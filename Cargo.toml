@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/proto", "crates/audio", "crates/core", "crates/peer", "crates/desktop"]
+members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/core", "crates/peer", "crates/desktop"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,8 +13,9 @@ serde_json = "1"
 thiserror = "2"
 base64 = "0.22"
 rand = "0.8"
-# Absolute so git worktrees (under .claude/worktrees/) resolve it too.
-identity = { path = "/home/abe/osvauld2/identity" }
+zeroize = { version = "1", features = ["derive"] }
+# Copied from osvauld2 (identity, cryptography @ abcae3d); keep in sync by hand for now.
+identity = { path = "crates/identity" }
 proto = { path = "crates/proto" }
 audio = { path = "crates/audio" }
 
