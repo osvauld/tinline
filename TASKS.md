@@ -1,5 +1,8 @@
 # Tasks
 
+Heavy builds (cargo, gradle) go through `scripts/buildlock.py --who <name> -- <cmd>`: one at a
+time machine-wide, and only when load/memory allow.
+
 Owner: `lead` = main session; `sonnet:<name>` = Sonnet subagent. A task is done only when the lead
 has re-run its acceptance command.
 
