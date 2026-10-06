@@ -81,6 +81,8 @@ struct App {
     devices: (Vec<String>, Vec<String>),
     name_edit: String,
     show_phrase: bool,
+    ticks: u32,
+    fetching: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -89,6 +91,7 @@ enum Msg {
     Tick,
     WindowOpened(#[allow(dead_code)] window::Id),
     CloseReq(window::Id),
+    Closed(window::Id),
     Theme(theme::Mode),
     Quit,
     Exit,
@@ -199,8 +202,14 @@ impl App {
             devices: (Vec::new(), Vec::new()),
             name_edit: node.profile().map(|p| p.name).unwrap_or_default(),
             show_phrase: false,
+            ticks: 0,
+            fetching: false,
             node,
         };
+        if has && std::env::var("P2P_SCREEN").is_ok_and(|v| v == "settings") {
+            app.devices = audio::list_devices();
+            app.screen = Screen::Settings;
+        }
         let mut tasks = vec![system::theme().map(Msg::Theme)];
         if !init.hidden {
             tasks.push(app.show_window());
@@ -229,7 +238,8 @@ impl App {
         blocking(move || node.start().map_err(s), Msg::Started)
     }
 
-    fn fetch_ticket(&self) -> Task<Msg> {
+    fn fetch_ticket(&mut self) -> Task<Msg> {
+        self.fetching = true;
         let node = self.node.clone();
         blocking(move || node.my_ticket().map_err(s), Msg::Ticket)
     }
@@ -285,6 +295,7 @@ impl App {
                 return self.on_event(ev);
             }
             Msg::Tick => {
+                self.ticks += 1;
                 self.status = self.node.status();
                 if let Some(c) = self.call.as_mut() {
                     c.stats = self.node.call_stats();
@@ -309,6 +320,11 @@ impl App {
                         return window::close(id);
                     }
                     return window::minimize(id, true);
+                }
+            }
+            Msg::Closed(id) => {
+                if Some(id) == self.win {
+                    self.win = None;
                 }
             }
             Msg::Theme(m) => self.dark = m != theme::Mode::Light,
@@ -380,14 +396,17 @@ impl App {
                     Err(e) => self.notice = Some(format!("Could not start: {e}")),
                 }
             }
-            Msg::Ticket(r) => match r {
+            Msg::Ticket(r) => {
+                self.fetching = false;
+                match r {
                 Ok(t) => {
                     eprintln!("TICKET {t}");
                     self.qr = qr_of(&t);
                     self.ticket = Some(t);
                 }
-                Err(e) => self.notice = Some(format!("Ticket: {e}")),
-            },
+                    Err(e) => self.notice = Some(format!("Ticket: {e}")),
+                }
+            }
             Msg::CopyTicket => {
                 if let Some(t) = self.ticket.clone() {
                     self.notice = Some("Contact card copied".into());
@@ -523,7 +542,7 @@ impl App {
     fn on_event(&mut self, ev: Ev) -> Task<Msg> {
         match ev {
             Ev::Status(st) => {
-                let need_ticket = st.started && self.ticket.is_none();
+                let need_ticket = st.started && self.ticket.is_none() && !self.fetching;
                 self.status = st;
                 if need_ticket {
                     return self.fetch_ticket();
@@ -586,6 +605,7 @@ impl App {
             Subscription::run(events),
             iced::time::every(Duration::from_secs(1)).map(|_| Msg::Tick),
             window::close_requests().map(Msg::CloseReq),
+            window::close_events().map(Msg::Closed),
             system::theme_changes().map(Msg::Theme),
         ])
     }
@@ -604,13 +624,13 @@ impl App {
             }
         };
         container(
-            scrollable(
-                container(body).max_width(440).padding(20).center_x(Fill),
-            )
-            .height(Fill),
+            container(scrollable(container(body).padding(20).width(Fill)).width(Fill).height(Fill))
+                .max_width(480)
+                .height(Fill),
         )
         .width(Fill)
         .height(Fill)
+        .center_x(Fill)
         .into()
     }
 
@@ -675,28 +695,28 @@ impl App {
         let pill: Element<Msg> = if !self.status.started {
             text("Starting...").size(13).style(text::secondary).into()
         } else if self.status.online {
-            text(format!("Online via relay{}", self.status.relay.as_deref().map(|r| format!(" ({})", short_relay(r))).unwrap_or_default()))
-                .size(13)
+            text(format!("● Online via relay{}", self.status.relay.as_deref().map(|r| format!(" ({})", short_relay(r))).unwrap_or_default()))
+                .size(14)
                 .style(text::success)
                 .into()
         } else {
-            text("Offline - no relay").size(13).style(text::danger).into()
+            text("● Offline - no relay").size(14).style(text::danger).into()
         };
         let header = row![
             column![
                 text(self.node.profile().map(|p| p.name).unwrap_or_default()).size(24),
-                container(pill).padding([3, 10]).style(container::rounded_box),
+                pill,
             ]
             .spacing(6),
             Space::new().width(Fill),
-            button(text("Settings")).style(button::secondary).on_press(Msg::OpenSettings),
+            button(text("Settings")).style(ghost).on_press(Msg::OpenSettings),
         ]
         .align_y(Alignment::Center);
 
         let card: Element<Msg> = {
             let qr: Element<Msg> = match &self.qr {
                 Some(q) => container(
-                    canvas(QrView(q)).width(Length::Fixed(220.0)).height(Length::Fixed(220.0)),
+                    canvas(QrView(q)).width(Fill).height(Length::Fixed(360.0)),
                 )
                 .center_x(Fill)
                 .into(),
@@ -712,7 +732,7 @@ impl App {
                     button(text("Copy contact code").center().width(Fill))
                         .padding(10)
                         .width(Fill)
-                        .style(button::secondary)
+                        .style(ghost)
                         .on_press_maybe(self.ticket.as_ref().map(|_| Msg::CopyTicket)),
                 ]
                 .spacing(10),
@@ -733,7 +753,7 @@ impl App {
                     row![
                         column![
                             text(c.name.clone()).size(16),
-                            text(c.device.clone()).size(11).style(text::secondary),
+                            text(format!("device {}", &c.device[..c.device.len().min(8)])).size(11).style(text::secondary),
                         ]
                         .width(Fill),
                         button(text("Call")).style(button::success).on_press(Msg::CallPressed(c.did.clone())),
@@ -800,7 +820,7 @@ impl App {
                 big_button_style(
                     if muted { "Unmute" } else { "Mute" },
                     (c.state == CallState::Active).then_some(Msg::ToggleMute),
-                    if muted { button::primary } else { button::secondary },
+                    if muted { button::primary } else { ghost },
                 ),
                 big_button_style("Hang up", Some(Msg::Hangup), button::danger),
             ]
@@ -819,7 +839,7 @@ impl App {
             .center_y(110)
             .style(container::bordered_box),
             text(c.info.peer_name.clone()).size(30),
-            text(state).size(18).style(text::secondary),
+            text(state).size(20).style(text::secondary),
             text(stats).size(13).style(text::secondary),
             Space::new().height(40),
             actions,
@@ -849,7 +869,7 @@ impl App {
         };
         column![
             row![
-                button(text("Back")).style(button::secondary).on_press(Msg::Back),
+                button(text("Back")).style(ghost).on_press(Msg::Back),
                 text("Settings").size(24),
             ]
             .spacing(14)
@@ -868,7 +888,7 @@ impl App {
             text("Device changes apply from the next call.").size(12).style(text::secondary),
             checkbox(self.settings.tone).label("Send a test tone instead of the microphone").on_toggle(Msg::ToneToggled),
             button(text(if self.show_phrase { "Hide recovery phrase" } else { "Show recovery phrase" }))
-                .style(button::secondary)
+                .style(ghost)
                 .on_press(Msg::ToggleShowPhrase),
             phrase,
             Space::new().height(10),
@@ -876,6 +896,21 @@ impl App {
         ]
         .spacing(10)
         .into()
+    }
+}
+
+fn ghost(theme: &Theme, status: button::Status) -> button::Style {
+    let p = theme.extended_palette();
+    let pair = match status {
+        button::Status::Hovered | button::Status::Pressed => p.background.strong,
+        _ => p.background.weak,
+    };
+    let dim = if status == button::Status::Disabled { 0.5 } else { 1.0 };
+    button::Style {
+        background: Some(pair.color.into()),
+        text_color: Color { a: dim, ..p.background.base.text },
+        border: iced::Border { radius: 8.0.into(), ..Default::default() },
+        ..Default::default()
     }
 }
 
