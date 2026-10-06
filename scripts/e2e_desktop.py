@@ -71,7 +71,7 @@ def run_mode(c, mode):
         peer(tmp / "alice", "init", "alice", env=env)
         peer(tmp / "bob", "init", "bob", env=env)
         ticket = peer(tmp / "alice", "ticket", env=env).stdout.strip()
-        c.ok(f"{mode}: ticket", ticket.startswith("osvc1."))
+        c.ok(f"{mode}: ticket", ticket.startswith("OSVC2:"))
         listener = peer(tmp / "alice", "listen", "--once", "--secs", 5, env=env, wait=False)
         time.sleep(3)
         added = peer(tmp / "bob", "add", ticket, env=env)
