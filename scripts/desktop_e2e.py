@@ -8,7 +8,8 @@ Env: TARGET (cargo target dir with release binaries), WORK (scratch dir).
 """
 import math, os, re, struct, subprocess, sys, time
 
-TARGET = os.environ.get("TARGET", "/tmp/claude-1000/target-desktop") + "/release"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TARGET = os.environ.get("TARGET", os.path.join(ROOT, "target")) + "/release"
 WORK = os.environ.get("WORK", "/tmp/claude-1000/e2e")
 APP, PEER = f"{TARGET}/p2p-desktop", f"{TARGET}/p2p-peer"
 A, B = f"{WORK}/A", f"{WORK}/B"
