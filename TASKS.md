@@ -14,6 +14,8 @@ has re-run its acceptance command.
 | 4 | Android Gradle skeleton: Compose app, cargo-ndk + UniFFI bindings, installs on emulator | sonnet:android | `android/`, `scripts/build_android.py` | done |
 | 5 | `core`: iroh endpoint, contacts store, call state machine, UniFFI API | lead | `crates/core` | done (desktop↔desktop verified) |
 | 6 | Host test peer CLI (headless, tone in / wav out) | lead | `crates/peer` | done |
-| 7 | Android app per `docs/android-app.md` | sonnet:android-app (worktree) | `android/` | in progress |
-| 7b | Desktop app (iced) + cpal/APM audio | sonnet:desktop (worktree) | `crates/desktop` | in progress |
-| 8 | E2E on emulator: add contact, call both ways, background/doze/reboot | lead | `scripts/e2e/` | todo |
+| 7 | Android app per `docs/android-app.md` | sonnet:android-app (worktree) | `android/` | done, merged, re-verified |
+| 7b | Desktop app (iced) + cpal/APM audio | sonnet:desktop (worktree) | `crates/desktop` | done, merged, re-verified |
+| 8 | E2E on emulator: add contact, call both ways, background/doze/reboot | lead | `scripts/e2e_*.py` | done (real-mic content on emulator blocked, see README) |
+| 9 | Compact QR ticket (`OSVC2:` base32) | sonnet:ticket (worktree) | `crates/proto` | in progress |
+| 10 | Review of `crates/core` | sonnet:review (worktree, read-only) | — | in progress |
