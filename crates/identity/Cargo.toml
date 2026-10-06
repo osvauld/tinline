@@ -1,0 +1,15 @@
+[package]
+name = "identity"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+cryptography = { path = "../cryptography" }
+bip39 = "2"
+bs58 = "0.5"
+rand = { workspace = true }
+zeroize = { workspace = true }
+serde = { workspace = true }
+bincode = "1"
+thiserror = { workspace = true }
