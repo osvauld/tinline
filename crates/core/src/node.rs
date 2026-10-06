@@ -475,7 +475,19 @@ impl Inner {
 
     fn ticket(&self) -> Result<String, Error> {
         let me = self.me()?;
-        let relay = self.endpoint().ok().and_then(|ep| ep.addr().relay_urls().next().map(|u| u.to_string()));
+        // Right after start the relay isn't known yet; a ticket without it leaves the joiner
+        // to DNS discovery, so give the relay a few seconds to come up first.
+        let relay_now = |ep: &Endpoint| ep.addr().relay_urls().next().map(|u| u.to_string());
+        let relay = self.endpoint().ok().and_then(|ep| {
+            let deadline = Instant::now() + Duration::from_secs(8);
+            loop {
+                let r = relay_now(&ep);
+                if r.is_some() || Instant::now() > deadline {
+                    break r;
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
+        });
         let mut s = self.shared.lock().unwrap();
         let now = now();
         if let Some(text) = &s.state.ticket
