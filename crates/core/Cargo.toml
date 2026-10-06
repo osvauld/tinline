@@ -1,0 +1,24 @@
+[package]
+name = "p2pcore"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+
+[dependencies]
+proto.workspace = true
+audio.workspace = true
+identity.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+rand.workspace = true
+iroh = "1.3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+uniffi = { version = "0.29", features = ["cli"] }
