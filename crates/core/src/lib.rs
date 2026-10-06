@@ -1,4 +1,16 @@
+//! The phone's (and desktop's) whole P2P side behind one UniFFI object: identity, contacts,
+//! the iroh endpoint, the call protocol and the codec. Platforms bring UI and audio devices.
+
 uniffi::setup_scaffolding!();
+
+mod error;
+mod logging;
+mod node;
+mod store;
+mod wire;
+
+pub use error::Error;
+pub use node::{CallInfo, CallState, CallStats, Contact, Node, NodeEvents, NodeStatus, ProfileInfo};
 
 #[uniffi::export]
 pub fn core_version() -> String {
