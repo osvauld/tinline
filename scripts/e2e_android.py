@@ -70,7 +70,7 @@ def main():
     dbg("tone", hz=440)
     sh(*ADB, "logcat", "-c")
     dbg("ticket")
-    ticket = wait_for(r"ticket=(osvc1\S+)")
+    ticket = wait_for(r"ticket=(\S+)")
     sh(*peer, "init", "desk")
     print(sh(*peer, "add", ticket).strip())
 

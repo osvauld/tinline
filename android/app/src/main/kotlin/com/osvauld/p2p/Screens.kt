@@ -344,7 +344,7 @@ fun AddContactScreen(app: P2pApp, onBack: () -> Unit) {
             )
             Button(onClick = { scan() }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Scan QR code") }
             OutlinedTextField(
-                text, { text = it }, label = { Text("Contact card (osvc1...)") },
+                text, { text = it }, label = { Text("Contact card (OSVC2:...)") },
                 modifier = Modifier.fillMaxWidth(), minLines = 3, maxLines = 6,
             )
             OutlinedButton(onClick = { clipboardText(ctx)?.let { text = it } }, modifier = Modifier.fillMaxWidth()) { Text("Paste from clipboard") }

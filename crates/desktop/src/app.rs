@@ -770,7 +770,7 @@ impl App {
         let add = column![
             text("Add contact").size(17),
             row![
-                text_input("Paste a contact code (osvc1...)", &self.add_in)
+                text_input("Paste a contact code (OSVC2:...)", &self.add_in)
                     .on_input(Msg::AddChanged)
                     .on_submit(Msg::AddPressed)
                     .padding(10),

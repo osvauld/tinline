@@ -309,7 +309,7 @@ impl Node {
         self.inner.status()
     }
 
-    /// Our contact ticket (`osvc1.…`), stable until someone redeems it.
+    /// Our contact ticket (`OSVC2:…`), stable until someone redeems it.
     pub fn my_ticket(&self) -> Result<String, Error> {
         self.inner.ticket()
     }
