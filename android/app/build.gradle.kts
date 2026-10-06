@@ -18,7 +18,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -35,6 +35,12 @@ dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("net.java.dev.jna:jna:5.14.0@aar")
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 }
 
 // ---- Rust (cargo-ndk + uniffi-bindgen) wiring ----
