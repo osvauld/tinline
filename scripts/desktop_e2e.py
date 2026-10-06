@@ -69,15 +69,31 @@ def call(env, peer_args, app_env):
     err = open(f"{WORK}/app.err").read()
     print(r.stdout[-600:], r.stderr[-300:])
     print("\n".join(l for l in err.splitlines() if l.startswith(("STATE", "INCOMING", "STATS")))[-1800:])
-    return r.stdout
+    return r.stdout, err
+
+
+def freq(text, pattern):
+    m = re.findall(pattern + r".*?freq=([0-9.]+)", text)
+    return float(m[-1]) if m else None
+
+
+def check(label, got, want):
+    ok = got is not None and abs(got - want) < 10
+    print(f"{'PASS' if ok else 'FAIL'} {label}: {got} Hz (want {want})")
+    return ok
 
 
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "tone"
     env = setup(null_sink())
     pair(env)
+    ok = True
     if mode == "tone":
-        call(env, ["--tone", "660", "--record", f"{WORK}/tone.wav"], {"P2P_TEST_TONE": "440", "P2P_AUTO_ANSWER": "1"})
+        out, err = call(env, ["--tone", "660", "--record", f"{WORK}/tone.wav"], {"P2P_TEST_TONE": "440", "P2P_AUTO_ANSWER": "1"})
+        ok &= check("peer heard app", freq(out, "RESULT"), 440)
+        # Mid-call stats; the last line can catch the hangup's drain.
+        mid = [l for l in err.splitlines() if l.startswith("STATS")][-4:-2]
+        ok &= check("app heard peer", freq("\n".join(mid), "STATS"), 660)
     else:
         n = 48000 * 30
         pcm = b"".join(struct.pack("<h", int(12000 * math.sin(2 * math.pi * 880 * i / 48000))) for i in range(n))
@@ -85,8 +101,14 @@ def main():
                                 stdin=subprocess.PIPE, env=env)
         import threading
         threading.Thread(target=lambda: (play.stdin.write(pcm), play.stdin.close()), daemon=True).start()
-        call(env, ["--record", f"{WORK}/mic.wav"], {"P2P_AUTO_ANSWER": "1", **({"P2P_NO_APM": "1"} if os.environ.get("NO_APM") else {})})
+        out, _ = call(env, ["--record", f"{WORK}/mic.wav"], {"P2P_AUTO_ANSWER": "1", **({"P2P_NO_APM": "1"} if os.environ.get("NO_APM") else {})})
         play.terminate()
+        ok &= check("peer heard app's real mic", freq(out, "RESULT"), 880)
+    # Leave no null sink behind.
+    for line in run("pactl", "list", "short", "modules").stdout.splitlines():
+        if "sink_name=p2p_test" in line:
+            run("pactl", "unload-module", line.split()[0])
+    sys.exit(0 if ok else 1)
 
 
 main()
