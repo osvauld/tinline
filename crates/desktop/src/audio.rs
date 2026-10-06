@@ -302,6 +302,8 @@ fn run_call(
     if let Err(e) = &mic {
         eprintln!("mic: {e}");
     }
+    // Test knob: skip the cleaning to check the device path on its own.
+    let bypass = std::env::var_os("P2P_NO_APM").is_some();
     let mut pcm: Vec<f32> = Vec::new();
     while !stop.load(Ordering::Relaxed) {
         match rx.recv_timeout(Duration::from_millis(50)) {
@@ -313,7 +315,7 @@ fn run_call(
             let mut frame: Vec<f32> = pcm.drain(..FRAME).collect();
             if muted.load(Ordering::Relaxed) {
                 frame.fill(0.0);
-            } else {
+            } else if !bypass {
                 for half in frame.chunks_exact_mut(APM_FRAME) {
                     if let Err(e) = apm.process_capture_frame([&mut *half]) {
                         eprintln!("capture apm: {e:?}");
