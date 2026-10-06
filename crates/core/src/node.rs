@@ -13,7 +13,7 @@ use identity::Identity;
 use iroh::endpoint::{Connection, QuicTransportConfig, presets};
 use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey, Watcher};
 use proto::{ContactTicket, Msg};
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{Semaphore, mpsc, oneshot};
 
 use crate::store::{Profile, State, Store, StoredContact};
 use crate::wire::Ctrl;
@@ -26,6 +26,12 @@ const GRANT_TTL: u64 = 365 * 24 * 3600;
 const DIAL_TIMEOUT: Duration = Duration::from_secs(30);
 const RING_TIMEOUT: Duration = Duration::from_secs(60);
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
+/// Unauthenticated connections we hold open at once while waiting for their hello; past this
+/// new ones are refused rather than queued.
+const MAX_PENDING_HELLOS: usize = 32;
+/// What a peer is told when we turn it away. The real reason is logged locally: telling an
+/// unauthenticated stranger "revoked" vs "not a contact" would leak our contact list.
+const REFUSED: &str = "not accepted";
 
 #[uniffi::export(with_foreign)]
 pub trait NodeEvents: Send + Sync {
@@ -113,6 +119,21 @@ struct Call {
     played: Mutex<VecDeque<i16>>,
     sent: Mutex<u64>,
     tone: Mutex<Option<(f32, audio::Tone)>>,
+    /// Set once by `end_call`; later calls are no-ops, so every path may call it.
+    ended: Mutex<bool>,
+}
+
+/// Ends the call when dropped unless it already ended: covers every early return (and panic)
+/// between taking the slot and `run_call` finishing it.
+struct SlotGuard<'a> {
+    inner: &'a Inner,
+    call: Arc<Call>,
+}
+
+impl Drop for SlotGuard<'_> {
+    fn drop(&mut self) {
+        self.inner.end_call(&self.call, "ended".into());
+    }
 }
 
 impl Call {
@@ -136,20 +157,53 @@ struct Shared {
     me: Option<Arc<Me>>,
     state: State,
     endpoint: Option<Endpoint>,
+}
+
+/// The call slot, apart from `Shared` so the 50 Hz audio threads never wait behind a disk
+/// write or a handshake holding `Shared`.
+#[derive(Default)]
+struct Live {
     call: Option<Arc<Call>>,
     tone: Option<f32>,
 }
 
 struct Inner {
-    rt: tokio::runtime::Runtime,
+    handle: tokio::runtime::Handle,
     store: Store,
+    /// Held while snapshotting and writing state, so writes land in the order taken. Always
+    /// taken before `shared`, never while holding it.
+    writing: Mutex<()>,
     events: Arc<dyn NodeEvents>,
     shared: Mutex<Shared>,
+    live: Mutex<Live>,
+    pending: Arc<Semaphore>,
 }
 
+/// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
+/// threads; called from inside a `NodeEvents` callback they fail (or, for `stop`, go async)
+/// instead of blocking the runtime that delivers the callback.
 #[derive(uniffi::Object)]
 pub struct Node {
     inner: Arc<Inner>,
+    rt: Option<tokio::runtime::Runtime>,
+}
+
+impl Drop for Node {
+    fn drop(&mut self) {
+        let ep = self.inner.shared.lock().unwrap().endpoint.take();
+        if let Some(rt) = self.rt.take() {
+            if let Some(ep) = ep {
+                // Best effort: a clean close tells peers at once instead of at idle timeout.
+                if tokio::runtime::Handle::try_current().is_err() {
+                    rt.block_on(async {
+                        let _ = tokio::time::timeout(Duration::from_secs(1), ep.close()).await;
+                    });
+                }
+            }
+            // Never blocks, so it is safe even if the last reference drops on a core thread.
+            rt.shutdown_background();
+        }
+    }
 }
 
 #[uniffi::export]
@@ -169,12 +223,15 @@ impl Node {
             None => None,
         };
         let inner = Arc::new(Inner {
-            rt,
+            handle: rt.handle().clone(),
             store,
+            writing: Mutex::new(()),
             events,
-            shared: Mutex::new(Shared { me, state, endpoint: None, call: None, tone: None }),
+            shared: Mutex::new(Shared { me, state, endpoint: None }),
+            live: Mutex::new(Live::default()),
+            pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
         });
-        Ok(Arc::new(Self { inner }))
+        Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
 
     pub fn has_identity(&self) -> bool {
@@ -204,30 +261,37 @@ impl Node {
     }
 
     pub fn set_name(&self, name: String) -> Result<(), Error> {
-        let mut s = self.inner.shared.lock().unwrap();
-        let me = s.me.as_ref().ok_or(Error::NoIdentity)?;
-        let mut profile = me.profile.clone();
-        profile.name = name;
-        self.inner.store.save_profile(&profile)?;
-        s.me = Some(Arc::new(Me::load(profile)?));
-        // The old ticket carries the old name.
-        s.state.ticket = None;
-        self.inner.store.save_state(&s.state)?;
-        Ok(())
+        {
+            let mut s = self.inner.shared.lock().unwrap();
+            let me = s.me.as_ref().ok_or(Error::NoIdentity)?;
+            let mut profile = me.profile.clone();
+            profile.name = name;
+            self.inner.store.save_profile(&profile)?;
+            s.me = Some(Arc::new(Me::load(profile)?));
+            // The old ticket carries the old name.
+            s.state.ticket = None;
+        }
+        self.inner.persist()
     }
 
     /// Binds the endpoint and starts accepting calls. Idempotent.
     pub fn start(&self) -> Result<(), Error> {
         let inner = self.inner.clone();
-        self.inner.rt.block_on(inner.start())
+        self.block_on(inner.start())?
     }
 
     pub fn stop(&self) {
         let ep = self.inner.shared.lock().unwrap().endpoint.take();
         if let Some(ep) = ep {
-            self.inner.rt.block_on(async {
+            let close = async move {
                 let _ = tokio::time::timeout(Duration::from_secs(2), ep.close()).await;
-            });
+            };
+            if tokio::runtime::Handle::try_current().is_ok() {
+                // From a callback: can't wait here, so finish the close in the background.
+                self.inner.handle.spawn(close);
+            } else {
+                self.inner.handle.block_on(close);
+            }
         }
         self.inner.emit_status();
     }
@@ -237,7 +301,7 @@ impl Node {
     pub fn network_changed(&self) {
         let ep = self.inner.shared.lock().unwrap().endpoint.clone();
         if let Some(ep) = ep {
-            self.inner.rt.spawn(async move { ep.network_change().await });
+            self.inner.handle.spawn(async move { ep.network_change().await });
         }
     }
 
@@ -253,7 +317,7 @@ impl Node {
     /// Redeems someone's ticket: dials them, exchanges grants, stores them. Blocks until done.
     pub fn add_contact(&self, ticket: String) -> Result<Contact, Error> {
         let inner = self.inner.clone();
-        self.inner.rt.block_on(inner.add_contact(ticket))
+        self.block_on(inner.add_contact(ticket))?
     }
 
     pub fn contacts(&self) -> Vec<Contact> {
@@ -261,13 +325,18 @@ impl Node {
         s.state.contacts.iter().map(Contact::from).collect()
     }
 
-    /// Forgets them and revokes every grant we gave them, so they can no longer ring us.
+    /// Forgets them and blocks their DID, so the grant we gave them no longer rings us; any
+    /// call with them ends. Adding them again lifts the block.
     pub fn remove_contact(&self, did: String) -> Result<(), Error> {
         {
             let mut s = self.inner.shared.lock().unwrap();
             s.state.contacts.retain(|c| c.did != did);
-            s.state.blocked.insert(did);
-            self.inner.store.save_state(&s.state)?;
+            s.state.blocked.insert(did.clone());
+        }
+        self.inner.persist()?;
+        let call = self.inner.live.lock().unwrap().call.clone();
+        if let Some(call) = call.filter(|c| c.info.peer_did == did) {
+            let _ = call.cmd.send(Cmd::Hangup);
         }
         self.inner.events.on_contacts_changed();
         Ok(())
@@ -291,8 +360,7 @@ impl Node {
     }
 
     pub fn current_call(&self) -> Option<CallInfo> {
-        let s = self.inner.shared.lock().unwrap();
-        s.call.as_ref().map(|c| c.info.clone())
+        self.inner.live.lock().unwrap().call.as_ref().map(|c| c.info.clone())
     }
 
     /// Microphone PCM, 48 kHz mono, any length; sent in 20 ms frames while a call is active.
@@ -324,7 +392,7 @@ impl Node {
     /// Replace the microphone with a sine of this frequency (or `None` to stop); a self-test
     /// that does not depend on the device having a real mic.
     pub fn set_test_tone(&self, hz: Option<f32>) {
-        self.inner.shared.lock().unwrap().tone = hz;
+        self.inner.live.lock().unwrap().tone = hz;
     }
 }
 
@@ -362,6 +430,15 @@ impl From<&StoredContact> for Contact {
 }
 
 impl Node {
+    /// Runs `fut` to completion from an app thread; refuses on a core thread, where blocking
+    /// would stall (or panic) the runtime that is calling us.
+    fn block_on<T>(&self, fut: impl std::future::Future<Output = T>) -> Result<T, Error> {
+        if tokio::runtime::Handle::try_current().is_ok() {
+            return Err(Error::Protocol("blocking call made from a NodeEvents callback".into()));
+        }
+        Ok(self.inner.handle.block_on(fut))
+    }
+
     fn set_identity(&self, phrase: String, name: String) -> Result<(), Error> {
         let mut s = self.inner.shared.lock().unwrap();
         if s.me.is_some() {
@@ -376,6 +453,13 @@ impl Node {
 }
 
 impl Inner {
+    /// Writes a snapshot of `State`. Callers must not hold `shared`.
+    fn persist(&self) -> Result<(), Error> {
+        let _w = self.writing.lock().unwrap();
+        let snapshot = self.shared.lock().unwrap().state.clone();
+        self.store.save_state(&snapshot)
+    }
+
     fn me(&self) -> Result<Arc<Me>, Error> {
         self.shared.lock().unwrap().me.clone().ok_or(Error::NoIdentity)
     }
@@ -450,7 +534,7 @@ impl Inner {
 
         let this = self.clone();
         let watch_ep = ep.clone();
-        self.rt.spawn(async move {
+        self.handle.spawn(async move {
             let mut addrs = watch_ep.watch_addr().stream();
             use n0_future::StreamExt;
             while let Some(_addr) = addrs.next().await {
@@ -459,12 +543,17 @@ impl Inner {
         });
 
         let this = self.clone();
-        self.rt.spawn(async move {
+        self.handle.spawn(async move {
             while let Some(incoming) = ep.accept().await {
+                // Bounded: a flood of strangers gets refused instead of costing a task each.
+                let Ok(permit) = this.pending.clone().try_acquire_owned() else {
+                    incoming.refuse();
+                    continue;
+                };
                 let this = this.clone();
                 tokio::spawn(async move {
-                    if let Err(e) = this.clone().handle_incoming(incoming).await {
-                        this.log(format!("incoming: {e}"));
+                    if let Err(e) = this.clone().handle_incoming(incoming, permit).await {
+                        tracing::debug!("incoming: {e}");
                     }
                 });
             }
@@ -511,7 +600,8 @@ impl Inner {
         );
         let text = ticket.to_text();
         s.state.ticket = Some(text.clone());
-        self.store.save_state(&s.state)?;
+        drop(s);
+        self.persist()?;
         Ok(text)
     }
 
@@ -584,13 +674,17 @@ impl Inner {
                 }
                 None => s.state.contacts.push(stored),
             }
-            self.store.save_state(&s.state)?;
         }
+        self.persist()?;
         self.events.on_contacts_changed();
         Ok(contact)
     }
 
-    async fn handle_incoming(self: Arc<Self>, incoming: iroh::endpoint::Incoming) -> Result<(), Error> {
+    async fn handle_incoming(
+        self: Arc<Self>,
+        incoming: iroh::endpoint::Incoming,
+        permit: tokio::sync::OwnedSemaphorePermit,
+    ) -> Result<(), Error> {
         let conn = incoming.await.map_err(Error::net)?;
         let remote = *conn.remote_id().as_bytes();
         let (send, recv) = tokio::time::timeout(HELLO_TIMEOUT, conn.accept_bi())
@@ -602,14 +696,18 @@ impl Inner {
             .await
             .map_err(|_| Error::Timeout)??
             .ok_or_else(|| Error::Protocol("peer closed before hello".into()))?;
+        // The hello is in; what follows is either quick or authenticated.
+        drop(permit);
         let me = self.me()?;
         match first {
             hello @ Msg::ContactHello { .. } => {
                 let Msg::ContactHello { relay: hint, .. } = &hello else { unreachable!() };
-                let hint = hint.clone();
+                let hint = relay_hint(hint);
+                // Check and spend the nonce under one lock, so two hellos racing on the same
+                // ticket can't both get in.
                 let accepted = {
-                    let s = self.shared.lock().unwrap();
-                    proto::accept_contact_hello(
+                    let mut s = self.shared.lock().unwrap();
+                    let r = proto::accept_contact_hello(
                         &me.id,
                         me.device,
                         &hello,
@@ -617,17 +715,17 @@ impl Inner {
                         now(),
                         &s.state.redeemed,
                         GRANT_TTL,
-                    )
+                    );
+                    if let Ok((_, new)) = &r {
+                        s.state.redeemed.insert(new.redeemed_nonce.clone());
+                        // Spent: the next `my_ticket` mints a fresh one.
+                        s.state.ticket = None;
+                    }
+                    r
                 };
                 match accepted {
                     Ok((welcome, new)) => {
-                        {
-                            let mut s = self.shared.lock().unwrap();
-                            s.state.redeemed.insert(new.redeemed_nonce.clone());
-                            // Spent: the next `my_ticket` mints a fresh one.
-                            s.state.ticket = None;
-                            self.store.save_state(&s.state)?;
-                        }
+                        self.persist()?;
                         ctrl.send(&welcome).await?;
                         ctrl.finish();
                         let contact = self.save_contact(new, hint)?;
@@ -637,7 +735,7 @@ impl Inner {
                     }
                     Err(e) => {
                         self.log(format!("rejected contact hello: {e}"));
-                        ctrl.send(&Msg::Reject { reason: e.to_string() }).await?;
+                        ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
                         ctrl.finish();
                         let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
                     }
@@ -646,7 +744,8 @@ impl Inner {
             }
             hello @ Msg::CallHello { .. } => self.incoming_call(conn, ctrl, hello, remote, &me).await,
             other => {
-                ctrl.send(&Msg::Reject { reason: format!("unexpected {}", msg_name(&other)) }).await?;
+                tracing::debug!("unexpected first message {}", msg_name(&other));
+                ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
                 Ok(())
             }
         }
@@ -661,7 +760,12 @@ impl Inner {
         me: &Me,
     ) -> Result<(), Error> {
         let Msg::CallHello { call_id, relay: hint, .. } = &hello else { unreachable!() };
-        let (call_id, hint) = (call_id.clone(), hint.clone());
+        let (call_id, hint) = (call_id.clone(), relay_hint(hint));
+        // It reaches the UI and logs: keep it to what we ourselves generate.
+        if call_id.is_empty() || call_id.len() > 64 || !call_id.bytes().all(|b| b.is_ascii_alphanumeric()) {
+            ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
+            return Ok(());
+        }
         let verified = {
             let s = self.shared.lock().unwrap();
             let contacts = &s.state.contacts;
@@ -678,7 +782,7 @@ impl Inner {
             Ok(c) => c,
             Err(e) => {
                 self.log(format!("rejected call: {e}"));
-                ctrl.send(&Msg::Reject { reason: e.to_string() }).await?;
+                ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
                 ctrl.finish();
                 let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
                 return Ok(());
@@ -689,6 +793,7 @@ impl Inner {
             s.state.contacts.iter().find(|c| c.did == caller.did).map(|c| c.name.clone()).unwrap_or_default()
         };
         let info = CallInfo { call_id, peer_did: caller.did.clone(), peer_name: name, incoming: true };
+        self.yield_on_glare(&caller.did, me.device, remote);
         let (call, cmds) = match self.begin_call(info.clone(), CallState::Ringing) {
             Ok(c) => c,
             Err(_) => {
@@ -698,6 +803,8 @@ impl Inner {
                 return Ok(());
             }
         };
+        // From here every exit must free the slot; the guard does it if nothing else did.
+        let _slot = SlotGuard { inner: &self, call: call.clone() };
         *call.conn.lock().unwrap() = Some(conn.clone());
         // A new device for a known contact: dial it next time.
         self.note_device(&caller.did, remote, hint);
@@ -705,8 +812,23 @@ impl Inner {
         self.log(format!("incoming call from {}", info.peer_name));
         self.events.on_incoming_call(info.clone());
         self.events.on_call_state(info.call_id.clone(), CallState::Ringing);
-        self.run_call(call, conn, ctrl, cmds, Some(caller.did)).await;
+        self.clone().run_call(call, conn, ctrl, cmds, Some(caller.did)).await;
         Ok(())
+    }
+
+    /// Both sides dialled each other at once: each would answer the other's hello with Busy
+    /// and both calls die. The call from the lower device key wins; the higher side drops its
+    /// own outgoing call so the incoming one can take the slot.
+    fn yield_on_glare(&self, peer: &str, mine: [u8; 32], theirs: [u8; 32]) {
+        let ours = self.live.lock().unwrap().call.clone();
+        if let Some(ours) = ours
+            && !ours.info.incoming
+            && ours.info.peer_did == peer
+            && matches!(ours.state(), CallState::Dialing | CallState::Ringing)
+            && mine > theirs
+        {
+            self.end_call(&ours, "they called at the same time".into());
+        }
     }
 
     /// The caller's device and relay as of this call, so our next call to them dials straight
@@ -724,8 +846,9 @@ impl Inner {
             c.relay = relay;
             changed = true;
         }
+        drop(s);
         if changed {
-            let _ = self.store.save_state(&s.state);
+            let _ = self.persist();
         }
     }
 
@@ -734,8 +857,8 @@ impl Inner {
         info: CallInfo,
         state: CallState,
     ) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
-        let mut s = self.shared.lock().unwrap();
-        if s.call.is_some() {
+        let mut live = self.live.lock().unwrap();
+        if live.call.is_some() {
             return Err(Error::Busy);
         }
         let (tx, rx) = mpsc::unbounded_channel();
@@ -751,8 +874,9 @@ impl Inner {
             played: Mutex::new(VecDeque::with_capacity(audio::RATE as usize)),
             sent: Mutex::new(0),
             tone: Mutex::new(None),
+            ended: Mutex::new(false),
         });
-        s.call = Some(call.clone());
+        live.call = Some(call.clone());
         Ok((call, rx))
     }
 
@@ -769,17 +893,32 @@ impl Inner {
             peer_name: contact.name.clone(),
             incoming: false,
         };
-        let (call, cmds) = self.begin_call(info.clone(), CallState::Dialing)?;
+        let (call, mut cmds) = self.begin_call(info.clone(), CallState::Dialing)?;
         self.events.on_call_state(info.call_id.clone(), CallState::Dialing);
         let this = self.clone();
-        self.rt.spawn(async move {
-            let dialed = this.dial(&ep, &me, &contact, &call.info.call_id).await;
+        self.handle.spawn(async move {
+            // Hanging up while dialing must not wait out the dial timeout.
+            let cancelled = async {
+                loop {
+                    match cmds.recv().await {
+                        Some(Cmd::Answer) => continue,
+                        _ => break,
+                    }
+                }
+            };
+            let dialed = tokio::select! {
+                d = this.dial(&ep, &me, &contact, &call.info.call_id) => Some(d),
+                _ = cancelled => None,
+            };
             match dialed {
-                Ok((conn, ctrl)) => {
+                // Ended while dialing (glare): drop the fresh connection, don't start a call.
+                Some(Ok((conn, _))) if *call.ended.lock().unwrap() => conn.close(0u32.into(), b"bye"),
+                Some(Ok((conn, ctrl))) => {
                     *call.conn.lock().unwrap() = Some(conn.clone());
                     this.run_call(call, conn, ctrl, cmds, None).await;
                 }
-                Err(e) => this.end_call(&call, format!("could not reach {}: {e}", contact.name)),
+                Some(Err(e)) => this.end_call(&call, format!("could not reach {}: {e}", contact.name)),
+                None => this.end_call(&call, "cancelled".into()),
             }
         });
         Ok(info)
@@ -807,7 +946,13 @@ impl Inner {
                     continue;
                 }
             };
-            let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
+            let (send, recv) = match conn.open_bi().await {
+                Ok(s) => s,
+                Err(e) => {
+                    last = Error::net(e);
+                    continue;
+                }
+            };
             let mut ctrl = Ctrl::new(send, recv);
             let mut hello = proto::call_hello(
                 &me.id,
@@ -837,11 +982,14 @@ impl Inner {
         let ring_deadline = tokio::time::Instant::now() + RING_TIMEOUT;
         let mut datagrams: Option<oneshot::Sender<()>> = None;
         let reason = loop {
+            if *call.ended.lock().unwrap() {
+                break "ended".into();
+            }
             let active = call.state() == CallState::Active;
             tokio::select! {
                 msg = ctrl.recv() => match msg {
-                    Ok(Some(Msg::Ringing)) => self.set_state(&call, CallState::Ringing),
-                    Ok(Some(Msg::Accept { renewed_grant })) if incoming_from.is_none() => {
+                    Ok(Some(Msg::Ringing)) if !active => self.set_state(&call, CallState::Ringing),
+                    Ok(Some(Msg::Accept { renewed_grant })) if incoming_from.is_none() && !active => {
                         if let Some(g) = renewed_grant {
                             self.renew_grant(&call.info.peer_did, g);
                         }
@@ -868,9 +1016,15 @@ impl Inner {
                         self.set_state(&call, CallState::Active);
                     }
                     Some(Cmd::Answer) => {}
-                    Some(Cmd::Decline) if !active => {
+                    // Not yet answered: the callee refusing is a decline, the caller giving up
+                    // is a hangup (the callee shows it as missed).
+                    Some(Cmd::Decline) | Some(Cmd::Hangup) if !active && incoming_from.is_some() => {
                         let _ = ctrl.send(&Msg::Decline { reason: "declined".into() }).await;
                         break "declined".into();
+                    }
+                    Some(Cmd::Decline) | Some(Cmd::Hangup) if !active => {
+                        let _ = ctrl.send(&Msg::Hangup).await;
+                        break "cancelled".into();
                     }
                     Some(Cmd::Decline) | Some(Cmd::Hangup) | None => {
                         let _ = ctrl.send(&Msg::Hangup).await;
@@ -886,10 +1040,14 @@ impl Inner {
         };
         ctrl.finish();
         drop(datagrams);
-        // Give the final frame a moment to leave before tearing the connection down.
-        let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
-        conn.close(0u32.into(), b"bye");
+        // Free the slot now, so a call placed right after this one isn't Busy; the connection
+        // gets a moment in the background for the final frame to leave.
+        call.conn.lock().unwrap().take();
         self.end_call(&call, reason);
+        tokio::spawn(async move {
+            let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
+            conn.close(0u32.into(), b"bye");
+        });
     }
 
     /// Spawns the datagram reader; dropping the returned sender stops it.
@@ -897,7 +1055,7 @@ impl Inner {
         let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
         let call = call.clone();
         let conn = conn.clone();
-        self.rt.spawn(async move {
+        self.handle.spawn(async move {
             loop {
                 tokio::select! {
                     d = conn.read_datagram() => match d {
@@ -912,10 +1070,12 @@ impl Inner {
     }
 
     fn renew_grant(&self, did: &str, grant: proto::SignedGrant) {
-        let mut s = self.shared.lock().unwrap();
-        if let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == did) {
-            c.grant_from_them = grant;
-            let _ = self.store.save_state(&s.state);
+        let found = {
+            let mut s = self.shared.lock().unwrap();
+            s.state.contacts.iter_mut().find(|c| c.did == did).map(|c| c.grant_from_them = grant).is_some()
+        };
+        if found {
+            let _ = self.persist();
         }
     }
 
@@ -925,11 +1085,16 @@ impl Inner {
         self.events.on_call_state(call.info.call_id.clone(), state);
     }
 
+    /// Frees the slot, closes the connection and emits Ended — once per call, however many
+    /// paths get here.
     fn end_call(&self, call: &Arc<Call>, reason: String) {
+        if std::mem::replace(&mut *call.ended.lock().unwrap(), true) {
+            return;
+        }
         {
-            let mut s = self.shared.lock().unwrap();
-            if s.call.as_ref().is_some_and(|c| Arc::ptr_eq(c, call)) {
-                s.call = None;
+            let mut live = self.live.lock().unwrap();
+            if live.call.as_ref().is_some_and(|c| Arc::ptr_eq(c, call)) {
+                live.call = None;
             }
         }
         if let Some(conn) = call.conn.lock().unwrap().take() {
@@ -939,15 +1104,15 @@ impl Inner {
     }
 
     fn command(&self, call_id: &str, cmd: Cmd) -> Result<(), Error> {
-        let s = self.shared.lock().unwrap();
-        let call = s.call.as_ref().filter(|c| c.info.call_id == call_id).ok_or(Error::NotFound)?;
+        let live = self.live.lock().unwrap();
+        let call = live.call.as_ref().filter(|c| c.info.call_id == call_id).ok_or(Error::NotFound)?;
         call.cmd.send(cmd).map_err(|_| Error::NotFound)
     }
 
     fn active_call(&self) -> Option<(Arc<Call>, Option<f32>)> {
-        let s = self.shared.lock().unwrap();
-        let call = s.call.clone()?;
-        (call.state() == CallState::Active).then_some((call, s.tone))
+        let live = self.live.lock().unwrap();
+        let call = live.call.clone()?;
+        (call.state() == CallState::Active).then_some((call, live.tone))
     }
 
     fn push_mic(&self, pcm: &[i16]) {
@@ -992,7 +1157,7 @@ impl Inner {
     }
 
     fn call_stats(&self) -> Option<CallStats> {
-        let call = self.shared.lock().unwrap().call.clone()?;
+        let call = self.live.lock().unwrap().call.clone()?;
         let rx = call.receiver.lock().unwrap().stats();
         let (direct, rtt_ms) = call
             .conn
@@ -1023,6 +1188,15 @@ impl Inner {
             rx_rms: audio::rms(&played),
         })
     }
+}
+
+/// An unsigned relay hint from a peer, kept only if it is a sane relay URL: it gets stored
+/// and dialled, so junk must not get in.
+fn relay_hint(hint: &Option<String>) -> Option<String> {
+    hint.as_deref()
+        .filter(|h| h.len() <= 200 && h.starts_with("https://"))
+        .and_then(|h| h.parse::<RelayUrl>().ok())
+        .map(|u| u.to_string())
 }
 
 fn relay_of(ep: &Endpoint) -> Option<String> {

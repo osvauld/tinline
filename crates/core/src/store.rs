@@ -32,7 +32,7 @@ pub struct StoredContact {
     pub added_at: u64,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct State {
     pub contacts: Vec<StoredContact>,
@@ -65,8 +65,20 @@ impl Store {
         write(&self.dir.join("profile.json"), p)
     }
 
+    /// A corrupt state file (power loss mid-write on a filesystem that reordered it) must not
+    /// brick the app: it is set aside as `state.json.corrupt` and we start from empty state.
+    /// Contacts are lost then, but the identity in `profile.json` is not.
     pub fn state(&self) -> Result<State, Error> {
-        Ok(read(&self.dir.join("state.json"))?.unwrap_or_default())
+        let path = self.dir.join("state.json");
+        match read(&path) {
+            Ok(s) => Ok(s.unwrap_or_default()),
+            Err(Error::Io(e)) if path.exists() => {
+                tracing::warn!("state.json unreadable ({e}); starting empty");
+                let _ = fs::rename(&path, path.with_extension("json.corrupt"));
+                Ok(State::default())
+            }
+            Err(e) => Err(e),
+        }
     }
 
     pub fn save_state(&self, s: &State) -> Result<(), Error> {
@@ -82,9 +94,19 @@ fn read<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, Error> {
     }
 }
 
+/// Write to a temp file, fsync it, rename over the old one, fsync the directory: after a
+/// crash or power cut the file is either the old version or the new one, never a torn mix.
+/// Matters most for `profile.json`, which holds the recovery phrase and device key.
 fn write<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> {
+    use std::io::Write;
     let tmp = path.with_extension("tmp");
-    fs::write(&tmp, serde_json::to_vec_pretty(value)?)?;
+    let mut f = fs::File::create(&tmp)?;
+    f.write_all(&serde_json::to_vec_pretty(value)?)?;
+    f.sync_all()?;
+    drop(f);
     fs::rename(&tmp, path)?;
+    if let Some(dir) = path.parent() {
+        fs::File::open(dir)?.sync_all()?;
+    }
     Ok(())
 }
