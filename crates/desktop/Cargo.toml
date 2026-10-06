@@ -1,0 +1,24 @@
+[package]
+name = "desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "p2p-desktop"
+path = "src/main.rs"
+
+[dependencies]
+p2pcore = { path = "../core" }
+audio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+iced = { version = "0.14", features = ["tokio", "canvas"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time", "sync"] }
+cpal = "0.18"
+webrtc-audio-processing = { version = "2.1", features = ["bundled"] }
+qrcode = { version = "0.14", default-features = false }
+directories = "6"
+notify-rust = "4"
+tray-icon = "0.21"
+gtk = "0.18"
