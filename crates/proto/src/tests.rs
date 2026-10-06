@@ -1,6 +1,6 @@
 use super::*;
 
-const T0: u64 = 1_000_000;
+const T0: u64 = 1_800_000_000;
 const TTL: u64 = 600;
 const GTTL: u64 = 86_400;
 
@@ -116,25 +116,121 @@ fn call_happy_path_and_multi_device() {
     assert_eq!(c2.device, dev2);
 }
 
+/// A v1 ticket as the previous release issued it (JSON invite).
+fn ticket_v1(a: &Peer) -> ContactTicket {
+    let claim = InviteClaim {
+        v: 1,
+        iss: a.id.did().to_string(),
+        nonce: random16(),
+        iat: T0,
+        exp: T0 + TTL,
+        device: enc(a.dev),
+        name: "alice".into(),
+        relay: Some("https://relay".into()),
+    };
+    ContactTicket {
+        v: 1,
+        did: claim.iss.clone(),
+        name: claim.name.clone(),
+        device: claim.device.clone(),
+        relay: claim.relay.clone(),
+        invite: sign_blob(&a.id, INVITE_DOMAIN, &claim),
+    }
+}
+
 #[test]
 fn ticket_text_roundtrip_and_prefix() {
     let a = peer();
     let t = ticket(&a);
     let text = t.to_text();
-    assert!(text.starts_with("osvc1."));
+    assert!(text.starts_with("OSVC2:"));
     let back = ContactTicket::from_text(&text).unwrap();
     assert_eq!(back, t);
-    back.verify(T0 + 1).unwrap();
+    let claim = back.verify(T0 + 1).unwrap();
+    assert_eq!(claim.iss, a.id.did());
+    assert_eq!(claim.exp, T0 + TTL);
+    // Case-insensitive body and prefix, surrounding whitespace tolerated.
+    let lower = format!("  \n{}\t", text.to_lowercase());
+    assert_eq!(ContactTicket::from_text(&lower).unwrap(), t);
     assert_eq!(
-        ContactTicket::from_text(&text.replace("osvc1.", "osvc2.")),
+        ContactTicket::from_text(&text.replace("OSVC2:", "osvc3:")),
         Err(Error::UnknownVersion)
     );
-    let mut v2 = t.clone();
-    v2.v = 2;
-    assert_eq!(
-        ContactTicket::from_text(&v2.to_text()),
-        Err(Error::UnknownVersion)
-    );
+    // v1 text still accepted, and keeps working end to end.
+    let (b, v1) = (peer(), ticket_v1(&a));
+    let v1_text = v1.to_text();
+    assert!(v1_text.starts_with("osvc1."));
+    let v1_back = ContactTicket::from_text(&v1_text).unwrap();
+    assert_eq!(v1_back, v1);
+    v1_back.verify(T0 + 1).unwrap();
+    let (hello, pending) = contact_hello(&b.id, b.dev, &v1_back, "bob", T0 + 1, GTTL).unwrap();
+    let (welcome, _) =
+        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0 + 2, &none(), GTTL).unwrap();
+    accept_contact_welcome(&b.id, &pending, &welcome, a.dev, T0 + 3).unwrap();
+}
+
+#[test]
+fn v2_typical_length() {
+    let a = peer();
+    let relay = Some("https://euc1-1.relay.n0.iroh.link./".to_string());
+    let t = issue_contact_ticket(&a.id, a.dev, "Alexandria Montgome", relay, T0, 7 * 86_400);
+    assert_eq!(t.name.len(), 19);
+    let text = t.to_text();
+    println!("v2 typical ticket length: {} ({text})", text.len());
+    assert!(text.len() <= 260, "{}", text.len());
+    println!("v1 ticket length: {}", ticket_v1(&a).to_text().len());
+    assert_eq!(ContactTicket::from_text(&text).unwrap(), t);
+}
+
+#[test]
+fn v2_relay_codes_and_name_cap() {
+    let a = peer();
+    for relay in [
+        None,
+        Some("https://use1-1.relay.n0.iroh.link./".to_string()),
+        Some("https://aps1-1.relay.n0.iroh.link./".to_string()),
+        Some("https://my.relay.example/".to_string()),
+    ] {
+        let t = issue_contact_ticket(&a.id, a.dev, "é".repeat(40).as_str(), relay.clone(), T0, TTL);
+        assert!(t.name.len() <= 31 && t.name.chars().all(|c| c == 'é'));
+        let back = ContactTicket::from_text(&t.to_text()).unwrap();
+        assert_eq!(back.relay, relay);
+        back.verify(T0).unwrap();
+    }
+}
+
+#[test]
+fn v2_any_flipped_bit_fails() {
+    let a = peer();
+    let t = ticket(&a);
+    let text = t.to_text();
+    let body = b32_decode(&text["OSVC2:".len()..]).unwrap();
+    for i in 0..body.len() {
+        let mut bad = body.clone();
+        bad[i] ^= 1;
+        let text = format!("OSVC2:{}", b32_encode(&bad));
+        let ok = ContactTicket::from_text(&text).and_then(|t| t.verify(T0));
+        assert!(ok.is_err(), "byte {i} tamper accepted");
+    }
+    // Truncation and trailing garbage.
+    assert!(ContactTicket::from_text(&text[..text.len() - 4]).is_err());
+    assert!(ContactTicket::from_text(&format!("{text}AA")).is_err());
+}
+
+#[test]
+fn v2_visible_fields_must_match_and_blob_tamper() {
+    let (a, m) = (peer(), peer());
+    let t = ticket(&a);
+    let mut x = t.clone();
+    x.name = "mallory".into();
+    assert_eq!(x.verify(T0), Err(Error::TicketMismatch));
+    let mut x = t.clone();
+    x.invite = ticket(&m).invite;
+    assert_eq!(x.verify(T0), Err(Error::TicketMismatch));
+    // Signature from another key over the same payload.
+    let mut x = t;
+    x.invite.signature = ticket(&m).invite.signature;
+    assert_eq!(x.verify(T0), Err(Error::BadSignature));
 }
 
 #[test]
@@ -163,7 +259,7 @@ fn tampered_visible_ticket_fields() {
 #[test]
 fn tampered_invite_payload_fails_signature() {
     let a = peer();
-    let mut t = ticket(&a);
+    let mut t = ticket_v1(&a);
     let mut claim: InviteClaim = serde_json::from_slice(&dec(&t.invite.payload).unwrap()).unwrap();
     claim.exp += 1_000_000;
     t.invite.payload = enc(serde_json::to_vec(&claim).unwrap());

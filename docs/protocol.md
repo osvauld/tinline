@@ -14,14 +14,37 @@ ALPN: `osvauld/p2p/0`.
   Several devices per DID are fine; each has its own attestation.
 
 All signed things are `SignedBlob { payload: b64url(json), signature: b64url }`,
-signature over `DOMAIN || payload`. Domains: `osvauld/p2p/{attest,invite,grant,bind}/v1\0`.
+signature over `DOMAIN || payload`. Domains: `osvauld/p2p/{attest,invite,grant,bind}/v1\0` plus `invite/v2\0` for compact invites.
 The verifying key is always recovered from the DID named inside the payload; callers then
 compare that DID to the one they expected.
 
 ## Contact ticket (QR)
 
-Text: `osvc1.` + b64url(json). Fields: `{v:1, did, name, device, relay, invite}`.
+Text (v2, issued today): `OSVC2:` + RFC 4648 base32, uppercase, no padding, so the QR uses
+alphanumeric mode (~260 chars vs ~800 for v1). Decoding is case-insensitive and trims
+whitespace. Binary body:
+
+```
+signing_pk[32] | device[32] | nonce[6] | exp[3] | flags[1] | name[n] | relay_ext | sig[64]
+```
+
+- `exp`: minutes since 2026-01-01T00:00:00Z, u24 big endian (issuer rounds up).
+  `iat` is not carried (decodes as 0). `nonce` is 6 random bytes (single-use id).
+- `flags`: high 3 bits relay code (0 none, 1..4 = `https://{use1,usw1,euc1,aps1}-1.relay.n0.iroh.link./`,
+  7 custom: `relay_ext` = u8 length + URL); low 5 bits = name length, so names are capped
+  at 31 bytes (truncated at a char boundary when issuing).
+- `sig`: Ed25519 by the DID key over `osvauld/p2p/invite/v2\0 || 0x02 || body-before-sig`.
+- The DID is `did_from_public_key(signing_pk)`; nothing is displayed that is not signed.
+
+Inside `ContactTicket`/`ContactHello.invite` the v2 invite is a `SignedBlob` whose payload is
+`b64url(0x02 || body-before-sig)` and signature `b64url(sig)`; `open_invite` picks v1 (JSON,
+payload starts with `{`) or v2 (first byte 0x02). The claim handed to the handshake has the
+same shape either way (`InviteClaim.v` = 1 or 2).
+
+Text (v1, still accepted): `osvc1.` + b64url(json). Fields: `{v:1, did, name, device, relay, invite}`.
 `invite` is a signed `InviteClaim {v, iss, nonce(16B), iat, exp, device, name, relay}`.
+A v1 ticket parsed from text re-serialises as v1 (it cannot be re-signed).
+
 The visible fields are display-only; `verify` requires them to equal the signed ones
 (mismatch is an error) and the claim to be unexpired.
 
