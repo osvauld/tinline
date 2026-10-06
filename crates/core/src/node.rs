@@ -425,13 +425,17 @@ impl Inner {
             .keep_alive_interval(Duration::from_secs(5))
             .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
             .build();
-        let ep = Endpoint::builder(presets::N0)
+        let mut builder = Endpoint::builder(presets::N0)
             .secret_key(SecretKey::from_bytes(&me.profile.device_secret))
             .alpns(vec![proto::ALPN.to_vec()])
-            .transport_config(transport)
-            .bind()
-            .await
-            .map_err(Error::net)?;
+            .transport_config(transport);
+        // Test knob: no UDP of our own, so every packet goes through the relay — the path a
+        // call takes when hole punching fails.
+        if std::env::var_os("P2P_RELAY_ONLY").is_some() {
+            builder = builder.clear_ip_transports();
+            self.log("relay-only mode");
+        }
+        let ep = builder.bind().await.map_err(Error::net)?;
         {
             let mut s = self.shared.lock().unwrap();
             if s.endpoint.is_some() {
