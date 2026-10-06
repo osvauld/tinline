@@ -20,5 +20,5 @@ webrtc-audio-processing = { version = "2.1", features = ["bundled"] }
 qrcode = { version = "0.14", default-features = false }
 directories = "6"
 notify-rust = "4"
-tray-icon = "0.21"
+tray-icon = { version = "0.21", default-features = false }
 gtk = "0.18"
