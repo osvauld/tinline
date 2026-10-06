@@ -63,7 +63,12 @@ class P2pApp : Application(), NodeEvents {
 
     // ---- NodeEvents (core threads) ----
     override fun onStatus(status: NodeStatus) { _status.value = status }
-    override fun onContactsChanged() { _contacts.value = node.contacts() }
+    override fun onContactsChanged() {
+        val list = node.contacts()
+        val known = _contacts.value.map { it.did }.toSet()
+        list.filter { it.did !in known }.forEach { testLog("added name=${it.name} did=${it.did}") }
+        _contacts.value = list
+    }
     override fun onIncomingCall(call: CallInfo) = calls.onIncoming(call)
     override fun onCallState(callId: String, state: CallState) = calls.onState(callId, state)
     override fun onLog(line: String) { Log.d("p2pcore", line) }
