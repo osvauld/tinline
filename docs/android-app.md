@@ -11,8 +11,9 @@ the codec; the app owns UI, audio devices, and staying alive.
 `hasIdentity()`, `createIdentity(name) -> phrase`, `restoreIdentity(phrase, name)`, `profile()`,
 `recoveryPhrase()`, `setName()`, `start()`, `stop()`, `networkChanged()`, `status()`,
 `myTicket()`, `addContact(ticket)`, `contacts()`, `removeContact(did)`, `call(did) -> CallInfo`,
-`answer(id)`, `decline(id)`, `hangup(id)`, `currentCall()`, `pushMic(ShortArray-ish List<Short>)`,
-`pullSpeaker() -> List<Short>` (960 samples = 20 ms @ 48 kHz mono), `callStats()`,
+`answer(id)`, `decline(id)`, `hangup(id)`, `currentCall()`, `pushMicPcm16(ByteArray)`,
+`pullSpeakerPcm16() -> ByteArray` (little-endian PCM16; 960 samples = 1920 bytes = 20 ms @
+48 kHz mono — use these, not the `List<Short>` variants), `callStats()`,
 `setTestTone(hz?)`.
 `NodeEvents` callback (called on core threads — hop to main/flows): `onStatus`, `onContactsChanged`,
 `onIncomingCall(CallInfo)`, `onCallState(callId, CallState)`, `onLog(line)`.
