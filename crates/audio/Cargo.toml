@@ -5,7 +5,6 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-opus = "0.4"
 # Direct dep only to switch on libopus 1.6's deep redundancy (DRED) and deep PLC (OSCE).
 opusic-sys = { version = "0.7.5", features = ["dred", "osce"] }
 thiserror.workspace = true
