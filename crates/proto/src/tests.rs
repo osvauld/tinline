@@ -41,6 +41,7 @@ fn add_contact(a: &Peer, b: &Peer) -> (NewContact, NewContact) {
 fn hello_parts(m: &Msg) -> (SignedAttestation, String, SignedBlob, String, SignedGrant) {
     match m.clone() {
         Msg::ContactHello {
+        relay: None,
             attestation,
             name,
             invite,
@@ -305,6 +306,7 @@ fn binding_for_different_device_or_invite() {
     let sig =
         b.id.sign(&binding_message(&claim.nonce, &other, &a.dev).unwrap());
     let bad = Msg::ContactHello {
+        relay: None,
         attestation: att.clone(),
         name: name.clone(),
         invite: invite.clone(),
@@ -321,6 +323,7 @@ fn binding_for_different_device_or_invite() {
     let (h2, _) = contact_hello(&b.id, b.dev, &t2, "bob", T0, GTTL).unwrap();
     let (_, _, _, binding2, _) = hello_parts(&h2);
     let bad = Msg::ContactHello {
+        relay: None,
         attestation: att,
         name,
         invite,
@@ -343,6 +346,7 @@ fn binding_signed_by_wrong_key() {
     let sig =
         m.id.sign(&binding_message(&claim.nonce, &b.dev, &a.dev).unwrap());
     let bad = Msg::ContactHello {
+        relay: None,
         attestation: att,
         name,
         invite,
@@ -362,6 +366,7 @@ fn hello_grant_wrong_holder_and_expired() {
     let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
     let (att, name, invite, binding, _) = hello_parts(&hello);
     let mk = |g: SignedGrant| Msg::ContactHello {
+        relay: None,
         attestation: att.clone(),
         name: name.clone(),
         invite: invite.clone(),

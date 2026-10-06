@@ -519,7 +519,7 @@ impl Inner {
         let me = self.me()?;
         let ep = self.endpoint()?;
         let ticket = ContactTicket::from_text(&text)?;
-        let (hello, pending) = proto::contact_hello(
+        let (mut hello, pending) = proto::contact_hello(
             &me.id,
             me.device,
             &ticket,
@@ -527,6 +527,9 @@ impl Inner {
             now(),
             GRANT_TTL,
         )?;
+        if let Msg::ContactHello { relay, .. } = &mut hello {
+            *relay = relay_of(&ep);
+        }
         let claim = ticket.verify(now())?;
         if claim.iss == me.id.did() {
             return Err(Error::Protocol("that is your own ticket".into()));
@@ -602,6 +605,8 @@ impl Inner {
         let me = self.me()?;
         match first {
             hello @ Msg::ContactHello { .. } => {
+                let Msg::ContactHello { relay: hint, .. } = &hello else { unreachable!() };
+                let hint = hint.clone();
                 let accepted = {
                     let s = self.shared.lock().unwrap();
                     proto::accept_contact_hello(
@@ -625,7 +630,7 @@ impl Inner {
                         }
                         ctrl.send(&welcome).await?;
                         ctrl.finish();
-                        let contact = self.save_contact(new, None)?;
+                        let contact = self.save_contact(new, hint)?;
                         self.log(format!("contact {} added us", contact.name));
                         // Let the joiner read the welcome and close first.
                         let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
@@ -655,8 +660,8 @@ impl Inner {
         remote: [u8; 32],
         me: &Me,
     ) -> Result<(), Error> {
-        let Msg::CallHello { call_id, .. } = &hello else { unreachable!() };
-        let call_id = call_id.clone();
+        let Msg::CallHello { call_id, relay: hint, .. } = &hello else { unreachable!() };
+        let (call_id, hint) = (call_id.clone(), hint.clone());
         let verified = {
             let s = self.shared.lock().unwrap();
             let contacts = &s.state.contacts;
@@ -695,7 +700,7 @@ impl Inner {
         };
         *call.conn.lock().unwrap() = Some(conn.clone());
         // A new device for a known contact: dial it next time.
-        self.note_device(&caller.did, remote);
+        self.note_device(&caller.did, remote, hint);
         ctrl.send(&Msg::Ringing).await?;
         self.log(format!("incoming call from {}", info.peer_name));
         self.events.on_incoming_call(info.clone());
@@ -704,13 +709,22 @@ impl Inner {
         Ok(())
     }
 
-    fn note_device(&self, did: &str, device: [u8; 32]) {
+    /// The caller's device and relay as of this call, so our next call to them dials straight
+    /// there.
+    fn note_device(&self, did: &str, device: [u8; 32], relay: Option<String>) {
         let mut s = self.shared.lock().unwrap();
-        if let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == did)
-            && c.devices.first() != Some(&device)
-        {
+        let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == did) else { return };
+        let mut changed = false;
+        if c.devices.first() != Some(&device) {
             c.devices.retain(|d| *d != device);
             c.devices.insert(0, device);
+            changed = true;
+        }
+        if relay.is_some() && c.relay != relay {
+            c.relay = relay;
+            changed = true;
+        }
+        if changed {
             let _ = self.store.save_state(&s.state);
         }
     }
@@ -795,12 +809,15 @@ impl Inner {
             };
             let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
             let mut ctrl = Ctrl::new(send, recv);
-            let hello = proto::call_hello(
+            let mut hello = proto::call_hello(
                 &me.id,
                 me.attestation.clone(),
                 contact.grant_from_them.clone(),
                 call_id.to_string(),
             );
+            if let Msg::CallHello { relay, .. } = &mut hello {
+                *relay = relay_of(ep);
+            }
             ctrl.send(&hello).await?;
             return Ok((conn, ctrl));
         }
@@ -1006,6 +1023,10 @@ impl Inner {
             rx_rms: audio::rms(&played),
         })
     }
+}
+
+fn relay_of(ep: &Endpoint) -> Option<String> {
+    ep.addr().relay_urls().next().map(|u| u.to_string())
 }
 
 fn addr_for(device: &[u8; 32], relay: Option<&str>) -> Result<EndpointAddr, Error> {

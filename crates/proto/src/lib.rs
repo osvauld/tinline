@@ -347,6 +347,10 @@ pub enum Msg {
         invite: SignedBlob,
         binding: String,
         grant_for_you: SignedGrant,
+        /// The joiner's relay right now: an unsigned routing hint so the ticket owner can call
+        /// back without waiting on DNS discovery. A wrong one only costs a slower dial.
+        #[serde(default)]
+        relay: Option<String>,
     },
     ContactWelcome {
         attestation: SignedAttestation,
@@ -360,6 +364,9 @@ pub enum Msg {
         call_id: String,
         attestation: SignedAttestation,
         grant: SignedGrant,
+        /// The caller's current relay, same kind of hint as in `ContactHello`.
+        #[serde(default)]
+        relay: Option<String>,
     },
     Ringing,
     Accept {
@@ -442,6 +449,7 @@ pub fn contact_hello(
     let their_device = dec32(&claim.device)?;
     let binding = enc(me.sign(&binding_message(&claim.nonce, &my_device, &their_device)?));
     let msg = Msg::ContactHello {
+        relay: None,
         attestation: attest(me, my_device, now),
         name: my_name.to_string(),
         invite: ticket.invite.clone(),
@@ -473,6 +481,7 @@ pub fn accept_contact_hello(
         invite,
         binding,
         grant_for_you,
+        ..
     } = msg
     else {
         return Err(Error::UnexpectedMessage);
@@ -575,6 +584,7 @@ pub fn call_hello(
         call_id,
         attestation: my_device_attestation,
         grant: grant_from_them,
+        relay: None,
     }
 }
 
