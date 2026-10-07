@@ -35,9 +35,10 @@ has re-run its acceptance command.
 | 23 | Wire 21 into the Android UI (recents, rename, verify, availability, end reasons) | sonnet:wire (worktree) | `android/` | done, merged; lead re-ran e2e_android + phone_phone |
 | 25 | Chat core (1:1): copied osvauld storage + sealed vault records, encrypted iroh-blobs, Loro day-shards with signed updates, files (2 GB), voice messages (hold to record), API + events, e2e_chat.py | sonnet:chat (worktree) | `crates/core`, `crates/peer`, `crates/storage`, `docs/chat.md` | in progress |
 | 26 | Chat design boards (Android chats/conversation/files+voice, desktop chat) | lead | design canvas | in progress |
-| 28 | Optional passphrase (design change 2026-10-08): core identity without passphrase (keys protected by Keystore / OS keyring only), add one later in Settings; onboarding drops quick check, single passphrase field + Skip | after 25 (core) | `crates/core`, `android/`, `crates/desktop` | todo |
-| 29 | Call waiting (Flow 4b): second incoming call rings as a banner over the current call; Decline → caller sees Busy; End & answer; ignored 30 s → missed | after 25 (core) | `crates/core`, `android/`, `crates/desktop` | todo |
-| 27 | Chat UI on Android + desktop | after 25, 26 | `android/`, `crates/desktop` | todo |
+| 28 | Optional passphrase (design change 2026-10-08): core identity without passphrase (keys protected by Keystore / OS keyring only), add one later in Settings; onboarding drops quick check, single passphrase field + Skip | sonnet:passphrase (worktree) | `crates/core` vault, `android/` onboarding/unlock/settings, `crates/desktop` | in progress |
+| 29 | Call waiting (Flow 4b): second incoming call rings as a banner over the current call; Decline → caller sees Busy; End & answer; ignored 30 s → missed | sonnet:callwait (worktree) | `crates/core` calls, `android/` call screens, `crates/desktop` | in progress |
+| 30 | Voice messages: Ogg Opus 16 kHz recorder/decoder + 64-peak waveform in core; Android hold-to-record + voice bubble; desktop recorder/player widget | sonnet:voice (worktree) | `crates/core/src/voice.rs`, `android/.../VoiceMessage.kt`, `crates/desktop/src/voice.rs` | in progress |
+| 27 | Chat UI on Android + desktop (Android and desktop agents, against the frozen chat API stub from 25) | after 25's API stub, 26 | `android/`, `crates/desktop` | todo |
 
 ## Roadmap (after the redesign)
 
