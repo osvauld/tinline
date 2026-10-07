@@ -17,5 +17,9 @@ has re-run its acceptance command.
 | 7 | Android app per `docs/android-app.md` | sonnet:android-app (worktree) | `android/` | done, merged, re-verified |
 | 7b | Desktop app (iced) + cpal/APM audio | sonnet:desktop (worktree) | `crates/desktop` | done, merged, re-verified |
 | 8 | E2E on emulator: add contact, call both ways, background/doze/reboot | lead | `scripts/e2e_*.py` | done (real-mic content on emulator blocked, see README) |
-| 9 | Compact QR ticket (`OSVC2:` base32) | sonnet:ticket (worktree) | `crates/proto` | in progress |
-| 10 | Review of `crates/core` | sonnet:review (worktree, read-only) | — | in progress |
+| 9 | Compact QR ticket (`OSVC2:` base32) | sonnet:ticket (worktree) | `crates/proto` | done |
+| 10 | Review of `crates/core` | sonnet:review (worktree, read-only) | — | done, fixes merged |
+| 11 | Idle network measurement (`scripts/measure_idle.py`) + iroh timer audit | sonnet (worktree) | `scripts/` | done: ~330 bursts/h idle; own relay deferred |
+| 12 | Passphrase vault in core: Argon2id-sealed secrets, device-unlock key, migration | sonnet:vault (worktree) | `crates/core`, `crates/peer`, `scripts/e2e_*` | in progress |
+| 13 | Android: passphrase onboarding/unlock/migration + Keystore-wrapped unlock key | sonnet (worktree), after 12 | `android/` | todo |
+| 14 | Desktop: passphrase onboarding/unlock/migration | sonnet (worktree), after 12 | `crates/desktop` | todo |
