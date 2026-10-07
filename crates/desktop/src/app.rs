@@ -551,6 +551,7 @@ impl App {
                         return self.start_node();
                     }
                     Err(e) => {
+                        eprintln!("UNLOCK failed: {e}");
                         self.screen = Screen::Unlock;
                         self.notice = Some(e);
                     }
