@@ -669,3 +669,29 @@ fn oversized_and_garbage_frames() {
     f.extend(b"nojso");
     assert_eq!(decode_frame(&f), Err(Error::Decode));
 }
+
+#[test]
+fn sanitize_name_strips_and_caps() {
+    assert_eq!(sanitize_name("bo\u{202E}b\u{0}\n\u{2066}x\u{2069}"), "bobx");
+    assert_eq!(sanitize_name("  Zoë  "), "Zoë");
+    let long = "é".repeat(200);
+    assert_eq!(sanitize_name(&long).chars().count(), MAX_NAME_CHARS);
+}
+
+#[test]
+fn peer_names_are_sanitized_on_receipt() {
+    let (a, b) = (peer(), peer());
+    let t = ticket(&a);
+    let evil = format!("bob\u{202E}\u{7}{}", "x".repeat(100));
+    let (hello, pending) = contact_hello(&b.id, b.dev, &t, &evil, T0 + 1, GTTL).unwrap();
+    let (_, a_view) = accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0 + 2, &none(), GTTL).unwrap();
+    assert_eq!(a_view.name.chars().count(), MAX_NAME_CHARS);
+    assert!(a_view.name.starts_with("bobxxx"));
+    assert!(!a_view.name.contains('\u{202E}') && !a_view.name.contains('\u{7}'));
+    // A ticket whose signed name carries control characters decodes clean.
+    let t = issue_contact_ticket(&a.id, a.dev, "al\u{202E}ice\n", None, T0, TTL);
+    assert_eq!(t.name, "alice");
+    let back = ContactTicket::from_text(&t.to_text()).unwrap();
+    assert_eq!(back.verify(T0 + 1).unwrap().name, "alice");
+    assert_eq!(pending.name, "alice");
+}

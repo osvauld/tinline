@@ -60,8 +60,13 @@ pub fn check_passphrase(pass: &str) -> Result<(), Error> {
 }
 
 fn kek(pass: &str, salt: &[u8], m: u32, t: u32, p: u32) -> Result<Zeroizing<[u8; 32]>, Error> {
-    // A tampered profile.json must not make us allocate gigabytes.
-    if m > 1 << 20 || t > 20 || p > 16 || salt.len() < 8 {
+    // A tampered profile.json must not make us allocate gigabytes, nor downgrade the KDF to
+    // something fast: only a band around our own parameters is accepted.
+    if !(65536..=262144).contains(&m)
+        || !(3..=10).contains(&t)
+        || !(1..=8).contains(&p)
+        || !(16..=64).contains(&salt.len())
+    {
         return Err(Error::Io("vault parameters out of range".into()));
     }
     let k = kdf::argon2id(pass.as_bytes(), salt, m, t, p).map_err(|e| Error::Io(e.to_string()))?;
@@ -112,4 +117,28 @@ pub fn open_with_key(v: &Vault, key: &[u8]) -> Result<Secrets, Error> {
 pub fn rewrap(v: &Vault, dek: &Dek, new_pass: &str) -> Result<Vault, Error> {
     let (salt, wrapped_dek) = wrap(dek, new_pass)?;
     Ok(Vault { salt, m: ARGON2_M, t: ARGON2_T, p: ARGON2_P, wrapped_dek, sealed: v.sealed.clone() })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parameter_bounds() {
+        // Rejected before any hashing happens.
+        for (m, t, p, s) in [
+            (1024, 3, 4, 16),
+            (1 << 20, 3, 4, 16),
+            (65536, 1, 4, 16),
+            (65536, 11, 4, 16),
+            (65536, 3, 0, 16),
+            (65536, 3, 9, 16),
+            (65536, 3, 4, 8),
+            (65536, 3, 4, 65),
+        ] {
+            assert!(kek("pass", &vec![7u8; s], m, t, p).is_err(), "{m} {t} {p} {s}");
+        }
+        assert!(kek("pass", &[7u8; 16], 65536, 3, 4).is_ok());
+        assert!(kek("pass", &[7u8; 64], 65536, 10, 8).is_ok());
+    }
 }

@@ -99,19 +99,41 @@ buffered and reports bytes consumed.
 | Revoked set | Cutting off a contact or a leaked grant |
 | Contact check | A valid grant surviving after the contact was removed |
 
-## Revocation
+## Removing a contact (there is no revocation yet)
 
-Grants carry a random 16-byte id. The callee keeps a revoked-id set and passes it to
-`accept_call_hello`. Removing a contact = drop it from the contact list (and optionally
-revoke its grant id). Grants are short-lived by choice of `ttl`; use `renewed_grant` in
-`Accept` to refresh. Tickets are single-use via the redeemed-nonce set and also expire.
+Grants carry a random 16-byte id and `accept_call_hello` takes a revoked-id set, but the core
+never writes to that set: no grant is revoked individually today. Removing a contact is a local
+block instead: the contact is dropped, their DID goes on a blocked list, and the grant we gave
+them is no longer honoured because calls from a blocked DID are refused with the same generic
+"not accepted" as any other failure (so they learn nothing). The block is lifted only when *we*
+add them again by scanning their ticket; a ticket of ours that they scan does not lift it.
+Grants are long-lived (a year) and renewed on every answered call; `renewed_grant` in `Accept`
+replaces the stored grant only if it is validly signed by the callee for us and expires later.
+Tickets are single-use via the redeemed-nonce set and also expire.
+
+## Tickets in the core
+
+- Only the one ticket the node currently hands out can be redeemed (it remembers its nonce).
+  Redeeming it, `set_name`, `remove_contact` and `reset_ticket` all drop it; the next `my_ticket`
+  mints a fresh one. A leaked or old ticket is dead even if its nonce was never spent.
+- Tickets live 7 days; one with less than a day left is replaced when asked for.
+- The `relay` in a ticket or hello is dialled and stored, so it must be an `https://` URL of at
+  most 200 characters that parses as a relay URL. A ticket whose relay fails this is refused;
+  a bad relay hint in a hello is dropped.
+- Names from peers (hello, ticket) lose control and bidi-override characters and are cut to 64
+  characters. Decline/reject reasons shown to the user are cut to 100.
+- A contact keeps at most its 4 newest devices; dialling tries them in turn within 45 s total.
+- An unauthenticated connection holds one of 24 slots (plus 8 reserved for contacts' devices)
+  from accept until it becomes a call or a contact, refusals and their short linger included,
+  and has 15 s in total to deliver a hello.
+- An active call that receives no media for 30 s ends with reason "no audio".
 
 ## Known gaps
 
 - Device secret storage (Keystore, Android Keystore) is the caller's job; proto only
   derives the public key. Losing it means re-adding contacts.
-- No device revocation list: a stolen unlocked phone is stopped only by revoking its
-  grants. Attestations never expire (`iat` is informational).
+- No device revocation list and no per-grant revocation: a stolen unlocked phone is stopped
+  only by the contact removing us (a block). Attestations never expire (`iat` is informational).
 - The ticket is a bearer secret until redeemed: whoever scans first wins. Show it
   in person, keep `ttl` short.
 - A ticket's visible `relay` hint is signed but not authenticated by anything else;

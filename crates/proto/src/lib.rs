@@ -106,6 +106,24 @@ pub fn device_from_text(text: &str) -> Result<[u8; 32]> {
     dec32(text)
 }
 
+// ---- peer-supplied text ------------------------------------------------------------
+
+/// Longest display name we keep, in chars.
+pub const MAX_NAME_CHARS: usize = 64;
+
+/// A name from a peer, made safe to show: control characters and bidi overrides/isolates (which
+/// can reorder the text around them) are dropped, and the rest is cut to `MAX_NAME_CHARS`.
+pub fn sanitize_name(name: &str) -> String {
+    let clean: String = name
+        .chars()
+        .filter(|c| {
+            !c.is_control() && !matches!(c, '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200E}' | '\u{200F}' | '\u{061C}')
+        })
+        .take(MAX_NAME_CHARS)
+        .collect();
+    clean.trim().to_string()
+}
+
 // ---- signed envelope ---------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -169,8 +187,9 @@ impl Attestation {
     }
 }
 
-/// No expiry: it asserts a fact about key custody, and revoking a device is done by
-/// revoking grants. `iat` is informational (callers may age it out).
+/// No expiry: it asserts a fact about key custody. There is no device revocation; removing a
+/// contact is a local block (see docs/protocol.md). `iat` is informational (callers may age it
+/// out).
 pub fn attest(id: &Identity, device: [u8; 32], now: u64) -> SignedAttestation {
     let claim = Attestation {
         v: VERSION,
@@ -318,9 +337,9 @@ fn parse_v2_body(b: &[u8]) -> Result<V2Body> {
     let e = take(3)?;
     let exp = V2_EPOCH + 60 * ((e[0] as u64) << 16 | (e[1] as u64) << 8 | e[2] as u64);
     let flags = take(1)?[0];
-    let name = std::str::from_utf8(take((flags & 31) as usize)?)
-        .map_err(|_| Error::Decode)?
-        .to_string();
+    let name = sanitize_name(
+        std::str::from_utf8(take((flags & 31) as usize)?).map_err(|_| Error::Decode)?,
+    );
     let relay = match flags >> 5 {
         0 => None,
         c @ 1..=4 => Some(KNOWN_RELAYS[c as usize - 1].to_string()),
@@ -453,6 +472,7 @@ pub fn issue_contact_ticket(
     ttl_secs: u64,
 ) -> ContactTicket {
     // Fit the compact layout: name capped at a char boundary, expiry rounded up to a minute.
+    let name = sanitize_name(name);
     let mut end = name.len().min(V2_MAX_NAME);
     while !name.is_char_boundary(end) {
         end -= 1;
@@ -674,7 +694,7 @@ pub fn contact_hello(
     };
     let pending = PendingContact {
         did: claim.iss,
-        name: claim.name,
+        name: sanitize_name(&claim.name),
         device: their_device,
         nonce: claim.nonce,
         my_did: me.did().to_string(),
@@ -729,12 +749,12 @@ pub fn accept_contact_hello(
 
     let welcome = Msg::ContactWelcome {
         attestation: attest(me, my_device, now),
-        name: claim.name,
+        name: sanitize_name(&claim.name),
         grant_for_you: issue_grant(me, &att.did, now, grant_ttl),
     };
     let contact = NewContact {
         did: att.did,
-        name: name.clone(),
+        name: sanitize_name(name),
         device: remote_device,
         grant_from_them: grant_for_you.clone(),
         redeemed_nonce: claim.nonce,
