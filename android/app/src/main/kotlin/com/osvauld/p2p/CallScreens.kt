@@ -61,6 +61,14 @@ const val ENDED_AUTOCLOSE_MS = 4000L
 class CallActivity : ComponentActivity() {
     private lateinit var answerWithMic: () -> Unit
 
+    override fun onStart() {
+        super.onStart()
+        P2pApp.get(this).calls.callScreenShown = true
+        Notifications.cancelWaiting(this)  // the banner is here now
+    }
+
+    override fun onStop() { P2pApp.get(this).calls.callScreenShown = false; super.onStop() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         secureWindow()
@@ -92,7 +100,11 @@ class CallActivity : ComponentActivity() {
                     // Their call arrived while ours was open (ours yielded): ring it here.
                     u != null && u.info.incoming && u.state is CallState.Ringing ->
                         IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() })
-                    u != null -> InCallScreen(u, meName, app.calls, onMinimise = { finish() })
+                    u != null -> {
+                        InCallScreen(u, meName, app.calls, onMinimise = { finish() })
+                        val w by app.calls.waiting.collectAsState()
+                        w?.let { WaitingBanner(it.peerName.ifBlank { "Unknown" }, it.peerDid, onDecline = { app.calls.declineWaiting() }, onEndAnswer = { app.calls.endAndAnswer() }) }
+                    }
                     showEnded && e != null -> EndedRoute(e, meName, onClose = { finish() }, onAgain = {
                         app.scope.launch { app.calls.place(e.peerDid) }
                     })
@@ -175,6 +187,36 @@ fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: 
 // ------------------------------------------------------------------ calling / in call
 
 private fun routeLabel(speaker: Boolean) = if (speaker) "Speaker" else "Phone"
+
+/** "Arjun is calling" over the in-call screen: no hold, no call waiting, so the two choices end one call or the other. */
+@Composable
+fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer: () -> Unit) {
+    val c = Tin.c
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.28f)).statusBarsPadding().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.sf).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("$name is calling", style = TinType.h1.copy(fontSize = 16.sp, lineHeight = 22.sp), color = c.ink)
+                    Text("Your call continues until you choose.", style = TinType.bodyM, color = c.ink2)
+                }
+                Avatar(name, did, 44.dp)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.clip(RoundedCornerShape(22.dp)).background(c.callEnd).clickable(onClickLabel = "Decline", role = Role.Button, onClick = onDecline)
+                    .height(44.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Rounded.CallEnd, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Text("Decline", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+                Row(Modifier.clip(RoundedCornerShape(22.dp)).background(c.callAccept).clickable(onClickLabel = "End and answer", role = Role.Button, onClick = onEndAnswer)
+                    .height(44.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Rounded.Call, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Text("End & answer", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            Text("Decline tells $name you\u2019re busy. No hold, no call waiting.", style = TinType.bodyM.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2)
+        }
+    }
+}
 
 @Composable
 fun InCallScreen(ui: CallUi, meName: String, calls: CallController, onMinimise: () -> Unit) {

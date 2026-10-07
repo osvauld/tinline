@@ -20,6 +20,7 @@ object Notifications {
     const val ID_INCOMING = 2
     const val ID_MISSED = 3
     const val ID_LOCKED = 4
+    const val ID_WAITING = 5
 
     private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -111,6 +112,25 @@ object Notifications {
     }
 
     fun cancelIncoming(c: Context) = nm(c).cancel(ID_INCOMING)
+
+    /** A second call during a call: a quiet heads-up with two actions, no full-screen intent. */
+    fun waiting(c: Context, call: CallInfo) {
+        val name = call.peerName.ifBlank { "Unknown" }
+        val b = Notification.Builder(c, CH_CALLS)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setCategory(Notification.CATEGORY_CALL)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .setContentTitle("$name is calling")
+            .setContentText("Your call continues until you choose.")
+            .setContentIntent(activity(c, CallActivity::class.java, 50))
+            .setTimeoutAfter(30_000)
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), "Decline", service(c, CoreService.ACTION_DECLINE_WAITING, 51)).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), "End & answer", service(c, CoreService.ACTION_END_ANSWER, 52)).build())
+        try { nm(c).notify(ID_WAITING, b.build()) } catch (e: SecurityException) { }
+    }
+
+    fun cancelWaiting(c: Context) = nm(c).cancel(ID_WAITING)
 
     fun locked(c: Context) {
         val n = Notification.Builder(c, CH_LOCKED)
