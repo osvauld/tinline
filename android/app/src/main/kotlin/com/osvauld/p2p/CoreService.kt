@@ -55,7 +55,11 @@ class CoreService : Service() {
         try {
             if (Build.VERSION.SDK_INT >= 29) {
                 var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                if (inCall != null) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                // The microphone type needs RECORD_AUDIO (else SecurityException) and is only added
+                // for a call the user started or answered (CallController asks for it then). The
+                // manifest declares specialUse|microphone, so the type is allowed to apply.
+                if (inCall != null && Perms.granted(this, android.Manifest.permission.RECORD_AUDIO))
+                    type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                 try {
                     startForeground(Notifications.ID_SERVICE, n, type)
                 } catch (e: Exception) {
@@ -67,6 +71,7 @@ class CoreService : Service() {
         } catch (e: Exception) { Log.e(TAG, "startForeground failed: $e") }
     }
 
+    /** Main thread only (onStartCommand / onDestroy); idempotent: a second call finds the locks set. */
     private fun updateLocks() {
         if (inCall != null) {
             if (wake == null) {
@@ -79,8 +84,8 @@ class CoreService : Service() {
                     .createWifiLock(mode, "p2p:call").apply { acquire() }
             }
         } else {
-            wake?.let { if (it.isHeld) it.release() }; wake = null
-            wifi?.let { if (it.isHeld) it.release() }; wifi = null
+            try { wake?.let { if (it.isHeld) it.release() } } catch (_: Exception) {}; wake = null
+            try { wifi?.let { if (it.isHeld) it.release() } } catch (_: Exception) {}; wifi = null
         }
     }
 
@@ -100,14 +105,16 @@ class CoreService : Service() {
         const val ACTION_IN_CALL = "com.osvauld.p2p.IN_CALL"
         const val ACTION_IDLE = "com.osvauld.p2p.IDLE"
         @Volatile var running: CoreService? = null
+        private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
         fun ensureRunning(ctx: Context, action: String? = null, name: String? = null) {
             val i = Intent(ctx, CoreService::class.java).setAction(action)
             if (name != null) i.putExtra("name", name)
             try { ctx.startForegroundService(i) } catch (e: Exception) {
                 Log.w(TAG, "startForegroundService refused: $e")
-                // Already running (foreground) services can still be poked directly.
-                running?.let { s -> try { s.onStartCommand(i, 0, 0) } catch (_: Exception) {} }
+                // An already-running foreground service can still be poked directly, but only on
+                // the main thread: onStartCommand touches notification and lock state.
+                main.post { running?.let { s -> try { s.onStartCommand(i, 0, 0) } catch (_: Exception) {} } }
             }
         }
     }
