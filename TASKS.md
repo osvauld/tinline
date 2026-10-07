@@ -23,3 +23,9 @@ has re-run its acceptance command.
 | 12 | Passphrase vault in core: Argon2id-sealed secrets, device-unlock key, migration | sonnet:vault (worktree) | `crates/core`, `crates/peer`, `scripts/e2e_*` | done, merged, tests re-run |
 | 13 | Android: passphrase onboarding/unlock/migration + Keystore-wrapped unlock key | sonnet (worktree), after 12 | `android/` | done, merged (emulator-verified) |
 | 14 | Desktop: passphrase onboarding/unlock/migration | sonnet (worktree), after 12 | `crates/desktop` | done, merged; audio decoupled from UI loop |
+| 15 | Code review (4 parallel read-only reviewers: crypto, core, Android, desktop/release) | sonnet x4 | — | done; findings triaged into 16–18 |
+| 16 | Fix core/proto review findings (tickets, handshake DoS, call states, perms, verify_strict) | sonnet (worktree) | `crates/core`, `crates/proto`, `crates/cryptography` | in progress |
+| 17 | Fix Android review findings (mic FGS, audio focus/routing, FLAG_SECURE, release/R8, targetSdk 36) | sonnet (worktree) | `android/` | in progress |
+| 18 | Fix desktop review findings (Windows build, test-hooks feature, single instance, device loss) | sonnet (worktree) | `crates/desktop` | in progress |
+| 19 | Rename to Tinline (`com.osvauld.tinline`), Terms/Privacy acceptance, reset-ticket UI | lead/sonnet, after 16–18 | all | todo |
+| 20 | CI: GitHub Actions for Android AAB/APK, Linux deb/rpm/AppImage, Windows installer | todo | `.github/` | todo |
