@@ -167,9 +167,12 @@ impl Decoder {
             return Err(Error::Alloc);
         }
         let mut d = Decoder(p);
-        // Complexity >= 5 lets libopus 1.6 use its neural enhancement (OSCE) / deep PLC.
+        // 5 = deep PLC on, OSCE speech enhancement (6+) off. OSCE is tuned for 6-12 kbps
+        // speech; at our 48 kbps it buys little and reshapes other signals (a 770 Hz tone came
+        // out at -6 dB, others +-16%). At 5 tones are flat within 1% and FEC/DRED recovery is
+        // unchanged (`cargo run -p audio --example level` shows the levels).
         // SAFETY: live decoder, one int argument.
-        check(unsafe { sys::opus_decoder_ctl(d.0, sys::OPUS_SET_COMPLEXITY_REQUEST, 6i32) })?;
+        check(unsafe { sys::opus_decoder_ctl(d.0, sys::OPUS_SET_COMPLEXITY_REQUEST, 5i32) })?;
         d.reset();
         Ok(d)
     }

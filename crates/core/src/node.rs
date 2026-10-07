@@ -194,7 +194,7 @@ impl Drop for Node {
         if let Some(rt) = self.rt.take() {
             if let Some(ep) = ep {
                 // Best effort: a clean close tells peers at once instead of at idle timeout.
-                if tokio::runtime::Handle::try_current().is_err() {
+                if !on_core_thread() && tokio::runtime::Handle::try_current().is_err() {
                     rt.block_on(async {
                         let _ = tokio::time::timeout(Duration::from_secs(1), ep.close()).await;
                     });
@@ -213,7 +213,7 @@ impl Node {
         crate::logging::init();
         let rt = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(2)
-            .thread_name("p2pcore")
+            .thread_name(CORE_THREAD)
             .enable_all()
             .build()?;
         let store = Store::open(data_dir)?;
@@ -286,11 +286,11 @@ impl Node {
             let close = async move {
                 let _ = tokio::time::timeout(Duration::from_secs(2), ep.close()).await;
             };
-            if tokio::runtime::Handle::try_current().is_ok() {
+            if on_core_thread() {
                 // From a callback: can't wait here, so finish the close in the background.
                 self.inner.handle.spawn(close);
             } else {
-                self.inner.handle.block_on(close);
+                let _ = self.block_on(close);
             }
         }
         self.inner.emit_status();
@@ -430,13 +430,21 @@ impl From<&StoredContact> for Contact {
 }
 
 impl Node {
-    /// Runs `fut` to completion from an app thread; refuses on a core thread, where blocking
-    /// would stall (or panic) the runtime that is calling us.
-    fn block_on<T>(&self, fut: impl std::future::Future<Output = T>) -> Result<T, Error> {
-        if tokio::runtime::Handle::try_current().is_ok() {
+    /// Runs `fut` on the core runtime and waits for it. Waiting on a plain channel works from
+    /// any app thread, including another runtime's (iced's tokio, `spawn_blocking`); only the
+    /// core's own threads are refused, since blocking one could starve the future itself.
+    fn block_on<T: Send + 'static>(
+        &self,
+        fut: impl std::future::Future<Output = T> + Send + 'static,
+    ) -> Result<T, Error> {
+        if on_core_thread() {
             return Err(Error::Protocol("blocking call made from a NodeEvents callback".into()));
         }
-        Ok(self.inner.handle.block_on(fut))
+        let (tx, rx) = std::sync::mpsc::channel();
+        self.inner.handle.spawn(async move {
+            let _ = tx.send(fut.await);
+        });
+        rx.recv().map_err(|_| Error::Protocol("core runtime stopped".into()))
     }
 
     fn set_identity(&self, phrase: String, name: String) -> Result<(), Error> {
@@ -520,14 +528,18 @@ impl Inner {
             self.log("relay-only mode");
         }
         let ep = builder.bind().await.map_err(Error::net)?;
-        {
+        // Decide under the lock, await outside it (a guard across an await isn't Send).
+        let lost_race = {
             let mut s = self.shared.lock().unwrap();
-            if s.endpoint.is_some() {
-                drop(s);
-                ep.close().await;
-                return Ok(());
+            let taken = s.endpoint.is_some();
+            if !taken {
+                s.endpoint = Some(ep.clone());
             }
-            s.endpoint = Some(ep.clone());
+            taken
+        };
+        if lost_race {
+            ep.close().await;
+            return Ok(());
         }
         self.log(format!("endpoint {} bound", ep.id()));
         self.emit_status();
@@ -1224,6 +1236,13 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::Busy => "Busy",
         Msg::Hangup => "Hangup",
     }
+}
+
+/// Every thread of the core runtime carries this name (workers and blocking pool alike).
+const CORE_THREAD: &str = "p2pcore";
+
+fn on_core_thread() -> bool {
+    std::thread::current().name() == Some(CORE_THREAD)
 }
 
 pub fn now() -> u64 {

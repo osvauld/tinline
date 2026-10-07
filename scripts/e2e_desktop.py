@@ -43,7 +43,9 @@ class Checks:
 
     def tone(self, label, text, want):
         f = heard(text)
-        self.ok(label, f is not None and abs(f - want) < 10, f"heard {f} Hz, want {want}")
+        m = re.search(r"RESULT .*", text or "")
+        detail = re.sub(r"heard_samples=\S+ |freq=\S+ ", "", m.group(0)[7:]) if m else ""
+        self.ok(label, f is not None and abs(f - want) < 10, f"heard {f} Hz, want {want} [{detail}]")
 
 
 def call_pair(c, mode, env, tmp, caller, callee, caller_name, callee_name, tx, rx):
