@@ -46,7 +46,8 @@ Shares location: No. Digital purchases: No.
 
 ### Foreground service
 
-Types used: `microphone` and `specialUse`.
+Types used: `microphone` and `specialUse`. The form asks per permission: FOREGROUND_SERVICE_MICROPHONE →
+**Background audio input**; FOREGROUND_SERVICE_SPECIAL_USE → **Other** (then the texts below).
 
 - **microphone** — "Active voice call. The service records the microphone only while a call the
   user started or answered is in progress, with an ongoing call notification."
