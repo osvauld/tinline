@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop main window</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rl:#4B5AA8;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00;--pk:#F3DDE6;--onpk:#5E1F3A}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--rl:#B8C1F5;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0;--pk:#5A2A3E;--onpk:#F3DDE6}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#DCE0DC;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.win{width:1100px;height:720px;border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.18);display:flex;flex-direction:column;background:var(--bg);color:var(--ink)}
+.tbar{height:32px;flex:none;background:var(--sf2);border-bottom:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink2);position:relative}
+.wc{position:absolute;right:10px;top:9px;display:flex;gap:14px}
+.wc span{width:12px;height:12px;border-radius:50%;background:var(--ln2);opacity:.6}
+.side{width:300px;flex:none;border-right:1px solid var(--ln);background:var(--sf);display:flex;flex-direction:column}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ib{width:36px;height:36px;border-radius:8px;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.btn{height:40px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 14px 'Figtree',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;box-sizing:border-box}
+.btn.tn{background:var(--prc);color:var(--onprc)}
+.btn.ol{background:transparent;color:var(--ink);border:1px solid var(--ln2)}
+.btn.dg{background:transparent;color:var(--er);border:1px solid var(--ln2)}
+.sec{font-size:12px;font-weight:600;letter-spacing:.05em;color:var(--ink2);padding:14px 16px 4px}
+.row{display:flex;align-items:center;gap:12px;height:52px;padding:0 12px;margin:0 8px;border-radius:8px}
+.row.sel{background:var(--prc);color:var(--onprc)}
+.row.sel .s{color:var(--onprc)}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex:none}
+.a1{background:var(--prc);color:var(--onprc)}.a2{background:var(--rlc);color:var(--onrlc)}.a3{background:var(--wn);color:var(--onwn)}.a4{background:var(--pk);color:var(--onpk)}
+.n{font-size:14px;font-weight:600;line-height:18px}
+.s{font-size:12px;color:var(--ink2);line-height:16px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 8px;border-radius:999px;font-size:12px;font-weight:600}
+.mono{font-family:'IBM Plex Mono',monospace}
+.tr{display:grid;grid-template-columns:28px 1fr 140px 90px 100px;align-items:center;height:44px;border-bottom:1px solid var(--ln);font-size:14px;padding:0 4px}
+.dd{height:40px;border-radius:8px;border:1px solid var(--ln2);background:var(--sf);color:var(--ink);display:flex;align-items:center;gap:10px;padding:0 12px;font:400 14px 'Figtree',sans-serif;width:100%;box-sizing:border-box}
+.cb{width:56px;height:56px;border-radius:50%;border:0;background:var(--sf3);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
+</style>
+</helmet>
+<div class="root" style="width:2344px;height:880px">
+
+<div class="col">
+<div class="lbl">Main window · contact selected <span>· light</span></div>
+<div class="win t">
+<div class="tbar">Tinline<div class="wc"><span></span><span></span><span></span></div></div>
+<div style="flex:1;display:flex;min-height:0">
+<div class="side">
+<div style="display:flex;align-items:center;gap:8px;padding:14px 12px 8px 16px"><svg viewBox="0 0 24 24" style="width:22px;height:22px;color:var(--pr)"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="var(--th)" stroke-width="1.75" stroke-linecap="round"></path></svg><span style="font-weight:700;font-size:17px;flex:1">Tinline</span><button class="ib" aria-label="Add contact" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M19 8v6 M22 11h-6"></path></svg></button><button class="ib" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5 M17 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div>
+<div style="margin:4px 12px 4px;height:36px;border-radius:8px;background:var(--sf2);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--ink2);font-size:14px"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.3-4.3"></path></svg>Search<span class="mono" style="margin-left:auto;font-size:11px;border:1px solid var(--ln);border-radius:4px;padding:1px 5px">Ctrl K</span></div>
+<div class="sec">RECENT</div>
+<div class="row"><div class="av a4" style="width:32px;height:32px;font-size:12px">RS</div><div style="flex:1"><div class="n" style="color:var(--er)">Rosa Silva</div><div class="s">Missed · 11:02</div></div></div>
+<div class="row"><div class="av a3" style="width:32px;height:32px;font-size:12px">JK</div><div style="flex:1"><div class="n">Jonas Krüger</div><div class="s">Outgoing · Yesterday</div></div></div>
+<div class="sec">CONTACTS</div>
+<sc-for list="{{contacts}}" as="c" hint-placeholder-count="6"><div class="row {{c.sel}}"><div class="av {{c.av}}" style="width:32px;height:32px;font-size:12px">{{c.ini}}</div><div style="flex:1"><div class="n">{{c.name}}</div><div class="s">{{c.st}}</div></div></div></sc-for>
+<div style="flex:1"></div>
+<div style="border-top:1px solid var(--ln);padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:var(--pr)"></span><span style="flex:1">Available for calls</span><button class="ib" aria-label="Change availability" style="width:auto;padding:0 8px;height:28px;font:600 12px 'Figtree',sans-serif;color:var(--pr)">Change</button></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;padding:32px 40px;gap:24px;min-width:0">
+<div style="display:flex;align-items:center;gap:20px">
+<div class="av a2" style="width:72px;height:72px;font-size:26px;font-weight:700">AO</div>
+<div style="flex:1"><div style="font-size:26px;font-weight:700">Arjun Oommen</div><div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);margin-top:4px">Calls himself “Arjun” · Added 12 Sep · <span class="pill" style="background:var(--prc);color:var(--onprc)"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg>Verified</span></div></div>
+<button class="btn" style="height:44px;padding:0 22px"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Call</button>
+</div>
+<div style="display:flex;gap:8px"><button class="btn ol"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M17 3l4 4L7 21H3v-4z"></path></svg>Rename</button><button class="btn ol"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg>Safety number</button><button class="btn dg"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg>Remove</button></div>
+<div style="display:flex;flex-direction:column">
+<div style="font-size:15px;font-weight:600;margin-bottom:8px">Calls with Arjun</div>
+<div class="tr" style="color:var(--ink2);font-size:12px;font-weight:600;height:32px"><span></span><span>Call</span><span>When</span><span>Length</span><span>Path</span></div>
+<sc-for list="{{hist}}" as="h" hint-placeholder-count="5"><div class="tr"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px;color:{{h.ic}}"><path d="{{h.d}}"></path></svg><span style="color:{{h.tc}}">{{h.what}}</span><span style="color:var(--ink2)">{{h.when}}</span><span class="mono" style="font-size:13px">{{h.len}}</span><span><span class="pill" style="{{h.ps}}">{{h.path}}</span></span></div></sc-for>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Main window · in a call <span>· dark</span></div>
+<div class="win dk">
+<div class="tbar">Tinline — in call with Arjun<div class="wc"><span></span><span></span><span></span></div></div>
+<div style="flex:1;display:flex;min-height:0">
+<div class="side">
+<div style="display:flex;align-items:center;gap:8px;padding:14px 12px 8px 16px"><svg viewBox="0 0 24 24" style="width:22px;height:22px;color:var(--pr)"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="var(--th)" stroke-width="1.75" stroke-linecap="round"></path></svg><span style="font-weight:700;font-size:17px;flex:1">Tinline</span><button class="ib" aria-label="Add contact" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M19 8v6 M22 11h-6"></path></svg></button><button class="ib" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5 M17 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div>
+<div style="margin:6px 12px;padding:10px 12px;border-radius:8px;background:var(--th);color:#17201D;display:flex;align-items:center;gap:10px"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg><span style="flex:1;font-size:13px;font-weight:600">Arjun · <span class="mono">04:12</span></span></div>
+<div class="sec">CONTACTS</div>
+<sc-for list="{{contacts}}" as="c" hint-placeholder-count="6"><div class="row {{c.sel}}"><div class="av {{c.av}}" style="width:32px;height:32px;font-size:12px">{{c.ini}}</div><div style="flex:1"><div class="n">{{c.name}}</div><div class="s">{{c.st}}</div></div></div></sc-for>
+<div style="flex:1"></div>
+<div style="border-top:1px solid var(--ln);padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:var(--pr)"></span><span style="flex:1">Available for calls</span></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:28px 40px;gap:14px;min-width:0">
+<div style="display:flex;gap:8px"><span class="pill" style="background:var(--prc);color:var(--onprc);height:28px"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><circle cx="4" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><circle cx="20" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><path d="M6.5 12h11"></path></svg>Direct</span><span class="pill" style="background:var(--sf2);color:var(--ink);height:28px"><svg viewBox="0 0 20 20" style="width:14px;height:14px"><rect x="2" y="13" width="3" height="5" rx="1" fill="var(--pr)"></rect><rect x="7" y="10" width="3" height="8" rx="1" fill="var(--pr)"></rect><rect x="12" y="6" width="3" height="12" rx="1" fill="var(--pr)"></rect><rect x="17" y="2" width="3" height="16" rx="1" fill="var(--ln)"></rect></svg>Good · 38 ms</span></div>
+<div style="display:flex;align-items:center;margin-top:28px"><div class="av a1" style="width:56px;height:56px;font-size:20px">M</div><svg viewBox="0 0 160 40" style="width:160px;height:40px"><path d="M4 16 Q80 32 156 16" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path></svg><div class="av a2" style="width:96px;height:96px;font-size:34px;font-weight:700">AO</div></div>
+<div style="font-size:28px;font-weight:700;margin-top:8px">Arjun Oommen</div>
+<div class="mono" style="font-size:18px;color:var(--ink2)">04:12</div>
+<div style="display:flex;gap:20px;margin-top:20px;align-items:center">
+<button class="cb" aria-label="Mute"><svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button>
+<button aria-label="End call" style="width:64px;height:64px;border-radius:50%;border:0;background:#C8372D;color:#FFFFFF;display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" style="width:26px;height:26px;transform:rotate(135deg)"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
+<button class="cb" aria-label="Pop out compact window"><svg class="i" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M15 3h6v6 M10 14 21 3 M21 14v7H3V3h7"></path></svg></button>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;width:100%;max-width:520px;margin-top:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12px;font-weight:600;color:var(--ink2)">Microphone</label><button class="dd"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg><span style="flex:1;text-align:left">Jabra Evolve2 65</span><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="m6 9 6 6 6-6"></path></svg></button><div style="display:flex;gap:3px;height:6px"><sc-for list="{{lvl}}" as="l" hint-placeholder-count="20"><span style="flex:1;border-radius:2px;{{l}}"></span></sc-for></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:12px;font-weight:600;color:var(--ink2)">Speaker</label><button class="dd"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M3 18v-6a9 9 0 0 1 18 0v6 M21 19a2 2 0 0 1-2 2h-1v-6h3z M3 19a2 2 0 0 0 2 2h1v-6H3z"></path></svg><span style="flex:1;text-align:left">Jabra Evolve2 65</span><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+</div>
+<div style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px;margin-top:auto"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>End-to-end encrypted · Ctrl M mute · Ctrl E end</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2344,"height":880}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const contacts = [
+      { name: 'Arjun Oommen', ini: 'AO', av: 'a2', st: 'Reached 4 min ago', sel: 'sel' },
+      { name: 'Dad', ini: 'D', av: 'a1', st: 'Last call Sunday', sel: '' },
+      { name: 'Joanna Ostrowska', ini: 'JO', av: 'a1', st: 'Not called yet', sel: '' },
+      { name: 'Jonas Krüger', ini: 'JK', av: 'a3', st: 'Last call yesterday', sel: '' },
+      { name: 'Lena Park', ini: 'LP', av: 'a2', st: 'Couldn’t reach · 2 h ago', sel: '' },
+      { name: 'Rosa Silva', ini: 'RS', av: 'a4', st: 'Missed her call · 11:02', sel: '' }
+    ];
+    const IN = 'M17 7 7 17 M17 17H7V7', OUT = 'M7 17 17 7 M7 7h10v10';
+    const D = 'background:var(--prc);color:var(--onprc)', R = 'background:var(--rlc);color:var(--onrlc)', N = 'background:var(--sf2);color:var(--ink2)';
+    const hist = [
+      { d: IN, ic: 'var(--ink2)', tc: 'inherit', what: 'Incoming', when: 'Today, 12:31', len: '18:04', path: 'Direct', ps: D },
+      { d: OUT, ic: 'var(--ink2)', tc: 'inherit', what: 'Outgoing', when: 'Yesterday, 19:04', len: '3:12', path: 'Relayed', ps: R },
+      { d: OUT, ic: 'var(--er)', tc: 'var(--er)', what: 'Couldn’t reach', when: 'Yesterday, 18:50', len: '—', path: '—', ps: N },
+      { d: IN, ic: 'var(--er)', tc: 'var(--er)', what: 'Missed', when: 'Mon, 09:12', len: '—', path: '—', ps: N },
+      { d: IN, ic: 'var(--ink2)', tc: 'inherit', what: 'Incoming', when: 'Sun, 20:15', len: '42:30', path: 'Direct', ps: D }
+    ];
+    const lvl = [];
+    for (let k = 0; k < 20; k++) lvl.push(k < 9 ? 'background:var(--pr)' : 'background:var(--sf3)');
+    return { contacts, hist, lvl };
+  }
+}
+</script>
+</body>
+</html>

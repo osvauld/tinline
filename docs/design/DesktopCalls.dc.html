@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop calls and tray</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--rl:#4B5AA8;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--rl:#B8C1F5;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#DCE0DC;box-sizing:border-box;padding:48px;display:flex;gap:56px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px;margin-top:12px}
+.lbl span{font-weight:400;color:#4D5853}
+.win{border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.18);display:flex;flex-direction:column;background:var(--bg);color:var(--ink)}
+.tbar{height:28px;flex:none;background:var(--sf2);border-bottom:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink2);position:relative}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:44px;border-radius:999px;border:0;font:600 15px 'Figtree',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;box-sizing:border-box;flex:1}
+.dec{background:#C8372D;color:#FFFFFF}.acc{background:#0E7C69;color:#FFFFFF}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;background:var(--rlc);color:var(--onrlc)}
+.pill{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px 0 7px;border-radius:999px;font-size:12px;font-weight:600}
+.mono{font-family:'IBM Plex Mono',monospace}
+.sb{width:40px;height:40px;border-radius:50%;border:0;background:var(--sf3);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.eb{width:40px;height:40px;border-radius:50%;border:0;background:#C8372D;color:#FFFFFF;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.menu{width:280px;background:var(--sf);color:var(--ink);border:1px solid var(--ln2);border-radius:8px;padding:6px 0;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.16)}
+.mi{display:flex;align-items:center;gap:10px;height:34px;padding:0 14px;border:0;background:transparent;color:inherit;width:100%;font:400 14px 'Figtree',sans-serif;text-align:left}
+.mi.h{background:var(--prc);color:var(--onprc)}
+.ms{height:1px;background:var(--ln);margin:6px 0}
+.mst{padding:8px 14px 6px;font-size:12px;color:var(--ink2);line-height:16px}
+.toast{width:380px;background:var(--sf);color:var(--ink);border:1px solid var(--ln2);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.16)}
+.th{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
+.tbtn{height:34px;border-radius:6px;border:1px solid var(--ln2);background:var(--sf2);color:var(--ink);font:600 13px 'Figtree',sans-serif;flex:1}
+.hang{transform:rotate(135deg)}
+</style>
+</helmet>
+<div class="root" style="width:2344px;height:940px">
+
+<div class="col" style="width:440px">
+<div class="lbl" style="margin-top:0">Incoming popup <span>· always on top, centred, light</span></div>
+<div class="win t" style="width:440px">
+<div class="tbar">Incoming call — Tinline</div>
+<div style="padding:24px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:center;gap:16px"><div style="width:80px;height:80px;border-radius:50%;border:2px solid rgba(201,138,30,.5);display:flex;align-items:center;justify-content:center"><div class="av" style="width:68px;height:68px;font-size:24px">AO</div></div><div style="flex:1"><div style="font-size:22px;font-weight:700">Arjun Oommen</div><div style="font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:6px;margin-top:2px"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>is calling · end-to-end encrypted</div></div></div>
+<div style="display:flex;gap:12px"><button class="btn dec"><svg class="i hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Decline</button><button class="btn acc"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Answer</button></div>
+<div style="font-size:12px;color:var(--ink2);text-align:center">Answer with Jabra Evolve2 65 · Enter answers · Esc declines</div>
+</div>
+</div>
+<div class="lbl">Incoming popup <span>· dark</span></div>
+<div class="win dk" style="width:440px">
+<div class="tbar">Incoming call — Tinline</div>
+<div style="padding:24px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:center;gap:16px"><div style="width:80px;height:80px;border-radius:50%;border:2px solid rgba(232,176,74,.5);display:flex;align-items:center;justify-content:center"><div class="av" style="width:68px;height:68px;font-size:24px">AO</div></div><div style="flex:1"><div style="font-size:22px;font-weight:700">Arjun Oommen</div><div style="font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:6px;margin-top:2px"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>is calling · end-to-end encrypted</div></div></div>
+<div style="display:flex;gap:12px"><button class="btn dec"><svg class="i hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Decline</button><button class="btn acc"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Answer</button></div>
+<div style="font-size:12px;color:var(--ink2);text-align:center">Answer with Jabra Evolve2 65 · Enter answers · Esc declines</div>
+</div>
+</div>
+</div>
+
+<div class="col" style="width:400px">
+<div class="lbl" style="margin-top:0">Compact call window <span>· 400×132, stays on top</span></div>
+<div class="win t" style="width:400px">
+<div style="padding:14px 14px 14px 16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:12px"><div class="av" style="width:40px;height:40px;font-size:15px">AO</div><div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:700">Arjun Oommen</div><div style="display:flex;gap:6px;align-items:center;margin-top:2px"><span class="mono" style="font-size:13px;color:var(--ink2)">04:12</span><span class="pill" style="background:var(--prc);color:var(--onprc)"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="4" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><circle cx="20" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><path d="M6.5 12h11"></path></svg>Direct</span><svg viewBox="0 0 20 20" style="width:14px;height:14px" aria-label="Quality good"><rect x="2" y="13" width="3" height="5" rx="1" fill="var(--pr)"></rect><rect x="7" y="10" width="3" height="8" rx="1" fill="var(--pr)"></rect><rect x="12" y="6" width="3" height="12" rx="1" fill="var(--pr)"></rect><rect x="17" y="2" width="3" height="16" rx="1" fill="var(--ln)"></rect></svg></div></div>
+<button class="sb" aria-label="Mute"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button><button class="sb" aria-label="Open main window"><svg class="i" viewBox="0 0 24 24"><path d="M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7"></path></svg></button><button class="eb" aria-label="End call"><svg class="i hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+<svg viewBox="0 0 370 8" style="width:368px;height:8px"><path d="M2 2 Q185 10 368 2" fill="none" stroke="var(--th)" stroke-width="2" stroke-linecap="round"></path></svg>
+</div>
+</div>
+<div class="lbl">Compact · muted, relayed <span>· dark</span></div>
+<div class="win dk" style="width:400px">
+<div style="padding:14px 14px 14px 16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:12px"><div class="av" style="width:40px;height:40px;font-size:15px">AO</div><div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:700">Arjun Oommen</div><div style="display:flex;gap:6px;align-items:center;margin-top:2px"><span class="mono" style="font-size:13px;color:var(--ink2)">12:47</span><span class="pill" style="background:var(--rlc);color:var(--onrlc)"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="4" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><circle cx="20" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><path d="M6.5 12h2.5M15 12h2.5"></path><rect x="9.5" y="9" width="5" height="6" rx="1.2"></rect></svg>Relayed</span><span class="pill" style="background:var(--ink);color:var(--bg)">Muted</span></div></div>
+<button class="sb" aria-label="Unmute" style="background:var(--ink);color:var(--bg)"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3 M3 3l18 18"></path></svg></button><button class="sb" aria-label="Open main window"><svg class="i" viewBox="0 0 24 24"><path d="M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7"></path></svg></button><button class="eb" aria-label="End call"><svg class="i hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+<svg viewBox="0 0 370 8" style="width:368px;height:8px"><path d="M2 2 Q90 7 170 5" fill="none" stroke="var(--th)" stroke-width="2" stroke-linecap="round"></path><rect x="176" y="0" width="16" height="8" rx="2" fill="var(--rl)"></rect><path d="M198 5 Q280 7 368 2" fill="none" stroke="var(--th)" stroke-width="2" stroke-linecap="round"></path></svg>
+</div>
+</div>
+<div class="lbl">Compact · reconnecting</div>
+<div class="win t" style="width:400px">
+<div style="padding:14px 14px 14px 16px;display:flex;align-items:center;gap:12px">
+<div class="av" style="width:40px;height:40px;font-size:15px;opacity:.6">AO</div><div style="flex:1"><div style="font-size:15px;font-weight:700">Arjun Oommen</div><div style="display:flex;gap:6px;align-items:center;margin-top:2px"><span class="pill" style="background:var(--wn);color:var(--onwn)"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M21 12a9 9 0 1 1-3-6.7L21 8 M21 3v5h-5"></path></svg>Reconnecting…</span></div></div>
+<button class="eb" aria-label="End call"><svg class="i hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
+</div>
+</div>
+<div class="lbl">Compact · ended / couldn’t reach</div>
+<div class="win t" style="width:400px">
+<div style="padding:14px 16px;display:flex;align-items:center;gap:12px">
+<div class="av" style="width:40px;height:40px;font-size:15px;background:var(--sf3);color:var(--ink2)">LP</div><div style="flex:1"><div style="font-size:15px;font-weight:700">Couldn’t reach Lena</div><div style="font-size:13px;color:var(--ink2)">She may be offline.</div></div>
+<button class="btn" style="flex:none;height:36px;font-size:13px;background:var(--prc);color:var(--onprc)">Try again</button>
+</div>
+</div>
+</div>
+
+<div class="col" style="width:300px">
+<div class="lbl" style="margin-top:0">Tray menu <span>· idle</span></div>
+<div class="menu t">
+<div class="mst"><div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);font-weight:600"><span style="width:8px;height:8px;border-radius:50%;background:var(--pr)"></span>Available for calls</div><div style="margin-top:2px">Online · 6 contacts</div></div>
+<div class="ms"></div>
+<button class="mi"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px;color:var(--pr)"><path d="M20 6 9 17l-5-5"></path></svg>Available for calls</button>
+<div class="ms"></div>
+<button class="mi h"><span style="width:16px"></span>Show Tinline</button>
+<button class="mi"><span style="width:16px"></span>Add contact…</button>
+<button class="mi"><span style="width:16px"></span>Settings</button>
+<div class="ms"></div>
+<button class="mi"><span style="width:16px"></span>Quit Tinline</button>
+<div class="mst">Quitting stops incoming calls.</div>
+</div>
+<div class="lbl">Tray menu <span>· in a call, dark</span></div>
+<div class="menu dk">
+<div class="mst"><div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);font-weight:600"><span style="width:8px;height:8px;border-radius:50%;background:var(--th)"></span>In call with Arjun · <span class="mono">04:12</span></div><div style="margin-top:2px">Direct · good quality</div></div>
+<div class="ms"></div>
+<button class="mi"><span style="width:16px"></span>Mute</button>
+<button class="mi"><span style="width:16px"></span>Show call</button>
+<button class="mi" style="color:var(--er)"><span style="width:16px"></span>End call</button>
+<div class="ms"></div>
+<button class="mi"><span style="width:16px"></span>Show Tinline</button>
+<button class="mi"><span style="width:16px"></span>Quit Tinline</button>
+</div>
+<div class="lbl">Tray in panel</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="height:32px;border-radius:6px;background:#E9ECE8;display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:0 12px;color:#17201D;font-size:12px"><span style="opacity:.5">▲</span><svg viewBox="0 0 24 24" style="width:20px;height:20px"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="#0B6B5B"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="#0B6B5B"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="#0B6B5B" stroke-width="2" stroke-linecap="round"></path></svg><span class="mono">14:08</span></div>
+<div style="height:32px;border-radius:6px;background:#1B1F1E;display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:0 12px;color:#E6ECE9;font-size:12px"><span style="opacity:.5">▲</span><svg viewBox="0 0 24 24" style="width:20px;height:20px"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="#6FD3BD"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="#6FD3BD"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="#E8B04A" stroke-width="2.4" stroke-linecap="round"></path></svg><span class="mono">14:08</span></div>
+<div style="font-size:12px;color:#4D5853;line-height:16px">Left-click opens the window; right-click opens the menu. Tooltip: “Tinline — Available”. Closing the window hides to tray (first time: a one-off notification explains it).</div>
+</div>
+</div>
+
+<div class="col" style="width:400px">
+<div class="lbl" style="margin-top:0">System notifications <span>· freedesktop / Windows toast</span></div>
+<div class="toast t">
+<div class="th"><svg viewBox="0 0 24 24" style="width:16px;height:16px;color:#0B6B5B"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>Tinline · now</div>
+<div style="display:flex;gap:12px;align-items:center"><div class="av" style="width:44px;height:44px;font-size:16px">AO</div><div><div style="font-weight:700;font-size:15px">Arjun Oommen is calling</div><div style="font-size:13px;color:var(--ink2)">End-to-end encrypted call</div></div></div>
+<div style="display:flex;gap:8px"><button class="tbtn">Decline</button><button class="tbtn" style="background:#0E7C69;color:#FFFFFF;border-color:#0E7C69">Answer</button></div>
+</div>
+<div class="toast t">
+<div class="th"><svg viewBox="0 0 24 24" style="width:16px;height:16px;color:#0B6B5B"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>Tinline · 11:02</div>
+<div style="font-weight:700;font-size:15px">Missed call from Rosa Silva</div>
+<div style="display:flex;gap:8px"><button class="tbtn">Call back</button></div>
+</div>
+<div class="toast dk">
+<div class="th"><svg viewBox="0 0 24 24" style="width:16px;height:16px;color:#6FD3BD"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>Tinline</div>
+<div style="font-weight:700;font-size:15px">Tinline is still running</div>
+<div style="font-size:13px;line-height:18px;color:var(--ink2)">It’s in the tray so calls can reach you. Quit from the tray menu to stop.</div>
+</div>
+<div style="font-size:12px;color:#4D5853;line-height:16px">The popup window is the primary ring surface on desktop (works without a notification daemon). The toast is a secondary nudge; both plus a looping ringtone, stopped by either.</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2344,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
