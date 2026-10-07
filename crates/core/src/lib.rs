@@ -3,6 +3,7 @@
 
 uniffi::setup_scaffolding!();
 
+mod chat;
 mod error;
 mod logging;
 mod node;
