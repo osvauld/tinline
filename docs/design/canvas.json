@@ -106,6 +106,13 @@
       "w": 2348,
       "h": 1060,
       "title": "Chat · Android · Files & voice messages"
+    },
+    "DesktopChat.dc.html": {
+      "x": 0,
+      "y": 18740,
+      "w": 2344,
+      "h": 880,
+      "title": "Chat · Desktop · Conversation, offline, drop, recording"
     }
   },
   "createdOnFiles": {
@@ -174,7 +181,8 @@
     "DesktopMore.dc.html",
     "AndroidChats.dc.html",
     "AndroidConversation.dc.html",
-    "AndroidChatFiles.dc.html"
+    "AndroidChatFiles.dc.html",
+    "DesktopChat.dc.html"
   ],
   "pages": [],
   "title": "Tinline app design"
