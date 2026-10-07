@@ -38,12 +38,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import uniffi.p2pcore.Contact
-
-/** One line of the Recent section / a contact's history. Fed by the call log once the core has one (see [Features.history]). */
-data class RecentCall(val did: String, val name: String, val kind: Kind, val whenText: String) {
-    enum class Kind { Incoming, Outgoing, Missed, Unreached }
-}
 
 private fun String.matchesQuery(q: String) = q.isBlank() || contains(q.trim(), ignoreCase = true)
 
@@ -51,29 +47,44 @@ private fun String.matchesQuery(q: String) = q.isBlank() || contains(q.trim(), i
 fun HomeScreen(
     app: P2pApp, missing: List<Need>, onFix: (Need) -> Unit,
     onAdd: (scan: Boolean) -> Unit, onSettings: () -> Unit, onContact: (Contact) -> Unit, onCall: (Contact) -> Unit,
-    onAvailability: () -> Unit = {}, recents: List<RecentCall> = emptyList(), callError: String? = null,
+    onSeeAll: () -> Unit = {}, callError: String? = null,
 ) {
     val status by app.status.collectAsState()
     val contacts by app.contacts.collectAsState()
+    val history by app.history.collectAsState()
+    val avail by app.availability.collectAsState()
     var grace by remember { mutableStateOf(true) }
+    var sheet by remember { mutableStateOf(false) }
+    // Relative times ("4 min ago") go stale: refresh them once a minute.
+    var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { delay(6000); grace = false }
+    LaunchedEffect(Unit) { while (true) { delay(60_000); now = System.currentTimeMillis() / 1000 } }
+    val byDid = remember(contacts) { contacts.associateBy { it.did } }
+    val recents = remember(history, byDid, now) { history.take(5).map { it.toRecent(byDid, now) } }
+    val subs = remember(history, contacts, now) { contacts.associate { it.did to contactSubLine(it.did, history, now) } }
     HomeContent(
         contacts = contacts, online = status?.online == true, connectingGrace = grace, missing = missing,
         onFix = onFix, onAdd = onAdd, onSettings = onSettings, onContact = onContact, onCall = onCall,
-        onAvailability = onAvailability, recents = recents, callError = callError,
+        onAvailability = { sheet = true }, recents = recents, callError = callError,
+        available = avail.available, onTurnOn = { app.setAvailable(true) }, subLines = subs, onSeeAll = onSeeAll,
     )
+    if (sheet) AvailabilitySheet(avail.available, avail.until?.toLong(), app.node.profile()?.name ?: "", onDismiss = { sheet = false }) { available, until ->
+        sheet = false
+        app.scope.launch { app.setAvailable(available, until) }
+    }
 }
 
 /** Banner priority: offline, mic, notifications, background (battery, lock-screen), then availability. Only one shows. */
 @Composable
-private fun TopBanner(online: Boolean, grace: Boolean, missing: List<Need>, onFix: (Need) -> Unit) {
+private fun TopBanner(online: Boolean, grace: Boolean, missing: List<Need>, onFix: (Need) -> Unit, available: Boolean, onTurnOn: () -> Unit) {
     when {
         !online && !grace -> Banner(BannerKind.Error, Icons.Rounded.WifiOff, "You’re offline", "Calls can’t reach you until you’re back on the internet.")
         Need.Mic in missing -> Banner(BannerKind.Error, Icons.Rounded.MicOff, "Microphone is off", "People won’t hear you on calls.", "Allow") { onFix(Need.Mic) }
         Need.Notifications in missing -> Banner(BannerKind.Warn, Icons.Rounded.NotificationsOff, "Calls won’t ring", "Notifications are off for Tinline.", "Turn on") { onFix(Need.Notifications) }
         Need.Battery in missing -> Banner(BannerKind.Warn, Icons.Rounded.BatteryAlert, "Calls may be missed when idle", "Android is limiting Tinline in the background.", "Fix") { onFix(Need.Battery) }
         Need.FullScreen in missing -> Banner(BannerKind.Warn, Icons.Rounded.PhoneLocked, "Calls won’t show on the lock screen", "Allow full-screen calls so Tinline rings like the phone app.", "Allow") { onFix(Need.FullScreen) }
-        // Availability off (Features.availability) and "Set a passphrase" slot in here; the latter is a blocking screen today.
+        !available -> Banner(BannerKind.Neutral, Icons.Rounded.PhoneDisabled, "You\u2019re not available", "Calls won\u2019t ring until you turn it back on.", "Turn on", onTurnOn)
+        // "Set a passphrase" slots in after this; it is a blocking screen today.
     }
 }
 
@@ -82,12 +93,13 @@ fun HomeContent(
     contacts: List<Contact>, online: Boolean, connectingGrace: Boolean, missing: List<Need>, onFix: (Need) -> Unit,
     onAdd: (scan: Boolean) -> Unit, onSettings: () -> Unit, onContact: (Contact) -> Unit, onCall: (Contact) -> Unit,
     onAvailability: () -> Unit, recents: List<RecentCall>, callError: String?, startSearching: Boolean = false, startQuery: String = "",
+    available: Boolean = true, onTurnOn: () -> Unit = {}, subLines: Map<String, String> = emptyMap(), onSeeAll: () -> Unit = {},
 ) {
     val c = Tin.c
     var searching by remember { mutableStateOf(startSearching) }
     var query by remember { mutableStateOf(startQuery) }
-    val pill = when { online -> PillState.Available; connectingGrace -> PillState.Connecting; else -> PillState.Offline }
-    val sorted = remember(contacts) { contacts.sortedBy { it.name.lowercase() } }
+    val pill = when { !online && !connectingGrace -> PillState.Offline; !online -> PillState.Connecting; !available -> PillState.Away; else -> PillState.Available }
+    val sorted = remember(contacts) { contacts.sortedBy { it.display().lowercase() } }
 
     Page {
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -97,18 +109,18 @@ fun HomeContent(
                     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TinMark(28.dp)
                         Text("Tinline", Modifier.weight(1f), style = TinType.titleL.copy(fontSize = 22.sp, lineHeight = 28.sp), color = c.ink)
-                        StatusPill(pill, if (Features.availability) onAvailability else null)
+                        StatusPill(pill, onAvailability)
                         IconBtn(Icons.Rounded.Settings, "Settings", onSettings)
                     }
                 }
                 if (contacts.isEmpty() && !searching) {
                     Column(Modifier.weight(1f)) {
-                        TopBanner(online, connectingGrace, missing, onFix)
+                        TopBanner(online, connectingGrace, missing, onFix, available, onTurnOn)
                         EmptyHome(onAdd)
                     }
                 } else LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 112.dp)) {
                     if (!searching) {
-                        item { TopBanner(online, connectingGrace, missing, onFix) }
+                        item { TopBanner(online, connectingGrace, missing, onFix, available, onTurnOn) }
                         item {
                             Row(
                                 Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(50)).background(c.sf2)
@@ -121,24 +133,24 @@ fun HomeContent(
                         }
                         if (callError != null) item { Text(callError, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = TinType.bodyM, color = c.er) }
                         if (recents.isNotEmpty()) {
-                            item { SectionLabel("RECENT") }
-                            items(recents.take(3), key = { "r" + it.did + it.whenText }) { r ->
+                            item {
+                                SectionLabel("RECENT", trailing = {
+                                    Text("See all", Modifier.clickable(role = Role.Button, onClick = onSeeAll).padding(8.dp), style = TinType.label.copy(fontWeight = FontWeight.Bold), color = c.pr)
+                                })
+                            }
+                            items(recents, key = { "r" + it.callId + it.whenText }) { r ->
                                 val k = r.kind
                                 val red = k == RecentCall.Kind.Missed
                                 val ctc = contacts.firstOrNull { it.did == r.did }
-                                RowItem(r.name, r.did, subIcon = when (k) {
-                                    RecentCall.Kind.Incoming -> Icons.Rounded.CallReceived
-                                    RecentCall.Kind.Missed -> Icons.Rounded.CallMissed
-                                    else -> Icons.Rounded.CallMade
-                                }, sub = r.whenText, nameColor = if (red) c.er else c.ink, subColor = if (red) c.er else c.ink2,
+                                RowItem(r.name, r.did, subIcon = recentIcon(k), sub = r.whenText, nameColor = if (red) c.er else c.ink, subColor = if (red) c.er else c.ink2,
                                     onClick = { ctc?.let(onContact) }, onCall = { ctc?.let(onCall) })
                             }
                         }
                         item { SectionLabel("CONTACTS · ${contacts.size}") }
                     } else item { SectionLabel("CONTACTS") }
-                    val shown = sorted.filter { it.name.matchesQuery(query) }
+                    val shown = sorted.filter { it.display().matchesQuery(query) || it.name.matchesQuery(query) }
                     items(shown, key = { it.did }) { ct ->
-                        RowItem(ct.name.ifBlank { "Unnamed" }, ct.did, highlight = query, onClick = { onContact(ct) }, onCall = { onCall(ct) })
+                        RowItem(ct.display(), ct.did, sub = subLines[ct.did], subColor = if (subLines[ct.did]?.startsWith("Missed") == true) c.er else c.ink2, highlight = query, onClick = { onContact(ct) }, onCall = { onCall(ct) })
                     }
                     if (searching) item {
                         Row(
@@ -166,6 +178,35 @@ fun HomeContent(
     }
 }
 
+fun recentIcon(k: RecentCall.Kind): ImageVector = when (k) {
+    RecentCall.Kind.Incoming -> Icons.Rounded.CallReceived
+    RecentCall.Kind.Missed -> Icons.Rounded.CallMissed
+    else -> Icons.Rounded.CallMade
+}
+
+/** The full call log (Home "See all"). */
+@Composable
+fun HistoryScreen(app: P2pApp, onBack: () -> Unit, onContact: (Contact) -> Unit) {
+    val history by app.history.collectAsState()
+    val contacts by app.contacts.collectAsState()
+    val now = System.currentTimeMillis() / 1000
+    val byDid = remember(contacts) { contacts.associateBy { it.did } }
+    val rows = remember(history, byDid) { history.map { it.toRecent(byDid, now) } }
+    val c = Tin.c
+    Page {
+        TopBar("Recent calls", onBack)
+        if (rows.isEmpty()) Hint("No calls yet. History stays on this phone only.", Modifier.padding(24.dp))
+        else LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 24.dp)) {
+            items(rows, key = { it.callId + it.whenLong }) { r ->
+                val red = r.kind == RecentCall.Kind.Missed
+                RowItem(r.name, r.did, subIcon = recentIcon(r.kind), sub = r.whenText, nameColor = if (red) c.er else c.ink, subColor = if (red) c.er else c.ink2,
+                    onClick = { byDid[r.did]?.let(onContact) }, onCall = null)
+            }
+            item { Hint("History stays on this phone only.", Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) }
+        }
+    }
+}
+
 @Composable
 private fun SearchBar(query: String, onChange: (String) -> Unit, onClose: () -> Unit) {
     val c = Tin.c
@@ -189,7 +230,7 @@ private fun SearchBar(query: String, onChange: (String) -> Unit, onClose: () -> 
 @Composable
 private fun RowItem(
     name: String, key: String, sub: String? = null, subIcon: ImageVector? = null, highlight: String = "",
-    nameColor: Color = Tin.c.ink, subColor: Color = Tin.c.ink2, onClick: () -> Unit, onCall: () -> Unit,
+    nameColor: Color = Tin.c.ink, subColor: Color = Tin.c.ink2, onClick: () -> Unit, onCall: (() -> Unit)?,
 ) {
     val c = Tin.c
     Row(
@@ -213,7 +254,7 @@ private fun RowItem(
                 Text(sub, style = TinType.bodyM, color = subColor)
             }
         }
-        IconBtn(Icons.Rounded.Call, "Call $name", onCall, tint = c.pr)
+        if (onCall != null) IconBtn(Icons.Rounded.Call, "Call $name", onCall, tint = c.pr) else Spacer(Modifier.width(12.dp))
     }
 }
 

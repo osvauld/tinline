@@ -107,6 +107,17 @@ class CoreService : Service() {
         @Volatile var running: CoreService? = null
         private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
+        /** Re-posts the always-on notification (availability or connectivity text changed). */
+        fun refreshNotification() {
+            main.post {
+                val s = running ?: return@post
+                try {
+                    (s.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager)
+                        .notify(Notifications.ID_SERVICE, Notifications.service(s, s.inCall))
+                } catch (_: Exception) {}
+            }
+        }
+
         fun ensureRunning(ctx: Context, action: String? = null, name: String? = null) {
             val i = Intent(ctx, CoreService::class.java).setAction(action)
             if (name != null) i.putExtra("name", name)

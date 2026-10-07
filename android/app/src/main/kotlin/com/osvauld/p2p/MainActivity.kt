@@ -51,6 +51,7 @@ private sealed interface Route {
     data class Contact(val did: String) : Route
     data class Verify(val did: String) : Route
     data object Settings : Route
+    data object History : Route
     data object Battery : Route
     data object Passphrase : Route
     data object PhraseGate : Route
@@ -68,6 +69,7 @@ private fun Root(app: P2pApp) {
     val has by app.hasIdentity.collectAsState()
     val lock by app.lockState.collectAsState()
     val contacts by app.contacts.collectAsState()
+    val history by app.history.collectAsState()
     var forgot by rememberSaveable { mutableStateOf(false) }
     var onboarding by rememberSaveable { mutableStateOf(!app.node.hasIdentity()) }
     var termsOk by remember { mutableStateOf(LegalStore.accepted(ctx)) }
@@ -149,13 +151,17 @@ private fun Root(app: P2pApp) {
                 Route.Home -> HomeScreen(
                     app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onSettings = { stack.add(Route.Settings) },
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
+                    onSeeAll = { stack.add(Route.History) },
                 )
+                Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
                 is Route.Add -> AddContactScreen(app, r.scan, onClose = ::pop,
                     onCall = { c -> pop(); call(c.did) }, onVerify = { c -> pop(); stack.add(Route.Contact(c.did)); stack.add(Route.Verify(c.did)) })
                 is Route.Contact -> {
                     val c = contacts.firstOrNull { it.did == r.did }
                     if (c == null) LaunchedEffect(Unit) { pop() }
-                    else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onVerify = { stack.add(Route.Verify(c.did)) }, onRemove = {
+                    else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onVerify = { stack.add(Route.Verify(c.did)) },
+                        history = remember(history, contacts) { val now = System.currentTimeMillis() / 1000; val by = contacts.associateBy { it.did }; history.filter { it.peerDid == c.did }.map { it.toRecent(by, now) } },
+                        onRename = { a -> scope.launch(Dispatchers.IO) { runCatching { app.node.renameContact(c.did, a) }; app.refresh() } }, onRemove = {
                         pop()
                         scope.launch(Dispatchers.IO) { runCatching { app.node.removeContact(c.did) }; app.refresh() }
                     })
@@ -163,8 +169,16 @@ private fun Root(app: P2pApp) {
                 is Route.Verify -> {
                     val c = contacts.firstOrNull { it.did == r.did }
                     if (c == null) LaunchedEffect(Unit) { pop() }
-                    // Needs the core's safety number (see Features.verify); until then the screen says so.
-                    else VerifyScreen(app.node.profile()?.name ?: "", c, groups = null, onBack = ::pop, onMatch = ::pop, onNoMatch = ::pop)
+                    else {
+                        val groups = remember(c.did, c.device) { runCatching { app.node.safetyNumber(c.did).trim().split(Regex("\\s+")) }.getOrNull() }
+                        VerifyScreen(app.node.profile()?.name ?: "", c, groups, onBack = ::pop, onMatch = {
+                            scope.launch(Dispatchers.IO) { runCatching { app.node.setVerified(c.did, true) }; app.refresh() }
+                            pop()
+                        }, onRemove = {
+                            pop(); pop()
+                            scope.launch(Dispatchers.IO) { runCatching { app.node.removeContact(c.did) }; app.refresh() }
+                        })
+                    }
                 }
                 Route.Settings -> SettingsScreen(
                     app, missing, onBack = ::pop, onBattery = { stack.add(Route.Battery) }, onPassphrase = { stack.add(Route.Passphrase) },

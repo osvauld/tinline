@@ -49,8 +49,10 @@ fun TinSwitch(checked: Boolean, onChange: (Boolean) -> Unit, desc: String) {
 @Composable
 fun SettingsScreen(
     app: P2pApp, missing: List<Need>, onBack: () -> Unit, onBattery: () -> Unit, onPassphrase: () -> Unit, onPhrase: () -> Unit,
-    onAbout: () -> Unit, onDiagnostics: () -> Unit, available: Boolean = true, onAvailable: (Boolean) -> Unit = {},
+    onAbout: () -> Unit, onDiagnostics: () -> Unit,
 ) {
+    val avail by app.availability.collectAsState()
+    val available = avail.available
     val c = Tin.c
     val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf(app.node.profile()?.name ?: "") }
@@ -70,8 +72,8 @@ fun SettingsScreen(
                 }
             }
             SectionLabel("CALLS")
-            if (Features.availability) ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = Icons.Rounded.Call,
-                trailing = { TinSwitch(available, onAvailable, "Available for calls") })
+            ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = Icons.Rounded.Call,
+                trailing = { TinSwitch(available, { on -> scope.launch(Dispatchers.IO) { app.setAvailable(on) } }, "Available for calls") })
             ListItem("Background & battery", onClick = onBattery, icon = Icons.Rounded.BatteryChargingFull,
                 sub = if (bgOk) "All set — calls will ring" else "Needs attention")
             SectionLabel("SECURITY")
@@ -119,7 +121,6 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
                 Text("Steps for your phone", Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button) { openUrl(ctx, "https://dontkillmyapp.com") }.padding(vertical = 8.dp),
                     style = TinType.label, color = c.pr)
             }
-            // A Quick Settings availability tile joins here with Features.availability.
         }
     }
 }

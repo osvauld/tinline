@@ -23,31 +23,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import uniffi.p2pcore.Contact
 
-/**
- * Contact page. [history] stays empty until the core keeps a call log; [verified] / [alias] and the
- * Rename / Verify entry points are gated by [Features] (rename, verify, history).
- */
+/** Contact page: name (alias first), Verified pill, Call / Rename / Verify / Remove, and this contact's call history. */
 @Composable
 fun ContactScreen(
     contact: Contact, onBack: () -> Unit, onCall: () -> Unit, onRemove: () -> Unit,
-    history: List<RecentCall> = emptyList(), verified: Boolean = false, alias: String? = null,
-    onRename: (String) -> Unit = {}, onVerify: () -> Unit = {},
+    history: List<RecentCall> = emptyList(), onRename: (String?) -> Unit = {}, onVerify: () -> Unit = {},
 ) {
+    val alias = contact.alias?.takeIf { it.isNotBlank() }
+    val verified = contact.verified
     val c = Tin.c
     var confirmRemove by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
-    val shown = alias?.takeIf { it.isNotBlank() } ?: contact.name.ifBlank { "Unnamed" }
+    val shown = contact.display()
     Page {
         TopBar(null, onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Avatar(shown, contact.did, 96.dp)
                 Text(shown, Modifier.padding(top = 6.dp), style = TinType.h1, color = c.ink, textAlign = TextAlign.Center)
-                if ((Features.rename && alias != null && alias != contact.name) || (Features.verify && verified)) Row(
+                if ((alias != null && alias != contact.name) || verified) Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (Features.rename && alias != null && alias != contact.name) Text("Calls themselves “${contact.name}”", style = TinType.bodyM, color = c.ink2)
-                    if (Features.verify && verified) Row(
+                    if (alias != null && alias != contact.name) Text("Calls themselves “${contact.name}”", style = TinType.bodyM, color = c.ink2)
+                    if (verified) Row(
                         Modifier.heightIn(min = 22.dp).clip(RoundedCornerShape(50)).background(c.prc).padding(start = 6.dp, end = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
@@ -57,8 +55,8 @@ fun ContactScreen(
                 }
                 TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = Icons.Rounded.Call)
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (Features.rename) ActionChip(Icons.Rounded.Edit, "Rename", c.pr) { renaming = true }
-                    if (Features.verify) ActionChip(Icons.Rounded.VerifiedUser, "Verify", c.pr, onVerify)
+                    ActionChip(Icons.Rounded.Edit, "Rename", c.pr) { renaming = true }
+                    ActionChip(Icons.Rounded.VerifiedUser, "Verify", c.pr, onVerify)
                     ActionChip(Icons.Rounded.PersonRemove, "Remove", c.er) { confirmRemove = true }
                 }
             }
@@ -72,10 +70,10 @@ fun ContactScreen(
     if (confirmRemove) TinDialog(
         "Remove $shown?", { confirmRemove = false }, "Remove", { confirmRemove = false; onRemove() }, destructive = true, icon = Icons.Rounded.PersonRemove,
     ) {
-        DialogText("They won’t be able to call you, and you won’t be able to call them." + if (Features.history) " Your call history with them is deleted from this phone." else "")
+        DialogText("They won’t be able to call you, and you won’t be able to call them." + " Your call history with them is deleted from this phone.")
         DialogText("To talk again, you’ll need to add each other again.")
     }
-    if (renaming) RenameSheet(alias ?: contact.name, contact.name, onDismiss = { renaming = false }) { onRename(it); renaming = false }
+    if (renaming) RenameSheet(alias ?: contact.name, contact.name, hasAlias = alias != null, onDismiss = { renaming = false }) { onRename(it); renaming = false }
 }
 
 @Composable
@@ -98,17 +96,19 @@ private fun HistoryRow(r: RecentCall) {
         Icon(when (r.kind) { RecentCall.Kind.Incoming -> Icons.Rounded.CallReceived; RecentCall.Kind.Missed -> Icons.Rounded.CallMissed; else -> Icons.Rounded.CallMade },
             null, tint = if (red) c.er else c.ink2, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
-            Text(when (r.kind) {
-                RecentCall.Kind.Incoming -> "Incoming"; RecentCall.Kind.Outgoing -> "Outgoing"
-                RecentCall.Kind.Missed -> "Missed"; RecentCall.Kind.Unreached -> "Couldn’t reach"
-            }, style = TinType.bodyL.copy(fontSize = 15.sp), color = if (red) c.er else c.ink)
-            Text(r.whenText, style = TinType.bodyM.copy(fontSize = 13.sp), color = c.ink2)
+            Text(r.title.ifBlank { "Call" }, style = TinType.bodyL.copy(fontSize = 15.sp), color = if (red) c.er else c.ink)
+            Text(r.whenLong, style = TinType.bodyM.copy(fontSize = 13.sp), color = c.ink2)
+        }
+        when (r.direct) {
+            true -> Badge("Direct", BadgeKind.Direct)
+            false -> Badge("Relayed", BadgeKind.Relayed)
+            null -> Text("—", style = TinType.bodyM, color = c.ink2)
         }
     }
 }
 
 @Composable
-fun RenameSheet(current: String, theirName: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+fun RenameSheet(current: String, theirName: String, hasAlias: Boolean, onDismiss: () -> Unit, onSave: (String?) -> Unit) {
     val c = Tin.c
     var text by remember { mutableStateOf(current) }
     TinSheet(onDismiss) {
@@ -116,17 +116,21 @@ fun RenameSheet(current: String, theirName: String, onDismiss: () -> Unit, onSav
         TinField(text, { text = it }, "Name on this phone")
         Hint("Only you see this. They still call themselves “$theirName”.", Modifier.padding(top = 14.dp))
         Row(Modifier.fillMaxWidth().padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
+            if (hasAlias) TinButton("Use their name", { onSave(null) }, style = BtnStyle.Text, fill = false)
             TinButton("Cancel", onDismiss, style = BtnStyle.Text, fill = false)
-            TinButton("Save", { onSave(text.trim()) }, fill = false, enabled = text.isNotBlank())
+            TinButton("Save", { text.trim().let { t -> onSave(if (t == theirName) null else t) } }, fill = false, enabled = text.isNotBlank())
         }
     }
 }
 
 /** Safety-number comparison. [groups] are the 12 five-digit groups, same on both phones. */
 @Composable
-fun VerifyScreen(me: String, contact: Contact, groups: List<String>?, onBack: () -> Unit, onMatch: () -> Unit, onNoMatch: () -> Unit) {
+fun VerifyScreen(
+    me: String, contact: Contact, groups: List<String>?, onBack: () -> Unit, onMatch: () -> Unit, onRemove: () -> Unit,
+) {
     val c = Tin.c
-    val name = contact.name.ifBlank { "contact" }
+    var mismatch by remember { mutableStateOf(false) }
+    val name = contact.display()
     Page {
         TopBar("Verify $name", onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -146,8 +150,15 @@ fun VerifyScreen(me: String, contact: Contact, groups: List<String>?, onBack: ()
         }
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TinButton("They match", onMatch, icon = Icons.Rounded.Check, enabled = groups != null)
-            TinButton("They don’t match", onNoMatch, style = BtnStyle.Text)
+            TinButton("They don’t match", { mismatch = true }, style = BtnStyle.Text)
             Hint("If they don’t match, remove $name and add them again face to face.", Modifier.fillMaxWidth(), align = TextAlign.Center)
         }
+    }
+    if (mismatch) TinDialog(
+        "The numbers don’t match", { mismatch = false }, "Remove $name", { mismatch = false; onRemove() }, dismiss = "Check again",
+        destructive = true, icon = Icons.Rounded.GppMaybe,
+    ) {
+        DialogText("Someone may be in the middle of your calls, or a digit was misread. Look once more, group by group.")
+        DialogText("If they still differ, remove $name and add them again face to face.")
     }
 }

@@ -54,6 +54,19 @@ class DebugReceiver : BroadcastReceiver() {
             }
             "lockstate" -> testLog("lockstate=${node.lockState()}")
             "stats" -> app.calls.logStats()
+            "avail" -> {
+                val on = i.getStringExtra("on") != "0"
+                val mins = i.getStringExtra("mins")?.toLongOrNull()
+                app.setAvailable(on, mins?.let { System.currentTimeMillis() / 1000 + it * 60 })
+                testLog("availability=${app.availability.value.available} until=${app.availability.value.until}")
+            }
+            "history" -> node.recentCalls(50u).forEach {
+                testLog("history peer=${it.peerName} incoming=${it.incoming} reason=${it.reason} missed=${it.missed} secs=${it.durationSecs}")
+            }
+            "safety" -> {
+                val c = node.contacts().firstOrNull { it.did == i.getStringExtra("who") || it.name == i.getStringExtra("who") }
+                testLog("safety=${c?.let { node.safetyNumber(it.did) }}")
+            }
             else -> Log.w("P2PTEST", "unknown cmd $cmd")
         }
     }

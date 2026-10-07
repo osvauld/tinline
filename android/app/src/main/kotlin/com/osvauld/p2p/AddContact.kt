@@ -83,7 +83,8 @@ fun AddContactScreen(app: P2pApp, startOnScan: Boolean, onClose: () -> Unit, onC
         AddStage.Main -> AddMain(app, meName, tab, { tab = it }, onClose, onPaste = { stage = AddStage.Paste }, onScanned = { pasted = it; add(it) })
         AddStage.Paste -> PasteCardScreen(pasted, { pasted = it }, onBack = { stage = AddStage.Main }, onAdd = { add(pasted) })
         AddStage.Adding -> AddingScreen(meName) { job?.cancel(); stage = AddStage.Main }
-        AddStage.Added -> added?.let { AddedScreen(meName, it, onCall = { onCall(it) }, onVerify = { onVerify(it) }, onDone = onClose) }
+        AddStage.Added -> added?.let { AddedScreen(meName, it, onCall = { onCall(it) }, onVerify = { onVerify(it) }, onDone = onClose,
+            onSaveAs = { a -> if (a != null) runCatching { app.node.renameContact(it.did, a); app.refresh() } }) }
         AddStage.Failed -> FailedScreen(meName, failure, onRetry = { add(pasted) }, onOther = { pasted = ""; tab = 1; stage = AddStage.Main })
     }
 }
@@ -295,17 +296,21 @@ fun AddingScreen(me: String, onCancel: () -> Unit) {
 }
 
 @Composable
-fun AddedScreen(me: String, contact: Contact, onCall: () -> Unit, onVerify: () -> Unit, onDone: () -> Unit) {
+fun AddedScreen(me: String, contact: Contact, onCall: () -> Unit, onVerify: () -> Unit, onDone: () -> Unit, onSaveAs: (String?) -> Unit = {}) {
+    var saveAs by remember { mutableStateOf("") }
     val name = contact.name.ifBlank { "Contact" }
+    val shown = saveAs.trim().ifEmpty { name }
+    fun commit() { val t = saveAs.trim(); onSaveAs(if (t.isEmpty() || t == contact.name) null else t) }
     CenterScreen(footer = {
-        TinButton("Call $name", onCall, icon = Icons.Rounded.Call)
-        if (Features.verify) TinButton("Verify identity", onVerify, style = BtnStyle.Outlined, icon = Icons.Rounded.VerifiedUser)
-        TinButton("Done", onDone, style = BtnStyle.Text)
+        TinButton("Call $shown", { commit(); onCall() }, icon = Icons.Rounded.Call)
+        TinButton("Verify identity", { commit(); onVerify() }, style = BtnStyle.Outlined, icon = Icons.Rounded.VerifiedUser)
+        TinButton("Done", { commit(); onDone() }, style = BtnStyle.Text)
     }) {
         PairAvatars(me, name, contact.did)
         H1("$name is added", align = TextAlign.Center)
         Lead("You can now call each other. $name’s phone shows the same thing.", Modifier.widthIn(max = 320.dp), align = TextAlign.Center)
-        // "Save as" (rename) joins here when Features.rename is wired.
+        TinField(saveAs, { saveAs = it }, "Save as", placeholder = name)
+        Hint("Only you see this name. They called themselves “$name”.", align = TextAlign.Center)
     }
 }
 

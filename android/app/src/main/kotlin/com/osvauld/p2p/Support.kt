@@ -106,36 +106,41 @@ fun qualityLabel(bars: Int) = when (bars) { 4 -> "Excellent"; 3 -> "Good"; 2 -> 
 
 // ---------------------------------------------------------------- call end reasons
 
-/** Local-only marker the controller substitutes for the core's ambiguous "hung up" when WE ended the call. */
-const val REASON_LOCAL_HANGUP = "you hung up"
-
-enum class EndKind { Normal, Unreachable, Declined, Mic }
+enum class EndKind { Normal, Unreachable, Declined, Superseded }
 
 /**
- * THE one place that turns a `CallState.Ended.reason` from the core into words. Unknown reasons
- * fall back to "Call ended". The reasons the core emits today: "ended", "hung up", "cancelled",
- * "declined", "declined: <text>", "busy", "rejected: <text>", "missed", "no answer", "no audio",
- * "connection lost: ...", "could not reach <name>: ...", "they called at the same time".
+ * The stable end-reason tokens of `CallState.Ended` / `CallRecord.reason` (docs/protocol.md,
+ * "End reasons"): hangup_local, hangup_remote, declined, declined_local, cancelled, no_answer,
+ * unreachable, connection_lost, busy, superseded, and the history-only unavailable.
  */
-fun classifyEnd(reason: String): EndKind = when {
-    reason.startsWith("could not reach") || reason == "no answer" -> EndKind.Unreachable
-    reason.startsWith("declined") || reason == "busy" || reason.startsWith("rejected") -> EndKind.Declined
+fun classifyEnd(reason: String): EndKind = when (reason) {
+    "unreachable" -> EndKind.Unreachable
+    "declined", "declined_local", "busy" -> EndKind.Declined
+    "superseded" -> EndKind.Superseded
     else -> EndKind.Normal
 }
 
-fun endReasonText(reason: String, peerName: String): String {
+/** An incoming call that rang out or was given up on without us answering it. */
+fun isMissedReason(reason: String, incoming: Boolean) =
+    incoming && (reason == "cancelled" || reason == "no_answer" || reason == "busy")
+
+/**
+ * THE one place that turns an end reason into words for the Call ended screen. [incoming] is whether
+ * the call came in (the same token reads differently from each side). Unknown reasons give "Call ended".
+ */
+fun endReasonText(reason: String, peerName: String, incoming: Boolean = false): String {
     val who = peerName.trim().ifEmpty { "They" }
-    return when {
-        reason == REASON_LOCAL_HANGUP -> "You hung up"
-        reason == "hung up" -> "$who hung up"
-        reason == "cancelled" -> "You cancelled the call"
-        reason.startsWith("declined") -> "$who declined"
-        reason == "busy" -> "$who is on another call"
-        reason.startsWith("rejected") -> "$who can’t take this call"
-        reason == "missed" -> "Missed call"
-        reason == "no answer" -> "No answer"
-        reason == "no audio" || reason.startsWith("connection lost") -> "Connection lost"
-        reason.startsWith("could not reach") -> "Couldn’t reach $who"
+    return when (reason) {
+        "hangup_local" -> "You hung up"
+        "hangup_remote" -> "$who hung up"
+        "declined" -> "$who declined"
+        "declined_local" -> "You declined"
+        "cancelled" -> if (incoming) "$who stopped calling" else "You cancelled the call"
+        "no_answer" -> if (incoming) "Missed call" else "No answer"
+        "busy" -> if (incoming) "Missed call" else "$who is on another call"
+        "unreachable" -> "Couldn\u2019t reach $who"
+        "connection_lost" -> "Connection lost"
+        "unavailable" -> "Turned away while you were not available"
         else -> "Call ended"
     }
 }
