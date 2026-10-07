@@ -19,7 +19,7 @@ import uniffi.p2pcore.NodeStatus
 
 /** Process-wide singleton: owns the one [Node] and the observable state the UI renders. */
 class P2pApp : Application(), NodeEvents {
-    lateinit var node: Node
+    @Volatile lateinit var node: Node
         private set
     @Volatile var testToneHz: Float? = null
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -52,22 +52,30 @@ class P2pApp : Application(), NodeEvents {
         _status.value = node.status()
     }
 
+    private val unlockLock = Any()
+
     /**
      * If the vault is locked and a device-wrapped key exists, unlock with it (fast, no passphrase).
-     * A key that no longer works is deleted and the node stays Locked. Returns true if usable.
+     * A key that is definitively unusable (bad tag, key gone, core says WrongPassphrase) is deleted
+     * and the node stays Locked; on a transient Keystore/IO error unlock.bin is kept and the next
+     * startNode retries. Returns true if usable. Blocking (Keystore): not for the main thread.
      */
-    @Synchronized
-    fun tryAutoUnlock(): Boolean {
+    fun tryAutoUnlock(): Boolean = synchronized(unlockLock) {
         if (node.lockState() != LockState.LOCKED) return node.lockState() != LockState.NO_IDENTITY
         if (!UnlockStore.exists(this)) return false
-        val key = UnlockStore.load(this)
-        if (key == null) { UnlockStore.clear(this); return false }
-        return try {
-            node.unlockWithKey(key); true
-        } catch (e: Exception) {
-            Log.w(TAG, "unlockWithKey failed: ${e.javaClass.simpleName}")
-            UnlockStore.clear(this); false
-        } finally { key.fill(0) }
+        when (val l = UnlockStore.load(this)) {
+            UnlockStore.Loaded.Gone -> { UnlockStore.clear(this); false }
+            UnlockStore.Loaded.Transient -> false
+            is UnlockStore.Loaded.Key -> try {
+                node.unlockWithKey(l.bytes); true
+            } catch (e: uniffi.p2pcore.Exception.WrongPassphrase) {
+                Log.w(TAG, "unlockWithKey: key rejected")
+                UnlockStore.clear(this); false
+            } catch (e: Exception) {
+                Log.w(TAG, "unlockWithKey failed (kept for retry): ${e.javaClass.simpleName}")
+                false
+            } finally { l.bytes.fill(0) }
+        }
     }
 
     /** After any successful passphrase path: remember the data key under the Keystore. */
@@ -84,8 +92,12 @@ class P2pApp : Application(), NodeEvents {
      * refuses to restore over an existing profile, so the sealed profile.json is moved aside first
      * (state.json, i.e. contacts, is untouched) and moved back if the restore fails. Blocking.
      */
-    @Synchronized
     fun restoreOverLocked(phrase: String, name: String, passphrase: String) {
+        try { lifecycle.submit { restoreOverLockedNow(phrase, name, passphrase) }.get() }
+        catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
+    }
+
+    private fun restoreOverLockedNow(phrase: String, name: String, passphrase: String) {
         val dir = filesDir.resolve("core")
         val prof = dir.resolve("profile.json")
         val bak = dir.resolve("profile.json.bak")
@@ -108,26 +120,39 @@ class P2pApp : Application(), NodeEvents {
         }
     }
 
-    /** Called after create/restore/unlock/set-passphrase: remember the key, bring up service and node. */
+    /**
+     * Called after create/restore/unlock/set-passphrase. The state refresh is immediate; remembering
+     * the key (Keystore work) and starting the node run off the main thread.
+     */
     fun identityReady() {
-        rememberKey()
-        Notifications.cancelLocked(this)
         refresh()
-        CoreService.ensureRunning(this)
-        scope.launch { startNode() }
+        scope.launch {
+            rememberKey()
+            Notifications.cancelLocked(this@P2pApp)
+            CoreService.ensureRunning(this@P2pApp)
+            startNode()
+        }
     }
 
-    @Synchronized
+    /** Node start/stop and identity swaps run one at a time on this thread, never on the callers' locks. */
+    private val lifecycle = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "p2p-lifecycle") }
+
+    /** Unlocks (if needed) and starts the node. Queued on the lifecycle thread; returns immediately. */
     fun startNode() {
-        if (!node.hasIdentity()) return
-        if (!tryAutoUnlock()) {
-            Log.w(TAG, "locked; not starting node")
-            Notifications.locked(this)
-            refresh()
-            return
+        lifecycle.execute {
+            try {
+                if (!node.hasIdentity()) return@execute
+                if (!tryAutoUnlock()) {
+                    Log.w(TAG, "locked; not starting node")
+                    Notifications.locked(this)
+                    refresh()
+                    return@execute
+                }
+                Notifications.cancelLocked(this)
+                try { node.start() } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
+                refresh()
+            } catch (e: Throwable) { Log.e(TAG, "startNode", e) }
         }
-        try { node.start() } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
-        _status.value = node.status()
     }
 
     // ---- NodeEvents (core threads) ----
@@ -140,7 +165,7 @@ class P2pApp : Application(), NodeEvents {
     }
     override fun onIncomingCall(call: CallInfo) = calls.onIncoming(call)
     override fun onCallState(callId: String, state: CallState) = calls.onState(callId, state)
-    override fun onLog(line: String) { Log.d("p2pcore", line) }
+    override fun onLog(line: String) { if (BuildConfig.DEBUG) Log.d("p2pcore", line) }
 
     companion object {
         const val TAG = "P2P"

@@ -46,7 +46,7 @@ class CoreService : Service() {
         }
         enterForeground()
         updateLocks()
-        app.scope.launch { app.startNode() }
+        app.startNode()
         return START_STICKY
     }
 
