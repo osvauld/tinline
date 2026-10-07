@@ -6,3 +6,6 @@ android/local.properties
 *.apk
 .claude/
 .venv/
+
+# Company documents: never commit
+*.pdf
