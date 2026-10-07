@@ -32,3 +32,13 @@ has re-run its acceptance command.
 | 21 | Core for the design: call history, contact alias + verified, safety number, availability, reconnecting, end reasons | sonnet:core-design (worktree) | `crates/core`, `docs/protocol.md` | in progress |
 | 22 | Android redesign per `docs/design/` (tokens, fonts, icon, all screens on today's API) | sonnet:android-design (worktree) | `android/` | in progress |
 | 23 | Wire 21 into the Android UI (recents, rename, verify, availability, end reasons) | lead, after 21+22 | `android/` | todo |
+
+## Roadmap (after the redesign)
+
+| # | Item | Notes |
+|---|------|-------|
+| R1 | 1:1 chat on Loro | one Loro doc per conversation, synced over a new iroh ALPN next to calls; same contacts/grants |
+| R2 | Time-based sharding | one doc per conversation per time window; recent shards sync first, old ones on demand |
+| R3 | File sending with iroh-blobs | messages carry BLAKE3 hash + name + size; content streams device to device, resumable |
+| R4 | Group chats | shared doc with a DID-signed member list; group encryption and member add/remove need a design doc first |
+| R5 | Offline delivery decision | pure P2P vs members relay vs optional encrypted mailbox relay; decide before R1 ships |
