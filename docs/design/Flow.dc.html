@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tinline flow overview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.root{font-family:'Figtree',system-ui,sans-serif;color:#17201D}
+.lane{display:flex;align-items:center;gap:0}
+.lname{width:170px;flex:none;font-size:14px;font-weight:700;line-height:20px;padding-right:16px}
+.lname span{display:block;font-weight:400;font-size:12px;color:#4D5853}
+.st{width:168px;flex:none;box-sizing:border-box;background:#FFFFFF;border:1px solid #D3D9D4;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-height:88px}
+.st b{font-size:14px;line-height:19px}
+.st i{font-style:normal;font-size:12px;line-height:16px;color:#4D5853}
+.st.k{background:#CDEBE3;border-color:#9FD6C8}
+.st.w{background:#FCEFD2;border-color:#EBD39A}
+.st.e{background:#F9DEDC;border-color:#EDB7B2}
+.cn{width:34px;height:2px;background:#C98A1E;flex:none;position:relative}
+.cn::after{content:"";position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#C98A1E}
+.br{font-size:12px;color:#8A5A00;font-weight:600;padding:0 8px}
+</style>
+</helmet>
+<div class="root" style="width:1880px;height:960px;box-sizing:border-box;padding:56px;background:#F5F6F3;display:flex;flex-direction:column;gap:36px">
+<div style="display:flex;justify-content:space-between;align-items:flex-end">
+<div>
+<h1 style="margin:0;font-size:34px;font-weight:700;letter-spacing:-0.02em">From install to first call</h1>
+<p style="margin:6px 0 0;color:#4D5853;font-size:16px">Every arrow is the string between two cans: one person, one line, nothing in the middle.</p>
+</div>
+<div style="display:flex;gap:16px;font-size:12px;color:#4D5853">
+<span style="display:flex;gap:6px;align-items:center"><span style="width:14px;height:14px;border-radius:4px;background:#CDEBE3"></span>Goal state</span>
+<span style="display:flex;gap:6px;align-items:center"><span style="width:14px;height:14px;border-radius:4px;background:#FCEFD2"></span>Needs attention</span>
+<span style="display:flex;gap:6px;align-items:center"><span style="width:14px;height:14px;border-radius:4px;background:#F9DEDC"></span>Failure / recovery</span>
+</div>
+</div>
+
+<div class="lane">
+<div class="lname">1 · First run<span>Android ~90 s, desktop skips permissions</span></div>
+<div class="st"><b>Welcome</b><i>One line + “Not for emergency calls”</i></div><div class="cn"></div>
+<div class="st"><b>Your name</b><i>Shown to people you add</i></div><div class="cn"></div>
+<div class="st"><b>Passphrase</b><i>Locks this device’s copy of your key</i></div><div class="cn"></div>
+<div class="st w"><b>Recovery phrase</b><i>24 words, write them down</i></div><div class="cn"></div>
+<div class="st"><b>Check 3 words</b><i>Proves it was saved</i></div><div class="cn"></div>
+<div class="st"><b>Terms & privacy</b><i>One checkbox</i></div><div class="cn"></div>
+<div class="st"><b>Permissions</b><i>Mic · notifications · background</i></div><div class="cn"></div>
+<div class="st k"><b>Home (empty)</b><i>“Add your first contact”</i></div>
+</div>
+
+<div class="lane">
+<div class="lname">2 · Add a contact<span>Both people online, side by side or on a video call</span></div>
+<div class="st"><b>Add contact</b><i>FAB / sidebar +</i></div><div class="cn"></div>
+<div class="st"><b>My code</b><i>Show QR · share card</i></div>
+<div class="br">or</div>
+<div class="st"><b>Scan</b><i>Camera · paste card text</i></div><div class="cn"></div>
+<div class="st"><b>Connecting…</b><i>Exchanging keys over the line</i></div><div class="cn"></div>
+<div class="st k"><b>Added</b><i>“You and Maya can now call each other”</i></div><div class="cn"></div>
+<div class="st"><b>Verify (optional)</b><i>Compare 12 digits</i></div>
+<div class="br" style="color:#B3261E">fails →</div>
+<div class="st e"><b>Couldn’t add</b><i>Both need the app open · Try again</i></div>
+</div>
+
+<div class="lane">
+<div class="lname">3 · Call<span>Outgoing</span></div>
+<div class="st"><b>Contact / recent</b><i>Tap call</i></div><div class="cn"></div>
+<div class="st"><b>Calling…</b><i>Finding a path</i></div><div class="cn"></div>
+<div class="st"><b>Ringing</b><i>Their phone rings</i></div><div class="cn"></div>
+<div class="st k"><b>In call</b><i>Direct or Relayed · quality</i></div><div class="cn"></div>
+<div class="st w"><b>Reconnecting</b><i>Network changed, audio paused</i></div><div class="cn"></div>
+<div class="st"><b>Call ended</b><i>Duration + reason</i></div>
+<div class="br" style="color:#B3261E">no answer →</div>
+<div class="st e"><b>Couldn’t reach</b><i>“They may be offline” · Try again</i></div>
+</div>
+
+<div class="lane">
+<div class="lname">4 · Incoming<span>App closed, phone locked</span></div>
+<div class="st"><b>Always-on link</b><i>Foreground service / tray</i></div><div class="cn"></div>
+<div class="st"><b>Rings</b><i>Full-screen on lock, heads-up when in use, popup on desktop</i></div><div class="cn"></div>
+<div class="st k"><b>Answer → In call</b><i>Same in-call screen</i></div>
+<div class="br">or</div>
+<div class="st"><b>Decline</b><i>Caller sees “Busy”</i></div><div class="cn"></div>
+<div class="st w"><b>Missed</b><i>Notification + red in Recents</i></div>
+</div>
+
+<div class="lane">
+<div class="lname">5 · Coming back<span>Desktop launch, or phone lost its unlock key</span></div>
+<div class="st"><b>Unlock</b><i>Enter passphrase</i></div><div class="cn"></div>
+<div class="st k"><b>Home</b><i>Contacts + recents</i></div>
+<div class="br" style="color:#B3261E">forgot →</div>
+<div class="st e"><b>Restore</b><i>Type 24 words</i></div><div class="cn"></div>
+<div class="st"><b>New passphrase</b><i>Contacts come back from backup?*</i></div><div class="cn"></div>
+<div class="st k"><b>Home</b><i>Same identity, same contacts can call you</i></div>
+</div>
+<p style="margin:0;font-size:12px;color:#4D5853">* Open question: restoring from the phrase recovers the identity; whether the contact list is recoverable depends on how contacts are stored — see product questions.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1880,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

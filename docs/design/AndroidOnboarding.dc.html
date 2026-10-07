@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android onboarding</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rl:#4B5AA8;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--rl:#B8C1F5;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px;flex:none}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.body{flex:1;display:flex;flex-direction:column;padding:8px 24px 32px;gap:16px;min-height:0}
+.h1{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-0.01em;margin:0}
+.p{font-size:16px;line-height:24px;color:var(--ink2);margin:0}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 24px;box-sizing:border-box}
+.btn.tn{background:var(--prc);color:var(--onprc)}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.btn.tx{background:transparent;color:var(--pr)}
+.btn.sm{height:40px;font-size:14px;width:auto;padding:0 16px}
+.btn.dis{background:var(--sf3);color:var(--ink2)}
+.fl{display:flex;flex-direction:column;gap:6px}
+.fl label{font-size:13px;font-weight:600;color:var(--ink2)}
+.in{height:56px;border-radius:8px;border:1px solid var(--ln2);background:var(--sf);color:var(--ink);font:400 16px 'Figtree',sans-serif;padding:0 16px;box-sizing:border-box;width:100%}
+.in.f{border:2px solid var(--pr)}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.prog{display:flex;align-items:center;gap:0;padding:4px 24px 0}
+.pd{width:10px;height:10px;border-radius:50%;background:var(--pr);flex:none}
+.pd.o{background:transparent;border:2px solid var(--ln2);box-sizing:border-box}
+.pl{flex:1;height:2px;background:var(--th)}
+.pl.o{background:var(--ln)}
+.perm{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:14px;background:var(--sf);border:1px solid var(--ln)}
+.pi{width:40px;height:40px;border-radius:12px;background:var(--prc);color:var(--onprc);display:flex;align-items:center;justify-content:center;flex:none}
+.word{display:flex;gap:10px;height:32px;padding:0 12px;border-radius:8px;background:var(--sf);border:1px solid var(--ln);font-size:15px;align-items:center}
+.word span{color:var(--ink2);font-size:12px;width:18px;text-align:right}
+.opt{height:40px;border-radius:999px;border:1px solid var(--ln2);background:var(--sf);color:var(--ink);font:500 15px 'IBM Plex Mono',monospace;padding:0 16px}
+</style>
+</helmet>
+<div class="root" style="width:3268px;height:1060px">
+
+<div class="col">
+<div class="lbl">1 Welcome <span>· light</span></div>
+<div class="ph t">
+<div style="flex:1;display:flex;flex-direction:column;padding:24px 28px 32px;gap:20px">
+<div style="display:flex;align-items:center;gap:10px;color:var(--pr)"><svg viewBox="0 0 24 24" style="width:30px;height:30px"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="#C98A1E" stroke-width="1.75" stroke-linecap="round"></path></svg><span style="font-size:20px;font-weight:700;color:var(--ink)">Tinline</span></div>
+<div style="height:250px;position:relative;margin:12px -28px 0">
+<svg viewBox="0 0 412 250" style="width:412px;height:250px"><path d="M96 128 C 170 168, 242 168, 316 120" fill="none" stroke="#C98A1E" stroke-width="3" stroke-linecap="round"></path><rect x="34" y="92" width="58" height="70" rx="10" fill="#0B6B5B"></rect><path d="M52 98v58M70 98v58" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="2"></path><ellipse cx="92" cy="127" rx="10" ry="35" fill="#9FD6C8" stroke="#0B6B5B" stroke-width="3"></ellipse><rect x="320" y="84" width="58" height="70" rx="10" fill="#0B6B5B"></rect><path d="M342 90v58M360 90v58" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="2"></path><ellipse cx="320" cy="119" rx="10" ry="35" fill="#9FD6C8" stroke="#0B6B5B" stroke-width="3"></ellipse></svg>
+</div>
+<h1 class="h1" style="font-size:34px;line-height:40px">Call people directly.</h1>
+<p class="p">Tinline connects your phone straight to theirs. End-to-end encrypted. No phone number, no ads, no tracking.</p>
+<div style="flex:1"></div>
+<button class="btn">Get started</button>
+<button class="btn tx">I have a recovery phrase</button>
+<div style="display:flex;gap:10px;align-items:flex-start;color:var(--ink2);font-size:13px;line-height:18px"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;margin-top:1px"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01"></path></svg><span><b style="color:var(--ink)">Not for emergency calls.</b> Use your phone’s dialer to reach emergency services.</span></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">2 Your name</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div class="prog"><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
+<div class="body" style="padding-top:28px">
+<h1 class="h1">What should people call you?</h1>
+<p class="p">Your name is shown to people you add. It never leaves your phone otherwise.</p>
+<div class="fl" style="margin-top:8px"><label for="nm">Your name</label><input id="nm" class="in f" value="Maya"></div>
+<div class="hint">You can change it any time in Settings.</div>
+<div style="flex:1"></div>
+<button class="btn">Continue</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">3 Passphrase</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
+<div class="body" style="padding-top:28px">
+<h1 class="h1">Lock it with a passphrase</h1>
+<p class="p">Your account lives only on this phone. The passphrase encrypts it, so nobody holding your phone can copy it.</p>
+<div class="fl"><label for="pp">Passphrase</label><div style="position:relative"><input id="pp" class="in f mono" type="password" value="correct-horse-lamp-river"><button class="ib" aria-label="Show passphrase" style="position:absolute;right:4px;top:4px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div></div>
+<div style="display:flex;gap:6px;align-items:center"><div style="flex:1;height:4px;border-radius:2px;background:var(--pr)"></div><div style="flex:1;height:4px;border-radius:2px;background:var(--pr)"></div><div style="flex:1;height:4px;border-radius:2px;background:var(--pr)"></div><div style="flex:1;height:4px;border-radius:2px;background:var(--ln)"></div><span class="hint" style="margin-left:6px;color:var(--pr);font-weight:600">Strong</span></div>
+<div class="fl"><label for="pp2">Type it again</label><input id="pp2" class="in mono" type="password" value="correct-horse-lamp-river"></div>
+<div style="display:flex;gap:10px;background:var(--sf2);border-radius:14px;padding:14px;font-size:14px;line-height:20px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="color:var(--ink)"><path d="M8 11a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M10.8 12.2 20 3 M17 6l3 3 M15 8l2 2"></path></svg><span>Three or four random words work well. Your phone remembers it so calls still ring after a restart — you’ll need it to see your recovery phrase.</span></div>
+<div style="flex:1"></div>
+<button class="btn">Continue</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">4 Recovery phrase <span>· screenshot-blocked</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
+<div class="body" style="padding-top:24px;gap:14px">
+<h1 class="h1">Write down these 24 words</h1>
+<p class="p" style="font-size:15px;line-height:22px">They <b style="color:var(--ink)">are</b> your Tinline account. If you lose this phone, they bring it back. Anyone who has them can pretend to be you.</p>
+<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:4px 10px" class="mono">
+<sc-for list="{{words}}" as="w" hint-placeholder-count="24"><div class="word"><span>{{w.n}}</span>{{w.w}}</div></sc-for>
+</div>
+<div class="hint" style="display:flex;gap:6px;align-items:center"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Paper is safest. Screenshots are blocked here.</div>
+<div style="flex:1"></div>
+<button class="btn">I’ve written them down</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">5 Quick check</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div></div>
+<div class="body" style="padding-top:28px">
+<h1 class="h1">Quick check</h1>
+<p class="p">Pick the right words, so we know your copy is complete.</p>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+<div style="display:flex;align-items:center;gap:12px;height:52px;border-radius:12px;background:var(--prc);color:var(--onprc);padding:0 16px"><span style="font-size:13px;width:60px">Word 4</span><span class="mono" style="font-size:16px;font-weight:500;flex:1">candle</span><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></div>
+<div style="display:flex;align-items:center;gap:12px;height:52px;border-radius:12px;border:2px solid var(--pr);background:var(--sf);padding:0 16px;box-sizing:border-box"><span style="font-size:13px;width:60px;color:var(--ink2)">Word 11</span><span class="mono" style="font-size:16px;color:var(--ink2);flex:1">?</span></div>
+<div style="display:flex;align-items:center;gap:12px;height:52px;border-radius:12px;border:1px dashed var(--ln2);padding:0 16px;box-sizing:border-box"><span style="font-size:13px;width:60px;color:var(--ink2)">Word 19</span></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+<button class="opt">anchor</button><button class="opt">copper</button><button class="opt">meadow</button><button class="opt">silver</button><button class="opt">cabin</button><button class="opt">ripple</button>
+</div>
+<div style="flex:1"></div>
+<button class="btn tx">Show the words again</button>
+<button class="btn dis">Check</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">6 Terms & privacy</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div></div>
+<div class="body" style="padding-top:28px;gap:14px">
+<h1 class="h1">Before you start</h1>
+<div style="display:flex;flex-direction:column;gap:14px;font-size:15px;line-height:22px">
+<div style="display:flex;gap:12px"><svg class="i" viewBox="0 0 24 24" style="color:var(--pr)"><path d="M20 6 9 17l-5-5"></path></svg><span><b>No ads, no tracking.</b> We don’t collect your contacts, calls or location.</span></div>
+<div style="display:flex;gap:12px"><svg class="i" viewBox="0 0 24 24" style="color:var(--pr)"><path d="M20 6 9 17l-5-5"></path></svg><span><b>Calls are end-to-end encrypted.</b> When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it.</span></div>
+<div style="display:flex;gap:12px"><svg class="i" viewBox="0 0 24 24" style="color:var(--pr)"><path d="M20 6 9 17l-5-5"></path></svg><span><b>You hold the keys.</b> Lose your phone and your recovery phrase, and nobody — not even Osvauld — can get your account back.</span></div>
+<div style="display:flex;gap:12px"><svg class="i" viewBox="0 0 24 24" style="color:var(--er)"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01"></path></svg><span><b>Not for emergency calls.</b></span></div>
+</div>
+<div style="flex:1"></div>
+<label style="display:flex;gap:14px;align-items:flex-start;padding:14px;border-radius:14px;background:var(--sf);border:1px solid var(--ln);font-size:15px;line-height:22px"><input type="checkbox" checked style="width:22px;height:22px;accent-color:#0B6B5B;margin:0;flex:none"><span>I agree to the <a href="https://tinline.osvauld.com/terms">Terms of Use</a> and have read the <a href="https://tinline.osvauld.com/privacy">Privacy Policy</a>.</span></label>
+<button class="btn">Agree and continue</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">7 Permissions <span>· Android only</span></div>
+<div class="ph t">
+<div class="body" style="padding-top:28px;gap:12px">
+<h1 class="h1">So calls can reach you</h1>
+<p class="p" style="font-size:15px">Tinline works like a phone line: it stays open quietly in the background.</p>
+<div class="perm"><div class="pi"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></div><div style="flex:1"><div style="font-weight:600;font-size:16px">Microphone</div><div class="hint" style="font-size:14px;line-height:19px">So they can hear you. Used only during a call.</div></div><button class="btn sm">Allow</button></div>
+<div class="perm"><div class="pi"><svg class="i" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></div><div style="flex:1"><div style="font-weight:600;font-size:16px">Notifications</div><div class="hint" style="font-size:14px;line-height:19px">To ring when someone calls, even when Tinline is closed.</div></div><span style="display:flex;align-items:center;gap:4px;color:var(--pr);font-weight:600;font-size:14px;height:40px"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M20 6 9 17l-5-5"></path></svg>On</span></div>
+<div class="perm"><div class="pi"><svg class="i" viewBox="0 0 24 24"><path d="M7 2h10v20H7z M10 6h4"></path></svg></div><div style="flex:1"><div style="font-weight:600;font-size:16px">Ring over lock screen</div><div class="hint" style="font-size:14px;line-height:19px">Shows incoming calls full screen, like the phone app.</div></div><button class="btn sm">Allow</button></div>
+<div class="perm"><div class="pi"><svg class="i" viewBox="0 0 24 24"><path d="M3 7h15v10H3z M22 11v2 M7 11v2"></path></svg></div><div style="flex:1"><div style="font-weight:600;font-size:16px">Run in background</div><div class="hint" style="font-size:14px;line-height:19px">Android pauses idle apps to save battery. This keeps your line open, using a little battery.</div></div><button class="btn sm">Allow</button></div>
+<div style="flex:1"></div>
+<button class="btn">Done</button>
+<button class="btn tx">Skip for now</button>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3268,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ws = ['harbor','velvet','orbit','candle','meadow','lunar','ticket','gravel','salmon','whisper','copper','anchor','fabric','jungle','pepper','quarter','ripple','saddle','timber','unveil','walnut','yellow','zebra','mosaic'];
+    // column-major: 1-12 left, 13-24 right
+    const words = [];
+    for (let r = 0; r < 12; r++) { words.push({ n: r + 1, w: ws[r] }); words.push({ n: r + 13, w: ws[r + 12] }); }
+    return { words };
+  }
+}
+</script>
+</body>
+</html>

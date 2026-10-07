@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px;flex:none}
+.bt{font-size:20px;font-weight:600;flex:1}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 20px;box-sizing:border-box}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.btn.tx{background:transparent;color:var(--pr)}
+.sec{font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--ink2);padding:18px 20px 4px}
+.it{display:flex;align-items:center;gap:16px;min-height:60px;padding:6px 16px 6px 20px;box-sizing:border-box}
+.it .ic{color:var(--ink2)}
+.it .tt{font-size:16px;line-height:22px}
+.it .ss{font-size:13px;line-height:18px;color:var(--ink2)}
+.ok{display:inline-flex;align-items:center;gap:4px;color:var(--pr);font-size:14px;font-weight:600}
+.tg{width:52px;height:32px;border-radius:999px;background:var(--pr);position:relative;flex:none;border:0;padding:0}
+.tg::after{content:"";position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:var(--onpr)}
+.mono{font-family:'IBM Plex Mono',monospace}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+.word{display:flex;gap:10px;height:32px;padding:0 12px;border-radius:8px;background:var(--sf);border:1px solid var(--ln);font-size:15px;align-items:center}
+.word span{color:var(--ink2);font-size:12px;width:18px;text-align:right}
+.chev{color:var(--ink2)}
+</style>
+</helmet>
+<div class="root" style="width:2348px;height:1060px">
+
+<div class="col">
+<div class="lbl">Settings</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Settings</span></div>
+<div style="margin:4px 16px 0;padding:14px 16px;border-radius:14px;background:var(--sf);border:1px solid var(--ln);display:flex;align-items:center;gap:14px"><div style="width:52px;height:52px;border-radius:50%;background:var(--prc);color:var(--onprc);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px">M</div><div style="flex:1"><div style="font-size:18px;font-weight:700">Maya</div><div class="hint">Shown to people you add</div></div><button class="ib" aria-label="Edit name" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M17 3l4 4L7 21H3v-4z"></path></svg></button></div>
+<div class="sec">CALLS</div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg><div style="flex:1"><div class="tt">Available for calls</div><div class="ss">Your line is open</div></div><button class="tg" aria-pressed="true" aria-label="Available for calls"></button></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M3 7h15v10H3z M22 11v2 M7 11v2"></path></svg><div style="flex:1"><div class="tt">Background & battery</div><div class="ss">All set — calls will ring</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="sec">SECURITY</div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M10.8 12.2 20 3 M17 6l3 3 M15 8l2 2"></path></svg><div style="flex:1"><div class="tt">Change passphrase</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg><div style="flex:1"><div class="tt">Recovery phrase</div><div class="ss">Needs your passphrase</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="sec">ABOUT</div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 16v-4 M12 8h.01"></path></svg><div style="flex:1"><div class="tt">About Tinline</div><div class="ss">Version, licences, terms, privacy</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6"></path></svg><div style="flex:1"><div class="tt">Diagnostics</div><div class="ss">Test your microphone and connection</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Recovery phrase · gate <span>· dark</span></div>
+<div class="ph dk">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Recovery phrase</span></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;padding:24px 24px 32px">
+<div style="width:64px;height:64px;border-radius:50%;background:var(--prc);color:var(--onprc);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" style="width:30px;height:30px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg></div>
+<h1 style="margin:0;font-size:26px;line-height:32px;font-weight:700">Enter your passphrase</h1>
+<p style="margin:0;font-size:16px;line-height:24px;color:var(--ink2)">Your recovery phrase is the key to your account, so we check it’s really you first.</p>
+<div style="display:flex;flex-direction:column;gap:6px"><label for="gp" style="font-size:13px;font-weight:600;color:var(--ink2)">Passphrase</label><input id="gp" type="password" value="correct-horse-lamp" class="mono" style="height:56px;border-radius:8px;border:2px solid var(--pr);background:var(--sf);color:var(--ink);font-size:16px;padding:0 16px;box-sizing:border-box;width:100%"></div>
+<div style="flex:1"></div>
+<button class="btn">Show recovery phrase</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Recovery phrase · shown <span>· FLAG_SECURE</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Recovery phrase</span></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;padding:4px 24px 32px">
+<div style="display:flex;gap:10px;background:var(--wn);color:var(--onwn);border-radius:14px;padding:14px;font-size:14px;line-height:20px"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg><span>Anyone who sees these words can become you. Check nobody is looking.</span></div>
+<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:4px 10px" class="mono">
+<sc-for list="{{words}}" as="w" hint-placeholder-count="24"><div class="word"><span>{{w.n}}</span>{{w.w}}</div></sc-for>
+</div>
+<div class="hint" style="display:flex;gap:6px;align-items:center"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Screenshots and screen recording are blocked here.</div>
+<div style="flex:1"></div>
+<button class="btn">Hide</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Background & battery</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Background & battery</span></div>
+<div class="it" style="padding-top:8px"><div style="flex:1"><div class="tt" style="font-weight:600">Keep my line open</div><div class="ss">Stay connected in the background so calls ring like a normal phone. Uses a little battery.</div></div><button class="tg" aria-pressed="true" aria-label="Keep my line open"></button></div>
+<div class="sec">CHECKLIST</div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M3 7h15v10H3z M22 11v2 M7 11v2"></path></svg><div style="flex:1"><div class="tt">Battery</div><div class="ss">Optimised — Android may pause Tinline</div></div><button class="btn" style="width:auto;height:40px;font-size:14px;padding:0 16px">Fix</button></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg><div style="flex:1"><div class="tt">Notifications</div></div><span class="ok"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M20 6 9 17l-5-5"></path></svg>On</span></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M7 2h10v20H7z M10 6h4"></path></svg><div style="flex:1"><div class="tt">Ring over lock screen</div></div><span class="ok"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M20 6 9 17l-5-5"></path></svg>On</span></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg><div style="flex:1"><div class="tt">Microphone</div></div><span class="ok"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M20 6 9 17l-5-5"></path></svg>Allowed</span></div>
+<div style="margin:12px 16px 0;padding:14px 16px;border-radius:14px;background:var(--sf2);font-size:14px;line-height:20px;color:var(--ink2)"><b style="color:var(--ink)">Still missing calls?</b> Some phones need an extra step to keep apps running. <a href="#" style="font-weight:600">Steps for your phone</a></div>
+<div style="margin:12px 16px 0;padding:14px 16px;border-radius:14px;border:1px solid var(--ln);display:flex;gap:12px;align-items:center"><svg class="i" viewBox="0 0 24 24" style="color:var(--pr)"><path d="M3 3h8v8H3z M13 3h8v8h-8z M3 13h8v8H3z M13 13h8v8h-8z"></path></svg><div style="flex:1;font-size:14px;line-height:20px">Add a Quick Settings tile to switch availability in one tap.</div><button class="btn tx" style="width:auto;height:40px;padding:0 8px;font-size:14px">Add</button></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">About <span>· dark</span></div>
+<div class="ph dk">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">About</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 24px 8px;text-align:center">
+<svg viewBox="0 0 108 108" style="width:80px;height:80px;border-radius:24px"><rect width="108" height="108" fill="#0B6B5B"></rect><rect x="20" y="43" width="20" height="22" rx="4" fill="#F5F6F3"></rect><ellipse cx="40" cy="54" rx="4" ry="11" fill="#9FD6C8" stroke="#F5F6F3" stroke-width="2"></ellipse><rect x="68" y="43" width="20" height="22" rx="4" fill="#F5F6F3"></rect><ellipse cx="68" cy="54" rx="4" ry="11" fill="#9FD6C8" stroke="#F5F6F3" stroke-width="2"></ellipse><path d="M44 54 Q54 62 64 54" fill="none" stroke="#E8B04A" stroke-width="3" stroke-linecap="round"></path></svg>
+<div style="font-size:24px;font-weight:700;margin-top:6px">Tinline</div>
+<div class="hint">Version [x.y.z] · by Osvauld</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink2);margin-top:8px">Free and open source under the GPL. No ads, no tracking, no analytics.</div>
+</div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6 M8 6l-6 6 6 6"></path></svg><div style="flex:1"><div class="tt">Source code</div><div class="ss">GPL-3.0</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="M15 3h6v6 M10 14 21 3 M21 14v7H3V3h7"></path></svg></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z M14 2v6h6"></path></svg><div style="flex:1"><div class="tt">Terms of Use</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="M15 3h6v6 M10 14 21 3 M21 14v7H3V3h7"></path></svg></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><div style="flex:1"><div class="tt">Privacy Policy</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="M15 3h6v6 M10 14 21 3 M21 14v7H3V3h7"></path></svg></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M4 4h16v16H4z M8 8h8 M8 12h8 M8 16h5"></path></svg><div style="flex:1"><div class="tt">Open-source licences</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M3 12h18 M12 3a14 14 0 0 1 0 18 M12 3a14 14 0 0 0 0 18"></path></svg><div style="flex:1"><div class="tt">tinline.osvauld.com</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="M15 3h6v6 M10 14 21 3 M21 14v7H3V3h7"></path></svg></div>
+<div class="hint" style="padding:16px 20px">Not for emergency calls.</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2348,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ws = ['harbor','velvet','orbit','candle','meadow','lunar','ticket','gravel','salmon','whisper','copper','anchor','fabric','jungle','pepper','quarter','ripple','saddle','timber','unveil','walnut','yellow','zebra','mosaic'];
+    const words = [];
+    for (let r = 0; r < 12; r++) { words.push({ n: r + 1, w: ws[r] }); words.push({ n: r + 13, w: ws[r + 12] }); }
+    return { words };
+  }
+}
+</script>
+</body>
+</html>

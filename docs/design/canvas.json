@@ -1,0 +1,140 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AndroidAddContact.dc.html": {
+      "h": 1060,
+      "title": "Android · Add contact",
+      "w": 2808,
+      "x": 0,
+      "y": 5780
+    },
+    "AndroidCalls.dc.html": {
+      "h": 1060,
+      "title": "Android · Calls",
+      "w": 4188,
+      "x": 0,
+      "y": 8140
+    },
+    "AndroidContact.dc.html": {
+      "h": 1060,
+      "title": "Android · Contact detail",
+      "w": 1888,
+      "x": 0,
+      "y": 6960
+    },
+    "AndroidHome.dc.html": {
+      "h": 1060,
+      "title": "Android · Home",
+      "w": 2348,
+      "x": 0,
+      "y": 4600
+    },
+    "AndroidOnboarding.dc.html": {
+      "h": 1060,
+      "title": "Android · Onboarding",
+      "w": 3268,
+      "x": 0,
+      "y": 2240
+    },
+    "AndroidSettings.dc.html": {
+      "h": 1060,
+      "title": "Android · Settings",
+      "w": 2348,
+      "x": 0,
+      "y": 9320
+    },
+    "AndroidUnlock.dc.html": {
+      "h": 1060,
+      "title": "Android · Unlock & restore",
+      "w": 1428,
+      "x": 0,
+      "y": 3420
+    },
+    "DesktopCalls.dc.html": {
+      "h": 940,
+      "title": "Desktop · Calls, tray & notifications",
+      "w": 2344,
+      "x": 0,
+      "y": 11840
+    },
+    "DesktopMain.dc.html": {
+      "h": 880,
+      "title": "Desktop · Main window (light / dark)",
+      "w": 2344,
+      "x": 0,
+      "y": 10840
+    },
+    "DesktopMore.dc.html": {
+      "h": 1720,
+      "title": "Desktop · Unlock, add contact, settings, empty",
+      "w": 2344,
+      "x": 0,
+      "y": 12900
+    },
+    "Flow.dc.html": {
+      "h": 960,
+      "title": "Flow overview",
+      "w": 1880,
+      "x": 1840,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 1760,
+      "title": "Design tokens & identity",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-07T10:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t_and": {
+      "kind": "title1",
+      "maxW": 4188,
+      "text": "Android — Material 3 / Compose, 412×915",
+      "w": 240,
+      "x": 0,
+      "y": 1940
+    },
+    "t_desk": {
+      "kind": "title1",
+      "maxW": 2344,
+      "text": "Desktop — iced (Linux, Windows), 1100×720",
+      "w": 240,
+      "x": 0,
+      "y": 10540
+    },
+    "t_id": {
+      "kind": "title1",
+      "maxW": 3720,
+      "text": "Tinline — identity & flow",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Flow.dc.html",
+    "AndroidOnboarding.dc.html",
+    "AndroidUnlock.dc.html",
+    "AndroidHome.dc.html",
+    "AndroidAddContact.dc.html",
+    "AndroidContact.dc.html",
+    "AndroidCalls.dc.html",
+    "AndroidSettings.dc.html",
+    "DesktopMain.dc.html",
+    "DesktopCalls.dc.html",
+    "DesktopMore.dc.html"
+  ],
+  "pages": [],
+  "title": "Tinline app design"
+}

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rl:#4B5AA8;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--rl:#B8C1F5;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 20px;box-sizing:border-box}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.btn.tx{background:transparent;color:var(--pr)}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;background:var(--rlc);color:var(--onrlc)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px 0 8px;border-radius:999px;font-size:13px;font-weight:600}
+.bD{background:var(--prc);color:var(--onprc)}.bR{background:var(--rlc);color:var(--onrlc)}.bW{background:var(--wn);color:var(--onwn)}.bN{background:var(--sf2);color:var(--ink)}
+.ctl{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink);width:96px}
+.cb{width:64px;height:64px;border-radius:50%;border:0;background:var(--sf3);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
+.cb.on{background:var(--ink);color:var(--bg)}
+.end{width:72px;height:72px;border-radius:50%;border:0;background:#C8372D;color:#FFFFFF;display:flex;align-items:center;justify-content:center;padding:0}
+.acc{width:72px;height:72px;border-radius:50%;border:0;background:#0E7C69;color:#FFFFFF;display:flex;align-items:center;justify-content:center;padding:0}
+.big{width:30px;height:30px}
+.hang{transform:rotate(135deg)}
+.mono{font-family:'IBM Plex Mono',monospace}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+.ntf{background:#FFFFFF;border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;color:#17201D}
+.nh{display:flex;align-items:center;gap:8px;font-size:12px;color:#4D5853}
+.nic{width:20px;height:20px;border-radius:50%;background:#0B6B5B;color:#FFFFFF;display:flex;align-items:center;justify-content:center}
+.opt{display:flex;align-items:center;gap:16px;min-height:60px;padding:0 8px;border-radius:14px;font-size:16px}
+.opt.on{background:var(--prc);color:var(--onprc)}
+.opt .s{font-size:13px;color:var(--ink2)}
+</style>
+</helmet>
+<div class="root" style="width:4188px;height:1060px">
+
+<div class="col">
+<div class="lbl">Incoming · lock screen <span>· full-screen intent, always dark</span></div>
+<div class="ph dk" style="background:#0B100F">
+<div style="display:flex;justify-content:center;align-items:center;gap:8px;padding-top:24px;font-size:14px;color:#A6B2AD"><svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#6FD3BD"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="#E8B04A" stroke-width="1.75" stroke-linecap="round"></path></svg>Tinline call</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-bottom:80px">
+<div style="width:168px;height:168px;border-radius:50%;border:2px solid rgba(232,176,74,.35);display:flex;align-items:center;justify-content:center"><div style="width:144px;height:144px;border-radius:50%;border:2px solid rgba(232,176,74,.6);display:flex;align-items:center;justify-content:center"><div class="av" style="width:120px;height:120px;font-size:42px">AO</div></div></div>
+<div style="font-size:34px;font-weight:700;margin-top:10px">Arjun Oommen</div>
+<div style="font-size:17px;color:#A6B2AD">is calling you</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#A6B2AD"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>End-to-end encrypted</div>
+</div>
+<div style="display:flex;justify-content:space-around;padding:0 32px 72px">
+<div class="ctl" style="color:#E6ECE9"><button class="end" aria-label="Decline"><svg class="i big hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>Decline</div>
+<div class="ctl" style="color:#E6ECE9"><button class="acc" aria-label="Answer"><svg class="i big" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>Answer</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Notifications <span>· heads-up, missed, always-on</span></div>
+<div class="ph t" style="background:#D9DED9">
+<div style="padding:16px 12px;display:flex;flex-direction:column;gap:10px">
+<div class="ntf" style="box-shadow:0 4px 16px rgba(0,0,0,.14)">
+<div class="nh"><span class="nic"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></span>Tinline · now</div>
+<div style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-weight:700;font-size:16px">Arjun Oommen</div><div style="font-size:14px;color:#4D5853">Incoming call · encrypted</div></div><div class="av" style="width:44px;height:44px;font-size:16px;background:#E1E4F7;color:#2F3A75">AO</div></div>
+<div style="display:flex;gap:8px;margin-top:4px"><button class="btn" style="height:44px;background:#C8372D;color:#FFFFFF;font-size:15px"><svg class="i hang" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Decline</button><button class="btn" style="height:44px;background:#0E7C69;color:#FFFFFF;font-size:15px"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Answer</button></div>
+</div>
+<div class="hint" style="padding:4px 8px 0;color:#4D5853">Heads-up (phone in use) — Android CallStyle.forIncomingCall</div>
+<div class="ntf">
+<div class="nh"><span class="nic" style="background:#B3261E"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px;stroke-width:2.5"><path d="M17 7 7 17 M17 17H7V7"></path></svg></span>Tinline · 11:02</div>
+<div style="font-weight:700;font-size:16px">Missed call from Rosa Silva</div>
+<div style="display:flex;gap:16px"><a href="#" style="font-weight:700;font-size:14px">Call back</a><a href="#" style="font-weight:700;font-size:14px">Dismiss</a></div>
+</div>
+<div class="hint" style="padding:4px 8px 0;color:#4D5853">Missed — default channel, groups when more than one</div>
+<div class="ntf" style="padding:12px 16px">
+<div class="nh"><span class="nic"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></span>Tinline</div>
+<div style="font-size:15px;font-weight:600">Available for calls</div>
+<div style="font-size:13px;color:#4D5853">Your line is open. Tap to change.</div>
+</div>
+<div class="hint" style="padding:4px 8px 0;color:#4D5853">Always-on — foreground service, silent “minimum” channel; text changes to “Not available” / “Offline — reconnecting”</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Calling…</div>
+<div class="ph t">
+<div style="display:flex;justify-content:center;padding-top:20px"><span class="badge bN"><span style="width:8px;height:8px;border-radius:50%;background:var(--th)"></span>Finding a path…</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+<div style="display:flex;align-items:center"><div class="av" style="width:64px;height:64px;font-size:22px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q70 40 136 16" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 9"></path></svg><div class="av" style="width:96px;height:96px;font-size:34px">AO</div></div>
+<div style="font-size:30px;font-weight:700;margin-top:16px">Arjun Oommen</div>
+<div style="font-size:17px;color:var(--ink2)">Calling…</div>
+</div>
+<div style="display:flex;justify-content:center;gap:24px;padding-bottom:28px">
+<div class="ctl"><button class="cb" aria-label="Mute"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button>Mute</div>
+<div class="ctl"><button class="cb" aria-label="Audio: phone"><svg class="i" viewBox="0 0 24 24"><path d="M7 2h10v20H7z M11 18h2"></path></svg></button>Phone</div>
+</div>
+<div style="display:flex;justify-content:center;padding-bottom:64px"><button class="end" aria-label="Cancel call"><svg class="i big hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">In call · Direct <span>· light</span></div>
+<div class="ph t">
+<div style="display:flex;align-items:center;padding:8px 8px 0 4px"><button class="ib" aria-label="Minimise"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></button><div style="flex:1;display:flex;justify-content:center;gap:8px"><span class="badge bD"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><circle cx="4" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><circle cx="20" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><path d="M6.5 12h11"></path></svg>Direct</span><span class="badge bN"><svg viewBox="0 0 20 20" style="width:16px;height:16px"><rect x="2" y="13" width="3" height="5" rx="1" fill="var(--pr)"></rect><rect x="7" y="10" width="3" height="8" rx="1" fill="var(--pr)"></rect><rect x="12" y="6" width="3" height="12" rx="1" fill="var(--pr)"></rect><rect x="17" y="2" width="3" height="16" rx="1" fill="var(--pr)"></rect></svg>Excellent</span></div><div style="width:48px"></div></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+<div style="display:flex;align-items:center"><div class="av" style="width:64px;height:64px;font-size:22px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q70 32 136 16" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path></svg><div class="av" style="width:96px;height:96px;font-size:34px">AO</div></div>
+<div style="font-size:30px;font-weight:700;margin-top:16px">Arjun Oommen</div>
+<div class="mono" style="font-size:20px;color:var(--ink2)">04:12</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>End-to-end encrypted · straight to his phone</div>
+</div>
+<div style="display:flex;justify-content:center;gap:24px;padding-bottom:28px">
+<div class="ctl"><button class="cb on" aria-label="Unmute" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3 M3 3l18 18"></path></svg></button>Muted</div>
+<div class="ctl"><button class="cb" aria-label="Audio: speaker"><svg class="i" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5z M15.54 8.46a5 5 0 0 1 0 7.07 M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg></button>Speaker</div>
+</div>
+<div style="display:flex;justify-content:center;padding-bottom:64px"><button class="end" aria-label="End call"><svg class="i big hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">In call · Relayed + audio route <span>· dark</span></div>
+<div class="ph dk">
+<div style="display:flex;align-items:center;padding:8px 8px 0 4px"><button class="ib" aria-label="Minimise"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></button><div style="flex:1;display:flex;justify-content:center;gap:8px"><span class="badge bR"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><circle cx="4" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><circle cx="20" cy="12" r="2.5" fill="currentColor" stroke="none"></circle><path d="M6.5 12h2.5M15 12h2.5"></path><rect x="9.5" y="9" width="5" height="6" rx="1.2"></rect></svg>Relayed · encrypted</span><span class="badge bN"><svg viewBox="0 0 20 20" style="width:16px;height:16px"><rect x="2" y="13" width="3" height="5" rx="1" fill="var(--pr)"></rect><rect x="7" y="10" width="3" height="8" rx="1" fill="var(--pr)"></rect><rect x="12" y="6" width="3" height="12" rx="1" fill="var(--pr)"></rect><rect x="17" y="2" width="3" height="16" rx="1" fill="var(--ln)"></rect></svg>Good</span></div><div style="width:48px"></div></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:60px">
+<div style="display:flex;align-items:center"><div class="av" style="width:64px;height:64px;font-size:22px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q30 26 56 24" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path><path d="M84 24 Q110 26 136 16" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path><rect x="58" y="14" width="24" height="20" rx="5" fill="var(--rlc)" stroke="var(--rl)" stroke-width="2"></rect><path d="M66 22v-3a4 4 0 0 1 8 0v3" fill="none" stroke="var(--rl)" stroke-width="2"></path></svg><div class="av" style="width:96px;height:96px;font-size:34px">AO</div></div>
+<div style="font-size:30px;font-weight:700;margin-top:16px">Arjun Oommen</div>
+<div class="mono" style="font-size:20px;color:var(--ink2)">12:47</div>
+</div>
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--sf);border-radius:24px 24px 0 0;padding:12px 16px 36px;display:flex;flex-direction:column;gap:6px">
+<div style="width:36px;height:4px;border-radius:2px;background:var(--ln2);align-self:center"></div>
+<div style="font-size:20px;font-weight:700;padding:12px 8px 8px">Play call through</div>
+<button class="opt" style="border:0;background:transparent;color:inherit;font:inherit;font-size:16px;text-align:left"><svg class="i" viewBox="0 0 24 24"><path d="M7 2h10v20H7z M11 18h2"></path></svg><span style="flex:1">Phone</span></button>
+<button class="opt" style="border:0;background:transparent;color:inherit;font:inherit;font-size:16px;text-align:left"><svg class="i" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5z M15.54 8.46a5 5 0 0 1 0 7.07 M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg><span style="flex:1">Speaker</span></button>
+<button class="opt on" style="border:0;font:inherit;font-size:16px;text-align:left"><svg class="i" viewBox="0 0 24 24"><path d="m7 7 10 10-5 5V2l5 5L7 17"></path></svg><span style="flex:1">Pixel Buds Pro<br><span class="s" style="color:var(--onprc)">Bluetooth · connected</span></span><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></button>
+<button class="opt" style="border:0;background:transparent;color:inherit;font:inherit;font-size:16px;text-align:left"><svg class="i" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6 M21 19a2 2 0 0 1-2 2h-1v-6h3z M3 19a2 2 0 0 0 2 2h1v-6H3z"></path></svg><span style="flex:1">Wired headset</span></button>
+<div class="hint" style="padding:8px 8px 0">Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Reconnecting <span>· dark</span></div>
+<div class="ph dk">
+<div style="display:flex;align-items:center;padding:8px 8px 0 4px"><button class="ib" aria-label="Minimise"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></button><div style="flex:1;display:flex;justify-content:center"><span class="badge bW"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M21 12a9 9 0 1 1-3-6.7L21 8 M21 3v5h-5"></path></svg>Reconnecting…</span></div><div style="width:48px"></div></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+<div style="display:flex;align-items:center"><div class="av" style="width:64px;height:64px;font-size:22px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q28 28 52 26" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path><path d="M88 26 Q112 28 136 16" fill="none" stroke="var(--ln2)" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 7"></path></svg><div class="av" style="width:96px;height:96px;font-size:34px;opacity:.6">AO</div></div>
+<div style="font-size:30px;font-weight:700;margin-top:16px">Arjun Oommen</div>
+<div class="mono" style="font-size:20px;color:var(--ink2)">12:51</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink2);text-align:center;max-width:300px;margin-top:6px">Your network changed. Hold on — Tinline is finding the line again.</div>
+</div>
+<div style="display:flex;justify-content:center;gap:24px;padding-bottom:28px">
+<div class="ctl"><button class="cb" aria-label="Mute"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button>Mute</div>
+<div class="ctl"><button class="cb" aria-label="Audio: Bluetooth"><svg class="i" viewBox="0 0 24 24"><path d="m7 7 10 10-5 5V2l5 5L7 17"></path></svg></button>Bluetooth</div>
+</div>
+<div style="display:flex;justify-content:center;padding-bottom:64px"><button class="end" aria-label="End call"><svg class="i big hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Call ended</div>
+<div class="ph t">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 24px">
+<div style="display:flex;align-items:center"><div class="av" style="width:64px;height:64px;font-size:22px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q36 34 60 30" fill="none" stroke="var(--ln2)" stroke-width="3" stroke-linecap="round"></path><path d="M80 30 Q104 34 136 16" fill="none" stroke="var(--ln2)" stroke-width="3" stroke-linecap="round"></path></svg><div class="av" style="width:96px;height:96px;font-size:34px">AO</div></div>
+<div style="font-size:30px;font-weight:700;margin-top:16px">Call ended</div>
+<div style="font-size:17px;color:var(--ink2)">Arjun hung up</div>
+<div style="display:flex;gap:8px;margin-top:8px"><span class="badge bN mono" style="padding:0 12px">18:04</span><span class="badge bD">Direct</span><span class="badge bN">Good quality</span></div>
+<div class="hint" style="margin-top:24px;text-align:center">Other reasons shown here: “You hung up” · “Connection lost” · “Arjun declined” · “No answer” · “Your microphone stopped working”</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 24px 48px">
+<button class="btn ol">Call again</button>
+<button class="btn tx">Close</button>
+<div class="hint" style="text-align:center">Closes by itself after 4 seconds.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Couldn’t reach</div>
+<div class="ph t">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 28px;text-align:center">
+<div style="display:flex;align-items:center"><div class="av" style="width:64px;height:64px;font-size:22px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q40 36 70 30" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path><circle cx="78" cy="29" r="3" fill="var(--th)"></circle></svg><div class="av" style="width:96px;height:96px;font-size:34px;background:var(--sf3);color:var(--ink2)">LP</div></div>
+<div style="font-size:28px;font-weight:700;margin-top:16px">Couldn’t reach Lena</div>
+<div style="font-size:16px;line-height:24px;color:var(--ink2)">She may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 24px 48px">
+<button class="btn">Try again</button>
+<button class="btn tx">Close</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Microphone needed <span>· before first call</span></div>
+<div class="ph t">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 28px;text-align:center">
+<div style="width:96px;height:96px;border-radius:50%;background:var(--erc);color:var(--er);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" style="width:44px;height:44px;stroke-width:1.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3 M3 3l18 18"></path></svg></div>
+<div style="font-size:28px;font-weight:700;margin-top:12px">Tinline can’t use the microphone</div>
+<div style="font-size:16px;line-height:24px;color:var(--ink2)">Without it, Arjun won’t hear you. Tinline only listens during calls — never in the background.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 24px 48px">
+<button class="btn">Open settings</button>
+<div class="hint" style="text-align:center">Then go to Permissions › Microphone and allow it.</div>
+<button class="btn tx">Not now</button>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4188,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

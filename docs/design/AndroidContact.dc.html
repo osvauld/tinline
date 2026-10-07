@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android contact detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rl:#4B5AA8;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--rl:#B8C1F5;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px;flex:none}
+.bt{font-size:20px;font-weight:600;flex:1}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 20px;box-sizing:border-box}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.btn.tx{background:transparent;color:var(--pr)}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;background:var(--rlc);color:var(--onrlc)}
+.act{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;color:var(--ink);font:500 13px 'Figtree',sans-serif;width:88px;padding:0}
+.act span{width:52px;height:52px;border-radius:50%;background:var(--sf2);display:flex;align-items:center;justify-content:center;color:var(--pr)}
+.sec{font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--ink2);padding:20px 20px 6px}
+.hr{display:flex;align-items:center;gap:14px;min-height:56px;padding:0 20px;font-size:15px}
+.hr .s{font-size:13px;color:var(--ink2)}
+.pill{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px 0 6px;border-radius:999px;font-size:12px;font-weight:600}
+.mono{font-family:'IBM Plex Mono',monospace}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+.scrim{position:absolute;inset:0;background:rgba(15,21,19,.48)}
+</style>
+</helmet>
+<div class="root" style="width:1888px;height:1060px">
+
+<div class="col">
+<div class="lbl">Contact detail</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt"></span><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 24 24" style="stroke-width:3"><path d="M12 5h.01M12 12h.01M12 19h.01"></path></svg></button></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 24px">
+<div class="av" style="width:96px;height:96px;font-size:34px">AO</div>
+<div style="font-size:28px;font-weight:700;margin-top:6px">Arjun Oommen</div>
+<div style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink2)">Calls himself “Arjun” · <span class="pill" style="background:var(--prc);color:var(--onprc)"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg>Verified</span></div>
+<button class="btn" style="margin-top:14px"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Call</button>
+<div style="display:flex;justify-content:center;gap:12px;margin-top:10px">
+<button class="act"><span><svg class="i" viewBox="0 0 24 24"><path d="M17 3l4 4L7 21H3v-4z"></path></svg></span>Rename</button>
+<button class="act"><span><svg class="i" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg></span>Verify</button>
+<button class="act"><span style="color:var(--er)"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg></span>Remove</button>
+</div>
+</div>
+<div class="sec">CALLS WITH ARJUN</div>
+<sc-for list="{{hist}}" as="h" hint-placeholder-count="5"><div class="hr"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;color:{{h.ic}}"><path d="{{h.d}}"></path></svg><div style="flex:1"><div style="color:{{h.tc}}">{{h.what}}</div><div class="s">{{h.when}}</div></div><span class="pill" style="{{h.ps}}">{{h.path}}</span></div></sc-for>
+<div class="hint" style="padding:8px 20px">History stays on this phone only.</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Verify identity <span>· safety number</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Verify Arjun</span></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;padding:8px 24px 32px">
+<p style="margin:0;font-size:16px;line-height:24px;color:var(--ink2)">Compare these numbers with Arjun, in person or on a Tinline call. If they match, your calls go only to him — nobody is in the middle.</p>
+<div style="background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:16px">
+<div style="display:flex;align-items:center;gap:0"><div class="av" style="width:40px;height:40px;font-size:15px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 80 20" style="width:80px;height:20px"><path d="M2 8 Q40 18 78 8" fill="none" stroke="var(--th)" stroke-width="2.5" stroke-linecap="round"></path></svg><div class="av" style="width:40px;height:40px;font-size:15px">AO</div></div>
+<div class="mono" style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:12px 18px;font-size:19px;font-weight:500;letter-spacing:.04em">
+<span>41203</span><span>88127</span><span>05519</span><span>73360</span><span>29841</span><span>66012</span><span>90475</span><span>13398</span><span>57206</span><span>84431</span><span>20987</span><span>36654</span>
+</div>
+<div class="hint" style="text-align:center">Same on both phones. Read them aloud in groups.</div>
+</div>
+<button class="btn ol"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2 M7 12h10"></path></svg>Scan Arjun’s verify code instead</button>
+<div style="flex:1"></div>
+<button class="btn"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M20 6 9 17l-5-5"></path></svg>They match</button>
+<button class="btn tx">They don’t match</button>
+<div class="hint" style="text-align:center">If they don’t match, remove Arjun and add him again face to face.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Rename <span>· dark, bottom sheet</span></div>
+<div class="ph dk">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 24px">
+<div class="av" style="width:96px;height:96px;font-size:34px">AO</div>
+<div style="font-size:28px;font-weight:700;margin-top:6px">Arjun Oommen</div>
+</div>
+<div class="scrim"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--sf);border-radius:24px 24px 0 0;padding:12px 24px 36px;display:flex;flex-direction:column;gap:14px">
+<div style="width:36px;height:4px;border-radius:2px;background:var(--ln2);align-self:center"></div>
+<div style="font-size:22px;font-weight:700;margin-top:6px">Rename</div>
+<div style="display:flex;flex-direction:column;gap:6px"><label for="rn" style="font-size:13px;font-weight:600;color:var(--ink2)">Name on this phone</label><input id="rn" value="Arjun (work)" style="height:56px;border-radius:8px;border:2px solid var(--pr);background:var(--bg);color:var(--ink);font:400 16px 'Figtree',sans-serif;padding:0 16px;box-sizing:border-box;width:100%"></div>
+<div class="hint">Only you see this. Arjun still calls himself “Arjun”. <a href="#" style="color:var(--pr);font-weight:600">Use his name</a></div>
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px"><button class="btn tx" style="width:auto">Cancel</button><button class="btn" style="width:auto;padding:0 28px">Save</button></div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Remove contact <span>· dialog</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 24px">
+<div class="av" style="width:96px;height:96px;font-size:34px">AO</div>
+<div style="font-size:28px;font-weight:700;margin-top:6px">Arjun Oommen</div>
+</div>
+<div class="scrim"></div>
+<div role="dialog" aria-label="Remove Arjun" style="position:absolute;left:28px;right:28px;top:260px;background:var(--sf);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<div style="width:44px;height:44px;border-radius:50%;background:var(--erc);color:var(--er);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg></div>
+<div style="font-size:22px;font-weight:700">Remove Arjun?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink2)">He won’t be able to call you, and you won’t be able to call him. Your call history with him is deleted from this phone.</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink2)">To talk again, you’ll need to add each other again.</div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><button class="btn tx" style="width:auto">Cancel</button><button class="btn" style="width:auto;background:var(--er);color:#FFFFFF;padding:0 24px">Remove</button></div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1888,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const IN = 'M17 7 7 17 M17 17H7V7', OUT = 'M7 17 17 7 M7 7h10v10';
+    const D = 'background:var(--prc);color:var(--onprc)', R = 'background:var(--rlc);color:var(--onrlc)', N = 'background:var(--sf2);color:var(--ink2)';
+    const hist = [
+      { d: IN, ic: 'var(--ink2)', tc: 'inherit', what: 'Incoming · 18 min', when: 'Today, 12:31', path: 'Direct', ps: D },
+      { d: OUT, ic: 'var(--ink2)', tc: 'inherit', what: 'Outgoing · 3 min', when: 'Yesterday, 19:04', path: 'Relayed', ps: R },
+      { d: OUT, ic: 'var(--er)', tc: 'var(--er)', what: 'Couldn’t reach', when: 'Yesterday, 18:50', path: '—', ps: N },
+      { d: IN, ic: 'var(--er)', tc: 'var(--er)', what: 'Missed', when: 'Mon, 09:12', path: '—', ps: N },
+      { d: IN, ic: 'var(--ink2)', tc: 'inherit', what: 'Incoming · 42 min', when: 'Sun, 20:15', path: 'Direct', ps: D }
+    ];
+    return { hist };
+  }
+}
+</script>
+</body>
+</html>

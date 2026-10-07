@@ -29,3 +29,6 @@ has re-run its acceptance command.
 | 18 | Fix desktop review findings (Windows build, test-hooks feature, single instance, device loss) | sonnet (worktree) | `crates/desktop` | in progress |
 | 19 | Rename to Tinline (`com.osvauld.tinline`), Terms/Privacy acceptance, reset-ticket UI | lead/sonnet, after 16–18 | all | Android id + name done; desktop rename (after 18), Terms/Privacy, reset-ticket todo |
 | 20 | CI: GitHub Actions for Android AAB/APK, Linux deb/rpm/AppImage, Windows installer | todo | `.github/` | todo |
+| 21 | Core for the design: call history, contact alias + verified, safety number, availability, reconnecting, end reasons | sonnet:core-design (worktree) | `crates/core`, `docs/protocol.md` | in progress |
+| 22 | Android redesign per `docs/design/` (tokens, fonts, icon, all screens on today's API) | sonnet:android-design (worktree) | `android/` | in progress |
+| 23 | Wire 21 into the Android UI (recents, rename, verify, availability, end reasons) | lead, after 21+22 | `android/` | todo |

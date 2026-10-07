@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android add contact</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px;flex:none}
+.bt{font-size:20px;font-weight:600;flex:1}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.body{flex:1;display:flex;flex-direction:column;padding:8px 24px 32px;gap:16px;min-height:0}
+.h1{font-size:26px;line-height:32px;font-weight:700;margin:0}
+.p{font-size:16px;line-height:24px;color:var(--ink2);margin:0}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 20px;box-sizing:border-box}
+.btn.tn{background:var(--prc);color:var(--onprc)}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.btn.tx{background:transparent;color:var(--pr)}
+.seg{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));margin:4px 24px 0;border:1px solid var(--ln2);border-radius:999px;overflow:hidden;flex:none}
+.seg button{height:44px;border:0;background:transparent;color:var(--ink);font:600 15px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px}
+.seg button.on{background:var(--prc);color:var(--onprc)}
+.qr{display:grid;grid-template-columns:repeat(25, 8px);grid-auto-rows:8px;background:#FFFFFF;padding:16px;border-radius:14px;position:relative}
+.av{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;flex:none}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+.mono{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div class="root" style="width:2808px;height:1060px">
+
+<div class="col">
+<div class="lbl">My code</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Add contact</span></div>
+<div class="seg"><button class="on"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h3v3h-3z M17 20h4v-3"></path></svg>My code</button><button><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2 M7 12h10"></path></svg>Scan</button></div>
+<div class="body" style="align-items:center;padding-top:24px;gap:14px">
+<div style="background:var(--sf);border:1px solid var(--ln);border-radius:24px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;box-sizing:border-box">
+<div style="font-size:20px;font-weight:700">Maya</div>
+<div class="qr"><sc-for list="{{qr}}" as="q" hint-placeholder-count="625"><div style="{{q}}"></div></sc-for><div style="position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:10px;background:#0B6B5B;border:4px solid #FFFFFF;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:26px;height:26px;color:#FFFFFF"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="#E8B04A" stroke-width="2" stroke-linecap="round"></path></svg></div></div>
+<div class="hint" style="text-align:center;max-width:300px">Works once. Making a new code cancels this one.</div>
+</div>
+<div style="display:flex;gap:10px;width:100%"><button class="btn tn"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M4 12v8h16v-8 M16 6l-4-4-4 4 M12 2v13"></path></svg>Share</button><button class="btn ol"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M8 8h12v12H8z M16 8V4H4v12h4"></path></svg>Copy</button></div>
+<button class="btn tx"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M21 12a9 9 0 1 1-3-6.7L21 8 M21 3v5h-5"></path></svg>New code</button>
+<div style="flex:1"></div>
+<div style="display:flex;gap:10px;align-items:center;background:var(--sf2);border-radius:14px;padding:12px 14px;font-size:14px;line-height:20px;color:var(--ink2);width:100%;box-sizing:border-box"><span style="width:10px;height:10px;border-radius:50%;background:var(--pr);flex:none"></span>Waiting for them to scan — keep this open.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Scan <span>· camera, always dark</span></div>
+<div class="ph dk" style="background:#050807">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Add contact</span><button class="ib" aria-label="Torch"><svg class="i" viewBox="0 0 24 24"><path d="M8 2h8l-1 6H9z M9 8h6v14H9z M12 13v3"></path></svg></button></div>
+<div class="seg" style="border-color:#4D5853"><button><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h3v3h-3z M17 20h4v-3"></path></svg>My code</button><button class="on"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2 M7 12h10"></path></svg>Scan</button></div>
+<div style="flex:1;position:relative;margin-top:16px;background:#2A302E;display:flex;align-items:center;justify-content:center">
+<div style="position:absolute;inset:0;background:#3A403D;opacity:.6"></div>
+<div style="width:260px;height:260px;position:relative">
+<div style="position:absolute;left:0;top:0;width:44px;height:44px;border-left:4px solid #FFFFFF;border-top:4px solid #FFFFFF;border-radius:16px 0 0 0"></div>
+<div style="position:absolute;right:0;top:0;width:44px;height:44px;border-right:4px solid #FFFFFF;border-top:4px solid #FFFFFF;border-radius:0 16px 0 0"></div>
+<div style="position:absolute;left:0;bottom:0;width:44px;height:44px;border-left:4px solid #FFFFFF;border-bottom:4px solid #FFFFFF;border-radius:0 0 0 16px"></div>
+<div style="position:absolute;right:0;bottom:0;width:44px;height:44px;border-right:4px solid #FFFFFF;border-bottom:4px solid #FFFFFF;border-radius:0 0 16px 0"></div>
+<div style="position:absolute;left:24px;right:24px;top:128px;height:2px;background:#E8B04A;border-radius:1px"></div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:24px;text-align:center;color:#FFFFFF;font-size:16px;font-weight:600">Point at their Tinline code</div>
+</div>
+<div style="padding:20px 24px 36px;display:flex;flex-direction:column;gap:8px;background:#050807">
+<button class="btn ol" style="color:#E6ECE9;border-color:#7C8984"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M9 3h6v4H9z M9 5H5v16h14V5h-4"></path></svg>Paste a card instead</button>
+<div class="hint" style="text-align:center;color:#A6B2AD">Camera is used only to read the code. Nothing is recorded.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Paste card</div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Paste a card</span></div>
+<div class="body" style="padding-top:12px">
+<p class="p">If they sent their card as a message, paste the whole text here. It starts with <span class="mono" style="color:var(--ink)">OSVC2:</span></p>
+<div style="display:flex;flex-direction:column;gap:6px"><label for="cardt" style="font-size:13px;font-weight:600;color:var(--ink2)">Contact card</label><textarea id="cardt" class="mono" style="height:150px;border-radius:8px;border:2px solid var(--pr);background:var(--sf);color:var(--ink);font-size:14px;line-height:20px;padding:12px 14px;resize:none;box-sizing:border-box;width:100%">OSVC2:eyJuIjoiQXJqdW4iLCJrIjoiejZNa3ZWUXFwYkxzTW1ZbkVSN3pkTXNUdnJENHMiLCJ0IjoiMTc5MTM2NDcxMiJ9…</textarea></div>
+<div style="display:flex;gap:12px;align-items:center;background:var(--prc);color:var(--onprc);border-radius:14px;padding:12px 14px"><div style="width:40px;height:40px;border-radius:50%;background:var(--rlc);color:var(--onrlc);display:flex;align-items:center;justify-content:center;font-weight:600">AO</div><div style="flex:1;font-size:14px;line-height:20px"><b style="font-size:15px">Arjun</b><br>Valid card · single use</div><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></div>
+<div class="hint">Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.</div>
+<div style="flex:1"></div>
+<button class="btn">Add Arjun</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Adding…</div>
+<div class="ph t">
+<div class="body" style="justify-content:center;align-items:center;gap:20px;text-align:center">
+<div style="display:flex;align-items:center;gap:0">
+<div class="av" style="background:var(--prc);color:var(--onprc)">M</div>
+<svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q70 40 136 16" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 9"></path><circle cx="52" cy="25" r="5" fill="var(--th)"></circle></svg>
+<div class="av" style="background:var(--rlc);color:var(--onrlc)">AO</div>
+</div>
+<h1 class="h1">Connecting to Arjun…</h1>
+<p class="p" style="max-width:320px">Exchanging keys directly between your phones. Keep Tinline open on both.</p>
+<div style="width:200px;height:4px;border-radius:2px;background:var(--sf3);overflow:hidden"><div style="width:45%;height:4px;background:var(--pr)"></div></div>
+<button class="btn tx" style="width:auto;margin-top:24px">Cancel</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Added</div>
+<div class="ph t">
+<div class="body" style="align-items:center;gap:16px;text-align:center;padding-top:96px">
+<div style="display:flex;align-items:center;gap:0">
+<div class="av" style="background:var(--prc);color:var(--onprc)">M</div>
+<svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q70 34 136 16" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path></svg>
+<div class="av" style="background:var(--rlc);color:var(--onrlc)">AO</div>
+</div>
+<h1 class="h1">Arjun is added</h1>
+<p class="p" style="max-width:320px">You can now call each other. Arjun’s phone shows the same thing.</p>
+<div style="display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;margin-top:8px"><label for="nick" style="font-size:13px;font-weight:600;color:var(--ink2)">Save as</label><input id="nick" value="Arjun Oommen" style="height:56px;border-radius:8px;border:1px solid var(--ln2);background:var(--sf);color:var(--ink);font:400 16px 'Figtree',sans-serif;padding:0 16px;box-sizing:border-box;width:100%"><span class="hint">Only you see this name. They called themselves “Arjun”.</span></div>
+<div style="flex:1"></div>
+<button class="btn"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Call Arjun</button>
+<button class="btn ol"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg>Verify identity</button>
+<button class="btn tx">Done</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Couldn’t add <span>· dark</span></div>
+<div class="ph dk">
+<div class="body" style="align-items:center;gap:16px;text-align:center;padding-top:96px">
+<div style="display:flex;align-items:center;gap:0">
+<div class="av" style="background:var(--prc);color:var(--onprc)">M</div>
+<svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q30 30 56 26" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path><path d="M84 26 Q110 30 136 16" fill="none" stroke="var(--ln2)" stroke-width="3" stroke-linecap="round"></path></svg>
+<div class="av" style="background:var(--sf3);color:var(--ink2)">?</div>
+</div>
+<h1 class="h1">Couldn’t add Arjun</h1>
+<p class="p" style="max-width:330px">Both phones need Tinline open and online at the same time. Ask Arjun to keep his code on screen, then try again.</p>
+<div style="width:100%;text-align:left;background:var(--sf2);border-radius:14px;padding:14px 16px;font-size:14px;line-height:20px;color:var(--ink2);box-sizing:border-box"><b style="color:var(--ink)">Other reasons</b><br>· The code was already used — ask for a new one.<br>· One of you is offline or on a network that blocks it.</div>
+<div style="flex:1"></div>
+<button class="btn">Try again</button>
+<button class="btn tx">Scan a different code</button>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2808,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const N = 25, on = 'background:#17201D', off = 'background:#FFFFFF';
+    const finder = (r, c, r0, c0) => {
+      const y = r - r0, x = c - c0;
+      if (y < 0 || x < 0 || y > 6 || x > 6) return null;
+      if (y === 0 || y === 6 || x === 0 || x === 6) return true;
+      if (y >= 2 && y <= 4 && x >= 2 && x <= 4) return true;
+      return false;
+    };
+    const qr = [];
+    let s = 7;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      let v = finder(r, c, 0, 0);
+      if (v === null) v = finder(r, c, 0, N - 7);
+      if (v === null) v = finder(r, c, N - 7, 0);
+      if (v === null) {
+        const sep = (r === 7 && (c < 8 || c > N - 9)) || (c === 7 && (r < 8 || r > N - 9)) || (r === 7 && c < 8) || (c === N - 8 && r < 8) || (r === N - 8 && c < 8);
+        v = sep ? false : ((s >> 9) % 100) < 48;
+      }
+      qr.push(v ? on : off);
+    }
+    return { qr };
+  }
+}
+</script>
+</body>
+</html>
