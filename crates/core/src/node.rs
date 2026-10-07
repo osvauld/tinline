@@ -14,10 +14,11 @@ use iroh::endpoint::{Connection, QuicTransportConfig, presets};
 use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey, Watcher};
 use parking_lot::{Mutex, ReentrantMutex};
 use proto::{ContactTicket, Msg};
+use sha2::{Digest, Sha512};
 use tokio::sync::{OwnedMutexGuard, OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
 use zeroize::Zeroize;
 
-use crate::store::{Disk, Profile, ProfileV2, State, Store, StoredContact};
+use crate::store::{CallRecord, Disk, History, Profile, ProfileV2, State, Store, StoredContact};
 use crate::vault::{self, Dek, Secrets};
 use crate::wire::Ctrl;
 use crate::Error;
@@ -39,6 +40,11 @@ const LINGER: Duration = Duration::from_secs(2);
 /// Longest peer-supplied reason we pass on to the UI.
 const MAX_REASON_CHARS: usize = 100;
 const RING_TIMEOUT: Duration = Duration::from_secs(60);
+/// An active call with no media for this long shows as `reconnecting` (a path change or a
+/// network switch), well before the no-audio timeout ends it.
+const RECONNECT_AFTER: Duration = Duration::from_millis(1500);
+/// Longest local alias for a contact, in characters (same cap as names from peers).
+const MAX_ALIAS_CHARS: usize = 64;
 /// One deadline for a connection to get from first packet to hello, and for the reply to the
 /// hello we send when adding a contact.
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
@@ -54,6 +60,8 @@ const RESERVED_HELLOS: usize = 8;
 /// unauthenticated stranger "revoked" vs "not a contact" would leak our contact list.
 const REFUSED: &str = "not accepted";
 
+/// `on_call_state` with `Ended` is also the moment the call history has changed: the UI should
+/// re-read `recent_calls` / `calls_with` then (there is no separate history callback).
 #[uniffi::export(with_foreign)]
 pub trait NodeEvents: Send + Sync {
     fn on_status(&self, status: NodeStatus);
@@ -96,6 +104,19 @@ pub struct Contact {
     pub name: String,
     pub device: String,
     pub added_at: u64,
+    /// Local-only name we gave them; show it in preference to `name` (what they call
+    /// themselves). Also what `CallInfo.peer_name` carries when set.
+    pub alias: Option<String>,
+    /// We confirmed their safety number in person; reset if their device changes.
+    pub verified: bool,
+}
+
+/// Whether calls ring. While unavailable, callers are turned away without being told why.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct Availability {
+    pub available: bool,
+    /// Unix seconds at which it turns back to available by itself; `None` = until switched on.
+    pub until: Option<u64>,
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
@@ -130,6 +151,8 @@ pub struct CallStats {
     /// Dominant frequency of the last second of received audio; for the tone self-test.
     pub rx_freq_hz: f32,
     pub rx_rms: f32,
+    /// Active, but no media for over 1.5 s and the call has not ended: the path is changing.
+    pub reconnecting: bool,
 }
 
 enum Cmd {
@@ -158,6 +181,13 @@ struct Call {
     notify: ReentrantMutex<()>,
     /// When media last arrived (or the call went active); feeds the no-audio watchdog.
     last_rx: Mutex<Instant>,
+    /// Unix seconds when the call began, for the history.
+    started_at: u64,
+    /// When it went active, for the duration.
+    active_at: Mutex<Option<Instant>>,
+    /// Whether the selected path was direct when last looked at (the connection is gone by the
+    /// time the call has ended).
+    direct: Mutex<bool>,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
@@ -169,7 +199,7 @@ struct SlotGuard<'a> {
 
 impl Drop for SlotGuard<'_> {
     fn drop(&mut self) {
-        self.inner.end_call(&self.call, "ended".into());
+        self.inner.end_call(&self.call, "connection_lost".into());
     }
 }
 
@@ -221,6 +251,7 @@ struct Inner {
     events: Arc<dyn NodeEvents>,
     shared: Mutex<Shared>,
     live: Mutex<Live>,
+    history: Arc<History>,
     pending: Arc<Semaphore>,
     reserved: Arc<Semaphore>,
     /// Serialises start, stop, lock and set_passphrase.
@@ -266,6 +297,7 @@ impl Node {
             .build()?;
         let store = Store::open(data_dir)?;
         let state = store.state()?;
+        let history = Arc::new(History::new(store.calls()?));
         let disk = store.profile()?;
         // A legacy profile keeps working (calls keep ringing) until it is converted.
         let me = match &disk {
@@ -279,6 +311,7 @@ impl Node {
             events,
             shared: Mutex::new(Shared { disk, me, dek: None, state, endpoint: None }),
             live: Mutex::new(Live::default()),
+            history,
             pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
             reserved: Arc::new(Semaphore::new(RESERVED_HELLOS)),
             lifecycle: Arc::new(tokio::sync::Mutex::new(())),
@@ -534,6 +567,53 @@ impl Node {
         s.state.contacts.iter().map(Contact::from).collect()
     }
 
+    /// Sets the name only we see for `did`; `None` or blank clears it. Trimmed, stripped of
+    /// control characters and cut to 64 characters.
+    pub fn rename_contact(&self, did: String, alias: Option<String>) -> Result<(), Error> {
+        let alias = alias
+            .map(|a| proto::sanitize_name(a.trim()).chars().take(MAX_ALIAS_CHARS).collect::<String>())
+            .map(|a| a.trim().to_string())
+            .filter(|a| !a.is_empty());
+        self.update_contact(&did, |c| c.alias = alias)
+    }
+
+    /// Marks that the safety numbers were compared (or not).
+    pub fn set_verified(&self, did: String, verified: bool) -> Result<(), Error> {
+        self.update_contact(&did, |c| c.verified = verified)
+    }
+
+    /// 60 digits in 12 groups of 5, the same on both phones: read it out or compare it in
+    /// person. Derived from the two long-term identity keys only, not from any device.
+    pub fn safety_number(&self, did: String) -> Result<String, Error> {
+        let mine = self.profile().ok_or(Error::NoIdentity)?.did;
+        safety_number(&mine, &did)
+    }
+
+    /// Finished calls, newest first, at most `limit`. Re-read on `on_call_state` `Ended`.
+    pub fn recent_calls(&self, limit: u32) -> Vec<CallRecord> {
+        self.inner.history.list(None, limit as usize)
+    }
+
+    /// Finished calls with one person, newest first.
+    pub fn calls_with(&self, did: String, limit: u32) -> Vec<CallRecord> {
+        self.inner.history.list(Some(&did), limit as usize)
+    }
+
+    /// Turns calls on or off. Off, incoming calls are not shown and the caller just fails to
+    /// get through; they are logged with reason `unavailable`. `until` (unix seconds) switches
+    /// it back on by itself. Adding contacts still works.
+    pub fn set_available(&self, available: bool, until: Option<u64>) -> Result<(), Error> {
+        self.inner.shared.lock().state.availability = crate::store::AvailabilityState {
+            unavailable: !available,
+            until: if available { None } else { until },
+        };
+        self.inner.persist()
+    }
+
+    pub fn availability(&self) -> Availability {
+        self.inner.availability()
+    }
+
     /// Forgets them and blocks their DID, so the grant we gave them no longer rings us; any
     /// call with them ends. Adding them again lifts the block.
     pub fn remove_contact(&self, did: String) -> Result<(), Error> {
@@ -544,9 +624,11 @@ impl Node {
             // A ticket they may have seen is of no further use.
             s.state.ticket = None;
         }
+        self.inner.history.remove_peer(&did);
         // The removal holds in memory whether or not it reached the disk, so act on it either
-        // way and report the failed write afterwards.
-        let saved = self.inner.persist();
+        // way and report the failed write afterwards. (A call ending now is not logged: the
+        // peer is no longer a contact.)
+        let saved = self.inner.persist().and(self.inner.history.save(&self.inner.store));
         let call = self.inner.live.lock().call.clone();
         if let Some(call) = call.filter(|c| c.info.peer_did == did) {
             let _ = call.cmd.send(Cmd::Hangup);
@@ -638,8 +720,35 @@ impl From<&StoredContact> for Contact {
                 .map(|k| k.to_string())
                 .unwrap_or_default(),
             added_at: c.added_at,
+            alias: c.alias.clone(),
+            verified: c.verified,
         }
     }
+}
+
+/// What the UI should call this contact: our alias if any, else their own name.
+fn display_name(c: &StoredContact) -> String {
+    c.alias.clone().unwrap_or_else(|| c.name.clone())
+}
+
+/// The safety number for the pair: each side's 30 digits come from its own key, and the two
+/// halves are joined in sorted order, so both phones compute the same string.
+fn safety_number(mine: &str, theirs: &str) -> Result<String, Error> {
+    let half = |did: &str| -> Result<String, Error> {
+        let key = identity::public_key_from_did(did).ok_or_else(|| Error::Protocol("not a valid DID".into()))?;
+        let mut h = Sha512::new().chain_update(b"tinline-safety-v1").chain_update(key).finalize();
+        // Iterated, as a (cheap) brake on grinding keys whose digits look alike.
+        for _ in 0..5200 {
+            h = Sha512::new().chain_update(h).chain_update(key).finalize();
+        }
+        Ok(h[..30]
+            .chunks_exact(5)
+            .map(|c| format!("{:05}", c.iter().fold(0u64, |n, b| n << 8 | *b as u64) % 100_000))
+            .collect())
+    };
+    let (a, b) = (half(mine)?, half(theirs)?);
+    let all = if a <= b { a + &b } else { b + &a };
+    Ok(all.as_bytes().chunks(5).map(|g| std::str::from_utf8(g).unwrap_or("")).collect::<Vec<_>>().join(" "))
 }
 
 impl Node {
@@ -658,6 +767,16 @@ impl Node {
             let _ = tx.send(fut.await);
         });
         rx.recv().map_err(|_| Error::Protocol("core runtime stopped".into()))
+    }
+
+    fn update_contact(&self, did: &str, f: impl FnOnce(&mut StoredContact)) -> Result<(), Error> {
+        {
+            let mut s = self.inner.shared.lock();
+            f(s.state.contacts.iter_mut().find(|c| c.did == did).ok_or(Error::NotFound)?);
+        }
+        let saved = self.inner.persist();
+        self.inner.events.on_contacts_changed();
+        saved
     }
 
     /// Takes the lifecycle lock for the caller's whole operation; refuses on core threads.
@@ -763,6 +882,42 @@ impl Inner {
         let this = self.clone();
         self.handle.spawn_blocking(move || {
             let _ = this.persist();
+        });
+    }
+
+    /// The setting as of now: an expired "until" counts as available again.
+    fn availability(&self) -> Availability {
+        let a = self.shared.lock().state.availability.clone();
+        match a.until {
+            Some(t) if a.unavailable && now() >= t => Availability { available: true, until: None },
+            _ if a.unavailable => Availability { available: false, until: a.until },
+            _ => Availability { available: true, until: None },
+        }
+    }
+
+    /// Adds to the call log and writes it in the background.
+    fn log_call(&self, rec: CallRecord) {
+        self.history.push(rec);
+        let (history, store) = (self.history.clone(), self.store.clone());
+        self.handle.spawn_blocking(move || {
+            if let Err(e) = history.save(&store) {
+                tracing::warn!("saving call history: {e}");
+            }
+        });
+    }
+
+    /// An incoming call that never became a `Call` (turned away unavailable, or busy).
+    fn log_refused(&self, call_id: &str, did: &str, name: &str, reason: &str, missed: bool) {
+        self.log_call(CallRecord {
+            call_id: call_id.to_string(),
+            peer_did: did.to_string(),
+            peer_name: name.to_string(),
+            incoming: true,
+            started_at: now(),
+            duration_secs: 0,
+            reason: reason.to_string(),
+            direct: false,
+            missed,
         });
     }
 
@@ -1018,6 +1173,8 @@ impl Inner {
             relay,
             grant_from_them: new.grant_from_them,
             added_at: now(),
+            alias: None,
+            verified: false,
         };
         let contact = Contact::from(&stored);
         {
@@ -1030,6 +1187,10 @@ impl Inner {
             match s.state.contacts.iter_mut().find(|c| c.did == new.did) {
                 Some(existing) => {
                     existing.name = stored.name;
+                    // A different phone than the one we compared numbers with.
+                    if !existing.devices.contains(&new.device) {
+                        existing.verified = false;
+                    }
                     existing.devices.retain(|d| *d != new.device);
                     existing.devices.insert(0, new.device);
                     existing.devices.truncate(MAX_DEVICES);
@@ -1200,13 +1361,23 @@ impl Inner {
         };
         let name = {
             let s = self.shared.lock();
-            s.state.contacts.iter().find(|c| c.did == caller.did).map(|c| c.name.clone()).unwrap_or_default()
+            s.state.contacts.iter().find(|c| c.did == caller.did).map(display_name).unwrap_or_default()
         };
+        if !self.availability().available {
+            // Same answer as any other refusal: the caller must not learn we are "away".
+            self.log("incoming call turned away: unavailable");
+            self.log_refused(&call_id, &caller.did, &name, "unavailable", false);
+            ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
+            ctrl.finish();
+            let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+            return Ok(());
+        }
         let info = CallInfo { call_id, peer_did: caller.did.clone(), peer_name: name, incoming: true };
         self.yield_on_glare(&caller.did, me.device, remote);
         let (call, cmds) = match self.begin_call(info.clone(), CallState::Ringing, false) {
             Ok(c) => c,
             Err(_) => {
+                self.log_refused(&info.call_id, &info.peer_did, &info.peer_name, "busy", true);
                 ctrl.send(&Msg::Busy).await?;
                 ctrl.finish();
                 let _ = tokio::time::timeout(LINGER, conn.closed()).await;
@@ -1245,7 +1416,7 @@ impl Inner {
             && matches!(ours.state(), CallState::Dialing | CallState::Ringing)
             && mine > theirs
         {
-            self.end_call(&ours, "they called at the same time".into());
+            self.end_call(&ours, "superseded".into());
         }
     }
 
@@ -1298,6 +1469,9 @@ impl Inner {
             ended: Mutex::new(false),
             notify: ReentrantMutex::new(()),
             last_rx: Mutex::new(Instant::now()),
+            started_at: now(),
+            active_at: Mutex::new(None),
+            direct: Mutex::new(false),
         });
         {
             let _first = call.notify.lock();
@@ -1329,7 +1503,7 @@ impl Inner {
         let info = CallInfo {
             call_id: random_id(),
             peer_did: did,
-            peer_name: contact.name.clone(),
+            peer_name: display_name(&contact),
             incoming: false,
         };
         let (call, mut cmds) = self.begin_call(info.clone(), CallState::Dialing, true)?;
@@ -1361,7 +1535,10 @@ impl Inner {
                     *call.conn.lock() = Some(conn.clone());
                     this.clone().run_call(call, conn, ctrl, cmds, None).await;
                 }
-                Some(Err(e)) => this.end_call(&call, format!("could not reach {}: {e}", contact.name)),
+                Some(Err(e)) => {
+                    this.log(format!("could not reach {}: {e}", contact.name));
+                    this.end_call(&call, "unreachable".into());
+                }
                 None => this.end_call(&call, "cancelled".into()),
             }
         });
@@ -1433,7 +1610,11 @@ impl Inner {
         let mut datagrams: Option<oneshot::Sender<()>> = None;
         let mut watchdog = tokio::time::interval(Duration::from_secs(5));
         watchdog.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        let reason = loop {
+        // How a call that dies under us ends, by who we are and how far it got.
+        let lost = |active: bool| -> String {
+            if active { "connection_lost" } else if incoming_from.is_some() { "cancelled" } else { "unreachable" }.into()
+        };
+        let reason: String = loop {
             if *call.ended.lock() {
                 break "ended".into();
             }
@@ -1448,21 +1629,33 @@ impl Inner {
                         datagrams = Some(self.start_media(&call, &conn));
                         self.set_state(&call, CallState::Active);
                     }
-                    Ok(Some(Msg::Decline { reason })) => break format!("declined: {}", clip_reason(&reason)),
-                    Ok(Some(Msg::Busy)) => break "busy".to_string(),
-                    Ok(Some(Msg::Reject { reason })) => break format!("rejected: {}", clip_reason(&reason)),
-                    Ok(Some(Msg::Hangup)) | Ok(None) => {
-                        break if active { "hung up".into() } else if incoming_from.is_some() { "missed".into() } else { "ended".into() };
+                    Ok(Some(Msg::Decline { reason })) => {
+                        self.log(format!("declined: {}", clip_reason(&reason)));
+                        break "declined".into();
                     }
+                    Ok(Some(Msg::Busy)) => break "busy".into(),
+                    // A refusal (not a contact there, blocked, or away) reads as "couldn't reach".
+                    Ok(Some(Msg::Reject { reason })) => {
+                        self.log(format!("rejected: {}", clip_reason(&reason)));
+                        break "unreachable".into();
+                    }
+                    Ok(Some(Msg::Hangup)) => {
+                        break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "declined" }.into();
+                    }
+                    Ok(None) => break if active { "hangup_remote".into() } else { lost(false) },
                     Ok(Some(other)) => self.log(format!("ignoring {} mid-call", msg_name(&other))),
-                    Err(e) => break format!("connection lost: {e}"),
+                    Err(e) => {
+                        self.log(format!("connection lost: {e}"));
+                        break lost(active);
+                    }
                 },
                 cmd = cmds.recv() => match cmd {
                     Some(Cmd::Answer) if incoming_from.is_some() && !active => {
-                        let me = match self.me() { Ok(m) => m, Err(e) => break e.to_string() };
+                        let me = match self.me() { Ok(m) => m, Err(_) => break "hangup_local".into() };
                         let renewed = incoming_from.as_deref().map(|did| proto::issue_grant(&me.id, did, now(), GRANT_TTL));
                         if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed }).await {
-                            break format!("connection lost: {e}");
+                            self.log(format!("connection lost: {e}"));
+                            break lost(false);
                         }
                         datagrams = Some(self.start_media(&call, &conn));
                         self.set_state(&call, CallState::Active);
@@ -1472,7 +1665,7 @@ impl Inner {
                     // is a hangup (the callee shows it as missed).
                     Some(Cmd::Decline) | Some(Cmd::Hangup) if !active && incoming_from.is_some() => {
                         let _ = ctrl.send(&Msg::Decline { reason: "declined".into() }).await;
-                        break "declined".into();
+                        break "declined_local".into();
                     }
                     Some(Cmd::Decline) | Some(Cmd::Hangup) if !active => {
                         let _ = ctrl.send(&Msg::Hangup).await;
@@ -1480,19 +1673,22 @@ impl Inner {
                     }
                     Some(Cmd::Decline) | Some(Cmd::Hangup) | None => {
                         let _ = ctrl.send(&Msg::Hangup).await;
-                        break "hung up".into();
+                        break "hangup_local".into();
                     }
                 },
-                why = conn.closed() => break format!("connection lost: {why}"),
+                why = conn.closed() => {
+                    self.log(format!("connection lost: {why}"));
+                    break lost(active);
+                }
                 _ = watchdog.tick(), if active => {
                     if call.last_rx.lock().elapsed() > NO_AUDIO_TIMEOUT {
                         let _ = ctrl.send(&Msg::Hangup).await;
-                        break "no audio".to_string();
+                        break "connection_lost".into();
                     }
                 }
                 _ = tokio::time::sleep_until(ring_deadline), if !active => {
                     let _ = ctrl.send(&Msg::Hangup).await;
-                    break if incoming_from.is_some() { "missed".into() } else { "no answer".into() };
+                    break "no_answer".into();
                 }
             }
         };
@@ -1500,6 +1696,7 @@ impl Inner {
         drop(datagrams);
         // Free the slot now, so a call placed right after this one isn't Busy; the connection
         // gets a moment in the background for the final frame to leave.
+        self.note_direct(&call);
         call.conn.lock().take();
         self.end_call(&call, reason);
         tokio::spawn(async move {
@@ -1562,6 +1759,9 @@ impl Inner {
             }
             *cur = state.clone();
         }
+        if state == CallState::Active {
+            call.active_at.lock().get_or_insert_with(Instant::now);
+        }
         self.log(format!("call {}: {state:?}", call.info.call_id));
         self.events.on_call_state(call.info.call_id.clone(), state);
     }
@@ -1574,7 +1774,8 @@ impl Inner {
             return;
         }
         let _order = call.notify.lock();
-        let state = CallState::Ended { reason };
+        self.note_direct(call);
+        let state = CallState::Ended { reason: reason.clone() };
         *call.state.lock() = state.clone();
         {
             let mut live = self.live.lock();
@@ -1586,8 +1787,44 @@ impl Inner {
         if let Some(conn) = call.conn.lock().take() {
             conn.close(0u32.into(), b"bye");
         }
+        self.record_ended(call, &reason);
         self.log(format!("call {}: {state:?}", call.info.call_id));
         self.events.on_call_state(call.info.call_id.clone(), state);
+    }
+
+    /// Remembers whether the call is on a direct path while we still have its connection.
+    fn note_direct(&self, call: &Call) {
+        if let Some((direct, _)) = call.conn.lock().as_ref().and_then(selected_path) {
+            *call.direct.lock() = direct;
+        }
+    }
+
+    /// Writes the call into the history (before `Ended` is delivered, so the UI's re-read sees
+    /// it). Not for a call we gave up on in favour of theirs, nor for a contact since removed.
+    fn record_ended(&self, call: &Call, reason: &str) {
+        if reason == "superseded" {
+            return;
+        }
+        let name = {
+            let s = self.shared.lock();
+            match s.state.contacts.iter().find(|c| c.did == call.info.peer_did) {
+                Some(c) => display_name(c),
+                None => return,
+            }
+        };
+        let answered = call.active_at.lock().is_some();
+        let duration_secs = call.active_at.lock().map_or(0, |t| t.elapsed().as_secs() as u32);
+        self.log_call(CallRecord {
+            call_id: call.info.call_id.clone(),
+            peer_did: call.info.peer_did.clone(),
+            peer_name: name,
+            incoming: call.info.incoming,
+            started_at: call.started_at,
+            duration_secs,
+            reason: reason.to_string(),
+            direct: *call.direct.lock(),
+            missed: call.info.incoming && !answered && reason != "declined_local",
+        });
     }
 
     fn command(&self, call_id: &str, cmd: Cmd) -> Result<(), Error> {
@@ -1646,21 +1883,16 @@ impl Inner {
     fn call_stats(&self) -> Option<CallStats> {
         let call = self.live.lock().call.clone()?;
         let rx = call.receiver.lock().stats();
-        let (direct, rtt_ms) = call
-            .conn
-            .lock()
-            .as_ref()
-            .and_then(|c| {
-                c.paths()
-                    .iter()
-                    .find(|p| p.is_selected())
-                    .map(|p| (p.is_ip(), p.rtt().as_millis() as u32))
-            })
-            .unwrap_or((false, 0));
+        let (direct, rtt_ms) = call.conn.lock().as_ref().and_then(selected_path).unwrap_or((false, 0));
+        if call.state() == CallState::Active {
+            *call.direct.lock() = direct;
+        }
+        let state = call.state();
         let played: Vec<i16> = call.played.lock().iter().copied().collect();
         Some(CallStats {
             call_id: call.info.call_id.clone(),
-            state: call.state(),
+            reconnecting: state == CallState::Active && call.last_rx.lock().elapsed() > RECONNECT_AFTER,
+            state,
             secs: call.started.elapsed().as_secs() as u32,
             direct,
             rtt_ms,
@@ -1674,6 +1906,11 @@ impl Inner {
             rx_rms: audio::rms(&played),
         })
     }
+}
+
+/// Whether the connection's selected path is direct (not via a relay), and its round trip.
+fn selected_path(c: &Connection) -> Option<(bool, u32)> {
+    c.paths().iter().find(|p| p.is_selected()).map(|p| (p.is_ip(), p.rtt().as_millis() as u32))
 }
 
 /// An unsigned relay hint from a peer, kept only if it is a sane relay URL: it gets stored
@@ -1777,6 +2014,21 @@ mod tests {
         assert!(!ok(&forged));
         // An expired stored grant is beaten by any valid one.
         assert!(grant_outlives(&old, &newer, them.did(), me.did(), T0 + 1200));
+    }
+
+    #[test]
+    fn safety_numbers_match_on_both_sides_and_differ_between_pairs() {
+        let (a, _) = identity::generate();
+        let (b, _) = identity::generate();
+        let (c, _) = identity::generate();
+        let ab = safety_number(a.did(), b.did()).unwrap();
+        assert_eq!(ab, safety_number(b.did(), a.did()).unwrap());
+        assert_ne!(ab, safety_number(a.did(), c.did()).unwrap());
+        assert_ne!(ab, safety_number(b.did(), c.did()).unwrap());
+        let groups: Vec<&str> = ab.split(' ').collect();
+        assert_eq!(groups.len(), 12);
+        assert!(groups.iter().all(|g| g.len() == 5 && g.bytes().all(|b| b.is_ascii_digit())));
+        assert!(safety_number(a.did(), "did:key:zNope").is_err());
     }
 
     #[test]
