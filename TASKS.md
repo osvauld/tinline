@@ -41,4 +41,6 @@ has re-run its acceptance command.
 | R2 | Time-based sharding | one doc per conversation per time window; recent shards sync first, old ones on demand |
 | R3 | File sending with iroh-blobs | messages carry BLAKE3 hash + name + size; content streams device to device, resumable |
 | R4 | Group chats | shared doc with a DID-signed member list; group encryption and member add/remove need a design doc first |
-| R5 | Offline delivery decision | pure P2P vs members relay vs optional encrypted mailbox relay; decide before R1 ships |
+| R5 | Offline delivery decision | pure P2P vs members relay vs optional encrypted mailbox relay; decide before R1 ships. osvauld2 already does offline catch-up through a kunki home node (group-chat-sync T3) |
+
+Reuse first (user, 2026-10-07): `~/osvauld2/courier` has the permits (node-rooted delegation tokens `token.rs`, `policy.rs`, `role.rs`, per-doc read/write rules `access.rs`) and the Loro sync engine (`sync.rs`, `subscribe.rs`, `publish.rs`); `~/osvauld2/kunki` is the sovereign node; `~/osvauld2/docs/design/group-chat-sync.md` (shards, permissions, ephemeral; steps 0-6 built) and `app-permissions.md`, `loro-notes.md` are the design. Courier is transport-free, so it can ride Tinline's iroh endpoint. Study these before designing R1-R5.
