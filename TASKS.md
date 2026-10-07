@@ -38,10 +38,10 @@ has re-run its acceptance command.
 
 | # | Item | Notes |
 |---|------|-------|
-| R1 | 1:1 chat on Loro | one Loro doc per conversation, synced over a new iroh ALPN next to calls; same contacts/grants |
+| R1 | 1:1 chat on Loro — FIRST | design in `docs/chat.md` §2, tests C1–C8 written first |
 | R2 | Time-based sharding | one doc per conversation per time window; recent shards sync first, old ones on demand |
 | R3 | File sending with iroh-blobs | messages carry BLAKE3 hash + name + size; content streams device to device, resumable |
-| R4 | Group chats | shared doc with a DID-signed member list; group encryption and member add/remove need a design doc first |
+| R4 | Group chats — after R1 (admins may create admins) | shared doc with a DID-signed member list; group encryption and member add/remove need a design doc first |
 | R5 | Offline delivery: members relay for each other (pure P2P, no node) | an online member who holds an update forwards it; delivery needs some member overlap |
 
 Reuse first (user, 2026-10-07): `~/osvauld2/courier` has the permits (node-rooted delegation tokens `token.rs`, `policy.rs`, `role.rs`, per-doc read/write rules `access.rs`) and the Loro sync engine (`sync.rs`, `subscribe.rs`, `publish.rs`); `~/osvauld2/docs/design/group-chat-sync.md` (shards, permissions, ephemeral; steps 0-6 built) and `app-permissions.md`, `loro-notes.md` are the design. Courier is transport-free, so it can ride Tinline's iroh endpoint.
