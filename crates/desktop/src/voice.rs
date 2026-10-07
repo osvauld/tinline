@@ -12,7 +12,7 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{FromSample, SampleFormat, SizedSample, Stream, StreamConfig};
+use cpal::{FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig};
 use iced::widget::{button, canvas, container, row, svg, text, Space};
 use iced::{Alignment, Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 use p2pcore::{VoiceDecoder, VoiceInfo, VoiceRecorder};
@@ -364,7 +364,7 @@ pub fn clock(ms: u32) -> String {
 }
 
 fn glyph<'a, M: 'a>(body: &str, size: f32, color: Color, fill: bool) -> Element<'a, M> {
-    let paint = if fill { r#"fill="#000" stroke="none""# } else { r#"fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round""# };
+    let paint = if fill { r##"fill="#000" stroke="none""## } else { r##"fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round""## };
     let markup = format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {paint}>{body}</svg>"#);
     svg(svg::Handle::from_memory(markup.into_bytes()))
         .width(Length::Fixed(size))
@@ -527,21 +527,21 @@ mod tests {
         assert!(peak > 0.9 && peak <= 1.0, "{peak}");
         // Odd ratio (44.1k) stays in step too.
         let mut d = Down::new(44_100, 16_000);
-        let mut n = 0;
+        let mut n = 0i32;
         for _ in 0..44_100 {
             d.push(0.5, |_| n += 1);
         }
-        assert!((n as i32 - 16_000).abs() <= 1, "{n}");
+        assert!((n - 16_000).abs() <= 1, "{n}");
     }
 
     #[test]
     fn upsampler_produces_the_ratio() {
         let mut u = Up::new(16_000, 48_000);
-        let mut n = 0;
+        let mut n = 0i32;
         for _ in 0..50 {
             u.process(&[0.1; 320], |_| n += 1);
         }
-        assert!((n as i32 - 48_000).abs() <= 3, "{n}");
+        assert!((n - 48_000).abs() <= 3, "{n}");
     }
 
     #[test]

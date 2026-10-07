@@ -216,7 +216,7 @@ impl Drop for Decoder {
 /// recording, scaled so the loudest bar is 255.
 fn waveform(peaks: &[u16]) -> Vec<u8> {
     let n = peaks.len();
-    let mut bars = vec![0u16; WAVEFORM_BARS];
+    let mut bars = [0u16; WAVEFORM_BARS];
     if n > 0 {
         for (i, b) in bars.iter_mut().enumerate() {
             let lo = (i * n / WAVEFORM_BARS).min(n - 1);

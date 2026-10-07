@@ -64,7 +64,7 @@ impl Demo {
                 if let Some(r) = self.rec.take() {
                     let n = self.items.len();
                     match r.finish() {
-                        Ok(Some(info)) => self.items.push(Item { path: Self::path(n), info, outgoing: n % 2 == 0 }),
+                        Ok(Some(info)) => self.items.push(Item { path: Self::path(n), info, outgoing: n.is_multiple_of(2) }),
                         Ok(None) => self.note = "Too short, discarded".into(),
                         Err(e) => self.note = e,
                     }
