@@ -16,6 +16,13 @@
       "x": 0,
       "y": 8140
     },
+    "AndroidChats.dc.html": {
+      "h": 1060,
+      "title": "Chat · Android · Chats list, empty, new chat",
+      "w": 1888,
+      "x": 0,
+      "y": 15200
+    },
     "AndroidContact.dc.html": {
       "h": 1060,
       "title": "Android · Contact detail",
@@ -33,7 +40,7 @@
     "AndroidOnboarding.dc.html": {
       "h": 1060,
       "title": "Android · Onboarding",
-      "w": 3268,
+      "w": 2808,
       "x": 0,
       "y": 2240
     },
@@ -73,7 +80,7 @@
       "y": 12900
     },
     "Flow.dc.html": {
-      "h": 960,
+      "h": 1084,
       "title": "Flow overview",
       "w": 1880,
       "x": 1840,
@@ -96,6 +103,15 @@
     "view": "canvas"
   },
   "notes": {
+    "n_chat_ia": {
+      "fill": "teal",
+      "maxH": 620,
+      "size": 24,
+      "text": "Chat changes the Android home: a bottom bar with Chats · Calls · Contacts. Chats opens by default. Calls = the old Home's Recent list; Contacts = the contact list with the Add contact FAB. The availability pill and Settings stay in the top bar on every tab.\n\nTicks are honest: one tick = saved on your phone; two = their phone has it; clock = waiting until you are both online. No 'online' dots in lists: Tinline only knows someone is reachable while it is connected to them.",
+      "w": 380,
+      "x": 1968,
+      "y": 15240
+    },
     "t_and": {
       "kind": "title1",
       "maxW": 4188,
@@ -103,6 +119,14 @@
       "w": 240,
       "x": 0,
       "y": 1940
+    },
+    "t_chat": {
+      "kind": "title1",
+      "maxW": 2348,
+      "text": "Chat — 1:1 first (groups later)",
+      "w": 240,
+      "x": 0,
+      "y": 14920
     },
     "t_desk": {
       "kind": "title1",
@@ -133,7 +157,8 @@
     "AndroidSettings.dc.html",
     "DesktopMain.dc.html",
     "DesktopCalls.dc.html",
-    "DesktopMore.dc.html"
+    "DesktopMore.dc.html",
+    "AndroidChats.dc.html"
   ],
   "pages": [],
   "title": "Tinline app design"

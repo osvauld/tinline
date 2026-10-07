@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android chats list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00;--pk:#F3DDE6;--onpk:#5E1F3A}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0;--pk:#5A2A3E;--onpk:#F3DDE6}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 20px;flex:none}
+.ttl{font-size:22px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 24px;box-sizing:border-box}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.avail{display:flex;align-items:center;gap:8px;height:36px;border-radius:999px;border:0;padding:0 12px 0 10px;background:var(--prc);color:var(--onprc);font:600 14px 'Figtree',sans-serif}
+.avail .d{width:10px;height:10px;border-radius:50%;background:var(--pr)}
+.search{margin:4px 16px 4px;height:52px;border-radius:999px;background:var(--sf2);display:flex;align-items:center;gap:12px;padding:0 16px;color:var(--ink2);font-size:16px;flex:none}
+.sec{font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--ink2);padding:18px 20px 6px}
+.row{display:flex;align-items:center;gap:14px;min-height:76px;padding:0 20px}
+.av{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;flex:none}
+.a1{background:var(--prc);color:var(--onprc)}.a2{background:var(--rlc);color:var(--onrlc)}.a3{background:var(--wn);color:var(--onwn)}.a4{background:var(--pk);color:var(--onpk)}
+.nm{font-size:16px;font-weight:600;line-height:22px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm{font-size:12px;line-height:16px;flex:none}
+.pv{font-size:14px;line-height:20px;color:var(--ink2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{min-width:22px;height:22px;border-radius:999px;background:var(--pr);color:var(--onpr);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 6px;box-sizing:border-box;flex:none}
+.fab{position:absolute;right:20px;bottom:112px;height:56px;border-radius:16px;background:var(--pr);color:var(--onpr);border:0;display:flex;align-items:center;gap:10px;padding:0 20px 0 16px;font:600 16px 'Figtree',sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.nav{position:absolute;left:0;right:0;bottom:0;height:80px;background:var(--sf2);display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));padding-bottom:12px;box-sizing:content-box}
+.nv{border:0;background:transparent;color:var(--ink2);font:500 12px 'Figtree',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0}
+.nv .ind{width:64px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;position:relative}
+.nv.on{color:var(--ink);font-weight:700}
+.nv.on .ind{background:var(--prc);color:var(--onprc)}
+.nv .cnt{position:absolute;right:8px;top:-2px;min-width:18px;height:18px;border-radius:999px;background:var(--er);color:#FFFFFF;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+</style>
+</helmet>
+<div class="root" style="width:1888px;height:1060px">
+
+<div class="col">
+<div class="lbl">Chats <span>· light · the default tab</span></div>
+<div class="ph t">
+<div class="bar"><div class="ttl"><svg viewBox="0 0 24 24" style="width:26px;height:26px;color:var(--pr)"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="var(--th)" stroke-width="1.75" stroke-linecap="round"></path></svg>Tinline</div><button class="avail"><span class="d"></span>Available</button><button class="ib" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5 M17 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div>
+<div class="search"><svg class="i" viewBox="0 0 24 24"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.3-4.3"></path></svg>Search chats</div>
+<sc-for list="{{chats}}" as="c" hint-placeholder-count="6"><div class="row"><div class="av {{c.av}}">{{c.ini}}</div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><div style="display:flex;align-items:baseline;gap:8px"><div class="nm">{{c.name}}</div><span class="tm" style="color:{{c.tc}};font-weight:{{c.tw}}">{{c.time}}</span></div><div style="display:flex;align-items:center;gap:6px"><sc-if value="{{c.tick}}" hint-placeholder-val="{{ true }}"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px;color:{{c.tcol}}"><path d="{{c.tp}}"></path></svg></sc-if><span class="pv" style="color:{{c.pc}};font-weight:{{c.pw}}">{{c.prev}}</span><sc-if value="{{c.unread}}" hint-placeholder-val="{{ false }}"><span class="badge">{{c.unread}}</span></sc-if></div></div></div></sc-for>
+<button class="fab"><svg class="i" viewBox="0 0 24 24"><path d="M17 3l4 4L7 21H3v-4z"></path></svg>New chat</button>
+<nav class="nav" aria-label="Main">
+<button class="nv on"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><span class="cnt">3</span></span>Chats</button>
+<button class="nv"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg><span class="cnt">1</span></span>Calls</button>
+<button class="nv"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>Contacts</button>
+</nav>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Chats <span>· dark · one message waiting to send</span></div>
+<div class="ph dk">
+<div class="bar"><div class="ttl"><svg viewBox="0 0 24 24" style="width:26px;height:26px;color:var(--pr)"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="var(--th)" stroke-width="1.75" stroke-linecap="round"></path></svg>Tinline</div><button class="avail"><span class="d"></span>Available</button><button class="ib" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5 M17 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div>
+<div class="search"><svg class="i" viewBox="0 0 24 24"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.3-4.3"></path></svg>Search chats</div>
+<sc-for list="{{chatsDark}}" as="c" hint-placeholder-count="6"><div class="row"><div class="av {{c.av}}">{{c.ini}}</div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><div style="display:flex;align-items:baseline;gap:8px"><div class="nm">{{c.name}}</div><span class="tm" style="color:{{c.tc}};font-weight:{{c.tw}}">{{c.time}}</span></div><div style="display:flex;align-items:center;gap:6px"><sc-if value="{{c.tick}}" hint-placeholder-val="{{ true }}"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px;color:{{c.tcol}}"><path d="{{c.tp}}"></path></svg></sc-if><span class="pv" style="color:{{c.pc}};font-weight:{{c.pw}}">{{c.prev}}</span><sc-if value="{{c.unread}}" hint-placeholder-val="{{ false }}"><span class="badge">{{c.unread}}</span></sc-if></div></div></div></sc-for>
+<button class="fab"><svg class="i" viewBox="0 0 24 24"><path d="M17 3l4 4L7 21H3v-4z"></path></svg>New chat</button>
+<nav class="nav" aria-label="Main">
+<button class="nv on"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><span class="cnt">3</span></span>Chats</button>
+<button class="nv"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></span>Calls</button>
+<button class="nv"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>Contacts</button>
+</nav>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">No chats yet</div>
+<div class="ph t">
+<div class="bar"><div class="ttl"><svg viewBox="0 0 24 24" style="width:26px;height:26px;color:var(--pr)"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="var(--th)" stroke-width="1.75" stroke-linecap="round"></path></svg>Tinline</div><button class="avail"><span class="d"></span>Available</button><button class="ib" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5 M17 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px 120px;gap:16px;text-align:center">
+<svg viewBox="0 0 300 150" style="width:300px;height:150px"><path d="M72 84 C 120 112, 180 112, 228 80" fill="none" stroke="#C98A1E" stroke-width="3" stroke-linecap="round"></path><rect x="16" y="50" width="48" height="58" rx="9" fill="#0B6B5B"></rect><ellipse cx="64" cy="79" rx="8" ry="29" fill="#9FD6C8" stroke="#0B6B5B" stroke-width="3"></ellipse><rect x="236" y="46" width="48" height="58" rx="9" fill="#0B6B5B"></rect><ellipse cx="236" cy="75" rx="8" ry="29" fill="#9FD6C8" stroke="#0B6B5B" stroke-width="3"></ellipse><rect x="118" y="28" width="64" height="40" rx="12" fill="#FFFFFF" stroke="#0B6B5B" stroke-width="2.5"></rect><path d="M132 44h36 M132 54h22" stroke="#0B6B5B" stroke-width="2.5" stroke-linecap="round"></path><path d="M138 68 l-6 10 14-10" fill="#FFFFFF" stroke="#0B6B5B" stroke-width="2.5" stroke-linejoin="round"></path></svg>
+<h1 style="margin:0;font-size:24px;line-height:30px;font-weight:700">No messages yet</h1>
+<p style="margin:0;font-size:16px;line-height:24px;color:var(--ink2)">Messages go straight from your phone to theirs, end-to-end encrypted. Nothing is stored on a server.</p>
+<div style="width:100%;margin-top:8px"><button class="btn">Start a chat</button></div>
+<div class="hint">You can message anyone in your contacts.</div>
+</div>
+<nav class="nav" aria-label="Main">
+<button class="nv on"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>Chats</button>
+<button class="nv"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></span>Calls</button>
+<button class="nv"><span class="ind"><svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>Contacts</button>
+</nav>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">New chat <span>· pick a contact</span></div>
+<div class="ph t">
+<div class="bar" style="padding-left:4px"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="ttl" style="font-size:20px;font-weight:600">New chat</div></div>
+<div class="search"><svg class="i" viewBox="0 0 24 24"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.3-4.3"></path></svg>Search contacts</div>
+<div class="row" style="min-height:68px"><div class="av" style="background:var(--pr);color:var(--onpr)"><svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M19 8v6 M22 11h-6"></path></svg></div><div style="flex:1"><div class="nm">Add a contact</div><div class="pv">Scan their code or paste their card</div></div></div>
+<div class="sec">CONTACTS · 6</div>
+<sc-for list="{{contacts}}" as="c" hint-placeholder-count="6"><div class="row" style="min-height:68px"><div class="av {{c.av}}">{{c.ini}}</div><div style="flex:1;min-width:0"><div class="nm">{{c.name}}</div><div class="pv">{{c.st}}</div></div></div></sc-for>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1888,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ONE = 'M20 6 9 17l-5-5';
+    const TWO = 'M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16';
+    const CLOCK = 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2';
+    const mine = (prev, tp, tcol) => ({ tick: true, tp, tcol, prev, pc: 'var(--ink2)', pw: 400, unread: 0, tc: 'var(--ink2)', tw: 400 });
+    const theirs = (prev, unread) => ({ tick: false, tp: '', tcol: '', prev, pc: unread ? 'var(--ink)' : 'var(--ink2)', pw: unread ? 600 : 400, unread, tc: unread ? 'var(--pr)' : 'var(--ink2)', tw: unread ? 700 : 400 });
+    const chats = [
+      { name: 'Arjun Oommen', ini: 'AO', av: 'a2', time: '12:41', ...theirs('Sure, call me after 6?', 2) },
+      { name: 'Dad', ini: 'D', av: 'a1', time: '11:20', ...mine('Landed, will call from home', TWO, 'var(--pr)') },
+      { name: 'Rosa Silva', ini: 'RS', av: 'a4', time: '09:05', ...theirs('Photo', 1) },
+      { name: 'Jonas Krüger', ini: 'JK', av: 'a3', time: 'Yesterday', ...mine('The slides are in the file I sent', TWO, 'var(--pr)') },
+      { name: 'Joanna Ostrowska', ini: 'JO', av: 'a1', time: 'Mon', ...theirs('Thanks for today!', 0) },
+      { name: 'Lena Park', ini: 'LP', av: 'a2', time: 'Sun', ...mine('See you there', ONE, 'var(--ink2)') }
+    ];
+    const chatsDark = chats.map((c) => c.name === 'Lena Park'
+      ? { ...c, time: 'Now', ...mine('Waiting to send — Lena isn’t reachable yet', CLOCK, 'var(--th)') }
+      : c);
+    const contacts = [
+      { name: 'Arjun Oommen', ini: 'AO', av: 'a2', st: 'Last message 12:41' },
+      { name: 'Dad', ini: 'D', av: 'a1', st: 'Last message 11:20' },
+      { name: 'Joanna Ostrowska', ini: 'JO', av: 'a1', st: 'Last message Mon' },
+      { name: 'Jonas Krüger', ini: 'JK', av: 'a3', st: 'Last message yesterday' },
+      { name: 'Lena Park', ini: 'LP', av: 'a2', st: 'Last message Sun' },
+      { name: 'Priya Nair', ini: 'PN', av: 'a4', st: 'No messages yet' }
+    ];
+    return { chats, chatsDark, contacts };
+  }
+}
+</script>
+</body>
+</html>

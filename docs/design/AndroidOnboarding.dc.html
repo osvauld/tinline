@@ -49,7 +49,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 .opt{height:40px;border-radius:999px;border:1px solid var(--ln2);background:var(--sf);color:var(--ink);font:500 15px 'IBM Plex Mono',monospace;padding:0 16px}
 </style>
 </helmet>
-<div class="root" style="width:3268px;height:1060px">
+<div class="root" style="width:2808px;height:1060px">
 
 <div class="col">
 <div class="lbl">1 Welcome <span>· light</span></div>
@@ -73,7 +73,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="lbl">2 Your name</div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
-<div class="prog"><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
+<div class="prog"><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
 <div class="body" style="padding-top:28px">
 <h1 class="h1">What should people call you?</h1>
 <p class="p">Your name is shown to people you add. It never leaves your phone otherwise.</p>
@@ -86,19 +86,18 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 
 <div class="col">
-<div class="lbl">3 Passphrase</div>
+<div class="lbl">3 Passphrase <span>· optional</span></div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
-<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
+<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
 <div class="body" style="padding-top:28px">
-<h1 class="h1">Lock it with a passphrase</h1>
-<p class="p">Your account lives only on this phone. The passphrase encrypts it, so nobody holding your phone can copy it.</p>
-<div class="fl"><label for="pp">Passphrase</label><div style="position:relative"><input id="pp" class="in f mono" type="password" value="correct-horse-lamp-river"><button class="ib" aria-label="Show passphrase" style="position:absolute;right:4px;top:4px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div></div>
-<div style="display:flex;gap:6px;align-items:center"><div style="flex:1;height:4px;border-radius:2px;background:var(--pr)"></div><div style="flex:1;height:4px;border-radius:2px;background:var(--pr)"></div><div style="flex:1;height:4px;border-radius:2px;background:var(--pr)"></div><div style="flex:1;height:4px;border-radius:2px;background:var(--ln)"></div><span class="hint" style="margin-left:6px;color:var(--pr);font-weight:600">Strong</span></div>
-<div class="fl"><label for="pp2">Type it again</label><input id="pp2" class="in mono" type="password" value="correct-horse-lamp-river"></div>
-<div style="display:flex;gap:10px;background:var(--sf2);border-radius:14px;padding:14px;font-size:14px;line-height:20px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="color:var(--ink)"><path d="M8 11a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M10.8 12.2 20 3 M17 6l3 3 M15 8l2 2"></path></svg><span>Three or four random words work well. Your phone remembers it so calls still ring after a restart — you’ll need it to see your recovery phrase.</span></div>
+<h1 class="h1">Add a passphrase</h1>
+<p class="p">Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it. Optional — you can add one later in Settings.</p>
+<div class="fl"><label for="pp">Passphrase</label><div style="position:relative"><input id="pp" class="in f mono" type="password" value="correct-horse-lamp"><button class="ib" aria-label="Show passphrase" style="position:absolute;right:4px;top:4px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div></div>
+<div style="display:flex;gap:10px;background:var(--sf2);border-radius:14px;padding:14px;font-size:14px;line-height:20px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="color:var(--ink)"><path d="M8 11a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M10.8 12.2 20 3 M17 6l3 3 M15 8l2 2"></path></svg><span>Any length works; a few random words are easy to remember. Your phone remembers it so calls still ring after a restart — you’ll need it to see your recovery phrase.</span></div>
 <div style="flex:1"></div>
 <button class="btn">Continue</button>
+<button class="btn tx">Skip for now</button>
 </div>
 </div>
 </div>
@@ -107,7 +106,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="lbl">4 Recovery phrase <span>· screenshot-blocked</span></div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
-<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
+<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div></div>
 <div class="body" style="padding-top:24px;gap:14px">
 <h1 class="h1">Write down these 24 words</h1>
 <p class="p" style="font-size:15px;line-height:22px">They <b style="color:var(--ink)">are</b> your Tinline account. If you lose this phone, they bring it back. Anyone who has them can pretend to be you.</p>
@@ -122,33 +121,10 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 
 <div class="col">
-<div class="lbl">5 Quick check</div>
+<div class="lbl">5 Terms & privacy</div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
-<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div></div>
-<div class="body" style="padding-top:28px">
-<h1 class="h1">Quick check</h1>
-<p class="p">Pick the right words, so we know your copy is complete.</p>
-<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
-<div style="display:flex;align-items:center;gap:12px;height:52px;border-radius:12px;background:var(--prc);color:var(--onprc);padding:0 16px"><span style="font-size:13px;width:60px">Word 4</span><span class="mono" style="font-size:16px;font-weight:500;flex:1">candle</span><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></div>
-<div style="display:flex;align-items:center;gap:12px;height:52px;border-radius:12px;border:2px solid var(--pr);background:var(--sf);padding:0 16px;box-sizing:border-box"><span style="font-size:13px;width:60px;color:var(--ink2)">Word 11</span><span class="mono" style="font-size:16px;color:var(--ink2);flex:1">?</span></div>
-<div style="display:flex;align-items:center;gap:12px;height:52px;border-radius:12px;border:1px dashed var(--ln2);padding:0 16px;box-sizing:border-box"><span style="font-size:13px;width:60px;color:var(--ink2)">Word 19</span></div>
-</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
-<button class="opt">anchor</button><button class="opt">copper</button><button class="opt">meadow</button><button class="opt">silver</button><button class="opt">cabin</button><button class="opt">ripple</button>
-</div>
-<div style="flex:1"></div>
-<button class="btn tx">Show the words again</button>
-<button class="btn dis">Check</button>
-</div>
-</div>
-</div>
-
-<div class="col">
-<div class="lbl">6 Terms & privacy</div>
-<div class="ph t">
-<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
-<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div></div>
+<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl"></div><div class="pd"></div></div>
 <div class="body" style="padding-top:28px;gap:14px">
 <h1 class="h1">Before you start</h1>
 <div style="display:flex;flex-direction:column;gap:14px;font-size:15px;line-height:22px">
@@ -165,7 +141,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 
 <div class="col">
-<div class="lbl">7 Permissions <span>· Android only</span></div>
+<div class="lbl">6 Permissions <span>· Android only</span></div>
 <div class="ph t">
 <div class="body" style="padding-top:28px;gap:12px">
 <h1 class="h1">So calls can reach you</h1>
@@ -183,7 +159,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3268,"height":1060}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2808,"height":1060}}'>
 class Component extends DCLogic {
   renderVals() {
     const ws = ['harbor','velvet','orbit','candle','meadow','lunar','ticket','gravel','salmon','whisper','copper','anchor','fabric','jungle','pepper','quarter','ripple','saddle','timber','unveil','walnut','yellow','zebra','mosaic'];

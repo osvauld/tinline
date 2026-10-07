@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android conversation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:6px;padding:0 4px;flex:none;border-bottom:1px solid var(--ln)}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;flex:none;background:var(--rlc);color:var(--onrlc)}
+.who{flex:1;min-width:0;display:flex;flex-direction:column}
+.who b{font-size:17px;line-height:22px}
+.st{font-size:12px;line-height:16px;color:var(--ink2);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.msgs{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;padding:8px 12px;min-height:0;overflow:hidden}
+.b{max-width:290px;padding:8px 12px 6px;border-radius:18px;font-size:15px;line-height:21px;box-sizing:border-box}
+.b.in{align-self:flex-start;background:var(--sf);border:1px solid var(--ln);border-bottom-left-radius:6px}
+.b.out{align-self:flex-end;background:var(--prc);color:var(--onprc);border-bottom-right-radius:6px}
+.meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;line-height:14px;color:var(--ink2);margin-top:2px}
+.out .meta{color:var(--onprc)}
+.tk{width:15px;height:15px}
+.day{align-self:center;font-size:12px;font-weight:600;color:var(--ink2);background:var(--sf2);border-radius:999px;padding:4px 12px;margin:10px 0 6px}
+.q{border-left:3px solid var(--pr);background:var(--bg);border-radius:8px;padding:4px 8px;margin-bottom:6px;font-size:13px;line-height:18px}
+.out .q{background:rgba(255,255,255,.45)}
+.q b{display:block;font-size:12px;color:var(--pr)}
+.comp{flex:none;display:flex;align-items:flex-end;gap:6px;padding:8px 8px 20px}
+.field{flex:1;min-height:48px;border-radius:24px;background:var(--sf2);display:flex;align-items:center;gap:4px;padding:0 6px 0 4px;color:var(--ink2);font-size:16px}
+.go{width:48px;height:48px;border-radius:50%;border:0;background:var(--pr);color:var(--onpr);display:flex;align-items:center;justify-content:center;flex:none;padding:0}
+.ban{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:12px 14px;font-size:14px;line-height:20px;margin:8px 12px 0;background:var(--wn);color:var(--onwn)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sf);border-radius:24px 24px 0 0;padding:10px 8px 28px;display:flex;flex-direction:column}
+.grab{width:32px;height:4px;border-radius:2px;background:var(--ln2);align-self:center;margin-bottom:10px}
+.act{display:flex;align-items:center;gap:16px;height:56px;padding:0 16px;border:0;background:transparent;color:inherit;font:400 16px 'Figtree',sans-serif;border-radius:12px;text-align:left}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+</style>
+</helmet>
+<div class="root" style="width:2348px;height:1060px">
+
+<div class="col">
+<div class="lbl">Conversation <span>· light · connected</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div><button class="ib" aria-label="Call Arjun" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+<div class="msgs">
+<div class="day">Yesterday</div>
+<div class="b in">Did you get home ok?<div class="meta">22:10</div></div>
+<div class="b out">Yes! Train was on time for once<div class="meta">22:14<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="day">Today</div>
+<div class="b in">Are we still on for the call about the flat?<div class="meta">12:38</div></div>
+<div class="b in">I have the landlord’s numbers now<div class="meta">12:38</div></div>
+<div class="b out"><div class="q"><b>Arjun</b>Are we still on for the call about the flat?</div>Yes — after 6 works for me<div class="meta">edited · 12:40<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="b in">Sure, call me after 6?<div class="meta">12:41</div></div>
+<div class="b out">Perfect, talk then<div class="meta">12:42<svg class="i tk" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></div></div>
+</div>
+<div class="comp"><div class="field"><button class="ib" aria-label="Attach" style="width:40px;height:40px"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button><span style="flex:1">Message</span></div><button class="go" aria-label="Hold to record a voice message"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Not connected <span>· dark · messages wait on this phone</span></div>
+<div class="ph dk">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="border:2px solid var(--ln2);box-sizing:border-box"></span>Not connected</span></div><button class="ib" aria-label="Call Arjun" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+<div class="ban"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2"></path></svg><span>Arjun isn’t reachable right now. Your messages stay on this phone and send by themselves when you’re both online.</span></div>
+<div class="msgs">
+<div class="day">Today</div>
+<div class="b in">Sure, call me after 6?<div class="meta">12:41</div></div>
+<div class="b out">Perfect, talk then<div class="meta">12:42<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="b out">Running 10 min late, sorry<div class="meta" style="color:var(--th)">Waiting · 17:58<svg class="i tk" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2"></path></svg></div></div>
+<div class="b out">Calling you in a bit<div class="meta" style="color:var(--th)">Waiting · 18:02<svg class="i tk" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2"></path></svg></div></div>
+</div>
+<div class="comp"><div class="field" style="color:var(--ink)"><button class="ib" aria-label="Attach" style="width:40px;height:40px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button><span style="flex:1">On my way</span></div><button class="go" aria-label="Send"><svg class="i" viewBox="0 0 24 24"><path d="M22 2 11 13 M22 2l-7 20-4-9-9-4 20-7z"></path></svg></button></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Message actions <span>· long-press</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div></div>
+<div class="msgs" style="padding-bottom:330px">
+<div class="b in" style="opacity:.35">Sure, call me after 6?<div class="meta">12:41</div></div>
+<div class="b out" style="outline:3px solid var(--pr);outline-offset:3px">Perfect, talk then<div class="meta">12:42<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+</div>
+<div style="position:absolute;inset:0;background:rgba(15,21,19,.28)"></div>
+<div class="sheet">
+<div class="grab"></div>
+<div class="hint" style="padding:0 16px 8px">Sent 12:42 · on Arjun’s phone 12:42</div>
+<button class="act"><svg class="i" viewBox="0 0 24 24"><path d="M9 17l-5-5 5-5 M4 12h11a5 5 0 0 1 5 5v2"></path></svg>Reply</button>
+<button class="act"><svg class="i" viewBox="0 0 24 24"><path d="M8 8h12v12H8z M16 8V4H4v12h4"></path></svg>Copy text</button>
+<button class="act"><svg class="i" viewBox="0 0 24 24"><path d="M17 3l4 4L7 21H3v-4z"></path></svg>Edit</button>
+<button class="act" style="color:var(--er)"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg>Delete for both of you</button>
+<div class="hint" style="padding:8px 16px 0">Edits and deletes reach Arjun’s phone the next time you’re both online.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Editing <span>· and replying</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div><button class="ib" aria-label="Call Arjun" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+<div class="msgs">
+<div class="day">Today</div>
+<div class="b in">I have the landlord’s numbers now<div class="meta">12:38</div></div>
+<div class="b in">Sure, call me after 6?<div class="meta">12:41</div></div>
+<div class="b out" style="opacity:.55">Perfect, talk then<div class="meta">12:42<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+</div>
+<div style="margin:0 8px;padding:8px 8px 8px 14px;border-radius:16px 16px 0 0;background:var(--sf);border:1px solid var(--ln);border-bottom:0;display:flex;align-items:center;gap:10px">
+<svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;color:var(--pr)"><path d="M17 3l4 4L7 21H3v-4z"></path></svg>
+<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--pr)">Editing</div><div class="hint" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Perfect, talk then</div></div>
+<button class="ib" aria-label="Cancel editing" style="width:40px;height:40px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<div class="comp" style="padding-top:0"><div class="field" style="color:var(--ink);border-radius:0 0 24px 24px;border:1px solid var(--pr);background:var(--sf)"><span style="flex:1;padding-left:12px">Perfect, talk then at 6:30</span></div><button class="go" aria-label="Save edit"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></button></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Older messages <span>· on their phone · deleted</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="border:2px solid var(--ln2);box-sizing:border-box"></span>Not connected</span></div><button class="ib" aria-label="Call Arjun" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
+<div class="msgs" style="justify-content:flex-start;padding-top:16px">
+<div style="align-self:stretch;margin:0 8px 8px;padding:16px;border-radius:14px;border:1px dashed var(--ln2);display:flex;gap:12px;align-items:flex-start">
+<svg class="i" viewBox="0 0 24 24" style="color:var(--ink2)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z M8 9h8 M8 13h5"></path></svg>
+<div style="flex:1"><div style="font-weight:600;font-size:15px">Older messages are on Arjun’s phone</div><div class="hint" style="font-size:14px;line-height:20px;margin-top:4px">This phone keeps them from when you started using it. Earlier days load when you’re both online.</div></div>
+</div>
+<div class="day">Monday</div>
+<div class="b in">Found a flat near the station, sending pics later<div class="meta">19:02</div></div>
+<div class="b out" style="background:transparent;border:1px dashed var(--ln2);color:var(--ink2);font-style:italic">You deleted this message<div class="meta">19:05</div></div>
+<div class="b in" style="background:transparent;color:var(--ink2);font-style:italic">Arjun deleted this message<div class="meta">19:06</div></div>
+<div class="b out">Nice! Which street?<div class="meta">19:07<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="day">Today</div>
+<div class="b in">Sure, call me after 6?<div class="meta">12:41</div></div>
+</div>
+<div class="comp"><div class="field"><button class="ib" aria-label="Attach" style="width:40px;height:40px"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button><span style="flex:1">Message</span></div><button class="go" aria-label="Hold to record a voice message"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2348,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

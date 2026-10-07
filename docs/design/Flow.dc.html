@@ -26,7 +26,7 @@ body{margin:0}
 .br{font-size:12px;color:#8A5A00;font-weight:600;padding:0 8px}
 </style>
 </helmet>
-<div class="root" style="width:1880px;height:960px;box-sizing:border-box;padding:56px;background:#F5F6F3;display:flex;flex-direction:column;gap:36px">
+<div class="root" style="width:1880px;height:1084px;box-sizing:border-box;padding:56px;background:#F5F6F3;display:flex;flex-direction:column;gap:36px">
 <div style="display:flex;justify-content:space-between;align-items:flex-end">
 <div>
 <h1 style="margin:0;font-size:34px;font-weight:700;letter-spacing:-0.02em">From install to first call</h1>
@@ -43,9 +43,8 @@ body{margin:0}
 <div class="lname">1 · First run<span>Android ~90 s, desktop skips permissions</span></div>
 <div class="st"><b>Welcome</b><i>One line + “Not for emergency calls”</i></div><div class="cn"></div>
 <div class="st"><b>Your name</b><i>Shown to people you add</i></div><div class="cn"></div>
-<div class="st"><b>Passphrase</b><i>Locks this device’s copy of your key</i></div><div class="cn"></div>
+<div class="st"><b>Passphrase</b><i>Optional · locks this device’s copy of your key</i></div><div class="cn"></div>
 <div class="st w"><b>Recovery phrase</b><i>24 words, write them down</i></div><div class="cn"></div>
-<div class="st"><b>Check 3 words</b><i>Proves it was saved</i></div><div class="cn"></div>
 <div class="st"><b>Terms & privacy</b><i>One checkbox</i></div><div class="cn"></div>
 <div class="st"><b>Permissions</b><i>Mic · notifications · background</i></div><div class="cn"></div>
 <div class="st k"><b>Home (empty)</b><i>“Add your first contact”</i></div>
@@ -87,8 +86,19 @@ body{margin:0}
 </div>
 
 <div class="lane">
+<div class="lname">4b · Incoming, already in a call<span>No call waiting, no hold</span></div>
+<div class="st"><b>Second call arrives</b><i>Current call keeps going, audio untouched</i></div><div class="cn"></div>
+<div class="st w"><b>Banner over in-call</b><i>“Arjun is calling” · quiet tone, no full-screen</i></div><div class="cn"></div>
+<div class="st"><b>Decline</b><i>Caller sees “Busy” · nothing else changes</i></div>
+<div class="br">or</div>
+<div class="st k"><b>End &amp; answer</b><i>Ends current call, answers new one</i></div>
+<div class="br">or ignore →</div>
+<div class="st w"><b>Missed</b><i>Notification + red in Recents after 30 s</i></div>
+</div>
+
+<div class="lane">
 <div class="lname">5 · Coming back<span>Desktop launch, or phone lost its unlock key</span></div>
-<div class="st"><b>Unlock</b><i>Enter passphrase</i></div><div class="cn"></div>
+<div class="st"><b>Unlock</b><i>Enter passphrase, if one is set</i></div><div class="cn"></div>
 <div class="st k"><b>Home</b><i>Contacts + recents</i></div>
 <div class="br" style="color:#B3261E">forgot →</div>
 <div class="st e"><b>Restore</b><i>Type 24 words</i></div><div class="cn"></div>
@@ -98,7 +108,7 @@ body{margin:0}
 <p style="margin:0;font-size:12px;color:#4D5853">* Open question: restoring from the phrase recovers the identity; whether the contact list is recoverable depends on how contacts are stored — see product questions.</p>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1880,"height":960}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1880,"height":1084}}'>
 class Component extends DCLogic {
   renderVals() { return {}; }
 }
