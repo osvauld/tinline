@@ -1,11 +1,15 @@
 package com.osvauld.p2p
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Build
+import android.os.PowerManager
+import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -14,6 +18,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallInfo
@@ -27,48 +33,91 @@ data class CallUi(
     val speaker: Boolean = false,
     val stats: CallStats? = null,
     val activeSinceMs: Long? = null,
+    /** Shown on the call screen when the mic cannot be used (denied permission or init failure). */
+    val micProblem: String? = null,
 )
+
+/** Thrown by [CallController.place] when the microphone permission is missing. */
+class MicPermissionNeeded : Exception("Microphone permission needed to place a call")
 
 /** Single place that reacts to call events: UI state, ringing, notifications, audio, service type. */
 class CallController(private val app: P2pApp) {
     private val _ui = MutableStateFlow<CallUi?>(null)
     val ui: StateFlow<CallUi?> = _ui
-    private val audio by lazy { AudioEngine(app, app.node) }
-    private var ringtone: Ringtone? = null
-    private var statsJob: Job? = null
-    private var everActive = false
+    private val audio by lazy { AudioEngine(app, { app.node }, ::micUnavailable) }
+    @Volatile private var ringtone: Ringtone? = null
+    @Volatile private var statsJob: Job? = null
+    @Volatile private var ringTimeout: Job? = null
+    @Volatile private var everActive = false
+    @Volatile private var declined = false
+    private var proximity: PowerManager.WakeLock? = null
+
+    // Events for a call we are still placing arrive before node.call() has returned its id and
+    // before _ui is set; they are held here and replayed (the desktop keeps the same `early` list).
+    private val lock = Any()
+    private val early = mutableListOf<Pair<String, CallState>>()
+    @Volatile private var placing = false
+
+    private fun micUnavailable() {
+        val msg = if (Perms.granted(app, Manifest.permission.RECORD_AUDIO)) "Microphone unavailable - you can't be heard"
+        else "Microphone permission needed - you can't be heard"
+        _ui.update { it?.copy(micProblem = msg) }
+    }
 
     fun onIncoming(call: CallInfo) {
         testLog("incoming id=${call.callId} from=${call.peerName.ifBlank { call.peerDid }}")
-        everActive = false
+        everActive = false; declined = false
         _ui.value = CallUi(call, CallState.Ringing)
         CoreService.ensureRunning(app)
         Notifications.incoming(app, call)
         startRinging()
+        ringTimeout?.cancel()
+        ringTimeout = app.scope.launch {
+            delay(RING_TIMEOUT_MS)
+            val c = _ui.value
+            if (c != null && c.info.callId == call.callId && c.state !is CallState.Active) {
+                // Nobody answered: stop ringing for good. Ended then posts the "Missed call" note.
+                stopRinging(); Notifications.cancelIncoming(app)
+                try { app.node.decline(call.callId) } catch (e: Exception) { Log.w("Call", "ring timeout decline: $e") }
+            }
+        }
     }
 
     fun onState(callId: String, state: CallState) {
         testLog("state id=$callId state=${describe(state)}")
-        val cur = _ui.value
-        if (cur == null || cur.info.callId != callId) return
+        synchronized(lock) {
+            val c = _ui.value
+            if (c == null || c.info.callId != callId) {
+                if (placing) early.add(callId to state)
+                return
+            }
+        }
         when (state) {
             is CallState.Active -> {
                 everActive = true
+                ringTimeout?.cancel()
                 stopRinging(); Notifications.cancelIncoming(app)
-                _ui.value = cur.copy(state = state, activeSinceMs = System.currentTimeMillis())
+                val now = System.currentTimeMillis()
+                val cur = _ui.updateAndGet { u -> if (u?.info?.callId == callId) u.copy(state = state, activeSinceMs = now) else u }
+                    ?: return
                 inCallService(cur.info)
                 audio.muted = cur.muted
                 audio.start(cur.speaker)
+                updateProximity(!cur.speaker)
                 startStats()
             }
             is CallState.Ended -> {
+                ringTimeout?.cancel()
                 stopRinging(); Notifications.cancelIncoming(app)
-                statsJob?.cancel(); audio.stop()
-                if (cur.info.incoming && !everActive) Notifications.missed(app, cur.info.peerName)
-                _ui.value = null
+                statsJob?.cancel(); audio.stop(); updateProximity(false)
+                val cur = _ui.value
+                if (cur != null && cur.info.callId == callId) {
+                    if (cur.info.incoming && !everActive && !declined) Notifications.missed(app, cur.info.peerName)
+                    _ui.update { u -> if (u?.info?.callId == callId) null else u }
+                }
                 CoreService.ensureRunning(app, CoreService.ACTION_IDLE)
             }
-            else -> _ui.value = cur.copy(state = state)
+            else -> _ui.update { u -> if (u?.info?.callId == callId) u.copy(state = state) else u }
         }
     }
 
@@ -76,9 +125,19 @@ class CallController(private val app: P2pApp) {
         CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL, info.peerName.ifBlank { "Call" })
 
     fun place(did: String): Result<CallInfo> = runCatching {
-        val info = app.node.call(did)
-        everActive = false
-        _ui.value = CallUi(info, CallState.Dialing)
+        if (!Perms.granted(app, Manifest.permission.RECORD_AUDIO)) throw MicPermissionNeeded()
+        synchronized(lock) { early.clear(); placing = true }
+        val info = try { app.node.call(did) } catch (e: Throwable) {
+            synchronized(lock) { placing = false; early.clear() }
+            throw e
+        }
+        everActive = false; declined = false
+        val replay = synchronized(lock) {
+            _ui.value = CallUi(info, CallState.Dialing)
+            placing = false
+            early.filter { it.first == info.callId }.also { early.clear() }
+        }
+        replay.forEach { (id, st) -> onState(id, st) }
         val i = Intent(app, CallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try { app.startActivity(i) } catch (e: Exception) { Log.w("Call", "cannot open call screen: $e") }
         info
@@ -86,6 +145,7 @@ class CallController(private val app: P2pApp) {
 
     fun answer() {
         val c = _ui.value ?: return
+        ringTimeout?.cancel()
         stopRinging(); Notifications.cancelIncoming(app)
         // Raise the service to microphone type while still allowed (user-initiated).
         inCallService(c.info)
@@ -94,6 +154,8 @@ class CallController(private val app: P2pApp) {
 
     fun decline() {
         val c = _ui.value ?: return
+        declined = true
+        ringTimeout?.cancel()
         stopRinging(); Notifications.cancelIncoming(app)
         app.scope.launch { try { app.node.decline(c.info.callId) } catch (e: Exception) { Log.w("Call", "decline: $e") } }
     }
@@ -104,15 +166,28 @@ class CallController(private val app: P2pApp) {
     }
 
     fun toggleMute() {
-        val c = _ui.value ?: return
-        audio.muted = !c.muted
-        _ui.value = c.copy(muted = !c.muted)
+        val n = _ui.updateAndGet { it?.copy(muted = !it.muted) } ?: return
+        audio.muted = n.muted
     }
 
     fun toggleSpeaker() {
-        val c = _ui.value ?: return
-        audio.setSpeaker(!c.speaker)
-        _ui.value = c.copy(speaker = !c.speaker)
+        val n = _ui.updateAndGet { it?.copy(speaker = !it.speaker) } ?: return
+        audio.setSpeaker(n.speaker)
+        if (n.state is CallState.Active) updateProximity(!n.speaker)
+    }
+
+    /** Screen off against the ear while a call is active and not on speaker. */
+    @Synchronized
+    private fun updateProximity(want: Boolean) {
+        try {
+            if (want) {
+                val pm = app.getSystemService(Context.POWER_SERVICE) as PowerManager
+                if (proximity == null && pm.isWakeLockLevelSupported(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
+                    proximity = pm.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "p2p:proximity")
+                }
+                proximity?.let { if (!it.isHeld) it.acquire(4 * 3600_000L) }
+            } else proximity?.let { if (it.isHeld) it.release() }
+        } catch (e: Exception) { Log.w("Call", "proximity: $e") }
     }
 
     fun statsLine(s: CallStats): String =
@@ -131,7 +206,7 @@ class CallController(private val app: P2pApp) {
                 delay(1000)
                 val s = try { app.node.callStats() } catch (_: Exception) { null } ?: continue
                 testLog(statsLine(s))
-                _ui.value = _ui.value?.copy(stats = s)
+                _ui.update { it?.copy(stats = s) }
             }
         }
     }
@@ -149,8 +224,17 @@ class CallController(private val app: P2pApp) {
             }
         } catch (e: Exception) { Log.w("Call", "ringtone: $e") }
         try {
-            val pattern = longArrayOf(0, 800, 800)
-            vibrator().vibrate(VibrationEffect.createWaveform(pattern, 0))
+            // Vibrate unless the phone is fully silent; the ringtone itself follows the ring volume.
+            val mode = (app.getSystemService(Context.AUDIO_SERVICE) as AudioManager).ringerMode
+            if (mode != AudioManager.RINGER_MODE_SILENT) {
+                val effect = VibrationEffect.createWaveform(longArrayOf(0, 800, 800), 0)
+                if (Build.VERSION.SDK_INT >= 33) {
+                    vibrator().vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_RINGTONE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator().vibrate(effect, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE).build())
+                }
+            }
         } catch (e: Exception) { Log.w("Call", "vibrate: $e") }
     }
 
@@ -166,6 +250,7 @@ class CallController(private val app: P2pApp) {
     }
 
     companion object {
+        const val RING_TIMEOUT_MS = 60_000L
         fun describe(s: CallState): String = when (s) {
             is CallState.Ended -> "Ended(${s.reason})"
             is CallState.Dialing -> "Dialing"
