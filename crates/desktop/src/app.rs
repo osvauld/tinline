@@ -12,7 +12,7 @@ use iced::{
     clipboard, system, theme, window, Alignment, Color, Element, Fill, Length, Point, Rectangle,
     Renderer, Size, Subscription, Task, Theme,
 };
-use p2pcore::{CallInfo, CallState, CallStats, Contact, Node, NodeStatus};
+use p2pcore::{CallInfo, CallState, CallStats, Contact, Error, LockState, Node, NodeStatus};
 use serde::{Deserialize, Serialize};
 
 use crate::audio::{self, Session};
@@ -39,6 +39,8 @@ struct Settings {
 #[derive(PartialEq, Clone, Copy)]
 enum Screen {
     Onboarding,
+    Unlock,
+    SetPass,
     Phrase,
     Home,
     Settings,
@@ -62,6 +64,14 @@ struct App {
     dark: bool,
     screen: Screen,
     name_in: String,
+    pass_in: String,
+    pass2_in: String,
+    old_in: String,
+    /// Restoring over an existing (locked) identity, from the Unlock screen.
+    replace: bool,
+    revealed: Option<String>,
+    reveal_form: bool,
+    change_form: bool,
     restore: bool,
     phrase_in: String,
     new_phrase: Option<String>,
@@ -80,7 +90,6 @@ struct App {
     settings: Settings,
     devices: (Vec<String>, Vec<String>),
     name_edit: String,
-    show_phrase: bool,
     ticks: u32,
     fetching: bool,
 }
@@ -96,12 +105,30 @@ enum Msg {
     Quit,
     Exit,
     NameChanged(String),
+    PassIn(String),
+    Pass2In(String),
+    OldIn(String),
     Create,
     Created(Result<String, String>),
     ToggleRestore,
     PhraseChanged(String),
     Restore,
-    Restored(Result<(), String>),
+    Restored(Result<NodeBox, String>),
+    Unlock,
+    Unlocked(Result<(), String>),
+    GoRestore,
+    SetPassSubmit,
+    PassSet(Result<(), String>),
+    SkipSetPass,
+    GoSetPass,
+    ChangePassSubmit,
+    PassChanged(Result<(), String>),
+    ToggleReveal,
+    RevealSubmit,
+    Revealed(Result<String, String>),
+    ToggleChange,
+    HidePhrase,
+    BackToUnlock,
     PhraseSaved,
     Started(Result<(), String>),
     Ticket(Result<String, String>),
@@ -121,10 +148,18 @@ enum Msg {
     Back,
     NameEdit(String),
     SaveName,
-    ToggleShowPhrase,
     InDev(String),
     OutDev(String),
     ToneToggled(bool),
+}
+
+/// A freshly built node, handed through the (Clone + Debug) message type.
+#[derive(Clone)]
+struct NodeBox(Arc<std::sync::Mutex<Option<Arc<Node>>>>);
+impl std::fmt::Debug for NodeBox {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Node")
+    }
 }
 
 /// `Ev` carries non-Clone data from the core; Debug/Clone for the message type go through here.
@@ -169,6 +204,29 @@ fn s<E: ToString>(e: E) -> String {
     e.to_string()
 }
 
+/// Plain-language text for errors the passphrase screens can hit. Never includes the passphrase.
+fn friendly(e: Error) -> String {
+    match e {
+        Error::WrongPassphrase => "That passphrase is not right. Try again.".into(),
+        Error::WeakPassphrase => "Use a passphrase of at least 8 characters.".into(),
+        Error::BadPhrase => "That recovery phrase is not valid. Check the 24 words.".into(),
+        Error::Locked => "Unlock first.".into(),
+        Error::HaveIdentity => "An identity already exists here.".into(),
+        e => e.to_string(),
+    }
+}
+
+/// Checks a new passphrase and its confirmation before the slow key derivation starts.
+fn check_new(pass: &str, again: &str) -> Result<(), String> {
+    if pass.chars().count() < 8 {
+        Err("Use a passphrase of at least 8 characters.".into())
+    } else if pass != again {
+        Err("The two passphrases do not match.".into())
+    } else {
+        Ok(())
+    }
+}
+
 impl App {
     fn boot() -> (App, Task<Msg>) {
         let init = INIT.get().expect("init");
@@ -178,11 +236,25 @@ impl App {
             .and_then(|b| serde_json::from_slice(&b).ok())
             .unwrap_or_default();
         let has = node.has_identity();
+        let lock = node.lock_state();
+        let test_unlock = init.test_pass.clone().filter(|_| lock == LockState::Locked);
         let mut app = App {
             win: None,
             dark: true,
-            screen: if has { Screen::Home } else { Screen::Onboarding },
+            screen: match lock {
+                LockState::NoIdentity => Screen::Onboarding,
+                LockState::Locked if test_unlock.is_none() => Screen::Unlock,
+                LockState::NeedsPassphrase => Screen::SetPass,
+                _ => Screen::Home,
+            },
             name_in: String::new(),
+            pass_in: String::new(),
+            pass2_in: String::new(),
+            old_in: String::new(),
+            replace: false,
+            revealed: None,
+            reveal_form: false,
+            change_form: false,
             restore: false,
             phrase_in: String::new(),
             new_phrase: None,
@@ -201,7 +273,6 @@ impl App {
             settings,
             devices: (Vec::new(), Vec::new()),
             name_edit: node.profile().map(|p| p.name).unwrap_or_default(),
-            show_phrase: false,
             ticks: 0,
             fetching: false,
             node,
@@ -214,7 +285,12 @@ impl App {
         if !init.hidden {
             tasks.push(app.show_window());
         }
-        if has {
+        if let Some(pass) = test_unlock {
+            app.busy = true;
+            let node = app.node.clone();
+            tasks.push(blocking(move || node.unlock(pass).map_err(friendly), Msg::Unlocked));
+        } else if has && lock != LockState::Locked {
+            // Locked identities stay offline until the passphrase is entered.
             tasks.push(app.start_node());
         }
         (app, Task::batch(tasks))
@@ -297,6 +373,13 @@ impl App {
             Msg::Tick => {
                 self.ticks += 1;
                 self.status = self.node.status();
+                crate::tray::set_status(match self.node.lock_state() {
+                    LockState::Locked => "Locked",
+                    LockState::NeedsPassphrase => "Set a passphrase",
+                    _ if !self.status.started => "Starting...",
+                    _ if self.status.online => "Online",
+                    _ => "Offline",
+                });
                 if let Some(c) = self.call.as_mut() {
                     c.stats = self.node.call_stats();
                     if let Some(st) = &c.stats
@@ -342,12 +425,26 @@ impl App {
                     self.notice = Some("Enter a name first".into());
                     return Task::none();
                 }
+                if self.busy {
+                    return Task::none();
+                }
+                if let Err(e) = check_new(&self.pass_in, &self.pass2_in) {
+                    self.notice = Some(e);
+                    return Task::none();
+                }
                 self.busy = true;
+                self.notice = Some("Securing your identity...".into());
+                let pass = std::mem::take(&mut self.pass_in);
+                self.pass2_in.clear();
                 let node = self.node.clone();
-                return blocking(move || node.create_identity(name).map_err(s), Msg::Created);
+                return blocking(move || node.create_identity(name, pass).map_err(friendly), Msg::Created);
             }
+            Msg::PassIn(v) => self.pass_in = v,
+            Msg::Pass2In(v) => self.pass2_in = v,
+            Msg::OldIn(v) => self.old_in = v,
             Msg::Created(r) => {
                 self.busy = false;
+                self.notice = None;
                 match r {
                     Ok(p) => {
                         self.new_phrase = Some(p);
@@ -365,19 +462,208 @@ impl App {
                     self.notice = Some("Enter your name and recovery phrase".into());
                     return Task::none();
                 }
+                if self.busy {
+                    return Task::none();
+                }
+                if let Err(e) = check_new(&self.pass_in, &self.pass2_in) {
+                    self.notice = Some(e);
+                    return Task::none();
+                }
                 self.busy = true;
-                let (node, phrase) = (self.node.clone(), self.phrase_in.clone());
-                return blocking(move || node.restore_identity(phrase, name).map_err(s), Msg::Restored);
+                self.notice = Some("Restoring...".into());
+                let pass = std::mem::take(&mut self.pass_in);
+                self.pass2_in.clear();
+                let phrase = std::mem::take(&mut self.phrase_in);
+                let (node, replace) = (self.node.clone(), self.replace);
+                let (data, tx) = {
+                    let i = INIT.get().unwrap();
+                    (i.data.clone(), i.tx.clone())
+                };
+                return blocking(
+                    move || {
+                        if !replace {
+                            node.restore_identity(phrase, name, pass).map_err(friendly)?;
+                            return Ok(NodeBox(Arc::new(std::sync::Mutex::new(Some(node)))));
+                        }
+                        // A locked identity is in the way: set its file aside (still encrypted),
+                        // restore into a fresh node, and put the file back if that fails.
+                        let file = data.join("profile.json");
+                        let aside = data.join(format!(
+                            "profile.replaced-{}.json",
+                            std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .map(|d| d.as_secs())
+                                .unwrap_or(0)
+                        ));
+                        std::fs::rename(&file, &aside).map_err(s)?;
+                        let fresh = Node::new(data.to_string_lossy().into(), Arc::new(crate::Events { tx }))
+                            .and_then(|n| n.restore_identity(phrase, name, pass).map(|_| n));
+                        match fresh {
+                            Ok(n) => Ok(NodeBox(Arc::new(std::sync::Mutex::new(Some(n))))),
+                            Err(e) => {
+                                let _ = std::fs::rename(&aside, &file);
+                                Err(friendly(e))
+                            }
+                        }
+                    },
+                    Msg::Restored,
+                );
             }
             Msg::Restored(r) => {
                 self.busy = false;
                 match r {
-                    Ok(()) => {
+                    Ok(b) => {
+                        if let Some(n) = b.0.lock().unwrap().take()
+                            && !Arc::ptr_eq(&n, &self.node)
+                        {
+                            let old = std::mem::replace(&mut self.node, n);
+                            // Dropping a node tears down its runtime; keep that off the UI loop.
+                            std::thread::spawn(move || drop(old));
+                        }
                         self.name_edit = self.name_in.trim().to_string();
-                        self.phrase_in.clear();
+                        self.replace = false;
                         self.screen = Screen::Home;
                         self.notice = None;
+                        self.ticket = None;
+                        self.qr = None;
                         return self.start_node();
+                    }
+                    Err(e) => self.notice = Some(e),
+                }
+            }
+            Msg::Unlock => {
+                if self.busy || self.pass_in.is_empty() {
+                    return Task::none();
+                }
+                self.busy = true;
+                self.notice = None;
+                let pass = std::mem::take(&mut self.pass_in);
+                let node = self.node.clone();
+                return blocking(move || node.unlock(pass).map_err(friendly), Msg::Unlocked);
+            }
+            Msg::Unlocked(r) => {
+                self.busy = false;
+                match r {
+                    Ok(()) => {
+                        self.screen = Screen::Home;
+                        self.notice = None;
+                        self.name_edit = self.node.profile().map(|p| p.name).unwrap_or_default();
+                        return self.start_node();
+                    }
+                    Err(e) => {
+                        eprintln!("UNLOCK failed: {e}");
+                        self.screen = Screen::Unlock;
+                        self.notice = Some(e);
+                    }
+                }
+            }
+            Msg::GoRestore => {
+                self.replace = true;
+                self.restore = true;
+                self.notice = None;
+                self.pass_in.clear();
+                self.screen = Screen::Onboarding;
+            }
+            Msg::BackToUnlock => {
+                self.replace = false;
+                self.restore = false;
+                self.notice = None;
+                self.pass_in.clear();
+                self.pass2_in.clear();
+                self.screen = Screen::Unlock;
+            }
+            Msg::GoSetPass => {
+                self.notice = None;
+                self.pass_in.clear();
+                self.pass2_in.clear();
+                self.screen = Screen::SetPass;
+            }
+            Msg::SkipSetPass => {
+                self.notice = None;
+                self.pass_in.clear();
+                self.pass2_in.clear();
+                self.screen = Screen::Home;
+            }
+            Msg::SetPassSubmit => {
+                if self.busy {
+                    return Task::none();
+                }
+                if let Err(e) = check_new(&self.pass_in, &self.pass2_in) {
+                    self.notice = Some(e);
+                    return Task::none();
+                }
+                self.busy = true;
+                self.notice = Some("Securing your identity...".into());
+                let pass = std::mem::take(&mut self.pass_in);
+                self.pass2_in.clear();
+                let node = self.node.clone();
+                return blocking(move || node.set_passphrase(None, pass).map_err(friendly), Msg::PassSet);
+            }
+            Msg::PassSet(r) => {
+                self.busy = false;
+                match r {
+                    Ok(()) => {
+                        self.screen = Screen::Home;
+                        self.notice = Some("Passphrase set. You will need it next time you open the app.".into());
+                    }
+                    Err(e) => self.notice = Some(e),
+                }
+            }
+            Msg::ToggleReveal => {
+                self.reveal_form = !self.reveal_form;
+                self.revealed = None;
+                self.pass_in.clear();
+                self.notice = None;
+            }
+            Msg::HidePhrase => {
+                self.revealed = None;
+                self.reveal_form = false;
+            }
+            Msg::RevealSubmit => {
+                if self.busy || self.pass_in.is_empty() {
+                    return Task::none();
+                }
+                self.busy = true;
+                self.notice = None;
+                let pass = std::mem::take(&mut self.pass_in);
+                let node = self.node.clone();
+                return blocking(move || node.recovery_phrase(pass).map_err(friendly), Msg::Revealed);
+            }
+            Msg::Revealed(r) => {
+                self.busy = false;
+                match r {
+                    Ok(p) => self.revealed = Some(p),
+                    Err(e) => self.notice = Some(e),
+                }
+            }
+            Msg::ToggleChange => {
+                self.change_form = !self.change_form;
+                self.old_in.clear();
+                self.pass_in.clear();
+                self.pass2_in.clear();
+                self.notice = None;
+            }
+            Msg::ChangePassSubmit => {
+                if self.busy || self.old_in.is_empty() {
+                    return Task::none();
+                }
+                if let Err(e) = check_new(&self.pass_in, &self.pass2_in) {
+                    self.notice = Some(e);
+                    return Task::none();
+                }
+                self.busy = true;
+                self.notice = Some("Changing passphrase...".into());
+                let (old, new) = (std::mem::take(&mut self.old_in), std::mem::take(&mut self.pass_in));
+                self.pass2_in.clear();
+                let node = self.node.clone();
+                return blocking(move || node.set_passphrase(Some(old), new).map_err(friendly), Msg::PassChanged);
+            }
+            Msg::PassChanged(r) => {
+                self.busy = false;
+                match r {
+                    Ok(()) => {
+                        self.change_form = false;
+                        self.notice = Some("Passphrase changed".into());
                     }
                     Err(e) => self.notice = Some(e),
                 }
@@ -492,7 +778,12 @@ impl App {
             Msg::OpenSettings => {
                 self.devices = audio::list_devices();
                 self.screen = Screen::Settings;
-                self.show_phrase = false;
+                self.revealed = None;
+                self.reveal_form = false;
+                self.change_form = false;
+                self.pass_in.clear();
+                self.pass2_in.clear();
+                self.old_in.clear();
                 self.notice = None;
             }
             Msg::Back => {
@@ -519,7 +810,6 @@ impl App {
                     Msg::Ticket,
                 );
             }
-            Msg::ToggleShowPhrase => self.show_phrase = !self.show_phrase,
             Msg::InDev(d) => {
                 self.settings.input = (d != DEFAULT_LABEL).then_some(d);
                 self.save_settings();
@@ -618,6 +908,8 @@ impl App {
         } else {
             match self.screen {
                 Screen::Onboarding => self.onboarding_view(),
+                Screen::Unlock => self.unlock_view(),
+                Screen::SetPass => self.setpass_view(),
                 Screen::Phrase => self.phrase_view(),
                 Screen::Home => self.home_view(),
                 Screen::Settings => self.settings_view(),
@@ -645,6 +937,23 @@ impl App {
         }
     }
 
+    fn pass_field<'a>(&'a self, label: &'a str, value: &'a str, on: fn(String) -> Msg, submit: Option<Msg>) -> Element<'a, Msg> {
+        let mut input = text_input("", value).secure(true).on_input(on).padding(10);
+        if let Some(m) = submit {
+            input = input.on_submit(m);
+        }
+        column![text(label).size(13).style(text::secondary), input].spacing(4).into()
+    }
+
+    fn new_pass_fields(&self, submit: Msg) -> Element<'_, Msg> {
+        column![
+            self.pass_field("Passphrase (at least 8 characters)", &self.pass_in, Msg::PassIn, None),
+            self.pass_field("Repeat passphrase", &self.pass2_in, Msg::Pass2In, Some(submit)),
+        ]
+        .spacing(8)
+        .into()
+    }
+
     fn onboarding_view(&self) -> Element<'_, Msg> {
         let mut col = column![
             Space::new().height(30),
@@ -661,19 +970,77 @@ impl App {
                 .push(
                     text_input("word word word ...", &self.phrase_in)
                         .on_input(Msg::PhraseChanged)
-                        .on_submit(Msg::Restore)
                         .padding(10),
-                )
-                .push(Space::new().height(6))
+                );
+            if self.replace {
+                col = col.push(
+                    text("This replaces the locked identity on this computer. Its encrypted file is kept aside, not deleted.")
+                        .size(13)
+                        .style(text::danger),
+                );
+            }
+        }
+        col = col
+            .push(self.new_pass_fields(if self.restore { Msg::Restore } else { Msg::Create }))
+            .push(
+                text("This passphrase locks your recovery phrase and keys on this computer. You type it each time the app starts. It cannot be recovered: if you forget it, you can only restore with your recovery phrase.")
+                    .size(13)
+                    .style(text::secondary),
+            )
+            .push(Space::new().height(6));
+        if self.restore {
+            col = col
                 .push(big_button("Restore", (!self.busy).then_some(Msg::Restore)))
-                .push(button(text("Create a new identity instead")).style(button::text).on_press(Msg::ToggleRestore));
+                .push(
+                    button(text(if self.replace { "Back to unlock" } else { "Create a new identity instead" }))
+                        .style(button::text)
+                        .on_press(if self.replace { Msg::BackToUnlock } else { Msg::ToggleRestore }),
+                );
         } else {
             col = col
-                .push(Space::new().height(6))
                 .push(big_button("Create identity", (!self.busy).then_some(Msg::Create)))
                 .push(button(text("Restore from recovery phrase")).style(button::text).on_press(Msg::ToggleRestore));
         }
         col.push(self.notice_view()).into()
+    }
+
+    fn unlock_view(&self) -> Element<'_, Msg> {
+        let name = self.node.profile().map(|p| p.name).unwrap_or_default();
+        column![
+            Space::new().height(40),
+            text("Osvauld Calls").size(30),
+            text(format!("Locked. Enter the passphrase for {name} to go online.")).size(15).style(text::secondary),
+            Space::new().height(10),
+            self.pass_field("Passphrase", &self.pass_in, Msg::PassIn, Some(Msg::Unlock)),
+            big_button(if self.busy { "Unlocking..." } else { "Unlock" }, (!self.busy).then_some(Msg::Unlock)),
+            self.notice_view(),
+            Space::new().height(10),
+            text("Forgot it? The passphrase cannot be recovered, but your 24-word recovery phrase can restore this identity.")
+                .size(12)
+                .style(text::secondary),
+            button(text("Restore from recovery phrase")).style(button::text).on_press_maybe((!self.busy).then_some(Msg::GoRestore)),
+        ]
+        .spacing(10)
+        .into()
+    }
+
+    fn setpass_view(&self) -> Element<'_, Msg> {
+        column![
+            Space::new().height(30),
+            text("Set a passphrase").size(26),
+            text("Your recovery phrase and keys are currently stored on this computer without protection. Choose a passphrase to encrypt them.")
+                .size(14)
+                .style(text::secondary),
+            self.new_pass_fields(Msg::SetPassSubmit),
+            text("You will type it each time the app starts. It cannot be recovered; your recovery phrase can still restore your identity if you forget it.")
+                .size(13)
+                .style(text::secondary),
+            big_button(if self.busy { "Working..." } else { "Set passphrase" }, (!self.busy).then_some(Msg::SetPassSubmit)),
+            button(text("Not now")).style(button::text).on_press_maybe((!self.busy).then_some(Msg::SkipSetPass)),
+            self.notice_view(),
+        ]
+        .spacing(12)
+        .into()
     }
 
     fn phrase_view(&self) -> Element<'_, Msg> {
@@ -780,7 +1147,24 @@ impl App {
         ]
         .spacing(8);
 
-        column![header, self.notice_view(), card, list, add].spacing(18).into()
+        let banner: Element<Msg> = if self.node.lock_state() == LockState::NeedsPassphrase {
+            container(
+                column![
+                    text("Protect your identity").size(17),
+                    text("Your recovery phrase and keys are stored without a passphrase. Set one to encrypt them.")
+                        .size(13),
+                    button(text("Set a passphrase")).style(button::primary).on_press(Msg::GoSetPass),
+                ]
+                .spacing(8),
+            )
+            .padding(16)
+            .width(Fill)
+            .style(container::danger)
+            .into()
+        } else {
+            Space::new().into()
+        };
+        column![header, banner, self.notice_view(), card, list, add].spacing(18).into()
     }
 
     fn call_view(&self) -> Element<'_, Msg> {
@@ -858,14 +1242,52 @@ impl App {
             o
         };
         let sel = |v: &Option<String>| Some(v.clone().unwrap_or_else(|| DEFAULT_LABEL.to_string()));
-        let phrase: Element<Msg> = if self.show_phrase {
-            container(text(self.node.recovery_phrase().unwrap_or_default()).size(15))
-                .padding(14)
-                .width(Fill)
-                .style(container::bordered_box)
-                .into()
+        let legacy = self.node.lock_state() == LockState::NeedsPassphrase;
+        let security: Element<Msg> = if legacy {
+            column![
+                text("Your keys are not protected by a passphrase yet.").size(13).style(text::danger),
+                button(text("Set a passphrase")).style(button::primary).on_press(Msg::GoSetPass),
+            ]
+            .spacing(8)
+            .into()
         } else {
-            Space::new().into()
+            let mut c = column![].spacing(8);
+            if let Some(p) = &self.revealed {
+                c = c
+                    .push(container(text(p.clone()).size(15)).padding(14).width(Fill).style(container::bordered_box))
+                    .push(button(text("Hide recovery phrase")).style(ghost).on_press(Msg::HidePhrase));
+            } else if self.reveal_form {
+                c = c
+                    .push(self.pass_field("Passphrase", &self.pass_in, Msg::PassIn, Some(Msg::RevealSubmit)))
+                    .push(
+                        row![
+                            button(text(if self.busy { "Checking..." } else { "Show" }))
+                                .style(button::primary)
+                                .on_press_maybe((!self.busy).then_some(Msg::RevealSubmit)),
+                            button(text("Cancel")).style(ghost).on_press(Msg::ToggleReveal),
+                        ]
+                        .spacing(8),
+                    );
+            } else {
+                c = c.push(button(text("Show recovery phrase")).style(ghost).on_press(Msg::ToggleReveal));
+            }
+            if self.change_form {
+                c = c
+                    .push(self.pass_field("Current passphrase", &self.old_in, Msg::OldIn, None))
+                    .push(self.new_pass_fields(Msg::ChangePassSubmit))
+                    .push(
+                        row![
+                            button(text(if self.busy { "Working..." } else { "Change passphrase" }))
+                                .style(button::primary)
+                                .on_press_maybe((!self.busy).then_some(Msg::ChangePassSubmit)),
+                            button(text("Cancel")).style(ghost).on_press(Msg::ToggleChange),
+                        ]
+                        .spacing(8),
+                    );
+            } else {
+                c = c.push(button(text("Change passphrase")).style(ghost).on_press(Msg::ToggleChange));
+            }
+            c.into()
         };
         column![
             row![
@@ -887,10 +1309,7 @@ impl App {
             pick_list(opts(&self.devices.1), sel(&self.settings.output), Msg::OutDev).width(Fill).padding(8),
             text("Device changes apply from the next call.").size(12).style(text::secondary),
             checkbox(self.settings.tone).label("Send a test tone instead of the microphone").on_toggle(Msg::ToneToggled),
-            button(text(if self.show_phrase { "Hide recovery phrase" } else { "Show recovery phrase" }))
-                .style(ghost)
-                .on_press(Msg::ToggleShowPhrase),
-            phrase,
+            security,
             Space::new().height(10),
             button(text("Quit Osvauld Calls")).style(button::danger).on_press(Msg::Quit),
         ]
