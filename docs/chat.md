@@ -60,8 +60,8 @@ stream.
   `ChatSync` for what the sender lacks (an empty update is fine).
 - `ChatPush { doc, update, sig }`: live, after a local write, while connected.
 - `ChatAck { doc, vv }`: "I now hold up to here" — this drives the ticks.
-- Older shards: `ChatHistory { before: day, limit }` → the peer lists `(day, vv)` pairs; we pull
-  only what the user scrolls to.
+- Older shards: `ChatHistory { before: day, limit }` → the peer lists `(day, vv, snapshot
+  hash)`; we fetch only what the user scrolls to, closed days as blobs over iroh-blobs.
 
 ### Delivery and offline
 1:1 has no third member to relay through, so **a message is sent when both devices are
@@ -75,10 +75,25 @@ online at the same time**. With the always-on service that is usually seconds; w
 - Notifications: the foreground service receives pushes and posts a messaging-style
   notification (`MessagingStyle`), quiet if the conversation is open.
 
-### Storage
-Each shard is stored as a Loro snapshot plus appended updates in the data dir, with the same
-private permissions as the other stores. Open question: seal chat content at rest with the
-vault key (the passphrase protects the identity today, not the content).
+### Storage (decided 2026-10-07: our vault + iroh-blobs)
+Two stores, both in the app's private data dir:
+
+- **Vault records**: osvauld2's `storage` (one redb file, sortable path keys) with `vault`'s
+  sealed-record pattern (`put_doc` / `put_entry`: Loro-free, snapshots are opaque sealed
+  bytes). Sealed with Tinline's existing data key (DEK, `crates/core/src/vault.rs`), not a
+  per-login passphrase: the phone unlocks at boot from the Keystore-remembered DEK, so chat
+  must be readable then too. Holds: open shards (Loro snapshot + appended updates), the shard
+  index (`dm/{pair}/{day}` → vv, closed-snapshot hash), outbox, read cursors.
+- **Blob store**: iroh-blobs, content-addressed by BLAKE3. Holds files/images/voice notes
+  (§3) and **closed shards**: a past day's doc is compacted into one snapshot blob and the
+  index records its hash. Messages and the index refer to content only by hash; the app loads
+  by hash and, if it isn't local, fetches it from a peer that may read it. Scrolling back and
+  receiving a file are then the same operation.
+- Blobs are stored as plaintext inside app-private storage (Android file-based encryption
+  covers it at rest): per-device encryption would change the hash and break fetching by hash
+  across devices. Sealing the blob store under our own key is a later option.
+- A closed shard that is edited later (an edit or delete of an old message) gets a delta in
+  the vault; the next compaction makes a new snapshot blob and drops the old one.
 
 ## 3. Phase 2: files (iroh-blobs)
 
