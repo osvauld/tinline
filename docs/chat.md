@@ -89,16 +89,22 @@ Two stores, both in the app's private data dir:
   index records its hash. Messages and the index refer to content only by hash; the app loads
   by hash and, if it isn't local, fetches it from a peer that may read it. Scrolling back and
   receiving a file are then the same operation.
-- Blobs are stored as plaintext inside app-private storage (Android file-based encryption
-  covers it at rest): per-device encryption would change the hash and break fetching by hash
-  across devices. Sealing the blob store under our own key is a later option.
+- **Blobs are encrypted, and the vault holds their keys** (decided 2026-10-07). The author
+  encrypts each blob once with a fresh random AES-256-GCM key (chunked, so large files stream
+  and resume), and stores the **ciphertext** in iroh-blobs: the hash is the ciphertext's.
+  The referencing message carries `{hash, key, name, size, mime}` (end-to-end encrypted in
+  transit, sealed in the vault at rest), and the vault index keeps `hash → key`. Every device
+  stores and serves the same ciphertext, so fetching by hash works across devices, and a
+  member who forwards a blob handles only ciphertext. Random keys, not content-derived ones:
+  convergent keys would dedupe identical files but reveal that two people hold the same file.
 - A closed shard that is edited later (an edit or delete of an old message) gets a delta in
   the vault; the next compaction makes a new snapshot blob and drops the old one.
 
 ## 3. Phase 2: files (iroh-blobs)
 
-A message's `file = { hash (BLAKE3), name, size, mime }`. The recipient fetches it from the
-author, or from any member who already has it (groups). A device serves a blob only to a peer
+A message's `file = { hash (BLAKE3 of the ciphertext), key, name, size, mime }` (see §2
+Storage). The recipient fetches the ciphertext from the author, or from any member who already
+has it (groups), and decrypts with `key`. A device serves a blob only to a peer
 that may read a doc referencing that hash. Auto-download limits per network type; resumable.
 
 ## 4. Phase 3: groups
