@@ -25,7 +25,7 @@ has re-run its acceptance command.
 | 14 | Desktop: passphrase onboarding/unlock/migration | sonnet (worktree), after 12 | `crates/desktop` | done, merged; audio decoupled from UI loop |
 | 15 | Code review (4 parallel read-only reviewers: crypto, core, Android, desktop/release) | sonnet x4 | — | done; findings triaged into 16–18 |
 | 16 | Fix core/proto review findings (tickets, handshake DoS, call states, perms, verify_strict) | sonnet (worktree) | `crates/core`, `crates/proto`, `crates/cryptography` | done, merged, tests re-run |
-| 17 | Fix Android review findings (mic FGS, audio focus/routing, FLAG_SECURE, release/R8, targetSdk 36) | sonnet (worktree) | `android/` | in progress |
+| 17 | Fix Android review findings (mic FGS, audio focus/routing, FLAG_SECURE, release/R8, targetSdk 36) | sonnet (worktree) | `android/` | done, merged; e2e on 2 emulators + R8 release smoke-tested (onboard, add, call) |
 | 18 | Fix desktop review findings (Windows build, test-hooks feature, single instance, device loss) | sonnet (worktree) | `crates/desktop` | in progress |
-| 19 | Rename to Tinline (`com.osvauld.tinline`), Terms/Privacy acceptance, reset-ticket UI | lead/sonnet, after 16–18 | all | todo |
+| 19 | Rename to Tinline (`com.osvauld.tinline`), Terms/Privacy acceptance, reset-ticket UI | lead/sonnet, after 16–18 | all | Android id + name done; desktop rename (after 18), Terms/Privacy, reset-ticket todo |
 | 20 | CI: GitHub Actions for Android AAB/APK, Linux deb/rpm/AppImage, Windows installer | todo | `.github/` | todo |
