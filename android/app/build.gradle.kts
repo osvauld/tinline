@@ -15,7 +15,8 @@ android {
         applicationId = "com.osvauld.tinline"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
+        // Play needs a higher code on every upload; scripts/build_android.py --bundle passes the commit count.
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = "0.1.0"
     }
     // Release signing: set RELEASE_STORE_FILE / RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS /
