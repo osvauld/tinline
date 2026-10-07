@@ -5489,6 +5489,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "redb"
+version = "2.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d64e07496d293ad8ed401c4d193d5b9f0f97671fbd5bf21d691a0c7d2c53dc8"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6350,6 +6359,16 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "storage"
+version = "0.1.0"
+dependencies = [
+ "cryptography",
+ "redb",
+ "thiserror 2.0.21",
+ "zeroize",
+]
 
 [[package]]
 name = "strict-num"
