@@ -65,8 +65,9 @@ in ~1 s), reboot (auto-start, call rings over the lock screen). Desktop speech o
   init/timing; content needs a real phone.
 - One device per DID is dialled at a time (newest first); a phrase restored on a second phone
   gets a new device key, but nothing yet announces it to contacts until it calls them.
-- Secrets (phrase, device key) are stored in the app sandbox, not yet wrapped by Android
-  Keystore. No Bluetooth audio routing, no QR scanning on desktop.
+- Secrets (phrase, device key) are sealed under a passphrase (Argon2id, see `docs/vault.md`); the
+  platform UIs for it and the Keystore-wrapped unlock key are still being built. No Bluetooth
+  audio routing, no QR scanning on desktop.
 
 ## License
 
