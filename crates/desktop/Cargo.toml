@@ -21,4 +21,17 @@ qrcode = { version = "0.14", default-features = false }
 directories = "6"
 notify-rust = "4"
 tray-icon = { version = "0.21", default-features = false }
+
+zeroize = "1"
+rtrb = "0.3"
+
+[target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+
+[features]
+# Test knobs (P2P_AUTO_ANSWER, P2P_PASSPHRASE, ...) and the TICKET/STATS stderr lines the e2e scripts
+# parse. Never enable in a release build.
+test-hooks = []

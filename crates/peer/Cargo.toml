@@ -3,6 +3,7 @@ name = "peer"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+publish = false
 
 [[bin]]
 name = "p2p-peer"

@@ -2,7 +2,7 @@
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use iced::widget::{
     button, canvas, checkbox, column, container, pick_list, row, scrollable,
@@ -14,12 +14,14 @@ use iced::{
 };
 use p2pcore::{CallInfo, CallState, CallStats, Contact, Error, LockState, Node, NodeStatus};
 use serde::{Deserialize, Serialize};
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::audio;
 use crate::tray::TrayCmd;
 use crate::{Ev, INIT};
 
 const DEFAULT_LABEL: &str = "System default";
+const REVEAL_SECS: u64 = 60;
 
 pub fn run() -> iced::Result {
     iced::daemon(App::boot, App::update, App::view)
@@ -64,17 +66,23 @@ struct App {
     dark: bool,
     screen: Screen,
     name_in: String,
-    pass_in: String,
-    pass2_in: String,
-    old_in: String,
+    pass_in: Zeroizing<String>,
+    pass2_in: Zeroizing<String>,
+    old_in: Zeroizing<String>,
     /// Restoring over an existing (locked) identity, from the Unlock screen.
     replace: bool,
-    revealed: Option<String>,
+    revealed: Option<Zeroizing<String>>,
+    /// When the phrase was revealed; it hides itself after `REVEAL_SECS`.
+    revealed_at: Option<Instant>,
     reveal_form: bool,
     change_form: bool,
     restore: bool,
-    phrase_in: String,
-    new_phrase: Option<String>,
+    phrase_in: Zeroizing<String>,
+    show_phrase_in: bool,
+    new_phrase: Option<Zeroizing<String>>,
+    /// Cached so `view` never calls into the node.
+    lock: LockState,
+    profile_name: String,
     busy: bool,
     notice: Option<String>,
     status: NodeStatus,
@@ -110,6 +118,8 @@ enum Msg {
     Create,
     Created(Result<String, String>),
     ToggleRestore,
+    TogglePhraseShow,
+    Devices((Vec<String>, Vec<String>)),
     PhraseChanged(String),
     Restore,
     Restored(Result<NodeBox, String>),
@@ -199,6 +209,11 @@ fn settings_path() -> std::path::PathBuf {
     INIT.get().unwrap().data.join("desktop-settings.json")
 }
 
+/// Moves a secret out of its field (no copy left behind) to hand to the core.
+fn take_secret(z: &mut Zeroizing<String>) -> String {
+    std::mem::take(&mut **z)
+}
+
 fn s<E: ToString>(e: E) -> String {
     e.to_string()
 }
@@ -236,6 +251,7 @@ impl App {
             .unwrap_or_default();
         let has = node.has_identity();
         let lock = node.lock_state();
+        let mut settings_devices = false;
         let test_unlock = init.test_pass.clone().filter(|_| lock == LockState::Locked);
         let mut app = App {
             win: None,
@@ -247,16 +263,20 @@ impl App {
                 _ => Screen::Home,
             },
             name_in: String::new(),
-            pass_in: String::new(),
-            pass2_in: String::new(),
-            old_in: String::new(),
+            pass_in: Zeroizing::default(),
+            pass2_in: Zeroizing::default(),
+            old_in: Zeroizing::default(),
             replace: false,
             revealed: None,
+            revealed_at: None,
             reveal_form: false,
             change_form: false,
             restore: false,
-            phrase_in: String::new(),
+            phrase_in: Zeroizing::default(),
+            show_phrase_in: false,
             new_phrase: None,
+            lock,
+            profile_name: node.profile().map(|p| p.name).unwrap_or_default(),
             busy: false,
             notice: None,
             status: node.status(),
@@ -274,13 +294,16 @@ impl App {
             fetching: false,
             node,
         };
-        if has && std::env::var("P2P_SCREEN").is_ok_and(|v| v == "settings") {
-            app.devices = audio::list_devices();
+        if has && crate::test_env("P2P_SCREEN").is_some_and(|v| v == "settings") {
             app.screen = Screen::Settings;
+            settings_devices = true;
         }
         *app.ctl.devices.lock().unwrap() = (app.settings.input.clone(), app.settings.output.clone());
         *app.ctl.tone.lock().unwrap() = app.tone_hz();
         let mut tasks = vec![system::theme().map(Msg::Theme)];
+        if settings_devices {
+            tasks.push(blocking(audio::list_devices, Msg::Devices));
+        }
         if !init.hidden {
             tasks.push(app.show_window());
         }
@@ -319,10 +342,34 @@ impl App {
         blocking(move || node.my_ticket().map_err(s), Msg::Ticket)
     }
 
+    /// Writes the settings on a helper thread (tmp file + rename, so a crash never leaves half a
+    /// file). The newest snapshot always wins even if two saves race.
     fn save_settings(&self) {
-        if let Ok(b) = serde_json::to_vec_pretty(&self.settings) {
-            let _ = std::fs::write(settings_path(), b);
-        }
+        static PENDING: std::sync::Mutex<Option<Vec<u8>>> = std::sync::Mutex::new(None);
+        static WRITE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let Ok(b) = serde_json::to_vec_pretty(&self.settings) else { return };
+        *PENDING.lock().unwrap() = Some(b);
+        let path = settings_path();
+        std::thread::spawn(move || {
+            let _w = WRITE.lock().unwrap();
+            let Some(b) = PENDING.lock().unwrap().take() else { return };
+            let tmp = path.with_extension("json.tmp");
+            if std::fs::write(&tmp, b).is_ok() && std::fs::rename(&tmp, &path).is_err() {
+                let _ = std::fs::remove_file(&tmp);
+            }
+        });
+    }
+
+    /// Refreshes what `view` shows about the identity; the node is only asked here, never per redraw.
+    fn refresh_identity(&mut self) {
+        self.lock = self.node.lock_state();
+        self.profile_name = self.node.profile().map(|p| p.name).unwrap_or_default();
+    }
+
+    fn hide_phrase(&mut self) {
+        self.revealed = None;
+        self.revealed_at = None;
+        self.reveal_form = false;
     }
 
 
@@ -352,6 +399,26 @@ impl App {
     }
 
     fn update(&mut self, msg: Msg) -> Task<Msg> {
+        let identity_may_change = matches!(
+            msg,
+            Msg::Tick
+                | Msg::Ev(_)
+                | Msg::Created(_)
+                | Msg::Restored(_)
+                | Msg::Unlocked(_)
+                | Msg::PassSet(_)
+                | Msg::PassChanged(_)
+                | Msg::Started(_)
+                | Msg::Ticket(_)
+        );
+        let task = self.update_inner(msg);
+        if identity_may_change {
+            self.refresh_identity();
+        }
+        task
+    }
+
+    fn update_inner(&mut self, msg: Msg) -> Task<Msg> {
         match msg {
             Msg::Ev(b) => {
                 let Some(ev) = b.0.lock().unwrap().take() else { return Task::none() };
@@ -360,7 +427,11 @@ impl App {
             Msg::Tick => {
                 self.ticks += 1;
                 self.status = self.node.status();
-                crate::tray::set_status(match self.node.lock_state() {
+                self.lock = self.node.lock_state();
+                if self.revealed_at.is_some_and(|t| t.elapsed() >= Duration::from_secs(REVEAL_SECS)) {
+                    self.hide_phrase();
+                }
+                crate::tray::set_status(match self.lock {
                     LockState::Locked => "Locked",
                     LockState::NeedsPassphrase => "Set a passphrase",
                     _ if !self.status.started => "Starting...",
@@ -369,22 +440,12 @@ impl App {
                 });
                 if let Some(c) = self.call.as_mut() {
                     c.stats = self.node.call_stats();
-                    if let Some(st) = &c.stats
-                        && st.state == CallState::Active
-                    {
-                        {
-                            eprintln!(
-                                "STATS t={} direct={} rtt={}ms sent={} recv={} lost={} recovered={} concealed={} buf={}ms freq={:.1} rms={:.0}",
-                                st.secs, st.direct, st.rtt_ms, st.sent, st.received, st.lost,
-                                st.recovered, st.concealed, st.buffered_ms, st.rx_freq_hz, st.rx_rms
-                            );
-                        }
-                    }
                 }
             }
             Msg::WindowOpened(_) => {}
             Msg::CloseReq(id) => {
                 if Some(id) == self.win {
+                    self.hide_phrase();
                     if INIT.get().unwrap().tray {
                         self.win = None;
                         return window::close(id);
@@ -394,6 +455,7 @@ impl App {
             }
             Msg::Closed(id) => {
                 if Some(id) == self.win {
+                    self.hide_phrase();
                     self.win = None;
                 }
             }
@@ -401,7 +463,14 @@ impl App {
             Msg::Quit => {
                 let node = self.node.clone();
                 self.ctl.stop_all();
-                return blocking(move || node.stop(), |_| Msg::Exit);
+                // A hung shutdown must not keep the app (and its tray icon) alive.
+                return Task::perform(
+                    async move {
+                        let stop = tokio::task::spawn_blocking(move || node.stop());
+                        let _ = tokio::time::timeout(Duration::from_secs(3), stop).await;
+                    },
+                    |_| Msg::Exit,
+                );
             }
             Msg::Exit => return iced::exit(),
             Msg::NameChanged(v) => self.name_in = v,
@@ -420,20 +489,20 @@ impl App {
                 }
                 self.busy = true;
                 self.notice = Some("Securing your identity...".into());
-                let pass = std::mem::take(&mut self.pass_in);
-                self.pass2_in.clear();
+                let pass = take_secret(&mut self.pass_in);
+                self.pass2_in.zeroize();
                 let node = self.node.clone();
                 return blocking(move || node.create_identity(name, pass).map_err(friendly), Msg::Created);
             }
-            Msg::PassIn(v) => self.pass_in = v,
-            Msg::Pass2In(v) => self.pass2_in = v,
-            Msg::OldIn(v) => self.old_in = v,
+            Msg::PassIn(v) => self.pass_in = Zeroizing::new(v),
+            Msg::Pass2In(v) => self.pass2_in = Zeroizing::new(v),
+            Msg::OldIn(v) => self.old_in = Zeroizing::new(v),
             Msg::Created(r) => {
                 self.busy = false;
                 self.notice = None;
                 match r {
                     Ok(p) => {
-                        self.new_phrase = Some(p);
+                        self.new_phrase = Some(Zeroizing::new(p));
                         self.screen = Screen::Phrase;
                         self.name_edit = self.name_in.trim().to_string();
                     }
@@ -441,7 +510,8 @@ impl App {
                 }
             }
             Msg::ToggleRestore => self.restore = !self.restore,
-            Msg::PhraseChanged(v) => self.phrase_in = v,
+            Msg::PhraseChanged(v) => self.phrase_in = Zeroizing::new(v),
+            Msg::TogglePhraseShow => self.show_phrase_in = !self.show_phrase_in,
             Msg::Restore => {
                 let name = self.name_in.trim().to_string();
                 if name.is_empty() || self.phrase_in.trim().is_empty() {
@@ -457,9 +527,10 @@ impl App {
                 }
                 self.busy = true;
                 self.notice = Some("Restoring...".into());
-                let pass = std::mem::take(&mut self.pass_in);
-                self.pass2_in.clear();
-                let phrase = std::mem::take(&mut self.phrase_in);
+                let pass = take_secret(&mut self.pass_in);
+                self.pass2_in.zeroize();
+                // The typed phrase stays until the restore succeeds, so a wrong passphrase costs no retyping.
+                let phrase = self.phrase_in.to_string();
                 let (node, replace) = (self.node.clone(), self.replace);
                 let (data, tx, ctl) = {
                     let i = INIT.get().unwrap();
@@ -497,6 +568,9 @@ impl App {
                         match fresh {
                             Ok(n) => {
                                 ctl.attach(&n);
+                                // The new profile is saved; the old one is encrypted under a
+                                // passphrase nobody remembers.
+                                let _ = std::fs::remove_file(&aside);
                                 Ok(NodeBox(Arc::new(std::sync::Mutex::new(Some(n)))))
                             }
                             Err(e) => {
@@ -512,6 +586,8 @@ impl App {
                 self.busy = false;
                 match r {
                     Ok(b) => {
+                        self.phrase_in.zeroize();
+                        self.show_phrase_in = false;
                         if let Some(n) = b.0.lock().unwrap().take()
                             && !Arc::ptr_eq(&n, &self.node)
                         {
@@ -536,7 +612,7 @@ impl App {
                 }
                 self.busy = true;
                 self.notice = None;
-                let pass = std::mem::take(&mut self.pass_in);
+                let pass = take_secret(&mut self.pass_in);
                 let node = self.node.clone();
                 return blocking(move || node.unlock(pass).map_err(friendly), Msg::Unlocked);
             }
@@ -560,27 +636,27 @@ impl App {
                 self.replace = true;
                 self.restore = true;
                 self.notice = None;
-                self.pass_in.clear();
+                self.pass_in.zeroize();
                 self.screen = Screen::Onboarding;
             }
             Msg::BackToUnlock => {
                 self.replace = false;
                 self.restore = false;
                 self.notice = None;
-                self.pass_in.clear();
-                self.pass2_in.clear();
+                self.pass_in.zeroize();
+                self.pass2_in.zeroize();
                 self.screen = Screen::Unlock;
             }
             Msg::GoSetPass => {
                 self.notice = None;
-                self.pass_in.clear();
-                self.pass2_in.clear();
+                self.pass_in.zeroize();
+                self.pass2_in.zeroize();
                 self.screen = Screen::SetPass;
             }
             Msg::SkipSetPass => {
                 self.notice = None;
-                self.pass_in.clear();
-                self.pass2_in.clear();
+                self.pass_in.zeroize();
+                self.pass2_in.zeroize();
                 self.screen = Screen::Home;
             }
             Msg::SetPassSubmit => {
@@ -593,8 +669,8 @@ impl App {
                 }
                 self.busy = true;
                 self.notice = Some("Securing your identity...".into());
-                let pass = std::mem::take(&mut self.pass_in);
-                self.pass2_in.clear();
+                let pass = take_secret(&mut self.pass_in);
+                self.pass2_in.zeroize();
                 let node = self.node.clone();
                 return blocking(move || node.set_passphrase(None, pass).map_err(friendly), Msg::PassSet);
             }
@@ -609,37 +685,38 @@ impl App {
                 }
             }
             Msg::ToggleReveal => {
-                self.reveal_form = !self.reveal_form;
-                self.revealed = None;
-                self.pass_in.clear();
+                let open = !self.reveal_form;
+                self.hide_phrase();
+                self.reveal_form = open;
+                self.pass_in.zeroize();
                 self.notice = None;
             }
-            Msg::HidePhrase => {
-                self.revealed = None;
-                self.reveal_form = false;
-            }
+            Msg::HidePhrase => self.hide_phrase(),
             Msg::RevealSubmit => {
                 if self.busy || self.pass_in.is_empty() {
                     return Task::none();
                 }
                 self.busy = true;
                 self.notice = None;
-                let pass = std::mem::take(&mut self.pass_in);
+                let pass = take_secret(&mut self.pass_in);
                 let node = self.node.clone();
                 return blocking(move || node.recovery_phrase(pass).map_err(friendly), Msg::Revealed);
             }
             Msg::Revealed(r) => {
                 self.busy = false;
                 match r {
-                    Ok(p) => self.revealed = Some(p),
+                    Ok(p) => {
+                        self.revealed = Some(Zeroizing::new(p));
+                        self.revealed_at = Some(Instant::now());
+                    }
                     Err(e) => self.notice = Some(e),
                 }
             }
             Msg::ToggleChange => {
                 self.change_form = !self.change_form;
-                self.old_in.clear();
-                self.pass_in.clear();
-                self.pass2_in.clear();
+                self.old_in.zeroize();
+                self.pass_in.zeroize();
+                self.pass2_in.zeroize();
                 self.notice = None;
             }
             Msg::ChangePassSubmit => {
@@ -652,8 +729,8 @@ impl App {
                 }
                 self.busy = true;
                 self.notice = Some("Changing passphrase...".into());
-                let (old, new) = (std::mem::take(&mut self.old_in), std::mem::take(&mut self.pass_in));
-                self.pass2_in.clear();
+                let (old, new) = (take_secret(&mut self.old_in), take_secret(&mut self.pass_in));
+                self.pass2_in.zeroize();
                 let node = self.node.clone();
                 return blocking(move || node.set_passphrase(Some(old), new).map_err(friendly), Msg::PassChanged);
             }
@@ -661,6 +738,7 @@ impl App {
                 self.busy = false;
                 match r {
                     Ok(()) => {
+                        self.hide_phrase();
                         self.change_form = false;
                         self.notice = Some("Passphrase changed".into());
                     }
@@ -685,7 +763,7 @@ impl App {
                 self.fetching = false;
                 match r {
                 Ok(t) => {
-                    eprintln!("TICKET {t}");
+                    crate::tlog!("TICKET {t}");
                     self.qr = qr_of(&t);
                     self.ticket = Some(t);
                 }
@@ -775,18 +853,20 @@ impl App {
                 self.ctl.muted.store(m, Ordering::Relaxed);
             }
             Msg::OpenSettings => {
-                self.devices = audio::list_devices();
                 self.screen = Screen::Settings;
-                self.revealed = None;
-                self.reveal_form = false;
+                self.hide_phrase();
                 self.change_form = false;
-                self.pass_in.clear();
-                self.pass2_in.clear();
-                self.old_in.clear();
+                self.pass_in.zeroize();
+                self.pass2_in.zeroize();
+                self.old_in.zeroize();
                 self.notice = None;
+                // Enumerating devices can block for a while (PulseAudio/WASAPI).
+                return blocking(audio::list_devices, Msg::Devices);
             }
+            Msg::Devices(d) => self.devices = d,
             Msg::Back => {
                 self.screen = Screen::Home;
+                self.hide_phrase();
                 self.notice = None;
             }
             Msg::NameEdit(v) => self.name_edit = v,
@@ -850,11 +930,13 @@ impl App {
                     stats: None,
                 });
                 std::thread::spawn(move || {
-                    let _ = notify_rust::Notification::new()
-                        .appname("Osvauld Calls")
-                        .summary("Incoming call")
-                        .body(&format!("{name} is calling"))
-                        .show();
+                    let mut n = notify_rust::Notification::new();
+                    n.appname("Osvauld Calls").summary("Incoming call").body(&format!("{name} is calling"));
+                    // Windows toasts are attributed to an AppUserModelID; an installer should register
+                    // a shortcut with the same id so they show under the app's name and icon.
+                    #[cfg(windows)]
+                    n.app_id("Osvauld.Calls");
+                    let _ = n.show();
                 });
                 let mut tasks = vec![self.show_window()];
                 if let Some(secs) = INIT.get().unwrap().auto_answer {
@@ -882,6 +964,7 @@ impl App {
                     }
                 }
             }
+            Ev::AudioNotice(m) => self.notice = Some(m),
             Ev::Tray(TrayCmd::Show) => return self.show_window(),
             Ev::Tray(TrayCmd::Quit) => return self.update(Msg::Quit),
         }
@@ -967,8 +1050,12 @@ impl App {
                 .push(text("Recovery phrase (24 words)").size(13).style(text::secondary))
                 .push(
                     text_input("word word word ...", &self.phrase_in)
+                        .secure(!self.show_phrase_in)
                         .on_input(Msg::PhraseChanged)
                         .padding(10),
+                )
+                .push(
+                    checkbox(self.show_phrase_in).label("Show the words").on_toggle(|_| Msg::TogglePhraseShow),
                 );
             if self.replace {
                 col = col.push(
@@ -1003,7 +1090,7 @@ impl App {
     }
 
     fn unlock_view(&self) -> Element<'_, Msg> {
-        let name = self.node.profile().map(|p| p.name).unwrap_or_default();
+        let name = self.profile_name.clone();
         column![
             Space::new().height(40),
             text("Osvauld Calls").size(30),
@@ -1042,7 +1129,7 @@ impl App {
     }
 
     fn phrase_view(&self) -> Element<'_, Msg> {
-        let phrase = self.new_phrase.clone().unwrap_or_default();
+        let phrase = self.new_phrase.as_ref().map(|p| p.to_string()).unwrap_or_default();
         column![
             Space::new().height(30),
             text("Your recovery phrase").size(26),
@@ -1069,7 +1156,7 @@ impl App {
         };
         let header = row![
             column![
-                text(self.node.profile().map(|p| p.name).unwrap_or_default()).size(24),
+                text(self.profile_name.clone()).size(24),
                 pill,
             ]
             .spacing(6),
@@ -1145,7 +1232,7 @@ impl App {
         ]
         .spacing(8);
 
-        let banner: Element<Msg> = if self.node.lock_state() == LockState::NeedsPassphrase {
+        let banner: Element<Msg> = if self.lock == LockState::NeedsPassphrase {
             container(
                 column![
                     text("Protect your identity").size(17),
@@ -1240,7 +1327,7 @@ impl App {
             o
         };
         let sel = |v: &Option<String>| Some(v.clone().unwrap_or_else(|| DEFAULT_LABEL.to_string()));
-        let legacy = self.node.lock_state() == LockState::NeedsPassphrase;
+        let legacy = self.lock == LockState::NeedsPassphrase;
         let security: Element<Msg> = if legacy {
             column![
                 text("Your keys are not protected by a passphrase yet.").size(13).style(text::danger),
@@ -1252,7 +1339,7 @@ impl App {
             let mut c = column![].spacing(8);
             if let Some(p) = &self.revealed {
                 c = c
-                    .push(container(text(p.clone()).size(15)).padding(14).width(Fill).style(container::bordered_box))
+                    .push(container(text(p.to_string()).size(15)).padding(14).width(Fill).style(container::bordered_box))
                     .push(button(text("Hide recovery phrase")).style(ghost).on_press(Msg::HidePhrase));
             } else if self.reveal_form {
                 c = c

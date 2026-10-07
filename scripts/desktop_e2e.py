@@ -4,6 +4,7 @@
   scripts/desktop_e2e.py tone   # app sends 440 Hz test tone, peer 660 Hz; both must hear the other
   scripts/desktop_e2e.py mic    # a tone played into the null source must reach the peer via the real mic path
 
+Needs a desktop build with test hooks: cargo build --release -p desktop --features test-hooks -p peer
 Env: P2P_PASSPHRASE (default test-passphrase; unlocks the app non-interactively), TARGET (cargo target dir with release binaries), WORK (scratch dir).
 """
 import math, os, re, struct, subprocess, sys, time
@@ -84,6 +85,8 @@ def check(label, got, want):
 
 
 def main():
+    if b"p2p-desktop-test-hooks-enabled" not in open(APP, "rb").read():
+        sys.exit(f"{APP} was built without test hooks; rebuild: cargo build --release -p desktop --features test-hooks")
     mode = sys.argv[1] if len(sys.argv) > 1 else "tone"
     os.environ.setdefault("P2P_PASSPHRASE", "test-passphrase")  # test-only unlock for the desktop app (peer init uses the same default)
     env = setup(null_sink())
