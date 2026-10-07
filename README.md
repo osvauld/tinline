@@ -67,3 +67,9 @@ in ~1 s), reboot (auto-start, call rings over the lock screen). Desktop speech o
   gets a new device key, but nothing yet announces it to contacts until it calls them.
 - Secrets (phrase, device key) are stored in the app sandbox, not yet wrapped by Android
   Keystore. No Bluetooth audio routing, no QR scanning on desktop.
+
+## License
+
+GPL-3.0-or-later (see `LICENSE`). Free and open source, no ads, no tracking: anyone who
+distributes a modified version must publish its source under the same terms. `crates/identity`
+and `crates/cryptography` come from osvauld2 and are relicensed here by their author.
