@@ -58,7 +58,7 @@ fun SettingsScreen(
     val bgOk = missing.none { it == Need.Battery || it == Need.Notifications || it == Need.FullScreen || it == Need.Mic }
     Page {
         TopBar("Settings", onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
             CardBox(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp).fillMaxWidth()) {
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     SelfAvatar(name.ifBlank { "?" }, 52.dp)
@@ -102,7 +102,7 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
     val ctx = LocalContext.current
     Page {
         TopBar("Background & battery", onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 Text("Keep my line open", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
                 Hint("Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that.")
@@ -154,7 +154,7 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
     }
     Page {
         TopBar("Recovery phrase", onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(Modifier.size(64.dp).clip(CircleShape).background(Tin.c.prc), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Lock, null, tint = Tin.c.onPrc, modifier = Modifier.size(28.dp)) }
             Text("Enter your passphrase", style = TinType.h1.copy(fontSize = 26.sp, lineHeight = 32.sp), color = Tin.c.ink)
             Lead("Your recovery phrase is the key to your account, so we check it’s really you first.")
@@ -171,7 +171,7 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
 fun PhraseShownScreen(phrase: String, onHide: () -> Unit) {
     Page {
         TopBar("Recovery phrase", onHide)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             InfoCard("Anyone who sees these words can become you. Check nobody is looking.", icon = Icons.Rounded.Warning, kind = BannerKind.Warn)
             WordGrid(phrase)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -196,7 +196,7 @@ fun ChangePassphraseScreen(app: P2pApp, onBack: () -> Unit) {
     var done by remember { mutableStateOf(false) }
     Page {
         TopBar("Change passphrase", onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             TinField(old, { old = it; error = null }, "Current passphrase", mono = true, password = true, enabled = !busy,
                 state = if (error != null) FieldState.Error else FieldState.Normal, hint = error)
             NewPassphraseFields(pass, confirm, { pass = it; error = null }, { confirm = it; error = null }, !busy, why = false)
@@ -226,7 +226,7 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
     val ext: @Composable () -> Unit = { Icon(Icons.Rounded.OpenInNew, null, tint = c.ink2) }
     Page {
         TopBar("About", onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
             Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AppIconBadge(88.dp)
                 Text("Tinline", Modifier.padding(top = 6.dp), style = TinType.titleL, color = c.ink)
@@ -259,7 +259,7 @@ fun LicencesScreen(onBack: () -> Unit) {
     )
     Page {
         TopBar("Open-source licences", onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             libs.forEach { Text(it, style = TinType.bodyL.copy(fontSize = 15.sp), color = c.ink) }
             fonts.forEach { (t, body) ->
                 Text(t, Modifier.padding(top = 12.dp), style = TinType.titleM, color = c.ink)

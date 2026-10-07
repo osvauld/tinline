@@ -143,7 +143,7 @@ fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: 
             Icon(Glyphs.Cans, null, tint = c.ink2, modifier = Modifier.size(20.dp))
             Text("Tinline call", style = TinType.bodyM, color = c.ink2)
         }
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
             // Two thin amber rings around the avatar: the line is ringing.
             Box(Modifier.size(168.dp).border(2.dp, c.thread.copy(alpha = 0.35f), CircleShape), contentAlignment = Alignment.Center) {
                 Box(Modifier.size(144.dp).border(2.dp, c.thread.copy(alpha = 0.6f), CircleShape), contentAlignment = Alignment.Center) {
@@ -205,7 +205,7 @@ fun InCallContent(
             }
             Spacer(Modifier.width(48.dp))
         }
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
             PairAvatars(meName.ifBlank { "?" }, name, did)
             Text(name, Modifier.padding(top = 16.dp), style = TinType.h1.copy(fontSize = 30.sp, lineHeight = 36.sp), color = c.ink, textAlign = TextAlign.Center)
@@ -275,7 +275,7 @@ fun EndedContent(
     val c = Tin.c
     if (autoClose) LaunchedEffect(Unit) { delay(ENDED_AUTOCLOSE_MS); onClose() }
     Page {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
             PairAvatars(meName.ifBlank { "?" }, name.ifBlank { "Unknown" }, did)
             Text("Call ended", Modifier.padding(top = 16.dp), style = TinType.h1.copy(fontSize = 30.sp, lineHeight = 36.sp), color = c.ink)
@@ -300,7 +300,7 @@ fun UnreachableContent(name: String, did: String, meName: String, onAgain: () ->
     val c = Tin.c
     val who = name.ifBlank { "them" }
     Page {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SelfAvatar(meName.ifBlank { "?" }, 64.dp)
@@ -324,7 +324,7 @@ fun UnreachableContent(name: String, did: String, meName: String, onAgain: () ->
 fun MicNeededScreen(onOpenSettings: () -> Unit, onNotNow: () -> Unit) {
     val c = Tin.c
     Page {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
             Box(Modifier.size(96.dp).clip(CircleShape).background(c.erc), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.MicOff, null, tint = c.er, modifier = Modifier.size(44.dp)) }
             H1("Tinline can’t use the microphone", Modifier.padding(top = 12.dp), align = TextAlign.Center)
