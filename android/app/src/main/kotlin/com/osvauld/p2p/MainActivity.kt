@@ -41,7 +41,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
+        intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
         setContent { TinlineTheme { Root(app) } }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
     }
 }
 
@@ -52,6 +58,8 @@ private sealed interface Route {
     data class Verify(val did: String) : Route
     data object Settings : Route
     data object History : Route
+    data class Chat(val did: String) : Route
+    data object NewChat : Route
     data object Battery : Route
     data object Passphrase : Route
     data object PhraseGate : Route
@@ -89,6 +97,16 @@ private fun Root(app: P2pApp) {
             }
         }
         owner.lifecycle.addObserver(o); onDispose { owner.lifecycle.removeObserver(o) }
+    }
+
+    // A tap on a message notification opens that conversation once the app is past onboarding and unlock.
+    val openReq by OpenChat.request.collectAsState()
+    LaunchedEffect(openReq, has, lock, termsOk) {
+        val did = openReq ?: return@LaunchedEffect
+        if (has && lock == LockState.UNLOCKED && termsOk && !onboarding) {
+            OpenChat.request.value = null
+            if ((stack.last() as? Route.Chat)?.did != did) stack.add(Route.Chat(did))
+        }
     }
 
     fun place(did: String) {
@@ -151,15 +169,27 @@ private fun Root(app: P2pApp) {
                 Route.Home -> HomeScreen(
                     app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onSettings = { stack.add(Route.Settings) },
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
-                    onSeeAll = { stack.add(Route.History) },
+                    onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                 )
+                Route.NewChat -> {
+                    val chats by app.chat.chats.collectAsState()
+                    val last = remember(chats) { chats.filter { it.lastActivity > 0UL }.associate { it.peerDid to "Last message ${listTime(it.lastActivity.toLong(), System.currentTimeMillis())}" } }
+                    NewChatScreen(contacts, last, onBack = ::pop, onPick = { pop(); stack.add(Route.Chat(it.did)) }, onAdd = { pop(); stack.add(Route.Add(true)) })
+                }
+                is Route.Chat -> {
+                    val chats by app.chat.chats.collectAsState()
+                    val status by app.status.collectAsState()
+                    val c = contacts.firstOrNull { it.did == r.did }
+                    val name = c?.display() ?: chats.firstOrNull { it.peerDid == r.did }?.peerName?.ifBlank { null } ?: "Unknown"
+                    ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) })
+                }
                 Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
                 is Route.Add -> AddContactScreen(app, r.scan, onClose = ::pop,
                     onCall = { c -> pop(); call(c.did) }, onVerify = { c -> pop(); stack.add(Route.Contact(c.did)); stack.add(Route.Verify(c.did)) })
                 is Route.Contact -> {
                     val c = contacts.firstOrNull { it.did == r.did }
                     if (c == null) LaunchedEffect(Unit) { pop() }
-                    else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onVerify = { stack.add(Route.Verify(c.did)) },
+                    else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onMessage = { stack.add(Route.Chat(c.did)) }, onVerify = { stack.add(Route.Verify(c.did)) },
                         history = remember(history, contacts) { val now = System.currentTimeMillis() / 1000; val by = contacts.associateBy { it.did }; history.filter { it.peerDid == c.did }.map { it.toRecent(by, now) } },
                         onRename = { a -> scope.launch(Dispatchers.IO) { runCatching { app.node.renameContact(c.did, a) }; app.refresh() } }, onRemove = {
                         pop()

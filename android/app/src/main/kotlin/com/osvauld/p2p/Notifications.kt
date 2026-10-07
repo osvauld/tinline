@@ -16,6 +16,7 @@ object Notifications {
     const val CH_CALLS = "calls"
     const val CH_MISSED = "missed"
     const val CH_LOCKED = "locked"
+    const val CH_MESSAGES = "messages"
     const val ID_SERVICE = 1
     const val ID_INCOMING = 2
     const val ID_MISSED = 3
@@ -36,6 +37,9 @@ object Notifications {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         })
         n.createNotificationChannel(NotificationChannel(CH_MISSED, "Missed calls", NotificationManager.IMPORTANCE_DEFAULT))
+        n.createNotificationChannel(NotificationChannel(CH_MESSAGES, "Messages", NotificationManager.IMPORTANCE_HIGH).apply {
+            description = "New messages from your contacts"
+        })
         n.createNotificationChannel(NotificationChannel(CH_LOCKED, "Locked", NotificationManager.IMPORTANCE_LOW).apply {
             description = "Shown while the app needs your passphrase to receive calls"
             setShowBadge(false)

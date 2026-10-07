@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import uniffi.p2pcore.Contact
 
 /**
@@ -18,7 +18,8 @@ class GalleryActivity : ComponentActivity() {
         enableEdgeToEdge()
         val which = intent.getStringExtra("screen") ?: "home"
         val app = P2pApp.get(this)
-        setContent { TinlineTheme { Gallery(which, app) } }
+        val dark = intent.getBooleanExtra("dark", false)
+        setContent { TinlineTheme(dark) { Gallery(which, app, this) } }
     }
 }
 
@@ -36,7 +37,7 @@ private val recents = listOf(
 )
 
 @Composable
-private fun Gallery(which: String, app: P2pApp) {
+private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
     val none = {}
     val needs = listOf(Need.Battery)
     when (which) {
@@ -84,6 +85,45 @@ private fun Gallery(which: String, app: P2pApp) {
         "changepass" -> ChangePassphraseScreen(app, none)
         "about" -> AboutScreen(none, none)
         "licences" -> LicencesScreen(none)
-        else -> HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null)
+        "fakechat" -> {
+            // The whole app on the fake chat backend (debug only): opens the real Home with seeded chats.
+            LaunchedEffect(Unit) {
+                ChatBackend.override = FakeChatSource(app)
+                act.startActivity(android.content.Intent(act, MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                act.finish()
+            }
+        }
+        "chats", "chats_waiting", "chats_empty", "calls", "contacts" -> {
+            val fake = remember { FakeChatSource(app).also { if (which == "chats_waiting") it.setLink(FakeChatSource.did("Lena"), Link.Offline) } }
+            val chats by fake.chats.collectAsState()
+            val links by fake.links.collectAsState()
+            val rows = if (which == "chats_empty") emptyList() else chatRows(chats, emptyList(), links, true, System.currentTimeMillis())
+            val tab = when (which) { "calls" -> HomeTab.Calls; "contacts" -> HomeTab.Contacts; else -> HomeTab.Chats }
+            HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, recents, null, subLines = subs, tab = tab, chatRows = rows,
+                chatBadge = rows.sumOf { it.unread }, callBadge = if (which == "calls") 0 else 1)
+        }
+        "newchat" -> NewChatScreen(contacts, mapOf(contacts[0].did to "Last message 12:41", contacts[1].did to "Last message 11:20"), none, {}, none)
+        else -> if (which.startsWith("conv") || which in setOf("attach", "files", "receive", "viewer")) {
+            val files = which in setOf("files", "receive", "viewer")
+            val fake = remember { FakeChatSource(app, files).also { ChatBackend.override = it } }
+            val peer = when (which) { "files", "viewer" -> "Jonas"; "receive" -> "Rosa"; else -> "Arjun" }
+            val did = FakeChatSource.did(peer)
+            val name = FakeChatSource.people.first { it.startsWith(peer) }
+            remember {
+                when (which) {
+                    "conv_offline" -> fake.setLink(did, Link.Offline)
+                    "conv_old" -> fake.seedOlder(did)
+                }
+            }
+            val preview = when (which) {
+                "conv_actions" -> ConvPreview(actionsFor = "perfect")
+                "conv_edit" -> ConvPreview(editing = "perfect", draft = "Perfect, talk then at 6:30")
+                "conv_reply" -> ConvPreview(replying = "perfect")
+                "attach" -> ConvPreview(attach = true)
+                "viewer" -> ConvPreview(viewer = "outphoto")
+                else -> null
+            }
+            ConversationScreen(fake, did, name, true, none, none, preview)
+        } else HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null)
     }
 }

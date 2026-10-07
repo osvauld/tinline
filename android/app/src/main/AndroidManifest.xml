@@ -56,6 +56,19 @@
                 android:value="peer-to-peer call listener" />
         </service>
         <receiver
+            android:name=".ReplyReceiver"
+            android:exported="false" />
+        <!-- Share a decrypted attachment from the cache (chat_media), or give the camera a place to write. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        <receiver
             android:name=".BootReceiver"
             android:exported="false">
             <intent-filter>

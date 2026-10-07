@@ -27,7 +27,7 @@ import uniffi.p2pcore.Contact
 @Composable
 fun ContactScreen(
     contact: Contact, onBack: () -> Unit, onCall: () -> Unit, onRemove: () -> Unit,
-    history: List<RecentCall> = emptyList(), onRename: (String?) -> Unit = {}, onVerify: () -> Unit = {},
+    history: List<RecentCall> = emptyList(), onRename: (String?) -> Unit = {}, onVerify: () -> Unit = {}, onMessage: (() -> Unit)? = null,
 ) {
     val alias = contact.alias?.takeIf { it.isNotBlank() }
     val verified = contact.verified
@@ -55,6 +55,7 @@ fun ContactScreen(
                 }
                 TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = Icons.Rounded.Call)
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (onMessage != null) ActionChip(Icons.Rounded.Chat, "Message", c.pr, onMessage)
                     ActionChip(Icons.Rounded.Edit, "Rename", c.pr) { renaming = true }
                     ActionChip(Icons.Rounded.VerifiedUser, "Verify", c.pr, onVerify)
                     ActionChip(Icons.Rounded.PersonRemove, "Remove", c.er) { confirmRemove = true }
