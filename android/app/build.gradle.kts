@@ -112,8 +112,10 @@ val cargoNdkBuild = tasks.register<RustExec>("cargoNdkBuild") {
     })
     inputs.files(rustInputs).withPropertyName("rustSources").withPathSensitivity(PathSensitivity.RELATIVE)
     outputs.dir(jniOut)
-    // Stale .so files from older builds (e.g. iroh dylibs) would otherwise be packaged too.
+    // Only libp2pcore is linked. cargo-ndk also copies stale .so files it finds in target/ (old
+    // iroh dylibs), which would otherwise be packaged too.
     doFirst { jniOut.get().asFile.deleteRecursively() }
+    doLast { jniOut.get().asFile.walk().filter { it.isFile && it.name != "libp2pcore.so" }.forEach { it.delete() } }
 }
 
 val uniffiBindgen = tasks.register<RustExec>("uniffiBindgen") {
