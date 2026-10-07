@@ -48,10 +48,12 @@ private fun clipboardText(c: Context): String? =
 // ---------------------------------------------------------------- onboarding
 
 @Composable
-fun OnboardingScreen(app: P2pApp, onDone: () -> Unit) {
+fun OnboardingScreen(app: P2pApp, forgot: Boolean = false, onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var name by rememberSaveable { mutableStateOf("") }
-    var restore by rememberSaveable { mutableStateOf(false) }
+    var name by rememberSaveable { mutableStateOf(if (forgot) app.node.profile()?.name ?: "" else "") }
+    var restore by rememberSaveable { mutableStateOf(forgot) }
+    var pass by rememberSaveable { mutableStateOf("") }
+    var confirm by rememberSaveable { mutableStateOf("") }
     var phraseIn by rememberSaveable { mutableStateOf("") }
     var shownPhrase by rememberSaveable { mutableStateOf<String?>(null) }
     var saved by rememberSaveable { mutableStateOf(false) }
@@ -89,34 +91,42 @@ fun OnboardingScreen(app: P2pApp, onDone: () -> Unit) {
                 name, { name = it }, label = { Text("Your name") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
             if (restore) {
+                if (forgot) Text(
+                    "Restoring keeps the same identity: use the recovery phrase of this account. Your contacts stay.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error,
+                )
                 OutlinedTextField(
                     phraseIn, { phraseIn = it }, label = { Text("24-word recovery phrase") },
-                    modifier = Modifier.fillMaxWidth(), minLines = 3,
+                    modifier = Modifier.fillMaxWidth(), minLines = 3, enabled = !busy,
                 )
             }
+            NewPassphraseFields(pass, confirm, { pass = it; error = null }, { confirm = it; error = null }, !busy)
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             Button(
                 onClick = {
                     busy = true; error = null
                     scope.launch {
                         val r = withContext(Dispatchers.IO) {
                             runCatching {
-                                if (restore) { app.node.restoreIdentity(phraseIn, name.trim()); null }
-                                else app.node.createIdentity(name.trim())
+                                if (forgot) { app.restoreOverLocked(phraseIn, name.trim(), pass); null }
+                                else if (restore) { app.node.restoreIdentity(phraseIn, name.trim(), pass); null }
+                                else app.node.createIdentity(name.trim(), pass)
                             }
                         }
                         busy = false
-                        r.onFailure { error = it.message ?: "Something went wrong" }
+                        r.onFailure { error = friendly(it) }
                         r.onSuccess { p ->
+                            pass = ""; confirm = ""
                             app.identityReady()
                             if (p == null) onDone() else shownPhrase = p
                         }
                     }
                 },
-                enabled = name.isNotBlank() && !busy && (!restore || phraseIn.isNotBlank()),
+                enabled = name.isNotBlank() && !busy && (!restore || phraseIn.isNotBlank()) && passphraseProblem(pass, confirm) == null,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-            ) { Text(if (busy) "Working..." else if (restore) "Restore identity" else "Create identity") }
-            TextButton(onClick = { restore = !restore; error = null }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            ) { Text(if (busy) "Encrypting..." else if (restore) "Restore identity" else "Create identity") }
+            if (!forgot) TextButton(onClick = { restore = !restore; error = null }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                 Text(if (restore) "Create a new identity instead" else "I already have a recovery phrase")
             }
         }
@@ -374,7 +384,9 @@ fun SettingsScreen(app: P2pApp, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var name by rememberSaveable { mutableStateOf(app.node.profile()?.name ?: "") }
     var saved by remember { mutableStateOf(false) }
-    var reveal by remember { mutableStateOf(false) }
+    var phrase by remember { mutableStateOf<String?>(null) }
+    var askPhrase by remember { mutableStateOf(false) }
+    var changePass by remember { mutableStateOf(false) }
     var tone by remember { mutableStateOf(app.testToneHz != null) }
     Scaffold(topBar = {
         TopAppBar(title = { Text("Settings") }, navigationIcon = {
@@ -389,12 +401,15 @@ fun SettingsScreen(app: P2pApp, onBack: () -> Unit) {
             }, enabled = name.isNotBlank()) { Text(if (saved) "Saved" else "Save name") }
             HorizontalDivider()
             Text("Recovery phrase", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            if (reveal) {
-                app.node.recoveryPhrase()?.let { PhraseGrid(it) }
-                TextButton(onClick = { reveal = false }) { Text("Hide") }
+            if (phrase != null) {
+                PhraseGrid(phrase.orEmpty())
+                TextButton(onClick = { phrase = null }) { Text("Hide") }
             } else {
-                OutlinedButton(onClick = { reveal = true }) { Icon(Icons.Default.Lock, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Show recovery phrase") }
+                OutlinedButton(onClick = { askPhrase = true }) { Icon(Icons.Default.Lock, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Show recovery phrase") }
             }
+            HorizontalDivider()
+            Text("Passphrase", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            OutlinedButton(onClick = { changePass = true }) { Text("Change passphrase") }
             HorizontalDivider()
             Text("Diagnostics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -409,4 +424,6 @@ fun SettingsScreen(app: P2pApp, onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+    if (askPhrase) ShowPhraseDialog(app, { phrase = it; askPhrase = false }, { askPhrase = false })
+    if (changePass) ChangePassphraseDialog(app) { changePass = false }
 }

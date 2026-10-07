@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import uniffi.p2pcore.LockState
 
 private enum class Screen { Home, Add, Settings }
 
@@ -37,6 +38,8 @@ class MainActivity : ComponentActivity() {
 private fun Root(app: P2pApp) {
     val ctx = LocalContext.current
     val has by app.hasIdentity.collectAsState()
+    val lock by app.lockState.collectAsState()
+    var forgot by rememberSaveable { mutableStateOf(false) }
     var screen by rememberSaveable { mutableStateOf(Screen.Home) }
     var onboarding by rememberSaveable { mutableStateOf(!app.node.hasIdentity()) }
     var missing by remember { mutableStateOf(Perms.missing(ctx)) }
@@ -52,8 +55,8 @@ private fun Root(app: P2pApp) {
         missing = Perms.missing(ctx)
     }
     // First run after onboarding: ask for the runtime permissions in one go.
-    LaunchedEffect(onboarding, has) {
-        if (!onboarding && has) {
+    LaunchedEffect(onboarding, has, lock) {
+        if (!onboarding && has && lock == LockState.UNLOCKED) {
             val rt = missing.mapNotNull { Perms.runtimePermission(it) }
             if (rt.isNotEmpty()) permLauncher.launch(rt.toTypedArray())
         }
@@ -69,6 +72,11 @@ private fun Root(app: P2pApp) {
 
     if (onboarding || !has) {
         OnboardingScreen(app) { onboarding = false; missing = Perms.missing(ctx) }
+    } else if (lock == LockState.LOCKED) {
+        if (forgot) OnboardingScreen(app, forgot = true) { forgot = false; missing = Perms.missing(ctx) }
+        else UnlockScreen(app) { forgot = true }
+    } else if (lock == LockState.NEEDS_PASSPHRASE) {
+        SetPassphraseScreen(app)
     } else {
         BackHandler(screen != Screen.Home) { screen = Screen.Home }
         when (screen) {

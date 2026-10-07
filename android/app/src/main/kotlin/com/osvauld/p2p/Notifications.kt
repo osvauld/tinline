@@ -18,6 +18,7 @@ object Notifications {
     const val ID_SERVICE = 1
     const val ID_INCOMING = 2
     const val ID_MISSED = 3
+    const val ID_LOCKED = 4
 
     private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -84,6 +85,19 @@ object Notifications {
     }
 
     fun cancelIncoming(c: Context) = nm(c).cancel(ID_INCOMING)
+
+    fun locked(c: Context) {
+        val n = Notification.Builder(c, CH_MISSED)
+            .setSmallIcon(android.R.drawable.ic_lock_lock)
+            .setContentTitle("Unlock to receive calls")
+            .setContentText("Tap to enter your passphrase")
+            .setOngoing(true)
+            .setContentIntent(activity(c, MainActivity::class.java, 40))
+            .build()
+        try { nm(c).notify(ID_LOCKED, n) } catch (e: SecurityException) { }
+    }
+
+    fun cancelLocked(c: Context) = nm(c).cancel(ID_LOCKED)
 
     fun missed(c: Context, name: String) {
         val n = Notification.Builder(c, CH_MISSED)

@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallInfo
 import uniffi.p2pcore.CallState
 import uniffi.p2pcore.Contact
+import uniffi.p2pcore.LockState
 import uniffi.p2pcore.Node
 import uniffi.p2pcore.NodeEvents
 import uniffi.p2pcore.NodeStatus
@@ -29,6 +30,8 @@ class P2pApp : Application(), NodeEvents {
     val status: StateFlow<NodeStatus?> = _status
     private val _contacts = MutableStateFlow<List<Contact>>(emptyList())
     val contacts: StateFlow<List<Contact>> = _contacts
+    private val _lock = MutableStateFlow(LockState.NO_IDENTITY)
+    val lockState: StateFlow<LockState> = _lock
     private val _hasIdentity = MutableStateFlow(false)
     val hasIdentity: StateFlow<Boolean> = _hasIdentity
 
@@ -37,18 +40,72 @@ class P2pApp : Application(), NodeEvents {
         instance = this
         Notifications.createChannels(this)
         calls = CallController(this)
-        node = Node(filesDir.resolve("core").also { it.mkdirs() }.absolutePath, this)
+        node = newNode()
+        tryAutoUnlock()
         refresh()
     }
 
     fun refresh() {
+        _lock.value = node.lockState()
         _hasIdentity.value = node.hasIdentity()
         _contacts.value = node.contacts()
         _status.value = node.status()
     }
 
-    /** Called after create/restore: bring up service (and node) now that an identity exists. */
+    /**
+     * If the vault is locked and a device-wrapped key exists, unlock with it (fast, no passphrase).
+     * A key that no longer works is deleted and the node stays Locked. Returns true if usable.
+     */
+    @Synchronized
+    fun tryAutoUnlock(): Boolean {
+        if (node.lockState() != LockState.LOCKED) return node.lockState() != LockState.NO_IDENTITY
+        if (!UnlockStore.exists(this)) return false
+        val key = UnlockStore.load(this)
+        if (key == null) { UnlockStore.clear(this); return false }
+        return try {
+            node.unlockWithKey(key); true
+        } catch (e: Exception) {
+            Log.w(TAG, "unlockWithKey failed: ${e.javaClass.simpleName}")
+            UnlockStore.clear(this); false
+        } finally { key.fill(0) }
+    }
+
+    /** After any successful passphrase path: remember the data key under the Keystore. */
+    fun rememberKey() {
+        val k = node.unlockKey() ?: return
+        UnlockStore.save(this, k)
+        k.fill(0)
+    }
+
+    private fun newNode() = Node(filesDir.resolve("core").also { it.mkdirs() }.absolutePath, this)
+
+    /**
+     * "Forgot passphrase": restore the same identity from its phrase over the locked vault. The core
+     * refuses to restore over an existing profile, so the sealed profile.json is moved aside first
+     * (state.json, i.e. contacts, is untouched) and moved back if the restore fails. Blocking.
+     */
+    @Synchronized
+    fun restoreOverLocked(phrase: String, name: String, passphrase: String) {
+        val dir = filesDir.resolve("core")
+        val prof = dir.resolve("profile.json")
+        val bak = dir.resolve("profile.json.bak")
+        node.stop()
+        if (prof.exists()) { bak.delete(); prof.renameTo(bak) }
+        node = newNode()
+        try {
+            node.restoreIdentity(phrase, name, passphrase)
+            bak.delete()
+            UnlockStore.clear(this)
+        } catch (e: Exception) {
+            if (bak.exists()) { prof.delete(); bak.renameTo(prof); node = newNode() }
+            throw e
+        }
+    }
+
+    /** Called after create/restore/unlock/set-passphrase: remember the key, bring up service and node. */
     fun identityReady() {
+        rememberKey()
+        Notifications.cancelLocked(this)
         refresh()
         CoreService.ensureRunning(this)
         scope.launch { startNode() }
@@ -57,6 +114,12 @@ class P2pApp : Application(), NodeEvents {
     @Synchronized
     fun startNode() {
         if (!node.hasIdentity()) return
+        if (!tryAutoUnlock()) {
+            Log.w(TAG, "locked; not starting node")
+            Notifications.locked(this)
+            refresh()
+            return
+        }
         try { node.start() } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
         _status.value = node.status()
     }

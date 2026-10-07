@@ -20,7 +20,7 @@ class DebugReceiver : BroadcastReceiver() {
         val node = app.node
         when (cmd) {
             "create" -> {
-                if (!node.hasIdentity()) node.createIdentity(i.getStringExtra("name") ?: "phone")
+                if (!node.hasIdentity()) node.createIdentity(i.getStringExtra("name") ?: "phone", i.getStringExtra("pass") ?: "test-passphrase")
                 app.identityReady()
                 val p = node.profile()
                 testLog("created did=${p?.did} name=${p?.name}")
@@ -52,6 +52,7 @@ class DebugReceiver : BroadcastReceiver() {
                 val s = node.status()
                 testLog("status online=${s.online} relay=${s.relay} id=${s.endpointId}")
             }
+            "lockstate" -> testLog("lockstate=${node.lockState()}")
             "stats" -> app.calls.logStats()
             else -> Log.w("P2PTEST", "unknown cmd $cmd")
         }
