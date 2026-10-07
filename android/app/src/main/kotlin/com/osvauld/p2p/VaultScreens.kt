@@ -5,10 +5,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,7 @@ fun PassField(value: String, onChange: (String) -> Unit, label: String, enabled:
     OutlinedTextField(
         value, onChange, label = { Text(label) }, singleLine = true, enabled = enabled,
         visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
     )
 }
 
@@ -59,7 +61,7 @@ fun NewPassphraseFields(pass: String, confirm: String, onPass: (String) -> Unit,
 @Composable
 fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var pass by rememberSaveable { mutableStateOf("") }
+    var pass by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val name = remember { app.node.profile()?.name ?: "" }
@@ -99,8 +101,8 @@ fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
 @Composable
 fun SetPassphraseScreen(app: P2pApp) {
     val scope = rememberCoroutineScope()
-    var pass by rememberSaveable { mutableStateOf("") }
-    var confirm by rememberSaveable { mutableStateOf("") }
+    var pass by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     Column(
@@ -193,7 +195,7 @@ fun ChangePassphraseDialog(app: P2pApp, onDone: () -> Unit) {
                     val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(old, pass) } }
                     busy = false
                     r.onFailure { error = friendly(it) }
-                    r.onSuccess { app.rememberKey(); onDone() }
+                    r.onSuccess { withContext(Dispatchers.IO) { app.rememberKey() }; onDone() }
                 }
             }) { Text("Change") }
         },

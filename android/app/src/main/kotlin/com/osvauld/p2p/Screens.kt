@@ -31,6 +31,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.Dispatchers
@@ -38,8 +40,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uniffi.p2pcore.Contact
 
+/** Copies [text]; flagged sensitive so Android 13+ hides it from the clipboard preview. */
 private fun copy(c: Context, label: String, text: String) {
-    (c.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText(label, text))
+    val clip = ClipData.newPlainText(label, text)
+    if (android.os.Build.VERSION.SDK_INT >= 33) {
+        clip.description.extras = android.os.PersistableBundle().apply {
+            putBoolean(android.content.ClipDescription.EXTRA_IS_SENSITIVE, true)
+        }
+    }
+    (c.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(clip)
 }
 
 private fun clipboardText(c: Context): String? =
@@ -52,13 +61,18 @@ fun OnboardingScreen(app: P2pApp, forgot: Boolean = false, onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
     var name by rememberSaveable { mutableStateOf(if (forgot) app.node.profile()?.name ?: "" else "") }
     var restore by rememberSaveable { mutableStateOf(forgot) }
-    var pass by rememberSaveable { mutableStateOf("") }
-    var confirm by rememberSaveable { mutableStateOf("") }
-    var phraseIn by rememberSaveable { mutableStateOf("") }
-    var shownPhrase by rememberSaveable { mutableStateOf<String?>(null) }
+    // Secrets are never saved into the instance-state bundle.
+    var pass by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
+    var phraseIn by remember { mutableStateOf("") }
+    var shownPhrase by remember { mutableStateOf<String?>(null) }
     var saved by rememberSaveable { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // After process death the recovery phrase is gone but the identity exists: do not show the
+    // create form again over it (the phrase can be viewed in Settings with the passphrase).
+    val has by app.hasIdentity.collectAsState()
+    LaunchedEffect(has, shownPhrase) { if (!forgot && has && shownPhrase == null && !busy) onDone() }
 
     Column(
         Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState()).padding(24.dp),
@@ -98,6 +112,7 @@ fun OnboardingScreen(app: P2pApp, forgot: Boolean = false, onDone: () -> Unit) {
                 OutlinedTextField(
                     phraseIn, { phraseIn = it }, label = { Text("24-word recovery phrase") },
                     modifier = Modifier.fillMaxWidth(), minLines = 3, enabled = !busy,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                 )
             }
             NewPassphraseFields(pass, confirm, { pass = it; error = null }, { confirm = it; error = null }, !busy)
@@ -233,8 +248,10 @@ fun HomeScreen(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(onClick = { copy(ctx, "ticket", t) }) { Text("Copy") }
                                 Button(onClick = {
-                                    ctx.startActivity(Intent.createChooser(
-                                        Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, t), "Share contact card"))
+                                    try {
+                                        ctx.startActivity(Intent.createChooser(
+                                            Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, t), "Share contact card"))
+                                    } catch (_: Exception) { callErr = "Nothing to share with" }
                                 }) {
                                     Icon(Icons.Default.Share, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Share")
                                 }
@@ -261,7 +278,10 @@ fun HomeScreen(
                     Modifier.fillMaxWidth().combinedClickable(
                         onClick = {
                             callErr = null
-                            scope.launch {
+                            if (!Perms.granted(ctx, android.Manifest.permission.RECORD_AUDIO)) {
+                                callErr = "Microphone permission needed to place a call"
+                                onFix(Need.Mic)
+                            } else scope.launch {
                                 val r = withContext(Dispatchers.IO) { app.calls.place(c.did) }
                                 r.onFailure { callErr = it.message }
                             }
@@ -410,6 +430,7 @@ fun SettingsScreen(app: P2pApp, onBack: () -> Unit) {
             HorizontalDivider()
             Text("Passphrase", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             OutlinedButton(onClick = { changePass = true }) { Text("Change passphrase") }
+            if (BuildConfig.DEBUG) {
             HorizontalDivider()
             Text("Diagnostics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -419,6 +440,7 @@ fun SettingsScreen(app: P2pApp, onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(tone, { tone = it; app.testToneHz = if (it) 440f else null; app.node.setTestTone(app.testToneHz) })
+            }
             }
             Text("p2pcore ${uniffi.p2pcore.coreVersion()}", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)

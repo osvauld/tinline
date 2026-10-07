@@ -28,9 +28,20 @@ object UnlockStore {
 
     private fun keyStore() = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
+    /**
+     * The Keystore key. If the alias exists but cannot be used (UnrecoverableKeyException and
+     * friends after a lock-screen reset or a restore), it is deleted and, when [create], regenerated.
+     */
     private fun key(create: Boolean): SecretKey? {
         val ks = keyStore()
-        (ks.getKey(ALIAS, null) as? SecretKey)?.let { return it }
+        val existing = try {
+            ks.getKey(ALIAS, null) as? SecretKey
+        } catch (e: java.security.UnrecoverableKeyException) {
+            Log.w(TAG, "keystore alias unusable, dropping it")
+            try { ks.deleteEntry(ALIAS) } catch (_: Exception) {}
+            null
+        }
+        if (existing != null) return existing
         if (!create) return null
         val g = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
         g.init(
@@ -57,16 +68,32 @@ object UnlockStore {
         false
     }
 
-    /** The unwrapped key, or null if missing/invalid (the caller should then [clear]). */
-    fun load(c: Context): ByteArray? = try {
+    sealed interface Loaded {
+        class Key(val bytes: ByteArray) : Loaded
+        /** The wrapped key can never be opened again (corrupt, key gone or invalidated): forget it. */
+        data object Gone : Loaded
+        /** A Keystore/IO hiccup: keep unlock.bin and try again later. */
+        data object Transient : Loaded
+    }
+
+    fun load(c: Context): Loaded = try {
         val raw = file(c).readBytes()
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, key(false) ?: throw IllegalStateException("no keystore key"),
-            GCMParameterSpec(128, raw, 0, 12))
-        cipher.doFinal(raw, 12, raw.size - 12)
+        if (raw.size < 12 + 16) throw javax.crypto.AEADBadTagException("short file")
+        val k = key(false)
+        if (k == null) Loaded.Gone
+        else {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, k, GCMParameterSpec(128, raw, 0, 12))
+            Loaded.Key(cipher.doFinal(raw, 12, raw.size - 12))
+        }
+    } catch (e: javax.crypto.AEADBadTagException) {
+        Log.w(TAG, "load failed: bad tag"); Loaded.Gone
+    } catch (e: android.security.keystore.KeyPermanentlyInvalidatedException) {
+        Log.w(TAG, "load failed: key invalidated"); Loaded.Gone
+    } catch (e: java.io.FileNotFoundException) {
+        Loaded.Gone
     } catch (e: Exception) {
-        Log.w(TAG, "load failed: ${e.javaClass.simpleName}")
-        null
+        Log.w(TAG, "load failed (transient): ${e.javaClass.simpleName}"); Loaded.Transient
     }
 
     fun clear(c: Context) {

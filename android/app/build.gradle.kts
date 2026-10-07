@@ -9,14 +9,34 @@ plugins {
 
 android {
     namespace = "com.osvauld.p2p"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "28.2.13676358"
     defaultConfig {
         applicationId = "com.osvauld.tinline"
         minSdk = 28
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+    }
+    // Release signing: set RELEASE_STORE_FILE / RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS /
+    // RELEASE_KEY_PASSWORD in ~/.gradle/gradle.properties (or -P). Without them the release build
+    // is signed with the DEBUG key so it can be installed locally for testing -- NOT publishable.
+    val relStore = findProperty("RELEASE_STORE_FILE") as String?
+    signingConfigs {
+        if (relStore != null) create("release") {
+            storeFile = file(relStore)
+            storePassword = findProperty("RELEASE_STORE_PASSWORD") as String?
+            keyAlias = findProperty("RELEASE_KEY_ALIAS") as String?
+            keyPassword = findProperty("RELEASE_KEY_PASSWORD") as String?
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = if (relStore != null) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
@@ -34,7 +54,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    implementation("net.java.dev.jna:jna:5.14.0@aar")
+    implementation("net.java.dev.jna:jna:5.17.0@aar")
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")

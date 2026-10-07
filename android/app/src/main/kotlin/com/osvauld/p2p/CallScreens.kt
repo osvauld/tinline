@@ -35,12 +35,29 @@ private fun ComponentActivity.showOverLock() {
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 }
 
+/** Asks for the microphone (if missing) and then runs [then] whatever the answer: a call can still be heard without it. */
+private fun ComponentActivity.registerMicThen(then: () -> Unit): () -> Unit {
+    var pending: (() -> Unit)? = null
+    val launcher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+        pending?.invoke(); pending = null
+    }
+    return {
+        if (Perms.granted(this, android.Manifest.permission.RECORD_AUDIO)) then()
+        else { pending = then; launcher.launch(android.Manifest.permission.RECORD_AUDIO) }
+    }
+}
+
 class CallActivity : ComponentActivity() {
+    private lateinit var answerWithMic: () -> Unit
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        secureWindow()
         showOverLock()
         val app = P2pApp.get(this)
-        handle(intent)
+        answerWithMic = registerMicThen { app.calls.answer() }
+        // Only a fresh launch answers: a recreation (rotation) must not answer a second time.
+        if (savedInstanceState == null) handle(intent)
         setContent {
             P2pTheme {
                 val ui by app.calls.ui.collectAsState()
@@ -53,12 +70,12 @@ class CallActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); handle(intent) }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); handle(intent) }
 
     private fun handle(i: Intent?) {
         if (i?.getBooleanExtra(EXTRA_ANSWER, false) == true) {
             i.removeExtra(EXTRA_ANSWER)
-            P2pApp.get(this).calls.answer()
+            answerWithMic()
         }
     }
 
@@ -68,8 +85,13 @@ class CallActivity : ComponentActivity() {
 class IncomingCallActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        secureWindow()
         showOverLock()
         val app = P2pApp.get(this)
+        val answerWithMic = registerMicThen {
+            app.calls.answer()
+            startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
+        }
         setContent {
             P2pTheme {
                 val ui by app.calls.ui.collectAsState()
@@ -89,10 +111,7 @@ class IncomingCallActivity : ComponentActivity() {
                     Spacer(Modifier.weight(1f))
                     Row(Modifier.fillMaxWidth().padding(bottom = 56.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                         RoundAction(Color(0xFFD93025), "Decline", rotate = 135f) { app.calls.decline(); finish() }
-                        RoundAction(Color(0xFF1E9E5A), "Answer") {
-                            app.calls.answer()
-                            startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
-                        }
+                        RoundAction(Color(0xFF1E9E5A), "Answer") { answerWithMic() }
                     }
                 }
             }
@@ -157,6 +176,10 @@ fun InCallScreen(ui: CallUi, calls: CallController) {
         Spacer(Modifier.height(20.dp))
         Text(ui.info.peerName.ifBlank { "Unknown" }, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
         Text(status, color = Color.White.copy(alpha = 0.7f), fontSize = 18.sp)
+        ui.micProblem?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, color = Color(0xFFFFB4AB), fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
         ui.stats?.let { s ->
             Spacer(Modifier.height(8.dp))
             val tot = (s.received + s.lost).toDouble()
