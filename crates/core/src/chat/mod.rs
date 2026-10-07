@@ -6,3 +6,4 @@ pub mod crypt;
 
 #[cfg(test)]
 mod blobs_tests;
+pub mod api;

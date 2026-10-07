@@ -12,6 +12,7 @@ mod vault;
 mod wire;
 
 pub use error::Error;
+pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use store::CallRecord;
 pub use node::{Availability, CallInfo, CallState, CallStats, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
 
