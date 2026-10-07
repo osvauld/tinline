@@ -51,18 +51,31 @@ frames → `pushMic`. Speaker: `AudioTrack` (`USAGE_VOICE_COMMUNICATION`,
 via `setCommunicationDevice` (API 31+) / `isSpeakerphoneOn` below. Mute pushes zeros. Bluetooth
 is out of scope for v1.
 
-## UI (Compose, Material 3)
+## UI (Compose, Material 3, Tinline design)
 
-- Onboarding: name + passphrase (min 8, confirmed) → create (show the 24-word recovery phrase, confirm saved) or restore.
-- Home: status chip (online via relay / offline), "My contact card" (QR of `myTicket()` + copy +
-  share), contacts list (tap → call; long-press → remove), "Add contact" (paste ticket; scan QR
-  with the camera).
-- Call screen: name, state (Calling…/Ringing…/timer), mute, speaker, hang up, small stats line
-  (direct/relay, rtt, loss).
-- Settings: name, show recovery phrase (asks the passphrase), change passphrase, test tone toggle.
-- Unlock screen when `lockState == LOCKED`; "Forgot passphrase" restores the same identity from its
-  phrase (sealed profile.json is moved aside, state.json/contacts kept). Legacy installs
-  (`NEEDS_PASSPHRASE`) get a blocking "Set a passphrase" screen; calls keep working meanwhile.
+Spec: `docs/design/*.dc.html` (tokens in `Main.dc.html`). Code map (package `com.osvauld.p2p`):
+
+- `Theme.kt` `TinlineTheme` (exact light/dark tokens, dynamic colour off, `Tin.c.*` custom tokens: thread
+  amber, relay, warn, call accept/end; `TinType` scale in Figtree + IBM Plex Mono from `res/font`, OFL
+  texts in `assets/licenses/`). Dark mode follows the system.
+- `Components.kt`, `Glyphs.kt`: buttons, fields, avatars (initials, colour by hashing the DID), progress
+  dots, banners, status pill, list rows, sheets/dialogs, custom Direct/Relayed glyphs. In-app icons are
+  Material Symbols Rounded via `material-icons-extended` (R8 strips the unused ones).
+- Screens: `Onboarding.kt` (welcome, name, passphrase + strength meter, recovery phrase, quick check,
+  terms, permissions), `Unlock.kt` (unlock, restore with BIP-39 suggestions from `assets/bip39_english.txt`,
+  legacy set-passphrase), `Home.kt`, `AddContact.kt` (My code / Scan / Paste / Adding / Added / Couldn't
+  add), `ContactDetail.kt`, `Settings.kt` (settings, background & battery, recovery phrase gate/shown,
+  change passphrase, about, licences, debug diagnostics), `CallScreens.kt` (incoming, calling, in call +
+  audio route sheet, call ended with 4 s auto-close, couldn't reach, microphone needed).
+- Navigation: `MainActivity.Root` with a small sealed `Route` back stack (not saved across process death;
+  the recovery phrase may sit in it).
+- Terms & privacy: `LegalStore` persists the accepted version (`LegalStore.CURRENT`); required once, also
+  for existing installs.
+- Call end vocabulary lives only in `endReasonText` / `classifyEnd` (`Support.kt`); unknown = "Call ended".
+- `Features` (`Features.kt`) hides entry points whose data the core does not have yet: rename, verify
+  (safety number), availability, history. Flip the flag when wired; the screens already exist.
+- Debug builds include `GalleryActivity` (`--es screen <name>`) that renders the screens with sample data
+  for screenshots.
 
 ## Passphrase + device unlock (`UnlockStore`)
 

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two tin cans, mouths facing, joined by an amber string (docs/design/Main.dc.html). Glyph x 20..88, inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#F5F6F3" android:pathData="M24,43h12a4,4 0 0 1 4,4v14a4,4 0 0 1 -4,4h-12a4,4 0 0 1 -4,-4v-14a4,4 0 0 1 4,-4z" />
+    <path android:strokeColor="#380B6B5B" android:strokeWidth="1.5" android:pathData="M27,46v16M33,46v16" />
+    <path android:fillColor="#9FD6C8" android:strokeColor="#F5F6F3" android:strokeWidth="2"
+        android:pathData="M36,54a4,11 0 1 0 8,0a4,11 0 1 0 -8,0z" />
+    <path android:fillColor="#F5F6F3" android:pathData="M72,43h12a4,4 0 0 1 4,4v14a4,4 0 0 1 -4,4h-12a4,4 0 0 1 -4,-4v-14a4,4 0 0 1 4,-4z" />
+    <path android:strokeColor="#380B6B5B" android:strokeWidth="1.5" android:pathData="M75,46v16M81,46v16" />
+    <path android:fillColor="#9FD6C8" android:strokeColor="#F5F6F3" android:strokeWidth="2"
+        android:pathData="M64,54a4,11 0 1 0 8,0a4,11 0 1 0 -8,0z" />
+    <path android:strokeColor="#E8B04A" android:strokeWidth="3" android:strokeLineCap="round"
+        android:pathData="M44,54Q54,62 64,54" />
+</vector>

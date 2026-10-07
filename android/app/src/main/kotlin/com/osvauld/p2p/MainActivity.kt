@@ -9,16 +9,19 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import uniffi.p2pcore.LockState
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * FLAG_SECURE keeps the recovery phrase, passphrases and the call screen out of screenshots, screen
@@ -31,8 +34,6 @@ fun androidx.activity.ComponentActivity.secureWindow() {
     if (android.os.Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(false)
 }
 
-private enum class Screen { Home, Add, Settings }
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,44 +41,70 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
-        setContent {
-            P2pTheme {
-                Surface(Modifier.fillMaxSize()) { Root(app) }
-            }
-        }
+        setContent { TinlineTheme { Root(app) } }
     }
+}
+
+private sealed interface Route {
+    data object Home : Route
+    data class Add(val scan: Boolean) : Route
+    data class Contact(val did: String) : Route
+    data class Verify(val did: String) : Route
+    data object Settings : Route
+    data object Battery : Route
+    data object Passphrase : Route
+    data object PhraseGate : Route
+    data class PhraseShown(val phrase: String) : Route
+    data object About : Route
+    data object Licences : Route
+    data object Diagnostics : Route
+    data object MicNeeded : Route
 }
 
 @Composable
 private fun Root(app: P2pApp) {
     val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
     val has by app.hasIdentity.collectAsState()
     val lock by app.lockState.collectAsState()
+    val contacts by app.contacts.collectAsState()
     var forgot by rememberSaveable { mutableStateOf(false) }
-    var screen by rememberSaveable { mutableStateOf(Screen.Home) }
     var onboarding by rememberSaveable { mutableStateOf(!app.node.hasIdentity()) }
+    var termsOk by remember { mutableStateOf(LegalStore.accepted(ctx)) }
     var missing by remember { mutableStateOf(Perms.missing(ctx)) }
+    var callError by remember { mutableStateOf<String?>(null) }
+    var pendingCall by remember { mutableStateOf<String?>(null) }
+    // Back stack. Not saved: the recovery phrase may sit in it, and Home is a fine place to restart.
+    val stack = remember { mutableStateListOf<Route>(Route.Home) }
+    fun pop() { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
     val prefs = remember { ctx.getSharedPreferences("perm_state", Context.MODE_PRIVATE) }
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
-        val o = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) { missing = Perms.missing(ctx); app.refresh() } }
+        val o = LifecycleEventObserver { _, e ->
+            if (e == Lifecycle.Event.ON_RESUME) {
+                missing = Perms.missing(ctx); app.refresh()
+                if (stack.last() == Route.MicNeeded && Perms.granted(ctx, android.Manifest.permission.RECORD_AUDIO)) pop()
+            }
+        }
         owner.lifecycle.addObserver(o); onDispose { owner.lifecycle.removeObserver(o) }
+    }
+
+    fun place(did: String) {
+        callError = null
+        scope.launch {
+            val r = withContext(Dispatchers.IO) { app.calls.place(did) }
+            r.onFailure { callError = it.message ?: "Couldn\u2019t start the call" }
+        }
     }
     val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         missing = Perms.missing(ctx)
+        pendingCall?.let { did ->
+            pendingCall = null
+            if (Perms.granted(ctx, android.Manifest.permission.RECORD_AUDIO)) place(did) else stack.add(Route.MicNeeded)
+        }
     }
     val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         missing = Perms.missing(ctx)
-    }
-    // First run after onboarding: ask for the runtime permissions in one go.
-    LaunchedEffect(onboarding, has, lock) {
-        if (!onboarding && has && lock == LockState.UNLOCKED) {
-            val rt = missing.mapNotNull { Perms.runtimePermission(it) }
-            if (rt.isNotEmpty()) {
-                rt.forEach { prefs.edit().putBoolean("asked_$it", true).apply() }
-                permLauncher.launch(rt.toTypedArray())
-            }
-        }
     }
     val fix: (Need) -> Unit = { n ->
         val p = Perms.runtimePermission(n)
@@ -96,20 +123,62 @@ private fun Root(app: P2pApp) {
             i != null -> try { settingsLauncher.launch(i) } catch (_: Exception) { Perms.openSettings(ctx, Perms.appDetails(ctx)) }
         }
     }
+    /** Tap on a call button: microphone first (system dialog once, then the explainer screen), then dial. */
+    val call: (String) -> Unit = { did ->
+        val mic = android.Manifest.permission.RECORD_AUDIO
+        if (Perms.granted(ctx, mic)) place(did)
+        else {
+            val act = ctx.findActivity()
+            val blocked = prefs.getBoolean("asked_$mic", false) && act != null &&
+                !androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(act, mic)
+            if (blocked) stack.add(Route.MicNeeded)
+            else { pendingCall = did; prefs.edit().putBoolean("asked_$mic", true).apply(); permLauncher.launch(arrayOf(mic)) }
+        }
+    }
 
-    if (onboarding || !has) {
-        OnboardingScreen(app) { onboarding = false; missing = Perms.missing(ctx) }
-    } else if (lock == LockState.LOCKED) {
-        if (forgot) OnboardingScreen(app, forgot = true) { forgot = false; missing = Perms.missing(ctx) }
-        else UnlockScreen(app) { forgot = true }
-    } else if (lock == LockState.NEEDS_PASSPHRASE) {
-        SetPassphraseScreen(app)
-    } else {
-        BackHandler(screen != Screen.Home) { screen = Screen.Home }
-        when (screen) {
-            Screen.Home -> HomeScreen(app, missing, fix, { screen = Screen.Add }, { screen = Screen.Settings })
-            Screen.Add -> AddContactScreen(app) { screen = Screen.Home }
-            Screen.Settings -> SettingsScreen(app) { screen = Screen.Home }
+    when {
+        onboarding || !has -> OnboardingFlow(app, missing, fix) { onboarding = false; termsOk = LegalStore.accepted(ctx); missing = Perms.missing(ctx) }
+        lock == LockState.LOCKED ->
+            if (forgot) OnboardingFlow(app, missing, fix, forgot = true, onCancelForgot = { forgot = false }) { forgot = false; missing = Perms.missing(ctx) }
+            else UnlockScreen(app) { forgot = true }
+        lock == LockState.NEEDS_PASSPHRASE -> SetPassphraseScreen(app)
+        !termsOk -> TermsScreen(progress = null, onBack = null) { LegalStore.accept(ctx); termsOk = true }
+        else -> {
+            BackHandler(stack.size > 1) { pop() }
+            when (val r = stack.last()) {
+                Route.Home -> HomeScreen(
+                    app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onSettings = { stack.add(Route.Settings) },
+                    onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
+                )
+                is Route.Add -> AddContactScreen(app, r.scan, onClose = ::pop,
+                    onCall = { c -> pop(); call(c.did) }, onVerify = { c -> pop(); stack.add(Route.Contact(c.did)); stack.add(Route.Verify(c.did)) })
+                is Route.Contact -> {
+                    val c = contacts.firstOrNull { it.did == r.did }
+                    if (c == null) LaunchedEffect(Unit) { pop() }
+                    else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onVerify = { stack.add(Route.Verify(c.did)) }, onRemove = {
+                        pop()
+                        scope.launch(Dispatchers.IO) { runCatching { app.node.removeContact(c.did) }; app.refresh() }
+                    })
+                }
+                is Route.Verify -> {
+                    val c = contacts.firstOrNull { it.did == r.did }
+                    if (c == null) LaunchedEffect(Unit) { pop() }
+                    // Needs the core's safety number (see Features.verify); until then the screen says so.
+                    else VerifyScreen(app.node.profile()?.name ?: "", c, groups = null, onBack = ::pop, onMatch = ::pop, onNoMatch = ::pop)
+                }
+                Route.Settings -> SettingsScreen(
+                    app, missing, onBack = ::pop, onBattery = { stack.add(Route.Battery) }, onPassphrase = { stack.add(Route.Passphrase) },
+                    onPhrase = { stack.add(Route.PhraseGate) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
+                )
+                Route.Battery -> BatteryScreen(missing, onBack = ::pop, onFix = fix)
+                Route.Passphrase -> ChangePassphraseScreen(app, onBack = ::pop)
+                Route.PhraseGate -> PhraseGateScreen(app, onBack = ::pop, onPhrase = { p -> pop(); stack.add(Route.PhraseShown(p)) })
+                is Route.PhraseShown -> PhraseShownScreen(r.phrase, onHide = ::pop)
+                Route.About -> AboutScreen(onBack = ::pop, onLicences = { stack.add(Route.Licences) })
+                Route.Licences -> LicencesScreen(::pop)
+                Route.Diagnostics -> DiagnosticsScreen(app, ::pop)
+                Route.MicNeeded -> MicNeededScreen(onOpenSettings = { Perms.openSettings(ctx, Perms.appDetails(ctx)) }, onNotNow = ::pop)
+            }
         }
     }
 }

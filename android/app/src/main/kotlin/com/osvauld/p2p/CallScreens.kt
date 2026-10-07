@@ -1,31 +1,39 @@
 package com.osvauld.p2p
 
-import android.app.KeyguardManager
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallState
 
 private fun ComponentActivity.showOverLock() {
@@ -47,25 +55,40 @@ private fun ComponentActivity.registerMicThen(then: () -> Unit): () -> Unit {
     }
 }
 
+/** Ended screens stay up this long (the "Call ended" board: "Closes by itself after 4 seconds"). */
+const val ENDED_AUTOCLOSE_MS = 4000L
+
 class CallActivity : ComponentActivity() {
     private lateinit var answerWithMic: () -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         secureWindow()
+        enableEdgeToEdge()
         showOverLock()
         val app = P2pApp.get(this)
         answerWithMic = registerMicThen { app.calls.answer() }
         // Only a fresh launch answers: a recreation (rotation) must not answer a second time.
         if (savedInstanceState == null) handle(intent)
+        val meName = app.node.profile()?.name ?: ""
         setContent {
-            P2pTheme {
+            TinlineTheme {
                 val ui by app.calls.ui.collectAsState()
+                val ended by app.calls.ended.collectAsState()
                 var seen by remember { mutableStateOf(false) }
                 if (ui != null) seen = true
-                LaunchedEffect(ui, seen) { if (ui == null && seen) finish() }
-                LaunchedEffect(Unit) { delay(1500); if (app.calls.ui.value == null) finish() }
-                ui?.let { InCallScreen(it, app.calls) }
+                val e = ended
+                // An outgoing call that fails at once is already over when this screen opens: still show why.
+                val showEnded = ui == null && e != null && (seen || System.currentTimeMillis() - e.atMs < 10_000)
+                LaunchedEffect(ui, seen, showEnded) { if (ui == null && seen && !showEnded) finish() }
+                LaunchedEffect(Unit) { delay(1500); if (app.calls.ui.value == null && app.calls.ended.value == null) finish() }
+                val u = ui
+                when {
+                    u != null -> InCallScreen(u, meName, app.calls, onMinimise = { finish() })
+                    showEnded && e != null -> EndedRoute(e, meName, onClose = { finish() }, onAgain = {
+                        app.scope.launch { app.calls.place(e.peerDid) }
+                    })
+                }
             }
         }
     }
@@ -86,6 +109,7 @@ class IncomingCallActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         secureWindow()
+        enableEdgeToEdge()
         showOverLock()
         val app = P2pApp.get(this)
         val answerWithMic = registerMicThen {
@@ -93,7 +117,7 @@ class IncomingCallActivity : ComponentActivity() {
             startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
         }
         setContent {
-            P2pTheme {
+            TinlineTheme(dark = true) {
                 val ui by app.calls.ui.collectAsState()
                 val u = ui
                 LaunchedEffect(u?.state) {
@@ -102,100 +126,214 @@ class IncomingCallActivity : ComponentActivity() {
                         startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
                     }
                 }
-                if (u != null) CallBackdrop {
-                    Spacer(Modifier.weight(1f))
-                    Avatar(u.info.peerName)
-                    Spacer(Modifier.height(20.dp))
-                    Text(u.info.peerName.ifBlank { "Unknown" }, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                    Text("Incoming call", color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp)
-                    Spacer(Modifier.weight(1f))
-                    Row(Modifier.fillMaxWidth().padding(bottom = 56.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        RoundAction(Color(0xFFD93025), "Decline", rotate = 135f) { app.calls.decline(); finish() }
-                        RoundAction(Color(0xFF1E9E5A), "Answer") { answerWithMic() }
-                    }
-                }
+                if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() })
             }
         }
     }
 }
 
-@Composable
-private fun CallBackdrop(content: @Composable ColumnScope.() -> Unit) {
-    Box(Modifier.fillMaxSize().background(Color(0xFF0F1220))) {
-        Column(Modifier.fillMaxSize().systemBarsPadding().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, content = content)
-    }
-}
+// ------------------------------------------------------------------ incoming (always dark)
 
 @Composable
-private fun Avatar(name: String) {
-    Box(Modifier.size(120.dp).clip(CircleShape).background(Color(0xFF2F5BEA)), contentAlignment = Alignment.Center) {
-        Text(name.take(1).uppercase().ifEmpty { "?" }, color = Color.White, fontSize = 52.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-private fun RoundAction(color: Color, label: String, rotate: Float = 0f, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        FilledIconButton(onClick, Modifier.size(72.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = color)) {
-            Icon(Icons.Default.Call, label, tint = Color.White, modifier = Modifier.size(32.dp).rotate(rotate))
+fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: () -> Unit) {
+    val c = Tin.c
+    val who = name.ifBlank { "Unknown" }
+    Column(Modifier.fillMaxSize().background(Color(0xFF0B100F)).systemBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(Modifier.padding(top = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Glyphs.Cans, null, tint = c.ink2, modifier = Modifier.size(20.dp))
+            Text("Tinline call", style = TinType.bodyM, color = c.ink2)
         }
-        Spacer(Modifier.height(8.dp))
-        Text(label, color = Color.White.copy(alpha = 0.8f))
-    }
-}
-
-@Composable
-private fun ToggleAction(label: String, icon: Int, on: Boolean, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        FilledIconToggleButton(on, { onClick() }, Modifier.size(64.dp), colors = IconButtonDefaults.filledIconToggleButtonColors(
-            containerColor = Color.White.copy(alpha = 0.12f), contentColor = Color.White,
-            checkedContainerColor = Color.White, checkedContentColor = Color(0xFF0F1220))) {
-            Icon(painterResource(icon), label, Modifier.size(28.dp))
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
+            // Two thin amber rings around the avatar: the line is ringing.
+            Box(Modifier.size(168.dp).border(2.dp, c.thread.copy(alpha = 0.35f), CircleShape), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(144.dp).border(2.dp, c.thread.copy(alpha = 0.6f), CircleShape), contentAlignment = Alignment.Center) {
+                    Avatar(who, did, 120.dp)
+                }
+            }
+            Text(who, Modifier.padding(top = 10.dp, start = 24.dp, end = 24.dp), style = TinType.display, color = c.ink, textAlign = TextAlign.Center)
+            Text("is calling you", style = TinType.bodyL.copy(fontSize = 17.sp), color = c.ink2)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(16.dp))
+                Text("End-to-end encrypted", style = TinType.bodyM.copy(fontSize = 13.sp), color = c.ink2)
+            }
         }
-        Spacer(Modifier.height(8.dp))
-        Text(label, color = Color.White.copy(alpha = 0.8f))
+        Row(Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, bottom = 56.dp), horizontalArrangement = Arrangement.SpaceAround) {
+            LabeledRound("Decline") { RoundBtn(Icons.Rounded.CallEnd, "Decline", c.callEnd, Color.White, onDecline) }
+            LabeledRound("Answer") { RoundBtn(Icons.Rounded.Call, "Answer", c.callAccept, Color.White, onAnswer) }
+        }
     }
 }
 
+// ------------------------------------------------------------------ calling / in call
+
+private fun routeLabel(speaker: Boolean) = if (speaker) "Speaker" else "Phone"
+
 @Composable
-fun InCallScreen(ui: CallUi, calls: CallController) {
+fun InCallScreen(ui: CallUi, meName: String, calls: CallController, onMinimise: () -> Unit) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(500); now = System.currentTimeMillis() } }
-    val status = when (ui.state) {
-        is CallState.Dialing -> "Calling..."
-        is CallState.Ringing -> if (ui.info.incoming) "Connecting..." else "Ringing..."
-        is CallState.Active -> {
-            val s = ((now - (ui.activeSinceMs ?: now)) / 1000).coerceAtLeast(0)
-            "%02d:%02d".format(s / 60, s % 60)
+    val secs = ((now - (ui.activeSinceMs ?: now)) / 1000).coerceAtLeast(0)
+    val s = ui.stats
+    val loss = s?.let { val t = (it.received + it.lost).toDouble(); if (t > 0) 100.0 * it.lost.toDouble() / t else 0.0 }
+    InCallContent(
+        name = ui.info.peerName.ifBlank { "Unknown" }, did = ui.info.peerDid, meName = meName,
+        active = ui.state is CallState.Active, ringing = ui.state is CallState.Ringing, secs = secs,
+        direct = s?.direct, bars = if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null,
+        muted = ui.muted, speaker = ui.speaker, micProblem = ui.micProblem,
+        onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
+    )
+}
+
+@Composable
+fun InCallContent(
+    name: String, did: String, meName: String, active: Boolean, ringing: Boolean, secs: Long, direct: Boolean?, bars: Int?,
+    muted: Boolean, speaker: Boolean, micProblem: String?,
+    onMute: () -> Unit, onSpeaker: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit, startWithSheet: Boolean = false,
+) {
+    val c = Tin.c
+    var sheet by remember { mutableStateOf(startWithSheet) }
+    Page {
+        Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconBtn(Icons.Rounded.KeyboardArrowDown, "Minimise", onMinimise)
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                if (!active) Badge(if (ringing) "Ringing…" else "Finding a path…", BadgeKind.Neutral) { Dot(c.thread, 8.dp) }
+                else {
+                    if (direct == true) Badge("Direct", BadgeKind.Direct, Glyphs.Direct)
+                    if (direct == false) Badge("Relayed · encrypted", BadgeKind.Relayed, Glyphs.Relayed)
+                    if (bars != null) Badge(qualityLabel(bars), BadgeKind.Neutral) { QualityBars(bars, warn = bars <= 1) }
+                }
+            }
+            Spacer(Modifier.width(48.dp))
         }
-        is CallState.Ended -> "Call ended"
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+            PairAvatars(meName.ifBlank { "?" }, name, did)
+            Text(name, Modifier.padding(top = 16.dp), style = TinType.h1.copy(fontSize = 30.sp, lineHeight = 36.sp), color = c.ink, textAlign = TextAlign.Center)
+            if (active) Text(clock(secs), style = TinType.mono.copy(fontSize = 20.sp, lineHeight = 28.sp), color = c.ink2)
+            else Text(if (ringing) "Ringing…" else "Calling…", style = TinType.bodyL.copy(fontSize = 17.sp), color = c.ink2)
+            if (active && direct != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(16.dp))
+                Text("End-to-end encrypted · " + if (direct) "straight to their phone" else "through an encrypted relay", style = TinType.bodyM.copy(fontSize = 13.sp), color = c.ink2)
+            }
+            if (micProblem != null) Text(micProblem, Modifier.padding(top = 4.dp), style = TinType.bodyM, color = c.er, textAlign = TextAlign.Center)
+        }
+        Row(Modifier.fillMaxWidth().padding(bottom = 28.dp), horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)) {
+            LabeledRound(if (muted) "Muted" else "Mute") {
+                RoundBtn(if (muted) Icons.Rounded.MicOff else Icons.Rounded.Mic, if (muted) "Unmute" else "Mute",
+                    if (muted) c.ink else c.sf3, if (muted) c.bg else c.ink, onMute, size = 64.dp, iconSize = 26.dp)
+            }
+            LabeledRound(routeLabel(speaker)) {
+                RoundBtn(if (speaker) Icons.Rounded.VolumeUp else Icons.Rounded.PhoneInTalk, "Audio: ${routeLabel(speaker)}", c.sf3, c.ink, { sheet = true }, size = 64.dp, iconSize = 26.dp)
+            }
+        }
+        Box(Modifier.fillMaxWidth().padding(bottom = 64.dp), contentAlignment = Alignment.Center) {
+            RoundBtn(Icons.Rounded.CallEnd, if (active) "End call" else "Cancel call", c.callEnd, Color.White, onEnd)
+        }
     }
-    CallBackdrop {
-        Spacer(Modifier.height(48.dp))
-        Avatar(ui.info.peerName)
-        Spacer(Modifier.height(20.dp))
-        Text(ui.info.peerName.ifBlank { "Unknown" }, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-        Text(status, color = Color.White.copy(alpha = 0.7f), fontSize = 18.sp)
-        ui.micProblem?.let {
-            Spacer(Modifier.height(8.dp))
-            Text(it, color = Color(0xFFFFB4AB), fontSize = 14.sp, textAlign = TextAlign.Center)
+    if (sheet) AudioRouteSheet(speaker, relayed = direct == false, onDismiss = { sheet = false }, onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); sheet = false })
+}
+
+@Composable
+private fun AudioRouteSheet(speaker: Boolean, relayed: Boolean, onDismiss: () -> Unit, onPick: (speaker: Boolean) -> Unit) {
+    val c = Tin.c
+    TinSheet(onDismiss) {
+        Text("Play call through", Modifier.padding(start = 8.dp, top = 12.dp, bottom = 8.dp), style = TinType.titleL.copy(fontSize = 20.sp), color = c.ink)
+        RouteOption(Icons.Rounded.PhoneInTalk, "Phone", !speaker) { onPick(false) }
+        RouteOption(Icons.Rounded.VolumeUp, "Speaker", speaker) { onPick(true) }
+        // Bluetooth and wired headsets join this list once AudioEngine can route to them.
+        if (relayed) Hint("Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you.", Modifier.padding(start = 8.dp, end = 8.dp, top = 12.dp))
+    }
+}
+
+@Composable
+private fun RouteOption(icon: ImageVector, label: String, on: Boolean, onClick: () -> Unit) {
+    val c = Tin.c
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.prc else Color.Transparent)
+            .clickable(role = Role.RadioButton, onClick = onClick).padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(icon, null, tint = if (on) c.onPrc else c.ink, modifier = Modifier.padding(start = 8.dp))
+        Text(label, Modifier.weight(1f), style = TinType.bodyL, color = if (on) c.onPrc else c.ink)
+        if (on) Icon(Icons.Rounded.Check, "Selected", tint = c.onPrc, modifier = Modifier.padding(end = 8.dp))
+    }
+}
+
+// ------------------------------------------------------------------ ended / couldn't reach / mic needed
+
+@Composable
+private fun EndedRoute(e: EndedUi, meName: String, onClose: () -> Unit, onAgain: () -> Unit) {
+    if (classifyEnd(e.reason) == EndKind.Unreachable && !e.wasActive) UnreachableContent(e.peerName, e.peerDid, meName, onAgain, onClose)
+    else EndedContent(e.peerName, e.peerDid, meName, endReasonText(e.reason, e.peerName), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
+}
+
+@Composable
+fun EndedContent(
+    name: String, did: String, meName: String, reasonText: String, secs: Long?, direct: Boolean?, bars: Int?,
+    onAgain: () -> Unit, onClose: () -> Unit, autoClose: Boolean = true,
+) {
+    val c = Tin.c
+    if (autoClose) LaunchedEffect(Unit) { delay(ENDED_AUTOCLOSE_MS); onClose() }
+    Page {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+            PairAvatars(meName.ifBlank { "?" }, name.ifBlank { "Unknown" }, did)
+            Text("Call ended", Modifier.padding(top = 16.dp), style = TinType.h1.copy(fontSize = 30.sp, lineHeight = 36.sp), color = c.ink)
+            Text(reasonText, style = TinType.bodyL.copy(fontSize = 17.sp), color = c.ink2, textAlign = TextAlign.Center)
+            if (secs != null) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Badge(clock(secs), BadgeKind.Mono)
+                if (direct == true) Badge("Direct", BadgeKind.Direct)
+                if (direct == false) Badge("Relayed", BadgeKind.Relayed)
+                if (bars != null) Badge("${qualityLabel(bars)} quality", BadgeKind.Neutral)
+            }
         }
-        ui.stats?.let { s ->
-            Spacer(Modifier.height(8.dp))
-            val tot = (s.received + s.lost).toDouble()
-            val loss = if (tot > 0) 100.0 * s.lost.toDouble() / tot else 0.0
-            Text(
-                "${if (s.direct) "Direct P2P" else "Relayed (encrypted)"} · rtt ${s.rttMs} ms · loss ${"%.1f".format(loss)}%",
-                color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, textAlign = TextAlign.Center,
-            )
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TinButton("Call again", onAgain, style = BtnStyle.Outlined)
+            TinButton("Close", onClose, style = BtnStyle.Text)
+            if (autoClose) Hint("Closes by itself after 4 seconds.", Modifier.fillMaxWidth(), align = TextAlign.Center)
         }
-        Spacer(Modifier.weight(1f))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ToggleAction("Mute", android.R.drawable.ic_lock_silent_mode, ui.muted) { calls.toggleMute() }
-            ToggleAction("Speaker", android.R.drawable.ic_lock_silent_mode_off, ui.speaker) { calls.toggleSpeaker() }
+    }
+}
+
+@Composable
+fun UnreachableContent(name: String, did: String, meName: String, onAgain: () -> Unit, onClose: () -> Unit) {
+    val c = Tin.c
+    val who = name.ifBlank { "them" }
+    Page {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SelfAvatar(meName.ifBlank { "?" }, 64.dp)
+                Box(Modifier.width(36.dp).height(3.dp).background(c.thread.copy(alpha = 0.5f), RoundedCornerShape(2.dp)))
+                Box(Modifier.size(96.dp).clip(CircleShape).background(c.sf3), contentAlignment = Alignment.Center) {
+                    Text(initialsOf(name), style = TinType.titleL.copy(fontSize = 34.sp), color = c.ink2)
+                }
+            }
+            H1("Couldn’t reach $who", Modifier.padding(top = 16.dp), align = TextAlign.Center)
+            Lead("${if (name.isBlank()) "They" else name} may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages.", align = TextAlign.Center)
         }
-        Spacer(Modifier.height(40.dp))
-        RoundAction(Color(0xFFD93025), "Hang up", rotate = 135f) { calls.hangup() }
-        Spacer(Modifier.height(48.dp))
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TinButton("Try again", onAgain)
+            TinButton("Close", onClose, style = BtnStyle.Text)
+        }
+    }
+}
+
+/** Before the first call without the microphone: say why and send the user to the permission page. */
+@Composable
+fun MicNeededScreen(onOpenSettings: () -> Unit, onNotNow: () -> Unit) {
+    val c = Tin.c
+    Page {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
+            Box(Modifier.size(96.dp).clip(CircleShape).background(c.erc), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.MicOff, null, tint = c.er, modifier = Modifier.size(44.dp)) }
+            H1("Tinline can’t use the microphone", Modifier.padding(top = 12.dp), align = TextAlign.Center)
+            Lead("Without it, they won’t hear you. Tinline only listens during calls — never in the background.", align = TextAlign.Center)
+        }
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TinButton("Open settings", onOpenSettings)
+            Hint("Then go to Permissions › Microphone and allow it.", Modifier.fillMaxWidth(), align = TextAlign.Center)
+            TinButton("Not now", onNotNow, style = BtnStyle.Text)
+        }
     }
 }

@@ -53,9 +53,10 @@ object Notifications {
     /** The always-on foreground notification; text reflects call state. */
     fun service(c: Context, inCall: String?): Notification {
         val b = Notification.Builder(c, CH_SERVICE)
-            .setSmallIcon(android.R.drawable.sym_action_call)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setColor(0xFF0B6B5B.toInt())
             .setContentTitle(inCall ?: "Ready for calls")
             .setContentText(if (inCall != null) "Tap to return to the call" else "Listening for contacts")
             .setContentIntent(
@@ -72,7 +73,7 @@ object Notifications {
         val answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) }
         val decline = service(c, CoreService.ACTION_DECLINE, 22)
         val b = Notification.Builder(c, CH_CALLS)
-            .setSmallIcon(android.R.drawable.sym_action_call)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
             .setCategory(Notification.CATEGORY_CALL)
             .setOngoing(true)
             .setAutoCancel(false)
@@ -95,7 +96,7 @@ object Notifications {
 
     fun locked(c: Context) {
         val n = Notification.Builder(c, CH_LOCKED)
-            .setSmallIcon(android.R.drawable.ic_lock_lock)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
             .setOnlyAlertOnce(true)
             .setContentTitle("Unlock to receive calls")
             .setContentText("Tap to enter your passphrase")
@@ -109,7 +110,7 @@ object Notifications {
 
     fun missed(c: Context, name: String) {
         val n = Notification.Builder(c, CH_MISSED)
-            .setSmallIcon(android.R.drawable.sym_call_missed)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
             .setContentTitle("Missed call")
             .setContentText(name.ifBlank { "Unknown" })
             .setAutoCancel(true)

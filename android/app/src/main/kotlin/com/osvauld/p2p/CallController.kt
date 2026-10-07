@@ -37,6 +37,13 @@ data class CallUi(
     val micProblem: String? = null,
 )
 
+/** What the "Call ended" / "Couldn't reach" screens show once the call is gone. */
+data class EndedUi(
+    val peerName: String, val peerDid: String, val reason: String, val incoming: Boolean,
+    val wasActive: Boolean, val secs: Long, val direct: Boolean?, val bars: Int?,
+    val atMs: Long = System.currentTimeMillis(),
+)
+
 /** Thrown by [CallController.place] when the microphone permission is missing. */
 class MicPermissionNeeded : Exception("Microphone permission needed to place a call")
 
@@ -44,6 +51,10 @@ class MicPermissionNeeded : Exception("Microphone permission needed to place a c
 class CallController(private val app: P2pApp) {
     private val _ui = MutableStateFlow<CallUi?>(null)
     val ui: StateFlow<CallUi?> = _ui
+    private val _ended = MutableStateFlow<EndedUi?>(null)
+    /** Set when a call ends (after [ui] goes null); cleared when the next call starts. */
+    val ended: StateFlow<EndedUi?> = _ended
+    @Volatile private var localHangup = false
     private val audio by lazy { AudioEngine(app, { app.node }, ::micUnavailable) }
     @Volatile private var ringtone: Ringtone? = null
     @Volatile private var statsJob: Job? = null
@@ -66,7 +77,7 @@ class CallController(private val app: P2pApp) {
 
     fun onIncoming(call: CallInfo) {
         testLog("incoming id=${call.callId} from=${call.peerName.ifBlank { call.peerDid }}")
-        everActive = false; declined = false
+        everActive = false; declined = false; localHangup = false; _ended.value = null
         _ui.value = CallUi(call, CallState.Ringing)
         CoreService.ensureRunning(app)
         Notifications.incoming(app, call)
@@ -113,6 +124,16 @@ class CallController(private val app: P2pApp) {
                 val cur = _ui.value
                 if (cur != null && cur.info.callId == callId) {
                     if (cur.info.incoming && !everActive && !declined) Notifications.missed(app, cur.info.peerName)
+                    val raw = state.reason
+                    // The core says "hung up" for either side; only we know whether it was us.
+                    val reason = if (raw == "hung up" && localHangup) REASON_LOCAL_HANGUP else raw
+                    val s = cur.stats
+                    val loss = s?.let { val t = (it.received + it.lost).toDouble(); if (t > 0) 100.0 * it.lost.toDouble() / t else 0.0 }
+                    _ended.value = EndedUi(
+                        cur.info.peerName, cur.info.peerDid, reason, cur.info.incoming, everActive,
+                        cur.activeSinceMs?.let { (System.currentTimeMillis() - it) / 1000 } ?: 0L,
+                        s?.direct, if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null,
+                    )
                     _ui.update { u -> if (u?.info?.callId == callId) null else u }
                 }
                 CoreService.ensureRunning(app, CoreService.ACTION_IDLE)
@@ -131,7 +152,7 @@ class CallController(private val app: P2pApp) {
             synchronized(lock) { placing = false; early.clear() }
             throw e
         }
-        everActive = false; declined = false
+        everActive = false; declined = false; localHangup = false; _ended.value = null
         val replay = synchronized(lock) {
             _ui.value = CallUi(info, CallState.Dialing)
             placing = false
@@ -154,7 +175,7 @@ class CallController(private val app: P2pApp) {
 
     fun decline() {
         val c = _ui.value ?: return
-        declined = true
+        declined = true; localHangup = true
         ringTimeout?.cancel()
         stopRinging(); Notifications.cancelIncoming(app)
         app.scope.launch { try { app.node.decline(c.info.callId) } catch (e: Exception) { Log.w("Call", "decline: $e") } }
@@ -162,6 +183,7 @@ class CallController(private val app: P2pApp) {
 
     fun hangup() {
         val c = _ui.value ?: return
+        localHangup = true
         app.scope.launch { try { app.node.hangup(c.info.callId) } catch (e: Exception) { Log.w("Call", "hangup: $e") } }
     }
 

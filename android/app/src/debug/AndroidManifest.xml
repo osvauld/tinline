@@ -11,5 +11,11 @@
                 <action android:name="${applicationId}.DEBUG" />
             </intent-filter>
         </receiver>
+        <!-- Screen gallery for design review (debug only); adb shell only, like the receiver. -->
+        <activity
+            android:name=".GalleryActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP"
+            android:theme="@style/Theme.P2P" />
     </application>
 </manifest>
