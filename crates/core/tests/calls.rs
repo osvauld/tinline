@@ -162,3 +162,40 @@ fn glare_leaves_exactly_one_call() {
     assert!(active[0] == ca.call_id || active[0] == cb.call_id);
     a.node.hangup(active[0].clone()).unwrap();
 }
+
+#[test]
+fn call_states_arrive_in_order() {
+    let (a, b) = pair("order");
+    let call = b.node.call(a.did.clone()).unwrap();
+    let inc = expect(&a, 40, "incoming", |e| match e {
+        Ev::Incoming(c) => Some(c.call_id.clone()),
+        _ => None,
+    });
+    a.node.answer(inc).unwrap();
+    // Let media run for a moment, then hang up from the caller.
+    std::thread::sleep(Duration::from_secs(2));
+    b.node.hangup(call.call_id.clone()).unwrap();
+    let rank = |s: &CallState| match s {
+        CallState::Dialing => 0,
+        CallState::Ringing => 1,
+        CallState::Active => 2,
+        CallState::Ended { .. } => 3,
+    };
+    for p in [&a, &b] {
+        let mut seen = Vec::new();
+        expect(p, 10, "ended", |e| match e {
+            Ev::State(id, st) if *id == call.call_id => {
+                seen.push(rank(st));
+                matches!(st, CallState::Ended { .. }).then_some(())
+            }
+            _ => None,
+        });
+        assert!(seen.windows(2).all(|w| w[0] <= w[1]), "out of order: {seen:?}");
+        assert!(seen.contains(&2), "never went active: {seen:?}");
+        // Nothing for this call after Ended.
+        std::thread::sleep(Duration::from_millis(500));
+        while let Ok(ev) = p.rx.try_recv() {
+            assert!(!matches!(ev, Ev::State(ref id, _) if *id == call.call_id), "event after Ended: {ev:?}");
+        }
+    }
+}
