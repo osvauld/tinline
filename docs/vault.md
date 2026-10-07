@@ -19,7 +19,8 @@ Everything secret is in `vault` (all bytes standard base64):
   32-byte data key (DEK).
 - `wrapped_dek` = the DEK, AES-256-GCM under KEK = Argon2id(passphrase, `salt`, m KiB, t, p) -> 32 bytes.
   Defaults are osvauld's keystore parameters: m=65536, t=3, p=4, 16-byte salt. A failed tag is reported as
-  `WrongPassphrase`. Out-of-range params in a tampered file are refused.
+  `WrongPassphrase`. Params outside m 64-256 MiB, t 3-10, p 1-8 or a salt outside 16-64 bytes (a tampered or downgraded
+  file) are refused.
 - Changing the passphrase rewraps the DEK (new salt) and leaves `sealed` and the DEK unchanged.
 
 The core never writes the DEK anywhere. `Node::unlock_key()` hands it to the platform, which may keep it
@@ -39,3 +40,9 @@ against malware running as the app or a rooted device while unlocked. With a pla
 phone that can unlock itself can still receive and place calls, but cannot reveal the recovery phrase
 (`recovery_phrase(passphrase)` re-derives from the passphrase) nor change the passphrase without it.
 Minimum passphrase length is 8 characters (`Error::WeakPassphrase`).
+
+## Files
+
+The data dir is created `0700` and every file written is `0600` (existing installs are fixed up when
+opened); leftover `*.tmp` files from an interrupted write are deleted on open. `Profile` (mnemonic and
+device secret in memory) is zeroized on drop.
