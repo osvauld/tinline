@@ -106,12 +106,10 @@ impl App {
             "add" => self.screen = Screen::AddContact,
             "add-paste" => {
                 self.screen = Screen::AddContact;
-                self.add_paste = true;
                 self.add_in = "OSVC2:eyJuIjoiQXJqdW4iLCJrIjoiejZNa3ZWUXFwYkxzTW1ZbkVSN3pkTXNUdnJENHMi".into();
             }
             "add-done" => {
                 self.screen = Screen::AddContact;
-                self.add_paste = true;
                 self.add_alias = "Arjun".into();
                 self.add_phase = AddPhase::Added(contacts[0].clone());
             }
@@ -124,8 +122,13 @@ impl App {
                 self.screen = Screen::Onboarding;
                 self.name_in = "Maya".into();
             }
-            "settings" => {
+            "settings" | "settings-audio" | "settings-security" => {
                 self.screen = Screen::Settings;
+                self.settings_tab = match name {
+                    "settings-audio" => 2,
+                    "settings-security" => 3,
+                    _ => 1,
+                };
                 self.devices = (
                     vec!["Built-in Audio Analog Stereo".into(), "USB Headset".into()],
                     vec!["Built-in Audio Analog Stereo".into(), "USB Headset".into()],

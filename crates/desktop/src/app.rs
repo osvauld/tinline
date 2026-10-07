@@ -122,7 +122,7 @@ struct App {
     avail_open: bool,
     add_phase: AddPhase,
     add_alias: String,
-    add_paste: bool,
+    settings_tab: u8,
     safety: Option<String>,
     ended: Option<EndedView>,
     screen: Screen,
@@ -226,7 +226,8 @@ enum Msg {
     ToggleAvail,
     SetAvail(bool, Option<u64>),
     OpenAdd,
-    AddTab(bool),
+    SettingsTab(u8),
+    Key(iced::keyboard::Key, iced::keyboard::Modifiers),
     AddAlias(String),
     SaveAlias,
     CloseEnded,
@@ -293,6 +294,7 @@ fn take_secret(z: &mut Zeroizing<String>) -> String {
 
 /// Widget id of the rename field, so it can take focus.
 const RENAME_ID: &str = "rename";
+const SEARCH_ID: &str = "search";
 
 /// A desktop notification, off the UI thread (some servers block on show).
 fn notify(summary: &str, body: &str) {
@@ -363,7 +365,7 @@ impl App {
             avail_open: false,
             add_phase: AddPhase::Idle,
             add_alias: String::new(),
-            add_paste: false,
+            settings_tab: 0,
             safety: None,
             ended: None,
             screen: match lock {
@@ -497,12 +499,16 @@ impl App {
         INIT.get().unwrap().env_tone.or(self.settings.tone.then_some(440.0))
     }
 
-    fn apply_call_state(&mut self, id: &str, state: CallState) {
-        let Some(c) = self.call.as_mut().filter(|c| c.info.call_id == id) else { return };
+    fn apply_call_state(&mut self, id: &str, state: CallState) -> Task<Msg> {
+        let Some(c) = self.call.as_mut().filter(|c| c.info.call_id == id) else { return Task::none() };
         c.state = state.clone();
         match state {
             CallState::Active => {
                 c.answered = true;
+                // The in-call screen has device pickers.
+                if self.devices.0.is_empty() && !self.demo {
+                    return blocking(audio::list_devices, Msg::Devices);
+                }
             }
             CallState::Ended { reason } => {
                 let who = c.info.peer_name.clone();
@@ -526,6 +532,7 @@ impl App {
             }
             _ => {}
         }
+        Task::none()
     }
 
     fn refresh_history(&mut self) {
@@ -973,7 +980,21 @@ impl App {
                 }
             }
             Msg::AddChanged(v) => self.add_in = v,
-            Msg::AddTab(p) => self.add_paste = p,
+            Msg::SettingsTab(n) => self.settings_tab = n,
+            Msg::Key(key, mods) => {
+                use iced::keyboard::key::Named;
+                use iced::keyboard::Key;
+                let ringing = self.call.as_ref().is_some_and(|c| c.info.incoming && !c.answered && c.state == CallState::Ringing);
+                let active = self.call.as_ref().is_some_and(|c| c.state == CallState::Active);
+                match key.as_ref() {
+                    Key::Named(Named::Enter) if ringing => return self.update(Msg::Answer),
+                    Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),
+                    Key::Character("k") if mods.command() && self.call.is_none() => return operation::focus(SEARCH_ID),
+                    Key::Character("m") if mods.command() && active => return self.update(Msg::ToggleMute),
+                    Key::Character("e") if mods.command() && self.call.is_some() => return self.update(Msg::Hangup),
+                    _ => {}
+                }
+            }
             Msg::AddAlias(v) => self.add_alias = v,
             Msg::OpenAdd => {
                 self.screen = Screen::AddContact;
@@ -1026,11 +1047,13 @@ impl App {
                     let id = info.call_id.clone();
                     self.ended = None;
                     self.call = Some(CallView { info, state: CallState::Dialing, answered: false, stats: None });
+                    let mut tasks = Vec::new();
                     for (eid, st) in std::mem::take(&mut self.early) {
                         if eid == id {
-                            self.apply_call_state(&eid, st);
+                            tasks.push(self.apply_call_state(&eid, st));
                         }
                     }
+                    return Task::batch(tasks);
                 }
                 Err(e) => self.notice = Some(format!("Could not call: {e}")),
             },
@@ -1234,7 +1257,7 @@ impl App {
             }
             Ev::State(id, st) => {
                 if self.call.as_ref().is_some_and(|c| c.info.call_id == id) {
-                    self.apply_call_state(&id, st);
+                    return self.apply_call_state(&id, st);
                 } else {
                     // An outgoing call's first states can beat the reply to `call`.
                     self.early.push((id, st));
@@ -1258,6 +1281,10 @@ impl App {
             window::close_requests().map(Msg::CloseReq),
             window::close_events().map(Msg::Closed),
             system::theme_changes().map(Msg::Theme),
+            iced::keyboard::listen().filter_map(|e| match e {
+                iced::keyboard::Event::KeyPressed { key, modifiers, .. } => Some(Msg::Key(key, modifiers)),
+                _ => None,
+            }),
         ])
     }
 }

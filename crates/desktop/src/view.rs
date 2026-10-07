@@ -9,7 +9,7 @@ use iced::{Alignment, Border, Color, Element, Fill, Length, Padding, Point, Rect
 use p2pcore::{CallRecord, CallState, LockState};
 
 use super::{
-    Detail, AddPhase, App, Msg, Qr, Screen, DEFAULT_LABEL, RENAME_ID,
+    AddPhase, App, Detail, Msg, Qr, Screen, DEFAULT_LABEL, RENAME_ID, SEARCH_ID,
 };
 use crate::ui::{self, Icon, Kind, Tok};
 
@@ -164,9 +164,9 @@ impl App {
     pub(super) fn view(&self, _id: iced::window::Id) -> El<'_> {
         let t = self.t();
         let body: El = if self.call.is_some() {
-            self.call_view(t)
+            row![self.sidebar(t), self.call_view(t)].into()
         } else if self.ended.is_some() {
-            self.ended_view(t)
+            row![self.sidebar(t), self.ended_view(t)].into()
         } else {
             match self.screen {
                 Screen::Onboarding => self.onboarding_view(t),
@@ -423,36 +423,33 @@ impl App {
         None
     }
 
-    fn status_pill(&self, t: Tok) -> El<'_> {
-        let (txt, bg, fg, dot) = if !self.status.started {
-            ("Connecting\u{2026}", t.surface2, t.ink2, t.ink2)
+    /// "Available for calls  Change" at the foot of the sidebar; Change opens the availability panel.
+    fn avail_footer(&self, t: Tok) -> El<'_> {
+        let (txt, dot) = if !self.status.started {
+            ("Connecting\u{2026}", t.ink2)
         } else if !self.status.online {
-            ("Offline", t.error_c, t.on_error_c, t.error)
+            ("Offline", t.error)
         } else if !self.avail.available {
-            ("Not available", t.warn, t.on_warn, t.thread)
+            ("Not available", t.thread)
         } else {
-            ("Available", t.primary_c, t.on_primary_c, t.primary)
+            ("Available for calls", t.primary)
         };
-        button(
-            row![
-                container(Space::new()).width(8).height(8).style(ui::plain(dot, 4.0)),
-                semi(txt, 13.0, fg),
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center),
-        )
-        .padding([6, 12])
-        .style(move |_: &Theme, st| button::Style {
-            background: Some(
-                ui::mix(bg, fg, if matches!(st, button::Status::Hovered | button::Status::Pressed) { 0.1 } else { 0.0 })
-                    .into(),
-            ),
-            text_color: fg,
-            border: Border { radius: 999.0.into(), ..Default::default() },
-            ..Default::default()
-        })
-        .on_press(Msg::ToggleAvail)
-        .into()
+        let bar = row![
+            container(Space::new()).width(8).height(8).style(ui::plain(dot, 4.0)),
+            semi(txt, 14.0, t.ink),
+            Space::new().width(Fill),
+            button(semi("Change", 13.0, t.primary))
+                .padding([4, 10])
+                .style(ui::button_style(t, Kind::Ghost, 999.0))
+                .on_press(Msg::ToggleAvail),
+        ]
+        .spacing(8)
+        .align_y(Alignment::Center);
+        let mut c = column![].spacing(10);
+        if self.avail_open {
+            c = c.push(self.avail_panel(t));
+        }
+        c.push(container(bar).padding([4, 4])).into()
     }
 
     fn avail_panel(&self, t: Tok) -> El<'_> {
@@ -543,20 +540,36 @@ impl App {
             ui::logo(28.0, t.primary, t.thread),
             bold("Tinline", 20.0, t.ink),
             Space::new().width(Fill),
+            icon_btn(t, Icon::UserPlus, Msg::OpenAdd),
             icon_btn(t, Icon::Sliders, Msg::OpenSettings),
         ]
-        .spacing(8)
+        .spacing(4)
         .align_y(Alignment::Center);
-        let mut col = column![head, self.status_pill(t)].spacing(12);
-        if self.avail_open {
-            col = col.push(self.avail_panel(t));
-        }
+        let mut col = column![head].spacing(12);
+        let bare = move |_: &Theme, _: text_input::Status| text_input::Style {
+            background: iced::Background::Color(Color::TRANSPARENT),
+            border: Border::default(),
+            icon: t.ink2,
+            placeholder: ui::alpha(t.ink2, 0.8),
+            value: t.ink,
+            selection: ui::alpha(t.primary, 0.3),
+        };
         col = col.push(
-            text_input("Search contacts", &self.search)
-                .on_input(Msg::SearchIn)
-                .padding([10, 12])
-                .size(14)
-                .style(ui::input_style(t)),
+            container(
+                row![
+                    text_input("Search", &self.search)
+                        .id(SEARCH_ID)
+                        .on_input(Msg::SearchIn)
+                        .padding([9, 4])
+                        .size(14)
+                        .style(bare),
+                    mono("Ctrl K", 11.0, t.ink2),
+                ]
+                .spacing(8)
+                .align_y(Alignment::Center),
+            )
+            .padding([0, 12])
+            .style(ui::outlined(t.surface, t.line, 8.0)),
         );
 
         let q = self.search.trim().to_lowercase();
@@ -618,7 +631,7 @@ impl App {
             );
         }
         if self.contacts.is_empty() {
-            list = list.push(container(tx("No contacts yet.", 13.0, t.ink2)).padding([4, 12]));
+            list = list.push(container(tx("Contacts you add appear here.", 13.0, t.ink2)).padding([4, 12]));
         } else if !q.is_empty() && count == 0 {
             list = list.push(container(tx(
                 "Not here? Tinline has no directory \u{2014} add people with their code.",
@@ -626,21 +639,12 @@ impl App {
                 t.ink2,
             )).padding([4, 12]));
         }
-        let add = button(
-            row![ui::icon(Icon::UserPlus, 18.0, t.on_primary_c), semi("Add contact", 15.0, t.on_primary_c)]
-                .spacing(8)
-                .align_y(Alignment::Center),
-        )
-        .padding([12, 18])
-        .width(Fill)
-        .style(ui::button_style(t, Kind::Tonal, 999.0))
-        .on_press(Msg::OpenAdd);
         container(
-            column![col, scroll(t, list).height(Fill), add]
+            column![col, scroll(t, list).height(Fill), self.avail_footer(t)]
                 .spacing(12),
         )
         .padding(16)
-        .width(340)
+        .width(300)
         .height(Fill)
         .style(ui::sidebar(t))
         .into()
@@ -678,7 +682,7 @@ impl App {
             column![
                 bold("Your line is ready", 28.0, t.ink),
                 tx(
-                    "Add someone to call. Meet up or video-chat, open Tinline on both computers, and exchange codes.",
+                    "Add the first person you want to call. You\u{2019}ll both need Tinline open for a moment \u{2014} side by side, or over a video call.",
                     15.0,
                     t.ink2
                 ),
@@ -700,8 +704,8 @@ impl App {
                     semi(self.profile_name.clone(), 18.0, t.ink),
                     tx("Works once. Share it with someone who should be able to call you.", 14.0, t.ink2),
                     row![
+                        pill(t, Kind::Primary, Some(Icon::UserPlus), if self.contacts.is_empty() { "Add your first contact" } else { "Add contact" }, Some(Msg::OpenAdd)),
                         pill(t, Kind::Quiet, Some(Icon::Copy), "Copy code", self.ticket.as_ref().map(|_| Msg::CopyTicket)),
-                        pill(t, Kind::Tonal, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd)),
                     ]
                     .spacing(10),
                     tx("Waiting for them to add it \u{2014} keep Tinline open.", 13.0, t.ink2),
@@ -720,9 +724,16 @@ impl App {
     fn detail_view<'a>(&'a self, t: Tok, c: &'a p2pcore::Contact) -> El<'a> {
         let name = Self::display(c);
         let mut title = column![bold(name.clone(), 28.0, t.ink)].spacing(4);
-        if c.alias.as_ref().is_some_and(|a| !a.is_empty()) {
-            title = title.push(tx(format!("Calls themself \u{201c}{}\u{201d}", c.name), 14.0, t.ink2));
-        }
+        let added = format!("Added {}", utc_date(c.added_at));
+        title = title.push(tx(
+            if c.alias.as_ref().is_some_and(|a| !a.is_empty()) {
+                format!("Calls themself \u{201c}{}\u{201d} \u{b7} {added}", c.name)
+            } else {
+                added
+            },
+            14.0,
+            t.ink2,
+        ));
         let mut badges = row![].spacing(8);
         if c.verified {
             badges = badges.push(badge(t.primary_c, t.on_primary_c, Some(Icon::ShieldCheck), "Verified"));
@@ -733,7 +744,7 @@ impl App {
         let actions = row![
             pill(t, Kind::Primary, Some(Icon::Phone), "Call", Some(Msg::CallPressed(c.did.clone()))),
             pill(t, Kind::Quiet, Some(Icon::Pencil), "Rename", Some(Msg::SetDetail(Detail::Rename))),
-            pill(t, Kind::Quiet, Some(Icon::ShieldCheck), if c.verified { "Verified" } else { "Verify" }, Some(Msg::SetDetail(Detail::Verify))),
+            pill(t, Kind::Quiet, Some(Icon::ShieldCheck), "Safety number", Some(Msg::SetDetail(Detail::Verify))),
             pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::SetDetail(Detail::ConfirmRemove))),
         ]
         .spacing(10);
@@ -852,12 +863,57 @@ impl App {
             ),
         };
 
-        let mut hist = column![label(t, &format!("Calls with {name}"))].spacing(2);
+        let cell = |s: String, w: f32, c: Color| container(tx(s, 13.0, c)).width(w);
+        let mut hist = column![
+            semi(format!("Calls with {name}"), 16.0, t.ink),
+            row![
+                Space::new().width(28),
+                container(label(t, "Call")).width(Fill),
+                container(label(t, "When")).width(150),
+                container(label(t, "Length")).width(80),
+                container(label(t, "Path")).width(90),
+            ]
+            .spacing(8),
+        ]
+        .spacing(10);
         if self.detail_calls.is_empty() {
             hist = hist.push(container(tx("No calls yet.", 14.0, t.ink2)).padding([8, 0]));
         }
         for r in &self.detail_calls {
-            hist = hist.push(container(self.record_row(t, r, false)).padding([10, 0]));
+            let bad = r.missed || r.reason == "unreachable";
+            let fg = if bad { t.error } else { t.ink };
+            let what = if r.missed {
+                "Missed".to_string()
+            } else if r.duration_secs == 0 {
+                crate::reason::history(&r.reason, r.incoming, r.missed, 0, &name)
+            } else if r.incoming {
+                "Incoming".into()
+            } else {
+                "Outgoing".into()
+            };
+            let len = if r.duration_secs == 0 {
+                "\u{2014}".to_string()
+            } else {
+                format!("{}:{:02}", r.duration_secs / 60, r.duration_secs % 60)
+            };
+            let path: El = if r.duration_secs == 0 {
+                cell("\u{2014}".into(), 90.0, t.ink2).into()
+            } else if r.direct {
+                container(badge(t.primary_c, t.on_primary_c, None, "Direct")).width(90).into()
+            } else {
+                container(badge(t.relay_c, t.on_relay_c, None, "Relayed")).width(90).into()
+            };
+            hist = hist.push(
+                row![
+                    container(ui::icon(if r.incoming { Icon::Incoming } else { Icon::Outgoing }, 16.0, if bad { t.error } else { t.ink2 })).width(28),
+                    container(semi(what, 14.0, fg)).width(Fill),
+                    cell(ago(now_secs(), r.started_at), 150.0, t.ink2),
+                    container(mono(len, 13.0, t.ink2)).width(80),
+                    path,
+                ]
+                .spacing(8)
+                .align_y(Alignment::Center),
+            );
         }
         hist = hist.push(tx("History stays on this computer only.", 12.0, t.ink2));
 
@@ -870,21 +926,14 @@ impl App {
 
     // ---- add contact ----
 
+    /// Add contact: a card over the dimmed window, our code and their card side by side.
     fn add_view(&self, t: Tok) -> El<'_> {
-        let back = row![icon_btn(t, Icon::ArrowLeft, Msg::Back), bold("Add contact", 24.0, t.ink)]
-            .spacing(10)
-            .align_y(Alignment::Center);
-        let tab = |s: &'static str, i: Icon, on: bool, m: Msg| {
-            button(row![ui::icon(i, 18.0, if on { t.on_primary_c } else { t.ink2 }), semi(s, 14.0, if on { t.on_primary_c } else { t.ink2 })].spacing(8).align_y(Alignment::Center))
-                .padding([9, 18])
-                .style(ui::button_style(t, if on { Kind::Tonal } else { Kind::Ghost }, 999.0))
-                .on_press(m)
-        };
-        let tabs = row![
-            tab("My code", Icon::Direct, !self.add_paste, Msg::AddTab(false)),
-            tab("Paste card", Icon::Clipboard, self.add_paste, Msg::AddTab(true)),
+        let head = row![
+            bold("Add a contact", 22.0, t.ink),
+            Space::new().width(Fill),
+            icon_btn(t, Icon::X, Msg::Back),
         ]
-        .spacing(8);
+        .align_y(Alignment::Center);
 
         let body: El = match &self.add_phase {
             AddPhase::Connecting => column![
@@ -906,9 +955,7 @@ impl App {
                         text_input("Name", &self.add_alias).on_input(Msg::AddAlias).on_submit(Msg::SaveAlias)
                     ),
                     tx(format!("Only you see this name. They called themselves \u{201c}{shown}\u{201d}."), 13.0, t.ink2),
-                    row![
-                        pill(t, Kind::Primary, None, "Done", Some(Msg::SaveAlias)),
-                    ],
+                    pill(t, Kind::Primary, None, "Done", Some(Msg::SaveAlias)),
                 ]
                 .spacing(12)
                 .into()
@@ -920,7 +967,7 @@ impl App {
                     14.0,
                     t.ink2
                 ),
-                tx("Other reasons", 13.0, t.ink2).font(ui::SANS_SEMI),
+                semi("Other reasons", 13.0, t.ink2),
                 tx("\u{b7} The code was already used \u{2014} ask for a new one.", 13.0, t.ink2),
                 tx("\u{b7} One of you is offline or on a network that blocks it.", 13.0, t.ink2),
                 mono(e.clone(), 12.0, t.ink2),
@@ -928,32 +975,59 @@ impl App {
             ]
             .spacing(8)
             .into(),
-            AddPhase::Idle if self.add_paste => column![
-                semi("Paste a card", 17.0, t.ink),
-                tx("If they sent their card as a message, paste the whole text here. It starts with OSVC2:", 14.0, t.ink2),
-                text_input("OSVC2:...", &self.add_in)
-                    .on_input(Msg::AddChanged)
-                    .on_submit(Msg::AddPressed)
-                    .padding(12)
-                    .size(14)
-                    .font(ui::MONO)
-                    .style(ui::input_style(t)),
-                tx(
-                    "Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.",
-                    13.0,
-                    t.ink2
-                ),
-                pill(t, Kind::Primary, None, "Add", (!self.add_in.trim().is_empty()).then_some(Msg::AddPressed)),
-            ]
-            .spacing(12)
-            .into(),
-            AddPhase::Idle => self.code_view(t),
+            AddPhase::Idle => {
+                let qr: El = match &self.qr {
+                    Some(q) => container(canvas(QrView(q)).width(Length::Fixed(200.0)).height(Length::Fixed(200.0)))
+                        .padding(8)
+                        .style(ui::plain(Color::WHITE, 12.0))
+                        .into(),
+                    None => container(tx("Preparing your code\u{2026}", 14.0, t.ink2)).width(216).height(216).center_x(216).center_y(216).into(),
+                };
+                let mine = column![
+                    label(t, "They scan your code"),
+                    qr,
+                    tx("Works once. Share it with someone who should be able to call you.", 13.0, t.ink2),
+                    pill(t, Kind::Quiet, Some(Icon::Copy), "Copy card", self.ticket.as_ref().map(|_| Msg::CopyTicket)),
+                ]
+                .spacing(12)
+                .width(Fill);
+                let theirs = column![
+                    label(t, "Or add theirs"),
+                    text_input("Paste their card (OSVC2:\u{2026})", &self.add_in)
+                        .on_input(Msg::AddChanged)
+                        .on_submit(Msg::AddPressed)
+                        .padding(12)
+                        .size(14)
+                        .font(ui::MONO)
+                        .style(ui::input_style(t)),
+                    pill(t, Kind::Primary, None, "Add contact", (!self.add_in.trim().is_empty()).then_some(Msg::AddPressed)),
+                    tx(
+                        "Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.",
+                        13.0,
+                        t.ink2
+                    ),
+                ]
+                .spacing(12)
+                .width(Fill);
+                row![mine, container(Space::new()).width(1).height(Fill).style(ui::plain(t.line, 0.0)), theirs]
+                    .spacing(28)
+                    .height(Length::Shrink)
+                    .into()
+            }
         };
-        let content = column![back, tabs, container(body).padding(if self.add_paste || !matches!(self.add_phase, AddPhase::Idle) { 24 } else { 0 })
+        let card = container(
+            column![head, body, tx("You both need Tinline open and online while adding.", 12.0, t.ink2)].spacing(18),
+        )
+        .padding(28)
+        .max_width(760)
+        .width(Fill)
+        .style(ui::card(t));
+        let dim = if t.dark { Color::from_rgb(0.04, 0.06, 0.05) } else { Color::from_rgb(0.86, 0.88, 0.86) };
+        container(scroll(t, container(card).padding(32).center_x(Fill).width(Fill)).height(Fill))
             .width(Fill)
-            .style(move |th: &Theme| if self.add_paste || !matches!(self.add_phase, AddPhase::Idle) { ui::card(t)(th) } else { Default::default() })]
-        .spacing(20);
-        scroll(t, container(container(content).max_width(720).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill).into()
+            .height(Fill)
+            .style(ui::plain(dim, 0.0))
+            .into()
     }
 
     // ---- settings ----
@@ -1093,18 +1167,39 @@ impl App {
             .into(),
         );
         let quit = pill(t, Kind::Danger, Some(Icon::LogOut), "Quit Tinline", Some(Msg::Quit));
-        let content = column![
-            row![icon_btn(t, Icon::ArrowLeft, Msg::Back), bold("Settings", 24.0, t.ink)].spacing(10).align_y(Alignment::Center),
-            self.notice_bar(t),
-            profile,
-            calls,
-            audio,
-            section(t, "Security", security),
-            about,
-            quit,
+        let items = ["Profile", "Calls & availability", "Audio devices", "Security", "About"];
+        let mut nav = column![
+            button(row![ui::icon(Icon::ArrowLeft, 18.0, t.ink2), semi("Back", 14.0, t.ink2)].spacing(8).align_y(Alignment::Center))
+                .padding([8, 12])
+                .style(ui::button_style(t, Kind::Ghost, 999.0))
+                .on_press(Msg::Back),
+            Space::new().height(8),
         ]
-        .spacing(20);
-        scroll(t, container(container(content).max_width(720).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill).into()
+        .spacing(2);
+        for (i, name) in items.iter().enumerate() {
+            let on = self.settings_tab as usize == i;
+            nav = nav.push(
+                button(semi(*name, 14.0, if on { t.on_primary_c } else { t.ink }))
+                    .padding([10, 14])
+                    .width(Fill)
+                    .style(ui::row_style(t, on))
+                    .on_press(Msg::SettingsTab(i as u8)),
+            );
+        }
+        let nav = container(nav).padding(16).width(240).height(Fill).style(ui::sidebar(t));
+        let page: El = match self.settings_tab {
+            0 => profile,
+            1 => calls,
+            2 => audio,
+            3 => section(t, "Security", security),
+            _ => column![about, quit].spacing(20).into(),
+        };
+        let content = column![bold(items[(self.settings_tab as usize).min(4)], 24.0, t.ink), self.notice_bar(t), page].spacing(20);
+        row![
+            nav,
+            scroll(t, container(container(content).max_width(640).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill)
+        ]
+        .into()
     }
 
     // ---- calls ----
@@ -1252,7 +1347,40 @@ impl App {
             .spacing(48)
             .into()
         };
-        self.call_shell(t, top, middle.into(), bottom)
+        let hint = if incoming_ring {
+            "Enter answers \u{b7} Esc declines"
+        } else if active {
+            "End-to-end encrypted \u{b7} Ctrl M mute \u{b7} Ctrl E end"
+        } else {
+            "Ctrl E cancels"
+        };
+        let mut bottom_col = column![bottom].spacing(18).align_x(Alignment::Center);
+        if active {
+            let (ins, outs) = &self.devices;
+            let opts = |v: &Vec<String>| {
+                let mut o = vec![DEFAULT_LABEL.to_string()];
+                o.extend(v.iter().cloned());
+                o
+            };
+            let pick = |title: &'static str, o: Vec<String>, sel: Option<String>, on: fn(String) -> Msg| -> El<'_> {
+                column![
+                    label(t, title),
+                    pick_list(o, sel, on).width(250).padding(9).text_size(14).style(ui::pick_style(t)).menu_style(ui::menu_style(t)),
+                ]
+                .spacing(6)
+                .into()
+            };
+            bottom_col = bottom_col.push(
+                row![
+                    pick("Microphone", opts(ins), Some(self.settings.input.clone().unwrap_or_else(|| DEFAULT_LABEL.into())), Msg::InDev),
+                    pick("Speaker", opts(outs), Some(self.settings.output.clone().unwrap_or_else(|| DEFAULT_LABEL.into())), Msg::OutDev),
+                ]
+                .spacing(16),
+            );
+            bottom_col = bottom_col.push(tx("Device changes apply from the next call.", 12.0, t.ink2));
+        }
+        bottom_col = bottom_col.push(tx(hint, 12.0, t.ink2));
+        self.call_shell(t, top, middle.into(), bottom_col.into())
     }
 
     fn ended_view(&self, t: Tok) -> El<'_> {
@@ -1306,6 +1434,21 @@ fn line<'a>(t: Tok, title: &str, sub: &str, right: El<'a>) -> El<'a> {
     .spacing(12)
     .align_y(Alignment::Center)
     .into()
+}
+
+/// "12 Sep" in UTC (no time-zone database here; the day can be off by one near midnight).
+fn utc_date(secs: u64) -> String {
+    let z = (secs / 86400) as i64 + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let _ = era;
+    const M: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    format!("{day} {}", M[(month - 1) as usize])
 }
 
 fn until_text(until: u64) -> String {
