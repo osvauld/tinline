@@ -217,6 +217,8 @@ enum Msg {
     OpenSettings,
     Back,
     Select(String),
+    /// Back to the home pane: no contact selected.
+    Home,
     SetDetail(Detail),
     RenameIn(String),
     RenameSave,
@@ -989,6 +991,9 @@ impl App {
                 match key.as_ref() {
                     Key::Named(Named::Enter) if ringing => return self.update(Msg::Answer),
                     Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),
+                    Key::Named(Named::Escape) if self.call.is_none() && (self.sel.is_some() || self.screen != Screen::Home) => {
+                        return self.update(Msg::Home);
+                    }
                     Key::Character("k") if mods.command() && self.call.is_none() => return operation::focus(SEARCH_ID),
                     Key::Character("m") if mods.command() && active => return self.update(Msg::ToggleMute),
                     Key::Character("e") if mods.command() && self.call.is_some() => return self.update(Msg::Hangup),
@@ -1063,6 +1068,14 @@ impl App {
                 self.safety = None;
                 self.refresh_detail_calls();
                 if self.screen != Screen::Home {
+                    self.screen = Screen::Home;
+                }
+            }
+            Msg::Home => {
+                self.sel = None;
+                self.detail = Detail::View;
+                self.safety = None;
+                if self.call.is_none() {
                     self.screen = Screen::Home;
                 }
             }

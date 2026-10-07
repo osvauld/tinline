@@ -536,9 +536,13 @@ impl App {
     }
 
     fn sidebar(&self, t: Tok) -> El<'_> {
+        // The name doubles as the way home, like a site's logo.
+        let home = button(row![ui::logo(28.0, t.primary, t.thread), bold("Tinline", 20.0, t.ink)].spacing(4).align_y(Alignment::Center))
+            .padding([2, 4])
+            .style(ui::button_style(t, Kind::Ghost, 8.0))
+            .on_press(Msg::Home);
         let head = row![
-            ui::logo(28.0, t.primary, t.thread),
-            bold("Tinline", 20.0, t.ink),
+            home,
             Space::new().width(Fill),
             icon_btn(t, Icon::UserPlus, Msg::OpenAdd),
             icon_btn(t, Icon::Sliders, Msg::OpenSettings),
@@ -669,60 +673,38 @@ impl App {
         .into()
     }
 
-    /// My code: shown when no contact is selected, and as the empty state.
+    /// Home with nothing selected: a quiet starting point. Your code lives in Add contact.
     fn code_view(&self, t: Tok) -> El<'_> {
-        let qr: El = match &self.qr {
-            Some(q) => container(canvas(QrView(q)).width(Length::Fixed(240.0)).height(Length::Fixed(240.0)))
-                .padding(10)
-                .style(ui::plain(Color::WHITE, 12.0))
-                .into(),
-            None => container(tx("Preparing your code\u{2026}", 14.0, t.ink2)).width(260).height(260).center_x(260).center_y(260).into(),
-        };
-        let head: El = if self.contacts.is_empty() {
-            column![
+        if self.contacts.is_empty() {
+            return column![
                 bold("Your line is ready", 28.0, t.ink),
                 tx(
                     "Add the first person you want to call. You\u{2019}ll both need Tinline open for a moment \u{2014} side by side, or over a video call.",
                     15.0,
                     t.ink2
                 ),
-            ]
-            .spacing(8)
-            .into()
-        } else {
-            column![
-                bold("My code", 28.0, t.ink),
-                tx("Select a contact on the left to call them, or show this code to add someone.", 15.0, t.ink2),
-            ]
-            .spacing(8)
-            .into()
-        };
-        let card = container(
-            row![
-                qr,
-                column![
-                    semi(self.profile_name.clone(), 18.0, t.ink),
-                    tx("Works once. Share it with someone who should be able to call you.", 14.0, t.ink2),
-                    row![
-                        pill(t, Kind::Primary, Some(Icon::UserPlus), if self.contacts.is_empty() { "Add your first contact" } else { "Add contact" }, Some(Msg::OpenAdd)),
-                        pill(t, Kind::Quiet, Some(Icon::Copy), "Copy code", self.ticket.as_ref().map(|_| Msg::CopyTicket)),
-                    ]
-                    .spacing(10),
-                    tx("Waiting for them to add it \u{2014} keep Tinline open.", 13.0, t.ink2),
+                row![
+                    pill(t, Kind::Primary, Some(Icon::UserPlus), "Add your first contact", Some(Msg::OpenAdd)),
+                    pill(t, Kind::Quiet, None, "Show my code", Some(Msg::OpenAdd)),
                 ]
-                .spacing(14)
-                .width(Fill),
+                .spacing(10),
             ]
-            .spacing(28)
-            .align_y(Alignment::Center),
-        )
-        .padding(28)
-        .style(ui::card(t));
-        column![head, card].spacing(24).into()
+            .spacing(14)
+            .into();
+        }
+        let hello = if self.profile_name.is_empty() { "Who do you want to call?".to_string() } else { format!("Hi {}", self.profile_name) };
+        column![
+            bold(hello, 28.0, t.ink),
+            tx("Pick someone on the left to call them, or press Ctrl K to search.", 15.0, t.ink2),
+            row![pill(t, Kind::Quiet, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd))].spacing(10),
+        ]
+        .spacing(14)
+        .into()
     }
 
     fn detail_view<'a>(&'a self, t: Tok, c: &'a p2pcore::Contact) -> El<'a> {
         let name = Self::display(c);
+        let back = pill(t, Kind::Ghost, Some(Icon::ArrowLeft), "Home", Some(Msg::Home));
         let mut title = column![bold(name.clone(), 28.0, t.ink)].spacing(4);
         let added = format!("Added {}", utc_date(c.added_at));
         title = title.push(tx(
@@ -917,7 +899,7 @@ impl App {
         }
         hist = hist.push(tx("History stays on this computer only.", 12.0, t.ink2));
 
-        let mut col = column![head, actions].spacing(20);
+        let mut col = column![back, head, actions].spacing(20);
         if let Some(p) = panel {
             col = col.push(p);
         }
