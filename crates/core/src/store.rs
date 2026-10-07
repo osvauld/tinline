@@ -11,6 +11,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use zeroize::ZeroizeOnDrop;
 
 use crate::Error;
 
@@ -31,7 +32,7 @@ pub enum Disk {
 }
 
 /// The old clear-text profile; also what an unlocked identity is loaded from.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct Profile {
     pub mnemonic: String,
     pub name: String,
@@ -73,7 +74,46 @@ impl Store {
     pub fn open(dir: impl Into<PathBuf>) -> Result<Self, Error> {
         let dir = dir.into();
         fs::create_dir_all(&dir)?;
-        Ok(Self { dir })
+        let store = Self { dir };
+        store.tighten_permissions();
+        store.remove_stale();
+        Ok(store)
+    }
+
+    /// Only the app's own user may read the data dir: it holds the (sealed) identity and the
+    /// contact list. Fixes up installs created before this was enforced.
+    fn tighten_permissions(&self) {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let chmod = |p: &Path, mode: u32| {
+                if let Err(e) = fs::set_permissions(p, fs::Permissions::from_mode(mode)) {
+                    tracing::warn!("chmod {}: {e}", p.display());
+                }
+            };
+            chmod(&self.dir, 0o700);
+            for entry in fs::read_dir(&self.dir).into_iter().flatten().flatten() {
+                if entry.file_type().is_ok_and(|t| t.is_file()) {
+                    chmod(&entry.path(), 0o600);
+                }
+            }
+        }
+    }
+
+    /// Leftovers of a write that was killed before its rename.
+    fn remove_stale(&self) {
+        for entry in fs::read_dir(&self.dir).into_iter().flatten().flatten() {
+            if entry.path().extension().is_some_and(|e| e == "tmp") {
+                let _ = fs::remove_file(entry.path());
+            }
+        }
+    }
+
+    /// After the legacy clear-text profile was converted: nothing of it may linger.
+    pub fn remove_legacy_leftovers(&self) {
+        for name in ["profile.json.bak", "profile.bak", "profile.tmp"] {
+            let _ = fs::remove_file(self.dir.join(name));
+        }
     }
 
     pub fn profile(&self) -> Result<Option<Disk>, Error> {
@@ -99,19 +139,24 @@ impl Store {
         }
     }
 
-    /// A corrupt state file (power loss mid-write on a filesystem that reordered it) must not
-    /// brick the app: it is set aside as `state.json.corrupt` and we start from empty state.
-    /// Contacts are lost then, but the identity in `profile.json` is not.
+    /// A state file that does not parse (power loss mid-write on a filesystem that reordered
+    /// it) must not brick the app: it is set aside as `state.json.corrupt` and we start from
+    /// empty state. Contacts are lost then, but the identity in `profile.json` is not. An IO
+    /// error (permissions, a flaky disk) is returned instead: the file may be fine.
     pub fn state(&self) -> Result<State, Error> {
         let path = self.dir.join("state.json");
-        match read(&path) {
-            Ok(s) => Ok(s.unwrap_or_default()),
-            Err(Error::Io(e)) if path.exists() => {
-                tracing::warn!("state.json unreadable ({e}); starting empty");
+        let bytes = match fs::read(&path) {
+            Ok(b) => b,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(State::default()),
+            Err(e) => return Err(e.into()),
+        };
+        match serde_json::from_slice(&bytes) {
+            Ok(s) => Ok(s),
+            Err(e) => {
+                tracing::warn!("state.json does not parse ({e}); starting empty");
                 let _ = fs::rename(&path, path.with_extension("json.corrupt"));
                 Ok(State::default())
             }
-            Err(e) => Err(e),
         }
     }
 
@@ -134,7 +179,14 @@ fn read<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, Error> {
 fn write<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> {
     use std::io::Write;
     let tmp = path.with_extension("tmp");
-    let mut f = fs::File::create(&tmp)?;
+    let mut opts = fs::OpenOptions::new();
+    opts.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        opts.mode(0o600);
+    }
+    let mut f = opts.open(&tmp)?;
     f.write_all(&serde_json::to_vec_pretty(value)?)?;
     f.sync_all()?;
     drop(f);
@@ -143,4 +195,68 @@ fn write<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> {
         fs::File::open(dir)?.sync_all()?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tmp(tag: &str) -> PathBuf {
+        let p = std::env::temp_dir().join(format!("p2pcore-store-{tag}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&p);
+        p
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn files_are_private_and_old_ones_are_fixed() {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = |p: &Path| fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        let dir = tmp("modes");
+        // An install from before: loose dir and file modes.
+        fs::create_dir_all(&dir).unwrap();
+        fs::set_permissions(&dir, fs::Permissions::from_mode(0o755)).unwrap();
+        fs::write(dir.join("state.json"), b"{}").unwrap();
+        fs::set_permissions(dir.join("state.json"), fs::Permissions::from_mode(0o644)).unwrap();
+        let store = Store::open(&dir).unwrap();
+        assert_eq!(mode(&dir), 0o700);
+        assert_eq!(mode(&dir.join("state.json")), 0o600);
+        store.save_state(&State::default()).unwrap();
+        assert_eq!(mode(&dir.join("state.json")), 0o600);
+        let top = tmp("fresh");
+        let fresh = top.join("a");
+        let store = Store::open(&fresh).unwrap();
+        store.save_state(&State::default()).unwrap();
+        assert_eq!(mode(&fresh), 0o700);
+        assert_eq!(mode(&fresh.join("state.json")), 0o600);
+        let _ = fs::remove_dir_all(&dir);
+        let _ = fs::remove_dir_all(&top);
+    }
+
+    #[test]
+    fn stale_temp_files_are_removed_on_open() {
+        let dir = tmp("stale");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("profile.tmp"), b"secret").unwrap();
+        fs::write(dir.join("state.tmp"), b"x").unwrap();
+        fs::write(dir.join("state.json"), b"{}").unwrap();
+        Store::open(&dir).unwrap();
+        assert!(!dir.join("profile.tmp").exists() && !dir.join("state.tmp").exists());
+        assert!(dir.join("state.json").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn only_a_parse_error_quarantines_state() {
+        let dir = tmp("corrupt");
+        let store = Store::open(&dir).unwrap();
+        fs::write(dir.join("state.json"), b"{ not json").unwrap();
+        assert!(store.state().unwrap().contacts.is_empty());
+        assert!(dir.join("state.json.corrupt").exists());
+        // Something that cannot be read as a file is an IO error, and is left alone.
+        fs::create_dir(dir.join("state.json")).unwrap();
+        assert!(matches!(store.state(), Err(Error::Io(_))));
+        assert!(dir.join("state.json").is_dir());
+        let _ = fs::remove_dir_all(&dir);
+    }
 }
