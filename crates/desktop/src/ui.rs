@@ -1,7 +1,7 @@
 //! Tinline look: colour tokens (docs/design/Main.dc.html), fonts, Lucide-style icons and the
 //! widget styles built from them.
 
-use iced::widget::{button, container, pick_list, svg, text_input, toggler};
+use iced::widget::{button, container, pick_list, scrollable, svg, text_input, toggler};
 use iced::{font, Background, Border, Color, Element, Font, Length, Theme};
 
 /// Figtree (variable, 400-700) and IBM Plex Mono, embedded; licences in assets/fonts.
@@ -430,5 +430,17 @@ pub fn initials(name: &str) -> String {
         (Some(a), Some(b)) => format!("{}{}", a.to_uppercase(), b.to_uppercase()),
         (Some(a), None) => a.to_uppercase().to_string(),
         _ => "?".into(),
+    }
+}
+
+/// Thin, quiet scroll rails.
+pub fn scroll_style(t: Tok) -> impl Fn(&Theme, scrollable::Status) -> scrollable::Style {
+    move |th, st| {
+        let mut s = scrollable::default(th, st);
+        for r in [&mut s.vertical_rail, &mut s.horizontal_rail] {
+            r.background = None;
+            r.scroller.background = Background::Color(alpha(t.ink2, 0.35));
+        }
+        s
     }
 }

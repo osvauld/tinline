@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use iced::widget::operation;
-use iced::{clipboard, font, system, theme, window, Size, Subscription, Task};
+use iced::{clipboard, system, theme, window, Size, Subscription, Task};
 use p2pcore::{
     Availability, CallInfo, CallRecord, CallState, CallStats, Contact, Error, LockState, Node, NodeStatus,
 };
@@ -36,6 +36,11 @@ pub fn run() -> iced::Result {
     iced::daemon(App::boot, App::update, App::view)
         .title(|_: &App, _| "Tinline".to_string())
         .theme(|a: &App, _| ui::theme(a.dark))
+        // Loaded before the first frame (font::load is async and text laid out earlier keeps the
+        // fallback face).
+        .font(ui::FIGTREE_BYTES)
+        .font(ui::PLEX_REGULAR_BYTES)
+        .font(ui::PLEX_MEDIUM_BYTES)
         .default_font(ui::SANS)
         .subscription(App::subscription)
         .run()
@@ -211,7 +216,6 @@ enum Msg {
     ToggleMute,
     OpenSettings,
     Back,
-    Noop,
     Select(String),
     SetDetail(Detail),
     RenameIn(String),
@@ -408,9 +412,6 @@ impl App {
         *app.ctl.tone.lock().unwrap() = app.tone_hz();
         let mut tasks = vec![
             system::theme().map(Msg::Theme),
-            font::load(ui::FIGTREE_BYTES).map(|_| Msg::Noop),
-            font::load(ui::PLEX_REGULAR_BYTES).map(|_| Msg::Noop),
-            font::load(ui::PLEX_MEDIUM_BYTES).map(|_| Msg::Noop),
         ];
         if settings_devices {
             tasks.push(blocking(audio::list_devices, Msg::Devices));
@@ -478,6 +479,9 @@ impl App {
 
     /// Refreshes what `view` shows about the identity; the node is only asked here, never per redraw.
     fn refresh_identity(&mut self) {
+        if self.demo {
+            return;
+        }
         self.lock = self.node.lock_state();
         self.profile_name = self.node.profile().map(|p| p.name).unwrap_or_default();
     }
@@ -652,7 +656,6 @@ impl App {
                 }
             }
             Msg::Theme(m) => self.dark = self.forced_dark.unwrap_or(m != theme::Mode::Light),
-            Msg::Noop => {}
             Msg::Quit => {
                 let node = self.node.clone();
                 self.ctl.stop_all();

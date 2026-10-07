@@ -3,7 +3,7 @@
 use std::sync::atomic::Ordering;
 
 use iced::widget::{
-    button, canvas, checkbox, column, container, pick_list, row, scrollable, text, text_input, toggler, Space,
+    button, canvas, checkbox, column, container, pick_list, row, text, text_input, toggler, Space,
 };
 use iced::{Alignment, Border, Color, Element, Fill, Length, Padding, Point, Rectangle, Renderer, Size, Theme};
 use p2pcore::{CallRecord, CallState, LockState};
@@ -14,6 +14,10 @@ use super::{
 use crate::ui::{self, Icon, Kind, Tok};
 
 type El<'a> = Element<'a, Msg>;
+
+fn scroll<'a>(t: Tok, c: impl Into<El<'a>>) -> iced::widget::Scrollable<'a, Msg> {
+    iced::widget::scrollable(c).style(ui::scroll_style(t))
+}
 
 fn tx<'a>(s: impl Into<String>, size: f32, color: Color) -> iced::widget::Text<'a> {
     text(s.into()).size(size).color(color)
@@ -200,7 +204,7 @@ impl App {
             .padding(32)
             .width(460)
             .style(ui::card(t));
-        scrollable(container(card).center_x(Fill).padding([32, 0]).width(Fill)).height(Fill).into()
+        scroll(t, container(card).center_x(Fill).padding([32, 0]).width(Fill)).height(Fill).into()
     }
 
     fn pass_field<'a>(&'a self, t: Tok, title: &'a str, value: &'a str, on: fn(String) -> Msg, submit: Option<Msg>) -> El<'a> {
@@ -503,7 +507,8 @@ impl App {
         let mut left = column![].spacing(2);
         if with_name {
             left = left.push(semi(name, 15.0, if missed { t.error } else { t.ink }));
-            left = left.push(tx(format!("{what} \u{b7} {when}"), 13.0, dim));
+            let short = if r.missed { "Missed".to_string() } else if r.duration_secs == 0 { what.clone() } else if r.incoming { "Incoming".into() } else { "Outgoing".into() };
+            left = left.push(tx(format!("{short} \u{b7} {when}"), 13.0, dim));
         } else {
             left = left.push(semi(what, 14.0, if missed { t.error } else { t.ink }));
             left = left.push(tx(when, 12.0, t.ink2));
@@ -628,7 +633,7 @@ impl App {
         .style(ui::button_style(t, Kind::Tonal, 999.0))
         .on_press(Msg::OpenAdd);
         container(
-            column![col, scrollable(list).height(Fill), add]
+            column![col, scroll(t, list).height(Fill), add]
                 .spacing(12),
         )
         .padding(16)
@@ -652,7 +657,7 @@ impl App {
         });
         row![
             self.sidebar(t),
-            scrollable(container(main).padding(32).max_width(760).width(Fill)).width(Fill).height(Fill)
+            scroll(t, container(main).padding(32).max_width(760).width(Fill)).width(Fill).height(Fill)
         ]
         .into()
     }
@@ -945,7 +950,7 @@ impl App {
             .width(Fill)
             .style(move |th: &Theme| if self.add_paste || !matches!(self.add_phase, AddPhase::Idle) { ui::card(t)(th) } else { Default::default() })]
         .spacing(20);
-        scrollable(container(content).padding(32).max_width(760).center_x(Fill).width(Fill)).height(Fill).into()
+        scroll(t, container(container(content).max_width(720).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill).into()
     }
 
     // ---- settings ----
@@ -1096,7 +1101,7 @@ impl App {
             quit,
         ]
         .spacing(20);
-        scrollable(container(content).padding(32).max_width(720).center_x(Fill).width(Fill)).height(Fill).into()
+        scroll(t, container(container(content).max_width(720).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill).into()
     }
 
     // ---- calls ----

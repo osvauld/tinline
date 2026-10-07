@@ -282,3 +282,6 @@ fn main() -> Result<(), String> {
     });
     app::run().map_err(|e| e.to_string())
 }
+
+#[cfg(test)]
+mod migrate_tests;
