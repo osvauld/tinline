@@ -1609,6 +1609,7 @@ name = "desktop"
 version = "0.1.0"
 dependencies = [
  "audio",
+ "chrono",
  "cpal",
  "directories",
  "gtk",

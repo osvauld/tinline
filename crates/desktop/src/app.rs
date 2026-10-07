@@ -7,6 +7,11 @@ mod view;
 #[path = "demo.rs"]
 mod demo;
 
+#[path = "chat.rs"]
+mod chat;
+
+use chat::{ChatState, Cm};
+
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -160,6 +165,7 @@ struct App {
     name_edit: String,
     ticks: u32,
     fetching: bool,
+    chat: ChatState,
 }
 
 #[derive(Debug, Clone)]
@@ -240,6 +246,7 @@ enum Msg {
     InDev(String),
     OutDev(String),
     ToneToggled(bool),
+    Chat(Cm),
 }
 
 /// A freshly built node, handed through the (Clone + Debug) message type.
@@ -406,6 +413,7 @@ impl App {
             name_edit: node.profile().map(|p| p.name).unwrap_or_default(),
             ticks: 0,
             fetching: false,
+            chat: ChatState::default(),
             node,
         };
         if has && crate::test_env("P2P_SCREEN").is_some_and(|v| v == "settings") {
@@ -796,6 +804,7 @@ impl App {
                         if let Some(n) = b.0.lock().unwrap().take()
                             && !Arc::ptr_eq(&n, &self.node)
                         {
+                            n.set_chat_events(Arc::new(crate::ChatBridge(INIT.get().unwrap().tx.clone())));
                             let old = std::mem::replace(&mut self.node, n);
                             // Dropping a node tears down its runtime; keep that off the UI loop.
                             std::thread::spawn(move || drop(old));
@@ -960,7 +969,7 @@ impl App {
                 self.status = self.node.status();
                 self.contacts = self.node.contacts();
                 match r {
-                    Ok(()) => return self.fetch_ticket(),
+                    Ok(()) => return Task::batch([self.fetch_ticket(), self.refresh_chats()]),
                     Err(e) => self.notice = Some(format!("Could not start: {e}")),
                 }
             }
@@ -1037,12 +1046,11 @@ impl App {
                     self.detail = Detail::View;
                     self.screen = Screen::Home;
                     self.add_phase = AddPhase::Idle;
-                    return blocking(
-                        move || {
-                            node.rename_contact(did, alias).map_err(s)
-                        },
-                        Msg::Done,
-                    );
+                    let open = self.open_chat(&did.clone());
+                    return Task::batch([
+                        open,
+                        blocking(move || node.rename_contact(did, alias).map_err(s), Msg::Done),
+                    ]);
                 }
             }
             Msg::CallPressed(did) => return self.dial(did),
@@ -1064,14 +1072,18 @@ impl App {
             },
             Msg::Select(did) => {
                 self.sel = Some(did);
+                self.chat.info = false;
                 self.detail = Detail::View;
                 self.safety = None;
                 self.refresh_detail_calls();
                 if self.screen != Screen::Home {
                     self.screen = Screen::Home;
                 }
+                let did = self.sel.clone().unwrap_or_default();
+                return self.open_chat(&did);
             }
             Msg::Home => {
+                self.leave_chat();
                 self.sel = None;
                 self.detail = Detail::View;
                 self.safety = None;
@@ -1133,6 +1145,7 @@ impl App {
             Msg::Remove(did) => {
                 let node = self.node.clone();
                 if self.sel.as_ref() == Some(&did) {
+                    self.leave_chat();
                     self.sel = None;
                     self.detail = Detail::View;
                     self.detail_calls.clear();
@@ -1217,6 +1230,7 @@ impl App {
                 self.ctl.devices.lock().unwrap().1 = self.settings.output.clone();
                 self.save_settings();
             }
+            Msg::Chat(m) => return self.update_chat(m),
             Msg::ToneToggled(on) => {
                 self.settings.tone = on;
                 *self.ctl.tone.lock().unwrap() = self.tone_hz();
@@ -1242,8 +1256,10 @@ impl App {
                 if !self.demo {
                     self.contacts = self.node.contacts();
                     self.refresh_history();
+                    return self.refresh_chats();
                 }
             }
+            Ev::Chat(c) => return self.on_chat_event(c),
             Ev::Incoming(info) => {
                 let name = info.peer_name.clone();
                 self.call = Some(CallView {
@@ -1294,6 +1310,12 @@ impl App {
             window::close_requests().map(Msg::CloseReq),
             window::close_events().map(Msg::Closed),
             system::theme_changes().map(Msg::Theme),
+            iced::event::listen_with(|e, _, _| match e {
+                iced::Event::Window(window::Event::FileDropped(p)) => Some(Msg::Chat(Cm::Dropped(p))),
+                iced::Event::Window(window::Event::FileHovered(_)) => Some(Msg::Chat(Cm::DropHover(true))),
+                iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::Chat(Cm::DropHover(false))),
+                _ => None,
+            }),
             iced::keyboard::listen().filter_map(|e| match e {
                 iced::keyboard::Event::KeyPressed { key, modifiers, .. } => Some(Msg::Key(key, modifiers)),
                 _ => None,

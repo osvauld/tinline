@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop chat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rl:#4B5AA8;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00;--pk:#F3DDE6;--onpk:#5E1F3A}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--rl:#B8C1F5;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0;--pk:#5A2A3E;--onpk:#F3DDE6}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#DCE0DC;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.win{width:1100px;height:720px;border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.18);display:flex;flex-direction:column;background:var(--bg);color:var(--ink);position:relative}
+.tbar{height:32px;flex:none;background:var(--sf2);border-bottom:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink2);position:relative}
+.wc{position:absolute;right:10px;top:9px;display:flex;gap:14px}
+.wc span{width:12px;height:12px;border-radius:50%;background:var(--ln2);opacity:.6}
+.side{width:300px;flex:none;border-right:1px solid var(--ln);background:var(--sf);display:flex;flex-direction:column}
+.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ib{width:36px;height:36px;border-radius:8px;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.btn{height:36px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 14px 'Figtree',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;box-sizing:border-box}
+.btn.ol{background:transparent;color:var(--ink);border:1px solid var(--ln2)}
+.tabs{display:flex;margin:4px 12px 6px;background:var(--sf2);border-radius:10px;padding:3px;gap:2px}
+.tab{flex:1;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink2)}
+.tab.on{background:var(--sf);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.dk .tab.on{background:var(--sf3)}
+.badge{min-width:18px;height:18px;border-radius:9px;background:var(--pr);color:var(--onpr);font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;box-sizing:border-box}
+.row{display:flex;align-items:center;gap:12px;height:60px;padding:0 12px;margin:0 8px;border-radius:8px}
+.row.sel{background:var(--prc);color:var(--onprc)}
+.row.sel .s,.row.sel .tm{color:var(--onprc)}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex:none}
+.a1{background:var(--prc);color:var(--onprc)}.a2{background:var(--rlc);color:var(--onrlc)}.a3{background:var(--wn);color:var(--onwn)}.a4{background:var(--pk);color:var(--onpk)}
+.n{font-size:14px;font-weight:600;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s{font-size:13px;color:var(--ink2);line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.tm{font-size:12px;color:var(--ink2)}
+.mono{font-family:'IBM Plex Mono',monospace}
+.head{height:60px;flex:none;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:12px;padding:0 16px 0 20px;background:var(--sf)}
+.st{font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.msgs{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:12px 32px;min-height:0;overflow:hidden}
+.day{align-self:center;font-size:12px;font-weight:600;color:var(--ink2);background:var(--sf2);border-radius:999px;padding:3px 12px;margin:8px 0 4px}
+.b{max-width:440px;padding:8px 12px 6px;border-radius:16px;font-size:14px;line-height:20px;box-sizing:border-box;position:relative}
+.b.in{align-self:flex-start;background:var(--sf);border:1px solid var(--ln);border-bottom-left-radius:6px}
+.b.out{align-self:flex-end;background:var(--prc);color:var(--onprc);border-bottom-right-radius:6px}
+.meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;line-height:14px;color:var(--ink2);margin-top:3px}
+.out .meta{color:var(--onprc)}
+.tk{width:15px;height:15px}
+.quote{border-left:3px solid var(--pr);background:rgba(0,0,0,.05);border-radius:6px;padding:4px 8px;margin-bottom:4px;font-size:13px;line-height:18px}
+.dk .quote{background:rgba(255,255,255,.06)}
+.quote b{display:block;font-size:12px;color:var(--pr)}
+.file{display:flex;align-items:center;gap:12px;min-width:260px}
+.fi{width:40px;height:40px;border-radius:10px;background:var(--sf2);display:flex;align-items:center;justify-content:center;flex:none;color:var(--pr)}
+.out .fi{background:rgba(255,255,255,.55)}
+.fn{font-size:14px;font-weight:600;line-height:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs{font-size:12px;line-height:16px;color:var(--ink2)}
+.out .fs{color:var(--onprc)}
+.voice{display:flex;align-items:center;gap:10px;min-width:260px}
+.play{width:36px;height:36px;border-radius:50%;border:0;background:var(--pr);color:var(--onpr);display:flex;align-items:center;justify-content:center;flex:none;padding:0}
+.wave{display:flex;align-items:center;gap:2px;height:26px;flex:1}
+.wave span{width:3px;border-radius:2px;flex:none}
+.hov{position:absolute;top:-16px;right:8px;display:flex;gap:2px;background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:2px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.hov .ib{width:28px;height:28px;color:var(--ink2)}
+.hov .i{width:16px;height:16px}
+.comp{flex:none;display:flex;align-items:flex-end;gap:8px;padding:10px 20px 14px;border-top:1px solid var(--ln);background:var(--sf)}
+.field{flex:1;min-height:40px;border-radius:20px;background:var(--sf2);display:flex;align-items:center;gap:6px;padding:0 6px 0 14px;color:var(--ink2);font-size:14px;box-sizing:border-box}
+.go{width:40px;height:40px;border-radius:50%;border:0;background:var(--pr);color:var(--onpr);display:flex;align-items:center;justify-content:center;flex:none;padding:0}
+.reply{display:flex;align-items:center;gap:10px;padding:8px 20px 0;background:var(--sf);border-top:1px solid var(--ln);font-size:13px}
+.menu{position:absolute;background:var(--sf);border:1px solid var(--ln);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:4px;width:200px;display:flex;flex-direction:column}
+.mi{height:34px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:6px;font-size:14px}
+.mi .k{margin-left:auto;font-size:11px;color:var(--ink2)}
+.mi.hl{background:var(--sf2)}
+.hint{font-size:12px;color:var(--ink2);line-height:16px}
+</style>
+</helmet>
+<div class="root" style="width:2344px;height:880px">
+
+<div class="col">
+<div class="lbl">Conversation · connected <span>· light · hover actions, right-click menu, reply</span></div>
+<div class="win t">
+<div class="tbar">Tinline<div class="wc"><span></span><span></span><span></span></div></div>
+<div style="flex:1;display:flex;min-height:0">
+<div class="side">
+<div style="display:flex;align-items:center;gap:8px;padding:14px 12px 8px 16px"><svg viewBox="0 0 24 24" style="width:22px;height:22px;color:var(--pr)"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="var(--th)" stroke-width="1.75" stroke-linecap="round"></path></svg><span style="font-weight:700;font-size:17px;flex:1">Tinline</span><button class="ib" aria-label="New chat" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z M12 7v6 M9 10h6"></path></svg></button><button class="ib" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5 M17 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div>
+<div class="tabs"><div class="tab on">Chats <span class="badge">3</span></div><div class="tab">Calls</div><div class="tab">Contacts</div></div>
+<div style="margin:2px 12px 6px;height:34px;border-radius:8px;background:var(--sf2);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--ink2);font-size:14px"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.3-4.3"></path></svg>Search<span class="mono" style="margin-left:auto;font-size:11px;border:1px solid var(--ln);border-radius:4px;padding:1px 5px">Ctrl K</span></div>
+<sc-for list="{{chats}}" as="c" hint-placeholder-count="6"><div class="row {{c.sel}}"><div class="av {{c.av}}" style="width:36px;height:36px;font-size:13px">{{c.ini}}</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:8px"><div class="n" style="flex:1;font-weight:{{c.fw}}">{{c.name}}</div><span class="tm">{{c.tm}}</span></div><div style="display:flex;align-items:center;gap:6px"><div class="s" style="flex:1;color:{{c.pc}}">{{c.pre}}</div><span class="badge" style="display:{{c.ub}}">{{c.un}}</span></div></div></div></sc-for>
+<div style="flex:1"></div>
+<div style="border-top:1px solid var(--ln);padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:var(--pr)"></span><span style="flex:1">Available for calls</span><button class="ib" aria-label="Change availability" style="width:auto;padding:0 8px;height:28px;font:600 12px 'Figtree',sans-serif;color:var(--pr)">Change</button></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;min-width:0;position:relative">
+<div class="head"><div class="av a2" style="width:36px;height:36px;font-size:13px">AO</div><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700">Arjun Oommen</div><div class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</div></div><button class="btn"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Call</button><button class="ib" aria-label="Contact details"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 16v-4 M12 8h.01"></path></svg></button></div>
+<div class="msgs">
+<div class="day">Yesterday</div>
+<div class="b in">Are you around tomorrow to go over the lease?<div class="meta">21:40</div></div>
+<div class="b out">Yes, after 5. I’ll call you.<div class="meta">21:42<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="day">Today</div>
+<div class="b in">Can you send the floor plan?<div class="meta">17:20</div></div>
+<div class="b out"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Floor plan – 3rd floor.pdf</div><div class="fs">2.4 MB · PDF</div></div></div><div class="meta">17:22<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="b in" style="margin-top:14px"><div class="hov"><button class="ib" aria-label="Reply"><svg class="i" viewBox="0 0 24 24"><path d="M9 17l-5-5 5-5 M4 12h11a5 5 0 0 1 5 5v2"></path></svg></button><button class="ib" aria-label="Copy"><svg class="i" viewBox="0 0 24 24"><path d="M9 9h11v11H9z M5 15H4V4h11v1"></path></svg></button><button class="ib" aria-label="More"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h.01 M12 12h.01 M19 12h.01"></path></svg></button></div><div class="voice"><button class="play" aria-label="Play voice message"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M7 4v16l13-8z" fill="currentColor"></path></svg></button><div class="wave"><sc-for list="{{waveIn}}" as="w" hint-placeholder-count="34"><span style="height:{{w.h}}px;background:{{w.c}}"></span></sc-for></div><span class="mono" style="font-size:12px;color:var(--ink2)">0:32</span></div><div class="meta">17:25</div></div>
+<div class="b out"><div class="quote"><b>Arjun Oommen</b>Voice message · 0:32</div>Got it, the kitchen wall can go. Talk at 6?<div class="meta">17:27<svg class="i tk" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></div></div>
+</div>
+<div class="reply"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px;color:var(--pr)"><path d="M9 17l-5-5 5-5 M4 12h11a5 5 0 0 1 5 5v2"></path></svg><div style="flex:1;min-width:0;border-left:3px solid var(--pr);padding-left:8px"><div style="font-size:12px;font-weight:600;color:var(--pr)">Replying to Arjun Oommen</div><div class="s">Can you send the floor plan?</div></div><button class="ib" aria-label="Cancel reply" style="width:28px;height:28px"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button></div>
+<div class="comp" style="border-top:0"><button class="ib" aria-label="Attach file" style="width:40px;height:40px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></button><div class="field" style="color:var(--ink)">Sure — it’s the one from Tuesday<span style="width:1px;height:18px;background:var(--ink);margin-left:-4px"></span><span style="flex:1"></span></div><button class="go" aria-label="Send"><svg class="i" viewBox="0 0 24 24"><path d="M22 2 11 13 M22 2l-7 20-4-9-9-4z"></path></svg></button></div>
+<div class="hint" style="position:absolute;right:20px;bottom:4px;font-size:11px">Enter to send · Shift Enter new line</div>
+<div class="menu" style="left:300px;top:250px"><div class="mi"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M9 17l-5-5 5-5 M4 12h11a5 5 0 0 1 5 5v2"></path></svg>Reply</div><div class="mi hl"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M9 9h11v11H9z M5 15H4V4h11v1"></path></svg>Copy text<span class="k mono">Ctrl C</span></div><div class="mi"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M17 3l4 4L7 21H3v-4z"></path></svg>Edit</div><div style="height:1px;background:var(--ln);margin:4px 6px"></div><div class="mi" style="color:var(--er)"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg>Delete for both…</div></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Not connected · drop a file · recording <span>· dark</span></div>
+<div class="win dk">
+<div class="tbar">Tinline<div class="wc"><span></span><span></span><span></span></div></div>
+<div style="flex:1;display:flex;min-height:0">
+<div class="side">
+<div style="display:flex;align-items:center;gap:8px;padding:14px 12px 8px 16px"><svg viewBox="0 0 24 24" style="width:22px;height:22px;color:var(--pr)"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="var(--th)" stroke-width="1.75" stroke-linecap="round"></path></svg><span style="font-weight:700;font-size:17px;flex:1">Tinline</span><button class="ib" aria-label="New chat" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z M12 7v6 M9 10h6"></path></svg></button><button class="ib" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5 M17 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M7 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></svg></button></div>
+<div class="tabs"><div class="tab on">Chats <span class="badge">2</span></div><div class="tab">Calls</div><div class="tab">Contacts</div></div>
+<div style="margin:2px 12px 6px;height:34px;border-radius:8px;background:var(--sf2);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--ink2);font-size:14px"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M21 21l-4.3-4.3"></path></svg>Search<span class="mono" style="margin-left:auto;font-size:11px;border:1px solid var(--ln);border-radius:4px;padding:1px 5px">Ctrl K</span></div>
+<sc-for list="{{chatsDk}}" as="c" hint-placeholder-count="6"><div class="row {{c.sel}}"><div class="av {{c.av}}" style="width:36px;height:36px;font-size:13px">{{c.ini}}</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:8px"><div class="n" style="flex:1;font-weight:{{c.fw}}">{{c.name}}</div><span class="tm">{{c.tm}}</span></div><div style="display:flex;align-items:center;gap:6px"><div class="s" style="flex:1;color:{{c.pc}}">{{c.pre}}</div><span class="badge" style="display:{{c.ub}}">{{c.un}}</span></div></div></div></sc-for>
+<div style="flex:1"></div>
+<div style="border-top:1px solid var(--ln);padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:var(--pr)"></span><span style="flex:1">Available for calls</span></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;min-width:0;position:relative">
+<div class="head"><div class="av a3" style="width:36px;height:36px;font-size:13px">JK</div><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700">Jonas Krüger</div><div class="st"><span class="dot" style="border:2px solid var(--ln2);box-sizing:border-box"></span>Not connected · messages wait until you’re both online</div></div><button class="btn"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Call</button><button class="ib" aria-label="Contact details"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 16v-4 M12 8h.01"></path></svg></button></div>
+<div class="msgs">
+<div class="day">Today</div>
+<div class="b in">Train’s delayed, I’ll be late for the call<div class="meta">09:12</div></div>
+<div class="b out">No problem<div class="meta">09:13<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="b in"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5z M1 5h15v14H1z"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Site visit.mp4</div><div class="fs">184 MB · paused — waiting for Jonas to come online</div></div></div><div class="meta">09:20</div></div>
+<div class="b out">Sent you the invoice draft, have a look when you’re back<div class="meta">11:48<svg class="i tk" viewBox="0 0 24 24" aria-label="Waiting"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2"></path></svg></div></div>
+<div class="b out"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Invoice 0412 draft.pdf</div><div class="fs">320 KB · Jonas downloads it when he’s online</div></div></div><div class="meta">11:48<svg class="i tk" viewBox="0 0 24 24" aria-label="Waiting"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2"></path></svg></div></div>
+</div>
+<div class="comp" style="align-items:center"><button class="ib" aria-label="Cancel recording (Esc)" style="width:40px;height:40px;color:var(--er)"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg></button><div class="field" style="background:var(--sf2);color:var(--ink);gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--er);flex:none"></span><span class="mono" style="font-size:14px">0:07</span><div class="wave" style="height:22px"><sc-for list="{{live}}" as="w" hint-placeholder-count="40"><span style="height:{{w}}px;background:var(--ln2)"></span></sc-for></div><span class="hint" style="white-space:nowrap">Esc to cancel</span></div><button class="go" aria-label="Send voice message"><svg class="i" viewBox="0 0 24 24"><path d="M22 2 11 13 M22 2l-7 20-4-9-9-4z"></path></svg></button></div>
+<div style="position:absolute;left:20px;right:20px;top:76px;height:300px;border:2px dashed var(--pr);border-radius:16px;background:rgba(15,21,19,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ink)"><div style="width:56px;height:56px;border-radius:16px;background:var(--prc);color:var(--onprc);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" style="width:28px;height:28px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12"></path></svg></div><div style="font-size:18px;font-weight:700">Drop to send to Jonas</div><div class="hint" style="font-size:13px;text-align:center;max-width:380px">Encrypted on this computer. Up to 2 GB each. Jonas gets it the next time you’re both online.</div></div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2344,"height":880}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const R = (o) => Object.assign({ sel: '', fw: 600, pc: 'var(--ink2)', ub: 'none', un: '' }, o);
+    const chats = [
+      R({ name: 'Arjun Oommen', ini: 'AO', av: 'a2', tm: '17:27', pre: 'You: Got it, the kitchen wall can go…', sel: 'sel' }),
+      R({ name: 'Rosa Silva', ini: 'RS', av: 'a4', tm: '16:40', pre: 'Voice message · 0:12', fw: 700, pc: 'var(--ink)', ub: 'inline-flex', un: '2' }),
+      R({ name: 'Dad', ini: 'D', av: 'a1', tm: '14:05', pre: 'Call me when you land', fw: 700, pc: 'var(--ink)', ub: 'inline-flex', un: '1' }),
+      R({ name: 'Jonas Krüger', ini: 'JK', av: 'a3', tm: '11:48', pre: 'You: Invoice 0412 draft.pdf' }),
+      R({ name: 'Lena Park', ini: 'LP', av: 'a2', tm: 'Mon', pre: 'Thanks!' }),
+      R({ name: 'Joanna Ostrowska', ini: 'JO', av: 'a1', tm: 'Sep 28', pre: 'See you there' })
+    ];
+    const chatsDk = chats.map((c) => Object.assign({}, c, { sel: c.name === 'Jonas Krüger' ? 'sel' : '' }));
+    chatsDk[2] = Object.assign({}, chatsDk[2], { fw: 600, pc: 'var(--ink2)', ub: 'none' });
+    const hs = [6,10,16,22,14,8,18,24,20,12,6,10,22,26,18,10,8,14,20,16,10,6,12,18,22,14,8,6,10,16,12,8,6,4];
+    const waveIn = hs.map((h, i) => ({ h, c: i < 10 ? 'var(--pr)' : 'var(--ln2)' }));
+    const live = [];
+    for (let k = 0; k < 40; k++) live.push(4 + Math.round(16 * Math.abs(Math.sin(k * 0.7) * Math.cos(k * 0.23))));
+    return { chats, chatsDk, waveIn, live };
+  }
+}
+</script>
+</body>
+</html>
