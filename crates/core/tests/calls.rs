@@ -4,6 +4,8 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
+const PASS: &str = "test-passphrase";
+
 use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
 
 #[derive(Debug, Clone)]
@@ -51,7 +53,7 @@ fn peer(name: &str) -> Peer {
     let dir = tempdir::new(name);
     let (tx, rx) = mpsc::channel();
     let node = Node::new(dir.0.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
-    node.create_identity(name.into()).unwrap();
+    node.create_identity(name.into(), PASS.into()).unwrap();
     node.start().unwrap();
     let t = Instant::now();
     while !node.status().online && t.elapsed() < Duration::from_secs(10) {

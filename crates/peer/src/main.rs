@@ -2,6 +2,9 @@
 //! place of the microphone and a WAV file in place of the speaker. It is the far end for
 //! end-to-end tests against the Android app.
 //!
+//! `--passphrase PASS` (default: env `P2P_PASSPHRASE`, else "test-passphrase") seals the identity
+//! on `init` and unlocks it for every other command; a legacy profile is converted on first use.
+//!
 //!   p2p-peer --data DIR init NAME
 //!   p2p-peer --data DIR ticket
 //!   p2p-peer --data DIR add TICKET
@@ -17,7 +20,7 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, LockState, Node, NodeEvents, NodeStatus};
 
 enum Event {
     Incoming(CallInfo),
@@ -55,6 +58,7 @@ impl NodeEvents for Printer {
 
 struct Opts {
     data: PathBuf,
+    passphrase: String,
     tone: Option<f32>,
     wav: Option<PathBuf>,
     record: Option<PathBuf>,
@@ -74,6 +78,9 @@ fn parse() -> Result<Opts, String> {
         Ok(Some(v))
     };
     let data = take("--data")?.ok_or("--data DIR is required")?.into();
+    let passphrase = take("--passphrase")?
+        .or_else(|| std::env::var("P2P_PASSPHRASE").ok())
+        .unwrap_or_else(|| "test-passphrase".into());
     let tone = take("--tone")?.map(|v| v.parse().map_err(|_| "bad --tone")).transpose()?;
     let wav = take("--wav")?.map(PathBuf::from);
     let record = take("--record")?.map(PathBuf::from);
@@ -89,7 +96,7 @@ fn parse() -> Result<Opts, String> {
     };
     let verbose = flag("-v");
     let once = flag("--once");
-    Ok(Opts { data, tone, wav, record, secs, answer_after, rest: args, verbose, once })
+    Ok(Opts { data, passphrase, tone, wav, record, secs, answer_after, rest: args, verbose, once })
 }
 
 fn main() {
@@ -105,9 +112,18 @@ fn run() -> Result<(), String> {
     let events = Arc::new(Printer { tx: Mutex::new(tx), verbose: o.verbose });
     let node = Node::new(o.data.to_string_lossy().into(), events).map_err(|e| e.to_string())?;
     let rest: Vec<&str> = o.rest.iter().map(String::as_str).collect();
+    if rest.first() != Some(&"init") {
+        match node.lock_state() {
+            LockState::Locked => node.unlock(o.passphrase.clone()).map_err(|e| e.to_string())?,
+            LockState::NeedsPassphrase => {
+                node.set_passphrase(None, o.passphrase.clone()).map_err(|e| e.to_string())?
+            }
+            LockState::NoIdentity | LockState::Unlocked => {}
+        }
+    }
     match rest.as_slice() {
         ["init", name] => {
-            let phrase = node.create_identity(name.to_string()).map_err(|e| e.to_string())?;
+            let phrase = node.create_identity(name.to_string(), o.passphrase.clone()).map_err(|e| e.to_string())?;
             let p = node.profile().unwrap();
             println!("did {}\ndevice {}\nphrase {phrase}", p.did, p.device);
         }
