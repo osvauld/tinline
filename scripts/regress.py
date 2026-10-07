@@ -41,7 +41,7 @@ def main():
     a = ap.parse_args()
     results = []
     if not a.skip_build:
-        results.append(step("build desktop + peer", LOCK + ["cargo", "build", "--release", "-q", "-p", "desktop", "-p", "peer"]))
+        results.append(step("build desktop (test-hooks) + peer", LOCK + ["cargo", "build", "--release", "-q", "-p", "desktop", "--features", "desktop/test-hooks", "-p", "peer"]))
     results.append(step("unit tests (identity, proto, audio)", LOCK + ["cargo", "test", "--release", "-q", "-p", "identity", "-p", "proto", "-p", "audio"]))
     results.append(step("core call-state tests", LOCK + ["cargo", "test", "--release", "-q", "-p", "p2pcore", "--test", "calls"]))
     results.append(step("e2e desktop peers (direct + relay)", [PY, "scripts/e2e_desktop.py"]))

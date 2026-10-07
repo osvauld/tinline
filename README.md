@@ -36,6 +36,7 @@ scripts/                   build + end-to-end tests (Python)
 
 ```sh
 cargo build --release -p desktop -p peer         # desktop app + test peer
+cargo build --release -p desktop --features test-hooks   # e2e builds only: P2P_AUTO_ANSWER etc.; never ship this
 ./target/release/p2p-desktop                     # tray app; --data DIR for a separate profile
 python3 scripts/build_android.py --install --abis x86_64        # emulator build
 python3 scripts/build_android.py --install                      # + arm64 for phones
