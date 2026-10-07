@@ -17,6 +17,7 @@ audio.workspace = true
 identity.workspace = true
 cryptography.workspace = true
 zeroize.workspace = true
+sha2 = "0.10"
 parking_lot = "0.12"
 base64.workspace = true
 serde.workspace = true

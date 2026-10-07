@@ -50,6 +50,20 @@ pub struct StoredContact {
     /// Lets us call them; replaced whenever they renew it.
     pub grant_from_them: proto::SignedGrant,
     pub added_at: u64,
+    /// Local-only name we gave them; `name` stays what they call themselves.
+    #[serde(default)]
+    pub alias: Option<String>,
+    /// We compared safety numbers with them in person. Reset when their device changes.
+    #[serde(default)]
+    pub verified: bool,
+}
+
+/// "Not now": calls are turned away (and not shown) until `until`, or until switched back on.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AvailabilityState {
+    pub unavailable: bool,
+    pub until: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -64,8 +78,69 @@ pub struct State {
     pub redeemed: HashSet<String>,
     /// The ticket we hand out until someone redeems it, so the QR stays stable across launches.
     pub ticket: Option<String>,
+    pub availability: AvailabilityState,
 }
 
+/// Most calls kept in `calls.json`; the oldest fall off.
+const MAX_HISTORY: usize = 500;
+
+/// One finished call, as the UI lists it. `reason` is one of the stable end reasons in
+/// `docs/protocol.md`.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct CallRecord {
+    pub call_id: String,
+    pub peer_did: String,
+    /// Their name when the call happened (our alias for them if we had one).
+    pub peer_name: String,
+    pub incoming: bool,
+    /// Unix seconds when the call started (dialing, or the first ring).
+    pub started_at: u64,
+    /// Seconds from answer to end; 0 if it never became active.
+    pub duration_secs: u32,
+    pub reason: String,
+    /// Media went over a direct path rather than a relay (as last seen).
+    pub direct: bool,
+    /// Incoming and we never answered it (not one we declined, nor one turned away while
+    /// unavailable).
+    pub missed: bool,
+}
+
+/// The call log, newest first, in `calls.json`. Writes are serialised and ordered like state's.
+#[derive(Default)]
+pub struct History {
+    calls: parking_lot::Mutex<Vec<CallRecord>>,
+    writing: parking_lot::Mutex<()>,
+}
+
+impl History {
+    pub fn new(calls: Vec<CallRecord>) -> Self {
+        Self { calls: parking_lot::Mutex::new(calls), writing: Default::default() }
+    }
+
+    pub fn push(&self, rec: CallRecord) {
+        let mut c = self.calls.lock();
+        c.insert(0, rec);
+        c.truncate(MAX_HISTORY);
+    }
+
+    /// Newest first; `did` filters to one person.
+    pub fn list(&self, did: Option<&str>, limit: usize) -> Vec<CallRecord> {
+        let c = self.calls.lock();
+        c.iter().filter(|r| did.is_none_or(|d| r.peer_did == d)).take(limit).cloned().collect()
+    }
+
+    pub fn remove_peer(&self, did: &str) {
+        self.calls.lock().retain(|r| r.peer_did != did);
+    }
+
+    pub fn save(&self, store: &Store) -> Result<(), Error> {
+        let _w = self.writing.lock();
+        let snapshot = self.calls.lock().clone();
+        store.save_calls(&snapshot)
+    }
+}
+
+#[derive(Clone)]
 pub struct Store {
     dir: PathBuf,
 }
@@ -163,6 +238,28 @@ impl Store {
     pub fn save_state(&self, s: &State) -> Result<(), Error> {
         write(&self.dir.join("state.json"), s)
     }
+
+    /// The call log; one that does not parse is set aside like `state.json` and starts empty.
+    pub fn calls(&self) -> Result<Vec<CallRecord>, Error> {
+        let path = self.dir.join("calls.json");
+        let bytes = match fs::read(&path) {
+            Ok(b) => b,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(e) => return Err(e.into()),
+        };
+        match serde_json::from_slice(&bytes) {
+            Ok(c) => Ok(c),
+            Err(e) => {
+                tracing::warn!("calls.json does not parse ({e}); starting empty");
+                let _ = fs::rename(&path, path.with_extension("json.corrupt"));
+                Ok(Vec::new())
+            }
+        }
+    }
+
+    pub fn save_calls(&self, calls: &[CallRecord]) -> Result<(), Error> {
+        write(&self.dir.join("calls.json"), &calls)
+    }
 }
 
 fn read<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, Error> {
@@ -243,6 +340,44 @@ mod tests {
         Store::open(&dir).unwrap();
         assert!(!dir.join("profile.tmp").exists() && !dir.join("state.tmp").exists());
         assert!(dir.join("state.json").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn history_is_capped_newest_first_and_private() {
+        let dir = tmp("calls");
+        let store = Store::open(&dir).unwrap();
+        let h = History::new(store.calls().unwrap());
+        let rec = |i: usize, did: &str| CallRecord {
+            call_id: i.to_string(),
+            peer_did: did.into(),
+            peer_name: "x".into(),
+            incoming: false,
+            started_at: i as u64,
+            duration_secs: 0,
+            reason: "hangup_local".into(),
+            direct: false,
+            missed: false,
+        };
+        for i in 0..MAX_HISTORY + 5 {
+            h.push(rec(i, if i % 2 == 0 { "a" } else { "b" }));
+        }
+        h.save(&store).unwrap();
+        let back = History::new(store.calls().unwrap());
+        assert_eq!(back.list(None, 10_000).len(), MAX_HISTORY);
+        assert_eq!(back.list(None, 1)[0].call_id, (MAX_HISTORY + 4).to_string());
+        assert!(back.list(Some("a"), 10_000).iter().all(|r| r.peer_did == "a"));
+        back.remove_peer("a");
+        assert!(back.list(Some("a"), 10).is_empty() && !back.list(Some("b"), 10).is_empty());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(dir.join("calls.json")).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600);
+        }
+        fs::write(dir.join("calls.json"), b"{ nope").unwrap();
+        assert!(store.calls().unwrap().is_empty());
+        assert!(dir.join("calls.json.corrupt").exists());
         let _ = fs::remove_dir_all(&dir);
     }
 
