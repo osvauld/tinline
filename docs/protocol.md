@@ -126,7 +126,44 @@ Tickets are single-use via the redeemed-nonce set and also expire.
 - An unauthenticated connection holds one of 24 slots (plus 8 reserved for contacts' devices)
   from accept until it becomes a call or a contact, refusals and their short linger included,
   and has 15 s in total to deliver a hello.
-- An active call that receives no media for 30 s ends with reason "no audio".
+- An active call that receives no media for 30 s ends with reason `connection_lost`. After
+  1.5 s without media `CallStats.reconnecting` is true (the call is not over yet).
+- Calls are logged to `calls.json` (last 500, newest first; `recent_calls`, `calls_with`).
+  The log is written before `Ended` is delivered, so the UI re-reads it on `on_call_state`
+  `Ended`. Removing a contact deletes their entries.
+- Safety number: per party, SHA-512 over `"tinline-safety-v1" || signing_pk`, then 5200 rounds
+  of `H = SHA-512(H || signing_pk)`; the first 30 bytes give 6 groups of 5 bytes, each read as a
+  big-endian integer mod 100000 and zero-padded to 5 digits. The two 30-digit halves are
+  concatenated in sorted order and shown as 12 groups of 5. Only the DID keys count, so it
+  survives a change of device. `verified` is local and resets when the contact's device changes.
+- Availability ("not now"): while unavailable an authenticated call is answered with the same
+  `Reject` as any refusal, never surfaced to the UI, and logged as `unavailable`. The caller
+  ends with `unreachable`, so it cannot tell "away" from "offline" or "blocked".
+
+## End reasons
+
+`CallState::Ended { reason }` and `CallRecord.reason` carry exactly one of these tokens
+(detail goes to the log, not the reason):
+
+| Reason | Meaning |
+|---|---|
+| `hangup_local` | Active call ended by us (also: we locked/removed the contact mid-call) |
+| `hangup_remote` | Active call ended by them |
+| `declined` | Caller's view: the callee declined |
+| `declined_local` | Callee's view: we declined (not a missed call) |
+| `cancelled` | Callee's view: the caller gave up (or the link died) before we answered: missed. Caller's view: we hung up before they answered |
+| `no_answer` | Rang for 60 s, nobody answered (either side; missed on the callee) |
+| `unreachable` | Caller's view: could not connect, or they refused (offline, blocked, or unavailable) |
+| `connection_lost` | Active call lost the connection or media for 30 s |
+| `busy` | Caller's view: callee is in another call. Callee's history: missed while busy |
+| `unavailable` | History only (callee): turned away while unavailable; `missed` is false; never an `Ended` event |
+| `superseded` | Our outgoing call yielded to their simultaneous call; not logged |
+
+Old strings: `hung up` -> `hangup_local`/`hangup_remote`; `missed` -> `cancelled`/`no_answer`;
+`declined: <text>` -> `declined`; callee's own `declined` -> `declined_local`;
+`could not reach <name>: <err>`, `rejected: <text>` -> `unreachable`; `connection lost: <err>`,
+`no audio` -> `connection_lost`; `no answer` -> `no_answer`; `ended` -> varies;
+`they called at the same time` -> `superseded`.
 
 ## Known gaps
 
