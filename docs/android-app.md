@@ -8,8 +8,8 @@ the codec; the app owns UI, audio devices, and staying alive.
 
 `Node(dataDir, events)` — one per process, kept by `P2pApp`. Blocking calls run on
 `Dispatchers.IO`, never the main thread.
-`hasIdentity()`, `createIdentity(name) -> phrase`, `restoreIdentity(phrase, name)`, `profile()`,
-`recoveryPhrase()`, `setName()`, `start()`, `stop()`, `networkChanged()`, `status()`,
+`hasIdentity()`, `lockState()`, `createIdentity(name, passphrase) -> phrase`, `restoreIdentity(phrase, name, passphrase)`, `unlock(pass)`, `unlockWithKey(key)`, `unlockKey()`, `setPassphrase(old?, new)`, `profile()`,
+`recoveryPhrase(passphrase)`, `setName()`, `start()`, `stop()`, `networkChanged()`, `status()`,
 `myTicket()`, `addContact(ticket)`, `contacts()`, `removeContact(did)`, `call(did) -> CallInfo`,
 `answer(id)`, `decline(id)`, `hangup(id)`, `currentCall()`, `pushMicPcm16(ByteArray)`,
 `pullSpeakerPcm16() -> ByteArray` (little-endian PCM16; 960 samples = 1920 bytes = 20 ms @
@@ -53,13 +53,26 @@ is out of scope for v1.
 
 ## UI (Compose, Material 3)
 
-- Onboarding: name → create (show the 24-word recovery phrase, confirm saved) or restore.
+- Onboarding: name + passphrase (min 8, confirmed) → create (show the 24-word recovery phrase, confirm saved) or restore.
 - Home: status chip (online via relay / offline), "My contact card" (QR of `myTicket()` + copy +
   share), contacts list (tap → call; long-press → remove), "Add contact" (paste ticket; scan QR
   with the camera).
 - Call screen: name, state (Calling…/Ringing…/timer), mute, speaker, hang up, small stats line
   (direct/relay, rtt, loss).
-- Settings: name, show recovery phrase, test tone toggle.
+- Settings: name, show recovery phrase (asks the passphrase), change passphrase, test tone toggle.
+- Unlock screen when `lockState == LOCKED`; "Forgot passphrase" restores the same identity from its
+  phrase (sealed profile.json is moved aside, state.json/contacts kept). Legacy installs
+  (`NEEDS_PASSPHRASE`) get a blocking "Set a passphrase" screen; calls keep working meanwhile.
+
+## Passphrase + device unlock (`UnlockStore`)
+
+After create/restore/unlock/set-passphrase the app calls `node.unlockKey()` (the 32-byte vault data
+key) and wraps it with an AES-256-GCM key in AndroidKeyStore (alias `p2p_unlock_v1`, no user
+authentication required) into `filesDir/unlock.bin` (`iv(12) || ct+tag`, atomic write). On process
+start (`P2pApp.onCreate`, `startNode`, so also service restarts and boot) a locked node is unlocked
+via `unlockWithKey`. If unwrapping or unlocking fails, `unlock.bin` is deleted, the node stays
+locked, the service stays up, and a "Unlock to receive calls" notification opens the app. Keys and
+passphrases are never logged; `allowBackup=false`.
 
 ## Test hooks (debug builds only)
 
