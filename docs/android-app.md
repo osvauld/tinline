@@ -71,9 +71,15 @@ Spec: `docs/design/*.dc.html` (tokens in `Main.dc.html`). Code map (package `com
   the recovery phrase may sit in it).
 - Terms & privacy: `LegalStore` persists the accepted version (`LegalStore.CURRENT`); required once, also
   for existing installs.
-- Call end vocabulary lives only in `endReasonText` / `classifyEnd` (`Support.kt`); unknown = "Call ended".
-- `Features` (`Features.kt`) hides entry points whose data the core does not have yet: rename, verify
-  (safety number), availability, history. Flip the flag when wired; the screens already exist.
+- Call end vocabulary lives only in `endReasonText` / `classifyEnd` / `isMissedReason` (`Support.kt`) and is the
+  core's token set (docs/protocol.md "End reasons"); unknown = "Call ended". `superseded` shows no ended
+  screen; `unreachable` before the call was active shows "Couldn't reach".
+- Core data wired (no feature flags any more): call log (`P2pApp.history`, re-read on every `Ended` and on
+  contacts changes; `History.kt` words it; Home Recent + "See all" list + per-contact history), alias
+  (`Contact.display()` everywhere; rename sheet, Added "Save as"), verify (`safetyNumber` in Plex Mono,
+  They match -> `setVerified`), availability (`P2pApp.availability`, status pill + sheet, Settings toggle,
+  banner, foreground-notification text, a coroutine timer for timed breaks, re-read on resume),
+  `CallStats.reconnecting` (In call "Reconnecting" state).
 - Debug builds include `GalleryActivity` (`--es screen <name>`) that renders the screens with sample data
   for screenshots.
 
