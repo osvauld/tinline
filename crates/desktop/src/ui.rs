@@ -421,7 +421,8 @@ pub fn avatar_colors(t: Tok, key: &str) -> (Color, Color) {
 }
 
 pub fn initials(name: &str) -> String {
-    let mut it = name.split_whitespace().filter_map(|w| w.chars().next());
+    // First letter or digit of each word, so "Lena (work)" is "LW", not "L(".
+    let mut it = name.split_whitespace().filter_map(|w| w.chars().find(|c| c.is_alphanumeric()));
     let a = it.next();
     let b = it.next();
     match (a, b) {
