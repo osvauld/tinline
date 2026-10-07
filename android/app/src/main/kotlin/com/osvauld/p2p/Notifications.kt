@@ -15,6 +15,7 @@ object Notifications {
     const val CH_SERVICE = "service"
     const val CH_CALLS = "calls"
     const val CH_MISSED = "missed"
+    const val CH_LOCKED = "locked"
     const val ID_SERVICE = 1
     const val ID_INCOMING = 2
     const val ID_MISSED = 3
@@ -35,6 +36,10 @@ object Notifications {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         })
         n.createNotificationChannel(NotificationChannel(CH_MISSED, "Missed calls", NotificationManager.IMPORTANCE_DEFAULT))
+        n.createNotificationChannel(NotificationChannel(CH_LOCKED, "Locked", NotificationManager.IMPORTANCE_LOW).apply {
+            description = "Shown while the app needs your passphrase to receive calls"
+            setShowBadge(false)
+        })
     }
 
     private fun flags() = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -73,6 +78,8 @@ object Notifications {
             .setAutoCancel(false)
             .setFullScreenIntent(full, true)
             .setContentIntent(full)
+            // Never ring forever (matches CallController.RING_TIMEOUT_MS).
+            .setTimeoutAfter(CallController.RING_TIMEOUT_MS)
         if (Build.VERSION.SDK_INT >= 31) {
             val p = Person.Builder().setName(name).setImportant(true).build()
             b.style = Notification.CallStyle.forIncomingCall(p, decline, answer)
@@ -87,8 +94,9 @@ object Notifications {
     fun cancelIncoming(c: Context) = nm(c).cancel(ID_INCOMING)
 
     fun locked(c: Context) {
-        val n = Notification.Builder(c, CH_MISSED)
+        val n = Notification.Builder(c, CH_LOCKED)
             .setSmallIcon(android.R.drawable.ic_lock_lock)
+            .setOnlyAlertOnce(true)
             .setContentTitle("Unlock to receive calls")
             .setContentText("Tap to enter your passphrase")
             .setOngoing(true)
