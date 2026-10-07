@@ -4798,7 +4798,9 @@ name = "p2pcore"
 version = "0.1.0"
 dependencies = [
  "audio",
+ "base64 0.22.1",
  "bytes",
+ "cryptography",
  "identity",
  "iroh",
  "n0-future",
@@ -4812,6 +4814,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uniffi",
+ "zeroize",
 ]
 
 [[package]]

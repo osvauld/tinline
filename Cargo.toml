@@ -16,9 +16,17 @@ rand = "0.8"
 zeroize = { version = "1", features = ["derive"] }
 # Copied from osvauld2 (identity, cryptography @ abcae3d); keep in sync by hand for now.
 identity = { path = "crates/identity" }
+cryptography = { path = "crates/cryptography" }
 proto = { path = "crates/proto" }
 audio = { path = "crates/audio" }
 
 [profile.release]
 lto = "thin"
 codegen-units = 4
+
+# Argon2id with the real (64 MiB, t=3, p=4) parameters is unusably slow unoptimised; tests
+# and debug runs keep the real parameters and just compile the KDF with optimisations.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3

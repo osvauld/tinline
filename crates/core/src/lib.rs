@@ -7,10 +7,11 @@ mod error;
 mod logging;
 mod node;
 mod store;
+mod vault;
 mod wire;
 
 pub use error::Error;
-pub use node::{CallInfo, CallState, CallStats, Contact, Node, NodeEvents, NodeStatus, ProfileInfo};
+pub use node::{CallInfo, CallState, CallStats, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
 
 #[uniffi::export]
 pub fn core_version() -> String {

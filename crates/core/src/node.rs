@@ -15,7 +15,8 @@ use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey, Watcher};
 use proto::{ContactTicket, Msg};
 use tokio::sync::{Semaphore, mpsc, oneshot};
 
-use crate::store::{Profile, State, Store, StoredContact};
+use crate::store::{Disk, Profile, ProfileV2, State, Store, StoredContact};
+use crate::vault::{self, Dek, Secrets};
 use crate::wire::Ctrl;
 use crate::Error;
 
@@ -56,6 +57,17 @@ pub struct ProfileInfo {
     pub did: String,
     pub name: String,
     pub device: String,
+}
+
+/// Whether the identity's secrets are available. `Locked` needs `unlock` (or
+/// `unlock_with_key`); `NeedsPassphrase` is a pre-vault install that works but must be
+/// converted with `set_passphrase(None, ..)`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum LockState {
+    NoIdentity,
+    Locked,
+    Unlocked,
+    NeedsPassphrase,
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
@@ -154,7 +166,12 @@ struct Me {
 }
 
 struct Shared {
+    /// What `profile.json` holds; present whenever an identity exists, locked or not.
+    disk: Option<Disk>,
+    /// Present while unlocked (and for a legacy profile).
     me: Option<Arc<Me>>,
+    /// The vault's data key while unlocked via a vault; never written to disk by the core.
+    dek: Option<Dek>,
     state: State,
     endpoint: Option<Endpoint>,
 }
@@ -218,16 +235,18 @@ impl Node {
             .build()?;
         let store = Store::open(data_dir)?;
         let state = store.state()?;
-        let me = match store.profile()? {
-            Some(p) => Some(Arc::new(Me::load(p)?)),
-            None => None,
+        let disk = store.profile()?;
+        // A legacy profile keeps working (calls keep ringing) until it is converted.
+        let me = match &disk {
+            Some(Disk::Legacy(p)) => Some(Arc::new(Me::load(p.clone())?)),
+            _ => None,
         };
         let inner = Arc::new(Inner {
             handle: rt.handle().clone(),
             store,
             writing: Mutex::new(()),
             events,
-            shared: Mutex::new(Shared { me, state, endpoint: None }),
+            shared: Mutex::new(Shared { disk, me, dek: None, state, endpoint: None }),
             live: Mutex::new(Live::default()),
             pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
         });
@@ -235,39 +254,176 @@ impl Node {
     }
 
     pub fn has_identity(&self) -> bool {
-        self.inner.shared.lock().unwrap().me.is_some()
+        self.inner.shared.lock().unwrap().disk.is_some()
     }
 
-    /// Returns the recovery phrase; it is also kept so `recovery_phrase` can show it again.
-    pub fn create_identity(&self, name: String) -> Result<String, Error> {
+    pub fn lock_state(&self) -> LockState {
+        let s = self.inner.shared.lock().unwrap();
+        match (&s.disk, &s.me) {
+            (None, _) => LockState::NoIdentity,
+            (Some(Disk::Legacy(_)), _) => LockState::NeedsPassphrase,
+            (Some(Disk::V2(_)), Some(_)) => LockState::Unlocked,
+            (Some(Disk::V2(_)), None) => LockState::Locked,
+        }
+    }
+
+    /// Creates an identity sealed under `passphrase` (at least 8 characters, else
+    /// `WeakPassphrase`) and leaves the node unlocked. Returns the recovery phrase; showing it
+    /// again later needs the passphrase (`recovery_phrase`). Slow: runs Argon2id.
+    pub fn create_identity(&self, name: String, passphrase: String) -> Result<String, Error> {
+        vault::check_passphrase(&passphrase)?;
         let (_, mnemonic) = identity::generate();
         let phrase = mnemonic.to_string();
-        self.set_identity(phrase.clone(), name)?;
+        self.set_identity(phrase.clone(), name, passphrase)?;
         Ok(phrase)
     }
 
-    pub fn restore_identity(&self, phrase: String, name: String) -> Result<(), Error> {
-        self.set_identity(phrase.trim().to_string(), name)
+    pub fn restore_identity(&self, phrase: String, name: String, passphrase: String) -> Result<(), Error> {
+        vault::check_passphrase(&passphrase)?;
+        self.set_identity(phrase.trim().to_string(), name, passphrase)
     }
 
+    /// Name, DID and device key; available while locked too (they are stored in the clear).
     pub fn profile(&self) -> Option<ProfileInfo> {
         let s = self.inner.shared.lock().unwrap();
-        s.me.as_ref().map(|me| me.info())
+        match (&s.disk, &s.me) {
+            (_, Some(me)) => Some(me.info()),
+            (Some(Disk::V2(p)), None) => Some(ProfileInfo {
+                did: p.did.clone(),
+                name: p.name.clone(),
+                device: PublicKey::from_bytes(&p.device_public).map(|k| k.to_string()).unwrap_or_default(),
+            }),
+            _ => None,
+        }
     }
 
-    pub fn recovery_phrase(&self) -> Option<String> {
-        let s = self.inner.shared.lock().unwrap();
-        s.me.as_ref().map(|me| me.profile.mnemonic.clone())
+    /// Unlocks with the passphrase; `WrongPassphrase` if it does not open the vault. Returns
+    /// at once if already unlocked (or a legacy profile). Slow: runs Argon2id.
+    pub fn unlock(&self, passphrase: String) -> Result<(), Error> {
+        let vault = match self.unlock_target()? {
+            Some(v) => v,
+            None => return Ok(()),
+        };
+        let (secrets, dek) = self.kdf(move || vault::open(&vault, &passphrase))??;
+        self.finish_unlock(secrets, dek)
+    }
+
+    /// Unlocks with a data key the platform remembered (from `unlock_key`); fast.
+    /// `WrongPassphrase` if it does not open the vault: the platform should then forget it.
+    pub fn unlock_with_key(&self, key: Vec<u8>) -> Result<(), Error> {
+        let vault = match self.unlock_target()? {
+            Some(v) => v,
+            None => return Ok(()),
+        };
+        let secrets = vault::open_with_key(&vault, &key)?;
+        let dek = <[u8; 32]>::try_from(key.as_slice())
+            .map(zeroize::Zeroizing::new)
+            .map_err(|_| Error::WrongPassphrase)?;
+        self.finish_unlock(secrets, dek)
+    }
+
+    /// The vault's data key while unlocked via a vault, for the platform to remember (wrapped
+    /// by its own hardware key). `None` when locked or on a legacy profile. Stays valid across
+    /// `set_passphrase`.
+    pub fn unlock_key(&self) -> Option<Vec<u8>> {
+        self.inner.shared.lock().unwrap().dek.as_ref().map(|d| d.to_vec())
+    }
+
+    /// Sets or changes the passphrase (at least 8 characters). With `old = None` it converts a
+    /// legacy profile (state `NeedsPassphrase`) and the clear-text secrets leave profile.json;
+    /// otherwise `old` is required and verified. The data key is kept, so a remembered
+    /// `unlock_key` stays valid. Slow: runs Argon2id once or twice.
+    pub fn set_passphrase(&self, old: Option<String>, new: String) -> Result<(), Error> {
+        vault::check_passphrase(&new)?;
+        let snapshot = self.inner.shared.lock().unwrap().disk.clone();
+        match snapshot.ok_or(Error::NoIdentity)? {
+            Disk::Legacy(p) => {
+                if old.is_some() {
+                    return Err(Error::Protocol("this identity has no passphrase yet".into()));
+                }
+                let id = identity::recover(&p.mnemonic).map_err(|_| Error::BadPhrase)?;
+                let secrets = Secrets { mnemonic: p.mnemonic.clone(), device_secret: p.device_secret };
+                let device_public = proto::device_public(&p.device_secret);
+                let (vault, dek) = self.kdf(move || vault::seal(&secrets, &new))??;
+                let mut s = self.inner.shared.lock().unwrap();
+                // The name may have changed (set_name) while the KDF ran.
+                let name = match s.me.as_ref() {
+                    Some(me) => me.profile.name.clone(),
+                    None => p.name,
+                };
+                let disk = Disk::V2(ProfileV2 {
+                    version: 2,
+                    name,
+                    did: id.did().to_string(),
+                    device_public,
+                    vault,
+                });
+                self.inner.store.save_profile(&disk)?;
+                s.disk = Some(disk);
+                s.dek = Some(dek);
+                Ok(())
+            }
+            Disk::V2(p) => {
+                let old = old.ok_or_else(|| Error::Protocol("the old passphrase is required".into()))?;
+                let vault = p.vault;
+                let rewrapped = self.kdf(move || {
+                    let (_secrets, dek) = vault::open(&vault, &old)?;
+                    vault::rewrap(&vault, &dek, &new)
+                })??;
+                let mut s = self.inner.shared.lock().unwrap();
+                // Only the vault changes; keep any name change made meanwhile.
+                let Some(Disk::V2(cur)) = s.disk.clone() else { return Err(Error::NoIdentity) };
+                let disk = Disk::V2(ProfileV2 { vault: rewrapped, ..cur });
+                self.inner.store.save_profile(&disk)?;
+                s.disk = Some(disk);
+                Ok(())
+            }
+        }
+    }
+
+    /// The recovery phrase, re-derived from the vault: `WrongPassphrase` unless `passphrase`
+    /// is right, and `Locked` on a legacy profile (convert it with `set_passphrase` first).
+    /// Works while locked. Slow: runs Argon2id.
+    pub fn recovery_phrase(&self, passphrase: String) -> Result<String, Error> {
+        let vault = {
+            let s = self.inner.shared.lock().unwrap();
+            match &s.disk {
+                None => return Err(Error::NoIdentity),
+                Some(Disk::Legacy(_)) => return Err(Error::Locked),
+                Some(Disk::V2(p)) => p.vault.clone(),
+            }
+        };
+        let (secrets, _dek) = self.kdf(move || vault::open(&vault, &passphrase))??;
+        Ok(secrets.mnemonic.clone())
+    }
+
+    /// Stops the endpoint and forgets the secrets in memory; the node is `Locked` until
+    /// `unlock`. No-op without a vault (no identity, or a legacy profile).
+    pub fn lock(&self) {
+        if !matches!(self.inner.shared.lock().unwrap().disk, Some(Disk::V2(_))) {
+            return;
+        }
+        self.stop();
+        let mut s = self.inner.shared.lock().unwrap();
+        s.me = None;
+        s.dek = None;
     }
 
     pub fn set_name(&self, name: String) -> Result<(), Error> {
         {
             let mut s = self.inner.shared.lock().unwrap();
-            let me = s.me.as_ref().ok_or(Error::NoIdentity)?;
-            let mut profile = me.profile.clone();
-            profile.name = name;
-            self.inner.store.save_profile(&profile)?;
-            s.me = Some(Arc::new(Me::load(profile)?));
+            let mut disk = s.disk.clone().ok_or(Error::NoIdentity)?;
+            match &mut disk {
+                Disk::V2(p) => p.name = name.clone(),
+                Disk::Legacy(p) => p.name = name.clone(),
+            }
+            self.inner.store.save_profile(&disk)?;
+            s.disk = Some(disk);
+            if let Some(me) = s.me.clone() {
+                let mut profile = me.profile.clone();
+                profile.name = name;
+                s.me = Some(Arc::new(Me::load(profile)?));
+            }
             // The old ticket carries the old name.
             s.state.ticket = None;
         }
@@ -447,15 +603,67 @@ impl Node {
         rx.recv().map_err(|_| Error::Protocol("core runtime stopped".into()))
     }
 
-    fn set_identity(&self, phrase: String, name: String) -> Result<(), Error> {
+    /// Runs a slow, blocking computation (the KDF) on the runtime's blocking pool and waits for
+    /// it, so it never runs while `shared` is held and never on a callback thread.
+    fn kdf<T: Send + 'static>(&self, f: impl FnOnce() -> T + Send + 'static) -> Result<T, Error> {
+        self.block_on(async move {
+            tokio::task::spawn_blocking(f).await.map_err(|_| Error::Protocol("kdf task failed".into()))
+        })?
+    }
+
+    /// The vault to open, or `None` when there is nothing to unlock.
+    fn unlock_target(&self) -> Result<Option<vault::Vault>, Error> {
+        let s = self.inner.shared.lock().unwrap();
+        match &s.disk {
+            None => Err(Error::NoIdentity),
+            Some(Disk::Legacy(_)) => Ok(None),
+            Some(Disk::V2(_)) if s.me.is_some() => Ok(None),
+            Some(Disk::V2(p)) => Ok(Some(p.vault.clone())),
+        }
+    }
+
+    fn finish_unlock(&self, secrets: Secrets, dek: Dek) -> Result<(), Error> {
         let mut s = self.inner.shared.lock().unwrap();
+        let Some(Disk::V2(p)) = &s.disk else { return Err(Error::NoIdentity) };
         if s.me.is_some() {
+            return Ok(());
+        }
+        let me = Me::load(Profile {
+            mnemonic: secrets.mnemonic.clone(),
+            name: p.name.clone(),
+            device_secret: secrets.device_secret,
+        })?;
+        if me.id.did() != p.did {
+            return Err(Error::Io("vault does not match profile".into()));
+        }
+        s.me = Some(Arc::new(me));
+        s.dek = Some(dek);
+        Ok(())
+    }
+
+    fn set_identity(&self, phrase: String, name: String, passphrase: String) -> Result<(), Error> {
+        if self.inner.shared.lock().unwrap().disk.is_some() {
             return Err(Error::HaveIdentity);
         }
         let profile = Profile { mnemonic: phrase, name, device_secret: proto::new_device_secret() };
         let me = Me::load(profile)?;
-        self.inner.store.save_profile(&me.profile)?;
+        let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret: me.profile.device_secret };
+        let (vault, dek) = self.kdf(move || vault::seal(&secrets, &passphrase))??;
+        let disk = Disk::V2(ProfileV2 {
+            version: 2,
+            name: me.profile.name.clone(),
+            did: me.id.did().to_string(),
+            device_public: me.device,
+            vault,
+        });
+        let mut s = self.inner.shared.lock().unwrap();
+        if s.disk.is_some() {
+            return Err(Error::HaveIdentity);
+        }
+        self.inner.store.save_profile(&disk)?;
+        s.disk = Some(disk);
         s.me = Some(Arc::new(me));
+        s.dek = Some(dek);
         Ok(())
     }
 }
@@ -469,7 +677,12 @@ impl Inner {
     }
 
     fn me(&self) -> Result<Arc<Me>, Error> {
-        self.shared.lock().unwrap().me.clone().ok_or(Error::NoIdentity)
+        let s = self.shared.lock().unwrap();
+        match (&s.me, &s.disk) {
+            (Some(me), _) => Ok(me.clone()),
+            (None, Some(_)) => Err(Error::Locked),
+            (None, None) => Err(Error::NoIdentity),
+        }
     }
 
     fn endpoint(&self) -> Result<Endpoint, Error> {
@@ -498,7 +711,13 @@ impl Inner {
                 started: false,
                 online: false,
                 relay: None,
-                endpoint_id: s.me.as_ref().map(|m| m.info().device).unwrap_or_default(),
+                endpoint_id: match (&s.me, &s.disk) {
+                    (Some(m), _) => m.info().device,
+                    (None, Some(Disk::V2(p))) => {
+                        PublicKey::from_bytes(&p.device_public).map(|k| k.to_string()).unwrap_or_default()
+                    }
+                    _ => String::new(),
+                },
             },
         }
     }

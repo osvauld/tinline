@@ -7,6 +7,12 @@ pub enum Error {
     HaveIdentity,
     #[error("that recovery phrase is not valid")]
     BadPhrase,
+    #[error("wrong passphrase")]
+    WrongPassphrase,
+    #[error("identity is locked")]
+    Locked,
+    #[error("passphrase must be at least 8 characters")]
+    WeakPassphrase,
     #[error("node not started")]
     NotStarted,
     #[error("not found")]

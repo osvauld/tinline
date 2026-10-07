@@ -1,8 +1,10 @@
 //! What survives a restart, as JSON files in the app's private data dir. Every write goes to a
 //! temp file then renames over the old one, so a kill mid-write leaves the previous state.
 //!
-//! The mnemonic and device secret sit here in the clear: the directory is the app sandbox,
-//! and wrapping them in the Android Keystore is the platform side's job, not this crate's.
+//! `profile.json` keeps the name, DID and device public key in the clear (so a lock screen can
+//! show them) and the mnemonic and device secret only inside the passphrase-sealed `vault`
+//! (see `vault.rs`, `docs/vault.md`). Installs from before the vault have the old clear-text
+//! shape; they load as `Disk::Legacy` until `set_passphrase` converts them.
 
 use std::collections::HashSet;
 use std::fs;
@@ -12,6 +14,23 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::Error;
 
+/// Current on-disk profile (`"version": 2`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileV2 {
+    pub version: u32,
+    pub name: String,
+    pub did: String,
+    pub device_public: [u8; 32],
+    pub vault: crate::vault::Vault,
+}
+
+#[derive(Clone)]
+pub enum Disk {
+    V2(ProfileV2),
+    Legacy(Profile),
+}
+
+/// The old clear-text profile; also what an unlocked identity is loaded from.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
     pub mnemonic: String,
@@ -57,12 +76,27 @@ impl Store {
         Ok(Self { dir })
     }
 
-    pub fn profile(&self) -> Result<Option<Profile>, Error> {
-        read(&self.dir.join("profile.json"))
+    pub fn profile(&self) -> Result<Option<Disk>, Error> {
+        let Some(v): Option<serde_json::Value> = read(&self.dir.join("profile.json"))? else {
+            return Ok(None);
+        };
+        if v.get("mnemonic").is_some() {
+            Ok(Some(Disk::Legacy(serde_json::from_value(v)?)))
+        } else {
+            let p: ProfileV2 = serde_json::from_value(v)?;
+            if p.version != 2 {
+                return Err(Error::Io(format!("unknown profile version {}", p.version)));
+            }
+            Ok(Some(Disk::V2(p)))
+        }
     }
 
-    pub fn save_profile(&self, p: &Profile) -> Result<(), Error> {
-        write(&self.dir.join("profile.json"), p)
+    pub fn save_profile(&self, p: &Disk) -> Result<(), Error> {
+        let path = self.dir.join("profile.json");
+        match p {
+            Disk::V2(p) => write(&path, p),
+            Disk::Legacy(p) => write(&path, p),
+        }
     }
 
     /// A corrupt state file (power loss mid-write on a filesystem that reordered it) must not
