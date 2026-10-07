@@ -3,8 +3,19 @@
 //!
 //!   p2p-desktop [--data DIR] [--hidden] [--print-ticket]
 //!
-//! Test env: P2P_AUTO_ANSWER=<secs>, P2P_TEST_TONE=<hz>, P2P_PASSPHRASE=<pass> (TEST ONLY: unlocks the
-//! vault non-interactively; the normal app always asks for the passphrase and never stores it).
+//! Test env (only with `--features test-hooks`, never in release builds): P2P_AUTO_ANSWER=<secs>,
+//! P2P_TEST_TONE=<hz>, P2P_PASSPHRASE=<pass> (unlocks the vault non-interactively; the normal app
+//! always asks for the passphrase and never stores it), P2P_NO_APM, P2P_SCREEN, plus the
+//! TICKET/STATS/INCOMING/STATE stderr lines the e2e scripts parse.
+
+/// stderr diagnostics the e2e scripts parse; compiled out of normal builds.
+macro_rules! tlog {
+    ($($a:tt)*) => {
+        #[cfg(feature = "test-hooks")]
+        eprintln!($($a)*);
+    };
+}
+pub(crate) use tlog;
 
 mod app;
 mod audio;
@@ -24,6 +35,8 @@ pub enum Ev {
     Incoming(CallInfo),
     State(String, CallState),
     Tray(tray::TrayCmd),
+    /// Audio device trouble worth telling the user about.
+    AudioNotice(String),
 }
 
 pub type EvRx = mpsc::UnboundedReceiver<Ev>;
@@ -42,12 +55,12 @@ impl NodeEvents for Events {
         let _ = self.tx.send(Ev::Contacts);
     }
     fn on_incoming_call(&self, call: CallInfo) {
-        eprintln!("INCOMING {} from {} ({})", call.call_id, call.peer_name, call.peer_did);
+        tlog!("INCOMING {} from {} ({})", call.call_id, call.peer_name, call.peer_did);
         self.audio.on_incoming();
         let _ = self.tx.send(Ev::Incoming(call));
     }
     fn on_call_state(&self, id: String, state: CallState) {
-        eprintln!("STATE {id} {state:?}");
+        tlog!("STATE {id} {state:?}");
         self.audio.on_state(&state);
         let _ = self.tx.send(Ev::State(id, state));
     }
@@ -75,6 +88,20 @@ fn default_data_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("osvauld-p2p"))
 }
 
+/// Lets scripts/desktop_e2e.py tell a test-hooks binary from a normal one.
+#[cfg(feature = "test-hooks")]
+#[used]
+static TEST_HOOKS_MARKER: &str = "p2p-desktop-test-hooks-enabled";
+
+/// Test-only environment knobs: always None unless built with `--features test-hooks`.
+pub fn test_env(k: &str) -> Option<String> {
+    if cfg!(feature = "test-hooks") { std::env::var(k).ok() } else { None }
+}
+
+fn test_env_f(k: &str) -> Option<f64> {
+    test_env(k).and_then(|v| v.parse().ok())
+}
+
 fn main() -> Result<(), String> {
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     let mut data = None;
@@ -96,7 +123,23 @@ fn main() -> Result<(), String> {
     }
     let data = data.unwrap_or_else(default_data_dir);
     std::fs::create_dir_all(&data).map_err(|e| e.to_string())?;
-    let env_f = |k: &str| std::env::var(k).ok().and_then(|v| v.parse::<f64>().ok());
+    // One instance per data dir: two nodes on the same keys and state files would corrupt them.
+    // The OS drops the lock when the process dies, so a crash never leaves a stale one.
+    let lock = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(data.join("instance.lock"))
+        .map_err(|e| format!("instance.lock: {e}"))?;
+    match lock.try_lock() {
+        Ok(()) => {}
+        Err(std::fs::TryLockError::WouldBlock) => {
+            eprintln!("Osvauld Calls is already running for {} (look for its tray icon).", data.display());
+            return Ok(());
+        }
+        Err(std::fs::TryLockError::Error(e)) => return Err(format!("instance.lock: {e}")),
+    }
+    std::mem::forget(lock); // held until the process exits
 
     let (tx, rx) = mpsc::unbounded_channel();
     let _ = EV_RX.set(Mutex::new(Some(rx)));
@@ -104,14 +147,40 @@ fn main() -> Result<(), String> {
     let node = Node::new(data.to_string_lossy().into(), Arc::new(Events { tx: tx.clone(), audio: audio.clone() }))
         .map_err(|e| e.to_string())?;
     audio.attach(&node);
+    let notice_tx = tx.clone();
+    audio.set_notice(move |m| {
+        let _ = notice_tx.send(Ev::AudioNotice(m));
+    });
+
+    // The e2e scripts read call stats from stderr; sampled here, not in the UI loop, which a
+    // window the compositor is not drawing can stall.
+    #[cfg(feature = "test-hooks")]
+    {
+        let node = node.clone();
+        std::thread::spawn(move || loop {
+            std::thread::sleep(Duration::from_secs(1));
+            if let Some(st) = node.call_stats().filter(|st| st.state == CallState::Active) {
+                tlog!(
+                    "STATS t={} direct={} rtt={}ms sent={} recv={} lost={} recovered={} concealed={} buf={}ms freq={:.1} rms={:.0}",
+                    st.secs, st.direct, st.rtt_ms, st.sent, st.received, st.lost,
+                    st.recovered, st.concealed, st.buffered_ms, st.rx_freq_hz, st.rx_rms
+                );
+            }
+        });
+    }
 
     if print_ticket {
         if !node.has_identity() {
             return Err("no identity yet; create one in the app first".into());
         }
         if node.lock_state() == LockState::Locked {
-            let pass = std::env::var("P2P_PASSPHRASE").map_err(|_| "identity is locked; set P2P_PASSPHRASE")?;
-            node.unlock(pass).map_err(|e| e.to_string())?;
+            #[cfg(feature = "test-hooks")]
+            {
+                let pass = std::env::var("P2P_PASSPHRASE").map_err(|_| "identity is locked; set P2P_PASSPHRASE")?;
+                node.unlock(pass).map_err(|e| e.to_string())?;
+            }
+            #[cfg(not(feature = "test-hooks"))]
+            return Err("identity is locked; unlock it in the app (--print-ticket needs an unlocked identity)".into());
         }
         node.start().map_err(|e| e.to_string())?;
         let t = Instant::now();
@@ -134,11 +203,11 @@ fn main() -> Result<(), String> {
         node,
         data,
         hidden: hidden && tray,
-        auto_answer: env_f("P2P_AUTO_ANSWER"),
-        env_tone: env_f("P2P_TEST_TONE").map(|v| v as f32),
+        auto_answer: test_env_f("P2P_AUTO_ANSWER"),
+        env_tone: test_env_f("P2P_TEST_TONE").map(|v| v as f32),
         tray,
         tx: tx.clone(),
-        test_pass: std::env::var("P2P_PASSPHRASE").ok().filter(|p| !p.is_empty()),
+        test_pass: test_env("P2P_PASSPHRASE").filter(|p| !p.is_empty()),
         audio,
     });
     app::run().map_err(|e| e.to_string())
