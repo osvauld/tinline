@@ -1,4 +1,4 @@
-//! Desktop app for the P2P voice-call core: iced UI, cpal audio with WebRTC echo
+//! Tinline desktop: the voice-call core with iced UI, cpal audio with WebRTC echo
 //! cancellation, system tray, and the node kept alive while the window is closed.
 //!
 //!   p2p-desktop [--data DIR] [--hidden] [--print-ticket]
@@ -19,7 +19,10 @@ pub(crate) use tlog;
 
 mod app;
 mod audio;
+mod reason;
+mod single;
 mod tray;
+mod ui;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -82,10 +85,70 @@ pub struct Init {
 
 pub static INIT: OnceLock<Init> = OnceLock::new();
 
+/// The data directory before the rename to Tinline.
+fn legacy_data_dir() -> Option<PathBuf> {
+    directories::ProjectDirs::from("", "", "osvauld-p2p").map(|d| d.data_dir().to_path_buf())
+}
+
 fn default_data_dir() -> PathBuf {
-    directories::ProjectDirs::from("", "", "osvauld-p2p")
+    let new = directories::ProjectDirs::from("com", "osvauld", "Tinline")
         .map(|d| d.data_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("osvauld-p2p"))
+        .unwrap_or_else(|| PathBuf::from("tinline"));
+    if let Some(old) = legacy_data_dir() {
+        match migrate_data_dir(&old, &new) {
+            Ok(true) => eprintln!("Tinline: moved {} to {}", old.display(), new.display()),
+            Ok(false) => {}
+            Err(e) => {
+                // Never run on a fresh empty directory while an identity sits in the old one:
+                // that would look like data loss. Keep using the old location instead.
+                eprintln!("Tinline: could not move {} to {}: {e}; using the old location", old.display(), new.display());
+                return old;
+            }
+        }
+    }
+    new
+}
+
+/// First start after the rename: moves the old data directory to the new one. Only when the old
+/// one has an identity and the new one has none, so an existing install never loses its keys and a
+/// new install never touches anything. Returns whether it moved.
+fn migrate_data_dir(old: &std::path::Path, new: &std::path::Path) -> std::io::Result<bool> {
+    if old == new || !old.join("profile.json").exists() || new.join("profile.json").exists() {
+        return Ok(false);
+    }
+    // An empty directory the new version created already is fine to replace; anything else is not.
+    if new.exists() && std::fs::read_dir(new)?.next().is_some() {
+        return Err(std::io::Error::other("the new directory is not empty"));
+    }
+    if let Some(parent) = new.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    if new.exists() {
+        std::fs::remove_dir(new)?;
+    }
+    if std::fs::rename(old, new).is_ok() {
+        return Ok(true);
+    }
+    // Different filesystems: copy everything, and only then drop the old copy.
+    copy_dir(old, new).inspect_err(|_| {
+        let _ = std::fs::remove_dir_all(new);
+    })?;
+    std::fs::remove_dir_all(old)?;
+    Ok(true)
+}
+
+fn copy_dir(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(to)?;
+    for e in std::fs::read_dir(from)? {
+        let e = e?;
+        let target = to.join(e.file_name());
+        if e.file_type()?.is_dir() {
+            copy_dir(&e.path(), &target)?;
+        } else {
+            std::fs::copy(e.path(), &target)?;
+        }
+    }
+    Ok(())
 }
 
 /// Lets scripts/desktop_e2e.py tell a test-hooks binary from a normal one.
@@ -134,7 +197,10 @@ fn main() -> Result<(), String> {
     match lock.try_lock() {
         Ok(()) => {}
         Err(std::fs::TryLockError::WouldBlock) => {
-            eprintln!("Osvauld Calls is already running for {} (look for its tray icon).", data.display());
+            // Ask the running instance to show its window, then leave.
+            if !single::poke(&data) {
+                eprintln!("Tinline is already running for {} (look for its tray icon).", data.display());
+            }
             return Ok(());
         }
         Err(std::fs::TryLockError::Error(e)) => return Err(format!("instance.lock: {e}")),
@@ -192,6 +258,10 @@ fn main() -> Result<(), String> {
         return Ok(());
     }
 
+    let show_tx = tx.clone();
+    single::listen(&data, move || {
+        let _ = show_tx.send(Ev::Tray(tray::TrayCmd::Show));
+    });
     let tray_tx = tx.clone();
     let tray = tray::spawn(move |c| {
         let _ = tray_tx.send(Ev::Tray(c));

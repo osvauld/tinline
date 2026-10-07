@@ -13,7 +13,8 @@ p2pcore = { path = "../core" }
 audio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-iced = { version = "0.14", features = ["tokio", "canvas"] }
+iced = { version = "0.14", features = ["tokio", "canvas", "svg"] }
+png = "0.17"
 tokio = { version = "1", features = ["rt-multi-thread", "time", "sync"] }
 cpal = "0.18"
 webrtc-audio-processing = { version = "2.1", features = ["bundled"] }
