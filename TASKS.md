@@ -21,5 +21,5 @@ has re-run its acceptance command.
 | 10 | Review of `crates/core` | sonnet:review (worktree, read-only) | — | done, fixes merged |
 | 11 | Idle network measurement (`scripts/measure_idle.py`) + iroh timer audit | sonnet (worktree) | `scripts/` | done: ~330 bursts/h idle; own relay deferred |
 | 12 | Passphrase vault in core: Argon2id-sealed secrets, device-unlock key, migration | sonnet:vault (worktree) | `crates/core`, `crates/peer`, `scripts/e2e_*` | done, merged, tests re-run |
-| 13 | Android: passphrase onboarding/unlock/migration + Keystore-wrapped unlock key | sonnet (worktree), after 12 | `android/` | in progress |
-| 14 | Desktop: passphrase onboarding/unlock/migration | sonnet (worktree), after 12 | `crates/desktop` | in progress |
+| 13 | Android: passphrase onboarding/unlock/migration + Keystore-wrapped unlock key | sonnet (worktree), after 12 | `android/` | done, merged (emulator-verified) |
+| 14 | Desktop: passphrase onboarding/unlock/migration | sonnet (worktree), after 12 | `crates/desktop` | done, merged; audio decoupled from UI loop |
