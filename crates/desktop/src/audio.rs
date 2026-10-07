@@ -363,3 +363,69 @@ pub fn start_ring(out_dev: Option<String>) -> Session {
         .ok();
     Session { stop, join }
 }
+
+/// Call audio and the ringer, driven straight from the core's event callbacks rather than the
+/// UI loop: a window the compositor isn't drawing can stall iced for seconds, and that must
+/// never delay or mute a call. The UI only edits the settings here and stops the ringer.
+#[derive(Default)]
+pub struct Ctl {
+    node: std::sync::Mutex<std::sync::Weak<Node>>,
+    /// (input, output); None = system default.
+    pub devices: std::sync::Mutex<(Option<String>, Option<String>)>,
+    pub muted: Arc<AtomicBool>,
+    /// Test tone sent instead of the mic, if set.
+    pub tone: std::sync::Mutex<Option<f32>>,
+    call: std::sync::Mutex<Option<Session>>,
+    ring: std::sync::Mutex<Option<Session>>,
+}
+
+impl Ctl {
+    pub fn attach(&self, node: &Arc<Node>) {
+        *self.node.lock().unwrap() = Arc::downgrade(node);
+    }
+
+    pub fn on_incoming(&self) {
+        if self.call.lock().unwrap().is_some() {
+            return; // already talking; the UI shows the waiting call
+        }
+        let out = self.devices.lock().unwrap().1.clone();
+        let old = self.ring.lock().unwrap().replace(start_ring(out));
+        retire(old);
+    }
+
+    pub fn stop_ring(&self) {
+        retire(self.ring.lock().unwrap().take());
+    }
+
+    pub fn on_state(&self, state: &p2pcore::CallState) {
+        let Some(node) = self.node.lock().unwrap().upgrade() else { return };
+        match state {
+            p2pcore::CallState::Active => {
+                self.stop_ring();
+                self.muted.store(false, Ordering::Relaxed);
+                node.set_test_tone(*self.tone.lock().unwrap());
+                let (i, o) = self.devices.lock().unwrap().clone();
+                let s = start_call(node, i, o, self.muted.clone());
+                retire(self.call.lock().unwrap().replace(s));
+            }
+            p2pcore::CallState::Ended { .. } => {
+                self.stop_all();
+                node.set_test_tone(None);
+            }
+            _ => {}
+        }
+    }
+
+    pub fn stop_all(&self) {
+        self.stop_ring();
+        retire(self.call.lock().unwrap().take());
+    }
+}
+
+/// Tears a session down off the caller's thread (joining cpal can take a moment, and the
+/// caller may be a core callback).
+fn retire(s: Option<Session>) {
+    if let Some(s) = s {
+        let _ = thread::Builder::new().name("audio-stop".into()).spawn(move || drop(s));
+    }
+}

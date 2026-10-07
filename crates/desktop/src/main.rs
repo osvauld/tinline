@@ -31,6 +31,7 @@ pub static EV_RX: OnceLock<Mutex<Option<EvRx>>> = OnceLock::new();
 
 pub struct Events {
     pub tx: mpsc::UnboundedSender<Ev>,
+    pub audio: Arc<audio::Ctl>,
 }
 
 impl NodeEvents for Events {
@@ -42,10 +43,12 @@ impl NodeEvents for Events {
     }
     fn on_incoming_call(&self, call: CallInfo) {
         eprintln!("INCOMING {} from {} ({})", call.call_id, call.peer_name, call.peer_did);
+        self.audio.on_incoming();
         let _ = self.tx.send(Ev::Incoming(call));
     }
     fn on_call_state(&self, id: String, state: CallState) {
         eprintln!("STATE {id} {state:?}");
+        self.audio.on_state(&state);
         let _ = self.tx.send(Ev::State(id, state));
     }
     fn on_log(&self, _line: String) {}
@@ -61,6 +64,7 @@ pub struct Init {
     pub tx: mpsc::UnboundedSender<Ev>,
     /// From P2P_PASSPHRASE; test-only.
     pub test_pass: Option<String>,
+    pub audio: Arc<audio::Ctl>,
 }
 
 pub static INIT: OnceLock<Init> = OnceLock::new();
@@ -96,8 +100,10 @@ fn main() -> Result<(), String> {
 
     let (tx, rx) = mpsc::unbounded_channel();
     let _ = EV_RX.set(Mutex::new(Some(rx)));
-    let node = Node::new(data.to_string_lossy().into(), Arc::new(Events { tx: tx.clone() }))
+    let audio = Arc::new(audio::Ctl::default());
+    let node = Node::new(data.to_string_lossy().into(), Arc::new(Events { tx: tx.clone(), audio: audio.clone() }))
         .map_err(|e| e.to_string())?;
+    audio.attach(&node);
 
     if print_ticket {
         if !node.has_identity() {
@@ -133,6 +139,7 @@ fn main() -> Result<(), String> {
         tray,
         tx: tx.clone(),
         test_pass: std::env::var("P2P_PASSPHRASE").ok().filter(|p| !p.is_empty()),
+        audio,
     });
     app::run().map_err(|e| e.to_string())
 }

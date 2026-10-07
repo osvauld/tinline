@@ -1,6 +1,6 @@
 //! The iced application: onboarding, home, call and settings screens.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -15,7 +15,7 @@ use iced::{
 use p2pcore::{CallInfo, CallState, CallStats, Contact, Error, LockState, Node, NodeStatus};
 use serde::{Deserialize, Serialize};
 
-use crate::audio::{self, Session};
+use crate::audio;
 use crate::tray::TrayCmd;
 use crate::{Ev, INIT};
 
@@ -84,9 +84,8 @@ struct App {
     add_in: String,
     call: Option<CallView>,
     early: Vec<(String, CallState)>,
-    muted: Arc<AtomicBool>,
-    audio: Option<Session>,
-    ring: Option<Session>,
+    /// Call audio + ringer; driven by core events (see `audio::Ctl`), not by this loop.
+    ctl: Arc<audio::Ctl>,
     settings: Settings,
     devices: (Vec<String>, Vec<String>),
     name_edit: String,
@@ -267,9 +266,7 @@ impl App {
             add_in: String::new(),
             call: None,
             early: Vec::new(),
-            muted: Arc::new(AtomicBool::new(false)),
-            audio: None,
-            ring: None,
+            ctl: INIT.get().unwrap().audio.clone(),
             settings,
             devices: (Vec::new(), Vec::new()),
             name_edit: node.profile().map(|p| p.name).unwrap_or_default(),
@@ -281,6 +278,8 @@ impl App {
             app.devices = audio::list_devices();
             app.screen = Screen::Settings;
         }
+        *app.ctl.devices.lock().unwrap() = (app.settings.input.clone(), app.settings.output.clone());
+        *app.ctl.tone.lock().unwrap() = app.tone_hz();
         let mut tasks = vec![system::theme().map(Msg::Theme)];
         if !init.hidden {
             tasks.push(app.show_window());
@@ -337,22 +336,10 @@ impl App {
         match state {
             CallState::Active => {
                 c.answered = true;
-                self.ring = None;
-                self.muted.store(false, Ordering::Relaxed);
-                self.node.set_test_tone(self.tone_hz());
-                self.audio = Some(audio::start_call(
-                    self.node.clone(),
-                    self.settings.input.clone(),
-                    self.settings.output.clone(),
-                    self.muted.clone(),
-                ));
             }
             CallState::Ended { reason } => {
                 let missed = c.info.incoming && !c.answered;
                 let who = c.info.peer_name.clone();
-                self.audio = None;
-                self.ring = None;
-                self.node.set_test_tone(None);
                 self.call = None;
                 self.notice = Some(if missed {
                     format!("Missed call from {who}")
@@ -413,8 +400,7 @@ impl App {
             Msg::Theme(m) => self.dark = m != theme::Mode::Light,
             Msg::Quit => {
                 let node = self.node.clone();
-                self.audio = None;
-                self.ring = None;
+                self.ctl.stop_all();
                 return blocking(move || node.stop(), |_| Msg::Exit);
             }
             Msg::Exit => return iced::exit(),
@@ -475,10 +461,11 @@ impl App {
                 self.pass2_in.clear();
                 let phrase = std::mem::take(&mut self.phrase_in);
                 let (node, replace) = (self.node.clone(), self.replace);
-                let (data, tx) = {
+                let (data, tx, ctl) = {
                     let i = INIT.get().unwrap();
-                    (i.data.clone(), i.tx.clone())
+                    (i.data.clone(), i.tx.clone(), i.audio.clone())
                 };
+                let old_did = self.node.profile().map(|p| p.did);
                 return blocking(
                     move || {
                         if !replace {
@@ -496,13 +483,25 @@ impl App {
                                 .unwrap_or(0)
                         ));
                         std::fs::rename(&file, &aside).map_err(s)?;
-                        let fresh = Node::new(data.to_string_lossy().into(), Arc::new(crate::Events { tx }))
-                            .and_then(|n| n.restore_identity(phrase, name, pass).map(|_| n));
+                        let events = Arc::new(crate::Events { tx, audio: ctl.clone() });
+                        let fresh = Node::new(data.to_string_lossy().into(), events)
+                            .and_then(|n| n.restore_identity(phrase, name, pass).map(|_| n))
+                            .map_err(friendly)
+                            .and_then(|n| {
+                                // Contacts in state.json belong to the locked identity.
+                                if old_did.is_some() && n.profile().map(|p| p.did) != old_did {
+                                    return Err("That recovery phrase belongs to a different identity".to_string());
+                                }
+                                Ok(n)
+                            });
                         match fresh {
-                            Ok(n) => Ok(NodeBox(Arc::new(std::sync::Mutex::new(Some(n))))),
+                            Ok(n) => {
+                                ctl.attach(&n);
+                                Ok(NodeBox(Arc::new(std::sync::Mutex::new(Some(n)))))
+                            }
                             Err(e) => {
                                 let _ = std::fs::rename(&aside, &file);
-                                Err(friendly(e))
+                                Err(e)
                             }
                         }
                     },
@@ -753,14 +752,14 @@ impl App {
             }
             Msg::Answer => {
                 if let Some(c) = &self.call {
-                    self.ring = None;
+                    self.ctl.stop_ring();
                     let (node, id) = (self.node.clone(), c.info.call_id.clone());
                     return blocking(move || node.answer(id).map_err(s), Msg::Done);
                 }
             }
             Msg::Decline => {
                 if let Some(c) = &self.call {
-                    self.ring = None;
+                    self.ctl.stop_ring();
                     let (node, id) = (self.node.clone(), c.info.call_id.clone());
                     return blocking(move || node.decline(id).map_err(s), Msg::Done);
                 }
@@ -772,8 +771,8 @@ impl App {
                 }
             }
             Msg::ToggleMute => {
-                let m = !self.muted.load(Ordering::Relaxed);
-                self.muted.store(m, Ordering::Relaxed);
+                let m = !self.ctl.muted.load(Ordering::Relaxed);
+                self.ctl.muted.store(m, Ordering::Relaxed);
             }
             Msg::OpenSettings => {
                 self.devices = audio::list_devices();
@@ -812,14 +811,17 @@ impl App {
             }
             Msg::InDev(d) => {
                 self.settings.input = (d != DEFAULT_LABEL).then_some(d);
+                self.ctl.devices.lock().unwrap().0 = self.settings.input.clone();
                 self.save_settings();
             }
             Msg::OutDev(d) => {
                 self.settings.output = (d != DEFAULT_LABEL).then_some(d);
+                self.ctl.devices.lock().unwrap().1 = self.settings.output.clone();
                 self.save_settings();
             }
             Msg::ToneToggled(on) => {
                 self.settings.tone = on;
+                *self.ctl.tone.lock().unwrap() = self.tone_hz();
                 self.save_settings();
                 if self.call.as_ref().is_some_and(|c| c.state == CallState::Active) {
                     self.node.set_test_tone(self.tone_hz());
@@ -841,16 +843,12 @@ impl App {
             Ev::Contacts => self.contacts = self.node.contacts(),
             Ev::Incoming(info) => {
                 let name = info.peer_name.clone();
-                let busy = self.call.is_some();
                 self.call = Some(CallView {
                     info: info.clone(),
                     state: CallState::Ringing,
                     answered: false,
                     stats: None,
                 });
-                if !busy {
-                    self.ring = Some(audio::start_ring(self.settings.output.clone()));
-                }
                 std::thread::spawn(move || {
                     let _ = notify_rust::Notification::new()
                         .appname("Osvauld Calls")
@@ -861,7 +859,7 @@ impl App {
                 let mut tasks = vec![self.show_window()];
                 if let Some(secs) = INIT.get().unwrap().auto_answer {
                     let (node, id) = (self.node.clone(), info.call_id);
-                    self.ring = None;
+                    self.ctl.stop_ring();
                     tasks.push(blocking(
                         move || {
                             std::thread::sleep(Duration::from_secs_f64(secs));
@@ -1199,7 +1197,7 @@ impl App {
             .spacing(14)
             .into()
         } else {
-            let muted = self.muted.load(Ordering::Relaxed);
+            let muted = self.ctl.muted.load(Ordering::Relaxed);
             row![
                 big_button_style(
                     if muted { "Unmute" } else { "Mute" },
