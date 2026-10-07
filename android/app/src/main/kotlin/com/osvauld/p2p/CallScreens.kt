@@ -81,7 +81,12 @@ class CallActivity : ComponentActivity() {
                 // An outgoing call that fails at once is already over when this screen opens: still show why.
                 val showEnded = ui == null && e != null && (seen || System.currentTimeMillis() - e.atMs < 10_000)
                 LaunchedEffect(ui, seen, showEnded) { if (ui == null && seen && !showEnded) finish() }
-                LaunchedEffect(Unit) { delay(1500); if (app.calls.ui.value == null && app.calls.ended.value == null) finish() }
+                // Opened with nothing to show (no call, and no recent ended call): do not sit there blank.
+                LaunchedEffect(Unit) {
+                    delay(1500)
+                    val en = app.calls.ended.value
+                    if (app.calls.ui.value == null && (en == null || System.currentTimeMillis() - en.atMs > 10_000)) finish()
+                }
                 val u = ui
                 when {
                     // Their call arrived while ours was open (ours yielded): ring it here.
