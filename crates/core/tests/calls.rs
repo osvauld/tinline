@@ -32,6 +32,7 @@ struct Peer {
     node: Arc<Node>,
     rx: mpsc::Receiver<Ev>,
     did: String,
+    phrase: String,
     _dir: tempdir::Dir,
 }
 
@@ -50,17 +51,28 @@ mod tempdir {
 }
 
 fn peer(name: &str) -> Peer {
+    make_peer(name, None)
+}
+
+/// With `phrase`: the same person on a new install (new device key).
+fn make_peer(name: &str, restore: Option<&str>) -> Peer {
     let dir = tempdir::new(name);
     let (tx, rx) = mpsc::channel();
     let node = Node::new(dir.0.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
-    node.create_identity(name.into(), PASS.into()).unwrap();
+    let phrase = match restore {
+        Some(p) => {
+            node.restore_identity(p.into(), name.into(), PASS.into()).unwrap();
+            p.to_string()
+        }
+        None => node.create_identity(name.into(), PASS.into()).unwrap(),
+    };
     node.start().unwrap();
     let t = Instant::now();
     while !node.status().online && t.elapsed() < Duration::from_secs(10) {
         std::thread::sleep(Duration::from_millis(100));
     }
     let did = node.profile().unwrap().did;
-    Peer { node, rx, did, _dir: dir }
+    Peer { node, rx, did, phrase, _dir: dir }
 }
 
 /// a and b, each a contact of the other.
@@ -106,7 +118,9 @@ fn caller_cancels_while_ringing() {
     assert_eq!(inc, call.call_id);
     b.node.hangup(call.call_id.clone()).unwrap();
     assert_eq!(expect(&b, 10, "caller ended", ended(&call.call_id)), "cancelled");
-    assert_eq!(expect(&a, 10, "callee ended", ended(&call.call_id)), "missed");
+    assert_eq!(expect(&a, 10, "callee ended", ended(&call.call_id)), "cancelled");
+    let rec = &a.node.recent_calls(10)[0];
+    assert!(rec.missed && rec.incoming && rec.duration_secs == 0 && rec.reason == "cancelled");
     // The slot is free right away on both sides.
     let again = b.node.call(a.did.clone()).expect("slot freed");
     b.node.hangup(again.call_id).unwrap();
@@ -118,8 +132,10 @@ fn callee_declines() {
     let call = b.node.call(a.did.clone()).unwrap();
     expect(&a, 40, "incoming", |e| matches!(e, Ev::Incoming(_)).then_some(()));
     a.node.hangup(call.call_id.clone()).unwrap();
-    assert!(expect(&b, 10, "caller ended", ended(&call.call_id)).starts_with("declined"));
-    assert_eq!(expect(&a, 10, "callee ended", ended(&call.call_id)), "declined");
+    assert_eq!(expect(&b, 10, "caller ended", ended(&call.call_id)), "declined");
+    assert_eq!(expect(&a, 10, "callee ended", ended(&call.call_id)), "declined_local");
+    // Declining is not a missed call.
+    assert!(!a.node.recent_calls(10)[0].missed);
 }
 
 #[test]
@@ -198,4 +214,88 @@ fn call_states_arrive_in_order() {
             assert!(!matches!(ev, Ev::State(ref id, _) if *id == call.call_id), "event after Ended: {ev:?}");
         }
     }
+}
+
+#[test]
+fn history_and_reconnecting_over_a_real_call() {
+    let (a, b) = pair("history");
+    let call = b.node.call(a.did.clone()).unwrap();
+    let inc = expect(&a, 40, "incoming", |e| match e {
+        Ev::Incoming(c) => Some(c.call_id.clone()),
+        _ => None,
+    });
+    a.node.answer(inc).unwrap();
+    expect(&b, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
+    // Nobody feeds a microphone yet, so no media flows: that reads as reconnecting.
+    std::thread::sleep(Duration::from_millis(2200));
+    assert!(a.node.call_stats().unwrap().reconnecting);
+    // Media from b clears it on a.
+    for _ in 0..10 {
+        b.node.push_mic(vec![0i16; 960]);
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(!a.node.call_stats().unwrap().reconnecting);
+    b.node.hangup(call.call_id.clone()).unwrap();
+    assert_eq!(expect(&b, 10, "caller ended", ended(&call.call_id)), "hangup_local");
+    assert_eq!(expect(&a, 10, "callee ended", ended(&call.call_id)), "hangup_remote");
+    let (rb, ra) = (b.node.recent_calls(10), a.node.calls_with(b.did.clone(), 10));
+    assert_eq!((rb.len(), ra.len()), (1, 1));
+    assert!(!rb[0].incoming && ra[0].incoming && !ra[0].missed);
+    assert!(rb[0].duration_secs >= 2 && ra[0].duration_secs >= 2, "{rb:?}");
+    assert_eq!(rb[0].peer_did, a.did);
+    assert_eq!(rb[0].peer_name, "history-a");
+    assert_eq!(rb[0].reason, "hangup_local");
+    assert!(a.node.calls_with(a.did.clone(), 10).is_empty());
+    // Removing the contact deletes the history with them.
+    a.node.remove_contact(b.did.clone()).unwrap();
+    assert!(a.node.recent_calls(10).is_empty());
+    assert_eq!(b.node.recent_calls(10).len(), 1);
+}
+
+#[test]
+fn unavailable_turns_callers_away_quietly() {
+    let (a, b) = pair("away");
+    assert!(a.node.availability().available);
+    a.node.set_available(false, Some(4_000_000_000)).unwrap();
+    assert_eq!(a.node.availability().until, Some(4_000_000_000));
+    let call = b.node.call(a.did.clone()).unwrap();
+    // The caller sees only that it could not get through.
+    assert_eq!(expect(&b, 30, "caller ended", ended(&call.call_id)), "unreachable");
+    assert!(a.rx.try_recv().is_err(), "nothing may reach a's UI while unavailable");
+    let rec = &a.node.recent_calls(10)[0];
+    assert_eq!((rec.reason.as_str(), rec.missed, rec.incoming), ("unavailable", false, true));
+    assert_eq!(b.node.recent_calls(10)[0].reason, "unreachable");
+    // Adding a contact still works, and an expired "until" means available again.
+    a.node.set_available(false, Some(1)).unwrap();
+    assert!(a.node.availability().available);
+    a.node.set_available(false, None).unwrap();
+    assert!(!a.node.availability().available);
+    a.node.set_available(true, None).unwrap();
+    let call = b.node.call(a.did.clone()).unwrap();
+    expect(&a, 30, "incoming", |e| matches!(e, Ev::Incoming(_)).then_some(()));
+    b.node.hangup(call.call_id).unwrap();
+}
+
+#[test]
+fn alias_verified_and_safety_number() {
+    let (a, b) = pair("alias");
+    let c = &b.node.contacts()[0];
+    assert_eq!((c.alias.clone(), c.verified), (None, false));
+    b.node.rename_contact(a.did.clone(), Some("  Mum \u{7}  ".into())).unwrap();
+    b.node.set_verified(a.did.clone(), true).unwrap();
+    let c = &b.node.contacts()[0];
+    assert_eq!((c.alias.as_deref(), c.verified, c.name.as_str()), (Some("Mum"), true, "alias-a"));
+    let long = "x".repeat(500);
+    b.node.rename_contact(a.did.clone(), Some(long)).unwrap();
+    assert_eq!(b.node.contacts()[0].alias.as_ref().unwrap().chars().count(), 64);
+    b.node.rename_contact(a.did.clone(), Some("   ".into())).unwrap();
+    assert_eq!(b.node.contacts()[0].alias, None);
+    assert!(b.node.rename_contact("did:key:zNope".into(), None).is_err());
+    assert_eq!(a.node.safety_number(b.did.clone()).unwrap(), b.node.safety_number(a.did.clone()).unwrap());
+    // Re-adding from a new device resets verified: a restored copy of a on a fresh install.
+    b.node.set_verified(a.did.clone(), true).unwrap();
+    let a2 = make_peer("alias-a2", Some(&a.phrase));
+    assert_eq!(a2.did, a.did);
+    b.node.add_contact(a2.node.my_ticket().unwrap()).unwrap();
+    assert!(!b.node.contacts()[0].verified, "a new device must be verified again");
 }
