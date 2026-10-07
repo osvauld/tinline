@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/core", "crates/peer", "crates/desktop"]
+members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/storage", "crates/core", "crates/peer", "crates/desktop"]
 
 [workspace.package]
 version = "0.1.0"
@@ -19,6 +19,7 @@ identity = { path = "crates/identity" }
 cryptography = { path = "crates/cryptography" }
 proto = { path = "crates/proto" }
 audio = { path = "crates/audio" }
+storage = { path = "crates/storage" }
 
 [profile.release]
 lto = "thin"
