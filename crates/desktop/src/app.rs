@@ -695,12 +695,12 @@ impl App {
         let pill: Element<Msg> = if !self.status.started {
             text("Starting...").size(13).style(text::secondary).into()
         } else if self.status.online {
-            text(format!("● Online via relay{}", self.status.relay.as_deref().map(|r| format!(" ({})", short_relay(r))).unwrap_or_default()))
+            text("● Online")
                 .size(14)
                 .style(text::success)
                 .into()
         } else {
-            text("● Offline - no relay").size(14).style(text::danger).into()
+            text("● Offline").size(14).style(text::danger).into()
         };
         let header = row![
             column![
@@ -799,7 +799,7 @@ impl App {
                 let loss = if total > 0 { st.lost as f64 * 100.0 / total as f64 } else { 0.0 };
                 format!(
                     "{} - rtt {} ms - loss {:.1}%",
-                    if st.direct { "direct" } else { "relay" },
+                    if st.direct { "Direct P2P" } else { "Relayed (encrypted)" },
                     st.rtt_ms,
                     loss
                 )
@@ -912,10 +912,6 @@ fn ghost(theme: &Theme, status: button::Status) -> button::Style {
         border: iced::Border { radius: 8.0.into(), ..Default::default() },
         ..Default::default()
     }
-}
-
-fn short_relay(r: &str) -> String {
-    r.trim_start_matches("https://").trim_start_matches("http://").trim_end_matches('/').to_string()
 }
 
 fn big_button(label: &str, on: Option<Msg>) -> Element<'_, Msg> {

@@ -162,7 +162,7 @@ fun InCallScreen(ui: CallUi, calls: CallController) {
             val tot = (s.received + s.lost).toDouble()
             val loss = if (tot > 0) 100.0 * s.lost.toDouble() / tot else 0.0
             Text(
-                "${if (s.direct) "direct" else "relay"} · rtt ${s.rttMs} ms · loss ${"%.1f".format(loss)}%",
+                "${if (s.direct) "Direct P2P" else "Relayed (encrypted)"} · rtt ${s.rttMs} ms · loss ${"%.1f".format(loss)}%",
                 color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, textAlign = TextAlign.Center,
             )
         }

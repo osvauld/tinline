@@ -303,7 +303,7 @@ fun StatusChip(online: Boolean, relay: String?) {
             Canvas(Modifier.size(10.dp)) { drawCircle(color) }
             Spacer(Modifier.width(8.dp))
             Text(
-                if (online) "Online via relay" else "Offline", color = color, fontWeight = FontWeight.Medium,
+                if (online) "Online" else "Offline", color = color, fontWeight = FontWeight.Medium,
                 style = MaterialTheme.typography.labelLarge,
             )
         }
