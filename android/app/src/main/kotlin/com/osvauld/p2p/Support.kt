@@ -10,8 +10,6 @@ import android.os.Build
 import android.os.PersistableBundle
 import uniffi.p2pcore.Exception as CoreError
 
-const val MIN_PASSPHRASE = 8
-
 const val URL_TERMS = "https://tinline.osvauld.com/terms"
 const val URL_PRIVACY = "https://tinline.osvauld.com/privacy"
 const val URL_SITE = "https://tinline.osvauld.com"
@@ -20,35 +18,11 @@ const val URL_SOURCE = "https://github.com/osvauld/tinline"
 /** Friendly text for a core error; never includes secrets. */
 fun friendly(e: Throwable): String = when (e) {
     is CoreError.WrongPassphrase -> "That didn’t match. Check the spelling and spaces."
-    is CoreError.WeakPassphrase -> "At least $MIN_PASSPHRASE characters"
+    is CoreError.WeakPassphrase -> "Type a passphrase, or skip it"
     is CoreError.Locked -> "Locked — enter your passphrase to unlock"
     is CoreError.BadPhrase -> "That recovery phrase is not valid"
     else -> e.message ?: "Something went wrong"
 }
-
-/** Null when the pair is acceptable, else what to tell the user. */
-fun passphraseProblem(pass: String, confirm: String): String? = when {
-    pass.length < MIN_PASSPHRASE -> "At least $MIN_PASSPHRASE characters"
-    pass != confirm -> "Passphrases don’t match"
-    else -> null
-}
-
-/** 0 = nothing typed, 1 weak, 2 okay, 3 good, 4 strong. A cheap local length / variety heuristic, no dictionary. */
-fun passphraseStrength(p: String): Int {
-    if (p.isEmpty()) return 0
-    val classes = listOf(p.any { it.isLowerCase() }, p.any { it.isUpperCase() }, p.any { it.isDigit() }, p.any { !it.isLetterOrDigit() }).count { it }
-    val words = p.split(Regex("[\\s\\-_.,]+")).count { it.length >= 3 }
-    val distinct = p.toSet().size
-    return when {
-        p.length < MIN_PASSPHRASE || distinct < 4 -> 1
-        p.length >= 16 && (classes >= 2 || words >= 3) -> 4
-        p.length >= 12 && (classes >= 3 || words >= 3) -> 3
-        p.length >= 12 || classes >= 3 -> 2
-        else -> 1
-    }
-}
-
-fun strengthLabel(s: Int) = when (s) { 1 -> "Weak"; 2 -> "Okay"; 3 -> "Good"; 4 -> "Strong"; else -> "" }
 
 /** The BIP-39 English list, bundled as an asset (the core does not expose it). */
 object Wordlist {

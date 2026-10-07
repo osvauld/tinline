@@ -42,10 +42,10 @@ private fun Gallery(which: String, app: P2pApp) {
     when (which) {
         "welcome" -> WelcomeScreen(none, none)
         "name" -> NameScreen("Maya", {}, none, 1, none)
-        "pass" -> PassphraseStep("correct-horse-lamp-river", "correct-horse-lamp-river", {}, {}, false, null, 2, "Lock it with a passphrase", "Continue", none, none)
+        "pass" -> PassphraseStep("correct-horse-lamp-river", {}, false, null, 2, "Add a passphrase", "Continue", none, none, none)
+        "key_lost" -> KeyLostContent("Maya", false, none, none)
         "phrase" -> PhraseScreen(PHRASE, none)
-        "check" -> QuickCheckScreen(PHRASE, none, none)
-        "terms" -> TermsScreen(5, null, none)
+        "terms" -> TermsScreen(4, null, none)
         "perms" -> PermissionsScreen(listOf(Need.Mic, Need.FullScreen, Need.Battery), {}, none)
         "restore" -> RestoreScreen(none, null, false, "Restoring replaces whatever account is on this phone. Next, you’ll choose a new passphrase.") {}
         "unlock" -> UnlockContent("Maya", "correct-horse-lamp", {}, false, null, none, none)
