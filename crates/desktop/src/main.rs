@@ -19,6 +19,7 @@ pub(crate) use tlog;
 
 mod app;
 mod audio;
+mod keystore;
 mod reason;
 mod single;
 mod tray;
@@ -213,6 +214,8 @@ fn main() -> Result<(), String> {
     let node = Node::new(data.to_string_lossy().into(), Arc::new(Events { tx: tx.clone(), audio: audio.clone() }))
         .map_err(|e| e.to_string())?;
     audio.attach(&node);
+    // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
+    keystore::auto_unlock(&node, &data);
     let notice_tx = tx.clone();
     audio.set_notice(move |m| {
         let _ = notice_tx.send(Ev::AudioNotice(m));
