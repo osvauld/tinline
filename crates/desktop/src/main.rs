@@ -3,7 +3,8 @@
 //!
 //!   p2p-desktop [--data DIR] [--hidden] [--print-ticket]
 //!
-//! Test env: P2P_AUTO_ANSWER=<secs>, P2P_TEST_TONE=<hz>.
+//! Test env: P2P_AUTO_ANSWER=<secs>, P2P_TEST_TONE=<hz>, P2P_PASSPHRASE=<pass> (TEST ONLY: unlocks the
+//! vault non-interactively; the normal app always asks for the passphrase and never stores it).
 
 mod app;
 mod audio;
@@ -13,7 +14,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, LockState, Node, NodeEvents, NodeStatus};
 use tokio::sync::mpsc;
 
 /// Everything the node and the tray report, funnelled into the UI's update loop.
@@ -28,8 +29,8 @@ pub enum Ev {
 pub type EvRx = mpsc::UnboundedReceiver<Ev>;
 pub static EV_RX: OnceLock<Mutex<Option<EvRx>>> = OnceLock::new();
 
-struct Events {
-    tx: mpsc::UnboundedSender<Ev>,
+pub struct Events {
+    pub tx: mpsc::UnboundedSender<Ev>,
 }
 
 impl NodeEvents for Events {
@@ -57,6 +58,9 @@ pub struct Init {
     pub auto_answer: Option<f64>,
     pub env_tone: Option<f32>,
     pub tray: bool,
+    pub tx: mpsc::UnboundedSender<Ev>,
+    /// From P2P_PASSPHRASE; test-only.
+    pub test_pass: Option<String>,
 }
 
 pub static INIT: OnceLock<Init> = OnceLock::new();
@@ -99,6 +103,10 @@ fn main() -> Result<(), String> {
         if !node.has_identity() {
             return Err("no identity yet; create one in the app first".into());
         }
+        if node.lock_state() == LockState::Locked {
+            let pass = std::env::var("P2P_PASSPHRASE").map_err(|_| "identity is locked; set P2P_PASSPHRASE")?;
+            node.unlock(pass).map_err(|e| e.to_string())?;
+        }
         node.start().map_err(|e| e.to_string())?;
         let t = Instant::now();
         while !node.status().online && t.elapsed() < Duration::from_secs(10) {
@@ -123,6 +131,8 @@ fn main() -> Result<(), String> {
         auto_answer: env_f("P2P_AUTO_ANSWER"),
         env_tone: env_f("P2P_TEST_TONE").map(|v| v as f32),
         tray,
+        tx: tx.clone(),
+        test_pass: std::env::var("P2P_PASSPHRASE").ok().filter(|p| !p.is_empty()),
     });
     app::run().map_err(|e| e.to_string())
 }
