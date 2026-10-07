@@ -32,7 +32,7 @@ has re-run its acceptance command.
 | 21 | Core for the design: call history, contact alias + verified, safety number, availability, reconnecting, end reasons | sonnet:core-design (worktree) | `crates/core`, `docs/protocol.md` | done, merged; 26 core tests re-run |
 | 22 | Android redesign per `docs/design/` (tokens, fonts, icon, all screens on today's API) | sonnet:android-design (worktree) | `android/` | in progress |
 | 24 | Desktop redesign per `docs/design/Desktop*` + Tinline rename, on the new core API | sonnet:desktop (worktree), after 18 | `crates/desktop` | in progress |
-| 23 | Wire 21 into the Android UI (recents, rename, verify, availability, end reasons) | lead, after 21+22 | `android/` | todo |
+| 23 | Wire 21 into the Android UI (recents, rename, verify, availability, end reasons) | sonnet:wire (worktree) | `android/` | in progress |
 
 ## Roadmap (after the redesign)
 
