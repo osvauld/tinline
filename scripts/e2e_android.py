@@ -55,7 +55,9 @@ def main():
         sh(*ADB, "shell", "pm", "clear", PKG)
         for perm in ["android.permission.RECORD_AUDIO", "android.permission.POST_NOTIFICATIONS"]:
             sh(*ADB, "shell", "pm", "grant", PKG, perm)
-        sh(*ADB, "shell", "appops", "set", PKG, "USE_FULL_SCREEN_INTENT", "allow")
+        # Android 14+ only; on 13 and below the permission is granted at install.
+        subprocess.run([*ADB, "shell", "appops", "set", PKG, "USE_FULL_SCREEN_INTENT", "allow"],
+                       capture_output=True)
         sh(*ADB, "logcat", "-c")
         dbg("create", name="phone")
         wait_for(r"created did=\S+")
