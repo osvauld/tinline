@@ -50,15 +50,33 @@ object Notifications {
     private fun service(c: Context, action: String, code: Int): PendingIntent =
         PendingIntent.getService(c, code, Intent(c, CoreService::class.java).setAction(action), flags())
 
-    /** The always-on foreground notification; text reflects call state. */
+    private fun idleTitle(): String {
+        val app = P2pApp.instance
+        return when {
+            !app.availability.value.available -> "Not available"
+            app.status.value?.online == false -> "Offline — reconnecting"
+            else -> "Available for calls"
+        }
+    }
+
+    private fun idleText(): String {
+        val app = P2pApp.instance
+        return when {
+            !app.availability.value.available -> "Calls won’t ring. Tap to change."
+            app.status.value?.online == false -> "Calls can’t reach you right now."
+            else -> "Your line is open. Tap to change."
+        }
+    }
+
+    /** The always-on foreground notification; text reflects call state, availability and connectivity. */
     fun service(c: Context, inCall: String?): Notification {
         val b = Notification.Builder(c, CH_SERVICE)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setColor(0xFF0B6B5B.toInt())
-            .setContentTitle(inCall ?: "Ready for calls")
-            .setContentText(if (inCall != null) "Tap to return to the call" else "Listening for contacts")
+            .setContentTitle(inCall ?: idleTitle())
+            .setContentText(if (inCall != null) "Tap to return to the call" else idleText())
             .setContentIntent(
                 if (inCall != null) activity(c, CallActivity::class.java, 10)
                 else activity(c, MainActivity::class.java, 11))

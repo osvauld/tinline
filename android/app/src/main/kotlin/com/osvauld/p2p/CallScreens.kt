@@ -84,6 +84,9 @@ class CallActivity : ComponentActivity() {
                 LaunchedEffect(Unit) { delay(1500); if (app.calls.ui.value == null && app.calls.ended.value == null) finish() }
                 val u = ui
                 when {
+                    // Their call arrived while ours was open (ours yielded): ring it here.
+                    u != null && u.info.incoming && u.state is CallState.Ringing ->
+                        IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() })
                     u != null -> InCallScreen(u, meName, app.calls, onMinimise = { finish() })
                     showEnded && e != null -> EndedRoute(e, meName, onClose = { finish() }, onAgain = {
                         app.scope.launch { app.calls.place(e.peerDid) }
@@ -179,7 +182,7 @@ fun InCallScreen(ui: CallUi, meName: String, calls: CallController, onMinimise: 
         name = ui.info.peerName.ifBlank { "Unknown" }, did = ui.info.peerDid, meName = meName,
         active = ui.state is CallState.Active, ringing = ui.state is CallState.Ringing, secs = secs,
         direct = s?.direct, bars = if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null,
-        muted = ui.muted, speaker = ui.speaker, micProblem = ui.micProblem,
+        muted = ui.muted, speaker = ui.speaker, micProblem = ui.micProblem, reconnecting = s?.reconnecting == true,
         onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
     )
 }
@@ -189,6 +192,7 @@ fun InCallContent(
     name: String, did: String, meName: String, active: Boolean, ringing: Boolean, secs: Long, direct: Boolean?, bars: Int?,
     muted: Boolean, speaker: Boolean, micProblem: String?,
     onMute: () -> Unit, onSpeaker: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit, startWithSheet: Boolean = false,
+    reconnecting: Boolean = false,
 ) {
     val c = Tin.c
     var sheet by remember { mutableStateOf(startWithSheet) }
@@ -197,6 +201,7 @@ fun InCallContent(
             IconBtn(Icons.Rounded.KeyboardArrowDown, "Minimise", onMinimise)
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                 if (!active) Badge(if (ringing) "Ringing…" else "Finding a path…", BadgeKind.Neutral) { Dot(c.thread, 8.dp) }
+                else if (reconnecting) Badge("Reconnecting\u2026", BadgeKind.Warn, Icons.Rounded.SyncProblem)
                 else {
                     if (direct == true) Badge("Direct", BadgeKind.Direct, Glyphs.Direct)
                     if (direct == false) Badge("Relayed · encrypted", BadgeKind.Relayed, Glyphs.Relayed)
@@ -207,11 +212,15 @@ fun InCallContent(
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
-            PairAvatars(meName.ifBlank { "?" }, name, did)
+            PairAvatars(meName.ifBlank { "?" }, name, did, otherAlpha = if (reconnecting) 0.6f else 1f)
             Text(name, Modifier.padding(top = 16.dp), style = TinType.h1.copy(fontSize = 30.sp, lineHeight = 36.sp), color = c.ink, textAlign = TextAlign.Center)
             if (active) Text(clock(secs), style = TinType.mono.copy(fontSize = 20.sp, lineHeight = 28.sp), color = c.ink2)
             else Text(if (ringing) "Ringing…" else "Calling…", style = TinType.bodyL.copy(fontSize = 17.sp), color = c.ink2)
-            if (active && direct != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (active && reconnecting) Text(
+                "Your network changed. Hold on \u2014 Tinline is finding the line again.", Modifier.widthIn(max = 300.dp).padding(top = 6.dp),
+                style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 22.sp), color = c.ink2, textAlign = TextAlign.Center,
+            )
+            else if (active && direct != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(16.dp))
                 Text("End-to-end encrypted · " + if (direct) "straight to their phone" else "through an encrypted relay", style = TinType.bodyM.copy(fontSize = 13.sp), color = c.ink2)
             }
@@ -264,7 +273,7 @@ private fun RouteOption(icon: ImageVector, label: String, on: Boolean, onClick: 
 @Composable
 private fun EndedRoute(e: EndedUi, meName: String, onClose: () -> Unit, onAgain: () -> Unit) {
     if (classifyEnd(e.reason) == EndKind.Unreachable && !e.wasActive) UnreachableContent(e.peerName, e.peerDid, meName, onAgain, onClose)
-    else EndedContent(e.peerName, e.peerDid, meName, endReasonText(e.reason, e.peerName), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
+    else EndedContent(e.peerName, e.peerDid, meName, endReasonText(e.reason, e.peerName, e.incoming), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
 }
 
 @Composable

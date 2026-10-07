@@ -9,7 +9,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import uniffi.p2pcore.Availability
 import uniffi.p2pcore.CallInfo
+import uniffi.p2pcore.CallRecord
 import uniffi.p2pcore.CallState
 import uniffi.p2pcore.Contact
 import uniffi.p2pcore.LockState
@@ -35,6 +41,13 @@ class P2pApp : Application(), NodeEvents {
     private val _hasIdentity = MutableStateFlow(false)
     val hasIdentity: StateFlow<Boolean> = _hasIdentity
 
+    private val _history = MutableStateFlow<List<CallRecord>>(emptyList())
+    /** The call log, newest first. Re-read on every call end (the core writes it before `Ended` fires). */
+    val history: StateFlow<List<CallRecord>> = _history
+    private val _availability = MutableStateFlow(Availability(true, null))
+    val availability: StateFlow<Availability> = _availability
+    @Volatile private var availJob: Job? = null
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -43,6 +56,32 @@ class P2pApp : Application(), NodeEvents {
         node = newNode()
         tryAutoUnlock()
         refresh()
+        // The always-on notification says "Available for calls" / "Not available" / "Offline".
+        scope.launch {
+            combine(status, availability) { st, av -> (st?.online == true) to av.available }.distinctUntilChanged()
+                .collect { CoreService.refreshNotification() }
+        }
+    }
+
+    fun refreshHistory() {
+        try { _history.value = node.recentCalls(200u) } catch (e: Exception) { Log.w(TAG, "recentCalls: $e") }
+    }
+
+    /** Re-reads availability and arms a timer for when a timed break ends (no polling). */
+    fun refreshAvailability() {
+        val a = try { node.availability() } catch (e: Exception) { return }
+        _availability.value = a
+        availJob?.cancel()
+        val until = a.until
+        if (!a.available && until != null) availJob = scope.launch {
+            delay((until.toLong() * 1000 - System.currentTimeMillis()).coerceAtLeast(0) + 500)
+            refreshAvailability()
+        }
+    }
+
+    fun setAvailable(available: Boolean, until: Long? = null) {
+        try { node.setAvailable(available, until?.toULong()) } catch (e: Exception) { Log.w(TAG, "setAvailable: $e") }
+        refreshAvailability()
     }
 
     fun refresh() {
@@ -50,6 +89,7 @@ class P2pApp : Application(), NodeEvents {
         _hasIdentity.value = node.hasIdentity()
         _contacts.value = node.contacts()
         _status.value = node.status()
+        if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability() }
     }
 
     private val unlockLock = Any()
@@ -162,9 +202,13 @@ class P2pApp : Application(), NodeEvents {
         val known = _contacts.value.map { it.did }.toSet()
         list.filter { it.did !in known }.forEach { testLog("added name=${it.name} did=${it.did}") }
         _contacts.value = list
+        refreshHistory()
     }
     override fun onIncomingCall(call: CallInfo) = calls.onIncoming(call)
-    override fun onCallState(callId: String, state: CallState) = calls.onState(callId, state)
+    override fun onCallState(callId: String, state: CallState) {
+        if (state is CallState.Ended) refreshHistory()
+        calls.onState(callId, state)
+    }
     override fun onLog(line: String) { if (BuildConfig.DEBUG) Log.d("p2pcore", line) }
 
     companion object {

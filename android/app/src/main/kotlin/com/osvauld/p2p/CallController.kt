@@ -54,13 +54,11 @@ class CallController(private val app: P2pApp) {
     private val _ended = MutableStateFlow<EndedUi?>(null)
     /** Set when a call ends (after [ui] goes null); cleared when the next call starts. */
     val ended: StateFlow<EndedUi?> = _ended
-    @Volatile private var localHangup = false
     private val audio by lazy { AudioEngine(app, { app.node }, ::micUnavailable) }
     @Volatile private var ringtone: Ringtone? = null
     @Volatile private var statsJob: Job? = null
     @Volatile private var ringTimeout: Job? = null
     @Volatile private var everActive = false
-    @Volatile private var declined = false
     private var proximity: PowerManager.WakeLock? = null
 
     // Events for a call we are still placing arrive before node.call() has returned its id and
@@ -77,14 +75,15 @@ class CallController(private val app: P2pApp) {
 
     fun onIncoming(call: CallInfo) {
         testLog("incoming id=${call.callId} from=${call.peerName.ifBlank { call.peerDid }}")
-        everActive = false; declined = false; localHangup = false; _ended.value = null
+        everActive = false; _ended.value = null
         _ui.value = CallUi(call, CallState.Ringing)
         CoreService.ensureRunning(app)
         Notifications.incoming(app, call)
         startRinging()
         ringTimeout?.cancel()
         ringTimeout = app.scope.launch {
-            delay(RING_TIMEOUT_MS)
+            // The core ends an unanswered call itself after 60 s (no_answer); this is only the backstop.
+            delay(RING_TIMEOUT_MS + 5_000)
             val c = _ui.value
             if (c != null && c.info.callId == call.callId && c.state !is CallState.Active) {
                 // Nobody answered: stop ringing for good. Ended then posts the "Missed call" note.
@@ -123,13 +122,12 @@ class CallController(private val app: P2pApp) {
                 statsJob?.cancel(); audio.stop(); updateProximity(false)
                 val cur = _ui.value
                 if (cur != null && cur.info.callId == callId) {
-                    if (cur.info.incoming && !everActive && !declined) Notifications.missed(app, cur.info.peerName)
-                    val raw = state.reason
-                    // The core says "hung up" for either side; only we know whether it was us.
-                    val reason = if (raw == "hung up" && localHangup) REASON_LOCAL_HANGUP else raw
+                    val reason = state.reason
+                    if (!everActive && isMissedReason(reason, cur.info.incoming)) Notifications.missed(app, cur.info.peerName)
                     val s = cur.stats
                     val loss = s?.let { val t = (it.received + it.lost).toDouble(); if (t > 0) 100.0 * it.lost.toDouble() / t else 0.0 }
-                    _ended.value = EndedUi(
+                    // Our outgoing call yielded to their simultaneous call: no ended screen, theirs rings.
+                    if (classifyEnd(reason) != EndKind.Superseded) _ended.value = EndedUi(
                         cur.info.peerName, cur.info.peerDid, reason, cur.info.incoming, everActive,
                         cur.activeSinceMs?.let { (System.currentTimeMillis() - it) / 1000 } ?: 0L,
                         s?.direct, if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null,
@@ -152,7 +150,7 @@ class CallController(private val app: P2pApp) {
             synchronized(lock) { placing = false; early.clear() }
             throw e
         }
-        everActive = false; declined = false; localHangup = false; _ended.value = null
+        everActive = false; _ended.value = null
         val replay = synchronized(lock) {
             _ui.value = CallUi(info, CallState.Dialing)
             placing = false
@@ -175,7 +173,6 @@ class CallController(private val app: P2pApp) {
 
     fun decline() {
         val c = _ui.value ?: return
-        declined = true; localHangup = true
         ringTimeout?.cancel()
         stopRinging(); Notifications.cancelIncoming(app)
         app.scope.launch { try { app.node.decline(c.info.callId) } catch (e: Exception) { Log.w("Call", "decline: $e") } }
@@ -183,7 +180,6 @@ class CallController(private val app: P2pApp) {
 
     fun hangup() {
         val c = _ui.value ?: return
-        localHangup = true
         app.scope.launch { try { app.node.hangup(c.info.callId) } catch (e: Exception) { Log.w("Call", "hangup: $e") } }
     }
 
