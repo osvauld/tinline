@@ -77,7 +77,7 @@ passphrases are never logged; `allowBackup=false`.
 ## Test hooks (debug builds only)
 
 Exported receiver `DebugReceiver` in `src/debug/AndroidManifest.xml`, action
-`com.osvauld.p2p.DEBUG`, extra `cmd`; every result and every call event logs one line with tag
+`com.osvauld.tinline.DEBUG`, extra `cmd`; every result and every call event logs one line with tag
 `P2PTEST` so scripts can `adb logcat -s P2PTEST`:
 
 | cmd | extras | logs |

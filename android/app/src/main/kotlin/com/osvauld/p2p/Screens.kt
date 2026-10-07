@@ -178,7 +178,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("P2P Calls", fontWeight = FontWeight.SemiBold) },
+                title = { Text("Tinline", fontWeight = FontWeight.SemiBold) },
                 actions = { IconButton(onSettings) { Icon(Icons.Default.Settings, "Settings") } },
             )
         },

@@ -26,7 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ADB = os.path.expanduser("~/Android/Sdk/platform-tools/adb")
-PKG = "com.osvauld.p2p"
+PKG = "com.osvauld.tinline"
 
 
 def main():
@@ -44,7 +44,7 @@ def main():
             sys.exit(f"null sink {s} missing; see the docstring")
 
     def dbg(cmd, **kw):
-        args = [*adb, "shell", "am", "broadcast", "-a", f"{PKG}.DEBUG", "-n", f"{PKG}/.DebugReceiver",
+        args = [*adb, "shell", "am", "broadcast", "-a", f"{PKG}.DEBUG", "-n", f"{PKG}/com.osvauld.p2p.DebugReceiver",
                 "--es", "cmd", cmd]
         for k, v in kw.items():
             args += ["--es", k, str(v)]

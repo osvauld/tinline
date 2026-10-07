@@ -9,7 +9,7 @@ fresh p2p-peer identity in a temp dir.
 import argparse, os, re, subprocess, sys, tempfile, time
 
 ADB = [os.path.expanduser("~/Android/Sdk/platform-tools/adb")]
-PKG = "com.osvauld.p2p"
+PKG = "com.osvauld.tinline"
 
 
 def sh(*a, **k):
@@ -17,8 +17,8 @@ def sh(*a, **k):
 
 
 def dbg(cmd, **extras):
-    args = [*ADB, "shell", "am", "broadcast", "-a", "com.osvauld.p2p.DEBUG",
-            "-n", "com.osvauld.p2p/.DebugReceiver", "--es", "cmd", cmd]
+    args = [*ADB, "shell", "am", "broadcast", "-a", f"{PKG}.DEBUG",
+            "-n", f"{PKG}/com.osvauld.p2p.DebugReceiver", "--es", "cmd", cmd]
     for k, v in extras.items():
         args += ["--es", k, str(v)]
     sh(*args)
@@ -64,7 +64,7 @@ def main():
     # Open the app like a user would: a foreground service may only start from the foreground
     # (or with the battery-optimisation exemption the setup card asks for). A debug broadcast
     # alone leaves the node in a cached process that Android freezes, unreachable.
-    sh(*ADB, "shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+    sh(*ADB, "shell", "am", "start", "-n", f"{PKG}/com.osvauld.p2p.MainActivity")
     time.sleep(4)
     sh(*ADB, "shell", "input", "keyevent", "KEYCODE_HOME")
     if "isForeground=true" not in sh(*ADB, "shell", "dumpsys", "activity", "services", PKG):

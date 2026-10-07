@@ -45,7 +45,7 @@ def main():
         for serial in a.serial or [None]:
             target = [adb] + (["-s", serial] if serial else [])
             subprocess.run(target + ["install", "-r", str(APK)], check=True)
-            subprocess.run(target + ["shell", "am", "start", "-n", "com.osvauld.p2p/.MainActivity"], check=True)
+            subprocess.run(target + ["shell", "am", "start", "-n", "com.osvauld.tinline/com.osvauld.p2p.MainActivity"], check=True)
 
 
 if __name__ == "__main__":

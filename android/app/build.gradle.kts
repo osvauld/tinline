@@ -12,7 +12,7 @@ android {
     compileSdk = 35
     ndkVersion = "28.2.13676358"
     defaultConfig {
-        applicationId = "com.osvauld.p2p"
+        applicationId = "com.osvauld.tinline"
         minSdk = 28
         targetSdk = 35
         versionCode = 1

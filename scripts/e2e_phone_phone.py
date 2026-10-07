@@ -15,7 +15,7 @@ import sys
 import time
 
 ADB = os.path.expanduser("~/Android/Sdk/platform-tools/adb")
-PKG = "com.osvauld.p2p"
+PKG = "com.osvauld.tinline"
 
 
 class Phone:
@@ -27,7 +27,7 @@ class Phone:
         return subprocess.run([*self.adb, *a], check=True, capture_output=True, text=True).stdout
 
     def dbg(self, cmd, **kw):
-        args = ["shell", "am", "broadcast", "-a", f"{PKG}.DEBUG", "-n", f"{PKG}/.DebugReceiver", "--es", "cmd", cmd]
+        args = ["shell", "am", "broadcast", "-a", f"{PKG}.DEBUG", "-n", f"{PKG}/com.osvauld.p2p.DebugReceiver", "--es", "cmd", cmd]
         for k, v in kw.items():
             args += ["--es", k, str(v)]
         self.sh(*args)
@@ -52,7 +52,7 @@ class Phone:
         self.sh("logcat", "-c")
         self.dbg("create", name=self.name)
         self.wait(r"created did=\S+")
-        self.sh("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+        self.sh("shell", "am", "start", "-n", f"{PKG}/com.osvauld.p2p.MainActivity")
         time.sleep(4)
         self.sh("shell", "input", "keyevent", "KEYCODE_HOME")
         self.dbg("tone", hz=self.tone)

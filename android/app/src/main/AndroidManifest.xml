@@ -19,7 +19,7 @@
 
     <application
         android:name=".P2pApp"
-        android:label="P2P"
+        android:label="Tinline"
         android:icon="@android:drawable/sym_action_call"
         android:theme="@style/Theme.P2P"
         android:allowBackup="false">

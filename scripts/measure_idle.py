@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure idle network activity (bursts ~ radio wakeups) of com.osvauld.p2p on an emulator/device.
+"""Measure idle network activity (bursts ~ radio wakeups) of com.osvauld.tinline on an emulator/device.
 
 Usage: scripts/measure_idle.py --serial emulator-5554 --minutes 30 [--doze] [--force-stop]
 
@@ -16,7 +16,7 @@ On a production phone without root only the dumpsys netstats totals are availabl
 """
 import argparse, collections, json, re, statistics, subprocess, sys, threading, time
 
-PKG = "com.osvauld.p2p"
+PKG = "com.osvauld.tinline"
 ADB = ["adb"]
 
 
@@ -37,7 +37,7 @@ def app_uid():
 
 
 def ensure_fg_service():
-    sh(f"am start -n {PKG}/.MainActivity")
+    sh(f"am start -n {PKG}/com.osvauld.p2p.MainActivity")
     time.sleep(4)
     sh("input keyevent KEYCODE_HOME")
     time.sleep(1)
