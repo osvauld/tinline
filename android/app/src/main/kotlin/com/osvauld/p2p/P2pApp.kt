@@ -89,11 +89,17 @@ class P2pApp : Application(), NodeEvents {
         val dir = filesDir.resolve("core")
         val prof = dir.resolve("profile.json")
         val bak = dir.resolve("profile.json.bak")
+        val oldDid = node.profile()?.did
         node.stop()
         if (prof.exists()) { bak.delete(); prof.renameTo(bak) }
         node = newNode()
         try {
             node.restoreIdentity(phrase, name, passphrase)
+            // The contacts in state.json belong to the locked identity; a different phrase must not
+            // inherit them.
+            if (oldDid != null && node.profile()?.did != oldDid) {
+                throw IllegalArgumentException("That recovery phrase belongs to a different identity")
+            }
             bak.delete()
             UnlockStore.clear(this)
         } catch (e: Exception) {
