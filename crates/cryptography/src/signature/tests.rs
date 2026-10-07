@@ -35,3 +35,14 @@ fn wrong_key_fails() {
     let sig = sign(&secret, b"message");
     assert!(!verify(&other_public, b"message", &sig));
 }
+
+#[test]
+fn small_order_key_is_rejected() {
+    // The identity point as a public key with R = identity, S = 0 satisfies the plain
+    // verification equation for every message; strict verification refuses the weak key.
+    let mut public = [0u8; 32];
+    public[0] = 1;
+    let mut sig = [0u8; 64];
+    sig[0] = 1;
+    assert!(!verify(&public, b"anything", &sig));
+}
