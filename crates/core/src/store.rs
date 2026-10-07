@@ -146,6 +146,10 @@ pub struct Store {
 }
 
 impl Store {
+    pub fn dir(&self) -> &Path {
+        &self.dir
+    }
+
     pub fn open(dir: impl Into<PathBuf>) -> Result<Self, Error> {
         let dir = dir.into();
         fs::create_dir_all(&dir)?;
