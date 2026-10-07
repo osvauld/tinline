@@ -153,6 +153,9 @@ fn quality(rtt_ms: u32, loss_pct: f64) -> (u8, &'static str) {
     }
 }
 
+/// Banner content: title, body, optional action, is-error.
+type Problem = (&'static str, &'static str, Option<(&'static str, Msg)>, bool);
+
 impl App {
     pub(super) fn t(&self) -> Tok {
         ui::tok(self.dark)
@@ -394,7 +397,7 @@ impl App {
 
     // ---- home ----
 
-    fn problem(&self) -> Option<(&'static str, &'static str, Option<(&'static str, Msg)>, bool)> {
+    fn problem(&self) -> Option<Problem> {
         if self.lock == LockState::Locked {
             return None;
         }
