@@ -299,3 +299,82 @@ fn alias_verified_and_safety_number() {
     b.node.add_contact(a2.node.my_ticket().unwrap()).unwrap();
     assert!(!b.node.contacts()[0].verified, "a new device must be verified again");
 }
+
+/// b is in a call with a; a and c are contacts of b.
+fn trio(tag: &str) -> (Peer, Peer, Peer, String) {
+    let (a, b) = pair(tag);
+    let c = peer(&format!("{tag}-c"));
+    c.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
+    let call = a.node.call(b.did.clone()).unwrap();
+    let inc = incoming(&b);
+    b.node.answer(inc).unwrap();
+    expect(&a, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
+    (a, b, c, call.call_id)
+}
+
+fn incoming(p: &Peer) -> String {
+    expect(p, 40, "incoming", |e| match e {
+        Ev::Incoming(c) => Some(c.call_id.clone()),
+        _ => None,
+    })
+}
+
+#[test]
+fn second_call_declined_ignored_or_answered() {
+    // Only calls that arrive during a call read this, when they start.
+    unsafe { std::env::set_var("P2P_WAITING_RING_SECS", "4") };
+    let (a, b, c, first) = trio("waiting");
+
+    // Declined: c hears busy, the a-b call is untouched.
+    let c1 = c.node.call(b.did.clone()).unwrap();
+    assert_eq!(incoming(&b), c1.call_id);
+    assert_eq!(b.node.waiting_call().unwrap().call_id, c1.call_id);
+    assert_eq!(b.node.current_call().unwrap().call_id, first);
+    // A third call while one waits is turned away busy at once.
+    let d = peer("waiting-d");
+    d.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
+    let d1 = d.node.call(b.did.clone()).unwrap();
+    assert_eq!(expect(&d, 20, "third busy", ended(&d1.call_id)), "busy");
+    b.node.decline(c1.call_id.clone()).unwrap();
+    assert_eq!(expect(&c, 10, "c busy", ended(&c1.call_id)), "busy");
+    assert_eq!(expect(&b, 10, "b ended", ended(&c1.call_id)), "declined_local");
+    assert!(b.node.waiting_call().is_none());
+    assert_eq!(b.node.current_call().unwrap().call_id, first);
+    assert!(!b.node.recent_calls(10).iter().find(|r| r.call_id == c1.call_id).unwrap().missed);
+
+    // Ignored: no_answer for c, missed for b, the call goes on.
+    let c2 = c.node.call(b.did.clone()).unwrap();
+    assert_eq!(incoming(&b), c2.call_id);
+    assert_eq!(expect(&c, 20, "c no_answer", ended(&c2.call_id)), "no_answer");
+    assert_eq!(expect(&b, 10, "b ended", ended(&c2.call_id)), "no_answer");
+    let rec = b.node.recent_calls(10).into_iter().find(|r| r.call_id == c2.call_id).unwrap();
+    assert!(rec.missed && rec.incoming);
+    assert_eq!(b.node.current_call().unwrap().call_id, first);
+
+    // End & answer: a's call ends, c's becomes the current call and goes active.
+    let c3 = c.node.call(b.did.clone()).unwrap();
+    assert_eq!(incoming(&b), c3.call_id);
+    b.node.end_and_answer(c3.call_id.clone()).unwrap();
+    assert_eq!(expect(&a, 10, "a ended", ended(&first)), "hangup_remote");
+    assert_eq!(expect(&b, 10, "b ended first", ended(&first)), "hangup_local");
+    expect(&c, 20, "c active", |e| matches!(e, Ev::State(i, CallState::Active) if *i == c3.call_id).then_some(()));
+    assert_eq!(b.node.current_call().unwrap().call_id, c3.call_id);
+    assert!(b.node.waiting_call().is_none());
+    c.node.hangup(c3.call_id.clone()).unwrap();
+    assert_eq!(expect(&b, 10, "b ended third", ended(&c3.call_id)), "hangup_remote");
+}
+
+#[test]
+fn waiting_call_rings_normally_when_the_active_call_ends() {
+    let (a, b, c, first) = trio("promote");
+    let c1 = c.node.call(b.did.clone()).unwrap();
+    assert_eq!(incoming(&b), c1.call_id);
+    a.node.hangup(first.clone()).unwrap();
+    expect(&b, 10, "b ended first", ended(&first));
+    // It is announced again as an ordinary incoming call, and can now be answered.
+    assert_eq!(incoming(&b), c1.call_id);
+    assert!(b.node.waiting_call().is_none());
+    b.node.answer(c1.call_id.clone()).unwrap();
+    expect(&c, 20, "c active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
+    c.node.hangup(c1.call_id).unwrap();
+}

@@ -6,6 +6,7 @@
 
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use bytes::Bytes;
@@ -40,6 +41,9 @@ const LINGER: Duration = Duration::from_secs(2);
 /// Longest peer-supplied reason we pass on to the UI.
 const MAX_REASON_CHARS: usize = 100;
 const RING_TIMEOUT: Duration = Duration::from_secs(60);
+/// How long a second incoming call (one that arrives during a call) waits to be answered.
+/// `P2P_WAITING_RING_SECS` overrides it, for tests.
+const WAITING_RING_TIMEOUT: Duration = Duration::from_secs(30);
 /// An active call with no media for this long shows as `reconnecting` (a path change or a
 /// network switch), well before the no-audio timeout ends it.
 const RECONNECT_AFTER: Duration = Duration::from_millis(1500);
@@ -155,6 +159,13 @@ pub struct CallStats {
     pub reconnecting: bool,
 }
 
+fn waiting_ring_timeout() -> Duration {
+    std::env::var("P2P_WAITING_RING_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .map_or(WAITING_RING_TIMEOUT, Duration::from_secs)
+}
+
 enum Cmd {
     Answer,
     Decline,
@@ -188,6 +199,11 @@ struct Call {
     /// Whether the selected path was direct when last looked at (the connection is gone by the
     /// time the call has ended).
     direct: Mutex<bool>,
+    /// An incoming call that arrived during another call and sits in `Live::waiting`, not
+    /// yet in the slot. Declining it tells the caller `Busy`.
+    waiting: AtomicBool,
+    /// "End & answer" was chosen: answer this call the moment it takes over the slot.
+    answer_on_promote: AtomicBool,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
@@ -236,6 +252,9 @@ struct Shared {
 #[derive(Default)]
 struct Live {
     call: Option<Arc<Call>>,
+    /// A second incoming call, ringing over the active one. At most one; a third is turned
+    /// away busy. Takes the slot if the active call ends first.
+    waiting: Option<Arc<Call>>,
     /// The call that held the slot before, until the next call has waited for its events to
     /// be delivered (so `Ended` always precedes the next call's `Dialing`).
     last: Option<Arc<Call>>,
@@ -629,8 +648,11 @@ impl Node {
         // way and report the failed write afterwards. (A call ending now is not logged: the
         // peer is no longer a contact.)
         let saved = self.inner.persist().and(self.inner.history.save(&self.inner.store));
-        let call = self.inner.live.lock().call.clone();
-        if let Some(call) = call.filter(|c| c.info.peer_did == did) {
+        let calls: Vec<_> = {
+            let live = self.inner.live.lock();
+            live.call.iter().chain(live.waiting.iter()).cloned().collect()
+        };
+        for call in calls.into_iter().filter(|c| c.info.peer_did == did) {
             let _ = call.cmd.send(Cmd::Hangup);
         }
         self.inner.events.on_contacts_changed();
@@ -652,6 +674,22 @@ impl Node {
 
     pub fn hangup(&self, call_id: String) -> Result<(), Error> {
         self.inner.command(&call_id, Cmd::Hangup)
+    }
+
+    /// Ends the active call (a local hangup) and answers the waiting one `call_id`, which
+    /// then becomes the current call.
+    pub fn end_and_answer(&self, call_id: String) -> Result<(), Error> {
+        let live = self.inner.live.lock();
+        let w = live.waiting.as_ref().filter(|c| c.info.call_id == call_id).ok_or(Error::NotFound)?;
+        let cur = live.call.as_ref().ok_or(Error::NotFound)?;
+        w.answer_on_promote.store(true, Ordering::SeqCst);
+        cur.cmd.send(Cmd::Hangup).map_err(|_| Error::NotFound)
+    }
+
+    /// The second incoming call ringing over the current call, if any. Declining it
+    /// (`decline`) tells its caller `busy`; ignoring it ends it with `no_answer` after 30 s.
+    pub fn waiting_call(&self) -> Option<CallInfo> {
+        self.inner.live.lock().waiting.as_ref().map(|c| c.info.clone())
     }
 
     pub fn current_call(&self) -> Option<CallInfo> {
@@ -1376,13 +1414,20 @@ impl Inner {
         self.yield_on_glare(&caller.did, me.device, remote);
         let (call, cmds) = match self.begin_call(info.clone(), CallState::Ringing, false) {
             Ok(c) => c,
-            Err(_) => {
-                self.log_refused(&info.call_id, &info.peer_did, &info.peer_name, "busy", true);
-                ctrl.send(&Msg::Busy).await?;
-                ctrl.finish();
-                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
-                return Ok(());
-            }
+            // In a call: ring quietly over it, if nothing is waiting there already.
+            Err(_) => match self.begin_waiting(info.clone()) {
+                Ok(c) => {
+                    self.log("incoming call while in a call: waiting");
+                    c
+                }
+                Err(_) => {
+                    self.log_refused(&info.call_id, &info.peer_did, &info.peer_name, "busy", true);
+                    ctrl.send(&Msg::Busy).await?;
+                    ctrl.finish();
+                    let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                    return Ok(());
+                }
+            },
         };
         // From here every exit must free the slot; the guard does it if nothing else did.
         let _slot = SlotGuard { inner: &self, call: call.clone() };
@@ -1442,13 +1487,9 @@ impl Inner {
         }
     }
 
-    /// Takes the call slot. With `announce` the first state is delivered to the UI before any
-    /// other thread can see (and end) the call, and after the previous call's events.
-    fn begin_call(
-        &self,
+    fn new_call(
         info: CallInfo,
         state: CallState,
-        announce: bool,
     ) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
         // Everything slow or fallible comes before the slot is taken.
         let sender = audio::Sender::new(48_000)?;
@@ -1457,7 +1498,7 @@ impl Inner {
         let call = Arc::new(Call {
             info,
             conn: Mutex::new(None),
-            state: Mutex::new(state.clone()),
+            state: Mutex::new(state),
             cmd: tx,
             started: Instant::now(),
             sender: Mutex::new(sender),
@@ -1472,7 +1513,21 @@ impl Inner {
             started_at: now(),
             active_at: Mutex::new(None),
             direct: Mutex::new(false),
+            waiting: AtomicBool::new(false),
+            answer_on_promote: AtomicBool::new(false),
         });
+        Ok((call, rx))
+    }
+
+    /// Takes the call slot. With `announce` the first state is delivered to the UI before any
+    /// other thread can see (and end) the call, and after the previous call's events.
+    fn begin_call(
+        &self,
+        info: CallInfo,
+        state: CallState,
+        announce: bool,
+    ) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
+        let (call, rx) = Self::new_call(info, state.clone())?;
         {
             let _first = call.notify.lock();
             let previous = {
@@ -1491,6 +1546,21 @@ impl Inner {
             }
         }
         Ok((call, rx))
+    }
+
+    /// Parks an incoming call beside the active one. Busy unless there is an answered call
+    /// and nothing already waiting.
+    fn begin_waiting(&self, info: CallInfo) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
+        let (call, rx) = Self::new_call(info, CallState::Ringing)?;
+        call.waiting.store(true, Ordering::SeqCst);
+        let mut live = self.live.lock();
+        match &live.call {
+            Some(c) if c.state() == CallState::Active && live.waiting.is_none() => {
+                live.waiting = Some(call.clone());
+                Ok((call, rx))
+            }
+            _ => Err(Error::Busy),
+        }
     }
 
     fn start_call(self: Arc<Self>, did: String) -> Result<CallInfo, Error> {
@@ -1606,7 +1676,8 @@ impl Inner {
         mut cmds: mpsc::UnboundedReceiver<Cmd>,
         incoming_from: Option<String>,
     ) {
-        let ring_deadline = tokio::time::Instant::now() + RING_TIMEOUT;
+        let ring = if call.waiting.load(Ordering::SeqCst) { waiting_ring_timeout() } else { RING_TIMEOUT };
+        let ring_deadline = tokio::time::Instant::now() + ring;
         let mut datagrams: Option<oneshot::Sender<()>> = None;
         let mut watchdog = tokio::time::interval(Duration::from_secs(5));
         watchdog.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -1640,7 +1711,8 @@ impl Inner {
                         break "unreachable".into();
                     }
                     Ok(Some(Msg::Hangup)) => {
-                        break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "declined" }.into();
+                        // A callee only hangs up unanswered when its ring timed out; a refusal is a Decline.
+                        break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "no_answer" }.into();
                     }
                     Ok(None) => break if active { "hangup_remote".into() } else { lost(false) },
                     Ok(Some(other)) => self.log(format!("ignoring {} mid-call", msg_name(&other))),
@@ -1664,7 +1736,13 @@ impl Inner {
                     // Not yet answered: the callee refusing is a decline, the caller giving up
                     // is a hangup (the callee shows it as missed).
                     Some(Cmd::Decline) | Some(Cmd::Hangup) if !active && incoming_from.is_some() => {
-                        let _ = ctrl.send(&Msg::Decline { reason: "declined".into() }).await;
+                        // Declined over another call: the caller is told we are busy.
+                        let reply = if call.waiting.load(Ordering::SeqCst) {
+                            Msg::Busy
+                        } else {
+                            Msg::Decline { reason: "declined".into() }
+                        };
+                        let _ = ctrl.send(&reply).await;
                         break "declined_local".into();
                     }
                     Some(Cmd::Decline) | Some(Cmd::Hangup) if !active => {
@@ -1777,11 +1855,20 @@ impl Inner {
         self.note_direct(call);
         let state = CallState::Ended { reason: reason.clone() };
         *call.state.lock() = state.clone();
+        // A waiting call takes over the slot when the active one ends.
+        let mut promoted = None;
         {
             let mut live = self.live.lock();
             if live.call.as_ref().is_some_and(|c| Arc::ptr_eq(c, call)) {
                 live.call = None;
                 live.last = Some(call.clone());
+                if let Some(w) = live.waiting.take() {
+                    w.waiting.store(false, Ordering::SeqCst);
+                    live.call = Some(w.clone());
+                    promoted = Some(w);
+                }
+            } else if live.waiting.as_ref().is_some_and(|c| Arc::ptr_eq(c, call)) {
+                live.waiting = None;
             }
         }
         if let Some(conn) = call.conn.lock().take() {
@@ -1790,6 +1877,18 @@ impl Inner {
         self.record_ended(call, &reason);
         self.log(format!("call {}: {state:?}", call.info.call_id));
         self.events.on_call_state(call.info.call_id.clone(), state);
+        if let Some(w) = promoted {
+            if w.answer_on_promote.load(Ordering::SeqCst) {
+                let _ = w.cmd.send(Cmd::Answer);
+            } else {
+                // Now an ordinary ringing call: the UI hears of it as a fresh incoming call.
+                let _order = w.notify.lock();
+                if !matches!(w.state(), CallState::Ended { .. }) {
+                    self.events.on_incoming_call(w.info.clone());
+                    self.events.on_call_state(w.info.call_id.clone(), CallState::Ringing);
+                }
+            }
+        }
     }
 
     /// Remembers whether the call is on a direct path while we still have its connection.
@@ -1829,7 +1928,12 @@ impl Inner {
 
     fn command(&self, call_id: &str, cmd: Cmd) -> Result<(), Error> {
         let live = self.live.lock();
-        let call = live.call.as_ref().filter(|c| c.info.call_id == call_id).ok_or(Error::NotFound)?;
+        let call = live
+            .call
+            .iter()
+            .chain(live.waiting.iter())
+            .find(|c| c.info.call_id == call_id)
+            .ok_or(Error::NotFound)?;
         call.cmd.send(cmd).map_err(|_| Error::NotFound)
     }
 
