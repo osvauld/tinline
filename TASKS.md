@@ -33,7 +33,6 @@ has re-run its acceptance command.
 | 22 | Android redesign per `docs/design/` (tokens, fonts, icon, all screens on today's API) | sonnet:android-design (worktree) | `android/` | done, merged (agent: e2e both emulators + release onboarding walk; lead: centring fix) |
 | 24 | Desktop redesign per `docs/design/Desktop*` + Tinline rename, on the new core API | sonnet:desktop (worktree), after 18 | `crates/desktop` | done, merged; lead re-ran desktop tests + desktop_e2e tone |
 | 23 | Wire 21 into the Android UI (recents, rename, verify, availability, end reasons) | sonnet:wire (worktree) | `android/` | done, merged; lead re-ran e2e_android + phone_phone |
-
 | 25 | Chat core (1:1): copied osvauld storage + sealed vault records, encrypted iroh-blobs, Loro day-shards with signed updates, files (2 GB), voice messages (hold to record), API + events, e2e_chat.py | sonnet:chat (worktree) | `crates/core`, `crates/peer`, `crates/storage`, `docs/chat.md` | in progress |
 | 26 | Chat design boards (Android chats/conversation/files+voice, desktop chat) | lead | design canvas | in progress |
 | 27 | Chat UI on Android + desktop | after 25, 26 | `android/`, `crates/desktop` | todo |
