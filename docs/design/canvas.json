@@ -12,7 +12,7 @@
     "AndroidCalls.dc.html": {
       "h": 1060,
       "title": "Android · Calls",
-      "w": 4188,
+      "w": 4648,
       "x": 0,
       "y": 8140
     },
@@ -92,6 +92,20 @@
       "w": 1760,
       "x": 0,
       "y": 0
+    },
+    "AndroidConversation.dc.html": {
+      "x": 0,
+      "y": 16380,
+      "w": 2348,
+      "h": 1060,
+      "title": "Chat · Android · Conversation"
+    },
+    "AndroidChatFiles.dc.html": {
+      "x": 0,
+      "y": 17560,
+      "w": 2348,
+      "h": 1060,
+      "title": "Chat · Android · Files & voice messages"
     }
   },
   "createdOnFiles": {
@@ -158,7 +172,9 @@
     "DesktopMain.dc.html",
     "DesktopCalls.dc.html",
     "DesktopMore.dc.html",
-    "AndroidChats.dc.html"
+    "AndroidChats.dc.html",
+    "AndroidConversation.dc.html",
+    "AndroidChatFiles.dc.html"
   ],
   "pages": [],
   "title": "Tinline app design"
