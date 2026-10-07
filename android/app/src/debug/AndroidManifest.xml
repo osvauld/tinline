@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
-        <receiver android:name=".DebugReceiver" android:exported="true">
+        <!-- DUMP: held by the adb shell, never grantable to ordinary apps, so test scripts can
+             drive this receiver but another app on the phone cannot. -->
+        <receiver
+            android:name=".DebugReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
             <intent-filter>
                 <action android:name="com.osvauld.p2p.DEBUG" />
             </intent-filter>
