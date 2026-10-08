@@ -10,6 +10,9 @@ use super::*;
 use crate::app::chat::{preview_of, Cm, SideTab, Thumb, ViewBody, COMPOSER_ID};
 use crate::media::{self, Class};
 
+/// Width of the hover actions beside a bubble: three 28 px buttons, 2 px apart.
+const ACTIONS_W: f32 = 3.0 * 28.0 + 2.0 * 2.0;
+
 fn local(ms: u64) -> Option<DateTime<Local>> {
     Local.timestamp_millis_opt(ms as i64).single()
 }
@@ -359,7 +362,8 @@ impl App {
         let open = self.chat.menu.as_ref() == Some(&m.id);
         let hot = open || self.chat.hover.as_ref() == Some(&m.id);
         let mut line = row![].spacing(6).align_y(Alignment::Start);
-        let actions: El = if hot && !m.deleted { self.hover_actions(t, m) } else { Space::new().width(0).into() };
+        // The actions' room is kept when they are hidden, so hovering never rewraps the bubble.
+        let actions: El = if hot && !m.deleted { self.hover_actions(t, m) } else { Space::new().width(ACTIONS_W).into() };
         if m.outgoing {
             line = line.push(Space::new().width(Fill)).push(actions).push(bubble);
         } else {
