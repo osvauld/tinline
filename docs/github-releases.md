@@ -63,6 +63,7 @@ The Ubuntu-built tarball must also be tested on current Arch before publishing
 `tinline-bin` to AUR. Resolve all dynamic dependencies and replace the AUR checksum
 placeholder with a real checksum, then regenerate `.SRCINFO`.
 
-Publishing the draft makes it visible on GitHub Releases. This workflow does not
-publish to R2, sign APT metadata, submit to AUR, or upload to Play. Those are separate
-steps after release verification. No Cloudflare/GPG/AUR secrets are needed yet.
+Publishing the draft makes it visible on GitHub Releases and triggers the separate
+`Publish release to R2` workflow. Configure its Cloudflare and APT signing credentials
+before publishing; see [R2 publishing](r2-publishing.md). AUR submission and Play
+uploads remain separate.
