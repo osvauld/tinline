@@ -53,7 +53,7 @@ class Serve:
         e = dict(os.environ)
         e.update(env or {})
         self.p = subprocess.Popen([str(PEER), "--data", str(data), "chat-serve"], env=e, text=True,
-                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=1)
+                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=open(str(data) + ".err", "a"), bufsize=1)
         self.lines = []
         self.lock = threading.Lock()
         threading.Thread(target=self._read, daemon=True).start()
@@ -156,9 +156,15 @@ def main():
             run(tmp / n, "init", n, env=env)
         t = run(tmp / "alice", "ticket", env=env).stdout.strip()
         c.ok("alice ticket", t.startswith("OSVC2:"))
-        c.ok("bob adds alice", "added" in run(tmp / "bob", "add", t, env=env).stdout)
-        t = run(tmp / "alice", "ticket", env=env).stdout.strip()
-        c.ok("carol adds alice", "added" in run(tmp / "carol", "add", t, env=env).stdout)
+        for joiner in ("bob", "carol"):
+            # The ticket owner has to be online while the joiner redeems it.
+            lis = subprocess.Popen([str(PEER), "--data", str(tmp / "alice"), "listen", "--for", "40"], env=env,
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(3)
+            c.ok(f"{joiner} adds alice", "added" in run(tmp / joiner, "add", t, env=env).stdout)
+            lis.kill()
+            lis.wait()
+            t = run(tmp / "alice", "ticket", env=env).stdout.strip()
 
         alice = Serve(tmp / "alice")
         bob = Serve(tmp / "bob")
@@ -229,9 +235,9 @@ def main():
                 f.write(hashlib.sha256(str(i).encode()).digest() * 32768)
         sha = hashlib.sha256(big.read_bytes()).hexdigest()
         t0 = time.time()
+        mark = bob.mark()
         out = alice.cmd(f"file bob {big}", timeout=300)
         fid = out[-1].split()[-1]
-        mark = bob.mark()
         got = bob.wait_line(rf"CHAT added id={fid}.*state=(Remote|Downloading)", 30, mark)
         c.ok("50 MB file is offered, not auto-downloaded", got is not None, str(got)[:120])
         saved = tmp / "big.out"
@@ -241,7 +247,7 @@ def main():
         small = tmp / "small.txt"
         small.write_text("hello file " * 100)
         sid = alice.cmd(f"file bob {small}")[-1].split()[-1]
-        ok = until(lambda: any(m["id"] == sid and "state=Ready" in str(m) for m in bob.listing("alice")[1]), 15)
+        ok = until(lambda: any(m["id"] == sid and m.get("state") == "Ready" for m in bob.listing("alice")[1]), 15)
         c.ok("small file auto-downloads", bool(ok))
         bob.cmd(f"get alice {sid} {tmp / 'small.out'}")
         c.ok("small file identical", (tmp / "small.out").read_text() == small.read_text())
@@ -250,7 +256,7 @@ def main():
         voice = tmp / "voice.ogg"
         voice.write_bytes(b"OggS" + os.urandom(20000))
         vid = alice.cmd(f"voice bob {voice} 4200")[-1].split()[-1]
-        ok = until(lambda: any(m["id"] == vid and "kind=Voice" in str(m) and "state=Ready" in str(m) for m in bob.listing("alice")[1]), 15)
+        ok = until(lambda: any(m["id"] == vid and m.get("kind") == "Voice" and m.get("state") == "Ready" for m in bob.listing("alice")[1]), 15)
         c.ok("voice message arrives as Voice and downloads", bool(ok))
         bob.cmd(f"get alice {vid} {tmp / 'voice.out'}")
         c.ok("voice blob identical", (tmp / "voice.out").read_bytes() == voice.read_bytes())
@@ -258,7 +264,7 @@ def main():
         # ---- a contact that is not a party cannot fetch the blob ------------------------------------------------
         lst = alice.listing("bob")[1]
         fmsg = [m for m in lst if m["id"] == fid][0]
-        h = re.search(r"hash=(\w+)", str(fmsg)).group(1)
+        h = fmsg["hash"]
         carol = run(tmp / "carol", "blob-fetch", "alice", h, 50 * 1024 * 1024, env=env)
         c.ok("non-party contact cannot fetch the blob", carol.returncode != 0 or "RESULT fetched=false" in carol.stdout,
              (carol.stdout + carol.stderr).strip()[-160:])
@@ -293,6 +299,14 @@ def main():
         yday = datetime.fromtimestamp(time.time() + day_noon_offset(1) / 1000, timezone.utc).strftime("%Y-%m-%d")
         ok = until(lambda: "c6-yesterday" in bob.texts("alice", yday), 20)
         c.ok("C6 yesterday's shard synced as its own day", bool(ok))
+        # A fresh install of bob (chat data gone): the last 7 days sync, older ones are asked for.
+        bob.quit(); live.remove(bob)
+        (tmp / "bob" / "chat.redb").unlink()
+        shutil.rmtree(tmp / "bob" / "blobs", ignore_errors=True)
+        bob = Serve(tmp / "bob")
+        live.append(bob)
+        ok = until(lambda: "c6-yesterday" in bob.texts("alice", yday) and "c6-today" in bob.texts("alice"), 30)
+        c.ok("C6 fresh install pulls today and yesterday by itself", bool(ok))
         tenth = datetime.fromtimestamp(time.time() + day_noon_offset(10) / 1000, timezone.utc).strftime("%Y-%m-%d")
         c.ok("C6 ten-day-old shard not pulled yet", "c6-ten-days-ago" not in bob.texts("alice", tenth))
         r = bob.cmd(f"history alice {yday}")

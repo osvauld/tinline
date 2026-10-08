@@ -42,12 +42,14 @@ pub struct ChatCore {
     sessions: Mutex<HashMap<String, Arc<Session>>>,
     dialing: Mutex<HashSet<String>>,
     downloading: Mutex<HashMap<String, (u64, u64)>>,
+    pulling: Mutex<HashSet<(String, String)>>,
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
 }
 
 pub enum Cmd {
     Push(String),
+    Ack(String),
     History(String, u32),
     Close,
 }
@@ -135,6 +137,7 @@ impl Inner {
             sessions: Default::default(),
             dialing: Default::default(),
             downloading: Default::default(),
+            pulling: Default::default(),
             dial_sem: Arc::new(Semaphore::new(4)),
             next_session: AtomicU64::new(1),
         });
@@ -462,6 +465,15 @@ impl Inner {
                                 break 'run e.to_string();
                             }
                         }
+                        Some(Cmd::Ack(day)) => {
+                            let me = match self.me() { Ok(m) => m, Err(e) => break 'run e.to_string() };
+                            let pair = pair_id(me.id.did(), &sess.did);
+                            if let Ok(Some(meta)) = core.store.shard_meta(&pair, &day)
+                                && let Err(e) = writer.send(&ChatMsg::Ack { doc: doc_name(&pair, &day), vv: meta.vv }).await
+                            {
+                                break 'run e.to_string();
+                            }
+                        }
                         Some(Cmd::History(before, limit)) => {
                             if let Err(e) = writer.send(&ChatMsg::HistoryReq { before, limit }).await {
                                 break 'run e.to_string();
@@ -722,7 +734,8 @@ impl Inner {
         self.chat_shard(core, me, &pair, &day).await?;
         let mut added_files = Vec::new();
         let mut unchanged: Option<VersionVector> = None;
-        let (vv_now, notify) = {
+        let mut need_history = false;
+        let (vv_now, notify) = 'blk: {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
@@ -733,10 +746,20 @@ impl Inner {
                 live,
                 history: None,
             };
-            let applied = shard.apply_remote(update, &ctx).map_err(|r| {
-                self.log(format!("rejected chat batch from {}: {r}", sess.did));
-                Error::Protocol(format!("rejected batch: {r}"))
-            })?;
+            let applied = match shard.apply_remote(update, &ctx) {
+                Ok(a) => a,
+                // Their ops build on ops of ours that we lost (a reinstall): the batch cannot
+                // be judged on its own. Ask them for the day as a vouched snapshot instead.
+                Err(Reject::Pending) => {
+                    need_history = true;
+                    unchanged = Some(shard.vv());
+                    break 'blk (shard.vv(), (Vec::new(), ConvMeta::default()));
+                }
+                Err(r) => {
+                    self.log(format!("rejected chat batch from {}: {r}", sess.did));
+                    return Err(Error::Protocol(format!("rejected batch: {r}")));
+                }
+            };
             if shard.vv() == before {
                 unchanged = Some(shard.vv());
                 (shard.vv(), (Vec::new(), ConvMeta::default()))
@@ -766,6 +789,10 @@ impl Inner {
             (shard.vv(), (owned, conv))
             }
         };
+        if need_history {
+            self.chat_pull_day(core, me, sess, &day);
+            return Ok(());
+        }
         if unchanged.is_some() {
             let _ = writer.send(&ChatMsg::Ack { doc: doc.to_string(), vv: vv_now.encode() }).await;
             return Ok(());
@@ -1487,47 +1514,87 @@ impl Inner {
             if !day_valid(&d.day) || core.store.shard_meta(&pair, &d.day)?.is_some() {
                 continue;
             }
-            let (hash, key) = (parse_hash(&d.hash)?, parse_key(&d.key)?);
-            if d.size == 0 || d.size > 64 * 1024 * 1024 {
-                continue;
-            }
-            let conn = self.chat_blob_conn(&core, did).await?;
-            hub.fetch(conn, hash, d.size, |_, _| {}).await?;
-            let ct = hub.read_cipher(&hash).await?;
-            let snap = tokio::task::spawn_blocking(move || crypt::decrypt_bytes(&key, &ct))
-                .await
-                .map_err(|e| Error::Io(e.to_string()))?
-                .map_err(|e| Error::Io(e.to_string()))?;
-            let _ = hub.release(&hash).await;
-            if self.chat_apply_history(&core, &me, &sess, &pair, &d.day, &snap)? {
+            if self.chat_import_day(&core, &me, &sess, &pair, d).await? {
                 added += 1;
             }
         }
         Ok(added)
     }
 
-    /// A peer-vouched snapshot of a day we hold nothing of: validated like a batch, then stored.
+    /// A peer-vouched snapshot of a day (see `Ctx::history`): validated like a batch, merged
+    /// into whatever we hold of that day, stored as the new snapshot. The shard must be loaded.
     fn chat_apply_history(&self, core: &ChatCore, me: &Me, sess: &Session, pair: &str, day: &str, snap: &[u8]) -> Result<bool, Error> {
-        let mut shard = Shard::new(pair, day, &me.device);
+        let mut shards = core.shards.lock();
+        let shard = shards.get_mut(&(pair.to_string(), day.to_string())).ok_or(Error::NotFound)?;
+        let before = shard.vv();
         let ctx = Ctx { signer_did: sess.did.clone(), signer_peer: 0, now_ms: now_ms(), live: false, history: Some(me.id.did().to_string()) };
-        let applied = shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
-        let msgs = shard.messages().map_err(|e| Error::Io(e.to_string()))?;
-        if msgs.is_empty() {
+        shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
+        if shard.vv() == before {
             return Ok(false);
         }
+        let msgs = shard.messages().map_err(|e| Error::Io(e.to_string()))?;
         let mut ops = Vec::new();
         for rec in msgs.values() {
             ops.push(core.store.mi_op(pair, &rec.id, day)?);
             let (o, _) = self.chat_register_file(core, pair, day, rec, rec.author != me.id.did())?;
             ops.extend(o);
         }
-        let _ = applied;
         let meta = ShardMeta { vv: shard.vv().encode(), next_seq: 0, n_updates: 0, n_messages: msgs.len() as u32, closed: None };
         ops.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
         ops.push(core.store.put_meta_op(pair, day, &meta)?);
-        // Their messages in there count as delivered both ways: nothing of ours is outstanding.
+        // The last-message row may need to move.
+        let recs: Vec<(&MsgRec, bool)> = msgs.values().map(|r| (r, false)).collect();
+        let (cops, _) = self.chat_conv_ops(core, me, &sess.did, pair, &recs, 0)?;
+        ops.extend(cops);
         core.store.db.apply(&ops).map_err(io)?;
         Ok(true)
+    }
+
+    /// Pulls one day from the peer as a vouched snapshot (in the background: the session task
+    /// must stay free to read the answer).
+    fn chat_pull_day(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, sess: &Arc<Session>, day: &str) {
+        let key = (pair_id(me.id.did(), &sess.did), day.to_string());
+        if !core.pulling.lock().insert(key.clone()) {
+            return;
+        }
+        let (this, core, me, sess) = (self.clone(), core.clone(), me.clone(), sess.clone());
+        self.handle.spawn(async move {
+            let res: Result<(), Error> = async {
+                let upto = day_of(day_start(&key.1).ok_or(Error::NotFound)? + DAY_MS + HOUR_MS);
+                let (tx, rx) = oneshot::channel();
+                *sess.hist.lock() = Some(tx);
+                sess.tx.send(Cmd::History(upto, 1)).map_err(|_| Error::Net("session closed".into()))?;
+                let days = tokio::time::timeout(Duration::from_secs(30), rx).await.map_err(|_| Error::Timeout)?.map_err(|_| Error::Net("session closed".into()))?;
+                let Some(d) = days.into_iter().find(|d| d.day == key.1) else { return Ok(()) };
+                this.chat_import_day(&core, &me, &sess, &key.0, d).await?;
+                let _ = sess.tx.send(Cmd::Ack(key.1.clone()));
+                Ok(())
+            }
+            .await;
+            if let Err(e) = res {
+                this.log(format!("pulling {} from {}: {e}", key.1, sess.did));
+            }
+            core.pulling.lock().remove(&key);
+        });
+    }
+
+    /// Fetches the snapshot blob `d` names from the peer and merges it (`chat_apply_history`).
+    async fn chat_import_day(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, sess: &Arc<Session>, pair: &str, d: HistDay) -> Result<bool, Error> {
+        if !day_valid(&d.day) || d.size == 0 || d.size > 64 * 1024 * 1024 {
+            return Ok(false);
+        }
+        let (hash, key) = (parse_hash(&d.hash)?, parse_key(&d.key)?);
+        let hub = self.chat_hub().await?;
+        let conn = self.chat_blob_conn(core, &sess.did).await?;
+        hub.fetch(conn, hash, d.size, |_, _| {}).await?;
+        let ct = hub.read_cipher(&hash).await?;
+        let snap = tokio::task::spawn_blocking(move || crypt::decrypt_bytes(&key, &ct))
+            .await
+            .map_err(|e| Error::Io(e.to_string()))?
+            .map_err(|e| Error::Io(e.to_string()))?;
+        let _ = hub.release(&hash).await;
+        self.chat_shard(core, me, pair, &d.day).await?;
+        self.chat_apply_history(core, me, sess, pair, &d.day, &snap)
     }
 
     /// Days at least `CLOSE_AFTER_DAYS` old become one encrypted snapshot blob each.
