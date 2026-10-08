@@ -152,10 +152,10 @@ Tickets are single-use via the redeemed-nonce set and also expire.
 | `declined` | Caller's view: the callee declined |
 | `declined_local` | Callee's view: we declined (not a missed call) |
 | `cancelled` | Callee's view: the caller gave up (or the link died) before we answered: missed. Caller's view: we hung up before they answered |
-| `no_answer` | Rang for 60 s, nobody answered (either side; missed on the callee) |
+| `no_answer` | Rang for 60 s (30 s for a call waiting over another call), nobody answered (either side; missed on the callee) |
 | `unreachable` | Caller's view: could not connect, or they refused (offline, blocked, or unavailable) |
 | `connection_lost` | Active call lost the connection or media for 30 s |
-| `busy` | Caller's view: callee is in another call. Callee's history: missed while busy |
+| `busy` | Caller's view: callee declined while in another call, or was already handling two calls. Callee's history: missed while busy |
 | `unavailable` | History only (callee): turned away while unavailable; `missed` is false; never an `Ended` event |
 | `superseded` | Our outgoing call yielded to their simultaneous call; not logged |
 
@@ -164,6 +164,23 @@ Old strings: `hung up` -> `hangup_local`/`hangup_remote`; `missed` -> `cancelled
 `could not reach <name>: <err>`, `rejected: <text>` -> `unreachable`; `connection lost: <err>`,
 `no audio` -> `connection_lost`; `no answer` -> `no_answer`; `ended` -> varies;
 `they called at the same time` -> `superseded`.
+
+## A second call during a call
+
+There is no hold. When a call arrives while another is active and nothing else is waiting, the
+callee parks it beside the active call (`Node::waiting_call`) and the UI shows a banner with a
+quiet tone; the active call's audio is untouched. A third call is answered `Busy` at once.
+
+- **Decline** (`decline`): the callee sends `Busy`, so the caller ends with `busy`; the callee
+  logs `declined_local`.
+- **End & answer** (`end_and_answer`): the active call ends `hangup_local`, then the waiting call
+  takes the slot and is answered.
+- **Ignored**: after 30 s (`P2P_WAITING_RING_SECS` in tests) the callee hangs up, the caller ends
+  `no_answer` and the callee logs a missed call.
+- If the active call ends first, the waiting call becomes an ordinary ringing call
+  (`on_incoming_call` again).
+
+`scripts/e2e_callwait.py` runs all three with headless peers.
 
 ## Known gaps
 
