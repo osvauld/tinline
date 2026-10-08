@@ -17,7 +17,7 @@ android {
         targetSdk = 36
         // Play needs a higher code on every upload; scripts/build_android.py --bundle passes the commit count.
         versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
-        versionName = "0.1.0"
+        versionName = (findProperty("versionName") as String?) ?: "0.1.0"
         // Only ship ABIs that have libp2pcore: libraries like JNA bring 32-bit/mips copies, which
         // would make Play offer the app to devices where the core can't load.
         ndk { abiFilters += (findProperty("abis") as String? ?: "x86_64,arm64-v8a").split(",").map { it.trim() } }
@@ -26,6 +26,10 @@ android {
     // RELEASE_KEY_PASSWORD in ~/.gradle/gradle.properties (or -P). Without them the release build
     // is signed with the DEBUG key so it can be installed locally for testing -- NOT publishable.
     val relStore = findProperty("RELEASE_STORE_FILE") as String?
+    if ((findProperty("requireReleaseSigning") as String?) == "true") {
+        listOf("RELEASE_STORE_FILE", "RELEASE_STORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD")
+            .forEach { if ((findProperty(it) as String?).isNullOrBlank()) throw GradleException("Missing release signing property: $it") }
+    }
     signingConfigs {
         if (relStore != null) create("release") {
             storeFile = file(relStore)
@@ -107,7 +111,7 @@ val cargoNdkBuild = tasks.register<RustExec>("cargoNdkBuild") {
     cmd.set(buildList {
         add("cargo"); add("ndk")
         rustAbis.forEach { add("-t"); add(it) }
-        addAll(listOf("-P", "28", "-o", jniOut.get().asFile.absolutePath, "build", "-p", "p2pcore"))
+        addAll(listOf("-P", "28", "-o", jniOut.get().asFile.absolutePath, "build", "--locked", "-p", "p2pcore"))
         if (rustRelease) add("--release")
     })
     inputs.files(rustInputs).withPropertyName("rustSources").withPathSensitivity(PathSensitivity.RELATIVE)
@@ -123,7 +127,7 @@ val uniffiBindgen = tasks.register<RustExec>("uniffiBindgen") {
     workDir.set(repoRoot.absolutePath)
     extraEnv.set(envMap)
     val so = File(repoRoot, "target/x86_64-linux-android/$profileDir/libp2pcore.so")
-    cmd.set(listOf("cargo", "run", "-q", "-p", "p2pcore", "--bin", "uniffi-bindgen", "--",
+    cmd.set(listOf("cargo", "run", "--locked", "-q", "-p", "p2pcore", "--bin", "uniffi-bindgen", "--",
         "generate", "--library", so.absolutePath, "--language", "kotlin",
         "--out-dir", uniffiOut.get().asFile.absolutePath))
     inputs.files(rustInputs).withPropertyName("rustSources").withPathSensitivity(PathSensitivity.RELATIVE)

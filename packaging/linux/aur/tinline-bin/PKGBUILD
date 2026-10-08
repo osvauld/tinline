@@ -1,0 +1,21 @@
+# Maintainer: Osvauld <contact@osvauld.com>
+pkgname=tinline-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Peer-to-peer voice calls and 1:1 chat"
+arch=('x86_64')
+url="https://tinline.osvauld.com"
+license=('GPL-3.0-or-later')
+depends=('gtk3' 'alsa-lib' 'libxkbcommon' 'libxcb' 'libsecret' 'xdg-desktop-portal')
+provides=('tinline')
+conflicts=('tinline')
+source_x86_64=("https://repo.osvauld.com/releases/v${pkgver}/tinline-v${pkgver}-x86_64-linux.tar.gz")
+sha256sums_x86_64=('SKIP')
+
+package() {
+  local srcdir_name="tinline-${pkgver}-x86_64-linux"
+  install -Dm755 "${srcdir}/${srcdir_name}/bin/tinline" "${pkgdir}/usr/bin/tinline"
+  install -Dm644 "${srcdir}/${srcdir_name}/share/applications/tinline.desktop" "${pkgdir}/usr/share/applications/tinline.desktop"
+  install -Dm644 "${srcdir}/${srcdir_name}/share/icons/hicolor/512x512/apps/tinline.png" "${pkgdir}/usr/share/icons/hicolor/512x512/apps/tinline.png"
+  install -Dm644 "${srcdir}/${srcdir_name}/LICENSE" "${pkgdir}/usr/share/licenses/tinline/LICENSE"
+}

@@ -1,0 +1,19 @@
+pkgbase = tinline-bin
+	pkgdesc = Peer-to-peer voice calls and 1:1 chat
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://tinline.osvauld.com
+	arch = x86_64
+	license = GPL-3.0-or-later
+	depends = gtk3
+	depends = alsa-lib
+	depends = libxkbcommon
+	depends = libxcb
+	depends = libsecret
+	depends = xdg-desktop-portal
+	provides = tinline
+	conflicts = tinline
+	source_x86_64 = https://repo.osvauld.com/releases/v0.1.0/tinline-v0.1.0-x86_64-linux.tar.gz
+	sha256sums_x86_64 = SKIP
+
+pkgname = tinline-bin
