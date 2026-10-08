@@ -8,9 +8,11 @@ mod logging;
 mod node;
 mod store;
 mod vault;
+mod voice;
 mod wire;
 
 pub use error::Error;
+pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use store::CallRecord;
 pub use node::{Availability, CallInfo, CallState, CallStats, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
 

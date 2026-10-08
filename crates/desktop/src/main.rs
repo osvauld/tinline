@@ -23,6 +23,8 @@ mod reason;
 mod single;
 mod tray;
 mod ui;
+#[allow(dead_code)]
+mod voice;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
