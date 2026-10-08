@@ -332,7 +332,7 @@ def main():
     if not args.skip_unit:
         # C5: the forged-batch rules are unit tests (peer id, author, third-device signature, ...).
         r = subprocess.run([sys.executable, str(ROOT / "scripts/buildlock.py"), "--who", "chat", "--", "cargo", "test", "--release", "-p", "p2pcore",
-                            "forged", "batch_signatures"], cwd=ROOT, capture_output=True, text=True)
+                            "--", "forged", "batch_signatures"], cwd=ROOT, capture_output=True, text=True)
         c.ok("C5 forged batches rejected and not stored (unit tests)", r.returncode == 0, r.stdout[-200:] if r.returncode else "")
     print("FAILED" if c.failed else "ALL PASSED", c.failed)
     return 1 if c.failed else 0
