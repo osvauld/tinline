@@ -3,6 +3,7 @@ name: Release builds
 on:
   workflow_dispatch:
   push:
+    branches: ['release/linux-android-packaging']
     tags: ['v*']
 
 permissions:

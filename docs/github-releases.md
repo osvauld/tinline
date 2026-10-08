@@ -16,7 +16,10 @@ runs produce Actions artifacts without creating a GitHub release.
    - `ANDROID_STORE_PASSWORD`
    - `ANDROID_KEY_ALIAS`
    - `ANDROID_KEY_PASSWORD`
-4. Run Actions → Release builds → Run workflow on the trusted branch first.
+4. Before merging, push `release/linux-android-packaging` to trigger both builds.
+   Allow that trusted branch in the `release` environment deployment rules and
+   approve the job if required. Branch builds upload artifacts only, not releases.
+   After merging into the default branch, manual Run workflow is also available.
 
 Do not paste secrets into chat, commit them, or include signing keys in artifacts.
 Base64 is encoding, not encryption. Keep an encrypted backup of the signing key
