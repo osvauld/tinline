@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, Sample, SampleFormat, SizedSample, Stream, StreamConfig};
-use iced::widget::{button, canvas, container, row, svg, text, Space};
+use iced::widget::{button, canvas, container, row, text, Space};
 use iced::{Alignment, Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 use p2pcore::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 use rtrb::RingBuffer;
@@ -363,14 +363,9 @@ pub fn clock(ms: u32) -> String {
     format!("{}:{:02}", s / 60, s % 60)
 }
 
-fn glyph<'a, M: 'a>(body: &str, size: f32, color: Color, fill: bool) -> Element<'a, M> {
-    let paint = if fill { r##"fill="#000" stroke="none""## } else { r##"fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round""## };
-    let markup = format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {paint}>{body}</svg>"#);
-    svg(svg::Handle::from_memory(markup.into_bytes()))
-        .width(Length::Fixed(size))
-        .height(Length::Fixed(size))
-        .style(move |_: &Theme, _| svg::Style { color: Some(color) })
-        .into()
+fn glyph<'a, M: 'a>(body: &'static str, size: f32, color: Color, fill: bool) -> Element<'a, M> {
+    let paint = if fill { r##"fill="#000" stroke="none""## } else { ui::STROKE };
+    ui::glyph(paint, body, size, color)
 }
 
 /// What the bubble shows. `position_ms` is `None` before the first play.

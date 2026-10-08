@@ -20,6 +20,7 @@ pub(crate) use tlog;
 mod app;
 mod audio;
 mod keystore;
+mod raise;
 mod media;
 mod reason;
 mod single;
@@ -45,6 +46,8 @@ pub enum Ev {
     /// Audio device trouble worth telling the user about.
     AudioNotice(String),
     Chat(ChatEv),
+    /// A notification was clicked.
+    Open(app::Target),
 }
 
 /// What the core's `ChatEvents` report, as plain data for the UI loop.
