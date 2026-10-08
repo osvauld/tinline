@@ -100,6 +100,8 @@ fun ConversationScreen(
     var editing by remember { mutableStateOf(preview?.editing) }
     var replying by remember { mutableStateOf(preview?.replying) }
     var viewer by remember { mutableStateOf(preview?.viewer) }
+    var docViewer by remember { mutableStateOf<String?>(null) }
+    val brokenImages = remember { mutableStateListOf<String>() }
     val first = firstName(name)
 
     fun toast(t: String) = Toast.makeText(ctx, t, Toast.LENGTH_SHORT).show()
@@ -211,6 +213,19 @@ fun ConversationScreen(
         }
     }
 
+    fun openFile(m: Message) {
+        val a = m.attachment ?: return
+        val plan = FileOpen.plan(a.name, a.mime)
+        when (plan.kind) {
+            OpenKind.NONE -> saveToPhone(m)
+            OpenKind.PDF, OpenKind.TEXT -> docViewer = m.id
+            OpenKind.EXTERNAL -> scope.launch(Dispatchers.IO) {
+                val ok = runCatching { FileOpen.openExternally(ctx, ChatMedia.decrypt(ctx, source, m), plan.mime) }.getOrDefault(false)
+                if (!ok) withContext(Dispatchers.Main) { toast("No app on this phone opens .${FileOpen.extOf(a.name)} files — Save it instead") }
+            }
+        }
+    }
+
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { sendUri(it) }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { sendUri(it) }
     var cameraFile by remember { mutableStateOf<File?>(null) }
@@ -248,6 +263,7 @@ fun ConversationScreen(
                             selected = actionsFor == r.m.id,
                             onLong = { if (!r.m.deleted) actionsFor = r.m.id },
                             onDownload = { download(r.m) }, onOpenPhoto = { viewer = r.m.id }, onSaveFile = { saveToPhone(r.m) },
+                            onOpenFile = { openFile(r.m) }, broken = r.m.id in brokenImages, onBroken = { if (r.m.id !in brokenImages) brokenImages.add(r.m.id) },
                         )
                     }
                 }
@@ -276,6 +292,10 @@ fun ConversationScreen(
                 onVoice = { path, ms, wave -> scope.launch(Dispatchers.IO) { runCatching { source.sendVoice(peerDid, path, ms, wave) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m) } }.onFailure { withContext(Dispatchers.Main) { toast("Couldn’t send that voice message.") } } } },
             )
         }
+        val dm = docViewer?.let { byId[it] }
+        if (dm != null) FileViewer(dm, FileOpen.plan(dm.attachment?.name ?: "", dm.attachment?.mime ?: ""), source, onClose = { docViewer = null }, onSave = { saveToPhone(dm) }, onShare = {
+            scope.launch(Dispatchers.IO) { runCatching { ChatMedia.share(ctx, ChatMedia.decrypt(ctx, source, dm), dm.attachment?.mime ?: "*/*") } }
+        })
         val vm = viewer?.let { byId[it] }
         if (vm != null) PhotoViewer(vm, name, source, onClose = { viewer = null }, onSave = { saveToPhone(vm) }, onShare = {
             scope.launch(Dispatchers.IO) { runCatching { ChatMedia.share(ctx, ChatMedia.decrypt(ctx, source, vm), vm.attachment?.mime ?: "image/*") } }
@@ -380,6 +400,7 @@ private fun Bubble(
     m: Message, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: List<String>,
     byId: Map<String, Message>, source: ChatSource, selected: Boolean,
     onLong: () -> Unit, onDownload: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
+    onOpenFile: () -> Unit, broken: Boolean, onBroken: () -> Unit,
 ) {
     val c = Tin.c
     val out = m.outgoing
@@ -396,7 +417,7 @@ private fun Bubble(
             return@Box
         }
         val a = m.attachment
-        val photo = a != null && a.isImage()
+        val photo = a != null && a.isImage() && !broken
         val prog = a?.let { progress[it.hash] }
         val tick = if (out) tickOf(m, link, online, nowMs) else null
         val bg = if (out) c.prc else c.sf
@@ -419,8 +440,8 @@ private fun Bubble(
             }
             if (a != null) when {
                 a.kind == AttachmentKind.VOICE -> VoiceBubble(m, a, a.state == TransferState.READY || out, out, source, onDownload)
-                photo -> PhotoBox(m, a, out, prog, link, source, onDownload, onOpenPhoto)
-                else -> FileRow(m, a, out, prog, link, first, m.id in requested, onDownload, onSaveFile)
+                photo -> PhotoBox(m, a, out, prog, link, source, onDownload, onOpenPhoto, onBroken)
+                else -> FileRow(a, out, prog, link, first, m.id in requested, onDownload, onSaveFile, onOpenFile, onLong)
             }
             if (m.text.isNotBlank()) Text(m.text, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
             val at = msClock(m.at.toLong())
@@ -450,12 +471,14 @@ private fun Meta(text: String, tick: Tick?, color: Color, hPad: androidx.compose
 }
 
 @Composable
-private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, source: ChatSource, onDownload: () -> Unit, onOpen: () -> Unit) {
+private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, source: ChatSource, onDownload: () -> Unit, onOpen: () -> Unit, onBroken: () -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
     val ready = a.state == TransferState.READY || out
     val bmp by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, m.id, ready) {
         value = if (!ready) null else withContext(Dispatchers.IO) { runCatching { ChatMedia.bitmap(ChatMedia.decrypt(ctx, source, m), 720) }.getOrNull() }
+        // Ready but undecodable (odd GIF/WebP/HEIC): fall back to a file bubble with Open/Save.
+        if (ready && value == null) onBroken()
     }
     Box(Modifier.size(240.dp, 180.dp).clip(RoundedCornerShape(12.dp)).background(c.sf3).clickable(role = Role.Button) { if (ready && bmp != null) onOpen() else if (!ready) onDownload() }, contentAlignment = Alignment.Center) {
         bmp?.let { Image(it, a.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
@@ -473,17 +496,20 @@ private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, L
 @Composable
 private fun Ring(content: @Composable BoxScope.() -> Unit) =
     Box(Modifier.size(56.dp).clip(CircleShape).background(Color(0x8C0F1513)), contentAlignment = Alignment.Center, content = content)
-
 @Composable
-private fun FileRow(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, first: String, asked: Boolean, onDownload: () -> Unit, onSave: () -> Unit) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, first: String, asked: Boolean, onDownload: () -> Unit, onSave: () -> Unit, onOpen: () -> Unit, onLong: () -> Unit) {
     val c = Tin.c
     val ready = a.state == TransferState.READY || out
     val size = sizeText(a.size.toLong())
     val frac = prog?.let { if (it.second > 0) it.first.toFloat() / it.second else 0f }
         ?: if (a.state == TransferState.DOWNLOADING && a.size > 0UL) a.transferred.toFloat() / a.size.toFloat() else null
     val paused = link == Link.Offline
+    val canOpen = FileOpen.plan(a.name, a.mime).kind != OpenKind.NONE
     val sub = when {
-        ready -> "$size · ${typeLabel(a)}"
+        ready && canOpen -> "$size · ${typeLabel(a)} · tap to open"
+        ready -> "$size · ${typeLabel(a)} · tap to save"
         a.state == TransferState.DOWNLOADING && !paused -> "Downloading · ${sizeText((frac ?: 0f).times(a.size.toLong()).toLong())} of $size"
         (a.state == TransferState.DOWNLOADING || asked) && paused -> "$size · paused — waiting for $first to come online"
         asked -> "$size · starting…"
@@ -492,7 +518,7 @@ private fun FileRow(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, Lo
     }
     val canDownload = !ready && (a.state == TransferState.REMOTE || a.state == TransferState.FAILED) && !asked
     Row(
-        Modifier.widthIn(min = 240.dp).clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button) { if (ready) onSave() else if (canDownload) onDownload() },
+        Modifier.widthIn(min = 240.dp).clip(RoundedCornerShape(8.dp)).combinedClickable(role = Role.Button, onLongClick = onLong) { if (ready) (if (canOpen) onOpen() else onSave()) else if (canDownload) onDownload() },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (out) Color.White.copy(alpha = .55f) else c.sf2), contentAlignment = Alignment.Center) {
@@ -506,6 +532,7 @@ private fun FileRow(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, Lo
             }
         }
         if (canDownload && a.state == TransferState.REMOTE) IconBtn(Icons.Rounded.Download, "Download ${a.name}", onDownload, tint = c.pr)
+        if (ready && canOpen) IconBtn(Icons.Rounded.SaveAlt, "Save ${a.name} to phone", onSave, tint = if (out) c.onPrc else c.ink2)
     }
 }
 
