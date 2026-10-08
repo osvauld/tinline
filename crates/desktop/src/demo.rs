@@ -163,6 +163,72 @@ impl App {
                     at: Instant::now() + Duration::from_secs(3600),
                 });
             }
+            n if n.starts_with("chat") => {
+                use chat::chat_fake::Fake;
+                use p2pcore::TransferState;
+                let f = Arc::new(Fake::new(Some(INIT.get().unwrap().tx.clone())));
+                self.chat.fake = Some(f.clone());
+                self.chat.tab = chat::SideTab::Chats;
+                let mut rows = f.chats(contacts.clone()).unwrap_or_default();
+                for r in rows.iter_mut() {
+                    r.unread = match r.peer_did.as_str() {
+                        "did:key:z6MkRosa" => 2,
+                        "did:key:z6MkJonas" => 1,
+                        _ => 0,
+                    };
+                }
+                self.chat.chats = rows;
+                let peer = if matches!(n, "chat-offline" | "chat-drop") { "did:key:z6MkJonas".to_string() } else { arjun.clone() };
+                self.sel = Some(peer.clone());
+                self.chat.peer = Some(peer.clone());
+                let page = f.chat_day(peer.clone(), None).unwrap();
+                let mut msgs = page.messages;
+                if let Some(prev) = page.older_day.and_then(|d| f.chat_day(peer.clone(), Some(d)).ok()) {
+                    // Show yesterday as well; whatever is older waits behind "Load earlier".
+                    self.chat.older = prev.older_day;
+                    let mut m = prev.messages;
+                    m.append(&mut msgs);
+                    msgs = m;
+                }
+                self.chat.msgs = msgs;
+                let id = |n: u32| format!("{peer}-{n}");
+                match n {
+                    "chat-offline" | "chat-drop" => {
+                        self.status.online = false;
+                        self.chat.drop_hover = n == "chat-drop";
+                    }
+                    "chat-menu" => self.chat.menu = Some(id(10)),
+                    "chat-hover" => self.chat.hover = Some(id(8)),
+                    "chat-reply" => {
+                        self.chat.reply = Some(id(5));
+                        self.chat.input = iced::widget::text_editor::Content::with_text("Sure \u{2014} it\u{2019}s the one from Tuesday");
+                    }
+                    "chat-edit" => {
+                        self.chat.editing = Some(id(10));
+                        self.chat.input = iced::widget::text_editor::Content::with_text("Sure \u{2014} it\u{2019}s the one from Tuesday");
+                    }
+                    "chat-files" => {
+                        if let Some(a) = self.chat.msgs.iter_mut().find(|m| m.id == id(9)).and_then(|m| m.attachment.as_mut()) {
+                            a.state = TransferState::Downloading;
+                            self.chat.progress.insert(a.hash.clone(), (62_000_000, 184_000_000));
+                        }
+                    }
+                    "chat-failed" => {
+                        if let Some(a) = self.chat.msgs.iter_mut().find(|m| m.id == id(9)).and_then(|m| m.attachment.as_mut()) {
+                            a.state = TransferState::Failed;
+                        }
+                    }
+                    "chat-empty" => {
+                        self.chat.msgs.clear();
+                        self.chat.older = None;
+                    }
+                    "chat-list" => {
+                        self.sel = None;
+                        self.chat.peer = None;
+                    }
+                    _ => {}
+                }
+            }
             _ => {}
         }
         self.contacts = contacts;

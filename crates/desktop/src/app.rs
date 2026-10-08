@@ -247,6 +247,8 @@ enum Msg {
     OutDev(String),
     ToneToggled(bool),
     Chat(Cm),
+    /// Test-hooks: the window's pixels, written to P2P_SHOT.
+    Shot(window::Screenshot),
 }
 
 /// A freshly built node, handed through the (Clone + Debug) message type.
@@ -430,6 +432,10 @@ impl App {
         }
         if !init.hidden {
             tasks.push(app.show_window());
+        }
+        #[cfg(feature = "test-hooks")]
+        if crate::test_env("P2P_CHAT_FAKE").is_some_and(|v| v == "1") {
+            app.chat.fake = Some(Arc::new(chat::chat_fake::Fake::new(Some(init.tx.clone()))));
         }
         if let Some(name) = crate::test_env("P2P_DEMO") {
             app.load_demo(&name);
@@ -620,6 +626,12 @@ impl App {
                 return self.on_event(ev);
             }
             Msg::Tick => {
+                if let (Some(_), Some(id)) = (crate::test_env("P2P_SHOT"), self.win) {
+                    self.ticks += 1;
+                    if self.ticks == 3 {
+                        return window::screenshot(id).map(Msg::Shot);
+                    }
+                }
                 if self.demo {
                     return Task::none();
                 }
@@ -1231,6 +1243,19 @@ impl App {
                 self.save_settings();
             }
             Msg::Chat(m) => return self.update_chat(m),
+            Msg::Shot(shot) => {
+                if let Some(path) = crate::test_env("P2P_SHOT") {
+                    let mut ok = false;
+                    if let Ok(f) = std::fs::File::create(&path) {
+                        let mut enc = png::Encoder::new(std::io::BufWriter::new(f), shot.size.width, shot.size.height);
+                        enc.set_color(png::ColorType::Rgba);
+                        enc.set_depth(png::BitDepth::Eight);
+                        ok = enc.write_header().and_then(|mut w| w.write_image_data(&shot.rgba)).is_ok();
+                    }
+                    crate::tlog!("SHOT {path} {ok}");
+                    return iced::exit();
+                }
+            }
             Msg::ToneToggled(on) => {
                 self.settings.tone = on;
                 *self.ctl.tone.lock().unwrap() = self.tone_hz();
