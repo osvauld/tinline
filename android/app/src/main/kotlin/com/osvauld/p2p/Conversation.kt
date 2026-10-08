@@ -496,7 +496,7 @@ private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, L
 @Composable
 private fun Ring(content: @Composable BoxScope.() -> Unit) =
     Box(Modifier.size(56.dp).clip(CircleShape).background(Color(0x8C0F1513)), contentAlignment = Alignment.Center, content = content)
-@Composable
+
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, first: String, asked: Boolean, onDownload: () -> Unit, onSave: () -> Unit, onOpen: () -> Unit, onLong: () -> Unit) {
