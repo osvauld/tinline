@@ -14,17 +14,38 @@ import javax.crypto.spec.GCMParameterSpec
 /**
  * Remembers the core's vault data key on this device so the always-on service can unlock after a
  * reboot without the passphrase. The 32 bytes are wrapped with a non-exportable AES-256-GCM key
- * in AndroidKeyStore (no user-authentication requirement) and stored as `iv(12) || ciphertext`
- * in filesDir/unlock.bin. Never logs key material.
+ * in AndroidKeyStore (no user-authentication requirement) and stored as `iv(12) || ciphertext`.
+ *
+ * One blob per account: filesDir/unlock/<did without "did:key:">.bin. The Keystore alias is shared
+ * on purpose: it is only the wrapping key, each blob has its own IV, and one alias means a lock-screen
+ * reset invalidates every blob at once (each then reads as [Loaded.Gone] and that account asks for
+ * its passphrase or phrase). A blob of another account would not open this account's vault anyway
+ * (the core answers WrongPassphrase). Never logs key material.
  */
 object UnlockStore {
     private const val ALIAS = "p2p_unlock_v1"
-    private const val FILE = "unlock.bin"
+    private const val LEGACY = "unlock.bin"
     private const val TAG = "UnlockStore"
 
-    private fun file(c: Context) = File(c.filesDir, FILE)
+    private fun dir(c: Context) = File(c.filesDir, "unlock")
+    private fun name(did: String) = did.removePrefix("did:key:").filter { it.isLetterOrDigit() }.ifEmpty { "x" }
+    private fun file(c: Context, did: String) = File(dir(c), name(did) + ".bin")
 
-    fun exists(c: Context) = file(c).isFile
+    fun exists(c: Context, did: String) = file(c, did).isFile
+
+    /**
+     * Upgrade from the single-key layout: the old unlock.bin belongs to the one account that existed,
+     * which the core has just migrated to be the current one. Idempotent; never overwrites a per-account blob.
+     */
+    @Synchronized
+    fun migrateLegacy(c: Context, currentDid: String?) {
+        val old = File(c.filesDir, LEGACY)
+        if (!old.isFile) return
+        if (currentDid == null) return // nothing to attach it to yet; keep it
+        val dst = file(c, currentDid)
+        dir(c).mkdirs()
+        if (dst.isFile) old.delete() else if (!old.renameTo(dst)) Log.w(TAG, "legacy key migration failed")
+    }
 
     private fun keyStore() = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
@@ -55,13 +76,17 @@ object UnlockStore {
     }
 
     /** Wraps [secret] and writes unlock.bin atomically. Returns false on failure (nothing remembered). */
-    fun save(c: Context, secret: ByteArray): Boolean = try {
+    fun save(c: Context, did: String, secret: ByteArray): Boolean = try {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key(true))
         val out = cipher.iv + cipher.doFinal(secret)
-        val tmp = File(c.filesDir, "$FILE.tmp")
+        dir(c).mkdirs()
+        val dst = file(c, did)
+        val tmp = File(dir(c), dst.name + ".tmp")
         tmp.outputStream().use { it.write(out); it.fd.sync() }
-        if (!tmp.renameTo(file(c))) throw java.io.IOException("rename failed")
+        if (!tmp.renameTo(dst)) throw java.io.IOException("rename failed")
+        // Read it back: a key that cannot be opened again is no key (S1).
+        (load(c, did) as? Loaded.Key)?.bytes?.fill(0) ?: throw java.io.IOException("read-back failed")
         true
     } catch (e: Exception) {
         Log.w(TAG, "save failed: ${e.javaClass.simpleName}")
@@ -76,8 +101,8 @@ object UnlockStore {
         data object Transient : Loaded
     }
 
-    fun load(c: Context): Loaded = try {
-        val raw = file(c).readBytes()
+    fun load(c: Context, did: String): Loaded = try {
+        val raw = file(c, did).readBytes()
         if (raw.size < 12 + 16) throw javax.crypto.AEADBadTagException("short file")
         val k = key(false)
         if (k == null) Loaded.Gone
@@ -96,8 +121,9 @@ object UnlockStore {
         Log.w(TAG, "load failed (transient): ${e.javaClass.simpleName}"); Loaded.Transient
     }
 
-    fun clear(c: Context) {
-        file(c).delete()
-        File(c.filesDir, "$FILE.tmp").delete()
+    fun clear(c: Context, did: String) {
+        val f = file(c, did)
+        f.delete()
+        File(f.path + ".tmp").delete()
     }
 }

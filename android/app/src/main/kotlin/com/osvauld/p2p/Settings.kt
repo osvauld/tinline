@@ -49,7 +49,8 @@ fun TinSwitch(checked: Boolean, onChange: (Boolean) -> Unit, desc: String) {
 @Composable
 fun SettingsScreen(
     app: P2pApp, missing: List<Need>, onBack: () -> Unit, onBattery: () -> Unit, onPassphrase: () -> Unit, onPhrase: () -> Unit,
-    onAbout: () -> Unit, onDiagnostics: () -> Unit,
+    onAbout: () -> Unit, onDiagnostics: () -> Unit, onSwitchPick: (String) -> Unit = {}, onCreateAccount: () -> Unit = {},
+    onRestoreAccount: () -> Unit = {}, onDevices: () -> Unit = {},
 ) {
     val avail by app.availability.collectAsState()
     val available = avail.available
@@ -57,6 +58,8 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf(app.node.profile()?.name ?: "") }
     var editing by remember { mutableStateOf(false) }
+    var sheet by remember { mutableStateOf(false) }
+    val deviceLabel = remember { app.node.deviceLabel() }
     val hasPass = remember { app.node.hasPassphrase() }
     val bgOk = missing.none { it == Need.Battery || it == Need.Notifications || it == Need.FullScreen || it == Need.Mic }
     Page {
@@ -67,11 +70,15 @@ fun SettingsScreen(
                     SelfAvatar(name.ifBlank { "?" }, 52.dp)
                     Column(Modifier.weight(1f)) {
                         Text(name, style = TinType.titleM, color = c.ink, maxLines = 1)
-                        Hint("Shown to people you add")
+                        Hint(if (deviceLabel != null) "On this phone as “$deviceLabel”" else "Shown to people you add")
                     }
                     IconBtn(Icons.Rounded.Edit, "Edit name", { editing = true }, tint = c.pr)
+                    TinButton("Switch", { sheet = true }, style = BtnStyle.Tonal, fill = false, height = 40.dp, textStyle = TinType.label)
                 }
             }
+            SectionLabel("DEVICES")
+            ListItem("Linked devices", onClick = onDevices, icon = Icons.Rounded.Devices, sub = "This phone only")
+            ListItem("Link a device", icon = Icons.Rounded.AddLink, sub = "Coming soon", trailing = null, titleColor = c.ink2)
             SectionLabel("CALLS")
             ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = Icons.Rounded.Call,
                 trailing = { TinSwitch(available, { on -> scope.launch(Dispatchers.IO) { app.setAvailable(on) } }, "Available for calls") })
@@ -86,6 +93,8 @@ fun SettingsScreen(
             if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = Icons.Rounded.BugReport, sub = "Test tone and core version (debug builds)")
         }
     }
+    if (sheet) AccountSheet(app, onDismiss = { sheet = false }, onPick = { sheet = false; onSwitchPick(it) },
+        actions = AccountActions(onCreate = { sheet = false; onCreateAccount() }, onRestore = { sheet = false; onRestoreAccount() }))
     if (editing) {
         var text by remember { mutableStateOf(name) }
         TinDialog("Your name", { editing = false }, "Save", {
@@ -224,7 +233,7 @@ fun ChangePassphraseScreen(app: P2pApp, onBack: () -> Unit) {
                     val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(if (has) old else null, pass) } }
                     busy = false
                     r.onFailure { error = friendly(it) }
-                    r.onSuccess { withContext(Dispatchers.IO) { app.rememberKey() }; old = ""; pass = ""; onBack() }
+                    r.onSuccess { withContext(Dispatchers.IO) { app.persistIdentity() }; old = ""; pass = ""; onBack() }
                 }
             }, enabled = (!has || old.isNotEmpty()) && pass.isNotEmpty() && !busy)
         }

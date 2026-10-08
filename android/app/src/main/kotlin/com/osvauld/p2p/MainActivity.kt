@@ -12,7 +12,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -70,6 +74,8 @@ private sealed interface Route {
     data object Licences : Route
     data object Diagnostics : Route
     data object MicNeeded : Route
+    data class SwitchConfirm(val did: String) : Route
+    data object Devices : Route
 }
 
 @Composable
@@ -80,6 +86,9 @@ private fun Root(app: P2pApp) {
     val lock by app.lockState.collectAsState()
     val contacts by app.contacts.collectAsState()
     val history by app.history.collectAsState()
+    val adding by app.adding.collectAsState()
+    val acct by app.accountDid.collectAsState()
+    val snack = remember { androidx.compose.material3.SnackbarHostState() }
     var forgot by rememberSaveable { mutableStateOf(false) }
     var onboarding by rememberSaveable { mutableStateOf(!app.node.hasIdentity()) }
     var termsOk by remember { mutableStateOf(LegalStore.accepted(ctx)) }
@@ -89,6 +98,16 @@ private fun Root(app: P2pApp) {
     // Back stack. Not saved: the recovery phrase may sit in it, and Home is a fine place to restart.
     val stack = remember { mutableStateListOf<Route>(Route.Home) }
     fun pop() { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
+    fun home() { stack.clear(); stack.add(Route.Home) }
+    fun say(msg: String) { scope.launch { snack.currentSnackbarData?.dismiss(); snack.showSnackbar(msg) } }
+    /** Create / restore: leave the current account and run the add-account onboarding. */
+    fun addAccount(restore: Boolean) {
+        scope.launch {
+            val r = withContext(Dispatchers.IO) { runCatching { app.beginAdding(restore) } }
+            r.onFailure { say(friendly(it)) }
+            r.onSuccess { home(); onboarding = true }
+        }
+    }
     val prefs = remember { ctx.getSharedPreferences("perm_state", Context.MODE_PRIVATE) }
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
@@ -158,11 +177,12 @@ private fun Root(app: P2pApp) {
         }
     }
 
+    Box(Modifier.fillMaxSize()) {
     when {
-        onboarding || !has -> OnboardingFlow(app, missing, fix) { onboarding = false; termsOk = LegalStore.accepted(ctx); missing = Perms.missing(ctx) }
+        onboarding || !has || adding != null -> key(adding) { OnboardingFlow(app, missing, fix) { onboarding = false; home(); termsOk = LegalStore.accepted(ctx); missing = Perms.missing(ctx) } }
         lock == LockState.LOCKED ->
             if (forgot) OnboardingFlow(app, missing, fix, forgot = true, onCancelForgot = { forgot = false }) { forgot = false; missing = Perms.missing(ctx) }
-            else UnlockScreen(app) { forgot = true }
+            else key(acct) { UnlockScreen(app) { forgot = true } }
         lock == LockState.NEEDS_PASSPHRASE -> SetPassphraseScreen(app)
         !termsOk -> TermsScreen(progress = null, onBack = null) { LegalStore.accept(ctx); termsOk = true }
         else -> {
@@ -222,7 +242,11 @@ private fun Root(app: P2pApp) {
                 Route.Settings -> SettingsScreen(
                     app, missing, onBack = ::pop, onBattery = { stack.add(Route.Battery) }, onPassphrase = { stack.add(Route.Passphrase) },
                     onPhrase = { stack.add(Route.PhraseGate) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
+                    onSwitchPick = { stack.add(Route.SwitchConfirm(it)) }, onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) },
+                    onDevices = { stack.add(Route.Devices) },
                 )
+                is Route.SwitchConfirm -> SwitchConfirmScreen(app, r.did, onBack = ::pop, onSwitched = { home() }, onMessage = ::say)
+                Route.Devices -> LinkedDevicesScreen(app, ::pop)
                 Route.Battery -> BatteryScreen(missing, onBack = ::pop, onFix = fix)
                 Route.Passphrase -> ChangePassphraseScreen(app, onBack = ::pop)
                 Route.PhraseGate -> PhraseGateScreen(app, onBack = ::pop, onPhrase = { p -> pop(); stack.add(Route.PhraseShown(p)) })
@@ -233,6 +257,8 @@ private fun Root(app: P2pApp) {
                 Route.MicNeeded -> MicNeededScreen(onOpenSettings = { Perms.openSettings(ctx, Perms.appDetails(ctx)) }, onNotNow = ::pop)
             }
         }
+    }
+    androidx.compose.material3.SnackbarHost(snack, Modifier.align(androidx.compose.ui.Alignment.BottomCenter).navigationBarsPadding().padding(16.dp))
     }
 }
 

@@ -43,7 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Step { Welcome, Name, Pass, Phrase, Terms, Perms, Restore }
+private enum class Step { Welcome, Name, Pass, Phrase, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd }
 
 /** Common frame of the onboarding steps: back arrow, progress dots, scrolling body, pinned footer. */
 @Composable
@@ -71,9 +71,12 @@ fun Lead(text: String, modifier: Modifier = Modifier, align: TextAlign = TextAli
     Text(text, modifier, style = TinType.bodyL, color = Tin.c.ink2, textAlign = align)
 
 /**
- * First run: Welcome - Name - Passphrase (optional) - Recovery phrase - Terms - Permissions, or the
- * restore path (recovery words - name - passphrase - Terms - Permissions). [forgot] is the
- * "forgot my passphrase" restore over a locked identity: words, new passphrase, done.
+ * First run: Welcome - Name - Passphrase (optional) - Recovery phrase - Name this phone - Terms -
+ * Permissions, or the restore path (recovery words - name - passphrase - Name this phone - Restored -
+ * Terms - Permissions). [forgot] is the "forgot my passphrase" restore over a locked identity: words,
+ * new passphrase, done. When [P2pApp.adding] is set the flow adds an account next to the existing
+ * ones: it starts at the name or the words, skips Terms and Permissions, and backing out returns to
+ * the account that was left.
  */
 @Composable
 fun OnboardingFlow(
@@ -82,9 +85,11 @@ fun OnboardingFlow(
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    var step by rememberSaveable { mutableStateOf(if (forgot) Step.Restore else Step.Welcome) }
+    val addState = remember { app.adding.value }
+    val adding = addState != null
+    var step by rememberSaveable { mutableStateOf(when { forgot -> Step.Restore; adding -> if (addState!!.restore) Step.Restore else Step.Name; else -> Step.Welcome }) }
     var name by rememberSaveable { mutableStateOf(if (forgot) app.node.profile()?.name ?: "" else "") }
-    var restoring by rememberSaveable { mutableStateOf(forgot) }
+    var restoring by rememberSaveable { mutableStateOf(forgot || addState?.restore == true) }
     // Secrets are never saved into the instance-state bundle.
     var words by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
@@ -92,9 +97,37 @@ fun OnboardingFlow(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var created by remember { mutableStateOf(false) }
+    var existsDialog by remember { mutableStateOf(false) }
+    var chooseAccount by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf("") }
+    var label by rememberSaveable { mutableStateOf("Personal phone") }
     // The identity appeared some other way (debug hook, a restored process): leave onboarding.
     val has by app.hasIdentity.collectAsState()
-    LaunchedEffect(has, created) { if (!forgot && has && !created && !busy) onDone() }
+    LaunchedEffect(has, created) { if (!forgot && !adding && has && !created && !busy) onDone() }
+
+    fun finish() { app.finishAdding(); onDone() }
+    fun cancelAdd() {
+        busy = true
+        scope.launch { withContext(Dispatchers.IO) { runCatching { app.cancelAdding() } }; busy = false; onDone() }
+    }
+    fun afterTerms() { if (adding) finish() else step = Step.Terms }
+    fun afterDevice() { if (restoring && !forgot) step = Step.Restored else afterTerms() }
+
+    /** The identity exists in memory (or on disk): make it durable (S1), then go on. */
+    fun persistThenContinue() {
+        busy = true; error = null
+        scope.launch {
+            val err = withContext(Dispatchers.IO) { app.persistIdentity() }
+            busy = false
+            if (err != null) { saveError = err; step = Step.SaveFailed; return@launch }
+            withContext(Dispatchers.IO) { app.startServices() }
+            when {
+                forgot -> onDone()
+                phrase != null -> step = Step.Phrase
+                else -> step = Step.Device
+            }
+        }
+    }
 
     // An empty [pass] means no passphrase.
     fun finishIdentity(pass: String) {
@@ -112,17 +145,14 @@ fun OnboardingFlow(
             busy = false
             r.onFailure {
                 error = friendly(it)
+                if (it is uniffi.p2pcore.Exception.AccountExists) { existsDialog = true; step = Step.Restore }
                 // A bad phrase belongs on the words screen.
-                if (it is uniffi.p2pcore.Exception.BadPhrase || (it is IllegalArgumentException && forgot)) step = Step.Restore
+                else if (it is uniffi.p2pcore.Exception.BadPhrase || (it is IllegalArgumentException && forgot)) step = Step.Restore
             }
             r.onSuccess { p ->
                 created = true
-                app.identityReady()
-                when {
-                    forgot -> onDone()
-                    p == null -> step = Step.Terms
-                    else -> { phrase = p; step = Step.Phrase }
-                }
+                phrase = p
+                persistThenContinue()
             }
         }
     }
@@ -130,13 +160,13 @@ fun OnboardingFlow(
     when (step) {
         Step.Welcome -> WelcomeScreen(onStart = { restoring = false; step = Step.Name }, onRestore = { restoring = true; step = Step.Restore })
         Step.Restore -> RestoreScreen(
-            onBack = { if (forgot) onCancelForgot() else step = Step.Welcome },
+            onBack = { if (forgot) onCancelForgot() else if (adding) cancelAdd() else step = Step.Welcome },
             error = error, busy = false,
-            warning = if (forgot) "Restoring keeps the same identity: use the recovery phrase of this account. Your contacts stay."
-            else "Restoring replaces whatever account is on this phone. Next, you’ll choose a new passphrase.",
+            warning = if (forgot) "Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase."
+            else "Next, you’ll choose a passphrase for this account.",
             onSubmit = { w -> words = w; error = null; step = if (forgot) Step.Pass else Step.Name },
         )
-        Step.Name -> NameScreen(name, { name = it }, onBack = { step = if (restoring) Step.Restore else Step.Welcome },
+        Step.Name -> NameScreen(name, { name = it }, onBack = { if (restoring) step = Step.Restore else if (adding) cancelAdd() else step = Step.Welcome },
             progress = 1, onNext = { step = Step.Pass })
         Step.Pass -> PassphraseStep(
             pass, { pass = it; error = null }, busy, error,
@@ -146,10 +176,48 @@ fun OnboardingFlow(
             onNext = { val p = pass; pass = ""; finishIdentity(p) },
             onSkip = { pass = ""; finishIdentity("") },
         )
-        Step.Phrase -> PhraseScreen(phrase.orEmpty(), onNext = { step = Step.Terms })
-        Step.Terms -> TermsScreen(progress = 4, onBack = null) { LegalStore.accept(ctx); step = Step.Perms }
+        Step.Phrase -> PhraseScreen(phrase.orEmpty(), onNext = { step = Step.Device })
+        Step.Device -> DeviceNameScreen(label, { label = it; error = null }, busy, error, onNext = {
+            busy = true; error = null
+            scope.launch {
+                val r = withContext(Dispatchers.IO) { runCatching { app.node.setDeviceLabel(label.trim()) } }
+                busy = false
+                r.onFailure { error = friendly(it) }
+                r.onSuccess { afterDevice() }
+            }
+        })
+        Step.Restored -> RestoredScreen(app.node.profile()?.name ?: name, onStart = { afterTerms() })
+        Step.Terms -> TermsScreen(progress = 5, onBack = null) { LegalStore.accept(ctx); step = Step.Perms }
         Step.Perms -> PermissionsScreen(missing, onFix, onDone)
+        Step.SaveFailed -> SaveFailedScreen(saveError, busy,
+            onRetry = { persistThenContinue() }, onPassphrase = { pass = ""; error = null; step = Step.PassAdd })
+        Step.PassAdd -> PassphraseStep(
+            pass, { pass = it; error = null }, busy, error, progress = null, title = "Add a passphrase", cta = "Save account",
+            onBack = { step = Step.SaveFailed }, canSkip = false,
+            onNext = {
+                val p = pass; pass = ""; busy = true; error = null
+                scope.launch {
+                    val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(null, p) } }
+                    busy = false
+                    r.onFailure { error = friendly(it) }
+                    r.onSuccess { persistThenContinue() }
+                }
+            }, onSkip = {},
+        )
     }
+    if (existsDialog) TinDialog("Already on this phone", { existsDialog = false }, "Choose account", { existsDialog = false; chooseAccount = true },
+        dismiss = "Not now") {
+        DialogText("That recovery phrase belongs to an account that is already here. Switch to it instead of adding it again.")
+    }
+    if (chooseAccount) AccountSheet(app, onDismiss = { chooseAccount = false }, onPick = { did ->
+        chooseAccount = false; busy = true
+        scope.launch {
+            val r = withContext(Dispatchers.IO) { runCatching { app.switchTo(did, null) } }
+            busy = false
+            r.onFailure { error = friendly(it) }
+            r.onSuccess { finish() }
+        }
+    })
 }
 
 // ------------------------------------------------------------------ 1 welcome
@@ -157,6 +225,7 @@ fun OnboardingFlow(
 @Composable
 fun WelcomeScreen(onStart: () -> Unit, onRestore: () -> Unit) {
     val c = Tin.c
+    var soon by remember { mutableStateOf(false) }
     Page {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -169,6 +238,8 @@ fun WelcomeScreen(onStart: () -> Unit, onRestore: () -> Unit) {
         }
         Column(Modifier.padding(start = 28.dp, end = 28.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TinButton("Get started", onStart)
+            TinButton("Link to an existing account", { soon = true }, style = BtnStyle.Outlined)
+            if (soon) Hint("Linking to another device is coming soon. For now, use your recovery phrase.", Modifier.padding(horizontal = 4.dp, vertical = 4.dp))
             TinButton("I have a recovery phrase", onRestore, style = BtnStyle.Text)
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
                 Icon(Icons.Rounded.WarningAmber, null, tint = c.ink2, modifier = Modifier.size(20.dp))
@@ -210,12 +281,12 @@ fun NewPassphraseField(pass: String, onPass: (String) -> Unit, enabled: Boolean 
 @Composable
 fun PassphraseStep(
     pass: String, onPass: (String) -> Unit, busy: Boolean, error: String?,
-    progress: Int?, title: String, cta: String, onBack: (() -> Unit)?, onNext: () -> Unit, onSkip: () -> Unit,
+    progress: Int?, title: String, cta: String, onBack: (() -> Unit)?, onNext: () -> Unit, onSkip: () -> Unit, canSkip: Boolean = true,
 ) {
     StepFrame(progress, onBack, footer = {
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 8.dp), color = Tin.c.pr, trackColor = Tin.c.sf3)
         TinButton(if (busy) "Encrypting…" else cta, onNext, enabled = !busy && pass.isNotEmpty())
-        TinButton("Skip for now", onSkip, style = BtnStyle.Text, enabled = !busy)
+        if (canSkip) TinButton("Skip for now", onSkip, style = BtnStyle.Text, enabled = !busy)
     }) {
         H1(title)
         Lead("Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it. Optional — you can add one later in Settings.")
@@ -261,6 +332,71 @@ fun PhraseScreen(phrase: String, onNext: () -> Unit) {
             Icon(Icons.Rounded.Lock, null, tint = Tin.c.ink2, modifier = Modifier.size(16.dp))
             Hint("Paper is safest. Screenshots are blocked here.")
         }
+    }
+}
+
+// ------------------------------------------------------------------ name this phone
+
+@Composable
+fun DeviceNameScreen(label: String, onChange: (String) -> Unit, busy: Boolean, error: String?, onNext: () -> Unit) {
+    val c = Tin.c
+    StepFrame(4, null, footer = { TinButton("Continue", onNext, enabled = label.isNotBlank() && !busy) }) {
+        H1("Name this phone")
+        Lead("So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.")
+        TinField(label, onChange, "Device name", Modifier.padding(top = 8.dp), enabled = !busy,
+            keyboard = KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+            actions = KeyboardActions(onDone = { if (label.isNotBlank() && !busy) onNext() }))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Personal phone", "Work phone", "Tablet").forEach { s ->
+                val on = label.trim() == s
+                Box(
+                    Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(50)).background(if (on) c.prc else c.sf)
+                        .border(1.dp, if (on) c.pr else c.ln2, RoundedCornerShape(50))
+                        .clickable(role = Role.Button) { onChange(s) }.padding(horizontal = 14.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Text(s, style = TinType.label, color = if (on) c.onPrc else c.ink) }
+            }
+        }
+        Hint("You can rename it later.")
+        if (error != null) Text(error, style = TinType.bodyM, color = c.er)
+    }
+}
+
+// ------------------------------------------------------------------ restored from phrase
+
+@Composable
+fun RestoredScreen(name: String, onStart: () -> Unit) {
+    val c = Tin.c
+    StepFrame(null, null, footer = { TinButton("Start without them", onStart, style = BtnStyle.Text) }) {
+        AppIconBadge(64.dp)
+        H1(if (name.isNotBlank()) "Welcome back, $name" else "Welcome back")
+        Lead("Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us.")
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(14.dp)).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("Still have Tinline on another device?", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+            Text("Link this phone to it to bring everything over.", style = TinType.bodyM, color = c.ink2)
+            TinButton("Link to another device", {}, enabled = false)
+            Hint("Coming soon.")
+        }
+        Hint("No other device? You’ll start with an empty contact list and add people again.")
+    }
+}
+
+// ------------------------------------------------------------------ could not save (S1)
+
+@Composable
+fun SaveFailedScreen(message: String, busy: Boolean, onRetry: () -> Unit, onPassphrase: () -> Unit) {
+    StepFrame(null, null, footer = {
+        if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 8.dp), color = Tin.c.pr, trackColor = Tin.c.sf3)
+        TinButton("Retry", onRetry, enabled = !busy)
+        TinButton("Add a passphrase instead", onPassphrase, style = BtnStyle.Text, enabled = !busy)
+    }) {
+        H1("Couldn’t save your account")
+        Lead(message)
+        InfoCard("Nothing was kept on this phone yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the phone’s own key.",
+            icon = Icons.Rounded.Warning, kind = BannerKind.Error)
     }
 }
 

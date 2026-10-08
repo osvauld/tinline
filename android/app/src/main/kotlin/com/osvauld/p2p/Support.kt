@@ -21,6 +21,8 @@ fun friendly(e: Throwable): String = when (e) {
     is CoreError.WeakPassphrase -> "Type a passphrase, or skip it"
     is CoreError.Locked -> "Locked — enter your passphrase to unlock"
     is CoreError.BadPhrase -> "That recovery phrase is not valid"
+    is CoreError.AccountExists -> "That account is already on this phone"
+    is CoreError.InCall -> "Finish your call first"
     else -> e.message ?: "Something went wrong"
 }
 

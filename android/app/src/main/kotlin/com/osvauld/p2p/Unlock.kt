@@ -57,16 +57,27 @@ fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val name = remember { app.node.profile()?.name ?: "" }
+    var sheet by remember { mutableStateOf(false) }
+    val many = remember { app.node.accounts().size > 1 }
+    val onSwitch: (() -> Unit)? = if (many) ({ sheet = true }) else null
+    if (sheet) AccountSheet(app, onDismiss = { sheet = false }, onPick = { did ->
+        sheet = false; busy = true
+        scope.launch {
+            val r = withContext(Dispatchers.IO) { runCatching { app.switchTo(did, null) } }
+            busy = false
+            r.onFailure { error = friendly(it) }
+        }
+    })
     // No passphrase and the Keystore key is gone: the 24 words are the only way back.
     if (!app.node.hasPassphrase()) {
         KeyLostContent(name, busy, onRetry = {
             busy = true
             scope.launch { withContext(Dispatchers.IO) { app.tryAutoUnlock() }; busy = false; app.identityReady() }
-        }, onRestore = onForgot)
+        }, onRestore = onForgot, onSwitch = onSwitch)
         return
     }
     UnlockContent(
-        name, pass, { pass = it; error = null }, busy, error, onForgot,
+        name, pass, { pass = it; error = null }, busy, error, onForgot, onSwitch = onSwitch,
         onUnlock = {
             busy = true; error = null
             scope.launch {
@@ -81,7 +92,7 @@ fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
 
 /** Locked with no passphrase: this phone's own key is gone, so only the recovery phrase brings the account back. */
 @Composable
-fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: () -> Unit) {
+fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: () -> Unit, onSwitch: (() -> Unit)? = null) {
     val c = Tin.c
     Page {
         Column(
@@ -97,12 +108,13 @@ fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: 
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TinButton("Restore with recovery phrase", onRestore, enabled = !busy)
             TinButton("Try again", onRetry, style = BtnStyle.Text, enabled = !busy)
+            if (onSwitch != null) TinButton("Switch account", onSwitch, style = BtnStyle.Text, enabled = !busy)
         }
     }
 }
 
 @Composable
-fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Boolean, error: String?, onForgot: () -> Unit, onUnlock: () -> Unit) {
+fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Boolean, error: String?, onForgot: () -> Unit, onUnlock: () -> Unit, onSwitch: (() -> Unit)? = null) {
     val c = Tin.c
     Page {
         Column(
@@ -129,7 +141,11 @@ fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Bo
             Text("Forgot it?", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
             Text("Your recovery phrase can restore this account and set a new passphrase.", style = TinType.bodyM, color = c.ink2)
             TinButton("Restore with recovery phrase", onForgot, style = BtnStyle.Text, fill = false, height = 40.dp)
-        } else Box(Modifier.padding(horizontal = 24.dp, vertical = 24.dp)) { TinButton("Forgot passphrase?", onForgot, style = BtnStyle.Text, enabled = !busy) }
+            if (onSwitch != null) TinButton("Switch account", onSwitch, style = BtnStyle.Text, fill = false, height = 40.dp)
+        } else Column(Modifier.padding(horizontal = 24.dp, vertical = 24.dp)) {
+            TinButton("Forgot passphrase?", onForgot, style = BtnStyle.Text, enabled = !busy)
+            if (onSwitch != null) TinButton("Switch account", onSwitch, style = BtnStyle.Text, enabled = !busy)
+        }
     }
 }
 

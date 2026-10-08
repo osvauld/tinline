@@ -45,6 +45,10 @@ class P2pApp : Application(), NodeEvents {
     private val _hasIdentity = MutableStateFlow(false)
     val hasIdentity: StateFlow<Boolean> = _hasIdentity
 
+    private val _accountDid = MutableStateFlow<String?>(null)
+    /** The selected account's DID (changes when the user switches); null with no account. */
+    val accountDid: StateFlow<String?> = _accountDid
+
     private val _history = MutableStateFlow<List<CallRecord>>(emptyList())
     /** The call log, newest first. Re-read on every call end (the core writes it before `Ended` fires). */
     val history: StateFlow<List<CallRecord>> = _history
@@ -60,6 +64,8 @@ class P2pApp : Application(), NodeEvents {
         calls = CallController(this)
         node = newNode()
         realChat = CoreChatSource(this).also { it.attach() }
+        selectLastAccountIfNone()
+        UnlockStore.migrateLegacy(this, currentDid())
         tryAutoUnlock()
         refresh()
         // The always-on notification says "Available for calls" / "Not available" / "Offline".
@@ -93,9 +99,31 @@ class P2pApp : Application(), NodeEvents {
     fun refresh() {
         _lock.value = node.lockState()
         _hasIdentity.value = node.hasIdentity()
+        _accountDid.value = currentDid()
         _contacts.value = node.contacts()
         _status.value = node.status()
         if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
+        else { _history.value = emptyList(); _availability.value = Availability(true, null) }
+        // The account to come back to if the app dies while a new one is being added.
+        if (_hasIdentity.value && node.identityCommitted()) currentDid()?.let { lastPrefs.edit().putString("did", it).apply() }
+    }
+
+    private val lastPrefs by lazy { getSharedPreferences("accounts", Context.MODE_PRIVATE) }
+
+    fun currentDid(): String? = try { node.profile()?.did } catch (_: Exception) { null }
+
+    /**
+     * Adding an account deselects the current one in the core. If the process died in that state the
+     * accounts would be invisible, so select the last used one (or the first) again.
+     */
+    private fun selectLastAccountIfNone() {
+        try {
+            if (node.hasIdentity()) return
+            val all = node.accounts()
+            if (all.isEmpty()) return
+            val want = lastPrefs.getString("did", null)
+            node.switchAccount((all.firstOrNull { it.did == want } ?: all.first()).did)
+        } catch (e: Exception) { Log.w(TAG, "selecting an account: ${e.javaClass.simpleName}") }
     }
 
     private val unlockLock = Any()
@@ -108,15 +136,16 @@ class P2pApp : Application(), NodeEvents {
      */
     fun tryAutoUnlock(): Boolean = synchronized(unlockLock) {
         if (node.lockState() != LockState.LOCKED) return node.lockState() != LockState.NO_IDENTITY
-        if (!UnlockStore.exists(this)) return false
-        when (val l = UnlockStore.load(this)) {
-            UnlockStore.Loaded.Gone -> { UnlockStore.clear(this); false }
+        val did = currentDid() ?: return false
+        if (!UnlockStore.exists(this, did)) return false
+        when (val l = UnlockStore.load(this, did)) {
+            UnlockStore.Loaded.Gone -> { UnlockStore.clear(this, did); false }
             UnlockStore.Loaded.Transient -> false
             is UnlockStore.Loaded.Key -> try {
                 node.unlockWithKey(l.bytes); true
             } catch (e: uniffi.p2pcore.Exception.WrongPassphrase) {
                 Log.w(TAG, "unlockWithKey: key rejected")
-                UnlockStore.clear(this); false
+                UnlockStore.clear(this, did); false
             } catch (e: Exception) {
                 Log.w(TAG, "unlockWithKey failed (kept for retry): ${e.javaClass.simpleName}")
                 false
@@ -124,19 +153,100 @@ class P2pApp : Application(), NodeEvents {
         }
     }
 
-    /** After any successful passphrase path: remember the data key under the Keystore. */
-    fun rememberKey() {
-        val k = node.unlockKey() ?: return
-        UnlockStore.save(this, k)
-        k.fill(0)
+    /**
+     * Wraps the vault data key under the Keystore for the current account. False if it could not be
+     * saved (nothing is remembered then). Blocking (Keystore).
+     */
+    fun rememberKey(): Boolean {
+        val did = currentDid() ?: return false
+        val k = node.unlockKey() ?: return false
+        return try { UnlockStore.save(this, did, k) } finally { k.fill(0) }
+    }
+
+    /**
+     * S1: makes a freshly created/restored identity durable. A no-passphrase identity exists only in
+     * memory until its data key is saved under the Keystore; only then is `commitIdentity` called.
+     * Returns null on success, else a message for the user (the identity then stays uncommitted: the
+     * caller offers Retry or a passphrase). A passphrase identity is already on disk; failing to
+     * remember its key only means the passphrase is asked after a restart. Blocking.
+     */
+    fun persistIdentity(): String? {
+        val saved = rememberKey()
+        if (!saved && !node.hasPassphrase()) return "Couldn’t save your account safely on this phone."
+        if (!saved) Log.w(TAG, "key not remembered; passphrase will be asked at startup")
+        return try { node.commitIdentity(); null } catch (e: Exception) { Log.w(TAG, "commitIdentity: ${e.javaClass.simpleName}"); "Couldn’t save your account on this phone." }
     }
 
     private fun newNode() = Node(filesDir.resolve("core").also { it.mkdirs() }.absolutePath, this)
 
+    // ---- accounts ----
+
+    /** Set while a new account is being created/restored next to the existing ones. */
+    data class Adding(val from: String?, val restore: Boolean)
+    private val _adding = MutableStateFlow<Adding?>(null)
+    val adding: StateFlow<Adding?> = _adding
+
+    /** Leaves the current account (offline until we come back) and lets onboarding add another. Blocking; throws InCall. */
+    fun beginAdding(restore: Boolean) {
+        try {
+            lifecycle.submit {
+                val from = currentDid()
+                node.beginNewAccount()
+                _adding.value = Adding(from, restore)
+                refresh()
+            }.get()
+        } catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
+    }
+
+    /** Back out of adding: select the account we left and bring it online. Blocking. */
+    fun cancelAdding() {
+        val from = _adding.value?.from
+        try {
+            if (from != null) switchTo(from, null) else _adding.value = null
+        } finally { _adding.value = null; refresh() }
+    }
+
+    fun finishAdding() { _adding.value = null }
+
     /**
-     * "Forgot passphrase": restore the same identity from its phrase over the locked vault. The core
-     * refuses to restore over an existing profile, so the sealed profile.json is moved aside first
-     * (state.json, i.e. contacts, is untouched) and moved back if the restore fails. Blocking.
+     * Selects [did] and unlocks it: with [passphrase], else with that account's remembered key (else it
+     * stays locked and the unlock screen shows). A wrong passphrase puts the previous account back and
+     * rethrows. Throws InCall during a call. Blocking.
+     */
+    fun switchTo(did: String, passphrase: String?) {
+        try { lifecycle.submit { switchToNow(did, passphrase) }.get() }
+        catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
+        refresh()
+        Notifications.cancelLocked(this)
+        CoreService.ensureRunning(this)
+        startNode()
+    }
+
+    private fun switchToNow(did: String, passphrase: String?) {
+        val prev = currentDid()
+        node.switchAccount(did)
+        if (passphrase == null) { tryAutoUnlock(); return }
+        try {
+            node.unlock(passphrase)
+        } catch (e: Exception) {
+            if (prev != null && prev != did) try { node.switchAccount(prev); tryAutoUnlock() } catch (_: Exception) {}
+            throw e
+        }
+        rememberKey()
+    }
+
+    /** Deletes a non-current account and its remembered key. */
+    fun removeAccount(did: String) {
+        node.removeAccount(did)
+        UnlockStore.clear(this, did)
+    }
+
+    /**
+     * "Forgot passphrase": restore the same identity from its phrase. The core never restores over an
+     * existing account, so the locked account is deselected, and if the phrase turns out to be this
+     * very account (AccountExists, and it is the only one) its directory is replaced: the passphrase is
+     * new, but contacts and history of that account are NOT kept (a core change could keep them).
+     * A phrase of a different identity changes nothing. Blocking.
      */
     fun restoreOverLocked(phrase: String, name: String, passphrase: String) {
         try { lifecycle.submit { restoreOverLockedNow(phrase, name, passphrase) }.get() }
@@ -144,41 +254,54 @@ class P2pApp : Application(), NodeEvents {
     }
 
     private fun restoreOverLockedNow(phrase: String, name: String, passphrase: String) {
-        val dir = filesDir.resolve("core")
-        val prof = dir.resolve("profile.json")
-        val bak = dir.resolve("profile.json.bak")
-        val oldDid = node.profile()?.did
-        node.stop()
-        if (prof.exists()) { bak.delete(); prof.renameTo(bak) }
-        node = newNode()
-        realChat.attach()
+        val oldDid = currentDid() ?: throw IllegalStateException("no account")
+        val others = node.accounts().any { it.did != oldDid }
+        node.beginNewAccount()
         try {
-            node.restoreIdentity(phrase, name, passphrase)
-            // The contacts in state.json belong to the locked identity; a different phrase must not
-            // inherit them.
-            if (oldDid != null && node.profile()?.did != oldDid) {
+            try {
+                node.restoreIdentity(phrase, name, passphrase)
+            } catch (e: uniffi.p2pcore.Exception.AccountExists) {
+                if (others) throw IllegalArgumentException("That recovery phrase belongs to an account that is already on this phone. Switch to it in Settings > Switch.")
+                node.removeAccount(oldDid)
+                UnlockStore.clear(this, oldDid)
+                node.restoreIdentity(phrase, name, passphrase)
+            }
+            if (node.profile()?.did != oldDid) {
+                // A different identity was just created next to the locked one: take it back out.
+                val fresh = node.profile()?.did
+                node.beginNewAccount()
+                if (fresh != null && node.accounts().any { it.did == fresh }) node.removeAccount(fresh)
+                node.switchAccount(oldDid)
                 throw IllegalArgumentException("That recovery phrase belongs to a different identity")
             }
-            bak.delete()
-            UnlockStore.clear(this)
+            UnlockStore.clear(this, oldDid)
         } catch (e: Exception) {
-            if (bak.exists()) { prof.delete(); bak.renameTo(prof); node = newNode(); realChat.attach() }
+            if (!node.hasIdentity() && node.accounts().any { it.did == oldDid }) runCatching { node.switchAccount(oldDid) }
             throw e
         }
     }
 
     /**
-     * Called after create/restore/unlock/set-passphrase. The state refresh is immediate; remembering
-     * the key (Keystore work) and starting the node run off the main thread.
+     * Called after unlock/set-passphrase (and by debug hooks). The state refresh is immediate; remembering
+     * the key and committing (S1) and starting the node run off the main thread.
      */
     fun identityReady() {
         refresh()
         scope.launch {
-            rememberKey()
-            Notifications.cancelLocked(this@P2pApp)
-            CoreService.ensureRunning(this@P2pApp)
-            startNode()
+            // A committed account is started whatever the Keystore said; an uncommitted one is not
+            // running yet (the caller that created it handles the failure, see persistIdentity).
+            val err = persistIdentity()
+            if (err != null && !node.identityCommitted()) { Log.w(TAG, "identity not committed: $err"); return@launch }
+            startServices()
         }
+    }
+
+    /** Starts the foreground service and the node for the current account. */
+    fun startServices() {
+        refresh()
+        Notifications.cancelLocked(this)
+        CoreService.ensureRunning(this)
+        startNode()
     }
 
     /** Node start/stop and identity swaps run one at a time on this thread, never on the callers' locks. */
