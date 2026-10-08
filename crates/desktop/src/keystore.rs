@@ -36,13 +36,15 @@ fn unhex(s: &str) -> Option<Vec<u8>> {
     (0..s.len()).step_by(2).map(|i| u8::from_str_radix(&s[i..i + 2], 16).ok()).collect()
 }
 
-fn entry() -> Result<keyring::Entry, keyring::Error> {
-    keyring::Entry::new(SERVICE, USER)
+/// One entry per data dir, so two profiles (or test peers) never share or clobber a key.
+fn entry(data: &Path) -> Result<keyring::Entry, keyring::Error> {
+    let dir = data.canonicalize().unwrap_or_else(|_| data.to_path_buf());
+    keyring::Entry::new(SERVICE, &format!("{USER}:{}", dir.display()))
 }
 
 /// Stores `key`. Falls back to the data-dir file when the keyring refuses.
 pub fn save(data: &Path, key: &[u8]) -> Result<Where, String> {
-    match entry().and_then(|e| e.set_password(&hex(key))) {
+    match entry(data).and_then(|e| e.set_password(&hex(key))) {
         Ok(()) => {
             let _ = std::fs::remove_file(file(data));
             Ok(Where::Keyring)
@@ -71,14 +73,14 @@ fn write_file(data: &Path, key: &[u8]) -> Result<(), String> {
 }
 
 pub fn load(data: &Path) -> Option<Vec<u8>> {
-    if let Some(k) = entry().and_then(|e| e.get_password()).ok().and_then(|s| unhex(&s)) {
+    if let Some(k) = entry(data).and_then(|e| e.get_password()).ok().and_then(|s| unhex(&s)) {
         return Some(k);
     }
     std::fs::read_to_string(file(data)).ok().and_then(|s| unhex(&s))
 }
 
 pub fn clear(data: &Path) {
-    if let Ok(e) = entry() {
+    if let Ok(e) = entry(data) {
         let _ = e.delete_credential();
     }
     let _ = std::fs::remove_file(file(data));
@@ -88,7 +90,7 @@ pub fn clear(data: &Path) {
 pub fn location(data: &Path) -> Option<Where> {
     if file(data).is_file() {
         Some(Where::File)
-    } else if entry().and_then(|e| e.get_password()).is_ok() {
+    } else if entry(data).and_then(|e| e.get_password()).is_ok() {
         Some(Where::Keyring)
     } else {
         None
@@ -96,7 +98,8 @@ pub fn location(data: &Path) -> Option<Where> {
 }
 
 /// Opens a locked node that has no passphrase with the stored key. Returns whether it is now
-/// unlocked; a key that no longer opens the vault is forgotten.
+/// unlocked. A key that does not open the vault is kept (never delete the only copy on a guess);
+/// the key-lost screen offers restore.
 pub fn auto_unlock(node: &Node, data: &Path) -> bool {
     if node.lock_state() != LockState::Locked || node.has_passphrase() {
         return false;
@@ -105,7 +108,7 @@ pub fn auto_unlock(node: &Node, data: &Path) -> bool {
     match node.unlock_with_key(key) {
         Ok(()) => true,
         Err(p2pcore::Error::WrongPassphrase) => {
-            clear(data);
+            eprintln!("keystore: the stored key does not open this vault");
             false
         }
         Err(e) => {
