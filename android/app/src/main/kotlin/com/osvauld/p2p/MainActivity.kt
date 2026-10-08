@@ -42,18 +42,20 @@ class MainActivity : ComponentActivity() {
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
         intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
+        if (savedInstanceState == null) CardInbox.take(intent)
         setContent { TinlineTheme { Root(app) } }
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
+        CardInbox.take(intent)
     }
 }
 
 private sealed interface Route {
     data object Home : Route
-    data class Add(val scan: Boolean) : Route
+    data class Add(val scan: Boolean, val ticket: String? = null, val paste: Boolean = false) : Route
     data class Contact(val did: String) : Route
     data class Verify(val did: String) : Route
     data object Settings : Route
@@ -165,9 +167,16 @@ private fun Root(app: P2pApp) {
         !termsOk -> TermsScreen(progress = null, onBack = null) { LegalStore.accept(ctx); termsOk = true }
         else -> {
             BackHandler(stack.size > 1) { pop() }
+            val inCall by app.calls.ui.collectAsState()
+            val top = stack.last()
+            val onHomeOrAdd = top is Route.Home || top is Route.Add
+            CardPrompts(app, clipboardOk = onHomeOrAdd && inCall == null, shareOk = true, showOnScreen = inCall == null, onChat = { p -> if (top is Route.Add) pop(); stack.add(Route.Chat(p.did)) }) { p ->
+                if (stack.last() is Route.Add) pop()
+                stack.add(Route.Add(false, ticket = p.ticket))
+            }
             when (val r = stack.last()) {
                 Route.Home -> HomeScreen(
-                    app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onSettings = { stack.add(Route.Settings) },
+                    app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onPaste = { stack.add(Route.Add(false, paste = true)) }, onSettings = { stack.add(Route.Settings) },
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                 )
@@ -184,7 +193,7 @@ private fun Root(app: P2pApp) {
                     ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong())
                 }
                 Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
-                is Route.Add -> AddContactScreen(app, r.scan, onClose = ::pop,
+                is Route.Add -> AddContactScreen(app, r.scan, r.ticket, r.paste, onClose = ::pop,
                     onCall = { c -> pop(); call(c.did) }, onVerify = { c -> pop(); stack.add(Route.Contact(c.did)); stack.add(Route.Verify(c.did)) })
                 is Route.Contact -> {
                     val c = contacts.firstOrNull { it.did == r.did }
