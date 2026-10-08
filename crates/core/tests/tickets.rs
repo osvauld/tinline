@@ -90,6 +90,32 @@ fn ticket_with_unusable_relay_is_refused() {
     }
 }
 
+/// S6: the contact, the spent nonce and the dropped ticket are one durable write, made before
+/// the Welcome. If it fails, the joiner gets no Welcome and the ticket is still good.
+#[test]
+fn failed_write_sends_no_welcome_and_spends_nothing() {
+    let (a, b) = (peer("s6-a", true), peer("s6-b", true));
+    let t = a.node.my_ticket().unwrap();
+    a.node.fail_next_writes(1);
+    assert!(matches!(b.node.add_contact(t.clone()), Err(Error::Rejected(_))));
+    assert!(b.node.contacts().is_empty(), "no Welcome, so no contact over there");
+    assert!(a.node.contacts().is_empty(), "nor over here");
+    assert_eq!(a.node.my_ticket().unwrap(), t, "the ticket is unspent and still current");
+
+    // Retrying works, and what was written survives a restart.
+    b.node.add_contact(t.clone()).unwrap();
+    assert_eq!(a.node.contacts().len(), 1);
+    assert_ne!(a.node.my_ticket().unwrap(), t, "spent: a fresh one is minted");
+    a.node.lock();
+    a.node.unlock(PASS.into()).unwrap();
+    a.node.start().unwrap();
+    assert_eq!(a.node.contacts().len(), 1);
+    // The spent nonce is durable too: the same ticket cannot be replayed by a third node.
+    let c = peer("s6-c", true);
+    assert!(matches!(c.node.add_contact(t), Err(Error::Rejected(_))));
+    assert_eq!(a.node.contacts().len(), 1);
+}
+
 fn now() -> u64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
 }

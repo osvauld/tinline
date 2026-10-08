@@ -9,6 +9,8 @@ mod error;
 mod logging;
 mod node;
 mod store;
+#[cfg(test)]
+mod account_tests;
 mod vault;
 mod voice;
 mod wire;

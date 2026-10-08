@@ -378,3 +378,29 @@ fn waiting_call_rings_normally_when_the_active_call_ends() {
     expect(&c, 20, "c active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
     c.node.hangup(c1.call_id).unwrap();
 }
+
+/// Switching to or starting another account is refused while a call rings or runs, and works
+/// the moment it is over.
+#[test]
+fn account_switch_is_refused_during_a_call() {
+    let (a, b) = pair("switch-incall");
+    let call = b.node.call(a.did.clone()).unwrap();
+    expect(&a, 40, "incoming", |e| matches!(e, Ev::Incoming(_)).then_some(()));
+    for p in [&a, &b] {
+        assert!(matches!(p.node.begin_new_account(), Err(p2pcore::Error::InCall)));
+        assert!(matches!(p.node.switch_account(p.did.clone()), Err(p2pcore::Error::InCall)));
+    }
+    a.node.answer(call.call_id.clone()).unwrap();
+    expect(&a, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
+    expect(&b, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
+    assert!(matches!(a.node.begin_new_account(), Err(p2pcore::Error::InCall)));
+    assert!(a.node.has_identity() && !a.node.contacts().is_empty());
+    b.node.hangup(call.call_id.clone()).unwrap();
+    expect(&a, 10, "ended", ended(&call.call_id));
+    a.node.begin_new_account().unwrap();
+    assert!(!a.node.has_identity() && a.node.contacts().is_empty() && !a.node.status().started);
+    a.node.switch_account(a.did.clone()).unwrap();
+    a.node.unlock(PASS.into()).unwrap();
+    assert_eq!(a.node.contacts().len(), 1);
+    assert_eq!(a.node.recent_calls(10).len(), 1, "the call was logged before the switch, and is still there");
+}

@@ -1808,6 +1808,7 @@ impl Inner {
                         // that we would forget.
                         let _ = ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await;
                         ctrl.finish();
+                        let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                         return Err(e);
                     }
                 }
