@@ -39,7 +39,7 @@ has re-run its acceptance command.
 | 29 | Call waiting (Flow 4b): second incoming call rings as a banner over the current call; Decline → caller sees Busy; End & answer; ignored 30 s → missed | sonnet:callwait (worktree) | `crates/core` calls, `android/` call screens, `crates/desktop` | done (e2e_callwait) |
 | 30 | Voice messages: Ogg Opus 16 kHz recorder/decoder + 64-peak waveform in core; Android hold-to-record + voice bubble; desktop recorder/player widget | sonnet:voice (worktree) | `crates/core/src/voice.rs`, `android/.../VoiceMessage.kt`, `crates/desktop/src/voice.rs` | done (emulator-checked by lead) |
 | 27 | Chat UI on Android + desktop (Android and desktop agents, against the frozen chat API stub from 25) | after 25's API stub, 26 | `android/`, `crates/desktop` | done (both merged; Android tested emulator <-> peer) |
-| 31 | See attachments: desktop image thumbnails + full-size viewer and Open for documents; Android Open for documents (PDF in-app, others via system viewer). Only safe types open; others Save only | sonnet:preview-android, sonnet:preview-desktop (worktrees) | `android/` chat files, `crates/desktop` chat | in progress |
+| 31 | See attachments: desktop image thumbnails + full-size viewer and Open for documents; Android Open for documents (PDF in-app, others via system viewer). Only safe types open; others Save only | sonnet:preview-android, sonnet:preview-desktop (worktrees) | `android/` chat files, `crates/desktop` chat | done (merged; emulator + demo screenshots; real phone↔laptop pending) |
 
 ## Roadmap (after the redesign)
 
