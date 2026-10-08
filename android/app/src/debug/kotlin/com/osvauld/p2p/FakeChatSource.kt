@@ -205,6 +205,7 @@ class FakeChatSource(private val app: P2pApp? = null, files: Boolean = false) : 
             var done = a.transferred.toLong()
             while (done < total) {
                 delay(300)
+                if (find(peerDid, messageId).attachment?.state == TransferState.REMOTE) return@launch  // cancelled
                 if (_links.value[peerDid] == Link.Offline) continue
                 done = (done + total / 8).coerceAtMost(total)
                 _events.tryEmit(ChatEvent.Progress(peerDid, a.hash, done, total, false))
@@ -214,6 +215,13 @@ class FakeChatSource(private val app: P2pApp? = null, files: Boolean = false) : 
             val cur = find(peerDid, messageId)
             put(cur.copy(attachment = cur.attachment!!.copy(state = TransferState.READY, transferred = 0UL)).also { _events.tryEmit(ChatEvent.Changed(it)) })
         }
+    }
+
+    override fun cancel(peerDid: String, messageId: String) {
+        val m0 = find(peerDid, messageId)
+        val a = m0.attachment ?: return
+        if (a.state == TransferState.READY) return
+        put(m0.copy(attachment = a.copy(state = TransferState.REMOTE, transferred = 0UL)).also { _events.tryEmit(ChatEvent.Changed(it)) })
     }
 
     override fun save(peerDid: String, messageId: String, destPath: String) {

@@ -443,11 +443,11 @@ impl App {
                 format!("{} \u{b7} paused \u{2014} waiting for {who} to come online", size_text(a.size))
             }
             TransferState::Downloading => format!("Downloading \u{b7} {} of {}", size_text(done), size_text(total.max(a.size))),
-            TransferState::Failed => "Download failed".to_string(),
+            TransferState::Failed => format!("{} \u{b7} couldn\u{2019}t download \u{2014} tap to retry", size_text(a.size)),
         };
         let action: Option<El> = match a.state {
             TransferState::Remote => Some(self.chip_btn(Icon::Download, "Download", fg, Msg::Chat(Cm::Download(m.id.clone())))),
-            TransferState::Failed => Some(self.chip_btn(Icon::RotateCw, "Retry", fg, Msg::Chat(Cm::Download(m.id.clone())))),
+            TransferState::Failed => Some(self.chip_btn(Icon::RotateCw, "Tap to retry", fg, Msg::Chat(Cm::Download(m.id.clone())))),
             TransferState::Ready => {
                 let mut r = row![].spacing(6);
                 if !voice && class.openable() {
@@ -455,7 +455,7 @@ impl App {
                 }
                 Some(r.push(self.chip_btn(Icon::Download, "Save", fg, Msg::Chat(Cm::Save(m.id.clone())))).into())
             }
-            TransferState::Downloading => None,
+            TransferState::Downloading => Some(self.chip_btn(Icon::X, "Cancel", fg, Msg::Chat(Cm::Cancel(m.id.clone())))),
         };
         let mut c = column![].spacing(6);
         let thumb = match class {
@@ -530,14 +530,17 @@ impl App {
         c = c.push(tx(if loading { "Loading\u{2026}".to_string() } else { status.to_string() }, 12.0, dim));
         match a.state {
             TransferState::Remote => c = c.push(self.chip_btn(Icon::Download, "Download", fg, Msg::Chat(Cm::Download(m.id.clone())))),
-            TransferState::Failed => c = c.push(self.chip_btn(Icon::RotateCw, "Retry", fg, Msg::Chat(Cm::Download(m.id.clone())))),
-            TransferState::Downloading if self.status.online => {
-                let v = if total > 0 { (done as f32 / total as f32).clamp(0.0, 1.0) } else { 0.0 };
-                c = c.push(progress_bar(0.0..=1.0, v).girth(5).length(180).style(move |_: &Theme| progress_bar::Style {
-                    background: iced::Background::Color(ui::alpha(fg, 0.15)),
-                    bar: iced::Background::Color(t.primary),
-                    border: Border { radius: 3.0.into(), ..Default::default() },
-                }));
+            TransferState::Failed => c = c.push(self.chip_btn(Icon::RotateCw, "Tap to retry", fg, Msg::Chat(Cm::Download(m.id.clone())))),
+            TransferState::Downloading => {
+                if self.status.online {
+                    let v = if total > 0 { (done as f32 / total as f32).clamp(0.0, 1.0) } else { 0.0 };
+                    c = c.push(progress_bar(0.0..=1.0, v).girth(5).length(180).style(move |_: &Theme| progress_bar::Style {
+                        background: iced::Background::Color(ui::alpha(fg, 0.15)),
+                        bar: iced::Background::Color(t.primary),
+                        border: Border { radius: 3.0.into(), ..Default::default() },
+                    }));
+                }
+                c = c.push(self.chip_btn(Icon::X, "Cancel", fg, Msg::Chat(Cm::Cancel(m.id.clone()))));
             }
             _ => {}
         }
