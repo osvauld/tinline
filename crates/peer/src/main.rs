@@ -243,7 +243,7 @@ fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) ->
         node.push_mic(pcm);
         heard.extend(node.pull_speaker());
         tick += 1;
-        if tick % 50 == 0
+        if tick.is_multiple_of(50)
             && let Some(s) = node.call_stats()
         {
             println!(

@@ -1606,14 +1606,7 @@ impl Inner {
             // A panic below must not leave the slot busy forever.
             let _slot = SlotGuard { inner: &this, call: call.clone() };
             // Hanging up while dialing must not wait out the dial timeout.
-            let cancelled = async {
-                loop {
-                    match cmds.recv().await {
-                        Some(Cmd::Answer) => continue,
-                        _ => break,
-                    }
-                }
-            };
+            let cancelled = async { while let Some(Cmd::Answer) = cmds.recv().await {} };
             let dialed = tokio::select! {
                 d = async {
                     tokio::time::timeout(DIAL_TOTAL, this.dial(&ep, &me, &contact, &call.info.call_id))
@@ -2029,7 +2022,7 @@ impl Inner {
             lost: rx.lost,
             recovered: rx.recovered_fec + rx.recovered_dred,
             concealed: rx.concealed,
-            buffered_ms: rx.buffered_ms as u32,
+            buffered_ms: rx.buffered_ms,
             rx_freq_hz: audio::estimate_frequency(&played).unwrap_or(0.0),
             rx_rms: audio::rms(&played),
         })
