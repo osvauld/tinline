@@ -745,6 +745,7 @@ impl Inner {
                 now_ms: now_ms(),
                 live,
                 history: None,
+                keys: vec![(sess.did.clone(), sess.device), (me.id.did().to_string(), me.device)],
             };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
@@ -923,11 +924,11 @@ impl Inner {
         let at = now_ms();
         let day = day_of(at);
         self.chat_shard(&core, &me, &pair, &day).await?;
-        let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to, file };
+        let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to, file, sig: Vec::new() };
         let conv = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-            let update = shard.add_message(&rec).map_err(|e| Error::Io(e.to_string()))?;
+            let update = shard.add_message(&rec, &me.profile.device_secret).map_err(|e| Error::Io(e.to_string()))?;
             let mut ops = vec![
                 core.store.put_mc_op(&pair, &day, &rec.id, shard.my_counter())?,
                 core.store.out_op(&pair, &day, true)?,
@@ -979,9 +980,9 @@ impl Inner {
                     if t.len() > MAX_TEXT {
                         return Err(Error::Protocol("message too long".into()));
                     }
-                    shard.edit(id, t, now_ms())
+                    shard.edit(id, t, now_ms(), &me.profile.device_secret)
                 }
-                None => shard.delete(id, now_ms()),
+                None => shard.delete(id, now_ms(), &me.profile.device_secret),
             }
             .map_err(|e| Error::Io(e.to_string()))?;
             let rec = shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?;
@@ -1526,7 +1527,7 @@ impl Inner {
         let mut shards = core.shards.lock();
         let shard = shards.get_mut(&(pair.to_string(), day.to_string())).ok_or(Error::NotFound)?;
         let before = shard.vv();
-        let ctx = Ctx { signer_did: sess.did.clone(), signer_peer: 0, now_ms: now_ms(), live: false, history: Some(me.id.did().to_string()) };
+        let ctx = Ctx { signer_did: sess.did.clone(), signer_peer: 0, now_ms: now_ms(), live: false, history: Some(me.id.did().to_string()), keys: vec![(sess.did.clone(), sess.device), (me.id.did().to_string(), me.device)] };
         shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
         if shard.vv() == before {
             return Ok(false);

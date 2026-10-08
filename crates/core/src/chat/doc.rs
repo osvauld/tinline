@@ -116,6 +116,66 @@ pub struct MsgRec {
     pub deleted: bool,
     pub reply_to: Option<String>,
     pub file: Option<FileRef>,
+    /// The author's device-key signature over everything above plus the doc id (`msg_sig_input`).
+    pub sig: Vec<u8>,
+}
+
+const MSG_SIG_DOMAIN: &[u8] = b"tinline-chat-msg-v1";
+
+fn put_str(v: &mut Vec<u8>, s: &str) {
+    v.extend_from_slice(&(s.len() as u32).to_be_bytes());
+    v.extend_from_slice(s.as_bytes());
+}
+
+/// Canonical bytes a message signature covers: doc id (so a message cannot be replayed into
+/// another day or pair), id, author, time, reply, file and the current text/edit/delete state.
+pub fn msg_sig_input(doc: &str, m: &MsgRec) -> Vec<u8> {
+    let mut v = MSG_SIG_DOMAIN.to_vec();
+    put_str(&mut v, doc);
+    put_str(&mut v, &m.id);
+    put_str(&mut v, &m.author);
+    v.extend_from_slice(&m.at.to_be_bytes());
+    put_str(&mut v, &m.text);
+    match m.edited_at {
+        None => v.push(0),
+        Some(t) => {
+            v.push(1);
+            v.extend_from_slice(&t.to_be_bytes());
+        }
+    }
+    v.push(m.deleted as u8);
+    match &m.reply_to {
+        None => v.push(0),
+        Some(r) => {
+            v.push(1);
+            put_str(&mut v, r);
+        }
+    }
+    match &m.file {
+        None => v.push(0),
+        Some(f) => {
+            v.push(1);
+            put_str(&mut v, &f.hash);
+            put_str(&mut v, &f.key);
+            put_str(&mut v, &f.name);
+            v.extend_from_slice(&f.size.to_be_bytes());
+            put_str(&mut v, &f.mime);
+            put_str(&mut v, &f.kind);
+            v.extend_from_slice(&f.duration_ms.to_be_bytes());
+            v.extend_from_slice(&(f.waveform.len() as u32).to_be_bytes());
+            v.extend_from_slice(&f.waveform);
+        }
+    }
+    v
+}
+
+pub fn sign_msg(secret: &[u8; 32], doc: &str, m: &MsgRec) -> Vec<u8> {
+    cryptography::signature::sign(secret, &msg_sig_input(doc, m)).to_vec()
+}
+
+pub fn verify_msg(device: &[u8; 32], doc: &str, m: &MsgRec) -> bool {
+    let Ok(sig) = <[u8; 64]>::try_from(m.sig.as_slice()) else { return false };
+    cryptography::signature::verify(device, &msg_sig_input(doc, m), &sig)
 }
 
 impl MsgRec {
@@ -176,6 +236,9 @@ pub struct Ctx {
     /// A history snapshot the peer vouches for: ops of both parties are accepted, authors must
     /// be `signer_did` or `me_did`.
     pub history: Option<String>,
+    /// Attested device keys by DID: whoever authored a new or changed message must have signed
+    /// it with one of these. (For our own DID: our own devices.)
+    pub keys: Vec<(String, [u8; 32])>,
 }
 
 fn read_i64(v: &LoroValue) -> Option<i64> {
@@ -206,7 +269,7 @@ fn read_messages(doc: &LoroDoc) -> Result<BTreeMap<String, MsgRec>, Reject> {
             let LoroValue::Map(m) = m else { return Err(Reject::Malformed(id.clone())) };
             let bad = || Reject::Malformed(id.clone());
             for k in m.keys() {
-                if !matches!(k.as_str(), "id" | "author" | "at" | "text" | "edited_at" | "deleted" | "reply_to" | "file") {
+                if !matches!(k.as_str(), "id" | "author" | "at" | "text" | "edited_at" | "deleted" | "reply_to" | "file" | "sig") {
                     return Err(bad());
                 }
             }
@@ -229,6 +292,7 @@ fn read_messages(doc: &LoroDoc) -> Result<BTreeMap<String, MsgRec>, Reject> {
                     None => None,
                     Some(v) => Some(read_str(v).ok_or_else(bad)?),
                 },
+                sig: get("sig").and_then(read_str).and_then(|h| hex::decode(h).ok()).filter(|b| b.len() == 64).ok_or_else(bad)?,
                 file: match get("file") {
                     None => None,
                     Some(v) => {
@@ -261,6 +325,7 @@ fn read_messages(doc: &LoroDoc) -> Result<BTreeMap<String, MsgRec>, Reject> {
 pub struct Shard {
     pub day: String,
     doc: LoroDoc,
+    name: String,
     pub peer: u64,
 }
 
@@ -270,7 +335,7 @@ impl Shard {
         let peer = peer_id(device, &name);
         let doc = LoroDoc::new();
         doc.set_peer_id(peer).expect("peer id");
-        Self { day: day.to_string(), doc, peer }
+        Self { day: day.to_string(), doc, name, peer }
     }
 
     /// Rebuilds a shard from its snapshot and the updates appended since.
@@ -316,13 +381,15 @@ impl Shard {
     }
 
     /// Adds a message; returns the update to persist and push.
-    pub fn add_message(&self, m: &MsgRec) -> Result<Vec<u8>, Reject> {
+    pub fn add_message(&self, m: &MsgRec, secret: &[u8; 32]) -> Result<Vec<u8>, Reject> {
+        let sig = hex::encode(sign_msg(secret, &self.name, m));
         self.write(|map| {
             let e = map.insert_container(&m.id, LoroMap::new())?;
             e.insert("id", m.id.as_str())?;
             e.insert("author", m.author.as_str())?;
             e.insert("at", m.at)?;
             e.insert("text", m.text.as_str())?;
+            e.insert("sig", sig.as_str())?;
             if let Some(r) = &m.reply_to {
                 e.insert("reply_to", r.as_str())?;
             }
@@ -340,22 +407,33 @@ impl Shard {
         }
     }
 
-    pub fn edit(&self, id: &str, text: &str, now_ms: i64) -> Result<Vec<u8>, Reject> {
+    /// Re-signs `id` after `change` was applied to its record.
+    fn resign(&self, id: &str, secret: &[u8; 32], change: impl FnOnce(&mut MsgRec)) -> Result<Vec<u8>, Reject> {
         let e = self.entry(id)?;
+        let mut rec = self.messages()?.remove(id).ok_or(Reject::Structure)?;
+        change(&mut rec);
+        let sig = hex::encode(sign_msg(secret, &self.name, &rec));
         self.write(|_| {
-            e.insert("text", text)?;
-            e.insert("edited_at", now_ms)?;
+            e.insert("text", rec.text.as_str())?;
+            e.insert("deleted", rec.deleted)?;
+            e.insert("edited_at", rec.edited_at.unwrap_or(0))?;
+            e.insert("sig", sig.as_str())?;
             Ok(())
         })
     }
 
-    pub fn delete(&self, id: &str, now_ms: i64) -> Result<Vec<u8>, Reject> {
-        let e = self.entry(id)?;
-        self.write(|_| {
-            e.insert("text", "")?;
-            e.insert("deleted", true)?;
-            e.insert("edited_at", now_ms)?;
-            Ok(())
+    pub fn edit(&self, id: &str, text: &str, now_ms: i64, secret: &[u8; 32]) -> Result<Vec<u8>, Reject> {
+        self.resign(id, secret, |r| {
+            r.text = text.to_string();
+            r.edited_at = Some(now_ms);
+        })
+    }
+
+    pub fn delete(&self, id: &str, now_ms: i64, secret: &[u8; 32]) -> Result<Vec<u8>, Reject> {
+        self.resign(id, secret, |r| {
+            r.text = String::new();
+            r.deleted = true;
+            r.edited_at = Some(now_ms);
         })
     }
 
@@ -436,6 +514,10 @@ impl Shard {
                     if old.id != new.id || old.author != new.author || old.at != new.at || old.reply_to != new.reply_to || old.file != new.file {
                         return Err(Reject::Immutable(id.clone()));
                     }
+                    // An old signed version must not roll a newer one back.
+                    if new.edited_at < old.edited_at || (old.deleted && !new.deleted) {
+                        return Err(Reject::Immutable(id.clone()));
+                    }
                     // Text, edited_at and deleted: the author only. (A history snapshot is a
                     // vouched copy of both parties' messages, so either may appear changed.)
                     if !history && old.author != ctx.signer_did {
@@ -444,6 +526,17 @@ impl Shard {
                     applied.changed.push(id.clone());
                 }
                 Some(_) => {}
+            }
+        }
+        // Every new or changed message must be signed by its author's attested device, bound to
+        // this very doc. This is what makes history snapshots safe to take from a peer.
+        for new in after.values() {
+            if before.get(&new.id) == Some(new) {
+                continue;
+            }
+            let signed = ctx.keys.iter().any(|(did, key)| *did == new.author && verify_msg(key, &self.name, new));
+            if !signed {
+                return Err(Reject::BadSignature);
             }
         }
         // Accepted: apply to the real doc.
