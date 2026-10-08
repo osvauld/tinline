@@ -157,6 +157,8 @@ struct App {
     status: NodeStatus,
     contacts: Vec<Contact>,
     ticket: Option<String>,
+    /// When "Copy card" was pressed; the button reads "Copied" for a moment after.
+    copied_at: Option<Instant>,
     qr: Option<Qr>,
     add_in: String,
     call: Option<CallView>,
@@ -422,6 +424,7 @@ impl App {
             status: node.status(),
             contacts: node.contacts(),
             ticket: None,
+            copied_at: None,
             qr: None,
             add_in: String::new(),
             call: None,
@@ -1051,7 +1054,7 @@ impl App {
             }
             Msg::CopyTicket => {
                 if let Some(t) = self.ticket.clone() {
-                    self.notice = Some("Contact card copied".into());
+                    self.copied_at = Some(Instant::now());
                     return clipboard::write(t);
                 }
             }

@@ -1,6 +1,7 @@
 //! Screens. Everything here is a pure function of `App`; styling comes from `ui`.
 
 use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 use iced::widget::{
     button, canvas, checkbox, column, container, pick_list, row, text, text_input, toggler, Space,
@@ -1010,7 +1011,11 @@ impl App {
                     label(t, "They scan your code"),
                     qr,
                     tx("Works once. Share it with someone who should be able to call you.", 13.0, t.ink2),
-                    pill(t, Kind::Quiet, Some(Icon::Copy), "Copy card", self.ticket.as_ref().map(|_| Msg::CopyTicket)),
+                    if self.copied_at.is_some_and(|at| at.elapsed() < Duration::from_secs(2)) {
+                        pill(t, Kind::Quiet, Some(Icon::Check), "Copied", self.ticket.as_ref().map(|_| Msg::CopyTicket))
+                    } else {
+                        pill(t, Kind::Quiet, Some(Icon::Copy), "Copy card", self.ticket.as_ref().map(|_| Msg::CopyTicket))
+                    },
                 ]
                 .spacing(12)
                 .width(Fill);
