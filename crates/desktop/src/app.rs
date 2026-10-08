@@ -1321,6 +1321,7 @@ impl App {
                         ok = enc.write_header().and_then(|mut w| w.write_image_data(&shot.rgba)).is_ok();
                     }
                     crate::tlog!("SHOT {path} {ok}");
+                    let _ = ok;
                     return iced::exit();
                 }
             }
