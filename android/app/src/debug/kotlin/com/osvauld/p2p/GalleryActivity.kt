@@ -131,6 +131,7 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
                 when (which) {
                     "conv_offline" -> fake.setLink(did, Link.Offline)
                     "conv_old" -> fake.seedOlder(did)
+                    "conv_new" -> fake.setLink(did, Link.Unknown)
                 }
             }
             val preview = when (which) {
@@ -141,7 +142,7 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
                 "viewer" -> ConvPreview(viewer = "outphoto")
                 else -> null
             }
-            ConversationScreen(fake, did, name, true, none, none, preview)
+            ConversationScreen(fake, did, name, true, none, none, preview, addedAtSecs = System.currentTimeMillis() / 1000 - (if (which == "conv_new") 0 else 30 * 86400))
         } else HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null)
     }
 }

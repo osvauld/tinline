@@ -78,7 +78,7 @@ private fun List<Message>.sortedChat() = sortedWith(compareBy<Message>({ it.at }
 @Composable
 fun ConversationScreen(
     source: ChatSource, peerDid: String, name: String, online: Boolean,
-    onBack: () -> Unit, onCall: () -> Unit, preview: ConvPreview? = null,
+    onBack: () -> Unit, onCall: () -> Unit, preview: ConvPreview? = null, addedAtSecs: Long? = null,
 ) {
     val c = Tin.c
     val ctx = LocalContext.current
@@ -88,6 +88,8 @@ fun ConversationScreen(
     var loaded by remember { mutableStateOf(false) }
     var olderDay by remember { mutableStateOf<String?>(null) }
     val fetched = remember { mutableSetOf<String>() }
+    // Their phone answered "nothing older": the banner would be false.
+    var noOlder by remember { mutableStateOf(false) }
     val progress = remember { mutableStateMapOf<String, Pair<Long, Long>>() }
     val requested = remember { mutableStateListOf<String>() }
     val link = (source.links.collectAsState().value[peerDid] ?: Link.Unknown)
@@ -161,6 +163,7 @@ fun ConversationScreen(
             } else if (msgs.isNotEmpty() && link != Link.Offline) {
                 val oldest = Instant.ofEpochMilli(msgs.first().at.toLong()).atZone(ZoneOffset.UTC).toLocalDate().toString()
                 if (fetched.add(oldest)) runCatching { source.fetchOlder(peerDid, oldest) }.onSuccess { n ->
+                    if (n == 0) noOlder = true
                     if (n > 0) runCatching { source.day(peerDid, oldest) }.onSuccess { p -> withContext(Dispatchers.Main) { olderDay = p.olderDay; p.messages.forEach(::upsert) } }
                 }
             }
@@ -248,7 +251,11 @@ fun ConversationScreen(
                         )
                     }
                 }
-                if (loaded && olderDay == null) item(key = "older") {
+                // Only when this phone may lack earlier days: the contact was added before our oldest day and their phone has not said "nothing older".
+                val oldestDay = msgs.firstOrNull()?.let { Instant.ofEpochMilli(it.at.toLong()).atZone(ZoneOffset.UTC).toLocalDate() }
+                val addedDay = addedAtSecs?.let { Instant.ofEpochSecond(it).atZone(ZoneOffset.UTC).toLocalDate() }
+                val mayHaveOlder = oldestDay != null && addedDay != null && addedDay.isBefore(oldestDay) && !noOlder
+                if (loaded && olderDay == null && mayHaveOlder) item(key = "older") {
                     Row(
                         Modifier.fillMaxWidth().padding(start = 0.dp, end = 0.dp, top = 8.dp, bottom = 8.dp).border(1.dp, c.ln2, RoundedCornerShape(14.dp)).padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -305,8 +312,8 @@ private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> 
         Avatar(name, peerDid, 40.dp)
         Column(Modifier.weight(1f)) {
             Text(name, style = TinType.bodyL.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (link != Link.Unknown) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Dot(if (link == Link.Offline) c.ln2 else c.pr, 8.dp, hollow = link == Link.Offline)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Dot(if (link == Link.Connected || link == Link.Relayed) c.pr else c.ln2, 8.dp, hollow = link != Link.Connected && link != Link.Relayed)
                 Text(when (link) { Link.Connected -> "Connected · direct"; Link.Relayed -> "Connected · relayed"; else -> "Not connected" }, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
             }
         }
