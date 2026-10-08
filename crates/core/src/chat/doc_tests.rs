@@ -83,7 +83,7 @@ fn honest_batches_apply_once_and_converge() {
 
 #[test]
 fn edits_and_deletes_by_the_author_only() {
-    let (mut a, b) = (shard(1), shard(2));
+    let (a, mut b) = (shard(1), shard(2));
     let u = a.add_message(&msg("m1", "A", NOON, "hello")).unwrap();
     b.apply_remote(&u, &ctx("A", 1, true)).unwrap();
     let e = a.edit("m1", "hello!", NOON + 1000).unwrap();
