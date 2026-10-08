@@ -45,6 +45,23 @@ def status():
           if h else "free")
 
 
+# Build output goes to the second disk when it is there: /home filled up with one 5-15 GB target/
+# per agent worktree. A checkout without target/ gets a symlink to its own dir on that disk.
+CACHE = Path.home() / "build-cache"
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def place_target():
+    t = ROOT / "target"
+    if t.exists() or t.is_symlink() or not os.path.ismount(CACHE):
+        return
+    name = "main" if ROOT.parent.name != "worktrees" else ROOT.name
+    real = CACHE / "p2p_chat" / name / "target"
+    real.mkdir(parents=True, exist_ok=True)
+    t.symlink_to(real)
+    print(f"buildlock: target/ -> {real}", file=sys.stderr, flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--who", default=os.environ.get("USER", "?"))
@@ -77,6 +94,7 @@ def main():
         print(f"buildlock: busy machine (load {os.getloadavg()[0]:.1f}, free {available_gib():.1f} GiB), waiting",
               file=sys.stderr, flush=True)
         time.sleep(10)
+    place_target()
     HOLDER.write_text(json.dumps({"who": a.who, "cmd": " ".join(cmd)[:200], "since": time.time(), "pid": os.getpid()}))
     env = dict(os.environ)
     # Leave two cores for the emulator, tests and the desktop.
