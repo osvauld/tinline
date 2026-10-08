@@ -79,17 +79,14 @@ fn unfamiliar_device_in_a_call_resets_verified_and_notifies() {
     assert_eq!(a.node.contacts()[0].did, b1.did);
     let d1 = a.node.contacts()[0].device.clone();
 
-    // Four more installs of B redeem tickets of A: A keeps four devices per contact, so b1's
-    // falls out of its list. b1 still holds A's grant and can call.
-    let mut others = Vec::new();
-    for i in 2..=5 {
-        let (bi, _) = peer(&format!("s4-b{i}"), Some(&phrase));
-        assert_eq!(bi.did, b1.did);
-        bi.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-        others.push(bi);
-    }
+    // A learns a signed device list of B that does not include b1 (as if B had unlinked it). Its
+    // seq is far in the future so that the list b1 signs itself on calling cannot replace it.
+    // b1 is no longer dialled, but it still holds A's grant and can call.
+    let bid = identity::recover(&phrase).unwrap();
+    let list = proto::sign_device_list(&bid, &[([9u8; 32], None)], 9_000_000_000_000_000);
+    assert!(a.node.offer_device_list_for_test(b1.did.clone(), serde_json::to_string(&list).unwrap()));
     assert_ne!(a.node.contacts()[0].device, d1);
-    // Adding a new device through a ticket already resets it (the existing rule).
+    // A new device in the list already reset it.
     assert!(!a.node.contacts()[0].verified);
 
     a.node.set_verified(b1.did.clone(), true).unwrap();
@@ -99,12 +96,12 @@ fn unfamiliar_device_in_a_call_resets_verified_and_notifies() {
     b1.node.call(a.did.clone()).unwrap();
     wait("the call to reach A", || a.events.incoming.load(Ordering::SeqCst) > 0);
     wait("verification reset", || !a.node.contacts()[0].verified);
-    assert_eq!(a.node.contacts()[0].device, d1, "the calling device is now the first to dial");
+    // Accepted for this call, but not added for dialling while a list exists.
+    assert_ne!(a.node.contacts()[0].device, d1, "a device missing from the list is not dialled");
     assert!(a.events.contacts_changed.load(Ordering::SeqCst) > changed, "the UI was told");
 
     // And it stuck: a restart of A still shows it unverified.
     a.node.lock();
     a.node.unlock(PASS.into()).unwrap();
     assert!(!a.node.contacts()[0].verified);
-    drop(others);
 }

@@ -321,8 +321,8 @@ impl Inner {
             .cloned()
             .ok_or(Error::NotFound)?;
         let mut last = Error::NotFound;
-        for device in &contact.devices {
-            let addr = match addr_for(device, contact.relay.as_deref()) {
+        for cd in &contact.devices {
+            let addr = match addr_for(&cd.device, cd.relay.as_deref()) {
                 Ok(a) => a,
                 Err(e) => {
                     last = e;
@@ -359,7 +359,7 @@ impl Inner {
             // We know who we are calling: present the grant they gave us.
             let grant = {
                 let s = self.shared.lock();
-                let c = s.state.contacts.iter().find(|c| c.devices.contains(&remote));
+                let c = s.state.contacts.iter().find(|c| c.has_device(&remote));
                 c.map(|c| c.grant_from_them.clone())
             };
             let grant = grant.ok_or(Error::NotFound)?;
@@ -1203,7 +1203,7 @@ impl Inner {
     }
 
     fn did_of_device(&self, dev: &[u8; 32]) -> Option<String> {
-        if let Some(c) = self.shared.lock().state.contacts.iter().find(|c| c.devices.contains(dev)) {
+        if let Some(c) = self.shared.lock().state.contacts.iter().find(|c| c.has_device(dev)) {
             return Some(c.did.clone());
         }
         let core = self.chat.lock().clone()?;
@@ -1357,14 +1357,14 @@ impl Inner {
         if let Some(s) = self.chat_session(core, did) {
             devices.push(s.device);
         }
-        for d in &contact.devices {
-            if !devices.contains(d) {
-                devices.push(*d);
+        for cd in &contact.devices {
+            if !devices.contains(&cd.device) {
+                devices.push(cd.device);
             }
         }
         let mut last = Error::NotFound;
         for d in devices {
-            let addr = addr_for(&d, contact.relay.as_deref())?;
+            let addr = addr_for(&d, contact.relay_for(&d))?;
             match tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, iroh_blobs::ALPN)).await {
                 Ok(Ok(c)) => return Ok(c),
                 Ok(Err(e)) => last = Error::net(e),

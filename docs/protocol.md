@@ -105,6 +105,53 @@ so every receiver converges on the same list. Carried in optional `devices` fiel
 The caller sends it to the other devices of the callee that it dialled with the same
 `call_id` (the first `Accept` wins; a `Decline` from any device ends the call).
 
+### Calls to several devices (task 34c)
+
+Every `CallHello` and `Accept` we send carries our current `DeviceList` (`devices`). The sealed
+account registry (`registry`, one entry per install, seeded with this device; real linking comes
+with task 34d) is the source; the list is re-signed with `seq` = unix ms (always higher than the
+previous one) whenever its content changes, that is when the registry changes or our relay does.
+Our own entry carries our current relay; others carry the last hint we know.
+
+**Receiving a list** (in a `CallHello` or an `Accept`): `verify_device_list(blob, contact_did)`;
+if it is `newer` than the stored one, the contact's devices are replaced (relay hints kept for
+devices we already knew), `verified` is reset if the list holds a device not in the previous set,
+the state is persisted (epoch fenced) and the UI hears `on_contacts_changed`. Older, equal,
+forged or other-DID lists change nothing. Once a contact has a list, `note_device` no longer
+adds devices: a device missing from the list that dials with a valid attestation is accepted for
+that call (same DID), is not dialled later, and resets `verified`. A contact without a list
+(peer from before device lists) behaves as before: the calling device is added, newest first.
+
+**Outgoing call** (one `call_id`, we are the coordinator). All devices of the contact are dialled
+concurrently, each connection does the usual `CallHello` handshake, and each device that fails
+simply drops out (the 30 s per-device and 45 s overall dial limits and the 60 s ring limit apply
+as before).
+
+- The first `Accept` wins: that connection becomes the call and is the only one media is read
+  from or sent on. Every other leg gets `Cancel{answered_elsewhere}` and is closed. A second
+  `Accept` that arrives meanwhile (simultaneous answers) gets the same `Cancel`, and that device
+  ends `answered_elsewhere` and stops its media, so exactly one device ends up active.
+- `Decline` from any device: the call ends `declined` and the other legs get
+  `Cancel{declined_elsewhere}`.
+- `Busy` or `Reject` (or a dead connection) from a device only removes that device. When none is
+  left the call ends `no_answer` if a device rang and gave up, `busy` if every device we reached
+  said busy, else `unreachable`.
+- Hanging up while dialling or ringing sends `Cancel{caller_hangup}` to every leg. When we hold
+  no device list for the contact it may be a peer from before lists, which does not know `cancel`:
+  it gets `Hangup` instead. (An old peer that does receive an unknown `cancel` frame fails to
+  decode it, treats that as a dead connection and ends `cancelled`, the same outcome.)
+- Glare: unchanged and decided per device pair. When a call from device X arrives while our
+  outgoing call to the same DID is dialling or ringing, the call from the lower device key wins;
+  if X is the lower key our outgoing call ends `superseded` (not logged) and every one of its
+  legs, siblings of X included, gets `Cancel{caller_hangup}`.
+
+**Incoming call**: while ringing (including the call-waiting banner) a `Cancel` ends the call
+`answered_elsewhere` / `declined_elsewhere` (history `missed: false`), `caller_hangup` ends it
+`cancelled`. If we had already sent `Accept` and then receive `Cancel`, the call ends at once with
+the reason of the cancel (`answered_elsewhere` for the lost answer race; its history duration is 0)
+and media stops. A `Cancel` is only honoured from the connection of that call, which is the
+caller's.
+
 ### Link QR
 
 `OSVL1:` + base32 (uppercase, no padding; decode is case-insensitive, trims whitespace) of
@@ -195,7 +242,9 @@ Tickets are single-use via the redeemed-nonce set and also expire.
   a bad relay hint in a hello is dropped.
 - Names from peers (hello, ticket) lose control and bidi-override characters and are cut to 64
   characters. Decline/reject reasons shown to the user are cut to 100.
-- A contact keeps at most its 4 newest devices; dialling tries them in turn within 45 s total.
+- A contact keeps up to 8 devices (`proto::MAX_LIST_DEVICES`), each with its own relay hint
+  (`ContactDevice { device, relay }`; the old single `relay` of a stored contact becomes the first
+  device's hint when it loads). A call dials all of them at once, see "Calls to several devices".
 - An unauthenticated connection holds one of 24 slots (plus 8 reserved for contacts' devices)
   from accept until it becomes a call or a contact, refusals and their short linger included,
   and has 15 s in total to deliver a hello.
@@ -224,15 +273,17 @@ Tickets are single-use via the redeemed-nonce set and also expire.
 |---|---|
 | `hangup_local` | Active call ended by us (also: we locked/removed the contact mid-call) |
 | `hangup_remote` | Active call ended by them |
-| `declined` | Caller's view: the callee declined |
+| `declined` | Caller's view: the callee (any of its devices) declined |
 | `declined_local` | Callee's view: we declined (not a missed call) |
-| `cancelled` | Callee's view: the caller gave up (or the link died) before we answered: missed. Caller's view: we hung up before they answered |
+| `cancelled` | Callee's view: the caller gave up (`Hangup` or `Cancel{caller_hangup}`, or the link died) before we answered: missed. Caller's view: we hung up before they answered |
 | `no_answer` | Rang for 60 s (30 s for a call waiting over another call), nobody answered (either side; missed on the callee) |
 | `unreachable` | Caller's view: could not connect, or they refused (offline, blocked, or unavailable) |
 | `connection_lost` | Active call lost the connection or media for 30 s |
-| `busy` | Caller's view: callee declined while in another call, or was already handling two calls. Callee's history: missed while busy |
+| `busy` | Caller's view: every device we reached declined while in another call, or was already handling two calls. Callee's history: missed while busy |
 | `unavailable` | History only (callee): turned away while unavailable; `missed` is false; never an `Ended` event |
 | `superseded` | Our outgoing call yielded to their simultaneous call; not logged |
+| `answered_elsewhere` | Callee's view: another of our devices took the call (also if we had answered at the same moment and lost); `missed` is false |
+| `declined_elsewhere` | Callee's view: another of our devices declined the call; `missed` is false |
 
 Old strings: `hung up` -> `hangup_local`/`hangup_remote`; `missed` -> `cancelled`/`no_answer`;
 `declined: <text>` -> `declined`; callee's own `declined` -> `declined_local`;

@@ -20,7 +20,7 @@ use tokio::sync::{OwnedMutexGuard, OwnedSemaphorePermit, Semaphore, mpsc, onesho
 use zeroize::Zeroize;
 
 use crate::accounts::{self, AccountDirs};
-use crate::store::{self, Backing, CallRecord, Disk, History, Profile, ProfileV2, State, Store, StoredContact};
+use crate::store::{self, Backing, CallRecord, ContactDevice, Disk, History, OwnDevice, Profile, ProfileV2, State, Store, StoredContact};
 use crate::vault::{self, Dek, Secrets};
 use crate::wire::Ctrl;
 use crate::Error;
@@ -33,8 +33,8 @@ const GRANT_TTL: u64 = 365 * 24 * 3600;
 const DIAL_TIMEOUT: Duration = Duration::from_secs(30);
 /// All devices of one contact together; each device alone gets at most `DIAL_TIMEOUT`.
 const DIAL_TOTAL: Duration = Duration::from_secs(45);
-/// Devices remembered per contact, newest first.
-const MAX_DEVICES: usize = 4;
+/// Devices remembered per contact: what a device list may hold.
+const MAX_DEVICES: usize = proto::MAX_LIST_DEVICES;
 /// An active call that receives no media for this long is over.
 const NO_AUDIO_TIMEOUT: Duration = Duration::from_secs(30);
 /// How long a turned-away connection gets to read our refusal before we let go of its slot.
@@ -232,6 +232,9 @@ pub(crate) struct Call {
     /// The session (see `Shared::epoch`) it belongs to: a call that outlives a switch of account
     /// must not write into the next one.
     epoch: u64,
+    /// Woken when the call ends from outside its own task (glare, lock), so an outgoing call
+    /// that is still dialling several devices stops at once.
+    ended_wake: tokio::sync::Notify,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
@@ -254,6 +257,119 @@ impl Call {
 
     fn state(&self) -> CallState {
         self.state.lock().clone()
+    }
+}
+
+/// What one dialled device of the callee reports to `run_outgoing`.
+enum LegEvent {
+    /// Connected and hello sent: the device is being rung (or about to be).
+    Connected,
+    Ringing,
+    /// The device answered; the connection and control stream are handed over.
+    Accepted {
+        renewed_grant: Option<proto::SignedGrant>,
+        devices: Option<proto::SignedBlob>,
+        conn: Connection,
+        ctrl: Ctrl,
+    },
+    Declined(String),
+    Busy,
+    /// It rang and the callee's ring timed out (it sent `Hangup`).
+    GaveUp,
+    /// Could not connect, refused (`Reject`: not a contact there, blocked, unavailable), or the
+    /// connection died.
+    Failed(String),
+}
+
+/// One connection of a fanned-out outgoing call: connects, sends the hello, relays what the
+/// device answers, and on a message from the coordinator sends it (a `Cancel`) and closes.
+struct Leg {
+    ep: Endpoint,
+    device: ContactDevice,
+    hello: Msg,
+    idx: usize,
+    events: mpsc::UnboundedSender<(usize, LegEvent)>,
+    cmds: mpsc::UnboundedReceiver<Msg>,
+    name: String,
+}
+
+impl Leg {
+    async fn run(mut self) {
+        let idx = self.idx;
+        let fail = |events: &mpsc::UnboundedSender<(usize, LegEvent)>, why: String| {
+            let _ = events.send((idx, LegEvent::Failed(why)));
+        };
+        let addr = match addr_for(&self.device.device, self.device.relay.as_deref()) {
+            Ok(a) => a,
+            Err(e) => return fail(&self.events, e.to_string()),
+        };
+        tracing::debug!("dialing {} at {}", self.name, addr.id);
+        let connect = tokio::time::timeout(DIAL_TIMEOUT, self.ep.connect(addr, proto::ALPN));
+        let conn = tokio::select! {
+            c = connect => match c {
+                Ok(Ok(c)) => c,
+                Ok(Err(e)) => return fail(&self.events, e.to_string()),
+                Err(_) => return fail(&self.events, "timed out".into()),
+            },
+            // Told to stop before we even connected: nothing was sent, nothing to say.
+            _ = self.cmds.recv() => return,
+        };
+        let (send, recv) = match conn.open_bi().await {
+            Ok(s) => s,
+            Err(e) => return fail(&self.events, e.to_string()),
+        };
+        let mut ctrl = Ctrl::new(send, recv);
+        if let Err(e) = ctrl.send(&self.hello).await {
+            conn.close(0u32.into(), b"bye");
+            return fail(&self.events, e.to_string());
+        }
+        let _ = self.events.send((idx, LegEvent::Connected));
+        loop {
+            tokio::select! {
+                msg = ctrl.recv() => {
+                    let ev = match msg {
+                        Ok(Some(Msg::Ringing)) => {
+                            let _ = self.events.send((idx, LegEvent::Ringing));
+                            continue;
+                        }
+                        Ok(Some(Msg::Accept { renewed_grant, devices })) => {
+                            let keep = conn.clone();
+                            let ev = LegEvent::Accepted { renewed_grant, devices, conn, ctrl };
+                            if self.events.send((idx, ev)).is_err() {
+                                keep.close(0u32.into(), b"bye");
+                            }
+                            return;
+                        }
+                        Ok(Some(Msg::Decline { reason })) => LegEvent::Declined(reason),
+                        Ok(Some(Msg::Busy)) => LegEvent::Busy,
+                        Ok(Some(Msg::Hangup)) => LegEvent::GaveUp,
+                        Ok(Some(Msg::Reject { reason })) => LegEvent::Failed(format!("rejected: {}", clip_reason(&reason))),
+                        Ok(Some(other)) => {
+                            tracing::debug!("ignoring {} before the answer", msg_name(&other));
+                            continue;
+                        }
+                        Ok(None) => LegEvent::Failed("closed".into()),
+                        Err(e) => LegEvent::Failed(e.to_string()),
+                    };
+                    let _ = self.events.send((idx, ev));
+                    conn.close(0u32.into(), b"bye");
+                    return;
+                }
+                cmd = self.cmds.recv() => {
+                    if let Some(msg) = cmd {
+                        let _ = ctrl.send(&msg).await;
+                    }
+                    ctrl.finish();
+                    // Let the frame leave; the callee closes first when it can.
+                    let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
+                    conn.close(0u32.into(), b"bye");
+                    return;
+                }
+                _ = conn.closed() => {
+                    return fail(&self.events, "connection lost".into());
+                }
+            }
+        }
     }
 }
 
@@ -973,7 +1089,7 @@ impl From<&StoredContact> for Contact {
             device: c
                 .devices
                 .first()
-                .and_then(|d| PublicKey::from_bytes(d).ok())
+                .and_then(|d| PublicKey::from_bytes(&d.device).ok())
                 .map(|k| k.to_string())
                 .unwrap_or_default(),
             added_at: c.added_at,
@@ -1156,6 +1272,77 @@ impl Node {
         drop(s);
         self.inner.chat_open();
         Ok(())
+    }
+
+    /// For tests: this install's attestation as JSON, to register it with another install of
+    /// the same phrase (`add_own_device_for_test`).
+    #[doc(hidden)]
+    pub fn own_attestation_for_test(&self) -> Result<String, Error> {
+        Ok(serde_json::to_string(&self.inner.me()?.attestation)?)
+    }
+
+    /// For tests: registers a second install of this account (real linking and sync are task
+    /// 34d). Its attestation must verify under our DID. The device list we send changes.
+    #[doc(hidden)]
+    pub fn add_own_device_for_test(&self, attestation_json: String) -> Result<(), Error> {
+        let me = self.inner.me()?;
+        let attestation: proto::SignedAttestation = serde_json::from_str(&attestation_json)?;
+        let att = proto::verify_attestation(&attestation).map_err(|e| Error::Protocol(e.to_string()))?;
+        if att.did != me.id.did() {
+            return Err(Error::Protocol("not our account".into()));
+        }
+        let device = att.device_key().map_err(|e| Error::Protocol(e.to_string()))?;
+        {
+            let mut s = self.inner.shared.lock();
+            if s.epoch != me.epoch {
+                return Err(Error::Locked);
+            }
+            let reg = &mut s.state.registry;
+            match reg.iter_mut().find(|e| e.device == device) {
+                Some(e) => {
+                    e.attestation = attestation;
+                    e.removed = false;
+                }
+                None => reg.push(OwnDevice { device, attestation, label: String::new(), removed: false, last_seen: now(), relay: None }),
+            }
+        }
+        self.inner.persist_for(Some(me.epoch))
+    }
+
+    /// For tests: offers `list_json` (a `SignedBlob`) to the contact `did` as if it had arrived
+    /// in a hello; whether it was taken.
+    #[doc(hidden)]
+    pub fn offer_device_list_for_test(&self, did: String, list_json: String) -> bool {
+        let Ok(me) = self.inner.me() else { return false };
+        let Ok(blob) = serde_json::from_str::<proto::SignedBlob>(&list_json) else { return false };
+        let taken = self.inner.accept_device_list(me.epoch, &did, &blob);
+        let _ = self.inner.persist_for(Some(me.epoch));
+        taken
+    }
+
+    /// For tests: the device keys we would dial for `did`, in order (text form).
+    #[doc(hidden)]
+    pub fn contact_devices_for_test(&self, did: String) -> Vec<String> {
+        let s = self.inner.shared.lock();
+        s.state
+            .contacts
+            .iter()
+            .find(|c| c.did == did)
+            .map(|c| c.devices.iter().map(|d| proto::device_to_text(&d.device)).collect())
+            .unwrap_or_default()
+    }
+
+    /// For tests: this install's device key (text form, as in `contact_devices_for_test`).
+    #[doc(hidden)]
+    pub fn device_key_for_test(&self) -> Result<String, Error> {
+        Ok(proto::device_to_text(&self.inner.me()?.device))
+    }
+
+    /// For tests: the device list we currently publish (a JSON `SignedBlob`).
+    #[doc(hidden)]
+    pub fn own_device_list_for_test(&self) -> Option<String> {
+        let me = self.inner.me().ok()?;
+        serde_json::to_string(&self.inner.my_device_list(&me)?).ok()
     }
 
     /// For tests: the next `n` writes of account state fail, as if the disk were full.
@@ -1826,7 +2013,7 @@ impl Inner {
     }
 
     pub(crate) fn is_contact_device(&self, device: &[u8; 32]) -> bool {
-        self.shared.lock().state.contacts.iter().any(|c| c.devices.contains(device))
+        self.shared.lock().state.contacts.iter().any(|c| c.has_device(device))
     }
 
     pub(crate) async fn incoming_call(
@@ -1838,8 +2025,8 @@ impl Inner {
         me: &Me,
         permit: OwnedSemaphorePermit,
     ) -> Result<(), Error> {
-        let Msg::CallHello { call_id, relay: hint, .. } = &hello else { unreachable!() };
-        let (call_id, hint) = (call_id.clone(), relay_hint(hint));
+        let Msg::CallHello { call_id, relay: hint, devices: list, .. } = &hello else { unreachable!() };
+        let (call_id, hint, list) = (call_id.clone(), relay_hint(hint), list.clone());
         // It reaches the UI and logs: keep it to what we ourselves generate.
         if call_id.is_empty() || call_id.len() > 64 || !call_id.bytes().all(|b| b.is_ascii_alphanumeric()) {
             ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
@@ -1904,7 +2091,10 @@ impl Inner {
         // From here every exit must free the slot; the guard does it if nothing else did.
         let _slot = SlotGuard { inner: &self, call: call.clone() };
         *call.conn.lock() = Some(conn.clone());
-        // A new device for a known contact: dial it next time.
+        // Their device list first (it decides whether this device is dialled), then this device.
+        if let Some(list) = &list {
+            self.accept_device_list(me.epoch, &caller.did, list);
+        }
         self.note_device(me.epoch, &caller.did, remote, hint);
         ctrl.send(&Msg::Ringing).await?;
         self.log(format!("incoming call from {}", info.peer_name));
@@ -1918,7 +2108,7 @@ impl Inner {
         }
         // Authenticated and holding the call slot: no longer one of the unproven connections.
         drop(permit);
-        self.clone().run_call(call, conn, ctrl, cmds, Some(caller.did)).await;
+        self.clone().run_call(call, conn, ctrl, cmds, Some(caller.did), None).await;
         Ok(())
     }
 
@@ -1939,6 +2129,8 @@ impl Inner {
 
     /// The caller's device and relay as of this call, so our next call to them dials straight
     /// there. A device we have not seen before resets `verified`, exactly as when they add us.
+    /// A contact whose signed device list we hold is dialled by that list only: a device missing
+    /// from it is accepted for this call (same DID) but not added.
     pub(crate) fn note_device(self: &Arc<Self>, epoch: u64, did: &str, device: [u8; 32], relay: Option<String>) {
         let changed = {
             let mut s = self.shared.lock();
@@ -1947,18 +2139,27 @@ impl Inner {
             }
             let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == did) else { return };
             let mut changed = false;
-            if c.devices.first() != Some(&device) {
-                if !c.devices.contains(&device) {
-                    c.verified = false;
+            if c.has_device(&device) {
+                if let Some(d) = c.devices.iter_mut().find(|d| d.device == device)
+                    && relay.is_some()
+                    && d.relay != relay
+                {
+                    d.relay = relay;
+                    changed = true;
                 }
-                c.devices.retain(|d| *d != device);
-                c.devices.insert(0, device);
-                c.devices.truncate(MAX_DEVICES);
-                changed = true;
-            }
-            if relay.is_some() && c.relay != relay {
-                c.relay = relay;
-                changed = true;
+                if c.device_list.is_none() && c.devices.first().map(|d| d.device) != Some(device) {
+                    let at = c.devices.iter().position(|d| d.device == device).unwrap_or(0);
+                    let d = c.devices.remove(at);
+                    c.devices.insert(0, d);
+                    changed = true;
+                }
+            } else {
+                changed = std::mem::replace(&mut c.verified, false);
+                if c.device_list.is_none() {
+                    c.devices.insert(0, ContactDevice { device, relay });
+                    c.devices.truncate(MAX_DEVICES);
+                    changed = true;
+                }
             }
             changed
         };
@@ -1966,6 +2167,94 @@ impl Inner {
             self.persist_in_background(epoch);
             self.events.on_contacts_changed();
         }
+    }
+
+    /// A contact's signed `DeviceList` from a hello or an accept: kept if it verifies for that
+    /// DID and is newer than the one we hold. A new device in it resets `verified`.
+    pub(crate) fn accept_device_list(self: &Arc<Self>, epoch: u64, did: &str, blob: &proto::SignedBlob) -> bool {
+        let changed = {
+            let mut s = self.shared.lock();
+            if s.epoch != epoch {
+                return false;
+            }
+            match s.state.contacts.iter_mut().find(|c| c.did == did) {
+                Some(c) => merge_device_list(c, blob),
+                None => false,
+            }
+        };
+        if changed {
+            self.persist_in_background(epoch);
+            self.events.on_contacts_changed();
+        }
+        changed
+    }
+
+    /// Our own `DeviceList`: every live install of the registry (this device first, on its
+    /// current relay). Re-signed with a higher `seq` only when its content changed.
+    pub(crate) fn my_device_list(self: &Arc<Self>, me: &Me) -> Option<proto::SignedBlob> {
+        let relay = self.endpoint().ok().as_ref().and_then(relay_of);
+        let (blob, dirty) = {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return None;
+            }
+            let label = s.device_label.clone().unwrap_or_default();
+            let st = &mut s.state;
+            let mut dirty = false;
+            match st.registry.iter_mut().find(|e| e.device == me.device) {
+                Some(e) => {
+                    if relay.is_some() && e.relay != relay {
+                        e.relay = relay;
+                        dirty = true;
+                    }
+                    if !label.is_empty() && e.label != label {
+                        e.label = label;
+                        dirty = true;
+                    }
+                    e.removed = false;
+                }
+                None => {
+                    st.registry.insert(0, OwnDevice {
+                        device: me.device,
+                        attestation: me.attestation.clone(),
+                        label,
+                        removed: false,
+                        last_seen: now(),
+                        relay,
+                    });
+                    dirty = true;
+                }
+            }
+            let mut want: Vec<([u8; 32], Option<String>)> = vec![(me.device, None)];
+            for e in &st.registry {
+                if e.device == me.device {
+                    want[0].1 = e.relay.clone();
+                } else if !e.removed {
+                    want.push((e.device, e.relay.clone()));
+                }
+            }
+            want.truncate(MAX_DEVICES);
+            let same = st.own_list.as_ref().is_some_and(|b| {
+                proto::verify_device_list(b, me.id.did()).is_ok_and(|l| {
+                    l.devices.len() == want.len()
+                        && l.devices.iter().zip(&want).all(|(e, (d, r))| e.device_key().ok() == Some(*d) && &e.relay == r)
+                })
+            });
+            if !same {
+                let prev = st
+                    .own_list
+                    .as_ref()
+                    .and_then(|b| proto::verify_device_list(b, me.id.did()).ok())
+                    .map_or(0, |l| l.seq);
+                st.own_list = Some(proto::sign_device_list(&me.id, &want, now_ms().max(prev + 1)));
+                dirty = true;
+            }
+            (st.own_list.clone(), dirty)
+        };
+        if dirty {
+            self.persist_in_background(me.epoch);
+        }
+        blob
     }
 
     fn new_call(
@@ -1998,6 +2287,7 @@ impl Inner {
             waiting: AtomicBool::new(false),
             answer_on_promote: AtomicBool::new(false),
             epoch,
+            ended_wake: tokio::sync::Notify::new(),
         });
         Ok((call, rx))
     }
@@ -2060,87 +2350,218 @@ impl Inner {
             peer_name: display_name(&contact),
             incoming: false,
         };
-        let (call, mut cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
+        let (call, cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
         let this = self.clone();
         self.handle.spawn(async move {
             // A panic below must not leave the slot busy forever.
             let _slot = SlotGuard { inner: &this, call: call.clone() };
-            // Hanging up while dialing must not wait out the dial timeout.
-            let cancelled = async { while let Some(Cmd::Answer) = cmds.recv().await {} };
-            let dialed = tokio::select! {
-                d = async {
-                    tokio::time::timeout(DIAL_TOTAL, this.dial(&ep, &me, &contact, &call.info.call_id))
-                        .await
-                        .unwrap_or(Err(Error::Timeout))
-                } => Some(d),
-                _ = cancelled => None,
-            };
-            match dialed {
-                // Ended while dialing (glare): drop the fresh connection, don't start a call.
-                Some(Ok((conn, _))) if *call.ended.lock() => conn.close(0u32.into(), b"bye"),
-                Some(Ok((conn, ctrl))) => {
-                    *call.conn.lock() = Some(conn.clone());
-                    this.clone().run_call(call, conn, ctrl, cmds, None).await;
-                }
-                Some(Err(e)) => {
-                    this.log(format!("could not reach {}: {e}", contact.name));
-                    this.end_call(&call, "unreachable".into());
-                }
-                None => this.end_call(&call, "cancelled".into()),
-            }
+            this.clone().run_outgoing(ep, me, contact, call, cmds).await;
         });
         Ok(info)
     }
 
-    pub(crate) async fn dial(
-        &self,
-        ep: &Endpoint,
-        me: &Me,
-        contact: &StoredContact,
-        call_id: &str,
-    ) -> Result<(Connection, Ctrl), Error> {
-        let mut last = Error::NotFound;
-        for device in &contact.devices {
-            let addr = match addr_for(device, contact.relay.as_deref()) {
-                Ok(a) => a,
-                Err(e) => {
-                    last = e;
-                    continue;
-                }
+    /// One logical call to a person: one call id, dialled at all their known devices at once
+    /// (design: `docs/design/device-linking.md` section 7). We are the coordinator:
+    ///
+    /// - the first `Accept` wins and its connection becomes the call; every other leg gets
+    ///   `Cancel(AnsweredElsewhere)` (a leg that accepted too, simultaneously, is sent the same
+    ///   and ends on its side);
+    /// - a `Decline` from any device ends the call `declined`, the rest get
+    ///   `Cancel(DeclinedElsewhere)`;
+    /// - `Busy` / `Reject` / a dead connection only drop that leg; when none is left the call ends
+    ///   `no_answer` if some device rang and gave up, else `busy` if every device we reached said
+    ///   busy, else `unreachable`;
+    /// - hanging up while dialling or ringing sends `Cancel(CallerHangup)` to every leg (a plain
+    ///   `Hangup` when we hold no device list for them: that is how a peer from before device lists
+    ///   understands it).
+    ///
+    /// Media is read from the winning connection only; messages of the other legs are not read
+    /// once they are cancelled.
+    async fn run_outgoing(
+        self: Arc<Self>,
+        ep: Endpoint,
+        me: Arc<Me>,
+        contact: StoredContact,
+        call: Arc<Call>,
+        mut cmds: mpsc::UnboundedReceiver<Cmd>,
+    ) {
+        let list = self.my_device_list(&me);
+        let (ev_tx, mut ev_rx) = mpsc::unbounded_channel::<(usize, LegEvent)>();
+        let mut legs: Vec<Option<mpsc::UnboundedSender<Msg>>> = Vec::new();
+        for (idx, device) in contact.devices.iter().enumerate() {
+            let (tx, rx) = mpsc::unbounded_channel();
+            legs.push(Some(tx));
+            let leg = Leg {
+                ep: ep.clone(),
+                device: device.clone(),
+                hello: {
+                    let mut hello = proto::call_hello(
+                        &me.id,
+                        me.attestation.clone(),
+                        contact.grant_from_them.clone(),
+                        call.info.call_id.clone(),
+                    );
+                    if let Msg::CallHello { relay, devices, .. } = &mut hello {
+                        *relay = relay_of(&ep);
+                        *devices = list.clone();
+                    }
+                    hello
+                },
+                idx,
+                events: ev_tx.clone(),
+                cmds: rx,
+                name: contact.name.clone(),
             };
-            self.log(format!("dialing {} at {}", contact.name, addr.id));
-            let conn = match tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, proto::ALPN)).await {
-                Ok(Ok(c)) => c,
-                Ok(Err(e)) => {
-                    last = Error::net(e);
-                    continue;
-                }
-                Err(_) => {
-                    last = Error::Timeout;
-                    continue;
-                }
-            };
-            let (send, recv) = match conn.open_bi().await {
-                Ok(s) => s,
-                Err(e) => {
-                    last = Error::net(e);
-                    continue;
-                }
-            };
-            let mut ctrl = Ctrl::new(send, recv);
-            let mut hello = proto::call_hello(
-                &me.id,
-                me.attestation.clone(),
-                contact.grant_from_them.clone(),
-                call_id.to_string(),
-            );
-            if let Msg::CallHello { relay, .. } = &mut hello {
-                *relay = relay_of(ep);
-            }
-            ctrl.send(&hello).await?;
-            return Ok((conn, ctrl));
+            self.handle.spawn(leg.run());
         }
-        Err(last)
+        drop(ev_tx);
+        // What each leg is doing, to decide the end when none is left.
+        #[derive(Clone, Copy, PartialEq)]
+        enum LegPhase {
+            Dialing,
+            Live,
+            Busy,
+            Gone,
+            GaveUp,
+        }
+        let mut state = vec![LegPhase::Dialing; legs.len()];
+        // Telling the others is queued; each leg task sends it and closes.
+        let cancel_others = |legs: &mut Vec<Option<mpsc::UnboundedSender<Msg>>>, keep: Option<usize>, msg: Msg| {
+            for (i, l) in legs.iter_mut().enumerate() {
+                if Some(i) != keep
+                    && let Some(tx) = l.take()
+                {
+                    let _ = tx.send(msg.clone());
+                }
+            }
+        };
+        let hangup_msg = if contact.device_list.is_some() {
+            Msg::Cancel { reason: proto::CancelReason::CallerHangup }
+        } else {
+            Msg::Hangup
+        };
+        let dial_deadline = tokio::time::Instant::now() + DIAL_TOTAL;
+        let mut ring_deadline: Option<tokio::time::Instant> = None;
+        let reason: String = loop {
+            if *call.ended.lock() {
+                // Ended from outside (glare: a sibling's simultaneous call won; lock).
+                cancel_others(&mut legs, None, hangup_msg.clone());
+                return;
+            }
+            if state.iter().all(|s| matches!(s, LegPhase::Busy | LegPhase::Gone | LegPhase::GaveUp)) {
+                break if state.contains(&LegPhase::GaveUp) {
+                    "no_answer"
+                } else if state.contains(&LegPhase::Busy) {
+                    "busy"
+                } else {
+                    "unreachable"
+                }
+                .into();
+            }
+            tokio::select! {
+                ev = ev_rx.recv() => {
+                    let Some((idx, ev)) = ev else { break "unreachable".into() };
+                    match ev {
+                        LegEvent::Connected => {
+                            state[idx] = LegPhase::Live;
+                            ring_deadline.get_or_insert(tokio::time::Instant::now() + RING_TIMEOUT);
+                        }
+                        LegEvent::Ringing => {
+                            if call.state() == CallState::Dialing {
+                                self.set_state(&call, CallState::Ringing);
+                            }
+                        }
+                        LegEvent::Accepted { renewed_grant, devices, conn, ctrl } => {
+                            legs[idx] = None;
+                            if *call.ended.lock() {
+                                conn.close(0u32.into(), b"bye");
+                                continue;
+                            }
+                            if let Some(g) = renewed_grant {
+                                self.renew_grant(call.epoch, &call.info.peer_did, g);
+                            }
+                            if let Some(list) = &devices {
+                                self.accept_device_list(call.epoch, &call.info.peer_did, list);
+                            }
+                            cancel_others(&mut legs, None, Msg::Cancel { reason: proto::CancelReason::AnsweredElsewhere });
+                            // A device that answered at the same moment has an `Accepted` still in
+                            // the queue: it gets the same cancel.
+                            Self::cancel_late_answers(&self.handle, ev_rx, Msg::Cancel { reason: proto::CancelReason::AnsweredElsewhere });
+                            *call.conn.lock() = Some(conn.clone());
+                            let datagrams = self.start_media(&call, &conn);
+                            self.set_state(&call, CallState::Active);
+                            self.clone().run_call(call, conn, ctrl, cmds, None, Some(datagrams)).await;
+                            return;
+                        }
+                        LegEvent::Declined(why) => {
+                            self.log(format!("declined: {}", clip_reason(&why)));
+                            cancel_others(&mut legs, Some(idx), Msg::Cancel { reason: proto::CancelReason::DeclinedElsewhere });
+                            break "declined".into();
+                        }
+                        LegEvent::Busy => {
+                            legs[idx] = None;
+                            state[idx] = LegPhase::Busy;
+                        }
+                        LegEvent::GaveUp => {
+                            legs[idx] = None;
+                            state[idx] = LegPhase::GaveUp;
+                        }
+                        LegEvent::Failed(why) => {
+                            self.log(format!("device {idx} of {}: {why}", contact.name));
+                            legs[idx] = None;
+                            state[idx] = LegPhase::Gone;
+                        }
+                    }
+                }
+                cmd = cmds.recv() => match cmd {
+                    Some(Cmd::Answer) => {}
+                    // Decline / hangup while dialling or ringing, or the handle went away.
+                    _ => {
+                        cancel_others(&mut legs, None, hangup_msg.clone());
+                        break "cancelled".into();
+                    }
+                },
+                _ = call.ended_wake.notified() => {}
+                _ = tokio::time::sleep_until(dial_deadline), if ring_deadline.is_none() => {
+                    cancel_others(&mut legs, None, hangup_msg.clone());
+                    break "unreachable".into();
+                }
+                _ = async { tokio::time::sleep_until(ring_deadline.expect("guarded")).await }, if ring_deadline.is_some() => {
+                    cancel_others(&mut legs, None, Msg::Hangup);
+                    break "no_answer".into();
+                }
+            }
+        };
+        // Answers that crossed our decision (or a hangup) still need telling.
+        let late = match reason.as_str() {
+            "declined" => Some(Msg::Cancel { reason: proto::CancelReason::DeclinedElsewhere }),
+            "cancelled" => Some(hangup_msg.clone()),
+            _ => None,
+        };
+        if let Some(late) = late {
+            Self::cancel_late_answers(&self.handle, ev_rx, late);
+        }
+        self.end_call(&call, reason);
+    }
+
+    /// Keeps reading the legs' events after the call was decided: a device whose `Accept` was
+    /// already on its way gets `msg` (a `Cancel`) and is closed, so it stops instead of waiting
+    /// on a call nobody will carry. Ends when the last leg task is gone.
+    fn cancel_late_answers(
+        handle: &tokio::runtime::Handle,
+        mut events: mpsc::UnboundedReceiver<(usize, LegEvent)>,
+        msg: Msg,
+    ) {
+        handle.spawn(async move {
+            while let Some((_, ev)) = events.recv().await {
+                if let LegEvent::Accepted { conn, mut ctrl, .. } = ev {
+                    let _ = ctrl.send(&msg).await;
+                    ctrl.finish();
+                    let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
+                    conn.close(0u32.into(), b"bye");
+                }
+            }
+        });
     }
 
     /// Drives one call from ringing to the end, on either side. `incoming_from` is the caller's
@@ -2152,10 +2573,11 @@ impl Inner {
         mut ctrl: Ctrl,
         mut cmds: mpsc::UnboundedReceiver<Cmd>,
         incoming_from: Option<String>,
+        preactive: Option<oneshot::Sender<()>>,
     ) {
         let ring = if call.waiting.load(Ordering::SeqCst) { waiting_ring_timeout() } else { RING_TIMEOUT };
         let ring_deadline = tokio::time::Instant::now() + ring;
-        let mut datagrams: Option<oneshot::Sender<()>> = None;
+        let mut datagrams: Option<oneshot::Sender<()>> = preactive;
         let mut watchdog = tokio::time::interval(Duration::from_secs(5));
         watchdog.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         // How a call that dies under us ends, by who we are and how far it got.
@@ -2170,12 +2592,23 @@ impl Inner {
             tokio::select! {
                 msg = ctrl.recv() => match msg {
                     Ok(Some(Msg::Ringing)) if !active => self.set_state(&call, CallState::Ringing),
+<<<<<<< HEAD
                     Ok(Some(Msg::Accept { renewed_grant })) if incoming_from.is_none() && !active => {
                         if let Some(g) = renewed_grant {
                             self.renew_grant(call.epoch, &call.info.peer_did, g);
+=======
+                    // The caller told us another of our devices took the call (or declined it),
+                    // or that it gave up. If we had answered meanwhile, we stop at once.
+                    Ok(Some(Msg::Cancel { reason })) if incoming_from.is_some() => {
+                        self.log(format!("call cancelled by the caller: {reason:?}"));
+                        break match reason {
+                            proto::CancelReason::AnsweredElsewhere => "answered_elsewhere",
+                            proto::CancelReason::DeclinedElsewhere => "declined_elsewhere",
+                            proto::CancelReason::CallerHangup if active => "hangup_remote",
+                            proto::CancelReason::CallerHangup => "cancelled",
+>>>>>>> 08ade9b (core: contacts dial all devices of a person; signed DeviceList distributed; first answer wins, global decline, answered/declined elsewhere)
                         }
-                        datagrams = Some(self.start_media(&call, &conn));
-                        self.set_state(&call, CallState::Active);
+                        .into();
                     }
                     Ok(Some(Msg::Decline { reason })) => {
                         self.log(format!("declined: {}", clip_reason(&reason)));
@@ -2202,7 +2635,12 @@ impl Inner {
                     Some(Cmd::Answer) if incoming_from.is_some() && !active => {
                         let me = match self.me() { Ok(m) => m, Err(_) => break "hangup_local".into() };
                         let renewed = incoming_from.as_deref().map(|did| proto::issue_grant(&me.id, did, now(), GRANT_TTL));
+<<<<<<< HEAD
                         if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed }).await {
+=======
+                        let devices = self.my_device_list(&me);
+                        if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices }).await {
+>>>>>>> 08ade9b (core: contacts dial all devices of a person; signed DeviceList distributed; first answer wins, global decline, answered/declined elsewhere)
                             self.log(format!("connection lost: {e}"));
                             break lost(false);
                         }
@@ -2333,6 +2771,7 @@ impl Inner {
         }
         let _order = call.notify.lock();
         self.note_direct(call);
+        call.ended_wake.notify_one();
         let state = CallState::Ended { reason: reason.clone() };
         *call.state.lock() = state.clone();
         // A waiting call takes over the slot when the active one ends.
@@ -2395,7 +2834,11 @@ impl Inner {
             }
         };
         let answered = call.active_at.lock().is_some();
-        let duration_secs = call.active_at.lock().map_or(0, |t| t.elapsed().as_secs() as u32);
+        let duration_secs = call
+            .active_at
+            .lock()
+            .filter(|_| reason != "answered_elsewhere")
+            .map_or(0, |t| t.elapsed().as_secs() as u32);
         self.log_call(call.epoch, CallRecord {
             call_id: call.info.call_id.clone(),
             peer_did: call.info.peer_did.clone(),
@@ -2405,7 +2848,9 @@ impl Inner {
             duration_secs,
             reason: reason.to_string(),
             direct: *call.direct.lock(),
-            missed: call.info.incoming && !answered && reason != "declined_local",
+            missed: call.info.incoming
+                && !answered
+                && !matches!(reason, "declined_local" | "answered_elsewhere" | "declined_elsewhere"),
         });
     }
 
@@ -2521,8 +2966,8 @@ fn stored_contact(new: &proto::NewContact, relay: Option<String>) -> StoredConta
     StoredContact {
         did: new.did.clone(),
         name: proto::sanitize_name(&new.name),
-        devices: vec![new.device],
-        relay,
+        devices: vec![ContactDevice { device: new.device, relay }],
+        device_list: None,
         grant_from_them: new.grant_from_them.clone(),
         added_at: now(),
         alias: None,
@@ -2541,20 +2986,50 @@ fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_b
     match st.contacts.iter_mut().find(|c| c.did == stored.did) {
         Some(existing) => {
             existing.name = stored.name;
-            if !existing.devices.contains(&device) {
+            let relay = stored
+                .devices
+                .first()
+                .and_then(|d| d.relay.clone())
+                .or_else(|| existing.relay_for(&device).map(String::from));
+            if !existing.has_device(&device) {
                 existing.verified = false;
             }
-            existing.devices.retain(|d| *d != device);
-            existing.devices.insert(0, device);
+            existing.devices.retain(|d| d.device != device);
+            existing.devices.insert(0, ContactDevice { device, relay });
             existing.devices.truncate(MAX_DEVICES);
-            if stored.relay.is_some() {
-                existing.relay = stored.relay;
-            }
             existing.grant_from_them = stored.grant_from_them;
         }
         None => st.contacts.push(stored),
     }
     Ok(())
+}
+
+/// Replaces the contact's devices by `blob`'s if it verifies for their DID and is newer than the
+/// list we hold. Hints are kept for devices we knew; a device we did not know resets `verified`.
+/// Returns whether anything changed.
+pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedBlob) -> bool {
+    let Ok(list) = proto::verify_device_list(blob, &c.did) else { return false };
+    if c.device_list.as_ref().is_some_and(|old| !proto::newer(blob, old)) {
+        return false;
+    }
+    let devices: Vec<ContactDevice> = list
+        .devices
+        .iter()
+        .filter_map(|e| {
+            let device = e.device_key().ok()?;
+            let relay = relay_hint(&e.relay).or_else(|| c.relay_for(&device).map(String::from));
+            Some(ContactDevice { device, relay })
+        })
+        .collect();
+    if devices.is_empty() {
+        return false;
+    }
+    if devices.iter().any(|d| !c.has_device(&d.device)) {
+        c.verified = false;
+    }
+    c.devices = devices;
+    c.device_list = Some(blob.clone());
+    true
 }
 
 fn current_nonce(state: &State, now: u64) -> Option<String> {
@@ -2608,6 +3083,10 @@ const CORE_THREAD: &str = "p2pcore";
 
 fn on_core_thread() -> bool {
     std::thread::current().name() == Some(CORE_THREAD)
+}
+
+pub(crate) fn now_ms() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64)
 }
 
 pub(crate) fn now() -> u64 {

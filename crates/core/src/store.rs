@@ -45,22 +45,112 @@ pub struct Profile {
     pub device_secret: [u8; 32],
 }
 
+/// One callable device of a contact, with the relay it was last seen on.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ContactDevice {
+    pub device: [u8; 32],
+    #[serde(default)]
+    pub relay: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(from = "RawContact")]
 pub struct StoredContact {
     pub did: String,
     pub name: String,
-    /// Newest first; calls dial the first.
-    pub devices: Vec<[u8; 32]>,
-    pub relay: Option<String>,
+    /// Calls dial all of them. Without a `device_list`: newest first (at most
+    /// `proto::MAX_LIST_DEVICES`); with one: the list's order.
+    pub devices: Vec<ContactDevice>,
+    /// The newest signed device list we hold for them; once present it, not `note_device`,
+    /// decides which devices we dial.
+    pub device_list: Option<proto::SignedBlob>,
     /// Lets us call them; replaced whenever they renew it.
     pub grant_from_them: proto::SignedGrant,
     pub added_at: u64,
     /// Local-only name we gave them; `name` stays what they call themselves.
-    #[serde(default)]
     pub alias: Option<String>,
     /// We compared safety numbers with them in person. Reset when their device changes.
-    #[serde(default)]
     pub verified: bool,
+}
+
+impl StoredContact {
+    pub fn has_device(&self, device: &[u8; 32]) -> bool {
+        self.devices.iter().any(|d| &d.device == device)
+    }
+
+    pub fn device_keys(&self) -> Vec<[u8; 32]> {
+        self.devices.iter().map(|d| d.device).collect()
+    }
+
+    pub fn relay_for(&self, device: &[u8; 32]) -> Option<&str> {
+        self.devices.iter().find(|d| &d.device == device).and_then(|d| d.relay.as_deref())
+    }
+}
+
+/// A device as older versions stored it (a bare key) or as now.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum RawDevice {
+    Old([u8; 32]),
+    New(ContactDevice),
+}
+
+/// Reads both shapes: before multi-device a contact had `devices: [key]` and one contact-wide
+/// `relay`, which becomes the hint of the first (newest) device.
+#[derive(Deserialize)]
+struct RawContact {
+    did: String,
+    name: String,
+    devices: Vec<RawDevice>,
+    #[serde(default)]
+    relay: Option<String>,
+    #[serde(default)]
+    device_list: Option<proto::SignedBlob>,
+    grant_from_them: proto::SignedGrant,
+    added_at: u64,
+    #[serde(default)]
+    alias: Option<String>,
+    #[serde(default)]
+    verified: bool,
+}
+
+impl From<RawContact> for StoredContact {
+    fn from(r: RawContact) -> Self {
+        let mut legacy_relay = r.relay;
+        let devices = r
+            .devices
+            .into_iter()
+            .map(|d| match d {
+                RawDevice::Old(device) => ContactDevice { device, relay: legacy_relay.take() },
+                RawDevice::New(d) => d,
+            })
+            .collect();
+        StoredContact {
+            did: r.did,
+            name: r.name,
+            devices,
+            device_list: r.device_list,
+            grant_from_them: r.grant_from_them,
+            added_at: r.added_at,
+            alias: r.alias,
+            verified: r.verified,
+        }
+    }
+}
+
+/// One install of this account, as our own registry knows it. Sealed with the rest of the state.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OwnDevice {
+    pub device: [u8; 32],
+    pub attestation: proto::SignedAttestation,
+    pub label: String,
+    #[serde(default)]
+    pub removed: bool,
+    #[serde(default)]
+    pub last_seen: u64,
+    /// The relay it was last known on (our own entry is refreshed from the endpoint).
+    #[serde(default)]
+    pub relay: Option<String>,
 }
 
 /// "Not now": calls are turned away (and not shown) until `until`, or until switched back on.
@@ -84,6 +174,10 @@ pub struct State {
     /// The ticket we hand out until someone redeems it, so the QR stays stable across launches.
     pub ticket: Option<String>,
     pub availability: AvailabilityState,
+    /// Our own installs (task 34c: seeded with this device; linking fills it later).
+    pub registry: Vec<OwnDevice>,
+    /// The latest `DeviceList` we signed from the registry; sent in every call hello and accept.
+    pub own_list: Option<proto::SignedBlob>,
 }
 
 /// Most calls kept in the call log; the oldest fall off.
@@ -577,5 +671,30 @@ mod tests {
         assert!(matches!(store.state(), Err(Error::Io(_))));
         assert!(dir.join("state.json").is_dir());
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn old_contact_records_load_with_the_relay_on_the_first_device() {
+        let old = serde_json::json!({
+            "did": "did:key:zX", "name": "N",
+            "devices": [vec![1u8; 32], vec![2u8; 32]],
+            "relay": "https://r.example/",
+            "grant_from_them": {"payload": "p", "signature": "s"},
+            "added_at": 5
+        });
+        let c: StoredContact = serde_json::from_value(old.clone()).unwrap();
+        assert_eq!(c.devices.len(), 2);
+        assert_eq!((c.devices[0].device, c.devices[0].relay.as_deref()), ([1u8; 32], Some("https://r.example/")));
+        assert_eq!((c.devices[1].device, c.devices[1].relay.clone()), ([2u8; 32], None));
+        assert!(c.device_list.is_none() && !c.verified && c.alias.is_none());
+        // Round trip in the new shape, and as part of a whole old State.
+        let again: StoredContact = serde_json::from_slice(&serde_json::to_vec(&c).unwrap()).unwrap();
+        assert_eq!(again.devices, c.devices);
+        let st: State = serde_json::from_value(serde_json::json!({"contacts": [old], "blocked": ["b"]})).unwrap();
+        assert_eq!(st.contacts[0].devices.len(), 2);
+        assert!(st.registry.is_empty() && st.own_list.is_none());
+        // No relay, and a contact with no devices at all, still load.
+        let bare = serde_json::json!({"did":"d","name":"n","devices":[],"relay":null,"grant_from_them":{"payload":"p","signature":"s"},"added_at":1});
+        assert!(serde_json::from_value::<StoredContact>(bare).unwrap().devices.is_empty());
     }
 }

@@ -1,6 +1,6 @@
 # Multiple accounts and devices — discussion decisions
 
-Status: core account storage, migration and switching done (task 34a); platform UI, pairing, sync and call fanout remain unimplemented.
+Status: core account storage, migration and switching done (task 34a); proto (DeviceList, Cancel, link handshake) done (34b); call fanout, DeviceList distribution and cross-device call coordination done in core (34c); platform UI, linking UI and own-device sync remain.
 
 ## Implementation progress
 
@@ -34,8 +34,7 @@ Task 34a (core) done:
 
 ## Current implementation gaps
 
-- Node dialing is sequential and returns the first connection, not the first accepted answer.
-- Contacts retain at most four device keys and one contact-wide relay hint, without device labels.
+- (Fixed in 34c) Dialing fans out to all devices and the first accept wins; contacts keep up to 8 devices with per-device relay hints. Still open: device labels in contacts (contacts never see labels by design), own-device registry sync.
 - A restored mnemonic recovers identity but does not discover other devices or restore account data.
 - Contact tickets carry signed invitations/address hints; mutual call grants are exchanged during the handshake. These do not authorize account sync.
 - osvauld2 derives its device key from the mnemonic; do not carry that behavior into this app's per-install device model.
