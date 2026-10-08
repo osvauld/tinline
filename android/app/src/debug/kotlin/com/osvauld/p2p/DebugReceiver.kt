@@ -67,6 +67,14 @@ class DebugReceiver : BroadcastReceiver() {
                 val c = node.contacts().firstOrNull { it.did == i.getStringExtra("who") || it.name == i.getStringExtra("who") }
                 testLog("safety=${c?.let { node.safetyNumber(it.did) }}")
             }
+            "chat_fake" -> {
+                ChatBackend.override = if (i.getStringExtra("on") == "0") null else ChatBackend.override ?: FakeChatSource(app)
+                testLog("chat_fake=${ChatBackend.override != null}")
+            }
+            "chat_incoming" -> {
+                val f = ChatBackend.override as? FakeChatSource ?: throw IllegalStateException("chat_fake is off")
+                f.incoming(i.getStringExtra("who") ?: FakeChatSource.did("Arjun"), i.getStringExtra("text") ?: "Hello")
+            }
             else -> Log.w("P2PTEST", "unknown cmd $cmd")
         }
     }

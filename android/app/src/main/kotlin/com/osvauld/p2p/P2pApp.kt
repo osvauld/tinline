@@ -31,6 +31,10 @@ class P2pApp : Application(), NodeEvents {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     lateinit var calls: CallController
         private set
+    lateinit var realChat: CoreChatSource
+        private set
+    /** The chat backend: the node's, or the in-memory fake the debug gallery swaps in. */
+    val chat: ChatSource get() = ChatBackend.current(this)
 
     private val _status = MutableStateFlow<NodeStatus?>(null)
     val status: StateFlow<NodeStatus?> = _status
@@ -52,8 +56,10 @@ class P2pApp : Application(), NodeEvents {
         super.onCreate()
         instance = this
         Notifications.createChannels(this)
+        ChatMedia.clear(this)
         calls = CallController(this)
         node = newNode()
+        realChat = CoreChatSource(this).also { it.attach() }
         tryAutoUnlock()
         refresh()
         // The always-on notification says "Available for calls" / "Not available" / "Offline".
@@ -89,7 +95,7 @@ class P2pApp : Application(), NodeEvents {
         _hasIdentity.value = node.hasIdentity()
         _contacts.value = node.contacts()
         _status.value = node.status()
-        if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability() }
+        if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
     }
 
     private val unlockLock = Any()
@@ -145,6 +151,7 @@ class P2pApp : Application(), NodeEvents {
         node.stop()
         if (prof.exists()) { bak.delete(); prof.renameTo(bak) }
         node = newNode()
+        realChat.attach()
         try {
             node.restoreIdentity(phrase, name, passphrase)
             // The contacts in state.json belong to the locked identity; a different phrase must not
@@ -155,7 +162,7 @@ class P2pApp : Application(), NodeEvents {
             bak.delete()
             UnlockStore.clear(this)
         } catch (e: Exception) {
-            if (bak.exists()) { prof.delete(); bak.renameTo(prof); node = newNode() }
+            if (bak.exists()) { prof.delete(); bak.renameTo(prof); node = newNode(); realChat.attach() }
             throw e
         }
     }
