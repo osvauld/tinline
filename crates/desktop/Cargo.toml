@@ -13,8 +13,11 @@ p2pcore = { path = "../core" }
 audio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-iced = { version = "0.14", features = ["tokio", "canvas", "svg", "image"] }
+iced = { version = "0.14", features = ["tokio", "canvas", "image"] }
 png = "0.17"
+# Icons are rasterised here (no text, so no system font scan; see ui.rs).
+resvg = { version = "0.45", default-features = false }
+usvg = { version = "0.45", default-features = false }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp"] }
 rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
 open = "5"

@@ -1,7 +1,7 @@
 //! Tinline look: colour tokens (docs/design/Main.dc.html), fonts, Lucide-style icons and the
 //! widget styles built from them.
 
-use iced::widget::{button, container, pick_list, scrollable, svg, text_input, toggler};
+use iced::widget::{button, container, pick_list, scrollable, text_input, toggler};
 use iced::{font, Background, Border, Color, Element, Font, Length, Theme};
 
 /// Figtree (variable, 400-700) and IBM Plex Mono, embedded; licences in assets/fonts.
@@ -211,55 +211,140 @@ impl Icon {
     }
 }
 
-fn from_markup(markup: String) -> svg::Handle {
-    svg::Handle::from_memory(markup.into_bytes())
+// ---- vector drawing without iced's `svg` widget ----
+//
+// iced_wgpu's SVG cache loads every system font for each new window's renderer; with a large
+// font collection that costs seconds per window. Our vector art has no text, so it is rasterised
+// here with an empty font set (resvg without its `text` feature) into `image` handles, once per
+// (art, pixel size, colour).
+
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Mutex, OnceLock};
+
+use iced::widget::image;
+
+static SCALE_BITS: AtomicU32 = AtomicU32::new(0x3f80_0000); // 1.0f32
+
+/// The window's scale factor, so icons are drawn at device pixels.
+pub fn set_scale(s: f32) {
+    if s.is_finite() && s > 0.0 {
+        SCALE_BITS.store(s.to_bits(), Ordering::Relaxed);
+    }
 }
 
-/// An icon of `size` px in `color`. The SVG is black; the widget tints it.
-pub fn icon<'a, M: 'a>(i: Icon, size: f32, color: Color) -> Element<'a, M> {
-    let markup = format!(
-        r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">{}</svg>"##,
-        i.body()
+fn scale() -> f32 {
+    f32::from_bits(SCALE_BITS.load(Ordering::Relaxed))
+}
+
+type RasterKey = (u64, u32, [u8; 4]);
+
+/// Draws `markup` (an SVG without text) `px` pixels square. With `tint`, every pixel takes that
+/// colour and keeps only its own alpha (what iced's svg `color` did); without, own colours stay.
+fn raster(art: u64, markup: impl FnOnce() -> String, px: u32, tint: Option<Color>) -> image::Handle {
+    static CACHE: OnceLock<Mutex<HashMap<RasterKey, image::Handle>>> = OnceLock::new();
+    let rgba = tint.map(|c| [c.r, c.g, c.b, c.a].map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8)).unwrap_or([0; 4]);
+    let key = (art, px, rgba);
+    let cache = CACHE.get_or_init(Default::default);
+    if let Some(h) = cache.lock().unwrap().get(&key) {
+        return h.clone();
+    }
+    let handle = render(&markup(), px, tint.map(|_| rgba));
+    cache.lock().unwrap().insert(key, handle.clone());
+    handle
+}
+
+fn render(markup: &str, px: u32, tint: Option<[u8; 4]>) -> image::Handle {
+    let px = px.clamp(1, 1024);
+    let blank = || image::Handle::from_rgba(1, 1, vec![0, 0, 0, 0]);
+    let Ok(tree) = usvg::Tree::from_str(markup, &usvg::Options::default()) else { return blank() };
+    let Some(mut pm) = resvg::tiny_skia::Pixmap::new(px, px) else { return blank() };
+    let ts = resvg::tiny_skia::Transform::from_scale(px as f32 / tree.size().width(), px as f32 / tree.size().height());
+    resvg::render(&tree, ts, &mut pm.as_mut());
+    let mut out = Vec::with_capacity(pm.data().len());
+    for p in pm.pixels() {
+        let c = p.demultiply();
+        match tint {
+            Some([r, g, b, a]) => out.extend_from_slice(&[r, g, b, (c.alpha() as u32 * a as u32 / 255) as u8]),
+            None => out.extend_from_slice(&[c.red(), c.green(), c.blue(), c.alpha()]),
+        }
+    }
+    image::Handle::from_rgba(px, px, out)
+}
+
+fn hash_of(x: impl Hash) -> u64 {
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    x.hash(&mut h);
+    h.finish()
+}
+
+fn art<'a, M: 'a>(handle: image::Handle, size: f32) -> Element<'a, M> {
+    image(handle).width(Length::Fixed(size)).height(Length::Fixed(size)).into()
+}
+
+fn device_px(size: f32) -> u32 {
+    (size * scale()).ceil().max(1.0) as u32
+}
+
+/// A single-colour glyph (24 grid): `paint` is the root element's attributes, `body` its shapes.
+/// Black in the SVG; the pixels are then tinted.
+pub fn glyph<'a, M: 'a>(paint: &'static str, body: &'static str, size: f32, color: Color) -> Element<'a, M> {
+    let h = raster(
+        hash_of((paint, body)),
+        || format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {paint}>{body}</svg>"#),
+        device_px(size),
+        Some(color),
     );
-    svg(from_markup(markup))
-        .width(Length::Fixed(size))
-        .height(Length::Fixed(size))
-        .style(move |_: &Theme, _| svg::Style { color: Some(color) })
-        .into()
+    art(h, size)
+}
+
+pub const STROKE: &str = r##"fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round""##;
+
+/// An icon of `size` px in `color`.
+pub fn icon<'a, M: 'a>(i: Icon, size: f32, color: Color) -> Element<'a, M> {
+    glyph(STROKE, i.body(), size, color)
 }
 
 /// The brand mark: two cans joined by the amber string. Own colours, never tinted.
 pub fn logo<'a, M: 'a>(size: f32, can: Color, string: Color) -> Element<'a, M> {
     let hex = |c: Color| format!("#{:02X}{:02X}{:02X}", (c.r * 255.0) as u8, (c.g * 255.0) as u8, (c.b * 255.0) as u8);
-    let m = format!(
-        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="{c}"/><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="{c}"/><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="{s}" stroke-width="1.75" stroke-linecap="round"/></svg>"#,
-        c = hex(can),
-        s = hex(string)
+    let (c, s) = (hex(can), hex(string));
+    let h = raster(
+        hash_of(("logo", &c, &s)),
+        || {
+            format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="{c}"/><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="{c}"/><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="{s}" stroke-width="1.75" stroke-linecap="round"/></svg>"#
+            )
+        },
+        device_px(size),
+        None,
     );
-    svg(from_markup(m)).width(Length::Fixed(size)).height(Length::Fixed(size)).into()
+    art(h, size)
 }
 
 /// Four quality bars, `n` of them filled.
 pub fn bars<'a, M: 'a>(n: u8, on: Color, off: Color) -> Element<'a, M> {
-    let mut body = String::new();
-    for i in 0..4u8 {
-        let h = 5 + i as u32 * 4;
-        let c = if i < n { on } else { off };
-        body += &format!(
-            r##"<rect x="{}" y="{}" width="3.5" height="{}" rx="1" fill="#{:02X}{:02X}{:02X}" fill-opacity="{}"/>"##,
-            2 + i as u32 * 5,
-            21 - h,
-            h,
-            (c.r * 255.0) as u8,
-            (c.g * 255.0) as u8,
-            (c.b * 255.0) as u8,
-            c.a
-        );
-    }
-    svg(from_markup(format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">{body}</svg>"#)))
-        .width(Length::Fixed(18.0))
-        .height(Length::Fixed(18.0))
-        .into()
+    let build = || {
+        let mut body = String::new();
+        for i in 0..4u8 {
+            let h = 5 + i as u32 * 4;
+            let c = if i < n { on } else { off };
+            body += &format!(
+                r##"<rect x="{}" y="{}" width="3.5" height="{}" rx="1" fill="#{:02X}{:02X}{:02X}" fill-opacity="{}"/>"##,
+                2 + i as u32 * 5,
+                21 - h,
+                h,
+                (c.r * 255.0) as u8,
+                (c.g * 255.0) as u8,
+                (c.b * 255.0) as u8,
+                c.a
+            );
+        }
+        format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">{body}</svg>"#)
+    };
+    let key = hash_of(("bars", n, [on, off].map(|c| [c.r, c.g, c.b, c.a].map(f32::to_bits))));
+    art(raster(key, build, device_px(18.0), None), 18.0)
 }
 
 // ---- widget styles ----

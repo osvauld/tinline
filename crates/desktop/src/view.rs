@@ -705,7 +705,14 @@ impl App {
             main = main.push(self.notice_bar(t));
         }
         if let Some(c) = self.selected().filter(|_| !self.chat.info) {
-            return row![self.sidebar(t), self.conversation_view(t, c)].into();
+            let pane: El = match self.offer_bar(t) {
+                Some(o) => column![container(o).padding([12, 16]), self.conversation_view(t, c)].width(Fill).height(Fill).into(),
+                None => self.conversation_view(t, c),
+            };
+            return row![self.sidebar(t), pane].into();
+        }
+        if let Some(o) = self.offer_bar(t) {
+            main = main.push(o);
         }
         main = main.push(match self.selected() {
             Some(c) => self.detail_view(t, c),
@@ -718,21 +725,96 @@ impl App {
         .into()
     }
 
+
+    /// Our QR code and "Copy card": what a first-timer shows or sends.
+    fn my_code(&self, t: Tok, title: &str) -> El<'_> {
+        let qr: El = match &self.qr {
+            Some(q) => container(canvas(QrView(q)).width(Length::Fixed(200.0)).height(Length::Fixed(200.0)))
+                .padding(8)
+                .style(ui::plain(Color::WHITE, 12.0))
+                .into(),
+            None => container(tx("Preparing your code\u{2026}", 14.0, t.ink2)).width(216).height(216).center_x(216).center_y(216).into(),
+        };
+        column![
+            label(t, title),
+            qr,
+            tx("Works once. Share it with someone who should be able to call you.", 13.0, t.ink2),
+            if self.copied_at.is_some_and(|at| at.elapsed() < Duration::from_secs(2)) {
+                pill(t, Kind::Quiet, Some(Icon::Check), "Copied", self.ticket.as_ref().map(|_| Msg::CopyTicket))
+            } else {
+                pill(t, Kind::Quiet, Some(Icon::Copy), "Copy card", self.ticket.as_ref().map(|_| Msg::CopyTicket))
+            },
+        ]
+        .spacing(12)
+        .width(Fill)
+        .into()
+    }
+
+    /// The paste field for someone else's card; a card with text around it is fine.
+    fn their_card(&self, t: Tok, title: &str) -> El<'_> {
+        column![
+            label(t, title),
+            text_input("Paste their card (OSVC2:\u{2026})", &self.add_in)
+                .on_input(Msg::AddChanged)
+                .on_paste(Msg::AddChanged)
+                .on_submit(Msg::AddPressed)
+                .padding(12)
+                .size(14)
+                .font(ui::MONO)
+                .style(ui::input_style(t)),
+            pill(t, Kind::Primary, None, "Add contact", (!self.add_in.trim().is_empty()).then_some(Msg::AddPressed)),
+            tx(
+                "Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.",
+                13.0,
+                t.ink2
+            ),
+        ]
+        .spacing(12)
+        .width(Fill)
+        .into()
+    }
+
+    /// "Add <name>?" for a card found on the clipboard.
+    fn offer_bar(&self, t: Tok) -> Option<El<'_>> {
+        let o = self.offer.as_ref()?;
+        Some(
+            container(
+                row![
+                    avatar(t, &o.name, &o.did, 36.0),
+                    column![semi(format!("Add {}?", o.name), 15.0, t.ink), tx("Their card is on your clipboard.", 13.0, t.ink2)]
+                        .spacing(2)
+                        .width(Fill),
+                    pill(t, Kind::Primary, None, "Add", Some(Msg::OfferAdd)),
+                    pill(t, Kind::Ghost, None, "Not now", Some(Msg::OfferDismiss)),
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center),
+            )
+            .padding([12, 16])
+            .width(Fill)
+            .style(ui::card(t))
+            .into(),
+        )
+    }
+
     /// Home with nothing selected: a quiet starting point. Your code lives in Add contact.
     fn code_view(&self, t: Tok) -> El<'_> {
         if self.contacts.is_empty() {
+            let both = row![
+                self.my_code(t, "Show this to them"),
+                container(Space::new()).width(1).height(Fill).style(ui::plain(t.line, 0.0)),
+                self.their_card(t, "Or paste theirs"),
+            ]
+            .spacing(28)
+            .height(Length::Shrink);
             return column![
                 bold("Your line is ready", 28.0, t.ink),
                 tx(
-                    "Add the first person you want to call. You\u{2019}ll both need Tinline open for a moment \u{2014} side by side, or over a video call.",
+                    "Let them scan your code or send them your card, or paste theirs. You\u{2019}ll both need Tinline open for a moment \u{2014} side by side, or over a video call.",
                     15.0,
                     t.ink2
                 ),
-                row![
-                    pill(t, Kind::Primary, Some(Icon::UserPlus), "Add your first contact", Some(Msg::OpenAdd)),
-                    pill(t, Kind::Quiet, None, "Show my code", Some(Msg::OpenAdd)),
-                ]
-                .spacing(10),
+                container(both).padding(24).width(Fill).style(ui::card(t)),
             ]
             .spacing(14)
             .into();
@@ -1004,43 +1086,8 @@ impl App {
             .spacing(8)
             .into(),
             AddPhase::Idle => {
-                let qr: El = match &self.qr {
-                    Some(q) => container(canvas(QrView(q)).width(Length::Fixed(200.0)).height(Length::Fixed(200.0)))
-                        .padding(8)
-                        .style(ui::plain(Color::WHITE, 12.0))
-                        .into(),
-                    None => container(tx("Preparing your code\u{2026}", 14.0, t.ink2)).width(216).height(216).center_x(216).center_y(216).into(),
-                };
-                let mine = column![
-                    label(t, "They scan your code"),
-                    qr,
-                    tx("Works once. Share it with someone who should be able to call you.", 13.0, t.ink2),
-                    if self.copied_at.is_some_and(|at| at.elapsed() < Duration::from_secs(2)) {
-                        pill(t, Kind::Quiet, Some(Icon::Check), "Copied", self.ticket.as_ref().map(|_| Msg::CopyTicket))
-                    } else {
-                        pill(t, Kind::Quiet, Some(Icon::Copy), "Copy card", self.ticket.as_ref().map(|_| Msg::CopyTicket))
-                    },
-                ]
-                .spacing(12)
-                .width(Fill);
-                let theirs = column![
-                    label(t, "Or add theirs"),
-                    text_input("Paste their card (OSVC2:\u{2026})", &self.add_in)
-                        .on_input(Msg::AddChanged)
-                        .on_submit(Msg::AddPressed)
-                        .padding(12)
-                        .size(14)
-                        .font(ui::MONO)
-                        .style(ui::input_style(t)),
-                    pill(t, Kind::Primary, None, "Add contact", (!self.add_in.trim().is_empty()).then_some(Msg::AddPressed)),
-                    tx(
-                        "Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.",
-                        13.0,
-                        t.ink2
-                    ),
-                ]
-                .spacing(12)
-                .width(Fill);
+                let mine = self.my_code(t, "They scan your code");
+                let theirs = self.their_card(t, "Or add theirs");
                 row![mine, container(Space::new()).width(1).height(Fill).style(ui::plain(t.line, 0.0)), theirs]
                     .spacing(28)
                     .height(Length::Shrink)

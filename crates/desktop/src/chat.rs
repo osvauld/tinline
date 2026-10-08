@@ -11,6 +11,7 @@ use iced::widget::text_editor;
 use iced::{clipboard, Task};
 use p2pcore::{Attachment, AttachmentKind, Chat, Contact, DayPage, Error, Message as ChatMsg, Node, TransferState};
 
+use crate::app::Target;
 use crate::media::{self, Class, Pixels};
 
 use crate::voice::{Player, Recorder};
@@ -446,7 +447,7 @@ impl App {
         blocking(move || src.chat_day(p, day).map_err(s), move |r| Msg::Chat(Cm::Day(peer.clone(), prepend, r)))
     }
 
-    fn mark_read(&mut self, peer: &str) -> Task<Msg> {
+    pub(crate) fn mark_read(&mut self, peer: &str) -> Task<Msg> {
         if let Some(c) = self.chat.chats.iter_mut().find(|c| c.peer_did == peer) {
             if c.unread == 0 {
                 return Task::none();
@@ -903,11 +904,13 @@ impl App {
             ChatEv::Added(m) => {
                 let (peer, incoming) = (m.peer_did.clone(), !m.outgoing);
                 let open = self.chat_visible() && self.chat.peer.as_deref() == Some(peer.as_str());
-                if incoming && !(open && self.win.is_some()) {
-                    notify(&self.chat_name(&peer), &preview_of(&m));
+                // Seen only if the window exists and the user is in it.
+                let attended = open && self.win.is_some() && self.focused;
+                if incoming && !attended {
+                    notify(&self.chat_name(&peer), &preview_of(&m), Target::Chat(peer.clone()));
                 }
                 self.chat.upsert(m);
-                if incoming && open {
+                if incoming && attended {
                     return self.mark_read(&peer);
                 }
             }
