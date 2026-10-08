@@ -270,7 +270,7 @@ enum LegEvent {
         renewed_grant: Option<proto::SignedGrant>,
         devices: Option<proto::SignedBlob>,
         conn: Connection,
-        ctrl: Ctrl,
+        ctrl: Box<Ctrl>,
     },
     Declined(String),
     Busy,
@@ -334,7 +334,7 @@ impl Leg {
                         }
                         Ok(Some(Msg::Accept { renewed_grant, devices })) => {
                             let keep = conn.clone();
-                            let ev = LegEvent::Accepted { renewed_grant, devices, conn, ctrl };
+                            let ev = LegEvent::Accepted { renewed_grant, devices, conn, ctrl: Box::new(ctrl) };
                             if self.events.send((idx, ev)).is_err() {
                                 keep.close(0u32.into(), b"bye");
                             }
@@ -2490,7 +2490,7 @@ impl Inner {
                             *call.conn.lock() = Some(conn.clone());
                             let datagrams = self.start_media(&call, &conn);
                             self.set_state(&call, CallState::Active);
-                            self.clone().run_call(call, conn, ctrl, cmds, None, Some(datagrams)).await;
+                            self.clone().run_call(call, conn, *ctrl, cmds, None, Some(datagrams)).await;
                             return;
                         }
                         LegEvent::Declined(why) => {
