@@ -113,6 +113,41 @@
       "w": 7404,
       "h": 880,
       "title": "Chat · Desktop · Conversation, offline, drop, recording"
+    },
+    "AndroidAccounts.dc.html": {
+      "x": 0,
+      "y": 20040,
+      "w": 2348,
+      "h": 1060,
+      "title": "Accounts · Android · Switcher, add account, device name, restore"
+    },
+    "AndroidLinkDevice.dc.html": {
+      "x": 0,
+      "y": 21220,
+      "w": 2348,
+      "h": 1060,
+      "title": "Accounts · Android · Link a device"
+    },
+    "AndroidLinkedDevices.dc.html": {
+      "x": 0,
+      "y": 22400,
+      "w": 1888,
+      "h": 1060,
+      "title": "Accounts · Android · Linked devices, unlink"
+    },
+    "AndroidMultiDevice.dc.html": {
+      "x": 0,
+      "y": 23580,
+      "w": 1888,
+      "h": 1060,
+      "title": "Accounts · Android · Calls & chats across devices"
+    },
+    "DesktopLinkDevice.dc.html": {
+      "x": 0,
+      "y": 24760,
+      "w": 2344,
+      "h": 1656,
+      "title": "Accounts · Desktop · Link, linked devices, switcher"
     }
   },
   "createdOnFiles": {
@@ -164,6 +199,23 @@
       "w": 240,
       "x": 0,
       "y": -300
+    },
+    "t_multi": {
+      "kind": "title1",
+      "maxW": 2348,
+      "text": "Accounts & linked devices",
+      "w": 240,
+      "x": 0,
+      "y": 19740
+    },
+    "n_multi": {
+      "fill": "teal",
+      "maxH": 700,
+      "size": 24,
+      "w": 380,
+      "x": 1968,
+      "y": 22440,
+      "text": "Many accounts can live on a device; one is online at a time.\n\nLinking copies your whole account (recovery phrase included) to the new device after you approve with your passphrase and match a 6-digit code. Each device keeps its own device key and passphrase.\n\nUnlink stops sync and ringing. It is not remote wipe or revocation: a lost device that can still unlock keeps working as you. Contacts never see device names.\n\nSpec: docs/design/device-linking.md"
     }
   },
   "order": [
@@ -182,7 +234,12 @@
     "AndroidChats.dc.html",
     "AndroidConversation.dc.html",
     "AndroidChatFiles.dc.html",
-    "DesktopChat.dc.html"
+    "DesktopChat.dc.html",
+    "AndroidAccounts.dc.html",
+    "AndroidLinkDevice.dc.html",
+    "AndroidLinkedDevices.dc.html",
+    "AndroidMultiDevice.dc.html",
+    "DesktopLinkDevice.dc.html"
   ],
   "pages": [],
   "title": "Tinline app design"

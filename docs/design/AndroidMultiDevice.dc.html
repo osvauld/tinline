@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android multi-device calls and chats</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px;flex:none}
+.bt{font-size:20px;font-weight:600;flex:1}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 20px;box-sizing:border-box}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+.av{width:44px;height:44px;border-radius:50%;background:var(--prc);color:var(--onprc);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}
+.li{display:flex;align-items:center;gap:14px;min-height:72px;padding:8px 16px 8px 20px;box-sizing:border-box}
+.li .tt{font-size:16px;line-height:22px;font-weight:600}
+.li .ss{font-size:14px;line-height:20px;color:var(--ink2);display:flex;align-items:center;gap:6px}
+.li .tm{font-size:13px;color:var(--ink2)}
+.sm{width:16px;height:16px}
+.nav{height:80px;flex:none;border-top:1px solid var(--ln);background:var(--sf);display:flex;justify-content:space-around;align-items:center;margin-top:auto}
+.nv{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink2)}
+.nv .pill{width:64px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.nv.on{color:var(--ink)}
+.nv.on .pill{background:var(--prc);color:var(--onprc)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--ln);font-size:15px}
+.kv span{color:var(--ink2)}
+.mono{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div class="root" style="width:1888px;height:1060px">
+
+<div class="col">
+<div class="lbl">Answered elsewhere <span>· ringing stops</span></div>
+<div class="ph dk">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:96px 32px 48px;gap:14px;text-align:center">
+<div class="av" style="width:112px;height:112px;font-size:44px">R</div>
+<div style="font-size:30px;font-weight:700;margin-top:10px">Ravi</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:17px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M3 4h18v12H3z M8 20h8 M12 16v4"></path></svg>Answered on Work desktop</div>
+<div style="flex:1"></div>
+<div class="hint" style="font-size:14px;line-height:20px">It rang on all your devices. The first one to answer takes the call; the others stop. Declining on any device declines everywhere.</div>
+<button class="btn ol" style="margin-top:12px">OK</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Calls <span>· one entry per call, from any device</span></div>
+<div class="ph t">
+<div class="bar"><span class="bt" style="padding-left:16px">Calls</span></div>
+<div class="li"><div class="av">R</div><div style="flex:1"><div class="tt">Ravi</div><div class="ss"><svg class="i sm" viewBox="0 0 24 24"><path d="M3 4h18v12H3z M8 20h8 M12 16v4"></path></svg>Incoming · on Work desktop · 4:12</div></div><span class="tm">10:42</span></div>
+<div class="li"><div class="av" style="background:var(--sf3);color:var(--ink)">A</div><div style="flex:1"><div class="tt">Ana</div><div class="ss"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 2h10v20H7z M11 18h2"></path></svg>Outgoing · 12:03</div></div><span class="tm">Yesterday</span></div>
+<div class="li"><div class="av">R</div><div style="flex:1"><div class="tt">Ravi</div><div class="ss">Declined on Old tablet</div></div><span class="tm">Mon</span></div>
+<div class="li"><div class="av" style="background:var(--erc);color:var(--oner)">J</div><div style="flex:1"><div class="tt" style="color:var(--er)">Jo</div><div class="ss">Missed · rang on 2 devices</div></div><span class="tm">Sun</span></div>
+<div class="hint" style="padding:12px 20px">The device shows only when it wasn’t this one.</div>
+<div class="nav"><div class="nv"><div class="pill"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>Chats</div><div class="nv on"><div class="pill"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div>Calls</div><div class="nv"><div class="pill"><svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"></path></svg></div>Contacts</div></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Chats <span>· “You” saved items, synced</span></div>
+<div class="ph t">
+<div class="bar"><span class="bt" style="padding-left:16px">Chats</span></div>
+<div class="li" style="background:var(--sf)"><div class="av" style="background:var(--pr);color:var(--onpr)"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></div><div style="flex:1;min-width:0"><div class="tt">You</div><div class="ss" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Train tickets.pdf</div></div><span class="tm">09:15</span></div>
+<div class="li"><div class="av">R</div><div style="flex:1;min-width:0"><div class="tt">Ravi</div><div class="ss">See you at 6 then</div></div><span class="tm">10:47</span></div>
+<div class="li"><div class="av" style="background:var(--sf3);color:var(--ink)">A</div><div style="flex:1;min-width:0"><div class="tt">Ana</div><div class="ss">Voice message · 0:24</div></div><span class="tm">Yesterday</span></div>
+<div style="margin:12px 16px 0;padding:14px 16px;border-radius:14px;background:var(--sf2);font-size:14px;line-height:20px;color:var(--ink2)"><b style="color:var(--ink)">You</b> is your own space for notes and files. It shows on every linked device and no one else can see it.</div>
+<div class="nav"><div class="nv on"><div class="pill"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>Chats</div><div class="nv"><div class="pill"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div>Calls</div><div class="nv"><div class="pill"><svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"></path></svg></div>Contacts</div></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Contact <span>· new device resets verified</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt"></span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 24px 12px"><div class="av" style="width:88px;height:88px;font-size:34px">R</div><div style="font-size:26px;font-weight:700">Ravi</div></div>
+<div style="margin:4px 16px 8px;display:flex;gap:10px;background:var(--wn);color:var(--onwn);border-radius:14px;padding:14px;font-size:14px;line-height:20px"><svg class="i" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01"></path></svg><span>Ravi added a device. Compare safety numbers again to keep them marked verified.</span></div>
+<div style="padding:0 24px;display:flex;flex-direction:column">
+<div class="kv">Devices<span>2 · newest added 8 Oct</span></div>
+<div class="kv">Verified<span>Not since 8 Oct</span></div>
+</div>
+<div style="padding:20px 24px 0;display:flex;flex-direction:column;gap:10px"><button class="btn">Compare safety numbers</button><div class="hint" style="text-align:center">Calls ring all of Ravi’s devices at once.</div></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1888,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

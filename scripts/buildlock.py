@@ -55,7 +55,7 @@ def place_target():
     t = ROOT / "target"
     if t.exists() or t.is_symlink() or not os.path.ismount(CACHE):
         return
-    name = "main" if ROOT.parent.name != "worktrees" else ROOT.name
+    name = ROOT.name if ROOT.parent.name in ("worktrees", "worktree") else "main"
     real = CACHE / "p2p_chat" / name / "target"
     real.mkdir(parents=True, exist_ok=True)
     t.symlink_to(real)

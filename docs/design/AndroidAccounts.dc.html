@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android accounts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--wn:#FCEFD2;--onwn:#5C3B00}
+.dk{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--oner:#FFDAD6;--wn:#4A3500;--onwn:#FFDFA0}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px;flex:none}
+.bt{font-size:20px;font-weight:600;flex:1}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.body{flex:1;display:flex;flex-direction:column;padding:8px 24px 32px;gap:16px;min-height:0}
+.h1{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-0.01em;margin:0}
+.p{font-size:16px;line-height:24px;color:var(--ink2);margin:0}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 20px;box-sizing:border-box}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.btn.tx{background:transparent;color:var(--pr)}
+.fl{display:flex;flex-direction:column;gap:6px}
+.fl label{font-size:13px;font-weight:600;color:var(--ink2)}
+.in{height:56px;border-radius:8px;border:1px solid var(--ln2);background:var(--sf);color:var(--ink);font:400 16px 'Figtree',sans-serif;padding:0 16px;box-sizing:border-box;width:100%}
+.in.f{border:2px solid var(--pr)}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.sec{font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--ink2);padding:18px 20px 4px}
+.it{display:flex;align-items:center;gap:16px;min-height:60px;padding:6px 16px 6px 20px;box-sizing:border-box}
+.it .ic{color:var(--ink2)}
+.it .tt{font-size:16px;line-height:22px}
+.it .ss{font-size:13px;line-height:18px;color:var(--ink2)}
+.chev{color:var(--ink2)}
+.av{width:44px;height:44px;border-radius:50%;background:var(--prc);color:var(--onprc);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}
+.prog{display:flex;align-items:center;gap:0;padding:4px 24px 0}
+.pd{width:10px;height:10px;border-radius:50%;background:var(--pr);flex:none}
+.pd.o{background:transparent;border:2px solid var(--ln2);box-sizing:border-box}
+.pl{flex:1;height:2px;background:var(--th)}
+.pl.o{background:var(--ln)}
+.chip{height:36px;border-radius:8px;border:1px solid var(--ln2);background:transparent;color:var(--ink);font:500 14px 'Figtree',sans-serif;padding:0 14px}
+.chip.on{background:var(--prc);color:var(--onprc);border-color:transparent}
+</style>
+</helmet>
+<div class="root" style="width:2348px;height:1060px">
+
+<div class="col">
+<div class="lbl">Settings <span>· account + devices</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Settings</span></div>
+<div style="margin:4px 16px 0;padding:14px 16px;border-radius:14px;background:var(--sf);border:1px solid var(--ln);display:flex;align-items:center;gap:14px"><div class="av" style="width:52px;height:52px;font-size:20px">M</div><div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:700">Maya</div><div class="hint">On this phone as “Personal phone”</div></div><button class="btn ol" style="width:auto;height:40px;font-size:14px;padding:0 14px">Switch</button></div>
+<div class="sec">DEVICES</div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M2 6h13v10H2z M0.5 19h16 M18 8h4v12h-4z"></path></svg><div style="flex:1"><div class="tt">Linked devices</div><div class="ss">2 devices · synced just now</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h3v3h-3z M20 14v.01 M14 20h.01 M17 20h4v-3"></path></svg><div style="flex:1"><div class="tt">Link a device</div><div class="ss">Add a computer or another phone</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="sec">CALLS</div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg><div style="flex:1"><div class="tt">Available for calls</div><div class="ss">On this phone only</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="sec">SECURITY</div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M10.8 12.2 20 3 M17 6l3 3 M15 8l2 2"></path></svg><div style="flex:1"><div class="tt">Change passphrase</div><div class="ss">For this phone only</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg><div style="flex:1"><div class="tt">Recovery phrase</div><div class="ss">Needs your passphrase</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Account switcher <span>· bottom sheet</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Settings</span></div>
+<div style="position:absolute;inset:0;background:rgba(10,16,14,.45)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--sf);border-radius:28px 28px 0 0;padding:8px 0 28px;display:flex;flex-direction:column">
+<div style="width:32px;height:4px;border-radius:2px;background:var(--ln2);align-self:center;margin:6px 0 14px"></div>
+<div style="font-size:20px;font-weight:700;padding:0 24px 6px">Accounts</div>
+<div class="it"><div class="av">M</div><div style="flex:1"><div class="tt" style="font-weight:600">Maya</div><div class="ss">Online on this phone</div></div><svg class="i" viewBox="0 0 24 24" style="color:var(--pr)"><path d="M20 6 9 17l-5-5"></path></svg></div>
+<div class="it"><div class="av" style="background:var(--sf3);color:var(--ink2)">W</div><div style="flex:1"><div class="tt">Maya · Work</div><div class="ss">Locked · not ringing here</div></div><svg class="i chev" viewBox="0 0 24 24"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg></div>
+<div style="height:1px;background:var(--ln);margin:8px 20px"></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M12 5v14 M5 12h14"></path></svg><div class="tt" style="flex:1">Create a new account</div></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h3v3h-3z M17 20h4v-3"></path></svg><div style="flex:1"><div class="tt">Link an account from another device</div><div class="ss">Brings contacts and chats too</div></div></div>
+<div class="it"><svg class="i ic" viewBox="0 0 24 24"><path d="M4 6h16 M4 12h16 M4 18h10"></path></svg><div class="tt" style="flex:1">Restore with recovery phrase</div></div>
+<div class="hint" style="padding:12px 24px 0">One account is online at a time. Calls to a locked account ring only on your other devices.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Switch account <span>· dark</span></div>
+<div class="ph dk">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div class="body" style="padding-top:20px">
+<div class="av" style="width:64px;height:64px;font-size:24px;background:var(--sf3);color:var(--ink)">W</div>
+<h1 class="h1">Switch to Maya · Work?</h1>
+<p class="p">Maya goes offline on this phone. Calls to Maya will ring only on your other linked devices until you switch back.</p>
+<div class="fl" style="margin-top:4px"><label for="wp">Passphrase for Maya · Work</label><input id="wp" class="in f mono" type="password" value="work-river-glass"></div>
+<div style="display:flex;gap:10px;background:var(--wn);color:var(--onwn);border-radius:14px;padding:14px;font-size:14px;line-height:20px"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3"></path></svg><span>You’re not on a call. If you were, switching would end it.</span></div>
+<div style="flex:1"></div>
+<button class="btn">Unlock and switch</button>
+<button class="btn tx">Cancel</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Name this device <span>· create, restore, link</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div class="prog"><div class="pd"></div><div class="pl"></div><div class="pd"></div><div class="pl o"></div><div class="pd o"></div><div class="pl o"></div><div class="pd o"></div></div>
+<div class="body" style="padding-top:28px">
+<h1 class="h1">Name this phone</h1>
+<p class="p">So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.</p>
+<div class="fl" style="margin-top:8px"><label for="dn">Device name</label><input id="dn" class="in f" value="Personal phone"></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px"><button class="chip on">Personal phone</button><button class="chip">Work phone</button><button class="chip">Tablet</button></div>
+<div class="hint">You can rename it later.</div>
+<div style="flex:1"></div>
+<button class="btn">Continue</button>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Restored from phrase <span>· identity only</span></div>
+<div class="ph t">
+<div class="body" style="padding-top:36px">
+<div style="width:64px;height:64px;border-radius:50%;background:var(--prc);color:var(--onprc);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" style="width:30px;height:30px"><path d="M20 6 9 17l-5-5"></path></svg></div>
+<h1 class="h1">Welcome back, Maya</h1>
+<p class="p">Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us.</p>
+<div style="padding:16px;border-radius:14px;background:var(--sf);border:1px solid var(--ln);display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:12px;align-items:center"><svg class="i" viewBox="0 0 24 24" style="color:var(--pr)"><path d="M2 6h13v10H2z M0.5 19h16 M18 8h4v12h-4z"></path></svg><div style="font-weight:600;font-size:16px">Still have Tinline on another device?</div></div>
+<div class="hint" style="font-size:14px;line-height:20px">Link this phone to it to bring everything over.</div>
+<button class="btn">Link to another device</button>
+</div>
+<div class="hint" style="font-size:14px;line-height:20px">No other device? You’ll start with an empty contact list and add people again.</div>
+<div style="flex:1"></div>
+<button class="btn tx">Start without them</button>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2348,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

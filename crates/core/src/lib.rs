@@ -3,6 +3,7 @@
 
 uniffi::setup_scaffolding!();
 
+pub mod accounts;
 mod chat;
 mod error;
 mod logging;
