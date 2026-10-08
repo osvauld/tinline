@@ -281,6 +281,16 @@ impl Fake {
         Ok(self.push_out(&peer, "", None, Some(file(&name, md.len(), &mime, TransferState::Ready))))
     }
 
+    pub fn send_voice(self: &Arc<Self>, peer: String, path: String, duration_ms: u32, waveform: Vec<u8>) -> Result<Message, Error> {
+        let md = std::fs::metadata(&path).map_err(|e| nope(&e.to_string()))?;
+        let mut a = file("Voice message", md.len(), "audio/ogg", TransferState::Ready);
+        a.kind = AttachmentKind::Voice;
+        a.duration_ms = duration_ms;
+        a.waveform = waveform;
+        a.hash = format!("h-voice-{}", now());
+        Ok(self.push_out(&peer, "", None, Some(a)))
+    }
+
     /// Ten steps of progress, then Ready.
     pub fn download_attachment(self: &Arc<Self>, peer: String, message_id: String) -> Result<(), Error> {
         let (total, hash) = self.with(&peer, |st, p| {

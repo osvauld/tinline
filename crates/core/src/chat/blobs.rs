@@ -148,12 +148,13 @@ impl BlobHub {
     }
 
     /// Fetches the ciphertext of `hash` over `conn` (an iroh-blobs connection to a peer that
-    /// holds it), resuming what is already here. `progress` gets `(bytes so far, total)`.
+    /// holds it), resuming what is already here. `cipher_total` is the expected ciphertext
+    /// length; `progress` gets `(ciphertext bytes so far, total)`.
     pub async fn fetch(
         &self,
         conn: Connection,
         hash: Hash,
-        total: u64,
+        cipher_total: u64,
         mut progress: impl FnMut(u64, u64) + Send,
     ) -> Result<(), Error> {
         self.keep(&hash).await?;
@@ -163,14 +164,14 @@ impl BlobHub {
         let mut stream = self.store.remote().fetch(conn, HashAndFormat::raw(hash)).stream();
         while let Some(item) = stream.next().await {
             match item {
-                iroh_blobs::api::remote::GetProgressItem::Progress(n) => progress(n.min(total), total),
+                iroh_blobs::api::remote::GetProgressItem::Progress(n) => progress(n.min(cipher_total), cipher_total),
                 iroh_blobs::api::remote::GetProgressItem::Done(_) => break,
                 iroh_blobs::api::remote::GetProgressItem::Error(e) => return Err(Error::Net(e.to_string())),
             }
         }
         match self.complete_size(&hash).await {
-            Some(n) if n == crypt::cipher_len(total) || total == 0 => {
-                progress(total, total);
+            Some(n) if n == cipher_total => {
+                progress(cipher_total, cipher_total);
                 Ok(())
             }
             Some(_) => Err(Error::Protocol("blob size does not match the message".into())),

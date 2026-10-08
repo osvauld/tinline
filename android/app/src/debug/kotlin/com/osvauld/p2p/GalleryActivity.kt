@@ -4,7 +4,24 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import uniffi.p2pcore.Contact
 
 /**
@@ -42,10 +59,10 @@ private fun Gallery(which: String, app: P2pApp) {
     when (which) {
         "welcome" -> WelcomeScreen(none, none)
         "name" -> NameScreen("Maya", {}, none, 1, none)
-        "pass" -> PassphraseStep("correct-horse-lamp-river", "correct-horse-lamp-river", {}, {}, false, null, 2, "Lock it with a passphrase", "Continue", none, none)
+        "pass" -> PassphraseStep("correct-horse-lamp-river", {}, false, null, 2, "Add a passphrase", "Continue", none, none, none)
+        "key_lost" -> KeyLostContent("Maya", false, none, none)
         "phrase" -> PhraseScreen(PHRASE, none)
-        "check" -> QuickCheckScreen(PHRASE, none, none)
-        "terms" -> TermsScreen(5, null, none)
+        "terms" -> TermsScreen(4, null, none)
         "perms" -> PermissionsScreen(listOf(Need.Mic, Need.FullScreen, Need.Battery), {}, none)
         "restore" -> RestoreScreen(none, null, false, "Restoring replaces whatever account is on this phone. Next, you’ll choose a new passphrase.") {}
         "unlock" -> UnlockContent("Maya", "correct-horse-lamp", {}, false, null, none, none)
@@ -77,6 +94,7 @@ private fun Gallery(which: String, app: P2pApp) {
         "ended" -> EndedContent("Arjun Oommen", arjun.did, maya, endReasonText("hangup_remote", "Arjun"), 1084, true, 3, {}, {}, autoClose = false)
         "unreach" -> UnreachableContent("Lena", contacts[4].did, maya, none, none)
         "mic" -> MicNeededScreen(none, none)
+        "voice" -> VoiceDemo()
         "settings" -> SettingsScreen(app, needs, none, none, none, none, none, none)
         "battery" -> BatteryScreen(needs, none) {}
         "gate" -> PhraseGateScreen(app, none) {}
@@ -85,5 +103,38 @@ private fun Gallery(which: String, app: P2pApp) {
         "about" -> AboutScreen(none, none)
         "licences" -> LicencesScreen(none)
         else -> HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null)
+    }
+}
+
+/** Record with the mic button; each recording lands as a bubble you can play and seek. Two made-up messages to start. */
+@Composable
+private fun VoiceDemo() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val msgs = remember { mutableStateListOf<RecordedVoice>() }
+    LaunchedEffect(Unit) {
+        // A synthetic warbling "speech" file through the real Rust recorder, so playback needs no mic.
+        val f = java.io.File(ctx.cacheDir, "demo.opus")
+        val rec = uniffi.p2pcore.VoiceRecorder.start(f.absolutePath)
+        rec.push(List(16000 * 6) { i -> (kotlin.math.sin(i * 2 * Math.PI * (200 + 80 * kotlin.math.sin(i / 3000.0)) / 16000) * 9000 * kotlin.math.abs(kotlin.math.sin(i / 2500.0))).toInt().toShort() })
+        val info = rec.finish()
+        msgs.add(RecordedVoice(f.absolutePath, info.durationMs.toInt(), info.waveform))
+    }
+    val state = rememberVoiceRecState { msgs.add(it) }
+    val c = Tin.c
+    Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().navigationBarsPadding()) {
+        Column(Modifier.weight(1f).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom)) {
+            msgs.forEachIndexed { i, m ->
+                val out = i % 2 == 1
+                Box(
+                    Modifier.align(if (out) Alignment.End else Alignment.Start)
+                        .background(if (out) c.prc else c.sf, RoundedCornerShape(18.dp)).padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                ) { VoiceBubbleContent("demo$i", m.path, m.durationMs, m.waveform, out) }
+            }
+        }
+        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (state.recording) VoiceRecordingBar(state, Modifier.weight(1f))
+            else Text("Message", color = c.ink2, modifier = Modifier.weight(1f).background(c.sf2, RoundedCornerShape(24.dp)).padding(16.dp))
+            VoiceMicButton(state)
+        }
     }
 }

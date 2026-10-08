@@ -11,6 +11,7 @@ use iced::widget::text_editor;
 use iced::{clipboard, Task};
 use p2pcore::{Chat, Contact, DayPage, Error, Message as ChatMsg, Node, TransferState};
 
+use crate::voice::{Player, Recorder};
 use super::{blocking, notify, s, App, Msg, Screen};
 use crate::ChatEv;
 
@@ -79,6 +80,9 @@ impl Source {
             Source::Fake(f) => f.send_file(peer, path, mime),
         }
     }
+    pub fn send_voice(&self, peer: String, path: String, duration_ms: u32, waveform: Vec<u8>) -> Result<ChatMsg, Error> {
+        route!(self.send_voice(peer, path, duration_ms, waveform))
+    }
     pub fn download_attachment(&self, peer: String, id: String) -> Result<(), Error> {
         route!(self.download_attachment(peer, id))
     }
@@ -111,6 +115,12 @@ pub(super) struct ChatState {
     pub drop_hover: bool,
     /// The contact details are shown instead of the conversation.
     pub info: bool,
+    /// A voice message being recorded, and the file it goes to.
+    pub rec: Option<(Recorder, PathBuf)>,
+    /// The voice message playing (or paused), by message id.
+    pub player: Option<(String, Player)>,
+    /// Decrypted voice files by message id, for playing again; removed when the app quits.
+    pub voice_files: HashMap<String, PathBuf>,
     #[cfg(feature = "test-hooks")]
     pub fake: Option<Arc<chat_fake::Fake>>,
 }
@@ -134,6 +144,9 @@ impl Default for ChatState {
             progress: HashMap::new(),
             drop_hover: false,
             info: false,
+            rec: None,
+            player: None,
+            voice_files: HashMap::new(),
             #[cfg(feature = "test-hooks")]
             fake: None,
         }
@@ -158,7 +171,6 @@ pub(super) enum Cm {
     Copy(String),
     CancelCompose,
     Attach,
-    Mic,
     Dropped(PathBuf),
     DropHover(bool),
     Download(String),
@@ -167,6 +179,12 @@ pub(super) enum Cm {
     Older,
     OlderDone(String, String, Result<u32, String>),
     Info(bool),
+    RecStart,
+    RecSend,
+    RecCancel,
+    VoiceToggle(String),
+    VoiceSeek(String, f32),
+    VoiceReady(String, Result<PathBuf, String>),
     Nop,
 }
 
@@ -256,6 +274,17 @@ impl ChatState {
         self.editing = None;
         self.menu = None;
     }
+}
+
+/// Scratch space for recordings and decrypted voice files; wiped at start and at quit.
+pub(super) fn voice_dir() -> PathBuf {
+    let d = std::env::temp_dir().join("tinline-voice");
+    let _ = std::fs::create_dir_all(&d);
+    d
+}
+
+pub(super) fn wipe_voice_dir() {
+    let _ = std::fs::remove_dir_all(std::env::temp_dir().join("tinline-voice"));
 }
 
 /// Widget id of the message field.
@@ -452,7 +481,6 @@ impl App {
                 return clipboard::write(text);
             }
             Cm::Attach => self.notice = Some("Drag files into this window to send them.".into()),
-            Cm::Mic => self.notice = Some(super::view::voice_unavailable().into()),
             Cm::DropHover(on) => self.chat.drop_hover = on && self.chat_visible(),
             Cm::Dropped(path) => {
                 self.chat.drop_hover = false;
@@ -536,7 +564,90 @@ impl App {
                 }
             }
             Cm::Info(on) => self.chat.info = on,
-            Cm::Nop => {}
+            Cm::RecStart => {
+                if self.chat.peer.is_none() || self.chat.rec.is_some() || !self.chat_io() {
+                    return Task::none();
+                }
+                self.chat.player = None;
+                let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+                let path = voice_dir().join(format!("rec-{stamp}.ogg"));
+                match Recorder::start(&path) {
+                    Ok(r) => self.chat.rec = Some((r, path)),
+                    Err(e) => self.notice = Some(format!("Could not record: {e}")),
+                }
+            }
+            Cm::RecCancel => {
+                if let Some((r, _)) = self.chat.rec.take() {
+                    r.cancel();
+                }
+            }
+            Cm::RecSend => {
+                let (Some((rec, path)), Some(peer)) = (self.chat.rec.take(), self.chat.peer.clone()) else {
+                    return Task::none();
+                };
+                match rec.finish() {
+                    Ok(Some(info)) => {
+                        let p = path.to_string_lossy().into_owned();
+                        return self.send_task(peer, move |src, peer| {
+                            let r = src.send_voice(peer, p.clone(), info.duration_ms, info.waveform);
+                            let _ = std::fs::remove_file(p);
+                            r
+                        });
+                    }
+                    Ok(None) => self.notice = Some("Too short \u{2014} hold on a little longer.".into()),
+                    Err(e) => self.notice = Some(format!("Could not record: {e}")),
+                }
+            }
+            Cm::VoiceToggle(id) => {
+                if let Some((pid, pl)) = &self.chat.player
+                    && *pid == id
+                {
+                    if pl.finished() {
+                        self.chat.player = None;
+                    } else {
+                        if pl.is_paused() { pl.resume() } else { pl.pause() }
+                        return Task::none();
+                    }
+                }
+                self.chat.player = None;
+                if let Some(p) = self.chat.voice_files.get(&id).filter(|p| p.exists()).cloned() {
+                    return self.update_chat(Cm::VoiceReady(id, Ok(p)));
+                }
+                let Some(peer) = self.chat.peer.clone() else { return Task::none() };
+                let dest = voice_dir().join(format!("play-{}.ogg", id.chars().filter(|c| c.is_ascii_alphanumeric()).collect::<String>()));
+                let src = self.src();
+                let (i, d) = (id.clone(), dest.clone());
+                return blocking(
+                    move || src.save_attachment(peer, i, d.to_string_lossy().into_owned()).map(|_| d).map_err(s),
+                    move |r| Msg::Chat(Cm::VoiceReady(id.clone(), r)),
+                );
+            }
+            Cm::VoiceReady(id, r) => match r.and_then(|p| Player::play(&p).map(|pl| (p, pl))) {
+                Ok((p, pl)) => {
+                    self.chat.voice_files.insert(id.clone(), p);
+                    self.chat.player = Some((id, pl));
+                }
+                Err(e) => self.notice = Some(format!("Could not play: {e}")),
+            },
+            Cm::VoiceSeek(id, f) => {
+                if let Some((pid, pl)) = &self.chat.player
+                    && *pid == id
+                {
+                    pl.seek((f * pl.duration_ms() as f32) as u32);
+                } else {
+                    // Seeking a bubble that is not playing starts it.
+                    return self.update_chat(Cm::VoiceToggle(id));
+                }
+            }
+            Cm::Nop => {
+                // Ticks at 100 ms while recording or playing redraw the timer and the wave.
+                if self.chat.player.as_ref().is_some_and(|(_, p)| p.finished()) {
+                    self.chat.player = None;
+                }
+                if self.chat.rec.as_ref().is_some_and(|(r, _)| r.elapsed_ms() >= crate::voice::MAX_MS) {
+                    return self.update_chat(Cm::RecSend);
+                }
+            }
         }
         Task::none()
     }

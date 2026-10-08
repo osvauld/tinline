@@ -57,6 +57,14 @@ fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val name = remember { app.node.profile()?.name ?: "" }
+    // No passphrase and the Keystore key is gone: the 24 words are the only way back.
+    if (!app.node.hasPassphrase()) {
+        KeyLostContent(name, busy, onRetry = {
+            busy = true
+            scope.launch { withContext(Dispatchers.IO) { app.tryAutoUnlock() }; busy = false; app.identityReady() }
+        }, onRestore = onForgot)
+        return
+    }
     UnlockContent(
         name, pass, { pass = it; error = null }, busy, error, onForgot,
         onUnlock = {
@@ -69,6 +77,28 @@ fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
             }
         },
     )
+}
+
+/** Locked with no passphrase: this phone's own key is gone, so only the recovery phrase brings the account back. */
+@Composable
+fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: () -> Unit) {
+    val c = Tin.c
+    Page {
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 72.dp, bottom = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            AppIconBadge(72.dp)
+            H1(if (name.isNotBlank()) "Can’t open $name’s account" else "Can’t open your account", align = TextAlign.Center)
+            Lead("This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Calls can’t reach you until you restore.", align = TextAlign.Center)
+            InfoCard("You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.", icon = Icons.Rounded.Info, kind = BannerKind.Warn)
+            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.pr, trackColor = c.sf3)
+        }
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TinButton("Restore with recovery phrase", onRestore, enabled = !busy)
+            TinButton("Try again", onRetry, style = BtnStyle.Text, enabled = !busy)
+        }
+    }
 }
 
 @Composable
@@ -203,29 +233,30 @@ fun RestoreScreen(onBack: () -> Unit, error: String?, busy: Boolean, warning: St
     }
 }
 
-/** Legacy installs: usable already, but the user must seal the identity under a passphrase. */
+/** Legacy installs: usable already, but the identity should be sealed, with a passphrase if the user wants one. */
 @Composable
 fun SetPassphraseScreen(app: P2pApp) {
     val scope = rememberCoroutineScope()
     var pass by remember { mutableStateOf("") }
-    var confirm by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    fun seal(p: String) {
+        busy = true; error = null
+        scope.launch {
+            val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(null, p) } }
+            busy = false
+            r.onFailure { error = friendly(it) }
+            r.onSuccess { pass = ""; app.identityReady() }
+        }
+    }
     StepFrame(null, null, footer = {
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 8.dp), color = Tin.c.pr, trackColor = Tin.c.sf3)
-        TinButton(if (busy) "Encrypting…" else "Set passphrase", {
-            busy = true; error = null
-            scope.launch {
-                val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(null, pass) } }
-                busy = false
-                r.onFailure { error = friendly(it) }
-                r.onSuccess { pass = ""; confirm = ""; app.identityReady() }
-            }
-        }, enabled = passphraseProblem(pass, confirm) == null && !busy)
+        TinButton(if (busy) "Encrypting…" else "Set passphrase", { seal(pass) }, enabled = pass.isNotEmpty() && !busy)
+        TinButton("Skip for now", { seal("") }, style = BtnStyle.Text, enabled = !busy)
     }) {
-        H1("Set a passphrase")
-        Lead("Your recovery phrase is currently stored unprotected on this phone. Choose a passphrase to encrypt it. Calls keep working while you do this.")
-        NewPassphraseFields(pass, confirm, { pass = it; error = null }, { confirm = it; error = null }, !busy, why = false)
+        H1("Add a passphrase")
+        Lead("Your recovery phrase is currently stored unprotected on this phone. Encrypt it now, with a passphrase if you like. Calls keep working while you do this.")
+        NewPassphraseField(pass, { pass = it; error = null }, !busy, onDone = { seal(pass) }, why = false)
         error?.let { Text(it, style = TinType.bodyM, color = Tin.c.er) }
     }
 }

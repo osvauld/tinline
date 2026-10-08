@@ -6,6 +6,7 @@
 
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use bytes::Bytes;
@@ -40,6 +41,9 @@ const LINGER: Duration = Duration::from_secs(2);
 /// Longest peer-supplied reason we pass on to the UI.
 const MAX_REASON_CHARS: usize = 100;
 const RING_TIMEOUT: Duration = Duration::from_secs(60);
+/// How long a second incoming call (one that arrives during a call) waits to be answered.
+/// `P2P_WAITING_RING_SECS` overrides it, for tests.
+const WAITING_RING_TIMEOUT: Duration = Duration::from_secs(30);
 /// An active call with no media for this long shows as `reconnecting` (a path change or a
 /// network switch), well before the no-audio timeout ends it.
 const RECONNECT_AFTER: Duration = Duration::from_millis(1500);
@@ -155,13 +159,20 @@ pub struct CallStats {
     pub reconnecting: bool,
 }
 
-enum Cmd {
+fn waiting_ring_timeout() -> Duration {
+    std::env::var("P2P_WAITING_RING_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .map_or(WAITING_RING_TIMEOUT, Duration::from_secs)
+}
+
+pub(crate) enum Cmd {
     Answer,
     Decline,
     Hangup,
 }
 
-struct Call {
+pub(crate) struct Call {
     info: CallInfo,
     conn: Mutex<Option<Connection>>,
     state: Mutex<CallState>,
@@ -188,6 +199,11 @@ struct Call {
     /// Whether the selected path was direct when last looked at (the connection is gone by the
     /// time the call has ended).
     direct: Mutex<bool>,
+    /// An incoming call that arrived during another call and sits in `Live::waiting`, not
+    /// yet in the slot. Declining it tells the caller `Busy`.
+    waiting: AtomicBool,
+    /// "End & answer" was chosen: answer this call the moment it takes over the slot.
+    answer_on_promote: AtomicBool,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
@@ -213,49 +229,54 @@ impl Call {
     }
 }
 
-struct Me {
-    profile: Profile,
-    id: Identity,
-    device: [u8; 32],
-    attestation: proto::SignedAttestation,
+pub(crate) struct Me {
+    pub(crate) profile: Profile,
+    pub(crate) id: Identity,
+    pub(crate) device: [u8; 32],
+    pub(crate) attestation: proto::SignedAttestation,
 }
 
-struct Shared {
+pub(crate) struct Shared {
     /// What `profile.json` holds; present whenever an identity exists, locked or not.
-    disk: Option<Disk>,
+    pub(crate) disk: Option<Disk>,
     /// Present while unlocked (and for a legacy profile).
-    me: Option<Arc<Me>>,
+    pub(crate) me: Option<Arc<Me>>,
     /// The vault's data key while unlocked via a vault; never written to disk by the core.
-    dek: Option<Dek>,
-    state: State,
-    endpoint: Option<Endpoint>,
+    pub(crate) dek: Option<Dek>,
+    pub(crate) state: State,
+    pub(crate) endpoint: Option<Endpoint>,
 }
 
 /// The call slot, apart from `Shared` so the 50 Hz audio threads never wait behind a disk
 /// write or a handshake holding `Shared`.
 #[derive(Default)]
-struct Live {
+pub(crate) struct Live {
     call: Option<Arc<Call>>,
+    /// A second incoming call, ringing over the active one. At most one; a third is turned
+    /// away busy. Takes the slot if the active call ends first.
+    waiting: Option<Arc<Call>>,
     /// The call that held the slot before, until the next call has waited for its events to
     /// be delivered (so `Ended` always precedes the next call's `Dialing`).
     last: Option<Arc<Call>>,
     tone: Option<f32>,
 }
 
-struct Inner {
-    handle: tokio::runtime::Handle,
-    store: Store,
+pub(crate) struct Inner {
+    pub(crate) handle: tokio::runtime::Handle,
+    pub(crate) store: Store,
     /// Held while snapshotting and writing state, so writes land in the order taken. Always
     /// taken before `shared`, never while holding it.
-    writing: Mutex<()>,
-    events: Arc<dyn NodeEvents>,
-    shared: Mutex<Shared>,
-    live: Mutex<Live>,
-    history: Arc<History>,
-    pending: Arc<Semaphore>,
-    reserved: Arc<Semaphore>,
+    pub(crate) writing: Mutex<()>,
+    pub(crate) events: Arc<dyn NodeEvents>,
+    pub(crate) shared: Mutex<Shared>,
+    pub(crate) live: Mutex<Live>,
+    pub(crate) history: Arc<History>,
+    pub(crate) pending: Arc<Semaphore>,
+    pub(crate) reserved: Arc<Semaphore>,
     /// Serialises start, stop, lock and set_passphrase.
-    lifecycle: Arc<tokio::sync::Mutex<()>>,
+    pub(crate) lifecycle: Arc<tokio::sync::Mutex<()>>,
+    pub(crate) chat: Mutex<Option<Arc<crate::chat::engine::ChatCore>>>,
+    pub(crate) chat_events: Mutex<Option<Arc<dyn crate::chat::api::ChatEvents>>>,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -263,7 +284,7 @@ struct Inner {
 /// instead of blocking the runtime that delivers the callback.
 #[derive(uniffi::Object)]
 pub struct Node {
-    inner: Arc<Inner>,
+    pub(crate) inner: Arc<Inner>,
     rt: Option<tokio::runtime::Runtime>,
 }
 
@@ -315,6 +336,8 @@ impl Node {
             pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
             reserved: Arc::new(Semaphore::new(RESERVED_HELLOS)),
             lifecycle: Arc::new(tokio::sync::Mutex::new(())),
+            chat: Mutex::new(None),
+            chat_events: Mutex::new(None),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -333,19 +356,25 @@ impl Node {
         }
     }
 
-    /// Creates an identity sealed under `passphrase` (at least 8 characters, else
-    /// `WeakPassphrase`) and leaves the node unlocked. Returns the recovery phrase; showing it
-    /// again later needs the passphrase (`recovery_phrase`). Slow: runs Argon2id.
+    /// Whether a passphrase wraps the vault's data key. False for a vault the platform alone
+    /// opens (see `unlock_key`) and for a legacy profile.
+    pub fn has_passphrase(&self) -> bool {
+        matches!(&self.inner.shared.lock().disk, Some(Disk::V2(p)) if p.vault.has_passphrase())
+    }
+
+    /// Creates an identity and leaves the node unlocked. An empty `passphrase` means none: the
+    /// data key is then only in the platform's hands (`unlock_key`). Returns the recovery
+    /// phrase; showing it again later needs the passphrase if there is one (`recovery_phrase`).
+    /// Slow with a passphrase: runs Argon2id.
     pub fn create_identity(&self, name: String, passphrase: String) -> Result<String, Error> {
-        vault::check_passphrase(&passphrase)?;
         let (_, mnemonic) = identity::generate();
         let phrase = mnemonic.to_string();
         self.set_identity(phrase.clone(), name, passphrase)?;
         Ok(phrase)
     }
 
+    /// Like `create_identity`, from a recovery phrase.
     pub fn restore_identity(&self, phrase: String, name: String, passphrase: String) -> Result<(), Error> {
-        vault::check_passphrase(&passphrase)?;
         self.set_identity(phrase.trim().to_string(), name, passphrase)
     }
 
@@ -364,7 +393,8 @@ impl Node {
     }
 
     /// Unlocks with the passphrase; `WrongPassphrase` if it does not open the vault. Returns
-    /// at once if already unlocked (or a legacy profile). Slow: runs Argon2id.
+    /// at once if already unlocked (or a legacy profile); a vault without a passphrase only
+    /// opens with `unlock_with_key`. Slow: runs Argon2id.
     pub fn unlock(&self, passphrase: String) -> Result<(), Error> {
         let vault = match self.unlock_target()? {
             Some(v) => v,
@@ -401,12 +431,12 @@ impl Node {
         self.inner.shared.lock().dek.as_ref().map(|d| d.to_vec())
     }
 
-    /// Sets or changes the passphrase (at least 8 characters). With `old = None` it converts a
-    /// legacy profile (state `NeedsPassphrase`) and the clear-text secrets leave profile.json;
-    /// otherwise `old` is required and verified. The data key is kept, so a remembered
-    /// `unlock_key` stays valid. Slow: runs Argon2id once or twice.
+    /// Sets or changes the passphrase (any non-empty one). With `old = None` it converts a
+    /// legacy profile (state `NeedsPassphrase`; an empty `new` seals it without a passphrase)
+    /// and the clear-text secrets leave profile.json; on a vault without a passphrase it adds
+    /// one (the node must be unlocked); otherwise `old` is required and verified. The data key
+    /// is kept, so a remembered `unlock_key` stays valid. Slow: runs Argon2id once or twice.
     pub fn set_passphrase(&self, old: Option<String>, new: String) -> Result<(), Error> {
-        vault::check_passphrase(&new)?;
         let _life = self.lifecycle()?;
         let snapshot = self.inner.shared.lock().disk.clone();
         match snapshot.ok_or(Error::NoIdentity)? {
@@ -414,10 +444,11 @@ impl Node {
                 if old.is_some() {
                     return Err(Error::Protocol("this identity has no passphrase yet".into()));
                 }
+                let new = Some(new).filter(|n| !n.is_empty());
                 let id = identity::recover(&p.mnemonic).map_err(|_| Error::BadPhrase)?;
                 let secrets = Secrets { mnemonic: p.mnemonic.clone(), device_secret: p.device_secret };
                 let device_public = proto::device_public(&p.device_secret);
-                let (vault, dek) = self.kdf(move || vault::seal(&secrets, &new))??;
+                let (vault, dek) = self.kdf(move || vault::seal(&secrets, new.as_deref()))??;
                 let mut s = self.inner.shared.lock();
                 // The name may have changed (set_name) while the KDF ran.
                 let name = match s.me.as_ref() {
@@ -435,15 +466,27 @@ impl Node {
                 self.inner.store.remove_legacy_leftovers();
                 s.disk = Some(disk);
                 s.dek = Some(dek);
+                drop(s);
+                self.inner.chat_open();
                 Ok(())
             }
             Disk::V2(p) => {
-                let old = old.ok_or_else(|| Error::Protocol("the old passphrase is required".into()))?;
+                vault::check_passphrase(&new)?;
                 let vault = p.vault;
-                let rewrapped = self.kdf(move || {
-                    let (_secrets, dek) = vault::open(&vault, &old)?;
-                    vault::rewrap(&vault, &dek, &new)
-                })??;
+                let rewrapped = if vault.has_passphrase() {
+                    let old = old.ok_or_else(|| Error::Protocol("the old passphrase is required".into()))?;
+                    self.kdf(move || {
+                        let (_secrets, dek) = vault::open(&vault, &old)?;
+                        vault::rewrap(&vault, &dek, &new)
+                    })??
+                } else {
+                    if old.is_some() {
+                        return Err(Error::Protocol("no passphrase is set yet".into()));
+                    }
+                    // Wrapping needs the data key, which only an unlocked node holds.
+                    let dek = self.inner.shared.lock().dek.clone().ok_or(Error::Locked)?;
+                    self.kdf(move || vault::rewrap(&vault, &dek, &new))??
+                };
                 let mut s = self.inner.shared.lock();
                 // Only the vault changes; keep any name change made meanwhile.
                 let Some(Disk::V2(cur)) = s.disk.clone() else { return Err(Error::NoIdentity) };
@@ -457,13 +500,18 @@ impl Node {
 
     /// The recovery phrase, re-derived from the vault: `WrongPassphrase` unless `passphrase`
     /// is right, and `Locked` on a legacy profile (convert it with `set_passphrase` first).
-    /// Works while locked. Slow: runs Argon2id.
+    /// Works while locked. Slow: runs Argon2id. With no passphrase set, `passphrase` is
+    /// ignored and the node must be unlocked: the platform asks for device authentication
+    /// before calling this.
     pub fn recovery_phrase(&self, passphrase: String) -> Result<String, Error> {
         let vault = {
             let s = self.inner.shared.lock();
             match &s.disk {
                 None => return Err(Error::NoIdentity),
                 Some(Disk::Legacy(_)) => return Err(Error::Locked),
+                Some(Disk::V2(p)) if !p.vault.has_passphrase() => {
+                    return s.me.as_ref().map(|me| me.profile.mnemonic.clone()).ok_or(Error::Locked);
+                }
                 Some(Disk::V2(p)) => p.vault.clone(),
             }
         };
@@ -484,9 +532,12 @@ impl Node {
                 // first and its endpoint is closed here.
                 let _life = inner.lifecycle.lock().await;
                 inner.close_endpoint().await;
-                let mut s = inner.shared.lock();
-                s.me = None;
-                s.dek = None;
+                {
+                    let mut s = inner.shared.lock();
+                    s.me = None;
+                    s.dek = None;
+                }
+                inner.chat_close().await;
             }
             inner.emit_status();
         });
@@ -531,6 +582,7 @@ impl Node {
         self.run_lifecycle(async move {
             {
                 let _life = inner.lifecycle.lock().await;
+                inner.chat_sessions_close();
                 inner.close_endpoint().await;
             }
             inner.emit_status();
@@ -543,6 +595,7 @@ impl Node {
         let ep = self.inner.shared.lock().endpoint.clone();
         if let Some(ep) = ep {
             self.inner.handle.spawn(async move { ep.network_change().await });
+            self.inner.chat_kick_pending();
         }
     }
 
@@ -625,12 +678,16 @@ impl Node {
             s.state.ticket = None;
         }
         self.inner.history.remove_peer(&did);
+        self.inner.chat_purge(&did);
         // The removal holds in memory whether or not it reached the disk, so act on it either
         // way and report the failed write afterwards. (A call ending now is not logged: the
         // peer is no longer a contact.)
         let saved = self.inner.persist().and(self.inner.history.save(&self.inner.store));
-        let call = self.inner.live.lock().call.clone();
-        if let Some(call) = call.filter(|c| c.info.peer_did == did) {
+        let calls: Vec<_> = {
+            let live = self.inner.live.lock();
+            live.call.iter().chain(live.waiting.iter()).cloned().collect()
+        };
+        for call in calls.into_iter().filter(|c| c.info.peer_did == did) {
             let _ = call.cmd.send(Cmd::Hangup);
         }
         self.inner.events.on_contacts_changed();
@@ -652,6 +709,22 @@ impl Node {
 
     pub fn hangup(&self, call_id: String) -> Result<(), Error> {
         self.inner.command(&call_id, Cmd::Hangup)
+    }
+
+    /// Ends the active call (a local hangup) and answers the waiting one `call_id`, which
+    /// then becomes the current call.
+    pub fn end_and_answer(&self, call_id: String) -> Result<(), Error> {
+        let live = self.inner.live.lock();
+        let w = live.waiting.as_ref().filter(|c| c.info.call_id == call_id).ok_or(Error::NotFound)?;
+        let cur = live.call.as_ref().ok_or(Error::NotFound)?;
+        w.answer_on_promote.store(true, Ordering::SeqCst);
+        cur.cmd.send(Cmd::Hangup).map_err(|_| Error::NotFound)
+    }
+
+    /// The second incoming call ringing over the current call, if any. Declining it
+    /// (`decline`) tells its caller `busy`; ignoring it ends it with `no_answer` after 30 s.
+    pub fn waiting_call(&self) -> Option<CallInfo> {
+        self.inner.live.lock().waiting.as_ref().map(|c| c.info.clone())
     }
 
     pub fn current_call(&self) -> Option<CallInfo> {
@@ -692,14 +765,14 @@ impl Node {
 }
 
 impl Me {
-    fn load(profile: Profile) -> Result<Self, Error> {
+    pub(crate) fn load(profile: Profile) -> Result<Self, Error> {
         let id = identity::recover(&profile.mnemonic).map_err(|_| Error::BadPhrase)?;
         let device = proto::device_public(&profile.device_secret);
         let attestation = proto::attest(&id, device, now());
         Ok(Self { profile, id, device, attestation })
     }
 
-    fn info(&self) -> ProfileInfo {
+    pub(crate) fn info(&self) -> ProfileInfo {
         ProfileInfo {
             did: self.id.did().to_string(),
             name: self.profile.name.clone(),
@@ -727,7 +800,7 @@ impl From<&StoredContact> for Contact {
 }
 
 /// What the UI should call this contact: our alias if any, else their own name.
-fn display_name(c: &StoredContact) -> String {
+pub(crate) fn display_name(c: &StoredContact) -> String {
     c.alias.clone().unwrap_or_else(|| c.name.clone())
 }
 
@@ -755,7 +828,7 @@ impl Node {
     /// Runs `fut` on the core runtime and waits for it. Waiting on a plain channel works from
     /// any app thread, including another runtime's (iced's tokio, `spawn_blocking`); only the
     /// core's own threads are refused, since blocking one could starve the future itself.
-    fn block_on<T: Send + 'static>(
+    pub(crate) fn block_on<T: Send + 'static>(
         &self,
         fut: impl std::future::Future<Output = T> + Send + 'static,
     ) -> Result<T, Error> {
@@ -830,6 +903,8 @@ impl Node {
         }
         s.me = Some(Arc::new(me));
         s.dek = Some(dek);
+        drop(s);
+        self.inner.chat_open();
         Ok(())
     }
 
@@ -840,7 +915,8 @@ impl Node {
         let profile = Profile { mnemonic: phrase, name, device_secret: proto::new_device_secret() };
         let me = Me::load(profile)?;
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret: me.profile.device_secret };
-        let (vault, dek) = self.kdf(move || vault::seal(&secrets, &passphrase))??;
+        let passphrase = Some(passphrase).filter(|p| !p.is_empty());
+        let (vault, dek) = self.kdf(move || vault::seal(&secrets, passphrase.as_deref()))??;
         let disk = Disk::V2(ProfileV2 {
             version: 2,
             name: me.profile.name.clone(),
@@ -856,13 +932,15 @@ impl Node {
         s.disk = Some(disk);
         s.me = Some(Arc::new(me));
         s.dek = Some(dek);
+        drop(s);
+        self.inner.chat_open();
         Ok(())
     }
 }
 
 impl Inner {
     /// Writes a snapshot of `State`. Callers must not hold `shared`.
-    fn persist(&self) -> Result<(), Error> {
+    pub(crate) fn persist(&self) -> Result<(), Error> {
         let _w = self.writing.lock();
         let snapshot = self.shared.lock().state.clone();
         self.store.save_state(&snapshot)
@@ -870,7 +948,7 @@ impl Inner {
 
     /// `persist` for async code: the write (and its fsyncs) runs on the blocking pool, not on a
     /// worker that other connections need.
-    async fn persist_async(self: &Arc<Self>) -> Result<(), Error> {
+    pub(crate) async fn persist_async(self: &Arc<Self>) -> Result<(), Error> {
         let this = self.clone();
         tokio::task::spawn_blocking(move || this.persist())
             .await
@@ -878,7 +956,7 @@ impl Inner {
     }
 
     /// Fire and forget, for state that is only a cache (a device, a renewed grant).
-    fn persist_in_background(self: &Arc<Self>) {
+    pub(crate) fn persist_in_background(self: &Arc<Self>) {
         let this = self.clone();
         self.handle.spawn_blocking(move || {
             let _ = this.persist();
@@ -886,7 +964,7 @@ impl Inner {
     }
 
     /// The setting as of now: an expired "until" counts as available again.
-    fn availability(&self) -> Availability {
+    pub(crate) fn availability(&self) -> Availability {
         let a = self.shared.lock().state.availability.clone();
         match a.until {
             Some(t) if a.unavailable && now() >= t => Availability { available: true, until: None },
@@ -896,7 +974,7 @@ impl Inner {
     }
 
     /// Adds to the call log and writes it in the background.
-    fn log_call(&self, rec: CallRecord) {
+    pub(crate) fn log_call(&self, rec: CallRecord) {
         self.history.push(rec);
         let (history, store) = (self.history.clone(), self.store.clone());
         self.handle.spawn_blocking(move || {
@@ -907,7 +985,7 @@ impl Inner {
     }
 
     /// An incoming call that never became a `Call` (turned away unavailable, or busy).
-    fn log_refused(&self, call_id: &str, did: &str, name: &str, reason: &str, missed: bool) {
+    pub(crate) fn log_refused(&self, call_id: &str, did: &str, name: &str, reason: &str, missed: bool) {
         self.log_call(CallRecord {
             call_id: call_id.to_string(),
             peer_did: did.to_string(),
@@ -921,14 +999,14 @@ impl Inner {
         });
     }
 
-    async fn close_endpoint(&self) {
+    pub(crate) async fn close_endpoint(&self) {
         let ep = self.shared.lock().endpoint.take();
         if let Some(ep) = ep {
             let _ = tokio::time::timeout(Duration::from_secs(2), ep.close()).await;
         }
     }
 
-    fn me(&self) -> Result<Arc<Me>, Error> {
+    pub(crate) fn me(&self) -> Result<Arc<Me>, Error> {
         let s = self.shared.lock();
         match (&s.me, &s.disk) {
             (Some(me), _) => Ok(me.clone()),
@@ -937,17 +1015,17 @@ impl Inner {
         }
     }
 
-    fn endpoint(&self) -> Result<Endpoint, Error> {
+    pub(crate) fn endpoint(&self) -> Result<Endpoint, Error> {
         self.shared.lock().endpoint.clone().ok_or(Error::NotStarted)
     }
 
-    fn log(&self, line: impl Into<String>) {
+    pub(crate) fn log(&self, line: impl Into<String>) {
         let line = line.into();
         tracing::info!("{line}");
         self.events.on_log(line);
     }
 
-    fn status(&self) -> NodeStatus {
+    pub(crate) fn status(&self) -> NodeStatus {
         let s = self.shared.lock();
         match &s.endpoint {
             Some(ep) => {
@@ -974,11 +1052,11 @@ impl Inner {
         }
     }
 
-    fn emit_status(&self) {
+    pub(crate) fn emit_status(&self) {
         self.events.on_status(self.status());
     }
 
-    async fn start(self: Arc<Self>) -> Result<(), Error> {
+    pub(crate) async fn start(self: Arc<Self>) -> Result<(), Error> {
         let _life = self.lifecycle.lock().await;
         let me = self.me()?;
         if self.shared.lock().endpoint.is_some() {
@@ -991,7 +1069,7 @@ impl Inner {
             .build();
         let mut builder = Endpoint::builder(presets::N0)
             .secret_key(SecretKey::from_bytes(&me.profile.device_secret))
-            .alpns(vec![proto::ALPN.to_vec()])
+            .alpns(vec![proto::ALPN.to_vec(), crate::chat::wire::CHAT_ALPN.to_vec(), iroh_blobs::ALPN.to_vec()])
             .transport_config(transport);
         // Test knob: no UDP of our own, so every packet goes through the relay — the path a
         // call takes when hole punching fails.
@@ -1021,6 +1099,7 @@ impl Inner {
         }
         self.log(format!("endpoint {} bound", ep.id()));
         self.emit_status();
+        self.chat_started();
 
         let this = self.clone();
         let watch_ep = ep.clone();
@@ -1050,7 +1129,22 @@ impl Inner {
                 };
                 let this = this.clone();
                 tokio::spawn(async move {
-                    if let Err(e) = this.clone().handle_incoming(incoming, permit, reserved).await {
+                    let mut accepting = match incoming.accept() {
+                        Ok(a) => a,
+                        Err(_) => return,
+                    };
+                    let alpn = match accepting.alpn().await {
+                        Ok(a) => a,
+                        Err(_) => return,
+                    };
+                    if alpn.as_slice() == crate::chat::wire::CHAT_ALPN || alpn.as_slice() == iroh_blobs::ALPN {
+                        let chat = alpn.as_slice() == crate::chat::wire::CHAT_ALPN;
+                        if let Err(e) = this.clone().handle_chat_incoming(accepting, chat, permit).await {
+                            tracing::debug!("incoming chat: {e}");
+                        }
+                        return;
+                    }
+                    if let Err(e) = this.clone().handle_incoming(accepting, permit, reserved).await {
                         tracing::debug!("incoming: {e}");
                     }
                 });
@@ -1060,7 +1154,7 @@ impl Inner {
         Ok(())
     }
 
-    async fn ticket(self: &Arc<Self>) -> Result<String, Error> {
+    pub(crate) async fn ticket(self: &Arc<Self>) -> Result<String, Error> {
         let me = self.me()?;
         // Right after start the relay isn't known yet; a ticket without it leaves the joiner
         // to DNS discovery, so give the relay a few seconds to come up first.
@@ -1107,7 +1201,7 @@ impl Inner {
         Ok(text)
     }
 
-    async fn add_contact(self: Arc<Self>, text: String) -> Result<Contact, Error> {
+    pub(crate) async fn add_contact(self: Arc<Self>, text: String) -> Result<Contact, Error> {
         let me = self.me()?;
         let ticket = ContactTicket::from_text(&text)?;
         let claim = ticket.verify(now())?;
@@ -1160,7 +1254,7 @@ impl Inner {
 
     /// `lift_block`: only when the user scanned this contact's ticket; a contact who arrives on
     /// their own (they scanned ours) must not undo a removal.
-    async fn save_contact(
+    pub(crate) async fn save_contact(
         self: &Arc<Self>,
         new: proto::NewContact,
         relay: Option<String>,
@@ -1209,9 +1303,9 @@ impl Inner {
 
     /// The slot in `permit` is held until this connection has become a call or a contact, or is
     /// over; `reserved` says it came from the contacts-only pool.
-    async fn handle_incoming(
+    pub(crate) async fn handle_incoming(
         self: Arc<Self>,
-        incoming: iroh::endpoint::Incoming,
+        incoming: iroh::endpoint::Accepting,
         mut permit: OwnedSemaphorePermit,
         reserved: bool,
     ) -> Result<(), Error> {
@@ -1315,11 +1409,11 @@ impl Inner {
         }
     }
 
-    fn is_contact_device(&self, device: &[u8; 32]) -> bool {
+    pub(crate) fn is_contact_device(&self, device: &[u8; 32]) -> bool {
         self.shared.lock().state.contacts.iter().any(|c| c.devices.contains(device))
     }
 
-    async fn incoming_call(
+    pub(crate) async fn incoming_call(
         self: Arc<Self>,
         conn: Connection,
         mut ctrl: Ctrl,
@@ -1376,13 +1470,20 @@ impl Inner {
         self.yield_on_glare(&caller.did, me.device, remote);
         let (call, cmds) = match self.begin_call(info.clone(), CallState::Ringing, false) {
             Ok(c) => c,
-            Err(_) => {
-                self.log_refused(&info.call_id, &info.peer_did, &info.peer_name, "busy", true);
-                ctrl.send(&Msg::Busy).await?;
-                ctrl.finish();
-                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
-                return Ok(());
-            }
+            // In a call: ring quietly over it, if nothing is waiting there already.
+            Err(_) => match self.begin_waiting(info.clone()) {
+                Ok(c) => {
+                    self.log("incoming call while in a call: waiting");
+                    c
+                }
+                Err(_) => {
+                    self.log_refused(&info.call_id, &info.peer_did, &info.peer_name, "busy", true);
+                    ctrl.send(&Msg::Busy).await?;
+                    ctrl.finish();
+                    let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                    return Ok(());
+                }
+            },
         };
         // From here every exit must free the slot; the guard does it if nothing else did.
         let _slot = SlotGuard { inner: &self, call: call.clone() };
@@ -1408,7 +1509,7 @@ impl Inner {
     /// Both sides dialled each other at once: each would answer the other's hello with Busy
     /// and both calls die. The call from the lower device key wins; the higher side drops its
     /// own outgoing call so the incoming one can take the slot.
-    fn yield_on_glare(&self, peer: &str, mine: [u8; 32], theirs: [u8; 32]) {
+    pub(crate) fn yield_on_glare(&self, peer: &str, mine: [u8; 32], theirs: [u8; 32]) {
         let ours = self.live.lock().call.clone();
         if let Some(ours) = ours
             && !ours.info.incoming
@@ -1422,7 +1523,7 @@ impl Inner {
 
     /// The caller's device and relay as of this call, so our next call to them dials straight
     /// there.
-    fn note_device(self: &Arc<Self>, did: &str, device: [u8; 32], relay: Option<String>) {
+    pub(crate) fn note_device(self: &Arc<Self>, did: &str, device: [u8; 32], relay: Option<String>) {
         let mut s = self.shared.lock();
         let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == did) else { return };
         let mut changed = false;
@@ -1442,13 +1543,9 @@ impl Inner {
         }
     }
 
-    /// Takes the call slot. With `announce` the first state is delivered to the UI before any
-    /// other thread can see (and end) the call, and after the previous call's events.
-    fn begin_call(
-        &self,
+    fn new_call(
         info: CallInfo,
         state: CallState,
-        announce: bool,
     ) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
         // Everything slow or fallible comes before the slot is taken.
         let sender = audio::Sender::new(48_000)?;
@@ -1457,7 +1554,7 @@ impl Inner {
         let call = Arc::new(Call {
             info,
             conn: Mutex::new(None),
-            state: Mutex::new(state.clone()),
+            state: Mutex::new(state),
             cmd: tx,
             started: Instant::now(),
             sender: Mutex::new(sender),
@@ -1472,7 +1569,21 @@ impl Inner {
             started_at: now(),
             active_at: Mutex::new(None),
             direct: Mutex::new(false),
+            waiting: AtomicBool::new(false),
+            answer_on_promote: AtomicBool::new(false),
         });
+        Ok((call, rx))
+    }
+
+    /// Takes the call slot. With `announce` the first state is delivered to the UI before any
+    /// other thread can see (and end) the call, and after the previous call's events.
+    pub(crate) fn begin_call(
+        &self,
+        info: CallInfo,
+        state: CallState,
+        announce: bool,
+    ) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
+        let (call, rx) = Self::new_call(info, state.clone())?;
         {
             let _first = call.notify.lock();
             let previous = {
@@ -1493,7 +1604,22 @@ impl Inner {
         Ok((call, rx))
     }
 
-    fn start_call(self: Arc<Self>, did: String) -> Result<CallInfo, Error> {
+    /// Parks an incoming call beside the active one. Busy unless there is an answered call
+    /// and nothing already waiting.
+    fn begin_waiting(&self, info: CallInfo) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
+        let (call, rx) = Self::new_call(info, CallState::Ringing)?;
+        call.waiting.store(true, Ordering::SeqCst);
+        let mut live = self.live.lock();
+        match &live.call {
+            Some(c) if c.state() == CallState::Active && live.waiting.is_none() => {
+                live.waiting = Some(call.clone());
+                Ok((call, rx))
+            }
+            _ => Err(Error::Busy),
+        }
+    }
+
+    pub(crate) fn start_call(self: Arc<Self>, did: String) -> Result<CallInfo, Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
         let contact = {
@@ -1512,14 +1638,7 @@ impl Inner {
             // A panic below must not leave the slot busy forever.
             let _slot = SlotGuard { inner: &this, call: call.clone() };
             // Hanging up while dialing must not wait out the dial timeout.
-            let cancelled = async {
-                loop {
-                    match cmds.recv().await {
-                        Some(Cmd::Answer) => continue,
-                        _ => break,
-                    }
-                }
-            };
+            let cancelled = async { while let Some(Cmd::Answer) = cmds.recv().await {} };
             let dialed = tokio::select! {
                 d = async {
                     tokio::time::timeout(DIAL_TOTAL, this.dial(&ep, &me, &contact, &call.info.call_id))
@@ -1545,7 +1664,7 @@ impl Inner {
         Ok(info)
     }
 
-    async fn dial(
+    pub(crate) async fn dial(
         &self,
         ep: &Endpoint,
         me: &Me,
@@ -1598,7 +1717,7 @@ impl Inner {
 
     /// Drives one call from ringing to the end, on either side. `incoming_from` is the caller's
     /// DID when we are the callee, so the answer can carry a renewed grant.
-    async fn run_call(
+    pub(crate) async fn run_call(
         self: Arc<Self>,
         call: Arc<Call>,
         conn: Connection,
@@ -1606,7 +1725,8 @@ impl Inner {
         mut cmds: mpsc::UnboundedReceiver<Cmd>,
         incoming_from: Option<String>,
     ) {
-        let ring_deadline = tokio::time::Instant::now() + RING_TIMEOUT;
+        let ring = if call.waiting.load(Ordering::SeqCst) { waiting_ring_timeout() } else { RING_TIMEOUT };
+        let ring_deadline = tokio::time::Instant::now() + ring;
         let mut datagrams: Option<oneshot::Sender<()>> = None;
         let mut watchdog = tokio::time::interval(Duration::from_secs(5));
         watchdog.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -1640,7 +1760,8 @@ impl Inner {
                         break "unreachable".into();
                     }
                     Ok(Some(Msg::Hangup)) => {
-                        break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "declined" }.into();
+                        // A callee only hangs up unanswered when its ring timed out; a refusal is a Decline.
+                        break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "no_answer" }.into();
                     }
                     Ok(None) => break if active { "hangup_remote".into() } else { lost(false) },
                     Ok(Some(other)) => self.log(format!("ignoring {} mid-call", msg_name(&other))),
@@ -1664,7 +1785,13 @@ impl Inner {
                     // Not yet answered: the callee refusing is a decline, the caller giving up
                     // is a hangup (the callee shows it as missed).
                     Some(Cmd::Decline) | Some(Cmd::Hangup) if !active && incoming_from.is_some() => {
-                        let _ = ctrl.send(&Msg::Decline { reason: "declined".into() }).await;
+                        // Declined over another call: the caller is told we are busy.
+                        let reply = if call.waiting.load(Ordering::SeqCst) {
+                            Msg::Busy
+                        } else {
+                            Msg::Decline { reason: "declined".into() }
+                        };
+                        let _ = ctrl.send(&reply).await;
                         break "declined_local".into();
                     }
                     Some(Cmd::Decline) | Some(Cmd::Hangup) if !active => {
@@ -1706,7 +1833,7 @@ impl Inner {
     }
 
     /// Spawns the datagram reader; dropping the returned sender stops it.
-    fn start_media(&self, call: &Arc<Call>, conn: &Connection) -> oneshot::Sender<()> {
+    pub(crate) fn start_media(&self, call: &Arc<Call>, conn: &Connection) -> oneshot::Sender<()> {
         let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
         let call = call.clone();
         let conn = conn.clone();
@@ -1731,7 +1858,7 @@ impl Inner {
     /// A callee's `Accept` may carry a fresh grant for us. It replaces the stored one only if it
     /// is validly signed by them for us and outlives the old one; anything else is ignored, so a
     /// peer can't shorten or break the grant we call them with.
-    fn renew_grant(self: &Arc<Self>, did: &str, grant: proto::SignedGrant) {
+    pub(crate) fn renew_grant(self: &Arc<Self>, did: &str, grant: proto::SignedGrant) {
         let Ok(me) = self.me() else { return };
         let replaced = {
             let mut s = self.shared.lock();
@@ -1750,7 +1877,7 @@ impl Inner {
 
     /// Never overwrites `Ended`, and the change and its delivery are one step, so the UI sees a
     /// call's states in the order they happened.
-    fn set_state(&self, call: &Call, state: CallState) {
+    pub(crate) fn set_state(&self, call: &Call, state: CallState) {
         let _order = call.notify.lock();
         {
             let mut cur = call.state.lock();
@@ -1769,7 +1896,7 @@ impl Inner {
     /// Frees the slot, closes the connection and emits Ended — once per call, however many
     /// paths get here. The slot is free before `Ended` is delivered (a UI that reacts to it may
     /// place the next call at once); the next call's first event waits for this one's.
-    fn end_call(&self, call: &Arc<Call>, reason: String) {
+    pub(crate) fn end_call(&self, call: &Arc<Call>, reason: String) {
         if std::mem::replace(&mut *call.ended.lock(), true) {
             return;
         }
@@ -1777,11 +1904,20 @@ impl Inner {
         self.note_direct(call);
         let state = CallState::Ended { reason: reason.clone() };
         *call.state.lock() = state.clone();
+        // A waiting call takes over the slot when the active one ends.
+        let mut promoted = None;
         {
             let mut live = self.live.lock();
             if live.call.as_ref().is_some_and(|c| Arc::ptr_eq(c, call)) {
                 live.call = None;
                 live.last = Some(call.clone());
+                if let Some(w) = live.waiting.take() {
+                    w.waiting.store(false, Ordering::SeqCst);
+                    live.call = Some(w.clone());
+                    promoted = Some(w);
+                }
+            } else if live.waiting.as_ref().is_some_and(|c| Arc::ptr_eq(c, call)) {
+                live.waiting = None;
             }
         }
         if let Some(conn) = call.conn.lock().take() {
@@ -1790,10 +1926,22 @@ impl Inner {
         self.record_ended(call, &reason);
         self.log(format!("call {}: {state:?}", call.info.call_id));
         self.events.on_call_state(call.info.call_id.clone(), state);
+        if let Some(w) = promoted {
+            if w.answer_on_promote.load(Ordering::SeqCst) {
+                let _ = w.cmd.send(Cmd::Answer);
+            } else {
+                // Now an ordinary ringing call: the UI hears of it as a fresh incoming call.
+                let _order = w.notify.lock();
+                if !matches!(w.state(), CallState::Ended { .. }) {
+                    self.events.on_incoming_call(w.info.clone());
+                    self.events.on_call_state(w.info.call_id.clone(), CallState::Ringing);
+                }
+            }
+        }
     }
 
     /// Remembers whether the call is on a direct path while we still have its connection.
-    fn note_direct(&self, call: &Call) {
+    pub(crate) fn note_direct(&self, call: &Call) {
         if let Some((direct, _)) = call.conn.lock().as_ref().and_then(selected_path) {
             *call.direct.lock() = direct;
         }
@@ -1801,7 +1949,7 @@ impl Inner {
 
     /// Writes the call into the history (before `Ended` is delivered, so the UI's re-read sees
     /// it). Not for a call we gave up on in favour of theirs, nor for a contact since removed.
-    fn record_ended(&self, call: &Call, reason: &str) {
+    pub(crate) fn record_ended(&self, call: &Call, reason: &str) {
         if reason == "superseded" {
             return;
         }
@@ -1827,19 +1975,24 @@ impl Inner {
         });
     }
 
-    fn command(&self, call_id: &str, cmd: Cmd) -> Result<(), Error> {
+    pub(crate) fn command(&self, call_id: &str, cmd: Cmd) -> Result<(), Error> {
         let live = self.live.lock();
-        let call = live.call.as_ref().filter(|c| c.info.call_id == call_id).ok_or(Error::NotFound)?;
+        let call = live
+            .call
+            .iter()
+            .chain(live.waiting.iter())
+            .find(|c| c.info.call_id == call_id)
+            .ok_or(Error::NotFound)?;
         call.cmd.send(cmd).map_err(|_| Error::NotFound)
     }
 
-    fn active_call(&self) -> Option<(Arc<Call>, Option<f32>)> {
+    pub(crate) fn active_call(&self) -> Option<(Arc<Call>, Option<f32>)> {
         let live = self.live.lock();
         let call = live.call.clone()?;
         (call.state() == CallState::Active).then_some((call, live.tone))
     }
 
-    fn push_mic(&self, pcm: &[i16]) {
+    pub(crate) fn push_mic(&self, pcm: &[i16]) {
         let Some((call, tone)) = self.active_call() else { return };
         let Some(conn) = call.conn.lock().clone() else { return };
         let mut mic = call.mic.lock();
@@ -1868,7 +2021,7 @@ impl Inner {
         }
     }
 
-    fn pull_speaker(&self) -> Vec<i16> {
+    pub(crate) fn pull_speaker(&self) -> Vec<i16> {
         let mut out = [0i16; audio::FRAME];
         if let Some((call, _)) = self.active_call() {
             call.receiver.lock().pull(&mut out, call.now_ms());
@@ -1880,7 +2033,7 @@ impl Inner {
         out.to_vec()
     }
 
-    fn call_stats(&self) -> Option<CallStats> {
+    pub(crate) fn call_stats(&self) -> Option<CallStats> {
         let call = self.live.lock().call.clone()?;
         let rx = call.receiver.lock().stats();
         let (direct, rtt_ms) = call.conn.lock().as_ref().and_then(selected_path).unwrap_or((false, 0));
@@ -1901,7 +2054,7 @@ impl Inner {
             lost: rx.lost,
             recovered: rx.recovered_fec + rx.recovered_dred,
             concealed: rx.concealed,
-            buffered_ms: rx.buffered_ms as u32,
+            buffered_ms: rx.buffered_ms,
             rx_freq_hz: audio::estimate_frequency(&played).unwrap_or(0.0),
             rx_rms: audio::rms(&played),
         })
@@ -1915,7 +2068,7 @@ fn selected_path(c: &Connection) -> Option<(bool, u32)> {
 
 /// An unsigned relay hint from a peer, kept only if it is a sane relay URL: it gets stored
 /// and dialled, so junk must not get in.
-fn relay_hint(hint: &Option<String>) -> Option<String> {
+pub(crate) fn relay_hint(hint: &Option<String>) -> Option<String> {
     hint.as_deref()
         .filter(|h| h.len() <= 200 && h.starts_with("https://"))
         .and_then(|h| h.parse::<RelayUrl>().ok())
@@ -1938,15 +2091,15 @@ fn grant_outlives(old: &proto::SignedGrant, new: &proto::SignedGrant, issuer: &s
 }
 
 /// A reason string from the peer, for the UI: no control characters, bounded length.
-fn clip_reason(reason: &str) -> String {
+pub(crate) fn clip_reason(reason: &str) -> String {
     reason.chars().filter(|c| !c.is_control()).take(MAX_REASON_CHARS).collect()
 }
 
-fn relay_of(ep: &Endpoint) -> Option<String> {
+pub(crate) fn relay_of(ep: &Endpoint) -> Option<String> {
     ep.addr().relay_urls().next().map(|u| u.to_string())
 }
 
-fn addr_for(device: &[u8; 32], relay: Option<&str>) -> Result<EndpointAddr, Error> {
+pub(crate) fn addr_for(device: &[u8; 32], relay: Option<&str>) -> Result<EndpointAddr, Error> {
     let id = PublicKey::from_bytes(device).map_err(|_| Error::Protocol("bad device key".into()))?;
     let mut addr = EndpointAddr::new(id);
     if let Some(url) = relay.and_then(|r| r.parse::<RelayUrl>().ok()) {
@@ -1976,11 +2129,11 @@ fn on_core_thread() -> bool {
     std::thread::current().name() == Some(CORE_THREAD)
 }
 
-pub fn now() -> u64 {
+pub(crate) fn now() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
-fn random_id() -> String {
+pub(crate) fn random_id() -> String {
     use rand::RngCore;
     let mut b = [0u8; 8];
     rand::rngs::OsRng.fill_bytes(&mut b);

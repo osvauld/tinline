@@ -446,9 +446,16 @@ fn run_call(
 
 /// One 20 ms slice of the ring tone: a classic double-ring on a 2 s cycle (two 0.4 s bursts,
 /// 0.2 s apart, then silence). `n` counts slices.
-fn ring_frame(n: u64, out: &mut Vec<f32>) {
+fn ring_frame(n: u64, out: &mut Vec<f32>, waiting: bool) {
     for i in 0..FRAME as u64 {
         let t = n * FRAME as u64 + i;
+        if waiting {
+            // A second call during a call: one quiet beep every four seconds.
+            let ms = (t * 1000 / RATE as u64) % 4000;
+            let ph = t as f32 / RATE as f32;
+            out.push(if ms < 300 { (ph * 425.0 * std::f32::consts::TAU).sin() * 0.05 } else { 0.0 });
+            continue;
+        }
         let ms = (t * 1000 / RATE as u64) % 2000;
         let on = ms < 400 || (600..1000).contains(&ms);
         let ph = t as f32 / RATE as f32;
@@ -461,8 +468,8 @@ fn ring_frame(n: u64, out: &mut Vec<f32>) {
     }
 }
 
-/// Plays a classic double-ring until stopped.
-pub fn start_ring(out_dev: Option<String>) -> Session {
+/// Plays a classic double-ring until stopped; with `waiting`, the quiet beep of a second call.
+pub fn start_ring(out_dev: Option<String>, waiting: bool) -> Session {
     let stop = Arc::new(AtomicBool::new(false));
     let flag = stop.clone();
     let join = thread::Builder::new()
@@ -476,7 +483,7 @@ pub fn start_ring(out_dev: Option<String>) -> Session {
                 if let Some(s) = spk.dev.as_mut() {
                     while s.queued() < SPK_TARGET && s.prod.slots() >= FRAME {
                         buf.clear();
-                        ring_frame(n, &mut buf);
+                        ring_frame(n, &mut buf, waiting);
                         n += 1;
                         buf.iter().for_each(|v| { let _ = s.prod.push(*v); });
                     }
@@ -503,6 +510,10 @@ pub struct Ctl {
     notice: std::sync::Mutex<Option<Notice>>,
     call: std::sync::Mutex<Option<Session>>,
     ring: std::sync::Mutex<Option<Session>>,
+    /// The call whose audio is running, so another call ending does not stop it.
+    call_id: std::sync::Mutex<Option<String>>,
+    /// The second incoming call whose beep is playing.
+    waiting_id: std::sync::Mutex<Option<String>>,
 }
 
 impl Ctl {
@@ -514,12 +525,12 @@ impl Ctl {
         *self.notice.lock().unwrap() = Some(Arc::new(f));
     }
 
-    pub fn on_incoming(&self) {
-        if self.call.lock().unwrap().is_some() {
-            return; // already talking; the UI shows the waiting call
-        }
+    pub fn on_incoming(&self, id: &str) {
+        let waiting = self.call.lock().unwrap().is_some();
+        // Already talking: the UI shows the waiting call, with a quiet beep instead of a ring.
+        *self.waiting_id.lock().unwrap() = waiting.then(|| id.to_string());
         let out = self.devices.lock().unwrap().1.clone();
-        let old = self.ring.lock().unwrap().replace(start_ring(out));
+        let old = self.ring.lock().unwrap().replace(start_ring(out, waiting));
         retire(old);
     }
 
@@ -527,11 +538,13 @@ impl Ctl {
         retire(self.ring.lock().unwrap().take());
     }
 
-    pub fn on_state(&self, state: &p2pcore::CallState) {
+    pub fn on_state(&self, id: &str, state: &p2pcore::CallState) {
         let Some(node) = self.node.lock().unwrap().upgrade() else { return };
         match state {
             p2pcore::CallState::Active => {
                 self.stop_ring();
+                *self.waiting_id.lock().unwrap() = None;
+                *self.call_id.lock().unwrap() = Some(id.to_string());
                 self.muted.store(false, Ordering::Relaxed);
                 node.set_test_tone(*self.tone.lock().unwrap());
                 let (i, o) = self.devices.lock().unwrap().clone();
@@ -540,6 +553,16 @@ impl Ctl {
                 retire(self.call.lock().unwrap().replace(s));
             }
             p2pcore::CallState::Ended { .. } => {
+                // The second call giving up (or declined) leaves the call it rang over alone.
+                if self.waiting_id.lock().unwrap().as_deref() == Some(id) {
+                    *self.waiting_id.lock().unwrap() = None;
+                    self.stop_ring();
+                    return;
+                }
+                if self.call_id.lock().unwrap().as_deref().is_some_and(|c| c != id) {
+                    return;
+                }
+                *self.call_id.lock().unwrap() = None;
                 self.stop_all();
                 node.set_test_tone(None);
             }

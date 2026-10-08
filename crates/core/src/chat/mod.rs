@@ -7,3 +7,9 @@ pub mod crypt;
 #[cfg(test)]
 mod blobs_tests;
 pub mod api;
+pub mod engine;
+pub mod store;
+pub mod wire;
+pub mod doc;
+#[cfg(test)]
+mod doc_tests;

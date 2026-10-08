@@ -235,7 +235,7 @@ fun PairAvatars(me: String, other: String, otherKey: String?, mine: Dp = 64.dp, 
 
 /** Onboarding progress: filled dots up to [step] (1-based) joined by amber string, the rest outlined. */
 @Composable
-fun ProgressDots(step: Int, total: Int = 5) {
+fun ProgressDots(step: Int, total: Int = 4) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 4.dp).semantics { contentDescription = "Step $step of $total" },
         verticalAlignment = Alignment.CenterVertically) {

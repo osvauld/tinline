@@ -8,6 +8,7 @@
 use std::sync::Arc;
 
 use crate::node::Node;
+use std::path::PathBuf;
 use crate::Error;
 
 /// Honest ticks. For a message we sent: `Pending` = only on this phone (one tick), `Delivered`
@@ -110,56 +111,51 @@ pub trait ChatEvents: Send + Sync {
     fn on_transfer_progress(&self, peer_did: String, hash: String, done: u64, total: u64, outgoing: bool);
 }
 
-fn todo<T>() -> Result<T, Error> {
-    Err(Error::Protocol("chat is not implemented yet".into()))
-}
-
 #[uniffi::export]
 impl Node {
     pub fn set_chat_events(&self, events: Arc<dyn ChatEvents>) {
-        let _ = events;
+        *self.inner.chat_events.lock() = Some(events);
     }
 
     /// Conversations, most recent activity first. One per contact.
     pub fn chats(&self) -> Result<Vec<Chat>, Error> {
-        todo()
+        self.inner.chat_list()
     }
 
     /// The messages of one UTC day; `day = None` is the newest day that has any. Only today's
     /// shard is loaded eagerly; older days are read from the local store when asked.
     pub fn chat_day(&self, peer_did: String, day: Option<String>) -> Result<DayPage, Error> {
-        let _ = (peer_did, day);
-        todo()
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_day(&peer_did, day).await })?
     }
 
     /// Asks the peer for days older than `before_day` that we do not hold (needs a connection;
     /// blocks until answered or timed out). Returns how many days were added.
     pub fn fetch_older_history(&self, peer_did: String, before_day: String) -> Result<u32, Error> {
-        let _ = (peer_did, before_day);
-        todo()
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_fetch_history(&peer_did, before_day).await })?
     }
 
     pub fn send_text(&self, peer_did: String, text: String, reply_to: Option<String>) -> Result<Message, Error> {
-        let _ = (peer_did, text, reply_to);
-        todo()
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_send_message(&peer_did, text, reply_to, None).await })?
     }
 
     /// Our own message only.
     pub fn edit_message(&self, peer_did: String, message_id: String, text: String) -> Result<Message, Error> {
-        let _ = (peer_did, message_id, text);
-        todo()
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_edit(&peer_did, &message_id, Some(text)).await })?
     }
 
     /// Our own message only; clears the text, keeps the id.
     pub fn delete_message(&self, peer_did: String, message_id: String) -> Result<Message, Error> {
-        let _ = (peer_did, message_id);
-        todo()
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_edit(&peer_did, &message_id, None).await })?
     }
 
     /// Zeroes the local unread counter (read receipts are not sent).
     pub fn mark_read(&self, peer_did: String) -> Result<(), Error> {
-        let _ = peer_did;
-        todo()
+        self.inner.chat_mark_read(&peer_did)
     }
 
     /// Encrypts the file at `path` (up to 2 GB) and sends a message carrying it. Blocks while
@@ -171,8 +167,8 @@ impl Node {
         mime: String,
         text: Option<String>,
     ) -> Result<Message, Error> {
-        let _ = (peer_did, path, mime, text);
-        todo()
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_send_file(&peer_did, PathBuf::from(path), mime, text, None).await })?
     }
 
     /// Sends an already recorded voice file (Ogg Opus, 16 kHz mono; produced by the app's
@@ -184,31 +180,41 @@ impl Node {
         duration_ms: u32,
         waveform: Vec<u8>,
     ) -> Result<Message, Error> {
-        let _ = (peer_did, path, duration_ms, waveform);
-        todo()
+        let inner = self.inner.clone();
+        self.block_on(async move {
+            inner.chat_send_file(&peer_did, PathBuf::from(path), "audio/ogg".into(), None, Some((duration_ms, waveform))).await
+        })?
     }
 
     /// Starts fetching the attachment of a message now (progress via `on_transfer_progress`,
     /// the end via `on_message_changed`). Returns at once.
     pub fn download_attachment(&self, peer_did: String, message_id: String) -> Result<(), Error> {
-        let _ = (peer_did, message_id);
-        todo()
+        self.inner.chat_want(&peer_did, &message_id)
     }
 
     /// Decrypts a `Ready` attachment to `dest_path` (a voice message is saved the same way and
     /// played from the file). Blocks.
     pub fn save_attachment(&self, peer_did: String, message_id: String, dest_path: String) -> Result<(), Error> {
-        let _ = (peer_did, message_id, dest_path);
-        todo()
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_save(&peer_did, &message_id, PathBuf::from(dest_path)).await })?
     }
 
     /// Attachments up to this many bytes download by themselves; 0 = never. Default 10 MB.
     pub fn set_auto_download_limit(&self, bytes: u64) -> Result<(), Error> {
-        let _ = bytes;
-        todo()
+        self.inner.chat_core()?.store.set_auto_download(bytes)
     }
 
     pub fn auto_download_limit(&self) -> Result<u64, Error> {
-        todo()
+        Ok(self.inner.chat_core()?.store.auto_download())
+    }
+}
+
+impl Node {
+    /// Not exported to apps: tests use it to show that a contact who is not a party to a
+    /// conversation cannot fetch its blobs.
+    #[doc(hidden)]
+    pub fn raw_fetch_blob(&self, did: String, hash: String, size: u64) -> Result<u64, Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_raw_fetch(&did, &hash, size).await })?
     }
 }

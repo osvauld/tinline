@@ -5,7 +5,7 @@ use chrono::{DateTime, Datelike, Local, TimeZone};
 use iced::widget::{button, column, container, mouse_area, progress_bar, row, text, text_editor, Space};
 use p2pcore::{AttachmentKind, Chat, Contact, DeliveryState, Message as ChatMsg, TransferState};
 
-use super::chat_voice_slot::{mic_button, voice_bubble};
+use crate::voice::{self, VoiceView};
 use super::*;
 use crate::app::chat::{preview_of, Cm, SideTab, COMPOSER_ID};
 
@@ -123,7 +123,8 @@ impl App {
             if r.last_outgoing && r.last_activity > 0 {
                 sub = sub.push(self.ticks(t, r.last_delivery, 14.0, dim));
             }
-            let pv = if unread { semi(r.preview.clone(), 13.0, t.ink) } else { tx(r.preview.clone(), 13.0, dim) };
+            let pv = if unread { semi(r.preview.clone(), 13.0, t.ink) } else { tx(r.preview.clone(), 13.0, dim) }
+                .wrapping(iced::widget::text::Wrapping::None);
             sub = sub.push(container(pv).width(Fill).clip(true));
             if unread {
                 sub = sub.push(count_badge(t, r.unread));
@@ -450,7 +451,13 @@ impl App {
         };
         let mut c = column![].spacing(6);
         if voice {
-            c = c.push(voice_bubble(t, a, fg));
+            let (playing, pos) = match &self.chat.player {
+                Some((pid, p)) if *pid == m.id => (!p.is_paused() && !p.finished(), Some(p.position_ms())),
+                _ => (false, None),
+            };
+            let v = VoiceView { waveform: &a.waveform, duration_ms: a.duration_ms, position_ms: pos, playing };
+            let (tid, sid) = (m.id.clone(), m.id.clone());
+            c = c.push(voice::bubble(t, v, m.outgoing, Msg::Chat(Cm::VoiceToggle(tid)), move |f| Msg::Chat(Cm::VoiceSeek(sid.clone(), f))));
             if !status.is_empty() {
                 c = c.push(tx(status, 12.0, dim));
             }
@@ -559,24 +566,22 @@ impl App {
                 .on_press(Msg::Chat(Cm::Send))
                 .into()
         } else {
-            // lead: voice.rs replaces this with the recorder's mic.
-            mic_button(t, Msg::Chat(Cm::Mic))
+            voice::mic_button(t, Msg::Chat(Cm::RecStart))
         };
+        let line: El = match &self.chat.rec {
+            Some((r, _)) => voice::record_bar(t, r.elapsed_ms(), Msg::Chat(Cm::RecSend), Msg::Chat(Cm::RecCancel)),
+            None => row![
+                icon_btn_big(t, Icon::Paperclip, Msg::Chat(Cm::Attach)),
+                container(editor).width(Fill),
+                last,
+            ]
+            .spacing(8)
+            .align_y(Alignment::End)
+            .into(),
+        };
+        let hint = if self.chat.rec.is_some() { "" } else { "Enter to send \u{b7} Shift Enter new line" };
         col = col.push(
-            container(
-                column![
-                    row![
-                        icon_btn_big(t, Icon::Paperclip, Msg::Chat(Cm::Attach)),
-                        container(editor).width(Fill),
-                        last,
-                    ]
-                    .spacing(8)
-                    .align_y(Alignment::End),
-                    container(tx("Enter to send \u{b7} Shift Enter new line", 11.0, t.ink2)).padding([0, 48]),
-                ]
-                .spacing(4),
-            )
-            .padding([10, 20]),
+            container(column![line, container(tx(hint, 11.0, t.ink2)).padding([0, 48])].spacing(4)).padding([10, 20]),
         );
         container(col).width(Fill).style(ui::plain(t.bg, 0.0)).into()
     }
