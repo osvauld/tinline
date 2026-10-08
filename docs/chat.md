@@ -232,11 +232,19 @@ updates + meta, acks, message counters, outbox markers, blob key index, read-per
 - Closed days: days 8+ days old are compacted into an encrypted snapshot blob (`closed` in the
   shard meta) by a periodic task; opening one decrypts the blob. A peer's `HistoryReq` is
   answered with such a blob (made on demand, cached) and its key, inside the authenticated link.
-- **Peer-vouched import.** History snapshots (older days, or a day whose batch depends on ops of
-  ours that we lost, e.g. after a reinstall) cannot be checked op by op. They are validated like a
-  batch (authors must be one of the two parties, times in range, immutables intact) but ops of both
-  parties are accepted: the peer vouches for them. This is the one place a contact can put words
-  in our mouth, and only for days we hold nothing (or not enough) of.
+- **Per-message author signatures.** Every message record carries `sig`, an Ed25519 signature by
+  the author's attested device key over `"tinline-chat-msg-v1"` and the length-prefixed doc id
+  (`dm/{pair}/{day}`), message id, author DID, `at`, current text, `edited_at`, `deleted`,
+  `reply_to` and the file ref (hash, key, name, size, mime, kind, duration, waveform). Creating,
+  editing and deleting all re-sign. Every apply path (live batch, history snapshot) verifies each
+  new or changed message against the author's device key (the peer's from the session, ours from
+  the profile); unsigned or mis-signed messages reject the whole batch. Because the doc id is
+  signed a message cannot be replayed into another day or pair, and a changed message may not move
+  `edited_at` backwards or un-delete, so an old signed version cannot roll back an edit.
+- **Vouched import.** History snapshots (older days, or a day whose batch depends on ops of ours
+  that we lost, e.g. after a reinstall) are accepted op-agnostically: ops of either party may
+  appear, but each message must carry a valid signature of its author. A contact therefore cannot
+  put words in our mouth; the worst it can do is withhold messages.
 - Contact removal: the conversation records and all its blobs are dropped (bytes freed by the
   next GC run); the block already refuses later sessions.
 - No `proto` change; `crates/audio` untouched (voice encode/decode left to the apps).
