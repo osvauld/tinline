@@ -461,6 +461,14 @@ impl App {
         }
         if let Some(name) = crate::test_env("P2P_DEMO") {
             app.load_demo(&name);
+            tasks.push(app.ensure_thumbs());
+            if let Some(peer) = app.chat.peer.clone() {
+                match name.as_str() {
+                    "chat-viewer" => tasks.push(app.update_chat(Cm::View(format!("{peer}-12")))),
+                    "chat-text" => tasks.push(app.update_chat(Cm::Open(format!("{peer}-14")))),
+                    _ => {}
+                }
+            }
             return (app, Task::batch(tasks));
         }
         if let Some(pass) = test_unlock {
@@ -656,7 +664,10 @@ impl App {
             Msg::Tick => {
                 if let (Some(_), Some(id)) = (crate::test_env("P2P_SHOT"), self.win) {
                     self.ticks += 1;
-                    if self.ticks == 3 {
+                    // Pictures decode in the background: wait for them (at most ~30 ticks).
+                    let busy = self.chat.thumbs.values().any(|t| matches!(t, chat::Thumb::Loading))
+                        || self.chat.viewer.as_ref().is_some_and(|v| matches!(v.body, chat::ViewBody::Loading));
+                    if self.ticks >= 3 && (!busy || self.ticks >= 30) {
                         return window::screenshot(id).map(Msg::Shot);
                     }
                 }
@@ -715,6 +726,7 @@ impl App {
             Msg::Theme(m) => self.dark = self.forced_dark.unwrap_or(m != theme::Mode::Light),
             Msg::Quit => {
                 chat::wipe_voice_dir();
+                crate::media::wipe_now();
                 let node = self.node.clone();
                 self.ctl.stop_all();
                 // A hung shutdown must not keep the app (and its tray icon) alive.
@@ -1066,6 +1078,9 @@ impl App {
                 let ringing = self.call.as_ref().is_some_and(|c| c.info.incoming && !c.answered && c.state == CallState::Ringing);
                 let active = self.call.as_ref().is_some_and(|c| c.state == CallState::Active);
                 match key.as_ref() {
+                    Key::Named(Named::Escape) if self.chat.viewer.is_some() => return self.update_chat(Cm::CloseView),
+                    Key::Named(Named::ArrowLeft) if self.chat.viewer.is_some() => return self.update_chat(Cm::Step(-1)),
+                    Key::Named(Named::ArrowRight) if self.chat.viewer.is_some() => return self.update_chat(Cm::Step(1)),
                     Key::Named(Named::Escape) if self.chat.rec.is_some() => return self.update_chat(Cm::RecCancel),
                     Key::Named(Named::Enter) if ringing => return self.update(Msg::Answer),
                     Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),

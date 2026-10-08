@@ -110,8 +110,48 @@ pub fn seed(peer: &str, now: u64) -> Vec<Message> {
     out.edited_at = Some(now - 18 * MIN);
     let mut pending = base(&id(11), peer, true, now - 2 * MIN, "Running 10 min late, sorry");
     pending.delivery = DeliveryState::Pending;
-    v.extend([plan, voice, r, big, out, pending]);
+    let mut photo = base(&id(12), peer, false, now - 110 * MIN, "The view from the balcony");
+    photo.attachment = Some(file("Balcony view.jpg", 1_800_000, "image/jpeg", TransferState::Ready));
+    let mut sketch = base(&id(13), peer, true, now - 100 * MIN, "");
+    sketch.attachment = Some(file("Sketch.png", 640_000, "image/png", TransferState::Ready));
+    let mut notes = base(&id(14), peer, false, now - 98 * MIN, "");
+    notes.attachment = Some(file("Move-in checklist.txt", 1_200, "text/plain", TransferState::Ready));
+    let mut exe = base(&id(15), peer, false, now - 96 * MIN, "");
+    exe.attachment = Some(file("setup.exe", 4_200_000, "application/x-msdownload", TransferState::Ready));
+    let mut sh = base(&id(16), peer, false, now - 95 * MIN, "");
+    sh.attachment = Some(file("install.sh", 2_048, "text/x-shellscript", TransferState::Ready));
+    v.extend([plan, voice, r, photo, sketch, notes, exe, sh, big, out, pending]);
     v
+}
+
+/// A PNG to look at: sky gradient with a sun and a hill (landscape), or a dusk-coloured portrait.
+fn fake_picture(portrait: bool) -> Vec<u8> {
+    let (w, h) = if portrait { (520u32, 700u32) } else { (900u32, 600u32) };
+    let mut px = Vec::with_capacity((w * h * 3) as usize);
+    for y in 0..h {
+        for x in 0..w {
+            let (fx, fy) = (x as f32 / w as f32, y as f32 / h as f32);
+            let hill = 0.72 + 0.08 * (fx * 6.0).sin();
+            let (cx, cy) = (0.7 * w as f32, 0.3 * h as f32);
+            let d = ((x as f32 - cx).powi(2) + (y as f32 - cy).powi(2)).sqrt();
+            let c = if fy > hill {
+                [40, (110.0 + 60.0 * fy) as u8, 70]
+            } else if d < 0.09 * w as f32 {
+                [255, 214, 120]
+            } else if portrait {
+                [(60.0 + 120.0 * fy) as u8, (50.0 + 60.0 * fy) as u8, (120.0 + 80.0 * fy) as u8]
+            } else {
+                [(90.0 + 90.0 * fy) as u8, (160.0 + 60.0 * fy) as u8, (235.0 - 30.0 * fy) as u8]
+            };
+            px.extend_from_slice(&c);
+        }
+    }
+    let mut out = Vec::new();
+    let mut e = png::Encoder::new(&mut out, w, h);
+    e.set_color(png::ColorType::Rgb);
+    e.set_depth(png::BitDepth::Eight);
+    e.write_header().and_then(|mut wr| wr.write_image_data(&px)).expect("png");
+    out
 }
 
 impl Fake {
@@ -322,7 +362,16 @@ impl Fake {
             st.msgs[p].iter().find(|m| m.id == message_id).and_then(|m| m.attachment.as_ref()).map(|a| (a.name.clone(), a.state))
         });
         match name {
-            Some((n, TransferState::Ready)) => std::fs::write(&dest_path, format!("fake attachment {n}\n")).map_err(|e| nope(&e.to_string())),
+            Some((n, TransferState::Ready)) => {
+                let bytes = if n.ends_with(".jpg") || n.ends_with(".png") {
+                    fake_picture(n.ends_with(".png"))
+                } else if n.ends_with(".txt") {
+                    b"Move-in checklist\n\n[x] Sign the lease\n[x] Pay the deposit\n[ ] Collect the keys (Tuesday, 6 pm)\n[ ] Photograph every room\n[ ] Meter readings: gas, electricity, water\n[ ] Change the address\n".to_vec()
+                } else {
+                    format!("fake attachment {n}\n").into_bytes()
+                };
+                std::fs::write(&dest_path, bytes).map_err(|e| nope(&e.to_string()))
+            }
             _ => Err(nope("not ready")),
         }
     }

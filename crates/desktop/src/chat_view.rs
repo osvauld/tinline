@@ -7,7 +7,8 @@ use p2pcore::{AttachmentKind, Chat, Contact, DeliveryState, Message as ChatMsg, 
 
 use crate::voice::{self, VoiceView};
 use super::*;
-use crate::app::chat::{preview_of, Cm, SideTab, COMPOSER_ID};
+use crate::app::chat::{preview_of, Cm, SideTab, Thumb, ViewBody, COMPOSER_ID};
+use crate::media::{self, Class};
 
 fn local(ms: u64) -> Option<DateTime<Local>> {
     Local.timestamp_millis_opt(ms as i64).single()
@@ -424,6 +425,7 @@ impl App {
 
     fn attachment_view<'a>(&'a self, t: Tok, m: &'a ChatMsg, a: &'a p2pcore::Attachment, fg: Color, dim: Color) -> El<'a> {
         let voice = a.kind == AttachmentKind::Voice;
+        let class = if voice { Class::SaveOnly } else { media::classify(&a.name, &a.mime) };
         let (done, total) = self.chat.progress.get(&a.hash).copied().unwrap_or((a.transferred, a.size));
         let who = self.chat_name(&m.peer_did);
         let status: String = match a.state {
@@ -446,10 +448,27 @@ impl App {
         let action: Option<El> = match a.state {
             TransferState::Remote => Some(self.chip_btn(Icon::Download, "Download", fg, Msg::Chat(Cm::Download(m.id.clone())))),
             TransferState::Failed => Some(self.chip_btn(Icon::RotateCw, "Retry", fg, Msg::Chat(Cm::Download(m.id.clone())))),
-            TransferState::Ready => Some(self.chip_btn(Icon::Download, "Save", fg, Msg::Chat(Cm::Save(m.id.clone())))),
+            TransferState::Ready => {
+                let mut r = row![].spacing(6);
+                if !voice && class.openable() {
+                    r = r.push(self.chip_btn(Icon::ExternalLink, "Open", fg, Msg::Chat(Cm::Open(m.id.clone()))));
+                }
+                Some(r.push(self.chip_btn(Icon::Download, "Save", fg, Msg::Chat(Cm::Save(m.id.clone())))).into())
+            }
             TransferState::Downloading => None,
         };
         let mut c = column![].spacing(6);
+        let thumb = match class {
+            Class::Image(_) if a.state == TransferState::Ready => match self.chat.thumbs.get(&a.hash) {
+                Some(Thumb::Bad) => None,
+                other => Some(other),
+            },
+            Class::Image(_) => Some(None),
+            _ => None,
+        };
+        if let Some(th) = thumb {
+            return self.image_view(t, m, a, th, &status, fg, dim);
+        }
         if voice {
             let (playing, pos) = match &self.chat.player {
                 Some((pid, p)) if *pid == m.id => (!p.is_paused() && !p.finished(), Some(p.position_ms())),
@@ -485,6 +504,123 @@ impl App {
             c = c.push(a);
         }
         c.into()
+    }
+
+    /// A picture in a bubble: the thumbnail (tap to enlarge), or a box while it is not here yet.
+    #[allow(clippy::too_many_arguments)]
+    fn image_view<'a>(&'a self, t: Tok, m: &'a ChatMsg, a: &'a p2pcore::Attachment, th: Option<&'a Thumb>, status: &str, fg: Color, dim: Color) -> El<'a> {
+        let (done, total) = self.chat.progress.get(&a.hash).copied().unwrap_or((a.transferred, a.size));
+        if let Some(Thumb::Ready { handle, w, h }) = th {
+            let (dw, dh) = fit(*w as f32 / 2.0, *h as f32 / 2.0);
+            let img = iced::widget::image(handle.clone())
+                .width(dw)
+                .height(dh)
+                .content_fit(iced::ContentFit::Fill)
+                .border_radius(10.0);
+            return button(img)
+                .padding(0)
+                .style(|_: &Theme, _| button::Style::default())
+                .on_press(Msg::Chat(Cm::View(m.id.clone())))
+                .into();
+        }
+        let loading = a.state == TransferState::Ready;
+        let mut c = column![].spacing(6).align_x(Alignment::Center);
+        c = c.push(ui::icon(Icon::File, 26.0, fg));
+        c = c.push(semi(a.name.clone(), 13.0, fg));
+        c = c.push(tx(if loading { "Loading\u{2026}".to_string() } else { status.to_string() }, 12.0, dim));
+        match a.state {
+            TransferState::Remote => c = c.push(self.chip_btn(Icon::Download, "Download", fg, Msg::Chat(Cm::Download(m.id.clone())))),
+            TransferState::Failed => c = c.push(self.chip_btn(Icon::RotateCw, "Retry", fg, Msg::Chat(Cm::Download(m.id.clone())))),
+            TransferState::Downloading if self.status.online => {
+                let v = if total > 0 { (done as f32 / total as f32).clamp(0.0, 1.0) } else { 0.0 };
+                c = c.push(progress_bar(0.0..=1.0, v).girth(5).length(180).style(move |_: &Theme| progress_bar::Style {
+                    background: iced::Background::Color(ui::alpha(fg, 0.15)),
+                    bar: iced::Background::Color(t.primary),
+                    border: Border { radius: 3.0.into(), ..Default::default() },
+                }));
+            }
+            _ => {}
+        }
+        container(c).width(260).height(150).center_x(260).center_y(150).style(ui::plain(ui::alpha(fg, 0.1), 10.0)).into()
+    }
+
+    /// The full-window overlay: a picture, or a text file, over a dark scrim.
+    pub(super) fn viewer_overlay<'a>(&'a self, t: Tok) -> Option<El<'a>> {
+        let v = self.chat.viewer.as_ref()?;
+        let white = Color::WHITE;
+        let ids = self.chat.viewable_images();
+        let pos = ids.iter().position(|x| *x == v.id);
+        let is_img = !matches!(v.body, ViewBody::Text(_)) && pos.is_some() || matches!(v.body, ViewBody::Image { .. });
+        let mut bar = row![semi(v.name.clone(), 15.0, white).width(Fill).wrapping(iced::widget::text::Wrapping::None)]
+            .spacing(8)
+            .align_y(Alignment::Center);
+        if let Some(i) = pos.filter(|_| ids.len() > 1) {
+            bar = bar.push(tx(format!("{} of {}", i + 1, ids.len()), 13.0, ui::alpha(white, 0.7)));
+        }
+        bar = bar
+            .push(self.chip_btn(Icon::ExternalLink, "Open in default app", white, Msg::Chat(Cm::OpenExt(v.id.clone()))))
+            .push(self.chip_btn(Icon::Download, "Save", white, Msg::Chat(Cm::Save(v.id.clone()))))
+            .push(
+                button(container(ui::icon(Icon::X, 20.0, white)).center_x(36).center_y(36))
+                    .padding(0)
+                    .style(move |_: &Theme, st| button::Style {
+                        background: Some(ui::alpha(white, if matches!(st, button::Status::Hovered | button::Status::Pressed) { 0.22 } else { 0.1 }).into()),
+                        border: Border { radius: 999.0.into(), ..Default::default() },
+                        ..Default::default()
+                    })
+                    .on_press(Msg::Chat(Cm::CloseView)),
+            );
+        let body: El = match &v.body {
+            ViewBody::Image { handle, .. } => iced::widget::image(handle.clone())
+                .content_fit(iced::ContentFit::Contain)
+                .width(Fill)
+                .height(Fill)
+                .border_radius(6.0)
+                .into(),
+            ViewBody::Text(txt) => container(scroll(t, container(text(txt.clone()).font(ui::MONO).size(13).color(t.ink)).padding(16)).width(Fill))
+                .max_width(860)
+                .height(if txt.lines().count() > 30 { Length::Fill } else { Length::Shrink })
+                .style(ui::plain(t.surface, 12.0))
+                .into(),
+            ViewBody::Loading => container(tx("Loading\u{2026}", 15.0, ui::alpha(white, 0.8))).center_x(Fill).center_y(Fill).into(),
+            ViewBody::Failed(e) => container(tx(format!("Could not show this: {e}"), 15.0, ui::alpha(white, 0.8))).center_x(Fill).center_y(Fill).into(),
+        };
+        let nav = |i: Icon, d: i32, on: bool| -> El<'a> {
+            let b = button(container(ui::icon(i, 26.0, white)).center_x(44).center_y(44))
+                .padding(0)
+                .style(move |_: &Theme, st| button::Style {
+                    background: Some(ui::alpha(white, if matches!(st, button::Status::Hovered | button::Status::Pressed) { 0.22 } else { 0.1 }).into()),
+                    border: Border { radius: 999.0.into(), ..Default::default() },
+                    ..Default::default()
+                });
+            container(if on { b.on_press(Msg::Chat(Cm::Step(d))) } else { b }).center_y(Fill).width(52).into()
+        };
+        let prev_ok = is_img && pos.is_some_and(|i| i > 0);
+        let next_ok = is_img && pos.is_some_and(|i| i + 1 < ids.len());
+        let mid: El = if is_img {
+            row![
+                if prev_ok { nav(Icon::ChevronLeft, -1, true) } else { Space::new().width(52).into() },
+                mouse_area(container(body).center_x(Fill).center_y(Fill)).on_press(Msg::Chat(Cm::Nop)),
+                if next_ok { nav(Icon::ChevronRight, 1, true) } else { Space::new().width(52).into() },
+            ]
+            .spacing(8)
+            .height(Fill)
+            .into()
+        } else {
+            container(body).center_x(Fill).height(Fill).into()
+        };
+        let page = column![container(bar).padding([0, 4]), mid].spacing(14).width(Fill).height(Fill);
+        Some(
+            mouse_area(
+                container(page)
+                    .padding(20)
+                    .width(Fill)
+                    .height(Fill)
+                    .style(ui::plain(Color { r: 0.04, g: 0.05, b: 0.06, a: 0.94 }, 0.0)),
+            )
+            .on_press(Msg::Chat(Cm::CloseView))
+            .into(),
+        )
     }
 
     fn chip_btn<'a>(&self, i: Icon, label_: &'static str, fg: Color, msg: Msg) -> El<'a> {
@@ -585,6 +721,12 @@ impl App {
         );
         container(col).width(Fill).style(ui::plain(t.bg, 0.0)).into()
     }
+}
+
+/// The size a picture of `w` x `h` is shown at in a bubble: within 320 x 360, never enlarged.
+fn fit(w: f32, h: f32) -> (f32, f32) {
+    let k = (320.0 / w).min(360.0 / h).min(1.0);
+    ((w * k).max(60.0).round(), (h * k).max(40.0).round())
 }
 
 fn icon_btn_big<'a>(t: Tok, i: Icon, on: Msg) -> El<'a> {
