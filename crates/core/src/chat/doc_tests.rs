@@ -46,7 +46,6 @@ fn days_and_pairs() {
     assert_eq!(day_start(DAY), Some(NOON - 12 * HOUR_MS));
     assert_eq!(day_start("2026-02-30"), None);
     assert_eq!(day_start("nope"), None);
-    assert_eq!(prev_day("2026-03-01").unwrap(), "2026-02-28");
     assert_eq!(pair_id("did:a", "did:b"), pair_id("did:b", "did:a"));
     assert_ne!(pair_id("did:a", "did:b"), pair_id("did:a", "did:c"));
     assert_ne!(peer_id(&dev(1), "dm/p/x"), peer_id(&dev(2), "dm/p/x"));

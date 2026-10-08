@@ -85,10 +85,6 @@ pub fn day_start(day: &str) -> Option<i64> {
     (day_of(ms) == day).then_some(ms)
 }
 
-pub fn prev_day(day: &str) -> Option<String> {
-    Some(day_of(day_start(day)? - 1))
-}
-
 // ---- records -------------------------------------------------------------------------------
 
 /// What a message carries besides text. Stored as one JSON string, immutable after creation.
@@ -163,6 +159,7 @@ pub struct Applied {
 }
 
 impl Applied {
+    #[cfg(test)]
     pub fn is_empty(&self) -> bool {
         self.added.is_empty() && self.changed.is_empty()
     }
@@ -262,7 +259,6 @@ fn read_messages(doc: &LoroDoc) -> Result<BTreeMap<String, MsgRec>, Reject> {
 
 /// A conversation day. Cheap to clone? No: owns the Loro doc.
 pub struct Shard {
-    pub name: String,
     pub day: String,
     doc: LoroDoc,
     pub peer: u64,
@@ -274,7 +270,7 @@ impl Shard {
         let peer = peer_id(device, &name);
         let doc = LoroDoc::new();
         doc.set_peer_id(peer).expect("peer id");
-        Self { name, day: day.to_string(), doc, peer }
+        Self { day: day.to_string(), doc, peer }
     }
 
     /// Rebuilds a shard from its snapshot and the updates appended since.

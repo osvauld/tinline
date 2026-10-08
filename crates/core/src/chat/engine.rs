@@ -196,10 +196,10 @@ impl Inner {
                 }
                 this.chat_kick_pending();
                 n += 1;
-                if n % 120 == 1 {
-                    if let Err(e) = this.chat_compact().await {
-                        tracing::warn!("chat compaction: {e}");
-                    }
+                if n % 120 == 1
+                    && let Err(e) = this.chat_compact().await
+                {
+                    tracing::warn!("chat compaction: {e}");
                 }
             }
         });
@@ -1468,7 +1468,7 @@ impl Inner {
             if d.as_str() >= before {
                 continue;
             }
-            if !core.store.shard_meta(pair, &d)?.is_some_and(|m| m.n_messages > 0) {
+            if core.store.shard_meta(pair, &d)?.is_none_or(|m| m.n_messages == 0) {
                 continue;
             }
             out.push(self.chat_snapshot_blob(core, me, pair, &d).await?);
@@ -1508,7 +1508,6 @@ impl Inner {
         sess.tx.send(Cmd::History(before, 14)).map_err(|_| Error::Net("session closed".into()))?;
         let days = tokio::time::timeout(Duration::from_secs(30), rx).await.map_err(|_| Error::Timeout)?.map_err(|_| Error::Net("session closed".into()))?;
         let pair = pair_id(me.id.did(), did);
-        let hub = self.chat_hub().await?;
         let mut added = 0;
         for d in days.into_iter().take(14) {
             if !day_valid(&d.day) || core.store.shard_meta(&pair, &d.day)?.is_some() {

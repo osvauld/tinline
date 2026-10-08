@@ -42,18 +42,6 @@ pub enum ChatMsg {
     HistoryResp { days: Vec<HistDay> },
 }
 
-pub fn name(m: &ChatMsg) -> &'static str {
-    match m {
-        ChatMsg::Auth { .. } => "Auth",
-        ChatMsg::Hello { .. } => "Hello",
-        ChatMsg::Sync { .. } => "Sync",
-        ChatMsg::Push { .. } => "Push",
-        ChatMsg::Ack { .. } => "Ack",
-        ChatMsg::HistoryReq { .. } => "HistoryReq",
-        ChatMsg::HistoryResp { .. } => "HistoryResp",
-    }
-}
-
 fn sig_input(doc: &str, update: &[u8]) -> Vec<u8> {
     let mut v = Vec::with_capacity(SIG_DOMAIN.len() + 4 + doc.len() + update.len());
     v.extend_from_slice(SIG_DOMAIN);

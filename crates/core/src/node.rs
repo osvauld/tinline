@@ -155,13 +155,13 @@ pub struct CallStats {
     pub reconnecting: bool,
 }
 
-enum Cmd {
+pub(crate) enum Cmd {
     Answer,
     Decline,
     Hangup,
 }
 
-struct Call {
+pub(crate) struct Call {
     info: CallInfo,
     conn: Mutex<Option<Connection>>,
     state: Mutex<CallState>,
@@ -234,7 +234,7 @@ pub(crate) struct Shared {
 /// The call slot, apart from `Shared` so the 50 Hz audio threads never wait behind a disk
 /// write or a handshake holding `Shared`.
 #[derive(Default)]
-struct Live {
+pub(crate) struct Live {
     call: Option<Arc<Call>>,
     /// The call that held the slot before, until the next call has waited for its events to
     /// be delivered (so `Ended` always precedes the next call's `Dialing`).

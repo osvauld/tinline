@@ -1,6 +1,6 @@
 # Chat — design
 
-Status: design, 2026-10-07. Order decided: **1:1 chat first, then groups**, then group calls.
+Status: 1:1 chat built (core + peer, 2026-10-08); groups still design. Order decided: **1:1 chat first, then groups**, then group calls.
 Pure P2P: no node, no server of ours. Reuses osvauld2's `courier` (role tokens, chain
 verification, the sync round trip) and its chat design (`~/osvauld2/docs/design/group-chat-sync.md`),
 adapted from "the node is the referee" to "every device is its own referee".
@@ -162,3 +162,82 @@ End to end, two desktop peers (`crates/peer`) and the Android emulators:
 | C6 | Messages on two UTC days land in two shards; a fresh open loads only today; scrolling back pulls the older shard |
 | C7 | A removes B: B's later messages are refused at A, and A's copy of the conversation is gone |
 | C8 | Android: the app backgrounded, screen off: a message from desktop raises a notification |
+
+
+## 7. As built (1:1, `crates/core/src/chat/`)
+
+What differs from or settles the text above.
+
+### Code map
+`crypt.rs` chunked blob AEAD · `blobs.rs` iroh-blobs hub (store, gated serving, GC) ·
+`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/1` ·
+`store.rs` sealed records · `engine.rs` sessions, sync, outbox, transfers, history ·
+`api.rs` the UniFFI surface. New crate `crates/storage` (redb + sealed records, copied from
+osvauld2 `storage` @ 90d22ec with the `vault` entry idea).
+
+### API (Kotlin-visible, additive; voice recording/encoding is the apps' job)
+`Node.set_chat_events(ChatEvents)`, `chats()`, `chat_day(peer_did, day?)` -> `DayPage{day,
+messages (oldest first), older_day}`, `fetch_older_history(peer_did, before_day)`,
+`send_text(peer_did, text, reply_to?)`, `edit_message`, `delete_message`, `mark_read`,
+`send_file(peer_did, path, mime, text?)`, `send_voice(peer_did, path, duration_ms, waveform)`,
+`download_attachment(peer_did, message_id)`, `save_attachment(peer_did, message_id, dest)`,
+`set_auto_download_limit(bytes)` / `auto_download_limit()` (default 10 MB).
+Records: `Chat`, `Message`, `Attachment` (state `Remote|Downloading|Ready|Failed`),
+`DeliveryState {Pending, Delivered}`. `ChatEvents`: `on_message_added`, `on_message_changed`,
+`on_chat_changed`, `on_delivery_changed`, `on_transfer_progress`. Times are unix ms; a day is the
+UTC `YYYY-MM-DD`. A voice message is a file message with `kind = Voice`, `duration_ms` and a
+~64 byte waveform; the blob is whatever file the app recorded (Ogg Opus 16 kHz mono).
+
+### Wire (`tinline/chat/1`)
+One bidirectional stream, opened by the dialer; frames are u32 BE length + bincode (cap 16 MiB).
+`Auth{attestation, grant, relay}` both ways first: the same proof as a call (a call hello with
+id "chat" is built and checked by `proto::accept_call_hello`; `proto` is unchanged).
+Then `Hello{shards:[(day, vv)]}` (last 7 days + days with unacknowledged ops; also acts as an
+ack), `Sync{doc, vv, update, sig}`, `Push{doc, update, sig}`, `Ack{doc, vv}`,
+`HistoryReq{before, limit}` / `HistoryResp{days:[{day, vv, hash, key, size}]}`.
+`sig` = Ed25519 by the device key over `"tinline-chat-batch-v1" ‖ len(doc) ‖ doc ‖ update`.
+A device only ever sends **its own** ops (export from the peer's vv with other peers' counters
+masked), so a receiver can require a single Loro peer id per batch.
+One session per contact: if both dial at once, the one dialled by the lower device key stays.
+Blobs travel on the stock iroh-blobs ALPN of the same endpoint (iroh-blobs 0.103, iroh 1.x).
+
+### Validation (one verdict on every device)
+`Shard::apply_remote` imports into a scratch fork and rejects the whole batch (nothing stored,
+session closed) if: the blob holds ops of a peer id other than the signer's device peer id for
+that doc; ops are not self-contained; the doc has anything but `messages`; a message has an
+unknown or ill-typed field; a new message's `author` is not the signer; `at` is outside the
+shard's day ±1 h (live pushes: also |at − now| < 24 h); an existing message changed `id`,
+`author`, `at`, `reply_to` or `file`; someone but the author changed `text/edited_at/deleted`;
+a message disappeared; a deleted message kept text. Unit tests: `chat::doc_tests`.
+
+### On disk (app data dir)
+`chat.redb`: sealed records (AES-256-GCM under `BLAKE3-derive-key("tinline chat store v1",
+DEK)`, each bound to its path), layout in `store.rs` (conversations, shard snapshot + appended
+updates + meta, acks, message counters, outbox markers, blob key index, read-permission refs).
+`blobs/`: the iroh-blobs store (ciphertext only; tags `tl/<hash>`; GC every 30 s). Existing
+`profile.json`/`state.json`/`calls.json` are untouched.
+
+### Decisions where the text was silent
+- Ticks track the *creation* op of a message; an edit does not take the second tick away.
+- A message id -> day index (`mi/`) lets edit/delete take only the id.
+- Conflicting concurrent edits of one message (same author, two devices) are last-writer-wins
+  per field (plain map values, not Loro text).
+- Outbox = the Loro doc plus an `out/{pair}/{day}` marker until the peer's vv covers our ops.
+  Dial at start, on local write, on `network_changed`, every 30 s while something is unsent, with
+  2..60 s backoff.
+- Auto-download: incoming files up to the limit are fetched as soon as the message is applied;
+  others on `download_attachment`. Retries on every new session.
+- Serving a blob: only to a device that is a contact's (or in an authenticated session) AND only
+  if a message of that conversation names the hash (`ref/{hash}/{pair}`). Push/observe refused.
+- Closed days: days 8+ days old are compacted into an encrypted snapshot blob (`closed` in the
+  shard meta) by a periodic task; opening one decrypts the blob. A peer's `HistoryReq` is
+  answered with such a blob (made on demand, cached) and its key, inside the authenticated link.
+- **Peer-vouched import.** History snapshots (older days, or a day whose batch depends on ops of
+  ours that we lost, e.g. after a reinstall) cannot be checked op by op. They are validated like a
+  batch (authors must be one of the two parties, times in range, immutables intact) but ops of both
+  parties are accepted: the peer vouches for them. This is the one place a contact can put words
+  in our mouth, and only for days we hold nothing (or not enough) of.
+- Contact removal: the conversation records and all its blobs are dropped (bytes freed by the
+  next GC run); the block already refuses later sessions.
+- No `proto` change; `crates/audio` untouched (voice encode/decode left to the apps).
+- Test knob: `P2P_CHAT_CLOCK_MS_OFFSET` shifts the chat clock (day-shard tests only).

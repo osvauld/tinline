@@ -95,6 +95,9 @@ mod hexbytes {
     }
 }
 
+/// `(snapshot, updates)` rows of an open shard.
+pub type ShardRows = (Option<Vec<u8>>, Vec<Vec<u8>>);
+
 pub const DEFAULT_AUTO_DOWNLOAD: u64 = 10 * 1024 * 1024;
 
 #[derive(Clone)]
@@ -151,7 +154,7 @@ impl ChatStore {
     }
 
     /// `(snapshot, updates)` rows of an open shard.
-    pub fn shard_rows(&self, pair: &str, day: &str) -> Result<(Option<Vec<u8>>, Vec<Vec<u8>>), Error> {
+    pub fn shard_rows(&self, pair: &str, day: &str) -> Result<ShardRows, Error> {
         let snap = self.db.get(&format!("shard/{pair}/{day}/snap")).map_err(io)?;
         let ups = self.db.scan(&format!("shard/{pair}/{day}/u/")).map_err(io)?.into_iter().map(|(_, v)| v).collect();
         Ok((snap, ups))
