@@ -857,11 +857,7 @@ impl App {
             } else {
                 "Locked"
             };
-            let right: El = if a.current {
-                ui::icon(Icon::Check, 18.0, t.primary).into()
-            } else {
-                ui::icon(Icon::Lock, 16.0, t.ink2).into()
-            };
+            let right = if a.current { ui::icon(Icon::Check, 18.0, t.primary) } else { ui::icon(Icon::Lock, 16.0, t.ink2) };
             c = c.push(
                 button(
                     row![

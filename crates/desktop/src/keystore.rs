@@ -7,9 +7,8 @@
 //! still works (the file is renamed per account) and Settings recommends adding a passphrase,
 //! which deletes it.
 
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
+use std::sync::OnceLock;
 
 use p2pcore::{LockState, Node};
 
@@ -66,7 +65,7 @@ impl Store for Unavailable {
 #[cfg(test)]
 #[derive(Default)]
 pub struct Mem {
-    pub map: Mutex<HashMap<String, String>>,
+    pub map: std::sync::Mutex<std::collections::HashMap<String, String>>,
     pub fail: std::sync::atomic::AtomicBool,
 }
 
@@ -186,12 +185,10 @@ pub fn migrate_legacy(st: &dyn Store, data: &Path, node: &Node) {
         return;
     }
     let did = acct.did;
-    if let Some(v) = st.get(&legacy_user(data)) {
-        if st.get(&user(data, &did)).is_some() {
-            st.delete(&legacy_user(data));
-        } else if st.set(&user(data, &did), &v).is_ok() {
-            st.delete(&legacy_user(data));
-        }
+    if let Some(v) = st.get(&legacy_user(data))
+        && (st.get(&user(data, &did)).is_some() || st.set(&user(data, &did), &v).is_ok())
+    {
+        st.delete(&legacy_user(data));
     }
     let old = data.join(LEGACY_FILE);
     if old.is_file() {
