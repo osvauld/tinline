@@ -57,7 +57,7 @@ class FakeChatSource(private val app: P2pApp? = null, files: Boolean = false) : 
 
     private fun att(name: String, size: Long, mime: String, state: TransferState = TransferState.READY, transferred: Long = 0, kind: AttachmentKind = AttachmentKind.FILE,
                     ms: Int = 0, wave: List<Int> = emptyList()) =
-        Attachment(UUID.randomUUID().toString().replace("-", ""), name, size.toULong(), mime, kind, ms.toUInt(), wave.map { it.toUByte() }, state, transferred.toULong())
+        Attachment(UUID.randomUUID().toString().replace("-", ""), name, size.toULong(), mime, kind, ms.toUInt(), wave.map { it.toByte() }.toByteArray(), state, transferred.toULong())
 
     private fun add(peer: String, m: Message) = msgs.getOrPut(peer) { mutableListOf() }.add(m)
 

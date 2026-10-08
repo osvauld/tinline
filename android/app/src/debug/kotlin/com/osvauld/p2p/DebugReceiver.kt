@@ -20,7 +20,7 @@ class DebugReceiver : BroadcastReceiver() {
         val node = app.node
         when (cmd) {
             "create" -> {
-                if (!node.hasIdentity()) node.createIdentity(i.getStringExtra("name") ?: "phone", i.getStringExtra("pass") ?: "test-passphrase")
+                if (!node.hasIdentity()) node.createIdentity(i.getStringExtra("name") ?: "phone", if (i.getBooleanExtra("nopass", false)) "" else i.getStringExtra("pass") ?: "test-passphrase")
                 app.identityReady()
                 val p = node.profile()
                 testLog("created did=${p?.did} name=${p?.name}")

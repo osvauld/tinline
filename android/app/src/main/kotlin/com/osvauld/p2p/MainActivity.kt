@@ -227,7 +227,7 @@ private fun Root(app: P2pApp) {
     }
 }
 
-private fun Context.findActivity(): android.app.Activity? {
+fun Context.findActivity(): android.app.Activity? {
     var c: Context? = this
     while (c is ContextWrapper) { if (c is android.app.Activity) return c; c = c.baseContext }
     return null

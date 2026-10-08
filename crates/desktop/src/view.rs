@@ -218,13 +218,9 @@ impl App {
         field(t, title, input)
     }
 
-    fn new_pass_fields(&self, t: Tok, submit: Msg) -> El<'_> {
-        column![
-            self.pass_field(t, "Passphrase (at least 8 characters)", &self.pass_in, Msg::PassIn, None),
-            self.pass_field(t, "Repeat passphrase", &self.pass2_in, Msg::Pass2In, Some(submit)),
-        ]
-        .spacing(12)
-        .into()
+    /// One passphrase field of any length: no repeat, no strength rules.
+    fn new_pass_field(&self, t: Tok, title: &'static str, submit: Msg) -> El<'_> {
+        self.pass_field(t, title, &self.pass_in, Msg::PassIn, Some(submit))
     }
 
     fn wide<'a>(&self, label_: &str, kind: Kind, t: Tok, on: Option<Msg>) -> El<'a> {
@@ -268,9 +264,9 @@ impl App {
             }
         }
         col = col
-            .push(self.new_pass_fields(t, if self.restore { Msg::Restore } else { Msg::Create }))
+            .push(self.new_pass_field(t, "Passphrase (optional)", if self.restore { Msg::Restore } else { Msg::Create }))
             .push(tx(
-                "This passphrase locks your recovery phrase and keys on this computer. You type it each time Tinline starts. It cannot be recovered: if you forget it, you can only restore with your recovery phrase.",
+                "A passphrase encrypts your account on this computer, so nobody who copies its files can read it. Optional \u{2014} leave it empty to skip, and add one later in Settings. With one, you type it each time Tinline starts; it cannot be recovered, only replaced by restoring with your recovery phrase. Without one, Tinline opens straight to your contacts.",
                 13.0,
                 t.ink2,
             ));
@@ -297,7 +293,32 @@ impl App {
         )
     }
 
+    /// Locked with no passphrase: the stored key is gone, so only the 24 words bring the account back.
+    fn key_lost_view(&self, t: Tok) -> El<'_> {
+        let mut col = column![tx(
+            "You didn\u{2019}t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.",
+            14.0,
+            t.ink,
+        )]
+        .spacing(12);
+        if let Some(n) = &self.notice {
+            col = col.push(tx(n.clone(), 13.0, t.error));
+        }
+        col = col
+            .push(self.wide("Restore with recovery phrase", Kind::Primary, t, (!self.busy).then_some(Msg::GoRestore)))
+            .push(self.wide("Try again", Kind::Ghost, t, (!self.busy).then_some(Msg::Unlock)));
+        self.shell(
+            t,
+            "Can\u{2019}t open your account",
+            "This computer no longer has the key that opens it, and its keyring entry is missing. Calls can\u{2019}t reach you until you restore.",
+            col.into(),
+        )
+    }
+
     fn unlock_view(&self, t: Tok) -> El<'_> {
+        if !self.has_pass {
+            return self.key_lost_view(t);
+        }
         let name = self.profile_name.clone();
         let mut col = column![
             self.pass_field(t, "Passphrase", &self.pass_in, Msg::PassIn, Some(Msg::Unlock)),
@@ -331,9 +352,9 @@ impl App {
 
     fn setpass_view(&self, t: Tok) -> El<'_> {
         let col = column![
-            self.new_pass_fields(t, Msg::SetPassSubmit),
+            self.new_pass_field(t, "Passphrase", Msg::SetPassSubmit),
             tx(
-                "You will type it each time Tinline starts. It cannot be recovered; your recovery phrase can still restore your identity if you forget it.",
+                "Any length works. You will type it each time Tinline starts. It cannot be recovered; your recovery phrase can still restore your identity if you forget it.",
                 13.0,
                 t.ink2
             ),
@@ -1102,7 +1123,11 @@ impl App {
                     .push(pill(t, Kind::Quiet, None, "Hide", Some(Msg::HidePhrase)));
             } else if self.reveal_form {
                 c = c
-                    .push(self.pass_field(t, "Enter your passphrase", &self.pass_in, Msg::PassIn, Some(Msg::RevealSubmit)))
+                    .push(if self.has_pass {
+                        self.pass_field(t, "Enter your passphrase", &self.pass_in, Msg::PassIn, Some(Msg::RevealSubmit))
+                    } else {
+                        tx("Anyone who sees these words can become you. Check nobody is looking, then show them.", 13.0, t.error).into()
+                    })
                     .push(
                         row![
                             pill(t, Kind::Primary, None, if self.busy { "Checking..." } else { "Show recovery phrase" }, (!self.busy).then_some(Msg::RevealSubmit)),
@@ -1113,17 +1138,19 @@ impl App {
             } else {
                 c = c.push(line(t,
                     "Recovery phrase",
-                    "Needs your passphrase",
+                    if self.has_pass { "Needs your passphrase" } else { "Asks you to confirm first" },
                     pill(t, Kind::Quiet, Some(Icon::Key), "Show", Some(Msg::ToggleReveal)),
                 ));
             }
             if self.change_form {
+                if self.has_pass {
+                    c = c.push(self.pass_field(t, "Current passphrase", &self.old_in, Msg::OldIn, None));
+                }
                 c = c
-                    .push(self.pass_field(t, "Current passphrase", &self.old_in, Msg::OldIn, None))
-                    .push(self.new_pass_fields(t, Msg::ChangePassSubmit))
+                    .push(self.new_pass_field(t, if self.has_pass { "New passphrase" } else { "Passphrase" }, Msg::ChangePassSubmit))
                     .push(
                         row![
-                            pill(t, Kind::Primary, None, if self.busy { "Working..." } else { "Change passphrase" }, (!self.busy).then_some(Msg::ChangePassSubmit)),
+                            pill(t, Kind::Primary, None, if self.busy { "Working..." } else if self.has_pass { "Change passphrase" } else { "Add passphrase" }, (!self.busy).then_some(Msg::ChangePassSubmit)),
                             pill(t, Kind::Ghost, None, "Cancel", Some(Msg::ToggleChange)),
                         ]
                         .spacing(8),
@@ -1131,9 +1158,12 @@ impl App {
             } else {
                 c = c.push(line(t,
                     "Passphrase",
-                    "Unlocks Tinline when it starts",
-                    pill(t, Kind::Quiet, Some(Icon::Lock), "Change", Some(Msg::ToggleChange)),
+                    if self.has_pass { "Unlocks Tinline when it starts" } else { "Optional \u{2014} encrypts your account on this computer" },
+                    pill(t, Kind::Quiet, Some(Icon::Lock), if self.has_pass { "Change" } else { "Add passphrase" }, Some(Msg::ToggleChange)),
                 ));
+                if !self.has_pass {
+                    c = c.push(tx(self.key_home, 13.0, t.ink2));
+                }
             }
             c.into()
         };
@@ -1362,7 +1392,35 @@ impl App {
             bottom_col = bottom_col.push(tx("Device changes apply from the next call.", 12.0, t.ink2));
         }
         bottom_col = bottom_col.push(tx(hint, 12.0, t.ink2));
-        self.call_shell(t, top, middle.into(), bottom_col.into())
+        let shell = self.call_shell(t, top, middle.into(), bottom_col.into());
+        match &self.waiting {
+            Some(w) => column![self.waiting_banner(t, w), shell].into(),
+            None => shell,
+        }
+    }
+
+    /// "Arjun is calling" over the call: no hold, so the choice is to refuse or to swap.
+    fn waiting_banner<'a>(&self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
+        let name = if w.peer_name.is_empty() { "Unknown".to_string() } else { w.peer_name.clone() };
+        container(
+            row![
+                avatar(t, &name, &w.peer_did, 44.0),
+                column![
+                    semi(format!("{name} is calling"), 16.0, t.ink),
+                    tx("Your call continues until you choose. Decline tells them you\u{2019}re busy.", 13.0, t.ink2),
+                ]
+                .spacing(2)
+                .width(Fill),
+                pill(t, Kind::Danger, Some(Icon::PhoneOff), "Decline", Some(Msg::DeclineWaiting)),
+                pill(t, Kind::Accept, Some(Icon::Phone), "End & answer", Some(Msg::EndAnswer)),
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center),
+        )
+        .padding(14)
+        .width(Fill)
+        .style(ui::card(t))
+        .into()
     }
 
     fn ended_view(&self, t: Tok) -> El<'_> {

@@ -89,7 +89,7 @@ fun ConversationScreen(
     var olderDay by remember { mutableStateOf<String?>(null) }
     val fetched = remember { mutableSetOf<String>() }
     val progress = remember { mutableStateMapOf<String, Pair<Long, Long>>() }
-    val requested = remember { mutableStateSetOf<String>() }
+    val requested = remember { mutableStateListOf<String>() }
     val link = (source.links.collectAsState().value[peerDid] ?: Link.Unknown)
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var draft by remember { mutableStateOf(preview?.draft ?: "") }
@@ -323,6 +323,7 @@ private fun Composer(
     onCancelBanner: () -> Unit, onAttach: () -> Unit, onSend: () -> Unit, onVoice: (String, Int, ByteArray) -> Unit,
 ) {
     val c = Tin.c
+    val voice = rememberVoiceRecState { r -> onVoice(r.path, r.durationMs, r.waveform) }
     val banner = editBanner ?: replyBanner
     if (banner != null) Row(
         Modifier.padding(horizontal = 8.dp).fillMaxWidth().clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)).background(c.sf)
@@ -338,7 +339,7 @@ private fun Composer(
     }
     Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = if (banner != null) 0.dp else 8.dp, bottom = 12.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         val shape = if (banner != null) RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp) else RoundedCornerShape(24.dp)
-        Row(
+        if (voice.recording) VoiceRecordingBar(voice, Modifier.weight(1f)) else Row(
             Modifier.weight(1f).heightIn(min = 48.dp).clip(shape).background(if (editing) c.sf else c.sf2).let { if (editing) it.border(1.dp, c.pr, shape) else it },
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -352,7 +353,7 @@ private fun Composer(
             }
             Spacer(Modifier.width(8.dp))
         }
-        if (draft.isBlank() && !editing) VoiceMicSlot(onVoice)
+        if (draft.isBlank() && !editing) VoiceMicButton(voice)
         else Box(
             Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank()) Tin.c.sf3 else c.pr).clickable(enabled = draft.isNotBlank(), role = Role.Button, onClick = onSend),
             contentAlignment = Alignment.Center,
@@ -369,7 +370,7 @@ private fun BannerLine(text: String) =
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun Bubble(
-    m: Message, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: Set<String>,
+    m: Message, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: List<String>,
     byId: Map<String, Message>, source: ChatSource, selected: Boolean,
     onLong: () -> Unit, onDownload: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
 ) {
@@ -410,7 +411,7 @@ private fun Bubble(
                 }
             }
             if (a != null) when {
-                a.kind == AttachmentKind.VOICE -> VoiceBubbleSlot(m, a.state == TransferState.READY || out, onDownload)
+                a.kind == AttachmentKind.VOICE -> VoiceBubble(m, a, a.state == TransferState.READY || out, out, source, onDownload)
                 photo -> PhotoBox(m, a, out, prog, link, source, onDownload, onOpenPhoto)
                 else -> FileRow(m, a, out, prog, link, first, m.id in requested, onDownload, onSaveFile)
             }
@@ -581,5 +582,32 @@ private fun PhotoViewer(m: Message, name: String, source: ChatSource, onClose: (
             Icon(Icons.Rounded.Lock, null, tint = Color(0xFFA6B2AD), modifier = Modifier.size(18.dp))
             Text("Kept encrypted inside Tinline. “Save to phone” copies it to your gallery, where other apps can see it.", style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = Color(0xFFA6B2AD))
         }
+    }
+}
+
+/** Voice message body: decrypts the attachment to the cache once, then hands the file to the player. */
+@Composable
+private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean, source: ChatSource, onDownload: () -> Unit) {
+    val c = Tin.c
+    val ctx = LocalContext.current
+    var path by remember(m.id) { mutableStateOf<String?>(null) }
+    LaunchedEffect(m.id, ready) {
+        if (!ready) return@LaunchedEffect
+        path = withContext(Dispatchers.IO) {
+            val f = java.io.File(ctx.cacheDir, "voice/${m.id}.ogg")
+            if (f.exists() && f.length() > 0) f.absolutePath else runCatching {
+                f.parentFile?.mkdirs(); source.save(m.peerDid, m.id, f.absolutePath); f.absolutePath
+            }.getOrNull()
+        }
+    }
+    val p = path
+    if (p != null) VoiceBubbleContent(m.id, p, a.durationMs.toInt(), a.waveform, out)
+    else Row(Modifier.widthIn(min = 230.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        val remote = !ready && a.state != TransferState.DOWNLOADING
+        Box(
+            Modifier.size(40.dp).clip(CircleShape).background(c.pr).clickable(enabled = remote, role = Role.Button) { onDownload() },
+            contentAlignment = Alignment.Center,
+        ) { Icon(if (remote) Icons.Rounded.Download else Icons.Rounded.PlayArrow, if (remote) "Download voice message" else "Voice message loading", tint = c.onPr) }
+        Text(formatMs(a.durationMs.toInt()), style = TinType.caption.copy(fontFamily = PlexMono, fontSize = 12.sp), color = if (out) c.onPrc else c.ink2)
     }
 }

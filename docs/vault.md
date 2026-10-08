@@ -22,6 +22,14 @@ Everything secret is in `vault` (all bytes standard base64):
   `WrongPassphrase`. Params outside m 64-256 MiB, t 3-10, p 1-8 or a salt outside 16-64 bytes (a tampered or downgraded
   file) are refused.
 - Changing the passphrase rewraps the DEK (new salt) and leaves `sealed` and the DEK unchanged.
+- The passphrase is optional. A vault without one has no `salt`, `m`, `t`, `p` or `wrapped_dek`, only `sealed`
+  (`Vault::has_passphrase()` is false), and only the platform's copy of the DEK opens it. The version stays 2:
+  every file written before this change has the full passphrase slot and opens as before. Adding a passphrase
+  later (`set_passphrase(None, new)` on an unlocked node) wraps the same DEK, so nothing is re-encrypted.
+  Passing an empty passphrase to `create_identity` / `restore_identity` means none; there is no minimum length.
+
+Without a passphrase the platform copy is the only way in: Android's Keystore, on desktop the OS keyring (or,
+with no keyring, a 0600 `unlock.key` in the data dir, which Settings says). If it is lost, restore with the 24 words.
 
 The core never writes the DEK anywhere. `Node::unlock_key()` hands it to the platform, which may keep it
 wrapped by hardware (Android Keystore) so the always-on service can `unlock_with_key` after a reboot without
@@ -39,7 +47,9 @@ ciphertext, only as strong as the passphrase (Argon2id slows guessing; use a lon
 against malware running as the app or a rooted device while unlocked. With a platform-remembered key, a stolen
 phone that can unlock itself can still receive and place calls, but cannot reveal the recovery phrase
 (`recovery_phrase(passphrase)` re-derives from the passphrase) nor change the passphrase without it.
-Minimum passphrase length is 8 characters (`Error::WeakPassphrase`).
+Without a passphrase, anyone who can use the unlocked phone or read the keyring/file can read the secrets; the
+recovery phrase then needs device authentication (Android) or a confirm (desktop), enforced by the platform,
+not the core. `Error::WeakPassphrase` now only means an empty new passphrase.
 
 ## Files
 

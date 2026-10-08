@@ -7,6 +7,7 @@ import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.media.ToneGenerator
 import android.os.Build
 import android.os.PowerManager
 import android.os.VibrationAttributes
@@ -59,6 +60,15 @@ class CallController(private val app: P2pApp) {
     @Volatile private var statsJob: Job? = null
     @Volatile private var ringTimeout: Job? = null
     @Volatile private var everActive = false
+
+    // A second call that arrived during an active one: it rings quietly over the call screen.
+    private val _waiting = MutableStateFlow<CallInfo?>(null)
+    val waiting: StateFlow<CallInfo?> = _waiting
+    @Volatile private var waitingTone: Job? = null
+    /** Set by [endAndAnswer]: the call that takes over when the current one ends. */
+    @Volatile private var takeover: CallInfo? = null
+    /** Whether the call screen is on top; if not, the waiting call also gets a notification. */
+    @Volatile var callScreenShown = false
     private var proximity: PowerManager.WakeLock? = null
 
     // Events for a call we are still placing arrive before node.call() has returned its id and
@@ -74,6 +84,15 @@ class CallController(private val app: P2pApp) {
     }
 
     fun onIncoming(call: CallInfo) {
+        if (_waiting.value?.callId == call.callId) clearWaiting()  // it was promoted: an ordinary ring now
+        val cur = _ui.value
+        if (cur != null && cur.state is CallState.Active && cur.info.callId != call.callId) {
+            testLog("waiting id=${call.callId} from=${call.peerName.ifBlank { call.peerDid }}")
+            _waiting.value = call
+            startWaitingTone()
+            if (!callScreenShown) Notifications.waiting(app, call)
+            return
+        }
         testLog("incoming id=${call.callId} from=${call.peerName.ifBlank { call.peerDid }}")
         everActive = false; _ended.value = null
         _ui.value = CallUi(call, CallState.Ringing)
@@ -95,6 +114,15 @@ class CallController(private val app: P2pApp) {
 
     fun onState(callId: String, state: CallState) {
         testLog("state id=$callId state=${describe(state)}")
+        val w = _waiting.value
+        if (w != null && w.callId == callId) {
+            if (state is CallState.Ended) {
+                // Unanswered (or the caller gave up): a missed call like any other.
+                clearWaiting()
+                if (isMissedReason(state.reason, true)) Notifications.missed(app, w.peerName)
+            }
+            return
+        }
         synchronized(lock) {
             val c = _ui.value
             if (c == null || c.info.callId != callId) {
@@ -125,14 +153,16 @@ class CallController(private val app: P2pApp) {
                     val reason = state.reason
                     if (!everActive && isMissedReason(reason, cur.info.incoming)) Notifications.missed(app, cur.info.peerName)
                     val s = cur.stats
+                    val next = takeover; takeover = null
                     val loss = s?.let { val t = (it.received + it.lost).toDouble(); if (t > 0) 100.0 * it.lost.toDouble() / t else 0.0 }
                     // Our outgoing call yielded to their simultaneous call: no ended screen, theirs rings.
-                    if (classifyEnd(reason) != EndKind.Superseded) _ended.value = EndedUi(
+                    if (next == null && classifyEnd(reason) != EndKind.Superseded) _ended.value = EndedUi(
                         cur.info.peerName, cur.info.peerDid, reason, cur.info.incoming, everActive,
                         cur.activeSinceMs?.let { (System.currentTimeMillis() - it) / 1000 } ?: 0L,
                         s?.direct, if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null,
                     )
-                    _ui.update { u -> if (u?.info?.callId == callId) null else u }
+                    // End & answer: straight on to the new call, no "call ended" screen in between.
+                    _ui.update { u -> if (u?.info?.callId == callId) next?.let { CallUi(it, CallState.Ringing) } else u }
                 }
                 CoreService.ensureRunning(app, CoreService.ACTION_IDLE)
             }
@@ -176,6 +206,45 @@ class CallController(private val app: P2pApp) {
         ringTimeout?.cancel()
         stopRinging(); Notifications.cancelIncoming(app)
         app.scope.launch { try { app.node.decline(c.info.callId) } catch (e: Exception) { Log.w("Call", "decline: $e") } }
+    }
+
+    /** Banner action: refuse the second call; its caller hears "busy" and the current call goes on. */
+    fun declineWaiting() {
+        val w = _waiting.value ?: return
+        clearWaiting()
+        app.scope.launch { try { app.node.decline(w.callId) } catch (e: Exception) { Log.w("Call", "decline waiting: $e") } }
+    }
+
+    /** Banner action: hang up the current call and answer the second one. */
+    fun endAndAnswer() {
+        val w = _waiting.value ?: return
+        clearWaiting()
+        takeover = w
+        inCallService(w)
+        everActive = false
+        app.scope.launch {
+            try { app.node.endAndAnswer(w.callId) } catch (e: Exception) { takeover = null; Log.w("Call", "end and answer: $e") }
+        }
+    }
+
+    private fun clearWaiting() {
+        waitingTone?.cancel(); waitingTone = null
+        Notifications.cancelWaiting(app)
+        _waiting.value = null
+    }
+
+    /** The quiet in-call "call waiting" beep, on the voice-call stream so it does not disturb the call audio. */
+    private fun startWaitingTone() {
+        waitingTone?.cancel()
+        waitingTone = app.scope.launch {
+            val tg = try { ToneGenerator(AudioManager.STREAM_VOICE_CALL, 35) } catch (e: Exception) { Log.w("Call", "tone: $e"); null }
+            try {
+                while (isActive) {
+                    tg?.startTone(ToneGenerator.TONE_SUP_CALL_WAITING, 400)
+                    delay(4_000)
+                }
+            } finally { tg?.release() }
+        }
     }
 
     fun hangup() {

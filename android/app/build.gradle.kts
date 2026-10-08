@@ -18,6 +18,9 @@ android {
         // Play needs a higher code on every upload; scripts/build_android.py --bundle passes the commit count.
         versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = "0.1.0"
+        // Only ship ABIs that have libp2pcore: libraries like JNA bring 32-bit/mips copies, which
+        // would make Play offer the app to devices where the core can't load.
+        ndk { abiFilters += (findProperty("abis") as String? ?: "x86_64,arm64-v8a").split(",").map { it.trim() } }
     }
     // Release signing: set RELEASE_STORE_FILE / RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS /
     // RELEASE_KEY_PASSWORD in ~/.gradle/gradle.properties (or -P). Without them the release build
@@ -109,6 +112,10 @@ val cargoNdkBuild = tasks.register<RustExec>("cargoNdkBuild") {
     })
     inputs.files(rustInputs).withPropertyName("rustSources").withPathSensitivity(PathSensitivity.RELATIVE)
     outputs.dir(jniOut)
+    // Only libp2pcore is linked. cargo-ndk also copies stale .so files it finds in target/ (old
+    // iroh dylibs), which would otherwise be packaged too.
+    doFirst { jniOut.get().asFile.deleteRecursively() }
+    doLast { jniOut.get().asFile.walk().filter { it.isFile && it.name != "libp2pcore.so" }.forEach { it.delete() } }
 }
 
 val uniffiBindgen = tasks.register<RustExec>("uniffiBindgen") {

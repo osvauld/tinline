@@ -41,6 +41,8 @@ class CoreService : Service() {
         when (intent?.action) {
             ACTION_DECLINE -> app.calls.decline()
             ACTION_HANGUP -> app.calls.hangup()
+            ACTION_DECLINE_WAITING -> app.calls.declineWaiting()
+            ACTION_END_ANSWER -> app.calls.endAndAnswer()
             ACTION_IN_CALL -> inCall = intent.getStringExtra("name") ?: "Call"
             ACTION_IDLE -> inCall = null
         }
@@ -102,6 +104,8 @@ class CoreService : Service() {
         const val TAG = "CoreService"
         const val ACTION_DECLINE = "com.osvauld.p2p.DECLINE"
         const val ACTION_HANGUP = "com.osvauld.p2p.HANGUP"
+        const val ACTION_DECLINE_WAITING = "com.osvauld.p2p.DECLINE_WAITING"
+        const val ACTION_END_ANSWER = "com.osvauld.p2p.END_ANSWER"
         const val ACTION_IN_CALL = "com.osvauld.p2p.IN_CALL"
         const val ACTION_IDLE = "com.osvauld.p2p.IDLE"
         @Volatile var running: CoreService? = null

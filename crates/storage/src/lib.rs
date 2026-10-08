@@ -11,6 +11,8 @@
 //! Keys are sortable path strings (`"dm/<pair>/<day>/snap"`); the namespace is a prefix
 //! convention. No serialisation here: values are bytes.
 
+#![allow(clippy::result_large_err)]
+
 mod error;
 mod sealed;
 mod store;

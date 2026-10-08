@@ -116,7 +116,7 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
     override fun markRead(peerDid: String) = node.markRead(peerDid)
     override fun sendFile(peerDid: String, path: String, mime: String, text: String?) = node.sendFile(peerDid, path, mime, text)
     override fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray) =
-        node.sendVoice(peerDid, path, durationMs.toUInt(), waveform.map { it.toUByte() })
+        node.sendVoice(peerDid, path, durationMs.toUInt(), waveform)
     override fun download(peerDid: String, messageId: String) = node.downloadAttachment(peerDid, messageId)
     override fun save(peerDid: String, messageId: String, destPath: String) = node.saveAttachment(peerDid, messageId, destPath)
 }

@@ -67,8 +67,8 @@ async fn encrypted_blob_round_trip_and_gate() {
     // A party fetches, decrypts to a file, and gets identical bytes.
     let conn = b_ep.connect(a_ep.addr(), iroh_blobs::ALPN).await.unwrap();
     let mut last = 0;
-    b.fetch(conn.clone(), hash, size, |n, _| last = n).await.unwrap();
-    assert_eq!(last, size);
+    b.fetch(conn.clone(), hash, crypt::cipher_len(size), |n, _| last = n).await.unwrap();
+    assert_eq!(last, crypt::cipher_len(size));
     let out = dir.join("out.bin");
     b.export_plain(hash, key, out.clone(), |_| {}).await.unwrap();
     assert_eq!(std::fs::read(&out).unwrap(), plain);
@@ -82,7 +82,7 @@ async fn encrypted_blob_round_trip_and_gate() {
     allow.store(false, Ordering::SeqCst);
     let c = BlobHub::open(&dir.join("c"), Arc::new(|_, _| false), Arc::new(|_, _, _, _| {})).await.unwrap();
     let conn2 = b_ep.connect(a_ep.addr(), iroh_blobs::ALPN).await.unwrap();
-    assert!(c.fetch(conn2, hash, size, |_, _| {}).await.is_err());
+    assert!(c.fetch(conn2, hash, crypt::cipher_len(size), |_, _| {}).await.is_err());
     assert_eq!(c.complete_size(&hash).await, None);
     let _ = std::fs::remove_dir_all(&dir);
 }
