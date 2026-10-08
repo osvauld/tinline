@@ -59,12 +59,12 @@ impl NodeEvents for Events {
     }
     fn on_incoming_call(&self, call: CallInfo) {
         tlog!("INCOMING {} from {} ({})", call.call_id, call.peer_name, call.peer_did);
-        self.audio.on_incoming();
+        self.audio.on_incoming(&call.call_id);
         let _ = self.tx.send(Ev::Incoming(call));
     }
     fn on_call_state(&self, id: String, state: CallState) {
         tlog!("STATE {id} {state:?}");
-        self.audio.on_state(&state);
+        self.audio.on_state(&id, &state);
         let _ = self.tx.send(Ev::State(id, state));
     }
     fn on_log(&self, _line: String) {}
@@ -75,6 +75,8 @@ pub struct Init {
     pub data: PathBuf,
     pub hidden: bool,
     pub auto_answer: Option<f64>,
+    /// Test hook: what to do a second later with a call that arrives during a call.
+    pub waiting_action: Option<String>,
     pub env_tone: Option<f32>,
     pub tray: bool,
     pub tx: mpsc::UnboundedSender<Ev>,
@@ -274,6 +276,7 @@ fn main() -> Result<(), String> {
         data,
         hidden: hidden && tray,
         auto_answer: test_env_f("P2P_AUTO_ANSWER"),
+        waiting_action: test_env("P2P_WAITING_ACTION"),
         env_tone: test_env_f("P2P_TEST_TONE").map(|v| v as f32),
         tray,
         tx: tx.clone(),

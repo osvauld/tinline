@@ -1362,7 +1362,35 @@ impl App {
             bottom_col = bottom_col.push(tx("Device changes apply from the next call.", 12.0, t.ink2));
         }
         bottom_col = bottom_col.push(tx(hint, 12.0, t.ink2));
-        self.call_shell(t, top, middle.into(), bottom_col.into())
+        let shell = self.call_shell(t, top, middle.into(), bottom_col.into());
+        match &self.waiting {
+            Some(w) => column![self.waiting_banner(t, w), shell].into(),
+            None => shell,
+        }
+    }
+
+    /// "Arjun is calling" over the call: no hold, so the choice is to refuse or to swap.
+    fn waiting_banner<'a>(&self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
+        let name = if w.peer_name.is_empty() { "Unknown".to_string() } else { w.peer_name.clone() };
+        container(
+            row![
+                avatar(t, &name, &w.peer_did, 44.0),
+                column![
+                    semi(format!("{name} is calling"), 16.0, t.ink),
+                    tx("Your call continues until you choose. Decline tells them you\u{2019}re busy.", 13.0, t.ink2),
+                ]
+                .spacing(2)
+                .width(Fill),
+                pill(t, Kind::Danger, Some(Icon::PhoneOff), "Decline", Some(Msg::DeclineWaiting)),
+                pill(t, Kind::Accept, Some(Icon::Phone), "End & answer", Some(Msg::EndAnswer)),
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center),
+        )
+        .padding(14)
+        .width(Fill)
+        .style(ui::card(t))
+        .into()
     }
 
     fn ended_view(&self, t: Tok) -> El<'_> {

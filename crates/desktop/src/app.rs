@@ -152,6 +152,10 @@ struct App {
     qr: Option<Qr>,
     add_in: String,
     call: Option<CallView>,
+    /// A second incoming call, shown as a banner over the call; the call carries on until the user chooses.
+    waiting: Option<CallInfo>,
+    /// "End & answer" was chosen: this call takes over when the current one ends.
+    takeover: Option<CallInfo>,
     early: Vec<(String, CallState)>,
     /// Call audio + ringer; driven by core events (see `audio::Ctl`), not by this loop.
     ctl: Arc<audio::Ctl>,
@@ -212,6 +216,8 @@ enum Msg {
     Done(Result<(), String>),
     Answer,
     Decline,
+    DeclineWaiting,
+    EndAnswer,
     Hangup,
     ToggleMute,
     OpenSettings,
@@ -399,6 +405,8 @@ impl App {
             qr: None,
             add_in: String::new(),
             call: None,
+            waiting: None,
+            takeover: None,
             early: Vec::new(),
             ctl: INIT.get().unwrap().audio.clone(),
             settings,
@@ -518,6 +526,12 @@ impl App {
                 let did = c.info.peer_did.clone();
                 let presentation = reason::present(&reason, &who, c.info.incoming, c.answered);
                 self.call = None;
+                // End & answer: straight on to the new call, no "call ended" screen in between.
+                if let Some(next) = self.takeover.take() {
+                    self.call = Some(CallView { info: next, state: CallState::Ringing, answered: false, stats: None });
+                    self.refresh_history();
+                    return Task::none();
+                }
                 self.ctl.muted.store(false, Ordering::Relaxed);
                 // The core logs the call before it says Ended, so the lists can be re-read now.
                 self.refresh_history();
@@ -1160,6 +1174,21 @@ impl App {
                     return blocking(move || node.decline(id).map_err(s), Msg::Done);
                 }
             }
+            Msg::DeclineWaiting => {
+                if let Some(w) = self.waiting.take() {
+                    self.ctl.stop_ring();
+                    let node = self.node.clone();
+                    return blocking(move || node.decline(w.call_id).map_err(s), Msg::Done);
+                }
+            }
+            Msg::EndAnswer => {
+                if let Some(w) = self.waiting.take() {
+                    self.ctl.stop_ring();
+                    self.takeover = Some(w.clone());
+                    let node = self.node.clone();
+                    return blocking(move || node.end_and_answer(w.call_id).map_err(s), Msg::Done);
+                }
+            }
             Msg::Hangup => {
                 if let Some(c) = &self.call {
                     let (node, id) = (self.node.clone(), c.info.call_id.clone());
@@ -1244,7 +1273,31 @@ impl App {
                     self.refresh_history();
                 }
             }
+            Ev::Incoming(info) if self.call.as_ref().is_some_and(|c| c.state == CallState::Active && c.info.call_id != info.call_id) => {
+                notify("Tinline", &format!("{} is calling", info.peer_name));
+                let mut tasks = vec![self.show_window()];
+                if let Some(act) = INIT.get().unwrap().waiting_action.clone() {
+                    let (node, id) = (self.node.clone(), info.call_id.clone());
+                    if act == "answer" {
+                        self.takeover = Some(info.clone());
+                    }
+                    self.ctl.stop_ring();
+                    tasks.push(blocking(
+                        move || {
+                            std::thread::sleep(Duration::from_secs(1));
+                            if act == "answer" { node.end_and_answer(id) } else { node.decline(id) }.map_err(s)
+                        },
+                        Msg::Done,
+                    ));
+                    self.waiting = None;
+                    return Task::batch(tasks);
+                }
+                self.waiting = Some(info);
+                return Task::batch(tasks);
+            }
             Ev::Incoming(info) => {
+                // Its ordinary ring: a waiting call whose call ended, or a fresh one.
+                self.waiting = None;
                 let name = info.peer_name.clone();
                 self.call = Some(CallView {
                     info: info.clone(),
@@ -1267,6 +1320,17 @@ impl App {
                     ));
                 }
                 return Task::batch(tasks);
+            }
+            Ev::State(id, st) if self.waiting.as_ref().is_some_and(|w| w.call_id == id) => {
+                if let CallState::Ended { reason } = st {
+                    let w = self.waiting.take().unwrap();
+                    self.refresh_history();
+                    // Unanswered, or the caller gave up: a missed call like any other.
+                    if let End::Missed(text) = reason::present(&reason, &w.peer_name, true, false) {
+                        notify("Tinline", &text);
+                        self.notice = Some(text);
+                    }
+                }
             }
             Ev::State(id, st) => {
                 if self.call.as_ref().is_some_and(|c| c.info.call_id == id) {

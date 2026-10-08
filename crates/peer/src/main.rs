@@ -9,7 +9,8 @@
 //!   p2p-peer --data DIR ticket
 //!   p2p-peer --data DIR add TICKET
 //!   p2p-peer --data DIR contacts
-//!   p2p-peer --data DIR listen [--answer-after SECS] [AUDIO] [--secs N]
+//!   p2p-peer --data DIR listen [--answer-after SECS] [--second decline|answer|ignore] [AUDIO] [--secs N]
+//!   p2p-peer --data DIR recents
 //!   p2p-peer --data DIR call DID|NAME [AUDIO] [--secs N]
 //!
 //! AUDIO: `--tone HZ` or `--wav in.wav` (48 kHz mono) as the mic; `--record out.wav` saves
@@ -67,6 +68,8 @@ struct Opts {
     rest: Vec<String>,
     verbose: bool,
     once: bool,
+    /// What to do with a second call that arrives during a call; `ignore` is the default.
+    second: String,
 }
 
 fn parse() -> Result<Opts, String> {
@@ -77,6 +80,7 @@ fn parse() -> Result<Opts, String> {
         args.drain(i..i + 2);
         Ok(Some(v))
     };
+    let second = take("--second")?.unwrap_or_else(|| "ignore".into());
     let data = take("--data")?.ok_or("--data DIR is required")?.into();
     let passphrase = take("--passphrase")?
         .or_else(|| std::env::var("P2P_PASSPHRASE").ok())
@@ -96,7 +100,7 @@ fn parse() -> Result<Opts, String> {
     };
     let verbose = flag("-v");
     let once = flag("--once");
-    Ok(Opts { data, passphrase, tone, wav, record, secs, answer_after, rest: args, verbose, once })
+    Ok(Opts { data, passphrase, tone, wav, record, secs, answer_after, rest: args, verbose, once, second })
 }
 
 fn main() {
@@ -147,6 +151,11 @@ fn run() -> Result<(), String> {
             let p = node.profile().ok_or("no identity; run init")?;
             println!("did {}\nname {}\ndevice {}", p.did, p.name, p.device);
         }
+        ["recents"] => {
+            for r in node.recent_calls(50) {
+                println!("CALL id={} peer={} incoming={} reason={} missed={}", r.call_id, r.peer_name, r.incoming, r.reason, r.missed);
+            }
+        }
         ["listen"] => {
             start_online(&node)?;
             eprintln!("LISTENING {}", node.status().endpoint_id);
@@ -155,7 +164,11 @@ fn run() -> Result<(), String> {
                     Event::Incoming(call) => {
                         std::thread::sleep(Duration::from_secs_f64(o.answer_after));
                         node.answer(call.call_id.clone()).map_err(|e| e.to_string())?;
-                        converse(&node, &o, &rx, &call.call_id)?;
+                        let mut id = call.call_id.clone();
+                        // `--second answer` swaps to the second call, which then gets its own run.
+                        while let Some(next) = converse(&node, &o, &rx, &id)? {
+                            id = next;
+                        }
                         if o.once {
                             break;
                         }
@@ -207,7 +220,8 @@ fn start_online(node: &Node) -> Result<(), String> {
 
 /// Runs the 20 ms audio clock for one active call until it ends or `--secs` pass, then hangs
 /// up and prints a summary.
-fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) -> Result<(), String> {
+fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) -> Result<Option<String>, String> {
+    let mut swapped = None;
     node.set_test_tone(o.tone);
     let mic: Vec<i16> = match &o.wav {
         Some(p) => read_wav(p)?,
@@ -240,10 +254,24 @@ fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) ->
             last = Some(s);
         }
         while let Ok(ev) = rx.try_recv() {
-            if let Event::State(id, CallState::Ended { reason }) = ev
-                && id == call_id
-            {
-                ended = Some(reason);
+            match ev {
+                Event::State(id, CallState::Ended { reason }) if id == call_id => ended = Some(reason),
+                Event::State(id, CallState::Ended { reason }) => println!("OTHER_ENDED id={id} reason={reason}"),
+                Event::Incoming(c) if c.call_id != call_id => {
+                    println!("SECOND_CALL id={} waiting={}", c.call_id, node.waiting_call().is_some_and(|w| w.call_id == c.call_id));
+                    match o.second.as_str() {
+                        "decline" => {
+                            let _ = node.decline(c.call_id);
+                        }
+                        "answer" => {
+                            if node.end_and_answer(c.call_id.clone()).is_ok() {
+                                swapped = Some(c.call_id);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
             }
         }
         if ended.is_some() {
@@ -285,7 +313,7 @@ fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) ->
         s.as_ref().map(|s| s.recovered).unwrap_or(0),
         s.as_ref().map(|s| s.concealed).unwrap_or(0),
     );
-    Ok(())
+    Ok(swapped)
 }
 
 fn read_wav(p: &PathBuf) -> Result<Vec<i16>, String> {
