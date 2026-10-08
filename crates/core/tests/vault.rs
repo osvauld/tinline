@@ -26,7 +26,8 @@ impl Dir {
         Node::new(self.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap()
     }
     fn profile_bytes(&self) -> Vec<u8> {
-        std::fs::read(self.0.join("profile.json")).unwrap()
+        let id = std::fs::read_to_string(self.0.join("current")).unwrap();
+        std::fs::read(self.0.join("accounts").join(id.trim()).join("account.json")).unwrap()
     }
 }
 impl Drop for Dir {
@@ -189,6 +190,9 @@ fn no_passphrase_then_add_one() {
     let phrase = n.create_identity("a".into(), "".into()).unwrap();
     assert!(!n.has_passphrase());
     let key = n.unlock_key().unwrap();
+    assert!(!n.identity_committed());
+    n.commit_identity().unwrap(); // the platform's keystore has the key
+    assert!(n.identity_committed());
     let raw = String::from_utf8(dir.profile_bytes()).unwrap();
     assert!(!raw.contains("wrapped_dek") && !raw.contains("salt"));
     assert_no_phrase(&raw, &phrase);
@@ -221,7 +225,7 @@ fn no_passphrase_then_add_one() {
     n.unlock_with_key(key).unwrap();
 }
 
-/// A version-2 profile.json written before the passphrase became optional keeps opening, both
+/// A version-2 account file written before the passphrase became optional keeps opening, both
 /// by passphrase and by key, and still reports a passphrase. A passphrase vault is written with
 /// every field the old format had, so the same file is what the previous release produced.
 #[test]

@@ -6,7 +6,7 @@
 
 use std::collections::VecDeque;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use bytes::Bytes;
@@ -19,7 +19,8 @@ use sha2::{Digest, Sha512};
 use tokio::sync::{OwnedMutexGuard, OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
 use zeroize::Zeroize;
 
-use crate::store::{CallRecord, Disk, History, Profile, ProfileV2, State, Store, StoredContact};
+use crate::accounts::{self, AccountDirs};
+use crate::store::{self, Backing, CallRecord, Disk, History, Profile, ProfileV2, State, Store, StoredContact};
 use crate::vault::{self, Dek, Secrets};
 use crate::wire::Ctrl;
 use crate::Error;
@@ -89,6 +90,17 @@ pub struct ProfileInfo {
     pub did: String,
     pub name: String,
     pub device: String,
+}
+
+/// One account on this device, as the lock screen and the switcher list it. Read from the clear
+/// `account.json`, so it is available while everything is locked.
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct AccountSummary {
+    pub did: String,
+    pub name: String,
+    /// The account `has_identity`, `unlock` and the rest act on.
+    pub current: bool,
+    pub has_passphrase: bool,
 }
 
 /// Whether the identity's secrets are available. `Locked` needs `unlock` (or
@@ -217,6 +229,9 @@ pub(crate) struct Call {
     waiting: AtomicBool,
     /// "End & answer" was chosen: answer this call the moment it takes over the slot.
     answer_on_promote: AtomicBool,
+    /// The session (see `Shared::epoch`) it belongs to: a call that outlives a switch of account
+    /// must not write into the next one.
+    epoch: u64,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
@@ -243,6 +258,8 @@ impl Call {
 }
 
 pub(crate) struct Me {
+    /// The session this was unlocked in; see `Shared::epoch`.
+    pub(crate) epoch: u64,
     pub(crate) profile: Profile,
     pub(crate) id: Identity,
     pub(crate) device: [u8; 32],
@@ -250,14 +267,36 @@ pub(crate) struct Me {
 }
 
 pub(crate) struct Shared {
-    /// What `profile.json` holds; present whenever an identity exists, locked or not.
+    /// What `account.json` holds; present whenever an identity exists, locked or not. (Also
+    /// present, in memory only, for an identity not yet `commit_identity`ed.)
     pub(crate) disk: Option<Disk>,
     /// Present while unlocked (and for a legacy profile).
     pub(crate) me: Option<Arc<Me>>,
     /// The vault's data key while unlocked via a vault; never written to disk by the core.
     pub(crate) dek: Option<Dek>,
+    /// Empty while locked: it is sealed on disk.
     pub(crate) state: State,
     pub(crate) endpoint: Option<Endpoint>,
+    /// Changes whenever the account in memory is replaced, locked or unlocked. Everything that
+    /// runs on its own (call tasks, background writes) remembers the value it started under and
+    /// is refused once it differs, so nothing of one account is ever written into another.
+    pub(crate) epoch: u64,
+    /// The account's directory and where its state goes; `None` for no identity and for one not
+    /// yet committed. `backing` is `None` while locked.
+    pub(crate) acct: Option<Acct>,
+    /// The call log of the unlocked account; empty while locked.
+    pub(crate) history: Arc<History>,
+    /// Sealed; known only while unlocked.
+    pub(crate) device_label: Option<String>,
+    /// `account.json` is on disk. False only for a no-passphrase identity waiting for
+    /// `commit_identity`.
+    pub(crate) committed: bool,
+}
+
+pub(crate) struct Acct {
+    pub(crate) id: String,
+    pub(crate) store: Store,
+    pub(crate) backing: Option<Backing>,
 }
 
 /// The call slot, apart from `Shared` so the 50 Hz audio threads never wait behind a disk
@@ -276,14 +315,17 @@ pub(crate) struct Live {
 
 pub(crate) struct Inner {
     pub(crate) handle: tokio::runtime::Handle,
-    pub(crate) store: Store,
+    pub(crate) accounts: AccountDirs,
+    /// Serialises creating, committing and unlocking an account (they open its files).
+    pub(crate) gate: Mutex<()>,
+    /// Test knob: this many state writes fail. See `Node::fail_next_writes`.
+    pub(crate) fail_writes: AtomicU32,
     /// Held while snapshotting and writing state, so writes land in the order taken. Always
     /// taken before `shared`, never while holding it.
     pub(crate) writing: Mutex<()>,
     pub(crate) events: Arc<dyn NodeEvents>,
     pub(crate) shared: Mutex<Shared>,
     pub(crate) live: Mutex<Live>,
-    pub(crate) history: Arc<History>,
     pub(crate) pending: Arc<Semaphore>,
     pub(crate) reserved: Arc<Semaphore>,
     /// Serialises start, stop, lock and set_passphrase.
@@ -329,23 +371,22 @@ impl Node {
             .thread_name(CORE_THREAD)
             .enable_all()
             .build()?;
-        let store = Store::open(data_dir)?;
-        let state = store.state()?;
-        let history = Arc::new(History::new(store.calls()?));
-        let disk = store.profile()?;
+        let accounts = AccountDirs::open(data_dir)?;
+        accounts.migrate()?;
+        let mut shared = Shared::new();
         // A legacy profile keeps working (calls keep ringing) until it is converted.
-        let me = match &disk {
-            Some(Disk::Legacy(p)) => Some(Arc::new(Me::load(p.clone())?)),
-            _ => None,
-        };
+        if let Some(id) = accounts.current() {
+            shared.install(load_account(&accounts, &id)?)?;
+        }
         let inner = Arc::new(Inner {
             handle: rt.handle().clone(),
-            store,
+            accounts,
+            gate: Mutex::new(()),
+            fail_writes: AtomicU32::new(0),
             writing: Mutex::new(()),
             events,
-            shared: Mutex::new(Shared { disk, me, dek: None, state, endpoint: None }),
+            shared: Mutex::new(shared),
             live: Mutex::new(Live::default()),
-            history,
             pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
             reserved: Arc::new(Semaphore::new(RESERVED_HELLOS)),
             lifecycle: Arc::new(tokio::sync::Mutex::new(())),
@@ -357,6 +398,103 @@ impl Node {
 
     pub fn has_identity(&self) -> bool {
         self.inner.shared.lock().disk.is_some()
+    }
+
+    /// Whether the identity is on disk. False only for a no-passphrase identity that has not
+    /// been `commit_identity`ed yet (and with no identity at all).
+    pub fn identity_committed(&self) -> bool {
+        let s = self.inner.shared.lock();
+        s.disk.is_some() && s.committed
+    }
+
+    /// Makes a no-passphrase identity durable: writes `account.json` and selects the account.
+    /// The platform calls it once its keystore has saved `unlock_key()`; until then nothing is
+    /// on disk, so a failed keystore write (or a crash) leaves no account whose key is lost, and
+    /// `lock` or a restart simply forgets the identity. No-op once committed, and for an
+    /// identity made with a passphrase (written at once).
+    pub fn commit_identity(&self) -> Result<(), Error> {
+        let _gate = self.inner.gate.lock();
+        self.inner.commit_locked()
+    }
+
+    /// Every account on this device. Needs no unlock: only the clear `account.json` is read.
+    pub fn accounts(&self) -> Vec<AccountSummary> {
+        let listed = self.inner.accounts.list().unwrap_or_else(|e| {
+            tracing::warn!("listing accounts: {e}");
+            Vec::new()
+        });
+        let s = self.inner.shared.lock();
+        let current = s.acct.as_ref().map(|a| a.id.clone());
+        let mut out: Vec<AccountSummary> = listed
+            .into_iter()
+            .map(|e| AccountSummary {
+                current: current.as_deref() == Some(e.id.as_str()),
+                did: e.did,
+                name: e.name,
+                has_passphrase: e.has_passphrase,
+            })
+            .collect();
+        if let (Some(Disk::V2(p)), false) = (&s.disk, s.committed) {
+            out.push(AccountSummary { did: p.did.clone(), name: p.name.clone(), current: true, has_passphrase: false });
+        }
+        out
+    }
+
+    /// Makes `did` the current account: stops the endpoint, locks and forgets the one in memory.
+    /// Unlock it as usual afterwards (`unlock` or `unlock_with_key`). `InCall` during a call.
+    pub fn switch_account(&self, did: String) -> Result<(), Error> {
+        let id = accounts::id_of(&did)?;
+        self.inner.not_in_call()?;
+        let loaded = load_account(&self.inner.accounts, &id)?;
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.replace_account(Some(loaded)).await })?
+    }
+
+    /// Leaves no account selected, so `has_identity` is false and `create_identity` /
+    /// `restore_identity` add a new one. The accounts on disk are untouched. `InCall` during a call.
+    pub fn begin_new_account(&self) -> Result<(), Error> {
+        self.inner.not_in_call()?;
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.replace_account(None).await })?
+    }
+
+    /// Deletes a non-current account and everything in its directory.
+    pub fn remove_account(&self, did: String) -> Result<(), Error> {
+        let id = accounts::id_of(&did)?;
+        let _life = self.lifecycle()?;
+        let current = self.inner.shared.lock().acct.as_ref().map(|a| a.id.clone());
+        if current.as_deref() == Some(id.as_str()) || self.inner.accounts.current().as_deref() == Some(id.as_str()) {
+            return Err(Error::Protocol("the current account cannot be removed".into()));
+        }
+        self.inner.accounts.remove(&id)
+    }
+
+    /// Names this installation ("Personal phone"), 1-64 characters, no control characters.
+    /// Sealed with the account: needs the node unlocked, and a vault (not a legacy profile).
+    pub fn set_device_label(&self, label: String) -> Result<(), Error> {
+        let label = label.trim().to_string();
+        if label.is_empty() || label.chars().count() > 64 || label.chars().any(char::is_control) {
+            return Err(Error::Protocol("a device name is 1-64 characters without control characters".into()));
+        }
+        self.inner.me()?;
+        let db = {
+            let s = self.inner.shared.lock();
+            match s.acct.as_ref().and_then(|a| a.backing.clone()) {
+                Some(Backing::Sealed(db)) => Some(db),
+                Some(Backing::Json(_)) => return Err(Error::Protocol("convert the profile with set_passphrase first".into())),
+                None => None, // not committed yet: kept in memory, written by the commit
+            }
+        };
+        if let Some(db) = db {
+            store::save_label(&db, &label)?;
+        }
+        self.inner.shared.lock().device_label = Some(label);
+        Ok(())
+    }
+
+    /// The label given to `set_device_label`; `None` until set, and while locked.
+    pub fn device_label(&self) -> Option<String> {
+        self.inner.shared.lock().device_label.clone()
     }
 
     pub fn lock_state(&self) -> LockState {
@@ -475,8 +613,17 @@ impl Node {
                     device_public,
                     vault,
                 });
-                self.inner.store.save_profile(&disk)?;
-                self.inner.store.remove_legacy_leftovers();
+                let store = s.acct.as_ref().ok_or(Error::NoIdentity)?.store.clone();
+                // The vault first: if we die before the state is sealed, the JSON is still
+                // there and the next unlock imports it.
+                store.save_profile(&disk)?;
+                let db = store::seal_into(&store, &dek, &s.state, &s.history.snapshot(), None)?;
+                store.remove_legacy_leftovers();
+                let backing = Backing::Sealed(db);
+                s.history.attach(backing.clone());
+                if let Some(a) = s.acct.as_mut() {
+                    a.backing = Some(backing);
+                }
                 s.disk = Some(disk);
                 s.dek = Some(dek);
                 drop(s);
@@ -504,7 +651,14 @@ impl Node {
                 // Only the vault changes; keep any name change made meanwhile.
                 let Some(Disk::V2(cur)) = s.disk.clone() else { return Err(Error::NoIdentity) };
                 let disk = Disk::V2(ProfileV2 { vault: rewrapped, ..cur });
-                self.inner.store.save_profile(&disk)?;
+                if !s.committed {
+                    // A passphrase makes the data key recoverable, so the identity can be written now.
+                    s.disk = Some(disk);
+                    drop(s);
+                    let _gate = self.inner.gate.lock();
+                    return self.inner.commit_locked();
+                }
+                s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
                 s.disk = Some(disk);
                 Ok(())
             }
@@ -545,11 +699,7 @@ impl Node {
                 // first and its endpoint is closed here.
                 let _life = inner.lifecycle.lock().await;
                 inner.close_endpoint().await;
-                {
-                    let mut s = inner.shared.lock();
-                    s.me = None;
-                    s.dek = None;
-                }
+                inner.shared.lock().forget_session();
                 inner.chat_close().await;
             }
             inner.emit_status();
@@ -557,29 +707,34 @@ impl Node {
     }
 
     pub fn set_name(&self, name: String) -> Result<(), Error> {
-        {
+        let unlocked = {
             let mut s = self.inner.shared.lock();
             let mut disk = s.disk.clone().ok_or(Error::NoIdentity)?;
             match &mut disk {
                 Disk::V2(p) => p.name = name.clone(),
                 Disk::Legacy(p) => p.name = name.clone(),
             }
-            self.inner.store.save_profile(&disk)?;
+            if s.committed {
+                s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
+            }
             s.disk = Some(disk);
             if let Some(me) = s.me.clone() {
                 let mut profile = me.profile.clone();
                 profile.name = name;
-                s.me = Some(Arc::new(Me::load(profile)?));
+                s.me = Some(Arc::new(Me::load(profile, me.epoch)?));
             }
-            // The old ticket carries the old name.
+            // The old ticket carries the old name (and `ticket()` checks it, for the locked case
+            // where the sealed state cannot be touched).
             s.state.ticket = None;
-        }
-        self.inner.persist()
+            s.me.is_some()
+        };
+        if unlocked { self.inner.persist() } else { Ok(()) }
     }
 
     /// Drops the ticket we hand out: the old QR/text stops working at once and the next
     /// `my_ticket` mints a fresh one. For "the ticket may have leaked".
     pub fn reset_ticket(&self) -> Result<(), Error> {
+        self.inner.me()?;
         self.inner.shared.lock().state.ticket = None;
         self.inner.persist()
     }
@@ -670,18 +825,19 @@ impl Node {
 
     /// Finished calls, newest first, at most `limit`. Re-read on `on_call_state` `Ended`.
     pub fn recent_calls(&self, limit: u32) -> Vec<CallRecord> {
-        self.inner.history.list(None, limit as usize)
+        self.inner.history().list(None, limit as usize)
     }
 
     /// Finished calls with one person, newest first.
     pub fn calls_with(&self, did: String, limit: u32) -> Vec<CallRecord> {
-        self.inner.history.list(Some(&did), limit as usize)
+        self.inner.history().list(Some(&did), limit as usize)
     }
 
     /// Turns calls on or off. Off, incoming calls are not shown and the caller just fails to
     /// get through; they are logged with reason `unavailable`. `until` (unix seconds) switches
     /// it back on by itself. Adding contacts still works.
     pub fn set_available(&self, available: bool, until: Option<u64>) -> Result<(), Error> {
+        self.inner.me()?;
         self.inner.shared.lock().state.availability = crate::store::AvailabilityState {
             unavailable: !available,
             until: if available { None } else { until },
@@ -696,6 +852,7 @@ impl Node {
     /// Forgets them and blocks their DID, so the grant we gave them no longer rings us; any
     /// call with them ends. Adding them again lifts the block.
     pub fn remove_contact(&self, did: String) -> Result<(), Error> {
+        self.inner.me()?;
         {
             let mut s = self.inner.shared.lock();
             s.state.contacts.retain(|c| c.did != did);
@@ -703,12 +860,13 @@ impl Node {
             // A ticket they may have seen is of no further use.
             s.state.ticket = None;
         }
-        self.inner.history.remove_peer(&did);
+        let history = self.inner.history();
+        history.remove_peer(&did);
         self.inner.chat_purge(&did);
         // The removal holds in memory whether or not it reached the disk, so act on it either
         // way and report the failed write afterwards. (A call ending now is not logged: the
         // peer is no longer a contact.)
-        let saved = self.inner.persist().and(self.inner.history.save(&self.inner.store));
+        let saved = self.inner.persist().and(history.save());
         let calls: Vec<_> = {
             let live = self.inner.live.lock();
             live.call.iter().chain(live.waiting.iter()).cloned().collect()
@@ -791,11 +949,11 @@ impl Node {
 }
 
 impl Me {
-    pub(crate) fn load(profile: Profile) -> Result<Self, Error> {
+    pub(crate) fn load(profile: Profile, epoch: u64) -> Result<Self, Error> {
         let id = identity::recover(&profile.mnemonic).map_err(|_| Error::BadPhrase)?;
         let device = proto::device_public(&profile.device_secret);
         let attestation = proto::attest(&id, device, now());
-        Ok(Self { profile, id, device, attestation })
+        Ok(Self { epoch, profile, id, device, attestation })
     }
 
     pub(crate) fn info(&self) -> ProfileInfo {
@@ -914,18 +1072,39 @@ impl Node {
     }
 
     fn finish_unlock(&self, secrets: Secrets, dek: Dek) -> Result<(), Error> {
-        let mut s = self.inner.shared.lock();
-        let Some(Disk::V2(p)) = &s.disk else { return Err(Error::NoIdentity) };
-        if s.me.is_some() {
-            return Ok(());
-        }
-        let me = Me::load(Profile {
-            mnemonic: secrets.mnemonic.clone(),
-            name: p.name.clone(),
-            device_secret: secrets.device_secret,
-        })?;
-        if me.id.did() != p.did {
+        let _gate = self.inner.gate.lock();
+        let (store, did, name, started) = {
+            let s = self.inner.shared.lock();
+            let Some(Disk::V2(p)) = &s.disk else { return Err(Error::NoIdentity) };
+            if s.me.is_some() {
+                return Ok(());
+            }
+            let store = s.acct.as_ref().ok_or(Error::NoIdentity)?.store.clone();
+            (store, p.did.clone(), p.name.clone(), s.epoch)
+        };
+        let me = Me::load(
+            Profile { mnemonic: secrets.mnemonic.clone(), name, device_secret: secrets.device_secret },
+            0,
+        )?;
+        if me.id.did() != did {
             return Err(Error::Io("vault does not match profile".into()));
+        }
+        // The sealed state is read (and a first-time import from JSON done) outside `shared`.
+        let (db, loaded) = store::load_sealed(&store, &dek)?;
+        let mut me = me;
+        let mut s = self.inner.shared.lock();
+        if s.epoch != started {
+            // Another account was selected while the passphrase was being checked.
+            return Err(Error::Locked);
+        }
+        s.epoch += 1;
+        me.epoch = s.epoch;
+        let backing = Backing::Sealed(db);
+        s.history = Arc::new(History::new(loaded.calls, Some(backing.clone())));
+        s.state = loaded.state;
+        s.device_label = loaded.device_label;
+        if let Some(a) = s.acct.as_mut() {
+            a.backing = Some(backing);
         }
         s.me = Some(Arc::new(me));
         s.dek = Some(dek);
@@ -935,13 +1114,20 @@ impl Node {
     }
 
     fn set_identity(&self, phrase: String, name: String, passphrase: String) -> Result<(), Error> {
+        let _gate = self.inner.gate.lock();
         if self.inner.shared.lock().disk.is_some() {
             return Err(Error::HaveIdentity);
         }
         let profile = Profile { mnemonic: phrase, name, device_secret: proto::new_device_secret() };
-        let me = Me::load(profile)?;
+        let mut me = Me::load(profile, 0)?;
+        let id = accounts::id_of(me.id.did())?;
+        // Checked before the slow KDF; `create` below is the check that cannot race.
+        if self.inner.accounts.exists(&id)? {
+            return Err(Error::AccountExists);
+        }
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret: me.profile.device_secret };
         let passphrase = Some(passphrase).filter(|p| !p.is_empty());
+        let durable = passphrase.is_some();
         let (vault, dek) = self.kdf(move || vault::seal(&secrets, passphrase.as_deref()))??;
         let disk = Disk::V2(ProfileV2 {
             version: 2,
@@ -950,11 +1136,20 @@ impl Node {
             device_public: me.device,
             vault,
         });
+        // Without a passphrase nothing is written until the platform has saved the key.
+        let acct = if durable {
+            Some(self.inner.create_account_files(&id, &disk, &dek, &State::default(), &[], None)?)
+        } else {
+            None
+        };
         let mut s = self.inner.shared.lock();
-        if s.disk.is_some() {
-            return Err(Error::HaveIdentity);
-        }
-        self.inner.store.save_profile(&disk)?;
+        s.epoch += 1;
+        me.epoch = s.epoch;
+        s.history = Arc::new(History::new(Vec::new(), acct.as_ref().and_then(|a| a.backing.clone())));
+        s.state = State::default();
+        s.device_label = None;
+        s.committed = durable;
+        s.acct = acct;
         s.disk = Some(disk);
         s.me = Some(Arc::new(me));
         s.dek = Some(dek);
@@ -962,31 +1157,227 @@ impl Node {
         self.inner.chat_open();
         Ok(())
     }
+
+    /// For tests: the next `n` writes of account state fail, as if the disk were full.
+    #[doc(hidden)]
+    pub fn fail_next_writes(&self, n: u32) {
+        self.inner.fail_writes.store(n, Ordering::SeqCst);
+    }
+}
+
+/// An account's files, read before anything is unlocked.
+pub(crate) struct Loaded {
+    id: String,
+    disk: Disk,
+    store: Store,
+}
+
+pub(crate) fn load_account(accounts: &AccountDirs, id: &str) -> Result<Loaded, Error> {
+    // `Store::open` would create the directory of an account that is not there.
+    if !accounts.exists(id)? {
+        return Err(Error::NotFound);
+    }
+    let store = Store::open(accounts.dir(id)?)?;
+    let disk = store.profile()?.ok_or(Error::NotFound)?;
+    accounts::entry_of(id, &disk)?;
+    Ok(Loaded { id: id.to_string(), disk, store })
+}
+
+impl Shared {
+    pub(crate) fn new() -> Self {
+        Shared {
+            disk: None,
+            me: None,
+            dek: None,
+            state: State::default(),
+            endpoint: None,
+            epoch: 1,
+            acct: None,
+            history: Arc::new(History::empty()),
+            device_label: None,
+            committed: true,
+        }
+    }
+
+    /// Puts the account's files in place, locked; a legacy profile is unlocked and brings its
+    /// JSON state with it.
+    pub(crate) fn install(&mut self, l: Loaded) -> Result<(), Error> {
+        self.forget_session();
+        self.epoch += 1;
+        let mut backing = None;
+        if let Disk::Legacy(p) = &l.disk {
+            self.state = l.store.state()?;
+            let b = Backing::Json(l.store.clone());
+            self.history = Arc::new(History::new(l.store.calls()?, Some(b.clone())));
+            self.me = Some(Arc::new(Me::load(p.clone(), self.epoch)?));
+            backing = Some(b);
+        }
+        self.acct = Some(Acct { id: l.id, store: l.store, backing });
+        self.disk = Some(l.disk);
+        self.committed = true;
+        Ok(())
+    }
+
+    /// Everything of the account that is secret or sealed leaves memory. An identity that was
+    /// never committed has nowhere to come back from, so it goes entirely.
+    pub(crate) fn forget_session(&mut self) {
+        self.epoch += 1;
+        self.me = None;
+        self.dek = None;
+        self.state = State::default();
+        self.history = Arc::new(History::empty());
+        self.device_label = None;
+        if let Some(a) = self.acct.as_mut() {
+            a.backing = None;
+        }
+        if !self.committed {
+            self.disk = None;
+            self.acct = None;
+            self.committed = true;
+        }
+    }
 }
 
 impl Inner {
-    /// Writes a snapshot of `State`. Callers must not hold `shared`.
+    /// Writes a snapshot of `State` to the current account.
     pub(crate) fn persist(&self) -> Result<(), Error> {
-        let _w = self.writing.lock();
-        let snapshot = self.shared.lock().state.clone();
-        self.store.save_state(&snapshot)
+        self.persist_for(None)
     }
 
-    /// `persist` for async code: the write (and its fsyncs) runs on the blocking pool, not on a
-    /// worker that other connections need.
-    pub(crate) async fn persist_async(self: &Arc<Self>) -> Result<(), Error> {
+    /// `persist` for something that belongs to session `epoch`: refused (`Locked`) if the account
+    /// in memory has been replaced since. Callers must not hold `shared`.
+    pub(crate) fn persist_for(&self, epoch: Option<u64>) -> Result<(), Error> {
+        let _w = self.writing.lock();
+        let (snapshot, backing) = {
+            let s = self.shared.lock();
+            if epoch.is_some_and(|g| g != s.epoch) {
+                return Err(Error::Locked);
+            }
+            if s.disk.is_none() {
+                return Err(Error::NoIdentity);
+            }
+            if !s.committed {
+                return Ok(());
+            }
+            match s.acct.as_ref().and_then(|a| a.backing.clone()) {
+                Some(b) => (s.state.clone(), b),
+                None => return Err(Error::Locked),
+            }
+        };
+        self.write_state(&backing, &snapshot)
+    }
+
+    fn write_state(&self, backing: &Backing, state: &State) -> Result<(), Error> {
+        if self.fail_writes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
+            return Err(Error::Io("injected write failure".into()));
+        }
+        backing.save_state(state)
+    }
+
+    /// `persist_for` for async code: the write (and its fsyncs) runs on the blocking pool, not on
+    /// a worker that other connections need.
+    pub(crate) async fn persist_async(self: &Arc<Self>, epoch: u64) -> Result<(), Error> {
         let this = self.clone();
-        tokio::task::spawn_blocking(move || this.persist())
+        tokio::task::spawn_blocking(move || this.persist_for(Some(epoch)))
             .await
             .map_err(|_| Error::Io("persist task failed".into()))?
     }
 
     /// Fire and forget, for state that is only a cache (a device, a renewed grant).
-    pub(crate) fn persist_in_background(self: &Arc<Self>) {
+    pub(crate) fn persist_in_background(self: &Arc<Self>, epoch: u64) {
         let this = self.clone();
         self.handle.spawn_blocking(move || {
-            let _ = this.persist();
+            let _ = this.persist_for(Some(epoch));
         });
+    }
+
+    pub(crate) fn history(&self) -> Arc<History> {
+        self.shared.lock().history.clone()
+    }
+
+    pub(crate) fn not_in_call(&self) -> Result<(), Error> {
+        let live = self.live.lock();
+        if live.call.is_some() || live.waiting.is_some() {
+            return Err(Error::InCall);
+        }
+        Ok(())
+    }
+
+    /// Writes a new account's files: the dir (never an existing one), `account.json`, the sealed
+    /// store, then the pointer. What it created is removed again if any step fails.
+    pub(crate) fn create_account_files(
+        &self,
+        id: &str,
+        disk: &Disk,
+        dek: &Dek,
+        state: &State,
+        calls: &[CallRecord],
+        label: Option<&str>,
+    ) -> Result<Acct, Error> {
+        let dir = self.accounts.create(id)?;
+        let built = (|| {
+            let store = Store::open(&dir)?;
+            store.save_profile(disk)?;
+            let db = store::seal_into(&store, dek, state, calls, label)?;
+            self.accounts.select(id)?;
+            Ok::<_, Error>(Acct { id: id.to_string(), store, backing: Some(Backing::Sealed(db)) })
+        })();
+        if built.is_err() {
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+        built
+    }
+
+    /// `commit_identity` with the gate held.
+    pub(crate) fn commit_locked(self: &Arc<Self>) -> Result<(), Error> {
+        let (disk, dek, state, calls, label) = {
+            let s = self.shared.lock();
+            let disk = s.disk.clone().ok_or(Error::NoIdentity)?;
+            if s.committed {
+                return Ok(());
+            }
+            (disk, s.dek.clone().ok_or(Error::Locked)?, s.state.clone(), s.history.snapshot(), s.device_label.clone())
+        };
+        let Disk::V2(p) = &disk else { return Err(Error::NoIdentity) };
+        let id = accounts::id_of(&p.did)?;
+        let acct = self.create_account_files(&id, &disk, &dek, &state, &calls, label.as_deref())?;
+        {
+            let mut s = self.shared.lock();
+            if let Some(b) = &acct.backing {
+                s.history.attach(b.clone());
+            }
+            s.acct = Some(acct);
+            s.committed = true;
+        }
+        self.chat_open();
+        // Anything that changed while the files were being written.
+        self.persist()
+    }
+
+    /// Switches (or, with `None`, deselects) the account in memory. Stops everything of the old one.
+    pub(crate) async fn replace_account(self: &Arc<Self>, target: Option<Loaded>) -> Result<(), Error> {
+        let _life = self.lifecycle.lock().await;
+        self.not_in_call()?;
+        match &target {
+            Some(l) => self.accounts.select(&l.id)?,
+            None => self.accounts.deselect()?,
+        }
+        self.chat_sessions_close();
+        self.close_endpoint().await;
+        self.chat_close().await;
+        {
+            let mut s = self.shared.lock();
+            s.forget_session();
+            s.disk = None;
+            s.acct = None;
+            s.committed = true;
+            if let Some(l) = target {
+                s.install(l)?;
+            }
+        }
+        self.emit_status();
+        self.events.on_contacts_changed();
+        Ok(())
     }
 
     /// The setting as of now: an expired "until" counts as available again.
@@ -999,20 +1390,27 @@ impl Inner {
         }
     }
 
-    /// Adds to the call log and writes it in the background.
-    pub(crate) fn log_call(&self, rec: CallRecord) {
-        self.history.push(rec);
-        let (history, store) = (self.history.clone(), self.store.clone());
+    /// Adds to the call log of session `epoch` and writes it in the background; dropped if that
+    /// session is over.
+    pub(crate) fn log_call(&self, epoch: u64, rec: CallRecord) {
+        let history = {
+            let s = self.shared.lock();
+            if s.epoch != epoch {
+                return;
+            }
+            s.history.clone()
+        };
+        history.push(rec);
         self.handle.spawn_blocking(move || {
-            if let Err(e) = history.save(&store) {
+            if let Err(e) = history.save() {
                 tracing::warn!("saving call history: {e}");
             }
         });
     }
 
     /// An incoming call that never became a `Call` (turned away unavailable, or busy).
-    pub(crate) fn log_refused(&self, call_id: &str, did: &str, name: &str, reason: &str, missed: bool) {
-        self.log_call(CallRecord {
+    pub(crate) fn log_refused(&self, epoch: u64, call_id: &str, did: &str, name: &str, reason: &str, missed: bool) {
+        self.log_call(epoch, CallRecord {
             call_id: call_id.to_string(),
             peer_did: did.to_string(),
             peer_name: name.to_string(),
@@ -1206,6 +1604,7 @@ impl Inner {
                 // Still ours (identity unchanged), still days of life left, and points at our
                 // current relay so the joiner can dial without discovery.
                 && claim.iss == me.id.did()
+                && claim.name == me.profile.name
                 && claim.exp > now + 24 * 3600
                 && (relay.is_none() || claim.relay == relay)
             {
@@ -1223,7 +1622,7 @@ impl Inner {
             s.state.ticket = Some(text.clone());
             text
         };
-        self.persist_async().await?;
+        self.persist_async(me.epoch).await?;
         Ok(text)
     }
 
@@ -1273,7 +1672,7 @@ impl Inner {
         ctrl.finish();
         conn.close(0u32.into(), b"added");
         // We scanned their ticket ourselves: that is the one way back from a block.
-        let contact = self.save_contact(new, relay, true).await?;
+        let contact = self.save_contact(me.epoch, new, relay, true).await?;
         self.log(format!("contact {} added", contact.name));
         Ok(contact)
     }
@@ -1282,49 +1681,68 @@ impl Inner {
     /// their own (they scanned ours) must not undo a removal.
     pub(crate) async fn save_contact(
         self: &Arc<Self>,
+        epoch: u64,
         new: proto::NewContact,
         relay: Option<String>,
         lift_block: bool,
     ) -> Result<Contact, Error> {
-        let stored = StoredContact {
-            did: new.did.clone(),
-            name: proto::sanitize_name(&new.name),
-            devices: vec![new.device],
-            relay,
-            grant_from_them: new.grant_from_them,
-            added_at: now(),
-            alias: None,
-            verified: false,
-        };
+        let stored = stored_contact(&new, relay);
         let contact = Contact::from(&stored);
         {
             let mut s = self.shared.lock();
-            if lift_block {
-                s.state.blocked.remove(&new.did);
-            } else if s.state.blocked.contains(&new.did) {
-                return Err(Error::Rejected(REFUSED.into()));
+            if s.epoch != epoch {
+                return Err(Error::Locked);
             }
-            match s.state.contacts.iter_mut().find(|c| c.did == new.did) {
-                Some(existing) => {
-                    existing.name = stored.name;
-                    // A different phone than the one we compared numbers with.
-                    if !existing.devices.contains(&new.device) {
-                        existing.verified = false;
-                    }
-                    existing.devices.retain(|d| *d != new.device);
-                    existing.devices.insert(0, new.device);
-                    existing.devices.truncate(MAX_DEVICES);
-                    if stored.relay.is_some() {
-                        existing.relay = stored.relay;
-                    }
-                    existing.grant_from_them = stored.grant_from_them;
-                }
-                None => s.state.contacts.push(stored),
-            }
+            apply_contact(&mut s.state, stored, new.device, lift_block)?;
         }
-        self.persist_async().await?;
+        self.persist_async(epoch).await?;
         self.events.on_contacts_changed();
         Ok(contact)
+    }
+
+    /// An incoming `ContactHello`, answered with a `Welcome` only after the contact, the spent
+    /// nonce and the dropped ticket are durable in one write. Blocking: runs on the blocking
+    /// pool. If the write fails nothing changes in memory either, so the ticket is still good
+    /// and the joiner can retry.
+    fn accept_hello(&self, me: &Me, hello: &Msg, remote: [u8; 32], hint: Option<String>) -> Result<(Msg, Contact), HelloError> {
+        let _w = self.writing.lock();
+        let (mut next, backing) = {
+            let s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return Err(HelloError::Failed(Error::Locked));
+            }
+            (s.state.clone(), s.committed.then(|| s.acct.as_ref().and_then(|a| a.backing.clone())).flatten())
+        };
+        let now = now();
+        let current = current_nonce(&next, now);
+        let (welcome, new) = proto::accept_contact_hello(&me.id, me.device, hello, remote, now, &next.redeemed, GRANT_TTL)
+            .map_err(|e| HelloError::Refused(e.to_string()))?;
+        // Only the ticket we hand out right now can be redeemed: an older one that leaked (or
+        // was reset) is dead even though its nonce is unspent.
+        if current.as_deref() != Some(new.redeemed_nonce.as_str()) {
+            return Err(HelloError::Refused("not the current ticket".into()));
+        }
+        if next.blocked.contains(&new.did) {
+            return Err(HelloError::Refused("blocked".into()));
+        }
+        let stored = stored_contact(&new, hint);
+        let contact = Contact::from(&stored);
+        let apply = |st: &mut State| {
+            st.redeemed.insert(new.redeemed_nonce.clone());
+            // Spent: the next `my_ticket` mints a fresh one.
+            st.ticket = None;
+            apply_contact(st, stored.clone(), new.device, false)
+        };
+        apply(&mut next).map_err(HelloError::Failed)?;
+        if let Some(b) = &backing {
+            self.write_state(b, &next).map_err(HelloError::Failed)?;
+        }
+        let mut s = self.shared.lock();
+        if s.epoch != me.epoch {
+            return Err(HelloError::Failed(Error::Locked));
+        }
+        apply(&mut s.state).map_err(HelloError::Failed)?;
+        Ok((welcome, contact))
     }
 
     /// The slot in `permit` is held until this connection has become a call or a contact, or is
@@ -1364,62 +1782,33 @@ impl Inner {
             hello @ Msg::ContactHello { .. } => {
                 let Msg::ContactHello { relay: hint, .. } = &hello else { unreachable!() };
                 let hint = relay_hint(hint);
-                // Check and spend the nonce under one lock, so two hellos racing on the same
-                // ticket can't both get in.
-                let accepted = {
-                    let mut s = self.shared.lock();
-                    let now = now();
-                    let current = current_nonce(&s.state, now);
-                    let r = proto::accept_contact_hello(
-                        &me.id,
-                        me.device,
-                        &hello,
-                        remote,
-                        now,
-                        &s.state.redeemed,
-                        GRANT_TTL,
-                    )
-                    .map_err(|e| e.to_string())
-                    .and_then(|(welcome, new)| {
-                        // Only the ticket we hand out right now can be redeemed: an older one
-                        // that leaked (or was reset) is dead even though its nonce is unspent.
-                        if current.as_deref() != Some(new.redeemed_nonce.as_str()) {
-                            Err("not the current ticket".to_string())
-                        } else if s.state.blocked.contains(&new.did) {
-                            Err("blocked".to_string())
-                        } else {
-                            Ok((welcome, new))
-                        }
-                    });
-                    if let Ok((_, new)) = &r {
-                        s.state.redeemed.insert(new.redeemed_nonce.clone());
-                        // Spent: the next `my_ticket` mints a fresh one.
-                        s.state.ticket = None;
-                    }
-                    r
-                };
+                let (this, me2, hello2) = (self.clone(), me.clone(), hello.clone());
+                let accepted = tokio::task::spawn_blocking(move || this.accept_hello(&me2, &hello2, remote, hint))
+                    .await
+                    .map_err(|_| Error::Io("contact task failed".into()))?;
                 match accepted {
-                    Ok((welcome, new)) => {
-                        if let Err(e) = self.persist_async().await {
-                            // The nonce is spent in memory but not on disk: say no rather than
-                            // add a contact that a restart would forget.
-                            let _ = ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await;
-                            ctrl.finish();
-                            return Err(e);
-                        }
+                    Ok((welcome, contact)) => {
+                        // Durable now; only then does the joiner hear of it.
+                        self.events.on_contacts_changed();
                         ctrl.send(&welcome).await?;
                         ctrl.finish();
-                        let contact = self.save_contact(new, hint, false).await?;
                         drop(permit);
                         self.log(format!("contact {} added us", contact.name));
                         // Let the joiner read the welcome and close first.
                         let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
                     }
-                    Err(e) => {
+                    Err(HelloError::Refused(e)) => {
                         self.log(format!("rejected contact hello: {e}"));
                         ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
                         ctrl.finish();
                         let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                    }
+                    Err(HelloError::Failed(e)) => {
+                        // Nothing was saved, so no Welcome: the joiner must not hold a contact
+                        // that we would forget.
+                        let _ = ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await;
+                        ctrl.finish();
+                        return Err(e);
                     }
                 }
                 Ok(())
@@ -1486,7 +1875,7 @@ impl Inner {
         if !self.availability().available {
             // Same answer as any other refusal: the caller must not learn we are "away".
             self.log("incoming call turned away: unavailable");
-            self.log_refused(&call_id, &caller.did, &name, "unavailable", false);
+            self.log_refused(me.epoch, &call_id, &caller.did, &name, "unavailable", false);
             ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
             ctrl.finish();
             let _ = tokio::time::timeout(LINGER, conn.closed()).await;
@@ -1494,16 +1883,16 @@ impl Inner {
         }
         let info = CallInfo { call_id, peer_did: caller.did.clone(), peer_name: name, incoming: true };
         self.yield_on_glare(&caller.did, me.device, remote);
-        let (call, cmds) = match self.begin_call(info.clone(), CallState::Ringing, false) {
+        let (call, cmds) = match self.begin_call(info.clone(), CallState::Ringing, false, me.epoch) {
             Ok(c) => c,
             // In a call: ring quietly over it, if nothing is waiting there already.
-            Err(_) => match self.begin_waiting(info.clone()) {
+            Err(_) => match self.begin_waiting(info.clone(), me.epoch) {
                 Ok(c) => {
                     self.log("incoming call while in a call: waiting");
                     c
                 }
                 Err(_) => {
-                    self.log_refused(&info.call_id, &info.peer_did, &info.peer_name, "busy", true);
+                    self.log_refused(me.epoch, &info.call_id, &info.peer_did, &info.peer_name, "busy", true);
                     ctrl.send(&Msg::Busy).await?;
                     ctrl.finish();
                     let _ = tokio::time::timeout(LINGER, conn.closed()).await;
@@ -1515,7 +1904,7 @@ impl Inner {
         let _slot = SlotGuard { inner: &self, call: call.clone() };
         *call.conn.lock() = Some(conn.clone());
         // A new device for a known contact: dial it next time.
-        self.note_device(&caller.did, remote, hint);
+        self.note_device(me.epoch, &caller.did, remote, hint);
         ctrl.send(&Msg::Ringing).await?;
         self.log(format!("incoming call from {}", info.peer_name));
         {
@@ -1548,30 +1937,40 @@ impl Inner {
     }
 
     /// The caller's device and relay as of this call, so our next call to them dials straight
-    /// there.
-    pub(crate) fn note_device(self: &Arc<Self>, did: &str, device: [u8; 32], relay: Option<String>) {
-        let mut s = self.shared.lock();
-        let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == did) else { return };
-        let mut changed = false;
-        if c.devices.first() != Some(&device) {
-            c.devices.retain(|d| *d != device);
-            c.devices.insert(0, device);
-            c.devices.truncate(MAX_DEVICES);
-            changed = true;
-        }
-        if relay.is_some() && c.relay != relay {
-            c.relay = relay;
-            changed = true;
-        }
-        drop(s);
+    /// there. A device we have not seen before resets `verified`, exactly as when they add us.
+    pub(crate) fn note_device(self: &Arc<Self>, epoch: u64, did: &str, device: [u8; 32], relay: Option<String>) {
+        let changed = {
+            let mut s = self.shared.lock();
+            if s.epoch != epoch {
+                return;
+            }
+            let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == did) else { return };
+            let mut changed = false;
+            if c.devices.first() != Some(&device) {
+                if !c.devices.contains(&device) {
+                    c.verified = false;
+                }
+                c.devices.retain(|d| *d != device);
+                c.devices.insert(0, device);
+                c.devices.truncate(MAX_DEVICES);
+                changed = true;
+            }
+            if relay.is_some() && c.relay != relay {
+                c.relay = relay;
+                changed = true;
+            }
+            changed
+        };
         if changed {
-            self.persist_in_background();
+            self.persist_in_background(epoch);
+            self.events.on_contacts_changed();
         }
     }
 
     fn new_call(
         info: CallInfo,
         state: CallState,
+        epoch: u64,
     ) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
         // Everything slow or fallible comes before the slot is taken.
         let sender = audio::Sender::new(48_000)?;
@@ -1597,6 +1996,7 @@ impl Inner {
             direct: Mutex::new(false),
             waiting: AtomicBool::new(false),
             answer_on_promote: AtomicBool::new(false),
+            epoch,
         });
         Ok((call, rx))
     }
@@ -1608,8 +2008,9 @@ impl Inner {
         info: CallInfo,
         state: CallState,
         announce: bool,
+        epoch: u64,
     ) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
-        let (call, rx) = Self::new_call(info, state.clone())?;
+        let (call, rx) = Self::new_call(info, state.clone(), epoch)?;
         {
             let _first = call.notify.lock();
             let previous = {
@@ -1632,8 +2033,8 @@ impl Inner {
 
     /// Parks an incoming call beside the active one. Busy unless there is an answered call
     /// and nothing already waiting.
-    fn begin_waiting(&self, info: CallInfo) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
-        let (call, rx) = Self::new_call(info, CallState::Ringing)?;
+    fn begin_waiting(&self, info: CallInfo, epoch: u64) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
+        let (call, rx) = Self::new_call(info, CallState::Ringing, epoch)?;
         call.waiting.store(true, Ordering::SeqCst);
         let mut live = self.live.lock();
         match &live.call {
@@ -1658,7 +2059,7 @@ impl Inner {
             peer_name: display_name(&contact),
             incoming: false,
         };
-        let (call, mut cmds) = self.begin_call(info.clone(), CallState::Dialing, true)?;
+        let (call, mut cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
         let this = self.clone();
         self.handle.spawn(async move {
             // A panic below must not leave the slot busy forever.
@@ -1770,7 +2171,7 @@ impl Inner {
                     Ok(Some(Msg::Ringing)) if !active => self.set_state(&call, CallState::Ringing),
                     Ok(Some(Msg::Accept { renewed_grant })) if incoming_from.is_none() && !active => {
                         if let Some(g) = renewed_grant {
-                            self.renew_grant(&call.info.peer_did, g);
+                            self.renew_grant(call.epoch, &call.info.peer_did, g);
                         }
                         datagrams = Some(self.start_media(&call, &conn));
                         self.set_state(&call, CallState::Active);
@@ -1884,10 +2285,13 @@ impl Inner {
     /// A callee's `Accept` may carry a fresh grant for us. It replaces the stored one only if it
     /// is validly signed by them for us and outlives the old one; anything else is ignored, so a
     /// peer can't shorten or break the grant we call them with.
-    pub(crate) fn renew_grant(self: &Arc<Self>, did: &str, grant: proto::SignedGrant) {
+    pub(crate) fn renew_grant(self: &Arc<Self>, epoch: u64, did: &str, grant: proto::SignedGrant) {
         let Ok(me) = self.me() else { return };
         let replaced = {
             let mut s = self.shared.lock();
+            if s.epoch != epoch {
+                return;
+            }
             match s.state.contacts.iter_mut().find(|c| c.did == did) {
                 Some(c) if grant_outlives(&c.grant_from_them, &grant, did, me.id.did(), now()) => {
                     c.grant_from_them = grant;
@@ -1897,7 +2301,7 @@ impl Inner {
             }
         };
         if replaced {
-            self.persist_in_background();
+            self.persist_in_background(epoch);
         }
     }
 
@@ -1981,6 +2385,9 @@ impl Inner {
         }
         let name = {
             let s = self.shared.lock();
+            if s.epoch != call.epoch {
+                return;
+            }
             match s.state.contacts.iter().find(|c| c.did == call.info.peer_did) {
                 Some(c) => display_name(c),
                 None => return,
@@ -1988,7 +2395,7 @@ impl Inner {
         };
         let answered = call.active_at.lock().is_some();
         let duration_secs = call.active_at.lock().map_or(0, |t| t.elapsed().as_secs() as u32);
-        self.log_call(CallRecord {
+        self.log_call(call.epoch, CallRecord {
             call_id: call.info.call_id.clone(),
             peer_did: call.info.peer_did.clone(),
             peer_name: name,
@@ -2102,6 +2509,53 @@ pub(crate) fn relay_hint(hint: &Option<String>) -> Option<String> {
 }
 
 /// The nonce of the ticket we currently hand out, if it is still valid.
+enum HelloError {
+    /// Not acceptable (bad, spent, old or blocked ticket): the joiner is turned away.
+    Refused(String),
+    /// Acceptable, but we could not make it durable.
+    Failed(Error),
+}
+
+fn stored_contact(new: &proto::NewContact, relay: Option<String>) -> StoredContact {
+    StoredContact {
+        did: new.did.clone(),
+        name: proto::sanitize_name(&new.name),
+        devices: vec![new.device],
+        relay,
+        grant_from_them: new.grant_from_them.clone(),
+        added_at: now(),
+        alias: None,
+        verified: false,
+    }
+}
+
+/// Adds `stored`, or refreshes the contact of that DID. A device we have not seen before resets
+/// `verified`: the safety numbers were compared with another phone.
+fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_block: bool) -> Result<(), Error> {
+    if lift_block {
+        st.blocked.remove(&stored.did);
+    } else if st.blocked.contains(&stored.did) {
+        return Err(Error::Rejected(REFUSED.into()));
+    }
+    match st.contacts.iter_mut().find(|c| c.did == stored.did) {
+        Some(existing) => {
+            existing.name = stored.name;
+            if !existing.devices.contains(&device) {
+                existing.verified = false;
+            }
+            existing.devices.retain(|d| *d != device);
+            existing.devices.insert(0, device);
+            existing.devices.truncate(MAX_DEVICES);
+            if stored.relay.is_some() {
+                existing.relay = stored.relay;
+            }
+            existing.grant_from_them = stored.grant_from_them;
+        }
+        None => st.contacts.push(stored),
+    }
+    Ok(())
+}
+
 fn current_nonce(state: &State, now: u64) -> Option<String> {
     let t = ContactTicket::from_text(state.ticket.as_deref()?).ok()?;
     Some(t.verify(now).ok()?.nonce)

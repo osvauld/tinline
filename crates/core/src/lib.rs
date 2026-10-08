@@ -17,7 +17,7 @@ pub use error::Error;
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use store::CallRecord;
-pub use node::{Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
+pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
 
 #[uniffi::export]
 pub fn core_version() -> String {

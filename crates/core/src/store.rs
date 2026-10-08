@@ -1,10 +1,15 @@
-//! What survives a restart, as JSON files in the app's private data dir. Every write goes to a
-//! temp file then renames over the old one, so a kill mid-write leaves the previous state.
+//! What survives a restart, in one account's directory (`<root>/accounts/<id>/`, see
+//! `accounts.rs`). Every JSON write goes to a temp file then renames over the old one, so a kill
+//! mid-write leaves the previous state.
 //!
-//! `profile.json` keeps the name, DID and device public key in the clear (so a lock screen can
-//! show them) and the mnemonic and device secret only inside the passphrase-sealed `vault`
-//! (see `vault.rs`, `docs/vault.md`). Installs from before the vault have the old clear-text
-//! shape; they load as `Disk::Legacy` until `set_passphrase` converts them.
+//! `account.json` keeps the name, DID and device public key in the clear (so a lock screen and
+//! the account switcher can show them) and the mnemonic and device secret only inside the
+//! passphrase-sealed `vault` (see `vault.rs`, `docs/vault.md`). Installs from before the vault
+//! have the old clear-text shape; they load as `Disk::Legacy` until `set_passphrase` converts them.
+//!
+//! State, call history and the device label live in `account.redb`, sealed under a key derived
+//! from the vault's data key (`Backing::Sealed`), so they exist only while unlocked. A legacy
+//! profile has no data key and keeps `state.json` / `calls.json` (`Backing::Json`) until converted.
 
 use std::collections::HashSet;
 use std::fs;
@@ -81,7 +86,7 @@ pub struct State {
     pub availability: AvailabilityState,
 }
 
-/// Most calls kept in `calls.json`; the oldest fall off.
+/// Most calls kept in the call log; the oldest fall off.
 const MAX_HISTORY: usize = 500;
 
 /// One finished call, as the UI lists it. `reason` is one of the stable end reasons in
@@ -105,16 +110,142 @@ pub struct CallRecord {
     pub missed: bool,
 }
 
-/// The call log, newest first, in `calls.json`. Writes are serialised and ordered like state's.
-#[derive(Default)]
+/// Where state and the call log are written.
+#[derive(Clone)]
+pub enum Backing {
+    /// Pre-vault install: `state.json` / `calls.json` in the account dir.
+    Json(Store),
+    /// `account.redb`, every value sealed under the account key.
+    Sealed(storage::Sealed),
+}
+
+const STATE_KEY: &str = "state";
+const CALLS_KEY: &str = "calls";
+const LABEL_KEY: &str = "device_label";
+const ACCOUNT_KEY_DOMAIN: &str = "tinline/account-store/v1";
+
+/// Opens (creating) the account's sealed store.
+pub fn open_sealed(dir: &Path, dek: &[u8; 32]) -> Result<storage::Sealed, Error> {
+    let path = dir.join("account.redb");
+    // A previous owner of the file (a task of an account just left) may still hold it for a moment.
+    let mut tries = 0;
+    let db = loop {
+        match storage::Store::open(&path) {
+            Ok(db) => break db,
+            Err(e) if tries >= 20 => return Err(Error::Io(e.to_string())),
+            Err(_) => {
+                tries += 1;
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        }
+    };
+    set_private(&path);
+    Ok(storage::Sealed::new(db, blake3::derive_key(ACCOUNT_KEY_DOMAIN, dek)))
+}
+
+fn io(e: storage::StorageError) -> Error {
+    Error::Io(e.to_string())
+}
+
+impl Backing {
+    pub fn save_state(&self, s: &State) -> Result<(), Error> {
+        match self {
+            Backing::Json(store) => store.save_state(s),
+            Backing::Sealed(db) => db.put(STATE_KEY, &zeroizing_json(s)?).map_err(io),
+        }
+    }
+
+    pub fn save_calls(&self, calls: &[CallRecord]) -> Result<(), Error> {
+        match self {
+            Backing::Json(store) => store.save_calls(calls),
+            Backing::Sealed(db) => db.put(CALLS_KEY, &zeroizing_json(&calls)?).map_err(io),
+        }
+    }
+}
+
+fn zeroizing_json<T: Serialize + ?Sized>(v: &T) -> Result<zeroize::Zeroizing<Vec<u8>>, Error> {
+    Ok(zeroize::Zeroizing::new(serde_json::to_vec(v)?))
+}
+
+/// What an unlock found in the account's sealed store.
+pub struct Loaded {
+    pub state: State,
+    pub calls: Vec<CallRecord>,
+    pub device_label: Option<String>,
+}
+
+/// Opens the sealed store of the account in `store`'s dir. First unlock after a migration or
+/// a legacy conversion also imports `state.json` / `calls.json`: both land in one transaction,
+/// and only then are the JSON files (and their `.corrupt` / `.tmp` leftovers) scrubbed.
+/// Anything that fails leaves the JSON in place. A record that does not open is an error, never
+/// an empty state.
+pub fn load_sealed(store: &Store, dek: &[u8; 32]) -> Result<(storage::Sealed, Loaded), Error> {
+    let db = open_sealed(store.dir(), dek)?;
+    let mut ops = Vec::new();
+    if db.get(STATE_KEY).map_err(io)?.is_none() && store.dir().join("state.json").exists() {
+        ops.push(db.put_op(STATE_KEY, &zeroizing_json(&store.state()?)?).map_err(io)?);
+    }
+    if db.get(CALLS_KEY).map_err(io)?.is_none() && store.dir().join("calls.json").exists() {
+        ops.push(db.put_op(CALLS_KEY, &zeroizing_json(&store.calls()?)?).map_err(io)?);
+    }
+    if !ops.is_empty() {
+        db.apply(&ops).map_err(io)?;
+    }
+    store.remove_json_state();
+    let state = match db.get(STATE_KEY).map_err(io)? {
+        Some(b) => serde_json::from_slice(&b)?,
+        None => State::default(),
+    };
+    let calls = match db.get(CALLS_KEY).map_err(io)? {
+        Some(b) => serde_json::from_slice(&b)?,
+        None => Vec::new(),
+    };
+    let device_label = db.get(LABEL_KEY).map_err(io)?.and_then(|b| String::from_utf8(b).ok());
+    Ok((db, Loaded { state, calls, device_label }))
+}
+
+/// Seals the in-memory state and call log into a new store, e.g. when a legacy profile gets its
+/// data key, and scrubs the JSON they came from.
+pub fn seal_into(store: &Store, dek: &[u8; 32], state: &State, calls: &[CallRecord], label: Option<&str>) -> Result<storage::Sealed, Error> {
+    let db = open_sealed(store.dir(), dek)?;
+    let mut ops = vec![
+        db.put_op(STATE_KEY, &zeroizing_json(state)?).map_err(io)?,
+        db.put_op(CALLS_KEY, &zeroizing_json(&calls)?).map_err(io)?,
+    ];
+    if let Some(l) = label {
+        ops.push(db.put_op(LABEL_KEY, l.as_bytes()).map_err(io)?);
+    }
+    db.apply(&ops).map_err(io)?;
+    store.remove_json_state();
+    Ok(db)
+}
+
+pub fn save_label(db: &storage::Sealed, label: &str) -> Result<(), Error> {
+    db.put(LABEL_KEY, label.as_bytes()).map_err(io)
+}
+
+/// The call log, newest first. Writes are serialised and ordered like state's. One per unlocked
+/// account, owning that account's backing, so a task that outlives a switch can only ever write
+/// to the account it started under.
 pub struct History {
     calls: parking_lot::Mutex<Vec<CallRecord>>,
     writing: parking_lot::Mutex<()>,
+    backing: parking_lot::Mutex<Option<Backing>>,
 }
 
 impl History {
-    pub fn new(calls: Vec<CallRecord>) -> Self {
-        Self { calls: parking_lot::Mutex::new(calls), writing: Default::default() }
+    pub fn new(calls: Vec<CallRecord>, backing: Option<Backing>) -> Self {
+        Self { calls: parking_lot::Mutex::new(calls), writing: Default::default(), backing: parking_lot::Mutex::new(backing) }
+    }
+
+    /// Nothing to show and nowhere to write: while locked, or before an identity exists.
+    pub fn empty() -> Self {
+        Self::new(Vec::new(), None)
+    }
+
+    /// For an identity that was committed after it started collecting records.
+    pub fn attach(&self, backing: Backing) {
+        *self.backing.lock() = Some(backing);
     }
 
     pub fn push(&self, rec: CallRecord) {
@@ -133,10 +264,18 @@ impl History {
         self.calls.lock().retain(|r| r.peer_did != did);
     }
 
-    pub fn save(&self, store: &Store) -> Result<(), Error> {
+    pub fn snapshot(&self) -> Vec<CallRecord> {
+        self.calls.lock().clone()
+    }
+
+    /// Without a backing (not yet committed) there is nothing to write yet.
+    pub fn save(&self) -> Result<(), Error> {
         let _w = self.writing.lock();
         let snapshot = self.calls.lock().clone();
-        store.save_calls(&snapshot)
+        match self.backing.lock().clone() {
+            Some(b) => b.save_calls(&snapshot),
+            None => Ok(()),
+        }
     }
 }
 
@@ -188,30 +327,28 @@ impl Store {
         }
     }
 
+    /// The JSON state files and their leftovers, once their content is sealed. Overwritten with
+    /// zeros first (best effort: a copy-on-write filesystem or flash wear-levelling may keep old
+    /// blocks).
+    pub fn remove_json_state(&self) {
+        for name in ["state.json", "calls.json", "state.json.corrupt", "calls.json.corrupt", "state.tmp", "calls.tmp"] {
+            scrub_remove(&self.dir.join(name));
+        }
+    }
+
     /// After the legacy clear-text profile was converted: nothing of it may linger.
     pub fn remove_legacy_leftovers(&self) {
         for name in ["profile.json.bak", "profile.bak", "profile.tmp"] {
-            let _ = fs::remove_file(self.dir.join(name));
+            scrub_remove(&self.dir.join(name));
         }
     }
 
     pub fn profile(&self) -> Result<Option<Disk>, Error> {
-        let Some(v): Option<serde_json::Value> = read(&self.dir.join("profile.json"))? else {
-            return Ok(None);
-        };
-        if v.get("mnemonic").is_some() {
-            Ok(Some(Disk::Legacy(serde_json::from_value(v)?)))
-        } else {
-            let p: ProfileV2 = serde_json::from_value(v)?;
-            if p.version != 2 {
-                return Err(Error::Io(format!("unknown profile version {}", p.version)));
-            }
-            Ok(Some(Disk::V2(p)))
-        }
+        read_profile(&self.dir)
     }
 
     pub fn save_profile(&self, p: &Disk) -> Result<(), Error> {
-        let path = self.dir.join("profile.json");
+        let path = self.dir.join("account.json");
         match p {
             Disk::V2(p) => write(&path, p),
             Disk::Legacy(p) => write(&path, p),
@@ -220,7 +357,7 @@ impl Store {
 
     /// A state file that does not parse (power loss mid-write on a filesystem that reordered
     /// it) must not brick the app: it is set aside as `state.json.corrupt` and we start from
-    /// empty state. Contacts are lost then, but the identity in `profile.json` is not. An IO
+    /// empty state. Contacts are lost then, but the identity in `account.json` is not. An IO
     /// error (permissions, a flaky disk) is returned instead: the file may be fine.
     pub fn state(&self) -> Result<State, Error> {
         let path = self.dir.join("state.json");
@@ -266,6 +403,49 @@ impl Store {
     }
 }
 
+/// The account dir's `account.json`, either shape.
+pub fn read_profile(dir: &Path) -> Result<Option<Disk>, Error> {
+    read_disk(&dir.join("account.json"))
+}
+
+/// A profile file of either shape (`profile.json` of the single-account layout included).
+pub fn read_disk(path: &Path) -> Result<Option<Disk>, Error> {
+    let Some(v): Option<serde_json::Value> = read(path)? else {
+        return Ok(None);
+    };
+    if v.get("mnemonic").is_some() {
+        Ok(Some(Disk::Legacy(serde_json::from_value(v)?)))
+    } else {
+        let p: ProfileV2 = serde_json::from_value(v)?;
+        if p.version != 2 {
+            return Err(Error::Io(format!("unknown profile version {}", p.version)));
+        }
+        Ok(Some(Disk::V2(p)))
+    }
+}
+
+fn scrub_remove(path: &Path) {
+    use std::io::Write;
+    if let Ok(meta) = fs::metadata(path)
+        && meta.is_file()
+        && let Ok(mut f) = fs::OpenOptions::new().write(true).open(path)
+    {
+        let _ = f.write_all(&vec![0u8; meta.len() as usize]);
+        let _ = f.sync_all();
+    }
+    let _ = fs::remove_file(path);
+}
+
+pub(crate) fn set_private(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
+    }
+    #[cfg(not(unix))]
+    let _ = path;
+}
+
 fn read<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, Error> {
     match fs::read(path) {
         Ok(bytes) => Ok(Some(serde_json::from_slice(&bytes)?)),
@@ -276,7 +456,7 @@ fn read<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, Error> {
 
 /// Write to a temp file, fsync it, rename over the old one, fsync the directory: after a
 /// crash or power cut the file is either the old version or the new one, never a torn mix.
-/// Matters most for `profile.json`, which holds the recovery phrase and device key.
+/// Matters most for `account.json`, which holds the recovery phrase and device key.
 fn write<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> {
     use std::io::Write;
     let tmp = path.with_extension("tmp");
@@ -351,7 +531,7 @@ mod tests {
     fn history_is_capped_newest_first_and_private() {
         let dir = tmp("calls");
         let store = Store::open(&dir).unwrap();
-        let h = History::new(store.calls().unwrap());
+        let h = History::new(store.calls().unwrap(), Some(Backing::Json(store.clone())));
         let rec = |i: usize, did: &str| CallRecord {
             call_id: i.to_string(),
             peer_did: did.into(),
@@ -366,8 +546,8 @@ mod tests {
         for i in 0..MAX_HISTORY + 5 {
             h.push(rec(i, if i % 2 == 0 { "a" } else { "b" }));
         }
-        h.save(&store).unwrap();
-        let back = History::new(store.calls().unwrap());
+        h.save().unwrap();
+        let back = History::new(store.calls().unwrap(), None);
         assert_eq!(back.list(None, 10_000).len(), MAX_HISTORY);
         assert_eq!(back.list(None, 1)[0].call_id, (MAX_HISTORY + 4).to_string());
         assert!(back.list(Some("a"), 10_000).iter().all(|r| r.peer_did == "a"));

@@ -136,7 +136,11 @@ impl Inner {
             return;
         }
         let key = blake3::derive_key("tinline chat store v1", &dek);
-        let dir = self.store.dir().to_path_buf();
+        // Nothing to open before the account has a directory (an uncommitted identity).
+        let dir = match self.shared.lock().acct.as_ref() {
+            Some(a) => a.store.dir().to_path_buf(),
+            None => return,
+        };
         let db = match Db::open(dir.join("chat.redb")) {
             Ok(d) => d,
             Err(e) => {
@@ -379,7 +383,7 @@ impl Inner {
             writer.send(&self.auth_msg(me, grant)).await?;
             (did, hint)
         };
-        self.note_device(&did, remote, hint);
+        self.note_device(me.epoch, &did, remote, hint);
         let (tx, rx) = mpsc::unbounded_channel();
         let my_dev = me.device;
         let sess = Arc::new(Session {
