@@ -117,6 +117,8 @@ fun endReasonText(reason: String, peerName: String, incoming: Boolean = false): 
         "unreachable" -> "Couldn\u2019t reach $who"
         "connection_lost" -> "Connection lost"
         "unavailable" -> "Turned away while you were not available"
+        "answered_elsewhere" -> "Answered on another device"
+        "declined_elsewhere" -> "Declined on another device"
         else -> "Call ended"
     }
 }

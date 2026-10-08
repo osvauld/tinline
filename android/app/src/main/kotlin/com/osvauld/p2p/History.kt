@@ -92,6 +92,8 @@ fun CallRecord.toRecent(contacts: Map<String, Contact>, now: Long): RecentCall {
             "cancelled" -> "cancelled"
             "no_answer" -> "no answer"
             "busy" -> "busy"
+            "answered_elsewhere" -> "answered on another device"
+            "declined_elsewhere" -> "declined on another device"
             else -> null
         }
         else -> null

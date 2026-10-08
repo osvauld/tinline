@@ -38,6 +38,8 @@ pub fn text(reason: &str, name: &str) -> Option<String> {
         "connection_lost" => "Connection lost".into(),
         "busy" => format!("{name} is busy"),
         "unavailable" => "Turned away while unavailable".into(),
+        "answered_elsewhere" => "Answered on another device".into(),
+        "declined_elsewhere" => "Declined on another device".into(),
         "superseded" => return None,
         // Tokens from a newer core: say something rather than nothing.
         _ => "Call ended".into(),
@@ -63,6 +65,8 @@ pub fn history(reason: &str, incoming: bool, missed: bool, secs: u32, name: &str
         "unavailable" => "Not available".into(),
         "no_answer" => "No answer".into(),
         "cancelled" => "Cancelled".into(),
+        "answered_elsewhere" => "Answered on another device".into(),
+        "declined_elsewhere" => "Declined on another device".into(),
         _ if secs > 0 => format!("{} \u{b7} {}", if incoming { "Incoming" } else { "Outgoing" }, dur(secs)),
         r => text(r, name).unwrap_or_else(|| "Call".into()),
     }
@@ -81,6 +85,8 @@ mod tests {
         assert_eq!(text("unreachable", "Ann").as_deref(), Some("Couldn\u{2019}t reach Ann"));
         assert_eq!(text("connection_lost", "Ann").as_deref(), Some("Connection lost"));
         assert_eq!(text("superseded", "Ann"), None);
+        assert_eq!(text("answered_elsewhere", "Ann").as_deref(), Some("Answered on another device"));
+        assert_eq!(history("declined_elsewhere", true, false, 0, "Ann"), "Declined on another device");
     }
 
     #[test]
