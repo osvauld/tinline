@@ -80,7 +80,7 @@
       "y": 12900
     },
     "Flow.dc.html": {
-      "h": 1084,
+      "h": 1290,
       "title": "Flow overview",
       "w": 1880,
       "x": 1840,
@@ -103,14 +103,14 @@
     "AndroidChatFiles.dc.html": {
       "x": 0,
       "y": 17560,
-      "w": 4600,
+      "w": 2348,
       "h": 1060,
       "title": "Chat · Android · Files & voice messages"
     },
     "DesktopChat.dc.html": {
       "x": 0,
       "y": 18740,
-      "w": 7404,
+      "w": 2344,
       "h": 880,
       "title": "Chat · Desktop · Conversation, offline, drop, recording"
     },

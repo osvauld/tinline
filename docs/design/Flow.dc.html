@@ -26,7 +26,7 @@ body{margin:0}
 .br{font-size:12px;color:#8A5A00;font-weight:600;padding:0 8px}
 </style>
 </helmet>
-<div class="root" style="width:1880px;height:1084px;box-sizing:border-box;padding:56px;background:#F5F6F3;display:flex;flex-direction:column;gap:36px">
+<div class="root" style="width:1880px;height:1290px;box-sizing:border-box;padding:56px;background:#F5F6F3;display:flex;flex-direction:column;gap:36px">
 <div style="display:flex;justify-content:space-between;align-items:flex-end">
 <div>
 <h1 style="margin:0;font-size:34px;font-weight:700;letter-spacing:-0.02em">From install to first call</h1>
@@ -41,8 +41,8 @@ body{margin:0}
 
 <div class="lane">
 <div class="lname">1 · First run<span>Android ~90 s, desktop skips permissions</span></div>
-<div class="st"><b>Welcome</b><i>One line + “Not for emergency calls”</i></div><div class="cn"></div>
-<div class="st"><b>Your name</b><i>Shown to people you add</i></div><div class="cn"></div>
+<div class="st"><b>Welcome</b><i>Get started · Link to an existing account · Restore</i></div><div class="cn"></div>
+<div class="st"><b>Name + device name</b><i>“Maya” · “Personal phone”</i></div><div class="cn"></div>
 <div class="st"><b>Passphrase</b><i>Optional · locks this device’s copy of your key</i></div><div class="cn"></div>
 <div class="st w"><b>Recovery phrase</b><i>24 words, write them down</i></div><div class="cn"></div>
 <div class="st"><b>Terms & privacy</b><i>One checkbox</i></div><div class="cn"></div>
@@ -102,13 +102,25 @@ body{margin:0}
 <div class="st k"><b>Home</b><i>Contacts + recents</i></div>
 <div class="br" style="color:#B3261E">forgot →</div>
 <div class="st e"><b>Restore</b><i>Type 24 words</i></div><div class="cn"></div>
-<div class="st"><b>New passphrase</b><i>Contacts come back from backup?*</i></div><div class="cn"></div>
-<div class="st k"><b>Home</b><i>Same identity, same contacts can call you</i></div>
+<div class="st"><b>Name this device</b><i>+ optional passphrase</i></div><div class="cn"></div>
+<div class="st k"><b>Link to another device</b><i>Contacts, chats, history come back</i></div>
+<div class="br" style="color:#B3261E">none left →</div>
+<div class="st e"><b>Start empty</b><i>Same identity · add people again</i></div>
 </div>
-<p style="margin:0;font-size:12px;color:#4D5853">* Open question: restoring from the phrase recovers the identity; whether the contact list is recoverable depends on how contacts are stored — see product questions.</p>
+<div class="lane">
+<div class="lname">6 · Same account, more devices<span>Phone + desktop, both ring</span></div>
+<div class="st"><b>New device</b><i>“Link to an existing account” · shows QR</i></div><div class="cn"></div>
+<div class="st"><b>Existing device scans</b><i>Settings › Link a device</i></div><div class="cn"></div>
+<div class="st w"><b>Codes match + approve</b><i>6 digits on both · passphrase</i></div><div class="cn"></div>
+<div class="st k"><b>Syncing</b><i>Contacts, chats, history, “You”</i></div><div class="cn"></div>
+<div class="st k"><b>Calls ring everywhere</b><i>First answer wins · decline ends all</i></div>
+<div class="br" style="color:#B3261E">lost device →</div>
+<div class="st e"><b>Unlink</b><i>Stops sync + ringing · not a remote wipe</i></div>
+</div>
+<p style="margin:0;font-size:12px;color:#4D5853">Restoring from the phrase brings back the identity only. Contacts, chats and history live on your devices, so linking another device is how they come back (docs/design/device-linking.md). Many accounts per device; one is online at a time.</p>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1880,"height":1084}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1880,"height":1290}}'>
 class Component extends DCLogic {
   renderVals() { return {}; }
 }
