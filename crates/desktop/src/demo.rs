@@ -32,6 +32,12 @@ impl App {
             missed,
         };
         self.profile_name = "Maya Fernandes".into();
+        self.device_label = "Work desktop".into();
+        self.device_edit = self.device_label.clone();
+        self.accounts = vec![
+            AccountSummary { did: "did:key:z6MkMaya".into(), name: "Maya Fernandes".into(), current: true, has_passphrase: false },
+            AccountSummary { did: "did:key:z6MkWork".into(), name: "Maya \u{b7} Work".into(), current: false, has_passphrase: true },
+        ];
         self.name_edit = self.profile_name.clone();
         self.lock = LockState::Unlocked;
         self.status = NodeStatus { started: true, online: true, ..self.status.clone() };
@@ -125,17 +131,43 @@ impl App {
                 self.screen = Screen::Unlock;
                 self.notice = Some("That passphrase is not right. Try again.".into());
             }
+            "accounts-menu" | "switch-confirm" => {
+                self.acct_menu = true;
+                if name == "switch-confirm" {
+                    self.switch_ask = Some(self.accounts[1].did.clone());
+                }
+            }
+            "name-device" => {
+                self.screen = Screen::NameDevice;
+                self.device_in = "Work desktop".into();
+            }
+            "key-failed" => {
+                self.screen = Screen::KeyFailed;
+                self.key_fail = Some("no secure keyring is available".into());
+            }
+            "onboarding-nokeyring" => {
+                self.screen = Screen::Onboarding;
+                self.name_in = "Maya".into();
+                self.keyring_ok = false;
+            }
             "onboarding" => {
                 self.screen = Screen::Onboarding;
                 self.name_in = "Maya".into();
             }
-            "settings" | "settings-audio" | "settings-security" => {
+            "settings" | "settings-audio" | "settings-security" | "settings-account" | "settings-devices" | "settings-legacy-key" => {
                 self.screen = Screen::Settings;
                 self.settings_tab = match name {
-                    "settings-audio" => 2,
-                    "settings-security" => 3,
-                    _ => 1,
+                    "settings-account" => 0,
+                    "settings-devices" => 1,
+                    "settings-audio" => 3,
+                    "settings-security" | "settings-legacy-key" => 4,
+                    _ => 2,
                 };
+                if name == "settings-legacy-key" {
+                    self.file_key = true;
+                    self.key_home = "Your key is kept in a plain file in Tinline\u{2019}s data folder. Anyone who copies that folder can open your account. Add a passphrase to protect it; the file is then deleted.";
+                    self.has_pass = false;
+                }
                 self.devices = (
                     vec!["Built-in Audio Analog Stereo".into(), "USB Headset".into()],
                     vec!["Built-in Audio Analog Stereo".into(), "USB Headset".into()],

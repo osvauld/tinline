@@ -19,6 +19,7 @@ pub(crate) use tlog;
 
 mod app;
 mod audio;
+mod flow;
 mod keystore;
 mod raise;
 mod media;
@@ -154,11 +155,17 @@ fn default_data_dir() -> PathBuf {
     new
 }
 
+/// Whether a data root already holds an identity: the old single `profile.json`, or the account
+/// layout (`accounts/` directory or the `current` pointer) that core migrates it into.
+fn has_identity_files(root: &std::path::Path) -> bool {
+    root.join("profile.json").exists() || root.join("accounts").is_dir() || root.join("current").exists()
+}
+
 /// First start after the rename: moves the old data directory to the new one. Only when the old
 /// one has an identity and the new one has none, so an existing install never loses its keys and a
 /// new install never touches anything. Returns whether it moved.
 fn migrate_data_dir(old: &std::path::Path, new: &std::path::Path) -> std::io::Result<bool> {
-    if old == new || !old.join("profile.json").exists() || new.join("profile.json").exists() {
+    if old == new || !has_identity_files(old) || has_identity_files(new) {
         return Ok(false);
     }
     // An empty directory the new version created already is fine to replace; anything else is not.
@@ -260,8 +267,10 @@ fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     audio.attach(&node);
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
+    // The single pre-accounts key entry belongs to the account core just migrated.
+    keystore::migrate_legacy(keystore::system(), &data, &node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
-    keystore::auto_unlock(&node, &data);
+    keystore::auto_unlock(keystore::system(), &data, &node);
     let notice_tx = tx.clone();
     audio.set_notice(move |m| {
         let _ = notice_tx.send(Ev::AudioNotice(m));

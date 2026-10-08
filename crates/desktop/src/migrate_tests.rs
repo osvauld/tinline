@@ -41,3 +41,27 @@ fn fresh_install_touches_nothing() {
     assert!(!migrate_data_dir(&old, &new).unwrap());
     assert!(!new.exists());
 }
+
+#[test]
+fn migration_treats_the_account_layout_as_an_identity() {
+    // An old root that core already migrated in place still moves as a whole.
+    let (old, new) = (tmp("old4").join("data"), tmp("new4").join("data"));
+    std::fs::create_dir_all(old.join("accounts/abc")).unwrap();
+    std::fs::write(old.join("accounts/abc/account.json"), b"{}").unwrap();
+    std::fs::write(old.join("current"), b"abc").unwrap();
+    assert!(migrate_data_dir(&old, &new).unwrap());
+    assert!(new.join("accounts/abc/account.json").exists());
+    assert!(!old.exists());
+}
+
+#[test]
+fn migration_never_overwrites_an_existing_account_layout() {
+    let (old, new) = (tmp("old5").join("data"), tmp("new5").join("data"));
+    std::fs::create_dir_all(&old).unwrap();
+    std::fs::write(old.join("profile.json"), b"{}").unwrap();
+    std::fs::create_dir_all(new.join("accounts/xyz")).unwrap();
+    std::fs::write(new.join("current"), b"xyz").unwrap();
+    assert!(!migrate_data_dir(&old, &new).unwrap());
+    assert!(old.join("profile.json").exists());
+    assert!(new.join("accounts/xyz").is_dir());
+}

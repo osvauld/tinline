@@ -19,12 +19,14 @@ use std::time::{Duration, Instant};
 use iced::widget::operation;
 use iced::{clipboard, system, theme, window, Size, Subscription, Task};
 use p2pcore::{
-    Availability, CallInfo, CallRecord, CallState, CallStats, Contact, Error, LockState, Node, NodeStatus,
+    AccountSummary, Availability, CallInfo, CallRecord, CallState, CallStats, Contact, Error, LockState, Node, NodeStatus,
 };
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::audio;
+use crate::flow::{self, SetupErr};
+use crate::keystore;
 use crate::reason::{self, End};
 use crate::tray::TrayCmd;
 use crate::ui;
@@ -58,11 +60,21 @@ struct Settings {
     tone: bool,
 }
 
-#[derive(PartialEq, Clone, Copy)]
+/// Onboarding in progress between creating the identity and the first Home.
+struct Setup {
+    /// The 24 words, to show once the setup is complete (not for a restore).
+    phrase: Option<Zeroizing<String>>,
+}
+
+#[derive(PartialEq, Clone, Copy, Debug)]
 enum Screen {
     Onboarding,
     Unlock,
     SetPass,
+    /// Last onboarding step: name this computer.
+    NameDevice,
+    /// The key could not be saved; the identity is still only in memory.
+    KeyFailed,
     Phrase,
     Home,
     AddContact,
@@ -138,8 +150,27 @@ struct App {
     has_pass: bool,
     /// Settings text about where the key lives when there is no passphrase.
     key_home: &'static str,
-    /// Restoring over an existing (locked) identity, from the Unlock screen.
-    replace: bool,
+    /// The key still sits in the old plaintext `unlock.key` (existing installs): Settings warns.
+    file_key: bool,
+    /// Whether the OS keyring can keep a key. When it cannot, a passphrase is required.
+    keyring_ok: bool,
+    /// Every account on this device (clear data only), cached for `view`.
+    accounts: Vec<AccountSummary>,
+    acct_menu: bool,
+    /// Account the user is being asked to confirm switching to.
+    switch_ask: Option<String>,
+    /// Account the user is being asked to confirm removing.
+    remove_ask: Option<String>,
+    /// The account that was current when "new account" / "restore" started; Cancel goes back to it.
+    return_to: Option<String>,
+    /// Restore found the account already on this computer.
+    exists_hint: bool,
+    /// An identity created/restored in this session that is still in onboarding.
+    setup: Option<Setup>,
+    device_in: String,
+    device_label: String,
+    device_edit: String,
+    key_fail: Option<String>,
     revealed: Option<Zeroizing<String>>,
     /// When the phrase was revealed; it hides itself after `REVEAL_SECS`.
     revealed_at: Option<Instant>,
@@ -207,12 +238,37 @@ enum Msg {
     OldIn(String),
     Create,
     Created(Result<String, String>),
+    DeviceIn(String),
+    DeviceGo,
+    Finished(Result<(), SetupErr>),
+    RetryKey,
+    KeyFailPass,
+    AcctMenu,
+    SwitchAsk(String),
+    /// Switch without the sidebar confirmation (lock screens, where the choice is the click).
+    SwitchNow(String),
+    SwitchCancel,
+    SwitchGo,
+    Switched(Result<bool, String>),
+    /// Start a new account (`true`: restore from a phrase).
+    NewAccount(bool),
+    NewAccountBegun(Result<(), String>, bool),
+    CancelNew,
+    DeviceEdit(String),
+    SaveDevice,
+    DeviceSaved(Result<String, String>),
+    RemoveAsk(String),
+    RemoveCancel,
+    RemoveGo(String),
+    Removed(Result<String, String>),
+    KeyringProbed(bool),
     ToggleRestore,
     TogglePhraseShow,
     Devices((Vec<String>, Vec<String>)),
     PhraseChanged(String),
     Restore,
-    Restored(Result<NodeBox, String>),
+    /// Err carries (message, the account already exists here).
+    Restored(Result<(), (String, bool)>),
     Unlock,
     Unlocked(Result<(), String>),
     GoRestore,
@@ -227,7 +283,6 @@ enum Msg {
     Revealed(Result<String, String>),
     ToggleChange,
     HidePhrase,
-    BackToUnlock,
     PhraseSaved,
     Started(Result<(), String>),
     Ticket(Result<String, String>),
@@ -280,15 +335,6 @@ enum Msg {
     OfferDismiss,
     /// Test-hooks: the window's pixels, written to P2P_SHOT.
     Shot(window::Screenshot),
-}
-
-/// A freshly built node, handed through the (Clone + Debug) message type.
-#[derive(Clone)]
-struct NodeBox(Arc<std::sync::Mutex<Option<Arc<Node>>>>);
-impl std::fmt::Debug for NodeBox {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Node")
-    }
 }
 
 /// `Ev` carries non-Clone data from the core; Debug/Clone for the message type go through here.
@@ -379,32 +425,105 @@ fn s<E: ToString>(e: E) -> String {
 fn friendly(e: Error) -> String {
     match e {
         Error::WrongPassphrase => "That passphrase is not right. Try again.".into(),
-        Error::WeakPassphrase => "Type a passphrase, or leave it empty to skip it.".into(),
+        Error::WeakPassphrase => "Type a passphrase first.".into(),
         Error::BadPhrase => "That recovery phrase is not valid. Check the 24 words.".into(),
         Error::Locked => "Unlock first.".into(),
         Error::HaveIdentity => "An identity already exists here.".into(),
+        Error::AccountExists => "That account is already on this computer.".into(),
+        Error::InCall => "You\u{2019}re on a call. Hang up before switching accounts.".into(),
         e => e.to_string(),
     }
 }
 
+/// Why a passphrase is required on a computer without a secure keyring.
+const NO_KEYRING: &str = "This computer has no secure keyring, so Tinline needs a passphrase to protect your account.";
+
 /// What Settings says about the stored key; empty with a passphrase (nothing is stored then).
-fn key_home(has_pass: bool) -> &'static str {
+fn key_home(node: &Node, has_pass: bool) -> (&'static str, bool) {
     if has_pass {
-        return "";
+        return ("", false);
     }
-    match crate::keystore::location(&INIT.get().unwrap().data) {
-        Some(crate::keystore::Where::Keyring) => "Your key is kept in this computer\u{2019}s keyring, so Tinline opens without asking.",
-        Some(crate::keystore::Where::File) => {
-            "No system keyring was found, so your key is kept in a file in Tinline\u{2019}s data folder, readable only by you. A passphrase protects it better."
-        }
-        None => "",
+    let Some(did) = keystore::current_did(node) else { return ("", false) };
+    match keystore::location(keystore::system(), &INIT.get().unwrap().data, &did) {
+        Some(keystore::Where::Keyring) => ("Your key is kept in this computer\u{2019}s keyring, so Tinline opens without asking.", false),
+        Some(keystore::Where::File) => (
+            "Your key is kept in a plain file in Tinline\u{2019}s data folder. Anyone who copies that folder can open your account. Add a passphrase to protect it; the file is then deleted.",
+            true,
+        ),
+        None => ("", false),
     }
 }
 
 impl App {
     fn refresh_pass(&mut self) {
         self.has_pass = self.node.has_passphrase();
-        self.key_home = key_home(self.has_pass);
+        (self.key_home, self.file_key) = key_home(&self.node, self.has_pass);
+    }
+
+    /// Re-reads what the account UI shows (accounts list, device name, passphrase state).
+    fn refresh_accounts(&mut self) {
+        if self.demo {
+            return;
+        }
+        self.accounts = self.node.accounts();
+        self.device_label = self.node.device_label().unwrap_or_default();
+    }
+
+    /// Everything tied to the account that was in memory is dropped when another one is selected.
+    fn reset_account_state(&mut self) {
+        self.leave_chat();
+        let tab = self.chat.tab;
+        #[cfg(feature = "test-hooks")]
+        let fake = self.chat.fake.take();
+        self.chat = ChatState::default();
+        self.chat.tab = tab;
+        #[cfg(feature = "test-hooks")]
+        {
+            self.chat.fake = fake;
+        }
+        self.sel = None;
+        self.detail = Detail::View;
+        self.search.clear();
+        self.safety = None;
+        self.ended = None;
+        self.waiting = None;
+        self.takeover = None;
+        self.detail_calls.clear();
+        self.add_phase = AddPhase::Idle;
+        self.ticket = None;
+        self.qr = None;
+        self.fetching = false;
+        self.avail_open = false;
+        self.acct_menu = false;
+        self.switch_ask = None;
+        self.remove_ask = None;
+        self.hide_phrase();
+        self.change_form = false;
+        self.pass_in.zeroize();
+        self.old_in.zeroize();
+        self.refresh_pass();
+        self.refresh_identity();
+        self.refresh_accounts();
+        self.contacts = self.node.contacts();
+        self.recents = self.node.recent_calls(RECENTS);
+        self.avail = self.node.availability();
+        self.name_edit = self.profile_name.clone();
+        self.device_edit = self.device_label.clone();
+    }
+
+    /// Identity exists (in memory until the key is saved): ask for this computer's name.
+    fn begin_name_device(&mut self, phrase: Option<Zeroizing<String>>) {
+        self.setup = Some(Setup { phrase });
+        if self.device_in.trim().is_empty() {
+            self.device_in = flow::suggest_label();
+        }
+        self.notice = None;
+        self.screen = Screen::NameDevice;
+    }
+
+    fn probe_keyring(&self) -> Task<Msg> {
+        let data = INIT.get().unwrap().data.clone();
+        blocking(move || keystore::available(keystore::system(), &data), Msg::KeyringProbed)
     }
 
     fn boot() -> (App, Task<Msg>) {
@@ -447,8 +566,20 @@ impl App {
             pass_in: Zeroizing::default(),
             old_in: Zeroizing::default(),
             has_pass: node.has_passphrase(),
-            key_home: key_home(node.has_passphrase()),
-            replace: false,
+            key_home: key_home(&node, node.has_passphrase()).0,
+            file_key: key_home(&node, node.has_passphrase()).1,
+            keyring_ok: true,
+            accounts: node.accounts(),
+            acct_menu: false,
+            switch_ask: None,
+            remove_ask: None,
+            return_to: None,
+            exists_hint: false,
+            setup: None,
+            device_in: String::new(),
+            device_label: node.device_label().unwrap_or_default(),
+            device_edit: node.device_label().unwrap_or_default(),
+            key_fail: None,
             revealed: None,
             revealed_at: None,
             reveal_form: false,
@@ -497,6 +628,9 @@ impl App {
         }
         if !init.hidden {
             tasks.push(app.open_window(false));
+        }
+        if app.screen == Screen::Onboarding {
+            tasks.push(app.probe_keyring());
         }
         #[cfg(feature = "test-hooks")]
         if crate::test_env("P2P_CHAT_FAKE").is_some_and(|v| v == "1") {
@@ -722,6 +856,8 @@ impl App {
                 | Msg::PassSet(_)
                 | Msg::PassChanged(_)
                 | Msg::Started(_)
+                | Msg::Switched(_)
+                | Msg::Finished(_)
                 | Msg::Ticket(_)
         );
         let task = self.update_inner(msg);
@@ -828,20 +964,16 @@ impl App {
                 if self.busy {
                     return Task::none();
                 }
+                if self.pass_in.is_empty() && !self.keyring_ok {
+                    self.notice = Some(NO_KEYRING.into());
+                    return Task::none();
+                }
                 self.busy = true;
                 self.notice = Some("Securing your identity...".into());
                 // An empty passphrase means none: the key then lives in the keyring.
                 let pass = take_secret(&mut self.pass_in);
                 let node = self.node.clone();
-                let data = INIT.get().unwrap().data.clone();
-                return blocking(
-                    move || {
-                        let phrase = node.create_identity(name, pass).map_err(friendly)?;
-                        crate::keystore::sync(&node, &data);
-                        Ok(phrase)
-                    },
-                    Msg::Created,
-                );
+                return blocking(move || node.create_identity(name, pass).map_err(friendly), Msg::Created);
             }
             Msg::PassIn(v) => self.pass_in = Zeroizing::new(v),
             Msg::OldIn(v) => self.old_in = Zeroizing::new(v),
@@ -851,13 +983,84 @@ impl App {
                 match r {
                     Ok(p) => {
                         self.refresh_pass();
-                        self.new_phrase = Some(Zeroizing::new(p));
-                        self.screen = Screen::Phrase;
                         self.name_edit = self.name_in.trim().to_string();
+                        self.begin_name_device(Some(Zeroizing::new(p)));
                     }
                     Err(e) => self.notice = Some(e),
                 }
             }
+            Msg::DeviceIn(v) => self.device_in = v,
+            Msg::DeviceGo => {
+                if self.busy {
+                    return Task::none();
+                }
+                let Some(label) = flow::valid_label(&self.device_in) else {
+                    self.notice = Some("Give this computer a name of 1 to 64 characters.".into());
+                    return Task::none();
+                };
+                self.busy = true;
+                self.notice = None;
+                let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
+                return blocking(move || flow::finish_setup(keystore::system(), &data, &node, Some(&label)), Msg::Finished);
+            }
+            Msg::RetryKey => {
+                if self.busy {
+                    return Task::none();
+                }
+                self.busy = true;
+                let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
+                return blocking(move || flow::finish_setup(keystore::system(), &data, &node, None), Msg::Finished);
+            }
+            Msg::KeyFailPass => {
+                if self.busy {
+                    return Task::none();
+                }
+                if self.pass_in.is_empty() {
+                    self.notice = Some(friendly(Error::WeakPassphrase));
+                    return Task::none();
+                }
+                self.busy = true;
+                self.notice = None;
+                let pass = take_secret(&mut self.pass_in);
+                let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
+                return blocking(
+                    move || flow::add_passphrase_instead(keystore::system(), &data, &node, pass).map_err(SetupErr::Other),
+                    Msg::Finished,
+                );
+            }
+            Msg::Finished(r) => {
+                self.busy = false;
+                match r {
+                    Ok(()) => {
+                        self.key_fail = None;
+                        self.notice = None;
+                        self.refresh_pass();
+                        self.refresh_identity();
+                        self.refresh_accounts();
+                        self.name_edit = self.profile_name.clone();
+                        self.device_edit = self.device_label.clone();
+                        self.return_to = None;
+                        match self.setup.take().and_then(|s| s.phrase) {
+                            Some(p) => {
+                                self.new_phrase = Some(p);
+                                self.screen = Screen::Phrase;
+                            }
+                            None => {
+                                self.screen = Screen::Home;
+                                return self.start_node();
+                            }
+                        }
+                    }
+                    Err(SetupErr::KeyNotSaved(e)) => {
+                        eprintln!("keystore: could not store the key: {e}");
+                        self.key_fail = Some(e);
+                        self.pass_in.zeroize();
+                        self.screen = Screen::KeyFailed;
+                    }
+                    Err(SetupErr::Other(e)) => self.notice = Some(e),
+                }
+            }
+            Msg::KeyringProbed(ok) => self.keyring_ok = ok,
             Msg::ToggleRestore => self.restore = !self.restore,
             Msg::PhraseChanged(v) => self.phrase_in = Zeroizing::new(v),
             Msg::TogglePhraseShow => self.show_phrase_in = !self.show_phrase_in,
@@ -870,60 +1073,24 @@ impl App {
                 if self.busy {
                     return Task::none();
                 }
+                if self.pass_in.is_empty() && !self.keyring_ok {
+                    self.notice = Some(NO_KEYRING.into());
+                    return Task::none();
+                }
                 self.busy = true;
+                self.exists_hint = false;
                 self.notice = Some("Restoring...".into());
                 let pass = take_secret(&mut self.pass_in);
-                // The typed phrase stays until the restore succeeds, so a wrong passphrase costs no retyping.
+                // The typed phrase stays until the restore succeeds, so a mistake costs no retyping.
                 let phrase = self.phrase_in.to_string();
-                let (node, replace) = (self.node.clone(), self.replace);
-                let (data, tx, ctl) = {
-                    let i = INIT.get().unwrap();
-                    (i.data.clone(), i.tx.clone(), i.audio.clone())
-                };
-                let old_did = self.node.profile().map(|p| p.did);
+                let node = self.node.clone();
                 return blocking(
                     move || {
-                        if !replace {
-                            node.restore_identity(phrase, name, pass).map_err(friendly)?;
-                            crate::keystore::sync(&node, &data);
-                            return Ok(NodeBox(Arc::new(std::sync::Mutex::new(Some(node)))));
-                        }
-                        // A locked identity is in the way: set its file aside (still encrypted),
-                        // restore into a fresh node, and put the file back if that fails.
-                        let file = data.join("profile.json");
-                        let aside = data.join(format!(
-                            "profile.replaced-{}.json",
-                            std::time::SystemTime::now()
-                                .duration_since(std::time::UNIX_EPOCH)
-                                .map(|d| d.as_secs())
-                                .unwrap_or(0)
-                        ));
-                        std::fs::rename(&file, &aside).map_err(s)?;
-                        let events = Arc::new(crate::Events { tx, audio: ctl.clone() });
-                        let fresh = Node::new(data.to_string_lossy().into(), events)
-                            .and_then(|n| n.restore_identity(phrase, name, pass).map(|_| n))
-                            .map_err(friendly)
-                            .and_then(|n| {
-                                // Contacts in state.json belong to the locked identity.
-                                if old_did.is_some() && n.profile().map(|p| p.did) != old_did {
-                                    return Err("That recovery phrase belongs to a different identity".to_string());
-                                }
-                                Ok(n)
-                            });
-                        match fresh {
-                            Ok(n) => {
-                                ctl.attach(&n);
-                                crate::keystore::sync(&n, &data);
-                                // The new profile is saved; the old one is encrypted under a
-                                // passphrase nobody remembers.
-                                let _ = std::fs::remove_file(&aside);
-                                Ok(NodeBox(Arc::new(std::sync::Mutex::new(Some(n)))))
-                            }
-                            Err(e) => {
-                                let _ = std::fs::rename(&aside, &file);
-                                Err(e)
-                            }
-                        }
+                        node.restore_identity(phrase, name, pass)
+                            .map_err(|e| {
+                                let exists = matches!(e, Error::AccountExists);
+                                (friendly(e), exists)
+                            })
                     },
                     Msg::Restored,
                 );
@@ -931,27 +1098,19 @@ impl App {
             Msg::Restored(r) => {
                 self.busy = false;
                 match r {
-                    Ok(b) => {
+                    Ok(()) => {
                         self.phrase_in.zeroize();
                         self.show_phrase_in = false;
-                        if let Some(n) = b.0.lock().unwrap().take()
-                            && !Arc::ptr_eq(&n, &self.node)
-                        {
-                            n.set_chat_events(Arc::new(crate::ChatBridge(INIT.get().unwrap().tx.clone())));
-                            let old = std::mem::replace(&mut self.node, n);
-                            // Dropping a node tears down its runtime; keep that off the UI loop.
-                            std::thread::spawn(move || drop(old));
-                        }
-                        self.name_edit = self.name_in.trim().to_string();
-                        self.refresh_pass();
-                        self.replace = false;
-                        self.screen = Screen::Home;
                         self.notice = None;
-                        self.ticket = None;
-                        self.qr = None;
-                        return self.start_node();
+                        self.refresh_pass();
+                        self.name_edit = self.name_in.trim().to_string();
+                        self.begin_name_device(None);
                     }
-                    Err(e) => self.notice = Some(e),
+                    Err((e, exists)) => {
+                        self.exists_hint = exists;
+                        self.accounts = self.node.accounts();
+                        self.notice = Some(e);
+                    }
                 }
             }
             Msg::Unlock if !self.has_pass => {
@@ -964,7 +1123,7 @@ impl App {
                 let data = INIT.get().unwrap().data.clone();
                 return blocking(
                     move || {
-                        if crate::keystore::auto_unlock(&node, &data) { Ok(()) } else { Err("Still can\u{2019}t find the key.".to_string()) }
+                        if keystore::auto_unlock(keystore::system(), &data, &node) { Ok(()) } else { Err("Still can\u{2019}t find the key.".to_string()) }
                     },
                     Msg::Unlocked,
                 );
@@ -986,6 +1145,9 @@ impl App {
                         self.screen = Screen::Home;
                         self.notice = None;
                         self.name_edit = self.node.profile().map(|p| p.name).unwrap_or_default();
+                        self.refresh_accounts();
+                        self.device_edit = self.device_label.clone();
+                        self.refresh_pass();
                         return self.start_node();
                     }
                     Err(e) => {
@@ -995,19 +1157,52 @@ impl App {
                     }
                 }
             }
-            Msg::GoRestore => {
-                self.replace = true;
-                self.restore = true;
+            Msg::GoRestore => return self.update(Msg::NewAccount(true)),
+            Msg::NewAccount(restore) => {
+                if self.busy {
+                    return Task::none();
+                }
+                if self.call.is_some() {
+                    self.notice = Some(friendly(Error::InCall));
+                    return Task::none();
+                }
+                self.busy = true;
+                self.acct_menu = false;
                 self.notice = None;
-                self.pass_in.zeroize();
-                self.screen = Screen::Onboarding;
+                // Cancel returns to the account that is selected now.
+                self.return_to = keystore::current_did(&self.node);
+                let node = self.node.clone();
+                return blocking(move || node.begin_new_account().map_err(friendly), move |r| Msg::NewAccountBegun(r, restore));
             }
-            Msg::BackToUnlock => {
-                self.replace = false;
+            Msg::NewAccountBegun(r, restore) => {
+                self.busy = false;
+                match r {
+                    Ok(()) => {
+                        self.reset_account_state();
+                        self.restore = restore;
+                        self.exists_hint = false;
+                        self.name_in.clear();
+                        self.phrase_in.zeroize();
+                        self.notice = None;
+                        self.screen = Screen::Onboarding;
+                        return self.probe_keyring();
+                    }
+                    Err(e) => {
+                        self.return_to = None;
+                        self.notice = Some(e);
+                    }
+                }
+            }
+            Msg::CancelNew => {
                 self.restore = false;
-                self.notice = None;
+                self.phrase_in.zeroize();
                 self.pass_in.zeroize();
-                self.screen = Screen::Unlock;
+                self.notice = None;
+                self.exists_hint = false;
+                if let Some(did) = self.return_to.take() {
+                    self.switch_ask = Some(did);
+                    return self.update(Msg::SwitchGo);
+                }
             }
             Msg::GoSetPass => {
                 self.notice = None;
@@ -1031,14 +1226,20 @@ impl App {
                 self.notice = Some("Securing your identity...".into());
                 let pass = take_secret(&mut self.pass_in);
                 let node = self.node.clone();
-                return blocking(move || node.set_passphrase(None, pass).map_err(friendly), Msg::PassSet);
+                let data = INIT.get().unwrap().data.clone();
+                return blocking(
+                    move || {
+                        node.set_passphrase(None, pass).map_err(friendly)?;
+                        keystore::sync(keystore::system(), &data, &node)
+                    },
+                    Msg::PassSet,
+                );
             }
             Msg::PassSet(r) => {
                 self.busy = false;
                 match r {
                     Ok(()) => {
-                        self.has_pass = true;
-                        self.key_home = "";
+                        self.refresh_pass();
                         self.screen = Screen::Home;
                         self.notice = Some("Passphrase set. You will need it next time you open the app.".into());
                     }
@@ -1098,8 +1299,9 @@ impl App {
                     move || {
                         // The same data key is rewrapped, so nothing is re-encrypted.
                         node.set_passphrase((!adding).then_some(old), new).map_err(friendly)?;
-                        // From now on Tinline asks for the passphrase at start: drop the stored key.
-                        crate::keystore::sync(&node, &data);
+                        // From now on Tinline asks for the passphrase at start: drop the stored key
+                        // (and the old plaintext file, if that is where it was).
+                        keystore::sync(keystore::system(), &data, &node)?;
                         Ok(adding)
                     },
                     Msg::PassChanged,
@@ -1109,8 +1311,7 @@ impl App {
                 self.busy = false;
                 match r {
                     Ok(added) => {
-                        self.has_pass = true;
-                        self.key_home = "";
+                        self.refresh_pass();
                         self.hide_phrase();
                         self.change_form = false;
                         self.notice = Some(if added { "Passphrase added. You will need it next time Tinline starts." } else { "Passphrase changed" }.into());
@@ -1415,6 +1616,10 @@ impl App {
             }
             Msg::OpenSettings => {
                 self.screen = Screen::Settings;
+                self.acct_menu = false;
+                self.remove_ask = None;
+                self.refresh_accounts();
+                self.device_edit = self.device_label.clone();
                 self.hide_phrase();
                 self.change_form = false;
                 self.pass_in.zeroize();
@@ -1458,6 +1663,92 @@ impl App {
                 self.settings.output = (d != DEFAULT_LABEL).then_some(d);
                 self.ctl.devices.lock().unwrap().1 = self.settings.output.clone();
                 self.save_settings();
+            }
+            Msg::AcctMenu => {
+                self.acct_menu = !self.acct_menu;
+                self.switch_ask = None;
+                if self.acct_menu {
+                    self.refresh_accounts();
+                }
+            }
+            Msg::SwitchAsk(did) => {
+                if self.call.is_some() {
+                    self.notice = Some(friendly(Error::InCall));
+                    return Task::none();
+                }
+                self.switch_ask = Some(did);
+            }
+            Msg::SwitchNow(did) => {
+                self.switch_ask = Some(did);
+                return self.update(Msg::SwitchGo);
+            }
+            Msg::SwitchCancel => self.switch_ask = None,
+            Msg::SwitchGo => {
+                let Some(did) = self.switch_ask.take() else { return Task::none() };
+                if self.busy {
+                    return Task::none();
+                }
+                if self.call.is_some() {
+                    self.notice = Some(friendly(Error::InCall));
+                    return Task::none();
+                }
+                self.busy = true;
+                self.notice = None;
+                let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
+                return blocking(move || flow::switch_to(keystore::system(), &data, &node, &did).map_err(friendly), Msg::Switched);
+            }
+            Msg::Switched(r) => {
+                self.busy = false;
+                match r {
+                    Ok(unlocked) => {
+                        self.reset_account_state();
+                        self.restore = false;
+                        self.return_to = None;
+                        self.screen = Screen::Home;
+                        if unlocked {
+                            return self.start_node();
+                        }
+                        self.screen = Screen::Unlock;
+                    }
+                    Err(e) => self.notice = Some(e),
+                }
+            }
+            Msg::DeviceEdit(v) => self.device_edit = v,
+            Msg::SaveDevice => {
+                let Some(label) = flow::valid_label(&self.device_edit) else {
+                    self.notice = Some("A device name is 1 to 64 characters.".into());
+                    return Task::none();
+                };
+                let node = self.node.clone();
+                return blocking(
+                    move || node.set_device_label(label.clone()).map(|_| label).map_err(s),
+                    Msg::DeviceSaved,
+                );
+            }
+            Msg::DeviceSaved(r) => match r {
+                Ok(l) => {
+                    self.device_label = l.clone();
+                    self.device_edit = l;
+                    self.notice = Some("Device name saved".into());
+                }
+                Err(e) => self.notice = Some(e),
+            },
+            Msg::RemoveAsk(did) => self.remove_ask = Some(did),
+            Msg::RemoveCancel => self.remove_ask = None,
+            Msg::RemoveGo(did) => {
+                self.remove_ask = None;
+                let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
+                return blocking(
+                    move || flow::remove(keystore::system(), &data, &node, &did).map(|_| "Account removed from this computer".to_string()).map_err(friendly),
+                    Msg::Removed,
+                );
+            }
+            Msg::Removed(r) => {
+                self.refresh_accounts();
+                self.accounts = self.node.accounts();
+                self.notice = Some(match r {
+                    Ok(m) | Err(m) => m,
+                });
             }
             Msg::Chat(m) => return self.update_chat(m),
             Msg::Shot(shot) => {

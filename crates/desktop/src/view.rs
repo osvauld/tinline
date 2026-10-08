@@ -175,6 +175,8 @@ impl App {
                 Screen::Onboarding => self.onboarding_view(t),
                 Screen::Unlock => self.unlock_view(t),
                 Screen::SetPass => self.setpass_view(t),
+                Screen::NameDevice => self.name_device_view(t),
+                Screen::KeyFailed => self.key_failed_view(t),
                 Screen::Phrase => self.phrase_view(t),
                 Screen::Home => self.home_view(t),
                 Screen::AddContact => self.add_view(t),
@@ -262,42 +264,127 @@ impl App {
                         .on_input(Msg::PhraseChanged),
                 ))
                 .push(checkbox(self.show_phrase_in).label("Show the words").on_toggle(|_| Msg::TogglePhraseShow));
-            if self.replace {
-                col = col.push(tx(
-                    "This replaces the locked identity on this computer. Its encrypted file is kept aside, not deleted.",
-                    13.0,
-                    t.error,
-                ));
-            }
         }
-        col = col
-            .push(self.new_pass_field(t, "Passphrase (optional)", if self.restore { Msg::Restore } else { Msg::Create }))
-            .push(tx(
-                "A passphrase encrypts your account on this computer, so nobody who copies its files can read it. Optional \u{2014} leave it empty to skip, and add one later in Settings. With one, you type it each time Tinline starts; it cannot be recovered, only replaced by restoring with your recovery phrase. Without one, Tinline opens straight to your contacts.",
-                13.0,
-                t.ink2,
-            ));
+        let go = if self.restore { Msg::Restore } else { Msg::Create };
+        if self.keyring_ok {
+            col = col
+                .push(self.new_pass_field(t, "Passphrase (optional)", go))
+                .push(tx(
+                    "A passphrase encrypts your account on this computer, so nobody who copies its files can read it. Optional \u{2014} leave it empty to skip, and add one later in Settings. With one, you type it each time Tinline starts; it cannot be recovered, only replaced by restoring with your recovery phrase. Without one, Tinline opens straight to your contacts.",
+                    13.0,
+                    t.ink2,
+                ));
+        } else {
+            col = col
+                .push(self.new_pass_field(t, "Passphrase", go))
+                .push(tx(super::NO_KEYRING, 13.0, t.ink))
+                .push(tx(
+                    "You type it each time Tinline starts. It cannot be recovered, only replaced by restoring with your recovery phrase.",
+                    13.0,
+                    t.ink2,
+                ));
+        }
+        if self.exists_hint {
+            col = col.push(self.exists_panel(t));
+        }
         if self.restore {
             col = col
                 .push(self.wide("Restore", Kind::Primary, t, (!self.busy).then_some(Msg::Restore)))
-                .push(self.wide(
-                    if self.replace { "Back to unlock" } else { "Create a new identity instead" },
-                    Kind::Ghost,
-                    t,
-                    Some(if self.replace { Msg::BackToUnlock } else { Msg::ToggleRestore }),
-                ));
+                .push(self.wide("Create a new identity instead", Kind::Ghost, t, Some(Msg::ToggleRestore)));
         } else {
             col = col
                 .push(self.wide("Create identity", Kind::Primary, t, (!self.busy).then_some(Msg::Create)))
                 .push(self.wide("Restore from recovery phrase", Kind::Ghost, t, Some(Msg::ToggleRestore)));
         }
+        if self.return_to.is_some() {
+            col = col.push(self.wide("Cancel", Kind::Quiet, t, (!self.busy).then_some(Msg::CancelNew)));
+        }
         col = col.push(self.notice_bar(t));
         self.shell(
             t,
-            "Welcome to Tinline",
+            if self.return_to.is_some() { "Add an account" } else { "Welcome to Tinline" },
             "A direct line between two people. No phone number, no ads, no tracking.",
             col.into(),
         )
+    }
+
+    /// Restore found that account here already: open it, or (deliberately) remove it and restore again.
+    fn exists_panel(&self, t: Tok) -> El<'_> {
+        let mut c = column![
+            semi("That account is already on this computer.", 14.0, t.ink),
+            tx("Open it instead. If you forgot its passphrase, remove it from this computer first (its contacts and chats here are deleted) and restore again.", 13.0, t.ink2),
+        ]
+        .spacing(8);
+        for a in &self.accounts {
+            if self.remove_ask.as_deref() == Some(a.did.as_str()) {
+                c = c.push(
+                    column![
+                        tx(format!("Remove {} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those.", a.name), 13.0, t.error),
+                        row![
+                            pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::RemoveGo(a.did.clone()))),
+                            pill(t, Kind::Ghost, None, "Keep", Some(Msg::RemoveCancel)),
+                        ]
+                        .spacing(8),
+                    ]
+                    .spacing(8),
+                );
+            } else {
+                c = c.push(
+                    row![
+                        avatar(t, &a.name, &a.did, 28.0),
+                        semi(a.name.clone(), 14.0, t.ink),
+                        Space::new().width(Fill),
+                        pill(t, Kind::Quiet, None, "Open", Some(Msg::SwitchNow(a.did.clone()))),
+                        pill(t, Kind::Ghost, Some(Icon::Trash), "Remove", Some(Msg::RemoveAsk(a.did.clone()))),
+                    ]
+                    .spacing(8)
+                    .align_y(Alignment::Center),
+                );
+            }
+        }
+        container(c).padding(14).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into()
+    }
+
+    /// Last onboarding step. The key is saved and the account committed only when this is submitted.
+    fn name_device_view(&self, t: Tok) -> El<'_> {
+        let col = column![
+            field(
+                t,
+                "Device name",
+                text_input("Work desktop", &self.device_in).on_input(Msg::DeviceIn).on_submit(Msg::DeviceGo),
+            ),
+            tx("You can rename it later.", 12.0, t.ink2),
+            self.notice_bar(t),
+            self.wide(if self.busy { "Saving..." } else { "Continue" }, Kind::Primary, t, (!self.busy).then_some(Msg::DeviceGo)),
+        ]
+        .spacing(12);
+        self.shell(
+            t,
+            "Name this computer",
+            "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.",
+            col.into(),
+        )
+    }
+
+    /// The key could not be stored. The account is not saved yet, so nothing is lost: retry, or
+    /// protect it with a passphrase instead.
+    fn key_failed_view(&self, t: Tok) -> El<'_> {
+        let mut col = column![tx(
+            "Tinline couldn\u{2019}t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost.",
+            14.0,
+            t.ink,
+        )]
+        .spacing(12);
+        if let Some(e) = &self.key_fail {
+            col = col.push(tx(e.clone(), 12.0, t.error));
+        }
+        col = col
+            .push(self.wide(if self.busy { "Trying..." } else { "Retry" }, Kind::Primary, t, (!self.busy).then_some(Msg::RetryKey)))
+            .push(label(t, "Or"))
+            .push(self.new_pass_field(t, "Passphrase", Msg::KeyFailPass))
+            .push(self.wide("Add a passphrase instead", Kind::Quiet, t, (!self.busy).then_some(Msg::KeyFailPass)))
+            .push(self.notice_bar(t));
+        self.shell(t, "Couldn\u{2019}t save your account", "The system keyring did not accept the key.", col.into())
     }
 
     /// Locked with no passphrase: the stored key is gone, so only the 24 words bring the account back.
@@ -313,13 +400,38 @@ impl App {
         }
         col = col
             .push(self.wide("Restore with recovery phrase", Kind::Primary, t, (!self.busy).then_some(Msg::GoRestore)))
-            .push(self.wide("Try again", Kind::Ghost, t, (!self.busy).then_some(Msg::Unlock)));
+            .push(self.wide("Try again", Kind::Ghost, t, (!self.busy).then_some(Msg::Unlock)))
+            .push(self.other_accounts(t));
         self.shell(
             t,
             "Can\u{2019}t open your account",
             "This computer no longer has the key that opens it, and its keyring entry is missing. Calls can\u{2019}t reach you until you restore.",
             col.into(),
         )
+    }
+
+    /// "Use another account" buttons for the lock screens; empty when this is the only account.
+    fn other_accounts(&self, t: Tok) -> El<'_> {
+        let mut c = column![].spacing(8);
+        let others: Vec<_> = self.accounts.iter().filter(|a| !a.current).collect();
+        if others.is_empty() {
+            return c.into();
+        }
+        c = c.push(label(t, "Other accounts"));
+        for a in others {
+            c = c.push(
+                button(
+                    row![avatar(t, &a.name, &a.did, 28.0), semi(a.name.clone(), 14.0, t.ink), Space::new().width(Fill), ui::icon(Icon::Lock, 16.0, t.ink2)]
+                        .spacing(10)
+                        .align_y(Alignment::Center),
+                )
+                .padding([8, 12])
+                .width(Fill)
+                .style(ui::row_style(t, false))
+                .on_press_maybe((!self.busy).then(|| Msg::SwitchNow(a.did.clone()))),
+            );
+        }
+        c.into()
     }
 
     fn unlock_view(&self, t: Tok) -> El<'_> {
@@ -352,7 +464,8 @@ impl App {
                 13.0,
                 t.ink2,
             ))
-            .push(self.wide("Restore with recovery phrase", Kind::Quiet, t, (!self.busy).then_some(Msg::GoRestore)));
+            .push(self.wide("Restore with recovery phrase", Kind::Quiet, t, (!self.busy).then_some(Msg::GoRestore)))
+            .push(self.other_accounts(t));
         let title = if name.is_empty() { "Welcome back".to_string() } else { format!("Welcome back, {name}") };
         self.shell(t, &title, "Enter your passphrase to open Tinline. Calls can\u{2019}t reach you until you do.", col.into())
     }
@@ -577,7 +690,7 @@ impl App {
         ]
         .spacing(4)
         .align_y(Alignment::Center);
-        let mut col = column![head, self.side_tabs(t)].spacing(12);
+        let mut col = column![head, self.account_chip(t), self.side_tabs(t)].spacing(12);
         let bare = move |_: &Theme, _: text_input::Status| text_input::Style {
             background: iced::Background::Color(Color::TRANSPARENT),
             border: Border::default(),
@@ -682,6 +795,105 @@ impl App {
             )).padding([4, 12]));
         }
         self.sidebar_frame(t, col, list.into())
+    }
+
+    /// The signed-in account at the top of the sidebar; opens the account switcher.
+    fn account_chip(&self, t: Tok) -> El<'_> {
+        let status = if self.status.started && self.status.online && self.avail.available {
+            "Available"
+        } else if self.status.started && !self.status.online {
+            "Offline"
+        } else if !self.avail.available {
+            "Not available"
+        } else {
+            "Connecting\u{2026}"
+        };
+        let chip = button(
+            row![
+                avatar(t, &self.profile_name, "me", 34.0),
+                column![semi(self.profile_name.clone(), 14.0, t.ink), tx(status, 12.0, t.ink2)].spacing(1).width(Fill),
+                ui::icon(Icon::ChevronRight, 16.0, t.ink2),
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
+        )
+        .padding([6, 10])
+        .width(Fill)
+        .style(ui::row_style(t, self.acct_menu))
+        .on_press(Msg::AcctMenu);
+        if !self.acct_menu {
+            return chip.into();
+        }
+        column![chip, self.account_menu(t)].spacing(8).into()
+    }
+
+    fn account_menu(&self, t: Tok) -> El<'_> {
+        if let Some(did) = &self.switch_ask {
+            let target = self.accounts.iter().find(|a| &a.did == did).map(|a| a.name.clone()).unwrap_or_default();
+            let me = self.profile_name.clone();
+            let c = column![
+                bold(format!("Switch to {target}?"), 16.0, t.ink),
+                tx(
+                    format!("{me} goes offline on this computer. Calls to {me} will ring only on your other linked devices until you switch back."),
+                    13.0,
+                    t.ink2,
+                ),
+                tx("Switching isn\u{2019}t possible during a call.", 12.0, t.ink2),
+                row![
+                    pill(t, Kind::Primary, None, if self.busy { "Switching..." } else { "Switch" }, (!self.busy).then_some(Msg::SwitchGo)),
+                    pill(t, Kind::Ghost, None, "Cancel", Some(Msg::SwitchCancel)),
+                ]
+                .spacing(8),
+            ]
+            .spacing(10);
+            return container(c).padding(14).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into();
+        }
+        let mut c = column![label(t, "Accounts")].spacing(6);
+        for a in &self.accounts {
+            let sub = if a.current {
+                if self.lock == LockState::Locked { "Locked" } else { "Online on this computer" }
+            } else if a.has_passphrase {
+                "Locked \u{b7} switching needs its passphrase"
+            } else {
+                "Locked"
+            };
+            let right: El = if a.current {
+                ui::icon(Icon::Check, 18.0, t.primary).into()
+            } else {
+                ui::icon(Icon::Lock, 16.0, t.ink2).into()
+            };
+            c = c.push(
+                button(
+                    row![
+                        avatar(t, &a.name, &a.did, 32.0),
+                        column![semi(a.name.clone(), 14.0, t.ink), tx(sub, 12.0, t.ink2)].spacing(1).width(Fill),
+                        right,
+                    ]
+                    .spacing(10)
+                    .align_y(Alignment::Center),
+                )
+                .padding([6, 8])
+                .width(Fill)
+                .style(ui::row_style(t, a.current))
+                .on_press_maybe((!a.current).then(|| Msg::SwitchAsk(a.did.clone()))),
+            );
+        }
+        let action = |icon: Icon, text_: &'static str, on: Option<Msg>| -> El<'_> {
+            let fg = if on.is_some() { t.ink } else { t.ink2 };
+            button(row![ui::icon(icon, 18.0, fg), semi(text_, 14.0, fg)].spacing(10).align_y(Alignment::Center))
+                .padding([8, 8])
+                .width(Fill)
+                .style(ui::row_style(t, false))
+                .on_press_maybe(on)
+                .into()
+        };
+        c = c
+            .push(container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)))
+            .push(action(Icon::UserPlus, "Create a new account", Some(Msg::NewAccount(false))))
+            .push(action(Icon::ExternalLink, "Link an account from your phone (coming soon)", None))
+            .push(action(Icon::Key, "Restore with recovery phrase", Some(Msg::NewAccount(true))))
+            .push(tx("One account is online at a time on this computer.", 12.0, t.ink2));
+        container(c).padding(12).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into()
     }
 
     fn sidebar_frame<'a>(&'a self, t: Tok, col: iced::widget::Column<'a, Msg>, list: El<'a>) -> El<'a> {
@@ -1128,9 +1340,7 @@ impl App {
                 .into()
         };
 
-        let profile = section(t,
-            "Profile",
-            row![
+        let name_row: El = row![
                 text_input("Your name", &self.name_edit)
                     .on_input(Msg::NameEdit)
                     .on_submit(Msg::SaveName)
@@ -1141,8 +1351,78 @@ impl App {
             ]
             .spacing(10)
             .align_y(Alignment::Center)
-            .into(),
-        );
+            .into();
+        let mut acct = column![
+            line(t, "Your name", "Shown to the people you add", Space::new().into()),
+            name_row,
+            line(t, "This computer\u{2019}s name", "Only your own devices see it", Space::new().into()),
+            row![
+                text_input("Work desktop", &self.device_edit)
+                    .on_input(Msg::DeviceEdit)
+                    .on_submit(Msg::SaveDevice)
+                    .padding(11)
+                    .size(15)
+                    .style(ui::input_style(t)),
+                pill(t, Kind::Tonal, None, "Save", Some(Msg::SaveDevice)),
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
+        ]
+        .spacing(12);
+        let others: Vec<_> = self.accounts.iter().filter(|a| !a.current).collect();
+        if !others.is_empty() {
+            acct = acct.push(label(t, "Other accounts on this computer"));
+            for a in others {
+                if self.remove_ask.as_deref() == Some(a.did.as_str()) {
+                    acct = acct.push(
+                        column![
+                            tx(format!("Remove {} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those.", a.name), 13.0, t.error),
+                            row![
+                                pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::RemoveGo(a.did.clone()))),
+                                pill(t, Kind::Ghost, None, "Keep", Some(Msg::RemoveCancel)),
+                            ]
+                            .spacing(8),
+                        ]
+                        .spacing(8),
+                    );
+                } else {
+                    acct = acct.push(line(t,
+                        &a.name,
+                        if a.has_passphrase { "Locked \u{b7} needs its passphrase" } else { "Locked" },
+                        pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::RemoveAsk(a.did.clone()))),
+                    ));
+                }
+            }
+        }
+        let profile = section(t, "Account", acct.into());
+        let this_name = if self.device_label.is_empty() { "This computer".to_string() } else { self.device_label.clone() };
+        let os = match std::env::consts::OS {
+            "linux" => "Linux",
+            "macos" => "macOS",
+            "windows" => "Windows",
+            o => o,
+        };
+        let devices = column![
+            row![
+                tx("Calls ring on all of these. People you call never see these names.", 14.0, t.ink2).width(Fill),
+                pill(t, Kind::Quiet, None, "Link a device", None),
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center),
+            container(
+                row![
+                    column![semi(this_name, 15.0, t.ink), tx(format!("This computer \u{b7} {os}"), 13.0, t.ink2)].spacing(2).width(Fill),
+                    pill(t, Kind::Quiet, Some(Icon::Pencil), "Rename", Some(Msg::SettingsTab(0))),
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center),
+            )
+            .padding(14)
+            .width(Fill)
+            .style(ui::outlined(t.surface2, t.line, 12.0)),
+            tx("Linking a phone or another computer is coming soon.", 13.0, t.ink2),
+        ]
+        .spacing(14);
         let calls = section(t,
             "Calls",
             column![
@@ -1234,11 +1514,14 @@ impl App {
             } else {
                 c = c.push(line(t,
                     "Passphrase",
-                    if self.has_pass { "Unlocks Tinline when it starts" } else { "Optional \u{2014} encrypts your account on this computer" },
+                    if self.has_pass { "Unlocks Tinline when it starts" } else if self.file_key { "Recommended \u{2014} your key is in a plain file" } else { "Optional \u{2014} encrypts your account on this computer" },
                     pill(t, Kind::Quiet, Some(Icon::Lock), if self.has_pass { "Change" } else { "Add passphrase" }, Some(Msg::ToggleChange)),
                 ));
                 if !self.has_pass {
-                    c = c.push(tx(self.key_home, 13.0, t.ink2));
+                    c = c.push(tx(self.key_home, 13.0, if self.file_key { t.error } else { t.ink2 }));
+                    if self.file_key {
+                        c = c.push(pill(t, Kind::Primary, Some(Icon::Lock), "Add a passphrase", Some(Msg::ToggleChange)));
+                    }
                 }
             }
             c.into()
@@ -1255,7 +1538,7 @@ impl App {
             .into(),
         );
         let quit = pill(t, Kind::Danger, Some(Icon::LogOut), "Quit Tinline", Some(Msg::Quit));
-        let items = ["Profile", "Calls & availability", "Audio devices", "Security", "About"];
+        let items = ["Account", "Linked devices", "Calls & availability", "Audio devices", "Security", "About"];
         let mut nav = column![
             button(row![ui::icon(Icon::ArrowLeft, 18.0, t.ink2), semi("Back", 14.0, t.ink2)].spacing(8).align_y(Alignment::Center))
                 .padding([8, 12])
@@ -1277,12 +1560,13 @@ impl App {
         let nav = container(nav).padding(16).width(240).height(Fill).style(ui::sidebar(t));
         let page: El = match self.settings_tab {
             0 => profile,
-            1 => calls,
-            2 => audio,
-            3 => section(t, "Security", security),
+            1 => devices.into(),
+            2 => calls,
+            3 => audio,
+            4 => section(t, "Security", security),
             _ => column![about, quit].spacing(20).into(),
         };
-        let content = column![bold(items[(self.settings_tab as usize).min(4)], 24.0, t.ink), self.notice_bar(t), page].spacing(20);
+        let content = column![bold(items[(self.settings_tab as usize).min(5)], 24.0, t.ink), self.notice_bar(t), page].spacing(20);
         row![
             nav,
             scroll(t, container(container(content).max_width(640).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill)
