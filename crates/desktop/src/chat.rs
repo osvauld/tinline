@@ -9,7 +9,9 @@ use std::sync::Arc;
 
 use iced::widget::text_editor;
 use iced::{clipboard, Task};
-use p2pcore::{Chat, Contact, DayPage, Error, Message as ChatMsg, Node, TransferState};
+use p2pcore::{Attachment, AttachmentKind, Chat, Contact, DayPage, Error, Message as ChatMsg, Node, TransferState};
+
+use crate::media::{self, Class, Pixels};
 
 use crate::voice::{Player, Recorder};
 use super::{blocking, notify, s, App, Msg, Screen};
@@ -121,8 +123,36 @@ pub(super) struct ChatState {
     pub player: Option<(String, Player)>,
     /// Decrypted voice files by message id, for playing again; removed when the app quits.
     pub voice_files: HashMap<String, PathBuf>,
+    /// Decoded image thumbnails by attachment hash, so scrolling never decodes twice.
+    pub thumbs: HashMap<String, Thumb>,
+    /// The image or text overlay.
+    pub viewer: Option<Viewer>,
     #[cfg(feature = "test-hooks")]
     pub fake: Option<Arc<chat_fake::Fake>>,
+}
+
+#[derive(Clone)]
+pub(super) enum Thumb {
+    Loading,
+    Ready { handle: iced::widget::image::Handle, w: u32, h: u32 },
+    /// Not decodable or too large: shown as a file.
+    Bad,
+}
+
+#[derive(Clone)]
+pub(super) enum ViewBody {
+    Loading,
+    Image { handle: iced::widget::image::Handle },
+    Text(String),
+    Failed(String),
+}
+
+#[derive(Clone)]
+pub(super) struct Viewer {
+    /// The message it shows.
+    pub id: String,
+    pub name: String,
+    pub body: ViewBody,
 }
 
 impl Default for ChatState {
@@ -147,6 +177,8 @@ impl Default for ChatState {
             rec: None,
             player: None,
             voice_files: HashMap::new(),
+            thumbs: HashMap::new(),
+            viewer: None,
             #[cfg(feature = "test-hooks")]
             fake: None,
         }
@@ -171,6 +203,7 @@ pub(super) enum Cm {
     Copy(String),
     CancelCompose,
     Attach,
+    Picked(Option<PathBuf>),
     Dropped(PathBuf),
     DropHover(bool),
     Download(String),
@@ -185,11 +218,29 @@ pub(super) enum Cm {
     VoiceToggle(String),
     VoiceSeek(String, f32),
     VoiceReady(String, Result<PathBuf, String>),
+    /// Thumbnail of the attachment with this hash.
+    Thumb(String, Result<Pixels, String>),
+    /// Open the picture in the viewer.
+    View(String),
+    /// The viewer's picture at full size.
+    Viewed(String, Result<Pixels, String>),
+    /// Documents: text in the app, anything else in the default app.
+    Open(String),
+    /// Always the default app.
+    OpenExt(String),
+    TextShown(Result<String, String>),
+    Opened(Result<(), String>),
+    CloseView,
+    /// -1 / +1: the previous / next picture.
+    Step(i32),
     Nop,
 }
 
 pub(super) fn mime_of(path: &std::path::Path) -> String {
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+    if let Some(m) = media::mime_for_ext(&ext) {
+        return m.into();
+    }
     match ext.as_str() {
         "pdf" => "application/pdf",
         "png" => "image/png",
@@ -268,12 +319,27 @@ impl ChatState {
         self.chats.iter().map(|c| c.unread).sum()
     }
 
+    /// Message ids of the pictures that can be stepped through, oldest first.
+    pub fn viewable_images(&self) -> Vec<String> {
+        self.msgs
+            .iter()
+            .filter(|m| !m.deleted)
+            .filter(|m| m.attachment.as_ref().is_some_and(|a| matches!(self.thumbs.get(&a.hash), Some(Thumb::Ready { .. }))))
+            .map(|m| m.id.clone())
+            .collect()
+    }
+
     fn clear_compose(&mut self) {
         self.input = text_editor::Content::new();
         self.reply = None;
         self.editing = None;
         self.menu = None;
     }
+}
+
+/// The decrypted copy of a Ready attachment in the private cache (made once).
+fn cache_attachment(src: &Source, peer: String, id: String, a: &Attachment, ext: &str) -> Result<PathBuf, String> {
+    media::ensure_cached(&a.hash, &a.name, ext, |tmp| src.save_attachment(peer, id, tmp.to_string()).map_err(s))
 }
 
 /// Scratch space for recordings and decrypted voice files; wiped at start and at quit.
@@ -297,6 +363,51 @@ impl App {
             return Source::Fake(f.clone());
         }
         Source::Node(self.node.clone())
+    }
+
+    /// A Ready file in the open conversation: where to read it from, and what it is.
+    fn attachment_job(&self, id: &str) -> Option<(Source, String, Attachment)> {
+        let peer = self.chat.peer.clone()?;
+        let a = self.chat.find(id).filter(|m| !m.deleted)?.attachment.clone()?;
+        (a.kind == AttachmentKind::File && a.state == TransferState::Ready).then(|| (self.src(), peer, a))
+    }
+
+    /// Starts decoding a thumbnail for each Ready picture that has none yet.
+    pub(super) fn ensure_thumbs(&mut self) -> Task<Msg> {
+        if !self.chat_io() {
+            return Task::none();
+        }
+        let Some(peer) = self.chat.peer.clone() else { return Task::none() };
+        let mut todo = Vec::new();
+        for m in self.chat.msgs.iter().filter(|m| !m.deleted) {
+            let Some(a) = m.attachment.as_ref().filter(|a| a.kind == AttachmentKind::File && a.state == TransferState::Ready) else {
+                continue;
+            };
+            if self.chat.thumbs.contains_key(&a.hash) {
+                continue;
+            }
+            if let Class::Image(ext) = media::classify(&a.name, &a.mime) {
+                todo.push((m.id.clone(), a.clone(), ext));
+            }
+        }
+        let mut tasks = Vec::new();
+        for (id, a, ext) in todo {
+            // Huge files are not worth decrypting just for a preview.
+            if a.size > 100_000_000 {
+                self.chat.thumbs.insert(a.hash.clone(), Thumb::Bad);
+                continue;
+            }
+            self.chat.thumbs.insert(a.hash.clone(), Thumb::Loading);
+            let (src, p, hash) = (self.src(), peer.clone(), a.hash.clone());
+            tasks.push(blocking(
+                move || {
+                    let path = cache_attachment(&src, p, id, &a, ext)?;
+                    media::decode_scaled(&path, media::THUMB_W, media::THUMB_H)
+                },
+                move |r| Msg::Chat(Cm::Thumb(hash.clone(), r)),
+            ));
+        }
+        Task::batch(tasks)
     }
 
     /// Chat IO is skipped in demo screens unless they brought a fake source.
@@ -358,6 +469,8 @@ impl App {
         self.chat.no_more = false;
         self.chat.fetching = false;
         self.chat.progress.clear();
+        self.chat.thumbs.clear();
+        self.chat.viewer = None;
         if !self.chat_io() {
             return Task::none();
         }
@@ -389,6 +502,11 @@ impl App {
     }
 
     pub(super) fn update_chat(&mut self, m: Cm) -> Task<Msg> {
+        let t = self.update_chat_inner(m);
+        Task::batch([t, self.ensure_thumbs()])
+    }
+
+    fn update_chat_inner(&mut self, m: Cm) -> Task<Msg> {
         match m {
             Cm::Tab(t) => {
                 self.chat.tab = t;
@@ -480,7 +598,20 @@ impl App {
                 self.chat.menu = None;
                 return clipboard::write(text);
             }
-            Cm::Attach => self.notice = Some("Drag files into this window to send them.".into()),
+            Cm::Attach => {
+                if !self.chat_visible() {
+                    return Task::none();
+                }
+                return Task::perform(
+                    async { rfd::AsyncFileDialog::new().set_title("Send a file").pick_file().await.map(|h| h.path().to_path_buf()) },
+                    |p| Msg::Chat(Cm::Picked(p)),
+                );
+            }
+            Cm::Picked(p) => {
+                if let Some(p) = p {
+                    return self.update_chat(Cm::Dropped(p));
+                }
+            }
             Cm::DropHover(on) => self.chat.drop_hover = on && self.chat_visible(),
             Cm::Dropped(path) => {
                 self.chat.drop_hover = false;
@@ -639,6 +770,95 @@ impl App {
                     return self.update_chat(Cm::VoiceToggle(id));
                 }
             }
+            Cm::Thumb(hash, r) => {
+                let t = match r {
+                    Ok(px) => Thumb::Ready { handle: iced::widget::image::Handle::from_rgba(px.w, px.h, px.rgba), w: px.w, h: px.h },
+                    Err(_) => Thumb::Bad,
+                };
+                self.chat.thumbs.insert(hash, t);
+            }
+            Cm::View(id) => {
+                let Some((src, peer, a)) = self.attachment_job(&id) else { return Task::none() };
+                let Class::Image(ext) = media::classify(&a.name, &a.mime) else { return Task::none() };
+                let body = match self.chat.thumbs.get(&a.hash) {
+                    Some(Thumb::Ready { handle, .. }) => ViewBody::Image { handle: handle.clone() },
+                    _ => ViewBody::Loading,
+                };
+                self.chat.viewer = Some(Viewer { id: id.clone(), name: a.name.clone(), body });
+                self.chat.menu = None;
+                return blocking(
+                    move || {
+                        let p = cache_attachment(&src, peer, id.clone(), &a, ext)?;
+                        media::decode_scaled(&p, media::VIEW_SIDE, media::VIEW_SIDE).map(|px| (id, px))
+                    },
+                    |r| match r {
+                        Ok((id, px)) => Msg::Chat(Cm::Viewed(id, Ok(px))),
+                        Err(e) => Msg::Chat(Cm::Viewed(String::new(), Err(e))),
+                    },
+                );
+            }
+            Cm::Viewed(id, r) => {
+                if let Some(v) = self.chat.viewer.as_mut() {
+                    match r {
+                        Ok(px) if v.id == id => {
+                            v.body = ViewBody::Image { handle: iced::widget::image::Handle::from_rgba(px.w, px.h, px.rgba) }
+                        }
+                        Err(e) if matches!(v.body, ViewBody::Loading) => v.body = ViewBody::Failed(e),
+                        _ => {}
+                    }
+                }
+            }
+            Cm::Open(id) => {
+                let Some((src, peer, a)) = self.attachment_job(&id) else { return Task::none() };
+                match media::classify(&a.name, &a.mime) {
+                    Class::Text(ext) if a.size <= media::TEXT_MAX => {
+                        self.chat.viewer = Some(Viewer { id: id.clone(), name: a.name.clone(), body: ViewBody::Loading });
+                        return blocking(
+                            move || cache_attachment(&src, peer, id, &a, ext).and_then(|p| media::read_text(&p)),
+                            |r| Msg::Chat(Cm::TextShown(r)),
+                        );
+                    }
+                    _ => return self.update_chat(Cm::OpenExt(id)),
+                }
+            }
+            Cm::OpenExt(id) => {
+                let Some((src, peer, a)) = self.attachment_job(&id) else { return Task::none() };
+                let ext = match media::classify(&a.name, &a.mime) {
+                    Class::Image(e) | Class::Text(e) | Class::Open(e) => e,
+                    Class::SaveOnly => return Task::none(),
+                };
+                return blocking(
+                    move || {
+                        let p = cache_attachment(&src, peer, id, &a, ext)?;
+                        media::open_external(&p)
+                    },
+                    |r| Msg::Chat(Cm::Opened(r)),
+                );
+            }
+            Cm::TextShown(r) => {
+                if let Some(v) = self.chat.viewer.as_mut().filter(|v| matches!(v.body, ViewBody::Loading)) {
+                    v.body = match r {
+                        Ok(t) => ViewBody::Text(t),
+                        Err(e) => ViewBody::Failed(e),
+                    };
+                }
+            }
+            Cm::Opened(r) => {
+                if let Err(e) = r {
+                    self.notice = Some(format!("Could not open: {e}"));
+                }
+            }
+            Cm::CloseView => self.chat.viewer = None,
+            Cm::Step(d) => {
+                let Some(cur) = self.chat.viewer.as_ref().map(|v| v.id.clone()) else { return Task::none() };
+                let ids = self.chat.viewable_images();
+                if let Some(i) = ids.iter().position(|x| *x == cur) {
+                    let n = i as i32 + d;
+                    if n >= 0 && (n as usize) < ids.len() {
+                        return self.update_chat(Cm::View(ids[n as usize].clone()));
+                    }
+                }
+            }
             Cm::Nop => {
                 // Ticks at 100 ms while recording or playing redraw the timer and the wave.
                 if self.chat.player.as_ref().is_some_and(|(_, p)| p.finished()) {
@@ -654,6 +874,11 @@ impl App {
 
     /// Core chat events, already on the UI loop.
     pub(super) fn on_chat_event(&mut self, ev: ChatEv) -> Task<Msg> {
+        let t = self.on_chat_event_inner(ev);
+        Task::batch([t, self.ensure_thumbs()])
+    }
+
+    fn on_chat_event_inner(&mut self, ev: ChatEv) -> Task<Msg> {
         match ev {
             ChatEv::Added(m) => {
                 let (peer, incoming) = (m.peer_did.clone(), !m.outgoing);

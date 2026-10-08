@@ -20,6 +20,7 @@ pub(crate) use tlog;
 mod app;
 mod audio;
 mod keystore;
+mod media;
 mod reason;
 mod single;
 mod tray;
@@ -120,6 +121,11 @@ pub struct Init {
 }
 
 pub static INIT: OnceLock<Init> = OnceLock::new();
+
+/// The data directory this instance runs on.
+pub fn data_dir() -> PathBuf {
+    INIT.get().map(|i| i.data.clone()).unwrap_or_else(std::env::temp_dir)
+}
 
 /// The data directory before the rename to Tinline.
 fn legacy_data_dir() -> Option<PathBuf> {
@@ -242,6 +248,7 @@ fn main() -> Result<(), String> {
         Err(std::fs::TryLockError::Error(e)) => return Err(format!("instance.lock: {e}")),
     }
     std::mem::forget(lock); // held until the process exits
+    media::wipe(&data);
 
     let (tx, rx) = mpsc::unbounded_channel();
     let _ = EV_RX.set(Mutex::new(Some(rx)));

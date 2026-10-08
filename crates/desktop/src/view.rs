@@ -181,7 +181,11 @@ impl App {
                 Screen::Settings => self.settings_view(t),
             }
         };
-        container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0)).into()
+        let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
+        match self.viewer_overlay(t) {
+            Some(o) => iced::widget::stack![base, o].into(),
+            None => base.into(),
+        }
     }
 
     // ---- shared pieces ----
