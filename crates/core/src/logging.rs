@@ -9,7 +9,7 @@ pub fn init() {
         use tracing_subscriber::prelude::*;
         #[cfg(target_os = "android")]
         {
-            let filter = tracing_subscriber::EnvFilter::new("info,iroh=warn,noq=warn,iroh_relay=warn");
+            let filter = tracing_subscriber::EnvFilter::new("info,iroh=warn,noq=warn,iroh_relay=warn,iroh_blobs=warn,loro_internal=warn,loro=warn");
             let _ = tracing_subscriber::registry()
                 .with(filter)
                 .with(paranoid_android::layer("p2pcore"))
@@ -18,7 +18,7 @@ pub fn init() {
         #[cfg(not(target_os = "android"))]
         {
             let filter = tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info,iroh=warn,noq=warn"));
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info,iroh=warn,noq=warn,iroh_blobs=warn,loro_internal=warn,loro=warn"));
             let _ = tracing_subscriber::registry()
                 .with(filter)
                 .with(tracing_subscriber::fmt::layer().with_writer(std::io::stderr))
