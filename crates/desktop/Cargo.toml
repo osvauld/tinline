@@ -20,6 +20,7 @@ cpal = "0.18"
 webrtc-audio-processing = { version = "2.1", features = ["bundled"] }
 qrcode = { version = "0.14", default-features = false }
 directories = "6"
+keyring = { version = "3", default-features = false, features = ["sync-secret-service", "crypto-rust", "vendored", "apple-native", "windows-native"] }
 notify-rust = "4"
 tray-icon = { version = "0.21", default-features = false }
 

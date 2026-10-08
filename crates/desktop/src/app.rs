@@ -128,8 +128,11 @@ struct App {
     screen: Screen,
     name_in: String,
     pass_in: Zeroizing<String>,
-    pass2_in: Zeroizing<String>,
     old_in: Zeroizing<String>,
+    /// Whether a passphrase is set; cached so `view` never calls into the node.
+    has_pass: bool,
+    /// Settings text about where the key lives when there is no passphrase.
+    key_home: &'static str,
     /// Restoring over an existing (locked) identity, from the Unlock screen.
     replace: bool,
     revealed: Option<Zeroizing<String>>,
@@ -178,7 +181,6 @@ enum Msg {
     Exit,
     NameChanged(String),
     PassIn(String),
-    Pass2In(String),
     OldIn(String),
     Create,
     Created(Result<String, String>),
@@ -196,7 +198,7 @@ enum Msg {
     SkipSetPass,
     GoSetPass,
     ChangePassSubmit,
-    PassChanged(Result<(), String>),
+    PassChanged(Result<bool, String>),
     ToggleReveal,
     RevealSubmit,
     Revealed(Result<String, String>),
@@ -326,7 +328,7 @@ fn s<E: ToString>(e: E) -> String {
 fn friendly(e: Error) -> String {
     match e {
         Error::WrongPassphrase => "That passphrase is not right. Try again.".into(),
-        Error::WeakPassphrase => "Use a passphrase of at least 8 characters.".into(),
+        Error::WeakPassphrase => "Type a passphrase, or leave it empty to skip it.".into(),
         Error::BadPhrase => "That recovery phrase is not valid. Check the 24 words.".into(),
         Error::Locked => "Unlock first.".into(),
         Error::HaveIdentity => "An identity already exists here.".into(),
@@ -334,18 +336,26 @@ fn friendly(e: Error) -> String {
     }
 }
 
-/// Checks a new passphrase and its confirmation before the slow key derivation starts.
-fn check_new(pass: &str, again: &str) -> Result<(), String> {
-    if pass.chars().count() < 8 {
-        Err("Use a passphrase of at least 8 characters.".into())
-    } else if pass != again {
-        Err("The two passphrases do not match.".into())
-    } else {
-        Ok(())
+/// What Settings says about the stored key; empty with a passphrase (nothing is stored then).
+fn key_home(has_pass: bool) -> &'static str {
+    if has_pass {
+        return "";
+    }
+    match crate::keystore::location(&INIT.get().unwrap().data) {
+        Some(crate::keystore::Where::Keyring) => "Your key is kept in this computer\u{2019}s keyring, so Tinline opens without asking.",
+        Some(crate::keystore::Where::File) => {
+            "No system keyring was found, so your key is kept in a file in Tinline\u{2019}s data folder, readable only by you. A passphrase protects it better."
+        }
+        None => "",
     }
 }
 
 impl App {
+    fn refresh_pass(&mut self) {
+        self.has_pass = self.node.has_passphrase();
+        self.key_home = key_home(self.has_pass);
+    }
+
     fn boot() -> (App, Task<Msg>) {
         let init = INIT.get().expect("init");
         let node = init.node.clone();
@@ -384,8 +394,9 @@ impl App {
             },
             name_in: String::new(),
             pass_in: Zeroizing::default(),
-            pass2_in: Zeroizing::default(),
             old_in: Zeroizing::default(),
+            has_pass: node.has_passphrase(),
+            key_home: key_home(node.has_passphrase()),
             replace: false,
             revealed: None,
             revealed_at: None,
@@ -702,25 +713,29 @@ impl App {
                 if self.busy {
                     return Task::none();
                 }
-                if let Err(e) = check_new(&self.pass_in, &self.pass2_in) {
-                    self.notice = Some(e);
-                    return Task::none();
-                }
                 self.busy = true;
                 self.notice = Some("Securing your identity...".into());
+                // An empty passphrase means none: the key then lives in the keyring.
                 let pass = take_secret(&mut self.pass_in);
-                self.pass2_in.zeroize();
                 let node = self.node.clone();
-                return blocking(move || node.create_identity(name, pass).map_err(friendly), Msg::Created);
+                let data = INIT.get().unwrap().data.clone();
+                return blocking(
+                    move || {
+                        let phrase = node.create_identity(name, pass).map_err(friendly)?;
+                        crate::keystore::sync(&node, &data);
+                        Ok(phrase)
+                    },
+                    Msg::Created,
+                );
             }
             Msg::PassIn(v) => self.pass_in = Zeroizing::new(v),
-            Msg::Pass2In(v) => self.pass2_in = Zeroizing::new(v),
             Msg::OldIn(v) => self.old_in = Zeroizing::new(v),
             Msg::Created(r) => {
                 self.busy = false;
                 self.notice = None;
                 match r {
                     Ok(p) => {
+                        self.refresh_pass();
                         self.new_phrase = Some(Zeroizing::new(p));
                         self.screen = Screen::Phrase;
                         self.name_edit = self.name_in.trim().to_string();
@@ -740,14 +755,9 @@ impl App {
                 if self.busy {
                     return Task::none();
                 }
-                if let Err(e) = check_new(&self.pass_in, &self.pass2_in) {
-                    self.notice = Some(e);
-                    return Task::none();
-                }
                 self.busy = true;
                 self.notice = Some("Restoring...".into());
                 let pass = take_secret(&mut self.pass_in);
-                self.pass2_in.zeroize();
                 // The typed phrase stays until the restore succeeds, so a wrong passphrase costs no retyping.
                 let phrase = self.phrase_in.to_string();
                 let (node, replace) = (self.node.clone(), self.replace);
@@ -760,6 +770,7 @@ impl App {
                     move || {
                         if !replace {
                             node.restore_identity(phrase, name, pass).map_err(friendly)?;
+                            crate::keystore::sync(&node, &data);
                             return Ok(NodeBox(Arc::new(std::sync::Mutex::new(Some(node)))));
                         }
                         // A locked identity is in the way: set its file aside (still encrypted),
@@ -787,6 +798,7 @@ impl App {
                         match fresh {
                             Ok(n) => {
                                 ctl.attach(&n);
+                                crate::keystore::sync(&n, &data);
                                 // The new profile is saved; the old one is encrypted under a
                                 // passphrase nobody remembers.
                                 let _ = std::fs::remove_file(&aside);
@@ -815,6 +827,7 @@ impl App {
                             std::thread::spawn(move || drop(old));
                         }
                         self.name_edit = self.name_in.trim().to_string();
+                        self.refresh_pass();
                         self.replace = false;
                         self.screen = Screen::Home;
                         self.notice = None;
@@ -824,6 +837,21 @@ impl App {
                     }
                     Err(e) => self.notice = Some(e),
                 }
+            }
+            Msg::Unlock if !self.has_pass => {
+                if self.busy {
+                    return Task::none();
+                }
+                self.busy = true;
+                self.notice = None;
+                let node = self.node.clone();
+                let data = INIT.get().unwrap().data.clone();
+                return blocking(
+                    move || {
+                        if crate::keystore::auto_unlock(&node, &data) { Ok(()) } else { Err("Still can\u{2019}t find the key.".to_string()) }
+                    },
+                    Msg::Unlocked,
+                );
             }
             Msg::Unlock => {
                 if self.busy || self.pass_in.is_empty() {
@@ -863,33 +891,29 @@ impl App {
                 self.restore = false;
                 self.notice = None;
                 self.pass_in.zeroize();
-                self.pass2_in.zeroize();
                 self.screen = Screen::Unlock;
             }
             Msg::GoSetPass => {
                 self.notice = None;
                 self.pass_in.zeroize();
-                self.pass2_in.zeroize();
                 self.screen = Screen::SetPass;
             }
             Msg::SkipSetPass => {
                 self.notice = None;
                 self.pass_in.zeroize();
-                self.pass2_in.zeroize();
                 self.screen = Screen::Home;
             }
             Msg::SetPassSubmit => {
                 if self.busy {
                     return Task::none();
                 }
-                if let Err(e) = check_new(&self.pass_in, &self.pass2_in) {
-                    self.notice = Some(e);
+                if self.pass_in.is_empty() {
+                    self.notice = Some(friendly(Error::WeakPassphrase));
                     return Task::none();
                 }
                 self.busy = true;
                 self.notice = Some("Securing your identity...".into());
                 let pass = take_secret(&mut self.pass_in);
-                self.pass2_in.zeroize();
                 let node = self.node.clone();
                 return blocking(move || node.set_passphrase(None, pass).map_err(friendly), Msg::PassSet);
             }
@@ -897,6 +921,8 @@ impl App {
                 self.busy = false;
                 match r {
                     Ok(()) => {
+                        self.has_pass = true;
+                        self.key_home = "";
                         self.screen = Screen::Home;
                         self.notice = Some("Passphrase set. You will need it next time you open the app.".into());
                     }
@@ -912,7 +938,8 @@ impl App {
             }
             Msg::HidePhrase => self.hide_phrase(),
             Msg::RevealSubmit => {
-                if self.busy || self.pass_in.is_empty() {
+                // With no passphrase the plain confirm on screen is the check.
+                if self.busy || (self.has_pass && self.pass_in.is_empty()) {
                     return Task::none();
                 }
                 self.busy = true;
@@ -935,31 +962,42 @@ impl App {
                 self.change_form = !self.change_form;
                 self.old_in.zeroize();
                 self.pass_in.zeroize();
-                self.pass2_in.zeroize();
                 self.notice = None;
             }
             Msg::ChangePassSubmit => {
-                if self.busy || self.old_in.is_empty() {
+                if self.busy || (self.has_pass && self.old_in.is_empty()) {
                     return Task::none();
                 }
-                if let Err(e) = check_new(&self.pass_in, &self.pass2_in) {
-                    self.notice = Some(e);
+                if self.pass_in.is_empty() {
+                    self.notice = Some(friendly(Error::WeakPassphrase));
                     return Task::none();
                 }
                 self.busy = true;
-                self.notice = Some("Changing passphrase...".into());
+                self.notice = Some(if self.has_pass { "Changing passphrase..." } else { "Adding passphrase..." }.into());
+                let adding = !self.has_pass;
                 let (old, new) = (take_secret(&mut self.old_in), take_secret(&mut self.pass_in));
-                self.pass2_in.zeroize();
                 let node = self.node.clone();
-                return blocking(move || node.set_passphrase(Some(old), new).map_err(friendly), Msg::PassChanged);
+                let data = INIT.get().unwrap().data.clone();
+                return blocking(
+                    move || {
+                        // The same data key is rewrapped, so nothing is re-encrypted.
+                        node.set_passphrase((!adding).then_some(old), new).map_err(friendly)?;
+                        // From now on Tinline asks for the passphrase at start: drop the stored key.
+                        crate::keystore::sync(&node, &data);
+                        Ok(adding)
+                    },
+                    Msg::PassChanged,
+                );
             }
             Msg::PassChanged(r) => {
                 self.busy = false;
                 match r {
-                    Ok(()) => {
+                    Ok(added) => {
+                        self.has_pass = true;
+                        self.key_home = "";
                         self.hide_phrase();
                         self.change_form = false;
-                        self.notice = Some("Passphrase changed".into());
+                        self.notice = Some(if added { "Passphrase added. You will need it next time Tinline starts." } else { "Passphrase changed" }.into());
                     }
                     Err(e) => self.notice = Some(e),
                 }
@@ -1204,7 +1242,6 @@ impl App {
                 self.hide_phrase();
                 self.change_form = false;
                 self.pass_in.zeroize();
-                self.pass2_in.zeroize();
                 self.old_in.zeroize();
                 self.notice = None;
                 // Enumerating devices can block for a while (PulseAudio/WASAPI).

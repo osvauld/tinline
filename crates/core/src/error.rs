@@ -11,7 +11,7 @@ pub enum Error {
     WrongPassphrase,
     #[error("identity is locked")]
     Locked,
-    #[error("passphrase must be at least 8 characters")]
+    #[error("the passphrase cannot be empty")]
     WeakPassphrase,
     #[error("node not started")]
     NotStarted,

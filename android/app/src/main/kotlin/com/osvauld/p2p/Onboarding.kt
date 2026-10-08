@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
@@ -40,7 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Step { Welcome, Name, Pass, Phrase, Check, Terms, Perms, Restore }
+private enum class Step { Welcome, Name, Pass, Phrase, Terms, Perms, Restore }
 
 /** Common frame of the onboarding steps: back arrow, progress dots, scrolling body, pinned footer. */
 @Composable
@@ -68,7 +71,7 @@ fun Lead(text: String, modifier: Modifier = Modifier, align: TextAlign = TextAli
     Text(text, modifier, style = TinType.bodyL, color = Tin.c.ink2, textAlign = align)
 
 /**
- * First run: Welcome - Name - Passphrase - Recovery phrase - Quick check - Terms - Permissions, or the
+ * First run: Welcome - Name - Passphrase (optional) - Recovery phrase - Terms - Permissions, or the
  * restore path (recovery words - name - passphrase - Terms - Permissions). [forgot] is the
  * "forgot my passphrase" restore over a locked identity: words, new passphrase, done.
  */
@@ -85,7 +88,6 @@ fun OnboardingFlow(
     // Secrets are never saved into the instance-state bundle.
     var words by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
-    var confirm by remember { mutableStateOf("") }
     var phrase by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -94,7 +96,8 @@ fun OnboardingFlow(
     val has by app.hasIdentity.collectAsState()
     LaunchedEffect(has, created) { if (!forgot && has && !created && !busy) onDone() }
 
-    fun finishIdentity() {
+    // An empty [pass] means no passphrase.
+    fun finishIdentity(pass: String) {
         busy = true; error = null
         scope.launch {
             val r = withContext(Dispatchers.IO) {
@@ -113,7 +116,7 @@ fun OnboardingFlow(
                 if (it is uniffi.p2pcore.Exception.BadPhrase || (it is IllegalArgumentException && forgot)) step = Step.Restore
             }
             r.onSuccess { p ->
-                pass = ""; confirm = ""; created = true
+                created = true
                 app.identityReady()
                 when {
                     forgot -> onDone()
@@ -136,14 +139,15 @@ fun OnboardingFlow(
         Step.Name -> NameScreen(name, { name = it }, onBack = { step = if (restoring) Step.Restore else Step.Welcome },
             progress = 1, onNext = { step = Step.Pass })
         Step.Pass -> PassphraseStep(
-            pass, confirm, { pass = it; error = null }, { confirm = it; error = null }, busy, error,
-            progress = if (forgot) null else 2, title = if (forgot) "Choose a new passphrase" else "Lock it with a passphrase",
+            pass, { pass = it; error = null }, busy, error,
+            progress = if (forgot) null else 2, title = if (forgot) "Choose a new passphrase" else "Add a passphrase",
             cta = if (restoring) "Restore account" else "Continue",
-            onBack = { step = if (forgot) Step.Restore else Step.Name }, onNext = ::finishIdentity,
+            onBack = { step = if (forgot) Step.Restore else Step.Name },
+            onNext = { val p = pass; pass = ""; finishIdentity(p) },
+            onSkip = { pass = ""; finishIdentity("") },
         )
-        Step.Phrase -> PhraseScreen(phrase.orEmpty(), onNext = { step = Step.Check })
-        Step.Check -> QuickCheckScreen(phrase.orEmpty(), onBack = { step = Step.Phrase }, onPassed = { step = Step.Terms })
-        Step.Terms -> TermsScreen(progress = 5, onBack = null) { LegalStore.accept(ctx); step = Step.Perms }
+        Step.Phrase -> PhraseScreen(phrase.orEmpty(), onNext = { step = Step.Terms })
+        Step.Terms -> TermsScreen(progress = 4, onBack = null) { LegalStore.accept(ctx); step = Step.Perms }
         Step.Perms -> PermissionsScreen(missing, onFix, onDone)
     }
 }
@@ -192,44 +196,30 @@ fun NameScreen(name: String, onChange: (String) -> Unit, onBack: () -> Unit, pro
 
 // ------------------------------------------------------------------ 3 passphrase
 
+/** One passphrase field of any length and the explainer; shared by onboarding, add and change. */
 @Composable
-fun StrengthMeter(pass: String) {
-    val c = Tin.c
-    val s = passphraseStrength(pass)
-    val col = when (s) { 1 -> c.er; 2 -> c.threadText; else -> c.pr }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        for (i in 1..4) Box(Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(if (i <= s) col else c.ln))
-        Text(strengthLabel(s).ifEmpty { " " }, Modifier.padding(start = 6.dp).widthIn(min = 48.dp), style = TinType.label.copy(fontSize = 13.sp, lineHeight = 18.sp), color = col)
-    }
-}
-
-/** Passphrase + "type it again" with the meter and the explainer; shared by onboarding, set and change. */
-@Composable
-fun NewPassphraseFields(pass: String, confirm: String, onPass: (String) -> Unit, onConfirm: (String) -> Unit, enabled: Boolean = true, why: Boolean = true) {
-    TinField(pass, onPass, "Passphrase", mono = true, password = true, enabled = enabled)
-    StrengthMeter(pass)
-    if (pass.isNotEmpty() && pass.length < MIN_PASSPHRASE) Hint("At least $MIN_PASSPHRASE characters", color = Tin.c.er)
-    TinField(confirm, onConfirm, "Type it again", mono = true, password = true, enabled = enabled,
-        state = if (confirm.isNotEmpty() && pass != confirm) FieldState.Error else FieldState.Normal,
-        hint = if (confirm.isNotEmpty() && pass != confirm) "Passphrases don’t match" else null)
+fun NewPassphraseField(pass: String, onPass: (String) -> Unit, enabled: Boolean = true, onDone: () -> Unit = {}, label: String = "Passphrase", why: Boolean = true) {
+    TinField(pass, onPass, label, mono = true, password = true, enabled = enabled,
+        keyboard = KeyboardOptions(imeAction = ImeAction.Done), actions = KeyboardActions(onDone = { if (pass.isNotEmpty() && enabled) onDone() }))
     if (why) InfoCard(
-        "Three or four random words work well. Your phone remembers it so calls still ring after a restart — you’ll need it to see your recovery phrase.",
-        icon = Icons.Rounded.Info,
+        "Any length works; a few random words are easy to remember. Your phone remembers it so calls still ring after a restart — you’ll need it to see your recovery phrase.",
+        icon = Icons.Rounded.Key,
     )
 }
 
 @Composable
 fun PassphraseStep(
-    pass: String, confirm: String, onPass: (String) -> Unit, onConfirm: (String) -> Unit, busy: Boolean, error: String?,
-    progress: Int?, title: String, cta: String, onBack: (() -> Unit)?, onNext: () -> Unit,
+    pass: String, onPass: (String) -> Unit, busy: Boolean, error: String?,
+    progress: Int?, title: String, cta: String, onBack: (() -> Unit)?, onNext: () -> Unit, onSkip: () -> Unit,
 ) {
     StepFrame(progress, onBack, footer = {
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 8.dp), color = Tin.c.pr, trackColor = Tin.c.sf3)
-        TinButton(if (busy) "Encrypting…" else cta, onNext, enabled = !busy && passphraseProblem(pass, confirm) == null)
+        TinButton(if (busy) "Encrypting…" else cta, onNext, enabled = !busy && pass.isNotEmpty())
+        TinButton("Skip for now", onSkip, style = BtnStyle.Text, enabled = !busy)
     }) {
         H1(title)
-        Lead("Your account lives only on this phone. The passphrase encrypts it, so nobody holding your phone can copy it.")
-        NewPassphraseFields(pass, confirm, onPass, onConfirm, !busy)
+        Lead("Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it. Optional — you can add one later in Settings.")
+        NewPassphraseField(pass, onPass, !busy, onDone = onNext)
         if (error != null) Text(error, style = TinType.bodyM, color = Tin.c.er)
     }
 }
@@ -274,79 +264,7 @@ fun PhraseScreen(phrase: String, onNext: () -> Unit) {
     }
 }
 
-// ------------------------------------------------------------------ 5 quick check
-
-private class Quiz(val indices: List<Int>, val options: List<String>)
-
-private fun makeQuiz(ctx: android.content.Context, phrase: String): Quiz {
-    val words = phrase.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
-    val rnd = java.security.SecureRandom()
-    val idx = (words.indices).shuffled(kotlin.random.Random(rnd.nextLong())).take(3).sorted()
-    val correct = idx.map { words[it] }
-    val decoys = Wordlist.get(ctx).filter { it !in words }.shuffled(kotlin.random.Random(rnd.nextLong())).take(6 - correct.toSet().size)
-    return Quiz(idx, (correct.toSet() + decoys).shuffled(kotlin.random.Random(rnd.nextLong())))
-}
-
-@Composable
-fun QuickCheckScreen(phrase: String, onBack: () -> Unit, onPassed: () -> Unit) {
-    val ctx = LocalContext.current
-    val c = Tin.c
-    val quiz = remember(phrase) { makeQuiz(ctx, phrase) }
-    val words = remember(phrase) { phrase.trim().split(Regex("\\s+")) }
-    val answers = remember { mutableStateListOf<String?>(null, null, null) }
-    var wrong by remember { mutableStateOf(false) }
-    val active = answers.indexOfFirst { it == null }
-    val ready = active == -1
-    StepFrame(4, onBack, footer = {
-        TinButton("Show the words again", onBack, style = BtnStyle.Text)
-        TinButton("Check", {
-            val ok = quiz.indices.indices.all { answers[it] == words[quiz.indices[it]] }
-            if (ok) onPassed() else { wrong = true; for (i in 0..2) answers[i] = null }
-        }, enabled = ready)
-    }) {
-        H1("Quick check")
-        Lead("Pick the right words, so we know your copy is complete.")
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
-            quiz.indices.forEachIndexed { n, wordIndex ->
-                val a = answers[n]
-                val shape = RoundedCornerShape(12.dp)
-                val m = Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(shape)
-                Row(
-                    when {
-                        a != null -> m.background(c.prc).clickable(role = Role.Button) { answers[n] = null; wrong = false }
-                        n == active -> m.border(2.dp, c.pr, shape)
-                        else -> m.drawBehind {
-                            drawRoundRect(c.ln2, cornerRadius = CornerRadius(12.dp.toPx()),
-                                style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))))
-                        }
-                    }.padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text("Word ${wordIndex + 1}", Modifier.width(64.dp), style = TinType.bodyM.copy(fontSize = 13.sp), color = if (a != null) c.onPrc else c.ink2)
-                    if (a != null) {
-                        Text(a, Modifier.weight(1f), style = TinType.mono.copy(fontSize = 16.sp), color = c.onPrc)
-                        Icon(Icons.Rounded.Check, "Selected", tint = c.onPrc)
-                    } else if (n == active) Text("?", style = TinType.mono.copy(fontSize = 16.sp), color = c.ink2)
-                }
-            }
-        }
-        @OptIn(ExperimentalLayoutApi::class)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-            quiz.options.forEach { w ->
-                val used = w in answers
-                Box(
-                    Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(50)).background(c.sf).border(1.dp, c.ln2, RoundedCornerShape(50))
-                        .clickable(enabled = !used && !ready, role = Role.Button) { answers[active] = w; wrong = false }
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center,
-                ) { Text(w, style = TinType.mono.copy(fontSize = 15.sp), color = if (used) c.ink2.copy(alpha = 0.4f) else c.ink) }
-            }
-        }
-        if (wrong) Text("Not quite. Look at your words once more and try again.", style = TinType.bodyM, color = c.er)
-    }
-}
-
-// ------------------------------------------------------------------ 6 terms
+// ------------------------------------------------------------------ 5 terms
 
 @Composable
 fun TermsScreen(progress: Int?, onBack: (() -> Unit)?, onAgree: () -> Unit) {
@@ -389,7 +307,7 @@ private fun TermPoint(icon: ImageVector, bold: String, rest: String) {
     }
 }
 
-// ------------------------------------------------------------------ 7 permissions
+// ------------------------------------------------------------------ 6 permissions
 
 @Composable
 fun PermissionsScreen(missing: List<Need>, onFix: (Need) -> Unit, onDone: () -> Unit) {

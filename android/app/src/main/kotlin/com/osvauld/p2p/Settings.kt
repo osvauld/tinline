@@ -57,6 +57,7 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf(app.node.profile()?.name ?: "") }
     var editing by remember { mutableStateOf(false) }
+    val hasPass = remember { app.node.hasPassphrase() }
     val bgOk = missing.none { it == Need.Battery || it == Need.Notifications || it == Need.FullScreen || it == Need.Mic }
     Page {
         TopBar("Settings", onBack)
@@ -77,8 +78,9 @@ fun SettingsScreen(
             ListItem("Background & battery", onClick = onBattery, icon = Icons.Rounded.BatteryChargingFull,
                 sub = if (bgOk) "All set — calls will ring" else "Needs attention")
             SectionLabel("SECURITY")
-            ListItem("Change passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key)
-            ListItem("Recovery phrase", onClick = onPhrase, icon = Icons.Rounded.Lock, sub = "Needs your passphrase")
+            if (hasPass) ListItem("Change passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key)
+            else ListItem("Add passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key, sub = "Optional — encrypts your account")
+            ListItem("Recovery phrase", onClick = onPhrase, icon = Icons.Rounded.Lock, sub = if (hasPass) "Needs your passphrase" else "Needs your screen lock")
             SectionLabel("ABOUT")
             ListItem("About Tinline", onClick = onAbout, icon = Icons.Rounded.Info, sub = "Version, licences, terms, privacy")
             if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = Icons.Rounded.BugReport, sub = "Test tone and core version (debug builds)")
@@ -137,14 +139,16 @@ private fun CheckRow(icon: androidx.compose.ui.graphics.vector.ImageVector, titl
 
 // ------------------------------------------------------------------ recovery phrase
 
-/** Asks for the passphrase, then reveals the phrase through [onPhrase]. */
+/** Asks for the passphrase (or, with none set, the screen lock), then reveals the phrase through [onPhrase]. */
 @Composable
 fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit) {
     val scope = rememberCoroutineScope()
+    val ctx = LocalContext.current
+    val hasPass = remember { app.node.hasPassphrase() }
     var pass by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    fun go() {
+    fun reveal() {
         busy = true; error = null
         scope.launch {
             val r = withContext(Dispatchers.IO) { runCatching { app.node.recoveryPhrase(pass) } }
@@ -153,18 +157,25 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
             r.onSuccess { pass = ""; onPhrase(it) }
         }
     }
+    fun go() {
+        val act = ctx.findActivity()
+        if (hasPass || act == null) reveal()
+        else DeviceAuth.ask(act, "Show recovery phrase") { ok -> if (ok) reveal() else error = "Screen lock check cancelled" }
+    }
     Page {
         TopBar("Recovery phrase", onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Box(Modifier.size(64.dp).clip(CircleShape).background(Tin.c.prc), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Lock, null, tint = Tin.c.onPrc, modifier = Modifier.size(28.dp)) }
-            Text("Enter your passphrase", style = TinType.h1.copy(fontSize = 26.sp, lineHeight = 32.sp), color = Tin.c.ink)
-            Lead("Your recovery phrase is the key to your account, so we check it’s really you first.")
-            TinField(pass, { pass = it; error = null }, "Passphrase", mono = true, password = true, enabled = !busy,
+            Text(if (hasPass) "Enter your passphrase" else "Confirm it’s you", style = TinType.h1.copy(fontSize = 26.sp, lineHeight = 32.sp), color = Tin.c.ink)
+            Lead(if (hasPass) "Your recovery phrase is the key to your account, so we check it’s really you first."
+            else "Your recovery phrase is the key to your account, so we ask for your phone’s screen lock first.")
+            if (hasPass) TinField(pass, { pass = it; error = null }, "Passphrase", mono = true, password = true, enabled = !busy,
                 state = if (error != null) FieldState.Error else FieldState.Normal, hint = error,
                 keyboard = KeyboardOptions(imeAction = ImeAction.Done), actions = KeyboardActions(onDone = { if (pass.isNotEmpty() && !busy) go() }))
+            else error?.let { Text(it, style = TinType.bodyM, color = Tin.c.er) }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Tin.c.pr, trackColor = Tin.c.sf3)
         }
-        Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Show recovery phrase", ::go, enabled = pass.isNotEmpty() && !busy) }
+        Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Show recovery phrase", ::go, enabled = (!hasPass || pass.isNotEmpty()) && !busy) }
     }
 }
 
@@ -184,36 +195,38 @@ fun PhraseShownScreen(phrase: String, onHide: () -> Unit) {
     }
 }
 
-// ------------------------------------------------------------------ change passphrase
+// ------------------------------------------------------------------ add / change passphrase
 
+/** Adds a passphrase when none is set (the data key is rewrapped, nothing re-encrypted), else changes it. */
 @Composable
 fun ChangePassphraseScreen(app: P2pApp, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
+    val has = remember { app.node.hasPassphrase() }
     var old by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
-    var confirm by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var done by remember { mutableStateOf(false) }
+    val title = if (has) "Change passphrase" else "Add passphrase"
     Page {
-        TopBar("Change passphrase", onBack)
+        TopBar(title, onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            TinField(old, { old = it; error = null }, "Current passphrase", mono = true, password = true, enabled = !busy,
+            if (has) TinField(old, { old = it; error = null }, "Current passphrase", mono = true, password = true, enabled = !busy,
                 state = if (error != null) FieldState.Error else FieldState.Normal, hint = error)
-            NewPassphraseFields(pass, confirm, { pass = it; error = null }, { confirm = it; error = null }, !busy, why = false)
+            else Lead("Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it.")
+            NewPassphraseField(pass, { pass = it; error = null }, !busy, label = if (has) "New passphrase" else "Passphrase", why = !has)
+            if (!has) error?.let { Text(it, style = TinType.bodyM, color = Tin.c.er) }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Tin.c.pr, trackColor = Tin.c.sf3)
-            if (done) InfoCard("Passphrase changed.", icon = Icons.Rounded.CheckCircle)
         }
         Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) {
-            TinButton(if (busy) "Encrypting…" else "Change passphrase", {
+            TinButton(if (busy) "Encrypting…" else title, {
                 busy = true; error = null
                 scope.launch {
-                    val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(old, pass) } }
+                    val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(if (has) old else null, pass) } }
                     busy = false
                     r.onFailure { error = friendly(it) }
-                    r.onSuccess { withContext(Dispatchers.IO) { app.rememberKey() }; old = ""; pass = ""; confirm = ""; done = true; onBack() }
+                    r.onSuccess { withContext(Dispatchers.IO) { app.rememberKey() }; old = ""; pass = ""; onBack() }
                 }
-            }, enabled = old.isNotEmpty() && passphraseProblem(pass, confirm) == null && !busy)
+            }, enabled = (!has || old.isNotEmpty()) && pass.isNotEmpty() && !busy)
         }
     }
 }
