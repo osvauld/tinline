@@ -82,6 +82,75 @@ Framing: u32 big-endian length + JSON `Msg` (`{"t": "...", ...}`), max 64 KiB. T
 is rejected from the header alone. `decode_frame` returns `None` until a whole frame is
 buffered and reports bytes consumed.
 
+## Multi-device
+
+Design: `docs/design/device-linking.md`. Implemented in `crates/proto` (`DeviceList`,
+`Cancel`, `link.rs`); all additive, old peers still parse the messages they know.
+
+### DeviceList
+
+`DeviceList { v: 1, did, seq, devices: [{ device, relay? }] }`, a `SignedBlob` under domain
+`osvauld/p2p/devices/v1\0`, signed by the DID. `seq` is unix ms chosen by the signer.
+`verify_device_list(blob, expected_did)`: signature by the DID in the payload, DID equals the
+expected one, 1..=8 devices, no duplicates, version 1. A relay hint failing the syntactic
+check (`https://`, at most 200 chars, no whitespace or control characters; the core also parses
+it as a relay URL) is dropped and the device kept, like a bad hint in a hello.
+`newer(a, b)`: higher `seq` wins; on equal `seq` the lexicographically larger signature wins,
+so every receiver converges on the same list. Carried in optional `devices` fields of
+`CallHello` and `Accept` (omitted from the wire when absent).
+
+### Cancel
+
+`Cancel { reason }`, reason one of `answered_elsewhere | declined_elsewhere | caller_hangup`.
+The caller sends it to the other devices of the callee that it dialled with the same
+`call_id` (the first `Accept` wins; a `Decline` from any device ends the call).
+
+### Link QR
+
+`OSVL1:` + base32 (uppercase, no padding; decode is case-insensitive, trims whitespace) of
+`v(1) | device[32] | link_secret[16] | exp[3] | flags[1] [| len | url]`. `exp` is minutes since
+2026-01-01T00:00:00Z (u24 BE, rounded up, default ttl 5 min). `flags` high 3 bits are the
+relay code of the contact ticket (0 none, 1..4 known relays, 7 custom with u8 length + URL);
+the low 5 bits must be zero. Trailing bytes are refused. Not signed: a bearer secret.
+
+### Link handshake (ALPN `tinline/link/1`)
+
+E = existing device, N = new one; either may display. `T = "tinline/link/v1" || e_dev || n_dev ||
+secret`, `K = HKDF-SHA256(ikm = secret, info = T)`.
+
+- `LinkHello { role: scanner|displayer, proof }`, `proof = HMAC-SHA256(K, role || own_device)`
+  (compared in constant time against the QUIC-authenticated remote device).
+- Confirmation code: first 20 bits of `HMAC(K, "confirm")` mod 1,000,000, shown `482 913`.
+- `LinkGrant { sealed }`: `b64url(nonce(12) || AES-256-GCM)` under `HKDF(K, "grant")`, AAD =
+  `T`; plaintext JSON `LinkGrantBody { mnemonic, account_name, registry: [{attestation, label,
+  removed}] }`.
+- `LinkDone { attestation, label }`: `accept_link_done` requires a valid attestation, DID ==
+  ours, device == `remote_device`; the label is sanitized (64 chars).
+- `Unlinked`, `Reject { reason }`. `LinkMsg` is a separate type with the same framing; call
+  peers never parse it.
+
+### Own-device sync authorization
+
+`accept_self_hello(attestation, my_did, remote_device, tombstoned)`: attestation verifies, DID
+== ours, device == `remote_device`, device not tombstoned. No grant is involved: a call grant
+is not an attestation and never opens self-sync, and a self attestation without a grant of ours
+never gets a call accepted.
+
+| Check | Defends against |
+|---|---|
+| Devices-domain signature, DID == expected | A list forged or lifted from another account or blob kind |
+| At most 8 devices, no duplicates, relay hint check | Dial-amplification, junk hints stored and dialled |
+| `newer`: seq then signature tie-break | Replay of an old list; receivers disagreeing on a tie |
+| `Cancel` sent only by the caller on its own call | (informational; callee ignores it for unknown `call_id`) |
+| QR secret in `K`, proof bound to role and own device | A scanner without the QR; a proof reflected back with the roles swapped |
+| `T` includes both device keys | Proofs and sealed grants replayed onto another device pair |
+| Constant-time proof compare | Timing oracle on the secret |
+| 5 minute `exp`, single use (caller closes listener) | A photographed QR used later |
+| Confirmation code on both screens | A third device racing a photographed QR |
+| Sealed grant AEAD with AAD `T` | Tampering or splicing the mnemonic transfer; wrong-pair delivery |
+| `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
+| Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
+
 ## What each check defends against
 
 | Check | Defends against |

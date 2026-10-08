@@ -13,3 +13,6 @@ base64.workspace = true
 rand.workspace = true
 sha2 = "0.10"
 ed25519-dalek = { version = "2", features = ["rand_core"] }
+aes-gcm = "0.10"
+hkdf = "0.12"
+hmac = "0.12"

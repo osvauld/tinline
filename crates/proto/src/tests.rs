@@ -627,9 +627,14 @@ fn frame_roundtrip_all_variants() {
         },
         Msg::Accept {
             renewed_grant: None,
+            devices: None,
         },
         Msg::Accept {
             renewed_grant: Some(g),
+            devices: None,
+        },
+        Msg::Cancel {
+            reason: CancelReason::AnsweredElsewhere,
         },
     ];
     for m in msgs {
@@ -694,4 +699,301 @@ fn peer_names_are_sanitized_on_receipt() {
     let back = ContactTicket::from_text(&t.to_text()).unwrap();
     assert_eq!(back.verify(T0 + 1).unwrap().name, "alice");
     assert_eq!(pending.name, "alice");
+}
+
+// ---- multi-device ------------------------------------------------------------------
+
+fn dev() -> [u8; 32] {
+    device_public(&new_device_secret())
+}
+
+fn list_of(a: &Peer, n: usize, seq: u64) -> SignedBlob {
+    let devs: Vec<_> = (0..n).map(|_| (dev(), None)).collect();
+    sign_device_list(&a.id, &devs, seq)
+}
+
+#[test]
+fn device_list_roundtrip_and_bad_relay_dropped() {
+    let a = peer();
+    let (d1, d2) = (dev(), dev());
+    let blob = sign_device_list(
+        &a.id,
+        &[(d1, Some("https://relay.example/".into())), (d2, Some("http://bad".into()))],
+        42,
+    );
+    let l = verify_device_list(&blob, a.id.did()).unwrap();
+    assert_eq!((l.seq, l.did.as_str()), (42, a.id.did()));
+    assert_eq!(l.devices[0].device_key().unwrap(), d1);
+    assert_eq!(l.devices[0].relay.as_deref(), Some("https://relay.example/"));
+    assert_eq!(l.devices[1].relay, None);
+}
+
+#[test]
+fn device_list_forged_wrong_did_and_limits() {
+    let (a, b) = (peer(), peer());
+    let blob = list_of(&a, 2, 1);
+    assert_eq!(verify_device_list(&blob, b.id.did()), Err(Error::WrongIssuer));
+    // Signature by someone else over a payload claiming A.
+    let forged = SignedBlob {
+        signature: list_of(&b, 2, 1).signature,
+        ..blob.clone()
+    };
+    assert_eq!(verify_device_list(&forged, a.id.did()), Err(Error::BadSignature));
+    // Another domain's blob (an attestation) is not a device list.
+    assert!(verify_device_list(&attest(&a.id, a.dev, T0), a.id.did()).is_err());
+    assert!(verify_device_list(&list_of(&a, MAX_LIST_DEVICES, 1), a.id.did()).is_ok());
+    assert_eq!(
+        verify_device_list(&list_of(&a, MAX_LIST_DEVICES + 1, 1), a.id.did()),
+        Err(Error::TooManyDevices)
+    );
+    let d = dev();
+    let dup = sign_device_list(&a.id, &[(d, None), (d, None)], 1);
+    assert_eq!(verify_device_list(&dup, a.id.did()), Err(Error::Decode));
+    let empty = sign_device_list(&a.id, &[], 1);
+    assert!(verify_device_list(&empty, a.id.did()).is_err());
+}
+
+#[test]
+fn device_list_ordering() {
+    let a = peer();
+    let (old, new) = (list_of(&a, 1, 10), list_of(&a, 2, 11));
+    assert!(newer(&new, &old) && !newer(&old, &new));
+    assert!(!newer(&old, &old));
+    // Tie: exactly one side wins, and it is the larger signature.
+    let (x, y) = (list_of(&a, 1, 20), list_of(&a, 2, 20));
+    assert_ne!(newer(&x, &y), newer(&y, &x));
+    let (xs, ys) = (dec(&x.signature).unwrap(), dec(&y.signature).unwrap());
+    assert_eq!(newer(&x, &y), xs > ys);
+    let junk = SignedBlob { payload: "!".into(), signature: "!".into() };
+    assert!(newer(&old, &junk) && !newer(&junk, &old));
+}
+
+#[test]
+fn old_format_messages_still_parse() {
+    let a = peer();
+    let g = issue_grant(&a.id, a.id.did(), T0, GTTL);
+    let att = attest(&a.id, a.dev, T0);
+    let hello = serde_json::json!({"t":"call_hello","call_id":"c","attestation":att,"grant":g});
+    match serde_json::from_value::<Msg>(hello).unwrap() {
+        Msg::CallHello { devices, relay, .. } => assert!(devices.is_none() && relay.is_none()),
+        _ => panic!(),
+    }
+    let acc = serde_json::json!({"t":"accept","renewed_grant":null});
+    assert_eq!(
+        serde_json::from_value::<Msg>(acc).unwrap(),
+        Msg::Accept { renewed_grant: None, devices: None }
+    );
+    // And without the new fields set, we emit exactly the old wire shape.
+    let m = call_hello(&a.id, att, g, "c".into());
+    assert!(!serde_json::to_string(&m).unwrap().contains("devices"));
+}
+
+#[test]
+fn cancel_tokens() {
+    for (r, t) in [
+        (CancelReason::AnsweredElsewhere, "answered_elsewhere"),
+        (CancelReason::DeclinedElsewhere, "declined_elsewhere"),
+        (CancelReason::CallerHangup, "caller_hangup"),
+    ] {
+        let j = serde_json::to_value(Msg::Cancel { reason: r }).unwrap();
+        assert_eq!(j, serde_json::json!({"t":"cancel","reason":t}));
+    }
+    assert!(serde_json::from_str::<Msg>(r#"{"t":"cancel","reason":"nope"}"#).is_err());
+}
+
+#[test]
+fn call_hello_with_max_device_list_fits_frame() {
+    let a = peer();
+    let long = format!("https://{}.example/", "r".repeat(150));
+    let devs: Vec<_> = (0..MAX_LIST_DEVICES).map(|_| (dev(), Some(long.clone()))).collect();
+    let list = sign_device_list(&a.id, &devs, u64::MAX);
+    let mut m = call_hello(
+        &a.id,
+        attest(&a.id, a.dev, T0),
+        issue_grant(&a.id, a.id.did(), T0, GTTL),
+        "x".repeat(64),
+    );
+    if let Msg::CallHello { devices, relay, .. } = &mut m {
+        *devices = Some(list);
+        *relay = Some(long);
+    }
+    let f = encode_frame(&m);
+    assert!(f.len() - 4 < MAX_FRAME, "{}", f.len());
+    assert_eq!(decode_frame(&f).unwrap().unwrap().0, m);
+}
+
+// ---- link QR -----------------------------------------------------------------------
+
+#[test]
+fn link_qr_roundtrip_case_and_expiry() {
+    for relay in [None, Some(KNOWN_RELAYS[2].to_string()), Some("https://my.relay/x".to_string())] {
+        let q = new_link_qr(dev(), relay, T0, LINK_TTL_SECS);
+        let t = q.to_text();
+        assert!(t.starts_with("OSVL1:") && t.chars().all(|c| c.is_ascii_alphanumeric() || c == ':'));
+        assert_eq!(LinkQr::from_text(&t).unwrap(), q);
+        assert_eq!(LinkQr::from_text(&format!("  {}\n", t.to_lowercase())).unwrap(), q);
+        assert!(!q.is_expired(T0 + 299));
+        assert!(q.is_expired(T0 + 360));
+        assert!(q.exp >= T0 + LINK_TTL_SECS);
+    }
+    let q = new_link_qr(dev(), None, T0, 300);
+    assert_ne!(q.secret, new_link_qr(q.device, None, T0, 300).secret);
+    assert_eq!(LinkQr::from_text("OSVC2:AAAA"), Err(Error::UnknownVersion));
+    assert!(LinkQr::from_text(&format!("{}A", q.to_text())).is_err());
+    assert!(LinkQr::from_text("OSVL1:AAAA").is_err());
+    assert!(LinkQr::from_text("").is_err());
+}
+
+// ---- link handshake ----------------------------------------------------------------
+
+const SECRET: [u8; 16] = [7; 16];
+
+#[test]
+fn link_proofs() {
+    let (e, n) = (dev(), dev());
+    let p = link_proof(&SECRET, &e, &n, LinkRole::Scanner, &n);
+    assert!(verify_link_proof(&SECRET, &e, &n, LinkRole::Scanner, &n, &p).is_ok());
+    assert!(verify_link_proof(&[8; 16], &e, &n, LinkRole::Scanner, &n, &p).is_err());
+    assert!(verify_link_proof(&SECRET, &e, &n, LinkRole::Displayer, &n, &p).is_err());
+    assert!(verify_link_proof(&SECRET, &e, &n, LinkRole::Scanner, &e, &p).is_err());
+    assert!(verify_link_proof(&SECRET, &n, &e, LinkRole::Scanner, &n, &p).is_err());
+    assert!(verify_link_proof(&SECRET, &e, &n, LinkRole::Scanner, &n, &p[..31]).is_err());
+    // Message form.
+    let hello = link_hello(&SECRET, &e, &n, LinkRole::Displayer, &e);
+    assert!(accept_link_hello(&SECRET, &e, &n, LinkRole::Displayer, &e, &hello).is_ok());
+    assert!(accept_link_hello(&SECRET, &e, &n, LinkRole::Scanner, &e, &hello).is_err());
+    assert!(accept_link_hello(&SECRET, &e, &n, LinkRole::Displayer, &n, &hello).is_err());
+    assert!(accept_link_hello(&SECRET, &e, &n, LinkRole::Displayer, &e, &LinkMsg::Unlinked).is_err());
+}
+
+#[test]
+fn confirm_codes() {
+    let (e, n) = (dev(), dev());
+    let c = confirm_code(&SECRET, &e, &n);
+    assert_eq!(c, confirm_code(&SECRET, &e, &n));
+    let b = c.as_bytes();
+    assert!(c.len() == 7 && b[3] == b' ' && c.replace(' ', "").bytes().all(|x| x.is_ascii_digit()));
+    // Over many secrets/devices codes vary and are always well formed.
+    let mut seen = HashSet::new();
+    for i in 0..50u8 {
+        let c = confirm_code(&[i; 16], &e, &n);
+        assert_eq!(c.len(), 7);
+        seen.insert(c);
+    }
+    assert!(seen.len() > 40);
+    assert_ne!(confirm_code(&[8; 16], &e, &n), c);
+    assert_ne!(confirm_code(&SECRET, &e, &dev()), c);
+}
+
+fn body(e: &Peer) -> LinkGrantBody {
+    LinkGrantBody {
+        mnemonic: "word ".repeat(24),
+        account_name: "Me".into(),
+        registry: vec![RegistryEntry {
+            attestation: attest(&e.id, e.dev, T0),
+            label: "Pixel".into(),
+            removed: false,
+        }],
+    }
+}
+
+#[test]
+fn link_grant_seal_open() {
+    let (e, n) = (peer(), dev());
+    let sealed = seal_link_grant(&SECRET, &e.dev, &n, b"secret words");
+    assert_eq!(open_link_grant(&SECRET, &e.dev, &n, &sealed).unwrap(), b"secret words");
+    assert!(open_link_grant(&[8; 16], &e.dev, &n, &sealed).is_err());
+    assert!(open_link_grant(&SECRET, &n, &e.dev, &sealed).is_err());
+    let mut raw = dec(&sealed).unwrap();
+    *raw.last_mut().unwrap() ^= 1;
+    assert!(open_link_grant(&SECRET, &e.dev, &n, &enc(raw)).is_err());
+    assert!(open_link_grant(&SECRET, &e.dev, &n, "AA").is_err());
+    assert_ne!(sealed, seal_link_grant(&SECRET, &e.dev, &n, b"secret words"));
+
+    let b = body(&e);
+    let msg = seal_link_grant_body(&SECRET, &e.dev, &n, &b);
+    let f = encode_link_frame(&msg);
+    let (back, used) = decode_link_frame(&f).unwrap().unwrap();
+    assert_eq!(used, f.len());
+    assert_eq!(open_link_grant_body(&SECRET, &e.dev, &n, &back).unwrap(), b);
+    assert!(open_link_grant_body(&[8; 16], &e.dev, &n, &back).is_err());
+    let json = serde_json::to_string(&back).unwrap();
+    assert!(!json.contains("word") && json.contains("\"t\":\"link_grant\""));
+}
+
+#[test]
+fn link_grant_with_full_registry_fits_frame() {
+    let e = peer();
+    let mut b = body(&e);
+    b.registry = (0..MAX_LIST_DEVICES * 2)
+        .map(|_| RegistryEntry { attestation: attest(&e.id, dev(), T0), label: "x".repeat(64), removed: false })
+        .collect();
+    let f = encode_link_frame(&seal_link_grant_body(&SECRET, &e.dev, &dev(), &b));
+    assert!(f.len() - 4 < MAX_FRAME, "{}", f.len());
+}
+
+#[test]
+fn link_done_checks() {
+    let (e, n, other) = (peer(), peer(), peer());
+    let done = |att| LinkMsg::LinkDone { attestation: att, label: format!("Ph\u{202E}one{}", "x".repeat(100)) };
+    // N holds E's identity after import: same DID, its own device key.
+    let n_dev = dev();
+    let ok = accept_link_done(&done(attest(&e.id, n_dev, T0)), e.id.did(), n_dev).unwrap();
+    assert_eq!(ok.attestation.did, e.id.did());
+    assert_eq!(ok.label.chars().count(), MAX_NAME_CHARS);
+    assert!(!ok.label.contains('\u{202E}'));
+    assert_eq!(
+        accept_link_done(&done(attest(&other.id, n_dev, T0)), e.id.did(), n_dev),
+        Err(Error::WrongIssuer)
+    );
+    assert_eq!(
+        accept_link_done(&done(attest(&e.id, n_dev, T0)), e.id.did(), n.dev),
+        Err(Error::DeviceMismatch)
+    );
+    let mut forged = attest(&e.id, n_dev, T0);
+    forged.signature = attest(&other.id, n_dev, T0).signature;
+    assert_eq!(accept_link_done(&done(forged), e.id.did(), n_dev), Err(Error::BadSignature));
+    assert_eq!(
+        accept_link_done(&LinkMsg::Unlinked, e.id.did(), n_dev),
+        Err(Error::UnexpectedMessage)
+    );
+}
+
+// ---- own-device sync ---------------------------------------------------------------
+
+#[test]
+fn self_hello_checks() {
+    let (a, other) = (peer(), peer());
+    let d2 = dev();
+    let none = HashSet::new();
+    let att = attest(&a.id, d2, T0);
+    assert!(accept_self_hello(&att, a.id.did(), d2, &none).is_ok());
+    assert_eq!(
+        accept_self_hello(&attest(&other.id, d2, T0), a.id.did(), d2, &none),
+        Err(Error::WrongIssuer)
+    );
+    assert_eq!(accept_self_hello(&att, a.id.did(), dev(), &none), Err(Error::DeviceMismatch));
+    assert_eq!(
+        accept_self_hello(&att, a.id.did(), d2, &HashSet::from([d2])),
+        Err(Error::Tombstoned)
+    );
+    // Unrelated tombstones don't matter.
+    assert!(accept_self_hello(&att, a.id.did(), d2, &HashSet::from([dev()])).is_ok());
+}
+
+#[test]
+fn call_grant_and_self_sync_do_not_cross() {
+    let (a, b) = (peer(), peer());
+    let none = HashSet::new();
+    // A call grant is not an attestation, so it cannot open own-device sync.
+    let g = issue_grant(&a.id, b.id.did(), T0, GTTL);
+    assert!(accept_self_hello(&g, a.id.did(), b.dev, &none).is_err());
+    // A self attestation alone (no grant from us) does not get a call accepted: here A's
+    // second device calls A's first with a grant from a stranger, and also as a non-contact.
+    let d2 = dev();
+    let hello = call_hello(&a.id, attest(&a.id, d2, T0), issue_grant(&b.id, a.id.did(), T0, GTTL), "c".into());
+    assert_eq!(
+        accept_call_hello(&a.id, &hello, d2, T0 + 1, &self::none(), |_| true),
+        Err(Error::WrongIssuer)
+    );
 }

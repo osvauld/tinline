@@ -24,6 +24,7 @@ const INVITE_DOMAIN: &[u8] = b"osvauld/p2p/invite/v1\0";
 const GRANT_DOMAIN: &[u8] = b"osvauld/p2p/grant/v1\0";
 const INVITE_V2_DOMAIN: &[u8] = b"osvauld/p2p/invite/v2\0";
 const BIND_DOMAIN: &[u8] = b"osvauld/p2p/bind/v1\0";
+const DEVICES_DOMAIN: &[u8] = b"osvauld/p2p/devices/v1\0";
 
 const VERSION: u8 = 1;
 const TICKET_PREFIX: &str = "osvc1.";
@@ -63,6 +64,10 @@ pub enum Error {
     UnexpectedMessage,
     #[error("cannot add yourself")]
     SelfContact,
+    #[error("too many devices")]
+    TooManyDevices,
+    #[error("device was removed from the account")]
+    Tombstoned,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -603,10 +608,20 @@ pub enum Msg {
         /// The caller's current relay, same kind of hint as in `ContactHello`.
         #[serde(default)]
         relay: Option<String>,
+        /// The caller's signed `DeviceList` (see `sign_device_list`); absent from old peers.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        devices: Option<SignedBlob>,
     },
     Ringing,
     Accept {
         renewed_grant: Option<SignedGrant>,
+        /// The callee's signed `DeviceList`, sent when the caller's copy is older.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        devices: Option<SignedBlob>,
+    },
+    /// Caller to a sibling device of the callee: stop ringing (design: device-linking §7).
+    Cancel {
+        reason: CancelReason,
     },
     Decline {
         reason: String,
@@ -615,8 +630,20 @@ pub enum Msg {
     Hangup,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CancelReason {
+    AnsweredElsewhere,
+    DeclinedElsewhere,
+    CallerHangup,
+}
+
 /// u32 BE length + JSON.
 pub fn encode_frame(msg: &Msg) -> Vec<u8> {
+    encode_json_frame(msg)
+}
+
+fn encode_json_frame<T: Serialize>(msg: &T) -> Vec<u8> {
     let json = serde_json::to_vec(msg).expect("msg serializes");
     let mut out = (json.len() as u32).to_be_bytes().to_vec();
     out.extend(json);
@@ -626,6 +653,10 @@ pub fn encode_frame(msg: &Msg) -> Vec<u8> {
 /// `Ok(None)` = need more bytes. The length is checked before buffering the body so a peer
 /// can't make us wait on (or allocate for) a huge frame.
 pub fn decode_frame(buf: &[u8]) -> Result<Option<(Msg, usize)>> {
+    decode_json_frame(buf)
+}
+
+fn decode_json_frame<T: DeserializeOwned>(buf: &[u8]) -> Result<Option<(T, usize)>> {
     let Some(head) = buf.first_chunk::<4>() else {
         return Ok(None);
     };
@@ -638,6 +669,130 @@ pub fn decode_frame(buf: &[u8]) -> Result<Option<(Msg, usize)>> {
     };
     let msg = serde_json::from_slice(body).map_err(|_| Error::Decode)?;
     Ok(Some((msg, 4 + len)))
+}
+
+// ---- device list -------------------------------------------------------------------
+
+/// Most devices one account may publish (contacts dial all of them).
+pub const MAX_LIST_DEVICES: usize = 8;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DeviceEntry {
+    /// Device key, text form like every other device on the wire.
+    pub device: String,
+    /// Unsigned-in-spirit routing hint; a bad one is dropped on verify, the device is kept.
+    pub relay: Option<String>,
+}
+
+impl DeviceEntry {
+    pub fn device_key(&self) -> Result<[u8; 32]> {
+        dec32(&self.device)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DeviceList {
+    pub v: u8,
+    pub did: String,
+    /// Unix ms chosen by the signer; higher wins (see `newer`).
+    pub seq: u64,
+    pub devices: Vec<DeviceEntry>,
+}
+
+/// Syntactic relay hint check. The core additionally parses it as a `RelayUrl`.
+pub fn valid_relay_hint(h: &str) -> bool {
+    h.len() <= 200
+        && h.len() > "https://".len()
+        && h.starts_with("https://")
+        && !h.chars().any(|c| c.is_control() || c.is_whitespace())
+}
+
+/// Sign the account's device set. Callers keep `devices.len() <= MAX_LIST_DEVICES`.
+pub fn sign_device_list(
+    id: &Identity,
+    devices: &[([u8; 32], Option<String>)],
+    seq: u64,
+) -> SignedBlob {
+    let claim = DeviceList {
+        v: VERSION,
+        did: id.did().to_string(),
+        seq,
+        devices: devices
+            .iter()
+            .map(|(d, r)| DeviceEntry {
+                device: enc(d),
+                relay: r.clone(),
+            })
+            .collect(),
+    };
+    sign_blob(id, DEVICES_DOMAIN, &claim)
+}
+
+pub fn verify_device_list(blob: &SignedBlob, expected_did: &str) -> Result<DeviceList> {
+    let mut list: DeviceList = open_blob(blob, DEVICES_DOMAIN, |c: &DeviceList| &c.did)?;
+    check_version(list.v)?;
+    if list.did != expected_did {
+        return Err(Error::WrongIssuer);
+    }
+    if list.devices.len() > MAX_LIST_DEVICES {
+        return Err(Error::TooManyDevices);
+    }
+    if list.devices.is_empty() {
+        return Err(Error::Decode);
+    }
+    let mut seen = HashSet::new();
+    for e in &mut list.devices {
+        if !seen.insert(e.device_key()?) {
+            return Err(Error::Decode);
+        }
+        if e.relay.as_deref().is_some_and(|r| !valid_relay_hint(r)) {
+            e.relay = None;
+        }
+    }
+    Ok(list)
+}
+
+/// Whether `a` should replace `b`. Both must already have passed `verify_device_list` for the
+/// same DID. Higher `seq` wins; on a tie the lexicographically larger signature does, so every
+/// receiver picks the same list. An unreadable blob loses.
+pub fn newer(a: &SignedBlob, b: &SignedBlob) -> bool {
+    #[derive(Deserialize)]
+    struct S {
+        seq: u64,
+    }
+    let key = |x: &SignedBlob| -> Option<(u64, Vec<u8>)> {
+        let seq = serde_json::from_slice::<S>(&dec(&x.payload).ok()?).ok()?.seq;
+        Some((seq, dec(&x.signature).ok()?))
+    };
+    match (key(a), key(b)) {
+        (Some(a), Some(b)) => a > b,
+        (Some(_), None) => true,
+        _ => false,
+    }
+}
+
+// ---- own-device sync ---------------------------------------------------------------
+
+/// Authorization for `tinline/self/1`: the peer is another device of *our* DID, it is the
+/// device the transport authenticated, and it has not been removed. No grant is involved.
+pub fn accept_self_hello(
+    attestation: &SignedAttestation,
+    my_did: &str,
+    remote_device: [u8; 32],
+    tombstoned: &HashSet<[u8; 32]>,
+) -> Result<Attestation> {
+    let att = verify_attestation(attestation)?;
+    if att.did != my_did {
+        return Err(Error::WrongIssuer);
+    }
+    let dev = att.device_key()?;
+    if dev != remote_device {
+        return Err(Error::DeviceMismatch);
+    }
+    if tombstoned.contains(&dev) {
+        return Err(Error::Tombstoned);
+    }
+    Ok(att)
 }
 
 // ---- add-contact handshake ---------------------------------------------------------
@@ -821,6 +976,7 @@ pub fn call_hello(
         attestation: my_device_attestation,
         grant: grant_from_them,
         relay: None,
+        devices: None,
     }
 }
 
@@ -853,6 +1009,9 @@ pub fn accept_call_hello(
         grant_id: g.id,
     })
 }
+
+mod link;
+pub use link::*;
 
 #[cfg(test)]
 mod tests;
