@@ -25,11 +25,40 @@ use crate::Error;
 
 pub const GC_INTERVAL: Duration = Duration::from_secs(30);
 
+/// A fetch that makes no progress for this long is given up (the connection may be alive but
+/// the peer has stopped sending, e.g. its app was suspended mid-transfer).
+pub const STALL: Duration = Duration::from_secs(20);
+
 /// Whether `device` (an authenticated endpoint key) may read the blob `hash`.
 pub type Gate = Arc<dyn Fn(&[u8; 32], &Hash) -> bool + Send + Sync>;
 
 /// Live upload progress: `(device, hash, bytes sent so far, total)`.
 pub type UploadProgress = Arc<dyn Fn(&[u8; 32], &Hash, u64, u64) + Send + Sync>;
+
+/// A transfer we were serving ended: `(device, hash, completed)`. `completed == false` means
+/// the provider reported it aborted (the peer went away, reset the stream, or we failed).
+pub type UploadEnd = Arc<dyn Fn(&[u8; 32], &Hash, bool) + Send + Sync>;
+
+/// Test-only knobs for the serving side, read once at `open` (like `P2P_CHAT_CLOCK_MS_OFFSET`):
+/// `P2P_BLOB_TEST_THROTTLE_MS` delays every 16 KiB chunk we send by that many ms;
+/// `P2P_BLOB_TEST_STALL_FILE` holds all sending (connection stays up) while that file exists.
+#[derive(Clone, Default)]
+pub(crate) struct TestKnobs {
+    pub(crate) delay_ms: u64,
+    pub(crate) stall_file: Option<PathBuf>,
+}
+
+impl TestKnobs {
+    fn from_env() -> Self {
+        Self {
+            delay_ms: std::env::var("P2P_BLOB_TEST_THROTTLE_MS").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
+            stall_file: std::env::var_os("P2P_BLOB_TEST_STALL_FILE").map(PathBuf::from),
+        }
+    }
+    fn active(&self) -> bool {
+        self.delay_ms > 0 || self.stall_file.is_some()
+    }
+}
 
 pub struct BlobHub {
     store: FsStore,
@@ -47,7 +76,11 @@ pub fn tag_of(hash: &Hash) -> String {
 
 impl BlobHub {
     /// Opens (or creates) the blob store under `dir` and starts the serving gate.
-    pub async fn open(dir: &Path, gate: Gate, progress: UploadProgress) -> Result<Self, Error> {
+    pub async fn open(dir: &Path, gate: Gate, progress: UploadProgress, ended: UploadEnd) -> Result<Self, Error> {
+        Self::open_with(dir, gate, progress, ended, TestKnobs::from_env()).await
+    }
+
+    pub(crate) async fn open_with(dir: &Path, gate: Gate, progress: UploadProgress, ended: UploadEnd, knobs: TestKnobs) -> Result<Self, Error> {
         std::fs::create_dir_all(dir.join("tmp"))?;
         // Leftovers of an interrupted import or export.
         for e in std::fs::read_dir(dir.join("tmp"))?.flatten() {
@@ -62,10 +95,10 @@ impl BlobHub {
             get_many: RequestMode::InterceptLog,
             push: RequestMode::Disabled,
             observe: ObserveMode::Intercept,
-            throttle: ThrottleMode::None,
+            throttle: if knobs.active() { ThrottleMode::Intercept } else { ThrottleMode::None },
         };
         let (events, rx) = EventSender::channel(64, mask);
-        tokio::spawn(gate_loop(rx, gate, progress));
+        tokio::spawn(gate_loop(rx, gate, progress, ended, knobs));
         let proto = BlobsProtocol::new(&store, Some(events));
         Ok(Self { store, dir: dir.to_path_buf(), proto })
     }
@@ -147,28 +180,58 @@ impl BlobHub {
         }
     }
 
+    /// Ciphertext bytes of `hash` already verified and stored here (a partial download counts).
+    pub async fn local_bytes(&self, hash: &Hash) -> u64 {
+        match self.store.remote().local(HashAndFormat::raw(*hash)).await {
+            Ok(info) => info.local_bytes(),
+            Err(_) => 0,
+        }
+    }
+
     /// Fetches the ciphertext of `hash` over `conn` (an iroh-blobs connection to a peer that
     /// holds it), resuming what is already here. `cipher_total` is the expected ciphertext
-    /// length; `progress` gets `(ciphertext bytes so far, total)`.
+    /// length; `progress` gets `(ciphertext bytes so far, total)`. Gives up with
+    /// `Error::Timeout` when nothing arrives for `STALL`.
     pub async fn fetch(
         &self,
         conn: Connection,
         hash: Hash,
         cipher_total: u64,
+        progress: impl FnMut(u64, u64) + Send,
+    ) -> Result<(), Error> {
+        self.fetch_with_stall(conn, hash, cipher_total, STALL, progress).await
+    }
+
+    pub async fn fetch_with_stall(
+        &self,
+        conn: Connection,
+        hash: Hash,
+        cipher_total: u64,
+        stall: Duration,
         mut progress: impl FnMut(u64, u64) + Send,
     ) -> Result<(), Error> {
+        use iroh_blobs::api::remote::GetProgressItem;
         self.keep(&hash).await?;
         if self.complete_size(&hash).await.is_some() {
             return Ok(());
         }
-        let mut stream = self.store.remote().fetch(conn, HashAndFormat::raw(hash)).stream();
-        while let Some(item) = stream.next().await {
-            match item {
-                iroh_blobs::api::remote::GetProgressItem::Progress(n) => progress(n.min(cipher_total), cipher_total),
-                iroh_blobs::api::remote::GetProgressItem::Done(_) => break,
-                iroh_blobs::api::remote::GetProgressItem::Error(e) => return Err(Error::Net(e.to_string())),
+        let mut stream = Box::pin(self.store.remote().fetch(conn.clone(), HashAndFormat::raw(hash)).stream());
+        let res = loop {
+            match tokio::time::timeout(stall, stream.next()).await {
+                Err(_) => break Err(Error::Timeout),
+                Ok(None) => break Ok(()),
+                Ok(Some(GetProgressItem::Progress(n))) => progress(n.min(cipher_total), cipher_total),
+                Ok(Some(GetProgressItem::Done(_))) => break Ok(()),
+                Ok(Some(GetProgressItem::Error(e))) => break Err(Error::Net(e.to_string())),
             }
+        };
+        // The request future lives inside `stream`; dropping it drops the stream pair, and
+        // closing the connection makes sure a peer that sits in a stalled send sees it end.
+        drop(stream);
+        if res.is_err() {
+            conn.close(0u32.into(), b"fetch abandoned");
         }
+        res?;
         match self.complete_size(&hash).await {
             Some(n) if n == cipher_total => {
                 progress(cipher_total, cipher_total);
@@ -223,7 +286,13 @@ impl BlobHub {
 }
 
 /// Answers the store's permission questions and reports upload progress.
-async fn gate_loop(mut rx: tokio::sync::mpsc::Receiver<ProviderMessage>, gate: Gate, progress: UploadProgress) {
+async fn gate_loop(
+    mut rx: tokio::sync::mpsc::Receiver<ProviderMessage>,
+    gate: Gate,
+    progress: UploadProgress,
+    ended: UploadEnd,
+    knobs: TestKnobs,
+) {
     // connection id -> authenticated device key
     let peers: Arc<Mutex<std::collections::HashMap<u64, [u8; 32]>>> = Default::default();
     while let Some(msg) = rx.recv().await {
@@ -247,7 +316,7 @@ async fn gate_loop(mut rx: tokio::sync::mpsc::Receiver<ProviderMessage>, gate: G
                 let ok = device.is_some_and(|d| gate(&d, &hash));
                 let _ = m.tx.send(if ok { Ok(()) } else { Err(AbortReason::Permission) }).await;
                 if let (true, Some(device)) = (ok, device) {
-                    let progress = progress.clone();
+                    let (progress, ended) = (progress.clone(), ended.clone());
                     let mut updates = m.rx;
                     tokio::spawn(async move {
                         let mut total = 0u64;
@@ -256,7 +325,8 @@ async fn gate_loop(mut rx: tokio::sync::mpsc::Receiver<ProviderMessage>, gate: G
                             match u {
                                 RequestUpdate::Started(s) => total = s.size,
                                 RequestUpdate::Progress(p) => progress(&device, &hash, p.end_offset, total),
-                                _ => {}
+                                RequestUpdate::Completed(_) => ended(&device, &hash, true),
+                                RequestUpdate::Aborted(_) => ended(&device, &hash, false),
                             }
                         }
                     });
@@ -274,7 +344,16 @@ async fn gate_loop(mut rx: tokio::sync::mpsc::Receiver<ProviderMessage>, gate: G
                 let _ = m.tx.send(Err(AbortReason::Permission)).await;
             }
             ProviderMessage::Throttle(m) => {
-                let _ = m.tx.send(Ok(())).await;
+                let k = knobs.clone();
+                tokio::spawn(async move {
+                    if k.delay_ms > 0 {
+                        tokio::time::sleep(Duration::from_millis(k.delay_ms)).await;
+                    }
+                    while k.stall_file.as_ref().is_some_and(|f| f.exists()) {
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                    }
+                    let _ = m.tx.send(Ok(())).await;
+                });
             }
             _ => {}
         }

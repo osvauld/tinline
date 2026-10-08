@@ -17,7 +17,7 @@ use storage::{Op, Sealed, Store as Db};
 use tokio::sync::{OnceCell, Semaphore, mpsc, oneshot};
 
 use super::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
-use super::blobs::{BlobHub, Gate, UploadProgress};
+use super::blobs::{BlobHub, Gate, UploadEnd, UploadProgress};
 use super::crypt;
 use super::doc::*;
 use super::store::*;
@@ -34,6 +34,20 @@ const CLOSE_AFTER_DAYS: i64 = 8;
 const UPDATES_BEFORE_SNAPSHOT: u32 = 64;
 const MAX_SHARDS_CACHED: usize = 12;
 
+/// Retry delays after a failed fetch while we stay connected; then the blob is marked failed
+/// ("Tap to retry"). A reconnect restarts wanted blobs regardless.
+const RETRY_BACKOFF: [u64; 5] = [2, 5, 15, 30, 60];
+
+/// One running download (a fetch, or the pause before its next retry).
+pub(crate) struct Dl {
+    done: u64,
+    total: u64,
+    /// Sleeping before a retry: a new `chat_download` replaces it at once.
+    waiting: bool,
+    seq: u64,
+    abort: Option<tokio::task::AbortHandle>,
+}
+
 pub struct ChatCore {
     pub store: ChatStore,
     pub dir: PathBuf,
@@ -41,7 +55,8 @@ pub struct ChatCore {
     shards: Mutex<HashMap<(String, String), Shard>>,
     sessions: Mutex<HashMap<String, Arc<Session>>>,
     dialing: Mutex<HashSet<String>>,
-    downloading: Mutex<HashMap<String, (u64, u64)>>,
+    downloading: Mutex<HashMap<String, Dl>>,
+    next_dl: AtomicU64,
     pulling: Mutex<HashSet<(String, String)>>,
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
@@ -137,6 +152,7 @@ impl Inner {
             sessions: Default::default(),
             dialing: Default::default(),
             downloading: Default::default(),
+            next_dl: AtomicU64::new(1),
             pulling: Default::default(),
             dial_sem: Arc::new(Semaphore::new(4)),
             next_session: AtomicU64::new(1),
@@ -1008,7 +1024,7 @@ impl Inner {
 
     fn chat_attachment(&self, core: &ChatCore, f: &FileRef, outgoing: bool) -> Attachment {
         let info = core.store.blob(&f.hash).ok().flatten();
-        let dl = core.downloading.lock().get(&f.hash).copied();
+        let dl = core.downloading.lock().get(&f.hash).map(|d| (d.done, d.total));
         let (state, transferred) = match (&info, dl, outgoing) {
             (_, _, true) => (TransferState::Ready, 0),
             (_, Some((done, _)), _) => (TransferState::Downloading, done),
@@ -1170,7 +1186,13 @@ impl Inner {
                         i.chat_upload_progress(dev, hash, done, total);
                     }
                 });
-                BlobHub::open(&core.dir.join("blobs"), gate, progress).await.map(Arc::new)
+                let w3 = this.clone();
+                let ended: UploadEnd = Arc::new(move |dev, hash, completed| {
+                    if let Some(i) = w3.upgrade() {
+                        i.chat_upload_end(dev, hash, completed);
+                    }
+                });
+                BlobHub::open(&core.dir.join("blobs"), gate, progress, ended).await.map(Arc::new)
             })
             .await
             .cloned()
@@ -1205,33 +1227,96 @@ impl Inner {
         }
     }
 
-    /// Starts fetching a blob from `did` in the background (idempotent).
+    /// The provider finished serving `hash` to `dev`. An aborted transfer (the peer dropped,
+    /// reset the stream, or the link died) ends with `(0, 0, outgoing)`, so the sender's UI
+    /// leaves "Sending n%"; a completed one needs nothing (progress already reached the total).
+    fn chat_upload_end(&self, dev: &[u8; 32], hash: &Hash, completed: bool) {
+        if completed {
+            return;
+        }
+        if let (Some(ev), Some(did)) = (self.ev(), self.did_of_device(dev)) {
+            ev.on_transfer_progress(did, hash.to_string(), 0, 0, true);
+        }
+    }
+
+    /// Starts fetching a blob from `did` in the background. Idempotent while a fetch is
+    /// running; an entry that is only waiting out a retry delay is replaced at once (a new
+    /// session or a user tap means "try now"), so nothing stale blocks a new attempt.
     pub(crate) fn chat_download(self: &Arc<Self>, did: String, hash: String) {
         let Ok(core) = self.chat_core() else { return };
+        let seq = core.next_dl.fetch_add(1, Ordering::Relaxed);
         {
             let mut d = core.downloading.lock();
-            if d.contains_key(&hash) {
-                return;
+            let mut seed = (0, 0);
+            if let Some(old) = d.get(&hash) {
+                if !old.waiting {
+                    return;
+                }
+                if let Some(a) = &old.abort {
+                    a.abort();
+                }
+                seed = (old.done, old.total);
             }
-            d.insert(hash.clone(), (0, 0));
+            d.insert(hash.clone(), Dl { done: seed.0, total: seed.1, waiting: false, seq, abort: None });
         }
         let this = self.clone();
-        self.handle.spawn(async move {
-            let res = this.chat_fetch_blob(&core, &did, &hash).await;
-            core.downloading.lock().remove(&hash);
-            let ok = res.is_ok();
-            if let Err(e) = &res {
-                this.log(format!("blob download {hash}: {e}"));
-            }
-            if let Ok(Some(mut info)) = core.store.blob(&hash) {
-                info.ready = ok;
-                info.failed = !ok;
-                if let Ok(op) = core.store.put_blob_op(&hash, &info) {
-                    let _ = core.store.db.apply(&[op]);
+        let (c2, h2) = (core.clone(), hash.clone());
+        let task = self.handle.spawn(async move {
+            let res = this.chat_download_loop(&c2, &did, &h2, seq).await;
+            {
+                let mut d = c2.downloading.lock();
+                if d.get(&h2).is_some_and(|e| e.seq == seq) {
+                    d.remove(&h2);
                 }
-                this.chat_emit_changed(&core, &did, &info.day, &info.msg);
+            }
+            if let Some(res) = res {
+                let ok = res.is_ok();
+                if let Ok(Some(mut info)) = c2.store.blob(&h2) {
+                    info.ready = ok;
+                    info.failed = !ok;
+                    if let Ok(op) = c2.store.put_blob_op(&h2, &info) {
+                        let _ = c2.store.db.apply(&[op]);
+                    }
+                    this.chat_emit_changed(&c2, &did, &info.day, &info.msg);
+                }
             }
         });
+        if let Some(e) = core.downloading.lock().get_mut(&hash)
+            && e.seq == seq
+        {
+            e.abort = Some(task.abort_handle());
+        }
+    }
+
+    /// Fetch, and retry with backoff. `None` = nothing to record (the user cancelled meanwhile).
+    async fn chat_download_loop(self: &Arc<Self>, core: &Arc<ChatCore>, did: &str, hash: &str, seq: u64) -> Option<Result<(), Error>> {
+        let mut attempt = 0;
+        loop {
+            let err = match self.chat_fetch_blob(core, did, hash).await {
+                Ok(()) => return Some(Ok(())),
+                Err(e) => e,
+            };
+            self.log(format!("blob download {hash}: {err}"));
+            let retryable = !matches!(err, Error::NotFound | Error::Protocol(_));
+            if !retryable || attempt >= RETRY_BACKOFF.len() {
+                return Some(Err(err));
+            }
+            if !core.store.blob(hash).ok().flatten().is_some_and(|i| i.wanted) {
+                return None;
+            }
+            if let Some(e) = core.downloading.lock().get_mut(hash)
+                && e.seq == seq
+            {
+                e.waiting = true;
+            }
+            tokio::time::sleep(Duration::from_secs(RETRY_BACKOFF[attempt])).await;
+            attempt += 1;
+            if let Some(e) = core.downloading.lock().get_mut(hash)
+                && e.seq == seq
+            {
+                e.waiting = false;
+            }
+        }
     }
 
     fn chat_emit_changed(self: &Arc<Self>, core: &Arc<ChatCore>, did: &str, day: &str, id: &str) {
@@ -1293,12 +1378,26 @@ impl Inner {
         if hub.complete_size(&hash).await == Some(total) {
             return Ok(());
         }
+        // What an earlier attempt (or an earlier run of the app) already stored.
+        let have = hub.local_bytes(&hash).await.min(total);
+        if let Some(e) = core.downloading.lock().get_mut(hash_hex) {
+            e.done = have;
+            e.total = total;
+        }
+        if have > 0
+            && let Some(ev) = self.ev()
+        {
+            ev.on_transfer_progress(did.to_string(), hash_hex.to_string(), have, total, false);
+        }
         let conn = self.chat_blob_conn(core, did).await?;
         let (c2, did2, h2) = (core.clone(), did.to_string(), hash_hex.to_string());
         let this = self.clone();
         let last = Arc::new(Mutex::new(std::time::Instant::now() - Duration::from_secs(1)));
         hub.fetch(conn, hash, total, move |done, tot| {
-            c2.downloading.lock().insert(h2.clone(), (done, tot));
+            if let Some(e) = c2.downloading.lock().get_mut(&h2) {
+                e.done = done;
+                e.total = tot;
+            }
             let mut l = last.lock();
             if l.elapsed() > Duration::from_millis(200) || done == tot {
                 *l = std::time::Instant::now();
@@ -1332,10 +1431,9 @@ impl Inner {
         }
     }
 
-    /// User asked for the attachment of a message.
-    pub(crate) fn chat_want(self: &Arc<Self>, did: &str, id: &str) -> Result<(), Error> {
+    /// The blob hash of message `id` in the conversation with `did`.
+    fn chat_blob_of(&self, core: &Arc<ChatCore>, did: &str, id: &str) -> Result<String, Error> {
         let me = self.me()?;
-        let core = self.chat_core()?;
         let pair = pair_id(me.id.did(), did);
         let day = core.store.mi(&pair, id)?.ok_or(Error::NotFound)?;
         let hash = {
@@ -1343,15 +1441,21 @@ impl Inner {
             shards.get(&(pair.clone(), day.clone())).and_then(|s| s.messages().ok()).and_then(|mut m| m.remove(id)).and_then(|r| r.file).map(|f| f.hash)
         };
         // Not cached: look the hash up through the blob records of this message.
-        let hash = match hash {
-            Some(h) => h,
+        match hash {
+            Some(h) => Ok(h),
             None => core
                 .store
                 .conv_blobs(&pair)?
                 .into_iter()
                 .find(|h| core.store.blob(h).ok().flatten().is_some_and(|b| b.msg == id))
-                .ok_or(Error::NotFound)?,
-        };
+                .ok_or(Error::NotFound),
+        }
+    }
+
+    /// User asked for the attachment of a message.
+    pub(crate) fn chat_want(self: &Arc<Self>, did: &str, id: &str) -> Result<(), Error> {
+        let core = self.chat_core()?;
+        let hash = self.chat_blob_of(&core, did, id)?;
         let mut info = core.store.blob(&hash)?.ok_or(Error::NotFound)?;
         if info.ready {
             return Ok(());
@@ -1361,6 +1465,33 @@ impl Inner {
         core.store.db.apply(&[core.store.put_blob_op(&hash, &info)?]).map_err(io)?;
         self.chat_download(did.to_string(), hash);
         self.chat_kick(did.to_string());
+        Ok(())
+    }
+
+    /// The user gave up on a download: stop the fetch, forget the wish (so a reconnect does not
+    /// restart it) and drop our tag so the GC frees the partial bytes. The attachment is
+    /// `Remote` again and a later `chat_want` starts from scratch.
+    pub(crate) async fn chat_cancel(self: &Arc<Self>, did: &str, id: &str) -> Result<(), Error> {
+        let core = self.chat_core()?;
+        let hash = self.chat_blob_of(&core, did, id)?;
+        let mut info = core.store.blob(&hash)?.ok_or(Error::NotFound)?;
+        if info.ready {
+            return Ok(());
+        }
+        if let Some(e) = core.downloading.lock().remove(&hash)
+            && let Some(a) = e.abort
+        {
+            a.abort();
+        }
+        info.wanted = false;
+        info.failed = false;
+        core.store.db.apply(&[core.store.put_blob_op(&hash, &info)?]).map_err(io)?;
+        let h = parse_hash(&hash)?;
+        self.chat_hub().await?.release(&h).await?;
+        if let Some(ev) = self.ev() {
+            ev.on_transfer_progress(did.to_string(), hash.clone(), 0, 0, false);
+        }
+        self.chat_emit_changed(&core, did, &info.day, &info.msg);
         Ok(())
     }
 

@@ -180,7 +180,7 @@ osvauld2 `storage` @ 90d22ec with the `vault` entry idea).
 messages (oldest first), older_day}`, `fetch_older_history(peer_did, before_day)`,
 `send_text(peer_did, text, reply_to?)`, `edit_message`, `delete_message`, `mark_read`,
 `send_file(peer_did, path, mime, text?)`, `send_voice(peer_did, path, duration_ms, waveform)`,
-`download_attachment(peer_did, message_id)`, `save_attachment(peer_did, message_id, dest)`,
+`download_attachment(peer_did, message_id)`, `cancel_download(peer_did, message_id)`, `save_attachment(peer_did, message_id, dest)`,
 `set_auto_download_limit(bytes)` / `auto_download_limit()` (default 10 MB).
 Records: `Chat`, `Message`, `Attachment` (state `Remote|Downloading|Ready|Failed`),
 `DeliveryState {Pending, Delivered}`. `ChatEvents`: `on_message_added`, `on_message_changed`,
@@ -227,6 +227,13 @@ updates + meta, acks, message counters, outbox markers, blob key index, read-per
   2..60 s backoff.
 - Auto-download: incoming files up to the limit are fetched as soon as the message is applied;
   others on `download_attachment`. Retries on every new session.
+- **Reliable transfer (task 32, details in `docs/iroh-blobs.md` section 2).** A fetch with no
+  progress for 20 s fails; failed fetches retry by themselves after 2, 5, 15, 30, 60 s (state stays
+  `Downloading` meanwhile), then `Failed` ("Tap to retry" = `download_attachment` again, which
+  resumes from the bytes held). `cancel_download` returns an attachment to `Remote` and frees the
+  partial bytes. Progress after an app restart starts at the bytes already on disk.
+  `on_transfer_progress(.., 0, 0, outgoing)` = the transfer ended without completing (for the
+  sender: the peer dropped, so leave "Sending n%").
 - Serving a blob: only to a device that is a contact's (or in an authenticated session) AND only
   if a message of that conversation names the hash (`ref/{hash}/{pair}`). Push/observe refused.
 - Closed days: days 8+ days old are compacted into an encrypted snapshot blob (`closed` in the
