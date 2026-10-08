@@ -115,6 +115,19 @@ pub struct Contact {
     pub verified: bool,
 }
 
+/// What a contact card found in some text says, before anyone is dialled: for "Add <name>?"
+/// prompts when a card is pasted or sits on the clipboard.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct CardPeek {
+    /// The card itself, cut out of the surrounding text; hand this to `add_contact`.
+    pub ticket: String,
+    /// The name they gave themselves. Unverified until they are added.
+    pub name: String,
+    pub did: String,
+    /// Already in our contacts.
+    pub known: bool,
+}
+
 /// Whether calls ring. While unavailable, callers are turned away without being told why.
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct Availability {
@@ -607,6 +620,19 @@ impl Node {
     pub fn my_ticket(&self) -> Result<String, Error> {
         let inner = self.inner.clone();
         self.block_on(async move { inner.ticket().await })?
+    }
+
+    /// Finds a contact card in `text` (a pasted message, the clipboard) and reads it without
+    /// dialling anyone. `None` when there is no valid, unexpired card or it is our own.
+    pub fn peek_card(&self, text: String) -> Option<CardPeek> {
+        let ticket = find_card(&text)?;
+        let claim = ContactTicket::from_text(&ticket).ok()?.verify(now()).ok()?;
+        let me = self.inner.me().ok()?;
+        if claim.iss == me.id.did() {
+            return None;
+        }
+        let known = self.inner.shared.lock().state.contacts.iter().any(|c| c.did == claim.iss);
+        Some(CardPeek { ticket, name: claim.name, did: claim.iss, known })
     }
 
     /// Redeems someone's ticket: dials them, exchanges grants, stores them. Blocks until done.
@@ -2207,5 +2233,34 @@ mod tests {
         assert!(relay_hint(&Some(format!("https://{}.example/", "a".repeat(300)))).is_none());
         assert!(relay_hint(&Some("https://use1-1.relay.n0.iroh.link./".into())).is_some());
         assert!(relay_hint(&None).is_none());
+    }
+}
+
+/// The first word of `text` that looks like a contact card (`OSVC2:` or `osvc1.`), so a card
+/// pasted with a greeting around it still works.
+fn find_card(text: &str) -> Option<String> {
+    text.split(|c: char| c.is_whitespace() || matches!(c, '<' | '>' | '"' | '\'' | '(' | ')'))
+        .map(|w| w.trim_end_matches(['.', ',', ';', '!', '?']))
+        .find(|w| {
+            w.get(..6).is_some_and(|h| h.eq_ignore_ascii_case("OSVC2:") || h.eq_ignore_ascii_case("osvc1."))
+                && w.len() > 20
+        })
+        .map(str::to_string)
+}
+
+
+#[cfg(test)]
+mod find_card_tests {
+    use super::find_card;
+
+    #[test]
+    fn finds_a_card_in_surrounding_text() {
+        let card = "OSVC2:MFRGGZDFMZTWQ2LKNNWG23TPOBYXE43U";
+        assert_eq!(find_card(card).as_deref(), Some(card));
+        assert_eq!(find_card(&format!("Add me on Tinline:\n{card}.")).as_deref(), Some(card));
+        assert_eq!(find_card(&format!("\"{card}\" thanks")).as_deref(), Some(card));
+        assert_eq!(find_card(&format!("osvc2:{}", &card[6..])).as_deref(), Some(&*format!("osvc2:{}", &card[6..])));
+        assert_eq!(find_card("hello there"), None);
+        assert_eq!(find_card("OSVC2:short"), None);
     }
 }
