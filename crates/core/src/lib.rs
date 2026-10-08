@@ -3,6 +3,7 @@
 
 uniffi::setup_scaffolding!();
 
+mod chat;
 mod error;
 mod logging;
 mod node;
@@ -12,6 +13,7 @@ mod voice;
 mod wire;
 
 pub use error::Error;
+pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use store::CallRecord;
 pub use node::{Availability, CallInfo, CallState, CallStats, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};

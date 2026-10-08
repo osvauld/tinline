@@ -12,6 +12,12 @@
 //!   p2p-peer --data DIR listen [--answer-after SECS] [--second decline|answer|ignore] [AUDIO] [--secs N]
 //!   p2p-peer --data DIR recents
 //!   p2p-peer --data DIR call DID|NAME [AUDIO] [--secs N]
+//!   p2p-peer --data DIR chat-send NAME TEXT [--wait SECS]
+//!   p2p-peer --data DIR chat-list NAME [DAY]
+//!   p2p-peer --data DIR file-send NAME PATH [--wait SECS]
+//!   p2p-peer --data DIR voice-send NAME OGGFILE [--duration-ms N] [--wait SECS]
+//!   p2p-peer --data DIR chat-serve          (commands on stdin, events on stdout; see `serve`)
+//!   p2p-peer --data DIR listen [--for SECS]   (also receives chat; prints CHAT lines)
 //!
 //! AUDIO: `--tone HZ` or `--wav in.wav` (48 kHz mono) as the mic; `--record out.wav` saves
 //! what was heard. Each second of a call prints a `STATS` line; the end prints `RESULT`.
@@ -21,7 +27,7 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, LockState, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus};
 
 enum Event {
     Incoming(CallInfo),
@@ -57,6 +63,40 @@ impl NodeEvents for Printer {
     }
 }
 
+struct ChatPrinter;
+
+fn show(m: &Message) -> String {
+    let att = m
+        .attachment
+        .as_ref()
+        .map(|a| format!(" file={} size={} state={:?} kind={:?} hash={}", a.name, a.size, a.state, a.kind, a.hash))
+        .unwrap_or_default();
+    format!(
+        "id={} from={} out={} at={} delivery={:?} deleted={} edited={} text={:?}{att}",
+        m.id, m.author_did, m.outgoing, m.at, m.delivery, m.deleted, m.edited_at.is_some(), m.text
+    )
+}
+
+impl ChatEvents for ChatPrinter {
+    fn on_message_added(&self, m: Message) {
+        println!("CHAT added {}", show(&m));
+    }
+    fn on_message_changed(&self, m: Message) {
+        println!("CHAT changed {}", show(&m));
+    }
+    fn on_chat_changed(&self, c: Chat) {
+        println!("CHAT chat peer={} unread={} preview={:?}", c.peer_did, c.unread, c.preview);
+    }
+    fn on_delivery_changed(&self, peer: String, id: String, d: DeliveryState) {
+        println!("CHAT delivery peer={peer} id={id} {d:?}");
+    }
+    fn on_transfer_progress(&self, peer: String, hash: String, done: u64, total: u64, outgoing: bool) {
+        if done == total {
+            println!("CHAT transfer peer={peer} hash={hash} {done}/{total} outgoing={outgoing}");
+        }
+    }
+}
+
 struct Opts {
     data: PathBuf,
     passphrase: String,
@@ -70,6 +110,9 @@ struct Opts {
     once: bool,
     /// What to do with a second call that arrives during a call; `ignore` is the default.
     second: String,
+    wait: u64,
+    duration_ms: u32,
+    listen_for: Option<u64>,
 }
 
 fn parse() -> Result<Opts, String> {
@@ -91,6 +134,9 @@ fn parse() -> Result<Opts, String> {
     let secs = take("--secs")?.map(|v| v.parse().map_err(|_| "bad --secs")).transpose()?.unwrap_or(10);
     let answer_after =
         take("--answer-after")?.map(|v| v.parse().map_err(|_| "bad --answer-after")).transpose()?.unwrap_or(1.0);
+    let wait = take("--wait")?.map(|v| v.parse().map_err(|_| "bad --wait")).transpose()?.unwrap_or(20);
+    let duration_ms = take("--duration-ms")?.map(|v| v.parse().map_err(|_| "bad --duration-ms")).transpose()?.unwrap_or(1000);
+    let listen_for = take("--for")?.map(|v| v.parse().map_err(|_| "bad --for")).transpose()?;
     let mut flag = |name: &str| match args.iter().position(|a| a == name) {
         Some(i) => {
             args.remove(i);
@@ -100,7 +146,7 @@ fn parse() -> Result<Opts, String> {
     };
     let verbose = flag("-v");
     let once = flag("--once");
-    Ok(Opts { data, passphrase, tone, wav, record, secs, answer_after, rest: args, verbose, once, second })
+    Ok(Opts { data, passphrase, tone, wav, record, secs, answer_after, rest: args, verbose, once, second, wait, duration_ms, listen_for })
 }
 
 fn main() {
@@ -125,7 +171,43 @@ fn run() -> Result<(), String> {
             LockState::NoIdentity | LockState::Unlocked => {}
         }
     }
+    node.set_chat_events(Arc::new(ChatPrinter));
     match rest.as_slice() {
+        ["chat-send", who, text] => {
+            start_online(&node)?;
+            let did = find(&node, who)?;
+            let m = node.send_text(did.clone(), text.to_string(), None).map_err(|e| e.to_string())?;
+            println!("SENT {}", m.id);
+            finish_send(&node, &did, &m.id, o.wait);
+            node.stop();
+        }
+        ["file-send", who, path] => {
+            start_online(&node)?;
+            let did = find(&node, who)?;
+            let m = node.send_file(did.clone(), path.to_string(), "application/octet-stream".into(), None).map_err(|e| e.to_string())?;
+            println!("SENT {}", m.id);
+            finish_send(&node, &did, &m.id, o.wait);
+            node.stop();
+        }
+        ["voice-send", who, path] => {
+            start_online(&node)?;
+            let did = find(&node, who)?;
+            let wave: Vec<u8> = (0..64u32).map(|i| (i * 4) as u8).collect();
+            let m = node.send_voice(did.clone(), path.to_string(), o.duration_ms, wave).map_err(|e| e.to_string())?;
+            println!("SENT {}", m.id);
+            finish_send(&node, &did, &m.id, o.wait);
+            node.stop();
+        }
+        ["chat-list", who] => list_day(&node, who, None)?,
+        ["chat-list", who, day] => list_day(&node, who, Some(day.to_string()))?,
+        ["chat-serve"] => serve(&node)?,
+        ["blob-fetch", who, hash, size] => {
+            start_online(&node)?;
+            let did = find(&node, who)?;
+            let n = node.raw_fetch_blob(did, hash.to_string(), size.parse().map_err(|_| "bad size")?).map_err(|e| e.to_string())?;
+            println!("RESULT fetched=true bytes={n}");
+            node.stop();
+        }
         ["init", name] => {
             let phrase = node.create_identity(name.to_string(), o.passphrase.clone()).map_err(|e| e.to_string())?;
             let p = node.profile().unwrap();
@@ -159,8 +241,16 @@ fn run() -> Result<(), String> {
         ["listen"] => {
             start_online(&node)?;
             eprintln!("LISTENING {}", node.status().endpoint_id);
+            let deadline = o.listen_for.map(|s| Instant::now() + Duration::from_secs(s));
             loop {
-                match rx.recv().map_err(|e| e.to_string())? {
+                let ev = match deadline {
+                    Some(d) => match rx.recv_timeout(d.saturating_duration_since(Instant::now())) {
+                        Ok(e) => e,
+                        Err(_) => break,
+                    },
+                    None => rx.recv().map_err(|e| e.to_string())?,
+                };
+                match ev {
                     Event::Incoming(call) => {
                         std::thread::sleep(Duration::from_secs_f64(o.answer_after));
                         node.answer(call.call_id.clone()).map_err(|e| e.to_string())?;
@@ -337,4 +427,145 @@ fn write_wav(p: &PathBuf, pcm: &[i16]) -> Result<(), String> {
         w.write_sample(*s).map_err(|e| e.to_string())?;
     }
     w.finalize().map_err(|e| e.to_string())
+}
+
+fn find(node: &Node, who: &str) -> Result<String, String> {
+    node.contacts().into_iter().find(|c| c.did == who || c.name == who).map(|c| c.did).ok_or(format!("no contact {who}"))
+}
+
+/// Waits (up to `wait` seconds) for the peer to confirm the message, then prints the result.
+fn finish_send(node: &Node, did: &str, id: &str, wait: u64) {
+    let end = Instant::now() + Duration::from_secs(wait);
+    let mut delivered = false;
+    loop {
+        let page = node.chat_day(did.to_string(), None);
+        if let Ok(p) = page
+            && p.messages.iter().any(|m| m.id == id && m.delivery == DeliveryState::Delivered)
+        {
+            delivered = true;
+            break;
+        }
+        if Instant::now() >= end {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(200));
+    }
+    println!("RESULT delivered={delivered}");
+}
+
+fn list_day(node: &Node, who: &str, day: Option<String>) -> Result<(), String> {
+    let did = find(node, who)?;
+    let page = node.chat_day(did, day).map_err(|e| e.to_string())?;
+    println!("DAY {} older={:?}", page.day, page.older_day);
+    for m in &page.messages {
+        println!("MSG {}", show(m));
+    }
+    println!("END");
+    Ok(())
+}
+
+/// Line commands on stdin, answers on stdout (`OK ...`, `ERR ...`); chat events interleave as
+/// `CHAT ...` lines. For tests that need one long-lived peer.
+fn serve(node: &Node) -> Result<(), String> {
+    use std::io::BufRead;
+    start_online(node)?;
+    println!("READY {}", node.status().endpoint_id);
+    for line in std::io::stdin().lock().lines() {
+        let line = line.map_err(|e| e.to_string())?;
+        let parts: Vec<&str> = line.splitn(4, ' ').collect();
+        let r: Result<String, String> = (|| match parts.as_slice() {
+            ["send", who, text @ ..] => {
+                let text = text.join(" ");
+                let m = node.send_text(find(node, who)?, text, None).map_err(|e| e.to_string())?;
+                Ok(format!("SENT {}", m.id))
+            }
+            ["reply", who, to, text] => {
+                let m = node.send_text(find(node, who)?, text.to_string(), Some(to.to_string())).map_err(|e| e.to_string())?;
+                Ok(format!("SENT {}", m.id))
+            }
+            ["edit", who, id, text] => {
+                node.edit_message(find(node, who)?, id.to_string(), text.to_string()).map_err(|e| e.to_string())?;
+                Ok("EDITED".into())
+            }
+            ["delete", who, id] => {
+                node.delete_message(find(node, who)?, id.to_string()).map_err(|e| e.to_string())?;
+                Ok("DELETED".into())
+            }
+            ["file", who, path] => {
+                let m = node.send_file(find(node, who)?, path.to_string(), "application/octet-stream".into(), None).map_err(|e| e.to_string())?;
+                Ok(format!("SENT {}", m.id))
+            }
+            ["voice", who, path, ms] => {
+                let wave: Vec<u8> = (0..64u32).map(|i| (i * 4) as u8).collect();
+                let m = node.send_voice(find(node, who)?, path.to_string(), ms.parse().map_err(|_| "bad ms")?, wave).map_err(|e| e.to_string())?;
+                Ok(format!("SENT {}", m.id))
+            }
+            ["get", who, id, out] => {
+                let did = find(node, who)?;
+                node.download_attachment(did.clone(), id.to_string()).map_err(|e| e.to_string())?;
+                let end = Instant::now() + Duration::from_secs(120);
+                loop {
+                    let ready = node.chat_day(did.clone(), None).map_err(|e| e.to_string())?;
+                    let mut all = Vec::new();
+                    let mut page = Some(ready);
+                    while let Some(p) = page {
+                        all.extend(p.messages.clone());
+                        page = match p.older_day {
+                            Some(d) => node.chat_day(did.clone(), Some(d)).ok(),
+                            None => None,
+                        };
+                    }
+                    let m = all.iter().find(|m| m.id == *id).ok_or("no such message")?;
+                    if m.attachment.as_ref().is_some_and(|a| matches!(a.state, p2pcore::TransferState::Ready)) {
+                        break;
+                    }
+                    if Instant::now() > end {
+                        return Err("download timed out".into());
+                    }
+                    std::thread::sleep(Duration::from_millis(200));
+                }
+                node.save_attachment(did, id.to_string(), out.to_string()).map_err(|e| e.to_string())?;
+                Ok(format!("SAVED {out}"))
+            }
+            ["list", who] => {
+                list_day(node, who, None)?;
+                Ok("LISTED".into())
+            }
+            ["list", who, day] => {
+                list_day(node, who, Some(day.to_string()))?;
+                Ok("LISTED".into())
+            }
+            ["history", who, before] => {
+                let n = node.fetch_older_history(find(node, who)?, before.to_string()).map_err(|e| e.to_string())?;
+                Ok(format!("HISTORY {n}"))
+            }
+            ["chats"] => {
+                for c in node.chats().map_err(|e| e.to_string())? {
+                    println!("CHATROW {} unread={} preview={:?}", c.peer_did, c.unread, c.preview);
+                }
+                Ok("LISTED".into())
+            }
+            ["markread", who] => {
+                node.mark_read(find(node, who)?).map_err(|e| e.to_string())?;
+                Ok("OK".into())
+            }
+            ["remove", who] => {
+                node.remove_contact(find(node, who)?).map_err(|e| e.to_string())?;
+                Ok("REMOVED".into())
+            }
+            ["lock"] => {
+                node.lock();
+                Ok("LOCKED".into())
+            }
+            ["quit"] => Err("quit".into()),
+            _ => Err(format!("unknown command {line:?}")),
+        })();
+        match r {
+            Ok(s) => println!("OK {s}"),
+            Err(e) if e == "quit" => break,
+            Err(e) => println!("ERR {e}"),
+        }
+    }
+    node.stop();
+    Ok(())
 }
