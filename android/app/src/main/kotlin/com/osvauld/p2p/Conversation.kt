@@ -205,6 +205,10 @@ fun ConversationScreen(
         requested.add(m.id)
         scope.launch(Dispatchers.IO) { runCatching { source.download(peerDid, m.id) }.onFailure { withContext(Dispatchers.Main) { requested.remove(m.id); toast("Couldn’t start the download.") } } }
     }
+    fun cancel(m: Message) {
+        requested.remove(m.id)
+        scope.launch(Dispatchers.IO) { runCatching { source.cancel(peerDid, m.id) } }
+    }
     fun saveToPhone(m: Message) {
         val a = m.attachment ?: return
         scope.launch(Dispatchers.IO) {
@@ -262,7 +266,7 @@ fun ConversationScreen(
                             r.m, name, link, online, nowMs, progress, requested, byId, source,
                             selected = actionsFor == r.m.id,
                             onLong = { if (!r.m.deleted) actionsFor = r.m.id },
-                            onDownload = { download(r.m) }, onOpenPhoto = { viewer = r.m.id }, onSaveFile = { saveToPhone(r.m) },
+                            onDownload = { download(r.m) }, onCancel = { cancel(r.m) }, onOpenPhoto = { viewer = r.m.id }, onSaveFile = { saveToPhone(r.m) },
                             onOpenFile = { openFile(r.m) }, broken = r.m.id in brokenImages, onBroken = { if (r.m.id !in brokenImages) brokenImages.add(r.m.id) },
                         )
                     }
@@ -399,7 +403,7 @@ private fun BannerLine(text: String) =
 private fun Bubble(
     m: Message, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: List<String>,
     byId: Map<String, Message>, source: ChatSource, selected: Boolean,
-    onLong: () -> Unit, onDownload: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
+    onLong: () -> Unit, onDownload: () -> Unit, onCancel: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
     onOpenFile: () -> Unit, broken: Boolean, onBroken: () -> Unit,
 ) {
     val c = Tin.c
@@ -440,8 +444,8 @@ private fun Bubble(
             }
             if (a != null) when {
                 a.kind == AttachmentKind.VOICE -> VoiceBubble(m, a, a.state == TransferState.READY || out, out, source, onDownload)
-                photo -> PhotoBox(m, a, out, prog, link, source, onDownload, onOpenPhoto, onBroken)
-                else -> FileRow(a, out, prog, link, first, m.id in requested, onDownload, onSaveFile, onOpenFile, onLong)
+                photo -> PhotoBox(m, a, out, prog, link, source, onDownload, onCancel, onOpenPhoto, onBroken)
+                else -> FileRow(a, out, prog, link, first, m.id in requested, onDownload, onCancel, onSaveFile, onOpenFile, onLong)
             }
             if (m.text.isNotBlank()) Text(m.text, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
             val at = msClock(m.at.toLong())
@@ -471,7 +475,7 @@ private fun Meta(text: String, tick: Tick?, color: Color, hPad: androidx.compose
 }
 
 @Composable
-private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, source: ChatSource, onDownload: () -> Unit, onOpen: () -> Unit, onBroken: () -> Unit) {
+private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, source: ChatSource, onDownload: () -> Unit, onCancel: () -> Unit, onOpen: () -> Unit, onBroken: () -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
     val ready = a.state == TransferState.READY || out
@@ -480,12 +484,15 @@ private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, L
         // Ready but undecodable (odd GIF/WebP/HEIC): fall back to a file bubble with Open/Save.
         if (ready && value == null) onBroken()
     }
-    Box(Modifier.size(240.dp, 180.dp).clip(RoundedCornerShape(12.dp)).background(c.sf3).clickable(role = Role.Button) { if (ready && bmp != null) onOpen() else if (!ready) onDownload() }, contentAlignment = Alignment.Center) {
+    Box(Modifier.size(240.dp, 180.dp).clip(RoundedCornerShape(12.dp)).background(c.sf3).clickable(role = Role.Button) { if (ready && bmp != null) onOpen() else if (!ready && a.state == TransferState.DOWNLOADING) onCancel() else if (!ready) onDownload() }, contentAlignment = Alignment.Center) {
         bmp?.let { Image(it, a.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
         val frac = prog?.let { if (it.second > 0) it.first.toFloat() / it.second else 0f }
             ?: if (a.state == TransferState.DOWNLOADING && a.size > 0UL) a.transferred.toFloat() / a.size.toFloat() else null
         when {
-            frac != null && !(ready && prog == null) -> Ring { CircularProgressIndicator({ frac }, Modifier.size(56.dp), color = Color.White, trackColor = Color.White.copy(alpha = .25f), strokeWidth = 3.dp) }
+            frac != null && !(ready && prog == null) -> Ring {
+                CircularProgressIndicator({ frac }, Modifier.size(56.dp), color = Color.White, trackColor = Color.White.copy(alpha = .25f), strokeWidth = 3.dp)
+                if (!ready) Icon(Icons.Rounded.Close, "Cancel download", tint = Color.White)
+            }
             a.state == TransferState.REMOTE && !out -> Ring { Icon(Icons.Rounded.Download, "Download photo", tint = Color.White) }
             a.state == TransferState.FAILED -> Ring { Icon(Icons.Rounded.Refresh, "Retry download", tint = Color.White) }
             bmp == null && ready -> Icon(Icons.Rounded.Image, null, tint = c.ink2)
@@ -499,8 +506,10 @@ private fun Ring(content: @Composable BoxScope.() -> Unit) =
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, first: String, asked: Boolean, onDownload: () -> Unit, onSave: () -> Unit, onOpen: () -> Unit, onLong: () -> Unit) {
+private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, first: String, asked0: Boolean, onDownload: () -> Unit, onCancel: () -> Unit, onSave: () -> Unit, onOpen: () -> Unit, onLong: () -> Unit) {
     val c = Tin.c
+    // "starting…" only until the core reports Downloading; never hides a failure (tap to retry).
+    val asked = asked0 && a.state == TransferState.REMOTE
     val ready = a.state == TransferState.READY || out
     val size = sizeText(a.size.toLong())
     val frac = prog?.let { if (it.second > 0) it.first.toFloat() / it.second else 0f }
@@ -532,6 +541,7 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
             }
         }
         if (canDownload && a.state == TransferState.REMOTE) IconBtn(Icons.Rounded.Download, "Download ${a.name}", onDownload, tint = c.pr)
+        if (!ready && (a.state == TransferState.DOWNLOADING || asked)) IconBtn(Icons.Rounded.Close, "Cancel download of ${a.name}", onCancel, tint = c.ink2)
         if (ready && canOpen) IconBtn(Icons.Rounded.SaveAlt, "Save ${a.name} to phone", onSave, tint = if (out) c.onPrc else c.ink2)
     }
 }

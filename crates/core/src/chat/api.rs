@@ -107,7 +107,9 @@ pub trait ChatEvents: Send + Sync {
     fn on_chat_changed(&self, chat: Chat);
     /// A message we sent changed delivery state.
     fn on_delivery_changed(&self, peer_did: String, message_id: String, delivery: DeliveryState);
-    /// Bytes moved for an attachment; `outgoing` = the peer is fetching ours.
+    /// Bytes moved for an attachment; `outgoing` = the peer is fetching ours. `done == 0 &&
+    /// total == 0` means the transfer ended without completing (outgoing: the peer dropped or
+    /// the link died, so leave "Sending"; incoming: cancelled).
     fn on_transfer_progress(&self, peer_did: String, hash: String, done: u64, total: u64, outgoing: bool);
 }
 
@@ -190,6 +192,15 @@ impl Node {
     /// the end via `on_message_changed`). Returns at once.
     pub fn download_attachment(&self, peer_did: String, message_id: String) -> Result<(), Error> {
         self.inner.chat_want(&peer_did, &message_id)
+    }
+
+    /// Gives up a download in progress (or one waiting to retry, or failed): the transfer stops,
+    /// the partial bytes are dropped (freed within ~30 s) and the attachment is `Remote` again
+    /// ("Tap to download"); `download_attachment` later starts from the beginning. A `Ready`
+    /// attachment is left alone. The end is reported via `on_message_changed`.
+    pub fn cancel_download(&self, peer_did: String, message_id: String) -> Result<(), Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_cancel(&peer_did, &message_id).await })?
     }
 
     /// Decrypts a `Ready` attachment to `dest_path` (a voice message is saved the same way and

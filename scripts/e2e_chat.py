@@ -10,6 +10,8 @@ batch is rejected (unit test run at the end), restart keeps everything, offline 
 concurrent edits converge.
 
 Needs `target/release/p2p-peer` (cargo build --release -p peer) and network for iroh's relay.
+Task 32 scenarios (killed peers, stalled provider, cancel) use the serving-side knobs
+P2P_BLOB_TEST_THROTTLE_MS / P2P_BLOB_TEST_STALL_FILE (crates/core/src/chat/blobs.rs).
 Clock knob: P2P_CHAT_CLOCK_MS_OFFSET shifts the chat clock of one peer (for the day-shard tests).
 """
 import argparse
@@ -132,6 +134,124 @@ def until(fn, timeout, step=0.25):
             return v
         time.sleep(step)
     return fn()
+
+
+def dir_bytes(d):
+    return sum(f.stat().st_size for f in Path(d).rglob("*") if f.is_file())
+
+
+def att(srv, who, mid):
+    """(state, transferred bytes) of the attachment of message `mid`, or (None, 0)."""
+    for m in srv.listing(who)[1]:
+        if m["id"] == mid:
+            return m.get("state"), int(m.get("xfer", 0))
+    return None, 0
+
+
+def first_transfer(srv, start, outgoing, timeout=60):
+    """Bytes `done` of the first CHAT transfer line (in or out) after line `start`."""
+    flag = "true" if outgoing else "false"
+    line = srv.wait_line(rf"CHAT transfer .* \d+/\d+ outgoing={flag}", timeout, start)
+    return int(re.search(r" (\d+)/\d+ outgoing", line).group(1)) if line else None
+
+
+def transfer_scenarios(c, tmp, env, alice, bob, live):
+    """Task 32: a transfer survives a killed peer, a stalled provider and a cancel."""
+    MB = 1024 * 1024
+    peers = {"alice": alice, "bob": bob}
+    other = {"alice": "bob", "bob": "alice"}
+    slow = {"P2P_BLOB_TEST_THROTTLE_MS": "25"}
+
+    def restart(name, extra=None, hard=False):
+        old = peers[name]
+        if hard:
+            old.kill()
+            old.p.wait()
+        else:
+            old.quit()
+        if old in live:
+            live.remove(old)
+        time.sleep(1)
+        peers[name] = Serve(tmp / name, env=extra)
+        live.append(peers[name])
+        return peers[name]
+
+    def start(sender, size, tag, extra):
+        """The sender (restarted with the knobs `extra`) sends a random file; returns (id, path)."""
+        restart(sender, extra)
+        time.sleep(6)  # sessions re-establish
+        src = tmp / f"{tag}.bin"
+        src.write_bytes(os.urandom(size))
+        mid = peers[sender].cmd(f"file {other[sender]} {src}", timeout=120)[-1].split()[-1]
+        return mid, src
+
+    def finish(rcv, mid, src, tag, timeout=150):
+        sender = other[rcv]
+        ok = until(lambda: att(peers[rcv], sender, mid)[0] == "Ready", timeout, 0.5)
+        out = tmp / (tag + ".out")
+        peers[rcv].cmd(f"get {sender} {mid} {out}", timeout=60)
+        return bool(ok), out.exists() and out.read_bytes() == src.read_bytes()
+
+    # ---- (a) a peer killed mid-transfer and restarted: resume, do not start over -----------------------
+    for tag, sender, killed in (("a1", "alice", "alice"), ("a2", "alice", "bob"), ("a3", "bob", "bob")):
+        rcv = other[sender]
+        mid, src = start(sender, 6 * MB, tag, slow)
+        got = until(lambda: att(peers[rcv], sender, mid)[1] >= 1.5 * MB, 60, 0.2)
+        have = att(peers[rcv], sender, mid)[1]
+        c.ok(f"{tag} {rcv} is mid-transfer before the kill", bool(got), f"{have} bytes")
+        mk_s = peers[sender].mark()
+        restart(killed, None, hard=True)
+        if killed == sender:
+            mk_s = 0
+        ok, same = finish(rcv, mid, src, tag)
+        c.ok(f"{tag} killed {killed}: {rcv} completes after the restart", ok)
+        c.ok(f"{tag} file identical byte for byte", same)
+        if killed == sender:
+            first = first_transfer(peers[sender], 0, True, 5)
+            c.ok(f"{tag} restarted sender serves from the receiver's bytes, not from 0", first is not None and first >= 0.8 * have, f"first={first} had={have}")
+        else:
+            first = first_transfer(peers[rcv], 0, False, 5)
+            c.ok(f"{tag} restarted receiver seeds progress from disk", first is not None and first >= 0.8 * have, f"first={first} had={have}")
+            ab = peers[sender].wait_line(r"CHAT transfer .* 0/0 outgoing=true", 90, mk_s)
+            c.ok(f"{tag} sender leaves Sending when the receiver died (aborted event)", ab is not None)
+
+    # ---- (b) a provider that stalls: fail in ~20 s, retry, complete once it recovers ---------------------
+    stall = tmp / "stall.flag"
+    stall.unlink(missing_ok=True)
+    mid, src = start("alice", 4 * MB, "b", {"P2P_BLOB_TEST_THROTTLE_MS": "15", "P2P_BLOB_TEST_STALL_FILE": str(stall)})
+    got = until(lambda: att(peers["bob"], "alice", mid)[1] >= 1 * MB, 60, 0.2)
+    c.ok("b bob is mid-transfer before the stall", bool(got))
+    mk_b, mk_a = peers["bob"].mark(), peers["alice"].mark()
+    stall.write_text("x")
+    t0 = time.time()
+    line = peers["bob"].wait_line(r"LOG blob download .*timed out", 45, mk_b)
+    dt = time.time() - t0
+    c.ok("b stalled provider: bob gives up within ~20 s", line is not None and 15 <= dt <= 35, f"{dt:.1f}s")
+    stall.unlink()
+    ok, same = finish("bob", mid, src, "b", 90)
+    c.ok("b bob retries by itself and completes once the stall ends", ok)
+    c.ok("b file identical byte for byte", same)
+    ab = peers["alice"].wait_line(r"CHAT transfer .* 0/0 outgoing=true", 30, mk_a)
+    c.ok("b sender saw the aborted request (Sending ends)", ab is not None)
+
+    # ---- (c) receiver cancels a download in progress -------------------------------------------------------
+    base = dir_bytes(tmp / "bob" / "blobs")  # earlier test files are kept; measure the partial on top
+    mid, src = start("alice", 6 * MB, "c", slow)
+    got = until(lambda: att(peers["bob"], "alice", mid)[1] >= 1.5 * MB, 60, 0.2)
+    size_mid = dir_bytes(tmp / "bob" / "blobs") - base
+    c.ok("c bob is mid-transfer before cancelling", bool(got), f"{size_mid} bytes on disk")
+    peers["bob"].cmd(f"cancel alice {mid}")
+    st, x = att(peers["bob"], "alice", mid)
+    c.ok("c cancel: back to not-downloaded", st == "Remote" and x == 0, f"{st} {x}")
+    time.sleep(6)
+    c.ok("c cancel: it does not restart by itself", att(peers["bob"], "alice", mid)[0] == "Remote")
+    freed = until(lambda: dir_bytes(tmp / "bob" / "blobs") - base < size_mid / 4, 90, 2)
+    c.ok("c partial bytes freed after GC", bool(freed), f"{size_mid} -> {dir_bytes(tmp / 'bob' / 'blobs') - base}")
+    peers["bob"].cmd(f"dl alice {mid}")
+    ok, same = finish("bob", mid, src, "c", 120)
+    c.ok("c a later download works, byte for byte", ok and same)
+    restart("alice", None)
+    return peers["alice"], peers["bob"]
 
 
 def day_noon_offset(days_back):
@@ -281,6 +401,10 @@ def main():
         c.ok("restart keeps bob's conversation", bob.texts("alice") == before_b)
         bob.cmd(f"get alice {sid} {tmp / 'small2.out'}")
         c.ok("restart keeps downloaded blobs readable", (tmp / "small2.out").read_text() == small.read_text())
+
+        # ---- task 32: reliable transfer ---------------------------------------------------------------------------
+        alice, bob = transfer_scenarios(c, tmp, env, alice, bob, live)
+        time.sleep(5)
 
         # ---- C6: day shards; old history fetched on demand ------------------------------------------------------------
         alice.quit(); live.remove(alice)

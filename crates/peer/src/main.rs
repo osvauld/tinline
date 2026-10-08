@@ -57,19 +57,25 @@ impl NodeEvents for Printer {
         let _ = self.tx.lock().unwrap().send(Event::State(id, state));
     }
     fn on_log(&self, line: String) {
+        if line.starts_with("blob download") {
+            println!("LOG {line}");
+        }
         if self.verbose {
             eprintln!("log: {line}");
         }
     }
 }
 
-struct ChatPrinter;
+#[derive(Default)]
+struct ChatPrinter {
+    seen: Mutex<std::collections::HashMap<(String, bool), u64>>,
+}
 
 fn show(m: &Message) -> String {
     let att = m
         .attachment
         .as_ref()
-        .map(|a| format!(" file={} size={} state={:?} kind={:?} hash={}", a.name, a.size, a.state, a.kind, a.hash))
+        .map(|a| format!(" file={} size={} state={:?} kind={:?} hash={} xfer={}", a.name, a.size, a.state, a.kind, a.hash, a.transferred))
         .unwrap_or_default();
     format!(
         "id={} from={} out={} at={} delivery={:?} deleted={} edited={} text={:?}{att}",
@@ -91,7 +97,11 @@ impl ChatEvents for ChatPrinter {
         println!("CHAT delivery peer={peer} id={id} {d:?}");
     }
     fn on_transfer_progress(&self, peer: String, hash: String, done: u64, total: u64, outgoing: bool) {
-        if done == total {
+        // Every 256 KiB step, the ends (0/0 = aborted) and the final one: keeps the log small.
+        let step = done / (256 * 1024);
+        let mut seen = self.seen.lock().unwrap();
+        let prev = seen.insert((hash.clone(), outgoing), step);
+        if done == total || prev != Some(step) {
             println!("CHAT transfer peer={peer} hash={hash} {done}/{total} outgoing={outgoing}");
         }
     }
@@ -171,7 +181,7 @@ fn run() -> Result<(), String> {
             LockState::NoIdentity | LockState::Unlocked => {}
         }
     }
-    node.set_chat_events(Arc::new(ChatPrinter));
+    node.set_chat_events(Arc::new(ChatPrinter::default()));
     match rest.as_slice() {
         ["chat-send", who, text] => {
             start_online(&node)?;
@@ -499,6 +509,14 @@ fn serve(node: &Node) -> Result<(), String> {
                 let wave: Vec<u8> = (0..64u32).map(|i| (i * 4) as u8).collect();
                 let m = node.send_voice(find(node, who)?, path.to_string(), ms.parse().map_err(|_| "bad ms")?, wave).map_err(|e| e.to_string())?;
                 Ok(format!("SENT {}", m.id))
+            }
+            ["dl", who, id] => {
+                node.download_attachment(find(node, who)?, id.to_string()).map_err(|e| e.to_string())?;
+                Ok("DL".into())
+            }
+            ["cancel", who, id] => {
+                node.cancel_download(find(node, who)?, id.to_string()).map_err(|e| e.to_string())?;
+                Ok("CANCELLED".into())
             }
             ["get", who, id, out] => {
                 let did = find(node, who)?;

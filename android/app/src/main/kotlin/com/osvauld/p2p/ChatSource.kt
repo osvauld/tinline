@@ -54,6 +54,8 @@ interface ChatSource {
     fun sendFile(peerDid: String, path: String, mime: String, text: String?): Message
     fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray): Message
     fun download(peerDid: String, messageId: String)
+    /** Stops a download (also one waiting to retry or failed); the attachment is REMOTE again. */
+    fun cancel(peerDid: String, messageId: String)
     fun save(peerDid: String, messageId: String, destPath: String)
 }
 
@@ -118,5 +120,6 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
     override fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray) =
         node.sendVoice(peerDid, path, durationMs.toUInt(), waveform)
     override fun download(peerDid: String, messageId: String) = node.downloadAttachment(peerDid, messageId)
+    override fun cancel(peerDid: String, messageId: String) = node.cancelDownload(peerDid, messageId)
     override fun save(peerDid: String, messageId: String, destPath: String) = node.saveAttachment(peerDid, messageId, destPath)
 }

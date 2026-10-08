@@ -29,7 +29,7 @@ copy no code.
 | Tickets | `BlobTicket` = address + hash + format, as a string | `ticket::BlobTicket` | Not used: hashes travel inside signed chat messages | Keep not using |
 | Metrics | Prometheus counters for store and protocol | `metrics` feature | Off | Off (no telemetry) |
 
-## 2. Reliability work (task 32)
+## 2. Reliability work (task 32) - built, see the end of this section
 
 Built on the features above, nothing new from the crate:
 
@@ -45,6 +45,44 @@ Built on the features above, nothing new from the crate:
 5. **Sender side.** Use the provider's transfer-aborted event (arrives on the per-request channel under `RequestMode::InterceptLog`; verify) to end the "Sending n%" state
    instead of leaving it stuck.
 6. **Size check stays.** `fetch` already rejects a blob whose size does not match the message.
+
+### As built (task 32)
+
+Verified against the source (0.103.1) and by tests:
+
+- **Dropping the stream ends the request.** `Remote::fetch(..).stream()` does not spawn: the
+  request future lives inside the stream (`api/remote.rs:into_stream`), so dropping the stream
+  drops the request and its streams. We also `close()` the connection on a stall/error, so a
+  provider blocked in a send sees it. Unit test `stalled_fetch_times_out_then_resumes`
+  (blobs_tests.rs): the fetch fails with `Timeout`, the partial bytes stay (`local_bytes > 0`), the
+  provider reports the request aborted, and a second fetch on a new connection completes.
+- **Watchdog**: `BlobHub::fetch_with_stall`, 20 s per progress item (`blobs::STALL`); the first
+  item (connect + request) is covered too.
+- **Retry** (`engine.rs:chat_download_loop`): 2, 5, 15, 30, 60 s, then `failed` ("Tap to
+  retry"). `NotFound`/`Protocol` errors (e.g. size mismatch) are not retried. Entries in
+  `downloading` carry a sequence number and the task's abort handle; one that is only waiting for
+  its next retry is replaced by a new `chat_download` (reconnect, user tap), so a failed or stuck
+  entry never blocks a new attempt. A running fetch is bounded by the watchdog + dial timeout.
+- **Cancel**: `Node::cancel_download(peer_did, message_id)`: abort the task, `wanted = false`,
+  drop the `tl/<hash>` tag (GC frees the partial bytes within 30 s), `on_message_changed`
+  (state `Remote`) and `on_transfer_progress(.., 0, 0, false)`. A `Ready` attachment is untouched.
+- **Progress after restart**: each attempt seeds `done` from `remote().local(hash).local_bytes()`
+  and emits it.
+- **Sender side**: per-request `RequestUpdate::Aborted` arrives on the `m.rx` channel of
+  `GetRequestReceived` (mask `RequestMode::InterceptLog`) when a write fails (the receiver reset or
+  stopped the stream, closed the connection, or the link died); `Completed` on success. The hub
+  reports it through `UploadEnd`; the engine emits `on_transfer_progress(peer, hash, 0, 0, true)`
+  for an abort, which means "ended without completing". Note the provider only notices once its
+  next write or throttle returns, so a provider stalled mid-chunk reports after it wakes.
+- **Test knobs** (serving side, read at hub open): `P2P_BLOB_TEST_THROTTLE_MS` (delay per 16 KiB
+  chunk, via `ThrottleMode::Intercept`) and `P2P_BLOB_TEST_STALL_FILE` (hold all sending while the
+  file exists). Used by `scripts/e2e_chat.py`.
+- e2e (`scripts/e2e_chat.py`): a1 sender killed (A to B), a2 receiver killed, a3 sender killed
+  (B to A): the file arrives byte for byte; the restarted sender serves from the receiver's bytes
+  (first progress >= 80% of what the receiver had); the restarted receiver seeds from disk; b stalled
+  provider: failure after 20 s, automatic completion once the stall ends; c cancel: state back to
+  `Remote`, no restart by itself, partial bytes freed after GC, a later download works.
+- Unchanged by decision: the 2 GB file limit.
 
 ## 3. Later, if needed
 

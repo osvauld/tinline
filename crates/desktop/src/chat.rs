@@ -88,6 +88,9 @@ impl Source {
     pub fn download_attachment(&self, peer: String, id: String) -> Result<(), Error> {
         route!(self.download_attachment(peer, id))
     }
+    pub fn cancel_download(&self, peer: String, id: String) -> Result<(), Error> {
+        route!(self.cancel_download(peer, id))
+    }
     pub fn save_attachment(&self, peer: String, id: String, dest: String) -> Result<(), Error> {
         route!(self.save_attachment(peer, id, dest))
     }
@@ -207,6 +210,7 @@ pub(super) enum Cm {
     Dropped(PathBuf),
     DropHover(bool),
     Download(String),
+    Cancel(String),
     Save(String),
     Saved(Result<String, String>),
     Older,
@@ -634,6 +638,22 @@ impl App {
                 let src = self.src();
                 return blocking(
                     move || src.download_attachment(peer, id).map_err(s),
+                    |r| match r {
+                        Ok(()) => Msg::Chat(Cm::Nop),
+                        Err(e) => Msg::Chat(Cm::Saved(Err(e))),
+                    },
+                );
+            }
+            Cm::Cancel(id) => {
+                let Some(peer) = self.chat.peer.clone() else { return Task::none() };
+                if let Some(a) = self.chat.msgs.iter_mut().find(|m| m.id == id).and_then(|m| m.attachment.as_mut()) {
+                    a.state = TransferState::Remote;
+                    a.transferred = 0;
+                    self.chat.progress.remove(&a.hash);
+                }
+                let src = self.src();
+                return blocking(
+                    move || src.cancel_download(peer, id).map_err(s),
                     |r| match r {
                         Ok(()) => Msg::Chat(Cm::Nop),
                         Err(e) => Msg::Chat(Cm::Saved(Err(e))),

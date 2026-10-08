@@ -347,11 +347,26 @@ impl Fake {
             }
             let m = fake.with(&peer, |st, p| {
                 let m = st.msgs.get_mut(p).unwrap().iter_mut().find(|m| m.id == message_id)?;
-                m.attachment.as_mut()?.state = TransferState::Ready;
+                let a = m.attachment.as_mut()?;
+                if a.state != TransferState::Downloading {
+                    return None; // cancelled meanwhile
+                }
+                a.state = TransferState::Ready;
                 Some(m.clone())
             });
             if let Some(m) = m {
                 fake.emit(ChatEv::Changed(m));
+            }
+        });
+        Ok(())
+    }
+
+    pub fn cancel_download(&self, peer: String, message_id: String) -> Result<(), Error> {
+        self.with(&peer, |st, p| {
+            if let Some(a) = st.msgs.get_mut(p).and_then(|v| v.iter_mut().find(|m| m.id == message_id)).and_then(|m| m.attachment.as_mut())
+                && a.state == TransferState::Downloading
+            {
+                a.state = TransferState::Remote;
             }
         });
         Ok(())
