@@ -40,6 +40,7 @@ has re-run its acceptance command.
 | 30 | Voice messages: Ogg Opus 16 kHz recorder/decoder + 64-peak waveform in core; Android hold-to-record + voice bubble; desktop recorder/player widget | sonnet:voice (worktree) | `crates/core/src/voice.rs`, `android/.../VoiceMessage.kt`, `crates/desktop/src/voice.rs` | done (emulator-checked by lead) |
 | 27 | Chat UI on Android + desktop (Android and desktop agents, against the frozen chat API stub from 25) | after 25's API stub, 26 | `android/`, `crates/desktop` | done (both merged; Android tested emulator <-> peer) |
 | 31 | See attachments: desktop image thumbnails + full-size viewer and Open for documents; Android Open for documents (PDF in-app, others via system viewer). Only safe types open; others Save only | sonnet:preview-android, sonnet:preview-desktop (worktrees) | `android/` chat files, `crates/desktop` chat | done (merged; emulator + demo screenshots; real phone↔laptop pending) |
+| 32 | Reliable file transfer (small files; no folders, LAN discovery or preview — DashBeam is reference only, AGPL): stall watchdog on blob fetch (no progress for 20 s → fail), automatic retry with backoff while the session is up (not only on reconnect), receiver cancel, "Tap to retry" on failure; e2e with a peer killed/restarted mid-transfer both directions | todo | `crates/core/src/chat/{engine,blobs}.rs`, `scripts/e2e_chat.py`, then apps for retry/cancel UI | todo |
 
 ## Roadmap (after the redesign)
 
