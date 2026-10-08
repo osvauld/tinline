@@ -3,6 +3,9 @@ package com.osvauld.p2p
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -48,7 +51,7 @@ private fun String.matchesQuery(q: String) = q.isBlank() || contains(q.trim(), i
 fun HomeScreen(
     app: P2pApp, missing: List<Need>, onFix: (Need) -> Unit,
     onAdd: (scan: Boolean) -> Unit, onSettings: () -> Unit, onContact: (Contact) -> Unit, onCall: (Contact) -> Unit,
-    onChat: (String) -> Unit = {}, onNewChat: () -> Unit = {}, callError: String? = null,
+    onChat: (String) -> Unit = {}, onNewChat: () -> Unit = {}, callError: String? = null, onPaste: () -> Unit = {},
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val status by app.status.collectAsState()
@@ -82,6 +85,7 @@ fun HomeScreen(
         available = avail.available, onTurnOn = { app.setAvailable(true) }, subLines = subs,
         tab = tab, onTab = { tab = it }, chatRows = rows, onChat = onChat, onNewChat = onNewChat,
         chatBadge = rows.sumOf { it.unread }, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
+        firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
     )
     if (sheet) AvailabilitySheet(avail.available, avail.until?.toLong(), app.node.profile()?.name ?: "", onDismiss = { sheet = false }) { available, until ->
         sheet = false
@@ -115,6 +119,7 @@ fun HomeContent(
     available: Boolean = true, onTurnOn: () -> Unit = {}, subLines: Map<String, String> = emptyMap(),
     tab: HomeTab = HomeTab.Contacts, onTab: (HomeTab) -> Unit = {}, chatRows: List<ChatRowUi> = emptyList(),
     onChat: (String) -> Unit = {}, onNewChat: () -> Unit = {}, chatBadge: Int = 0, callBadge: Int = 0,
+    firstRun: (@Composable () -> Unit)? = null,
 ) {
     val c = Tin.c
     var searching by remember { mutableStateOf(startSearching) }
@@ -125,6 +130,8 @@ fun HomeContent(
     LaunchedEffect(tab) { searching = false; query = "" }
     val banner: @Composable () -> Unit = { TopBanner(online, connectingGrace, missing, onFix, available, onTurnOn) }
 
+    // No contacts yet: the home screen is the add screen (my code, Copy, Share, Scan, Paste), on Chats and Contacts alike.
+    val firstRunShown = firstRun != null && contacts.isEmpty() && !searching && tab != HomeTab.Calls
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().imePadding()) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Column(Modifier.fillMaxSize()) {
@@ -137,7 +144,7 @@ fun HomeContent(
                         IconBtn(Icons.Rounded.Settings, "Settings", onSettings)
                     }
                 }
-                when (tab) {
+                if (firstRunShown) Column(Modifier.weight(1f)) { banner(); firstRun?.invoke() } else when (tab) {
                     HomeTab.Chats -> Box(Modifier.weight(1f)) {
                         ChatsBody(chatRows, query, banner, onSearch = { searching = true }, onChat = onChat, onNewChat = onNewChat, searching = searching)
                     }
@@ -159,12 +166,7 @@ fun HomeContent(
                         item { Hint("History stays on this phone only.", Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) }
                     }
                     HomeTab.Contacts -> Box(Modifier.weight(1f)) {
-                        if (contacts.isEmpty() && !searching) {
-                            Column(Modifier.fillMaxSize()) {
-                                banner()
-                                EmptyHome(onAdd)
-                            }
-                        } else LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 112.dp)) {
+                        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 112.dp)) {
                             if (!searching) {
                                 item { banner() }
                                 item {
@@ -293,17 +295,26 @@ private fun RowItem(
     }
 }
 
+/** First run: my code with Copy and Share under it, Scan their code, Paste their card. One screen, nothing to open. */
 @Composable
-private fun EmptyHome(onAdd: (Boolean) -> Unit) {
+private fun FirstRunAdd(app: P2pApp, onScan: () -> Unit, onPaste: () -> Unit) {
+    val c = Tin.c
+    val meName = remember { app.node.profile()?.name ?: "" }
     Column(
-        Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, bottom = 48.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp), horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        StringIllustration(height = 150.dp)
-        H1("Your line is ready")
-        Lead("Add someone to call. Meet up or video-chat, open Tinline on both phones, and scan each other’s code.")
-        Spacer(Modifier.height(4.dp))
-        TinButton("Scan their code", { onAdd(true) }, icon = Icons.Rounded.QrCodeScanner)
-        TinButton("Show my code", { onAdd(false) }, style = BtnStyle.Outlined, icon = Icons.Rounded.QrCode2)
+        H1("Add your first contact", align = TextAlign.Center)
+        Lead("Show your code to a friend, or copy it and send it. Or scan theirs.", Modifier.widthIn(max = 320.dp), align = TextAlign.Center)
+        MyCodeBlock(app, meName, qr = 220.dp, showNewCode = false)
+        TinButton("Scan their code", onScan, icon = Icons.Rounded.QrCodeScanner)
+        TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Dot(c.pr, 10.dp)
+            Text("Waiting for them to scan — keep this open.", style = TinType.bodyM, color = c.ink2)
+        }
     }
 }
