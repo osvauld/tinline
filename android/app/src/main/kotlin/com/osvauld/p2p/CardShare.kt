@@ -134,6 +134,7 @@ fun CardPrompts(app: P2pApp, clipboardOk: Boolean, shareOk: Boolean, showOnScree
     val okNow by rememberUpdatedState(clipboardOk)
 
     fun check() {
+        testLog("clipcheck armed=$armed ok=$okNow focus=${view.hasWindowFocus()}")
         if (!armed || !okNow || !view.hasWindowFocus()) return
         val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         val d = cm.primaryClipDescription
@@ -141,11 +142,13 @@ fun CardPrompts(app: P2pApp, clipboardOk: Boolean, shareOk: Boolean, showOnScree
         // Reading the clipboard shows a system toast on Android 12+, so only read real text, and only if it changed.
         if (d == null || !(d.hasMimeType("text/plain") || d.hasMimeType("text/html"))) return
         val stamp = d.timestamp
+        testLog("clipread stamp=$stamp last=${prefs.getLong("clip_stamp", -1L)}")
         if (stamp != 0L && stamp == prefs.getLong("clip_stamp", -1L)) return
         val text = runCatching { clipboardText(ctx) }.getOrNull()
         prefs.edit().putLong("clip_stamp", stamp).apply()
         scope.launch {
             val p = withContext(Dispatchers.IO) { peekOrNull(app, text) }
+            testLog("clippeek len=${text?.length} -> ${p?.name} known=${p?.known}")
             if (p != null && hashOf(p.ticket) !in dismissed && prompt == null) prompt = p
         }
     }
@@ -180,7 +183,7 @@ fun CardPrompts(app: P2pApp, clipboardOk: Boolean, shareOk: Boolean, showOnScree
             ) {
                 Avatar(p.name.ifBlank { "?" }, p.did, 44.dp)
                 Column(Modifier.weight(1f)) {
-                    Text(if (p.known) "Open chat with ${p.name.ifBlank { "them" }}?" else "Add ${p.name.ifBlank { "this contact" }}?", style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (p.known) "Chat with ${p.name.ifBlank { "them" }}?" else "Add ${p.name.ifBlank { "this contact" }}?", style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(if (p.known) "They are already in your contacts." else "Tinline found their card.", style = TinType.bodyM, color = c.ink2)
                 }
                 TinButton("Not now", { dismissed += hashOf(p.ticket); prefs.edit().putString("dismissed", hashOf(p.ticket)).apply(); prompt = null }, style = BtnStyle.Text, fill = false, height = 44.dp, textStyle = TinType.label)

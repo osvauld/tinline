@@ -170,7 +170,7 @@ private fun Root(app: P2pApp) {
             val inCall by app.calls.ui.collectAsState()
             val top = stack.last()
             val onHomeOrAdd = top is Route.Home || top is Route.Add
-            CardPrompts(app, clipboardOk = onHomeOrAdd && inCall == null, shareOk = true, showOnScreen = onHomeOrAdd, onChat = { p -> if (top is Route.Add) pop(); stack.add(Route.Chat(p.did)) }) { p ->
+            CardPrompts(app, clipboardOk = onHomeOrAdd && inCall == null, shareOk = true, showOnScreen = inCall == null, onChat = { p -> if (top is Route.Add) pop(); stack.add(Route.Chat(p.did)) }) { p ->
                 if (stack.last() is Route.Add) pop()
                 stack.add(Route.Add(false, ticket = p.ticket))
             }
