@@ -155,6 +155,16 @@ pub enum Icon {
     Relayed,
     LogOut,
     Key,
+    CheckCheck,
+    Clock,
+    Paperclip,
+    Send,
+    Download,
+    File,
+    Reply,
+    MessageSquare,
+    RotateCw,
+    More,
 }
 
 impl Icon {
@@ -182,6 +192,16 @@ impl Icon {
             Icon::Direct => r#"<circle cx="4" cy="12" r="2"/><circle cx="20" cy="12" r="2"/><path d="M6 12h12"/>"#,
             Icon::Relayed => r#"<circle cx="3" cy="12" r="2"/><circle cx="21" cy="12" r="2"/><path d="M5 12h4"/><path d="M15 12h4"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M10.5 9V8a1.5 1.5 0 0 1 3 0v1"/>"#,
             Icon::LogOut => r#"<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>"#,
+            Icon::CheckCheck => r#"<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>"#,
+            Icon::Clock => r#"<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>"#,
+            Icon::Paperclip => r#"<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>"#,
+            Icon::Send => r#"<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>"#,
+            Icon::Download => r#"<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>"#,
+            Icon::File => r#"<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>"#,
+            Icon::Reply => r#"<path d="m9 17-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>"#,
+            Icon::MessageSquare => r#"<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>"#,
+            Icon::RotateCw => r#"<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>"#,
+            Icon::More => r#"<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>"#,
             Icon::Key => r#"<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>"#,
         }
     }

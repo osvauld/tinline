@@ -31,7 +31,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, LockState, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus};
 use tokio::sync::mpsc;
 
 /// Everything the node and the tray report, funnelled into the UI's update loop.
@@ -43,6 +43,37 @@ pub enum Ev {
     Tray(tray::TrayCmd),
     /// Audio device trouble worth telling the user about.
     AudioNotice(String),
+    Chat(ChatEv),
+}
+
+/// What the core's `ChatEvents` report, as plain data for the UI loop.
+pub enum ChatEv {
+    Added(Message),
+    Changed(Message),
+    Chat(Chat),
+    Delivery(String, String, DeliveryState),
+    Progress { hash: String, done: u64, total: u64, outgoing: bool },
+}
+
+/// Bridges `ChatEvents` into the same channel as `NodeEvents`.
+pub struct ChatBridge(pub mpsc::UnboundedSender<Ev>);
+
+impl ChatEvents for ChatBridge {
+    fn on_message_added(&self, message: Message) {
+        let _ = self.0.send(Ev::Chat(ChatEv::Added(message)));
+    }
+    fn on_message_changed(&self, message: Message) {
+        let _ = self.0.send(Ev::Chat(ChatEv::Changed(message)));
+    }
+    fn on_chat_changed(&self, chat: Chat) {
+        let _ = self.0.send(Ev::Chat(ChatEv::Chat(chat)));
+    }
+    fn on_delivery_changed(&self, peer_did: String, message_id: String, delivery: DeliveryState) {
+        let _ = self.0.send(Ev::Chat(ChatEv::Delivery(peer_did, message_id, delivery)));
+    }
+    fn on_transfer_progress(&self, _peer_did: String, hash: String, done: u64, total: u64, outgoing: bool) {
+        let _ = self.0.send(Ev::Chat(ChatEv::Progress { hash, done, total, outgoing }));
+    }
 }
 
 pub type EvRx = mpsc::UnboundedReceiver<Ev>;
@@ -218,6 +249,7 @@ fn main() -> Result<(), String> {
     let node = Node::new(data.to_string_lossy().into(), Arc::new(Events { tx: tx.clone(), audio: audio.clone() }))
         .map_err(|e| e.to_string())?;
     audio.attach(&node);
+    node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
     keystore::auto_unlock(&node, &data);
     let notice_tx = tx.clone();

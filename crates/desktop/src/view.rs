@@ -9,10 +9,12 @@ use iced::{Alignment, Border, Color, Element, Fill, Length, Padding, Point, Rect
 use p2pcore::{CallRecord, CallState, LockState};
 
 use super::{
-    AddPhase, App, Detail, Msg, Qr, Screen, DEFAULT_LABEL, RENAME_ID, SEARCH_ID,
+    AddPhase, App, Detail, Msg, Qr, Screen, DEFAULT_LABEL, RECENTS, RENAME_ID, SEARCH_ID,
 };
 use crate::ui::{self, Icon, Kind, Tok};
 
+#[path = "chat_view.rs"]
+mod chat_view;
 type El<'a> = Element<'a, Msg>;
 
 fn scroll<'a>(t: Tok, c: impl Into<El<'a>>) -> iced::widget::Scrollable<'a, Msg> {
@@ -570,7 +572,7 @@ impl App {
         ]
         .spacing(4)
         .align_y(Alignment::Center);
-        let mut col = column![head].spacing(12);
+        let mut col = column![head, self.side_tabs(t)].spacing(12);
         let bare = move |_: &Theme, _: text_input::Status| text_input::Style {
             background: iced::Background::Color(Color::TRANSPARENT),
             border: Border::default(),
@@ -598,6 +600,10 @@ impl App {
         );
 
         let q = self.search.trim().to_lowercase();
+        if self.chat.tab == super::chat::SideTab::Chats {
+            return self.sidebar_frame(t, col, self.chat_list(t, &q));
+        }
+        let calls_tab = self.chat.tab == super::chat::SideTab::Calls;
         let mut list = column![].spacing(2);
         let known = |did: &str| self.contacts.iter().any(|c| c.did == did);
         let recents: Vec<&CallRecord> = self
@@ -605,7 +611,7 @@ impl App {
             .iter()
             .filter(|r| known(&r.peer_did))
             .filter(|_| q.is_empty())
-            .take(3)
+            .take(if calls_tab { RECENTS as usize } else { 3 })
             .collect();
         if !recents.is_empty() {
             list = list.push(container(label(t, "Recent")).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }));
@@ -623,6 +629,12 @@ impl App {
                     .on_press(Msg::Select(r.peer_did.clone())),
                 );
             }
+        }
+        if calls_tab {
+            if self.recents.is_empty() {
+                list = list.push(container(tx("Calls you make and get appear here.", 13.0, t.ink2)).padding([4, 12]));
+            }
+            return self.sidebar_frame(t, col, list.into());
         }
         let shown: Vec<&p2pcore::Contact> = self
             .contacts
@@ -664,6 +676,10 @@ impl App {
                 t.ink2,
             )).padding([4, 12]));
         }
+        self.sidebar_frame(t, col, list.into())
+    }
+
+    fn sidebar_frame<'a>(&'a self, t: Tok, col: iced::widget::Column<'a, Msg>, list: El<'a>) -> El<'a> {
         container(
             column![col, scroll(t, list).height(Fill), self.avail_footer(t)]
                 .spacing(12),
@@ -682,6 +698,9 @@ impl App {
         }
         if self.notice.is_some() {
             main = main.push(self.notice_bar(t));
+        }
+        if let Some(c) = self.selected().filter(|_| !self.chat.info) {
+            return row![self.sidebar(t), self.conversation_view(t, c)].into();
         }
         main = main.push(match self.selected() {
             Some(c) => self.detail_view(t, c),
@@ -746,6 +765,7 @@ impl App {
             .align_y(Alignment::Center);
         let actions = row![
             pill(t, Kind::Primary, Some(Icon::Phone), "Call", Some(Msg::CallPressed(c.did.clone()))),
+            pill(t, Kind::Quiet, Some(Icon::MessageSquare), "Message", Some(Msg::Chat(super::chat::Cm::Info(false)))),
             pill(t, Kind::Quiet, Some(Icon::Pencil), "Rename", Some(Msg::SetDetail(Detail::Rename))),
             pill(t, Kind::Quiet, Some(Icon::ShieldCheck), "Safety number", Some(Msg::SetDetail(Detail::Verify))),
             pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::SetDetail(Detail::ConfirmRemove))),
