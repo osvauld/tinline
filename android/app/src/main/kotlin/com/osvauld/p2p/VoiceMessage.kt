@@ -253,7 +253,7 @@ fun VoiceMicButton(state: VoiceRecState, modifier: Modifier = Modifier) {
                             waitForUpOrCancellation()
                             return@awaitEachGesture
                         }
-                        if (!state.begin()) { haptic.performHapticFeedback(HapticFeedbackType.Reject); waitForUpOrCancellation(); return@awaitEachGesture }
+                        if (!state.begin()) { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); waitForUpOrCancellation(); return@awaitEachGesture }
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         var cancelled = false
                         while (true) {
@@ -268,7 +268,7 @@ fun VoiceMicButton(state: VoiceRecState, modifier: Modifier = Modifier) {
                         }
                         when {
                             cancelled -> { haptic.performHapticFeedback(HapticFeedbackType.LongPress); state.cancel() }
-                            state.locked -> haptic.performHapticFeedback(HapticFeedbackType.ContextClick)
+                            state.locked -> haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             else -> state.send()
                         }
                         // A cancelled or locked gesture may still have the finger down: swallow the rest of it.
@@ -405,7 +405,7 @@ object VoicePlayer {
                 track.play()
                 var tick = 0
                 while (gen == my) {
-                    val pcm = d.read(RATE / 20)
+                    val pcm = d.read((RATE / 20).toUInt())
                     if (pcm.isEmpty()) { finished = true; break }
                     val arr = ShortArray(pcm.size) { pcm[it] }
                     track.write(arr, 0, arr.size)
