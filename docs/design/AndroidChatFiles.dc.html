@@ -59,12 +59,21 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 .hint{font-size:13px;color:var(--ink2);line-height:18px}
 .btn{height:44px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 15px 'Figtree',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;box-sizing:border-box}
 .btn.tn{background:var(--prc);color:var(--onprc)}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.tag.nb{background:#FCEFD2;color:#5C3B00}
+.tag.ok{background:#CDEBE3;color:#06352D}
+.tag.pt{background:#E1E4F7;color:#2F3A75}
+.need{background:#FFFFFF;border:1px solid #D3D9D4;border-radius:16px;padding:20px 22px;color:#17201D;font-size:14px;line-height:20px;box-sizing:border-box}
+.need h3{margin:0 0 4px;font-size:17px}
+.need ul{margin:8px 0 0;padding-left:18px}
+.need li{margin:0 0 7px}
+.need li b{font-weight:700}
 </style>
 </helmet>
-<div class="root" style="width:2348px;height:1060px">
+<div class="root" style="width:4600px;height:1060px">
 
 <div class="col">
-<div class="lbl">Attach <span>· tap +</span></div>
+<div class="lbl">Attach <span>· tap +</span><span class="tag ok">Built</span></div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div></div>
 <div class="msgs" style="padding-bottom:300px">
@@ -85,13 +94,13 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 
 <div class="col">
-<div class="lbl">Sending <span>· photo, file, voice message</span></div>
+<div class="lbl">Sending <span>· photo, file, voice message</span><span class="tag ok">Built</span></div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div></div>
 <div class="msgs">
 <div class="b in">Can you send the floor plan?<div class="meta">17:20</div></div>
 <div class="b out" style="padding:4px"><div class="photo">[photo: living room]<div class="ring"><svg viewBox="0 0 36 36" style="width:44px;height:44px"><circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="3"></circle><circle cx="18" cy="18" r="15" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="40 95" stroke-linecap="round" transform="rotate(-90 18 18)"></circle><path d="M13 13l10 10M23 13 13 23" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path></svg></div></div><div class="meta" style="padding:0 8px 4px">Sending 42% · 17:22</div></div>
-<div class="b out"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Floor plan – 3rd floor.pdf</div><div class="fs">2.4 MB · PDF</div></div></div><div class="meta">17:22<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="b out"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Floor plan – 3rd floor.pdf</div><div class="fs">2.4 MB · PDF · tap to open</div></div></div><div class="meta">17:22<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
 <div class="b out"><div class="voice"><button class="play" aria-label="Play voice message"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M7 4v16l13-8z" fill="currentColor"></path></svg></button><div class="wave"><sc-for list="{{wave}}" as="w" hint-placeholder-count="34"><span style="height:{{w.h}}px;background:{{w.c}}"></span></sc-for></div><span class="mono" style="font-family:'IBM Plex Mono',monospace;font-size:12px">0:14</span></div><div class="meta">17:23<svg class="i tk" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg></div></div>
 </div>
 <div class="comp"><div class="field"><button class="ib" aria-label="Attach" style="width:40px;height:40px"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button><span style="flex:1">Message</span></div><button class="go" aria-label="Hold to record a voice message"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button></div>
@@ -99,12 +108,12 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 
 <div class="col">
-<div class="lbl">Hold to record <span>· slide left to cancel, up to lock</span></div>
+<div class="lbl">Hold to record <span>· slide left to cancel, up to lock</span><span class="tag pt">Partly built</span></div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div></div>
 <div class="msgs">
 <div class="b in">Can you send the floor plan?<div class="meta">17:20</div></div>
-<div class="b out"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Floor plan – 3rd floor.pdf</div><div class="fs">2.4 MB · PDF</div></div></div><div class="meta">17:22<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
+<div class="b out"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Floor plan – 3rd floor.pdf</div><div class="fs">2.4 MB · PDF · tap to open</div></div></div><div class="meta">17:22<svg class="i tk" viewBox="0 0 24 24"><path d="M18 6 7 17l-5-5 M22 10l-7.5 7.5L13 16"></path></svg></div></div>
 </div>
 <div style="position:absolute;right:14px;bottom:104px;width:40px;height:96px;border-radius:999px;background:var(--sf);border:1px solid var(--ln);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:12px 0;box-sizing:border-box;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="m18 15-6-6-6 6"></path></svg></div>
 <div class="comp" style="align-items:center">
@@ -116,7 +125,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 
 <div class="col">
-<div class="lbl">Receiving <span>· dark · download, waiting for sender</span></div>
+<div class="lbl">Receiving <span>· dark · download, waiting for sender</span><span class="tag ok">Built</span><span class="tag nb">Not built yet: 25 MB setting</span></div>
 <div class="ph dk">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="border:2px solid var(--ln2);box-sizing:border-box"></span>Not connected</span></div></div>
 <div class="msgs">
@@ -126,13 +135,13 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="b in"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Bank statement.pdf</div><div class="fs">36 MB · not downloaded</div></div><button class="ib" aria-label="Download Bank statement.pdf" style="width:40px;height:40px;color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"></path></svg></button></div><div class="meta">16:08</div></div>
 <div class="b in"><div class="voice"><button class="play" aria-label="Play voice message"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M7 4v16l13-8z" fill="currentColor"></path></svg></button><div class="wave"><sc-for list="{{waveIn}}" as="w" hint-placeholder-count="34"><span style="height:{{w.h}}px;background:{{w.c}}"></span></sc-for></div><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink2)">0:32</span></div><div class="meta">16:10</div></div>
 </div>
-<div class="hint" style="padding:0 20px 8px">Files over 25 MB wait for you to tap download (change in Settings › Chats). Files come only from Arjun’s phone — if it’s offline, the download waits.</div>
+<div class="hint" style="padding:0 20px 8px">Files over 25 MB wait for you to tap download (change in Settings › Chats — setting not built yet; the limit exists in core). Files come only from Arjun’s phone — if it’s offline, the download waits.</div>
 <div class="comp"><div class="field"><button class="ib" aria-label="Attach" style="width:40px;height:40px"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button><span style="flex:1">Message</span></div><button class="go" aria-label="Hold to record a voice message"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button></div>
 </div>
 </div>
 
 <div class="col">
-<div class="lbl">Photo viewer <span>· always dark</span></div>
+<div class="lbl">Photo viewer <span>· always dark</span><span class="tag ok">Built</span><span class="tag nb">Not built yet: zoom</span></div>
 <div class="ph dk" style="background:#000000">
 <div style="display:flex;align-items:center;gap:6px;padding:0 4px;height:64px;color:#FFFFFF;flex:none"><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div style="flex:1"><div style="font-size:16px;font-weight:600">Arjun Oommen</div><div style="font-size:12px;color:#A6B2AD">Today, 16:02</div></div><button class="ib" aria-label="Share"><svg class="i" viewBox="0 0 24 24"><path d="M4 12v8h16v-8 M16 6l-4-4-4 4 M12 2v13"></path></svg></button><button class="ib" aria-label="Save to phone"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"></path></svg></button></div>
 <div style="flex:1;display:flex;align-items:center;justify-content:center"><div style="width:412px;height:310px;background:#26302D;display:flex;align-items:center;justify-content:center;color:#A6B2AD;font-size:14px">[photo: kitchen, full size]</div></div>
@@ -140,9 +149,88 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 </div>
 
+
+<div class="col">
+<div class="lbl">PDF viewer <span>· tap a PDF</span><span class="tag ok">Built · task 31</span></div>
+<div class="ph dk" style="background:#000000">
+<div style="display:flex;align-items:center;gap:6px;padding:0 4px;height:64px;color:#FFFFFF;flex:none"><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Floor plan – 3rd floor.pdf</div><div style="font-size:12px;color:#A6B2AD">Page 2 of 5</div></div><button class="ib" aria-label="Share"><svg class="i" viewBox="0 0 24 24"><path d="M4 12v8h16v-8 M16 6l-4-4-4 4 M12 2v13"></path></svg></button><button class="ib" aria-label="Save to phone"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"></path></svg></button></div>
+<div style="flex:1;overflow:hidden;padding:0 12px"><div style="height:18px"></div><div style="width:300px;height:392px;background:#FFFFFF;margin:0 auto 10px;color:#4D5853;font-size:12px;padding:16px;box-sizing:border-box">[page 2]<div style="margin-top:10px;height:8px;background:#E2E6E1;width:80%"></div><div style="margin-top:8px;height:8px;background:#E2E6E1"></div><div style="margin-top:8px;height:8px;background:#E2E6E1;width:60%"></div></div><div style="width:300px;height:330px;background:#FFFFFF;margin:0 auto 10px;color:#4D5853;font-size:12px;padding:16px;box-sizing:border-box">[page 3]</div></div>
+<div style="padding:12px 20px 28px;color:#A6B2AD;font-size:13px;line-height:18px;display:flex;gap:8px;align-items:flex-start"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px;margin-top:1px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Drawn inside Tinline from an encrypted copy that stays on this phone. Pages render one at a time.</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Text viewer <span>· .txt .md .csv .log, up to 1 MB</span><span class="tag ok">Built · task 31</span></div>
+<div class="ph dk" style="background:#000000">
+<div style="display:flex;align-items:center;gap:6px;padding:0 4px;height:64px;color:#FFFFFF;flex:none"><button class="ib" aria-label="Close"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Lease notes.txt</div><div style="font-size:12px;color:#A6B2AD">Today, 16:08</div></div><button class="ib" aria-label="Share"><svg class="i" viewBox="0 0 24 24"><path d="M4 12v8h16v-8 M16 6l-4-4-4 4 M12 2v13"></path></svg></button><button class="ib" aria-label="Save to phone"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"></path></svg></button></div>
+<div style="flex:1;overflow:hidden;padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:20px;color:#E6ECE9;display:flex;flex-direction:column"><div style="display:flex;gap:12px"><span style="color:#7C8984;width:24px;text-align:right;flex:none">1</span><span>Lease notes — 3rd floor</span></div><div style="display:flex;gap:12px"><span style="color:#7C8984;width:24px;text-align:right;flex:none">2</span><span></span></div><div style="display:flex;gap:12px"><span style="color:#7C8984;width:24px;text-align:right;flex:none">3</span><span>- Rent: 1,450 per month</span></div><div style="display:flex;gap:12px"><span style="color:#7C8984;width:24px;text-align:right;flex:none">4</span><span>- Deposit: two months</span></div><div style="display:flex;gap:12px"><span style="color:#7C8984;width:24px;text-align:right;flex:none">5</span><span>- Notice period: 3 months</span></div><div style="display:flex;gap:12px"><span style="color:#7C8984;width:24px;text-align:right;flex:none">6</span><span>- Parking: space 14 included</span></div><div style="display:flex;gap:12px"><span style="color:#7C8984;width:24px;text-align:right;flex:none">7</span><span></span></div><div style="display:flex;gap:12px"><span style="color:#7C8984;width:24px;text-align:right;flex:none">8</span><span>Call Arjun about the kitchen wall.</span></div></div>
+<div style="padding:12px 20px 28px;color:#A6B2AD;font-size:13px;line-height:18px">Bigger than 1 MB, or not really text: “This file is too big to show here. Save it to open it in another app.”</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Open with <span>· Word, Excel, audio, video</span><span class="tag ok">Built · task 31</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div></div>
+<div class="msgs">
+<div class="b in"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Lease draft v3.docx</div><div class="fs">1.2 MB · Word · tap to open</div></div><button class="ib" aria-label="Save to phone" style="width:40px;height:40px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"></path></svg></button></div><div class="meta">16:08</div></div>
+<div class="b in"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5z M1 5h15v14H1z"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Walkthrough.mp4</div><div class="fs">184 MB · video · tap to open</div></div><button class="ib" aria-label="Save to phone" style="width:40px;height:40px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"></path></svg></button></div><div class="meta">16:08</div></div>
+</div>
+<div style="position:absolute;inset:0;background:rgba(15,21,19,.28)"></div>
+<div class="sheet"><div class="grab"></div><div style="font-size:18px;font-weight:600;padding:0 4px 8px">Open with</div>
+<div class="opt3"><button class="ob"><span style="border-radius:50%;background:var(--sf3);color:var(--ink)">W</span>Docs app</button><button class="ob"><span style="border-radius:50%;background:var(--sf3);color:var(--ink)">O</span>Office</button><button class="ob"><span style="border-radius:50%;background:var(--sf3);color:var(--ink)">…</span>More</button></div>
+<div class="hint" style="padding:12px 4px 0">This sheet is Android’s own app chooser, not ours. Tinline hands the app a read-only link to a decrypted copy in its private cache.</div>
+<div style="align-self:center;margin-top:14px;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;font-size:14px">No app on this phone opens .docx files — Save it instead</div></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Save only · failures <span>· light</span><span class="tag ok">Built · task 31</span><span class="tag nb">Not built yet: cancel</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div></div>
+<div class="msgs">
+<div class="b in"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">setup-tool.apk</div><div class="fs">4.0 MB · tap to save</div></div></div><div class="meta">16:08</div></div>
+<div class="b in"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">IMG_0412.heic</div><div class="fs">3.1 MB · tap to save</div></div></div><div class="meta">16:08</div></div>
+<div class="b in"><div class="file"><div class="fi"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"></path></svg></div><div style="flex:1;min-width:0"><div class="fn">Lease draft v2.pdf</div><div class="fs">8.0 MB · couldn’t download — tap to retry</div></div></div><div class="meta">16:08</div></div>
+<div class="b in"><div style="display:flex;gap:10px;align-items:flex-start;color:var(--ink)"><span style="color:var(--er)"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 8v5 M12 16h.01"></path></svg></span><div style="font-size:14px;line-height:19px">Tinline can’t read this PDF. It may be damaged. You can still save it.<div style="margin-top:8px"><span class="btn tn" style="height:36px">Save to phone</span></div></div></div><div class="meta">shown in the viewer</div></div>
+</div>
+<div class="hint" style="padding:0 20px 8px">Only PDF, text, Office, audio and video open, and only when the file name and the type it claims agree. APK, installers and mismatched files show “tap to save” and never open. A picture the phone cannot decode becomes a file row.</div>
+<div class="comp"><div class="field"><button class="ib" aria-label="Attach" style="width:40px;height:40px"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button><span style="flex:1">Message</span></div></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Bubble width <span>· rule</span><span class="tag ok">Built · layout fix</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div></div>
+<div class="msgs">
+<div class="b in">Hi<div class="meta">17:20</div></div>
+<div class="b out">Yes! Train was on time for once<div class="meta">22:14</div></div>
+<div class="b in">A long message wraps once it reaches 82% of the screen width, and never grows past 480 dp even on a tablet or in landscape, so lines stay readable.<div class="meta">17:21</div></div>
+</div>
+<div class="hint" style="padding:0 20px 8px">Max width = min(82% of the screen, 480 dp). Width follows the content, so short bubbles hug their text and time instead of stretching. Photos stay 240 × 180 dp.</div>
+<div class="comp"><div class="field"><button class="ib" aria-label="Attach" style="width:40px;height:40px"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button><span style="flex:1">Message</span></div></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Still needed <span>· verified in code, 2026-10-08</span><span class="tag nb">Not built yet</span></div>
+<div class="need">
+<h3>Open gaps on Android</h3>
+<ul>
+<li><b>Real phone ↔ laptop test.</b> Task 31 is only emulator and demo checked.</li>
+<li><b>Photo viewer zoom and swipe.</b> One fit-to-screen photo; no pinch, no next or previous.</li>
+<li><b>Audio and video playback in Tinline.</b> They open in another app; only voice messages play in the bubble.</li>
+<li><b>Download setting.</b> The 25 MB “wait for tap” limit exists in core, with no Settings control.</li>
+<li><b>Cancel or pause a transfer.</b> Only progress, “paused”, and retry on failure exist.</li>
+<li><b>Password-protected PDF.</b> Shows an error; no way to enter a password.</li>
+</ul>
+</div>
+</div>
+
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2348,"height":1060}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4600,"height":1060}}'>
 class Component extends DCLogic {
   renderVals() {
     const hs = [6,10,16,22,14,8,18,26,20,12,6,10,24,28,18,10,8,14,20,16,10,6,12,18,24,14,8,6,10,16,12,8,6,4];

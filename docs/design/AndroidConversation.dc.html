@@ -28,7 +28,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 .st{font-size:12px;line-height:16px;color:var(--ink2);display:flex;align-items:center;gap:6px}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
 .msgs{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;padding:8px 12px;min-height:0;overflow:hidden}
-.b{max-width:290px;padding:8px 12px 6px;border-radius:18px;font-size:15px;line-height:21px;box-sizing:border-box}
+.b{max-width:min(82%,480px);width:fit-content;padding:8px 12px 6px;border-radius:18px;font-size:15px;line-height:21px;box-sizing:border-box}
 .b.in{align-self:flex-start;background:var(--sf);border:1px solid var(--ln);border-bottom-left-radius:6px}
 .b.out{align-self:flex-end;background:var(--prc);color:var(--onprc);border-bottom-right-radius:6px}
 .meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;line-height:14px;color:var(--ink2);margin-top:2px}
@@ -46,12 +46,21 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 .grab{width:32px;height:4px;border-radius:2px;background:var(--ln2);align-self:center;margin-bottom:10px}
 .act{display:flex;align-items:center;gap:16px;height:56px;padding:0 16px;border:0;background:transparent;color:inherit;font:400 16px 'Figtree',sans-serif;border-radius:12px;text-align:left}
 .hint{font-size:13px;color:var(--ink2);line-height:18px}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.tag.nb{background:#FCEFD2;color:#5C3B00}
+.tag.ok{background:#CDEBE3;color:#06352D}
+.tag.pt{background:#E1E4F7;color:#2F3A75}
+.need{background:#FFFFFF;border:1px solid #D3D9D4;border-radius:16px;padding:20px 22px;color:#17201D;font-size:14px;line-height:20px;box-sizing:border-box}
+.need h3{margin:0 0 4px;font-size:17px}
+.need ul{margin:8px 0 0;padding-left:18px}
+.need li{margin:0 0 7px}
+.need li b{font-weight:700}
 </style>
 </helmet>
 <div class="root" style="width:2348px;height:1060px">
 
 <div class="col">
-<div class="lbl">Conversation <span>· light · connected</span></div>
+<div class="lbl">Conversation <span>· light · connected</span><span class="tag ok">Built</span><span class="tag ok">Bubble width: min(82%, 480 dp), hugs content</span></div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av">AO</div><div class="who"><b>Arjun Oommen</b><span class="st"><span class="dot" style="background:var(--pr)"></span>Connected · direct</span></div><button class="ib" aria-label="Call Arjun" style="color:var(--pr)"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button></div>
 <div class="msgs">

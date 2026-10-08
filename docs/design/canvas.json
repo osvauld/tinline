@@ -103,14 +103,14 @@
     "AndroidChatFiles.dc.html": {
       "x": 0,
       "y": 17560,
-      "w": 2348,
+      "w": 4600,
       "h": 1060,
       "title": "Chat · Android · Files & voice messages"
     },
     "DesktopChat.dc.html": {
       "x": 0,
       "y": 18740,
-      "w": 2344,
+      "w": 7404,
       "h": 880,
       "title": "Chat · Desktop · Conversation, offline, drop, recording"
     }
