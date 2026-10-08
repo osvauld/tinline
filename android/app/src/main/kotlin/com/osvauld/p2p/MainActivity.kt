@@ -181,7 +181,7 @@ private fun Root(app: P2pApp) {
                     val status by app.status.collectAsState()
                     val c = contacts.firstOrNull { it.did == r.did }
                     val name = c?.display() ?: chats.firstOrNull { it.peerDid == r.did }?.peerName?.ifBlank { null } ?: "Unknown"
-                    ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) })
+                    ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong())
                 }
                 Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
                 is Route.Add -> AddContactScreen(app, r.scan, onClose = ::pop,
