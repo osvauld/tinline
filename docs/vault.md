@@ -1,6 +1,61 @@
 # Identity at rest (passphrase vault)
 
-`profile.json` in the app data dir holds the identity. Format (version 2):
+## Layout: one directory per account
+
+The platform's data dir is a root that can hold several accounts:
+
+```
+<root>/accounts/<id>/account.json   clear: version, name, did, device_public, vault
+<root>/accounts/<id>/account.redb   sealed: state, call history, device label
+<root>/accounts/<id>/chat.redb, blobs/   chat store (sealed as before), moved under the account
+<root>/current                      plain text: the <id> of the selected account
+```
+
+`<id>` is the DID after `did:key:`. `account.json` (formerly `profile.json`) is described below.
+`account.redb` is a `storage::Sealed` store whose key is `BLAKE3-derive-key("tinline/account-store/v1", DEK)`:
+contacts, grants, block/revoke lists, redeemed ticket nonces, the ticket we hand out, availability, the call
+history and the device label are in there, and exist in memory only while the account is unlocked (`lock()` drops
+them; contacts and calls read as empty while locked). Record paths (`state`, `calls`, `device_label`) are not
+hidden. Not sealed, on purpose: the account **name**, DID and device public key in `account.json`, because the lock
+screen and the account switcher need them while locked. Anyone who copies the files can read who the accounts are
+and how many there are; nothing about contacts or calls. Ciphertext-only files do not prove secure deletion of
+earlier plaintext (JSON files are zeroed before they are removed, which a copy-on-write filesystem or flash may defeat).
+
+Migration (`Node::new`): an old root with `profile.json` (v2 or legacy) is moved into
+`accounts/<id>.migrating/` with renames only (`chat.redb`, `blobs/`, `state.json`, `calls.json` and leftovers
+first, `profile.json` last as `account.json`), `current` is written, then the directory is renamed to its final
+name. Every step can be repeated after a crash; nothing is deleted, and an error (account already present,
+unparsable profile, a file in both places) returns before anything moves. `state.json` / `calls.json` stay JSON
+until the account is first unlocked; then both go into `account.redb` in one transaction and the JSON files (and
+`*.corrupt`, `*.tmp`) are removed. A legacy (pre-vault) profile has no data key, so its state stays JSON until
+`set_passphrase` seals it. A sealed record that fails to open is an error, never a silent reset to empty.
+
+Switching: `accounts()` lists them (clear data only), `switch_account(did)` stops the endpoint, forgets the secrets
+and state of the current one and selects another (then `unlock` / `unlock_with_key` as usual), `begin_new_account()`
+leaves none selected so `create_identity` / `restore_identity` add one, `remove_account(did)` deletes a
+non-current one. Switching is refused with `Error::InCall` during a ringing, waiting or active call. Creating or
+restoring never overwrites an account: a phrase whose DID is already on the device gives `Error::AccountExists`.
+Everything that runs on its own (call tasks, background writes) carries the session epoch it started under and is
+refused once the account in memory has changed, so a stale task cannot write into the next account.
+
+**Remembered keys are per account.** `unlock_key()` / `unlock_with_key()` act on the current account. A platform
+must store the data key under a name that includes the DID (Android: one Keystore-wrapped blob per DID; desktop:
+one keyring entry per DID), and pass the right one after `switch_account`. A key of another account gives
+`WrongPassphrase`.
+
+## No-passphrase identity: `commit_identity` (S1)
+
+With an empty passphrase the data key exists only in the platform's keystore, so a profile written before the key
+was saved would be unrecoverable. `create_identity` / `restore_identity` with an empty passphrase therefore write
+nothing: the identity lives in memory, unlocked (`has_identity()` true, `identity_committed()` false,
+`unlock_key()` returns the key). The platform saves the key and then calls `commit_identity()`, which writes the
+account directory and `current`. Until then `lock()`, a failed save, or process death discards the identity and
+onboarding starts again with nothing on disk. With a passphrase the account is written at once and `commit_identity`
+is a no-op; adding a passphrase (`set_passphrase`) to an uncommitted identity commits it.
+
+## `account.json`
+
+`account.json` in the account dir holds the identity. Format (version 2):
 
 ```json
 {
@@ -38,7 +93,7 @@ platform must delete its copy.
 
 Legacy installs have the old shape (`{"mnemonic","name","device_secret"}`, no `version`). They load unlocked
 so calls keep working but report `LockState::NeedsPassphrase`; `set_passphrase(None, new)` seals them and
-atomically replaces `profile.json` without the clear secrets.
+atomically replaces `account.json` without the clear secrets, and the JSON state moves into `account.redb`.
 
 ## Threat model
 
@@ -53,6 +108,6 @@ not the core. `Error::WeakPassphrase` now only means an empty new passphrase.
 
 ## Files
 
-The data dir is created `0700` and every file written is `0600` (existing installs are fixed up when
+The root, `accounts/` and each account dir are `0700` and every file written is `0600` (existing installs are fixed up when
 opened); leftover `*.tmp` files from an interrupted write are deleted on open. `Profile` (mnemonic and
 device secret in memory) is zeroized on drop.

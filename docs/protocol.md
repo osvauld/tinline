@@ -116,6 +116,10 @@ Tickets are single-use via the redeemed-nonce set and also expire.
 - Only the one ticket the node currently hands out can be redeemed (it remembers its nonce).
   Redeeming it, `set_name`, `remove_contact` and `reset_ticket` all drop it; the next `my_ticket`
   mints a fresh one. A leaked or old ticket is dead even if its nonce was never spent.
+- The inviter makes the new contact, the spent nonce and the dropped ticket durable in one
+  write (sealed account store) BEFORE it sends `ContactWelcome`; if that write fails it sends
+  `Reject`, nothing changed, and the same ticket can be tried again. The UI hears of the contact
+  after the commit.
 - Tickets live 7 days; one with less than a day left is replaced when asked for.
 - The `relay` in a ticket or hello is dialled and stored, so it must be an `https://` URL of at
   most 200 characters that parses as a relay URL. A ticket whose relay fails this is refused;
@@ -135,7 +139,9 @@ Tickets are single-use via the redeemed-nonce set and also expire.
   of `H = SHA-512(H || signing_pk)`; the first 30 bytes give 6 groups of 5 bytes, each read as a
   big-endian integer mod 100000 and zero-padded to 5 digits. The two 30-digit halves are
   concatenated in sorted order and shown as 12 groups of 5. Only the DID keys count, so it
-  survives a change of device. `verified` is local and resets when the contact's device changes.
+  survives a change of device. `verified` is local and resets when the contact's device changes: whether the device arrives
+  through a ticket exchange or through an authenticated call from a device we had not seen
+  (`note_device`, which also tells the UI the contacts changed).
 - Availability ("not now"): while unavailable an authenticated call is answered with the same
   `Reject` as any refusal, never surfaced to the UI, and logged as `unavailable`. The caller
   ends with `unreachable`, so it cannot tell "away" from "offline" or "blocked".

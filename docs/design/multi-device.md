@@ -1,15 +1,18 @@
 # Multiple accounts and devices — discussion decisions
 
-Status: account-storage foundation started; Node/UI integration, migration, pairing, sync and call fanout remain unimplemented.
+Status: core account storage, migration and switching done (task 34a); platform UI, pairing, sync and call fanout remain unimplemented.
 
 ## Implementation progress
 
-- `crates/core/src/accounts.rs`: separate redb per DID; passphrase-wrapped random DEK; sealed account/device labels and data records; fresh per-enrollment device key; one active storage session with stale-session fences.
-- Record encryption authenticates the DID and record key as associated data, preventing ciphertext substitution between records/accounts.
-- This API currently requires a passphrase. Platform-key-only onboarding is deferred until key persistence has an acknowledged, recoverable transaction.
-- `crates/core/tests/accounts.rs`: identity restore/device separation, ciphertext-only persistence checks, permissions, namespace validation, account isolation, stale sessions and tamper/substitution rejection.
-- This foundation is not yet wired into existing Node storage. Existing plaintext persistence remains until migration/integration lands.
-- Process death during new DB reservation can leave an incomplete account file; recovery UX/crash handling is still required before release. Account filenames and record names remain visible; sealed storage is not metadata anonymity.
+Task 34a (core) done:
+
+- Layout: `<root>/accounts/<id>/{account.json, account.redb, chat.redb, blobs/}` and `<root>/current` (see `docs/vault.md`). The first `accounts.rs` prototype (one redb per DID with its own envelope) was replaced by this: `accounts.rs` now only manages the directories; records use `storage::Sealed`.
+- Contacts, grants, block/revoke lists, redeemed nonces, the ticket, availability, call history and the device label are sealed in `account.redb` and exist in memory only while unlocked. The account name stays in the clear (lock screen / switcher).
+- Migration of the single-account layout is restartable and renames only; JSON state is imported into the sealed store at first unlock.
+- Node API: `accounts()`, `switch_account`, `begin_new_account`, `remove_account`, `set_device_label` / `device_label`, `commit_identity` / `identity_committed`; new errors `InCall`, `AccountExists`. Remembered keys are per account (platforms key them by DID).
+- Stale callbacks: every session has an epoch; call tasks, history/state writes and device/grant updates are refused once the account in memory changed.
+- Security review fixes: S1 (no-passphrase identity written only after `commit_identity`), S3 (metadata sealed), S4 (`note_device` resets `verified`, emits contacts-changed), S6 (contact + nonce + ticket in one sealed write before Welcome).
+- Still open: platform UI (account switcher, device naming, per-DID key storage in Android/desktop), device linking and sync, call fanout, per-device relay hints and labels in contacts. Chat tasks of a previous account are closed on switch, but are not epoch-fenced like call tasks.
 
 ## Agreed model
 

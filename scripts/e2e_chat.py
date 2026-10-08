@@ -43,6 +43,11 @@ class Checks:
         return cond
 
 
+def acct(data):
+    """The selected account's directory under a peer's data root (accounts/<id>/)."""
+    return Path(data) / "accounts" / (Path(data) / "current").read_text().strip()
+
+
 def run(data, *args, env=None, timeout=120):
     cmd = [str(PEER), "--data", str(data), *map(str, args)]
     return subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=timeout)
@@ -235,18 +240,18 @@ def transfer_scenarios(c, tmp, env, alice, bob, live):
     c.ok("b sender saw the aborted request (Sending ends)", ab is not None)
 
     # ---- (c) receiver cancels a download in progress -------------------------------------------------------
-    base = dir_bytes(tmp / "bob" / "blobs")  # earlier test files are kept; measure the partial on top
+    base = dir_bytes(acct(tmp / "bob") / "blobs")  # earlier test files are kept; measure the partial on top
     mid, src = start("alice", 6 * MB, "c", slow)
     got = until(lambda: att(peers["bob"], "alice", mid)[1] >= 1.5 * MB, 60, 0.2)
-    size_mid = dir_bytes(tmp / "bob" / "blobs") - base
+    size_mid = dir_bytes(acct(tmp / "bob") / "blobs") - base
     c.ok("c bob is mid-transfer before cancelling", bool(got), f"{size_mid} bytes on disk")
     peers["bob"].cmd(f"cancel alice {mid}")
     st, x = att(peers["bob"], "alice", mid)
     c.ok("c cancel: back to not-downloaded", st == "Remote" and x == 0, f"{st} {x}")
     time.sleep(6)
     c.ok("c cancel: it does not restart by itself", att(peers["bob"], "alice", mid)[0] == "Remote")
-    freed = until(lambda: dir_bytes(tmp / "bob" / "blobs") - base < size_mid / 4, 90, 2)
-    c.ok("c partial bytes freed after GC", bool(freed), f"{size_mid} -> {dir_bytes(tmp / 'bob' / 'blobs') - base}")
+    freed = until(lambda: dir_bytes(acct(tmp / "bob") / "blobs") - base < size_mid / 4, 90, 2)
+    c.ok("c partial bytes freed after GC", bool(freed), f"{size_mid} -> {dir_bytes(acct(tmp / 'bob') / 'blobs') - base}")
     peers["bob"].cmd(f"dl alice {mid}")
     ok, same = finish("bob", mid, src, "c", 120)
     c.ok("c a later download works, byte for byte", ok and same)
@@ -425,8 +430,8 @@ def main():
         c.ok("C6 yesterday's shard synced as its own day", bool(ok))
         # A fresh install of bob (chat data gone): the last 7 days sync, older ones are asked for.
         bob.quit(); live.remove(bob)
-        (tmp / "bob" / "chat.redb").unlink()
-        shutil.rmtree(tmp / "bob" / "blobs", ignore_errors=True)
+        (acct(tmp / "bob") / "chat.redb").unlink()
+        shutil.rmtree(acct(tmp / "bob") / "blobs", ignore_errors=True)
         bob = Serve(tmp / "bob")
         live.append(bob)
         ok = until(lambda: "c6-yesterday" in bob.texts("alice", yday) and "c6-today" in bob.texts("alice"), 30)

@@ -220,6 +220,8 @@ fn run() -> Result<(), String> {
         }
         ["init", name] => {
             let phrase = node.create_identity(name.to_string(), o.passphrase.clone()).map_err(|e| e.to_string())?;
+            // No keystore here: with an empty passphrase the identity is made durable at once.
+            node.commit_identity().map_err(|e| e.to_string())?;
             let p = node.profile().unwrap();
             println!("did {}\ndevice {}\nphrase {phrase}", p.did, p.device);
         }
