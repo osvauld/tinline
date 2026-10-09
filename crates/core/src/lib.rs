@@ -10,6 +10,7 @@ mod logging;
 mod node;
 mod rekey;
 mod store;
+mod sync;
 #[cfg(test)]
 mod account_tests;
 mod vault;
@@ -18,6 +19,7 @@ mod wire;
 
 pub use error::Error;
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
+pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use store::CallRecord;
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};

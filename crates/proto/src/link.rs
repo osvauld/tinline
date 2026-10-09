@@ -272,7 +272,13 @@ pub struct LinkGrantBody {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "t", rename_all = "snake_case")]
 pub enum LinkMsg {
-    LinkHello { role: LinkRole, proof: String },
+    /// `label` is the sender's device name, shown on the other screen next to the code.
+    LinkHello {
+        role: LinkRole,
+        proof: String,
+        #[serde(default)]
+        label: String,
+    },
     LinkGrant { sealed: String },
     LinkDone { attestation: SignedAttestation, label: String },
     Unlinked,
@@ -293,10 +299,12 @@ pub fn link_hello(
     n_dev: &[u8; 32],
     role: LinkRole,
     own_device: &[u8; 32],
+    label: &str,
 ) -> LinkMsg {
     LinkMsg::LinkHello {
         role,
         proof: enc(link_proof(secret, e_dev, n_dev, role, own_device)),
+        label: sanitize_name(label),
     }
 }
 
@@ -309,7 +317,7 @@ pub fn accept_link_hello(
     remote_device: &[u8; 32],
     msg: &LinkMsg,
 ) -> Result<()> {
-    let LinkMsg::LinkHello { role, proof } = msg else {
+    let LinkMsg::LinkHello { role, proof, .. } = msg else {
         return Err(Error::UnexpectedMessage);
     };
     if *role != expect_role {

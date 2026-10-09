@@ -358,6 +358,11 @@ impl History {
         c.iter().filter(|r| did.is_none_or(|d| r.peer_did == d)).take(limit).cloned().collect()
     }
 
+    /// Swaps in the merged log of an own-device sync.
+    pub fn replace(&self, calls: Vec<CallRecord>) {
+        *self.calls.lock() = calls;
+    }
+
     pub fn remove_peer(&self, did: &str) {
         self.calls.lock().retain(|r| r.peer_did != did);
     }

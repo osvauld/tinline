@@ -859,7 +859,7 @@ fn link_proofs() {
     assert!(verify_link_proof(&SECRET, &n, &e, LinkRole::Scanner, &n, &p).is_err());
     assert!(verify_link_proof(&SECRET, &e, &n, LinkRole::Scanner, &n, &p[..31]).is_err());
     // Message form.
-    let hello = link_hello(&SECRET, &e, &n, LinkRole::Displayer, &e);
+    let hello = link_hello(&SECRET, &e, &n, LinkRole::Displayer, &e, "Tablet");
     assert!(accept_link_hello(&SECRET, &e, &n, LinkRole::Displayer, &e, &hello).is_ok());
     assert!(accept_link_hello(&SECRET, &e, &n, LinkRole::Scanner, &e, &hello).is_err());
     assert!(accept_link_hello(&SECRET, &e, &n, LinkRole::Displayer, &n, &hello).is_err());

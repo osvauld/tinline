@@ -408,6 +408,8 @@ pub(crate) struct Shared {
     /// `account.json` is on disk. False only for a no-passphrase identity waiting for
     /// `commit_identity`.
     pub(crate) committed: bool,
+    /// The account doc of own-device sync; open while unlocked.
+    pub(crate) acc: Option<Arc<crate::sync::accdoc::AccDoc>>,
 }
 
 pub(crate) struct Acct {
@@ -449,6 +451,10 @@ pub(crate) struct Inner {
     pub(crate) lifecycle: Arc<tokio::sync::Mutex<()>>,
     pub(crate) chat: Mutex<Option<Arc<crate::chat::engine::ChatCore>>>,
     pub(crate) chat_events: Mutex<Option<Arc<dyn crate::chat::api::ChatEvents>>>,
+    pub(crate) link_events: Mutex<Option<Arc<dyn crate::sync::LinkEvents>>>,
+    pub(crate) selfsync: crate::sync::engine::SelfSync,
+    pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
+    pub(crate) link: crate::sync::link::LinkState,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -509,6 +515,10 @@ impl Node {
             lifecycle: Arc::new(tokio::sync::Mutex::new(())),
             chat: Mutex::new(None),
             chat_events: Mutex::new(None),
+            link_events: Mutex::new(None),
+            selfsync: Default::default(),
+            sync_tx: tokio::sync::watch::channel(0).0,
+            link: Default::default(),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -745,6 +755,7 @@ impl Node {
                 s.dek = Some(dek);
                 drop(s);
                 self.inner.chat_open();
+        self.inner.acc_open();
                 Ok(())
             }
             Disk::V2(p) => {
@@ -881,6 +892,7 @@ impl Node {
         if let Some(ep) = ep {
             self.inner.handle.spawn(async move { ep.network_change().await });
             self.inner.chat_kick_pending();
+            self.inner.sync_kick();
         }
     }
 
@@ -984,6 +996,7 @@ impl Node {
         // way and report the failed write afterwards. (A call ending now is not logged: the
         // peer is no longer a contact.)
         let saved = self.inner.persist().and(history.save());
+        self.inner.sync_local(None);
         let calls: Vec<_> = {
             let live = self.inner.live.lock();
             live.call.iter().chain(live.waiting.iter()).cloned().collect()
@@ -1171,7 +1184,7 @@ impl Node {
 
     /// Runs a slow, blocking computation (the KDF) on the runtime's blocking pool and waits for
     /// it, so it never runs while `shared` is held and never on a callback thread.
-    fn kdf<T: Send + 'static>(&self, f: impl FnOnce() -> T + Send + 'static) -> Result<T, Error> {
+    pub(crate) fn kdf<T: Send + 'static>(&self, f: impl FnOnce() -> T + Send + 'static) -> Result<T, Error> {
         self.block_on(async move {
             tokio::task::spawn_blocking(f).await.map_err(|_| Error::Protocol("kdf task failed".into()))
         })?
@@ -1227,6 +1240,7 @@ impl Node {
         s.dek = Some(dek);
         drop(s);
         self.inner.chat_open();
+        self.inner.acc_open();
         Ok(())
     }
 
@@ -1311,6 +1325,7 @@ impl Node {
         s.dek = Some(dek);
         drop(s);
         self.inner.chat_open();
+        self.inner.acc_open();
         Ok(())
     }
 
@@ -1423,6 +1438,7 @@ impl Shared {
             history: Arc::new(History::empty()),
             device_label: None,
             committed: true,
+            acc: None,
         }
     }
 
@@ -1454,6 +1470,7 @@ impl Shared {
         self.state = State::default();
         self.history = Arc::new(History::empty());
         self.device_label = None;
+        self.acc = None;
         if let Some(a) = self.acct.as_mut() {
             a.backing = None;
         }
@@ -1491,7 +1508,9 @@ impl Inner {
                 None => return Err(Error::Locked),
             }
         };
-        self.write_state(&backing, &snapshot)
+        self.write_state(&backing, &snapshot)?;
+        self.sync_local(epoch);
+        Ok(())
     }
 
     fn write_state(&self, backing: &Backing, state: &State) -> Result<(), Error> {
@@ -1614,6 +1633,7 @@ impl Inner {
             s.committed = true;
         }
         self.chat_open();
+        self.acc_open();
         // Anything that changed while the files were being written.
         self.persist()
     }
@@ -1665,6 +1685,7 @@ impl Inner {
             s.history.clone()
         };
         history.push(rec);
+        self.sync_local(Some(epoch));
         self.handle.spawn_blocking(move || {
             if let Err(e) = history.save() {
                 tracing::warn!("saving call history: {e}");
@@ -1757,7 +1778,13 @@ impl Inner {
             .build();
         let mut builder = Endpoint::builder(presets::N0)
             .secret_key(SecretKey::from_bytes(&me.profile.device_secret))
-            .alpns(vec![proto::ALPN.to_vec(), crate::chat::wire::CHAT_ALPN.to_vec(), iroh_blobs::ALPN.to_vec()])
+            .alpns(vec![
+                proto::ALPN.to_vec(),
+                crate::chat::wire::CHAT_ALPN.to_vec(),
+                iroh_blobs::ALPN.to_vec(),
+                proto::SELF_ALPN.to_vec(),
+                proto::link::LINK_ALPN.to_vec(),
+            ])
             .transport_config(transport);
         // Test knob: no UDP of our own, so every packet goes through the relay — the path a
         // call takes when hole punching fails.
@@ -1788,6 +1815,8 @@ impl Inner {
         self.log(format!("endpoint {} bound", ep.id()));
         self.emit_status();
         self.chat_started();
+        self.selfsync_started();
+        self.sync_kick();
 
         let this = self.clone();
         let watch_ep = ep.clone();
@@ -1825,6 +1854,20 @@ impl Inner {
                         Ok(a) => a,
                         Err(_) => return,
                     };
+                    if alpn.as_slice() == proto::SELF_ALPN {
+                        drop(permit);
+                        if let Err(e) = this.clone().handle_self_incoming(accepting).await {
+                            tracing::debug!("incoming self-sync: {e}");
+                        }
+                        return;
+                    }
+                    if alpn.as_slice() == proto::link::LINK_ALPN {
+                        drop(permit);
+                        if let Err(e) = this.clone().handle_link_incoming(accepting).await {
+                            tracing::debug!("incoming link: {e}");
+                        }
+                        return;
+                    }
                     if alpn.as_slice() == crate::chat::wire::CHAT_ALPN || alpn.as_slice() == iroh_blobs::ALPN {
                         let chat = alpn.as_slice() == crate::chat::wire::CHAT_ALPN;
                         if let Err(e) = this.clone().handle_chat_incoming(accepting, chat, permit).await {
@@ -3115,7 +3158,7 @@ fn current_nonce(state: &State, now: u64) -> Option<String> {
 }
 
 /// Whether `new` is a good grant from `issuer` to `holder` and expires after `old`.
-fn grant_outlives(old: &proto::SignedGrant, new: &proto::SignedGrant, issuer: &str, holder: &str, now: u64) -> bool {
+pub(crate) fn grant_outlives(old: &proto::SignedGrant, new: &proto::SignedGrant, issuer: &str, holder: &str, now: u64) -> bool {
     let none = std::collections::HashSet::new();
     let Ok(new) = proto::verify_grant(new, issuer, holder, now, &none) else { return false };
     // An old grant that no longer verifies (expired) is beaten by any valid new one.

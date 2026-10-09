@@ -18,6 +18,8 @@ use rand::RngCore;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const ALPN: &[u8] = b"osvauld/p2p/0";
+/// Own-device sync (docs/design/device-linking.md §4); only devices of the same DID.
+pub const SELF_ALPN: &[u8] = b"tinline/self/1";
 
 const ATTEST_DOMAIN: &[u8] = b"osvauld/p2p/attest/v1\0";
 const INVITE_DOMAIN: &[u8] = b"osvauld/p2p/invite/v1\0";
@@ -1010,7 +1012,7 @@ pub fn accept_call_hello(
     })
 }
 
-mod link;
+pub mod link;
 pub use link::*;
 
 #[cfg(test)]
