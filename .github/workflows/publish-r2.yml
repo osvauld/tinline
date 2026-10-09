@@ -30,10 +30,12 @@ jobs:
       AWS_DEFAULT_REGION: auto
       R2_BUCKET: ${{ vars.R2_BUCKET }}
       R2_ENDPOINT: ${{ vars.R2_ENDPOINT }}
-      GNUPGHOME: ${{ runner.temp }}/apt-gnupg
     steps:
       # Environment rules must restrict publishing to reviewed branches/tags.
       - uses: actions/checkout@v4
+      # The runner context is not available in job-level env, so set it here.
+      - name: Set GnuPG home
+        run: echo "GNUPGHOME=$RUNNER_TEMP/apt-gnupg" >> "$GITHUB_ENV"
       - name: Test upload safeguards offline
         run: python3 scripts/test_r2_upload.py
       - name: Validate published stable release and configuration
