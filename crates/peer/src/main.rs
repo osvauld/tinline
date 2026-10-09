@@ -106,6 +106,9 @@ impl ChatEvents for ChatPrinter {
             println!("CHAT transfer peer={peer} hash={hash} {done}/{total} outgoing={outgoing}");
         }
     }
+    fn on_presence_changed(&self, peer: String, online: bool) {
+        println!("CHAT presence peer={peer} online={online}");
+    }
 }
 
 struct Opts {

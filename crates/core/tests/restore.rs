@@ -275,4 +275,5 @@ impl p2pcore::ChatEvents for NoChat {
     fn on_chat_changed(&self, _: p2pcore::Chat) {}
     fn on_delivery_changed(&self, _: String, _: String, _: p2pcore::DeliveryState) {}
     fn on_transfer_progress(&self, _: String, _: String, _: u64, _: u64, _: bool) {}
+    fn on_presence_changed(&self, _: String, _: bool) {}
 }

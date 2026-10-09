@@ -278,6 +278,22 @@ add more docs to the `Hello` list (done in 34g, below).
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
+## Presence (on `tinline/chat/1`)
+
+Whether a contact is reachable right now. Each device keeps a Loro `EphemeralStore` with one key
+(`online`), refreshed every 8 s, and sends it on every chat session as a QUIC datagram: `b"tp1"` +
+`EphemeralStore::encode`, at most 512 bytes. The receiver applies it into a store belonging to that
+session only, so a contact speaks only for its own device. An entry not refreshed within 30 s
+expires (the store compares the sender's timestamp with our clock, so this also bounds the clock
+skew presence tolerates); a closed session drops its store at once. A contact is online while any
+of its devices has a live entry: `ChatEvents::on_presence_changed(did, online)`,
+`Node::contact_online(did)`. Opening a conversation calls `Node::watch_presence(did)`, which dials
+the contact if there is no session. Nothing is stored or retried.
+
+Datagrams rather than a `ChatMsg` variant: an older app never reads them and keeps working (it
+just shows the contact as not connected), where an unknown `ChatMsg` variant would fail to decode
+and close the session.
+
 ## What each check defends against
 
 | Check | Defends against |

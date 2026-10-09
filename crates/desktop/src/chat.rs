@@ -3,7 +3,7 @@
 //! in-memory `chat_fake`. An erroring API (the real one, until it is filled in) leaves the
 //! lists empty; only a send, edit or save the user asked for reports its error.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -76,6 +76,12 @@ impl Source {
     pub fn mark_read(&self, peer: String) -> Result<(), Error> {
         route!(self.mark_read(peer))
     }
+    pub fn contact_online(&self, peer: String) -> bool {
+        route!(self.contact_online(peer))
+    }
+    pub fn watch_presence(&self, peer: String) {
+        route!(self.watch_presence(peer))
+    }
     pub fn send_file(&self, peer: String, path: String, mime: String) -> Result<ChatMsg, Error> {
         match self {
             Source::Node(n) => n.send_file(peer, path, mime, None),
@@ -117,6 +123,8 @@ pub(super) struct ChatState {
     pub menu: Option<String>,
     /// Attachment hash -> (done, total) while downloading.
     pub progress: HashMap<String, (u64, u64)>,
+    /// Contacts reachable right now (the core's ephemeral presence).
+    pub online: HashSet<String>,
     /// A file is being dragged over the window.
     pub drop_hover: bool,
     /// The contact details are shown instead of the conversation.
@@ -176,6 +184,7 @@ impl Default for ChatState {
             hover: None,
             menu: None,
             progress: HashMap::new(),
+            online: HashSet::new(),
             drop_hover: false,
             info: false,
             rec: None,
@@ -192,6 +201,8 @@ impl Default for ChatState {
 #[derive(Debug, Clone)]
 pub(super) enum Cm {
     Tab(SideTab),
+    /// A contact's presence, read when its conversation opened.
+    Presence(String, bool),
     Chats(Result<Vec<Chat>, String>),
     /// peer, whether the page goes in front of what is loaded
     Day(String, bool, Result<DayPage, String>),
@@ -480,7 +491,15 @@ impl App {
             return Task::none();
         }
         self.chat.loading = true;
-        Task::batch([self.load_day(did.to_string(), None, false), self.mark_read(did)])
+        let (src, p) = (self.src(), did.to_string());
+        let presence = blocking(
+            move || {
+                src.watch_presence(p.clone());
+                (p.clone(), src.contact_online(p))
+            },
+            |(p, on)| Msg::Chat(Cm::Presence(p, on)),
+        );
+        Task::batch([self.load_day(did.to_string(), None, false), self.mark_read(did), presence])
     }
 
     pub(super) fn leave_chat(&mut self) {
@@ -513,6 +532,7 @@ impl App {
 
     fn update_chat_inner(&mut self, m: Cm) -> Task<Msg> {
         match m {
+            Cm::Presence(peer, on) => return self.on_chat_event(ChatEv::Presence(peer, on)),
             Cm::Tab(t) => {
                 self.chat.tab = t;
                 if t == SideTab::Chats {
@@ -915,6 +935,13 @@ impl App {
                 }
             }
             ChatEv::Changed(m) => self.chat.upsert(m),
+            ChatEv::Presence(peer, on) => {
+                if on {
+                    self.chat.online.insert(peer);
+                } else {
+                    self.chat.online.remove(&peer);
+                }
+            }
             ChatEv::Chat(c) => self.chat.upsert_chat(c),
             ChatEv::Delivery(peer, id, d) => {
                 if self.chat.peer.as_deref() == Some(peer.as_str())

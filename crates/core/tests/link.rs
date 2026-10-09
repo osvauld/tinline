@@ -662,7 +662,7 @@ fn removing_a_contact_on_one_device_removes_the_conversation_on_the_other() {
     eventually(20, "b2 dropped the conversation", || {
         b2.node.chat_day(a.did.clone(), None).is_err() && b2.node.chats().unwrap().iter().all(|c| c.peer_did != a.did)
     });
-    assert!(!b2.node.has_chat_docs_for_test(&b2.did, &a.did));
+    eventually(20, "b2 deleted the docs", || !b2.node.has_chat_docs_for_test(&b2.did, &a.did));
     // The sync does not bring it back.
     b1.node.sync_now_for_test();
     std::thread::sleep(Duration::from_secs(3));
@@ -702,4 +702,19 @@ fn a_message_held_only_by_our_other_device_is_not_delivered() {
         let c = p.node.chats().unwrap().into_iter().find(|c| c.peer_did == a.did).unwrap();
         assert_eq!(c.last_delivery, DeliveryState::Delivered);
     }
+}
+
+#[test]
+fn presence_follows_the_contact_going_offline_and_back() {
+    let a = make_peer("p1-a");
+    let b = make_peer("p1-b");
+    connect(&a, &b);
+    a.node.watch_presence(b.did.clone());
+    eventually(40, "A sees B online", || a.node.contact_online(b.did.clone()));
+    eventually(40, "B sees A online", || b.node.contact_online(a.did.clone()));
+    b.node.stop();
+    eventually(40, "A sees B offline", || !a.node.contact_online(b.did.clone()));
+    online(&b.node);
+    a.node.watch_presence(b.did.clone());
+    eventually(60, "A sees B online again", || a.node.contact_online(b.did.clone()));
 }
