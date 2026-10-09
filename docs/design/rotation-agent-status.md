@@ -77,7 +77,7 @@ branch and commit only owned files; coordinator merges.
 | D2 | 3 | MERGED | rot/d2 f248eb9; doc | rotation-author-group-adapter.md |
 | G-A | 1 | MERGED | rot/ga f8bca01; audit doc | docs/group-sim-coverage-audit.md |
 | G-B | 2 | RUNNING | rot/gb from 72d03a3 | group-sim/src/policy_candidates.rs, docs/group-policy-options.md |
-| G-C | 3 | RUNNING | rot/gc from 9e6bbb5 | group-sim/src/persistence.rs, docs/group-persistence-contract.md |
+| G-C | 3 | MERGED | rot/gc fa8357b; +15 tests, group-sim now 50 | group-sim/src/persistence.rs, docs/group-persistence-contract.md |
 | G-H | 3 | MERGED | rot/gh a60e8f8; group-sim 24→35, 2 sim bugs fixed | group-sim sources + README |
 | K1 | 3 | MERGED | rot/k1 77ab375; 8 core tests, confirmed restore bugs | crates/core/tests/rotation_restore_characterization.rs |
 | G-D | later | WAIT B1,B3 + decisions | unclaimed | group-sim/src/reachability.rs |

@@ -4,7 +4,7 @@ Status: coordinator digest, 2026-10-10. Collects the policy questions raised by 
 packets. Nothing here is decided. "Coordinator lean" lines are recommendations to evaluate,
 not selections. Source documents hold the evidence and tests; read them before answering.
 
-Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, G-H, K1, C3. Still running/queued: G-B, G-C (their questions get appended when they land).
+Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, G-C, G-H, K1, C3. Still running: G-B. G-B, G-C (their questions get appended when they land).
 
 ## 1. Highest leverage (unblock the most work)
 
@@ -186,3 +186,12 @@ overflowed the pending bound; seeded RNG ignored the seed):
    silently dropped?
 3. Sync must send in causal order or retry on `Limit` (receivers don't keep refused envelopes) —
    accept as a protocol requirement?
+
+From G-C (group persistence harness S01–S07, `docs/group-persistence-contract.md` §8; 15 tests):
+4. S04 corrupted local store on open: FailClosed (refuse to open) or Reconstruct (quarantine and
+   rebuild from verified original proofs)? If Reconstruct, tell senders about quarantined acked ids?
+5. S06: persist the bounded pending queue, or keep it in memory and rely on sender retry?
+6. S03: must a host's StoredAck wait for fsync of the group store and the vault?
+7. S05: whole-shard eviction with an identity manifest — right granularity? Advertise availability
+   or only answer on request?
+8. Re-verify every stored proof on each open, or trust AEAD + an integrity check?
