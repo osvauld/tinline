@@ -4,7 +4,7 @@ Status: coordinator digest, 2026-10-10. Collects the policy questions raised by 
 packets. Nothing here is decided. "Coordinator lean" lines are recommendations to evaluate,
 not selections. Source documents hold the evidence and tests; read them before answering.
 
-Packets merged so far: A1, A2, B1, C1, D1, D2, E1, G-A. Still running/queued: B2, B3, C2, C3,
+Packets merged so far: A1, A2, B1, B2, B3, C1, D1, D2, E1, G-A. Still running/queued: C2, C3,
 K1, G-H, G-B, G-C (their questions get appended when they land).
 
 ## 1. Highest leverage (unblock the most work)
@@ -48,6 +48,44 @@ contact (unbounded). Options: strict everywhere / checkpoint everywhere (group c
 changes) / hybrid: strict for group audiences, checkpoint for private.
 Coordinator lean: depends on Q2 — under (i) routing history no longer carries authorship, so
 a bounded/checkpointed private history becomes much less risky. Decide Q2 first.
+
+### Q4 — Forks and revocation (G-FORK, G-REVOCATION, G-AUTHORITY)
+Source: `rotation-fork-revocation-options.md` §4–§8; `crates/proto/tests/rotation_fork_revocation.rs`.
+
+Tested facts: forks are always detected when receivers retain per-record evidence, never
+resolved by arrival order. Under the shared mnemonic **no** option excludes a hostile linked
+device: it can sign successors, "recoveries", and even revoke the owner's records (DoS).
+A separate recovery key (needs G-AUTHORITY change) stops hostile revoke/recover but not
+hostile DID-signed successors. A checkpoint at a higher generation from a clone silently
+replaces the honest one; strict history flags it.
+1. On a fork: freeze the path (any mnemonic holder can then DoS it) or keep the first-accepted
+   head (race)? Who signs a resolution?
+2. Revocation: (a) cascade — descendants suspended until owner-signed recovery; or (b) block
+   only that record's endpoint, descendants stand. Is revoking the anchor a rotation or a
+   group-nomination operation? Under (a), what happens to group proofs holding revoked
+   descendants (group gate D06)?
+3. Keep the shared-mnemonic model and document "only a new identity truly cuts off a device",
+   or open a separate-authority design? (Matches E1 Q1.)
+4. Must receivers retain per-record evidence for every audience (needed to detect older forks)?
+
+### Q5 — Wire/input bounds and ID collisions (G-HISTORY, G-FORK)
+Source: `crates/proto/tests/rotation_history_adversarial.rs` (B2; analysis summarised here).
+
+Tested facts: all delivery orders/duplicates converge; splices, malformed frames, forged and
+private-on-group input are rejected with state unchanged and before signature work where
+possible; a lost cursor yields explicit `RecoveryRequired` and never lowers the high-water mark.
+Path-local checks cannot see replacement-ID collisions with siblings or pruned history; a
+registry-level ID index catches all of them but grows one entry per rotation forever.
+1. Byte cap: per-record (also caps owner/audience string length) or per-page (forces byte-aware
+   paging)? Values?
+2. Pending-queue drop policy: refuse new arrivals (a mnemonic clone can occupy slots first) or
+   evict oldest (a clone flood evicts honest pages); or evict farthest from cursor? Bound per
+   path, per DID, or global?
+3. After `RecoveryRequired`: full re-verify, checkpoint, or re-nomination?
+4. ID collisions: reject or flag; registry scope per (owner, audience) or per owner; forbid
+   endpoint reuse across paths; how long to keep the ID index?
+5. Wire encoding: sign received bytes, or require canonical encoding? (Pretty-printed JSON
+   currently maps to the same signed claims.)
 
 ## 2. Timing and renewal (G-TIME, G-RENEWAL)
 Source: `rotation-time-contract.md` §7; `crates/proto/tests/rotation_time_contracts.rs`.
@@ -94,4 +132,4 @@ K1 is writing characterization tests to confirm or refute these. Decision after 
 on `dev` (separately from rotation) or defer?
 
 ## 6. Group chat (D01–D06)
-G-B (candidate oracles for D01–D05) has not run yet. D06 is covered by B3 (running).
+G-B (candidate oracles for D01–D05) runs after G-H. D06's rotation side is Q4 above.
