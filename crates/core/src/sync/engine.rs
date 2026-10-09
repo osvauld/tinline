@@ -13,7 +13,7 @@ use super::frames::{FrameReader, FrameWriter, SelfMsg};
 use crate::node::{Inner, Me, addr_for, now, now_ms, relay_of};
 use crate::store::{Backing, OwnDevice};
 use crate::Error;
-use crate::chat::own::{MAX_OWN_DOCS, READ_MARK, parse_doc};
+use crate::chat::own::{ACK_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
 
 const DOC_KEY: &str = "sync/account";
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
@@ -38,6 +38,7 @@ type Acked = Arc<parking_lot::Mutex<Option<VersionVector>>>;
 struct PeerChat {
     docs: HashMap<String, VersionVector>,
     read: HashMap<String, i64>,
+    acks: HashMap<String, VersionVector>,
     hello: bool,
 }
 
@@ -498,6 +499,19 @@ impl Inner {
                                 }
                             }
                         }
+                        SelfMsg::Acks { acks } => {
+                            if acks.len() > MAX_OWN_DOCS {
+                                return Err(Error::Protocol("too many acks".into()));
+                            }
+                            for (doc, vv) in &acks {
+                                if let Some(v) = Self::peer_vv_of(vv) {
+                                    peer.acks.entry(doc.clone()).and_modify(|x| x.merge(&v)).or_insert(v);
+                                }
+                            }
+                            if let Err(e) = self.chat_apply_acks(&acks) {
+                                tracing::debug!("own-device acks: {e}");
+                            }
+                        }
                         SelfMsg::Read { cursors } => {
                             for (pair, c) in &cursors {
                                 let e = peer.read.entry(pair.clone()).or_insert(0);
@@ -529,6 +543,8 @@ impl Inner {
                         for name in names {
                             if name == READ_MARK {
                                 self.push_read(&mut peer, writer).await?;
+                            } else if name == ACK_MARK {
+                                self.push_acks(&mut peer, writer).await?;
                             } else {
                                 self.push_chat_doc(me, &name, &mut peer, writer).await?;
                             }
@@ -544,7 +560,8 @@ impl Inner {
         for (name, _) in self.chat_own_docs() {
             self.push_chat_doc(me, &name, peer, writer).await?;
         }
-        self.push_read(peer, writer).await
+        self.push_read(peer, writer).await?;
+        self.push_acks(peer, writer).await
     }
 
     async fn push_chat_doc(self: &Arc<Self>, me: &Arc<Me>, name: &str, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
@@ -564,6 +581,22 @@ impl Inner {
             }
         }
         Ok(())
+    }
+
+    /// The contacts' acks the peer is not known to hold yet.
+    async fn push_acks(&self, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        let mut acks = Vec::new();
+        for (doc, vv) in self.chat_acks() {
+            if peer.acks.get(&doc).is_some_and(|p| p.partial_cmp(&vv).is_some_and(|o| o != std::cmp::Ordering::Less)) {
+                continue;
+            }
+            acks.push((doc.clone(), vv.encode()));
+            peer.acks.insert(doc, vv);
+        }
+        if acks.is_empty() {
+            return Ok(());
+        }
+        writer.send(&SelfMsg::Acks { acks }).await
     }
 
     async fn push_read(&self, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {

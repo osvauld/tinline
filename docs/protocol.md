@@ -252,6 +252,11 @@ add more docs to the `Hello` list (done in 34g, below).
   rules. A rejected batch is dropped, the session continues.
 - `Read { cursors: [(pair, unix ms)] }` (appended `SelfMsg` variant, unsigned): read cursors, merged
   by max; sent after `Hello` and whenever one moves, forwarded to other sessions.
+- `Acks { acks: [(doc, vv)] }` (appended `SelfMsg` variant, unsigned): what a contact acknowledged
+  holding of each day, merged into our stored ack like the contact's own `Ack`; sent after `Hello` and
+  whenever an ack grows, forwarded onward. So a device that is not talking to the contact still shows
+  two ticks on our messages only once the contact holds them (a message written on another own
+  device is ticked against that device's peer id, recorded when it arrives: `mo/` in docs/chat.md).
 - Live updates: a write to any shard marks it dirty for every session, which pushes the ops the peer
   lacks. Blobs use the stock iroh-blobs ALPN: an own (non-removed) device is served any blob that any of our
   conversations references.

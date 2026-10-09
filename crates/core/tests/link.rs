@@ -680,3 +680,26 @@ fn a_forged_batch_relayed_by_an_own_device_is_rejected() {
         assert!(find_msg(&b2, &a.did, &format!("forged {kind}")).is_none());
     }
 }
+
+#[test]
+fn a_message_held_only_by_our_other_device_is_not_delivered() {
+    let (a, b1, b2) = trio("c8");
+    a.node.stop();
+    b1.node.send_text(a.did.clone(), "contact is away".into(), None).unwrap();
+    eventually(40, "b2 has it", || find_msg(&b2, &a.did, "contact is away").is_some());
+    std::thread::sleep(Duration::from_secs(2));
+    let on_b1 = find_msg(&b1, &a.did, "contact is away").unwrap().delivery;
+    let on_b2 = find_msg(&b2, &a.did, "contact is away").unwrap().delivery;
+    assert_eq!(on_b1, DeliveryState::Pending, "sender");
+    assert_eq!(on_b2, DeliveryState::Pending, "other own device");
+    // The contact comes back: both of our devices show two ticks.
+    online(&a.node);
+    b1.node.sync_now_for_test();
+    b2.node.sync_now_for_test();
+    eventually(60, "A has it", || find_msg(&a, &b1.did, "contact is away").is_some());
+    for p in [&b1, &b2] {
+        eventually(60, "two ticks on both devices", || find_msg(p, &a.did, "contact is away").is_some_and(|m| m.delivery == DeliveryState::Delivered));
+        let c = p.node.chats().unwrap().into_iter().find(|c| c.peer_did == a.did).unwrap();
+        assert_eq!(c.last_delivery, DeliveryState::Delivered);
+    }
+}

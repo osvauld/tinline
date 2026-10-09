@@ -22,7 +22,7 @@ use super::crypt;
 use super::doc::*;
 use super::store::*;
 use super::wire::*;
-use super::own::READ_MARK;
+use super::own::{ACK_MARK, READ_MARK};
 use crate::Error;
 use crate::node::{Inner, Me, addr_for, now, relay_hint, relay_of};
 
@@ -96,7 +96,7 @@ fn day_valid(day: &str) -> bool {
     day_start(day).is_some()
 }
 
-fn decode_vv(b: &[u8]) -> Result<VersionVector, Error> {
+pub(super) fn decode_vv(b: &[u8]) -> Result<VersionVector, Error> {
     VersionVector::decode(b).map_err(|_| Error::Protocol("bad version vector".into()))
 }
 
@@ -839,6 +839,12 @@ impl Inner {
             }
         }
         let _ = writer.send(&ChatMsg::Ack { doc: doc.to_string(), vv: vv_now.encode() }).await;
+        // The contact's other devices tick from our acks too: tell them we hold it now.
+        for s in self.chat_sessions_of(core, &sess.did) {
+            if s.id != sess.id {
+                let _ = s.tx.send(Cmd::Ack(day.clone()));
+            }
+        }
         for h in added_files {
             self.chat_download(sess.did.clone(), h);
         }
@@ -885,7 +891,7 @@ impl Inner {
     }
 
     /// The peer says it holds `their_vv` of a day: our messages up to there are delivered.
-    fn chat_ack(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, day: &str, their_vv: &VersionVector) -> Result<(), Error> {
+    pub(super) fn chat_ack(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, day: &str, their_vv: &VersionVector) -> Result<(), Error> {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
         let name = doc_name(pair, day);
         let my_peer = peer_id(&me.device, &name);
@@ -893,21 +899,18 @@ impl Inner {
             Some(b) => decode_vv(&b).unwrap_or_default(),
             None => VersionVector::default(),
         };
-        let old = acked.get(&my_peer).copied().unwrap_or(0);
+        let before = acked.clone();
         merge_vv(&mut acked, their_vv);
-        let new = acked.get(&my_peer).copied().unwrap_or(0);
-        if new == old {
+        if acked == before {
             return Ok(());
         }
+        let moved = |peer: u64, c: i32| before.get(&peer).copied().unwrap_or(0) < c && c <= acked.get(&peer).copied().unwrap_or(0);
+        let new = acked.get(&my_peer).copied().unwrap_or(0);
         let mine = decode_vv(&meta.vv).ok().and_then(|v| v.get(&my_peer).copied()).unwrap_or(0);
-        let newly: Vec<String> = core
-            .store
-            .mcs(pair, day)?
-            .into_iter()
-            .filter(|(_, c)| *c > old && *c <= new)
-            .map(|(id, _)| id)
-            .collect();
+        let mut newly: Vec<String> = core.store.mcs(pair, day)?.into_iter().filter(|(_, c)| moved(my_peer, *c)).map(|(id, _)| id).collect();
+        newly.extend(core.store.mos(pair, day)?.into_iter().filter(|(_, (p, c))| moved(*p, *c)).map(|(id, _)| id));
         core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, mine > new)?]).map_err(io)?;
+        self.selfsync_dirty(ACK_MARK);
         if let Some(ev) = self.ev() {
             for id in &newly {
                 ev.on_delivery_changed(did.to_string(), id.clone(), DeliveryState::Delivered);
@@ -1112,20 +1115,24 @@ impl Inner {
         }
     }
 
+    /// Two ticks once the contact holds the change that created our message: written here
+    /// (`mc`, our peer) or on another of our devices (`mo`, that device's peer). A message of
+    /// ours with neither (synced before `mo` existed) shows as held.
+    fn chat_delivery(core: &ChatCore, me: &Me, pair: &str, day: &str, id: &str) -> DeliveryState {
+        let mark = match core.store.mc(pair, day, id).ok().flatten() {
+            Some(c) => Some((peer_id(&me.device, &doc_name(pair, day)), c)),
+            None => core.store.mo(pair, day, id).ok().flatten(),
+        };
+        let Some((peer, c)) = mark else { return DeliveryState::Delivered };
+        let ack = core.store.ack(pair, day).ok().flatten().and_then(|b| decode_vv(&b).ok()).and_then(|v| v.get(&peer).copied()).unwrap_or(0);
+        if c > ack { DeliveryState::Pending } else { DeliveryState::Delivered }
+    }
+
     pub(crate) fn chat_api_message(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, day: &str, rec: &MsgRec) -> Message {
         let outgoing = rec.author == me.id.did();
         // "You" items go nowhere; a message written on another of our devices has no counter
         // here and shows as held (it reached this device).
-        let delivery = if outgoing && !self.is_self_did(did) {
-            let my_peer = peer_id(&me.device, &doc_name(pair, day));
-            let ack = core.store.ack(pair, day).ok().flatten().and_then(|b| decode_vv(&b).ok()).and_then(|v| v.get(&my_peer).copied()).unwrap_or(0);
-            match core.store.mc(pair, day, &rec.id).ok().flatten() {
-                Some(c) if c > ack => DeliveryState::Pending,
-                _ => DeliveryState::Delivered,
-            }
-        } else {
-            DeliveryState::Delivered
-        };
+        let delivery = if outgoing && !self.is_self_did(did) { Self::chat_delivery(core, me, pair, day, &rec.id) } else { DeliveryState::Delivered };
         Message {
             id: rec.id.clone(),
             peer_did: did.to_string(),
@@ -1154,14 +1161,7 @@ impl Inner {
         let (last_outgoing, last_delivery, last_activity, preview) = match &conv.last {
             Some(l) => {
                 let delivery = match core.store.mi(&pair, &l.id).ok().flatten() {
-                    Some(day) if l.outgoing && !is_self => {
-                        let my_peer = peer_id(&me.device, &doc_name(&pair, &day));
-                        let ack = core.store.ack(&pair, &day).ok().flatten().and_then(|b| decode_vv(&b).ok()).and_then(|v| v.get(&my_peer).copied()).unwrap_or(0);
-                        match core.store.mc(&pair, &day, &l.id).ok().flatten() {
-                            Some(c) if c > ack => DeliveryState::Pending,
-                            _ => DeliveryState::Delivered,
-                        }
-                    }
+                    Some(day) if l.outgoing && !is_self => Self::chat_delivery(core, me, &pair, &day, &l.id),
                     _ => DeliveryState::Delivered,
                 };
                 (l.outgoing, delivery, l.at.max(0) as u64, l.preview.clone())

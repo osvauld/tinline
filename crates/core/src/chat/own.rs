@@ -8,13 +8,15 @@ use std::sync::Arc;
 use loro::VersionVector;
 
 use super::doc::*;
-use super::engine::ChatCore;
+use super::engine::{ChatCore, decode_vv};
 use super::store::ConvMeta;
 use crate::Error;
 use crate::node::{Inner, Me, now_ms};
 
 /// The dirty-set entry that means "a read cursor moved".
 pub(crate) const READ_MARK: &str = "!read";
+/// The dirty-set entry that means "a contact acknowledged more".
+pub(crate) const ACK_MARK: &str = "!ack";
 /// Shards offered per session (newest days first); the rest are not synced until the next
 /// session finds room (older days are normally closed and rarely change).
 pub(crate) const MAX_OWN_DOCS: usize = 4096;
@@ -147,7 +149,25 @@ impl Inner {
                     if shard.vv() == before {
                         None
                     } else {
-                        Some(self.chat_commit(&core, &me, &did, &pair, &day, shard, update, &applied, true)?)
+                        let committed = self.chat_commit(&core, &me, &did, &pair, &day, shard, update, &applied, true)?;
+                        // Our messages written on the other device: remember which change the
+                        // contact must hold before they get two ticks here too.
+                        if !self.is_self_did(&did) {
+                            let mut ops = Vec::new();
+                            for (rec, added) in &committed.0 {
+                                if *added
+                                    && rec.author == me.id.did()
+                                    && let Some((peer, c)) = shard.creator_end(&rec.id)
+                                    && peer != shard.peer
+                                {
+                                    ops.push(core.store.put_mo_op(&pair, &day, &rec.id, peer, c)?);
+                                }
+                            }
+                            if !ops.is_empty() {
+                                core.store.db.apply(&ops).map_err(crate::chat::store::io)?;
+                            }
+                        }
+                        Some(committed)
                     }
                 }
                 // Ops that build on ops we lack: the sender's idea of our version was stale; the
@@ -212,6 +232,31 @@ impl Inner {
         if moved {
             // Pass it on to our other devices (the sessions only send what a device lacks).
             self.selfsync_dirty(READ_MARK);
+        }
+        Ok(())
+    }
+
+    /// `(doc, vv)` of every day a contact of ours acknowledged.
+    pub(crate) fn chat_acks(&self) -> Vec<(String, VersionVector)> {
+        let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return vec![] };
+        core.store
+            .acks()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(pair, _, _)| self.pair_owner(&me, pair).is_some())
+            .filter_map(|(pair, day, vv)| Some((doc_name(&pair, &day), decode_vv(&vv).ok()?)))
+            .collect()
+    }
+
+    /// Acks relayed by another own device: merged like the contact's own (`chat_ack`), which
+    /// passes them on to our other devices when they add anything.
+    pub(crate) fn chat_apply_acks(&self, acks: &[(String, Vec<u8>)]) -> Result<(), Error> {
+        let (me, core) = (self.me()?, self.chat_core()?);
+        for (doc, vv) in acks {
+            let Some((pair, day)) = parse_doc(doc) else { continue };
+            let Some(did) = self.pair_owner(&me, &pair) else { continue };
+            let Ok(vv) = decode_vv(vv) else { continue };
+            self.chat_ack(&core, &me, &did, &pair, &day, &vv)?;
         }
         Ok(())
     }

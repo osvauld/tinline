@@ -75,4 +75,7 @@ pub enum SelfMsg {
     /// Read cursors `(pair, unix ms)` of conversations: everything incoming at or before is read.
     /// A max-register per pair (34g); unsigned, the link itself is authenticated.
     Read { cursors: Vec<(String, i64)> },
+    /// What the contact confirmed holding, `(doc, VersionVector::encode)`: a device that is not
+    /// talking to the contact itself still shows two ticks (a max-register per doc, merged).
+    Acks { acks: Vec<(String, Vec<u8>)> },
 }
