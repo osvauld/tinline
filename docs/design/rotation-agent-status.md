@@ -76,11 +76,15 @@ branch and commit only owned files; coordinator merges.
 | C2 | 3 | MERGED | rot/c2 73945dc; 13 tests | tests/rotation_storage_contracts.rs, rotation-storage-failure-contract.md |
 | D2 | 3 | MERGED | rot/d2 f248eb9; doc | rotation-author-group-adapter.md |
 | G-A | 1 | MERGED | rot/ga f8bca01; audit doc | docs/group-sim-coverage-audit.md |
-| G-B | 2 | RUNNING | rot/gb from 72d03a3 | group-sim/src/policy_candidates.rs, docs/group-policy-options.md |
+| G-B | 2 | MERGED | rot/gb b3ac944; +23 tests, group-sim now 73 | group-sim/src/policy_candidates.rs, docs/group-policy-options.md |
 | G-C | 3 | MERGED | rot/gc fa8357b; +15 tests, group-sim now 50 | group-sim/src/persistence.rs, docs/group-persistence-contract.md |
 | G-H | 3 | MERGED | rot/gh a60e8f8; group-sim 24→35, 2 sim bugs fixed | group-sim sources + README |
 | K1 | 3 | MERGED | rot/k1 77ab375; 8 core tests, confirmed restore bugs | crates/core/tests/rotation_restore_characterization.rs |
 | G-D | later | WAIT B1,B3 + decisions | unclaimed | group-sim/src/reachability.rs |
+
+Wave 1 complete 2026-10-10 at `7ff55f0`. Final regression: `cargo test -p proto` 166 passed
+(46 unit + 120 rotation model), `cargo test -p p2pcore` 129 passed (121 + 8 K1), group-sim 73,
+Python 6 + 10 + 14. Log `/tmp/claude-1000/rotation-coord-final.log`.
 
 Coordinator verification after each merge: owned-files-only diff, reran the packet's tests in
 the coordinator checkout (counts above). Note: shared CARGO_TARGET_DIR can run stale binaries

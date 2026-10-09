@@ -4,7 +4,8 @@ Status: coordinator digest, 2026-10-10. Collects the policy questions raised by 
 packets. Nothing here is decided. "Coordinator lean" lines are recommendations to evaluate,
 not selections. Source documents hold the evidence and tests; read them before answering.
 
-Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, G-C, G-H, K1, C3. Still running: G-B. G-B, G-C (their questions get appended when they land).
+Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, G-B, G-C, G-H, K1, C3 — all of Wave 1. Final regression at 7ff55f0: proto 166,
+p2pcore 129, group-sim 73, Python 6 + 10 + 14 — all passing. G-B, G-C (their questions get appended when they land).
 
 ## 1. Highest leverage (unblock the most work)
 
@@ -177,7 +178,29 @@ Also: should a DID-attested key seen on a live session be accepted for verifying
 the stored device list lacks it? (root of bug 1)
 
 ## 6. Group chat (D01–D06)
-G-B (candidate oracles for D01–D05) is running. D06's rotation side is Q4 above.
+Source: `docs/group-policy-options.md` §6 (G-B; 23 tests over all delivery orders). D06's
+rotation side is Q4 above.
+
+Core trade-off, tested: "signed frontier" (accept posts whose cited frontier predates removal)
+is order-independent and keeps honest offline posts, but a removed member's backdated post is
+accepted in every order. "Removal wins" blocks backdating but also drops honest delayed posts,
+can drop a post after showing it, and strands later posts on that device chain. Signed epochs
+with cuts block backdating but drop un-cut offline posts; competing epochs need a tie-break.
+Receiver-clock expiry makes history depend on clock and arrival time.
+1. Keep honest offline/concurrent posts at the cost of stale-frontier backdating, or cut off
+   unseen writes from removed members at the cost of honest posts? A mixed rule?
+2. Must every removal carry the remover's seen-content frontier?
+3. Are posts that disappear after a partition heals acceptable? UI? Do hosts keep serving them?
+4. After a rejected post: strand later posts on that device chain, allow skipping, or require a
+   new chain?
+5. Regrant concurrent with removal: remove-wins, add-wins or seniority? Two admins removing each
+   other: both removed acceptable? Tie-break?
+6. Removing an admin: cascade to members they added? (note: cascaded members can still post by
+   citing a stale frontier)
+7. Can the creator be removed? What if no admins remain?
+8. `expires_at` at all, or only an explicit admin expiry op? Local clock for current access only?
+9. Signed epochs with cuts: wanted? issuer, tie-break, format, max length?
+10. Authentic ops from non-admins: keep as inert records or refuse?
 From G-H (group-sim hardening; 24 → 35 tests, fixed two simulator bugs: bulk repair in ID order
 overflowed the pending bound; seeded RNG ignored the seed):
 1. How does a member whose host binding expired while both were offline rejoin? (tests use an
