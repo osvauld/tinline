@@ -10,6 +10,10 @@ mod demo;
 #[path = "chat.rs"]
 mod chat;
 
+#[path = "link.rs"]
+mod link;
+use link::{LinkState, Role, UnlinkedInfo};
+
 use chat::{ChatState, Cm};
 
 use std::sync::atomic::Ordering;
@@ -79,6 +83,14 @@ enum Screen {
     Home,
     AddContact,
     Settings,
+    /// Linking a device (name, QR, code, approve, done), either role.
+    Link,
+    /// New device linked: protect the account on this computer, then commit it.
+    LinkSecure,
+    /// New device linked and saved: contacts and history are coming over.
+    LinkSync,
+    /// This computer was removed from its account.
+    Unlinked,
 }
 
 /// What the home screen's right pane shows about the selected contact.
@@ -212,6 +224,16 @@ struct App {
     offer: Option<p2pcore::CardPeek>,
     /// Tickets of cards the user said "Not now" to; not offered again by the clipboard watcher.
     dismissed: std::collections::HashSet<String>,
+    link: LinkState,
+    /// The account's devices (removed ones hidden), cached for `view`.
+    linked: Vec<p2pcore::LinkedDevice>,
+    /// Rename in progress: device key and the text so far.
+    dev_rename: Option<(String, String)>,
+    /// Device the user is being asked to confirm unlinking.
+    unlink_ask: Option<String>,
+    /// This computer joined an account by linking and has not saved it yet.
+    link_joined: bool,
+    unlinked: Option<UnlinkedInfo>,
 }
 
 /// Where a click on a notification should lead.
@@ -333,6 +355,35 @@ enum Msg {
     ClipText(bool, Option<String>),
     OfferAdd,
     OfferDismiss,
+    LinkStartNew,
+    LinkStartExisting,
+    NewLink,
+    NewLinkBegun(Result<(), String>),
+    LinkNameGo,
+    LinkQr(Result<String, String>),
+    LinkRegen,
+    LinkPasteToggle,
+    LinkPasteIn(String),
+    LinkPasteGo,
+    LinkScanned(Result<(), String>),
+    LinkPassIn(String),
+    LinkApprove,
+    LinkApproved(Result<(), String>),
+    LinkCancel,
+    LinkDoneOk,
+    LinkSecureGo,
+    LinkSyncDone,
+    DevRenameStart(String),
+    DevRenameIn(String),
+    DevRenameSave,
+    DevRenameCancel,
+    DevDone(Result<(), String>),
+    UnlinkAsk(String),
+    UnlinkCancel,
+    UnlinkGo,
+    /// Ok((this device, DID)).
+    Unlinked(Result<(bool, String), String>),
+    UnlinkedOk,
     /// Test-hooks: the window's pixels, written to P2P_SHOT.
     Shot(window::Screenshot),
 }
@@ -428,6 +479,7 @@ fn friendly(e: Error) -> String {
         Error::WeakPassphrase => "Type a passphrase first.".into(),
         Error::BadPhrase => "That recovery phrase is not valid. Check the 24 words.".into(),
         Error::Locked => "Unlock first.".into(),
+        Error::NotStarted => "Tinline is still starting. Try again in a moment.".into(),
         Error::HaveIdentity => "An identity already exists here.".into(),
         Error::AccountExists(_) => "That account is already on this computer.".into(),
         Error::InCall => "You\u{2019}re on a call. Hang up before switching accounts.".into(),
@@ -501,9 +553,13 @@ impl App {
         self.change_form = false;
         self.pass_in.zeroize();
         self.old_in.zeroize();
+        self.dev_rename = None;
+        self.unlink_ask = None;
+        self.linked.clear();
         self.refresh_pass();
         self.refresh_identity();
         self.refresh_accounts();
+        self.refresh_linked();
         self.contacts = self.node.contacts();
         self.recents = self.node.recent_calls(RECENTS);
         self.avail = self.node.availability();
@@ -612,6 +668,12 @@ impl App {
             focused: false,
             offer: None,
             dismissed: Default::default(),
+            link: LinkState::new(Role::New),
+            linked: Vec::new(),
+            dev_rename: None,
+            unlink_ask: None,
+            link_joined: false,
+            unlinked: None,
             node,
         };
         if has && crate::test_env("P2P_SCREEN").is_some_and(|v| v == "settings") {
@@ -1040,6 +1102,11 @@ impl App {
                         self.name_edit = self.profile_name.clone();
                         self.device_edit = self.device_label.clone();
                         self.return_to = None;
+                        if std::mem::take(&mut self.link_joined) {
+                            // Linked: no recovery phrase to show; contacts and history follow.
+                            self.screen = Screen::LinkSync;
+                            return self.start_node();
+                        }
                         match self.setup.take().and_then(|s| s.phrase) {
                             Some(p) => {
                                 self.new_phrase = Some(p);
@@ -1351,7 +1418,15 @@ impl App {
                 }
             }
             Msg::AddChanged(v) => self.add_in = v,
-            Msg::SettingsTab(n) => self.settings_tab = n,
+            Msg::SettingsTab(n) => {
+                self.settings_tab = n;
+                self.dev_rename = None;
+                self.unlink_ask = None;
+                self.notice = None;
+                if n == 1 {
+                    self.refresh_linked();
+                }
+            }
             Msg::Key(key, mods) => {
                 use iced::keyboard::key::Named;
                 use iced::keyboard::Key;
@@ -1619,6 +1694,7 @@ impl App {
                 self.acct_menu = false;
                 self.remove_ask = None;
                 self.refresh_accounts();
+                self.refresh_linked();
                 self.device_edit = self.device_label.clone();
                 self.hide_phrase();
                 self.change_form = false;
@@ -1751,6 +1827,34 @@ impl App {
                 });
             }
             Msg::Chat(m) => return self.update_chat(m),
+            m @ (Msg::LinkStartNew
+            | Msg::LinkStartExisting
+            | Msg::NewLink
+            | Msg::NewLinkBegun(_)
+            | Msg::LinkNameGo
+            | Msg::LinkQr(_)
+            | Msg::LinkRegen
+            | Msg::LinkPasteToggle
+            | Msg::LinkPasteIn(_)
+            | Msg::LinkPasteGo
+            | Msg::LinkScanned(_)
+            | Msg::LinkPassIn(_)
+            | Msg::LinkApprove
+            | Msg::LinkApproved(_)
+            | Msg::LinkCancel
+            | Msg::LinkDoneOk
+            | Msg::LinkSecureGo
+            | Msg::LinkSyncDone
+            | Msg::DevRenameStart(_)
+            | Msg::DevRenameIn(_)
+            | Msg::DevRenameSave
+            | Msg::DevRenameCancel
+            | Msg::DevDone(_)
+            | Msg::UnlinkAsk(_)
+            | Msg::UnlinkCancel
+            | Msg::UnlinkGo
+            | Msg::Unlinked(_)
+            | Msg::UnlinkedOk) => return self.link_update(m),
             Msg::Shot(shot) => {
                 if let Some(path) = crate::test_env("P2P_SHOT") {
                     let mut ok = false;
@@ -1793,10 +1897,15 @@ impl App {
                         self.offer = None;
                     }
                     self.refresh_history();
+                    // Linked just now: the first contacts mean the sync has started to land.
+                    if self.screen == Screen::LinkSync && !self.contacts.is_empty() {
+                        self.screen = Screen::Home;
+                    }
                     return self.refresh_chats();
                 }
             }
             Ev::Chat(c) => return self.on_chat_event(c),
+            Ev::Link(l) => return self.link_event(l),
             Ev::Incoming(info) if self.call.as_ref().is_some_and(|c| c.state == CallState::Active && c.info.call_id != info.call_id) => {
                 notify("Tinline", &format!("{} is calling", info.peer_name), Target::Show);
                 let mut tasks = vec![self.show_window()];

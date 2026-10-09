@@ -53,6 +53,17 @@ pub fn add_passphrase_instead(st: &dyn Store, data: &Path, node: &Node, pass: St
     keystore::sync(st, data, node)
 }
 
+/// Last step of linking this computer as the new device: the account is unlocked in memory. An
+/// optional passphrase protects it (it then needs no remembered key); without one the key is
+/// saved first and the identity committed after, exactly like a fresh setup. `None` = retry of a
+/// failed key save.
+pub fn finish_link(st: &dyn Store, data: &Path, node: &Node, pass: Option<String>) -> Result<(), SetupErr> {
+    match pass.filter(|p| !p.is_empty()) {
+        Some(p) => add_passphrase_instead(st, data, node, p).map_err(SetupErr::Other),
+        None => finish_setup(st, data, node, None),
+    }
+}
+
 /// Switches to `did`; opens it with its remembered key when it has one. `Ok(true)` = unlocked.
 pub fn switch_to(st: &dyn Store, data: &Path, node: &Node, did: &str) -> Result<bool, Error> {
     node.switch_account(did.to_string())?;

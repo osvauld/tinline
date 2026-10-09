@@ -16,6 +16,8 @@ use crate::ui::{self, Icon, Kind, Tok};
 
 #[path = "chat_view.rs"]
 mod chat_view;
+#[path = "link_view.rs"]
+mod link_view;
 type El<'a> = Element<'a, Msg>;
 
 fn scroll<'a>(t: Tok, c: impl Into<El<'a>>) -> iced::widget::Scrollable<'a, Msg> {
@@ -181,6 +183,10 @@ impl App {
                 Screen::Home => self.home_view(t),
                 Screen::AddContact => self.add_view(t),
                 Screen::Settings => self.settings_view(t),
+                Screen::Link => self.link_screen(t),
+                Screen::LinkSecure => self.link_secure_screen(t),
+                Screen::LinkSync => self.link_sync_screen(t),
+                Screen::Unlinked => self.unlinked_screen(t),
             }
         };
         let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
@@ -294,6 +300,7 @@ impl App {
         } else {
             col = col
                 .push(self.wide("Create identity", Kind::Primary, t, (!self.busy).then_some(Msg::Create)))
+                .push(self.wide("Link to my phone", Kind::Quiet, t, (!self.busy).then_some(Msg::LinkStartNew)))
                 .push(self.wide("Restore from recovery phrase", Kind::Ghost, t, Some(Msg::ToggleRestore)));
         }
         if self.return_to.is_some() {
@@ -886,7 +893,7 @@ impl App {
         c = c
             .push(container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)))
             .push(action(Icon::UserPlus, "Create a new account", Some(Msg::NewAccount(false))))
-            .push(action(Icon::ExternalLink, "Link an account from your phone (coming soon)", None))
+            .push(action(Icon::ExternalLink, "Link an account from your phone", Some(Msg::NewLink)))
             .push(action(Icon::Key, "Restore with recovery phrase", Some(Msg::NewAccount(true))))
             .push(tx("One account is online at a time on this computer.", 12.0, t.ink2));
         container(c).padding(12).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into()
@@ -1391,34 +1398,7 @@ impl App {
             }
         }
         let profile = section(t, "Account", acct.into());
-        let this_name = if self.device_label.is_empty() { "This computer".to_string() } else { self.device_label.clone() };
-        let os = match std::env::consts::OS {
-            "linux" => "Linux",
-            "macos" => "macOS",
-            "windows" => "Windows",
-            o => o,
-        };
-        let devices = column![
-            row![
-                tx("Calls ring on all of these. People you call never see these names.", 14.0, t.ink2).width(Fill),
-                pill(t, Kind::Quiet, None, "Link a device", None),
-            ]
-            .spacing(12)
-            .align_y(Alignment::Center),
-            container(
-                row![
-                    column![semi(this_name, 15.0, t.ink), tx(format!("This computer \u{b7} {os}"), 13.0, t.ink2)].spacing(2).width(Fill),
-                    pill(t, Kind::Quiet, Some(Icon::Pencil), "Rename", Some(Msg::SettingsTab(0))),
-                ]
-                .spacing(12)
-                .align_y(Alignment::Center),
-            )
-            .padding(14)
-            .width(Fill)
-            .style(ui::outlined(t.surface2, t.line, 12.0)),
-            tx("Linking a phone or another computer is coming soon.", 13.0, t.ink2),
-        ]
-        .spacing(14);
+        let devices = self.linked_devices_page(t);
         let calls = section(t,
             "Calls",
             column![
@@ -1556,7 +1536,7 @@ impl App {
         let nav = container(nav).padding(16).width(240).height(Fill).style(ui::sidebar(t));
         let page: El = match self.settings_tab {
             0 => profile,
-            1 => devices.into(),
+            1 => devices,
             2 => calls,
             3 => audio,
             4 => section(t, "Security", security),

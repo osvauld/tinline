@@ -39,6 +39,18 @@ impl App {
             AccountSummary { did: "did:key:z6MkWork".into(), name: "Maya \u{b7} Work".into(), current: false, has_passphrase: true },
         ];
         self.name_edit = self.profile_name.clone();
+        let dev = |id: &str, label: &str, this: bool, ago: Option<u64>| p2pcore::LinkedDevice {
+            device: id.into(),
+            label: label.into(),
+            this_device: this,
+            last_seen: ago.map(|a| now - a),
+            removed: false,
+        };
+        self.linked = vec![
+            dev("desk", "Work desktop", true, Some(0)),
+            dev("phone", "Personal phone", false, Some(120)),
+            dev("tablet", "Old tablet", false, Some(86400 * 23)),
+        ];
         self.lock = LockState::Unlocked;
         self.status = NodeStatus { started: true, online: true, ..self.status.clone() };
         self.avail = Availability { available: true, until: None };
@@ -140,6 +152,69 @@ impl App {
             "name-device" => {
                 self.screen = Screen::NameDevice;
                 self.device_in = "Work desktop".into();
+            }
+            n if n.starts_with("link-") || n.starts_with("unlink") || n == "unlinked" => {
+                use link::{Role, Step};
+                let qr_text = "OSVL1:AEBAGBAFAYDQQCIKBMGA2DQPCAIREEYUCULBOGAZDINRYHQ4DCMRTGQ2TMNZYHEYDAMBQ";
+                self.keyring_ok = true;
+                let st = |role: Role, step: Step| {
+                    let mut l = LinkState::new(role);
+                    l.step = step;
+                    l.qr = view::qr_of(qr_text);
+                    l.started = Instant::now() - Duration::from_secs(8);
+                    l.code = "482 913".into();
+                    l.peer = "Personal phone".into();
+                    l
+                };
+                self.screen = Screen::Link;
+                match n {
+                    "link-name" => self.link = st(Role::New, Step::Name),
+                    "link-qr" => self.link = st(Role::New, Step::Qr),
+                    "link-qr-paste" => {
+                        self.link = st(Role::New, Step::Qr);
+                        self.link.paste_open = true;
+                        self.link.paste = qr_text.into();
+                    }
+                    "link-qr-expired" => {
+                        self.link = st(Role::New, Step::Qr);
+                        self.link.started = Instant::now() - Duration::from_secs(400);
+                    }
+                    "link-connecting" => self.link = st(Role::New, Step::Connecting),
+                    "link-code" => self.link = st(Role::New, Step::Code),
+                    "link-failed" => self.link = st(Role::New, Step::Failed("timeout".into())),
+                    "link-existing-qr" => self.link = st(Role::Existing, Step::Qr),
+                    "link-approve" | "link-approve-pass" => {
+                        self.link = st(Role::Existing, Step::Code);
+                        self.has_pass = n == "link-approve-pass";
+                    }
+                    "link-approve-wrong" => {
+                        self.link = st(Role::Existing, Step::Code);
+                        self.has_pass = true;
+                        self.notice = Some("That passphrase is not right. Try again.".into());
+                    }
+                    "link-done" => self.link = st(Role::Existing, Step::Done),
+                    "link-secure" | "link-secure-nokeyring" => {
+                        self.screen = Screen::LinkSecure;
+                        self.keyring_ok = n == "link-secure";
+                    }
+                    "link-sync" => self.screen = Screen::LinkSync,
+                    "unlinked" => {
+                        self.screen = Screen::Unlinked;
+                        self.unlinked = Some(link::UnlinkedInfo { name: "Maya Fernandes".into(), by_self: false });
+                    }
+                    "unlink-confirm" | "unlink-confirm-pass" | "unlink-rename" => {
+                        self.screen = Screen::Settings;
+                        self.settings_tab = 1;
+                        self.has_pass = n == "unlink-confirm-pass";
+                        let dev = "tablet".to_string();
+                        if n == "unlink-rename" {
+                            self.dev_rename = Some(("phone".into(), "Personal phone".into()));
+                        } else {
+                            self.unlink_ask = Some(dev);
+                        }
+                    }
+                    _ => {}
+                }
             }
             "key-failed" => {
                 self.screen = Screen::KeyFailed;

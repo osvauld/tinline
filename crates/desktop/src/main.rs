@@ -49,6 +49,45 @@ pub enum Ev {
     Chat(ChatEv),
     /// A notification was clicked.
     Open(app::Target),
+    Link(LinkEv),
+}
+
+/// What the core's `LinkEvents` report (device linking and own-device sync).
+pub enum LinkEv {
+    Code(String, String),
+    Done(String, String),
+    Failed(String),
+    Devices,
+    History,
+    Unlinked(String),
+}
+
+/// Bridges `LinkEvents` into the same channel as `NodeEvents`.
+pub struct LinkBridge(pub mpsc::UnboundedSender<Ev>);
+
+impl p2pcore::LinkEvents for LinkBridge {
+    fn on_link_code(&self, code: String, peer_label: String) {
+        tlog!("LINK_CODE {code} {peer_label}");
+        let _ = self.0.send(Ev::Link(LinkEv::Code(code, peer_label)));
+    }
+    fn on_link_done(&self, did: String, name: String) {
+        tlog!("LINK_DONE {did} {name}");
+        let _ = self.0.send(Ev::Link(LinkEv::Done(did, name)));
+    }
+    fn on_link_failed(&self, reason: String) {
+        tlog!("LINK_FAILED {reason}");
+        let _ = self.0.send(Ev::Link(LinkEv::Failed(reason)));
+    }
+    fn on_devices_changed(&self) {
+        let _ = self.0.send(Ev::Link(LinkEv::Devices));
+    }
+    fn on_history_changed(&self) {
+        let _ = self.0.send(Ev::Link(LinkEv::History));
+    }
+    fn on_unlinked(&self, did: String) {
+        tlog!("UNLINKED {did}");
+        let _ = self.0.send(Ev::Link(LinkEv::Unlinked(did)));
+    }
 }
 
 /// What the core's `ChatEvents` report, as plain data for the UI loop.
@@ -267,6 +306,7 @@ fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     audio.attach(&node);
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
+    node.set_link_events(Arc::new(LinkBridge(tx.clone())));
     // The single pre-accounts key entry belongs to the account core just migrated.
     keystore::migrate_legacy(keystore::system(), &data, &node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
