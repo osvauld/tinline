@@ -55,6 +55,13 @@ pub struct ConvMeta {
     pub peer_did: String,
     pub unread: u32,
     pub last: Option<LastMsg>,
+    /// Everything incoming sent at or before this (unix ms, the author's clock) is read. A
+    /// max-register: it only grows, and it is synced between our own devices.
+    #[serde(default)]
+    pub read_upto: i64,
+    /// `at` of the newest incoming message applied here (what `mark_read` advances the cursor to).
+    #[serde(default)]
+    pub last_in: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -252,6 +259,46 @@ impl ChatStore {
 
     pub fn may_read(&self, hash: &str, pair: &str) -> bool {
         matches!(self.db.raw().get(&format!("ref/{hash}/{pair}")), Ok(Some(_)))
+    }
+
+    /// Does any conversation of ours reference this blob? (Our own devices may read those.)
+    pub fn referenced(&self, hash: &str) -> bool {
+        self.db.list_prefixed(&format!("ref/{hash}/")).map(|v| !v.is_empty()).unwrap_or(false)
+    }
+
+    /// Every conversation row (`pair`, meta).
+    pub fn convs(&self) -> Result<Vec<(String, ConvMeta)>, Error> {
+        let mut out = Vec::new();
+        for (k, v) in self.db.scan("conv/").map_err(io)? {
+            if let (Some(pair), Ok(m)) = (k.strip_prefix("conv/"), serde_json::from_slice::<ConvMeta>(&v)) {
+                out.push((pair.to_string(), m));
+            }
+        }
+        Ok(out)
+    }
+
+    /// Every shard we hold as `(pair, day, vv)`, newest day first, at most `limit`.
+    pub fn all_shards(&self, limit: usize) -> Result<Vec<(String, String, Vec<u8>)>, Error> {
+        let mut keys: Vec<(String, String)> = self
+            .db
+            .list_prefixed("shard/")
+            .map_err(io)?
+            .into_iter()
+            .filter_map(|k| {
+                let rest = k.strip_prefix("shard/")?.strip_suffix("/meta")?;
+                let (pair, day) = rest.split_once('/')?;
+                (!day.contains('/')).then(|| (pair.to_string(), day.to_string()))
+            })
+            .collect();
+        keys.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        keys.truncate(limit);
+        let mut out = Vec::new();
+        for (pair, day) in keys {
+            if let Some(m) = self.shard_meta(&pair, &day)? {
+                out.push((pair, day, m.vv));
+            }
+        }
+        Ok(out)
     }
 
     /// Blobs the user wants (or auto-download chose) that are not complete yet.

@@ -256,3 +256,79 @@ updates + meta, acks, message counters, outbox markers, blob key index, read-per
   next GC run); the block already refuses later sessions.
 - No `proto` change; `crates/audio` untouched (voice encode/decode left to the apps).
 - Test knob: `P2P_CHAT_CLOCK_MS_OFFSET` shifts the chat clock (day-shard tests only).
+
+## 8. Own devices (task 34g)
+
+A person's linked devices hold the same conversations. Pair ids are `BLAKE3(sorted DIDs)`, so
+`dm/{pair}/{day}` is the same doc on every device of the account. The devices exchange shards over
+the own-device link (`tinline/self/1`, `docs/protocol.md` "Own-device sync"); a contact never
+learns how many devices we have.
+
+### What is exchanged
+- `Hello` lists every shard we hold (up to 4096, newest day first) with its version vector, next to
+  the `account` doc. Docs the peer does not list it has none of: we send them whole. Then
+  `Sync{doc, vv, update, sig}` carries the ops beyond the peer's vector, **all peers' ops** (ours,
+  the other device's, the contact's). A write on any device marks its shard dirty and is pushed to
+  every connected own device at once. Older (closed) days travel the same way, only when a vector
+  differs; the cap bounds a session's work.
+- A batch relayed by an own device is validated like a vouched history snapshot (`Ctx::history`):
+  the QUIC-authenticated own device signed the batch; the doc must be a conversation of ours (a
+  contact in good standing, or "You"); authors are only we and that contact; and **every new or
+  changed message must carry a valid signature of its author's attested device key**: our devices
+  (the registry, removed ones included so old messages stay valid) or the devices we know of the
+  contact. So a relayed batch can neither forge the contact's words nor ours, and a message from
+  the contact verifies against the contact's attestation, not against the relay. A rejected batch
+  is dropped (nothing stored) and the session goes on; the usual per-field rules (immutable
+  `id/author/at/reply_to/file`, no un-delete, no removal, day window) hold.
+- A device still sends the **contact** only its own ops (`export_own_since`), and the contact
+  accepts a batch from a session device only with that device's peer id. So each of our devices
+  syncs its own writes with the contact itself; a contact keeps one session per *device* (a person's
+  devices no longer replace each other's sessions). Messages the contact wrote reach our second
+  device through the first, with the contact offline. Duplicates cannot happen: a message is a
+  map entry keyed by its random id.
+
+### Read state
+`ConvMeta.read_upto` is a read cursor: everything incoming whose `at` is at or before it is read.
+`mark_read` moves it to the newest incoming message applied here and zeroes `unread`. The cursor
+is a max-register synced with `SelfMsg::Read{(pair, ms)}` (sent at session start and when it
+moves, forwarded onward). A device receiving a larger cursor stores it and **recounts** unread
+(incoming, not deleted, `at` > cursor), so reading on one device clears the other, and the order in
+which messages and cursors arrive does not matter. A new message counts as unread only if its
+`at` is above the cursor. A message that arrives late with an `at` below the cursor counts as read.
+
+### Delivery state
+Ticks are per device pair. The device that wrote a message shows `Pending` until the contact's
+ack covers it (exactly as before). Another of our devices shows a message written elsewhere as
+`Delivered` once it holds it, which means "held by your devices"; it has no counter for it and does
+not know whether the contact has it. "You" items are always `Delivered`.
+
+### Files and voice
+The blob is ciphertext addressed by hash, so any holder can serve it. A device serves a blob to
+a contact only for a conversation with that contact (unchanged); **to our own devices it serves
+any blob that any of our conversations references** (`ref/{hash}/*`). A fetch tries, in order: the
+contact's live session device, our own devices we are in sync with, the contact's other devices,
+our remaining own devices; the first that works delivers. A message we wrote on another device
+(`all_remote`) is fetched like an incoming one (auto-download under the limit). `Attachment.state`
+of such a message reflects this device's bytes.
+
+### "You" (saved items)
+A conversation with ourselves: `peer_did` = our own DID, pair `BLAKE3(did, did)`, docs
+`dm/{pair}/{day}` as for any chat. It is offered only over the own-device link: a contact's session
+accepts only `dm/{its own pair}/...`, so a contact can neither request nor push these docs
+(`doc_day_of`), and `Hello`/`chats()` for contacts never mention them. API: the existing calls
+(`send_text`, `send_file`, `edit_message`, `delete_message`, `chat_day`, `mark_read`,
+`download_attachment`, `save_attachment`) with `peer_did = own DID`. `chats()` always contains
+this row with `peer_name = "You"`. Messages are `outgoing`, `Delivered`, and never create an
+outbox marker; `fetch_older_history` is a no-op returning 0.
+
+### Removing a contact
+`remove_contact` drops the conversation (shards, blobs, rows) on this device and tombstones the
+contact in the account doc; the other devices apply the tombstone and `chat_purge` the same
+conversation. Relayed shards of a pair that is no longer a contact (and was blocked) are ignored,
+so the sync cannot bring it back.
+
+### Known limits
+A batch relayed to a device that does not yet know the author's device (a contact's new device
+learned by one of our devices only) fails the signature check and is dropped until the contact
+list reaches it; it is retried at every session. Read cursors are per conversation, not per
+message.

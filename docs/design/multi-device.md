@@ -1,6 +1,6 @@
 # Multiple accounts and devices — discussion decisions
 
-Status: core account storage, migration and switching done (task 34a); proto (DeviceList, Cancel, link handshake) done (34b); call fanout, DeviceList distribution and cross-device call coordination done in core (34c); linking, own-device sync (contacts, redeemed/revoked, call history, registry) and unlink done in core (34d); platform UI, chats/"You" sync (34g) remain.
+Status: core account storage, migration and switching done (task 34a); proto (DeviceList, Cancel, link handshake) done (34b); call fanout, DeviceList distribution and cross-device call coordination done in core (34c); linking, own-device sync (contacts, redeemed/revoked, call history, registry) and unlink done in core (34d); chats and "You" sync done in core (34g); platform UI remains.
 
 ## Implementation progress
 
