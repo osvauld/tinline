@@ -4,7 +4,7 @@ Status: coordinator digest, 2026-10-10. Collects the policy questions raised by 
 packets. Nothing here is decided. "Coordinator lean" lines are recommendations to evaluate,
 not selections. Source documents hold the evidence and tests; read them before answering.
 
-Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, K1. Still running/queued: C3,
+Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, K1, C3. Still running/queued:
 G-H, G-B, G-C (their questions get appended when they land).
 
 ## 1. Highest leverage (unblock the most work)
@@ -132,6 +132,20 @@ and `account.redb` (registry); no single atomic write covers both today.
 4. Wipe the old secret earlier than RetireOld? What if RetireOld keeps failing?
 5. Must per-peer acked generations be durable?
 6. Forced transport restart acceptable when closing the old endpoint fails?
+
+## 3c. Proving possession of the new key (G-STORAGE)
+Source: `rotation-challenge-options.md`; `crates/proto/tests/rotation_challenge_contracts.rs`.
+
+(a) durable nonce counter written before each challenge (existing model) vs (b) challenge
+bound to the authenticated QUIC session, nothing persisted. Tested: (a) costs 2 disk writes per
+update and lets anyone holding a captured update force writes; no quota isolates peers from
+strangers. (b) costs 1 write, strangers are refused before using capacity, but freshness relies
+on the boot RNG and a proof can't be answered on a different connection.
+1. Persist per challenge (a), or session-bound (b)? Coordinator lean: (b).
+2. Must possession ever be proven asynchronously (queued/relayed)? Only (a) allows it.
+3. If (b): explicit random challenge, signature over the TLS exporter value, or iroh's
+   authenticated `remote_id()` alone?
+4. Admission keying: per verified DID, per transport key, or global cap?
 
 ## 4. Product semantics
 Sources: `rotation-baseline-report.md` §4–5; `rotation-author-key-trace.md` §6.
