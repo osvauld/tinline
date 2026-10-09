@@ -309,7 +309,7 @@ impl Inner {
     /// grant we issued them, and they are a contact who is not blocked. Returns their DID.
     fn verify_auth(&self, me: &Me, auth: &ChatMsg, remote: [u8; 32]) -> Result<(String, Option<String>), Error> {
         let ChatMsg::Auth { attestation, grant, relay } = auth else { return Err(Error::Protocol("expected Auth".into())) };
-        let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone() };
+        let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None };
         let s = self.shared.lock();
         let contacts = &s.state.contacts;
         let who = proto::accept_call_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| {

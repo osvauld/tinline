@@ -2714,11 +2714,16 @@ impl Inner {
             tokio::select! {
                 msg = ctrl.recv() => match msg {
                     Ok(Some(Msg::Ringing)) if !active => self.set_state(&call, CallState::Ringing),
-<<<<<<< HEAD
-                    Ok(Some(Msg::Accept { renewed_grant })) if incoming_from.is_none() && !active => {
+                    Ok(Some(Msg::Accept { renewed_grant, devices })) if incoming_from.is_none() && !active => {
                         if let Some(g) = renewed_grant {
                             self.renew_grant(call.epoch, &call.info.peer_did, g);
-=======
+                        }
+                        if let Some(list) = &devices {
+                            self.accept_device_list(call.epoch, &call.info.peer_did, list);
+                        }
+                        datagrams = Some(self.start_media(&call, &conn));
+                        self.set_state(&call, CallState::Active);
+                    }
                     // The caller told us another of our devices took the call (or declined it),
                     // or that it gave up. If we had answered meanwhile, we stop at once.
                     Ok(Some(Msg::Cancel { reason })) if incoming_from.is_some() => {
@@ -2728,7 +2733,6 @@ impl Inner {
                             proto::CancelReason::DeclinedElsewhere => "declined_elsewhere",
                             proto::CancelReason::CallerHangup if active => "hangup_remote",
                             proto::CancelReason::CallerHangup => "cancelled",
->>>>>>> 08ade9b (core: contacts dial all devices of a person; signed DeviceList distributed; first answer wins, global decline, answered/declined elsewhere)
                         }
                         .into();
                     }
@@ -2757,12 +2761,8 @@ impl Inner {
                     Some(Cmd::Answer) if incoming_from.is_some() && !active => {
                         let me = match self.me() { Ok(m) => m, Err(_) => break "hangup_local".into() };
                         let renewed = incoming_from.as_deref().map(|did| proto::issue_grant(&me.id, did, now(), GRANT_TTL));
-<<<<<<< HEAD
-                        if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed }).await {
-=======
                         let devices = self.my_device_list(&me);
                         if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices }).await {
->>>>>>> 08ade9b (core: contacts dial all devices of a person; signed DeviceList distributed; first answer wins, global decline, answered/declined elsewhere)
                             self.log(format!("connection lost: {e}"));
                             break lost(false);
                         }
@@ -3207,6 +3207,7 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::CallHello { .. } => "CallHello",
         Msg::Ringing => "Ringing",
         Msg::Accept { .. } => "Accept",
+        Msg::Cancel { .. } => "Cancel",
         Msg::Decline { .. } => "Decline",
         Msg::Busy => "Busy",
         Msg::Hangup => "Hangup",

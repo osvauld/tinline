@@ -532,6 +532,8 @@ impl App {
                 13.0,
                 t.ink2
             ),
+            self.wide("Copy recovery phrase", Kind::Quiet, t, Some(Msg::CopyPhrase)),
+            tx("Paste only into a trusted password manager; the clipboard contains your account key.", 13.0, t.ink2),
             self.wide("I have saved it", Kind::Primary, t, Some(Msg::PhraseSaved)),
         ]
         .spacing(16);
@@ -1452,6 +1454,8 @@ impl App {
                 c = c
                     .push(tx("Anyone who sees these words can become you. Check nobody is looking.", 13.0, t.error))
                     .push(grid)
+                    .push(pill(t, Kind::Quiet, Some(Icon::Copy), "Copy recovery phrase", Some(Msg::CopyPhrase)))
+                    .push(tx("Paste only into a trusted password manager; the clipboard contains your account key.", 13.0, t.ink2))
                     .push(pill(t, Kind::Quiet, None, "Hide", Some(Msg::HidePhrase)));
             } else if self.reveal_form {
                 c = c
