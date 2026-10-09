@@ -48,7 +48,9 @@ class Phone:
         self.sh("shell", "pm", "clear", PKG)
         for p in ("android.permission.RECORD_AUDIO", "android.permission.POST_NOTIFICATIONS"):
             self.sh("shell", "pm", "grant", PKG, p)
-        self.sh("shell", "appops", "set", PKG, "USE_FULL_SCREEN_INTENT", "allow")
+        # Android 14+ only; Android 13 and below do not know this app-op.
+        subprocess.run([*self.adb, "shell", "appops", "set", PKG, "USE_FULL_SCREEN_INTENT", "allow"],
+                       capture_output=True)
         self.sh("logcat", "-c")
         self.dbg("create", name=self.name)
         self.wait(r"created did=\S+")

@@ -8,6 +8,7 @@
 //! shard/{pair}/{day}/u/{seq}     bytes      validated update batches since the snapshot
 //! ack/{pair}/{day}               bytes      the peer's last acknowledged version vector
 //! mc/{pair}/{day}/{id}           u32 BE     our op counter after creating that message
+//! mo/{pair}/{day}/{id}           u64+i32 BE our message written on another own device: (its peer, op count)
 //! out/{pair}/{day}               empty      this day has ops of ours the peer has not acked
 //! blob/{hash}                    BlobInfo   hash -> key (+ name, size, mime, state)
 //! ref/{hash}/{pair}              empty      this conversation may read that blob
@@ -55,6 +56,13 @@ pub struct ConvMeta {
     pub peer_did: String,
     pub unread: u32,
     pub last: Option<LastMsg>,
+    /// Everything incoming sent at or before this (unix ms, the author's clock) is read. A
+    /// max-register: it only grows, and it is synced between our own devices.
+    #[serde(default)]
+    pub read_upto: i64,
+    /// `at` of the newest incoming message applied here (what `mark_read` advances the cursor to).
+    #[serde(default)]
+    pub last_in: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,6 +111,11 @@ pub const DEFAULT_AUTO_DOWNLOAD: u64 = 10 * 1024 * 1024;
 #[derive(Clone)]
 pub struct ChatStore {
     pub db: Sealed,
+}
+
+fn decode_mo(b: &[u8]) -> Option<(u64, i32)> {
+    let b: [u8; 12] = b.try_into().ok()?;
+    Some((u64::from_be_bytes(b[..8].try_into().ok()?), i32::from_be_bytes(b[8..].try_into().ok()?)))
 }
 
 fn json<T: Serialize>(v: &T) -> Vec<u8> {
@@ -188,6 +201,20 @@ impl ChatStore {
         self.db.get(&format!("ack/{pair}/{day}")).map_err(io)
     }
 
+    /// Every `(pair, day, vv)` the contacts acknowledged.
+    pub fn acks(&self) -> Result<Vec<(String, String, Vec<u8>)>, Error> {
+        Ok(self
+            .db
+            .scan("ack/")
+            .map_err(io)?
+            .into_iter()
+            .filter_map(|(k, v)| {
+                let (pair, day) = k.strip_prefix("ack/")?.split_once('/')?;
+                Some((pair.to_string(), day.to_string(), v))
+            })
+            .collect())
+    }
+
     pub fn put_ack_op(&self, pair: &str, day: &str, vv: &[u8]) -> Result<Op, Error> {
         self.db.put_op(&format!("ack/{pair}/{day}"), vv).map_err(io)
     }
@@ -214,6 +241,29 @@ impl ChatStore {
 
     pub fn put_mc_op(&self, pair: &str, day: &str, id: &str, c: i32) -> Result<Op, Error> {
         self.db.put_op(&format!("mc/{pair}/{day}/{id}"), &c.to_be_bytes()).map_err(io)
+    }
+
+    /// Our messages written on another of our devices: `(peer, op count)` that the contact must
+    /// hold for two ticks.
+    pub fn mo(&self, pair: &str, day: &str, id: &str) -> Result<Option<(u64, i32)>, Error> {
+        Ok(self.db.get(&format!("mo/{pair}/{day}/{id}")).map_err(io)?.and_then(|b| decode_mo(&b)))
+    }
+
+    pub fn mos(&self, pair: &str, day: &str) -> Result<Vec<(String, (u64, i32))>, Error> {
+        let prefix = format!("mo/{pair}/{day}/");
+        Ok(self
+            .db
+            .scan(&prefix)
+            .map_err(io)?
+            .into_iter()
+            .filter_map(|(k, v)| Some((k.strip_prefix(&prefix)?.to_string(), decode_mo(&v)?)))
+            .collect())
+    }
+
+    pub fn put_mo_op(&self, pair: &str, day: &str, id: &str, peer: u64, c: i32) -> Result<Op, Error> {
+        let mut v = peer.to_be_bytes().to_vec();
+        v.extend_from_slice(&c.to_be_bytes());
+        self.db.put_op(&format!("mo/{pair}/{day}/{id}"), &v).map_err(io)
     }
 
     pub fn out_op(&self, pair: &str, day: &str, pending: bool) -> Result<Op, Error> {
@@ -252,6 +302,46 @@ impl ChatStore {
 
     pub fn may_read(&self, hash: &str, pair: &str) -> bool {
         matches!(self.db.raw().get(&format!("ref/{hash}/{pair}")), Ok(Some(_)))
+    }
+
+    /// Does any conversation of ours reference this blob? (Our own devices may read those.)
+    pub fn referenced(&self, hash: &str) -> bool {
+        self.db.list_prefixed(&format!("ref/{hash}/")).map(|v| !v.is_empty()).unwrap_or(false)
+    }
+
+    /// Every conversation row (`pair`, meta).
+    pub fn convs(&self) -> Result<Vec<(String, ConvMeta)>, Error> {
+        let mut out = Vec::new();
+        for (k, v) in self.db.scan("conv/").map_err(io)? {
+            if let (Some(pair), Ok(m)) = (k.strip_prefix("conv/"), serde_json::from_slice::<ConvMeta>(&v)) {
+                out.push((pair.to_string(), m));
+            }
+        }
+        Ok(out)
+    }
+
+    /// Every shard we hold as `(pair, day, vv)`, newest day first, at most `limit`.
+    pub fn all_shards(&self, limit: usize) -> Result<Vec<(String, String, Vec<u8>)>, Error> {
+        let mut keys: Vec<(String, String)> = self
+            .db
+            .list_prefixed("shard/")
+            .map_err(io)?
+            .into_iter()
+            .filter_map(|k| {
+                let rest = k.strip_prefix("shard/")?.strip_suffix("/meta")?;
+                let (pair, day) = rest.split_once('/')?;
+                (!day.contains('/')).then(|| (pair.to_string(), day.to_string()))
+            })
+            .collect();
+        keys.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        keys.truncate(limit);
+        let mut out = Vec::new();
+        for (pair, day) in keys {
+            if let Some(m) = self.shard_meta(&pair, &day)? {
+                out.push((pair, day, m.vv));
+            }
+        }
+        Ok(out)
     }
 
     /// Blobs the user wants (or auto-download chose) that are not complete yet.
@@ -307,6 +397,7 @@ impl ChatStore {
             Op::DeletePrefix(format!("shard/{pair}/")),
             Op::DeletePrefix(format!("ack/{pair}/")),
             Op::DeletePrefix(format!("mc/{pair}/")),
+            Op::DeletePrefix(format!("mo/{pair}/")),
             Op::DeletePrefix(format!("out/{pair}/")),
             Op::DeletePrefix(format!("pb/{pair}/")),
             Op::DeletePrefix(format!("snapcache/{pair}/")),

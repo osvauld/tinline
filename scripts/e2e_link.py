@@ -171,6 +171,31 @@ def main():
         c.ok("N rings", n.wait(rf"INCOMING {call3}", 40, m_n) is not None)
         a.cmd(f"hangup {call3}")
 
+        # Chat across the two devices (34g): A writes to the person, both devices get it; a reply
+        # from one shows as outgoing on the other; reading on one clears unread on the other;
+        # "You" items stay between the person's own devices; a file reaches both.
+        has = lambda p, who, text: any(text in l for l in p.cmd(f"msgs {who}") if l.startswith("MSG"))
+        unread = lambda p: next((int(re.search(r"unread=(\d+)", l).group(1)) for l in p.cmd("chats") if l.startswith("CHATROW") and a_did in l), None)
+        a.cmd(f"send {e_did} hello from alice")
+        c.ok("E got the chat", until(lambda: has(e, a_did, "hello from alice"), 60))
+        c.ok("N got the chat", until(lambda: has(n, a_did, "hello from alice"), 60))
+        c.ok("unread 1 on both", until(lambda: unread(e) == 1 and unread(n) == 1, 30))
+        e.cmd(f"markread {a_did}")
+        c.ok("read on E clears N", until(lambda: unread(n) == 0, 30))
+        n.cmd(f"send {a_did} reply from n")
+        c.ok("A got N's reply", until(lambda: has(a, e_did, "reply from n"), 60))
+        c.ok("E shows N's reply as outgoing", until(lambda: any("out=true" in l and "reply from n" in l for l in e.cmd(f"msgs {a_did}")), 60))
+        n.cmd("send me remember the milk")
+        c.ok("You item reaches E", until(lambda: has(e, "me", "remember the milk"), 60))
+        time.sleep(2)
+        c.ok("A has no You item", not has(a, "me", "milk") and not has(a, e_did, "milk"))
+        blob = tmp / "pic.bin"
+        blob.write_bytes(bytes(range(256)) * 800)
+        a.cmd(f"file {e_did} {blob}")
+        ready = lambda p: any("att=Ready" in l for l in p.cmd(f"msgs {a_did}") if l.startswith("MSG"))
+        c.ok("E holds the file", until(lambda: ready(e), 60))
+        c.ok("N holds the file", until(lambda: ready(n), 60))
+
         # Unlink.
         n_dev = n_who[3]
         c.ok("unlink", e.last(f"unlink {n_dev}").startswith("OK"))

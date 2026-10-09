@@ -253,4 +253,46 @@ impl Node {
     pub fn sync_now_for_test(&self) {
         self.inner.sync_kick();
     }
+
+    /// For tests: offers a hand-made batch for today's shard with `contact` to the validator
+    /// that judges batches relayed by our other devices. `kind`: 0 = a message of the contact's
+    /// signed with a random key, 1 = a message of ours signed with a random key, 2 = a message of
+    /// a stranger signed with our device key, 3 = a genuine message of ours (control).
+    #[doc(hidden)]
+    pub fn forged_own_batch_for_test(&self, contact: String, kind: u8) -> Result<(), Error> {
+        use crate::chat::doc::{MsgRec, Shard, day_of, doc_name, pair_id};
+        let me = self.inner.me()?;
+        let pair = pair_id(me.id.did(), &contact);
+        let at = crate::node::now_ms() as i64;
+        let day = day_of(at);
+        let random = proto::new_device_secret();
+        let (author, secret, device) = match kind {
+            0 => (contact.clone(), random, proto::device_public(&random)),
+            1 => (me.id.did().to_string(), random, proto::device_public(&random)),
+            2 => ("did:key:stranger".to_string(), me.profile.device_secret, proto::device_public(&random)),
+            _ => (me.id.did().to_string(), me.profile.device_secret, me.device),
+        };
+        let shard = Shard::new(&pair, &day, &device);
+        let rec = MsgRec { id: format!("forged{kind}"), author, at, text: format!("forged {kind}"), edited_at: None, deleted: false, reply_to: None, file: None, sig: Vec::new() };
+        let update = shard.add_message(&rec, &secret).map_err(|e| Error::Io(e.to_string()))?;
+        let inner = self.inner.clone();
+        let doc = doc_name(&pair, &day);
+        self.block_on(async move { inner.chat_own_apply(&doc, &update).await })?
+    }
+
+    /// For tests: does the chat store hold any shard of the conversation between `me_did` and
+    /// `peer_did` (`me_did == peer_did`: the "You" docs)?
+    #[doc(hidden)]
+    pub fn has_chat_docs_for_test(&self, me_did: &str, peer_did: &str) -> bool {
+        let Ok(core) = self.inner.chat_core() else { return false };
+        let pair = crate::chat::doc::pair_id(me_did, peer_did);
+        core.store.shard_days(&pair).map(|d| !d.is_empty()).unwrap_or(false)
+    }
+
+    /// For tests: does the chat store hold any "You" shard?
+    #[doc(hidden)]
+    pub fn has_you_docs_for_test(&self) -> bool {
+        let Ok(me) = self.inner.me() else { return false };
+        self.has_chat_docs_for_test(me.id.did(), me.id.did())
+    }
 }

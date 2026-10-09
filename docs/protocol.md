@@ -237,7 +237,31 @@ least as new as the receiver's (S4). Never synced: device secret, DEK, passphras
 current ticket, `last_seen`, in-flight calls. `State` stays the working copy: every persist flushes
 into the doc (`write_from`) and every received batch is imported and merged back (`read_into`) under
 the `shared` lock, so a missing entry always means a local deletion. Chats and "You" items (34g)
-add more docs to the `Hello` list.
+add more docs to the `Hello` list (done in 34g, below).
+
+#### Chats and "You" over the own-device link (task 34g)
+
+- `Hello.docs` also lists `dm/{pair}/{day}` for every shard of every conversation of the account
+  (contacts and "You"), newest day first, at most 4096; more are refused (`too many docs`). A doc the
+  peer does not list is sent whole. `Sync{doc, vv, update, sig}` for such a doc carries all ops beyond
+  the peer's vector (any peer ids); `sig` is the sending device's `sign_batch(doc, update)`, checked
+  against the authenticated device (a bad signature closes the session, as for the account doc).
+- The receiver validates a chat batch like a vouched history snapshot (docs/chat.md section 8): doc
+  of a current conversation, authors only us and that contact, every new/changed message signed by its
+  author's attested device (ours incl. removed devices, the contact's known devices), plus the field
+  rules. A rejected batch is dropped, the session continues.
+- `Read { cursors: [(pair, unix ms)] }` (appended `SelfMsg` variant, unsigned): read cursors, merged
+  by max; sent after `Hello` and whenever one moves, forwarded to other sessions.
+- `Acks { acks: [(doc, vv)] }` (appended `SelfMsg` variant, unsigned): what a contact acknowledged
+  holding of each day, merged into our stored ack like the contact's own `Ack`; sent after `Hello` and
+  whenever an ack grows, forwarded onward. So a device that is not talking to the contact still shows
+  two ticks on our messages only once the contact holds them (a message written on another own
+  device is ticked against that device's peer id, recorded when it arrives: `mo/` in docs/chat.md).
+- Live updates: a write to any shard marks it dirty for every session, which pushes the ops the peer
+  lacks. Blobs use the stock iroh-blobs ALPN: an own (non-removed) device is served any blob that any of our
+  conversations references.
+- Contacts are unaffected: `tinline/chat/1` stays one session per contact *device*, each device sends
+  its own ops only, and a session can name only `dm/{pair with that contact}/{day}`.
 
 | Check | Defends against |
 |---|---|
@@ -253,6 +277,22 @@ add more docs to the `Hello` list.
 | Sealed grant AEAD with AAD `T` | Tampering or splicing the mnemonic transfer; wrong-pair delivery |
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
+
+## Presence (on `tinline/chat/1`)
+
+Whether a contact is reachable right now. Each device keeps a Loro `EphemeralStore` with one key
+(`online`), refreshed every 8 s, and sends it on every chat session as a QUIC datagram: `b"tp1"` +
+`EphemeralStore::encode`, at most 512 bytes. The receiver applies it into a store belonging to that
+session only, so a contact speaks only for its own device. An entry not refreshed within 30 s
+expires (the store compares the sender's timestamp with our clock, so this also bounds the clock
+skew presence tolerates); a closed session drops its store at once. A contact is online while any
+of its devices has a live entry: `ChatEvents::on_presence_changed(did, online)`,
+`Node::contact_online(did)`. Opening a conversation calls `Node::watch_presence(did)`, which dials
+the contact if there is no session. Nothing is stored or retried.
+
+Datagrams rather than a `ChatMsg` variant: an older app never reads them and keeps working (it
+just shows the contact as not connected), where an unknown `ChatMsg` variant would fail to decode
+and close the session.
 
 ## What each check defends against
 

@@ -192,11 +192,18 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
 
 @Composable
 fun PhraseShownScreen(phrase: String, onHide: () -> Unit) {
+    val ctx = LocalContext.current
+    var copied by remember { mutableStateOf(false) }
     Page {
         TopBar("Recovery phrase", onHide)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             InfoCard("Anyone who sees these words can become you. Check nobody is looking.", icon = Icons.Rounded.Warning, kind = BannerKind.Warn)
             WordGrid(phrase)
+            TinButton(if (copied) "Copied" else "Copy recovery phrase", {
+                copyToClipboard(ctx, "Recovery phrase", phrase)
+                copied = true
+            }, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentCopy)
+            Hint("Paste into a trusted password manager. Anyone with these words can access your account.")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Lock, null, tint = Tin.c.ink2, modifier = Modifier.size(16.dp))
                 Hint("Screenshots and screen recording are blocked here.")

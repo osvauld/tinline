@@ -1,8 +1,6 @@
 package com.osvauld.p2p
 
 import android.util.Log
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -14,7 +12,6 @@ import uniffi.p2pcore.ChatEvents
 import uniffi.p2pcore.DayPage
 import uniffi.p2pcore.DeliveryState
 import uniffi.p2pcore.Message
-import java.util.concurrent.ConcurrentHashMap
 
 /** What the core pushes while a conversation or the chat list is on screen. */
 sealed interface ChatEvent {
@@ -51,6 +48,8 @@ interface ChatSource {
     fun edit(peerDid: String, messageId: String, text: String): Message
     fun delete(peerDid: String, messageId: String): Message
     fun markRead(peerDid: String)
+    /** A conversation opened: connect so the contact's presence is known. */
+    fun watchPresence(peerDid: String) {}
     fun sendFile(peerDid: String, path: String, mime: String, text: String?): Message
     fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray): Message
     fun download(peerDid: String, messageId: String)
@@ -74,17 +73,10 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
     override val events: SharedFlow<ChatEvent> = _events
     private val _links = MutableStateFlow<Map<String, Link>>(emptyMap())
     override val links: StateFlow<Map<String, Link>> = _links
-    private val expiry = ConcurrentHashMap<String, Job>()
 
     /** Registers for callbacks on the current node; call again after the node is replaced. */
     fun attach() { try { node.setChatEvents(this) } catch (e: Exception) { Log.w(P2pApp.TAG, "setChatEvents: $e") } }
 
-    /** Traffic from a peer proves a link for a minute. */
-    private fun touch(peerDid: String) {
-        _links.update { it + (peerDid to Link.Connected) }
-        expiry.remove(peerDid)?.cancel()
-        expiry[peerDid] = app.scope.launch { delay(60_000); _links.update { it - peerDid } }
-    }
 
     override fun refresh() {
         app.scope.launch {
@@ -93,7 +85,6 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
     }
 
     override fun onMessageAdded(message: Message) {
-        if (!message.outgoing) touch(message.peerDid)
         _events.tryEmit(ChatEvent.Added(message))
         if (!message.outgoing) ChatNotifier.incoming(app, message)
     }
@@ -102,12 +93,14 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
         _chats.value = (listOf(chat) + _chats.value.filter { it.peerDid != chat.peerDid }).sortedByDescending { it.lastActivity }
     }
     override fun onDeliveryChanged(peerDid: String, messageId: String, delivery: DeliveryState) {
-        touch(peerDid)
         _events.tryEmit(ChatEvent.Delivery(peerDid, messageId, delivery))
     }
     override fun onTransferProgress(peerDid: String, hash: String, done: ULong, total: ULong, outgoing: Boolean) {
-        touch(peerDid)
         _events.tryEmit(ChatEvent.Progress(peerDid, hash, done.toLong(), total.toLong(), outgoing))
+    }
+    /** The core's ephemeral presence: Connected while one of the contact's devices is live. */
+    override fun onPresenceChanged(peerDid: String, online: Boolean) {
+        _links.update { if (online) it + (peerDid to Link.Connected) else it - peerDid }
     }
 
     override fun day(peerDid: String, day: String?) = node.chatDay(peerDid, day)
@@ -116,6 +109,10 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
     override fun edit(peerDid: String, messageId: String, text: String) = node.editMessage(peerDid, messageId, text)
     override fun delete(peerDid: String, messageId: String) = node.deleteMessage(peerDid, messageId)
     override fun markRead(peerDid: String) = node.markRead(peerDid)
+    override fun watchPresence(peerDid: String) {
+        try { node.watchPresence(peerDid) } catch (e: Exception) { Log.d(P2pApp.TAG, "watchPresence: $e") }
+        if (node.contactOnline(peerDid)) _links.update { it + (peerDid to Link.Connected) }
+    }
     override fun sendFile(peerDid: String, path: String, mime: String, text: String?) = node.sendFile(peerDid, path, mime, text)
     override fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray) =
         node.sendVoice(peerDid, path, durationMs.toUInt(), waveform)

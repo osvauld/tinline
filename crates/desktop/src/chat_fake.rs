@@ -310,6 +310,12 @@ impl Fake {
         })
     }
 
+    pub fn contact_online(&self, _peer: String) -> bool {
+        false
+    }
+
+    pub fn watch_presence(&self, _peer: String) {}
+
     pub fn mark_read(&self, peer: String) -> Result<(), Error> {
         self.with(&peer, |st, p| st.unread.insert(p.to_string(), 0));
         Ok(())

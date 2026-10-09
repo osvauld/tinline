@@ -360,6 +360,15 @@ impl Shard {
         self.vv().get(&self.peer).copied().unwrap_or(0)
     }
 
+    /// Who created message `id` (peer) and that peer's op count once the creating change is
+    /// in (the tick marker of a message written on another device). A merged change makes it
+    /// later, never earlier.
+    pub fn creator_end(&self, id: &str) -> Option<(u64, i32)> {
+        let loro::ContainerID::Normal { peer, counter, .. } = loro::ContainerTrait::id(&self.entry(id).ok()?) else { return None };
+        let ch = self.doc.get_change(loro::ID::new(peer, counter))?;
+        Some((peer, ch.id.counter + ch.len as i32))
+    }
+
     pub fn snapshot(&self) -> Vec<u8> {
         self.doc.export(ExportMode::Snapshot).expect("snapshot export")
     }
@@ -452,6 +461,15 @@ impl Shard {
             }
         }
         self.doc.export(ExportMode::updates(&from)).ok()
+    }
+
+    /// Every op beyond `theirs`, whoever wrote it; `None` if they hold all we do. Only for our
+    /// own devices (own-device sync): a contact is only ever sent our own ops.
+    pub fn export_all_since(&self, theirs: &VersionVector) -> Option<Vec<u8>> {
+        if theirs.partial_cmp(&self.vv()).is_some_and(|o| o != std::cmp::Ordering::Less) {
+            return None;
+        }
+        self.doc.export(ExportMode::updates(theirs)).ok()
     }
 
     /// Validates `update` against this shard and, if it is acceptable in every respect,
