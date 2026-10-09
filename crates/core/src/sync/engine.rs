@@ -13,6 +13,7 @@ use super::frames::{FrameReader, FrameWriter, SelfMsg};
 use crate::node::{Inner, Me, addr_for, now, now_ms, relay_of};
 use crate::store::{Backing, OwnDevice};
 use crate::Error;
+use crate::chat::own::{MAX_OWN_DOCS, READ_MARK, parse_doc};
 
 const DOC_KEY: &str = "sync/account";
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
@@ -24,7 +25,20 @@ pub(crate) struct SelfSlot {
     conn: Connection,
     /// What the peer has confirmed it holds of the account doc (its `Hello`s and batches), not
     /// merely what was written to the stream: an unlink closes the endpoint right after.
-    pub(crate) acked: Arc<parking_lot::Mutex<Option<VersionVector>>>,
+    pub(crate) acked: Acked,
+    /// Docs (and `READ_MARK`) changed locally that this session has not looked at yet (34g).
+    pub(crate) dirty: Dirty,
+}
+
+type Dirty = Arc<parking_lot::Mutex<HashSet<String>>>;
+type Acked = Arc<parking_lot::Mutex<Option<VersionVector>>>;
+
+/// What the other device is known to hold of the chat shards and read cursors.
+#[derive(Default)]
+struct PeerChat {
+    docs: HashMap<String, VersionVector>,
+    read: HashMap<String, i64>,
+    hello: bool,
 }
 
 impl SelfSlot {
@@ -297,7 +311,7 @@ impl Inner {
 
     /// Keeps one session per device: if both sides dialled at once, the connection dialled by
     /// the lower device key survives on both ends. `false` = this one lost.
-    fn register_session(&self, remote: [u8; 32], dialer: [u8; 32], conn: &Connection) -> Option<Arc<parking_lot::Mutex<Option<VersionVector>>>> {
+    fn register_session(&self, remote: [u8; 32], dialer: [u8; 32], conn: &Connection) -> Option<(Acked, Dirty)> {
         let mut map = self.selfsync.sessions.lock();
         if let Some(old) = map.get(&remote) {
             if old.dialer < dialer {
@@ -305,9 +319,10 @@ impl Inner {
             }
             old.conn.close(0u32.into(), b"duplicate");
         }
-        let acked = Arc::new(parking_lot::Mutex::new(None));
-        map.insert(remote, SelfSlot { dialer, conn: conn.clone(), acked: acked.clone() });
-        Some(acked)
+        let acked: Acked = Default::default();
+        let dirty: Dirty = Default::default();
+        map.insert(remote, SelfSlot { dialer, conn: conn.clone(), acked: acked.clone(), dirty: dirty.clone() });
+        Some((acked, dirty))
     }
 
     /// Waits (bounded) until every other live device of the registry has a session whose peer
@@ -333,6 +348,7 @@ impl Inner {
                 })
             };
             if done || Instant::now() > end {
+                tracing::debug!("wait_pushed: done={done} others={} sessions={}", others.len(), self.selfsync.sessions.lock().len());
                 return;
             }
             std::thread::sleep(Duration::from_millis(50));
@@ -391,12 +407,12 @@ impl Inner {
         let remote_relay = remote_relay.filter(|r| proto::valid_relay_hint(r));
         self.note_own_device(epoch, &attestation, remote, remote_relay);
         let dialer_key = if dialer { me.device } else { remote };
-        let Some(acked) = self.register_session(remote, dialer_key, &conn) else {
+        let Some((acked, dirty)) = self.register_session(remote, dialer_key, &conn) else {
             return Ok(());
         };
         self.selfsync.backoff.lock().remove(&remote);
         self.log(format!("own-device sync with {} ({})", proto::device_to_text(&remote), if dialer { "dialed" } else { "accepted" }));
-        let r = self.clone().self_loop(&me, remote, &acked, &mut reader, &mut writer).await;
+        let r = self.clone().self_loop(&me, remote, &acked, &dirty, &mut reader, &mut writer).await;
         self.drop_session(remote, &conn);
         conn.close(0u32.into(), b"done");
         if let Err(e) = &r {
@@ -413,48 +429,83 @@ impl Inner {
         self: Arc<Self>,
         me: &Arc<Me>,
         remote: [u8; 32],
-        acked: &Arc<parking_lot::Mutex<Option<VersionVector>>>,
+        acked: &Acked,
+        dirty: &Dirty,
         reader: &mut FrameReader,
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
         let epoch = me.epoch;
         let acc = self.shared.lock().acc.clone().ok_or(Error::Locked)?;
-        writer.send(&SelfMsg::Hello { docs: vec![(DOC_NAME.into(), acc.vv().encode())] }).await?;
+        let mut docs = vec![(DOC_NAME.to_string(), acc.vv().encode())];
+        docs.extend(self.chat_own_docs());
+        writer.send(&SelfMsg::Hello { docs }).await?;
         // What the peer is known to hold; nothing is sent until its Hello says.
         let mut sent: Option<VersionVector> = None;
+        let mut peer = PeerChat::default();
         let mut changes = self.sync_tx.subscribe();
         loop {
             tokio::select! {
                 m = reader.recv::<SelfMsg>() => {
                     let Some(m) = m? else { return Ok(()) };
+                    let mut full = false;
                     match m {
                         SelfMsg::Hello { docs } => {
+                            if docs.len() > MAX_OWN_DOCS + 1 {
+                                return Err(Error::Protocol("too many docs".into()));
+                            }
                             for (name, vv) in docs {
-                                if name == DOC_NAME && let Some(vv) = Self::peer_vv_of(&vv) {
+                                let Some(vv) = Self::peer_vv_of(&vv) else { continue };
+                                if name == DOC_NAME {
                                     acked.lock().get_or_insert_with(VersionVector::new).merge(&vv);
                                     sent = Some(vv);
+                                } else if parse_doc(&name).is_some() {
+                                    peer.docs.insert(name, vv);
                                 }
                             }
+                            peer.hello = true;
+                            full = true;
                         }
                         SelfMsg::Sync { doc, vv, update, sig } => {
-                            if doc != DOC_NAME {
-                                continue;
-                            }
                             if !chat_sig_ok(&remote, &doc, &update, &sig) {
                                 return Err(Error::Protocol("bad batch signature".into()));
                             }
-                            if !update.is_empty() {
-                                self.apply_account_update(epoch, &update)?;
-                                // The ack the sender waits on before it may drop the connection.
-                                writer.send(&SelfMsg::Hello { docs: vec![(DOC_NAME.into(), acc.vv().encode())] }).await?;
-                            }
-                            if let Some(theirs) = Self::peer_vv_of(&vv) {
-                                acked.lock().get_or_insert_with(VersionVector::new).merge(&theirs);
-                                if let Some(s) = sent.as_mut() {
-                                    s.merge(&theirs);
+                            if doc == DOC_NAME {
+                                if !update.is_empty() {
+                                    self.apply_account_update(epoch, &update)?;
+                                    // Tell the sender what we hold now (an empty batch is an ack).
+                                    let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, DOC_NAME, &[]);
+                                    writer.send(&SelfMsg::Sync { doc: DOC_NAME.into(), vv: acc.vv().encode(), update: Vec::new(), sig }).await?;
+                                }
+                                if let Some(theirs) = Self::peer_vv_of(&vv) {
+                                    if let Some(s) = sent.as_mut() {
+                                        s.merge(&theirs);
+                                    }
+                                    acked.lock().get_or_insert_with(VersionVector::new).merge(&theirs);
+                                }
+                                self.touch_device(epoch, remote);
+                            } else if parse_doc(&doc).is_some() {
+                                // A rejected or unusable batch is dropped, the session goes on.
+                                if !update.is_empty()
+                                    && let Err(e) = self.chat_own_apply(&doc, &update).await
+                                {
+                                    tracing::debug!("own-device chat batch for {doc}: {e}");
+                                }
+                                if let Some(theirs) = Self::peer_vv_of(&vv) {
+                                    peer.docs.entry(doc.clone()).and_modify(|v| v.merge(&theirs)).or_insert(theirs);
+                                }
+                                if peer.hello {
+                                    self.push_chat_doc(me, &doc, &mut peer, writer).await?;
                                 }
                             }
-                            self.touch_device(epoch, remote);
+                        }
+                        SelfMsg::Read { cursors } => {
+                            for (pair, c) in &cursors {
+                                let e = peer.read.entry(pair.clone()).or_insert(0);
+                                *e = (*e).max(*c);
+                            }
+                            if let Err(e) = self.chat_apply_read(&cursors).await {
+                                tracing::debug!("own-device read cursors: {e}");
+                            }
                         }
                         SelfMsg::Unlinked => {
                             self.clone().remove_self_account(epoch).await;
@@ -463,15 +514,67 @@ impl Inner {
                         SelfMsg::Auth { .. } => return Err(Error::Protocol("unexpected auth".into())),
                     }
                     self.push_changes(me, &acc, &mut sent, writer).await?;
+                    if full {
+                        self.push_all_chat(me, &mut peer, writer).await?;
+                        self.chat_resume_all();
+                    }
                 }
                 _ = changes.changed() => {
                     if self.shared.lock().epoch != epoch {
                         return Ok(());
                     }
                     self.push_changes(me, &acc, &mut sent, writer).await?;
+                    let names: Vec<String> = std::mem::take(&mut *dirty.lock()).into_iter().collect();
+                    if peer.hello {
+                        for name in names {
+                            if name == READ_MARK {
+                                self.push_read(&mut peer, writer).await?;
+                            } else {
+                                self.push_chat_doc(me, &name, &mut peer, writer).await?;
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+
+    /// Everything the peer lacks of the chat shards (newest days first), then the read cursors.
+    async fn push_all_chat(self: &Arc<Self>, me: &Arc<Me>, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        for (name, _) in self.chat_own_docs() {
+            self.push_chat_doc(me, &name, peer, writer).await?;
+        }
+        self.push_read(peer, writer).await
+    }
+
+    async fn push_chat_doc(self: &Arc<Self>, me: &Arc<Me>, name: &str, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        let theirs = peer.docs.get(name).cloned().unwrap_or_default();
+        let out = match self.chat_own_export(name, &theirs).await {
+            Ok(o) => o,
+            Err(e) => {
+                tracing::debug!("own-device export of {name}: {e}");
+                None
+            }
+        };
+        if let Some((update, vv)) = out {
+            let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
+            writer.send(&SelfMsg::Sync { doc: name.to_string(), vv: vv.clone(), update, sig }).await?;
+            if let Some(v) = Self::peer_vv_of(&vv) {
+                peer.docs.insert(name.to_string(), v);
+            }
+        }
+        Ok(())
+    }
+
+    async fn push_read(&self, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        let cursors: Vec<(String, i64)> = self.chat_read_cursors().into_iter().filter(|(p, c)| peer.read.get(p).is_none_or(|x| c > x)).collect();
+        if cursors.is_empty() {
+            return Ok(());
+        }
+        for (p, c) in &cursors {
+            peer.read.insert(p.clone(), *c);
+        }
+        writer.send(&SelfMsg::Read { cursors }).await
     }
 
     async fn push_changes(&self, me: &Arc<Me>, acc: &Arc<AccDoc>, sent: &mut Option<VersionVector>, writer: &mut FrameWriter) -> Result<(), Error> {

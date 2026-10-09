@@ -72,4 +72,7 @@ pub enum SelfMsg {
     /// "You were removed from this account." Only ever sent after the receiver accepted our
     /// `Auth`, i.e. by an own device it does not consider removed.
     Unlinked,
+    /// Read cursors `(pair, unix ms)` of conversations: everything incoming at or before is read.
+    /// A max-register per pair (34g); unsigned, the link itself is authenticated.
+    Read { cursors: Vec<(String, i64)> },
 }

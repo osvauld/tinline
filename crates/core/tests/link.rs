@@ -494,3 +494,189 @@ fn three_devices_converge_after_offline_edits() {
         });
     }
 }
+
+// ---- task 34g: chats and "You" items between own devices ---------------------------------------
+
+use p2pcore::{DeliveryState, Message, TransferState};
+
+fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
+    let mut out = Vec::new();
+    let mut page = p.node.chat_day(did.to_string(), None).ok();
+    while let Some(pg) = page {
+        out.extend(pg.messages.clone());
+        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
+    }
+    out
+}
+
+fn find_msg(p: &Peer, did: &str, text: &str) -> Option<Message> {
+    all_msgs(p, did).into_iter().find(|m| m.text == text)
+}
+
+fn count_msgs(p: &Peer, did: &str, text: &str) -> usize {
+    all_msgs(p, did).iter().filter(|m| m.text == text).count()
+}
+
+fn unread(p: &Peer, did: &str) -> u32 {
+    p.node.chats().unwrap().into_iter().find(|c| c.peer_did == did).map_or(0, |c| c.unread)
+}
+
+/// A with a contact B who has two devices (b1 original, b2 linked).
+fn trio(tag: &str) -> (Peer, Peer, Peer) {
+    let a = make_peer(&format!("{tag}-a"));
+    let b1 = make_peer(&format!("{tag}-b1"));
+    connect(&a, &b1);
+    let b2 = link_fresh(&b1, &format!("{tag}-b2"), true);
+    eventually(40, "b2 has A", || b2.node.contacts().iter().any(|c| c.did == a.did));
+    eventually(40, "two devices everywhere", || [&b1, &b2].iter().all(|p| p.node.linked_devices().iter().filter(|d| !d.removed).count() == 2));
+    (a, b1, b2)
+}
+
+#[test]
+fn chat_reaches_both_devices_and_replies_show_as_outgoing() {
+    let (a, b1, b2) = trio("c1");
+    a.node.send_text(b1.did.clone(), "hello B".into(), None).unwrap();
+    for p in [&b1, &b2] {
+        eventually(40, "B device has hello", || find_msg(p, &a.did, "hello B").is_some());
+        assert!(!find_msg(p, &a.did, "hello B").unwrap().outgoing);
+    }
+    b1.node.send_text(a.did.clone(), "reply from b1".into(), None).unwrap();
+    eventually(40, "b2 shows the reply as outgoing", || find_msg(&b2, &a.did, "reply from b1").is_some_and(|m| m.outgoing && m.author_did == b1.did));
+    eventually(40, "A has the reply", || find_msg(&a, &b1.did, "reply from b1").is_some());
+    // Both of B's devices talk to A at once: nothing is lost or doubled anywhere.
+    b1.node.send_text(a.did.clone(), "x1".into(), None).unwrap();
+    b2.node.send_text(a.did.clone(), "x2".into(), None).unwrap();
+    a.node.send_text(b1.did.clone(), "x3".into(), None).unwrap();
+    for p in [&a, &b1, &b2] {
+        let other = if p.did == a.did { b1.did.clone() } else { a.did.clone() };
+        for t in ["x1", "x2", "x3", "hello B", "reply from b1"] {
+            eventually(60, "everyone has everything", || count_msgs(p, &other, t) >= 1);
+        }
+    }
+    std::thread::sleep(Duration::from_secs(2));
+    for p in [&a, &b1, &b2] {
+        let other = if p.did == a.did { b1.did.clone() } else { a.did.clone() };
+        for t in ["x1", "x2", "x3", "hello B", "reply from b1"] {
+            assert_eq!(count_msgs(p, &other, t), 1, "{t} on {}", p.did);
+        }
+        assert_eq!(all_msgs(p, &other).len(), 5, "same history everywhere");
+    }
+    // The sending device shows the real ticks; the other one shows what arrived as delivered.
+    assert_eq!(find_msg(&b2, &a.did, "x2").unwrap().delivery, DeliveryState::Delivered);
+}
+
+#[test]
+fn a_device_that_was_offline_catches_up_from_the_other_while_the_contact_is_away() {
+    let (a, b1, b2) = trio("c2");
+    b2.node.stop();
+    a.node.send_text(b1.did.clone(), "while b2 slept".into(), None).unwrap();
+    eventually(40, "b1 has it", || find_msg(&b1, &a.did, "while b2 slept").is_some());
+    b1.node.send_text(a.did.clone(), "b1 reply".into(), None).unwrap();
+    a.node.stop();
+    online(&b2.node);
+    b2.node.sync_now_for_test();
+    eventually(60, "b2 caught up from b1 alone", || {
+        find_msg(&b2, &a.did, "while b2 slept").is_some_and(|m| !m.outgoing) && find_msg(&b2, &a.did, "b1 reply").is_some_and(|m| m.outgoing)
+    });
+}
+
+#[test]
+fn reading_on_one_device_clears_unread_on_the_other() {
+    let (a, b1, b2) = trio("c3");
+    a.node.send_text(b1.did.clone(), "one".into(), None).unwrap();
+    a.node.send_text(b1.did.clone(), "two".into(), None).unwrap();
+    eventually(40, "both unread 2", || unread(&b1, &a.did) == 2 && unread(&b2, &a.did) == 2);
+    b1.node.mark_read(a.did.clone()).unwrap();
+    assert_eq!(unread(&b1, &a.did), 0);
+    eventually(40, "b2 cleared", || unread(&b2, &a.did) == 0);
+    // A newer message counts again on both.
+    std::thread::sleep(Duration::from_millis(50));
+    a.node.send_text(b1.did.clone(), "three".into(), None).unwrap();
+    eventually(40, "both unread 1", || unread(&b1, &a.did) == 1 && unread(&b2, &a.did) == 1);
+    // And the other direction: read on b2 clears b1.
+    b2.node.mark_read(a.did.clone()).unwrap();
+    eventually(40, "b1 cleared", || unread(&b1, &a.did) == 0);
+}
+
+#[test]
+fn a_file_from_the_contact_reaches_the_other_device_through_ours_while_the_contact_is_offline() {
+    let (a, b1, b2) = trio("c4");
+    let dir = std::env::temp_dir().join(format!("p2pcore-c4-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let src = dir.join("pic.bin");
+    let bytes: Vec<u8> = (0..300_000u32).map(|i| (i.wrapping_mul(31) % 251) as u8).collect();
+    std::fs::write(&src, &bytes).unwrap();
+    b2.node.stop();
+    let m = a.node.send_file(b1.did.clone(), src.to_string_lossy().into(), "application/octet-stream".into(), None).unwrap();
+    eventually(60, "b1 holds the file", || {
+        all_msgs(&b1, &a.did).iter().any(|x| x.id == m.id && x.attachment.as_ref().is_some_and(|t| t.state == TransferState::Ready))
+    });
+    a.node.stop();
+    online(&b2.node);
+    b2.node.sync_now_for_test();
+    eventually(90, "b2 holds the file", || {
+        all_msgs(&b2, &a.did).iter().any(|x| x.id == m.id && x.attachment.as_ref().is_some_and(|t| t.state == TransferState::Ready))
+    });
+    let out = dir.join("out.bin");
+    b2.node.save_attachment(a.did.clone(), m.id.clone(), out.to_string_lossy().into()).unwrap();
+    assert_eq!(std::fs::read(&out).unwrap(), bytes);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn you_items_sync_between_own_devices_and_never_reach_contacts() {
+    let (a, b1, b2) = trio("c5");
+    let sent = b1.node.send_text(b1.did.clone(), "remember the milk".into(), None).unwrap();
+    assert!(sent.outgoing);
+    assert_eq!(sent.delivery, DeliveryState::Delivered);
+    eventually(40, "b2 has the You item", || find_msg(&b2, &b2.did, "remember the milk").is_some_and(|m| m.outgoing));
+    for p in [&b1, &b2] {
+        let you = p.node.chats().unwrap().into_iter().find(|c| c.peer_did == p.did).expect("a You entry");
+        assert_eq!(you.peer_name, "You");
+        assert_eq!(you.preview, "remember the milk");
+        assert_eq!(you.unread, 0);
+    }
+    // An edit travels too.
+    b2.node.edit_message(b2.did.clone(), sent.id.clone(), "remember the oat milk".into()).unwrap();
+    eventually(40, "b1 sees the edit", || find_msg(&b1, &b1.did, "remember the oat milk").is_some());
+    // Give a session with A every chance to leak it, then look.
+    b1.node.send_text(a.did.clone(), "to A".into(), None).unwrap();
+    eventually(40, "A has the normal message", || find_msg(&a, &b1.did, "to A").is_some());
+    std::thread::sleep(Duration::from_secs(2));
+    assert!(!a.node.has_you_docs_for_test() || all_msgs(&a, &a.did).is_empty());
+    assert!(all_msgs(&a, &b1.did).iter().all(|m| !m.text.contains("milk")));
+    assert!(a.node.chats().unwrap().iter().all(|c| !c.preview.contains("milk")));
+    assert!(!a.node.has_chat_docs_for_test(&b1.did, &b1.did));
+    // A new device linked later gets the saved items as well.
+    let b3 = link_fresh(&b1, "c5-b3", false);
+    eventually(60, "b3 has the You item", || find_msg(&b3, &b3.did, "remember the oat milk").is_some());
+}
+
+#[test]
+fn removing_a_contact_on_one_device_removes_the_conversation_on_the_other() {
+    let (a, b1, b2) = trio("c6");
+    a.node.send_text(b1.did.clone(), "keep?".into(), None).unwrap();
+    eventually(40, "b2 has it", || find_msg(&b2, &a.did, "keep?").is_some());
+    b1.node.remove_contact(a.did.clone()).unwrap();
+    eventually(40, "b2 dropped A", || !b2.node.contacts().iter().any(|c| c.did == a.did));
+    eventually(20, "b2 dropped the conversation", || {
+        b2.node.chat_day(a.did.clone(), None).is_err() && b2.node.chats().unwrap().iter().all(|c| c.peer_did != a.did)
+    });
+    assert!(!b2.node.has_chat_docs_for_test(&b2.did, &a.did));
+    // The sync does not bring it back.
+    b1.node.sync_now_for_test();
+    std::thread::sleep(Duration::from_secs(3));
+    assert!(!b2.node.has_chat_docs_for_test(&b2.did, &a.did) && !b1.node.has_chat_docs_for_test(&b1.did, &a.did));
+}
+
+#[test]
+fn a_forged_batch_relayed_by_an_own_device_is_rejected() {
+    let (a, _b1, b2) = trio("c7");
+    // Genuine control first, so the rejections below are about the forgery and nothing else.
+    b2.node.forged_own_batch_for_test(a.did.clone(), 3).unwrap();
+    assert!(find_msg(&b2, &a.did, "forged 3").is_some_and(|m| m.outgoing));
+    for kind in 0..3u8 {
+        assert!(b2.node.forged_own_batch_for_test(a.did.clone(), kind).is_err(), "kind {kind} must be rejected");
+        assert!(find_msg(&b2, &a.did, &format!("forged {kind}")).is_none());
+    }
+}

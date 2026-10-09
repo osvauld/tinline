@@ -444,6 +444,10 @@ fn write_wav(p: &PathBuf, pcm: &[i16]) -> Result<(), String> {
 }
 
 fn find(node: &Node, who: &str) -> Result<String, String> {
+    // "me" is the "You" (saved items) conversation.
+    if who == "me" {
+        return node.profile().map(|p| p.did).ok_or("no identity".into());
+    }
     node.contacts().into_iter().find(|c| c.did == who || c.name == who).map(|c| c.did).ok_or(format!("no contact {who}"))
 }
 
@@ -476,6 +480,17 @@ fn list_day(node: &Node, who: &str, day: Option<String>) -> Result<(), String> {
     }
     println!("END");
     Ok(())
+}
+
+/// Every message of a conversation, newest day first.
+fn all_messages(node: &Node, did: &str) -> Vec<Message> {
+    let mut out = Vec::new();
+    let mut page = node.chat_day(did.to_string(), None).ok();
+    while let Some(p) = page {
+        out.extend(p.messages.clone());
+        page = p.older_day.and_then(|d| node.chat_day(did.to_string(), Some(d)).ok());
+    }
+    out
 }
 
 /// Line commands on stdin, answers on stdout (`OK ...`, `ERR ...`); chat events interleave as
@@ -725,6 +740,42 @@ fn link_serve(node: &Arc<Node>, o: &Opts, rx: mpsc::Receiver<Event>) -> Result<(
             ["unlink", dev] => {
                 node.unlink_device(dev.to_string(), Some(o.passphrase.clone())).map_err(|e| e.to_string())?;
                 Ok("UNLINKED".into())
+            }
+            // Chat across linked devices (34g). `WHO` = a contact's name or DID, or `me` (the
+            // "You" saved items).
+            ["send", who, text] => {
+                let m = node.send_text(find(node, who)?, text.to_string(), None).map_err(|e| e.to_string())?;
+                Ok(format!("SENT {}", m.id))
+            }
+            ["file", who, path] => {
+                let m = node.send_file(find(node, who)?, path.to_string(), "application/octet-stream".into(), None).map_err(|e| e.to_string())?;
+                Ok(format!("SENT {}", m.id))
+            }
+            ["msgs", who] => {
+                for m in all_messages(node, &find(node, who)?) {
+                    let att = m.attachment.as_ref().map(|a| format!("{:?}", a.state)).unwrap_or_default();
+                    println!("MSG {} out={} text={:?} att={att}", m.id, m.outgoing, m.text);
+                }
+                Ok("LISTED".into())
+            }
+            ["chats"] => {
+                for c in node.chats().map_err(|e| e.to_string())? {
+                    println!("CHATROW {} name={:?} unread={} preview={:?}", c.peer_did, c.peer_name, c.unread, c.preview);
+                }
+                Ok("LISTED".into())
+            }
+            ["markread", who] => {
+                node.mark_read(find(node, who)?).map_err(|e| e.to_string())?;
+                Ok("OK".into())
+            }
+            ["save", who, rest] => {
+                let (id, out) = rest.split_once(' ').ok_or("save WHO ID OUT")?;
+                node.save_attachment(find(node, who)?, id.to_string(), out.to_string()).map_err(|e| e.to_string())?;
+                Ok(format!("SAVED {out}"))
+            }
+            ["remove", who] => {
+                node.remove_contact(find(node, who)?).map_err(|e| e.to_string())?;
+                Ok("REMOVED".into())
             }
             ["quit"] => Err("quit".into()),
             _ => Err(format!("unknown command {line:?}")),

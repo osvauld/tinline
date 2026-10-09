@@ -8,6 +8,7 @@ pub mod crypt;
 mod blobs_tests;
 pub mod api;
 pub mod engine;
+pub mod own;
 pub mod store;
 pub mod wire;
 pub mod doc;

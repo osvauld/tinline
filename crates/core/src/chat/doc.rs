@@ -454,6 +454,15 @@ impl Shard {
         self.doc.export(ExportMode::updates(&from)).ok()
     }
 
+    /// Every op beyond `theirs`, whoever wrote it; `None` if they hold all we do. Only for our
+    /// own devices (own-device sync): a contact is only ever sent our own ops.
+    pub fn export_all_since(&self, theirs: &VersionVector) -> Option<Vec<u8>> {
+        if theirs.partial_cmp(&self.vv()).is_some_and(|o| o != std::cmp::Ordering::Less) {
+            return None;
+        }
+        self.doc.export(ExportMode::updates(theirs)).ok()
+    }
+
     /// Validates `update` against this shard and, if it is acceptable in every respect,
     /// imports it. On any `Err` nothing was imported. The verdict depends only on the batch
     /// and this shard's content, never on arrival order.
