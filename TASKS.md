@@ -48,6 +48,7 @@ has re-run its acceptance command.
 | 34d | Core: `tinline/link/1` linking + `tinline/self/1` own-device sync (registry, contacts doc, history, chats, You), unlink | after 34c | `crates/core` | sonnet (in progress, after 34f) |
 | 34f | Core: storage keys (account.redb, chat.redb) derived from the identity seed, not the DEK, so restoring from the phrase over one's own locked account keeps contacts/history/chats (forgot-passphrase); `AccountExists` carries the DID | after 34c | `crates/core` | done, merged; lead fixed desktop test + Android forgot-passphrase (no longer deletes the account); core/desktop tests, e2e, Android build re-run |
 | 34e | Platforms: account switcher, device name, commit_identity + key-save failure UI (S1), desktop no-keyring requires passphrase (S2), link/linked-devices screens per canvas section Accounts & linked devices | after 34a (switcher) / 34d (linking) | `android/`, `crates/desktop` | Android switcher/S1 merged (emulator-verified upgrade, create, switch); desktop in progress; linking UI after 34d |
+| 35 | Security S5: bounded, strictly validated Ogg Opus voice parser (CRC, single stream, continuation, OpusHead/Tags, size/packet/duration caps) + mutation tests | sonnet (worktree) | `crates/core/src/voice.rs` | in progress |
 
 ## Roadmap (after the redesign)
 
