@@ -49,8 +49,8 @@ has re-run its acceptance command.
 | 34f | Core: storage keys (account.redb, chat.redb) derived from the identity seed, not the DEK, so restoring from the phrase over one's own locked account keeps contacts/history/chats (forgot-passphrase); `AccountExists` carries the DID | after 34c | `crates/core` | done, merged; lead fixed desktop test + Android forgot-passphrase (no longer deletes the account); core/desktop tests, e2e, Android build re-run |
 | 34e | Platforms: account switcher, device name, commit_identity + key-save failure UI (S1), desktop no-keyring requires passphrase (S2), link/linked-devices screens per canvas section Accounts & linked devices | after 34a (switcher) / 34d (linking) | `android/`, `crates/desktop` | Android switcher/S1 merged (emulator-verified upgrade, create, switch); desktop in progress; linking UI after 34d |
 | 35 | Security S5: bounded, strictly validated Ogg Opus voice parser (CRC, single stream, continuation, OpusHead/Tags, size/packet/duration caps) + mutation tests | sonnet (worktree) | `crates/core/src/voice.rs` | done, merged; lead re-ran core tests + e2e_chat (voice) |
-| 34g | Core: chats + "You" saved items sync between own devices over tinline/self/1 (dm shards, You doc, blobs on demand) | sonnet (worktree) | `crates/core` | in progress |
-| 34h | Platforms: linking UI (QR show/scan, code confirm, approve with passphrase/device auth, syncing, linked devices rename/unlink, unlinked screen) per canvas | sonnet x2 (worktrees) | `android/`, `crates/desktop` | in progress |
+| 34g | Core: chats + "You" saved items sync between own devices over tinline/self/1 (dm shards, You doc, blobs on demand) | sonnet (worktree) | `crates/core` | stopped by user; WIP 3083577 on task-34g-chatsync |
+| 34h | Platforms: linking UI (QR show/scan, code confirm, approve with passphrase/device auth, syncing, linked devices rename/unlink, unlinked screen) per canvas | sonnet x2 (worktrees) | `android/`, `crates/desktop` | desktop done, merged; Android stopped by user at a995fa5 (branch task-34h-android, unverified) |
 
 ## Roadmap (after the redesign)
 
