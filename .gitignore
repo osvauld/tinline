@@ -10,3 +10,7 @@ android/local.properties
 
 # Company documents: never commit
 *.pdf
+
+# Local test output
+artifacts/
+__pycache__/

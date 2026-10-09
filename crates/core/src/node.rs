@@ -3177,6 +3177,19 @@ pub(crate) fn relay_of(ep: &Endpoint) -> Option<String> {
     ep.addr().relay_urls().next().map(|u| u.to_string())
 }
 
+/// `relay_of`, waiting up to `max` for a just-started endpoint to pick its relay: a code shown
+/// without one leaves the scanner to DNS discovery. Blocks; callers are off the UI thread.
+pub(crate) fn relay_within(ep: &Endpoint, max: Duration) -> Option<String> {
+    let end = std::time::Instant::now() + max;
+    loop {
+        let r = relay_of(ep);
+        if r.is_some() || std::time::Instant::now() > end {
+            return r;
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
 pub(crate) fn addr_for(device: &[u8; 32], relay: Option<&str>) -> Result<EndpointAddr, Error> {
     let id = PublicKey::from_bytes(device).map_err(|_| Error::Protocol("bad device key".into()))?;
     let mut addr = EndpointAddr::new(id);

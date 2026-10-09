@@ -50,7 +50,7 @@ has re-run its acceptance command.
 | 34e | Platforms: account switcher, device name, commit_identity + key-save failure UI (S1), desktop no-keyring requires passphrase (S2), link/linked-devices screens per canvas section Accounts & linked devices | after 34a (switcher) / 34d (linking) | `android/`, `crates/desktop` | Android switcher/S1 merged (emulator-verified upgrade, create, switch); desktop in progress; linking UI after 34d |
 | 35 | Security S5: bounded, strictly validated Ogg Opus voice parser (CRC, single stream, continuation, OpusHead/Tags, size/packet/duration caps) + mutation tests | sonnet (worktree) | `crates/core/src/voice.rs` | done, merged; lead re-ran core tests + e2e_chat (voice) |
 | 34g | Core: chats + "You" saved items sync between own devices over tinline/self/1 (dm shards, You doc, blobs on demand) | sonnet (worktree) | `crates/core` | stopped by user; WIP 3083577 on task-34g-chatsync |
-| 34h | Platforms: linking UI (QR show/scan, code confirm, approve with passphrase/device auth, syncing, linked devices rename/unlink, unlinked screen) per canvas | sonnet x2 (worktrees) | `android/`, `crates/desktop` | desktop done, merged; Android stopped by user at a995fa5 (branch task-34h-android, unverified) |
+| 34h | Platforms: linking UI (QR show/scan, code confirm, approve with passphrase/device auth, syncing, linked devices rename/unlink, unlinked screen) per canvas | sonnet x2 (worktrees) | `android/`, `crates/desktop` | done, merged (desktop + Android); lead verified Android on emulator with scripts/e2e_android_link.py (26/26, both directions, wrong pass, cancel, unlink), Kotlin unit tests, Rust tests, clippy |
 
 ## Roadmap (after the redesign)
 

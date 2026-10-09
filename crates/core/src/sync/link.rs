@@ -11,7 +11,7 @@ use iroh::endpoint::{Accepting, Connection, Endpoint, RecvStream, SendStream};
 use proto::link::{self as pl, LinkMsg, LinkQr, LinkRole};
 use tokio::sync::mpsc;
 
-use crate::node::{Inner, Me, addr_for, now, relay_of};
+use crate::node::{Inner, Me, addr_for, now, relay_within};
 use crate::store::{Disk, OwnDevice, ProfileV2, State};
 use crate::vault::{self, Secrets};
 use crate::Error;
@@ -19,6 +19,8 @@ use crate::Error;
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
 const DONE_TIMEOUT: Duration = Duration::from_secs(60);
 const APPROVE_TIMEOUT: Duration = Duration::from_secs(300);
+/// How long a QR waits for a just-started endpoint to know its relay.
+const QR_RELAY_WAIT: Duration = Duration::from_secs(8);
 
 pub(crate) enum LinkCmd {
     Approve,
@@ -135,7 +137,7 @@ impl Inner {
         let me = self.me()?;
         let ep = self.endpoint()?;
         let (id, _tx, rx) = self.reserve_link()?;
-        let qr = pl::new_link_qr(me.device, relay_of(&ep), now(), ttl_secs());
+        let qr = pl::new_link_qr(me.device, relay_within(&ep, QR_RELAY_WAIT), now(), ttl_secs());
         let text = qr.to_text();
         let label = self.shared.lock().device_label.clone().unwrap_or_default();
         let run = LinkRun { id, is_e: true, scanner: false, qr, my_device: me.device, label, rx, fresh: None, epoch: me.epoch };
@@ -165,7 +167,7 @@ impl Inner {
         self.require_no_account()?;
         let (id, _tx, rx) = self.reserve_link()?;
         let device = proto::device_public(&secret);
-        let qr = pl::new_link_qr(device, relay_of(&ep), now(), ttl_secs());
+        let qr = pl::new_link_qr(device, relay_within(&ep, QR_RELAY_WAIT), now(), ttl_secs());
         let text = qr.to_text();
         let run = LinkRun { id, is_e: false, scanner: false, qr, my_device: device, label: proto::sanitize_name(&label), rx, fresh: Some((secret, ep.clone())), epoch: 0 };
         self.arm_pending(id, run);
