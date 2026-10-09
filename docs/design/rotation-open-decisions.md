@@ -4,8 +4,7 @@ Status: coordinator digest, 2026-10-10. Collects the policy questions raised by 
 packets. Nothing here is decided. "Coordinator lean" lines are recommendations to evaluate,
 not selections. Source documents hold the evidence and tests; read them before answering.
 
-Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, K1, C3. Still running/queued:
-G-H, G-B, G-C (their questions get appended when they land).
+Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, G-H, K1, C3. Still running/queued: G-B, G-C (their questions get appended when they land).
 
 ## 1. Highest leverage (unblock the most work)
 
@@ -178,4 +177,12 @@ Also: should a DID-attested key seen on a live session be accepted for verifying
 the stored device list lacks it? (root of bug 1)
 
 ## 6. Group chat (D01–D06)
-G-B (candidate oracles for D01–D05) runs after G-H. D06's rotation side is Q4 above.
+G-B (candidate oracles for D01–D05) is running. D06's rotation side is Q4 above.
+From G-H (group-sim hardening; 24 → 35 tests, fixed two simulator bugs: bulk repair in ID order
+overflowed the pending bound; seeded RNG ignored the seed):
+1. How does a member whose host binding expired while both were offline rejoin? (tests use an
+   explicit re-bootstrap fixture; same question as E1 Q2)
+2. Should an envelope promoted from pending that then fails validation be reported instead of
+   silently dropped?
+3. Sync must send in causal order or retry on `Limit` (receivers don't keep refused envelopes) —
+   accept as a protocol requirement?

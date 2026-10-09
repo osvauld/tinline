@@ -64,21 +64,29 @@ branch and commit only owned files; coordinator merges.
 
 | Packet | Batch | State | Owner | Owned files |
 |---|---|---|---|---|
-| A1 | 1 | READY | unclaimed | docs/design/rotation-baseline-report.md |
-| B1 | 1 | READY | unclaimed | tests/rotation_history_paging.rs, rotation-history-policy-options.md |
-| C1 | 1 | READY | unclaimed | tests/rotation_time_contracts.rs, rotation-time-contract.md |
-| D1 | 1 | READY | unclaimed | rotation-author-key-trace.md |
-| A2 | 2 | READY | unclaimed | rotation-lifecycle-hooks.md |
-| B2 | 2 | READY | unclaimed | tests/rotation_history_adversarial.rs |
-| C3 | 2 | READY | unclaimed | tests/rotation_challenge_contracts.rs, rotation-challenge-options.md |
-| E1 | 2 | READY | unclaimed | rotation-linked-discovery-options.md, scripts/test_rotation_linked_discovery_options.py |
-| B3 | 3 | READY | unclaimed | tests/rotation_fork_revocation.rs, rotation-fork-revocation-options.md |
-| C2 | 3 | READY | unclaimed | tests/rotation_storage_contracts.rs, rotation-storage-failure-contract.md |
-| D2 | 3 | WAIT D1 | unclaimed | rotation-author-group-adapter.md |
-| G-A | 1 | READY | unclaimed | docs/group-sim-coverage-audit.md |
-| G-B | 2 | READY | unclaimed | group-sim/src/policy_candidates.rs, docs/group-policy-options.md |
-| G-C | 3 | WAIT C2 | unclaimed | group-sim/src/persistence.rs, docs/group-persistence-contract.md |
+| A1 | 1 | MERGED | rot/a1 56e774b; p2pcore 121 passed; O1–O8 findings | docs/design/rotation-baseline-report.md |
+| B1 | 1 | MERGED | rot/b1 02792b5; 12 tests | tests/rotation_history_paging.rs, rotation-history-policy-options.md |
+| C1 | 1 | MERGED | rot/c1 f2ca695; 19 tests | tests/rotation_time_contracts.rs, rotation-time-contract.md |
+| D1 | 1 | MERGED | rot/d1 502d90f; doc | rotation-author-key-trace.md |
+| A2 | 2 | MERGED | rot/a2 d348b11; doc | rotation-lifecycle-hooks.md |
+| B2 | 2 | MERGED | rot/b2 ba3fdea; 14 tests (analysis in rotation-open-decisions Q5) | tests/rotation_history_adversarial.rs |
+| C3 | 2 | MERGED | rot/c3 dc7157d; 14 tests | tests/rotation_challenge_contracts.rs, rotation-challenge-options.md |
+| E1 | 2 | MERGED | rot/e1 fd7b917; 14 python tests | rotation-linked-discovery-options.md, scripts/test_rotation_linked_discovery_options.py |
+| B3 | 3 | MERGED | rot/b3 49e40b2; 15 tests | tests/rotation_fork_revocation.rs, rotation-fork-revocation-options.md |
+| C2 | 3 | MERGED | rot/c2 73945dc; 13 tests | tests/rotation_storage_contracts.rs, rotation-storage-failure-contract.md |
+| D2 | 3 | MERGED | rot/d2 f248eb9; doc | rotation-author-group-adapter.md |
+| G-A | 1 | MERGED | rot/ga f8bca01; audit doc | docs/group-sim-coverage-audit.md |
+| G-B | 2 | RUNNING | rot/gb from 72d03a3 | group-sim/src/policy_candidates.rs, docs/group-policy-options.md |
+| G-C | 3 | RUNNING | rot/gc from 9e6bbb5 | group-sim/src/persistence.rs, docs/group-persistence-contract.md |
+| G-H | 3 | MERGED | rot/gh a60e8f8; group-sim 24→35, 2 sim bugs fixed | group-sim sources + README |
+| K1 | 3 | MERGED | rot/k1 77ab375; 8 core tests, confirmed restore bugs | crates/core/tests/rotation_restore_characterization.rs |
 | G-D | later | WAIT B1,B3 + decisions | unclaimed | group-sim/src/reachability.rs |
+
+Coordinator verification after each merge: owned-files-only diff, reran the packet's tests in
+the coordinator checkout (counts above). Note: shared CARGO_TARGET_DIR can run stale binaries
+from other worktrees — `touch` the crate sources before verifying group-sim.
+
+User decisions are collected in `rotation-open-decisions.md`.
 
 ## Per-agent result entries
 
