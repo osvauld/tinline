@@ -184,7 +184,7 @@ fn run() -> Result<(), String> {
     }
     node.set_chat_events(Arc::new(ChatPrinter::default()));
     match rest.as_slice() {
-        ["link-serve"] => link_serve(&node, &o, rx),
+        ["link-serve"] => link_serve(&node, &o, rx)?,
         ["chat-send", who, text] => {
             start_online(&node)?;
             let did = find(&node, who)?;

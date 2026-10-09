@@ -138,8 +138,8 @@ def main():
         c.ok("N linked", n.wait(r"^LINK_DONE", 40, m_n) is not None)
         c.ok("N committed", n.last("commit").startswith("OK"))
         n_who = n.last("whoami").split()
-        c.ok("same DID", n_who[1] == e_did)
-        c.ok("devices differ", n_who[2] != e.last("whoami").split()[2])
+        c.ok("same DID", n_who[2] == e_did)
+        c.ok("devices differ", n_who[3] != e.last("whoami").split()[3])
 
         # Data arrives by own-device sync.
         def has_contact():
@@ -167,7 +167,7 @@ def main():
         a.cmd(f"hangup {call3}")
 
         # Unlink.
-        n_dev = n_who[2]
+        n_dev = n_who[3]
         c.ok("unlink", e.last(f"unlink {n_dev}").startswith("OK"))
         c.ok("N drops the account", n.wait(r"^UNLINKED", 40, m_n) is not None)
     finally:
