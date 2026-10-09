@@ -4,8 +4,8 @@ Status: coordinator digest, 2026-10-10. Collects the policy questions raised by 
 packets. Nothing here is decided. "Coordinator lean" lines are recommendations to evaluate,
 not selections. Source documents hold the evidence and tests; read them before answering.
 
-Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A. Still running/queued: C3,
-K1, G-H, G-B, G-C (their questions get appended when they land).
+Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, K1. Still running/queued: C3,
+G-H, G-B, G-C (their questions get appended when they land).
 
 ## 1. Highest leverage (unblock the most work)
 
@@ -142,13 +142,26 @@ Sources: `rotation-baseline-report.md` §4–5; `rotation-author-key-trace.md` �
 3. Where should blocked contacts be filtered from address updates (nothing filters on the
    sending side today)?
 
-## 5. Possible bugs in the shipped product (no rotation needed)
-Source: A1 O1–O5, D1 §7. Restore-over-existing already changes the device key.
-- Cached contact ticket is reused after the device key changes and cannot be redeemed.
-- Unacked messages from before restore may be stranded; ticks may be wrong; a contact's other
-  devices may fail to verify our pre-restore history once our old key drops off our list.
-K1 is writing characterization tests to confirm or refute these. Decision after K1: fix now
-on `dev` (separately from rotation) or defer?
+## 5. CONFIRMED bugs in the shipped product (no rotation needed)
+Source: `crates/core/tests/rotation_restore_characterization.rs` (K1; 8 tests, real iroh,
+`// KIND: limitation` tests assert today's wrong behaviour). Restore-from-phrase on an existing
+install already changes the device key, and:
+1. **Chat stall (worst):** if a contact holds our signed device list and we had an unacked
+   message at restore time, the contact rejects our history ("signature does not verify") and
+   NO further chat from us reaches them (pending and new messages). Root cause: the contact's
+   device list for us still names only the old key and is not updated from the live session.
+2. **Dead ticket:** after restore (same display name) `my_ticket()` hands out the cached ticket
+   naming the old key; redeeming it times out and creates no contact.
+3. **Contact's other device** rejects our pre-restore messages relayed by its sibling once it
+   learned our new device list.
+4. **Ticks:** pre-restore messages go Delivered → Pending after restore.
+5. **Verified flag** cleared on the contact's side (safety numbers unchanged — DID-only).
+Not tested: O5 (old self entry tombstoned on restore).
+Decision: fix 1–4 now on `dev` as a separate bugfix task (independent of rotation design), or
+defer? Coordinator lean: fix 1 and 2 now; they are small, user-visible and rotation would make
+them happen constantly. 3–5 depend on G-KEYS/G-HISTORY and the verified-flag policy (§4.1).
+Also: should a DID-attested key seen on a live session be accepted for verifying history when
+the stored device list lacks it? (root of bug 1)
 
 ## 6. Group chat (D01–D06)
 G-B (candidate oracles for D01–D05) runs after G-H. D06's rotation side is Q4 above.
