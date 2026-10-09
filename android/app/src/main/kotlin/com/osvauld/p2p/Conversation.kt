@@ -10,6 +10,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -266,6 +271,7 @@ fun ConversationScreen(
                             r.m, name, link, online, nowMs, progress, requested, byId, source,
                             selected = actionsFor == r.m.id,
                             onLong = { if (!r.m.deleted) actionsFor = r.m.id },
+                            onReply = { editing = null; replying = r.m.id },
                             onDownload = { download(r.m) }, onCancel = { cancel(r.m) }, onOpenPhoto = { viewer = r.m.id }, onSaveFile = { saveToPhone(r.m) },
                             onOpenFile = { openFile(r.m) }, broken = r.m.id in brokenImages, onBroken = { if (r.m.id !in brokenImages) brokenImages.add(r.m.id) },
                         )
@@ -403,14 +409,33 @@ private fun BannerLine(text: String) =
 private fun Bubble(
     m: Message, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: List<String>,
     byId: Map<String, Message>, source: ChatSource, selected: Boolean,
-    onLong: () -> Unit, onDownload: () -> Unit, onCancel: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
+    onLong: () -> Unit, onReply: () -> Unit, onDownload: () -> Unit, onCancel: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
     onOpenFile: () -> Unit, broken: Boolean, onBroken: () -> Unit,
 ) {
     val c = Tin.c
     val out = m.outgoing
     val shape = RoundedCornerShape(18.dp, 18.dp, if (out) 6.dp else 18.dp, if (out) 18.dp else 6.dp)
     val first = firstName(name)
-    Box(Modifier.fillMaxWidth(), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
+    var drag by remember(m.id) { mutableFloatStateOf(0f) }
+    val threshold = with(LocalDensity.current) { 64.dp.toPx() }
+    val replyAction by rememberUpdatedState(onReply)
+    val swipe = if (m.deleted) Modifier else Modifier.pointerInput(m.id, threshold) {
+        detectHorizontalDragGestures(
+            onDragEnd = {
+                if (drag >= threshold) replyAction()
+                drag = 0f
+            },
+            onDragCancel = { drag = 0f },
+        ) { change, amount ->
+            if (drag > 0f || amount > 0f) {
+                change.consume()
+                drag = (drag + amount).coerceIn(0f, threshold * 1.4f)
+            }
+        }
+    }
+    Box(Modifier.fillMaxWidth().then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
+        if (drag > 0f) Icon(Icons.AutoMirrored.Rounded.Reply, "Reply", tint = c.pr,
+            modifier = Modifier.align(Alignment.CenterStart).size(24.dp))
         if (m.deleted) {
             Column(
                 Modifier.widthIn(max = 290.dp).clip(shape).let { if (out) it.border(1.dp, c.ln2, shape) else it }.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
@@ -427,7 +452,9 @@ private fun Bubble(
         val bg = if (out) c.prc else c.sf
         val fg = if (out) c.onPrc else c.ink
         Column(
-            Modifier.widthIn(max = 290.dp).clip(shape).background(bg).let { if (!out) it.border(1.dp, c.ln, shape) else it }
+            Modifier.offset { IntOffset(drag.roundToInt(), 0) }.widthIn(max = 290.dp)
+                .let { if (a == null) it.width(IntrinsicSize.Max) else it }
+                .clip(shape).background(bg).let { if (!out) it.border(1.dp, c.ln, shape) else it }
                 .let { if (selected) it.border(3.dp, c.pr, shape) else it }
                 .combinedClickable(onClick = {}, onLongClick = onLong)
                 .padding(if (photo) PaddingValues(4.dp) else PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp)),
@@ -435,11 +462,14 @@ private fun Bubble(
             m.replyTo?.let { rid ->
                 val q = byId[rid]
                 Column(
-                    Modifier.padding(bottom = 6.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(if (out) Color.White.copy(alpha = .45f) else c.bg)
-                        .padding(start = 11.dp, top = 4.dp, end = 8.dp, bottom = 4.dp).drawLeftBar(c.pr),
+                    Modifier.padding(bottom = 8.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                        .background(if (out) Color.White.copy(alpha = .22f) else c.bg)
+                        .drawLeftBar(c.pr).padding(start = 12.dp, top = 7.dp, end = 10.dp, bottom = 7.dp),
                 ) {
                     Text(if (q == null) "Earlier message" else if (q.outgoing) "You" else first, style = TinType.caption.copy(fontWeight = FontWeight.Bold), color = c.pr)
-                    if (q != null) Text(ChatNotifier.previewOf(q), style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(q?.let { ChatNotifier.previewOf(it) } ?: "Message unavailable",
+                        style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp),
+                        color = fg.copy(alpha = .8f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             if (a != null) when {

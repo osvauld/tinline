@@ -350,6 +350,8 @@ fun WordGrid(phrase: String) {
 
 @Composable
 fun PhraseScreen(phrase: String, onNext: () -> Unit) {
+    val ctx = LocalContext.current
+    var copied by remember { mutableStateOf(false) }
     StepFrame(3, null, footer = { TinButton("I’ve written them down", onNext) }) {
         H1("Write down these 24 words")
         Text(buildAnnotatedString {
@@ -357,6 +359,11 @@ fun PhraseScreen(phrase: String, onNext: () -> Unit) {
             append(" your Tinline account. If you lose this phone, they bring it back. Anyone who has them can pretend to be you.")
         }, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 22.sp), color = Tin.c.ink2)
         WordGrid(phrase)
+        TinButton(if (copied) "Copied" else "Copy recovery phrase", {
+            copyToClipboard(ctx, "Recovery phrase", phrase)
+            copied = true
+        }, style = BtnStyle.Outlined)
+        Hint("Paste only into a trusted password manager; the clipboard contains your account key.")
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Lock, null, tint = Tin.c.ink2, modifier = Modifier.size(16.dp))
             Hint("Paper is safest. Screenshots are blocked here.")

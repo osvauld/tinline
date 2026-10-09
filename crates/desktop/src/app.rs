@@ -305,6 +305,7 @@ enum Msg {
     Revealed(Result<String, String>),
     ToggleChange,
     HidePhrase,
+    CopyPhrase,
     PhraseSaved,
     Started(Result<(), String>),
     Ticket(Result<String, String>),
@@ -1411,6 +1412,18 @@ impl App {
                     self.ticket = Some(t);
                 }
                     Err(e) => self.notice = Some(format!("Ticket: {e}")),
+                }
+            }
+            Msg::CopyPhrase => {
+                let phrase = if self.screen == Screen::Phrase {
+                    self.new_phrase.as_ref()
+                } else {
+                    self.revealed.as_ref()
+                };
+                if let Some(phrase) = phrase {
+                    let text = phrase.to_string();
+                    self.notice = Some("Recovery phrase copied. Paste only into a trusted password manager.".into());
+                    return clipboard::write(text);
                 }
             }
             Msg::CopyTicket => {
