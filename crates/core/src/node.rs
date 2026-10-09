@@ -820,6 +820,7 @@ impl Node {
         if !matches!(self.inner.shared.lock().disk, Some(Disk::V2(_))) {
             return;
         }
+        self.inner.link_cancel();
         let inner = self.inner.clone();
         self.run_lifecycle(async move {
             {

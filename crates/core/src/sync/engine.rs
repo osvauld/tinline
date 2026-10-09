@@ -504,6 +504,26 @@ impl Inner {
         }
     }
 
+    /// For tests: a bare `Auth` exchange with `device`, as whoever we are.
+    pub(crate) async fn self_probe(self: &Arc<Self>, device: [u8; 32]) -> Result<(), Error> {
+        let me = self.me()?;
+        let ep = self.endpoint()?;
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr_for(&device, None)?, proto::SELF_ALPN))
+            .await
+            .map_err(|_| Error::Timeout)?
+            .map_err(Error::net)?;
+        let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
+        let mut writer = FrameWriter(send);
+        let mut reader = FrameReader::new(recv);
+        writer.send(&SelfMsg::Auth { attestation: me.attestation.clone(), relay: None, unlink: false }).await?;
+        let r = tokio::time::timeout(Duration::from_secs(5), reader.recv::<SelfMsg>()).await;
+        conn.close(0u32.into(), b"probe");
+        match r {
+            Ok(Ok(Some(SelfMsg::Auth { .. }))) => Ok(()),
+            _ => Err(Error::Protocol("refused".into())),
+        }
+    }
+
     /// Tells a removed device that it is (so it drops the account), if it can be reached:
     /// authenticates as one of its own devices, sends `Unlinked`, waits briefly.
     pub(crate) async fn send_unlinked(self: &Arc<Self>, device: [u8; 32], relay: Option<String>) {

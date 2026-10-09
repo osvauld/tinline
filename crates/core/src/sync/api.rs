@@ -182,6 +182,15 @@ impl Node {
         self.local_auth(passphrase)?;
         if dev == me.device {
             self.inner.not_in_call()?;
+            // Tell the others first (best effort: they stop dialling this device), then go.
+            {
+                let mut s = self.inner.shared.lock();
+                if let Some(e) = s.state.registry.iter_mut().find(|e| e.device == dev) {
+                    e.removed = true;
+                }
+            }
+            let _ = self.inner.persist_for(Some(me.epoch));
+            std::thread::sleep(std::time::Duration::from_millis(500));
             let inner = self.inner.clone();
             let epoch = me.epoch;
             return self.block_on(async move {
@@ -206,5 +215,39 @@ impl Node {
             ev.on_devices_changed();
         }
         Ok(())
+    }
+
+}
+
+impl Node {
+    /// For tests: the redeemed ticket nonces.
+    #[doc(hidden)]
+    pub fn redeemed_for_test(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.inner.shared.lock().state.redeemed.iter().cloned().collect();
+        v.sort();
+        v
+    }
+
+    /// For tests: the blocked DIDs.
+    #[doc(hidden)]
+    pub fn blocked_for_test(&self) -> Vec<String> {
+        let mut v: Vec<String> = self.inner.shared.lock().state.blocked.iter().cloned().collect();
+        v.sort();
+        v
+    }
+
+    /// For tests: dials `device` on `tinline/self/1` as this node and reports whether the peer
+    /// accepted us (answered with its `Auth`).
+    #[doc(hidden)]
+    pub fn self_probe_for_test(&self, device: String) -> bool {
+        let Ok(dev) = proto::device_from_text(&device) else { return false };
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.self_probe(dev).await.is_ok() }).unwrap_or(false)
+    }
+
+    /// For tests: forget the dial backoff and dial now.
+    #[doc(hidden)]
+    pub fn sync_now_for_test(&self) {
+        self.inner.sync_kick();
     }
 }
