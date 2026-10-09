@@ -1,0 +1,15 @@
+[package]
+name = "group-sim"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+identity.workspace = true
+proto.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ed25519-dalek = "2"
+blake3 = "1"
+loro = "1.13.9"
