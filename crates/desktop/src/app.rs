@@ -979,6 +979,7 @@ impl App {
                 if let Some(c) = self.call.as_mut() {
                     c.stats = self.node.call_stats();
                 }
+                return self.link_drive();
             }
             Msg::WindowOpened(id) => return window::scale_factor(id).map(Msg::Scale),
             Msg::Scale(f) => ui::set_scale(f),
@@ -1104,6 +1105,7 @@ impl App {
                         self.return_to = None;
                         if std::mem::take(&mut self.link_joined) {
                             // Linked: no recovery phrase to show; contacts and history follow.
+                            crate::tlog!("LINK_SAVED");
                             self.screen = Screen::LinkSync;
                             return self.start_node();
                         }

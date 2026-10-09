@@ -99,6 +99,7 @@ impl App {
             return;
         }
         self.linked = self.node.linked_devices().into_iter().filter(|d| !d.removed).collect();
+        crate::tlog!("LINKED_DEVICES {}", self.linked.iter().map(|d| format!("{}{}", d.label, if d.this_device { "*" } else { "" })).collect::<Vec<_>>().join(","));
     }
 
     /// Leaves the link screens for where the user came from.
@@ -458,5 +459,96 @@ impl App {
             _ => {}
         }
         Task::none()
+    }
+}
+
+/// Test-hooks only: drives the linking screens from the environment so the e2e check needs no
+/// clicks. `P2P_LINK_AUTO=new|existing`, `P2P_LINK_PASTE_FILE` (a file holding the other side's
+/// `OSVL1:` code, polled), `P2P_LINK_NEWPASS` (passphrase to protect the linked account),
+/// `P2P_LINK_UNLINK=<file>` (existing side: once the file exists, unlink the first other device).
+#[cfg(feature = "test-hooks")]
+impl App {
+    pub(super) fn link_drive(&mut self) -> Task<Msg> {
+        use std::sync::atomic::AtomicU32;
+        static UNLINK_STEP: AtomicU32 = AtomicU32::new(0);
+        static STARTED: AtomicBool = AtomicBool::new(false);
+        use std::sync::atomic::AtomicBool;
+        let Some(mode) = crate::test_env("P2P_LINK_AUTO") else { return Task::none() };
+        if self.busy {
+            return Task::none();
+        }
+        let pass = crate::test_env("P2P_PASSPHRASE").or_else(|| crate::test_env("P2P_LINK_NEWPASS")).unwrap_or_default();
+        match self.screen {
+            Screen::Onboarding if mode == "new" && !STARTED.swap(true, Ordering::SeqCst) => return self.update(Msg::LinkStartNew),
+            Screen::Home | Screen::Settings if mode == "existing" && self.status.started && !STARTED.swap(true, Ordering::SeqCst) => {
+                return self.update(Msg::LinkStartExisting)
+            }
+            Screen::Link => match self.link.step.clone() {
+                Step::Name => return self.update(Msg::LinkNameGo),
+                Step::Qr => {
+                    if let Some(code) = crate::test_env("P2P_LINK_PASTE_FILE").and_then(|p| std::fs::read_to_string(p).ok()) {
+                        if code.trim().starts_with("OSVL1:") && self.link.qr.is_some() {
+                            self.link.paste = code.trim().to_string();
+                            return self.update(Msg::LinkPasteGo);
+                        }
+                    }
+                }
+                Step::Code if self.link.role == Role::Existing => {
+                    self.link.pass = Zeroizing::new(pass);
+                    return self.update(Msg::LinkApprove);
+                }
+                Step::Done if crate::test_env("P2P_LINK_UNLINK").is_some() => return self.update(Msg::LinkDoneOk),
+                _ => {}
+            },
+            Screen::LinkSecure => {
+                self.pass_in = Zeroizing::new(crate::test_env("P2P_LINK_NEWPASS").unwrap_or_default());
+                return self.update(Msg::LinkSecureGo);
+            }
+            Screen::Settings
+                if self.settings_tab == 1
+                    && crate::test_env("P2P_LINK_UNLINK").is_some_and(|p| std::path::Path::new(&p).exists()) =>
+            {
+                if let Some(d) = self.linked.iter().find(|d| !d.this_device).map(|d| d.device.clone()) {
+                    match UNLINK_STEP.fetch_add(1, Ordering::SeqCst) {
+                        0 => return self.update(Msg::UnlinkAsk(d)),
+                        1 => {
+                            self.link.pass = Zeroizing::new(pass);
+                            return self.update(Msg::UnlinkGo);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
+        Task::none()
+    }
+}
+
+#[cfg(not(feature = "test-hooks"))]
+impl App {
+    pub(super) fn link_drive(&mut self) -> Task<Msg> {
+        Task::none()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_core_reason_has_its_own_words() {
+        let generic = failure_text("something else");
+        for r in ["expired", "cancelled", "rejected", "bad_proof", "mismatch", "timeout", "net", "locked", "busy", "bad_grant", "account_exists"] {
+            assert_ne!(failure_text(r), generic, "{r}");
+        }
+    }
+
+    #[test]
+    fn the_qr_countdown_stops_at_zero() {
+        let mut l = LinkState::new(Role::New);
+        assert!(l.remaining() <= l.ttl && l.remaining() > 0);
+        l.started = Instant::now() - Duration::from_secs(l.ttl + 30);
+        assert_eq!(l.remaining(), 0);
     }
 }

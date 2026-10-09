@@ -166,6 +166,31 @@ mod tests {
     }
 
     #[test]
+    fn finish_link_saves_the_key_or_takes_a_passphrase() {
+        // No passphrase: key saved, then committed (and a failed save leaves nothing on disk).
+        let d = dir("link-nopass");
+        let st = Mem::default();
+        let node = open(&d);
+        node.create_identity("Ann".into(), String::new()).unwrap();
+        st.fail.store(true, Ordering::SeqCst);
+        assert!(matches!(finish_link(&st, &d, &node, Some(String::new())), Err(SetupErr::KeyNotSaved(_))));
+        assert!(!node.identity_committed());
+        st.fail.store(false, Ordering::SeqCst);
+        finish_link(&st, &d, &node, None).unwrap();
+        assert!(node.identity_committed());
+
+        // Passphrase: no remembered key is needed, even without a keyring.
+        let d = dir("link-pass");
+        let node = open(&d);
+        node.create_identity("Bo".into(), String::new()).unwrap();
+        finish_link(&keystore::Unavailable, &d, &node, Some("a long passphrase".into())).unwrap();
+        assert!(node.identity_committed());
+        drop(node);
+        let node = open(&d);
+        node.unlock("a long passphrase".into()).unwrap();
+    }
+
+    #[test]
     fn switch_remove_and_in_call_style_errors() {
         let d = dir("switch");
         let st = Mem::default();
