@@ -4,7 +4,7 @@ Status: coordinator digest, 2026-10-10. Collects the policy questions raised by 
 packets. Nothing here is decided. "Coordinator lean" lines are recommendations to evaluate,
 not selections. Source documents hold the evidence and tests; read them before answering.
 
-Packets merged so far: A1, A2, B1, B2, B3, C1, D1, D2, E1, G-A. Still running/queued: C2, C3,
+Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A. Still running/queued: C3,
 K1, G-H, G-B, G-C (their questions get appended when they land).
 
 ## 1. Highest leverage (unblock the most work)
@@ -113,6 +113,25 @@ Source: `rotation-lifecycle-hooks.md` §6–7.
    `resumed()` entry point + Android hooks (onStartCommand, network callback, ON_RESUME)?
 3. Rotating while unlocked needs a new vault "re-seal under existing data key" function;
    otherwise the remembered Keystore unlock key breaks. Accept adding it?
+
+## 3b. Storage ordering and failure (G-STORAGE, G-RETIREMENT)
+Source: `rotation-storage-failure-contract.md` §8; `crates/proto/tests/rotation_storage_contracts.rs`.
+
+Tested: crashing before/after every sender step never reuses a generation, never revives a
+retired key, never serves the old key past its deadline. Announcing before commit (two keys for
+one generation) and acking before commit (lost update) are shown as broken orderings.
+Source finding: a real rotation commit would span `account.json` (vault secret, device_public)
+and `account.redb` (registry); no single atomic write covers both today.
+1. CommitFirst vs PendingThenPromote (two-phase)? Is a small journal acceptable for cross-file
+   atomicity?
+2. Replacement endpoint fails to start: FailClosed (outage) vs DegradedGrace (old key serves until
+   min(deadline + grace, signed expiry), shown to the user)? What grace?
+3. Open sessions at retirement: Terminate vs bounded overlap. Either way a long call is cut —
+   is a dropped call at rotation acceptable for v1? (Coordinator lean: yes for v1, schedule
+   rotation to avoid active calls if cheap.)
+4. Wipe the old secret earlier than RetireOld? What if RetireOld keeps failing?
+5. Must per-peer acked generations be durable?
+6. Forced transport restart acceptable when closing the old endpoint fails?
 
 ## 4. Product semantics
 Sources: `rotation-baseline-report.md` §4–5; `rotation-author-key-trace.md` §6.
