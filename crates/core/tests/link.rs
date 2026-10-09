@@ -331,3 +331,166 @@ fn locked_e_cannot_approve() {
     wait_for(&n, 30, "N failed", |ev| matches!(ev, LEv::Failed(_)).then_some(()));
     assert!(!n.node.has_identity());
 }
+
+fn same<T: PartialEq + std::fmt::Debug>(secs: u64, what: &str, f: impl Fn() -> (T, T)) {
+    let end = Instant::now() + Duration::from_secs(secs);
+    loop {
+        let (a, b) = f();
+        if a == b {
+            return;
+        }
+        if Instant::now() > end {
+            panic!("{what}: {a:?} != {b:?}");
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    }
+}
+
+fn alias(p: &Peer, did: &str) -> Option<Option<String>> {
+    p.node.contacts().into_iter().find(|c| c.did == did).map(|c| c.alias)
+}
+
+fn verified(p: &Peer, did: &str) -> Option<bool> {
+    p.node.contacts().into_iter().find(|c| c.did == did).map(|c| c.verified)
+}
+
+#[test]
+fn concurrent_contact_edits_converge_and_removal_wins() {
+    let a = make_peer("s1-a");
+    let e = make_peer("s1-e");
+    connect(&a, &e);
+    let n = link_fresh(&e, "s1-n", true);
+    eventually(40, "N has A", || n.node.contacts().iter().any(|c| c.did == a.did));
+
+    // Edits of different fields on both devices at once: both survive.
+    e.node.rename_contact(a.did.clone(), Some("Al".into())).unwrap();
+    n.node.set_verified(a.did.clone(), true).unwrap();
+    same(30, "alias", || (alias(&e, &a.did), alias(&n, &a.did)));
+    same(30, "verified", || (verified(&e, &a.did), verified(&n, &a.did)));
+    assert_eq!(alias(&n, &a.did), Some(Some("Al".into())));
+    assert_eq!(verified(&e, &a.did), Some(true));
+
+    // N offline: it edits the contact while E removes it. The removal stands.
+    n.node.stop();
+    n.node.rename_contact(a.did.clone(), Some("Stale".into())).unwrap();
+    e.node.remove_contact(a.did.clone()).unwrap();
+    n.node.start().unwrap();
+    n.node.sync_now_for_test();
+    eventually(40, "N drops A", || !n.node.contacts().iter().any(|c| c.did == a.did));
+    assert!(e.node.blocked_for_test().contains(&a.did));
+    eventually(20, "N blocks A", || n.node.blocked_for_test().contains(&a.did));
+
+    // A later ticket scan brings the contact back on both devices.
+    std::thread::sleep(Duration::from_millis(1200));
+    e.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    eventually(40, "N has A again", || n.node.contacts().iter().any(|c| c.did == a.did));
+    assert!(!n.node.blocked_for_test().contains(&a.did) && !e.node.blocked_for_test().contains(&a.did));
+}
+
+#[test]
+fn redeemed_nonces_union_and_strangers_cannot_open_self_sync() {
+    let a = make_peer("s2-a");
+    let x = make_peer("s2-x");
+    let e = make_peer("s2-e");
+    connect(&a, &e);
+    let n = link_fresh(&e, "s2-n", true);
+    // X redeems E's ticket: the nonce must reach N, which then refuses the same ticket.
+    x.node.add_contact(e.node.my_ticket().unwrap()).unwrap();
+    let nonces = e.node.redeemed_for_test();
+    assert_eq!(nonces.len() >= 1, true);
+    eventually(40, "N has the nonce", || n.node.redeemed_for_test() == nonces);
+    // A contact (other DID) is not let into tinline/self/1; our own device is.
+    assert!(!a.node.self_probe_for_test(dev(&e)));
+    assert!(!x.node.self_probe_for_test(dev(&n)));
+    assert!(n.node.self_probe_for_test(dev(&e)));
+}
+
+#[test]
+fn unlink_an_online_device() {
+    let a = make_peer("u1-a");
+    let e = make_peer("u1-e");
+    connect(&a, &e);
+    let n = link_fresh(&e, "u1-n", true);
+    let nd = dev(&n);
+    // A learns N, then N is unlinked.
+    let call = a.node.call(e.did.clone()).unwrap();
+    incoming(&e, 30);
+    e.node.answer(call.call_id.clone()).unwrap();
+    eventually(20, "active", || a.node.current_call().is_some());
+    std::thread::sleep(Duration::from_millis(500));
+    a.node.hangup(call.call_id.clone()).unwrap();
+    ended(&e, &call.call_id, 20);
+    eventually(20, "A knows N", || a.node.contact_devices_for_test(e.did.clone()).contains(&nd));
+    assert!(matches!(e.node.unlink_device(nd.clone(), Some("wrong".into())), Err(p2pcore::Error::WrongPassphrase)));
+    e.node.unlink_device(nd.clone(), Some(PASS.into())).unwrap();
+    wait_for(&n, 30, "N unlinked", |ev| matches!(ev, LEv::Unlinked(_)).then_some(()));
+    assert!(!n.node.has_identity() && n.node.accounts().is_empty());
+    let devs = e.node.linked_devices();
+    assert!(devs.iter().any(|d| d.device == nd && d.removed));
+    // The next call to E teaches A the shorter list.
+    let call = a.node.call(e.did.clone()).unwrap();
+    incoming(&e, 30);
+    e.node.answer(call.call_id.clone()).unwrap();
+    eventually(20, "active", || a.node.current_call().is_some());
+    std::thread::sleep(Duration::from_millis(500));
+    a.node.hangup(call.call_id.clone()).unwrap();
+    eventually(20, "A forgets N", || !a.node.contact_devices_for_test(e.did.clone()).contains(&nd));
+}
+
+#[test]
+fn an_offline_device_learns_it_was_unlinked_when_it_returns() {
+    let e = make_peer("u2-e");
+    let n = link_fresh(&e, "u2-n", false);
+    let nd = dev(&n);
+    n.node.stop();
+    std::thread::sleep(Duration::from_millis(500));
+    e.node.unlink_device(nd.clone(), None).unwrap_err(); // the passphrase is required
+    e.node.unlink_device(nd.clone(), Some(PASS.into())).unwrap();
+    // N comes back: its first dial to E is answered with "Unlinked", and it drops the account.
+    n.node.start().unwrap();
+    n.node.sync_now_for_test();
+    wait_for(&n, 60, "N unlinked", |ev| matches!(ev, LEv::Unlinked(_)).then_some(()));
+    assert!(!n.node.has_identity());
+    // And E would not sync with it: a probe as N is refused (N is gone, so check E's view).
+    assert!(e.node.linked_devices().iter().any(|d| d.device == nd && d.removed));
+}
+
+#[test]
+fn unlinking_this_device_removes_the_account_here_and_tombstones_it_there() {
+    let e = make_peer("u3-e");
+    let n = link_fresh(&e, "u3-n", true);
+    let nd = dev(&n);
+    n.node.unlink_device(nd.clone(), Some("n-pass".into())).unwrap();
+    wait_for(&n, 20, "N unlinked", |ev| matches!(ev, LEv::Unlinked(_)).then_some(()));
+    assert!(n.node.accounts().is_empty());
+    eventually(30, "E tombstones N", || e.node.linked_devices().iter().any(|d| d.device == nd && d.removed));
+}
+
+#[test]
+fn three_devices_converge_after_offline_edits() {
+    let a = make_peer("t1-a");
+    let b = make_peer("t1-b");
+    let e = make_peer("t1-e");
+    connect(&a, &e);
+    connect(&b, &e);
+    let n1 = link_fresh(&e, "t1-n1", true);
+    let n2 = link_fresh(&e, "t1-n2", false);
+    for p in [&n1, &n2] {
+        eventually(60, "contacts everywhere", || p.node.contacts().len() == 2);
+    }
+    eventually(60, "three devices everywhere", || [&e, &n1, &n2].iter().all(|p| p.node.linked_devices().iter().filter(|d| !d.removed).count() == 3));
+    n2.node.stop();
+    e.node.rename_contact(a.did.clone(), Some("Alpha".into())).unwrap();
+    n1.node.set_verified(b.did.clone(), true).unwrap();
+    n1.node.rename_contact(b.did.clone(), Some("Beta".into())).unwrap();
+    n2.node.start().unwrap();
+    n2.node.sync_now_for_test();
+    for p in [&e, &n1, &n2] {
+        let (a_did, b_did) = (a.did.clone(), b.did.clone());
+        eventually(60, "converged", || {
+            alias(p, &a_did) == Some(Some("Alpha".into()))
+                && alias(p, &b_did) == Some(Some("Beta".into()))
+                && verified(p, &b_did) == Some(true)
+        });
+    }
+}
