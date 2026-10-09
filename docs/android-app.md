@@ -122,10 +122,11 @@ Create/restore: `beginAdding()` → `beginNewAccount()`, then the onboarding flo
 (`P2pApp.adding`): starts at Name or the recovery words, skips Terms/Permissions, and backing out calls
 `cancelAdding()` which selects the account that was left. `beginNewAccount` deselects in the core, so the app
 remembers the last committed account (prefs `accounts/did`) and re-selects it at start if the process died
-mid-add. A phrase whose account is already here gives `AccountExists`: "Already on this phone" with a button to
-the switcher. "Forgot passphrase" restores over the locked account: when it is the only account its directory is
-replaced (contacts and history of that account are not kept, see "needs core" below); with several accounts the
-phrase cannot be matched to one, so the user is told to switch to the matching account instead.
+mid-add. Restoring a phrase whose account is already on the phone restores that account in place (core 34f):
+contacts, history and chats are kept, with a new passphrase and device key. "Forgot passphrase" on the unlock
+screen does exactly that for the locked current account, after checking `didOfPhrase(phrase)` matches it (a
+different identity's phrase is refused before anything changes). `AccountExists(did)` now only means that account
+is open right now.
 
 **Onboarding.** Welcome (Get started, Link to an existing account = "coming soon", I have a recovery phrase) →
 Name → Passphrase → Recovery phrase → **Name this phone** (`setDeviceLabel`; chips Personal phone / Work phone /
@@ -133,10 +134,6 @@ Tablet; works before the commit, the core keeps it in memory and writes it with 
 Permissions. A restore shows the "Welcome back" screen after the device name (link button disabled for now;
 "Start without them" continues). Settings › Devices › Linked devices lists "This phone — <label>" (rename) and a
 disabled "Link a device".
-
-**Needs core (not done here).** (1) A way to restore a phrase over its own locked account keeping contacts and
-history (today the account directory is replaced). (2) `Error::AccountExists` carrying the DID (or a
-`did_of_phrase()`), so the app can offer to switch to exactly that account instead of "Choose account".
 
 ## Test hooks (debug builds only)
 

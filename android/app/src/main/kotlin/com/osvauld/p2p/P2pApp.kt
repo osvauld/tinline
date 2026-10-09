@@ -242,11 +242,9 @@ class P2pApp : Application(), NodeEvents {
     }
 
     /**
-     * "Forgot passphrase": restore the same identity from its phrase. The core never restores over an
-     * existing account, so the locked account is deselected, and if the phrase turns out to be this
-     * very account (AccountExists, and it is the only one) its directory is replaced: the passphrase is
-     * new, but contacts and history of that account are NOT kept (a core change could keep them).
-     * A phrase of a different identity changes nothing. Blocking.
+     * "Forgot passphrase": restore the locked current account from its phrase. The core restores in place
+     * (34f): contacts, history and chats are kept, the passphrase and device key are new. A phrase of a
+     * different identity is refused before anything changes. Blocking.
      */
     fun restoreOverLocked(phrase: String, name: String, passphrase: String) {
         try { lifecycle.submit { restoreOverLockedNow(phrase, name, passphrase) }.get() }
@@ -255,25 +253,13 @@ class P2pApp : Application(), NodeEvents {
 
     private fun restoreOverLockedNow(phrase: String, name: String, passphrase: String) {
         val oldDid = currentDid() ?: throw IllegalStateException("no account")
-        val others = node.accounts().any { it.did != oldDid }
+        if (uniffi.p2pcore.didOfPhrase(phrase) != oldDid) {
+            throw IllegalArgumentException("That recovery phrase belongs to a different identity")
+        }
         node.beginNewAccount()
         try {
-            try {
-                node.restoreIdentity(phrase, name, passphrase)
-            } catch (e: uniffi.p2pcore.Exception.AccountExists) {
-                if (others) throw IllegalArgumentException("That recovery phrase belongs to an account that is already on this phone. Switch to it in Settings > Switch.")
-                node.removeAccount(oldDid)
-                UnlockStore.clear(this, oldDid)
-                node.restoreIdentity(phrase, name, passphrase)
-            }
-            if (node.profile()?.did != oldDid) {
-                // A different identity was just created next to the locked one: take it back out.
-                val fresh = node.profile()?.did
-                node.beginNewAccount()
-                if (fresh != null && node.accounts().any { it.did == fresh }) node.removeAccount(fresh)
-                node.switchAccount(oldDid)
-                throw IllegalArgumentException("That recovery phrase belongs to a different identity")
-            }
+            node.restoreIdentity(phrase, name, passphrase)
+            // The old remembered key opens nothing now (new data key); persistIdentity saves the new one.
             UnlockStore.clear(this, oldDid)
         } catch (e: Exception) {
             if (!node.hasIdentity() && node.accounts().any { it.did == oldDid }) runCatching { node.switchAccount(oldDid) }

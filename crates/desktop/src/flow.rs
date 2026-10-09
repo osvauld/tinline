@@ -184,17 +184,22 @@ mod tests {
     }
 
     #[test]
-    fn restoring_a_phrase_already_here_is_account_exists() {
+    fn restoring_a_phrase_already_here_restores_that_account_in_place() {
         let d = dir("exists");
         let st = Mem::default();
         let node = open(&d);
         let phrase = node.create_identity("Ann".into(), "a long passphrase".into()).unwrap();
         finish_setup(&st, &d, &node, Some("A")).unwrap();
+        let did = node.accounts()[0].did.clone();
+        // Forgot the passphrase: restore from the phrase, with no account selected.
         node.begin_new_account().unwrap();
+        node.restore_identity(phrase.clone(), "Ann".into(), String::new()).unwrap();
+        finish_setup(&st, &d, &node, Some("A")).unwrap();
+        let list = node.accounts();
+        assert_eq!(list.len(), 1);
+        assert!(list[0].current && list[0].did == did && !list[0].has_passphrase);
+        // While that account is open, restoring it again is refused and names it.
         let e = node.restore_identity(phrase, "Ann".into(), String::new()).unwrap_err();
-        assert!(matches!(e, Error::AccountExists(_)));
-        // Nothing was half-created: the user can still open the existing account.
-        assert!(!node.has_identity());
-        assert_eq!(node.accounts().len(), 1);
+        assert!(matches!(e, Error::AccountExists(ref x) if *x == did) || matches!(e, Error::HaveIdentity));
     }
 }
