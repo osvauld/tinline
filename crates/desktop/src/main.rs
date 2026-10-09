@@ -97,6 +97,7 @@ pub enum ChatEv {
     Chat(Chat),
     Delivery(String, String, DeliveryState),
     Progress { hash: String, done: u64, total: u64, outgoing: bool },
+    Presence(String, bool),
 }
 
 /// Bridges `ChatEvents` into the same channel as `NodeEvents`.
@@ -117,6 +118,9 @@ impl ChatEvents for ChatBridge {
     }
     fn on_transfer_progress(&self, _peer_did: String, hash: String, done: u64, total: u64, outgoing: bool) {
         let _ = self.0.send(Ev::Chat(ChatEv::Progress { hash, done, total, outgoing }));
+    }
+    fn on_presence_changed(&self, peer_did: String, online: bool) {
+        let _ = self.0.send(Ev::Chat(ChatEv::Presence(peer_did, online)));
     }
 }
 
