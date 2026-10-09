@@ -1,10 +1,15 @@
 # Rotation Wave 1 — subagent-ready packets
 
 Status: coordinator-authored assignment sheet (2026-10-09). Expands Wave 1 of
-`rotation-agent-tasks.md` (packets A–E) into tasks small enough for one Sonnet
+`rotation-agent-tasks.md` (packets A–E) into tasks small enough for one Opus
 agent each. Packets F–H remain WAIT and are not expanded here.
 
-Coordinator baseline at assignment time (HEAD `6b1aaef`, rotation work untracked):
+Branch state (2026-10-10): `endpoint-rotation-blocking` @`35564bc` contains the rotation
+models (`01ee106`), the group-chat work imported from the `group-chat` worktree (`a3b8829`;
+that worktree is now a stale duplicate), and `presence` + `dev` merged in (node.rs conflict
+markers resolved by dev). This branch is the single home for rotation AND group-chat work.
+
+Coordinator baseline at `35564bc`:
 
 ```
 python3 scripts/test_rotation_discovery_model.py   # 6 passed
@@ -12,28 +17,28 @@ python3 scripts/test_rotation_network_model.py     # 10 passed
 python3 scripts/buildlock.py --who rotation-coord -- cargo test -p proto \
   --test rotation_identity_boundary --test rotation_succession_model --test rotation_permit_model
 # 33 passed (5 + 18 + 10)
+python3 scripts/buildlock.py --who rotation-coord -- cargo test -p group-sim   # 24 passed
+python3 scripts/buildlock.py --who rotation-coord -- cargo check -p p2pcore --tests   # ok
 ```
+(The core crate's package name is `p2pcore`.)
 
-Group-chat sibling state (read 2026-10-09, `group-chat/docs/STATUS-group-chat.md`): branch
-`group-chat` @6b1aaef, all uncommitted; test-only `crates/group-sim` (24 passed per their
-status) consumes a MOCK `SuccessionAdapter::verified_path(&Nomination) -> Option<VerifiedSuccession>`
-in `group-sim/src/reachability.rs`, whose contract is "full verified ancestry since the
-nominated root, no omitted endpoint-bearing predecessors". Their next work is a
-persistence/crash harness. They add `group-sim` to workspace `Cargo.toml`/`Cargo.lock`
-(future merge touchpoint; we do not edit manifests).
-
-Note: `dev` (2c6d231) already contains `0f36a29 core: resolve conflict markers left by
-the rebase onto main`. This branch still has 4 marker blocks in `crates/core/src/node.rs`
-(lines ~2717–2765). Bringing `dev` in is a coordinator/user branch decision, not a
-subagent task.
+Group-chat state: see `docs/STATUS-group-chat.md`. Test-only `crates/group-sim` consumes a MOCK
+`SuccessionAdapter::verified_path(&Nomination) -> Option<VerifiedSuccession>` in
+`crates/group-sim/src/reachability.rs`, whose contract is "full verified ancestry since the
+nominated root, no omitted endpoint-bearing predecessors". Group policy gates D01–D06 and
+persistence scenarios S01–S07 are in `docs/group-chat-tests.md`.
 
 ---
 
 ## 0. Rules every packet inherits (paste into each agent prompt)
 
-1. Worktree `/home/abe/p2p_chat/.claude/worktree/endpoint-rotation-blocking`, branch
-   `endpoint-rotation-blocking`. Do not switch branches, reset, clean, stash, stage,
-   commit, or touch any other worktree (sibling group-chat docs are READ-ONLY).
+1. You run in your own isolated git worktree created from `endpoint-rotation-blocking`.
+   First run `git log --oneline -1 35564bc` and `git merge-base --is-ancestor 35564bc HEAD`;
+   if 35564bc is not in your history, STOP and report. Do not touch any other worktree
+   (`/home/abe/p2p_chat/.claude/worktree/*` are READ-ONLY, including the stale `group-chat`).
+   No rebase/reset/push. When done, commit ONLY your owned files on your worktree branch
+   with explicit paths (never `git add .`/`-A`), message prefixed `[<PACKET>]` and ending
+   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. The coordinator merges.
 2. Create/edit ONLY the files listed under "Owns". Every other file is read-only,
    including existing `crates/proto/tests/**`, `scripts/test_rotation_*.py`,
    `Cargo.toml`/`Cargo.lock`, `crates/proto/src/**`, all status/plan/handoff docs.
@@ -47,10 +52,12 @@ subagent task.
    `serde_json`, `rand`. Use real signatures; never a "signature always valid" stub.
 4. Build/test ONLY through buildlock and ONLY your own target plus the baseline:
    ```
-   python3 scripts/buildlock.py --who rotation-<PACKET> -- cargo test -p proto --test <your_target> 2>&1 | tee /tmp/rotation-<PACKET>.log
+   python3 scripts/buildlock.py --who rotation-<PACKET> -- cargo test -p proto --test <your_target> 2>&1 | tee /tmp/claude-1000/rotation-<PACKET>.log
    ```
    Finish with one run that also includes `--test rotation_identity_boundary
    --test rotation_succession_model --test rotation_permit_model` (must stay 33 passed).
+   group-sim packets: `cargo test -p group-sim` instead (baseline 24 passed).
+   Use log paths under `/tmp/claude-1000/` (e.g. `/tmp/claude-1000/rotation-<PACKET>.log`).
    Never run workspace-wide `cargo test`/`cargo fmt`; `rustfmt <your file>` only.
 5. Fake time (`u64` ticks), deterministic seeds, in-memory state only. No iroh,
    no filesystem, no real clock, no network.
@@ -67,9 +74,8 @@ subagent task.
    Never invent a key-derivation/ratchet scheme. Never claim shared-mnemonic revocation.
 8. Docs you own: state at the top `Status: proposal — not approved`. Cite source as
    `path:line`. Separate "verified in source/tests" from "proposed".
-9. Stop and report (don't improvise) if: a required file is already modified by
-   someone else, baseline tests fail before your change, or the task needs a
-   shared-file edit.
+9. Stop and report (don't improvise) if: an owned file already exists, baseline
+   tests fail before your change, or the task needs a shared-file edit.
 10. Final message = the completion report template in `rotation-agent-tasks.md`
     ("Common subagent completion report"), plus the exact test names you added
     with their KIND label, and the last `test result:` line(s) verbatim.
@@ -92,10 +98,11 @@ subagent task.
 | D2 | Author/group adapter contract | doc | `docs/design/rotation-author-group-adapter.md` | D1 | doc |
 | E1 | Linked-device discovery decision matrix | research + Python | `docs/design/rotation-linked-discovery-options.md`, `scripts/test_rotation_linked_discovery_options.py` | — | doc + ~8 tests |
 
-Suggested batches (≤4 concurrent to keep buildlock queues short):
-- Batch 1: A1, B1, C1, D1
-- Batch 2: A2, B2, C3, E1
-- Batch 3: B3, C2, D2
+Suggested batches (≤5 concurrent; buildlock serializes builds):
+- Batch 1: A1, B1, C1, D1, G-A
+- Batch 2: A2, B2, C3, E1, G-B
+- Batch 3: B3, C2, D2, G-C
+- Later: G-D (after G-HISTORY/G-FORK decisions)
 Coordinator reviews each batch, updates the status board, then launches the next.
 
 ---
@@ -109,16 +116,17 @@ Read: handoff §2; `endpoint-rotation-device-audit.md`; `crates/core/src/{node.r
 
 Steps:
 1. Record `git rev-parse --short HEAD`, `git status --short`.
-2. Merge markers: list each block in `crates/core/src/node.rs` (line ranges, both sides
-   summarized). Run `git show 0f36a29 -- crates/core/src/node.rs` and state whether that
-   dev commit resolves exactly these blocks and how. Do NOT edit node.rs.
-3. Run `python3 scripts/buildlock.py --who rotation-A1 -- cargo check -p core 2>&1 | tee /tmp/rotation-A1-check.log`
-   and record the result (expected to fail on markers; record the first errors verbatim).
+2. Merge markers are resolved (dev `0f36a29`, merged at `35564bc`); just confirm
+   `grep -c '^<<<<<<<' crates/core/src/node.rs` is 0.
+3. Run `python3 scripts/buildlock.py --who rotation-A1 -- cargo test -p p2pcore 2>&1 | tee /tmp/claude-1000/rotation-A1-core.log`
+   and record pass/fail counts per test target and any failure names verbatim. Classify
+   failures as pre-existing (do not fix). This is the first full-core baseline claim.
 4. Build a table of every type/field/function/key that stores, signs with, indexes by or
    derives from a device transport public key / `EndpointId` / `device_secret`:
    registry (`OwnDevice`), `DeviceList`, tombstones, link grants, invitations, grants,
-   contacts, blocks, chat sessions/batch signatures, self-sync, Loro peer IDs, blobs,
-   relay hints, call routing, presence. Columns: `path:line` | what it keys/signs |
+   contacts, blocks, chat sessions/batch signatures, self-sync incl. new `chat/own.rs`
+   (34g own-device chat sync), Loro peer IDs, blobs, relay hints, call routing,
+   presence (new `chat/presence.rs`, EphemeralStore). Columns: `path:line` | what it keys/signs |
    persisted? (where) | effect if key rotates | migration needed (yes/no/unknown).
 5. List where contact removal implies block (path:line) and every block check site.
 
@@ -301,9 +309,9 @@ that embeds the key. Output `rotation-author-key-trace.md`. No proposals beyond 
 
 ## D2 — Author/group adapter contract (after D1)
 
-Read D1 output, group contract, `docs/group-chat-coordination-*.md`, sibling (read-only)
-`group-chat/docs/{STATUS-group-chat.md,endpoint-rotation-coordination.md,group-chat.md}` and
-`group-chat/crates/group-sim/src/{reachability.rs,authority.rs}`. Map our proposed adapters
+Read D1 output, group contract, `docs/group-chat-coordination-*.md`, now in this branch:
+`docs/{STATUS-group-chat.md,endpoint-rotation-coordination.md,group-chat.md}` and
+`crates/group-sim/src/{reachability.rs,authority.rs}`. Map our proposed adapters
 onto their existing mock `SuccessionAdapter`/`VerifiedSuccession`/`BindingEvidence`/
 `Nomination` types: what they can keep, what fields are missing (expiry vs `retire_at`,
 generation, permit id, revocation), and the full-ancestry vs checkpoint question from B1.
@@ -329,9 +337,51 @@ Do not edit existing `scripts/test_rotation_*.py`.
 
 ---
 
+## Group-chat packets (work lives in `crates/group-sim`, docs in `docs/`)
+
+Shared rules above apply; Rust tests are NEW modules under `crates/group-sim/src/`. Adding a
+module requires one `mod` line in `crates/group-sim/src/tests.rs` (that is how `reachability`
+is wired, with `#[path]` + `use super::*`); that `#[path]`+`mod` pair is the only allowed edit outside
+owned files, and it must be reported. Read first: `docs/STATUS-group-chat.md`,
+`docs/group-chat.md`, `docs/group-chat-tests.md`, `docs/group-rotation-integration-contract.md`,
+`crates/group-sim/README.md`.
+
+### G-A — Group-sim coverage audit (read-only + test run)
+
+Run `cargo test -p group-sim` through buildlock. For each claim in `crates/group-sim/README.md`
+and `docs/STATUS-group-chat.md` "Executable coverage", name the test(s) that cover it and
+whether the test actually asserts it (negative controls present? unchanged-state checks?).
+Map every conceptual case ID in `docs/group-chat-tests.md` to: executable test / partially /
+none. List weak or vacuous tests. Owns: `docs/group-sim-coverage-audit.md`.
+
+### G-B — Causal policy candidates D01–D05
+
+Owns: `crates/group-sim/src/policy_candidates.rs`, `docs/group-policy-options.md`.
+For each of D01–D05 implement ≥2 candidate oracles as `candidate-policy D0x` tests over small
+traces with all delivery orders, reusing existing fixture builders (read-only). Must show for
+each option: order-independence holds or not, what a removed member signing against a stale
+frontier can achieve, partition behavior. Do not pick a winner; doc gives the comparison
+table and exact questions for the user. D06 is B3's (rotation) — reference, don't duplicate.
+
+### G-C — Persistence/crash harness S01–S07 (after C2 vocabulary exists; batch 3)
+
+Owns: `crates/group-sim/src/persistence.rs`, `docs/group-persistence-contract.md`.
+Explicit `Durable`/`Volatile` replica state and a crash/fail injector at: validate, scratch
+import, commit, StoredAck, fan-out. Implement S01–S07 as tests. Use the same step/term names as
+C2's `rotation-storage-failure-contract.md` where they overlap; state that real fsync/vault
+durability is not modeled.
+
+### G-D — Real succession verifier behind the group adapter (WAIT for B1 + B3 + user decisions)
+
+Replace `MockRotation` usage with an adapter over the rotation verifier fixture, keeping the
+mock for contrast. Not schedulable until G-HISTORY (full ancestry vs checkpoint) and G-FORK
+are decided.
+
+---
+
 ## Coordinator checklist per returned packet
 
-- `git status --short` shows only the packet's owned files added/changed.
+- Agent's worktree branch commit touches only the packet's owned files (+ allowed mod line).
 - Re-run its target + baseline 33 through buildlock; numbers match the report.
 - Every test has a KIND label; candidate-policy tests name a gate.
 - Record result + open questions in `rotation-agent-status.md`; collect user questions.

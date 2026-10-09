@@ -57,9 +57,10 @@ new-file work is preferred during parallel investigation.
 
 ## Wave 1 packet board (see rotation-agent-packets.md)
 
-Coordinator re-ran baseline 2026-10-09 at 6b1aaef: Python 6 + 10 passed; Rust 33 passed
-(log `/tmp/claude-1000/rotation-coord-tests.log`). `dev` already resolves the node.rs
-markers in `0f36a29`; merging dev into this branch awaits user decision.
+2026-10-10: branch now holds rotation work (01ee106), imported group-chat work (a3b8829) and
+presence+dev (merge 35564bc). Baseline at 35564bc: Python 6 + 10; proto rotation 33; group-sim
+24; `cargo check -p p2pcore --tests` ok. Subagents (Opus) run in isolated worktrees from this
+branch and commit only owned files; coordinator merges.
 
 | Packet | Batch | State | Owner | Owned files |
 |---|---|---|---|---|
@@ -74,6 +75,10 @@ markers in `0f36a29`; merging dev into this branch awaits user decision.
 | B3 | 3 | READY | unclaimed | tests/rotation_fork_revocation.rs, rotation-fork-revocation-options.md |
 | C2 | 3 | READY | unclaimed | tests/rotation_storage_contracts.rs, rotation-storage-failure-contract.md |
 | D2 | 3 | WAIT D1 | unclaimed | rotation-author-group-adapter.md |
+| G-A | 1 | READY | unclaimed | docs/group-sim-coverage-audit.md |
+| G-B | 2 | READY | unclaimed | group-sim/src/policy_candidates.rs, docs/group-policy-options.md |
+| G-C | 3 | WAIT C2 | unclaimed | group-sim/src/persistence.rs, docs/group-persistence-contract.md |
+| G-D | later | WAIT B1,B3 + decisions | unclaimed | group-sim/src/reachability.rs |
 
 ## Per-agent result entries
 
