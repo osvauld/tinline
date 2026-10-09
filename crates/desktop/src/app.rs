@@ -429,7 +429,7 @@ fn friendly(e: Error) -> String {
         Error::BadPhrase => "That recovery phrase is not valid. Check the 24 words.".into(),
         Error::Locked => "Unlock first.".into(),
         Error::HaveIdentity => "An identity already exists here.".into(),
-        Error::AccountExists => "That account is already on this computer.".into(),
+        Error::AccountExists(_) => "That account is already on this computer.".into(),
         Error::InCall => "You\u{2019}re on a call. Hang up before switching accounts.".into(),
         e => e.to_string(),
     }
@@ -1088,7 +1088,7 @@ impl App {
                     move || {
                         node.restore_identity(phrase, name, pass)
                             .map_err(|e| {
-                                let exists = matches!(e, Error::AccountExists);
+                                let exists = matches!(e, Error::AccountExists(_));
                                 (friendly(e), exists)
                             })
                     },

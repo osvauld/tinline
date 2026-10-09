@@ -216,10 +216,10 @@ pub enum Backing {
 const STATE_KEY: &str = "state";
 const CALLS_KEY: &str = "calls";
 const LABEL_KEY: &str = "device_label";
-const ACCOUNT_KEY_DOMAIN: &str = "tinline/account-store/v1";
 
-/// Opens (creating) the account's sealed store.
-pub fn open_sealed(dir: &Path, dek: &[u8; 32]) -> Result<storage::Sealed, Error> {
+/// Opens (creating) the account's sealed store. It is keyed by the recovery `phrase` (see
+/// `rekey.rs`); `dek` lets a store from before that change be re-keyed on the way.
+pub fn open_sealed(dir: &Path, phrase: &str, dek: Option<&[u8; 32]>) -> Result<storage::Sealed, Error> {
     let path = dir.join("account.redb");
     // A previous owner of the file (a task of an account just left) may still hold it for a moment.
     let mut tries = 0;
@@ -234,7 +234,11 @@ pub fn open_sealed(dir: &Path, dek: &[u8; 32]) -> Result<storage::Sealed, Error>
         }
     };
     set_private(&path);
-    Ok(storage::Sealed::new(db, blake3::derive_key(ACCOUNT_KEY_DOMAIN, dek)))
+    crate::rekey::open(
+        db,
+        crate::rekey::key_from_phrase(crate::rekey::Which::Account, phrase),
+        dek.map(|d| crate::rekey::old_key(crate::rekey::Which::Account, d)),
+    )
 }
 
 fn io(e: storage::StorageError) -> Error {
@@ -273,8 +277,8 @@ pub struct Loaded {
 /// and only then are the JSON files (and their `.corrupt` / `.tmp` leftovers) scrubbed.
 /// Anything that fails leaves the JSON in place. A record that does not open is an error, never
 /// an empty state.
-pub fn load_sealed(store: &Store, dek: &[u8; 32]) -> Result<(storage::Sealed, Loaded), Error> {
-    let db = open_sealed(store.dir(), dek)?;
+pub fn load_sealed(store: &Store, phrase: &str, dek: Option<&[u8; 32]>) -> Result<(storage::Sealed, Loaded), Error> {
+    let db = open_sealed(store.dir(), phrase, dek)?;
     let mut ops = Vec::new();
     if db.get(STATE_KEY).map_err(io)?.is_none() && store.dir().join("state.json").exists() {
         ops.push(db.put_op(STATE_KEY, &zeroizing_json(&store.state()?)?).map_err(io)?);
@@ -300,8 +304,8 @@ pub fn load_sealed(store: &Store, dek: &[u8; 32]) -> Result<(storage::Sealed, Lo
 
 /// Seals the in-memory state and call log into a new store, e.g. when a legacy profile gets its
 /// data key, and scrubs the JSON they came from.
-pub fn seal_into(store: &Store, dek: &[u8; 32], state: &State, calls: &[CallRecord], label: Option<&str>) -> Result<storage::Sealed, Error> {
-    let db = open_sealed(store.dir(), dek)?;
+pub fn seal_into(store: &Store, phrase: &str, dek: &[u8; 32], state: &State, calls: &[CallRecord], label: Option<&str>) -> Result<storage::Sealed, Error> {
+    let db = open_sealed(store.dir(), phrase, Some(dek))?;
     let mut ops = vec![
         db.put_op(STATE_KEY, &zeroizing_json(state)?).map_err(io)?,
         db.put_op(CALLS_KEY, &zeroizing_json(&calls)?).map_err(io)?,

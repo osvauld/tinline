@@ -146,7 +146,7 @@ impl AccountDirs {
                 private_dir(&dir);
                 Ok(dir)
             }
-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Err(Error::AccountExists),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Err(Error::AccountExists(format!("did:key:{id}"))),
             Err(e) => Err(e.into()),
         }
     }

@@ -8,6 +8,7 @@ mod chat;
 mod error;
 mod logging;
 mod node;
+mod rekey;
 mod store;
 #[cfg(test)]
 mod account_tests;
@@ -24,4 +25,12 @@ pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, Car
 #[uniffi::export]
 pub fn core_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
+}
+
+/// The DID a recovery phrase belongs to (`BadPhrase` if it is not valid), so a platform can offer
+/// "Open <that account>" when the phrase is already on this device.
+#[uniffi::export]
+pub fn did_of_phrase(phrase: String) -> Result<String, Error> {
+    let phrase = zeroize::Zeroizing::new(phrase);
+    identity::recover(phrase.trim()).map(|i| i.did().to_string()).map_err(|_| Error::BadPhrase)
 }

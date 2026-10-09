@@ -414,14 +414,12 @@ fn existing_account_is_never_overwritten() {
     let did = n.profile().unwrap().did;
     let account_json = std::fs::read(root.acct(&did).join("account.json")).unwrap();
     assert!(matches!(n.create_identity("x".into(), PASS.into()), Err(Error::HaveIdentity)));
-    n.begin_new_account().unwrap();
+    // The open (unlocked) account is never restored over: the caller is told to switch to it.
     // With and without a passphrase.
-    assert!(matches!(n.restore_identity(phrase.clone(), "again".into(), "other".into()), Err(Error::AccountExists)));
-    assert!(matches!(n.restore_identity(phrase.clone(), "again".into(), "".into()), Err(Error::AccountExists)));
-    assert!(!n.has_identity());
+    assert!(matches!(n.restore_identity(phrase.clone(), "again".into(), "other".into()), Err(Error::AccountExists(d)) if d == did));
+    assert!(matches!(n.restore_identity(phrase.clone(), "again".into(), "".into()), Err(Error::AccountExists(d)) if d == did));
+    assert_eq!(p2pcore::did_of_phrase(phrase.clone()).unwrap(), did);
     assert_eq!(std::fs::read(root.acct(&did).join("account.json")).unwrap(), account_json);
-    n.switch_account(did).unwrap();
-    n.unlock(PASS.into()).unwrap();
     assert_eq!(n.profile().unwrap().name, "alice");
 }
 
@@ -472,9 +470,8 @@ fn uncommitted_identity_leaves_nothing_on_disk() {
     n.unlock_with_key(key2).unwrap();
     assert_eq!(n.device_label().as_deref(), Some("Committed phone"));
 
-    // A second restore of the committed phrase is refused, committed or not.
-    n.begin_new_account().unwrap();
-    assert!(matches!(n.restore_identity(phrase, "again".into(), "".into()), Err(Error::AccountExists)));
+    // A restore of the phrase of the open account is refused, committed or not.
+    assert!(matches!(n.restore_identity(phrase, "again".into(), "".into()), Err(Error::AccountExists(_))));
 }
 
 #[test]

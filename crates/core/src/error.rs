@@ -5,8 +5,10 @@ pub enum Error {
     NoIdentity,
     #[error("an identity already exists")]
     HaveIdentity,
-    #[error("that account is already on this device")]
-    AccountExists,
+    /// The phrase belongs to the account that is open right now (carries its DID): switch to or
+    /// unlock it instead of restoring.
+    #[error("that account is already on this device ({0})")]
+    AccountExists(String),
     #[error("a call is in progress")]
     InCall,
     #[error("that recovery phrase is not valid")]

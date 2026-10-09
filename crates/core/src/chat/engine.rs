@@ -13,7 +13,7 @@ use iroh_blobs::Hash;
 use loro::VersionVector;
 use parking_lot::Mutex;
 use proto::Msg;
-use storage::{Op, Sealed, Store as Db};
+use storage::{Op, Store as Db};
 use tokio::sync::{OnceCell, Semaphore, mpsc, oneshot};
 
 use super::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
@@ -128,20 +128,29 @@ impl Inner {
 
     /// Opens the sealed chat store; called whenever the data key becomes available.
     pub(crate) fn chat_open(self: &Arc<Self>) {
-        let dek = match self.shared.lock().dek.as_ref() {
-            Some(d) => **d,
-            None => return,
+        let (dek, phrase) = {
+            let s = self.shared.lock();
+            match (s.dek.as_ref(), s.me.as_ref()) {
+                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone())),
+                _ => return,
+            }
         };
         if self.chat.lock().is_some() {
             return;
         }
-        let key = blake3::derive_key("tinline chat store v1", &dek);
         // Nothing to open before the account has a directory (an uncommitted identity).
         let dir = match self.shared.lock().acct.as_ref() {
             Some(a) => a.store.dir().to_path_buf(),
             None => return,
         };
-        let db = match Db::open(dir.join("chat.redb")) {
+        // Keyed by the recovery phrase; a store from before that is re-keyed here (rekey.rs).
+        let sealed = match Db::open(dir.join("chat.redb")).map_err(|e| crate::Error::Io(e.to_string())).and_then(|db| {
+            crate::rekey::open(
+                db,
+                crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase),
+                Some(crate::rekey::old_key(crate::rekey::Which::Chat, &dek)),
+            )
+        }) {
             Ok(d) => d,
             Err(e) => {
                 tracing::warn!("chat store: {e}");
@@ -149,7 +158,7 @@ impl Inner {
             }
         };
         let core = Arc::new(ChatCore {
-            store: ChatStore::new(Sealed::new(db, key)),
+            store: ChatStore::new(sealed),
             dir,
             hub: OnceCell::new(),
             shards: Default::default(),

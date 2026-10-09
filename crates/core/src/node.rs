@@ -21,6 +21,7 @@ use zeroize::Zeroize;
 
 use crate::accounts::{self, AccountDirs};
 use crate::store::{self, Backing, CallRecord, ContactDevice, Disk, History, OwnDevice, Profile, ProfileV2, State, Store, StoredContact};
+use crate::rekey;
 use crate::vault::{self, Dek, Secrets};
 use crate::wire::Ctrl;
 use crate::Error;
@@ -733,7 +734,7 @@ impl Node {
                 // The vault first: if we die before the state is sealed, the JSON is still
                 // there and the next unlock imports it.
                 store.save_profile(&disk)?;
-                let db = store::seal_into(&store, &dek, &s.state, &s.history.snapshot(), None)?;
+                let db = store::seal_into(&store, &p.mnemonic, &dek, &s.state, &s.history.snapshot(), None)?;
                 store.remove_legacy_leftovers();
                 let backing = Backing::Sealed(db);
                 s.history.attach(backing.clone());
@@ -1206,7 +1207,7 @@ impl Node {
             return Err(Error::Io("vault does not match profile".into()));
         }
         // The sealed state is read (and a first-time import from JSON done) outside `shared`.
-        let (db, loaded) = store::load_sealed(&store, &dek)?;
+        let (db, loaded) = store::load_sealed(&store, &secrets.mnemonic, Some(&dek))?;
         let mut me = me;
         let mut s = self.inner.shared.lock();
         if s.epoch != started {
@@ -1231,15 +1232,50 @@ impl Node {
 
     fn set_identity(&self, phrase: String, name: String, passphrase: String) -> Result<(), Error> {
         let _gate = self.inner.gate.lock();
-        if self.inner.shared.lock().disk.is_some() {
-            return Err(Error::HaveIdentity);
-        }
         let profile = Profile { mnemonic: phrase, name, device_secret: proto::new_device_secret() };
         let mut me = Me::load(profile, 0)?;
-        let id = accounts::id_of(me.id.did())?;
-        // Checked before the slow KDF; `create` below is the check that cannot race.
-        if self.inner.accounts.exists(&id)? {
-            return Err(Error::AccountExists);
+        let did = me.id.did().to_string();
+        let id = accounts::id_of(&did)?;
+        // What is selected right now decides: a locked copy of this very account may be restored
+        // over (the passphrase was forgotten); an unlocked one is not touched (`AccountExists`,
+        // switch to it instead); any other selected account is `HaveIdentity`.
+        {
+            let s = self.inner.shared.lock();
+            match &s.disk {
+                None => {}
+                Some(Disk::V2(p)) if p.did == did && s.me.is_none() && s.committed => {}
+                Some(Disk::V2(p)) if p.did == did => return Err(Error::AccountExists(did)),
+                Some(Disk::Legacy(_)) if s.me.as_ref().is_some_and(|m| m.id.did() == did) => return Err(Error::AccountExists(did)),
+                Some(_) => return Err(Error::HaveIdentity),
+            }
+        }
+        // Checked before the slow KDF; `create` / the restore below are the checks that cannot race.
+        let existing = self.inner.accounts.exists(&id)?;
+        let mut state = State::default();
+        let mut calls = Vec::new();
+        let mut label = None;
+        if existing {
+            let store = Store::open(self.inner.accounts.dir(&id)?)?;
+            let old_device = match store.profile()? {
+                Some(Disk::V2(p)) => Some(p.device_public),
+                Some(Disk::Legacy(_)) => return Err(Error::AccountExists(did)),
+                None => None,
+            };
+            // The data opens with the phrase alone. A store from before the identity-derived
+            // keys that was never unlocked since cannot be read without the lost data key; it is
+            // set aside when the restore is written, and the account starts empty.
+            if !rekey::file_needs_migration(&store.dir().join("account.redb"))? {
+                let (_db, loaded) = store::load_sealed(&store, &me.profile.mnemonic, None)?;
+                state = loaded.state;
+                calls = loaded.calls;
+                label = loaded.device_label;
+            }
+            // This install's previous device key died with the old vault.
+            if let Some(old) = old_device {
+                for e in state.registry.iter_mut().filter(|e| e.device == old && old != me.device) {
+                    e.removed = true;
+                }
+            }
         }
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret: me.profile.device_secret };
         let passphrase = Some(passphrase).filter(|p| !p.is_empty());
@@ -1248,22 +1284,26 @@ impl Node {
         let disk = Disk::V2(ProfileV2 {
             version: 2,
             name: me.profile.name.clone(),
-            did: me.id.did().to_string(),
+            did: did.clone(),
             device_public: me.device,
             vault,
         });
         // Without a passphrase nothing is written until the platform has saved the key.
         let acct = if durable {
-            Some(self.inner.create_account_files(&id, &disk, &dek, &State::default(), &[], None)?)
+            Some(if existing {
+                self.inner.restore_account_files(&id, &disk, &me.profile.mnemonic, &dek, &state, &calls, label.as_deref())?
+            } else {
+                self.inner.create_account_files(&id, &disk, &me.profile.mnemonic, &dek, &state, &calls, label.as_deref())?
+            })
         } else {
             None
         };
         let mut s = self.inner.shared.lock();
         s.epoch += 1;
         me.epoch = s.epoch;
-        s.history = Arc::new(History::new(Vec::new(), acct.as_ref().and_then(|a| a.backing.clone())));
-        s.state = State::default();
-        s.device_label = None;
+        s.history = Arc::new(History::new(calls, acct.as_ref().and_then(|a| a.backing.clone())));
+        s.state = state;
+        s.device_label = label;
         s.committed = durable;
         s.acct = acct;
         s.disk = Some(disk);
@@ -1492,10 +1532,12 @@ impl Inner {
 
     /// Writes a new account's files: the dir (never an existing one), `account.json`, the sealed
     /// store, then the pointer. What it created is removed again if any step fails.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn create_account_files(
         &self,
         id: &str,
         disk: &Disk,
+        phrase: &str,
         dek: &Dek,
         state: &State,
         calls: &[CallRecord],
@@ -1505,7 +1547,7 @@ impl Inner {
         let built = (|| {
             let store = Store::open(&dir)?;
             store.save_profile(disk)?;
-            let db = store::seal_into(&store, dek, state, calls, label)?;
+            let db = store::seal_into(&store, phrase, dek, state, calls, label)?;
             self.accounts.select(id)?;
             Ok::<_, Error>(Acct { id: id.to_string(), store, backing: Some(Backing::Sealed(db)) })
         })();
@@ -1515,19 +1557,54 @@ impl Inner {
         built
     }
 
+    /// Restore over an account dir that is already there (its owner forgot the passphrase): the
+    /// sealed stores stay, `account.json` gets the new vault. A store that cannot be re-keyed
+    /// (it predates the identity-derived keys and the data key is gone) is renamed
+    /// `*.unreadable`, never deleted. Nothing of the old vault survives.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn restore_account_files(
+        &self,
+        id: &str,
+        disk: &Disk,
+        phrase: &str,
+        dek: &Dek,
+        state: &State,
+        calls: &[CallRecord],
+        label: Option<&str>,
+    ) -> Result<Acct, Error> {
+        let dir = self.accounts.dir(id)?;
+        let store = Store::open(&dir)?;
+        for name in ["account.redb", "chat.redb"] {
+            let path = dir.join(name);
+            if rekey::file_needs_migration(&path)? {
+                rekey::quarantine(&path)?;
+            }
+        }
+        let db = store::seal_into(&store, phrase, dek, state, calls, label)?;
+        store.save_profile(disk)?;
+        self.accounts.select(id)?;
+        Ok(Acct { id: id.to_string(), store, backing: Some(Backing::Sealed(db)) })
+    }
+
     /// `commit_identity` with the gate held.
     pub(crate) fn commit_locked(self: &Arc<Self>) -> Result<(), Error> {
-        let (disk, dek, state, calls, label) = {
+        let (disk, dek, phrase, state, calls, label) = {
             let s = self.shared.lock();
             let disk = s.disk.clone().ok_or(Error::NoIdentity)?;
             if s.committed {
                 return Ok(());
             }
-            (disk, s.dek.clone().ok_or(Error::Locked)?, s.state.clone(), s.history.snapshot(), s.device_label.clone())
+            let phrase = zeroize::Zeroizing::new(s.me.as_ref().ok_or(Error::Locked)?.profile.mnemonic.clone());
+            (disk, s.dek.clone().ok_or(Error::Locked)?, phrase, s.state.clone(), s.history.snapshot(), s.device_label.clone())
         };
         let Disk::V2(p) = &disk else { return Err(Error::NoIdentity) };
         let id = accounts::id_of(&p.did)?;
-        let acct = self.create_account_files(&id, &disk, &dek, &state, &calls, label.as_deref())?;
+        let acct = if self.accounts.exists(&id)? {
+            // A restore over an existing account of this device.
+            self.restore_account_files(&id, &disk, &phrase, &dek, &state, &calls, label.as_deref())?
+        } else {
+            self.create_account_files(&id, &disk, &phrase, &dek, &state, &calls, label.as_deref())?
+        };
         {
             let mut s = self.shared.lock();
             if let Some(b) = &acct.backing {

@@ -12,8 +12,8 @@ The platform's data dir is a root that can hold several accounts:
 ```
 
 `<id>` is the DID after `did:key:`. `account.json` (formerly `profile.json`) is described below.
-`account.redb` is a `storage::Sealed` store whose key is `BLAKE3-derive-key("tinline/account-store/v1", DEK)`:
-contacts, grants, block/revoke lists, redeemed ticket nonces, the ticket we hand out, availability, the call
+`account.redb` is a `storage::Sealed` store whose key is `BLAKE3-derive-key("tinline/account-store/v2", recovery phrase)`
+(words lower-cased, single-spaced; see "Storage keys" below): contacts, grants, block/revoke lists, redeemed ticket nonces, the ticket we hand out, availability, the call
 history and the device label are in there, and exist in memory only while the account is unlocked (`lock()` drops
 them; contacts and calls read as empty while locked). Record paths (`state`, `calls`, `device_label`) are not
 hidden. Not sealed, on purpose: the account **name**, DID and device public key in `account.json`, because the lock
@@ -34,7 +34,7 @@ Switching: `accounts()` lists them (clear data only), `switch_account(did)` stop
 and state of the current one and selects another (then `unlock` / `unlock_with_key` as usual), `begin_new_account()`
 leaves none selected so `create_identity` / `restore_identity` add one, `remove_account(did)` deletes a
 non-current one. Switching is refused with `Error::InCall` during a ringing, waiting or active call. Creating or
-restoring never overwrites an account: a phrase whose DID is already on the device gives `Error::AccountExists`.
+restoring never overwrites the open account: its phrase gives `Error::AccountExists(did)` (see the restore table).
 Everything that runs on its own (call tasks, background writes) carries the session epoch it started under and is
 refused once the account in memory has changed, so a stale task cannot write into the next account.
 
@@ -42,6 +42,43 @@ refused once the account in memory has changed, so a stale task cannot write int
 must store the data key under a name that includes the DID (Android: one Keystore-wrapped blob per DID; desktop:
 one keyring entry per DID), and pass the right one after `switch_account`. A key of another account gives
 `WrongPassphrase`.
+
+## Storage keys come from the recovery phrase (34f)
+
+`account.redb` and `chat.redb` are sealed under `BLAKE3-derive-key("tinline/account-store/v2" | "tinline/chat-store/v2",
+normalised phrase)`, not under the data key as before (v1: `"tinline/account-store/v1"` / `"tinline chat store v1"` over the
+DEK). Forgetting the passphrase (with no remembered key) therefore no longer loses contacts, call history or chats: the
+24 words reopen both files. The files are still protected by the passphrase, because the phrase itself only exists on disk
+inside the vault. iroh-blobs ciphertexts are keyed per blob and unchanged.
+
+A store written under the phrase key carries an unsealed marker row `~keyver` = `2`. `rekey::open` (used for both files):
+marker present: open; no rows and no marker: write the marker (fresh file); rows but no marker: the file is still v1.
+On the first unlock where both keys exist (the data key from the unlock, the phrase from the vault) it re-seals EVERY row
+(old key, then new key, same path binding) and the marker in ONE redb transaction. A crash leaves the old file or the
+new one, never a mix, and an interrupted run simply starts over from the old file; a row that fails to open aborts the
+whole migration and changes nothing. The cost is that the store passes through memory once. `chat_open` migrates
+`chat.redb` the same way (a failure there is logged and leaves chat unavailable, never a partial file).
+
+## Restore over an account that is already on the device
+
+`restore_identity(phrase, name, passphrase)` looks at what is selected:
+
+| selected right now | phrase's account dir exists | result |
+|---|---|---|
+| nothing (`begin_new_account`) | no | new account |
+| nothing | yes | **restore in place** |
+| the same account, locked (`Locked`) | yes | **restore in place** (the forgotten-passphrase path) |
+| the same account, unlocked | yes | `Error::AccountExists(did)`: switch to it, nothing was touched |
+| another account | any | `Error::HaveIdentity` |
+| a legacy (clear) profile of that DID | yes | `Error::AccountExists(did)` |
+
+Restore in place: `account.json` gets a vault with a fresh data key, the new passphrase (or none: then the S1 rule
+applies and `commit_identity` writes it) and a NEW device key (the old one lived only in the old vault; the old registry
+entry of this install is tombstoned and contacts learn the new device from the next DeviceList). `account.redb`,
+`chat.redb` and `blobs/` stay and open from the phrase. A v1-keyed file that was never unlocked since 34f cannot be
+re-keyed without the lost data key; it is renamed `*.unreadable` (kept, not deleted) and starts empty.
+`did_of_phrase(phrase)` (free UniFFI function) returns the DID so a platform can say "this phrase is the account
+<name> on this device" and offer to open it.
 
 ## No-passphrase identity: `commit_identity` (S1)
 

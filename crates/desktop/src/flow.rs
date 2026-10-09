@@ -192,7 +192,7 @@ mod tests {
         finish_setup(&st, &d, &node, Some("A")).unwrap();
         node.begin_new_account().unwrap();
         let e = node.restore_identity(phrase, "Ann".into(), String::new()).unwrap_err();
-        assert!(matches!(e, Error::AccountExists));
+        assert!(matches!(e, Error::AccountExists(_)));
         // Nothing was half-created: the user can still open the existing account.
         assert!(!node.has_identity());
         assert_eq!(node.accounts().len(), 1);
