@@ -12,6 +12,8 @@ const MAX_PENDING: usize = 16;
 mod reachability;
 #[path = "persistence.rs"]
 mod persistence;
+#[path = "policy_candidates.rs"]
+mod policy_candidates;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {
