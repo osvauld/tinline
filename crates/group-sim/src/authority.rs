@@ -175,6 +175,7 @@ mod tests {
         )
         .unwrap()
     }
+    // KIND: invariant
     #[test]
     fn genesis_hash_signature_version_and_creator_are_checked() {
         let a = identity(1);
@@ -193,6 +194,7 @@ mod tests {
         altered.signature = a.sign(&bytes(GENESIS_DOMAIN, &altered.body)).to_vec();
         assert!(!altered.verify(&altered.id()));
     }
+    // KIND: invariant
     #[test]
     fn delegation_is_rooted_scoped_narrowed_and_holder_bound() {
         let a = identity(1);
@@ -236,6 +238,7 @@ mod tests {
         let forged_root = Grant::issue(&b, c.did(), &gid, &[Capability::Post], false, 3, None);
         assert!(!forged_root.allows(&g, c.did(), Capability::Post));
     }
+    // KIND: invariant
     #[test]
     fn nondelegable_grants_scope_widening_and_depth_are_refused() {
         let a = identity(1);
@@ -291,5 +294,41 @@ mod tests {
             Some(chain),
         );
         assert!(!chain.allows(&g, b.did(), Capability::Post));
+    }
+    // KIND: invariant
+    #[test]
+    fn delegable_flag_issuer_holder_and_holder_did_are_each_sole_cause() {
+        let a = identity(1);
+        let b = identity(2);
+        let c = identity(3);
+        let d = identity(4);
+        let g = Genesis::create(&a, [9; 32]);
+        let gid = g.id();
+        let admin_caps = [Capability::Read, Capability::Post, Capability::Delegate];
+        let child = |issuer: &Identity, parent: Grant| {
+            Grant::issue(
+                issuer,
+                d.did(),
+                &gid,
+                &[Capability::Post],
+                false,
+                2,
+                Some(parent),
+            )
+        };
+        // delegable=false is the ONLY difference from the positive control (parent still
+        // holds Delegate, child is a subset, issuer is the parent holder).
+        let delegable = Grant::issue(&a, b.did(), &gid, &admin_caps, true, 1, None);
+        let nondelegable = Grant::issue(&a, b.did(), &gid, &admin_caps, false, 1, None);
+        assert!(child(&b, delegable.clone()).allows(&g, d.did(), Capability::Post));
+        assert!(!child(&b, nondelegable).allows(&g, d.did(), Capability::Post));
+        // Issuer must be the parent's holder: C signs a child under B's delegable grant.
+        assert!(!child(&c, delegable.clone()).allows(&g, d.did(), Capability::Post));
+        // Holder DID must parse, even when the presented holder string matches it.
+        let bogus = "did:key:not-a-key";
+        let root = Grant::issue(&a, bogus, &gid, &[Capability::Post], false, 3, None);
+        assert!(!root.allows(&g, bogus, Capability::Post));
+        let ok_root = Grant::issue(&a, d.did(), &gid, &[Capability::Post], false, 5, None);
+        assert!(ok_root.allows(&g, d.did(), Capability::Post));
     }
 }
