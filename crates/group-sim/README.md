@@ -10,50 +10,164 @@ Uses real DID/device attestations, Ed25519 author signatures and Loro updates. I
 schedule seeds are deterministic test fixtures (never production secrets). Message keys and
 insert-only schemas are provisional; the signing domain explicitly marks simulation data.
 
-Twenty-four tests cover original-author relaying/offline delivery, all six permutations of small
-traces, missing-dependency negative controls, tampering, wrong group/outsider/identity,
-extra Loro mutation injection, two-host partition recovery, 20 seeded loss/reordering/retry
-schedules, bounded pending queues, signed genesis and scoped DID delegation chains.
+There are thirty-five tests. Each one carries a `// KIND:` label, either `invariant` or
+`limitation`. A limitation test passes by demonstrating a missing guarantee.
 
-New authority fixtures verify the creator-signed genesis hash and original grant chain:
-holder binding, scope, capability narrowing, delegation authority and chain-depth cap.
-Legacy scheduler tests still use explicit allowlists. The grant model is test-only and is
-not the courier token format; expiry and revocation are intentionally absent, not solved.
+## Replica and authority tests (`src/tests.rs`, `src/authority.rs`)
 
-Cross-author dependencies are explicit signed envelope IDs with transitive closure. Validate
-actual Loro prerequisites against that declared closure, not incidental receiver knowledge;
-omitting a required dependency fails even when the receiver already has it. Receivers
-scratch-import and compare semantic state to accepted insert-only records, rather than
-trusting signatures alone to make operations safe. Original envelopes survive forwarding.
-General causal meta/frontier authorization is not yet implemented.
+- **Relaying and order independence.**
+  - Original author envelopes survive host relay with their signatures intact.
+  - All six permutations of two small traces converge. A duplicate redelivery must return
+    `Duplicate`, or `Pending` while the envelope is still waiting.
+  - Twenty seeded loss/reordering schedules converge after a complete-set repair. Every
+    envelope must be accepted exactly once on both sides, and no valid envelope may be refused
+    as `Invalid` or `Limit`.
+  - Each seed also has a negative control. One envelope is withheld from both the lossy
+    schedule and the repair source. That replica must not converge, and the same author's later
+    envelopes must stay pending until the withheld one arrives.
+- **Missing dependencies.** An envelope whose previous-chain or cross-author dependency is
+  missing stays pending, with nothing accepted, then drains when the dependency arrives.
+- **Rejections leave state byte-for-byte unchanged.** These tests use *populated* replicas:
+  accepted history plus one pending envelope. Each rejection compares a snapshot taken before
+  and after. The snapshot holds the Loro export bytes, the deep value and VV, every accepted
+  and pending envelope's signed bytes, signature and attestation, and the fan-out list.
+  - **Single-cause cases**, each with a positive control on the same replica:
+    - attestation DID ≠ author
+    - attested device key ≠ signing device
+    - forged attestation signature
+    - group-only mismatch
+    - document-only mismatch
+    - text-size bound
+    - dependency-count bound
+    - a second, validly attested device that writes under another device's Loro peer ID. This
+      is the first fixture with more than one device per DID.
+  - **Rejected, but not as the only cause**, because `apply()` also refuses them: sequence 0
+    and an oversized update.
+  - **Rejected on a populated signed replica:**
+    - tampered text
+    - missing, wrong-holder, read-only and other-group permits
+    - extra Loro mutation injection
+  - **Still checked only on empty replicas** by the older tests: outsider, wrong DID and
+    cross-group.
+- **Pending bound.** When an envelope is refused with `Limit`, state is unchanged and the
+  envelope is not kept. When the withheld dependency arrives, all 16 pending envelopes drain.
+  The refused envelope stays absent until it is sent again.
+- **Causality.**
+  - Cross-author dependencies are explicit signed envelope IDs, with transitive closure.
+  - The real Loro prerequisites are checked against that declared closure, not against
+    whatever the receiver happens to hold. Omitting a required dependency therefore fails even
+    when the receiver already has it. This is asserted on a populated replica, by count.
+  - Receivers import the update into a scratch copy and compare the result with the accepted
+    insert-only records.
+  - Transitive closure is only exercised through `previous` chains.
+  - General causal meta/frontier authorization is not implemented.
+- **Two-host partition.** Two hosts partition and then recover. A stale peer holding a strict
+  subset cannot change the up-to-date host (its snapshot is equal before and after), and that
+  host catches the stale peer up. There is no model of refusing a lower VV or requesting a
+  replace.
+- **Signed genesis and grants.**
+  - Checked: the creator-signed genesis hash, version and creator; holder binding; scope;
+    capability narrowing; root issuer = creator; and the chain-depth cap (8 links accepted,
+    9 refused).
+  - Single-cause cases with positive controls: `delegable=false`, issuer ≠ parent holder, and
+    a holder DID that does not parse.
+  - The grant model is test-only and is not the courier token format. Expiry and revocation
+    are deliberately absent, not solved.
+- **Limitations shown by tests.**
+  - An envelope promoted from pending that then fails `apply()` is dropped without any outcome.
+    The caller only sees the outcome of the envelope that released it.
+  - Repair in envelope-ID order overflows `MAX_PENDING` on a chain 60 envelopes deep. Before
+    G-H, `Replica::sync_from` and `Fleet::reconcile` used that order. They now send in causal
+    order, as a VV/frontier exchange would.
+  - The receiver never keeps envelopes refused with `Limit`, so retrying is the sender's job.
 
-Five group-consumer reachability tests use a **mock verified-succession adapter**, not a new
-rotation verifier. They separate historical bindings from active routes at retirement, reject
-private/wrong-audience records anywhere in the supplied complete proof path, isolate nominated
-devices from siblings, route/retry messages after host device-ID replacement, and expose failed
-discovery after offline retirement. Mock paths assume rotation verified ownership/link ordering;
-cryptographic succession, omitted-path detection, fork/rollback and proof-size bounds remain the
-rotation contract. Simulated host ID changes do not change author keys or prove writer migration.
-The group directory retains historical evidence only after the audience guard; it never routes
-using an expired predecessor. This models routing retirement, not access-grant expiry.
+## Reachability (`src/reachability.rs`): MOCK verified-succession adapter
 
-The five-node scheduler adds three tests: ten seeded 100-event schedules with three members
-and two host replicas, plus explicit reachable-update recovery and mutual-retirement failure.
-It combines cross-author causal writes, bounded queues, duplication/loss/reordering, sleep/wake,
-partitions, independent host ID replacements and control-frame delivery. Mandatory faults and
-coverage counters ensure each seed exercises the intended failures; traces report the seed and
-recent events. Healthy recovery delivers address updates over still-known routes before message
-retries. There is no automatic global directory refresh. Replica contents/proofs and fan-out
-counts converge; a retired queued destination can lose a frame without losing the local write.
+These tests use a mock adapter, not a rotation verifier.
 
-The scheduler uses idealized authenticated links and missing-envelope selection (as if a VV
-exchange completed), not real handshake/session code. Bootstrap paths are explicit fixtures.
-The random schedules recover within address overlap; separate tests expose what happens when
-that assumption fails. Host rotation changes routing device IDs only, not author keys or Loro
-writer identities. Sleep retains in-memory state and is not a process-crash test.
+- **Whole-path install check.** `HostDirectory::install` checks the whole disclosed path:
+  - The root must be the nominated device and must have no predecessor.
+  - Each later record must name the previous record's device. This is a mock `predecessor`
+    field, not a cryptographic link.
+  - Every record must have the right owner and the group audience.
+- **Paths that are refused.** These leave the directory unchanged:
+  - `[nominated, sibling]`
+  - a spliced predecessor
+  - a private or wrong-group record at any position
+  - an owner mismatch in the middle of the path
 
-Not covered: edits/deletes, rotation, author-key succession, device forks/collisions, group
-revocation/ban semantics, durable storage, endpoint discovery, file transfers, actual host
-capability proofs or OS lifecycle. In-memory host receipts do not establish persistence.
-A complete-set reconciliation pass repairs loss in the scheduler; it is not a bandwidth-efficient
-production sync protocol. See `docs/group-chat-tests.md` for the larger conceptual plan.
+  An adapter that returns no path installs nothing.
+- **Typed connect failures.** `Network::connect` returns one of two reasons:
+  - `NoActiveBinding`: no binding is installed, or the current one has retired.
+  - `EndpointGone`: the binding is live, but that endpoint/device is not listening.
+
+  This separates "unreachable" from a proof failure, which is `install` returning false.
+- **Expired predecessors.** They are kept as history but never used as a fallback, even while
+  their endpoint still listens. A positive control routes before retirement.
+- **Host device-ID replacement.** Routing and retry keep working across a replacement with no
+  new group delegation. "No delegation" is structural: authorization never reads the directory.
+- **Offline retirement (limitation).** Even with the old endpoint still listening, the failure
+  is `NoActiveBinding`, and nothing discovers the new endpoint.
+
+Mock paths assume that rotation has already verified signatures, ordering, forks and rollback.
+Cryptographic succession, omitted-path detection, fork/rollback and proof-size bounds stay in
+the rotation contract. Simulated host ID changes do not change author keys or prove writer
+migration. Retirement here means routing retirement, not access-grant expiry.
+
+## Five-node scheduler (`src/scheduler.rs`)
+
+The scheduler has five tests.
+
+1. **Ten seeded 100-event schedules.**
+   - Setup: three members and two hosts. Cross-author causal writes, duplication, loss and
+     reordering, sleep/wake, partitions, two forced host rotations and control frames.
+   - Time stays at or below 13, under `BINDING_LIFETIME` (30), so **no binding retires in this
+     test**.
+   - Fault counters only count operations that actually happened, and the test asserts that a
+     receiver saw a duplicate.
+   - The event kind now comes from high LCG bits. The low bits used before G-H cycle with
+     period 8, so every seed got the same sequence of event kinds.
+2. **Ten seeded schedules to t=120 (four binding lifetimes).**
+   - Every node rotates every 10 ticks, 12 times in all.
+   - Random sleep, partitions, duplicate/drop/reorder and control frames run throughout.
+   - At the end of every 7th tick, nodes 0–3 heal and every node re-pushes its address over
+     routes it still knows. Outages are therefore shorter than the 20-tick overlap.
+   - Asserted:
+     - some sends are refused because a binding retired;
+     - nodes 0–3 converge, with no duplicate fan-out and original signatures;
+     - host 4, offline for 40 ticks (longer than one lifetime), is **mutually retired**:
+       neither side holds a live binding of the other, both directions fail with
+       `NoActiveBinding`, and host 4 misses every post made after it went offline.
+   - An explicit out-of-band re-bootstrap fixture, not discovery, then restores convergence.
+   - Without a real bound on outages, G-H saw online nodes fragment permanently in some seeds.
+3. **Queue limit.** The transport queue limit (64) is reached. Further sends are refused and not
+   kept, and a later reconcile delivers the rest.
+4. **Address update before retry.** A replacement host pushes its address over a route the
+   other side still knows, and the message retry then succeeds.
+5. **Mutual retirement (limitation).** A queued frame is lost and both directions report
+   `NoActiveBinding`. The local write is kept.
+
+The scheduler uses idealized authenticated links. It selects missing envelopes as if a VV
+exchange had completed; there is no real handshake or session code. Bootstrap paths are explicit
+fixtures, and there is no automatic global directory refresh. Sleep keeps in-memory state, so it
+is not a process-crash test.
+
+## Not covered
+
+- Edits and deletes.
+- Author-key succession.
+- Device forks and collisions.
+- Group revocation and ban semantics (D01–D06).
+- Durable storage (S01–S07).
+- Endpoint discovery.
+- File transfers.
+- Real host capability proofs.
+- OS lifecycle.
+- Acks (I7, I8).
+- Pull/subscribe.
+
+In-memory host receipts do not establish persistence. Both harnesses repair loss with a
+complete-set reconciliation pass, so convergence after that pass is largely by construction. It
+is not evidence of an efficient production sync or gossip protocol. See
+`docs/group-chat-tests.md` for the larger conceptual plan and `docs/group-sim-coverage-audit.md`
+for the claim-by-claim audit.
