@@ -266,11 +266,18 @@ def day_noon_offset(days_back):
     return int(target - now.timestamp() * 1000)
 
 
+def build_peer():
+    """Always (re)build: a stale target/release/p2p-peer silently tests old code."""
+    subprocess.run([sys.executable, str(ROOT / "scripts/buildlock.py"), "--who", "e2e", "--",
+                    "cargo", "build", "--locked", "--release", "-q", "-p", "peer"], cwd=ROOT, check=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--keep", action="store_true")
     ap.add_argument("--skip-unit", action="store_true")
     args = ap.parse_args()
+    build_peer()
     c = Checks()
     tmp = Path(tempfile.mkdtemp(prefix="tl-chat-e2e-"))
     env = dict(os.environ)

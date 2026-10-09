@@ -100,12 +100,17 @@ def until(fn, timeout, step=0.3):
     return None
 
 
+def build_peer():
+    """Always (re)build: a stale target/release/p2p-peer silently tests old code."""
+    subprocess.run([sys.executable, str(ROOT / "scripts/buildlock.py"), "--who", "e2e", "--",
+                    "cargo", "build", "--locked", "--release", "-q", "-p", "peer"], cwd=ROOT, check=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--keep", action="store_true")
     args = ap.parse_args()
-    if not PEER.exists():
-        sys.exit(f"build it first: cargo build --release -p peer ({PEER})")
+    build_peer()
     tmp = Path(tempfile.mkdtemp(prefix="e2e-link-"))
     c = Checks()
     peers = []

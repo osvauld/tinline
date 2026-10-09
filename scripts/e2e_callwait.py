@@ -86,9 +86,14 @@ def scenario(c, tmp, env, action):
         c.ok("answer: B ran a second call", b_out.count("RESULT") >= 2, b_out[-300:])
 
 
+def build_peer():
+    """Always (re)build: a stale target/release/p2p-peer silently tests old code."""
+    subprocess.run([sys.executable, str(ROOT / "scripts/buildlock.py"), "--who", "e2e", "--",
+                    "cargo", "build", "--locked", "--release", "-q", "-p", "peer"], cwd=ROOT, check=True)
+
+
 def main():
-    if not PEER.exists():
-        subprocess.run(["cargo", "build", "--release", "-q", "-p", "peer"], cwd=ROOT, check=True)
+    build_peer()
     env = dict(os.environ, P2P_WAITING_RING_SECS=str(WAIT_SECS))
     env.pop("P2P_RELAY_ONLY", None)
     c = Checks()
