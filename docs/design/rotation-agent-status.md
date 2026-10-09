@@ -9,7 +9,7 @@ This board is a handoff snapshot, not a running task service.
 - Rotation tests/docs are uncommitted/untracked; preserve them.
 - No subagents are currently claimed by this board.
 - No production rotation implementation, stable API or derivation scheme selected.
-- Existing core merge-marker repair still unverified/unperformed in this worktree.
+- Core merge markers resolved via dev merge (35564bc); full p2pcore suite 121 passed (A1).
 
 ## Latest executed checks
 

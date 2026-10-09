@@ -2,9 +2,12 @@
 
 ## Location and delivery state
 
-- Worktree: `/home/abe/p2p_chat/.claude/worktree/group-chat`
-- Branch: `group-chat`, based on dev commit `6b1aaef`.
-- All group work currently **uncommitted**. No production group feature or integration landed.
+- (Updated 2026-10-10) Group work was imported and committed into branch
+  `endpoint-rotation-blocking` (`a3b8829`), worktree `.claude/worktree/endpoint-rotation-blocking`,
+  which now hosts both rotation and group work under one coordinator. The old `group-chat`
+  worktree is a stale duplicate. Task packets: `docs/design/rotation-agent-packets.md`.
+- Coverage audit of these tests: `docs/group-sim-coverage-audit.md` (several claims below are
+  overstated; see its §5 hardening table). No production group feature or integration landed.
 - Other worktrees/agents own blocking and rotation. Do not copy their uncommitted implementation
   or assume their test-only models are frozen APIs.
 

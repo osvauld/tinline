@@ -170,7 +170,7 @@ Record outcomes in this file, with supporting test cases:
 Inspect proto, endpoint lifecycle, vault/store, device registry, chat/control
 handshakes, account switching, and existing block enforcement. Record findings
 and precise file/function integration points. The base currently contains
-committed conflict markers in `crates/core/src/node.rs` around lines 2717 and
+(RESOLVED 2026-10-10 via dev merge 35564bc; see rotation-baseline-report.md) committed conflict markers in `crates/core/src/node.rs` around lines 2717 and
 2760. Resolve those in an isolated prerequisite change before claiming a passing
 core baseline; do not mix unrelated cleanup into rotation changes.
 

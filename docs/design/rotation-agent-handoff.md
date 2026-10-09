@@ -77,8 +77,8 @@ Keep historical notes labeled; don't silently treat every earlier proposal as se
 - Contact removal currently also blocks the DID, purges chat and ends matching calls.
 - Transport secret also signs chat/self-sync batches; Loro peer IDs depend on device
   public key and document name. Rotation is therefore not just swapping a socket key.
-- Core base contains committed merge markers in `crates/core/src/node.rs` (verify
-  their current state). No full-core passing baseline has been claimed here.
+- (Updated 2026-10-10) node.rs merge markers were resolved by dev `0f36a29`, merged at
+  `35564bc`. Full `cargo test -p p2pcore`: 121 passed (A1, `rotation-baseline-report.md`).
 
 ### Added here: test-only artifacts
 

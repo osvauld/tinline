@@ -46,7 +46,7 @@ Run from rotation worktree:
 python3 scripts/test_rotation_discovery_model.py
 ```
 
-Result: 6 tests passed. No core build was run; inherited conflict markers remain
+Result: 6 tests passed. No core build was run; inherited conflict markers remained (resolved 2026-10-10, see rotation-baseline-report.md)
 in `crates/core/src/node.rs` and baseline repair is still pending.
 
 The deterministic model checks discovery/update requirements: independent device

@@ -101,8 +101,9 @@ persistence scenarios S01–S07 are in `docs/group-chat-tests.md`.
 Suggested batches (≤5 concurrent; buildlock serializes builds):
 - Batch 1: A1, B1, C1, D1, G-A
 - Batch 2: A2, B2, C3, E1, G-B
-- Batch 3: B3, C2, D2, G-C
-- Later: G-D (after G-HISTORY/G-FORK decisions)
+- Batch 3: B3, C2, D2, G-C, G-H, K1
+- Later: G-B after G-H (shares tests.rs); G-D after G-HISTORY/G-FORK decisions
+(2026-10-10: actual dispatch is rolling — packets start as soon as dependencies merge, ≤5 live.)
 Coordinator reviews each batch, updates the status board, then launches the next.
 
 ---
@@ -371,11 +372,44 @@ import, commit, StoredAck, fan-out. Implement S01–S07 as tests. Use the same s
 C2's `rotation-storage-failure-contract.md` where they overlap; state that real fsync/vault
 durability is not modeled.
 
+### G-H — Group-sim test hardening (from G-A audit §5; before G-B)
+
+Owns edits to existing `crates/group-sim/src/{tests.rs,scheduler.rs,reachability.rs,authority.rs}`
+and `crates/group-sim/README.md` (sole owner of these files while running). Apply the G-A §5
+hardening table: non-vacuity guards (accepted-count/len assertions) and omitted-dependency
+negative control on `seeded_reordered_loss_and_retry_schedules_converge`; a seeded schedule that
+runs past `BINDING_LIFETIME` so retirement actually happens; isolated single-cause rejection tests
+(attestation-to-author binding, `delegable=false`, issuer-must-be-parent-holder, cross-group with
+post-state check); a reusable before/after replica snapshot helper (doc, VV, accepted, pending,
+fanout) used by rejection tests on POPULATED replicas; make queue limits reachable and asserted;
+make `connect` report a reason so routing-failure tests can tell why; mock path install checks the
+whole path (reject `[nominated, sibling]`). Do not change semantics silently: if hardening exposes a
+real bug, keep a failing-then-fixed pair and report it. Re-scope README claims to what is asserted.
+Run `cargo test -p group-sim`; report old 24 → new count.
+
 ### G-D — Real succession verifier behind the group adapter (WAIT for B1 + B3 + user decisions)
 
 Replace `MockRotation` usage with an adapter over the rotation verifier fixture, keeping the
 mock for contrast. Not schedulable until G-HISTORY (full ancestry vs checkpoint) and G-FORK
 are decided.
+
+---
+
+## K1 — Restore key-change characterization tests (core; current-product relevance)
+
+A1 (O1–O5) and D1 (§7) found that restore-over-existing ALREADY changes the device key today, with
+untested consequences. Owns NEW `crates/core/tests/rotation_restore_characterization.rs` only.
+Read `crates/core/tests/restore.rs` and its helpers first and reuse them (read-only). Write tests
+that characterise current behaviour after a restore that changes the device key, each labelled
+`// KIND: limitation` if it demonstrates a defect or `// KIND: invariant` if it holds:
+1. `ticket()` after the key change: is the cached ticket redeemable? (A1 O1, `node.rs:1910`)
+2. A message sent but unacknowledged before restore: is it delivered afterwards? (O3)
+3. Delivery ticks for pre-restore messages after restore. (O4)
+4. A contact's OTHER device verifying our pre-restore history via relay/history path. (O2, D1 §2)
+5. Contact's `verified` flag after our restore. (O6)
+Do NOT fix production code; a limitation test asserts today's (wrong) outcome and names the
+expected-correct outcome in a comment. Run `cargo test -p p2pcore --test rotation_restore_characterization`
+through buildlock, then full `cargo test -p p2pcore` (baseline 121 passed).
 
 ---
 
