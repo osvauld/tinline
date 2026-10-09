@@ -1831,6 +1831,7 @@ impl Inner {
 
         let this = self.clone();
         self.handle.spawn(async move {
+            let id = ep.id();
             while let Some(incoming) = ep.accept().await {
                 // Bounded: a flood of strangers gets refused instead of costing a task each.
                 // The reserved slots are for contacts' devices, which we can only tell apart
@@ -1881,7 +1882,7 @@ impl Inner {
                     }
                 });
             }
-            this.log("endpoint closed");
+            this.log(format!("endpoint {id} closed"));
         });
         Ok(())
     }

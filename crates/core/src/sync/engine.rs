@@ -22,8 +22,9 @@ const DIAL_TIMEOUT: Duration = Duration::from_secs(10);
 pub(crate) struct SelfSlot {
     dialer: [u8; 32],
     conn: Connection,
-    /// What the peer is known to hold of the account doc (updated by the session loop).
-    pub(crate) sent: Arc<parking_lot::Mutex<Option<VersionVector>>>,
+    /// What the peer has confirmed it holds of the account doc (its `Hello`s and batches), not
+    /// merely what was written to the stream: an unlink closes the endpoint right after.
+    pub(crate) acked: Arc<parking_lot::Mutex<Option<VersionVector>>>,
 }
 
 impl SelfSlot {
@@ -39,6 +40,9 @@ pub(crate) struct SelfSync {
     pub backoff: parking_lot::Mutex<HashMap<[u8; 32], (u32, Instant)>>,
     pub dialing: parking_lot::Mutex<HashSet<[u8; 32]>>,
     pub kick: tokio::sync::Notify,
+    /// This device is unlinking itself: its own tombstone coming back in a batch must not remove
+    /// the account before `unlink_device` has pushed that tombstone to the others.
+    pub leaving: std::sync::atomic::AtomicBool,
 }
 
 fn sync_period() -> Duration {
@@ -193,7 +197,7 @@ impl Inner {
             }
         }
         self.sync_bump();
-        if ch.self_removed {
+        if ch.self_removed && !self.selfsync.leaving.load(std::sync::atomic::Ordering::SeqCst) {
             let this = self.clone();
             self.handle.spawn(async move {
                 this.remove_self_account(epoch).await;
@@ -301,13 +305,13 @@ impl Inner {
             }
             old.conn.close(0u32.into(), b"duplicate");
         }
-        let sent = Arc::new(parking_lot::Mutex::new(None));
-        map.insert(remote, SelfSlot { dialer, conn: conn.clone(), sent: sent.clone() });
-        Some(sent)
+        let acked = Arc::new(parking_lot::Mutex::new(None));
+        map.insert(remote, SelfSlot { dialer, conn: conn.clone(), acked: acked.clone() });
+        Some(acked)
     }
 
-    /// Waits (bounded) until every other live device of the registry has a session that has been
-    /// sent everything we hold (dialling the ones without).
+    /// Waits (bounded) until every other live device of the registry has a session whose peer
+    /// confirmed holding everything we hold (dialling the ones without).
     pub(crate) fn wait_pushed(&self, max: Duration) {
         self.sync_kick();
         let end = Instant::now() + max;
@@ -324,7 +328,7 @@ impl Inner {
                 let sessions = self.selfsync.sessions.lock();
                 others.iter().all(|d| {
                     sessions.get(d).is_some_and(|s| {
-                        s.sent.lock().as_ref().is_some_and(|v| v.partial_cmp(&mine).is_some_and(|o| o != std::cmp::Ordering::Less))
+                        s.acked.lock().as_ref().is_some_and(|v| v.partial_cmp(&mine).is_some_and(|o| o != std::cmp::Ordering::Less))
                     })
                 })
             };
@@ -387,12 +391,12 @@ impl Inner {
         let remote_relay = remote_relay.filter(|r| proto::valid_relay_hint(r));
         self.note_own_device(epoch, &attestation, remote, remote_relay);
         let dialer_key = if dialer { me.device } else { remote };
-        let Some(sent_shared) = self.register_session(remote, dialer_key, &conn) else {
+        let Some(acked) = self.register_session(remote, dialer_key, &conn) else {
             return Ok(());
         };
         self.selfsync.backoff.lock().remove(&remote);
         self.log(format!("own-device sync with {} ({})", proto::device_to_text(&remote), if dialer { "dialed" } else { "accepted" }));
-        let r = self.clone().self_loop(&me, remote, &sent_shared, &mut reader, &mut writer).await;
+        let r = self.clone().self_loop(&me, remote, &acked, &mut reader, &mut writer).await;
         self.drop_session(remote, &conn);
         conn.close(0u32.into(), b"done");
         if let Err(e) = &r {
@@ -409,7 +413,7 @@ impl Inner {
         self: Arc<Self>,
         me: &Arc<Me>,
         remote: [u8; 32],
-        sent_shared: &Arc<parking_lot::Mutex<Option<VersionVector>>>,
+        acked: &Arc<parking_lot::Mutex<Option<VersionVector>>>,
         reader: &mut FrameReader,
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
@@ -427,6 +431,7 @@ impl Inner {
                         SelfMsg::Hello { docs } => {
                             for (name, vv) in docs {
                                 if name == DOC_NAME && let Some(vv) = Self::peer_vv_of(&vv) {
+                                    acked.lock().get_or_insert_with(VersionVector::new).merge(&vv);
                                     sent = Some(vv);
                                 }
                             }
@@ -440,9 +445,14 @@ impl Inner {
                             }
                             if !update.is_empty() {
                                 self.apply_account_update(epoch, &update)?;
+                                // The ack the sender waits on before it may drop the connection.
+                                writer.send(&SelfMsg::Hello { docs: vec![(DOC_NAME.into(), acc.vv().encode())] }).await?;
                             }
-                            if let (Some(theirs), Some(s)) = (Self::peer_vv_of(&vv), sent.as_mut()) {
-                                s.merge(&theirs);
+                            if let Some(theirs) = Self::peer_vv_of(&vv) {
+                                acked.lock().get_or_insert_with(VersionVector::new).merge(&theirs);
+                                if let Some(s) = sent.as_mut() {
+                                    s.merge(&theirs);
+                                }
                             }
                             self.touch_device(epoch, remote);
                         }
@@ -453,14 +463,12 @@ impl Inner {
                         SelfMsg::Auth { .. } => return Err(Error::Protocol("unexpected auth".into())),
                     }
                     self.push_changes(me, &acc, &mut sent, writer).await?;
-                    *sent_shared.lock() = sent.clone();
                 }
                 _ = changes.changed() => {
                     if self.shared.lock().epoch != epoch {
                         return Ok(());
                     }
                     self.push_changes(me, &acc, &mut sent, writer).await?;
-                    *sent_shared.lock() = sent.clone();
                 }
             }
         }

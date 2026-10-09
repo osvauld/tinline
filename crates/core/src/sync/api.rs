@@ -183,6 +183,7 @@ impl Node {
         if dev == me.device {
             self.inner.not_in_call()?;
             // Tell the others first (best effort: they stop dialling this device), then go.
+            self.inner.selfsync.leaving.store(true, std::sync::atomic::Ordering::SeqCst);
             {
                 let mut s = self.inner.shared.lock();
                 if let Some(e) = s.state.registry.iter_mut().find(|e| e.device == dev) {
@@ -193,9 +194,11 @@ impl Node {
             self.inner.wait_pushed(std::time::Duration::from_secs(5));
             let inner = self.inner.clone();
             let epoch = me.epoch;
-            return self.block_on(async move {
+            let r = self.block_on(async move {
                 inner.remove_self_account(epoch).await;
             });
+            self.inner.selfsync.leaving.store(false, std::sync::atomic::Ordering::SeqCst);
+            return r;
         }
         let relay = {
             let mut s = self.inner.shared.lock();

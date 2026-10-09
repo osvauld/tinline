@@ -10,6 +10,7 @@
 - 35: S5 voice parser hardened. Security review S1–S6 marked fixed.
 - 34h-desktop: desktop linking UI (desktop 32 tests + clippy re-run by lead after merge; linked against headless peer both ways).
 - e2e scripts now always rebuild the release peer.
+- Fix (lead): unlinking a device from itself now reaches the other devices. Its own tombstone coming back in a batch removed the account before the push (`SelfSync::leaving`), and `wait_pushed` now waits for the peer's ack (a `Hello` after each applied batch), not just a stream write.
 
 ## Stopped mid-task by the user (NOT merged, unverified)
 - 34g chat + "You" sync between own devices: WIP commit 3083577 on branch `task-34g-chatsync` (worktree `.claude/worktree/task-34g-chatsync`).
