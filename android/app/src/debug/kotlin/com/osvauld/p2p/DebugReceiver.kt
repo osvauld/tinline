@@ -80,6 +80,13 @@ class DebugReceiver : BroadcastReceiver() {
                 val f = ChatBackend.override as? FakeChatSource ?: throw IllegalStateException("chat_fake is off")
                 f.incoming(i.getStringExtra("who") ?: FakeChatSource.did("Arjun"), i.getStringExtra("text") ?: "Hello")
             }
+            // Device linking without a camera: feed the other device's QR text into the scan path.
+            // `new=1` = this phone is the new device (link_new_scan, label `label`).
+            "link_scan" -> app.links.scan(i.getStringExtra("qr") ?: "", i.getStringExtra("new") == "1", i.getStringExtra("label") ?: "Test phone")
+            "link_show" -> app.links.showQr(i.getStringExtra("new") == "1", i.getStringExtra("label") ?: "Test phone")
+            "link_approve" -> { app.links.approve(i.getStringExtra("pass")); testLog("link_approve ok") }
+            "link_cancel" -> app.links.cancel()
+            "devices" -> node.linkedDevices().forEach { testLog("device label=${it.label} this=${it.thisDevice} removed=${it.removed} seen=${it.lastSeen}") }
             else -> Log.w("P2PTEST", "unknown cmd $cmd")
         }
     }

@@ -50,7 +50,7 @@ fun TinSwitch(checked: Boolean, onChange: (Boolean) -> Unit, desc: String) {
 fun SettingsScreen(
     app: P2pApp, missing: List<Need>, onBack: () -> Unit, onBattery: () -> Unit, onPassphrase: () -> Unit, onPhrase: () -> Unit,
     onAbout: () -> Unit, onDiagnostics: () -> Unit, onSwitchPick: (String) -> Unit = {}, onCreateAccount: () -> Unit = {},
-    onRestoreAccount: () -> Unit = {}, onDevices: () -> Unit = {},
+    onRestoreAccount: () -> Unit = {}, onDevices: () -> Unit = {}, onLinkDevice: () -> Unit = {}, onLinkAccount: () -> Unit = {},
 ) {
     val avail by app.availability.collectAsState()
     val available = avail.available
@@ -77,8 +77,10 @@ fun SettingsScreen(
                 }
             }
             SectionLabel("DEVICES")
-            ListItem("Linked devices", onClick = onDevices, icon = Icons.Rounded.Devices, sub = "This phone only")
-            ListItem("Link a device", icon = Icons.Rounded.AddLink, sub = "Coming soon", trailing = null, titleColor = c.ink2)
+            val devVer by app.links.devicesVersion.collectAsState()
+            val devCount by produceState(1, devVer) { value = withContext(Dispatchers.IO) { runCatching { app.node.linkedDevices().count { !it.removed } }.getOrDefault(1) } }
+            ListItem("Linked devices", onClick = onDevices, icon = Icons.Rounded.Devices, sub = if (devCount <= 1) "This phone only" else "$devCount devices")
+            ListItem("Link a device", onClick = onLinkDevice, icon = Icons.Rounded.AddLink, sub = "Use your account on another phone or computer")
             SectionLabel("CALLS")
             ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = Icons.Rounded.Call,
                 trailing = { TinSwitch(available, { on -> scope.launch(Dispatchers.IO) { app.setAvailable(on) } }, "Available for calls") })
@@ -94,7 +96,7 @@ fun SettingsScreen(
         }
     }
     if (sheet) AccountSheet(app, onDismiss = { sheet = false }, onPick = { sheet = false; onSwitchPick(it) },
-        actions = AccountActions(onCreate = { sheet = false; onCreateAccount() }, onRestore = { sheet = false; onRestoreAccount() }))
+        actions = AccountActions(onCreate = { sheet = false; onCreateAccount() }, onRestore = { sheet = false; onRestoreAccount() }, onLink = { sheet = false; onLinkAccount() }))
     if (editing) {
         var text by remember { mutableStateOf(name) }
         TinDialog("Your name", { editing = false }, "Save", {

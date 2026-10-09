@@ -43,7 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Step { Welcome, Name, Pass, Phrase, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd }
+private enum class Step { Welcome, Name, Pass, Phrase, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd, LinkName, LinkQr, LinkPass, Syncing }
 
 /** Common frame of the onboarding steps: back arrow, progress dots, scrolling body, pinned footer. */
 @Composable
@@ -87,7 +87,7 @@ fun OnboardingFlow(
     val scope = rememberCoroutineScope()
     val addState = remember { app.adding.value }
     val adding = addState != null
-    var step by rememberSaveable { mutableStateOf(when { forgot -> Step.Restore; adding -> if (addState!!.restore) Step.Restore else Step.Name; else -> Step.Welcome }) }
+    var step by rememberSaveable { mutableStateOf(when { forgot -> Step.Restore; adding -> if (addState!!.link) Step.LinkName else if (addState.restore) Step.Restore else Step.Name; else -> Step.Welcome }) }
     var name by rememberSaveable { mutableStateOf(if (forgot) app.node.profile()?.name ?: "" else "") }
     var restoring by rememberSaveable { mutableStateOf(forgot || addState?.restore == true) }
     // Secrets are never saved into the instance-state bundle.
@@ -100,10 +100,13 @@ fun OnboardingFlow(
     var existsDialog by remember { mutableStateOf(false) }
     var chooseAccount by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf("") }
+    // Linking to an existing account: set once the account has arrived (the peer's name, for the Syncing screen).
+    var linkedPeer by remember { mutableStateOf<String?>(null) }
+    var linkedName by remember { mutableStateOf("") }
     var label by rememberSaveable { mutableStateOf("Personal phone") }
     // The identity appeared some other way (debug hook, a restored process): leave onboarding.
     val has by app.hasIdentity.collectAsState()
-    LaunchedEffect(has, created) { if (!forgot && !adding && has && !created && !busy) onDone() }
+    LaunchedEffect(has, created) { if (!forgot && !adding && has && !created && !busy && step != Step.LinkQr) onDone() }
 
     fun finish() { app.finishAdding(); onDone() }
     fun cancelAdd() {
@@ -123,6 +126,7 @@ fun OnboardingFlow(
             withContext(Dispatchers.IO) { app.startServices() }
             when {
                 forgot -> onDone()
+                linkedPeer != null -> step = Step.Syncing
                 phrase != null -> step = Step.Phrase
                 else -> step = Step.Device
             }
@@ -158,7 +162,33 @@ fun OnboardingFlow(
     }
 
     when (step) {
-        Step.Welcome -> WelcomeScreen(onStart = { restoring = false; step = Step.Name }, onRestore = { restoring = true; step = Step.Restore })
+        Step.Welcome -> WelcomeScreen(onStart = { restoring = false; step = Step.Name }, onRestore = { restoring = true; step = Step.Restore },
+            onLink = { restoring = false; step = Step.LinkName })
+        Step.LinkName -> DeviceNameScreen(label, { label = it; error = null }, false, null, progress = null, cta = "Continue",
+            onBack = { if (adding) cancelAdd() else step = Step.Welcome }, onNext = { label = label.trim(); step = Step.LinkQr })
+        Step.LinkQr -> LinkSession(app, newDevice = true, label = label.trim(), onClose = { step = Step.LinkName }, onDone = { d ->
+            created = true; linkedPeer = d.peer.ifBlank { "your other device" }; linkedName = d.name; step = Step.LinkPass
+        })
+        Step.LinkPass -> PassphraseStep(
+            pass, { pass = it; error = null }, busy, error, progress = null, title = "Protect this phone", cta = "Add passphrase",
+            lead = "A passphrase encrypts your account on this phone, so nobody holding it can copy your account. Optional: you can add one later in Settings.",
+            onBack = null,
+            onNext = {
+                val p = pass; pass = ""; busy = true; error = null
+                scope.launch {
+                    val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(null, p) } }
+                    busy = false
+                    r.onFailure { error = friendly(it) }
+                    r.onSuccess { persistThenContinue() }
+                }
+            },
+            onSkip = { pass = ""; persistThenContinue() },
+        )
+        Step.Syncing -> {
+            val contacts by app.contacts.collectAsState()
+            val calls by app.history.collectAsState()
+            SyncingScreen(app.node.profile()?.name ?: linkedName, linkedPeer.orEmpty(), contacts.size, calls.size, onStart = { afterTerms() })
+        }
         Step.Restore -> RestoreScreen(
             onBack = { if (forgot) onCancelForgot() else if (adding) cancelAdd() else step = Step.Welcome },
             error = error, busy = false,
@@ -223,9 +253,8 @@ fun OnboardingFlow(
 // ------------------------------------------------------------------ 1 welcome
 
 @Composable
-fun WelcomeScreen(onStart: () -> Unit, onRestore: () -> Unit) {
+fun WelcomeScreen(onStart: () -> Unit, onRestore: () -> Unit, onLink: () -> Unit = {}) {
     val c = Tin.c
-    var soon by remember { mutableStateOf(false) }
     Page {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -238,8 +267,7 @@ fun WelcomeScreen(onStart: () -> Unit, onRestore: () -> Unit) {
         }
         Column(Modifier.padding(start = 28.dp, end = 28.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TinButton("Get started", onStart)
-            TinButton("Link to an existing account", { soon = true }, style = BtnStyle.Outlined)
-            if (soon) Hint("Linking to another device is coming soon. For now, use your recovery phrase.", Modifier.padding(horizontal = 4.dp, vertical = 4.dp))
+            TinButton("Link to an existing account", onLink, style = BtnStyle.Outlined)
             TinButton("I have a recovery phrase", onRestore, style = BtnStyle.Text)
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
                 Icon(Icons.Rounded.WarningAmber, null, tint = c.ink2, modifier = Modifier.size(20.dp))
@@ -282,6 +310,7 @@ fun NewPassphraseField(pass: String, onPass: (String) -> Unit, enabled: Boolean 
 fun PassphraseStep(
     pass: String, onPass: (String) -> Unit, busy: Boolean, error: String?,
     progress: Int?, title: String, cta: String, onBack: (() -> Unit)?, onNext: () -> Unit, onSkip: () -> Unit, canSkip: Boolean = true,
+    lead: String = "Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it. Optional — you can add one later in Settings.",
 ) {
     StepFrame(progress, onBack, footer = {
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 8.dp), color = Tin.c.pr, trackColor = Tin.c.sf3)
@@ -289,7 +318,7 @@ fun PassphraseStep(
         if (canSkip) TinButton("Skip for now", onSkip, style = BtnStyle.Text, enabled = !busy)
     }) {
         H1(title)
-        Lead("Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it. Optional — you can add one later in Settings.")
+        Lead(lead)
         NewPassphraseField(pass, onPass, !busy, onDone = onNext)
         if (error != null) Text(error, style = TinType.bodyM, color = Tin.c.er)
     }
@@ -338,9 +367,9 @@ fun PhraseScreen(phrase: String, onNext: () -> Unit) {
 // ------------------------------------------------------------------ name this phone
 
 @Composable
-fun DeviceNameScreen(label: String, onChange: (String) -> Unit, busy: Boolean, error: String?, onNext: () -> Unit) {
+fun DeviceNameScreen(label: String, onChange: (String) -> Unit, busy: Boolean, error: String?, onNext: () -> Unit, progress: Int? = 4, cta: String = "Continue", onBack: (() -> Unit)? = null) {
     val c = Tin.c
-    StepFrame(4, null, footer = { TinButton("Continue", onNext, enabled = label.isNotBlank() && !busy) }) {
+    StepFrame(progress, onBack, footer = { TinButton(cta, onNext, enabled = label.isNotBlank() && !busy) }) {
         H1("Name this phone")
         Lead("So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.")
         TinField(label, onChange, "Device name", Modifier.padding(top = 8.dp), enabled = !busy,
@@ -367,20 +396,11 @@ fun DeviceNameScreen(label: String, onChange: (String) -> Unit, busy: Boolean, e
 @Composable
 fun RestoredScreen(name: String, onStart: () -> Unit) {
     val c = Tin.c
-    StepFrame(null, null, footer = { TinButton("Start without them", onStart, style = BtnStyle.Text) }) {
+    StepFrame(null, null, footer = { TinButton("Continue", onStart) }) {
         AppIconBadge(64.dp)
         H1(if (name.isNotBlank()) "Welcome back, $name" else "Welcome back")
         Lead("Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us.")
-        Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(14.dp)).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text("Still have Tinline on another device?", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-            Text("Link this phone to it to bring everything over.", style = TinType.bodyM, color = c.ink2)
-            TinButton("Link to another device", {}, enabled = false)
-            Hint("Coming soon.")
-        }
-        Hint("No other device? You’ll start with an empty contact list and add people again.")
+        Hint("This phone starts with an empty contact list. Linking works only for a phone that has no copy of the account yet, so to bring your contacts over, use “Link to an existing account” on a fresh install.")
     }
 }
 

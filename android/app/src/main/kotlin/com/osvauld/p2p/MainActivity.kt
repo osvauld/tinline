@@ -76,6 +76,8 @@ private sealed interface Route {
     data object MicNeeded : Route
     data class SwitchConfirm(val did: String) : Route
     data object Devices : Route
+    data class DeviceDetail(val device: String) : Route
+    data object LinkDevice : Route
 }
 
 @Composable
@@ -101,9 +103,9 @@ private fun Root(app: P2pApp) {
     fun home() { stack.clear(); stack.add(Route.Home) }
     fun say(msg: String) { scope.launch { snack.currentSnackbarData?.dismiss(); snack.showSnackbar(msg) } }
     /** Create / restore: leave the current account and run the add-account onboarding. */
-    fun addAccount(restore: Boolean) {
+    fun addAccount(restore: Boolean, link: Boolean = false) {
         scope.launch {
-            val r = withContext(Dispatchers.IO) { runCatching { app.beginAdding(restore) } }
+            val r = withContext(Dispatchers.IO) { runCatching { app.beginAdding(restore, link) } }
             r.onFailure { say(friendly(it)) }
             r.onSuccess { home(); onboarding = true }
         }
@@ -177,8 +179,13 @@ private fun Root(app: P2pApp) {
         }
     }
 
+    val unlinkedName by app.unlinked.collectAsState()
+    // The account went away (unlinked here or from another device): leave whatever screen was open.
+    LaunchedEffect(has) { if (!has) home() }
     Box(Modifier.fillMaxSize()) {
     when {
+        unlinkedName != null -> UnlinkedScreen(unlinkedName!!, onOk = { app.dismissUnlinked(); home() },
+            onLinkAgain = { app.dismissUnlinked(); if (!app.node.hasIdentity()) onboarding = true else addAccount(false, link = true) })
         onboarding || !has || adding != null -> key(adding) { OnboardingFlow(app, missing, fix) { onboarding = false; home(); termsOk = LegalStore.accepted(ctx); missing = Perms.missing(ctx) } }
         lock == LockState.LOCKED ->
             if (forgot) OnboardingFlow(app, missing, fix, forgot = true, onCancelForgot = { forgot = false }) { forgot = false; missing = Perms.missing(ctx) }
@@ -243,10 +250,12 @@ private fun Root(app: P2pApp) {
                     app, missing, onBack = ::pop, onBattery = { stack.add(Route.Battery) }, onPassphrase = { stack.add(Route.Passphrase) },
                     onPhrase = { stack.add(Route.PhraseGate) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
                     onSwitchPick = { stack.add(Route.SwitchConfirm(it)) }, onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) },
-                    onDevices = { stack.add(Route.Devices) },
+                    onDevices = { stack.add(Route.Devices) }, onLinkDevice = { stack.add(Route.LinkDevice) }, onLinkAccount = { addAccount(false, link = true) },
                 )
                 is Route.SwitchConfirm -> SwitchConfirmScreen(app, r.did, onBack = ::pop, onSwitched = { home() }, onMessage = ::say)
-                Route.Devices -> LinkedDevicesScreen(app, ::pop)
+                Route.Devices -> LinkedDevicesScreen(app, ::pop, onLink = { stack.add(Route.LinkDevice) }, onDetail = { stack.add(Route.DeviceDetail(it)) })
+                is Route.DeviceDetail -> DeviceDetailScreen(app, r.device, onBack = ::pop, onMessage = ::say)
+                Route.LinkDevice -> LinkSession(app, newDevice = false, label = "", onClose = ::pop)
                 Route.Battery -> BatteryScreen(missing, onBack = ::pop, onFix = fix)
                 Route.Passphrase -> ChangePassphraseScreen(app, onBack = ::pop)
                 Route.PhraseGate -> PhraseGateScreen(app, onBack = ::pop, onPhrase = { p -> pop(); stack.add(Route.PhraseShown(p)) })

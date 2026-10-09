@@ -158,64 +158,14 @@ private fun MyCodeTab(app: P2pApp, meName: String, tab: Int, onTab: (Int) -> Uni
 
 @Composable
 private fun ScanTab(tab: Int, onTab: (Int) -> Unit, onClose: () -> Unit, onPaste: () -> Unit, onScanned: (String) -> Unit) {
-    val ctx = LocalContext.current
-    val c = Tin.c
-    val owner = LocalLifecycleOwner.current
-    var granted by remember { mutableStateOf(Perms.granted(ctx, Manifest.permission.CAMERA)) }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
+    var granted by remember { mutableStateOf(true) }
     var torch by remember { mutableStateOf(false) }
-    var view by remember { mutableStateOf<BarcodeView?>(null) }
-    var handled by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { if (!granted) ask.launch(Manifest.permission.CAMERA) }
-    DisposableEffect(owner, view, granted) {
-        val v = view
-        val o = LifecycleEventObserver { _, e ->
-            if (v != null && granted) when (e) {
-                Lifecycle.Event.ON_RESUME -> v.resume()
-                Lifecycle.Event.ON_PAUSE -> v.pause()
-                else -> {}
-            }
-        }
-        owner.lifecycle.addObserver(o)
-        if (v != null && granted && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) v.resume()
-        onDispose { owner.lifecycle.removeObserver(o); v?.pause() }
-    }
     Page(Modifier.background(Color(0xFF050807))) {
         TopBar("Add contact", onClose) {
-            if (granted) IconBtn(if (torch) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, "Torch", { torch = !torch; view?.setTorch(torch) })
+            if (granted) IconBtn(if (torch) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, "Torch", { torch = !torch })
         }
         Segmented(tab, onTab, Color(0xFF4D5853))
-        Box(Modifier.weight(1f).fillMaxWidth().padding(top = 16.dp).background(Color(0xFF2A302E)), contentAlignment = Alignment.Center) {
-            if (granted) {
-                AndroidView({ context ->
-                    BarcodeView(context).apply {
-                        decoderFactory = DefaultDecoderFactory(listOf(BarcodeFormat.QR_CODE))
-                        decodeSingle(BarcodeCallback { r -> r.text?.let { if (!handled) { handled = true; onScanned(it) } } })
-                        view = this
-                    }
-                }, Modifier.fillMaxSize())
-                Canvas(Modifier.size(260.dp)) {
-                    val len = 44.dp.toPx(); val w = 4.dp.toPx(); val r = 16.dp.toPx(); val s = size.width
-                    fun corner(x: Float, y: Float, dx: Float, dy: Float) {
-                        val p = androidx.compose.ui.graphics.Path().apply {
-                            moveTo(x, y + dy * len); lineTo(x, y + dy * r); quadraticTo(x, y, x + dx * r, y); lineTo(x + dx * len, y)
-                        }
-                        drawPath(p, Color.White, style = Stroke(w, cap = androidx.compose.ui.graphics.StrokeCap.Round))
-                    }
-                    corner(0f, 0f, 1f, 1f); corner(s, 0f, -1f, 1f); corner(0f, s, 1f, -1f); corner(s, s, -1f, -1f)
-                    drawRoundRect(Color(0xFFE8B04A), Offset(24.dp.toPx(), s / 2), Size(s - 48.dp.toPx(), 2.dp.toPx()), CornerRadius(1.dp.toPx()))
-                }
-                Text("Point at their Tinline code", Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
-            } else Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Icon(Icons.Rounded.NoPhotography, null, tint = Color.White, modifier = Modifier.size(48.dp))
-                Text("Tinline needs the camera to read the code.", style = TinType.bodyL, color = Color.White, textAlign = TextAlign.Center)
-                TinButton("Allow camera", {
-                    val act = ctx as? android.app.Activity
-                    if (act != null && !androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(act, Manifest.permission.CAMERA) && !granted) ask.launch(Manifest.permission.CAMERA)
-                    else ask.launch(Manifest.permission.CAMERA)
-                }, fill = false)
-            }
-        }
+        QrCameraBox(Modifier.weight(1f).fillMaxWidth().padding(top = 16.dp), "Point at their Tinline code", torch, { granted = it }, onScanned)
         Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
             Hint("Camera is used only to read the code. Nothing is recorded.", Modifier.fillMaxWidth(), align = TextAlign.Center)

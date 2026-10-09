@@ -33,6 +33,9 @@ class P2pApp : Application(), NodeEvents {
         private set
     lateinit var realChat: CoreChatSource
         private set
+    /** Device linking: the state machine behind the Link a device screens, and the core's LinkEvents. */
+    lateinit var links: LinkController
+        private set
     /** The chat backend: the node's, or the in-memory fake the debug gallery swaps in. */
     val chat: ChatSource get() = ChatBackend.current(this)
 
@@ -63,6 +66,8 @@ class P2pApp : Application(), NodeEvents {
         ChatMedia.clear(this)
         calls = CallController(this)
         node = newNode()
+        links = LinkController(this)
+        node.setLinkEvents(links)
         realChat = CoreChatSource(this).also { it.attach() }
         selectLastAccountIfNone()
         UnlockStore.migrateLegacy(this, currentDid())
@@ -100,12 +105,39 @@ class P2pApp : Application(), NodeEvents {
         _lock.value = node.lockState()
         _hasIdentity.value = node.hasIdentity()
         _accountDid.value = currentDid()
+        rememberName()
         _contacts.value = node.contacts()
         _status.value = node.status()
         if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
         else { _history.value = emptyList(); _availability.value = Availability(true, null) }
         // The account to come back to if the app dies while a new one is being added.
         if (_hasIdentity.value && node.identityCommitted()) currentDid()?.let { lastPrefs.edit().putString("did", it).apply() }
+    }
+
+    /** DID -> name of the accounts seen, so "this phone was unlinked" can still say whose account it was. */
+    private val names = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private fun rememberName() {
+        try { node.profile()?.let { names[it.did] = it.name } } catch (_: Exception) {}
+    }
+
+    private val _unlinked = MutableStateFlow<String?>(null)
+    /** Set (to the account's name) when another device removed the account from this phone; the screen clears it. */
+    val unlinked: StateFlow<String?> = _unlinked
+    fun dismissUnlinked() { _unlinked.value = null }
+
+    /**
+     * The core removed account [did] from this phone (we unlinked it here, or another device did):
+     * forget its remembered key, select another account if one is left (and bring it online).
+     * [notify] shows the "This phone was unlinked" screen. Blocking.
+     */
+    fun accountGone(did: String, notify: Boolean) {
+        val name = names.remove(did) ?: ""
+        UnlockStore.clear(this, did)
+        if (lastPrefs.getString("did", null) == did) lastPrefs.edit().remove("did").apply()
+        if (notify) _unlinked.value = name
+        try { lifecycle.submit { selectLastAccountIfNone() }.get() } catch (e: Exception) { Log.w(TAG, "accountGone: ${e.javaClass.simpleName}") }
+        refresh()
+        if (node.hasIdentity()) { Notifications.cancelLocked(this); CoreService.ensureRunning(this); startNode() }
     }
 
     private val lastPrefs by lazy { getSharedPreferences("accounts", Context.MODE_PRIVATE) }
@@ -182,17 +214,17 @@ class P2pApp : Application(), NodeEvents {
     // ---- accounts ----
 
     /** Set while a new account is being created/restored next to the existing ones. */
-    data class Adding(val from: String?, val restore: Boolean)
+    data class Adding(val from: String?, val restore: Boolean, val link: Boolean = false)
     private val _adding = MutableStateFlow<Adding?>(null)
     val adding: StateFlow<Adding?> = _adding
 
     /** Leaves the current account (offline until we come back) and lets onboarding add another. Blocking; throws InCall. */
-    fun beginAdding(restore: Boolean) {
+    fun beginAdding(restore: Boolean, link: Boolean = false) {
         try {
             lifecycle.submit {
                 val from = currentDid()
                 node.beginNewAccount()
-                _adding.value = Adding(from, restore)
+                _adding.value = Adding(from, restore, link)
                 refresh()
             }.get()
         } catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }

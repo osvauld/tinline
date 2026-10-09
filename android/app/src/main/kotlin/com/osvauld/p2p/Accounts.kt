@@ -27,7 +27,7 @@ import kotlinx.coroutines.withContext
 import uniffi.p2pcore.AccountSummary
 
 /** What the sheet's two "add" rows do; null (onboarding) hides them. */
-class AccountActions(val onCreate: () -> Unit, val onRestore: () -> Unit)
+class AccountActions(val onCreate: () -> Unit, val onRestore: () -> Unit, val onLink: () -> Unit)
 
 /** The account switcher bottom sheet. [onPick] gets a non-current account; the current one is just ticked. */
 @Composable
@@ -58,7 +58,7 @@ fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, a
         if (actions != null) {
             Spacer(Modifier.height(8.dp))
             SheetRow(Icons.Rounded.Add, "Create a new account", null, true) { actions.onCreate() }
-            SheetRow(Icons.Rounded.Link, "Link an account from another device", "Coming soon", false) {}
+            SheetRow(Icons.Rounded.Link, "Link an account from another device", null, true) { actions.onLink() }
             SheetRow(Icons.Rounded.Key, "Restore with recovery phrase", null, true) { actions.onRestore() }
         }
         Hint("One account is online at a time. Calls to a locked account ring only on your other devices.", Modifier.padding(top = 12.dp))
@@ -125,47 +125,6 @@ fun SwitchConfirmScreen(app: P2pApp, did: String, onBack: () -> Unit, onSwitched
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TinButton(if (busy) "Switching…" else if (needsPass) "Unlock and switch" else "Switch", ::go, enabled = !busy && (!needsPass || pass.isNotEmpty()))
             TinButton("Cancel", onBack, style = BtnStyle.Text, enabled = !busy)
-        }
-    }
-}
-
-/** Settings › Devices › Linked devices. Only this phone for now; linking is a later task. */
-@Composable
-fun LinkedDevicesScreen(app: P2pApp, onBack: () -> Unit) {
-    val c = Tin.c
-    val scope = rememberCoroutineScope()
-    var label by remember { mutableStateOf(app.node.deviceLabel()) }
-    var editing by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    Page {
-        TopBar("Linked devices", onBack)
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-            Hint("Calls ring on all of these. People you call never see these names.", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
-            ListItem("This phone — ${label ?: "Unnamed"}", sub = "This device · Android", icon = Icons.Rounded.PhoneAndroid,
-                trailing = { IconBtn(Icons.Rounded.Edit, "Rename this phone", { editing = true }, tint = c.pr) })
-            error?.let { Text(it, Modifier.padding(horizontal = 20.dp), style = TinType.bodyM, color = c.er) }
-            Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    TinButton("Link a device", {}, enabled = false, icon = Icons.Rounded.Add)
-                    Hint("Coming soon.")
-                }
-            }
-            SectionLabel("SYNC")
-            Hint("Devices sync directly with each other whenever two are online at once. There is no copy on any server.", Modifier.padding(horizontal = 20.dp))
-        }
-    }
-    if (editing) {
-        var text by remember { mutableStateOf(label ?: "") }
-        TinDialog("Name this phone", { editing = false }, "Save", {
-            val n = text.trim()
-            editing = false
-            scope.launch {
-                val r = withContext(Dispatchers.IO) { runCatching { app.node.setDeviceLabel(n) } }
-                r.onFailure { error = friendly(it) }
-                r.onSuccess { error = null; label = n }
-            }
-        }, confirmEnabled = text.isNotBlank()) {
-            TinField(text, { text = it }, "Device name")
         }
     }
 }
