@@ -349,24 +349,18 @@ impl Inner {
         n_dev: &[u8; 32],
     ) -> Result<(), &'static str> {
         let deadline = tokio::time::Instant::now() + APPROVE_TIMEOUT;
-        loop {
-            tokio::select! {
-                c = run.rx.recv() => match c {
-                    Some(LinkCmd::Approve) => break,
-                    _ => {
-                        let _ = io.send(&LinkMsg::Reject { reason: "rejected".into() }).await;
-                        return Err("cancelled");
-                    }
-                },
-                m = io.recv() => {
-                    // The peer gave up (or sent nonsense) while we waited for the user.
-                    let _ = m;
-                    return Err("rejected");
-                }
-                _ = tokio::time::sleep_until(deadline) => {
+        tokio::select! {
+            c = run.rx.recv() => {
+                if !matches!(c, Some(LinkCmd::Approve)) {
                     let _ = io.send(&LinkMsg::Reject { reason: "rejected".into() }).await;
-                    return Err("timeout");
+                    return Err("cancelled");
                 }
+            }
+            // The peer gave up (or sent nonsense) while we waited for the user.
+            _ = io.recv() => return Err("rejected"),
+            _ = tokio::time::sleep_until(deadline) => {
+                let _ = io.send(&LinkMsg::Reject { reason: "rejected".into() }).await;
+                return Err("timeout");
             }
         }
         let me = self.me().map_err(|_| "locked")?;

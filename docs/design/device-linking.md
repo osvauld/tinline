@@ -2,7 +2,9 @@
 
 Status: design agreed (2026-10-09): mnemonic transfer chosen (§0). UI boards: canvas section
 "Accounts & linked devices" (`*Accounts*`, `*Link*`, `*LinkedDevices*`, `AndroidMultiDevice` in this folder). Builds on `multi-device.md` (agreed model) and `accounts.rs`
-(per-DID sealed storage). Nothing here is implemented yet.
+(per-DID sealed storage).
+
+**Implementation status (task 34d, 2026-10-09):** §1-§5 are implemented in `crates/core/src/sync/` (`link.rs`, `engine.rs`, `accdoc.rs`, `api.rs`); wire and merge rules in `docs/protocol.md` ("Link session in core", "Own-device sync"). Tests: `crates/core/tests/link*.rs`, `scripts/e2e_link.py`. Not done: chats and "You" items in the sync set (34g), the crash-before-`LinkDone` case is covered only by the generic "accept an unknown device with a valid attestation" rule (no dedicated test), cap on linked devices (the DeviceList already caps at 8), platform UI.
 
 ## 0. The decision everything rests on
 

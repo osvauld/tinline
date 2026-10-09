@@ -16,6 +16,7 @@
 //!   p2p-peer --data DIR chat-list NAME [DAY]
 //!   p2p-peer --data DIR file-send NAME PATH [--wait SECS]
 //!   p2p-peer --data DIR voice-send NAME OGGFILE [--duration-ms N] [--wait SECS]
+//!   p2p-peer --data DIR link-serve          (commands on stdin: init, link-show, link-scan, approve, devices ...; see `link_serve`)
 //!   p2p-peer --data DIR chat-serve          (commands on stdin, events on stdout; see `serve`)
 //!   p2p-peer --data DIR listen [--for SECS]   (also receives chat; prints CHAT lines)
 //!
@@ -183,6 +184,7 @@ fn run() -> Result<(), String> {
     }
     node.set_chat_events(Arc::new(ChatPrinter::default()));
     match rest.as_slice() {
+        ["link-serve"] => link_serve(&node, &o, rx),
         ["chat-send", who, text] => {
             start_online(&node)?;
             let did = find(&node, who)?;
@@ -576,6 +578,153 @@ fn serve(node: &Node) -> Result<(), String> {
             ["lock"] => {
                 node.lock();
                 Ok("LOCKED".into())
+            }
+            ["quit"] => Err("quit".into()),
+            _ => Err(format!("unknown command {line:?}")),
+        })();
+        match r {
+            Ok(s) => println!("OK {s}"),
+            Err(e) if e == "quit" => break,
+            Err(e) => println!("ERR {e}"),
+        }
+    }
+    node.stop();
+    Ok(())
+}
+
+struct LinkPrinter;
+
+impl p2pcore::LinkEvents for LinkPrinter {
+    fn on_link_code(&self, code: String, peer_label: String) {
+        println!("LINK code={code} peer={peer_label:?}");
+    }
+    fn on_link_done(&self, did: String, name: String) {
+        println!("LINK_DONE {did} {name}");
+    }
+    fn on_link_failed(&self, reason: String) {
+        println!("LINK_FAILED {reason}");
+    }
+    fn on_devices_changed(&self) {
+        println!("DEVICES_CHANGED");
+    }
+    fn on_history_changed(&self) {
+        println!("HISTORY_CHANGED");
+    }
+    fn on_unlinked(&self, did: String) {
+        println!("UNLINKED {did}");
+    }
+}
+
+/// Device-linking driver for `scripts/e2e_link.py`. Commands on stdin, `OK ...` / `ERR ...` on
+/// stdout, `LINK*` / `INCOMING` / `DEVICES_CHANGED` events interleaved. May start with no
+/// identity (`init NAME` creates one; `link-new-*` + `approve` on the other side + `commit`
+/// adds this install to an existing account).
+fn link_serve(node: &Arc<Node>, o: &Opts, rx: mpsc::Receiver<Event>) -> Result<(), String> {
+    use std::io::BufRead;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    node.set_link_events(Arc::new(LinkPrinter));
+    if node.has_identity() {
+        start_online(node)?;
+    }
+    let auto = Arc::new(AtomicBool::new(false));
+    {
+        let node = node.clone();
+        let auto = auto.clone();
+        std::thread::spawn(move || {
+            for ev in rx {
+                match ev {
+                    Event::Incoming(c) => {
+                        println!("INCOMING {} {}", c.call_id, c.peer_did);
+                        if auto.load(Ordering::SeqCst) {
+                            std::thread::sleep(Duration::from_millis(500));
+                            let _ = node.answer(c.call_id);
+                        }
+                    }
+                    Event::State(id, st) => println!("STATE {id} {st:?}"),
+                }
+            }
+        });
+    }
+    println!("READY");
+    for line in std::io::stdin().lock().lines() {
+        let line = line.map_err(|e| e.to_string())?;
+        let parts: Vec<&str> = line.splitn(3, ' ').collect();
+        let r: Result<String, String> = (|| match parts.as_slice() {
+            ["init", name] => {
+                node.create_identity(name.to_string(), o.passphrase.clone()).map_err(|e| e.to_string())?;
+                start_online(node)?;
+                Ok(format!("INIT {}", node.profile().map(|p| p.did).unwrap_or_default()))
+            }
+            ["whoami"] => {
+                let p = node.profile().ok_or("no identity")?;
+                Ok(format!("WHO {} {}", p.did, node.device_key_for_test().unwrap_or_default()))
+            }
+            ["ticket"] => Ok(format!("TICKET {}", node.my_ticket().map_err(|e| e.to_string())?)),
+            ["add", t] => {
+                let c = node.add_contact(t.to_string()).map_err(|e| e.to_string())?;
+                Ok(format!("ADDED {}", c.did))
+            }
+            ["contacts"] => {
+                for c in node.contacts() {
+                    println!("CONTACT {} name={:?} alias={:?} verified={}", c.did, c.name, c.alias, c.verified);
+                }
+                Ok("LISTED".into())
+            }
+            ["recents"] => {
+                for r in node.recent_calls(50) {
+                    println!("REC {} {} {}", r.call_id, r.peer_did, r.reason);
+                }
+                Ok("LISTED".into())
+            }
+            ["alias", did, text] => {
+                node.rename_contact(did.to_string(), Some(text.to_string())).map_err(|e| e.to_string())?;
+                Ok("OK".into())
+            }
+            ["verify", did] => {
+                node.set_verified(did.to_string(), true).map_err(|e| e.to_string())?;
+                Ok("OK".into())
+            }
+            ["call", did] => Ok(format!("CALL {}", node.call(did.to_string()).map_err(|e| e.to_string())?.call_id)),
+            ["hangup", id] => {
+                node.hangup(id.to_string()).map_err(|e| e.to_string())?;
+                Ok("OK".into())
+            }
+            ["autoanswer", v] => {
+                auto.store(*v == "on", Ordering::SeqCst);
+                Ok("OK".into())
+            }
+            ["link-show"] => Ok(format!("QR {}", node.link_show_qr().map_err(|e| e.to_string())?)),
+            ["link-scan", qr] => {
+                node.link_scan(qr.to_string()).map_err(|e| e.to_string())?;
+                Ok("SCANNING".into())
+            }
+            ["link-new-show", label] => Ok(format!("QR {}", node.link_new_show_qr(label.to_string()).map_err(|e| e.to_string())?)),
+            ["link-new-scan", qr, label] => {
+                node.link_new_scan(qr.to_string(), label.to_string()).map_err(|e| e.to_string())?;
+                Ok("SCANNING".into())
+            }
+            ["approve"] => {
+                node.link_approve(Some(o.passphrase.clone())).map_err(|e| e.to_string())?;
+                Ok("APPROVED".into())
+            }
+            ["cancel"] => {
+                node.link_cancel();
+                Ok("OK".into())
+            }
+            ["commit"] => {
+                node.set_passphrase(None, o.passphrase.clone()).map_err(|e| e.to_string())?;
+                start_online(node)?;
+                Ok("COMMITTED".into())
+            }
+            ["devices"] => {
+                for d in node.linked_devices() {
+                    println!("DEVICE {} label={:?} this={} removed={}", d.device, d.label, d.this_device, d.removed);
+                }
+                Ok("LISTED".into())
+            }
+            ["unlink", dev] => {
+                node.unlink_device(dev.to_string(), Some(o.passphrase.clone())).map_err(|e| e.to_string())?;
+                Ok("UNLINKED".into())
             }
             ["quit"] => Err("quit".into()),
             _ => Err(format!("unknown command {line:?}")),

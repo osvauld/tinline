@@ -397,7 +397,7 @@ fn redeemed_nonces_union_and_strangers_cannot_open_self_sync() {
     // X redeems E's ticket: the nonce must reach N, which then refuses the same ticket.
     x.node.add_contact(e.node.my_ticket().unwrap()).unwrap();
     let nonces = e.node.redeemed_for_test();
-    assert_eq!(nonces.len() >= 1, true);
+    assert!(!nonces.is_empty());
     eventually(40, "N has the nonce", || n.node.redeemed_for_test() == nonces);
     // A contact (other DID) is not let into tinline/self/1; our own device is.
     assert!(!a.node.self_probe_for_test(dev(&e)));

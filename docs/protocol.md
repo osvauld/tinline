@@ -183,6 +183,62 @@ secret`, `K = HKDF-SHA256(ikm = secret, info = T)`.
 is not an attestation and never opens self-sync, and a self attestation without a grant of ours
 never gets a call accepted.
 
+### Link session in core (task 34d)
+
+`LinkHello` also carries the sender's device `label` (sanitized, not covered by the proof), shown on
+the other screen next to the code. Flow: scanner dials the QR's device (core checks the QUIC remote
+equals it), scanner sends its hello, displayer verifies (proof, role, remote device, QR not expired
+or spent), answers, both emit `on_link_code`. E waits for `link_approve` (5 min), then sends
+`LinkGrant`; N validates (mnemonic DID equals every attestation DID in the registry, E is in it, no
+account dir for that DID yet), creates the account in memory with its own device key and data key
+(the key of the endpoint that carried the link), sends `LinkDone`. E registers N (label, attestation,
+relay if known), re-signs its `DeviceList` lazily and kicks own-device sync.
+
+One link at a time (`reserve_link`). The first connection to a displayed QR consumes it: a wrong
+proof, a racing second scanner and a late scanner all get a plain close (`rejected`), never a
+reason. Failure tokens surfaced to the UI: `expired cancelled rejected bad_proof mismatch timeout
+net locked busy bad_grant account_exists`. Locking E cancels its link. Env knob for tests:
+`P2P_LINK_TTL_SECS`.
+
+### Own-device sync (ALPN `tinline/self/1`, task 34d)
+
+Frames: u32 BE length + bincode of `SelfMsg` (16 MiB cap).
+
+- `Auth { attestation, relay, unlink }`: dialer first, acceptor answers. The acceptor runs
+  `accept_self_hello` against its registry's tombstones. An unknown device with a valid attestation
+  of our DID is accepted and added to the registry (a linked device that never announced itself).
+  A tombstoned dialer is answered with `Auth` then `Unlinked` (it had to prove it is ours first).
+- `Hello { docs: [(name, version vector)] }` both ways, then `Sync { doc, vv, update, sig }` with
+  the ops the other side lacks (also the live push after any local change). `sig` is the sender's
+  device key over `chat::wire::sign_batch(doc, update)`; the receiver verifies it with the
+  QUIC-authenticated device. All own devices hold the identity secret, so peer-id ownership of
+  ops is not enforced (unlike chats).
+- `Unlinked`: "you were removed". Sent after `Auth`, either by the unlinker (dialer with
+  `unlink: true`, skipping session setup) or by an acceptor that tombstoned the dialer. The receiver
+  locks and deletes the account and emits `on_unlinked`. Ignored while a call is running (the next
+  contact with a device that knows retries).
+- One session per device; if both dialled at once the connection dialled by the lower device key
+  survives on both ends. Dial loop: every 15 s (`P2P_SELF_SYNC_SECS`), at start, after a link, on
+  `network_changed`; per device exponential backoff 20 s..300 s, cleared by a kick.
+
+What syncs: one Loro doc `account` (peer id = `BLAKE3("tinline-loro-peer-v1" || device || "account")`),
+sealed in `account.redb` under `sync/account`, with maps:
+
+| map | entry | merge |
+|---|---|---|
+| `devices/<device>` | `{att, label, removed, relay}` | field LWW; `removed` is sticky (OR) |
+| `contacts/<did>` | `{rec, alias, verified}`; `rec` = name, devices, device_list, grant, added_at | alias/verified LWW; `rec`: name LWW, newer signed device list wins (S4 reset applies), grant that outlives, max added_at |
+| `tomb/<did>` | removal time (ms) | a contact is alive iff `added_at*1000 > tomb`: removal beats stale edits; a later ticket scan re-adds (and lifts the block on every device); same-second ties go to the removal |
+| `redeemed/<nonce>`, `revoked/<id>` | `"1"` | union, never shrink |
+| `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept |
+
+`verified` is stored with the contact's device-list `seq`; it counts only against a device set at
+least as new as the receiver's (S4). Never synced: device secret, DEK, passphrase, availability,
+current ticket, `last_seen`, in-flight calls. `State` stays the working copy: every persist flushes
+into the doc (`write_from`) and every received batch is imported and merged back (`read_into`) under
+the `shared` lock, so a missing entry always means a local deletion. Chats and "You" items (34g)
+add more docs to the `Hello` list.
+
 | Check | Defends against |
 |---|---|
 | Devices-domain signature, DID == expected | A list forged or lifted from another account or blob kind |

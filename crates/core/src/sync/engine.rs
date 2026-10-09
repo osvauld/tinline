@@ -20,9 +20,10 @@ const DIAL_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// One live session with another own device.
 pub(crate) struct SelfSlot {
-    // see `close`
     dialer: [u8; 32],
     conn: Connection,
+    /// What the peer is known to hold of the account doc (updated by the session loop).
+    pub(crate) sent: Arc<parking_lot::Mutex<Option<VersionVector>>>,
 }
 
 impl SelfSlot {
@@ -292,16 +293,46 @@ impl Inner {
 
     /// Keeps one session per device: if both sides dialled at once, the connection dialled by
     /// the lower device key survives on both ends. `false` = this one lost.
-    fn register_session(&self, remote: [u8; 32], dialer: [u8; 32], conn: &Connection) -> bool {
+    fn register_session(&self, remote: [u8; 32], dialer: [u8; 32], conn: &Connection) -> Option<Arc<parking_lot::Mutex<Option<VersionVector>>>> {
         let mut map = self.selfsync.sessions.lock();
         if let Some(old) = map.get(&remote) {
             if old.dialer < dialer {
-                return false;
+                return None;
             }
             old.conn.close(0u32.into(), b"duplicate");
         }
-        map.insert(remote, SelfSlot { dialer, conn: conn.clone() });
-        true
+        let sent = Arc::new(parking_lot::Mutex::new(None));
+        map.insert(remote, SelfSlot { dialer, conn: conn.clone(), sent: sent.clone() });
+        Some(sent)
+    }
+
+    /// Waits (bounded) until every other live device of the registry has a session that has been
+    /// sent everything we hold (dialling the ones without).
+    pub(crate) fn wait_pushed(&self, max: Duration) {
+        self.sync_kick();
+        let end = Instant::now() + max;
+        loop {
+            let (acc, others) = {
+                let s = self.shared.lock();
+                let me = s.me.as_ref().map(|m| m.device);
+                let others: Vec<[u8; 32]> = s.state.registry.iter().filter(|e| !e.removed && Some(e.device) != me).map(|e| e.device).collect();
+                (s.acc.clone(), others)
+            };
+            let Some(acc) = acc else { return };
+            let mine = acc.vv();
+            let done = {
+                let sessions = self.selfsync.sessions.lock();
+                others.iter().all(|d| {
+                    sessions.get(d).is_some_and(|s| {
+                        s.sent.lock().as_ref().is_some_and(|v| v.partial_cmp(&mine).is_some_and(|o| o != std::cmp::Ordering::Less))
+                    })
+                })
+            };
+            if done || Instant::now() > end {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
     }
 
     fn drop_session(&self, remote: [u8; 32], conn: &Connection) {
@@ -356,12 +387,12 @@ impl Inner {
         let remote_relay = remote_relay.filter(|r| proto::valid_relay_hint(r));
         self.note_own_device(epoch, &attestation, remote, remote_relay);
         let dialer_key = if dialer { me.device } else { remote };
-        if !self.register_session(remote, dialer_key, &conn) {
+        let Some(sent_shared) = self.register_session(remote, dialer_key, &conn) else {
             return Ok(());
-        }
+        };
         self.selfsync.backoff.lock().remove(&remote);
         self.log(format!("own-device sync with {} ({})", proto::device_to_text(&remote), if dialer { "dialed" } else { "accepted" }));
-        let r = self.clone().self_loop(&me, remote, &mut reader, &mut writer).await;
+        let r = self.clone().self_loop(&me, remote, &sent_shared, &mut reader, &mut writer).await;
         self.drop_session(remote, &conn);
         conn.close(0u32.into(), b"done");
         if let Err(e) = &r {
@@ -378,6 +409,7 @@ impl Inner {
         self: Arc<Self>,
         me: &Arc<Me>,
         remote: [u8; 32],
+        sent_shared: &Arc<parking_lot::Mutex<Option<VersionVector>>>,
         reader: &mut FrameReader,
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
@@ -421,12 +453,14 @@ impl Inner {
                         SelfMsg::Auth { .. } => return Err(Error::Protocol("unexpected auth".into())),
                     }
                     self.push_changes(me, &acc, &mut sent, writer).await?;
+                    *sent_shared.lock() = sent.clone();
                 }
                 _ = changes.changed() => {
                     if self.shared.lock().epoch != epoch {
                         return Ok(());
                     }
                     self.push_changes(me, &acc, &mut sent, writer).await?;
+                    *sent_shared.lock() = sent.clone();
                 }
             }
         }

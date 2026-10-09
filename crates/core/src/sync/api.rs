@@ -190,7 +190,7 @@ impl Node {
                 }
             }
             let _ = self.inner.persist_for(Some(me.epoch));
-            std::thread::sleep(std::time::Duration::from_millis(500));
+            self.inner.wait_pushed(std::time::Duration::from_secs(5));
             let inner = self.inner.clone();
             let epoch = me.epoch;
             return self.block_on(async move {

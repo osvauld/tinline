@@ -15,7 +15,7 @@ The platform's data dir is a root that can hold several accounts:
 `account.redb` is a `storage::Sealed` store whose key is `BLAKE3-derive-key("tinline/account-store/v2", recovery phrase)`
 (words lower-cased, single-spaced; see "Storage keys" below): contacts, grants, block/revoke lists, redeemed ticket nonces, the ticket we hand out, availability, the call
 history and the device label are in there, and exist in memory only while the account is unlocked (`lock()` drops
-them; contacts and calls read as empty while locked). Record paths (`state`, `calls`, `device_label`) are not
+them; contacts and calls read as empty while locked). Record paths (`state`, `calls`, `device_label`, `sync/account` = the own-device sync doc) are not
 hidden. Not sealed, on purpose: the account **name**, DID and device public key in `account.json`, because the lock
 screen and the account switcher need them while locked. Anyone who copies the files can read who the accounts are
 and how many there are; nothing about contacts or calls. Ciphertext-only files do not prove secure deletion of
