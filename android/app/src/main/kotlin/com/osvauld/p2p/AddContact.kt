@@ -49,18 +49,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uniffi.p2pcore.Contact
 
-private enum class AddStage { Main, Paste, Adding, Added, Failed }
+private enum class AddStage { Main, Paste, Confirm, Adding, Added, Failed }
 
 /** Add contact: My code / Scan tabs, Paste a card, Adding..., Added, Couldn't add. */
 @Composable
-fun AddContactScreen(app: P2pApp, startOnScan: Boolean, onClose: () -> Unit, onCall: (Contact) -> Unit, onVerify: (Contact) -> Unit) {
+fun AddContactScreen(app: P2pApp, startOnScan: Boolean, autoAdd: String? = null, pasteOnOpen: Boolean = false, onClose: () -> Unit, onCall: (Contact) -> Unit, onVerify: (Contact) -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val contacts by app.contacts.collectAsState()
     val meName = remember { app.node.profile()?.name ?: "" }
-    var stage by rememberSaveable { mutableStateOf(AddStage.Main) }
+    var stage by rememberSaveable { mutableStateOf(if (autoAdd != null) AddStage.Adding else AddStage.Main) }
     var tab by rememberSaveable { mutableIntStateOf(if (startOnScan) 1 else 0) }
-    var pasted by rememberSaveable { mutableStateOf("") }
+    var pasted by rememberSaveable { mutableStateOf(autoAdd ?: "") }
+    var peek by remember { mutableStateOf<uniffi.p2pcore.CardPeek?>(null) }
+    var pasteNote by remember { mutableStateOf<String?>(null) }
     var added by remember { mutableStateOf<Contact?>(null) }
     var failure by remember { mutableStateOf<String?>(null) }
     val knownAtOpen = remember { contacts.map { it.did }.toSet() }
@@ -74,14 +76,30 @@ fun AddContactScreen(app: P2pApp, startOnScan: Boolean, onClose: () -> Unit, onC
                 .onFailure { failure = it.message; stage = AddStage.Failed }
         }
     }
+    LaunchedEffect(Unit) { if (autoAdd != null) add(autoAdd) }
+    /** Paste button: a card on the clipboard goes straight to "Add <name>?"; otherwise the text field. */
+    fun pasteNow() {
+        val t = clipboardText(ctx)
+        scope.launch {
+            val p = withContext(Dispatchers.IO) { peekOrNull(app, t) }
+            when {
+                p == null -> { pasteNote = "No Tinline card on your clipboard. Paste the message here."; pasted = t.orEmpty(); stage = AddStage.Paste }
+                p.known -> { pasteNote = null; android.widget.Toast.makeText(ctx, "${p.name.ifBlank { "They" }} is already in your contacts", android.widget.Toast.LENGTH_LONG).show() }
+                else -> { peek = p; pasted = p.ticket; stage = AddStage.Confirm }
+            }
+        }
+    }
+    LaunchedEffect(Unit) { if (pasteOnOpen) pasteNow() }
     // The other phone dialled us while our code was on screen: they are in the contact list now.
     LaunchedEffect(contacts, stage) {
         if (stage == AddStage.Main) contacts.firstOrNull { it.did !in knownAtOpen }?.let { added = it; stage = AddStage.Added }
     }
 
     when (stage) {
-        AddStage.Main -> AddMain(app, meName, tab, { tab = it }, onClose, onPaste = { stage = AddStage.Paste }, onScanned = { pasted = it; add(it) })
-        AddStage.Paste -> PasteCardScreen(pasted, { pasted = it }, onBack = { stage = AddStage.Main }, onAdd = { add(pasted) })
+        AddStage.Main -> AddMain(app, meName, tab, { tab = it }, onClose, onPaste = ::pasteNow, onScanned = { pasted = it; add(it) })
+        AddStage.Confirm -> peek?.let { p -> ConfirmScreen(p, onAdd = { add(p.ticket) }, onBack = { stage = AddStage.Main }) }
+            ?: AddMain(app, meName, tab, { tab = it }, onClose, onPaste = ::pasteNow, onScanned = { pasted = it; add(it) })
+        AddStage.Paste -> PasteCardScreen(app, pasted, { pasted = it }, onBack = { stage = AddStage.Main }, onAdd = { add(it) }, note = pasteNote)
         AddStage.Adding -> AddingScreen(meName) { job?.cancel(); stage = AddStage.Main }
         AddStage.Added -> added?.let { AddedScreen(meName, it, onCall = { onCall(it) }, onVerify = { onVerify(it) }, onDone = onClose,
             onSaveAs = { a -> if (a != null) runCatching { app.node.renameContact(it.did, a); app.refresh() } }) }
@@ -95,7 +113,7 @@ fun AddContactScreen(app: P2pApp, startOnScan: Boolean, onClose: () -> Unit, onC
 private fun AddMain(app: P2pApp, meName: String, tab: Int, onTab: (Int) -> Unit, onClose: () -> Unit, onPaste: () -> Unit, onScanned: (String) -> Unit) {
     if (tab == 1) TinlineTheme(dark = true) {
         ScanTab(tab, onTab, onClose, onPaste, onScanned)
-    } else MyCodeTab(app, meName, tab, onTab, onClose)
+    } else MyCodeTab(app, meName, tab, onTab, onClose, onPaste)
 }
 
 @Composable
@@ -116,19 +134,8 @@ private fun Segmented(tab: Int, onTab: (Int) -> Unit, outline: Color) {
 }
 
 @Composable
-private fun MyCodeTab(app: P2pApp, meName: String, tab: Int, onTab: (Int) -> Unit, onClose: () -> Unit) {
-    val ctx = LocalContext.current
+private fun MyCodeTab(app: P2pApp, meName: String, tab: Int, onTab: (Int) -> Unit, onClose: () -> Unit, onPaste: () -> Unit) {
     val c = Tin.c
-    val scope = rememberCoroutineScope()
-    val status by app.status.collectAsState()
-    var ticket by remember { mutableStateOf<String?>(null) }
-    var err by remember { mutableStateOf<String?>(null) }
-    var version by remember { mutableIntStateOf(0) }
-    var share by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(status?.online, version) {
-        withContext(Dispatchers.IO) { runCatching { app.node.myTicket() } }
-            .onSuccess { ticket = it; err = null }.onFailure { err = it.message }
-    }
     Page {
         TopBar("Add contact", onClose)
         Segmented(tab, onTab, c.ln2)
@@ -136,35 +143,8 @@ private fun MyCodeTab(app: P2pApp, meName: String, tab: Int, onTab: (Int) -> Uni
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            CardBox(Modifier.fillMaxWidth(), radius = 24.dp) {
-                Column(Modifier.padding(20.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text(meName, style = TinType.titleL.copy(fontSize = 20.sp), color = c.ink)
-                    val t = ticket
-                    Box(Modifier.size(248.dp).clip(RoundedCornerShape(14.dp)).background(Color.White), contentAlignment = Alignment.Center) {
-                        if (t != null) {
-                            val bmp = remember(t) { qrBitmap(t, 720, fg = 0xFF17201D.toInt()) }
-                            Image(bmp.asImageBitmap(), "QR code of your contact card", Modifier.fillMaxSize().padding(10.dp))
-                            Box(Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color.White).padding(3.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF0B6B5B)), contentAlignment = Alignment.Center) {
-                                TinMark(26.dp, can = Color.White, string = Color(0xFFE8B04A))
-                            }
-                        } else Text(err ?: "Preparing your code…", Modifier.padding(16.dp), style = TinType.bodyM, color = Color(0xFF4D5853), textAlign = TextAlign.Center)
-                    }
-                    Hint("Works once. Making a new code cancels this one.", Modifier.widthIn(max = 300.dp), align = TextAlign.Center)
-                }
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                TinButton("Share", {
-                    ticket?.let { t ->
-                        try { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, t), "Share contact card")) }
-                        catch (_: Exception) { share = "Nothing to share with" }
-                    }
-                }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = Icons.Rounded.Share, enabled = ticket != null)
-                TinButton("Copy", { ticket?.let { copyToClipboard(ctx, "ticket", it) } }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = Icons.Rounded.ContentCopy, enabled = ticket != null)
-            }
-            share?.let { Hint(it, color = c.er) }
-            TinButton("New code", {
-                scope.launch { withContext(Dispatchers.IO) { runCatching { app.node.resetTicket() } }; ticket = null; version++ }
-            }, style = BtnStyle.Text, icon = Icons.Rounded.Refresh)
+            MyCodeBlock(app, meName)
+            TinButton("Paste their card", onPaste, style = BtnStyle.Tonal, icon = Icons.Rounded.ContentPaste)
         }
         Row(
             Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
@@ -237,7 +217,7 @@ private fun ScanTab(tab: Int, onTab: (Int) -> Unit, onClose: () -> Unit, onPaste
             }
         }
         Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TinButton("Paste a card instead", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
+            TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
             Hint("Camera is used only to read the code. Nothing is recorded.", Modifier.fillMaxWidth(), align = TextAlign.Center)
         }
     }
@@ -246,15 +226,18 @@ private fun ScanTab(tab: Int, onTab: (Int) -> Unit, onClose: () -> Unit, onPaste
 // ------------------------------------------------------------------ paste, adding, added, failed
 
 @Composable
-fun PasteCardScreen(text: String, onChange: (String) -> Unit, onBack: () -> Unit, onAdd: () -> Unit) {
+fun PasteCardScreen(app: P2pApp, text: String, onChange: (String) -> Unit, onBack: () -> Unit, onAdd: (String) -> Unit, note: String? = null) {
     val ctx = LocalContext.current
     val c = Tin.c
-    val looks = text.trim().let { it.startsWith("OSVC2:", true) || it.startsWith("osvc1.", true) }
+    // A card may sit inside a greeting; the core finds it and checks it.
+    val peek = remember(text) { peekOrNull(app, text) }
+    val looks = peek != null
     Page {
         TopBar("Paste a card", onBack) {
             TinButton("Paste", { clipboardText(ctx)?.let(onChange) }, style = BtnStyle.Text, icon = Icons.Rounded.ContentPaste, fill = false, height = 40.dp, textStyle = TinType.label)
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (note != null) Text(note, style = TinType.bodyM, color = c.er)
             Text(androidx.compose.ui.text.buildAnnotatedString {
                 append("If they sent their card as a message, paste the whole text here. It starts with ")
                 pushStyle(androidx.compose.ui.text.SpanStyle(fontFamily = PlexMono, color = c.ink)); append("OSVC2:"); pop()
@@ -266,13 +249,13 @@ fun PasteCardScreen(text: String, onChange: (String) -> Unit, onBack: () -> Unit
             ) {
                 Column(Modifier.weight(1f)) {
                     Text("Looks like a Tinline card", style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.onPrc)
-                    Text("Single use", style = TinType.bodyM, color = c.onPrc)
+                    Text(if (peek?.known == true) "Already a contact" else "Add ${peek?.name?.ifBlank { null } ?: "them"} · single use", style = TinType.bodyM, color = c.onPrc)
                 }
                 Icon(Icons.Rounded.CheckCircle, null, tint = c.onPrc)
             }
             Hint("Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.")
         }
-        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Add contact", onAdd, enabled = looks) }
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Add contact", { peek?.let { onAdd(it.ticket) } }, enabled = looks && peek?.known != true) }
     }
 }
 
@@ -282,6 +265,19 @@ private fun CenterScreen(footer: @Composable ColumnScope.() -> Unit = {}, body: 
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically), content = body)
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp), content = footer)
+    }
+}
+
+@Composable
+private fun ConfirmScreen(p: uniffi.p2pcore.CardPeek, onAdd: () -> Unit, onBack: () -> Unit) {
+    val name = p.name.ifBlank { "this contact" }
+    CenterScreen(footer = {
+        TinButton("Add $name", onAdd, icon = Icons.Rounded.PersonAdd)
+        TinButton("Not now", onBack, style = BtnStyle.Text)
+    }) {
+        Avatar(p.name.ifBlank { "?" }, p.did, 88.dp)
+        H1("Add $name?", align = TextAlign.Center)
+        Lead("Found their Tinline card on your clipboard. Both phones need Tinline open and online to connect.", Modifier.widthIn(max = 320.dp), align = TextAlign.Center)
     }
 }
 

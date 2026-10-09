@@ -31,6 +31,11 @@ class DebugReceiver : BroadcastReceiver() {
                 app.refresh()
                 testLog("added name=${c.name} did=${c.did}")
             }
+            "clip" -> {
+                val cm = app.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("test", i.getStringExtra("text") ?: node.myTicket()))
+                testLog("clip set")
+            }
             "contacts" -> node.contacts().forEach { testLog("contact name=${it.name} did=${it.did}") }
             "call" -> {
                 val who = i.getStringExtra("who") ?: ""

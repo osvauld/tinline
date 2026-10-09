@@ -96,6 +96,13 @@ impl App {
                 };
                 self.safety = Some("41203 88127 05519 73360 29841 66012 90475 13398 57206 84431 20987 36654".into());
             }
+            "offer" | "empty-offer" => {
+                if name == "empty-offer" {
+                    contacts.clear();
+                    self.recents.clear();
+                }
+                self.offer = Some(p2pcore::CardPeek { ticket: "OSVC2:x".into(), name: "Priya Nair".into(), did: "did:key:z6MkPriya".into(), known: false });
+            }
             "avail" => self.avail_open = true,
             "offline" => self.status.online = false,
             "unavailable" => {

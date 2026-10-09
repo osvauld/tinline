@@ -175,6 +175,21 @@ struct App {
     ticks: u32,
     fetching: bool,
     chat: ChatState,
+    /// The window has keyboard focus (false with no window).
+    focused: bool,
+    /// A contact card found on the clipboard, offered as "Add <name>?".
+    offer: Option<p2pcore::CardPeek>,
+    /// Tickets of cards the user said "Not now" to; not offered again by the clipboard watcher.
+    dismissed: std::collections::HashSet<String>,
+}
+
+/// Where a click on a notification should lead.
+#[derive(Debug, Clone)]
+pub enum Target {
+    /// Just bring the window up (calls: the call screen is already what it shows).
+    Show,
+    /// The conversation with this contact.
+    Chat(String),
 }
 
 #[derive(Debug, Clone)]
@@ -257,6 +272,12 @@ enum Msg {
     OutDev(String),
     ToneToggled(bool),
     Chat(Cm),
+    /// The window gained or lost keyboard focus.
+    Focus(window::Id, bool),
+    Scale(f32),
+    ClipText(bool, Option<String>),
+    OfferAdd,
+    OfferDismiss,
     /// Test-hooks: the window's pixels, written to P2P_SHOT.
     Shot(window::Screenshot),
 }
@@ -317,8 +338,9 @@ fn take_secret(z: &mut Zeroizing<String>) -> String {
 const RENAME_ID: &str = "rename";
 const SEARCH_ID: &str = "search";
 
-/// A desktop notification, off the UI thread (some servers block on show).
-fn notify(summary: &str, body: &str) {
+/// A desktop notification, off the UI thread (some servers block on show). Clicking it (the
+/// "default" action, Linux) sends `target` back into the app.
+fn notify(summary: &str, body: &str, target: Target) {
     let (summary, body) = (summary.to_string(), body.to_string());
     std::thread::spawn(move || {
         let mut n = notify_rust::Notification::new();
@@ -327,7 +349,25 @@ fn notify(summary: &str, body: &str) {
         // a shortcut with the same id so they show under the app's name and icon.
         #[cfg(windows)]
         n.app_id("com.osvauld.tinline");
-        let _ = n.show();
+        #[cfg(all(unix, not(target_os = "macos")))]
+        {
+            n.action("default", "Open");
+            if let Ok(handle) = n.show() {
+                // Blocks until the notification is clicked or closed; this thread is its own.
+                handle.wait_for_action(|action| {
+                    if action == "default"
+                        && let Some(init) = INIT.get()
+                    {
+                        let _ = init.tx.send(Ev::Open(target));
+                    }
+                });
+            }
+        }
+        #[cfg(not(all(unix, not(target_os = "macos"))))]
+        {
+            let _ = target;
+            let _ = n.show();
+        }
     });
 }
 
@@ -438,6 +478,9 @@ impl App {
             ticks: 0,
             fetching: false,
             chat: ChatState::default(),
+            focused: false,
+            offer: None,
+            dismissed: Default::default(),
             node,
         };
         if has && crate::test_env("P2P_SCREEN").is_some_and(|v| v == "settings") {
@@ -453,7 +496,7 @@ impl App {
             tasks.push(blocking(audio::list_devices, Msg::Devices));
         }
         if !init.hidden {
-            tasks.push(app.show_window());
+            tasks.push(app.open_window(false));
         }
         #[cfg(feature = "test-hooks")]
         if crate::test_env("P2P_CHAT_FAKE").is_some_and(|v| v == "1") {
@@ -482,9 +525,21 @@ impl App {
         (app, Task::batch(tasks))
     }
 
+    /// Brings the window up for the user: opens it if closed, un-minimises, and asks the
+    /// compositor to put it in front of them (see `crate::raise`).
     fn show_window(&mut self) -> Task<Msg> {
+        crate::raise::to_user();
+        self.open_window(true)
+    }
+
+    fn open_window(&mut self, attention: bool) -> Task<Msg> {
+        let ask = move |id| if attention { window::request_user_attention(id, Some(window::UserAttention::Informational)) } else { Task::none() };
         if let Some(id) = self.win {
-            return Task::batch([window::minimize(id, false), window::gain_focus(id)]);
+            return Task::batch([
+                window::minimize(id, false),
+                window::gain_focus(id),
+                ask(id),
+            ]);
         }
         let (id, task) = window::open(window::Settings {
             size: WINDOW,
@@ -493,7 +548,28 @@ impl App {
             ..Default::default()
         });
         self.win = Some(id);
-        task.map(Msg::WindowOpened)
+        Task::batch([
+            task.map(Msg::WindowOpened),
+            ask(id),
+        ])
+    }
+
+    /// Whether the home screen is what the user is looking at, so a card offer makes sense.
+    fn can_offer(&self) -> bool {
+        self.win.is_some()
+            && !self.demo
+            && self.call.is_none()
+            && self.ended.is_none()
+            && self.screen == Screen::Home
+            && self.lock != LockState::Locked
+            && self.lock != LockState::NoIdentity
+    }
+
+    fn check_clipboard(&self, explicit: bool) -> Task<Msg> {
+        if !explicit && !self.can_offer() {
+            return Task::none();
+        }
+        clipboard::read().map(move |t| Msg::ClipText(explicit, t))
     }
 
     fn start_node(&self) -> Task<Msg> {
@@ -574,7 +650,7 @@ impl App {
                 match presentation {
                     End::Hidden => {}
                     End::Missed(text) => {
-                        notify("Tinline", &text);
+                        notify("Tinline", &text, Target::Show);
                         self.notice = Some(text);
                     }
                     End::Screen(text) => {
@@ -706,12 +782,14 @@ impl App {
                     c.stats = self.node.call_stats();
                 }
             }
-            Msg::WindowOpened(_) => {}
+            Msg::WindowOpened(id) => return window::scale_factor(id).map(Msg::Scale),
+            Msg::Scale(f) => ui::set_scale(f),
             Msg::CloseReq(id) => {
                 if Some(id) == self.win {
                     self.hide_phrase();
                     if INIT.get().unwrap().tray {
                         self.win = None;
+                        self.focused = false;
                         return window::close(id);
                     }
                     return window::minimize(id, true);
@@ -721,6 +799,7 @@ impl App {
                 if Some(id) == self.win {
                     self.hide_phrase();
                     self.win = None;
+                    self.focused = false;
                 }
             }
             Msg::Theme(m) => self.dark = self.forced_dark.unwrap_or(m != theme::Mode::Light),
@@ -1049,7 +1128,7 @@ impl App {
                 self.status = self.node.status();
                 self.contacts = self.node.contacts();
                 match r {
-                    Ok(()) => return Task::batch([self.fetch_ticket(), self.refresh_chats()]),
+                    Ok(()) => return Task::batch([self.fetch_ticket(), self.refresh_chats(), self.check_clipboard(false)]),
                     Err(e) => self.notice = Some(format!("Could not start: {e}")),
                 }
             }
@@ -1087,10 +1166,56 @@ impl App {
                     Key::Named(Named::Escape) if self.call.is_none() && (self.sel.is_some() || self.screen != Screen::Home) => {
                         return self.update(Msg::Home);
                     }
+                    // Only reaches here when no text input took the paste.
+                    Key::Character("v") if mods.command() && self.can_offer() && self.chat.viewer.is_none() => {
+                        return self.check_clipboard(true);
+                    }
                     Key::Character("k") if mods.command() && self.call.is_none() => return operation::focus(SEARCH_ID),
                     Key::Character("m") if mods.command() && active => return self.update(Msg::ToggleMute),
                     Key::Character("e") if mods.command() && self.call.is_some() => return self.update(Msg::Hangup),
                     _ => {}
+                }
+            }
+            Msg::Focus(id, on) => {
+                if Some(id) != self.win {
+                    return Task::none();
+                }
+                self.focused = on;
+                if on {
+                    // What arrived while the user was elsewhere counts as read now.
+                    let mut tasks = vec![self.check_clipboard(false)];
+                    if self.chat_visible()
+                        && let Some(peer) = self.chat.peer.clone()
+                    {
+                        tasks.push(self.mark_read(&peer));
+                    }
+                    return Task::batch(tasks);
+                }
+            }
+            Msg::ClipText(explicit, text) => {
+                if !explicit && !self.can_offer() {
+                    return Task::none();
+                }
+                let Some(peek) = text.filter(|t| t.len() < 64 * 1024).and_then(|t| self.node.peek_card(t)) else {
+                    return Task::none();
+                };
+                if peek.known {
+                    if explicit {
+                        self.notice = Some(format!("{} is already in your contacts", peek.name));
+                    }
+                } else if explicit || !self.dismissed.contains(&peek.ticket) {
+                    self.offer = Some(peek);
+                }
+            }
+            Msg::OfferAdd => {
+                if let Some(p) = self.offer.take() {
+                    self.add_in = p.ticket;
+                    return self.update(Msg::AddPressed);
+                }
+            }
+            Msg::OfferDismiss => {
+                if let Some(p) = self.offer.take() {
+                    self.dismissed.insert(p.ticket);
                 }
             }
             Msg::AddAlias(v) => self.add_alias = v,
@@ -1102,10 +1227,16 @@ impl App {
                 self.notice = None;
             }
             Msg::AddPressed => {
-                let t = self.add_in.trim().to_string();
+                let mut t = self.add_in.trim().to_string();
                 if t.is_empty() || matches!(self.add_phase, AddPhase::Connecting) {
                     return Task::none();
                 }
+                // A card pasted with text around it (a chat message, a mail) is cut out of it.
+                if let Some(p) = self.node.peek_card(t.clone()) {
+                    t = p.ticket;
+                }
+                self.offer = None;
+                self.screen = Screen::AddContact;
                 self.add_phase = AddPhase::Connecting;
                 let node = self.node.clone();
                 return blocking(move || node.add_contact(t).map_err(s), Msg::Added);
@@ -1367,13 +1498,16 @@ impl App {
             Ev::Contacts => {
                 if !self.demo {
                     self.contacts = self.node.contacts();
+                    if self.offer.as_ref().is_some_and(|o| self.contacts.iter().any(|c| c.did == o.did)) {
+                        self.offer = None;
+                    }
                     self.refresh_history();
                     return self.refresh_chats();
                 }
             }
             Ev::Chat(c) => return self.on_chat_event(c),
             Ev::Incoming(info) if self.call.as_ref().is_some_and(|c| c.state == CallState::Active && c.info.call_id != info.call_id) => {
-                notify("Tinline", &format!("{} is calling", info.peer_name));
+                notify("Tinline", &format!("{} is calling", info.peer_name), Target::Show);
                 let mut tasks = vec![self.show_window()];
                 if let Some(act) = INIT.get().unwrap().waiting_action.clone() {
                     let (node, id) = (self.node.clone(), info.call_id.clone());
@@ -1405,7 +1539,7 @@ impl App {
                     stats: None,
                 });
                 self.ended = None;
-                notify("Tinline", &format!("{name} is calling"));
+                notify("Tinline", &format!("{name} is calling"), Target::Show);
                 let mut tasks = vec![self.show_window()];
                 if let Some(secs) = INIT.get().unwrap().auto_answer {
                     let (node, id) = (self.node.clone(), info.call_id);
@@ -1426,7 +1560,7 @@ impl App {
                     self.refresh_history();
                     // Unanswered, or the caller gave up: a missed call like any other.
                     if let End::Missed(text) = reason::present(&reason, &w.peer_name, true, false) {
-                        notify("Tinline", &text);
+                        notify("Tinline", &text, Target::Show);
                         self.notice = Some(text);
                     }
                 }
@@ -1445,6 +1579,16 @@ impl App {
             }
             Ev::AudioNotice(m) => self.notice = Some(m),
             Ev::Tray(TrayCmd::Show) => return self.show_window(),
+            Ev::Open(target) => {
+                let mut tasks = vec![self.show_window()];
+                if let Target::Chat(did) = target
+                    && self.contacts.iter().any(|c| c.did == did)
+                    && self.call.is_none()
+                {
+                    tasks.push(self.update(Msg::Select(did)));
+                }
+                return Task::batch(tasks);
+            }
             Ev::Tray(TrayCmd::Quit) => return self.update(Msg::Quit),
         }
         Task::none()
@@ -1457,7 +1601,10 @@ impl App {
             window::close_requests().map(Msg::CloseReq),
             window::close_events().map(Msg::Closed),
             system::theme_changes().map(Msg::Theme),
-            iced::event::listen_with(|e, _, _| match e {
+            iced::event::listen_with(|e, _, id| match e {
+                iced::Event::Window(window::Event::Focused) => Some(Msg::Focus(id, true)),
+                iced::Event::Window(window::Event::Unfocused) => Some(Msg::Focus(id, false)),
+                iced::Event::Window(window::Event::Rescaled(f)) => Some(Msg::Scale(f)),
                 iced::Event::Window(window::Event::FileDropped(p)) => Some(Msg::Chat(Cm::Dropped(p))),
                 iced::Event::Window(window::Event::FileHovered(_)) => Some(Msg::Chat(Cm::DropHover(true))),
                 iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::Chat(Cm::DropHover(false))),

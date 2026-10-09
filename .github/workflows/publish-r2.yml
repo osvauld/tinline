@@ -1,0 +1,108 @@
+name: Publish release to R2
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published release tag (also refreshes expiring APT metadata)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r2-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment: release
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      R2_BUCKET: ${{ vars.R2_BUCKET }}
+      R2_ENDPOINT: ${{ vars.R2_ENDPOINT }}
+      GNUPGHOME: ${{ runner.temp }}/apt-gnupg
+    steps:
+      # Environment rules must restrict publishing to reviewed branches/tags.
+      - uses: actions/checkout@v4
+      - name: Test upload safeguards offline
+        run: python3 scripts/test_r2_upload.py
+      - name: Validate published stable release and configuration
+        shell: bash
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected stable vX.Y.Z tag'; exit 1; }
+          gh release view "$TAG" --json isDraft,isPrerelease > release.json
+          python3 - <<'PY'
+          import json
+          release = json.load(open('release.json'))
+          assert not release['isDraft'] and not release['isPrerelease'], 'Release must be published and stable'
+          PY
+          : "${R2_BUCKET:?Set environment variable R2_BUCKET}"
+          : "${R2_ENDPOINT:?Set environment variable R2_ENDPOINT}"
+          : "${AWS_ACCESS_KEY_ID:?Missing R2_ACCESS_KEY_ID secret}"
+          : "${AWS_SECRET_ACCESS_KEY:?Missing R2_SECRET_ACCESS_KEY secret}"
+      - name: Install repository tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev apt-utils gnupg
+          command -v aws
+      - name: Download release assets and retain existing APT pool
+        run: |
+          mkdir -p dist/deb "dist/repo/releases/$TAG" dist/repo/apt/pool
+          gh release download "$TAG" --pattern 'tinline_*.deb' --dir dist/deb
+          gh release download "$TAG" --pattern "tinline-${TAG}-x86_64-linux.tar.gz" --dir "dist/repo/releases/$TAG"
+          gh release download "$TAG" --pattern "tinline-${TAG}.apk" --dir "dist/repo/releases/$TAG"
+          aws s3 sync "s3://$R2_BUCKET/apt/pool/" dist/repo/apt/pool/ --endpoint-url "$R2_ENDPOINT"
+          # Reject changes to any existing versioned object, including old .deb files.
+          python3 - <<'PY'
+          import os, pathlib, subprocess
+          subprocess.run(['aws', 's3api', 'list-objects-v2', '--bucket', os.environ['R2_BUCKET'],
+                          '--endpoint-url', os.environ['R2_ENDPOINT'], '--output', 'json'],
+                         check=True, stdout=open('objects.json', 'w'))
+          import json
+          existing = {x['Key'] for x in json.load(open('objects.json')).get('Contents', [])}
+          candidates = [(p, f'releases/{os.environ["TAG"]}/{p.name}')
+                        for p in pathlib.Path(f'dist/repo/releases/{os.environ["TAG"]}').iterdir()]
+          candidates += [(p, f'apt/pool/main/t/tinline/{p.name}') for p in pathlib.Path('dist/deb').glob('*.deb')]
+          for path, key in candidates:
+              if key in existing:
+                  subprocess.run(['aws', 's3', 'cp', f's3://{os.environ["R2_BUCKET"]}/{key}',
+                                  'existing-object', '--endpoint-url', os.environ['R2_ENDPOINT']], check=True)
+                  if path.read_bytes() != pathlib.Path('existing-object').read_bytes():
+                      raise SystemExit(f'Refusing to overwrite immutable object: {key}')
+          PY
+          (cd "dist/repo/releases/$TAG" && sha256sum *.apk *.tar.gz > SHA256SUMS)
+      - name: Import APT signing key
+        env:
+          PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+          FINGERPRINT: ${{ vars.APT_GPG_KEY_ID }}
+        run: |
+          : "${PRIVATE_KEY:?Missing APT_GPG_PRIVATE_KEY armored secret}"
+          : "${FINGERPRINT:?Set APT_GPG_KEY_ID full fingerprint}"
+          mkdir -m 700 -p "$GNUPGHOME"
+          printf '%s' "$PRIVATE_KEY" | gpg --batch --import
+          gpg --list-secret-keys "$FINGERPRINT"
+          umask 077
+          printf '%s' "$PASSPHRASE" > "$RUNNER_TEMP/apt-passphrase"
+      - name: Sign and publish repository
+        env:
+          GPG_KEY_ID: ${{ vars.APT_GPG_KEY_ID }}
+          GPG_PASSPHRASE_FILE: ${{ runner.temp }}/apt-passphrase
+        run: |
+          ./scripts/build_apt_repo.sh
+          ./scripts/upload_repo_r2.sh
+      - name: Clean signing material
+        if: always()
+        run: |
+          gpgconf --kill gpg-agent || true
+          rm -rf "$GNUPGHOME" "$RUNNER_TEMP/apt-passphrase"

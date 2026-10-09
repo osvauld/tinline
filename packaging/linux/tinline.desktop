@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Tinline
+Comment=Peer-to-peer voice calls and 1:1 chat
+Exec=tinline %u
+Icon=tinline
+Terminal=false
+Categories=Network;Chat;InstantMessaging;
+StartupNotify=true
