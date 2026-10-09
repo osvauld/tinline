@@ -70,6 +70,8 @@ Add an integration test using a second device of the same DID.
 
 ### S5 — Medium, gate before chat exposure: voice file parser is unbounded/permissive
 
+Status: FIXED in task 35 (`crates/core/src/voice.rs`): 16 MiB file cap, 100k packets, 30 min, 7650-byte audio packets (64 KiB tags); Ogg version/flags/BOS/EOS/CRC/serial/sequence/continuation/granule checks, strict OpusHead (mono, family 0, major 0, pre-skip bound), unfinished/truncated files rejected; randomized mutation test.
+
 Evidence: `VoiceDecoder::open` reads the whole file and `read_ogg` copies packets into
 memory. It checks framing bounds but not CRC, stream serial/sequence, continuation rules,
 Ogg version, or an unfinished final packet. OpusHead validation only checks prefix/length,

@@ -3,7 +3,7 @@
 //! in through [`VoiceRecorder`] and play files back through [`VoiceDecoder`].
 
 use std::fs::{self, File};
-use std::io::{BufWriter, Write};
+use std::io::{BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -52,8 +52,7 @@ fn crc_table() -> &'static [u32; 256] {
 }
 
 fn crc(data: &[u8]) -> u32 {
-    let t = crc_table();
-    data.iter().fold(0u32, |c, &b| (c << 8) ^ t[((c >> 24) as u8 ^ b) as usize])
+    crc_update(0, data)
 }
 
 /// One Ogg page holding whole packets (a packet's lacing may span several segments).
@@ -81,38 +80,148 @@ fn page(flags: u8, granule: u64, seq: u32, packets: &[Vec<u8>]) -> Vec<u8> {
     out
 }
 
-/// Reads every packet of a single-stream Ogg file (pages may split packets across pages).
-/// Returns the packets and the granule position of the last page.
-fn read_ogg(data: &[u8]) -> Result<(Vec<Vec<u8>>, u64), Error> {
-    let bad = |m: &str| Error::Audio(format!("not a valid Ogg file: {m}"));
-    let mut packets = Vec::new();
-    let mut cur = Vec::new();
+/// Hard limits applied to a voice file before anything is allocated for it. The recorder has no
+/// duration cap of its own; playback accepts up to 30 minutes (24 kbps VBR is about 5.4 MB for
+/// that), and 16 MiB leaves a generous margin for louder/noisier audio and page overhead.
+pub const MAX_VOICE_FILE: u64 = 16 * 1024 * 1024;
+/// 30 minutes of 20 ms packets is 90 000; round up.
+const MAX_AUDIO_PACKETS: usize = 100_000;
+/// RFC 6716: a packet holds at most 120 ms, i.e. six 20 ms frames of at most 1275 bytes each.
+const MAX_AUDIO_PACKET_BYTES: usize = MAX_PACKET * 6;
+const MAX_HEAD_BYTES: usize = 19;
+const MAX_TAGS_BYTES: usize = 64 * 1024;
+const MAX_DURATION_SAMPLES_48K: u64 = 30 * 60 * 48_000;
+const MAX_PRESKIP: u16 = 9_600;
+/// Samples (16 kHz) one packet may decode to: 120 ms.
+const MAX_PACKET_SAMPLES: i32 = 1920;
+
+#[derive(Debug)]
+struct Ogg {
+    packets: Vec<Vec<u8>>,
+    /// Granule position of the final (EOS) page, in 48 kHz samples.
+    granule: u64,
+}
+
+fn bad_ogg(m: &str) -> Error {
+    Error::Audio(format!("not a valid Ogg Opus file: {m}"))
+}
+
+fn crc_update(c: u32, data: &[u8]) -> u32 {
+    let t = crc_table();
+    data.iter().fold(c, |c, &b| (c << 8) ^ t[((c >> 24) as u8 ^ b) as usize])
+}
+
+/// Parses and validates a single-stream Ogg file, enforcing every limit before it allocates.
+/// Packet 0 must be a bare OpusHead page, the last page must carry EOS and a real granule.
+fn read_ogg(data: &[u8]) -> Result<Ogg, Error> {
+    if data.len() as u64 > MAX_VOICE_FILE {
+        return Err(bad_ogg("file too large"));
+    }
+    let mut packets: Vec<Vec<u8>> = Vec::new();
+    let mut cur: Vec<u8> = Vec::new();
+    let mut open = false; // previous page ended inside a packet
+    let mut serial = 0u32;
+    let mut next_seq = 0u32;
     let mut last_granule = 0u64;
+    let mut eos = false;
     let mut pos = 0;
     while pos < data.len() {
-        let h = data.get(pos..pos + 27).ok_or_else(|| bad("truncated header"))?;
-        if &h[..4] != b"OggS" {
-            return Err(bad("missing capture pattern"));
+        if eos {
+            return Err(bad_ogg("data after end of stream"));
         }
-        let n = h[26] as usize;
-        let lacing = data.get(pos + 27..pos + 27 + n).ok_or_else(|| bad("truncated lacing"))?;
-        let body_len: usize = lacing.iter().map(|&b| b as usize).sum();
-        let body = data.get(pos + 27 + n..pos + 27 + n + body_len).ok_or_else(|| bad("truncated page"))?;
+        let h = data.get(pos..pos + 27).ok_or_else(|| bad_ogg("truncated header"))?;
+        if &h[..4] != b"OggS" {
+            return Err(bad_ogg("missing capture pattern"));
+        }
+        if h[4] != 0 {
+            return Err(bad_ogg("unsupported version"));
+        }
+        let flags = h[5];
+        if flags & !0x07 != 0 {
+            return Err(bad_ogg("bad header flags"));
+        }
+        let first = pos == 0;
+        if (flags & 0x02 != 0) != first {
+            return Err(bad_ogg("BOS must be on the first page only"));
+        }
+        if (flags & 0x01 != 0) != open {
+            return Err(bad_ogg("continuation flag does not match the previous page"));
+        }
         let granule = u64::from_le_bytes(h[6..14].try_into().unwrap());
+        let ser = u32::from_le_bytes(h[14..18].try_into().unwrap());
+        let seq = u32::from_le_bytes(h[18..22].try_into().unwrap());
+        let want_crc = u32::from_le_bytes(h[22..26].try_into().unwrap());
+        if first {
+            serial = ser;
+        } else if ser != serial {
+            return Err(bad_ogg("more than one logical stream"));
+        }
+        if seq != next_seq {
+            return Err(bad_ogg("page sequence gap"));
+        }
+        next_seq = next_seq.wrapping_add(1);
+        let n = h[26] as usize;
+        if n == 0 {
+            return Err(bad_ogg("empty segment table"));
+        }
+        let lacing = data.get(pos + 27..pos + 27 + n).ok_or_else(|| bad_ogg("truncated lacing"))?;
+        let body_len: usize = lacing.iter().map(|&b| b as usize).sum();
+        let body = data.get(pos + 27 + n..pos + 27 + n + body_len).ok_or_else(|| bad_ogg("truncated page"))?;
+        let mut c = crc_update(0, &h[..22]);
+        c = crc_update(c, &[0; 4]);
+        c = crc_update(c, &h[26..27]);
+        c = crc_update(c, lacing);
+        c = crc_update(c, body);
+        if c != want_crc {
+            return Err(bad_ogg("page checksum mismatch"));
+        }
         if granule != u64::MAX {
+            if granule >= 1 << 63 || granule < last_granule {
+                return Err(bad_ogg("granule position out of range"));
+            }
+            if granule > MAX_DURATION_SAMPLES_48K + MAX_PRESKIP as u64 {
+                return Err(bad_ogg("recording too long"));
+            }
             last_granule = granule;
+        }
+        if flags & 0x04 != 0 {
+            if granule == u64::MAX {
+                return Err(bad_ogg("final page has no granule position"));
+            }
+            eos = true;
         }
         let mut off = 0;
         for &l in lacing {
+            let limit = match packets.len() {
+                0 => MAX_HEAD_BYTES,
+                1 => MAX_TAGS_BYTES,
+                _ => MAX_AUDIO_PACKET_BYTES,
+            };
+            if cur.len() + l as usize > limit {
+                return Err(bad_ogg("packet too large"));
+            }
             cur.extend_from_slice(&body[off..off + l as usize]);
             off += l as usize;
-            if l < 255 {
+            open = l == 255;
+            if !open {
+                if packets.len() >= MAX_AUDIO_PACKETS + 2 {
+                    return Err(bad_ogg("too many packets"));
+                }
                 packets.push(std::mem::take(&mut cur));
             }
         }
+        if first && (open || packets.len() != 1) {
+            return Err(bad_ogg("OpusHead must be alone on the first page"));
+        }
         pos += 27 + n + body_len;
     }
-    Ok((packets, last_granule))
+    if open {
+        return Err(bad_ogg("unfinished final packet"));
+    }
+    if !eos {
+        return Err(bad_ogg("missing end of stream (truncated file)"));
+    }
+    Ok(Ogg { packets, granule: last_granule })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -401,24 +510,45 @@ pub struct VoiceDecoder {
 impl VoiceDecoder {
     #[uniffi::constructor]
     pub fn open(path: String) -> Result<Arc<Self>, Error> {
-        let (mut packets, granule) = read_ogg(&fs::read(path)?)?;
-        if packets.len() < 2 || !packets[0].starts_with(b"OpusHead") || !packets[1].starts_with(b"OpusTags") {
-            return Err(Error::Audio("not an Ogg Opus voice message".into()));
-        }
+        let mut f = File::open(path)?;
+        let mut data = Vec::new();
+        Read::by_ref(&mut f).take(MAX_VOICE_FILE + 1).read_to_end(&mut data)?;
+        let Ogg { mut packets, granule } = read_ogg(&data)?;
+        drop(data);
+        let bad = |m: &str| Error::Audio(format!("not a valid Ogg Opus voice message: {m}"));
         let head = packets.remove(0);
-        packets.remove(0);
-        if head.len() < 19 {
-            return Err(Error::Audio("short OpusHead".into()));
+        let tags = packets.remove(0);
+        if !tags.starts_with(b"OpusTags") {
+            return Err(bad("missing OpusTags"));
         }
-        let preskip = u16::from_le_bytes([head[10], head[11]]) as u64 / 3;
+        if head.len() != MAX_HEAD_BYTES || !head.starts_with(b"OpusHead") {
+            return Err(bad("bad OpusHead"));
+        }
+        if head[8] >> 4 != 0 {
+            return Err(bad("unsupported OpusHead version"));
+        }
+        if head[9] != 1 {
+            return Err(bad("only mono is supported"));
+        }
+        if head[18] != 0 {
+            return Err(bad("unsupported channel mapping"));
+        }
+        let preskip_raw = u16::from_le_bytes([head[10], head[11]]);
+        if preskip_raw > MAX_PRESKIP {
+            return Err(bad("pre-skip too large"));
+        }
+        if packets.is_empty() {
+            return Err(bad("no audio"));
+        }
+        let preskip = preskip_raw as u64 / 3;
         let mut starts = Vec::with_capacity(packets.len());
         let mut at = 0u64;
         for p in &packets {
             starts.push(at);
             // SAFETY: p is a valid slice for its length.
             let n = unsafe { sys::opus_packet_get_nb_samples(p.as_ptr(), p.len() as i32, VOICE_RATE as i32) };
-            if n < 0 {
-                return Err(audio_err(n));
+            if n <= 0 || n > MAX_PACKET_SAMPLES {
+                return Err(bad("bad Opus packet"));
             }
             at += n as u64;
         }
@@ -594,6 +724,290 @@ mod tests {
         assert!((freq(&d.read(8000).unwrap()[800..]) - 300.0).abs() < 10.0);
         d.seek(999_999);
         assert!(d.read(100).unwrap().is_empty());
+    }
+
+    // ---- hostile-input tests -------------------------------------------------------------
+
+    fn head_pkt() -> Vec<u8> {
+        let mut h = b"OpusHead".to_vec();
+        h.extend_from_slice(&[1, 1]);
+        h.extend_from_slice(&312u16.to_le_bytes());
+        h.extend_from_slice(&VOICE_RATE.to_le_bytes());
+        h.extend_from_slice(&0i16.to_le_bytes());
+        h.push(0);
+        h
+    }
+
+    fn tags_pkt() -> Vec<u8> {
+        let mut t = b"OpusTags".to_vec();
+        t.extend_from_slice(&0u32.to_le_bytes());
+        t.extend_from_slice(&0u32.to_le_bytes());
+        t
+    }
+
+    fn silence_pkt() -> Vec<u8> {
+        let mut e = Encoder::new().unwrap();
+        e.encode(&[0; FRAME]).unwrap()
+    }
+
+    /// head, tags, then `n` single-packet audio pages (last is EOS), all valid.
+    fn build(head: Vec<u8>, tags: Vec<u8>, audio: &[Vec<u8>]) -> Vec<u8> {
+        let mut f = page(0x02, 0, 0, &[head]);
+        f.extend(page(0, 0, 1, &[tags]));
+        for (i, a) in audio.iter().enumerate() {
+            let last = i + 1 == audio.len();
+            f.extend(page(if last { 0x04 } else { 0 }, (i as u64 + 1) * 960 + 312, 2 + i as u32, std::slice::from_ref(a)));
+        }
+        f
+    }
+
+    fn good() -> Vec<u8> {
+        build(head_pkt(), tags_pkt(), &vec![silence_pkt(); 4])
+    }
+
+    /// Rejected at the Ogg layer (and therefore by the decoder).
+    #[track_caller]
+    fn rejects_ogg(f: &[u8]) {
+        assert!(read_ogg(f).is_err(), "accepted a bad file");
+        rejects(f);
+    }
+
+    /// Rejected by `VoiceDecoder::open`.
+    #[track_caller]
+    fn rejects(f: &[u8]) {
+        static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let p = tmp(&format!("bad{}.opus", N.fetch_add(1, std::sync::atomic::Ordering::Relaxed)));
+        fs::write(&p, f).unwrap();
+        assert!(VoiceDecoder::open(p).is_err());
+    }
+
+    #[test]
+    fn handmade_good_file_opens() {
+        let p = tmp("good.opus");
+        fs::write(&p, good()).unwrap();
+        assert!(VoiceDecoder::open(p).is_ok());
+    }
+
+    #[test]
+    fn truncation_always_fails() {
+        let f = record_bytes();
+        for cut in 0..f.len() {
+            assert!(read_ogg(&f[..cut]).is_err(), "cut {cut}");
+        }
+        let mut s = 12345u64;
+        for _ in 0..50 {
+            s = s.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let cut = (s >> 33) as usize % f.len();
+            rejects_ogg(&f[..cut]);
+        }
+    }
+
+    fn record_bytes() -> Vec<u8> {
+        let p = tmp(&format!("bytes{:?}.opus", std::thread::current().id()));
+        record(&p, &sine(440.0, 1500, 8000.0));
+        fs::read(p).unwrap()
+    }
+
+    #[test]
+    fn any_flipped_byte_fails() {
+        let f = good();
+        for i in 0..f.len() {
+            let mut g = f.clone();
+            g[i] ^= 0x01;
+            assert!(read_ogg(&g).is_err(), "flip at {i} accepted");
+        }
+        let f = record_bytes();
+        for i in (0..f.len()).step_by(7) {
+            let mut g = f.clone();
+            g[i] ^= 0x80;
+            assert!(read_ogg(&g).is_err(), "flip at {i} accepted");
+        }
+    }
+
+    #[test]
+    fn framing_violations_rejected() {
+        let a = silence_pkt();
+        let h = head_pkt();
+        let t = tags_pkt();
+        let pg = |flags, gr, ser: u32, seq, pk: &[Vec<u8>]| {
+            let mut v = page(flags, gr, seq, pk);
+            v[14..18].copy_from_slice(&ser.to_le_bytes());
+            let mut z = v.clone();
+            z[22..26].copy_from_slice(&[0; 4]);
+            let c = crc(&z);
+            v[22..26].copy_from_slice(&c.to_le_bytes());
+            v
+        };
+        let s = SERIAL;
+        let ok = |extra: Vec<u8>| {
+            let mut f = pg(0x02, 0, s, 0, std::slice::from_ref(&h));
+            f.extend(pg(0, 0, s, 1, std::slice::from_ref(&t)));
+            f.extend(extra);
+            f
+        };
+        rejects_ogg(&ok(pg(0x04, 960, s + 1, 2, std::slice::from_ref(&a)))); // wrong serial
+        rejects_ogg(&ok(pg(0x04, 960, s, 3, std::slice::from_ref(&a)))); // skipped sequence
+        rejects_ogg(&ok([pg(0, 960, s, 2, std::slice::from_ref(&a)), pg(0x06, 1920, s, 3, std::slice::from_ref(&a))].concat())); // BOS twice
+        rejects_ogg(&ok(pg(0x05, 960, s, 2, std::slice::from_ref(&a)))); // continued flag with nothing open
+        rejects_ogg(&ok(pg(0x04, 960, s, 2, &[vec![1u8; MAX_AUDIO_PACKET_BYTES + 1]]))); // oversized packet
+        rejects_ogg(&ok(pg(0x08, 960, s, 2, std::slice::from_ref(&a)))); // unknown flag
+        rejects_ogg(&ok([pg(0, 1920, s, 2, std::slice::from_ref(&a)), pg(0x04, 960, s, 3, std::slice::from_ref(&a))].concat())); // granule backwards
+        rejects_ogg(&ok([pg(0x04, 960, s, 2, std::slice::from_ref(&a)), pg(0x04, 1920, s, 3, std::slice::from_ref(&a))].concat())); // after EOS
+        rejects_ogg(&ok(pg(0, 960, s, 2, std::slice::from_ref(&a)))); // no EOS
+        rejects_ogg(&ok(pg(0x04, 1 << 60, s, 2, std::slice::from_ref(&a)))); // absurd duration
+        // Open (255-lacing) packet left dangling at EOS, and a missing continuation.
+        rejects_ogg(&ok(raw_page(0x04, 960, 2, &[255], &[0u8; 255])));
+        // Version byte.
+        let mut v = good();
+        v[4] = 1;
+        rejects_ogg(&v);
+        // Empty audio packet.
+        rejects(&build(h.clone(), t.clone(), &[vec![]]));
+        // No audio at all.
+        let mut f = pg(0x02, 0, s, 0, std::slice::from_ref(&h));
+        f.extend(pg(0x04, 0, s, 1, std::slice::from_ref(&t)));
+        rejects(&f);
+    }
+
+    /// A page with explicit lacing, correct CRC.
+    fn raw_page(flags: u8, granule: u64, seq: u32, lacing: &[u8], body: &[u8]) -> Vec<u8> {
+        let mut v = b"OggS".to_vec();
+        v.extend_from_slice(&[0, flags]);
+        v.extend_from_slice(&granule.to_le_bytes());
+        v.extend_from_slice(&SERIAL.to_le_bytes());
+        v.extend_from_slice(&seq.to_le_bytes());
+        v.extend_from_slice(&[0; 4]);
+        v.push(lacing.len() as u8);
+        v.extend_from_slice(lacing);
+        v.extend_from_slice(body);
+        let c = crc(&v);
+        v[22..26].copy_from_slice(&c.to_le_bytes());
+        v
+    }
+
+    #[test]
+    fn continuation_across_pages_is_accepted_and_checked() {
+        // A 300-byte tags packet: 255 bytes on one page (open), 45 on the next (continued).
+        let mut t = tags_pkt();
+        t.resize(300, 0);
+        let build = |second_flags: u8, first_lacing: &[u8]| {
+            let mut f = page(0x02, 0, 0, &[head_pkt()]);
+            f.extend(raw_page(0, u64::MAX, 1, first_lacing, &t[..255]));
+            f.extend(raw_page(second_flags, 0, 2, &[45], &t[255..]));
+            f.extend(page(0x04, 960 + 312, 3, &[silence_pkt()]));
+            f
+        };
+        assert!(read_ogg(&build(0x01, &[255])).is_ok());
+        rejects_ogg(&build(0x00, &[255])); // open packet but next page not marked continued
+        rejects_ogg(&build(0x01, &[254])); // marked continued but previous page closed its packet
+    }
+
+    #[test]
+    fn bad_opus_head_and_tags_rejected() {
+        let a = vec![silence_pkt(); 2];
+        let mutate = |i: usize, v: u8| {
+            let mut h = head_pkt();
+            h[i] = v;
+            build(h, tags_pkt(), &a)
+        };
+        rejects(&mutate(0, b'X')); // magic
+        rejects(&mutate(8, 0x10)); // major version
+        rejects(&mutate(9, 2)); // stereo
+        rejects(&mutate(9, 0)); // zero channels
+        rejects(&mutate(18, 1)); // mapping family
+        let mut h = head_pkt();
+        h[10..12].copy_from_slice(&60000u16.to_le_bytes());
+        rejects(&build(h, tags_pkt(), &a)); // preskip
+        let mut h = head_pkt();
+        h.push(0);
+        rejects(&build(h, tags_pkt(), &a)); // length
+        let mut t = tags_pkt();
+        t[0] = b'X';
+        rejects(&build(head_pkt(), t, &a)); // OpusTags magic
+        rejects(&build(head_pkt(), vec![b'O'; MAX_TAGS_BYTES + 1], &a)); // tags too big
+        // Audio packet that is not Opus-decodable length-wise is bounded by the sample cap.
+        let mut v = good();
+        v.truncate(v.len() - 1);
+        rejects(&v);
+    }
+
+    #[test]
+    fn size_and_count_limits() {
+        rejects_ogg(&vec![0u8; MAX_VOICE_FILE as usize + 1]);
+        let n = MAX_AUDIO_PACKETS + 1;
+        let mut f = page(0x02, 0, 0, &[head_pkt()]);
+        f.extend(page(0, 0, 1, &[tags_pkt()]));
+        let a = silence_pkt();
+        let mut seq = 2;
+        let mut left = n;
+        while left > 0 {
+            let k = left.min(40);
+            left -= k;
+            let flags = if left == 0 { 0x04 } else { 0 };
+            f.extend(page(flags, 960, seq, &vec![a.clone(); k]));
+            seq += 1;
+        }
+        assert!(f.len() as u64 <= MAX_VOICE_FILE, "test file must hit the packet cap, not the size cap");
+        assert!(read_ogg(&f).unwrap_err().to_string().contains("too many packets"));
+    }
+
+    #[test]
+    fn random_mutations_never_panic() {
+        let seeds = [good(), record_bytes()];
+        let mut s = 0x1234_5678_9abc_def0u64;
+        let mut next = move || {
+            s = s.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            (s >> 33) as usize
+        };
+        let p = tmp("fuzz.opus");
+        for it in 0..2000 {
+            let mut f = seeds[it % 2].clone();
+            for _ in 0..1 + next() % 4 {
+                match next() % 4 {
+                    0 => {
+                        let i = next() % f.len();
+                        f[i] = next() as u8;
+                    }
+                    1 => f.truncate(1 + next() % f.len()),
+                    2 => {
+                        let i = next() % f.len();
+                        f.insert(i, next() as u8);
+                    }
+                    _ => {
+                        // Fix up the CRC of a random page so the structural checks run past it.
+                        if let Some(o) = (0..f.len().saturating_sub(27)).filter(|&o| &f[o..o + 4] == b"OggS").nth(next() % 3) {
+                            let i = o + 4 + next() % 22;
+                            f[i] = next() as u8;
+                            if let Some(h) = f.get(o..o + 27) {
+                                let n = h[26] as usize;
+                                if let Some(lac) = f.get(o + 27..o + 27 + n) {
+                                    let end = o + 27 + n + lac.iter().map(|&b| b as usize).sum::<usize>();
+                                    if end <= f.len() {
+                                        f[o + 22..o + 26].copy_from_slice(&[0; 4]);
+                                        let c = crc(&f[o..end]);
+                                        f[o + 22..o + 26].copy_from_slice(&c.to_le_bytes());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if let Ok(o) = read_ogg(&f) {
+                assert!(o.packets.len() <= MAX_AUDIO_PACKETS + 2);
+                assert!(o.packets.iter().all(|p| p.len() <= MAX_AUDIO_PACKET_BYTES.max(MAX_TAGS_BYTES)));
+            }
+            fs::write(&p, &f).unwrap();
+            if let Ok(d) = VoiceDecoder::open(p.clone()) {
+                for _ in 0..5 {
+                    if d.read(4000).unwrap_or_default().is_empty() {
+                        break;
+                    }
+                }
+                d.seek(next() as u32 % 10_000);
+                let _ = d.read(100);
+            }
+        }
     }
 
     /// Both ffprobe (container, codec, rate, duration) and opusinfo (page CRCs) when installed.
