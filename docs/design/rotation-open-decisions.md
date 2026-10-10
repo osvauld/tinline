@@ -146,6 +146,16 @@ Per-recipient sealing (or a rotating group key) is required only if a NON-member
 - W2-U: no count cap on pre-removal uploads — the host rotation is the only cut-off; hosts that
   learn late align to the earliest announced deadline (section 13 Q1, Q4).
 
+**U16 (user, 2026-10-10) — writer ID = app-supplied, stable, verified by the app.** Each device
+stores one random value (per account; never derived from any device or transport key) and its
+writer ID = first 64 bits of hash(DID || device value). The app sets it as the Loro peer ID
+(`set_peer_id`) and keeps it stable. Every post carries the device value; every receiver
+recomputes the hash and refuses a post whose Loro ops use any other peer ID (U10). All replicas
+use the sender's number unchanged. No claim table / claim round, no cross-host agreement.
+Cross-DID copying needs ~2^64 work; same-DID copying by a phrase holder is the accepted
+shared-mnemonic limitation. Resolves section 9 Q1/Q2 and section 10 Q4. Exact hash function and
+domain separation to be fixed in the production spec.
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
