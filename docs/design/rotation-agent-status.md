@@ -102,7 +102,7 @@ After W2-U/C (a9ae06d): proto 215, p2pcore 149 (148 + known `link.rs` self-probe
 |---|---|---|---|
 | W2-R | MERGED fcdb335, +11 | rot/w2r `.claude/worktrees/rot-w2r` | group-sim/src/host_relay.rs (+ mod line) |
 | W2-Q | MERGED c954d56, +18 | rot/w2q `.claude/worktrees/rot-w2q` | group-sim/src/chat_request.rs (+ mod line, group-sim dev-deps) |
-| W2-B | MERGED 020a91e, +14 proto +5 core | rot/w2b `.claude/worktrees/rot-w2b` | proto/tests/rotation_silent_block.rs, core/tests/block_characterization.rs |
+| W2-B | MERGED 020a91e, +14 proto +5 core | rot/w2b `.claude/worktrees/rot-w2b` | proto/tests/rotation_visible_block.rs (was rotation_silent_block.rs), core/tests/block_characterization.rs |
 | W2-C | MERGED e4a3d6e, +18 proto +8 core | rot/w2c `.claude/worktrees/rot-w2c` | proto/tests/capability_tokens.rs, core/tests/grant_characterization.rs |
 | W2-U | MERGED bf3b4e3, +10 | rot/w2u `.claude/worktrees/rot-w2u` | group-sim/src/removal_rotation.rs (+ mod line) |
 | W2-D | MERGED d3d6467, +17 proto +7 core | rot/w2d `.claude/worktrees/rot-w2d` | proto/tests/rotation_device_list_push.rs, core/tests/device_list_characterization.rs |
