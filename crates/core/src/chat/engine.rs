@@ -695,7 +695,8 @@ impl Inner {
             }
             _ => snap,
         };
-        let shard = Shard::load(pair, day, &me.device, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
+        let mut shard = Shard::load(pair, day, &me.device, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
+        shard.hidden = meta.map(|m| m.hidden.into_iter().collect()).unwrap_or_default();
         let mut cache = core.shards.lock();
         if cache.len() >= MAX_SHARDS_CACHED {
             let today = day_of(now_ms());
@@ -719,6 +720,7 @@ impl Inner {
         let mut meta = core.store.shard_meta(pair, day)?.unwrap_or_default();
         meta.vv = shard.vv().encode();
         meta.n_messages = shard.messages().map(|m| m.len() as u32).unwrap_or(meta.n_messages);
+        meta.hidden = shard.hidden.iter().cloned().collect();
         if meta.n_updates + 1 > UPDATES_BEFORE_SNAPSHOT {
             extra.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
             meta.n_updates = 0;
@@ -818,6 +820,7 @@ impl Inner {
                 live,
                 history: None,
                 keys: vec![(sess.did.clone(), sess.device), (me.id.did().to_string(), me.device)],
+                hide_unverified: None,
             };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
@@ -1805,12 +1808,29 @@ impl Inner {
 
     /// A peer-vouched snapshot of a day (see `Ctx::history`): validated like a batch, merged
     /// into whatever we hold of that day, stored as the new snapshot. The shard must be loaded.
+    /// Judged per message: the contact's messages are verified with every key we know of theirs
+    /// plus the key of this live session (attested by their DID, which their live batches are
+    /// verified with too); one of theirs that still does not verify stays hidden (logged) and
+    /// does not cost us the rest of the day.
     fn chat_apply_history(&self, core: &ChatCore, me: &Me, sess: &Session, pair: &str, day: &str, snap: &[u8]) -> Result<bool, Error> {
         let mut shards = core.shards.lock();
         let shard = shards.get_mut(&(pair.to_string(), day.to_string())).ok_or(Error::NotFound)?;
         let before = shard.vv();
-        let ctx = Ctx { signer_did: sess.did.clone(), signer_peer: 0, now_ms: now_ms(), live: false, history: Some(me.id.did().to_string()), keys: self.chat_keys(me, &sess.did) };
-        shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
+        let mut keys = self.chat_keys(me, &sess.did);
+        keys.push((sess.did.clone(), sess.device));
+        let ctx = Ctx {
+            signer_did: sess.did.clone(),
+            signer_peer: 0,
+            now_ms: now_ms(),
+            live: false,
+            history: Some(me.id.did().to_string()),
+            keys,
+            hide_unverified: Some(sess.did.clone()),
+        };
+        let applied = shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
+        if !applied.hidden.is_empty() {
+            self.log(format!("history of {day} from {}: hid {} (signature does not verify)", sess.did, applied.hidden.join(", ")));
+        }
         if shard.vv() == before {
             return Ok(false);
         }
@@ -1821,7 +1841,14 @@ impl Inner {
             let (o, _) = self.chat_register_file(core, pair, day, rec, true)?;
             ops.extend(o);
         }
-        let meta = ShardMeta { vv: shard.vv().encode(), next_seq: 0, n_updates: 0, n_messages: msgs.len() as u32, closed: None };
+        let meta = ShardMeta {
+            vv: shard.vv().encode(),
+            next_seq: 0,
+            n_updates: 0,
+            n_messages: msgs.len() as u32,
+            closed: None,
+            hidden: shard.hidden.iter().cloned().collect(),
+        };
         ops.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
         ops.push(core.store.put_meta_op(pair, day, &meta)?);
         // The last-message row may need to move.

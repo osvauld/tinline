@@ -41,6 +41,9 @@ pub struct ShardMeta {
     pub n_messages: u32,
     /// Set once the day was compacted into a snapshot blob and its vault rows dropped.
     pub closed: Option<ClosedRef>,
+    /// Messages in the doc we keep hidden: their signature did not verify (`Shard::hidden`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub hidden: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

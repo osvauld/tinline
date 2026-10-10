@@ -675,10 +675,16 @@ fn a_forged_batch_relayed_by_an_own_device_is_rejected() {
     // Genuine control first, so the rejections below are about the forgery and nothing else.
     b2.node.forged_own_batch_for_test(a.did.clone(), 3).unwrap();
     assert!(find_msg(&b2, &a.did, "forged 3").is_some_and(|m| m.outgoing));
-    for kind in 0..3u8 {
+    // Ours with a key that is not ours, or by a stranger: the batch is rejected.
+    for kind in 1..3u8 {
         assert!(b2.node.forged_own_batch_for_test(a.did.clone(), kind).is_err(), "kind {kind} must be rejected");
         assert!(find_msg(&b2, &a.did, &format!("forged {kind}")).is_none());
     }
+    // The contact's with a key we do not know of theirs: history is judged per message (P1), so
+    // the batch is taken but that message stays hidden. (A device cannot tell a forgery from a
+    // message the contact signed with a key only our other device knew.)
+    b2.node.forged_own_batch_for_test(a.did.clone(), 0).unwrap();
+    assert!(find_msg(&b2, &a.did, "forged 0").is_none());
 }
 
 #[test]
