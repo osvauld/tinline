@@ -86,6 +86,8 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
         "failed" -> FailedScreen(maya, null, none, none)
         "contact" -> ContactScreen(arjun, none, none, none)
         "contact_full" -> ContactScreen(arjun, none, none, none, history = recents)
+        "contact_blocked" -> ContactScreen(arjun, none, none, none, block = BlockView(blockedByMe = true, blockedAtSecs = System.currentTimeMillis() / 1000))
+        "block" -> { ContactScreen(arjun, none, none, none); BlockDialog(arjun.display(), none) {} }
         "verify" -> VerifyScreen(maya, arjun, "41203 88127 05519 73360 29841 66012 90475 13398 57206 84431 20987 36654".split(" "), none, none, none)
         "rename" -> RenameSheet("Arjun (work)", "Arjun", true, none) {}
         "incoming" -> IncomingContent("Arjun Oommen", arjun.did, none, none)

@@ -23,16 +23,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import uniffi.p2pcore.Contact
 
-/** Contact page: name (alias first), Verified pill, Call / Rename / Verify / Remove, and this contact's call history. */
+/**
+ * Contact page: name (alias first), Verified pill, Call / Rename / Verify / Block, and this contact's call history.
+ * U19: a contact's action is Block (kept contact, kept chat, Unblock available); there is no Remove.
+ */
 @Composable
 fun ContactScreen(
-    contact: Contact, onBack: () -> Unit, onCall: () -> Unit, onRemove: () -> Unit,
+    contact: Contact, onBack: () -> Unit, onCall: () -> Unit, onBlock: () -> Unit,
     history: List<RecentCall> = emptyList(), onRename: (String?) -> Unit = {}, onVerify: () -> Unit = {}, onMessage: (() -> Unit)? = null,
+    block: BlockView = BlockView(), onUnblock: () -> Unit = {},
 ) {
     val alias = contact.alias?.takeIf { it.isNotBlank() }
     val verified = contact.verified
     val c = Tin.c
-    var confirmRemove by remember { mutableStateOf(false) }
+    var confirmBlock by remember { mutableStateOf(false) }
+    val blockedMe = block.blockedMeAtSecs != null
+    val canCall = !block.blockedByMe && !blockedMe
     var renaming by remember { mutableStateOf(false) }
     val shown = contact.display()
     Page {
@@ -41,10 +47,12 @@ fun ContactScreen(
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Avatar(shown, contact.did, 96.dp)
                 Text(shown, Modifier.padding(top = 6.dp), style = TinType.h1, color = c.ink, textAlign = TextAlign.Center)
-                if ((alias != null && alias != contact.name) || verified) Row(
+                if ((alias != null && alias != contact.name) || verified || block.blockedByMe || blockedMe) Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (alias != null && alias != contact.name) Text("Calls themselves “${contact.name}”", style = TinType.bodyM, color = c.ink2)
+                    if (block.blockedByMe || blockedMe) Text(if (block.blockedByMe) "Blocked" else "Blocked you",
+                        style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.er)
                     if (verified) Row(
                         Modifier.heightIn(min = 22.dp).clip(RoundedCornerShape(50)).background(c.prc).padding(start = 6.dp, end = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -53,12 +61,13 @@ fun ContactScreen(
                         Text("Verified", style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.onPrc)
                     }
                 }
-                TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = Icons.Rounded.Call)
+                TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = if (canCall) Icons.Rounded.Call else Icons.Rounded.PhoneDisabled, enabled = canCall)
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (onMessage != null) ActionChip(Icons.Rounded.Chat, "Message", c.pr, onMessage)
                     ActionChip(Icons.Rounded.Edit, "Rename", c.pr) { renaming = true }
                     ActionChip(Icons.Rounded.VerifiedUser, "Verify", c.pr, onVerify)
-                    ActionChip(Icons.Rounded.PersonRemove, "Remove", c.er) { confirmRemove = true }
+                    if (block.blockedByMe) ActionChip(Icons.Rounded.Block, "Unblock", c.pr, onUnblock)
+                    else ActionChip(Icons.Rounded.Block, "Block", c.er) { confirmBlock = true }
                 }
             }
             if (history.isNotEmpty()) {
@@ -68,12 +77,7 @@ fun ContactScreen(
             }
         }
     }
-    if (confirmRemove) TinDialog(
-        "Remove $shown?", { confirmRemove = false }, "Remove", { confirmRemove = false; onRemove() }, destructive = true, icon = Icons.Rounded.PersonRemove,
-    ) {
-        DialogText("They won’t be able to call you, and you won’t be able to call them." + " Your call history with them is deleted from this phone.")
-        DialogText("To talk again, you’ll need to add each other again.")
-    }
+    if (confirmBlock) BlockDialog(shown, onDismiss = { confirmBlock = false }, onBlock = onBlock)
     if (renaming) RenameSheet(alias ?: contact.name, contact.name, hasAlias = alias != null, onDismiss = { renaming = false }) { onRename(it); renaming = false }
 }
 
@@ -127,7 +131,7 @@ fun RenameSheet(current: String, theirName: String, hasAlias: Boolean, onDismiss
 /** Safety-number comparison. [groups] are the 12 five-digit groups, same on both phones. */
 @Composable
 fun VerifyScreen(
-    me: String, contact: Contact, groups: List<String>?, onBack: () -> Unit, onMatch: () -> Unit, onRemove: () -> Unit,
+    me: String, contact: Contact, groups: List<String>?, onBack: () -> Unit, onMatch: () -> Unit, onBlock: () -> Unit,
 ) {
     val c = Tin.c
     var mismatch by remember { mutableStateOf(false) }
@@ -152,14 +156,14 @@ fun VerifyScreen(
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TinButton("They match", onMatch, icon = Icons.Rounded.Check, enabled = groups != null)
             TinButton("They don’t match", { mismatch = true }, style = BtnStyle.Text)
-            Hint("If they don’t match, remove $name and add them again face to face.", Modifier.fillMaxWidth(), align = TextAlign.Center)
+            Hint("If they don’t match, block $name and add each other again face to face.", Modifier.fillMaxWidth(), align = TextAlign.Center)
         }
     }
     if (mismatch) TinDialog(
-        "The numbers don’t match", { mismatch = false }, "Remove $name", { mismatch = false; onRemove() }, dismiss = "Check again",
+        "The numbers don’t match", { mismatch = false }, "Block $name", { mismatch = false; onBlock() }, dismiss = "Check again",
         destructive = true, icon = Icons.Rounded.GppMaybe,
     ) {
         DialogText("Someone may be in the middle of your calls, or a digit was misread. Look once more, group by group.")
-        DialogText("If they still differ, remove $name and add them again face to face.")
+        DialogText("If they still differ, block $name and add each other again face to face.")
     }
 }

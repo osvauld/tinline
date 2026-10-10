@@ -80,6 +80,8 @@ private sealed interface Route {
     data object LinkDevice : Route
     /** PLACEHOLDER groups & privacy preview (debug builds, [PreviewFlags]). */
     data class Preview(val start: PRoute) : Route
+    /** Settings › Blocked people (real data). */
+    data object Blocked : Route
 }
 
 @Composable
@@ -138,6 +140,12 @@ private fun Root(app: P2pApp) {
 
     fun place(did: String) {
         callError = null
+        // Either side blocking, or someone no longer a contact: no call (the core refuses it too).
+        val bs = app.blocks.value.composer(did, contacts.any { it.did == did })
+        if (bs != ComposerState.Open) {
+            val name = contacts.firstOrNull { it.did == did }?.display() ?: app.chat.chats.value.firstOrNull { it.peerDid == did }?.peerName ?: ""
+            say(BlockCopy.cantCall(name, bs)); return
+        }
         scope.launch {
             val r = withContext(Dispatchers.IO) { app.calls.place(did) }
             r.onFailure { callError = it.message ?: "Couldn\u2019t start the call" }
@@ -223,7 +231,11 @@ private fun Root(app: P2pApp) {
                     val c = contacts.firstOrNull { it.did == r.did }
                     val self = r.did == app.currentDid()
                     val name = if (self) "You" else c?.display() ?: chats.firstOrNull { it.peerDid == r.did }?.peerName?.ifBlank { null } ?: "Unknown"
-                    ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self)
+                    val blocks by app.blocks.collectAsState()
+                    ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self,
+                        block = if (self) null else ConvBlock(blocks.of(r.did), blocks.composer(r.did, c != null)),
+                        onUnblock = { app.unblock(r.did) }, onAddContact = { stack.add(Route.Add(true)) },
+                        notDelivered = { id -> app.notDeliveredReason(r.did, id) })
                 }
                 Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
                 is Route.Add -> AddContactScreen(app, r.scan, r.ticket, r.paste, onClose = ::pop,
@@ -232,10 +244,11 @@ private fun Root(app: P2pApp) {
                     val c = contacts.firstOrNull { it.did == r.did }
                     if (c == null) LaunchedEffect(Unit) { pop() }
                     else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onMessage = { stack.add(Route.Chat(c.did)) }, onVerify = { stack.add(Route.Verify(c.did)) },
+                        block = app.blocks.collectAsState().value.of(c.did), onUnblock = { app.unblock(c.did) },
                         history = remember(history, contacts) { val now = System.currentTimeMillis() / 1000; val by = contacts.associateBy { it.did }; history.filter { it.peerDid == c.did }.map { it.toRecent(by, now) } },
-                        onRename = { a -> scope.launch(Dispatchers.IO) { runCatching { app.node.renameContact(c.did, a) }; app.refresh() } }, onRemove = {
-                        pop()
-                        scope.launch(Dispatchers.IO) { runCatching { app.node.removeContact(c.did) }; app.refresh() }
+                        onRename = { a -> scope.launch(Dispatchers.IO) { runCatching { app.node.renameContact(c.did, a) }; app.refresh() } }, onBlock = {
+                        // U19/U24: the contact and the chat stay; the page shows Blocked and Unblock.
+                        app.block(c.did); say("${firstName(c.display())} is told you blocked them")
                     })
                 }
                 is Route.Verify -> {
@@ -246,9 +259,9 @@ private fun Root(app: P2pApp) {
                         VerifyScreen(app.node.profile()?.name ?: "", c, groups, onBack = ::pop, onMatch = {
                             scope.launch(Dispatchers.IO) { runCatching { app.node.setVerified(c.did, true) }; app.refresh() }
                             pop()
-                        }, onRemove = {
-                            pop(); pop()
-                            scope.launch(Dispatchers.IO) { runCatching { app.node.removeContact(c.did) }; app.refresh() }
+                        }, onBlock = {
+                            pop()
+                            app.block(c.did); say("${firstName(c.display())} is told you blocked them")
                         })
                     }
                 }
@@ -257,8 +270,9 @@ private fun Root(app: P2pApp) {
                     onPhrase = { stack.add(Route.PhraseGate) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
                     onSwitchPick = { stack.add(Route.SwitchConfirm(it)) }, onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) },
                     onDevices = { stack.add(Route.Devices) }, onLinkDevice = { stack.add(Route.LinkDevice) }, onLinkAccount = { addAccount(false, link = true) },
-                    onPreview = { stack.add(Route.Preview(PRoute.parse(it))) },
+                    onPreview = { stack.add(Route.Preview(PRoute.parse(it))) }, onBlocked = { stack.add(Route.Blocked) },
                 )
+                Route.Blocked -> BlockedPeopleScreen(app, onBack = ::pop, say = ::say)
                 is Route.SwitchConfirm -> SwitchConfirmScreen(app, r.did, onBack = ::pop, onSwitched = { home() }, onMessage = ::say)
                 Route.Devices -> LinkedDevicesScreen(app, ::pop, onLink = { stack.add(Route.LinkDevice) }, onDetail = { stack.add(Route.DeviceDetail(it)) })
                 is Route.DeviceDetail -> DeviceDetailScreen(app, r.device, onBack = ::pop, onMessage = ::say)

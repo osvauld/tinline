@@ -66,7 +66,7 @@ fun TinNavBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int = 0, callBa
 
 /** Chat list rows from the core's conversations. Only conversations that have a message; a contact's name wins over what they call themselves.
  *  "You" (our DID: saved items for our own devices) is always there, pinned first. */
-fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link>, online: Boolean, nowMs: Long, myDid: String? = null): List<ChatRowUi> {
+fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link>, online: Boolean, nowMs: Long, myDid: String? = null, blocks: Blocks = Blocks()): List<ChatRowUi> {
     val by = contacts.associateBy { it.did }
     val you = chats.firstOrNull { it.peerDid == myDid }?.let { ch ->
         val at = ch.lastActivity.toLong()
@@ -77,12 +77,15 @@ fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link
         val at = ch.lastActivity.toLong()
         val pending = ch.lastOutgoing && ch.lastDelivery == uniffi.p2pcore.DeliveryState.PENDING
         val waiting = pending && (links[ch.peerDid] == Link.Offline || (links[ch.peerDid] == null && !online))
+        // Blocked people stay in the list with a red line, so the state is never hidden.
+        val status = blocks.status(ch.peerDid)
         ChatRowUi(
             ch.peerDid, name,
-            if (waiting) "Waiting to send — ${firstName(name)} isn’t reachable yet" else ch.preview,
+            status ?: if (waiting) "Waiting to send — ${firstName(name)} isn’t reachable yet" else ch.preview,
             listTime(at, nowMs), ch.lastOutgoing,
             when { waiting -> Tick.Clock; ch.lastDelivery == uniffi.p2pcore.DeliveryState.DELIVERED -> Tick.Two; else -> Tick.One },
             ch.unread.toInt(),
+            alert = status != null,
         )
     }
 }
@@ -164,7 +167,7 @@ private fun ChatRow(r: ChatRowUi, onClick: () -> Unit) {
                 if (r.mine) TickIcon(r.tick, when (r.tick) { Tick.Two -> c.pr; Tick.Clock -> c.thread; Tick.One -> c.ink2 }, 16.dp)
                 Text(
                     r.preview, Modifier.weight(1f), style = TinType.bodyM, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    color = if (unread) c.ink else c.ink2, fontWeight = if (unread) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (r.alert) c.er else if (unread) c.ink else c.ink2, fontWeight = if (unread || r.alert) FontWeight.SemiBold else FontWeight.Normal,
                 )
                 if (unread) Box(Modifier.defaultMinSize(22.dp, 22.dp).clip(RoundedCornerShape(50)).background(c.pr).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
                     Text("${r.unread}", style = TinType.caption.copy(fontWeight = FontWeight.Bold), color = c.onPr)

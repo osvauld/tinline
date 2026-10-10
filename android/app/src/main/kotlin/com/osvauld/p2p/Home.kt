@@ -91,10 +91,11 @@ fun HomeScreen(
     }
     val byDid = remember(contacts) { contacts.associateBy { it.did } }
     val recents = remember(history, byDid, now) { history.take(200).map { it.toRecent(byDid, now) } }
-    val subs = remember(history, contacts, now) { contacts.associate { it.did to contactSubLine(it.did, history, now) } }
+    val blocks by app.blocks.collectAsState()
+    val subs = remember(history, contacts, now, blocks) { contacts.associate { it.did to (blocks.status(it.did) ?: contactSubLine(it.did, history, now)) } }
     val online = status?.online == true
     val myDid = remember(chats) { app.currentDid() }
-    val rows = remember(chats, contacts, links, online, now, myDid) { chatRows(chats, contacts, links, online, now * 1000, myDid) }
+    val rows = remember(chats, contacts, links, online, now, myDid, blocks) { chatRows(chats, contacts, links, online, now * 1000, myDid, blocks) }
     HomeContent(
         contacts = contacts, online = online, connectingGrace = grace, missing = missing,
         onFix = onFix, onAdd = onAdd, onSettings = onSettings, onContact = onContact, onCall = onCall,
@@ -205,7 +206,7 @@ fun HomeContent(
                             } else item { SectionLabel("CONTACTS") }
                             val shown = sorted.filter { it.display().matchesQuery(query) || it.name.matchesQuery(query) }
                             items(shown, key = { it.did }) { ct ->
-                                RowItem(ct.display(), ct.did, sub = subLines[ct.did], subColor = if (subLines[ct.did]?.startsWith("Missed") == true) c.er else c.ink2, highlight = query, onClick = { onContact(ct) }, onCall = { onCall(ct) })
+                                RowItem(ct.display(), ct.did, sub = subLines[ct.did], subColor = if (subLines[ct.did]?.let { it.startsWith("Missed") || it.startsWith("Blocked") } == true) c.er else c.ink2, highlight = query, onClick = { onContact(ct) }, onCall = { onCall(ct) })
                             }
                             if (searching) item {
                                 Row(

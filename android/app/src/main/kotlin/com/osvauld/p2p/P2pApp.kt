@@ -55,6 +55,9 @@ class P2pApp : Application(), NodeEvents {
     private val _history = MutableStateFlow<List<CallRecord>>(emptyList())
     /** The call log, newest first. Re-read on every call end (the core writes it before `Ended` fires). */
     val history: StateFlow<List<CallRecord>> = _history
+    private val _blocks = MutableStateFlow(Blocks())
+    /** Contact blocking (Blocking.kt): who we block, who blocks us. Re-read on every contacts/chats change. */
+    val blocks: StateFlow<Blocks> = _blocks
     private val _availability = MutableStateFlow(Availability(true, null))
     val availability: StateFlow<Availability> = _availability
     @Volatile private var availJob: Job? = null
@@ -73,6 +76,8 @@ class P2pApp : Application(), NodeEvents {
         UnlockStore.migrateLegacy(this, currentDid())
         tryAutoUnlock()
         refresh()
+        // Kept chats of people who are no longer contacts (their block deleted our entry) come only from the chat list.
+        scope.launch { realChat.chats.collect { refreshBlocks() } }
         // The always-on notification says "Available for calls" / "Not available" / "Offline".
         scope.launch {
             combine(status, availability) { st, av -> (st?.online == true) to av.available }.distinctUntilChanged()
@@ -107,6 +112,7 @@ class P2pApp : Application(), NodeEvents {
         _accountDid.value = currentDid()
         rememberName()
         _contacts.value = node.contacts()
+        refreshBlocks()
         _status.value = node.status()
         if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
         else { _history.value = emptyList(); _availability.value = Availability(true, null) }
@@ -350,8 +356,38 @@ class P2pApp : Application(), NodeEvents {
         val known = _contacts.value.map { it.did }.toSet()
         list.filter { it.did !in known }.forEach { testLog("added name=${it.name} did=${it.did}") }
         _contacts.value = list
+        refreshBlocks()
         refreshHistory()
     }
+
+    /** Re-reads block states for every contact and conversation, and the blocked list. Cheap core reads. */
+    fun refreshBlocks() {
+        try {
+            val me = currentDid()
+            val dids = (_contacts.value.map { it.did } + realChat.chats.value.map { it.peerDid }).filter { it != me }.toSet()
+            val views = dids.associateWith { did ->
+                val st = node.blockState(did)
+                BlockView(st.blockedByMe, st.blockedAt?.toLong(), st.blockedMe?.signedAt?.toLong())
+            }
+            val list = node.blockedContacts().map { BlockedRow(it.did, it.name, it.blockedAt.toLong()) }
+            _blocks.value = Blocks.from(views, list)
+        } catch (e: Exception) { Log.w(TAG, "blocks: $e") }
+    }
+
+    /** U19: the contact action. Keeps the contact and the chat; they are told. */
+    fun block(did: String) = scope.launch {
+        try { node.block(did) } catch (e: Exception) { Log.w(TAG, "block: $e") }
+        refreshBlocks()
+    }
+
+    fun unblock(did: String) = scope.launch {
+        try { node.unblock(did) } catch (e: Exception) { Log.w(TAG, "unblock: $e") }
+        refreshBlocks()
+    }
+
+    /** "blocked" while they block us and message [messageId] has not reached them. Blocking (store read). */
+    fun notDeliveredReason(peerDid: String, messageId: String): String? =
+        try { node.notDeliveredReason(peerDid, messageId) } catch (e: Exception) { null }
     override fun onIncomingCall(call: CallInfo) = calls.onIncoming(call)
     override fun onCallState(callId: String, state: CallState) {
         if (state is CallState.Ended) refreshHistory()

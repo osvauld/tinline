@@ -53,6 +53,7 @@ fun SettingsScreen(
     onRestoreAccount: () -> Unit = {}, onDevices: () -> Unit = {}, onLinkDevice: () -> Unit = {}, onLinkAccount: () -> Unit = {},
     /** Opens the PLACEHOLDER groups & privacy preview at a start screen (see [PRoute.parse]); debug builds only. */
     onPreview: (String) -> Unit = {},
+    onBlocked: () -> Unit = {},
 ) {
     val ctx = LocalContext.current
     val previewOn by PreviewFlags.enabled(ctx).collectAsState()
@@ -94,10 +95,14 @@ fun SettingsScreen(
             if (hasPass) ListItem("Change passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key)
             else ListItem("Add passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key, sub = "Optional — encrypts your account")
             ListItem("Recovery phrase", onClick = onPhrase, icon = Icons.Rounded.Lock, sub = if (hasPass) "Needs your passphrase" else "Needs your screen lock")
+            SectionLabel("PRIVACY")
+            val blocks by app.blocks.collectAsState()
+            ListItem("Blocked people", onClick = onBlocked, icon = Icons.Rounded.Block,
+                sub = when (val n = blocks.list.size) { 0 -> "Nobody"; 1 -> "1 person"; else -> "$n people" })
             if (previewOn == true) {
                 SectionLabel("PRIVACY · PREVIEW")
                 ListItem("People, requests & blocking", onClick = { onPreview("chats") }, icon = Icons.Rounded.Groups, sub = "Demo chats with Meera, Arjun, Priya · placeholder data")
-                ListItem("Blocked people", onClick = { onPreview("blocked") }, icon = Icons.Rounded.Block, sub = "Placeholder data")
+                ListItem("Blocked people (preview)", onClick = { onPreview("blocked") }, icon = Icons.Rounded.Block, sub = "Placeholder data")
                 ListItem("Address changes", onClick = { onPreview("address") }, icon = Icons.Rounded.Sync, sub = "Placeholder data")
             }
             SectionLabel("ABOUT")
