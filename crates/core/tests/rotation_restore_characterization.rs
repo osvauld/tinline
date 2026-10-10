@@ -14,6 +14,9 @@
 //! leaves a trace, backed by the log line that explains why.
 //! Helpers are copied from `link.rs` / `restore.rs` (they are not in a shared module). Bugs 1 and
 //! 3 of decisions section 5 are fixed on `dev` (P1); their tests are invariants now.
+//! P8: messages are signed by the author's DID key as well, so a message written before a
+//! restore verifies on any device; only records written without it (pre-P8, simulated with
+//! `legacy_message_signing_for_test`) still depend on the device key that signed them.
 
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
@@ -439,6 +442,7 @@ fn o4_ticks_of_pre_restore_messages_follow_the_new_device_counter() {
 /// with `r1`, which B holds (so `r1`'s ops build on `m1`'s, in A1's doc and in B's). B restores;
 /// a call from the restored B rings A2, whose answer path takes B's new signed device list: A2
 /// knows only B's NEW key and holds neither `m1` nor `r1`. Left: B and A2 started, A1 stopped.
+/// With `legacy_m1`, B writes `m1` as an un-upgraded (pre-P8) app does: device signature only.
 struct Sib {
     a1: Peer,
     a2: Peer,
@@ -447,7 +451,7 @@ struct Sib {
     r1: String,
 }
 
-fn sibling_fixture(tag: &str) -> Sib {
+fn sibling_fixture(tag: &str, legacy_m1: bool) -> Sib {
     let a1 = peer(&format!("{tag}-a1"), true);
     let mut b = peer(&format!("{tag}-b"), true);
     b.node.add_contact(a1.node.my_ticket().unwrap()).unwrap();
@@ -459,6 +463,7 @@ fn sibling_fixture(tag: &str) -> Sib {
     eventually(20, "B knows A2", || b.node.contact_devices_for_test(a1.did.clone()).contains(&a2_dev));
 
     a2.node.stop();
+    b.node.legacy_message_signing_for_test(legacy_m1);
     let m1 = b.node.send_text(a1.did.clone(), "m1: only A1 holds it".into(), None).unwrap().id;
     eventually(60, "A1 holds m1", || has(&a1, &b.did, &m1));
     let r1 = a1.node.send_text(b.did.clone(), "r1: A1 answers m1".into(), None).unwrap().id;
@@ -483,7 +488,7 @@ fn sibling_fixture(tag: &str) -> Sib {
 // `m3` reach A2 (what happens to `m1` is the separate limitation test below).
 #[test]
 fn o2_contacts_other_device_gets_our_new_messages_although_it_never_knew_our_old_key() {
-    let f = sibling_fixture("o2snap");
+    let f = sibling_fixture("o2snap", false);
     let (a2, b) = (&f.a2, &f.b);
     let m3 = b.node.send_text(f.a1.did.clone(), "m3: after restore".into(), None).unwrap().id;
     eventually(90, "A2 holds m3", || has(a2, &b.did, &m3));
@@ -500,7 +505,7 @@ fn o2_contacts_other_device_gets_our_new_messages_although_it_never_knew_our_old
 // showing `m1` (stored messages are never re-verified) and learns B's new list from A2.
 #[test]
 fn o2_contacts_other_device_accepts_the_verifiable_messages_its_sibling_relays() {
-    let f = sibling_fixture("o2rel");
+    let f = sibling_fixture("o2rel", false);
     let (a1, a2, b) = (&f.a1, &f.a2, &f.b);
     b.node.stop();
     online(&a1.node);
@@ -515,19 +520,46 @@ fn o2_contacts_other_device_accepts_the_verifiable_messages_its_sibling_relays()
     eventually(20, "A1 learns B's new list from A2", || a1.node.contact_devices_for_test(b.did.clone()) == new_dev);
 }
 
-// KIND: limitation
-// POLICY-GATED (production-phase1-plan "Open details", P1; decisions section 12 Q1). `m1` was
-// signed by B's OLD device key, and A2 never knew that key: neither the snapshot from B nor the
-// relay from A1 lets A2 verify it, so A2 keeps its ops (later messages build on them) but never
-// shows it; A1 still does. Bounded: `m1` does not appear on A2 within 20 s after both routes
-// delivered their verifiable messages.
-// Expected-correct: undecided. Options: accept that `m1` is lost on A2; B re-signs its own
-// unacknowledged messages with its current key after a restore (a valid re-signed copy would
-// replace the hidden one); or receivers keep superseded keys of the same DID for verifying
-// content only.
+// KIND: invariant
+// P8 (was the P1 limitation below for every message). `m1` was written by B before its restore
+// and signed by B's OLD device key, which A2 never knew, and by B's DID key, which does not
+// change on restore. A2 verifies `m1` against B's DID, so it shows `m1` by both routes: B's
+// vouched snapshot (pulled because `m3` builds on `m1`), and A1 relaying the day.
 #[test]
-fn o2_a_pre_restore_message_signed_by_the_old_key_stays_hidden_from_a_device_that_never_knew_that_key() {
-    let f = sibling_fixture("o2lim");
+fn o2_a_pre_restore_message_reaches_a_device_that_never_knew_the_old_key() {
+    let f = sibling_fixture("o2did", false);
+    let (a1, a2, b) = (&f.a1, &f.a2, &f.b);
+    // Route 1: B's vouched snapshot.
+    let m3 = b.node.send_text(a1.did.clone(), "m3: after restore".into(), None).unwrap().id;
+    eventually(90, "A2 holds m3", || has(a2, &b.did, &m3));
+    eventually(30, "A2 shows m1 from B's snapshot", || has(a2, &b.did, &f.m1));
+    assert!(!a2.logged("signature does not verify"), "nothing was hidden or rejected");
+    // Route 2: A1 relays the day (a second copy of the same ops changes nothing).
+    b.node.stop();
+    online(&a1.node);
+    a1.node.rename_contact(b.did.clone(), Some("Bee".into())).unwrap();
+    a2.node.sync_now_for_test();
+    eventually(60, "the account doc syncs A1 -> A2", || {
+        a2.node.contacts().iter().any(|c| c.did == b.did && c.alias.as_deref() == Some("Bee"))
+    });
+    assert!(has(a2, &b.did, &f.m1) && has(a2, &b.did, &f.r1) && has(a2, &b.did, &m3));
+    assert!(has(a1, &b.did, &f.m1), "A1 keeps showing m1");
+    assert!(!a2.logged("signature does not verify"));
+}
+
+// KIND: limitation
+// POLICY-GATED (production-phase1-plan "Open details", P1; decisions section 12 Q1). Only for
+// records without a DID signature (written by a pre-P8 app; simulated here). `m1` was signed by
+// B's OLD device key only, and A2 never knew that key: neither the snapshot from B nor the relay
+// from A1 lets A2 verify it, so A2 keeps its ops (later messages build on them) but never shows
+// it; A1 still does. Bounded: `m1` does not appear on A2 within 20 s after both routes delivered
+// their verifiable messages.
+// Expected-correct: undecided. Options: accept that such `m1` is lost on A2; B re-signs its own
+// unacknowledged messages with its DID key after a restore (a valid re-signed copy would replace
+// the hidden one); or receivers keep superseded keys of the same DID for verifying content only.
+#[test]
+fn o2_a_pre_p8_message_signed_only_by_the_old_key_stays_hidden_from_a_device_that_never_knew_that_key() {
+    let f = sibling_fixture("o2lim", true);
     let (a1, a2, b) = (&f.a1, &f.a2, &f.b);
     // Route 1: B's vouched snapshot (pulled because `m3` builds on `m1`).
     let m3 = b.node.send_text(a1.did.clone(), "m3: after restore".into(), None).unwrap().id;

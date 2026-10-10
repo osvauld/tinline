@@ -274,7 +274,10 @@ impl Node {
         };
         let shard = Shard::new(&pair, &day, &device);
         let rec = MsgRec { id: format!("forged{kind}"), author, at, text: format!("forged {kind}"), edited_at: None, deleted: false, reply_to: None, file: None, sig: Vec::new() };
-        let update = shard.add_message(&rec, &secret).map_err(|e| Error::Io(e.to_string()))?;
+        // Forgeries carry no DID signature (only the account could make one); the control is
+        // written exactly as `send_text` writes.
+        let writer = if kind >= 3 { self.inner.chat_writer(&me) } else { crate::chat::doc::Writer::legacy(secret) };
+        let update = shard.add_message(&rec, &writer).map_err(|e| Error::Io(e.to_string()))?;
         let inner = self.inner.clone();
         let doc = doc_name(&pair, &day);
         self.block_on(async move { inner.chat_own_apply(&doc, &update).await })?
