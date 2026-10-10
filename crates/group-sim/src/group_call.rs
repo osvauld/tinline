@@ -414,6 +414,11 @@ struct Fwd {
     held: BTreeMap<u8, VecDeque<bool>>,
     demoted_until: BTreeMap<u8, u64>,
     lowered: BTreeSet<u8>, // host user's "lower priority" (§6)
+    // G6-D2: a provisional slot K+1 for a new speaker (slot, since frame, level sum, count),
+    // and senders whose provisional slot was dropped (no new one until they go quiet).
+    provisional: bool,
+    prov: Option<(u8, u64, u32, u32)>,
+    denied: BTreeSet<u8>,
 }
 impl Fwd {
     fn new(k: usize) -> Self {
@@ -428,7 +433,16 @@ impl Fwd {
             held: BTreeMap::new(),
             demoted_until: BTreeMap::new(),
             lowered: BTreeSet::new(),
+            provisional: true,
+            prov: None,
+            denied: BTreeSet::new(),
         }
+    }
+    // G6-D2: what H forwards and announces in `Active`: S plus the provisional slot.
+    fn forwarded(&self) -> BTreeSet<u8> {
+        let mut f = self.set.clone();
+        f.extend(self.prov.map(|p| p.0));
+        f
     }
     // ASSUMPTION(G3): the mean of the levels that arrived in the window. 127 means silent.
     fn avg(&self, s: u8) -> u32 {
@@ -447,6 +461,19 @@ impl Fwd {
 // Returns the next state; `prev` is not changed.
 fn select(prev: &Fwd, levels: &BTreeMap<u8, u8>) -> Fwd {
     let mut n = prev.clone();
+    // G6-D2: a sender outside S at speech level gets the free provisional slot at once (H does
+    // this on the datagram itself, before the frame ends).
+    for (&s, &l) in levels {
+        if n.provisional
+            && (l as u32) < SPEECH_DBOV
+            && !n.set.contains(&s)
+            && n.prov.is_none()
+            && !n.low(s)
+            && !n.denied.contains(&s)
+        {
+            n.prov = Some((s, n.frame, 0, 0));
+        }
+    }
     n.frame += 1;
     let senders: BTreeSet<u8> = n.hist.keys().chain(levels.keys()).copied().collect();
     for s in &senders {
@@ -523,6 +550,43 @@ fn select(prev: &Fwd, levels: &BTreeMap<u8, u8>) -> Fwd {
             }
         }
     }
+    // G6-D2: after HYST_FRAMES the provisional slot replaces the weakest member of S if its
+    // spurt was louder by HYST_DB (or S has room), else it is dropped. The normal rule may
+    // promote it earlier.
+    if let Some((p, since, mut sum, mut cnt)) = n.prov.take() {
+        if !n.set.contains(&p) {
+            if let Some(l) = levels.get(&p) {
+                sum += *l as u32;
+                cnt += 1;
+            }
+            if n.frame - since < HYST_FRAMES as u64 {
+                n.prov = Some((p, since, sum, cnt));
+            } else {
+                let spurt = if cnt == 0 { 127 } else { sum / cnt };
+                let out = if n.low(p) {
+                    None
+                } else if n.set.len() < n.k {
+                    (spurt < SPEECH_DBOV).then_some(None)
+                } else {
+                    let q = *n.set.iter().max_by_key(|s| key(&n, **s)).unwrap();
+                    (n.low(q) || spurt + HYST_DB <= avg[&q]).then_some(Some(q))
+                };
+                match out {
+                    Some(q) => {
+                        if let Some(q) = q {
+                            n.set.remove(&q);
+                        }
+                        n.set.insert(p);
+                        n.challenge.clear();
+                    }
+                    None => {
+                        n.denied.insert(p);
+                    }
+                }
+            }
+        }
+    }
+    n.denied.retain(|s| avg.get(s).is_some_and(|a| *a < SPEECH_DBOV));
     n
 }
 // Copies H sends: every datagram from a selected sender goes to every receiver except that
@@ -1878,7 +1942,7 @@ impl Sim {
         let pending = std::mem::take(&mut hc.pending);
         let levels = std::mem::take(&mut hc.levels);
         hc.fwd = select(&hc.fwd, &levels);
-        let set = hc.fwd.set.clone();
+        let set = hc.fwd.forwarded(); // G6-D2: S plus the provisional slot
         let parts: Vec<(u8, String)> = hc.parts.values().map(|p| (p.slot, p.endpoint.clone())).collect();
         if set != hc.active {
             // G6-D1: tell every participant before forwarding under the new set.
@@ -2565,6 +2629,7 @@ fn gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping() {
     for (burst, swap_at) in [(10usize, None), (30, Some(19usize))] {
         let mut f = Fwd::new(2);
         f.dominance_cap = false;
+        f.provisional = false;
         let steady = BTreeMap::from([(1u8, 30u8), (2, 32), (3, 60)]);
         for _ in 0..AVG_FRAMES * 2 {
             f = select(&f, &steady);
@@ -2580,6 +2645,45 @@ fn gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping() {
         }
         assert_eq!(at, swap_at, "burst {burst}");
     }
+    // G6-D2 (decided): the same bursts with the provisional slot. Slot 3 is forwarded from its
+    // first frame, at most K+1 slots are forwarded, and after HYST_FRAMES its spurt (level 5,
+    // 6 dB or more below S's weakest average) puts it in S.
+    for burst in [10usize, 30] {
+        let mut f = Fwd::new(2);
+        f.dominance_cap = false;
+        let steady = BTreeMap::from([(1u8, 30u8), (2, 32), (3, 60)]);
+        for _ in 0..AVG_FRAMES * 2 {
+            f = select(&f, &steady);
+        }
+        let (mut fwd_at, mut sel_at) = (None, None);
+        for t in 1..=burst + AVG_FRAMES {
+            let lv = BTreeMap::from([(1u8, 30u8), (2, 32), (3, if t <= burst { 5 } else { 60 })]);
+            f = select(&f, &lv);
+            assert!(f.forwarded().len() <= 3, "at most K + 1");
+            if fwd_at.is_none() && f.forwarded().contains(&3) {
+                fwd_at = Some(t);
+            }
+            if sel_at.is_none() && f.set.contains(&3) {
+                sel_at = Some(t);
+            }
+        }
+        assert_eq!((fwd_at, sel_at), (Some(1), Some(HYST_FRAMES as usize)), "D2 burst {burst}");
+    }
+    // A quieter newcomer (not 6 dB louder) is forwarded for HYST_FRAMES, then dropped, and not
+    // offered again while it keeps talking.
+    let mut f = Fwd::new(2);
+    f.dominance_cap = false;
+    let steady = BTreeMap::from([(1u8, 30u8), (2, 32), (3, 60)]);
+    for _ in 0..AVG_FRAMES * 2 {
+        f = select(&f, &steady);
+    }
+    let mut forwarded = 0;
+    for _ in 0..100 {
+        f = select(&f, &BTreeMap::from([(1u8, 30u8), (2, 32), (3, 40)]));
+        forwarded += usize::from(f.forwarded().contains(&3));
+    }
+    assert_eq!(forwarded, HYST_FRAMES as usize - 1);
+    assert_eq!(f.set, BTreeSet::from([1, 2]));
 }
 
 // KIND: invariant
@@ -3280,6 +3384,7 @@ fn gc_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over_with_host_leaving
         hc.limited = true;
         hc.k = 1;
         hc.fwd.k = 1;
+        hc.fwd.provisional = false; // no K+1 slot while limited
     }
     s.c[HP].log.push("hosting limited".into());
     let before = s.snap_all();
