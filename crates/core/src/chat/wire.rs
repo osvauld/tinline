@@ -1,14 +1,15 @@
-//! Frames of `tinline/chat/2`: u32 BE length + bincode of `ChatMsg`, on one bidirectional QUIC
+//! Frames of `tinline/chat/3`: u32 BE length + bincode of `ChatMsg`, on one bidirectional QUIC
 //! stream opened by the dialer. Both sides send `Auth` first, then everything is symmetric.
-//! Version 2 (P9c) carries the strict DID-signed chat docs; `tinline/chat/1` (apps before P9c)
-//! is refused clearly (`crate::version`).
+//! Version 3 (P6): `Auth` presents a message token (separate from the call token); version 2
+//! (P9c) carries the strict DID-signed chat docs. Older versions are refused clearly
+//! (`crate::version`).
 
 use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
-pub const CHAT_ALPN: &[u8] = b"tinline/chat/2";
+pub const CHAT_ALPN: &[u8] = b"tinline/chat/3";
 /// A shard snapshot of a very busy day can be large; blobs carry the rest.
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 const SIG_DOMAIN: &[u8] = b"tinline-chat-batch-v1";
@@ -28,7 +29,7 @@ pub struct HistDay {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ChatMsg {
-    /// The same proof as a call: device attestation + the grant the other side issued to us.
+    /// Device attestation + the message token the other side issued to us (P6).
     Auth { attestation: proto::SignedAttestation, grant: proto::SignedGrant, relay: Option<String> },
     /// `ChatHello`: the days we hold (the last seven, and any with unacknowledged ops), each
     /// with its version vector. Doubles as an acknowledgement of everything in those vvs.

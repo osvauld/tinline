@@ -203,6 +203,8 @@ ack), `Sync{doc, vv, update, sig}`, `Push{doc, update, sig}`, `Ack{doc, vv}`,
 `sig` = Ed25519 by the device key over `"tinline-chat-batch-v1" ‖ len(doc) ‖ doc ‖ update`.
 A device only ever sends **its own** ops (export from the peer's vv with other peers' counters
 masked), so a receiver can require that every op of a live batch is the signer's own.
+**Version 3 (P6).** `Auth` now presents the peer's *message* token (a call token does not open
+chat; a token taken back by a block is refused); `tinline/chat/2` is refused like `/1`.
 **Version check (P9c, U18).** Version 2 is incompatible with apps before P9c (`tinline/chat/1`).
 The endpoint still lists `/1` only to refuse it: an old app's connection is accepted and closed at
 once with application code 426 and a reason naming both versions ("chat tinline/chat/1 is no

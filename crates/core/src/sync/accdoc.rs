@@ -3,7 +3,9 @@
 //!
 //! ```text
 //! devices/<device_text>  { att, label, removed, relay }   the registry
-//! contacts/<did>         { rec, alias, verified }         rec = name, devices, device_list, grant, added_at
+//! contacts/<did>         { rec, alias, verified, calls }  rec = name, devices, device_list, grant,
+//!                                                          call_grant, added_at; calls = we let them call
+//! cutoffs/<did>          our token cut-offs for <did> (JSON `CutOffs`; per field, max wins)
 //! sent/<did>             our latest signed block/unblock notice to <did> (JSON; newest `at` wins)
 //! notices/<did>          the latest notice <did> signed to us + their name (JSON; newest wins)
 //! redeemed/<nonce>       "1"                              set, never shrinks
@@ -24,9 +26,9 @@ use std::ops::Deref;
 use loro::{Container, LoroMap, LoroValue, ValueOrContainer};
 use serde::{Deserialize, Serialize};
 
-use crate::node::{grant_outlives, merge_device_list};
+use crate::node::merge_device_list;
 use super::doc::{Doc, entries, field, io, text};
-use crate::store::{ContactDevice, HeldNotice, OwnDevice, State, StoredContact};
+use crate::store::{ContactDevice, CutOffs, HeldNotice, OwnDevice, State, StoredContact};
 use crate::Error;
 
 pub const DOC_NAME: &str = "account";
@@ -37,6 +39,8 @@ struct CRec {
     devices: Vec<ContactDevice>,
     device_list: Option<proto::SignedBlob>,
     grant: proto::SignedGrant,
+    #[serde(default)]
+    call_grant: Option<proto::SignedGrant>,
     added_at: u64,
 }
 
@@ -140,12 +144,14 @@ impl AccDoc {
                 devices: c.devices.clone(),
                 device_list: c.device_list.clone(),
                 grant: c.grant_from_them.clone(),
+                call_grant: c.call_grant_from_them.clone(),
                 added_at: c.added_at,
             };
             set_str(&m, "rec", &serde_json::to_string(&rec).map_err(io)?)?;
             set_str(&m, "alias", &serde_json::to_string(&c.alias).map_err(io)?)?;
             let ver = Verified { v: c.verified, seq: list_seq(&c.did, &c.device_list) };
             set_str(&m, "verified", &serde_json::to_string(&ver).map_err(io)?)?;
+            set_str(&m, "calls", if c.calls_allowed { "1" } else { "0" })?;
         }
         // A contact the doc has and the working copy lacks was removed here.
         if let LoroValue::Map(cm) = contacts.get_deep_value() {
@@ -159,6 +165,11 @@ impl AccDoc {
         let sent = self.doc.get_map("sent");
         for (did, n) in &st.sent_notices {
             set_str(&sent, did, &serde_json::to_string(n).map_err(io)?)?;
+        }
+        // Cut-offs only rise; a merge takes the max per field.
+        let cutoffs = self.doc.get_map("cutoffs");
+        for (did, c) in &st.cut_offs {
+            set_str(&cutoffs, did, &serde_json::to_string(c).map_err(io)?)?;
         }
         let held = self.doc.get_map("notices");
         for (did, h) in &st.notices {
@@ -273,6 +284,7 @@ impl AccDoc {
             doc_alive.insert(did.clone());
             let alias: Option<String> = field(m, "alias").and_then(text).and_then(|t| serde_json::from_str(&t).ok()).flatten();
             let ver: Option<Verified> = field(m, "verified").and_then(text).and_then(|t| serde_json::from_str(&t).ok());
+            let calls: Option<bool> = field(m, "calls").and_then(text).map(|t| t != "0");
             match st.contacts.iter_mut().find(|c| c.did == did) {
                 None => {
                     let verified = ver.as_ref().is_some_and(|v| v.v && v.seq >= list_seq(&did, &rec.device_list));
@@ -282,6 +294,8 @@ impl AccDoc {
                         devices: rec.devices,
                         device_list: rec.device_list,
                         grant_from_them: rec.grant,
+                        call_grant_from_them: rec.call_grant,
+                        calls_allowed: calls.unwrap_or(true),
                         added_at: rec.added_at,
                         alias,
                         verified,
@@ -289,7 +303,8 @@ impl AccDoc {
                 }
                 Some(c) => {
                     c.name = rec.name;
-                    if rec.added_at > c.added_at {
+                    let readded_elsewhere = rec.added_at > c.added_at;
+                    if readded_elsewhere {
                         c.added_at = rec.added_at;
                     }
                     // Device set: the newer signed list wins; without lists, union (ours first).
@@ -303,8 +318,20 @@ impl AccDoc {
                         }
                         c.devices.truncate(proto::MAX_LIST_DEVICES);
                     }
-                    if grant_outlives(&c.grant_from_them, &rec.grant, &did, ctx.my_did, ctx.now) {
+                    if crate::caps::outlives(Some(&c.grant_from_them), &rec.grant, proto::Cap::Message, &did, ctx.my_did, ctx.now) {
                         c.grant_from_them = rec.grant;
+                    }
+                    // A re-add elsewhere may have replaced the call token with none: the doc's
+                    // slot wins when it is newer, else the later-expiring token.
+                    if let Some(g) = rec.call_grant {
+                        if crate::caps::outlives(c.call_grant_from_them.as_ref(), &g, proto::Cap::Call, &did, ctx.my_did, ctx.now) {
+                            c.call_grant_from_them = Some(g);
+                        }
+                    } else if readded_elsewhere {
+                        c.call_grant_from_them = None;
+                    }
+                    if let Some(calls) = calls {
+                        c.calls_allowed = calls;
                     }
                     c.alias = alias;
                     // S4: someone's "verified" counts only against a device set at least as
@@ -319,6 +346,11 @@ impl AccDoc {
         for (did, at) in block_at {
             if crate::block::apply_block_deletion_request(st, &did, at) {
                 ch.removed.push(did);
+            }
+        }
+        for (did, v) in sect("cutoffs") {
+            if let Some(c) = text(v).and_then(|t| serde_json::from_str::<CutOffs>(&t).ok()) {
+                st.cut_offs.entry(did).or_default().merge(&c);
             }
         }
         for (name, set) in [("redeemed", &mut st.redeemed), ("revoked", &mut st.revoked)] {

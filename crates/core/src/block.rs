@@ -137,7 +137,8 @@ fn notice_at(blob: &SignedBlob, to: &str) -> u64 {
 #[uniffi::export]
 impl Node {
     /// Blocks a contact (U19: the contact action; there is no separate Remove). The contact and
-    /// the chat history are kept and shown as Blocked. One DID-signed notice goes to them
+    /// the chat history are kept and shown as Blocked. Both their tokens (message and call) are
+    /// taken back for good (P6): after an unblock they re-add us and get fresh ones. One DID-signed notice goes to them
     /// (retried until their app takes it); it also asks their app to delete its contact entry
     /// for us (U20). From now on all our devices refuse their calls, chats, history requests and
     /// ticket redemptions with the reason `"blocked"`. Any call with them ends. Does not rotate
@@ -156,6 +157,8 @@ impl Node {
             s.state.sent_notices.insert(did.clone(), n.clone());
             s.state.blocked.insert(did.clone());
             s.state.notice_outbox.insert(did.clone());
+            // Takes back both their tokens (P6): an unblock does not revive them.
+            Inner::revoke_all(&mut s.state, &did);
             // A ticket they may have seen is of no further use.
             s.state.ticket = None;
             n
@@ -462,6 +465,8 @@ mod tests {
             devices: vec![ContactDevice { device: [7; 32], relay: None }],
             device_list: None,
             grant_from_them: grant.clone(),
+            call_grant_from_them: None,
+            calls_allowed: true,
             added_at,
             alias: None,
             verified: true,
