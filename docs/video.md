@@ -30,6 +30,36 @@ Status: design + simulation. Not wired into calls or the apps yet.
 
 `[group: u64 BE]`, then frames `[len: u32 BE][capture_us: u64 BE][AV1 temporal unit]`.
 Frame 0 of a group is a keyframe. Receiver caps frame size (`max_frame`, default 1 MiB).
+No resolution field: the size only changes at a keyframe, whose AV1 sequence header carries
+it, and rav1d follows it with the same decoder instance.
+
+## Resolution ladder (`media::Ladder`, owned by `Sender`)
+
+| rung | floor (`min_bps`) | up when bitrate >= (130% of floor) | ceiling (`max_bps`) |
+|---|---|---|---|
+| 320x180 | - | - | 500 kbps |
+| 640x360 | 250 kbps | 325 kbps | 1.2 Mbps |
+| 960x540 | 600 kbps | 780 kbps | 2 Mbps |
+| 1280x720 | 1 Mbps | 1.3 Mbps | 3 Mbps |
+
+- Start: the highest rung whose floor the start bitrate covers (500 kbps -> 640x360).
+- **Down at once**, skipping rungs, as soon as the target bitrate falls below the floor.
+- **Up one rung at a time**, after the bitrate has stayed above the up threshold for 2.5 s
+  without a break, and not within 4 s of a step down.
+- **Encode time**: the app reports each frame's encode time (`Sender::encode_time`). If the
+  p90 of the last 30 frames (>= 10 samples) exceeds 60% of the frame interval (20 ms at
+  30 fps), step down and block the rung above for 30 s. Stepping up also needs the p90
+  scaled by the pixel ratio to fit the budget, so a device that can't encode the next rung
+  never tries it (phone pinned: 540p p90 ~13 ms -> 720p predicted ~24 ms, so it stays at
+  540p; unpinned it stays at 360p).
+- **Ceiling**: the encoder bitrate is clamped to the rung's `max_bps`; without it a step
+  down for CPU sends a keyframe sized for the old bitrate, which flooded the link in the
+  simulation and dropped a further rung.
+- `LadderConfig::max_rung` / `Sender::set_max_rung`: device or peer capability.
+- **Switching**: `Sender::resolution()` is the size for the next captured frame; on a change
+  the sender wants a keyframe, so the new size always opens a new group. The codec layer
+  re-creates the encoder at the new size (its first frame is a keyframe anyway); the
+  receiver needs nothing.
 
 ## Transport (`video::net`, feature `net`)
 
@@ -135,14 +165,36 @@ device's measured encode time allow.
 a bottleneck link (rate, delay, jitter, loss, buffer, outages, rate changes) and a QUIC model
 (per-stream retransmission, newest-first scheduling, resets, loss-based cwnd, pacing).
 
-| Scenario | latency p50 / p95 | freezes |
-|---|---|---|
-| clean 2 Mbps, 20 ms | 64 / 93 ms | 0 |
-| 3% random loss | 51 / 115 ms | 0 |
-| 2 Mbps -> 300 kbps at 10 s | 64 ms p50; adapted below 300 kbps | 0.3 s |
-| 500 ms outage | 62 / 97 ms | 0.9 s |
-| relay: 75 ms +-20 ms, 1.5 Mbps | 126 / 155 ms | 0 |
-| real AV1 (libaom -> rav1d), 2% loss + 400 ms outage | 49 / 106 ms, 0 decode errors | 0.5 s |
+The device model is the phone's measured encode time (`sim::Device::phone`: 2.1 ms +
+18 ns/pixel, +-20%, one frame at a time; `phone_unpinned` for the A53 cores). The fake codec
+gives deltas the target bitrate up to 0.3 bits/pixel and keyframes a size fitted to the
+real-footage table above (key/delta ~7 at 180p / 200 kbps down to ~3.3 at 720p / 1.5 Mbps).
+
+Before the ladder: fixed size, fixed 5 ms encode. After: ladder + phone device model.
+Latency p50 / p95 over the whole run.
+
+| Scenario | before | after | sizes (after) |
+|---|---|---|---|
+| clean 2 Mbps, 20 ms | 64 / 93 ms, 0 freezes | 65 / 99 ms, 0 freezes | 360p -> 540p at 3.5 s |
+| 3% random loss | 51 / 115 ms, 0 | 53 / 110 ms, 0 | 360 -> 540 -> 180 (19.4 s) -> 360 -> 540 |
+| 2 Mbps -> 300 kbps at 10 s | 64 / 828 ms, 0.3 s | 60 / 844 ms, 0 | 540 -> 360 (10.2 s) -> 180 (10.8 s) |
+| 500 ms outage | 62 / 97 ms, 0.9 s | 64 / 96 ms, 0.7 s | 360 -> 540 |
+| relay: 75 ms +-20 ms, 1.5 Mbps | 126 / 155 ms, 0 | 131 / 177 ms, 0 | 360 -> 540 |
+| real AV1, 2% loss + 400 ms outage | 49 / 106 ms, 0.5 s | 40 / 84 ms, 0.6 s | 360 -> 180 -> 360 |
+| 2 M -> 200 k (10 s) -> 2 M (20 s), 40 s | 60 / 2824 ms, 4.7 s (9) | 58 / 1829 ms, 0.9 s (3) | 540 -> 180 at 10.3 s -> 360 (24.2) -> 540 (27.2); 4 switches |
+| slow device (unpinned), clean | - | 56 / 62 ms, 0 | 360p throughout, 0 switches |
+| phone throttles 2x at 15 s | - | 58 / 78 ms, 0 | 540 -> 360 at 15.1 s, stays |
+| real AV1, 2 M -> 200 k (6 s) -> 2 M (12 s), 20 s | 56 / 2232 ms, 0.6 s (12 s run, no recovery) | 52 / 2493 ms, 3.0 s, 0 decode errors | decoded 360, 540, 180, 360 |
+
+The p95 in the bandwidth-drop rows is the bottleneck buffer draining (64 KB is 1.7 s at
+300 kbps, 2.6 s at 200 kbps): the rate controller backs off to 85% of delivered, so it only
+drains slowly. That is pre-existing; the ladder makes it shorter, not longer. Open issues:
+- A step down's keyframe waits behind that queue, and the old group's unsent frames are reset,
+  so with real AV1 the switch costs a freeze of up to ~the queue time (3.0 s total above).
+  Options: drain faster (cut below delivered while queueing is high), or AV1 reference
+  scaling (libaom `resize_mode`), which changes size without a keyframe.
+- The ladder only steps down for CPU after 10 frames at the new speed; a sudden 2x slowdown
+  at 720p costs ~1/3 s of late frames.
 
 The first version used the congestion window for the bitrate; the simulation showed
 bufferbloat (p50 256 ms on a clean link, 1.5 s after a bandwidth drop), which is why rate
@@ -153,7 +205,8 @@ control is delay-based.
 1. ~~Real footage, ARM numbers~~ done (above). Static libaom: `scripts/build_libaom.py` works
    for the benchmark; still to wire into `scripts/build_android.py` / release packaging
    (vendored source, not fetched at build time).
-2. Resolution ladder in `media::Sender` (switch at a keyframe), added to the simulation.
+2. ~~Resolution ladder in `media::Sender` (switch at a keyframe), added to the simulation.~~
+   done (above).
 3. iroh transport against `media::Sender`/`Receiver`: **built** (`video::net`, see Transport,
    loopback tests). Still to do: run it over a lossy/limited link (netem or a lossy socket) to
    check it against the simulation's scenarios; set `max_concurrent_uni_streams` in the call

@@ -17,6 +17,10 @@
 //! delivered rate as soon as a queue builds and only ramps up while the path is empty. A
 //! loss-based congestion controller alone fills the bottleneck buffer first (bufferbloat), which
 //! the simulation showed as seconds of delay.
+//!
+//! Resolution follows the bitrate through a [`Ladder`] and changes only at a new group: the
+//! sender asks for a keyframe and the app encodes it at [`Sender::resolution`]. The AV1 sequence
+//! header in the keyframe carries the new size, so the wire format doesn't change.
 
 use std::collections::BTreeMap;
 
@@ -46,6 +50,7 @@ pub struct SenderConfig {
     pub overuse_us: u64,
     /// Queueing delay below this: allowed to ramp up.
     pub underuse_us: u64,
+    pub ladder: LadderConfig,
 }
 
 impl Default for SenderConfig {
@@ -58,7 +63,198 @@ impl Default for SenderConfig {
             max_backlog_us: 300_000,
             overuse_us: 40_000,
             underuse_us: 15_000,
+            ladder: LadderConfig::default(),
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Rung {
+    pub width: u32,
+    pub height: u32,
+    /// Below this bitrate the rung is left for a smaller one.
+    pub min_bps: u32,
+    /// The encoder gets no more than this at this size: more bits barely help a small picture,
+    /// and they would make the keyframe after a step down needlessly large.
+    pub max_bps: u32,
+}
+
+impl Rung {
+    fn pixels(&self) -> u64 {
+        self.width as u64 * self.height as u64
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct LadderConfig {
+    /// Smallest first.
+    pub rungs: Vec<Rung>,
+    /// Highest rung index allowed (device or peer capability).
+    pub max_rung: usize,
+    /// Step up once the bitrate is this % of the next rung's `min_bps`...
+    pub up_margin_pct: u32,
+    /// ...for this long without a break,
+    pub up_hold_us: u64,
+    /// and no sooner than this after stepping down.
+    pub up_after_down_us: u64,
+    /// p90 encode time above this % of the frame interval: too slow for the rung.
+    pub encode_budget_pct: u32,
+    /// After stepping down for encode time, the rung stays out of reach this long.
+    pub cpu_block_us: u64,
+}
+
+impl Default for LadderConfig {
+    fn default() -> Self {
+        let r = |width, height, min_bps, max_bps| Rung { width, height, min_bps, max_bps };
+        Self {
+            rungs: vec![
+                r(320, 180, 0, 500_000),
+                r(640, 360, 250_000, 1_200_000),
+                r(960, 540, 600_000, 2_000_000),
+                r(1280, 720, 1_000_000, 3_000_000),
+            ],
+            max_rung: 3,
+            up_margin_pct: 130,
+            up_hold_us: 2_500_000,
+            up_after_down_us: 4_000_000,
+            encode_budget_pct: 60,
+            cpu_block_us: 30_000_000,
+        }
+    }
+}
+
+/// Encode times kept for the p90 (about a second of video).
+const ENCODE_WINDOW: usize = 30;
+/// Samples needed before encode time is trusted.
+const ENCODE_MIN: usize = 10;
+
+/// Picks the resolution from the bitrate and the measured encode time. Steps down at once,
+/// up one rung at a time and only after the bitrate has held above the next rung's threshold.
+pub struct Ladder {
+    cfg: LadderConfig,
+    frame_us: u64,
+    cur: usize,
+    above_since: Option<u64>,
+    last_down_us: Option<u64>,
+    /// Encode times (us) at the current rung.
+    encode: std::collections::VecDeque<u64>,
+    /// Rungs above this are blocked until the time, for being too slow to encode.
+    cpu_cap: Option<(usize, u64)>,
+    pub switches: u64,
+}
+
+impl Ladder {
+    pub fn new(cfg: LadderConfig, fps: u32, start_bps: u32) -> Self {
+        assert!(!cfg.rungs.is_empty());
+        let mut l = Self {
+            cfg,
+            frame_us: 1_000_000 / fps.max(1) as u64,
+            cur: 0,
+            above_since: None,
+            last_down_us: None,
+            encode: Default::default(),
+            cpu_cap: None,
+            switches: 0,
+        };
+        l.cur = l.fit(start_bps);
+        l
+    }
+
+    pub fn rung(&self) -> Rung {
+        self.cfg.rungs[self.cur]
+    }
+
+    pub fn index(&self) -> usize {
+        self.cur
+    }
+
+    /// Highest rung index the peer or device can take.
+    pub fn set_max(&mut self, max: usize) {
+        self.cfg.max_rung = max;
+    }
+
+    fn max(&self, now_us: u64) -> usize {
+        let cap = match self.cpu_cap {
+            Some((r, until)) if now_us < until => r,
+            _ => usize::MAX,
+        };
+        self.cfg.max_rung.min(cap).min(self.cfg.rungs.len() - 1)
+    }
+
+    /// Highest rung whose floor `bps` covers (ignoring caps).
+    fn fit(&self, bps: u32) -> usize {
+        let top = self.cfg.max_rung.min(self.cfg.rungs.len() - 1);
+        (0..=top).rev().find(|&i| self.cfg.rungs[i].min_bps <= bps).unwrap_or(0)
+    }
+
+    fn p90(&self) -> Option<u64> {
+        if self.encode.len() < ENCODE_MIN {
+            return None;
+        }
+        let mut v: Vec<u64> = self.encode.iter().copied().collect();
+        v.sort_unstable();
+        Some(v[(v.len() - 1) * 9 / 10])
+    }
+
+    fn budget_us(&self) -> u64 {
+        self.frame_us * self.cfg.encode_budget_pct as u64 / 100
+    }
+
+    fn set(&mut self, now_us: u64, to: usize) {
+        if to < self.cur {
+            self.last_down_us = Some(now_us);
+        }
+        self.cur = to;
+        self.above_since = None;
+        self.encode.clear();
+        self.switches += 1;
+    }
+
+    /// One frame took `us` to encode. Returns true if the rung changed.
+    pub fn encode_time(&mut self, now_us: u64, us: u64) -> bool {
+        self.encode.push_back(us);
+        if self.encode.len() > ENCODE_WINDOW {
+            self.encode.pop_front();
+        }
+        if self.cur > 0 && self.p90().is_some_and(|p| p > self.budget_us()) {
+            self.cpu_cap = Some((self.cur - 1, now_us + self.cfg.cpu_block_us));
+            self.set(now_us, self.cur - 1);
+            return true;
+        }
+        false
+    }
+
+    /// Re-evaluates for the current target bitrate. Returns true if the rung changed.
+    pub fn update(&mut self, now_us: u64, bps: u32) -> bool {
+        let max = self.max(now_us);
+        let down = self.fit(bps).min(max);
+        if down < self.cur {
+            self.set(now_us, down);
+            return true;
+        }
+        let next = self.cur + 1;
+        if next > max {
+            self.above_since = None;
+            return false;
+        }
+        let r = self.cfg.rungs[next];
+        let above = bps as u64 * 100 >= r.min_bps as u64 * self.cfg.up_margin_pct as u64;
+        // Would the bigger picture still encode in time? Assume time grows with pixels.
+        let fast = match self.p90() {
+            Some(p) => p * r.pixels() / self.rung().pixels() <= self.budget_us(),
+            None => false,
+        };
+        if !(above && fast) {
+            self.above_since = None;
+            return false;
+        }
+        let since = *self.above_since.get_or_insert(now_us);
+        let settled = self.last_down_us.is_none_or(|t| now_us - t >= self.cfg.up_after_down_us);
+        if now_us - since >= self.cfg.up_hold_us && settled {
+            self.set(now_us, next);
+            return true;
+        }
+        false
     }
 }
 
@@ -72,6 +268,8 @@ pub struct Sender {
     want_key: bool,
     bitrate: u32,
     last_decrease_us: u64,
+    ladder: Ladder,
+    now_us: u64,
     pub keyframes: u64,
     pub drops: u64,
 }
@@ -79,6 +277,7 @@ pub struct Sender {
 impl Sender {
     pub fn new(cfg: SenderConfig) -> Self {
         let bitrate = cfg.start_bps;
+        let ladder = Ladder::new(cfg.ladder.clone(), cfg.fps, bitrate);
         Self {
             cfg,
             next_group: 0,
@@ -87,6 +286,8 @@ impl Sender {
             want_key: true,
             bitrate,
             last_decrease_us: 0,
+            ladder,
+            now_us: 0,
             keyframes: 0,
             drops: 0,
         }
@@ -95,6 +296,39 @@ impl Sender {
     /// Encoder target to use for the next frame.
     pub fn bitrate(&self) -> u32 {
         self.bitrate
+    }
+
+    /// Size (width, height) to encode the next frame at. When it changes the sender also wants a
+    /// keyframe, so the new size always starts a new group.
+    pub fn resolution(&self) -> (u32, u32) {
+        let r = self.ladder.rung();
+        (r.width, r.height)
+    }
+
+    pub fn ladder(&self) -> &Ladder {
+        &self.ladder
+    }
+
+    /// Highest ladder rung the peer or device can take.
+    pub fn set_max_rung(&mut self, max: usize) {
+        self.ladder.set_max(max);
+        self.relayer();
+    }
+
+    /// The encoder took `us` for the last frame.
+    pub fn encode_time(&mut self, now_us: u64, us: u64) {
+        self.now_us = self.now_us.max(now_us);
+        if self.ladder.encode_time(now_us, us) {
+            self.want_key = true;
+        }
+        self.relayer();
+    }
+
+    fn relayer(&mut self) {
+        if self.ladder.update(self.now_us, self.bitrate) {
+            self.want_key = true;
+        }
+        self.bitrate = self.bitrate.min(self.ladder.rung().max_bps);
     }
 
     /// The next frame handed to the encoder must be a keyframe.
@@ -134,6 +368,12 @@ impl Sender {
 
     /// A receiver report arrived.
     pub fn on_report(&mut self, now_us: u64, r: &RateReport) {
+        self.now_us = self.now_us.max(now_us);
+        self.rate(now_us, r);
+        self.relayer();
+    }
+
+    fn rate(&mut self, now_us: u64, r: &RateReport) {
         let delivered = r.delivered_bps as u64;
         if r.queuing_us > self.cfg.overuse_us {
             // A queue is building: send no faster than what actually gets through.
@@ -172,6 +412,7 @@ impl Sender {
             self.want_key = true;
             self.drops += 1;
             self.bitrate = (self.bitrate / 2).max(self.cfg.min_bps);
+            self.relayer();
         }
         out
     }
@@ -475,5 +716,147 @@ mod tests {
         assert_eq!(tx.bitrate(), 255_000);
         tx.on_report(1_600_000, &RateReport { delivered_bps: 300_000, queuing_us: 0 });
         assert!(tx.bitrate() > 255_000 && tx.bitrate() < start);
+    }
+
+    const MS: u64 = 1_000;
+
+    fn ladder(start_bps: u32) -> Ladder {
+        Ladder::new(LadderConfig::default(), 30, start_bps)
+    }
+
+    /// Feeds a fast encode time and `bps` every 100 ms over `[from, to)`; returns switches.
+    fn hold(l: &mut Ladder, from: u64, to: u64, bps: u32) -> u64 {
+        let mut switches = 0;
+        let mut t = from;
+        while t < to {
+            l.encode_time(t, 3 * MS);
+            switches += l.update(t, bps) as u64;
+            t += 100 * MS;
+        }
+        switches
+    }
+
+    #[test]
+    fn ladder_starts_at_the_rung_the_start_rate_covers() {
+        assert_eq!(ladder(500_000).index(), 1);
+        assert_eq!(ladder(100_000).index(), 0);
+        assert_eq!(ladder(5_000_000).index(), 3);
+    }
+
+    #[test]
+    fn ladder_steps_down_at_once_and_skips_rungs() {
+        let mut l = ladder(5_000_000);
+        assert!(l.update(0, 200_000));
+        assert_eq!((l.rung().width, l.rung().height), (320, 180));
+    }
+
+    #[test]
+    fn ladder_steps_up_only_after_hold() {
+        let mut l = ladder(300_000);
+        assert_eq!(l.index(), 1);
+        // 700 kbps is above 540p's floor but not its 130% up threshold: stays.
+        assert_eq!(hold(&mut l, 0, 10_000 * MS, 700_000), 0);
+        // 800 kbps clears it; steps up after the 2.5 s hold, not before.
+        assert_eq!(hold(&mut l, 10_000 * MS, 12_400 * MS, 800_000), 0);
+        assert_eq!(hold(&mut l, 12_400 * MS, 12_700 * MS, 800_000), 1);
+        assert_eq!(l.index(), 2);
+        // A dip below the threshold restarts the hold.
+        let mut l = ladder(300_000);
+        hold(&mut l, 0, 2_000 * MS, 800_000);
+        hold(&mut l, 2_000 * MS, 2_100 * MS, 500_000);
+        assert_eq!(hold(&mut l, 2_100 * MS, 4_500 * MS, 800_000), 0);
+        assert_eq!(hold(&mut l, 4_500 * MS, 4_700 * MS, 800_000), 1);
+    }
+
+    #[test]
+    fn ladder_waits_after_a_down_switch() {
+        let mut l = ladder(300_000);
+        hold(&mut l, 0, 1_000 * MS, 300_000);
+        assert!(l.update(1_000 * MS, 100_000));
+        // The rate recovers at once, but no step up within 4 s of the step down.
+        assert_eq!(hold(&mut l, 1_100 * MS, 5_000 * MS, 400_000), 0);
+        assert_eq!(hold(&mut l, 5_000 * MS, 5_200 * MS, 400_000), 1);
+        assert_eq!(l.index(), 1);
+    }
+
+    #[test]
+    fn ladder_does_not_flap_around_a_floor() {
+        // Bitrate wobbling around 360p's floor: one step down, nothing else.
+        let mut l = ladder(300_000);
+        let mut switches = 0;
+        for i in 0..300u64 {
+            let bps = if i % 7 < 3 { 215_000 } else { 285_000 };
+            l.encode_time(i * 100 * MS, 3 * MS);
+            switches += l.update(i * 100 * MS, bps) as u64;
+        }
+        assert_eq!(switches, 1);
+        assert_eq!(l.index(), 0);
+    }
+
+    #[test]
+    fn ladder_steps_down_when_encoding_is_too_slow() {
+        let mut l = ladder(5_000_000);
+        assert_eq!(l.index(), 3);
+        // 30 fps: budget is 60% of 33.3 ms = 20 ms. 25 ms frames: down once p90 is known.
+        let mut t = 0;
+        while l.index() == 3 {
+            l.encode_time(t, 25 * MS);
+            t += 33 * MS;
+        }
+        assert_eq!(t, ENCODE_MIN as u64 * 33 * MS);
+        assert_eq!(l.index(), 2);
+        // Fast again (throttling ended): 720p stays blocked for 30 s, then returns after the hold.
+        while l.index() == 2 {
+            l.encode_time(t, 6 * MS);
+            l.update(t, 5_000_000);
+            t += 33 * MS;
+        }
+        assert!(t > 30_300 * MS && t < 33_500 * MS, "back up at {} ms", t / MS);
+        assert_eq!(l.index(), 3);
+    }
+
+    #[test]
+    fn ladder_predicts_encode_time_before_stepping_up() {
+        let mut l = ladder(800_000);
+        assert_eq!(l.index(), 2);
+        // 540p at 12 ms predicts 720p at ~21 ms, over the 20 ms budget: stays, on any link.
+        let mut t = 0;
+        for _ in 0..1800 {
+            l.encode_time(t, 12 * MS);
+            l.update(t, 5_000_000);
+            t += 33 * MS;
+        }
+        assert_eq!((l.index(), l.switches), (2, 0));
+        // 8 ms (~14 ms at 720p) fits.
+        for _ in 0..150 {
+            l.encode_time(t, 8 * MS);
+            l.update(t, 5_000_000);
+            t += 33 * MS;
+        }
+        assert_eq!(l.index(), 3);
+    }
+
+    #[test]
+    fn ladder_respects_max_rung() {
+        let mut l = ladder(5_000_000);
+        l.set_max(1);
+        assert!(l.update(0, 5_000_000));
+        assert_eq!(l.index(), 1);
+        assert_eq!(hold(&mut l, 0, 60_000 * MS, 5_000_000), 0);
+    }
+
+    #[test]
+    fn sender_resolution_change_forces_keyframe() {
+        let mut tx = Sender::new(SenderConfig { start_bps: 800_000, ..Default::default() });
+        assert_eq!(tx.resolution(), (960, 540));
+        tx.frame(0, true, b"k");
+        assert!(!tx.wants_keyframe());
+        // A queue builds and the rate falls below 540p's floor: smaller, from a new keyframe.
+        tx.on_report(1_000_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
+        assert_eq!(tx.resolution(), (640, 360));
+        assert!(tx.wants_keyframe());
+        assert!(tx.bitrate() <= 1_200_000);
+        let outs = tx.frame(33_000, true, b"k2");
+        assert_eq!(outs[..2], [Out::Finish { group: 0 }, Out::Open { group: 1 }]);
     }
 }
