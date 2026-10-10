@@ -115,7 +115,11 @@ def main():
             f"-DANDROID_PLATFORM=android-{MIN_SDK}",
             f"-DAOM_TARGET_CPU={cpu}",
         ]
-    run(cmake)
+    # Reconfiguring regenerates the rtcd headers and so rebuilds everything: only when args change.
+    args_stamp = build / ".tinline-cmake-args"
+    if not (build / "build.ninja").exists() or not args_stamp.exists() or args_stamp.read_text() != "\n".join(cmake):
+        run(cmake)
+        args_stamp.write_text("\n".join(cmake))
     run(["cmake", "--build", str(build), "-j", args.jobs])
     run(["cmake", "--install", str(build)])
     print(prefix)
