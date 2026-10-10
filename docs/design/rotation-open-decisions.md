@@ -73,6 +73,12 @@ host receives group endpoints (U7). Any phrase holder can sign a list (shared-mn
 limitation); concurrent edits by two own devices are the Q4 fork question. Also addresses the
 K1 restore stall (contacts reject a key missing from their stored list).
 
+**U9 (user, 2026-10-10) — group removal by admin flags.** Admins can flag a member; at 3 flags
+the member is removed and their group grant (token) is revoked. Flags and the removal are
+DID-signed group ops every member verifies (not host fiat); with U7 the host also stops
+relaying for and accepting from the removed DID and drops its group endpoint. Removal timing
+for concurrent/offline posts is still D01–D05. Open sub-questions (section 8).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
@@ -343,3 +349,15 @@ Source files: `crates/group-sim/src/{host_relay,chat_request,block_in_group}.rs`
     devices look like a fork.
 21. Host silently dropping notes is undetected; is a host liveness/censorship check in scope?
 22. No group path left: show explicit "lost contact — re-share" in the app?
+
+## 8. Group removal by flags (U9) — open details
+
+1. 3 flags from 3 *distinct* admins (lean), or any 3 flags?
+2. Group with fewer than 3 admins: threshold = number of admins, owner alone, or no removal?
+3. Can the owner/creator be flagged or removed? Lean: no.
+4. Can an admin withdraw a flag before the threshold? Do flags expire?
+5. Fixed threshold of 3, or a per-group setting chosen at creation?
+6. Is the removed member told (explicit), or does the group just go quiet (silent, like U5)?
+7. Can a removed DID be invited back later?
+8. Posts the member made before/concurrently with the 3rd flag: kept or dropped? (= D01/D02)
+9. Can admins be flagged by other admins (removing their admin rights too)?
