@@ -410,6 +410,8 @@ impl Inner {
         }
         let _ = self.persist_for(Some(me.epoch));
         self.log(format!("linked device {}", proto::device_to_text(&remote)));
+        // U8: tell every unblocked contact about the new install.
+        self.devices_changed();
         if let Some(ev) = self.link_events() {
             ev.on_devices_changed();
             ev.on_link_done(me.id.did().to_string(), me.profile.name.clone());
