@@ -611,6 +611,7 @@ fn replica_level_block_filter_strands_other_members_replies() {
 }
 
 // KIND: candidate-policy G-BLOCK
+// Rejected option per U5 revised (blocking is visible).
 // Host-relay option "neutral": B hosts the group and blocks C, yet relays C's posts like any
 // other. Everyone converges, and C's observation is identical to the unblocked run (silent).
 #[test]

@@ -22,6 +22,8 @@ mod host_relay;
 mod chat_request;
 #[path = "host_only.rs"]
 mod host_only;
+#[path = "multi_host.rs"]
+mod multi_host;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {

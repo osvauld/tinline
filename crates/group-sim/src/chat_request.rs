@@ -1301,7 +1301,8 @@ fn acceptance_cannot_be_redirected_to_a_third_party() {
     assert!(w.carol.state.contacts.is_empty());
 }
 
-// KIND: invariant
+// KIND: candidate-policy G-BLOCK
+// Rejected option per U5 revised (blocking is visible).
 #[test]
 fn host_drop_yields_no_answer_never_refused() {
     let explicit = Policy {
@@ -1419,7 +1420,8 @@ fn requester_view(decline: DeclinePolicy, case: TargetCase) -> (Observation, Vec
     )
 }
 
-// KIND: invariant
+// KIND: candidate-policy G-BLOCK
+// Rejected option per U5 revised (blocking is visible).
 #[test]
 fn silent_block_is_indistinguishable_from_offline_or_unanswered_target() {
     // U5 must hold under either decline candidate.
@@ -1464,6 +1466,7 @@ fn candidate_explicit_decline_reports_refused_and_hides_kind_from_host() {
 }
 
 // KIND: candidate-policy G-BLOCK
+// Rejected option per U5 revised (blocking is visible).
 #[test]
 fn candidate_silent_decline_is_indistinguishable_from_block() {
     let declined = requester_view(DeclinePolicy::Silent, TargetCase::SilentDecline);
