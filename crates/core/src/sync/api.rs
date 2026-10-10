@@ -239,7 +239,7 @@ impl Node {
         v
     }
 
-    /// For tests: dials `device` on `tinline/self/2` as this node and reports whether the peer
+    /// For tests: dials `device` on `tinline/self/3` as this node and reports whether the peer
     /// accepted us (answered with its `Auth`).
     #[doc(hidden)]
     pub fn self_probe_for_test(&self, device: String) -> bool {

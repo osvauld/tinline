@@ -1,16 +1,21 @@
 //! One conversation day as a Loro doc, and the rules every device applies to every batch.
 //!
-//! `messages` is a map `id -> record`, a record `{ id, author, at, reply_to?, file?, v }` whose
-//! immutable fields are written once, at creation, and whose `v` is the current version, one
-//! atomic map value `{ text, edited_at?, deleted, dev, did_sig }` (`version_value`). Strict model
-//! (P9c, U18; no compatibility with earlier apps or data):
+//! `messages` is a map `id -> record`, a record `{ id, author, at, reply_to?, file?, v:<writer>... }`
+//! whose immutable fields are written once, at creation, and which holds one version per writer:
+//! under `v:<writer ID as 16 hex digits>` (`version_key`) the latest version that writer wrote,
+//! one atomic map value `{ text, edited_at?, deleted, dev, did_sig }` (`version_value`). Strict
+//! model (P9c, U18; no compatibility with earlier apps or data):
 //!
 //! - Every message version carries, as record fields, the device ID of the install that wrote it
 //!   (`dev`, random per install, U16) and its author's DID signature (`did_sig`) over the
 //!   version's content, `dev` and the span of ops that wrote it (`WrittenAt`: Loro peer id, first
-//!   counter, op count; `msg_sig_input`). The span ends with the `v` insert. `v` is one value, so
-//!   of two concurrent edits one whole signed version wins (a field-by-field merge could mix two
-//!   versions, and Loro skips inserting a field whose value is unchanged).
+//!   counter, op count; `msg_sig_input`). The span ends with the insert of the writer's own
+//!   version key. A version is one value, so a field-by-field merge never mixes two versions.
+//! - What a message shows is its highest-ranked version (`rank`, P10): a delete above any edit,
+//!   then the later `edited_at`, then the higher writer ID. Concurrent edits from two of the
+//!   author's devices sit side by side under two keys, so every replica ranks the same versions
+//!   and shows the same one, whatever Loro's own last-writer-wins order would pick. A writer's own
+//!   versions never go back (older edit time, undone delete): judged per span, from the ops alone.
 //! - A device writes every chat doc under its writer ID `writer_id(DID, device ID)` as the Loro
 //!   peer id; nothing else.
 //! - A receiver accepts a batch only if every new op lies in a span that ends with a `did_sig`
@@ -44,6 +49,28 @@ pub fn doc_name(pair: &str, day: &str) -> String {
 }
 
 const WRITER_ID_DOMAIN: &[u8] = b"tinline-writer-id-v1";
+
+/// The record key a writer's version of a message lives under: `v:` and its writer ID as 16
+/// lowercase hex digits. Only that writer ever writes it.
+pub fn version_key(writer: u64) -> String {
+    format!("v:{writer:016x}")
+}
+
+/// The writer ID a record key names, if it is a version key in canonical form.
+fn writer_of_key(k: &str) -> Option<u64> {
+    let h = k.strip_prefix("v:")?;
+    if h.len() != 16 || !h.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+        return None;
+    }
+    u64::from_str_radix(h, 16).ok()
+}
+
+/// How competing versions of one message rank; the highest is what the message shows (P10). A
+/// delete beats any edit, then the later edit time, then the higher writer ID. Every replica
+/// ranks the same versions the same way, so all of them show the same one in any arrival order.
+fn rank(m: &MsgRec, writer: u64) -> (bool, Option<i64>, u64) {
+    (m.deleted, m.edited_at, writer)
+}
 
 /// The writer ID (U16) of the account `did` on the install whose device ID is `device`: the
 /// first 64 bits (little-endian) of BLAKE3 over a domain, the length-prefixed DID and the device
@@ -348,7 +375,7 @@ fn read_hex<const N: usize>(v: Option<&LoroValue>) -> Option<[u8; N]> {
     v.and_then(read_str).and_then(|h| hex::decode(h).ok()).and_then(|b| b.try_into().ok())
 }
 
-/// The record value `v` of the version `rec` with the signature `did_sig`.
+/// The value of a version (`rec`, signed `did_sig`), as its writer files it under its version key.
 pub fn version_value(rec: &MsgRec, did_sig: &[u8]) -> LoroValue {
     let mut v: std::collections::HashMap<&str, LoroValue> = std::collections::HashMap::new();
     v.insert("text", rec.text.as_str().into());
@@ -361,10 +388,14 @@ pub fn version_value(rec: &MsgRec, did_sig: &[u8]) -> LoroValue {
     LoroValue::from(v)
 }
 
+/// Every version of every message: `id -> writer ID -> version` (each a whole `MsgRec`: the
+/// record's immutable fields and that writer's version).
+type Records = BTreeMap<String, BTreeMap<u64, MsgRec>>;
+
 /// Reads `messages` out of a deep value; `Structure` if anything else is in the doc,
-/// `Malformed` for a record with an unknown, missing or ill-formed field (`v` with `dev` and
-/// `did_sig` included).
-fn read_messages(doc: &LoroDoc) -> Result<BTreeMap<String, MsgRec>, Reject> {
+/// `Malformed` for a record with an unknown, missing or ill-formed field, or no version. (That a
+/// version's `dev` gives the writer ID it is filed under is part of its proof, `proves`.)
+fn read_records(doc: &LoroDoc) -> Result<Records, Reject> {
     let root = doc.get_deep_value();
     let LoroValue::Map(top) = root else { return Err(Reject::Structure) };
     let mut out = BTreeMap::new();
@@ -376,64 +407,91 @@ fn read_messages(doc: &LoroDoc) -> Result<BTreeMap<String, MsgRec>, Reject> {
         for (id, m) in msgs.iter() {
             let LoroValue::Map(m) = m else { return Err(Reject::Malformed(id.clone())) };
             let bad = || Reject::Malformed(id.clone());
-            for k in m.keys() {
-                if !matches!(k.as_str(), "id" | "author" | "at" | "reply_to" | "file" | "v") {
-                    return Err(bad());
+            let mut versions = BTreeMap::new();
+            for (k, val) in m.iter() {
+                if matches!(k.as_str(), "id" | "author" | "at" | "reply_to" | "file") {
+                    continue;
                 }
+                let Some(writer) = writer_of_key(k) else { return Err(bad()) };
+                let LoroValue::Map(v) = val else { return Err(bad()) };
+                versions.insert(writer, v);
             }
-            let Some(LoroValue::Map(v)) = m.get("v") else { return Err(bad()) };
-            for k in v.keys() {
-                if !matches!(k.as_str(), "text" | "edited_at" | "deleted" | "dev" | "did_sig") {
-                    return Err(bad());
-                }
-            }
-            let get = |k: &str| if matches!(k, "text" | "edited_at" | "deleted" | "dev" | "did_sig") { v.get(k) } else { m.get(k) };
-            let rec = MsgRec {
-                id: get("id").and_then(read_str).ok_or_else(bad)?,
-                author: get("author").and_then(read_str).ok_or_else(bad)?,
-                at: get("at").and_then(read_i64).ok_or_else(bad)?,
-                text: get("text").and_then(read_str).ok_or_else(bad)?,
-                edited_at: match get("edited_at") {
-                    None => None,
-                    Some(v) => Some(read_i64(v).ok_or_else(bad)?),
-                },
-                deleted: match get("deleted") {
-                    None => false,
-                    Some(LoroValue::Bool(b)) => *b,
-                    Some(_) => return Err(bad()),
-                },
-                reply_to: match get("reply_to") {
-                    None => None,
-                    Some(v) => Some(read_str(v).ok_or_else(bad)?),
-                },
-                file: match get("file") {
-                    None => None,
-                    Some(v) => {
-                        let s = read_str(v).ok_or_else(bad)?;
-                        if s.len() > MAX_FILE_JSON {
-                            return Err(bad());
-                        }
-                        Some(serde_json::from_str::<FileRef>(&s).map_err(|_| bad())?)
-                    }
-                },
-                dev: read_hex::<32>(get("dev")).ok_or_else(bad)?,
-                did_sig: read_hex::<64>(get("did_sig")).ok_or_else(bad)?.to_vec(),
-            };
-            if rec.id != *id
-                || rec.text.len() > MAX_TEXT
-                || rec.author.len() > 200
-                || rec.id.is_empty()
-                || rec.id.len() > 64
-                || rec.reply_to.as_ref().is_some_and(|r| r.len() > 64)
-                || rec.file.as_ref().is_some_and(|f| f.waveform.len() > 256 || f.name.len() > 300)
-                || (rec.deleted && !rec.text.is_empty())
-            {
+            if versions.is_empty() {
                 return Err(bad());
             }
-            out.insert(id.clone(), rec);
+            let base = |k: &str| m.get(k);
+            let id_f = base("id").and_then(read_str).ok_or_else(bad)?;
+            let author = base("author").and_then(read_str).ok_or_else(bad)?;
+            let at = base("at").and_then(read_i64).ok_or_else(bad)?;
+            let reply_to = match base("reply_to") {
+                None => None,
+                Some(v) => Some(read_str(v).ok_or_else(bad)?),
+            };
+            let file = match base("file") {
+                None => None,
+                Some(v) => {
+                    let s = read_str(v).ok_or_else(bad)?;
+                    if s.len() > MAX_FILE_JSON {
+                        return Err(bad());
+                    }
+                    Some(serde_json::from_str::<FileRef>(&s).map_err(|_| bad())?)
+                }
+            };
+            let mut recs = BTreeMap::new();
+            for (writer, v) in versions {
+                for k in v.keys() {
+                    if !matches!(k.as_str(), "text" | "edited_at" | "deleted" | "dev" | "did_sig") {
+                        return Err(bad());
+                    }
+                }
+                let rec = MsgRec {
+                    id: id_f.clone(),
+                    author: author.clone(),
+                    at,
+                    text: v.get("text").and_then(read_str).ok_or_else(bad)?,
+                    edited_at: match v.get("edited_at") {
+                        None => None,
+                        Some(v) => Some(read_i64(v).ok_or_else(bad)?),
+                    },
+                    deleted: match v.get("deleted") {
+                        None => false,
+                        Some(LoroValue::Bool(b)) => *b,
+                        Some(_) => return Err(bad()),
+                    },
+                    reply_to: reply_to.clone(),
+                    file: file.clone(),
+                    dev: read_hex::<32>(v.get("dev")).ok_or_else(bad)?,
+                    did_sig: read_hex::<64>(v.get("did_sig")).ok_or_else(bad)?.to_vec(),
+                };
+                if rec.id != *id
+                    || rec.text.len() > MAX_TEXT
+                    || rec.author.len() > 200
+                    || rec.id.is_empty()
+                    || rec.id.len() > 64
+                    || rec.reply_to.as_ref().is_some_and(|r| r.len() > 64)
+                    || rec.file.as_ref().is_some_and(|f| f.waveform.len() > 256 || f.name.len() > 300)
+                    || (rec.deleted && !rec.text.is_empty())
+                {
+                    return Err(bad());
+                }
+                recs.insert(writer, rec);
+            }
+            out.insert(id.clone(), recs);
         }
     }
     Ok(out)
+}
+
+/// What each message shows: its highest-ranked version (`rank`).
+fn winners(records: &Records) -> BTreeMap<String, MsgRec> {
+    records
+        .iter()
+        .filter_map(|(id, vs)| vs.iter().max_by_key(|(w, m)| rank(m, **w)).map(|(_, m)| (id.clone(), m.clone())))
+        .collect()
+}
+
+fn read_messages(doc: &LoroDoc) -> Result<BTreeMap<String, MsgRec>, Reject> {
+    read_records(doc).map(|r| winners(&r))
 }
 
 /// One op of a batch, as far as the proof is concerned.
@@ -442,14 +500,15 @@ struct OpAt {
     counter: i32,
     /// The message it writes: the key it sets in `messages`, or the record it writes a field of.
     msg: Option<String>,
-    /// It sets `did_sig` on that record: the last op of a version's span.
+    /// It inserts its writer's own version of that record: the last op of a version's span.
     closes: bool,
 }
 
 /// Splits the ops of `doc` between `from` and `to` into spans of one message each, ending with
-/// the insert of that record's `v` (`WrittenAt`, message id). `Unsigned` if any op is not part of
-/// such a span: an op on anything but `messages` and its records, a span over two messages, or
-/// ops after the last `v` of a peer.
+/// the insert of the writer's own version key of that record (`WrittenAt`, message id).
+/// `Unsigned` if any op is not part of such a span: an op on anything but `messages` and its
+/// records, a removal or another writer's version key in a record, a span over two messages, or
+/// ops after the last version of a peer.
 fn spans(doc: &LoroDoc, from: &VersionVector, to: &VersionVector, containers: &std::collections::HashMap<loro::ContainerID, String>) -> Result<Vec<(WrittenAt, String)>, Reject> {
     let root = loro::ContainerID::new_root("messages", loro::ContainerType::Map);
     let mut ops: Vec<OpAt> = Vec::new();
@@ -462,7 +521,13 @@ fn spans(doc: &LoroDoc, from: &VersionVector, to: &VersionVector, containers: &s
             let (msg, closes) = if op.container == root {
                 (Some(key.clone()), false)
             } else {
-                (containers.get(&op.container).cloned(), key == "v" && matches!(m, loro::JsonMapOp::Insert { .. }))
+                let insert = matches!(m, loro::JsonMapOp::Insert { .. });
+                let closes = insert && *key == version_key(c.id.peer);
+                // Besides its own version, a writer sets only the immutable fields of a record.
+                if !insert || !(closes || matches!(key.as_str(), "id" | "author" | "at" | "reply_to" | "file")) {
+                    return Err(Reject::Unsigned);
+                }
+                (containers.get(&op.container).cloned(), closes)
             };
             ops.push(OpAt { peer: c.id.peer, counter: op.counter, msg, closes });
         }
@@ -568,8 +633,9 @@ impl Shard {
     }
 
     /// Writes the version `rec` as one span under the writer's ID: `fields` writes the record's
-    /// immutable fields if it is new (and returns the record), then, as the last op, `v` with
-    /// `dev` and the `did_sig` over the version and the span. Returns the update it produced.
+    /// immutable fields if it is new (and returns the record), then, as the last op, the
+    /// writer's version (`version_key`) with `dev` and the `did_sig` over the version and the
+    /// span. Returns the update it produced.
     fn write(&self, w: &Writer, rec: &MsgRec, fields: impl FnOnce(&LoroMap) -> loro::LoroResult<LoroMap>) -> Result<Vec<u8>, Reject> {
         let peer = w.writer_id();
         if self.doc.peer_id() != peer {
@@ -582,7 +648,7 @@ impl Shard {
         let e = fields(&self.msgs_map()).map_err(|_| Reject::Structure)?;
         let len = u32::try_from(self.doc.get_pending_txn_len() + 1).map_err(|_| Reject::Structure)?;
         let at = WrittenAt { peer, counter, len };
-        e.insert("v", version_value(&rec, &sign_msg(&w.account, &self.name, &rec, &at))).map_err(|_| Reject::Structure)?;
+        e.insert(&version_key(peer), version_value(&rec, &sign_msg(&w.account, &self.name, &rec, &at))).map_err(|_| Reject::Structure)?;
         let written = self.doc.get_pending_txn_len();
         self.doc.commit();
         // The span is what was signed (receivers would refuse it otherwise).
@@ -617,27 +683,30 @@ impl Shard {
         }
     }
 
-    /// Writes a new version of `id` after `change` was applied to its record: one op, the new
-    /// `v` (so of two concurrent edits one whole signed version wins).
-    fn resign(&self, id: &str, w: &Writer, change: impl FnOnce(&mut MsgRec)) -> Result<Vec<u8>, Reject> {
+    /// Writes a new version of `id`, made from the version it shows with `change` applied, as
+    /// one op: our version key. Its edit time is `now_ms`, or just after the version it shows if
+    /// that is later (a skewed clock), so it outranks everything this device has seen. A deleted
+    /// message stays deleted (`Immutable`).
+    fn resign(&self, id: &str, w: &Writer, now_ms: i64, change: impl FnOnce(&mut MsgRec)) -> Result<Vec<u8>, Reject> {
         let e = self.entry(id)?;
         let mut rec = self.messages()?.remove(id).ok_or(Reject::Structure)?;
+        if rec.deleted {
+            return Err(Reject::Immutable(id.to_string()));
+        }
+        let at = rec.edited_at.map_or(now_ms, |t| now_ms.max(t.saturating_add(1)));
         change(&mut rec);
+        rec.edited_at = Some(at);
         self.write(w, &rec, |_| Ok(e))
     }
 
     pub fn edit(&self, id: &str, text: &str, now_ms: i64, w: &Writer) -> Result<Vec<u8>, Reject> {
-        self.resign(id, w, |r| {
-            r.text = text.to_string();
-            r.edited_at = Some(now_ms);
-        })
+        self.resign(id, w, now_ms, |r| r.text = text.to_string())
     }
 
     pub fn delete(&self, id: &str, now_ms: i64, w: &Writer) -> Result<Vec<u8>, Reject> {
-        self.resign(id, w, |r| {
+        self.resign(id, w, now_ms, |r| {
             r.text = String::new();
             r.deleted = true;
-            r.edited_at = Some(now_ms);
         })
     }
 
@@ -688,8 +757,9 @@ impl Shard {
         if !new_vv.iter().any(|(p, c)| *c > old_vv.get(p).copied().unwrap_or(0)) {
             return Ok(Applied::default());
         }
-        let before = read_messages(&self.doc)?;
-        let after = read_messages(&scratch)?;
+        let before_all = read_records(&self.doc)?;
+        let after_all = read_records(&scratch)?;
+        let (before, after) = (winners(&before_all), winners(&after_all));
         // Per message: who may add or change what.
         let lo = day_start(&self.day).ok_or(Reject::OutOfRange)? - HOUR_MS;
         let hi = lo + DAY_MS + 2 * HOUR_MS;
@@ -721,10 +791,6 @@ impl Shard {
                     if old.id != new.id || old.author != new.author || old.at != new.at || old.reply_to != new.reply_to || old.file != new.file {
                         return Err(Reject::Immutable(id.clone()));
                     }
-                    // An old signed version must not roll a newer one back.
-                    if new.edited_at < old.edited_at || (old.deleted && !new.deleted) {
-                        return Err(Reject::Immutable(id.clone()));
-                    }
                     // Text, edited_at and deleted: the author only. (A history copy holds both
                     // parties' versions, so either may appear changed; each is still proven by
                     // its author's signature below.)
@@ -749,17 +815,27 @@ impl Shard {
             .collect();
         let spans = spans(&scratch, &old_vv, &new_vv, &containers)?;
         let mut proven: BTreeMap<&str, Vec<MsgRec>> = BTreeMap::new();
+        // Per (message, writer): its version before the span at hand. `spans` lists each peer's
+        // spans in counter order; before the first, it is the version our doc holds (only that
+        // writer writes its key, and our doc holds all its ops before this batch).
+        let mut prior: BTreeMap<(&str, u64), MsgRec> = BTreeMap::new();
         for (at, id) in &spans {
-            let version = self.version_after(&scratch, &after, id, at)?;
+            let version = self.version_after(&scratch, &after_all, id, at)?;
             // Live: a contact sends only its own ops.
             if !history && version.author != ctx.signer_did {
                 return Err(Reject::ForeignPeer);
             }
+            // A writer's versions never go back: no older edit time, no undone delete (P10). From
+            // the ops alone, so every device reaches the same verdict in any delivery order.
+            let prev = prior.get(&(id.as_str(), at.peer)).or_else(|| before_all.get(id).and_then(|vs| vs.get(&at.peer)));
+            if prev.is_some_and(|p| (version.deleted, version.edited_at) < (p.deleted, p.edited_at)) {
+                return Err(Reject::Immutable(id.clone()));
+            }
+            prior.insert((id.as_str(), at.peer), version.clone());
             let Some((key, _)) = after.get_key_value(id.as_str()) else { return Err(Reject::Unsigned) };
             proven.entry(key.as_str()).or_default().push(version);
         }
-        // What each touched message ends up as is one of the versions proven here (concurrent
-        // edits resolve to one whole `v`).
+        // What each touched message ends up showing is one of the versions proven here.
         for id in applied.added.iter().chain(&applied.changed) {
             if !proven.get(id.as_str()).is_some_and(|vs| vs.contains(&after[id])) {
                 return Err(Reject::BadSignature);
@@ -770,17 +846,18 @@ impl Shard {
         Ok(applied)
     }
 
-    /// The version of message `id` that the span `at` leaves behind, if it proves that span
-    /// (`proves`): the current one when it does, else the record as of the span's last op.
-    fn version_after(&self, scratch: &LoroDoc, after: &BTreeMap<String, MsgRec>, id: &str, at: &WrittenAt) -> Result<MsgRec, Reject> {
-        if let Some(m) = after.get(id)
+    /// The version of message `id` that the span `at` writes (under its writer's key), if it
+    /// proves that span (`proves`): the current one when it does, else the one as of the span's
+    /// last op.
+    fn version_after(&self, scratch: &LoroDoc, after: &Records, id: &str, at: &WrittenAt) -> Result<MsgRec, Reject> {
+        if let Some(m) = after.get(id).and_then(|vs| vs.get(&at.peer))
             && proves(&self.name, m, at).is_ok()
         {
             return Ok(m.clone());
         }
         let last = loro::ID::new(at.peer, at.counter + at.len as i32 - 1);
         let then = scratch.fork_at(&loro::Frontiers::from_id(last)).map_err(|_| Reject::Unsigned)?;
-        let m = read_messages(&then)?.remove(id).ok_or(Reject::Unsigned)?;
+        let m = read_records(&then)?.remove(id).and_then(|mut vs| vs.remove(&at.peer)).ok_or(Reject::Unsigned)?;
         proves(&self.name, &m, at)?;
         Ok(m)
     }

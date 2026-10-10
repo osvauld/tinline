@@ -62,9 +62,7 @@ fn restart(p: &mut Peer) {
     p.node.stop();
     let old = std::mem::replace(&mut p.node, open(&p.dir));
     drop(old);
-    // The old node's tasks may hold `chat.redb` for a moment, and `chat_open` does not retry
-    // (unlike `account.redb`): give them time to wind down, as a real process exit would.
-    std::thread::sleep(Duration::from_secs(2));
+    // No pause: `chat_open` waits for a `chat.redb` the old node's tasks still hold (P10).
     p.node.unlock(PASS.into()).unwrap();
     online(&p.node);
 }
