@@ -374,9 +374,15 @@ Source files: `crates/group-sim/src/{host_relay,chat_request,block_in_group}.rs`
 
 ## 8b. Visible blocking (U5 revised) — open details
 
-1. Notice shape: a DID-signed "blocked" message pushed once, or a refusal reason returned
-   whenever they try to reach you (or both)?
+1. ~~Notice shape~~ DECIDED (user): one DID-signed "blocked" notice sent when blocking, and the
+   same reason returned on every later attempt. The blocked party's app shows the state and
+   disables composing/calling (UX reinforcement; enforcement stays on the blocker's side).
 2. Does the blocked person see it immediately, or only on their next attempt to contact you?
 3. Wording in the app: "X blocked you" vs neutral "You can't message X".
 4. Chat requests via host from a blocked DID: refused with the same notice?
 5. Unblock: notify them, or just start accepting again?
+6. Peer app attestation (user asked): should peers require proof the other side runs the
+   publisher-signed app? Candidate: Android hardware key attestation (cert chain includes the
+   app signing-cert digest; verifiable offline by peers). Costs: excludes desktop, custom
+   ROMs/unlocked bootloaders, and self-built/F-Droid builds of an open-source app; needs
+   Google's revocation list. Coordinator lean: not as a gate; never rely on it for security.
