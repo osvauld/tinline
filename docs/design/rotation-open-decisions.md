@@ -208,6 +208,12 @@ person's app stops sending/calling and can delete our contact, the blocker's dev
 Endpoint rotation is the backstop for truly malicious users running modified clients; it follows
 after blocking (P5) and message/call tokens (P6).
 
+**U24 (user, 2026-10-10) — chats are never deleted; media can be.** No "Delete chat" action:
+chat history is kept (blocking keeps it too). Users may delete media/files to free space. The
+now-unused `chat_purge` (P5) should be removed or limited to media. Messages written before a
+block are delivered after an unblock + re-add (accepted). The "tried to message you N times"
+counter comes later with the UI wiring.
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
