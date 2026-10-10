@@ -399,7 +399,13 @@ Loro silently and permanently diverges on a writer-ID collision — a collision 
 2. Same-DID collision: reject later, or freeze writer (any phrase holder can stall a sibling)?
 3. Writer IDs let members count a DID's devices and per-device activity. Accept, or require hiding?
 4. Host directory keyed per device (random slot) or per DID? (= section 7 Q20)
-5. Backup host / host succession needed for launch? Host outage stalls the whole group.
+5. ~~Backup host~~ DECIDED (user, 2026-10-10): a group can have MULTIPLE HOSTS. Members know
+   every host's group endpoint; each host knows members' group endpoints; hosts sync with each
+   other. Consequences to model: member rotation notes go to all hosts; any reachable host
+   repairs the others; "first claim at the host wins" (Q1) needs a deterministic cross-host
+   tie-break; removal (U9) must be applied by every host and one rogue host can still serve a
+   removed member; more parties see member endpoints/metadata. Open: who appoints hosts (owner
+   / admins, signed host list), how many, are hosts always admins, how is a host removed?
 6. ~~Host overlap window~~ DECIDED (user, 2026-10-10): after the host rotates, the HOST connects
    to the members itself (at their current group endpoints) and hands them its new endpoint;
    members do not need to find the host. No overlap window on the host side.
