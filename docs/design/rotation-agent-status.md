@@ -103,7 +103,7 @@ After W2-H/M/F/D (f87511a): proto 197, p2pcore 141 (one flaky pre-existing `link
 | W2-Q | MERGED c954d56, +18 | rot/w2q `.claude/worktrees/rot-w2q` | group-sim/src/chat_request.rs (+ mod line, group-sim dev-deps) |
 | W2-B | MERGED 020a91e, +14 proto +5 core | rot/w2b `.claude/worktrees/rot-w2b` | proto/tests/rotation_silent_block.rs, core/tests/block_characterization.rs |
 | W2-C | RUNNING | rot/w2c `.claude/worktrees/rot-w2c` | proto/tests/capability_tokens.rs, core/tests/grant_characterization.rs |
-| W2-U | RUNNING | rot/w2u `.claude/worktrees/rot-w2u` | group-sim/src/removal_rotation.rs (+ mod line) |
+| W2-U | MERGED bf3b4e3, +10 | rot/w2u `.claude/worktrees/rot-w2u` | group-sim/src/removal_rotation.rs (+ mod line) |
 | W2-D | MERGED d3d6467, +17 proto +7 core | rot/w2d `.claude/worktrees/rot-w2d` | proto/tests/rotation_device_list_push.rs, core/tests/device_list_characterization.rs |
 | W2-F | MERGED 9d0fbd2, +16 | rot/w2f `.claude/worktrees/rot-w2f` | group-sim/src/flags.rs (+ mod line), docs/group-flag-removal-model.md |
 | W2-M | MERGED eb21b91, +18 | rot/w2m `.claude/worktrees/rot-w2m` | group-sim/src/multi_host.rs (+ mod line), docs/group-multi-host-model.md, KIND relabels |

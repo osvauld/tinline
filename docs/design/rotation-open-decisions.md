@@ -555,3 +555,20 @@ Also: a list with seq = u64::MAX from any phrase holder pins every contact forev
    (`node.rs:3122`). Keep `verified` for DID-signed list updates?
 6. Must the pushed list arrive before / bundled with content from the new key, or should
    content from an unlisted key be queued?
+
+## 13. W2-U questions (delayed host rotation after removal; `crates/group-sim/src/removal_rotation.rs`)
+
+Tested: refusal of new posts and calls is immediate at every host and member; hosts announce
+only to remaining members, rotate once at +2 days and reconnect members themselves; afterwards
+the removed member reaches nobody; forged/replayed announcements are refused.
+Findings: during the 2-day window a removed member can backdate posts without limit (accepted
+U11 cost, ended only by rotation); a count cap cannot tell honest backlog from backdating; the
+group's real cut-off is the LAST host to rotate (each host times from when it learned); members
+rotating too adds cost and nothing under U7.
+1. Upload cap during the window: none (rotation is the only cut-off), or a count cap?
+2. Several removals in one window: keep first deadline / extend to last / one rotation each?
+3. Members do not rotate after a removal (hosts only) — confirm.
+4. Hosts that learn late: align to the earliest announced deadline, or own 2 days?
+5. A member removed during a pending window already saw the earlier announcement's time — OK?
+6. Should removal also refuse direct 1:1 calls from that person that started via a group chat
+   request (U3/U13 grants)?
