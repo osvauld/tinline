@@ -1796,11 +1796,11 @@ impl App {
             Msg::Block(did) => {
                 self.detail = Detail::View;
                 let node = self.node.clone();
-                return blocking(move || node.block(did).map_err(s), Msg::Done);
+                return blocking(move || crate::blocks::BlockApi::block(&*node, did).map_err(s), Msg::Done);
             }
             Msg::Unblock(did) => {
                 let node = self.node.clone();
-                return blocking(move || node.unblock(did).map_err(s), Msg::Done);
+                return blocking(move || crate::blocks::BlockApi::unblock(&*node, did).map_err(s), Msg::Done);
             }
             Msg::Done(r) => {
                 self.reload_contacts();
