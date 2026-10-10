@@ -572,3 +572,26 @@ rotating too adds cost and nothing under U7.
 5. A member removed during a pending window already saw the earlier announcement's time — OK?
 6. Should removal also refuse direct 1:1 calls from that person that started via a group chat
    request (U3/U13 grants)?
+
+## 14. W2-C questions (message/call tokens; `crates/proto/tests/capability_tokens.rs`, `crates/core/tests/grant_characterization.rs`)
+
+Verified today: ONE `call` grant gates both calls and chat (chat `Auth` is wrapped as a
+`CallHello`, `chat/engine.rs:331` -> `accept_call_hello`, `node.rs:2162`). No message-only
+contact is possible; only the global "unavailable" switch separates calls from chat. Grants renew
+only on an answered call. Nothing in core ever writes `State.revoked`; blocking works by removing
+the contact (generic "not accepted").
+Findings: revoking legacy grants by id leaks (every answered call minted a new id; core keeps no
+record) — a per-DID cut-off works; today's `verify_grant` hard-codes cap "call" (`lib.rs:570`,
+also in the contact handshake `:900`, `:953`), so a `message` cap breaks old peers' add-contact
+unless encoded compatibly; one token with a cap set makes a downgrade cut messaging until the
+new token arrives (separate tokens don't); sibling devices honour a revoked/blocked holder until
+the revocation set syncs.
+1. Token shape (new gate G-CAPSHAPE): separate message and call tokens (lean: cleaner downgrade)
+   or one token with a cap set?
+2. Legacy revocation: per-DID cut-off (lean) or by id? Start recording issued token ids?
+3. Renewal: message token renews on activity near expiry, or fixed TTL + explicit reissue? Call
+   token keeps renew-on-answer?
+4. Sibling revocation sync window: best effort OK, or must refusal be immediate on every device?
+5. Wire compatibility with un-upgraded peers (keep sending a `call` grant to old peers? version bump?)
+6. Show "calls not allowed" to every authenticated contact (vs today's generic refusal)?
+7. Unblock: revive old tokens or issue new ones?
