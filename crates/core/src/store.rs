@@ -28,6 +28,25 @@ pub struct ProfileV2 {
     pub did: String,
     pub device_public: [u8; 32],
     pub vault: crate::vault::Vault,
+    /// This install's device ID (hex of 32 random bytes; U16's "device value", P9b): new when
+    /// the account is created, linked or restored over this directory, kept when only the device
+    /// key changes (endpoint rotation). Never derived from any key. The chat writer ID is
+    /// `writer_id(DID, device ID)`. Absent in profiles from before P9b until the chat store
+    /// first opens.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub device_id: Option<String>,
+}
+
+/// A fresh device ID (`ProfileV2::device_id`).
+pub fn new_device_id() -> String {
+    hex::encode(crate::chat::doc::new_device_value())
+}
+
+impl ProfileV2 {
+    /// The device ID as bytes, if the profile has a well-formed one.
+    pub fn device_id_bytes(&self) -> Option<[u8; 32]> {
+        self.device_id.as_deref().and_then(|h| hex::decode(h).ok()).and_then(|b| b.try_into().ok())
+    }
 }
 
 #[derive(Clone)]

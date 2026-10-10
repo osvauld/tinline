@@ -1,4 +1,4 @@
-//! Own-device sync: the account doc wired to `State`, and the `tinline/self/1` sessions.
+//! Own-device sync: the account doc wired to `State`, and the `tinline/self/2` sessions.
 //! See docs/protocol.md "Own-device sync".
 
 use std::collections::{HashMap, HashSet};
@@ -348,10 +348,9 @@ impl Inner {
     async fn self_dial(self: Arc<Self>, device: [u8; 32], relay: Option<String>) -> Result<(), Error> {
         let ep = self.endpoint()?;
         let addr = addr_for(&device, relay.as_deref())?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, proto::SELF_ALPN))
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::OWN))
             .await
-            .map_err(|_| Error::Timeout)?
-            .map_err(Error::net)?;
+            .map_err(|_| Error::Timeout)??;
         let r = self.clone().self_run(conn.clone(), true).await;
         if r.is_err() {
             conn.close(0u32.into(), b"done");
@@ -757,10 +756,9 @@ impl Inner {
     pub(crate) async fn self_probe(self: &Arc<Self>, device: [u8; 32]) -> Result<(), Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr_for(&device, None)?, proto::SELF_ALPN))
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr_for(&device, None)?, &crate::version::OWN))
             .await
-            .map_err(|_| Error::Timeout)?
-            .map_err(Error::net)?;
+            .map_err(|_| Error::Timeout)??;
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
         let mut writer = FrameWriter(send);
         let mut reader = FrameReader::new(recv);
@@ -779,7 +777,7 @@ impl Inner {
         let Ok(me) = self.me() else { return };
         let Ok(ep) = self.endpoint() else { return };
         let Ok(addr) = addr_for(&device, relay.as_deref()) else { return };
-        let Ok(Ok(conn)) = tokio::time::timeout(Duration::from_secs(8), ep.connect(addr, proto::SELF_ALPN)).await else { return };
+        let Ok(Ok(conn)) = tokio::time::timeout(Duration::from_secs(8), crate::version::connect(&ep, addr, &crate::version::OWN)).await else { return };
         let run = async {
             let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
             let mut writer = FrameWriter(send);

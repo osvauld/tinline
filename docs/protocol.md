@@ -200,7 +200,7 @@ reason. Failure tokens surfaced to the UI: `expired cancelled rejected bad_proof
 net locked busy bad_grant account_exists`. Locking E cancels its link. Env knob for tests:
 `P2P_LINK_TTL_SECS`.
 
-### Own-device sync (ALPN `tinline/self/1`, task 34d)
+### Own-device sync (ALPN `tinline/self/2`, task 34d; `/1` refused since P9c, see "Protocol versions")
 
 Frames: u32 BE length + bincode of `SelfMsg` (16 MiB cap).
 
@@ -256,20 +256,21 @@ add more docs to the `Hello` list (done in 34g, below).
   the peer's vector (any peer ids); `sig` is the sending device's `sign_batch(doc, update)`, checked
   against the authenticated device (a bad signature closes the session, as for the account doc).
 - The receiver validates a chat batch like a vouched history snapshot (docs/chat.md section 8): doc
-  of a current conversation, authors only us and that contact, every new/changed message signed by its
-  author's attested device (ours incl. removed devices, the contact's known devices), plus the field
-  rules. A rejected batch is dropped, the session continues.
+  of a current conversation, authors only us and that contact, every op proven by its author's DID
+  signature under the author's writer ID (below, "Chat message signatures and writer IDs"), plus the
+  field rules. A rejected batch is dropped, the session continues.
 - `Read { cursors: [(pair, unix ms)] }` (appended `SelfMsg` variant, unsigned): read cursors, merged
   by max; sent after `Hello` and whenever one moves, forwarded to other sessions.
 - `Acks { acks: [(doc, vv)] }` (appended `SelfMsg` variant, unsigned): what a contact acknowledged
   holding of each day, merged into our stored ack like the contact's own `Ack`; sent after `Hello` and
   whenever an ack grows, forwarded onward. So a device that is not talking to the contact still shows
-  two ticks on our messages only once the contact holds them (a message written on another own
-  device is ticked against that device's peer id, recorded when it arrives: `mo/` in docs/chat.md).
+  two ticks on our messages only once the contact holds them (each message of ours is ticked against
+  the writer ID it was created under, recorded when written or when it arrives: `mo/` in
+  docs/chat.md).
 - Live updates: a write to any shard marks it dirty for every session, which pushes the ops the peer
   lacks. Blobs use the stock iroh-blobs ALPN: an own (non-removed) device is served any blob that any of our
   conversations references.
-- Contacts are unaffected: `tinline/chat/1` stays one session per contact *device*, each device sends
+- Contacts are unaffected: `tinline/chat/2` stays one session per contact *device*, each device sends
   its own ops only, and a session can name only `dm/{pair with that contact}/{day}`.
 
 | Check | Defends against |
@@ -287,7 +288,53 @@ add more docs to the `Hello` list (done in 34g, below).
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
-## Presence (on `tinline/chat/1`)
+## Protocol versions (P9c, U18)
+
+The chat content format changed incompatibly (below), so the chat wire is `tinline/chat/2` and
+own-device sync, which relays chat docs, is `tinline/self/2`. There is no compatibility with apps
+or data from before P9c: installing this build means wiping the app data on every device.
+
+- Accepting: the endpoint lists `tinline/chat/1` and `tinline/self/1` only to refuse them. Such a
+  connection is accepted and closed at once with application close code **426** and the reason
+  `"<chat|own-device sync> <old alpn> is no longer supported, this app speaks <new alpn>: update the
+  app (and wipe its data)"` (`crates/core/src/version.rs` `refuse`, called from the accept loop in
+  `node.rs`). The node logs "refused <protocol> from an older app (<alpn>)".
+- Dialing: `version::connect` offers the old ALPN as well; if the peer picks it, it is an old app:
+  the connection is closed with 426 and the same reason, and the dial fails with
+  `Error::Protocol("the other device runs an older app: <reason>")` (chat logs it per contact).
+- Tests: `version::tests` (old app dialing us, us dialing an old app, two current apps).
+
+## Chat message signatures and writer IDs (P9c, strict)
+
+Formats inside the chat docs (`dm/{pair}/{day}`); the wire batch `sig` (device key over
+`"tinline-chat-batch-v1" ‖ len(doc) ‖ doc ‖ update`) authenticates the sending device only.
+Design and rules: docs/chat.md section 7 "Signatures and writer IDs".
+
+- **Record**: `{ id, author, at, reply_to?, file?, v }`; `id/author/at/reply_to/file` written once
+  at creation; `v` = the current version, one map value
+  `{ text, edited_at?, deleted, dev: hex(device ID), did_sig: hex(64 bytes) }`.
+- **DID signature** (`chat::doc::msg_sig_input`): the author's DID key (Ed25519, `did:key`) over
+  `"tinline-chat-msg-v3"` ‖ len-prefixed doc ‖ id ‖ author ‖ `at` (i64 BE) ‖ text ‖ `edited_at`
+  (0, or 1 + i64 BE) ‖ `deleted` (1 byte) ‖ `reply_to` (0, or 1 + string) ‖ file (0, or 1 + hash,
+  key, name, size u64, mime, kind, duration u32, waveform len u32 + bytes) ‖ device ID (32 bytes) ‖
+  `WrittenAt` = Loro peer id (u64 BE) ‖ counter of the span's first op (i32 BE) ‖ op count of the
+  span (u32 BE). Strings are u32 BE length-prefixed. The span is the ops that write the version,
+  the last being the insert of `v`: for a new message the `messages` key, `id`, `author`, `at`,
+  `reply_to?`, `file?`, `v`; for an edit or delete only `v`. (P8/P9/P9b used
+  `"tinline-chat-msg-did-v2"` in a commit message, plus a device-key `sig`; both are gone.)
+- **Writer ID** (U16): the Loro peer id a device writes every chat doc with = first 8 bytes (LE) of
+  `BLAKE3("tinline-writer-id-v1" ‖ u32 BE len(DID) ‖ DID ‖ device ID)` (`u64::MAX` maps to
+  `u64::MAX - 1`). The device ID is 32 random bytes per install of the account (`account.json`
+  `device_id`): new on create, link and restore over the directory, kept when only the device key
+  changes (endpoint rotation). It is never derived from a key.
+- **Accepting a batch** (`Shard::apply_remote`, every path): the new ops are split per peer id
+  into spans (consecutive ops on one message, ending with its `v`); any op outside one refuses
+  the batch. Each span must be proven by the message as it reads after it:
+  `writer_id(author, v.dev)` = the span's peer id and `v.did_sig` verifies for the span. Live,
+  every span's author is the session's DID. Every touched message must end as one of the proven
+  versions. Nothing else is consulted (no device keys, device lists or remembered writer IDs).
+
+## Presence (on `tinline/chat/2`)
 
 Whether a contact is reachable right now. Each device keeps a Loro `EphemeralStore` with one key
 (`online`), refreshed every 8 s, and sends it on every chat session as a QUIC datagram: `b"tp1"` +

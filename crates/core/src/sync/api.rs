@@ -239,7 +239,7 @@ impl Node {
         v
     }
 
-    /// For tests: dials `device` on `tinline/self/1` as this node and reports whether the peer
+    /// For tests: dials `device` on `tinline/self/2` as this node and reports whether the peer
     /// accepted us (answered with its `Auth`).
     #[doc(hidden)]
     pub fn self_probe_for_test(&self, device: String) -> bool {
@@ -256,27 +256,27 @@ impl Node {
 
     /// For tests: offers a hand-made batch for today's shard with `contact` to the validator
     /// that judges batches relayed by our other devices. `kind`: 0 = a message of the contact's
-    /// signed with a random key, 1 = a message of ours signed with a random key, 2 = a message of
-    /// a stranger signed with our device key, 3 = a genuine message of ours (control).
+    /// signed by another account's DID key, 1 = a message of ours signed by another account's DID
+    /// key, 2 = a stranger's message, validly signed by the stranger, 3 = a genuine message of
+    /// ours (control). Each is written under the writer ID its author and device ID give, so only
+    /// the signature (or the author) is wrong.
     #[doc(hidden)]
     pub fn forged_own_batch_for_test(&self, contact: String, kind: u8) -> Result<(), Error> {
-        use crate::chat::doc::{MsgRec, Shard, day_of, doc_name, pair_id};
+        use crate::chat::doc::{MsgRec, Shard, Writer, day_of, doc_name, new_device_value, pair_id};
         let me = self.inner.me()?;
+        let core = self.inner.chat_core()?;
         let pair = pair_id(me.id.did(), &contact);
         let at = crate::node::now_ms() as i64;
         let day = day_of(at);
-        let random = proto::new_device_secret();
-        let (author, secret, device) = match kind {
-            0 => (contact.clone(), random, proto::device_public(&random)),
-            1 => (me.id.did().to_string(), random, proto::device_public(&random)),
-            2 => ("did:key:stranger".to_string(), me.profile.device_secret, proto::device_public(&random)),
-            _ => (me.id.did().to_string(), me.profile.device_secret, me.device),
+        let (stranger, _) = identity::generate();
+        let (author, writer) = match kind {
+            0 => (contact.clone(), Writer::forging(stranger, new_device_value(), &contact)),
+            1 => (me.id.did().to_string(), Writer::forging(stranger, new_device_value(), me.id.did())),
+            2 => (stranger.did().to_string(), Writer::new(stranger, new_device_value())),
+            _ => (me.id.did().to_string(), self.inner.chat_writer(&me, &core)),
         };
-        let shard = Shard::new(&pair, &day, &device);
-        let rec = MsgRec { id: format!("forged{kind}"), author, at, text: format!("forged {kind}"), edited_at: None, deleted: false, reply_to: None, file: None, sig: Vec::new() };
-        // Forgeries carry no DID signature (only the account could make one); the control is
-        // written exactly as `send_text` writes.
-        let writer = if kind >= 3 { self.inner.chat_writer(&me, &*self.inner.chat_core()?, &contact) } else { crate::chat::doc::Writer::legacy(secret) };
+        let shard = Shard::new(&pair, &day, writer.writer_id());
+        let rec = MsgRec { id: format!("forged{kind}"), author, at, text: format!("forged {kind}"), edited_at: None, deleted: false, reply_to: None, file: None, dev: [0; 32], did_sig: Vec::new() };
         let update = shard.add_message(&rec, &writer).map_err(|e| Error::Io(e.to_string()))?;
         let inner = self.inner.clone();
         let doc = doc_name(&pair, &day);
@@ -309,7 +309,7 @@ impl Node {
             let pair = crate::chat::doc::pair_id(me.id.did(), &peer_did);
             let (mut peers, mut created) = (Vec::new(), Vec::new());
             for day in core.store.shard_days(&pair).unwrap_or_default() {
-                if inner.chat_shard(&core, &me, &pair, &day).await.is_err() {
+                if inner.chat_shard(&core, &pair, &day).await.is_err() {
                     continue;
                 }
                 let shards = core.shards.lock();
@@ -324,15 +324,6 @@ impl Node {
             (peers, created)
         })
         .unwrap_or_default()
-    }
-
-    /// For tests (P9): the legacy (device-derived) Loro peer id the device `device` (text) has
-    /// in the conversation between `a_did` and `b_did` on `day`.
-    #[doc(hidden)]
-    pub fn legacy_peer_for_test(device: String, a_did: String, b_did: String, day: String) -> Option<u64> {
-        use crate::chat::doc::{doc_name, pair_id, peer_id};
-        let dev = proto::device_from_text(&device).ok()?;
-        Some(peer_id(&dev, &doc_name(&pair_id(&a_did, &b_did), &day)))
     }
 
     /// For tests: does the chat store hold any "You" shard?

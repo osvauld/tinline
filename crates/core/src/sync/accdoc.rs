@@ -1,4 +1,4 @@
-//! The account-wide Loro doc that own devices sync (`tinline/self/1`), and the merge rules
+//! The account-wide Loro doc that own devices sync (`tinline/self/2`), and the merge rules
 //! between it and the working copy (`State`). The call log is its own doc (`callsdoc.rs`).
 //!
 //! ```text

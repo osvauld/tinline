@@ -441,9 +441,6 @@ pub(crate) struct Inner {
     pub(crate) gate: Mutex<()>,
     /// Test knob: this many state writes fail. See `Node::fail_next_writes`.
     pub(crate) fail_writes: AtomicU32,
-    /// Test knob: write chat messages as a pre-P8 app does (device signature only). See
-    /// `Node::legacy_message_signing_for_test`.
-    pub(crate) legacy_msg_sigs: AtomicBool,
     /// Held while snapshotting and writing state, so writes land in the order taken. Always
     /// taken before `shared`, never while holding it.
     pub(crate) writing: Mutex<()>,
@@ -511,7 +508,6 @@ impl Node {
             accounts,
             gate: Mutex::new(()),
             fail_writes: AtomicU32::new(0),
-            legacy_msg_sigs: AtomicBool::new(false),
             writing: Mutex::new(()),
             events,
             shared: Mutex::new(shared),
@@ -759,6 +755,7 @@ impl Node {
                     did: id.did().to_string(),
                     device_public,
                     vault,
+                    device_id: Some(crate::store::new_device_id()),
                 });
                 let store = s.acct.as_ref().ok_or(Error::NoIdentity)?.store.clone();
                 // The vault first: if we die before the state is sealed, the JSON is still
@@ -1322,6 +1319,8 @@ impl Node {
             did: did.clone(),
             device_public: me.device,
             vault,
+            // A restore over an existing directory is a new install too: new device ID, new writer ID.
+            device_id: Some(crate::store::new_device_id()),
         });
         // Without a passphrase nothing is written until the platform has saved the key.
         let acct = if durable {
@@ -1427,11 +1426,20 @@ impl Node {
         self.inner.fail_writes.store(n, Ordering::SeqCst);
     }
 
-    /// For tests: while on, this node writes chat messages (and edits, deletes) the way an app
-    /// from before DID-signed messages (P8) did: with the device-key signature only.
+    /// For tests: replaces this install's device key on disk, as endpoint rotation will (the
+    /// same install: same device ID, data key and passphrase). Takes effect on the next unlock
+    /// (restart the node).
     #[doc(hidden)]
-    pub fn legacy_message_signing_for_test(&self, on: bool) {
-        self.inner.legacy_msg_sigs.store(on, Ordering::SeqCst);
+    pub fn rotate_device_key_on_disk_for_test(&self) -> Result<(), Error> {
+        let me = self.inner.me()?;
+        let s = self.inner.shared.lock();
+        let Some(Disk::V2(cur)) = s.disk.clone() else { return Err(Error::NoIdentity) };
+        let dek = s.dek.clone().ok_or(Error::Locked)?;
+        let device_secret = proto::new_device_secret();
+        let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
+        let vault = vault::reseal(&cur.vault, &dek, &secrets)?;
+        let disk = Disk::V2(ProfileV2 { device_public: proto::device_public(&device_secret), vault, ..cur });
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)
     }
 }
 
@@ -1806,15 +1814,18 @@ impl Inner {
             .keep_alive_interval(Duration::from_secs(5))
             .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
             .build();
+        let mut alpns = vec![
+            proto::ALPN.to_vec(),
+            crate::chat::wire::CHAT_ALPN.to_vec(),
+            iroh_blobs::ALPN.to_vec(),
+            proto::SELF_ALPN.to_vec(),
+            proto::link::LINK_ALPN.to_vec(),
+        ];
+        // Superseded versions (P9c): listed only so an old app is refused with a clear reason.
+        alpns.extend(crate::version::old_alpns());
         let mut builder = Endpoint::builder(presets::N0)
             .secret_key(SecretKey::from_bytes(&me.profile.device_secret))
-            .alpns(vec![
-                proto::ALPN.to_vec(),
-                crate::chat::wire::CHAT_ALPN.to_vec(),
-                iroh_blobs::ALPN.to_vec(),
-                proto::SELF_ALPN.to_vec(),
-                proto::link::LINK_ALPN.to_vec(),
-            ])
+            .alpns(alpns)
             .transport_config(transport);
         // Test knob: no UDP of our own, so every packet goes through the relay — the path a
         // call takes when hole punching fails.
@@ -1885,6 +1896,16 @@ impl Inner {
                         Ok(a) => a,
                         Err(_) => return,
                     };
+                    // An app that speaks a superseded version (P9c): closed at once with
+                    // `VERSION_MISMATCH` and a reason naming both versions.
+                    if let Some(v) = crate::version::superseded(&alpn) {
+                        drop(permit);
+                        this.log(format!("refused {} from an older app ({})", v.name, String::from_utf8_lossy(&alpn)));
+                        if let Err(e) = crate::version::refuse(accepting, v, &alpn).await {
+                            tracing::debug!("refusing an old version: {e}");
+                        }
+                        return;
+                    }
                     if alpn.as_slice() == proto::SELF_ALPN {
                         drop(permit);
                         if let Err(e) = this.clone().handle_self_incoming(accepting).await {

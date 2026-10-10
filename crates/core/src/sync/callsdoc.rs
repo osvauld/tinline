@@ -1,4 +1,4 @@
-//! The call log that own devices sync (`tinline/self/1`, doc `calls`), apart from the account
+//! The call log that own devices sync (`tinline/self/2`, doc `calls`), apart from the account
 //! doc: it only grows and is trimmed, while contacts must stay small and arrive first.
 //!
 //! ```text
