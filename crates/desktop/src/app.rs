@@ -106,7 +106,8 @@ enum Detail {
     View,
     Rename,
     Verify,
-    ConfirmRemove,
+    /// "Block X?" (U19: a contact's action is Block; there is no Remove).
+    ConfirmBlock,
 }
 
 /// Progress of adding a contact from a pasted card.
@@ -245,6 +246,11 @@ struct App {
     unlinked: Option<UnlinkedInfo>,
     /// Groups, hosting, blocking and permissions preview on placeholder data.
     groups: GroupsUi,
+    /// Real contact blocking, read from the core (`crate::blocks`).
+    blocks: crate::blocks::Blocks,
+    /// Kept, read-only chats of people who are no longer contacts (their block deleted our
+    /// entry for them, U20), as contact-shaped rows for the chat screens; never real contacts.
+    kept: Vec<Contact>,
 }
 
 /// Where a click on a notification should lead.
@@ -326,7 +332,9 @@ enum Msg {
     Added(Result<Contact, String>),
     CallPressed(String),
     CallStarted(Result<CallInfo, String>),
-    Remove(String),
+    /// Block a contact (after the confirmation).
+    Block(String),
+    Unblock(String),
     Done(Result<(), String>),
     Answer,
     Decline,
@@ -575,7 +583,7 @@ impl App {
         self.refresh_linked();
         let preview_on = self.groups.on;
         self.groups.enable(preview_on, &self.profile_name);
-        self.contacts = self.node.contacts();
+        self.reload_contacts();
         self.recents = self.node.recent_calls(RECENTS);
         self.avail = self.node.availability();
         self.name_edit = self.profile_name.clone();
@@ -693,6 +701,8 @@ impl App {
             link_joined: false,
             unlinked: None,
             groups: GroupsUi::new(preview_on, &me_name),
+            blocks: Default::default(),
+            kept: Vec::new(),
             node,
         };
         if has && crate::test_env("P2P_SCREEN").is_some_and(|v| v == "settings") {
@@ -876,7 +886,14 @@ impl App {
                 let who = c.info.peer_name.clone();
                 let (direct, secs) = c.stats.as_ref().map(|s| (s.direct, s.secs)).unwrap_or((false, 0));
                 let did = c.info.peer_did.clone();
-                let presentation = reason::present(&reason, &who, c.info.incoming, c.answered);
+                let mut presentation = reason::present(&reason, &who, c.info.incoming, c.answered);
+                // "blocked" ends the call on both sides: say which side blocked.
+                if reason == p2pcore::BLOCKED {
+                    self.refresh_blocks();
+                    if self.blocks.blocked_by_me(&did) {
+                        presentation = End::Screen(format!("You blocked {}", crate::blocks::first_name(&who)));
+                    }
+                }
                 self.call = None;
                 // End & answer: straight on to the new call, no "call ended" screen in between.
                 if let Some(next) = self.takeover.take() {
@@ -929,7 +946,69 @@ impl App {
 
     fn selected(&self) -> Option<&Contact> {
         let did = self.sel.as_ref()?;
-        self.contacts.iter().find(|c| &c.did == did).or_else(|| self.me.as_ref().filter(|m| &m.did == did))
+        self.contacts
+            .iter()
+            .find(|c| &c.did == did)
+            .or_else(|| self.me.as_ref().filter(|m| &m.did == did))
+            .or_else(|| self.kept.iter().find(|c| &c.did == did))
+    }
+
+    fn is_contact(&self, did: &str) -> bool {
+        self.contacts.iter().any(|c| c.did == did)
+    }
+
+    /// Whose conversation can be opened: contacts, "You", and kept chats.
+    pub(super) fn selectable(&self, did: &str) -> bool {
+        self.is_contact(did) || self.is_me(did) || self.kept.iter().any(|c| c.did == did)
+    }
+
+    /// Contacts from the core, then everything that depends on them.
+    fn reload_contacts(&mut self) {
+        self.contacts = self.node.contacts();
+        self.refresh_blocks();
+    }
+
+    /// Re-reads block states for every conversation we show, the kept chats, and why our
+    /// pending messages in the open conversation are not delivered. Cheap core reads.
+    pub(super) fn refresh_blocks(&mut self) {
+        if self.demo {
+            return;
+        }
+        let mut dids: Vec<String> = self.contacts.iter().map(|c| c.did.clone()).collect();
+        let more: Vec<String> = self.chat.chats.iter().map(|c| c.peer_did.clone()).filter(|d| !self.is_me(d) && !dids.contains(d)).collect();
+        dids.extend(more);
+        self.blocks.refresh(&*self.node, dids);
+        self.kept = self
+            .chat
+            .chats
+            .iter()
+            .filter(|c| !self.is_me(&c.peer_did) && !self.is_contact(&c.peer_did))
+            .map(|c| Contact {
+                did: c.peer_did.clone(),
+                name: c.peer_name.clone(),
+                device: String::new(),
+                added_at: 0,
+                alias: None,
+                verified: false,
+            })
+            .collect();
+        self.refresh_undelivered();
+    }
+
+    /// Why our pending messages in the open conversation are not delivered.
+    pub(super) fn refresh_undelivered(&mut self) {
+        if self.demo {
+            return;
+        }
+        let Some(peer) = self.chat.peer.clone() else { return };
+        let pending: Vec<&str> = self
+            .chat
+            .msgs
+            .iter()
+            .filter(|m| m.outgoing && m.delivery == p2pcore::DeliveryState::Pending)
+            .map(|m| m.id.as_str())
+            .collect();
+        self.blocks.refresh_undelivered(&*self.node, &peer, pending);
     }
 
     fn rename(&mut self, clear: bool) -> Task<Msg> {
@@ -943,6 +1022,15 @@ impl App {
     /// Starts a call (ignored while one is on) to `did`.
     fn dial(&mut self, did: String) -> Task<Msg> {
         if self.call.is_some() {
+            return Task::none();
+        }
+        if !self.demo && !self.blocks.can_call(&did, self.is_contact(&did)) {
+            let name = self.chat_name(&did);
+            self.notice = Some(match self.blocks.composer(&did, true) {
+                crate::blocks::Composer::BlockedByMe => format!("You blocked {name}. Unblock to call."),
+                crate::blocks::Composer::BlockedMe => format!("Can\u{2019}t call: {} blocked you", crate::blocks::first_name(&name)),
+                _ => format!("{name} is no longer in your contacts."),
+            });
             return Task::none();
         }
         self.notice = None;
@@ -1441,7 +1529,7 @@ impl App {
             }
             Msg::Started(r) => {
                 self.status = self.node.status();
-                self.contacts = self.node.contacts();
+                self.reload_contacts();
                 // Unlocking opens the call log too; nothing else reloads it until the next call.
                 self.refresh_history();
                 match r {
@@ -1586,7 +1674,7 @@ impl App {
                 return blocking(move || node.add_contact(t).map_err(s), Msg::Added);
             }
             Msg::Added(r) => {
-                self.contacts = self.node.contacts();
+                self.reload_contacts();
                 match r {
                     Ok(c) => {
                         self.add_in.clear();
@@ -1704,18 +1792,18 @@ impl App {
                 return blocking(move || node.set_available(on, until).map_err(s), Msg::Done);
             }
             Msg::CloseEnded => self.ended = None,
-            Msg::Remove(did) => {
+            // The contact, the chat and the call history stay (U19, U24); only the state changes.
+            Msg::Block(did) => {
+                self.detail = Detail::View;
                 let node = self.node.clone();
-                if self.sel.as_ref() == Some(&did) {
-                    self.leave_chat();
-                    self.sel = None;
-                    self.detail = Detail::View;
-                    self.detail_calls.clear();
-                }
-                return blocking(move || node.remove_contact(did).map_err(s), Msg::Done);
+                return blocking(move || node.block(did).map_err(s), Msg::Done);
+            }
+            Msg::Unblock(did) => {
+                let node = self.node.clone();
+                return blocking(move || node.unblock(did).map_err(s), Msg::Done);
             }
             Msg::Done(r) => {
-                self.contacts = self.node.contacts();
+                self.reload_contacts();
                 self.refresh_history();
                 if let Err(e) = r {
                     self.notice = Some(e);
@@ -1964,7 +2052,7 @@ impl App {
             }
             Ev::Contacts => {
                 if !self.demo {
-                    self.contacts = self.node.contacts();
+                    self.reload_contacts();
                     if self.offer.as_ref().is_some_and(|o| self.contacts.iter().any(|c| c.did == o.did)) {
                         self.offer = None;
                     }
@@ -2054,7 +2142,7 @@ impl App {
             Ev::Open(target) => {
                 let mut tasks = vec![self.show_window()];
                 if let Target::Chat(did) = target
-                    && self.contacts.iter().any(|c| c.did == did)
+                    && self.selectable(&did)
                     && self.call.is_none()
                 {
                     tasks.push(self.update(Msg::Select(did)));

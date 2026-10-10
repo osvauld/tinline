@@ -18,6 +18,8 @@ macro_rules! tlog {
 pub(crate) use tlog;
 
 mod app;
+/// Contact blocking on the core's API: state the screens read, and the dialog copy.
+mod blocks;
 mod emoji;
 mod audio;
 mod flow;

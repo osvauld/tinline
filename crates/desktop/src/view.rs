@@ -644,6 +644,9 @@ impl App {
     }
 
     fn contact_sub(&self, did: &str) -> String {
+        if let Some(st) = self.blocks.status(did) {
+            return st.to_string();
+        }
         match self.recents.iter().find(|r| r.peer_did == did) {
             Some(r) => format!("Last call {}", ago(now_secs(), r.started_at)),
             None => "Not called yet".into(),
@@ -731,6 +734,9 @@ impl App {
         let q = self.search.trim().to_lowercase();
         if self.chat.tab == super::chat::SideTab::Chats {
             return self.sidebar_frame(t, col, self.chat_list(t, &q));
+        }
+        if self.chat.tab == super::chat::SideTab::Groups && self.groups.on {
+            return self.sidebar_frame(t, col, self.groups_list(t, &q));
         }
         let calls_tab = self.chat.tab == super::chat::SideTab::Calls;
         let mut list = column![].spacing(2);
@@ -1069,17 +1075,32 @@ impl App {
         if c.verified {
             badges = badges.push(badge(t.primary_c, t.on_primary_c, Some(Icon::ShieldCheck), "Verified"));
         }
+        if let Some(st) = self.blocks.status(&c.did) {
+            badges = badges.push(badge(t.error_c, t.on_error_c, Some(Icon::PhoneOff), st));
+        }
+        let blocked_by_me = self.blocks.blocked_by_me(&c.did);
+        let can_call = self.blocks.can_call(&c.did, true);
         let head = row![avatar(t, &name, &c.did, 72.0), column![title, badges].spacing(10).width(Fill)]
             .spacing(20)
             .align_y(Alignment::Center);
         let actions = row![
-            pill(t, Kind::Primary, Some(Icon::Phone), "Call", Some(Msg::CallPressed(c.did.clone()))),
+            pill(t, Kind::Primary, Some(if can_call { Icon::Phone } else { Icon::PhoneOff }), "Call", can_call.then(|| Msg::CallPressed(c.did.clone()))),
             pill(t, Kind::Quiet, Some(Icon::MessageSquare), "Message", Some(Msg::Chat(super::chat::Cm::Info(false)))),
             pill(t, Kind::Quiet, Some(Icon::Pencil), "Rename", Some(Msg::SetDetail(Detail::Rename))),
             pill(t, Kind::Quiet, Some(Icon::ShieldCheck), "Safety number", Some(Msg::SetDetail(Detail::Verify))),
-            pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::SetDetail(Detail::ConfirmRemove))),
+            // U19: Block is the contact action; there is no Remove.
+            if blocked_by_me {
+                pill(t, Kind::Quiet, None, "Unblock", Some(Msg::Unblock(c.did.clone())))
+            } else {
+                pill(t, Kind::Danger, Some(Icon::PhoneOff), "Block", Some(Msg::SetDetail(Detail::ConfirmBlock)))
+            },
         ]
         .spacing(10);
+        // "Allow calls" (U13) comes with packet P6; until then `calls_allowed` is None and the
+        // switch is only in the groups preview.
+        let allow_calls: Option<El> = crate::blocks::calls_allowed(&self.node, &c.did).map(|on| {
+            line(t, "Allow calls", "They can ring this computer", toggler(on).style(ui::toggle_style(t)).into())
+        });
 
         let panel: Option<El> = match self.detail {
             Detail::View => None,
@@ -1159,7 +1180,7 @@ impl App {
                             ]
                             .spacing(8),
                             tx(
-                                format!("If they don\u{2019}t match, remove {name} and add them again face to face."),
+                                format!("If they don\u{2019}t match, block {name} and add each other again face to face."),
                                 13.0,
                                 t.ink2
                             ),
@@ -1171,19 +1192,17 @@ impl App {
                     .into(),
                 )
             }
-            Detail::ConfirmRemove => Some(
+            Detail::ConfirmBlock => Some({
+                let (title_, lines) = crate::blocks::block_dialog(&name);
+                let text_ = lines.iter().map(|b| format!("\u{2022} {b}")).collect::<Vec<_>>().join("\n");
                 container(
                     column![
-                        semi(format!("Remove {name}?"), 17.0, t.ink),
-                        tx(
-                            "They won\u{2019}t be able to call you, and you won\u{2019}t be able to call them. Your call history with them is deleted from this computer. To talk again, you\u{2019}ll need to add each other again.",
-                            14.0,
-                            t.ink2
-                        ),
+                        semi(title_, 17.0, t.ink),
+                        tx(text_, 14.0, t.ink2),
                         row![
                             Space::new().width(Fill),
                             pill(t, Kind::Ghost, None, "Cancel", Some(Msg::SetDetail(Detail::View))),
-                            pill(t, Kind::End, None, "Remove", Some(Msg::Remove(c.did.clone()))),
+                            pill(t, Kind::End, None, "Block", Some(Msg::Block(c.did.clone()))),
                         ]
                         .spacing(8),
                     ]
@@ -1191,8 +1210,8 @@ impl App {
                 )
                 .padding(24)
                 .style(ui::card(t))
-                .into(),
-            ),
+                .into()
+            }),
         };
 
         let cell = |s: String, w: f32, c: Color| container(tx(s, 13.0, c)).width(w);
@@ -1250,6 +1269,9 @@ impl App {
         hist = hist.push(tx("History stays on this computer only.", 12.0, t.ink2));
 
         let mut col = column![back, head, actions].spacing(20);
+        if let Some(a) = allow_calls {
+            col = col.push(container(a).padding(16).width(Fill).style(ui::card(t)));
+        }
         if let Some(p) = panel {
             col = col.push(p);
         }

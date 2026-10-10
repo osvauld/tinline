@@ -25,6 +25,8 @@ pub(super) mod chat_fake;
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub(super) enum SideTab {
     Chats,
+    /// Groups preview (placeholder data); shown only while the preview switch is on.
+    Groups,
     Calls,
     Contacts,
 }
@@ -546,6 +548,8 @@ impl App {
                 // An erroring API is the empty state, not a banner.
                 self.chat.chats = r.unwrap_or_default();
                 self.chat.sort_chats();
+                // Kept chats of people who are no longer contacts come only from this list.
+                self.refresh_blocks();
             }
             Cm::Day(peer, prepend, r) => {
                 if self.chat.peer.as_deref() != Some(peer.as_str()) {
@@ -570,6 +574,7 @@ impl App {
                     self.chat.msgs.append(&mut late);
                     self.chat.msgs.sort_by(|a, b| (a.at, &a.id).cmp(&(b.at, &b.id)));
                 }
+                self.refresh_undelivered();
             }
             Cm::Edit(a) => self.chat.input.perform(a),
             Cm::Send => {
@@ -933,6 +938,9 @@ impl App {
                     notify(&self.chat_name(&peer), &preview_of(&m), Target::Chat(peer.clone()));
                 }
                 self.chat.upsert(m);
+                if open && !incoming {
+                    self.refresh_undelivered();
+                }
                 if incoming && attended {
                     return self.mark_read(&peer);
                 }
@@ -951,6 +959,7 @@ impl App {
                     && let Some(m) = self.chat.msgs.iter_mut().find(|m| m.id == id)
                 {
                     m.delivery = d;
+                    self.refresh_undelivered();
                 }
             }
             ChatEv::Progress { hash, done, total, outgoing } => {

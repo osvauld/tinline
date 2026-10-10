@@ -137,11 +137,57 @@ impl App {
 
     // ---- chats list ----
 
-    /// Preview rows for the Chats tab, as (last activity, row), to merge with the real chats.
-    pub(super) fn preview_rows(&self, t: Tok, q: &str) -> Vec<(u64, El<'_>)> {
-        if !self.groups.on {
-            return Vec::new();
+    /// The sidebar's Groups tab (preview only, like the phone's bottom-bar Groups tab): host and
+    /// chat requests, then the groups, newest first, and New group.
+    pub(super) fn groups_list(&self, t: Tok, q: &str) -> El<'_> {
+        let mut col = column![
+            container(tx("Preview: placeholder data. Nothing is sent.", 12.0, t.thread_text))
+                .padding([6, 12])
+                .width(Fill)
+                .style(ui::plain(t.surface2, 10.0)),
+        ]
+        .spacing(2);
+        if let Some(b) = self.requests_block(t) {
+            col = col.push(b);
+        } else {
+            col = col.push(container(label(t, &format!("Groups \u{b7} {}", self.groups.snap.groups.len()))).padding(Padding {
+                top: 12.0,
+                bottom: 4.0,
+                left: 12.0,
+                right: 0.0,
+            }));
         }
+        let mut rows = self.group_rows(t, q);
+        rows.sort_by(|a, b| b.0.cmp(&a.0));
+        let none = rows.is_empty();
+        for (_, el) in rows {
+            col = col.push(el);
+        }
+        if none {
+            col = col.push(container(tx("No groups yet. Make one with New group.", 13.0, t.ink2)).padding([4, 12]));
+        }
+        col = col.push(
+            container(btn(t, Kind::Tonal, "New group", Some(g(Gm::Placeholder("New group"))))).padding(Padding {
+                top: 12.0,
+                bottom: 0.0,
+                left: 12.0,
+                right: 0.0,
+            }),
+        );
+        col.into()
+    }
+
+    /// Unread groups plus waiting requests, for the Groups tab's badge.
+    pub(super) fn groups_badge(&self) -> u32 {
+        if !self.groups.on {
+            return 0;
+        }
+        let s = &self.groups.snap;
+        let unread: u32 = s.groups.iter().filter(|gr| gr.removed.is_none()).map(|gr| gr.unread).sum();
+        unread + s.incoming.len() as u32 + s.host_requests.len() as u32
+    }
+
+    fn group_rows(&self, t: Tok, q: &str) -> Vec<(u64, El<'_>)> {
         let s = &self.groups.snap;
         let mut out = Vec::new();
         for gr in &s.groups {
@@ -191,6 +237,17 @@ impl App {
                 .into(),
             ));
         }
+        out
+    }
+
+    /// The preview's sample people for the Chats tab, as (last activity, row), to merge with the
+    /// real chats. Groups have their own tab.
+    pub(super) fn preview_rows(&self, t: Tok, q: &str) -> Vec<(u64, El<'_>)> {
+        if !self.groups.on {
+            return Vec::new();
+        }
+        let s = &self.groups.snap;
+        let mut out = Vec::new();
         for p in s.people.iter().filter(|p| p.contact) {
             if !q.is_empty() && !p.name.to_lowercase().contains(q) {
                 continue;
@@ -338,7 +395,7 @@ impl App {
                 col = col.push(container(link_btn(t, "Preview: a week passes", t.relay, g(Gm::SimWeek))).padding([0, 4]));
             }
         }
-        col = col.push(head("Chats".into()));
+        col = col.push(head(format!("Groups \u{b7} {}", s.groups.len())));
         Some(col.into())
     }
 
@@ -956,8 +1013,30 @@ impl App {
         c.into()
     }
 
-    /// Settings › Privacy: the preview switch, then (when on) address changes and blocked people.
+    /// Settings › Privacy: the people we block (real, from the core), the preview switch, then
+    /// (when on) the preview's address changes and its placeholder blocks.
     pub(super) fn privacy_page(&self, t: Tok) -> El<'_> {
+        let mut real = column![tx("One list across all your devices: a block made on another device shows here too.", 13.0, t.ink2)].spacing(10);
+        for b in &self.blocks.list {
+            let name = self.contacts.iter().find(|c| c.did == b.did).map(Self::display).unwrap_or_else(|| b.name.clone());
+            let name = if name.is_empty() { "Someone".to_string() } else { name };
+            real = real.push(line(
+                t,
+                &name,
+                &format!("Blocked {}", day(b.blocked_at.saturating_mul(1000))),
+                btn(t, Kind::Quiet, "Unblock", Some(Msg::Unblock(b.did.clone()))),
+            ));
+        }
+        if self.blocks.list.is_empty() {
+            real = real.push(tx("Nobody is blocked. To block someone, open them in Contacts and choose Block.", 14.0, t.ink2));
+        }
+        real = real.push(
+            container(column![semi("Unblocking", 13.0, t.ink), tx(crate::blocks::UNBLOCK_NOTE, 13.0, t.ink2)].spacing(4))
+                .padding(12)
+                .width(Fill)
+                .style(ui::plain(t.surface2, 12.0)),
+        );
+        let real = section(t, "Blocked people", real.into());
         let switch = section(
             t,
             "Preview",
@@ -968,7 +1047,7 @@ impl App {
                 toggler(self.groups.on).on_toggle(|v| g(Gm::Enable(v))).style(ui::toggle_style(t)).into(),
             ),
         );
-        let mut c = column![switch].spacing(20);
+        let mut c = column![real, switch].spacing(20);
         if !self.groups.on {
             return c.into();
         }
@@ -1028,7 +1107,7 @@ impl App {
                 .into(),
             ));
         }
-        let mut bl = column![tx("One list across all your devices: a block made on another device shows here too.", 13.0, t.ink2)].spacing(10);
+        let mut bl = column![tx("Sample people from the preview; blocking them changes nothing real.", 13.0, t.ink2)].spacing(10);
         let mut any = false;
         for p in &s.people {
             let Block::ByMe { at, how, .. } = p.block else { continue };
@@ -1059,7 +1138,7 @@ impl App {
             .width(Fill)
             .style(ui::plain(t.surface2, 12.0)),
         );
-        c = c.push(section(t, "Blocked people", bl.into()));
+        c = c.push(section(t, "Blocked in the preview (placeholder data)", bl.into()));
         c.into()
     }
 
@@ -1143,16 +1222,8 @@ impl App {
                 let p = s.person(did);
                 let name = p.map(|p| p.name.clone()).or_else(|| s.groups.iter().find_map(|gr| gr.member(did)).map(|m| m.name.clone()))?;
                 let first = first_name(&name).to_string();
-                let shared: Vec<String> = s.groups.iter().filter(|gr| gr.removed.is_none() && gr.member(did).is_some()).map(|gr| gr.name.clone()).collect();
-                let mut bullets = vec![
-                    format!("{first} can\u{2019}t message or call you, on any of your devices."),
-                    format!("{first} is told you blocked them."),
-                    format!("{first} won\u{2019}t get your new address next time it changes, so they lose any way to reach this computer."),
-                ];
-                if !shared.is_empty() {
-                    bullets.push(format!("You both stay in {}. Their group messages show collapsed for you.", and_list(&shared)));
-                }
-                bullets.push("Your chat history stays on this computer.".into());
+                // Same copy as the real contact block (U5 revised, U19, U20, U24).
+                let bullets = crate::blocks::block_dialog(&name).1;
                 let text_ = bullets.iter().map(|b| format!("\u{2022} {b}")).collect::<Vec<_>>().join("\n");
                 column![
                     row![avatar(t, &name, did, 40.0), title(format!("Block {first}?"))].spacing(12).align_y(Alignment::Center),

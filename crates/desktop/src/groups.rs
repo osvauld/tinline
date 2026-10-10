@@ -154,6 +154,9 @@ impl App {
             if !on && self.settings_tab == 6 {
                 self.settings_tab = 7;
             }
+            if !on && self.chat.tab == super::chat::SideTab::Groups {
+                self.chat.tab = super::chat::SideTab::Chats;
+            }
             self.settings.groups_preview = Some(on);
             self.save_settings();
             return Task::none();

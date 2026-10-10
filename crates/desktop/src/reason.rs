@@ -40,6 +40,9 @@ pub fn text(reason: &str, name: &str) -> Option<String> {
         "unavailable" => "Turned away while unavailable".into(),
         "answered_elsewhere" => "Answered on another device".into(),
         "declined_elsewhere" => "Declined on another device".into(),
+        // Either side's block ends the call with this token; the app says "You blocked X" when
+        // it was ours.
+        "blocked" => format!("{} blocked you", crate::blocks::first_name(name)),
         "superseded" => return None,
         // Tokens from a newer core: say something rather than nothing.
         _ => "Call ended".into(),
@@ -67,6 +70,7 @@ pub fn history(reason: &str, incoming: bool, missed: bool, secs: u32, name: &str
         "cancelled" => "Cancelled".into(),
         "answered_elsewhere" => "Answered on another device".into(),
         "declined_elsewhere" => "Declined on another device".into(),
+        "blocked" => "Blocked".into(),
         _ if secs > 0 => format!("{} \u{b7} {}", if incoming { "Incoming" } else { "Outgoing" }, dur(secs)),
         r => text(r, name).unwrap_or_else(|| "Call".into()),
     }
@@ -87,6 +91,8 @@ mod tests {
         assert_eq!(text("superseded", "Ann"), None);
         assert_eq!(text("answered_elsewhere", "Ann").as_deref(), Some("Answered on another device"));
         assert_eq!(history("declined_elsewhere", true, false, 0, "Ann"), "Declined on another device");
+        assert_eq!(text("blocked", "Ann Lee").as_deref(), Some("Ann blocked you"));
+        assert_eq!(history("blocked", false, false, 0, "Ann"), "Blocked");
     }
 
     #[test]
