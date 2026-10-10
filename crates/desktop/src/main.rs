@@ -18,6 +18,7 @@ macro_rules! tlog {
 pub(crate) use tlog;
 
 mod app;
+mod emoji;
 mod audio;
 mod flow;
 mod keystore;
