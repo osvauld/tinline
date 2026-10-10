@@ -230,7 +230,16 @@ sealed in `account.redb` under `sync/account`, with maps:
 | `contacts/<did>` | `{rec, alias, verified}`; `rec` = name, devices, device_list, grant, added_at | alias/verified LWW; `rec`: name LWW, newer signed device list wins (S4 reset applies), grant that outlives, max added_at |
 | `tomb/<did>` | removal time (ms) | a contact is alive iff `added_at*1000 > tomb`: removal beats stale edits; a later ticket scan re-adds (and lifts the block on every device); same-second ties go to the removal |
 | `redeemed/<nonce>`, `revoked/<id>` | `"1"` | union, never shrink |
-| `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept |
+| `calls/<call_id>` | CallRecord JSON | written by builds before the calls doc; no longer read |
+
+The call log is a second doc, `calls` (peer id as above with `"calls"`), sealed under `sync/calls`,
+in the `Hello` list and synced like `account` (signed `Sync`, an empty batch acks). It only grows
+and gets trimmed, so it stays out of the doc that carries contacts and devices. Older builds ignore
+the name. On the first open it is seeded from the local call log.
+
+| map | entry | merge |
+|---|---|---|
+| `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept; calls with a removed (blocked) contact are dropped |
 
 `verified` is stored with the contact's device-list `seq`; it counts only against a device set at
 least as new as the receiver's (S4). Never synced: device secret, DEK, passphrase, availability,

@@ -2,6 +2,8 @@
 //! (`tinline/self/1`). See docs/design/device-linking.md and docs/protocol.md.
 
 pub(crate) mod accdoc;
+pub(crate) mod callsdoc;
+pub(crate) mod doc;
 pub(crate) mod api;
 pub(crate) mod engine;
 pub(crate) mod frames;
