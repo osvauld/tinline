@@ -326,6 +326,14 @@ impl Node {
         .unwrap_or_default()
     }
 
+    /// For tests (P10): the next `n` chat writes (`chat_persist`) fail, as if the disk were full.
+    #[doc(hidden)]
+    pub fn fail_next_chat_writes_for_test(&self, n: u32) {
+        if let Ok(core) = self.inner.chat_core() {
+            core.fail_writes.store(n, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+
     /// For tests: does the chat store hold any "You" shard?
     #[doc(hidden)]
     pub fn has_you_docs_for_test(&self) -> bool {

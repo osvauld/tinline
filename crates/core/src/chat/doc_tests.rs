@@ -395,6 +395,105 @@ fn concurrent_edits_whose_loro_winner_is_older_are_refused() {
     assert!(verdicts.iter().any(|v| v.is_ok()), "{verdicts:?}");
 }
 
+// KIND: invariant (P10; replaces the flaky limitation test
+// `concurrent_edits_whose_loro_winner_is_older_are_refused`)
+// Two own devices edit the same message concurrently with different edit times. Every replica,
+// in either arrival order, accepts both edits and shows the newer one: competing versions are
+// ordered by (deleted, edited_at, writer ID), never by Loro's internal winner (Lamport, then
+// peer id), which made the old rollback rule refuse the batch on one replica only. Many device-ID
+// pairs, so both Loro peer orders occur in every run.
+#[test]
+fn concurrent_edits_converge_on_the_newest_version_in_every_arrival_order() {
+    for v in 0..16u8 {
+        let (v1, v3) = (10 + 2 * v, 11 + 2 * v);
+        let mut d1 = shard(0, v1);
+        let u = d1.add_message(&msg("m1", &did(0), NOON, "v0"), &w(0, v1)).unwrap();
+        let mut d3 = shard(0, v3);
+        d3.apply_remote(&u, &own(0, 1)).unwrap();
+        let e1 = d1.edit("m1", "older", NOON + 10, &w(0, v1)).unwrap();
+        let e3 = d3.edit("m1", "newer", NOON + 11, &w(0, v3)).unwrap();
+        for (first, second) in [(&e1, &e3), (&e3, &e1)] {
+            let mut c = shard(1, 2);
+            c.apply_remote(&u, &live(0)).unwrap();
+            c.apply_remote(first, &live(0)).unwrap();
+            assert_eq!(c.apply_remote(second, &live(0)).map(|_| ()), Ok(()), "pair {v}");
+            assert_eq!(c.messages().unwrap()["m1"].text, "newer", "pair {v}");
+            assert_eq!(c.messages().unwrap()["m1"].edited_at, Some(NOON + 11));
+        }
+        d1.apply_remote(&e3, &own(0, 1)).unwrap();
+        d3.apply_remote(&e1, &own(0, 1)).unwrap();
+        assert_eq!(d1.messages().unwrap(), d3.messages().unwrap());
+        assert_eq!(d1.messages().unwrap()["m1"].text, "newer");
+    }
+}
+
+// KIND: invariant (P10)
+// The order of competing versions: a delete beats any concurrent edit, whatever its time; equal
+// edit times go to the higher writer ID. Every replica agrees, in either arrival order, and a
+// device's next edit supersedes whatever it shows.
+#[test]
+fn a_delete_beats_a_concurrent_edit_and_ties_go_to_the_higher_writer_id() {
+    let base = |v1: u8, v3: u8| {
+        let d1 = shard(0, v1);
+        let u = d1.add_message(&msg("m1", &did(0), NOON, "v0"), &w(0, v1)).unwrap();
+        let mut d3 = shard(0, v3);
+        d3.apply_remote(&u, &own(0, 1)).unwrap();
+        (d1, d3, u)
+    };
+    let both_orders = |u: &[u8], x: &[u8], y: &[u8]| {
+        let mut out = Vec::new();
+        for (first, second) in [(x, y), (y, x)] {
+            let mut c = shard(1, 2);
+            c.apply_remote(u, &live(0)).unwrap();
+            c.apply_remote(first, &live(0)).unwrap();
+            c.apply_remote(second, &live(0)).unwrap();
+            out.push(c.messages().unwrap()["m1"].clone());
+        }
+        assert_eq!(out[0], out[1]);
+        out.remove(0)
+    };
+    // A delete at NOON+10 against an edit at NOON+20: deleted.
+    let (d1, d3, u) = base(1, 3);
+    let del = d1.delete("m1", NOON + 10, &w(0, 1)).unwrap();
+    let ed = d3.edit("m1", "later edit", NOON + 20, &w(0, 3)).unwrap();
+    let m = both_orders(&u, &del, &ed);
+    assert!(m.deleted && m.text.is_empty());
+    // Equal edit times: the higher writer ID wins.
+    let (d1, mut d3, u) = base(1, 3);
+    let e1 = d1.edit("m1", "from 1", NOON + 10, &w(0, 1)).unwrap();
+    let e3 = d3.edit("m1", "from 3", NOON + 10, &w(0, 3)).unwrap();
+    let m = both_orders(&u, &e1, &e3);
+    assert_eq!(m.text, if wid(0, 1) > wid(0, 3) { "from 1" } else { "from 3" });
+    // The losing device's next edit, even with an older clock, wins everywhere.
+    d3.apply_remote(&e1, &own(0, 1)).unwrap();
+    let again = d3.edit("m1", "from 3 again", NOON + 5, &w(0, 3)).unwrap();
+    let mut c = shard(1, 2);
+    for b in [&u, &e1, &e3, &again] {
+        c.apply_remote(b, &live(0)).unwrap();
+    }
+    assert_eq!(c.messages().unwrap()["m1"].text, "from 3 again");
+    assert_eq!(d3.messages().unwrap(), c.messages().unwrap());
+}
+
+// KIND: limitation (Loro; why P10 never rebuilds a day under the same writer ID)
+// A day rebuilt from nothing under the same writer ID writes at (writer ID, counter) pairs the
+// contact already holds; Loro takes them for ops it has and drops them, so the new message is
+// silently lost there. Under a fresh writer ID it arrives.
+#[test]
+fn a_day_rebuilt_under_the_same_writer_id_is_silently_lost() {
+    let a = shard(0, 1);
+    let u1 = a.add_message(&msg("m1", &did(0), NOON, "first"), &w(0, 1)).unwrap();
+    let mut b = shard(1, 2);
+    b.apply_remote(&u1, &live(0)).unwrap();
+    let rebuilt = shard(0, 1);
+    let u2 = rebuilt.add_message(&msg("m2", &did(0), NOON + 1, "second"), &w(0, 1)).unwrap();
+    assert_eq!(b.apply_remote(&u2, &live(0)), Ok(Applied::default()));
+    assert!(!b.messages().unwrap().contains_key("m2"));
+    let fresh = shard(0, 4);
+    let u3 = fresh.add_message(&msg("m3", &did(0), NOON + 2, "third"), &w(0, 4)).unwrap();
+    assert_eq!(b.apply_remote(&u3, &live(0)).unwrap().added, vec!["m3".to_string()]);
+}
+
 // KIND: invariant
 // Two own devices write under their own writer IDs; each sends contacts only its own ops; a
 // device edits a message the other created.

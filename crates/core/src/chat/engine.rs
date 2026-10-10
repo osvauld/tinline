@@ -68,6 +68,8 @@ pub struct ChatCore {
     device_id: [u8; 32],
     /// Our writer ID: `writer_id(our DID, value)`, the Loro peer id we write chat docs with.
     pub(crate) wid: u64,
+    /// Test knob: the next this-many `chat_persist` calls fail, as if the disk were full.
+    pub(crate) fail_writes: std::sync::atomic::AtomicU32,
 }
 
 pub enum Cmd {
@@ -201,6 +203,7 @@ impl Inner {
             presence: super::presence::Presence::new(),
             device_id: value,
             wid: writer_id(&did, &value),
+            fail_writes: Default::default(),
         });
         *self.chat.lock() = Some(core);
     }
@@ -791,6 +794,9 @@ impl Inner {
             meta.n_updates += 1;
         }
         extra.push(core.store.put_meta_op(pair, day, &meta)?);
+        if core.fail_writes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
+            return Err(Error::Io("test: chat write failed".into()));
+        }
         core.store.db.apply(&extra).map_err(io)?;
         self.selfsync_dirty(&doc_name(pair, day));
         Ok(())
