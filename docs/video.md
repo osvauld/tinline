@@ -20,11 +20,45 @@ Status: design + simulation. Not wired into calls or the apps yet.
   offset cancels) every 100 ms; the sender backs off to 85% of delivered when queueing
   > 40 ms and ramps +8%/report when < 15 ms. Backlog > 300 ms: reset the group, force a
   keyframe, halve the rate.
-- **Shipping**: release builds compile libaom from source and link it statically (as opus is);
-  nothing needs to be installed. `AOM_DIR=<prefix from scripts/build_libaom.py>` links that
-  static build; without it the crate falls back to the system libaom via pkg-config.
+- **Shipping**: every shipped build links libaom statically; users never install it. See
+  [Shipping libaom](#shipping-libaom).
 - **rav1d from its git tag** v1.1.0: the crates.io package lacks `src/arm/asm-offsets.h`, so
   the ARM assembly doesn't build from it.
+
+## Shipping libaom
+
+- **Source pin: release tarball + SHA-256**, not git-at-commit. `scripts/build_libaom.py` fetches
+  `libaom-3.14.1.tar.gz` from `storage.googleapis.com/aom-releases` (the official release, also
+  GPG-signed upstream) and checks its SHA-256 on every run before using the tree; a mismatch
+  deletes the download and fails. Why: SHA-256 rather than git's SHA-1, no git needed, 6 MB
+  instead of a clone, and a stamp ties the extracted tree to the hash. The tarball was checked
+  byte-identical to tag v3.14.1 = commit `03087864cf4b`. Vendoring the tree is ruled out (size).
+  Bumping: change `VERSION`/`SHA256`/`COMMIT` in the script and `aomTag` in
+  `android/app/build.gradle.kts`.
+- **Build**: `python3 scripts/build_libaom.py --target host|<android triple>` (cmake + Ninja +
+  nasm; NDK for Android) builds a static realtime-only encoder under
+  `~/build-cache/p2p_chat/libaom/install-v3.14.1-<target>` and prints that prefix. Idempotent;
+  a rerun re-verifies and is a no-op build. A build dir configured from another source tree
+  is wiped.
+- **Linking** (`crates/video/build.rs`): `AOM_DIR_<triple>` (dashes as underscores) or
+  `AOM_DIR` links `<prefix>/lib/libaom.a`. Without either, dev host builds fall back to the
+  system libaom via pkg-config (dynamic); `AOM_STATIC_REQUIRED=1` turns that fallback into a
+  build error, and Android always requires the static build.
+- **Where it is wired**: `scripts/build_android.py` (per ABI, every build) and gradle's
+  `AOM_DIR_<triple>`; `scripts/package_linux_tarball.sh` and `scripts/package_deb.sh` (host
+  build, `AOM_STATIC_REQUIRED=1`, then fail if `readelf -d` shows a `libaom` NEEDED entry);
+  `.github/workflows/release.yml` (linux job via the package scripts, plus an `ldd` check; android
+  job builds both ABIs before gradle); `.github/workflows/ci.yml` (cached, sets `AOM_DIR`).
+- **Windows**: there is no Windows build yet. When there is: MSVC target, same script with a
+  `--target x86_64-pc-windows-msvc` branch running cmake with the Visual Studio/Ninja generator
+  from a VS dev prompt (nasm on PATH), producing `aom.lib`; build.rs's static link line works
+  unchanged (`static=aom`). Cross-building from Linux (mingw) is possible with libaom's
+  `build/cmake/toolchains/x86_64-mingw-gcc.cmake` but would make Rust use the gnu target.
+- **Licences**: libaom is BSD-2-Clause plus the Alliance for Open Media Patent License 1.0;
+  rav1d is BSD-2-Clause. Texts in `packaging/licenses/` (installed by the deb to
+  `/usr/share/doc/tinline/third-party/`, in the tarball's `licenses/`, AUR
+  `/usr/share/licenses/tinline/`) and in Android's `assets/licenses/` (shown in Settings ->
+  About -> Open-source licences). Desktop About names both.
 
 ## Wire format (per group stream)
 
@@ -112,9 +146,8 @@ control is delay-based.
 
 ## Next
 
-1. ~~Real footage, ARM numbers~~ done (above). Static libaom: `scripts/build_libaom.py` works
-   for the benchmark; still to wire into `scripts/build_android.py` / release packaging
-   (vendored source, not fetched at build time).
+1. ~~Real footage, ARM numbers~~ done (above). ~~Static libaom in every shipped build~~ done:
+   pinned tarball + SHA-256, Android, deb/tarball packaging and CI (see Shipping libaom).
 2. Resolution ladder in `media::Sender` (switch at a keyframe), added to the simulation.
 3. iroh transport against `media::Sender`/`Receiver` (uni stream per group, priority by
    group, control stream for reports/keyframe requests), checked against the same scenarios.

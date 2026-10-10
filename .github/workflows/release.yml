@@ -52,7 +52,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config cmake meson ninja-build clang libclang-dev \
             libgtk-3-dev libasound2-dev libssl-dev libdbus-1-dev libabsl-dev \
-            libxkbcommon-dev libxcb1-dev dpkg-dev desktop-file-utils
+            libxkbcommon-dev libxcb1-dev dpkg-dev desktop-file-utils nasm
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal && rustup default stable
       - name: Build tarball and Debian package
@@ -67,6 +67,7 @@ jobs:
           sudo apt-get install -y ./dist/deb/*.deb
           ldd /usr/bin/tinline | tee dist/linux-libraries.txt
           ! grep -q 'not found' dist/linux-libraries.txt
+          ! grep -q 'libaom' dist/linux-libraries.txt
       - uses: actions/upload-artifact@v4
         with:
           name: linux-release
@@ -95,7 +96,7 @@ jobs:
       - name: Install native build dependencies and Android SDK
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build pkg-config clang libclang-dev
+          sudo apt-get install -y build-essential cmake ninja-build pkg-config clang libclang-dev nasm
           sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
       - name: Install Rust and cargo-ndk
         run: |
@@ -103,6 +104,11 @@ jobs:
           rustup default stable
           rustup target add aarch64-linux-android x86_64-linux-android
           cargo install cargo-ndk --version 4.1.2 --locked
+      - name: Build static libaom per ABI (pinned, sha256-verified source)
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+          python3 scripts/build_libaom.py --target aarch64-linux-android
+          python3 scripts/build_libaom.py --target x86_64-linux-android
       - name: Restore release keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
