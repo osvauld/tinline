@@ -131,6 +131,18 @@ it as a relay URL) is dropped and the device kept, like a bad hint in a hello.
 so every receiver converges on the same list. Carried in optional `devices` fields of
 `CallHello` and `Accept` (omitted from the wire when absent).
 
+Pushed (P4, decision U8): whenever the install's set of device keys changes (a device linked,
+unlinked, seen via own-device sync, or this install restored with a new key) it re-signs the list
+and sends `Devices { list }` as the first message of a connection on the calls ALPN to every
+contact it neither blocks nor is blocked by; answered `DevicesTaken` (whether or not the list was
+kept) or, by a receiver that blocks the sender, with its `Notice`. Queued per contact
+(`list_outbox`, local), retried with backoff (2..60 s) and after every start; each attempt sends
+the current list. A new contact is sent the list too when the install has more than one device.
+A relay-only change is not pushed (PROVISIONAL (coordinator)). The receiver keeps a list only if
+it verifies for the DID it names, is `newer` than the one held, and its `seq` is at most one day
+(`MAX_LIST_SEQ_AHEAD_MS`, PROVISIONAL (coordinator)) ahead of the receiver's clock; the same
+bound applies to lists in calls and in own-device sync.
+
 ### Cancel
 
 `Cancel { reason }`, reason one of `answered_elsewhere | declined_elsewhere | caller_hangup`.
