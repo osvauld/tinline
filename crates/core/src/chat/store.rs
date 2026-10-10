@@ -40,6 +40,11 @@ pub struct ShardMeta {
     pub n_messages: u32,
     /// Set once the day was compacted into a snapshot blob and its vault rows dropped.
     pub closed: Option<ClosedRef>,
+    /// Our writer IDs in this day as of `vv` (`Shard::own_writers`): which ops the contact must
+    /// hold before the day is delivered, without loading the shard (P10b). Empty in a meta from
+    /// before P10b: then only our current writer ID is known.
+    #[serde(default)]
+    pub own: Vec<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
