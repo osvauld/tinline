@@ -85,3 +85,16 @@ instead of reporting via the event; passes 3/3 alone; link code untouched by pha
   session was dialled by the lower key (P7 finding 2).
 - Flakes: `link_expiry::an_expired_qr_is_refused`; `link.rs` unlink pair (P7 finding 4).
 - Docs: `docs/chat.md`, `docs/protocol.md` not updated for P8/P9.
+
+## Design and acceptance tests (2026-10-10)
+
+- UI design canvas (user asked for UI, not system diagrams): https://claude.ai/artifact/KS9HUDfQzRFX9tpayTt76a
+  Android boards: Groups, Group info, Removal, Chat request, Blocking, Privacy (calls permission,
+  address changes, lost contact); Desktop: group chat, Hosting, asked-to-host, contact panel.
+  Choices made in the design and not yet decided by the user: declined chat requests are shown as
+  "declined"; a blocked member's group messages show collapsed.
+- R1a (`fix/r1a`): real-node acceptance tests for rotation and visible blocking, ignored until the
+  features exist. R1b (`rot/r1b`): silent-block model rewritten to visible blocking; superseded
+  group-sim tests removed or rewritten.
+- Cleanup: 31 merged rot-*/fix-* worktrees removed (branches kept). `agent-*` worktrees belong to
+  other sessions (some dirty) and were left alone.
