@@ -16,6 +16,8 @@ use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::src::lib as d;
 use rav1e::prelude::*;
 
+pub mod media;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("encoder config: {0}")]
