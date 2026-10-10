@@ -98,6 +98,14 @@ decision but says "not accepted" — wording/shape of the notice is open (sectio
 - K1 restore stall for legacy device-key-signed history: accept history per message, not
   all-or-nothing (section 12 Q1 option b).
 
+**U11 (user, 2026-10-10) — D01/D02: signed frontier (option A).** A post is kept if its signed
+frontier predates the removal, in every delivery order. Honest offline/concurrent posts survive.
+Accepted cost: a removed member can backdate posts by citing an old frontier (D02; W2-F
+finding 6 applies the same to a removed admin's ops). Implication (W2-F finding 4): for this to
+help under U7, hosts must accept a removed member's upload of posts whose frontier predates
+the removal (section 11 Q8 -> yes). Open: bound that upload (count cap or a cut-off) so a
+removed member cannot keep injecting backdated posts indefinitely?
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
