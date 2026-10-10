@@ -1,0 +1,11 @@
+[package]
+name = "video"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+# Add "asm" to both codecs once nasm is installed (5-10x faster on x86).
+rav1e = { version = "0.8", default-features = false, features = ["threading"] }
+rav1d = { version = "1.1", default-features = false, features = ["bitdepth_8"] }
