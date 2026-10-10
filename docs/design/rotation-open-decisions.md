@@ -184,7 +184,9 @@ address changes (backstop for modified open-source builds). The signed block not
 a deletion request: the blocked person's app deletes our contact entry (address, tokens, device
 list). Honoured by the shipped app; not enforceable against modified builds, and they still know
 our DID. DECIDED (user): the deletion request removes the contact entry only; their chat history
-with us stays (read-only). Is it always sent with a block, or a separate choice in the block dialog?
+with us stays (read-only). DECIDED (user): always sent with every block (no checkbox). Consequence: after an unblock the other
+person must re-add us (scan QR / ticket) because their contact entry for us is gone; the unblock
+notice only clears their "blocked you" state on the kept chat history.
 
 **U21 (user, 2026-10-10) — group calls are relayed through one call host, never a member mesh.**
 Members connect only to the selected call host (keeps U7: no member learns another member's
