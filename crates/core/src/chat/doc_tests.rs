@@ -17,7 +17,7 @@ fn msg(id: &str, author: &str, at: i64, text: &str) -> MsgRec {
 }
 
 fn ctx(signer: &str, device: u8, live: bool) -> Ctx {
-    Ctx { signer_did: signer.into(), signer_peer: peer_id(&dev(device), &doc_name("p", DAY)), now_ms: NOON, live, history: None, keys: vec![("A".into(), dev(1)), ("B".into(), dev(2))] }
+    Ctx { signer_did: signer.into(), signer_peer: peer_id(&dev(device), &doc_name("p", DAY)), now_ms: NOON, live, history: None, keys: vec![("A".into(), dev(1)), ("B".into(), dev(2))], hide_unverified: None }
 }
 
 fn shard(device: u8) -> Shard {
@@ -249,4 +249,80 @@ fn signed_messages_do_not_replay_across_days_or_pairs() {
         set_field(m, "m1", "sig", &sig);
     });
     assert_eq!(wrong_day.apply_remote(&u, &c), Err(Reject::BadSignature));
+}
+
+/// A history snapshot from B (the contact) as `chat_apply_history` judges it: per message.
+fn per_message_ctx() -> Ctx {
+    let mut c = history_ctx();
+    c.hide_unverified = Some("B".into());
+    c
+}
+
+#[test]
+fn one_unverifiable_message_of_the_contact_does_not_block_the_rest_of_a_snapshot() {
+    // B wrote b1 with a device key we never learned (5); A answered (a1), then B wrote b2 with
+    // its known key (2). Each change builds on the previous ones.
+    let b_old = Shard::new("p", DAY, &dev(5));
+    b_old.add_message(&msg("b1", "B", NOON, "old key"), &sec(5)).unwrap();
+    let a = Shard::load("p", DAY, &dev(1), Some(&b_old.snapshot()), &[]).unwrap();
+    a.add_message(&msg("a1", "A", NOON + 1, "reply"), &sec(1)).unwrap();
+    let b = Shard::load("p", DAY, &dev(2), Some(&a.snapshot()), &[]).unwrap();
+    b.add_message(&msg("b2", "B", NOON + 2, "new key"), &sec(2)).unwrap();
+    let snap = b.snapshot();
+    // All-or-nothing: the one bad message rejects everything.
+    let mut strict = shard(3);
+    assert_eq!(strict.apply_remote(&snap, &history_ctx()), Err(Reject::BadSignature));
+    assert!(strict.messages().unwrap().is_empty());
+    // Per message: a1 and b2 are accepted, b1's ops are kept but it stays hidden.
+    let mut recv = shard(3);
+    let r = recv.apply_remote(&snap, &per_message_ctx()).unwrap();
+    assert_eq!(r.added, vec!["a1".to_string(), "b2".to_string()]);
+    assert_eq!(r.hidden, vec!["b1".to_string()]);
+    assert_eq!(recv.messages().unwrap().keys().collect::<Vec<_>>(), vec!["a1", "b2"]);
+    assert!(recv.hidden.contains("b1"));
+    // A replay changes nothing and reveals nothing.
+    assert!(recv.apply_remote(&snap, &per_message_ctx()).unwrap().is_empty());
+    assert_eq!(recv.messages().unwrap().len(), 2);
+    // Reloaded with its hidden set (as `ShardMeta::hidden` persists it): still hidden.
+    let mut back = Shard::load("p", DAY, &dev(3), Some(&recv.snapshot()), &[]).unwrap();
+    back.hidden = recv.hidden.clone();
+    assert_eq!(back.messages().unwrap().len(), 2);
+    // A later change to b1 that still does not verify keeps it hidden, not rejected.
+    let u = b_old.edit("b1", "old key, edited", NOON + 5, &sec(5)).unwrap();
+    let r = back.apply_remote(&u, &per_message_ctx()).unwrap();
+    assert!(r.added.is_empty() && r.changed.is_empty());
+    assert_eq!(r.hidden, vec!["b1".to_string()]);
+    // Once b1 carries a signature by a key we know, it shows, reported as added.
+    let u = b.edit("b1", "signed again", NOON + 10, &sec(2)).unwrap();
+    let r = back.apply_remote(&u, &per_message_ctx()).unwrap();
+    assert_eq!(r.added, vec!["b1".to_string()]);
+    assert!(back.hidden.is_empty());
+    assert_eq!(back.messages().unwrap()["b1"].text, "signed again");
+}
+
+#[test]
+fn per_message_judging_never_hides_our_messages_or_a_forged_change() {
+    // A message "by A" (the receiver) that does not verify still rejects the whole snapshot.
+    let evil = shard(2);
+    evil.add_message(&msg("f1", "A", NOON, "A says pay B"), &sec(2)).unwrap();
+    let mut fresh = shard(1);
+    assert_eq!(fresh.apply_remote(&evil.snapshot(), &per_message_ctx()), Err(Reject::BadSignature));
+    assert!(fresh.messages().unwrap().is_empty() && fresh.hidden.is_empty());
+    // A forged change to a message of B's that we accepted still rejects: a verified message is
+    // never replaced or hidden.
+    let b = shard(2);
+    b.add_message(&msg("b1", "B", NOON, "real"), &sec(2)).unwrap();
+    let mut victim = shard(1);
+    victim.apply_remote(&b.snapshot(), &per_message_ctx()).unwrap();
+    let u = forge(&victim, 77, |m| set_field(m, "b1", "text", "forged"));
+    assert_eq!(victim.apply_remote(&u, &per_message_ctx()), Err(Reject::BadSignature));
+    assert_eq!(victim.messages().unwrap()["b1"].text, "real");
+    assert!(victim.hidden.is_empty());
+    // Live batches are never judged per message, whatever the context says.
+    let mut live = shard(1);
+    let u = forge(&shard(9), peer_id(&dev(2), &doc_name("p", DAY)), |m| put(m, "b9", "B", NOON, "x"));
+    let mut c = ctx("B", 2, true);
+    c.hide_unverified = Some("B".into());
+    assert_eq!(live.apply_remote(&u, &c), Err(Reject::BadSignature));
+    assert!(live.hidden.is_empty());
 }

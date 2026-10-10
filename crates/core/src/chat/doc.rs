@@ -5,7 +5,7 @@
 //! deterministically from its own content and the receiver's copy of the same doc: the
 //! receiver imports it into a scratch fork and checks what changed (see `Shard::apply_remote`).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use loro::{ExportMode, LoroDoc, LoroMap, LoroValue, VersionVector};
 use serde::{Deserialize, Serialize};
@@ -216,12 +216,14 @@ pub enum Reject {
 pub struct Applied {
     pub added: Vec<String>,
     pub changed: Vec<String>,
+    /// New messages kept hidden: their signature did not verify (see `Ctx::hide_unverified`).
+    pub hidden: Vec<String>,
 }
 
 impl Applied {
     #[cfg(test)]
     pub fn is_empty(&self) -> bool {
-        self.added.is_empty() && self.changed.is_empty()
+        self.added.is_empty() && self.changed.is_empty() && self.hidden.is_empty()
     }
 }
 
@@ -239,6 +241,12 @@ pub struct Ctx {
     /// Attested device keys by DID: whoever authored a new or changed message must have signed
     /// it with one of these. (For our own DID: our own devices.)
     pub keys: Vec<(String, [u8; 32])>,
+    /// Only for history (a vouched snapshot, own-device sync): a message by this DID (the
+    /// contact) that is new to us, or still hidden, and whose signature does not verify against
+    /// `keys` (e.g. signed by a device key of theirs we never learned) is kept hidden instead of
+    /// failing the whole batch. Its ops are imported, since later ops may build on them, but
+    /// `Shard::messages` never returns it. Anything else that does not verify still fails it.
+    pub hide_unverified: Option<String>,
 }
 
 fn read_i64(v: &LoroValue) -> Option<i64> {
@@ -327,6 +335,9 @@ pub struct Shard {
     doc: LoroDoc,
     name: String,
     pub peer: u64,
+    /// Messages in the doc whose signature we could not verify (`Ctx::hide_unverified`). Not
+    /// part of the doc: persisted next to it (`ShardMeta::hidden`).
+    pub hidden: BTreeSet<String>,
 }
 
 impl Shard {
@@ -335,7 +346,7 @@ impl Shard {
         let peer = peer_id(device, &name);
         let doc = LoroDoc::new();
         doc.set_peer_id(peer).expect("peer id");
-        Self { day: day.to_string(), doc, name, peer }
+        Self { day: day.to_string(), doc, name, peer, hidden: BTreeSet::new() }
     }
 
     /// Rebuilds a shard from its snapshot and the updates appended since.
@@ -373,8 +384,11 @@ impl Shard {
         self.doc.export(ExportMode::Snapshot).expect("snapshot export")
     }
 
+    /// The messages we accepted: every message in the doc but the hidden ones.
     pub fn messages(&self) -> Result<BTreeMap<String, MsgRec>, Reject> {
-        read_messages(&self.doc)
+        let mut all = read_messages(&self.doc)?;
+        all.retain(|id, _| !self.hidden.contains(id));
+        Ok(all)
     }
 
     fn msgs_map(&self) -> LoroMap {
@@ -474,7 +488,7 @@ impl Shard {
 
     /// Validates `update` against this shard and, if it is acceptable in every respect,
     /// imports it. On any `Err` nothing was imported. The verdict depends only on the batch
-    /// and this shard's content, never on arrival order.
+    /// and this shard's content (hidden messages included), never on arrival order.
     pub fn apply_remote(&mut self, update: &[u8], ctx: &Ctx) -> Result<Applied, Reject> {
         let history = ctx.history.is_some();
         let meta = LoroDoc::decode_import_blob_meta(update, true).map_err(|_| Reject::Undecodable)?;
@@ -500,7 +514,7 @@ impl Shard {
         if !grew {
             return Ok(Applied::default());
         }
-        let before = self.messages()?;
+        let before = read_messages(&self.doc)?;
         let after = read_messages(&scratch)?;
         let lo = day_start(&self.day).ok_or(Reject::OutOfRange)? - HOUR_MS;
         let hi = lo + DAY_MS + 2 * HOUR_MS;
@@ -547,18 +561,34 @@ impl Shard {
             }
         }
         // Every new or changed message must be signed by its author's attested device, bound to
-        // this very doc. This is what makes history snapshots safe to take from a peer.
+        // this very doc. This is what makes history snapshots safe to take from a peer. History
+        // is judged per message: one of the contact's that we cannot verify stays hidden.
+        let mut hidden = self.hidden.clone();
         for new in after.values() {
             if before.get(&new.id) == Some(new) {
                 continue;
             }
             let signed = ctx.keys.iter().any(|(did, key)| *did == new.author && verify_msg(key, &self.name, new));
-            if !signed {
+            let id = &new.id;
+            if signed {
+                // A hidden message now verifies (e.g. signed again with a key we know): it is
+                // new to whoever reads this shard.
+                if hidden.remove(id) {
+                    applied.changed.retain(|c| c != id);
+                    applied.added.push(id.clone());
+                }
+            } else if history && ctx.hide_unverified.as_deref() == Some(new.author.as_str()) && (!before.contains_key(id) || hidden.contains(id)) {
+                hidden.insert(id.clone());
+                applied.added.retain(|a| a != id);
+                applied.changed.retain(|c| c != id);
+                applied.hidden.push(id.clone());
+            } else {
                 return Err(Reject::BadSignature);
             }
         }
         // Accepted: apply to the real doc.
         self.doc.import(update).map_err(|_| Reject::Undecodable)?;
+        self.hidden = hidden;
         Ok(applied)
     }
 }

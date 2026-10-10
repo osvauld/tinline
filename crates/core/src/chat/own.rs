@@ -143,9 +143,15 @@ impl Inner {
                 live: false,
                 history: Some(did.clone()),
                 keys,
+                // The contact's messages are judged one by one (one we cannot verify, e.g. signed
+                // by a key of theirs only the relaying device knew, stays hidden); ours never.
+                hide_unverified: (!self.is_self_did(&did)).then(|| did.clone()),
             };
             match shard.apply_remote(update, &ctx) {
                 Ok(applied) => {
+                    if !applied.hidden.is_empty() {
+                        self.log(format!("own-device batch for {doc}: hid {} (signature does not verify)", applied.hidden.join(", ")));
+                    }
                     if shard.vv() == before {
                         None
                     } else {
