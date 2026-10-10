@@ -106,6 +106,15 @@ help under U7, hosts must accept a removed member's upload of posts whose fronti
 the removal (section 11 Q8 -> yes). Open: bound that upload (count cap or a cut-off) so a
 removed member cannot keep injecting backdated posts indefinitely?
 
+**U12 (user, 2026-10-10) — hosts rotate after a member removal, announced, not immediate.**
+After a member is removed, every host announces an upcoming rotation of its group endpoint
+(signed, to remaining members only) and performs it after a delay. After the rotation the
+removed member holds only dead host addresses. The host reconnects members itself (section 9
+Q6), so members need not do anything. Coordinator note: the delay doubles as the U11 upload
+cut-off — the removed member's pre-removal posts are accepted until the hosts rotate, then it
+cannot reach them. Open: delay length; batch several removals into one rotation; does a
+member removal also rotate members' own group endpoints (W2-F says unnecessary under U7)?
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
