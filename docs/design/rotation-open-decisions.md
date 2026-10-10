@@ -330,6 +330,8 @@ defer? Coordinator lean: fix 1 and 2 now; they are small, user-visible and rotat
 them happen constantly. 3–5 depend on G-KEYS/G-HISTORY and the verified-flag policy (§4.1).
 Also: should a DID-attested key seen on a live session be accepted for verifying history when
 the stored device list lacks it? (root of bug 1)
+**DECIDED (user, 2026-10-10): yes** — P1 verifies history with the live session's DID-attested
+key as well (fixes-phase1 `cb65ee7`, `chat/engine.rs` `chat_apply_history`).
 
 ## 6. Group chat (D01–D06)
 Source: `docs/group-policy-options.md` §6 (G-B; 23 tests over all delivery orders). D06's
