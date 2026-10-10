@@ -89,6 +89,15 @@ removal does, and that removal is announced to the removed member). Consequences
 candidate-policy G-BLOCK); today's explicit `Reject` (`node.rs:2168-2177`) is closer to the
 decision but says "not accepted" — wording/shape of the notice is open (section 8b).
 
+**U10 (user, 2026-10-10).**
+- Removal threshold: 3 flags, kept simple (no withdrawal/expiry variants). Whether the 3 must be
+  distinct admins and what happens in groups with fewer than 3 admins: confirm (section 11).
+- Every device verifies the signature of every message and every op (flags, grants, host
+  permits, rotation notes, device lists) — no trust in hosts or relays. Invariant.
+- When a host is appointed, every member is updated (signed host permit delivered to all).
+- K1 restore stall for legacy device-key-signed history: accept history per message, not
+  all-or-nothing (section 12 Q1 option b).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
