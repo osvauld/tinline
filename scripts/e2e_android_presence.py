@@ -18,6 +18,8 @@ Checks, phone UI checked from the conversation header ("Connected · direct" / "
   L0/L1 contact carol + her call on the phone BEFORE linking -> both reach X2 when linked
   L2 X2 renames carol -> the phone shows the alias
   L3 X2 removes carol -> she and her calls are gone on the phone
+  L4-L6 dave added on X2 after linking -> on the phone; the phone chats with him; his call on both
+  L7 X2 renames itself -> the phone shows the new name
 Screenshots go to artifacts/presence-phone/. Needs the debug APK installed and target/release/p2p-peer.
 """
 import argparse, re, shutil, sys, tempfile, time
@@ -134,6 +136,27 @@ def main():
         c.ok("L3 X2's removal reaches the phone", until(lambda: phone("contacts", r"(contact name=bob)", 5) and not phone("contacts", rf"(did={carol})", 3), 60))
         c.ok("L3 carol's calls gone on the phone", until(lambda: not phone("history", r"(history peer=(?:carol|Caroline))", 3), 60))
         z.quit(); peers.remove(z)
+
+        # --- a contact added on X2 after the link: on the phone, chat and calls from there --
+        dv = Peer(tmp / "dave"); peers.append(dv)
+        dv.last("init dave")
+        dave = dv.last("whoami").split()[2]
+        x2.last("add " + dv.last("ticket").split(" ", 2)[-1])
+        c.ok("L4 dave (added on X2) is on the phone", until(lambda: phone("contacts", rf"(did={dave})", 5), 60) is not None)
+        c.ok("L4 dave has us", until(lambda: any(did in l for l in dv.cmd("contacts")), 60))
+        phone("chat_send", r"chat_sent id=(\S+)", who="dave", text="hi-dave-from-phone")
+        c.ok("L5 dave got the phone's message", until(lambda: "hi-dave-from-phone" in peer_msgs(dv, did), 60))
+        dv.last(f"send {did} hi-back-from-dave")
+        c.ok("L5 the phone has dave's reply", until(lambda: "hi-back-from-dave" in phone_msgs("dave"), 60))
+        c.ok("L5 X2 has both", until(lambda: {"hi-dave-from-phone", "hi-back-from-dave"} <= set(peer_msgs(x2, dave)), 60))
+        dcall = dv.last(f"call {did}").split()[-1]
+        time.sleep(5)
+        dv.last(f"hangup {dcall}")
+        c.ok("L6 dave's call on the phone", until(lambda: phone("history", r"(history peer=dave)", 5), 60) is not None)
+        c.ok("L6 dave's call on X2", until(lambda: any(l.startswith(f"REC {dcall}") for l in x2.cmd("recents")), 60))
+        x2.last("label Work-laptop")
+        c.ok("L7 X2's new name on the phone", until(lambda: phone("devices", r"(device label=Work-laptop)", 5), 60) is not None)
+        dv.quit(); peers.remove(dv)
 
         # --- presence ---------------------------------------------------------------------
         ok, s = timed(lambda: phone_online("bob"), 60)
