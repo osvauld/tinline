@@ -58,7 +58,7 @@ with chat datagrams. Each connection carries:
 | Channel | Direction | Content |
 |---|---|---|
 | Bidirectional stream 0 | both | `GroupCallMsg` control frames (§3), framed as in `proto` |
-| Datagrams | member → H | `[0x01 type][audio datagram]` |
+| Datagrams | member → H | `[0x01 type][audio datagram]`, or `[0x03 type][level u8]` while gated (§1.4; never forwarded) |
 | Datagrams | H → member | `[0x02 type][slot u8][audio datagram]` |
 
 `audio datagram` is exactly the 1:1 wire `[seq u32][level u8][opus]`. Each sender keeps its own
@@ -100,18 +100,35 @@ with chat datagrams. Each connection carries:
   decoder state belongs to one sender.
 - Every 20 ms the client pulls one frame from each live receiver, sums them in i32, and applies
   soft limiting before converting back to i16. At most K streams are mixed.
-- **Forwarding gaps.** When a sender leaves S, its stream stops abruptly. A gap longer than
-  1 s already causes a resync (`RESYNC_AHEAD = 50`, `audio/src/lib.rs:24, 468`) [V].
-  Shorter gaps run through PLC and then silence (`MAX_CONCEAL = 5`, `:29`) [V].
-  - [A] The current target logic may treat these gaps as underruns and raise latency
-    (`update_target`, `:501-508`).
-  - Proposed fix: the mixer stops pulling a slot after 100 ms with no datagrams and resets
-    that slot's receiver. This needs a small `audio` change, tested as GC-U01.
-- **Sender silence gate [P, Q4].** A client stops sending after 300 ms below the speech
-  threshold, and resumes at the first frame above it. It keeps one keep-level datagram every
-  500 ms so H's averages stay current. This cuts H's downlink from N−1 streams to about the
-  number of active speakers, and it saves battery on every phone. It is new behaviour: today
-  DTX is off and the sender sends continuously (`audio/src/lib.rs:304`) [V].
+- **Forwarding gaps — measured (GC-U01, `21bfd7a`) [V].** On today's `Receiver` every gap
+  ratchets latency: the underrun branch in `pull()` adds 20 ms to the base target per gap and
+  decays only 5 ms per 3 s (`update_target` merely applies it), so speaker switching pins the
+  target at 200 ms. A pause with continuous `seq` inflates the jitter estimate by gap/16. Short
+  `seq` jumps (< 1 s) are waited on and played as lost frames, adding the gap to latency. After
+  `MAX_CONCEAL` PLC frames output drops to hard zero (click), and resume clicks mid-frame.
+  Resetting the receiver after 100 ms alone does not fix the clicks.
+- **Decided (G6-D1, user 2026-10-10): H signals slot changes explicitly; receivers do not
+  guess from missing packets.**
+  - H sends `Active { gen: u32, slots: [u8] }` on the control stream (§3) whenever S changes.
+    Not signed: H already controls the media (U14). `gen` increases; stale ones are ignored.
+  - On a slot leaving `slots`: that slot's receiver plays one faded-out PLC frame, then goes
+    idle (no pulls, no underrun accounting) and is reset. Fallback if the control message is
+    late: a slot with no datagram for 200 ms is treated the same way.
+  - On a slot entering `slots`: the receiver starts fresh at its last learned network-jitter
+    target (not the gap-inflated one), and the first frame fades in. The gap never counts as
+    an underrun or as jitter.
+  - The 1:1 receiver behaviour (continuous stream, underrun adaptation) is unchanged; the
+    idle/resume path is only entered by the group mixer.
+- **Sender silence gate (G6-D1, answers Q4 = yes, group calls only).** A client stops sending
+  Opus after 300 ms below the speech threshold, and resumes at the first frame above it. `seq`
+  keeps counting one per 20 ms frame of wall time while gated, so a resumed stream shows a jump
+  equal to the pause. While gated it sends a level-only datagram `[0x03 type][level u8]` every
+  500 ms. H uses these only for speaker selection and **never forwards them**. This cuts H's
+  downlink to about the number of active speakers and saves battery on every phone. New
+  behaviour: today DTX is off and the sender sends continuously (`audio/src/lib.rs:304`) [V].
+- **Scope (user, 2026-10-10): G6 is audio only.** Video (the `video-spike` AV1 work: 0.5–2 Mbps
+  per stream vs ~76 kbps audio) would go through the same call host but is a later phase that
+  needs a desktop host; a phone host cannot forward more than one or two video streams.
 
 ## 2. Call host selection
 
@@ -414,8 +431,8 @@ reusing `multi_host.rs` fixtures). Each refusal case asserts byte-identical stat
 
 | ID | Case |
 |---|---|
-| GC-U01 | Per-slot `Receiver` with forwarding gaps of 100 ms to 2 s: latency target does not ratchet up; no clicks |
-| GC-U02 | Mixer with K = 3 tones (`Tone`, `estimate_frequency`, `audio/src/lib.rs:74, 102`): all frequencies present; no clipping |
+| GC-U01 | Per-slot `Receiver` with forwarding gaps of 100 ms to 2 s: latency target does not ratchet up; no clicks; driven through the G6-D1 idle/resume path (§1.4) |
+| GC-U02 | Mixer with K = 3 tones (`mix`, Goertzel `amplitude_at` in `group_call_tests.rs`): all frequencies present; no clipping |
 
 **On-device tests.** Use `scripts/buildlock.py` for builds. The phone is **ZD22257P6G**.
 
