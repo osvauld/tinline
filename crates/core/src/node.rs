@@ -410,6 +410,8 @@ pub(crate) struct Shared {
     pub(crate) committed: bool,
     /// The account doc of own-device sync; open while unlocked.
     pub(crate) acc: Option<Arc<crate::sync::accdoc::AccDoc>>,
+    /// The call log of own-device sync, beside the account doc; open while unlocked.
+    pub(crate) calls: Option<Arc<crate::sync::callsdoc::CallsDoc>>,
 }
 
 pub(crate) struct Acct {
@@ -1440,6 +1442,7 @@ impl Shared {
             device_label: None,
             committed: true,
             acc: None,
+            calls: None,
         }
     }
 
@@ -1472,6 +1475,7 @@ impl Shared {
         self.history = Arc::new(History::empty());
         self.device_label = None;
         self.acc = None;
+        self.calls = None;
         if let Some(a) = self.acct.as_mut() {
             a.backing = None;
         }

@@ -718,3 +718,21 @@ fn presence_follows_the_contact_going_offline_and_back() {
     a.node.watch_presence(b.did.clone());
     eventually(60, "A sees B online again", || a.node.contact_online(b.did.clone()));
 }
+
+#[test]
+fn a_call_after_linking_reaches_the_other_device_from_the_calls_doc() {
+    let (a, b1, b2) = trio("cl");
+    b2.node.stop();
+    let call = a.node.call(b1.did.clone()).unwrap();
+    let id = incoming(&b1, 30);
+    assert_eq!(id, call.call_id);
+    b1.node.decline(id.clone()).unwrap();
+    ended(&b1, &id, 20);
+    // b2 was away for the call; it gets the record when it is back.
+    online(&b2.node);
+    b2.node.sync_now_for_test();
+    eventually(60, "b2 has the call", || b2.node.recent_calls(10).iter().any(|r| r.call_id == id));
+    // Removing the contact on b2 drops its calls on b1 as well.
+    b2.node.remove_contact(a.did.clone()).unwrap();
+    eventually(60, "b1 dropped the contact's calls", || !b1.node.recent_calls(10).iter().any(|r| r.peer_did == a.did));
+}
