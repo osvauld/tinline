@@ -17,7 +17,7 @@ android {
         targetSdk = 36
         // Play needs a higher code on every upload; scripts/build_android.py --bundle passes the commit count.
         versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
-        versionName = (findProperty("versionName") as String?) ?: "0.1.0"
+        versionName = (findProperty("versionName") as String?) ?: "0.1.31"
         // Only ship ABIs that have libp2pcore: libraries like JNA bring 32-bit/mips copies, which
         // would make Play offer the app to devices where the core can't load.
         ndk { abiFilters += (findProperty("abis") as String? ?: "x86_64,arm64-v8a").split(",").map { it.trim() } }
