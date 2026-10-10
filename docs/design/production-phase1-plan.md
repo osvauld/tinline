@@ -52,3 +52,28 @@ cause of the restore problems (a restore changes the device key; the DID never c
 Signing of other records by the device key (account doc, own-device sync, attestations; see
 `rotation-author-key-trace.md` R3–R5) beyond chat messages: later packet.
 Ticks regression and verified flag after restore (section 5 bugs 4, 5).
+
+## Progress (coordinator)
+
+On `fixes-phase1`: P2 `41b27cb`, P1 `cb65ee7`, P7 `eb8c6d3`, o1 test flip `4e05da3`, P8 `ce4be54`,
+P9 `8b8b907`. Suite at `8b8b907`: core 160 + proto 46; one failure `link_expiry::an_expired_qr_is_refused`
+(pre-existing timing flake: `link_new_scan` returned `Err("that code has expired")` directly
+instead of reporting via the event; passes 3/3 alone; link code untouched by phase 1).
+
+## Follow-ups found during phase 1
+
+- P9b (recommended before release, P8 format not shipped yet so it can change freely):
+  bind the writer value / writer ID into the DID-signed bytes so vouched history snapshots
+  cannot put ops under a not-yet-seen sibling writer ID (P9 open question 1); and tie the device
+  value to a stable install ID instead of the device key, so endpoint rotation does not change
+  the writer ID (P9 Q3).
+- DID-signature requirement cut-off (P8 Q1): coordinator lean = per contact, once that contact
+  has sent DID-signed versions. Needs user decision.
+- Pre-existing bug: removing a contact deletes the conversation but keeps peer/counter state;
+  re-adding and writing the same day reuses (peer, counter) the contact already holds -> silent
+  Loro divergence (P9 Q4). Needs a test + fix packet.
+- Pre-existing: `chat_open` does not retry when `chat.redb` is still locked (P9 Q4).
+- Possible product race: a crashed device may not reconnect for ~20 s when its stale self-sync
+  session was dialled by the lower key (P7 finding 2).
+- Flakes: `link_expiry::an_expired_qr_is_refused`; `link.rs` unlink pair (P7 finding 4).
+- Docs: `docs/chat.md`, `docs/protocol.md` not updated for P8/P9.
