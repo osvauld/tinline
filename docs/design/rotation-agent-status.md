@@ -94,6 +94,7 @@ User decisions are collected in `rotation-open-decisions.md`.
 
 Wave 2 regression at 198c1f1: proto 180, p2pcore 134, group-sim 113 — all passing. Log `/tmp/claude-1000/rotation-coord-w2.log`.
 After W2-H/M/F/D (f87511a): proto 197, p2pcore 141 (one flaky pre-existing `link.rs` self-probe failure on first run; passed 3/3 in isolation and in a full `--no-fail-fast` rerun), group-sim 163.
+After W2-U/C (a9ae06d): proto 215, p2pcore 149 (148 + known `link.rs` self-probe flake, passes alone; fails in most full parallel runs — worth a fix on dev), group-sim 173.
 
 ## Wave 2 packet board (user decisions U1–U6, 2026-10-10)
 
