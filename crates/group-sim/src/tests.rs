@@ -14,6 +14,8 @@ mod reachability;
 mod persistence;
 #[path = "policy_candidates.rs"]
 mod policy_candidates;
+#[path = "block_in_group.rs"]
+mod block_in_group;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {
