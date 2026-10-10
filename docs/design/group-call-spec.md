@@ -494,3 +494,43 @@ reusing `multi_host.rs` fixtures). Each refusal case asserts byte-identical stat
     relays.
     *Recommended:* allow it for launch, prefer hosts with direct paths, and measure with
     GC-D07. Revisit when the user's own relay lands.
+
+## 9. Findings from the test-first pass (2026-10-10)
+
+Tests: `crates/audio/src/group_call_tests.rs` (GC-U01/U02, 29 audio tests pass, `1737dfc`) and
+`crates/group-sim/src/group_call.rs` (GC-S01..S17, 19 pass, 2 ignored, `0c5b56d`).
+
+**Built (GA-F1, `1737dfc`).** `Receiver::new_group()` / `set_active(bool)` / `is_idle()` with a
+200 ms no-datagram fallback (`SLOT_FALLBACK_MS`), faded spurt end and fade-in on resume; in the
+group path a gap only counts as an underrun if audio resumes before the spurt ends.
+`Sender::encode_group` returns `Opus` or `Gated { level }` (gate after 300 ms at or above
+`SPEECH_LEVEL = 50` −dBov, `seq` keeps counting, encoder reset on reopen). 1:1 `Receiver::new()`
+and `Sender::encode` are unchanged. Measured: target 60 ms and latency equal to gap-free in every
+gap case (before: up to 200 ms target, 250 ms latency).
+
+**Corrections to this spec** (not yet folded into the sections above):
+1. A 12-entry `Roster` exceeds the 4 KiB `MAX_CONTROL` in both JSON and `sign_blob` shape (§6
+   claim is wrong). Raise the limit or encode entries compactly.
+2. 32 kbps saves about 21 % (150 B / 60 kbps per stream on the wire), not 24 % (§4).
+3. Removed members must not be sent a `CallStart`: its call-host record carries H's (possibly
+   rotated) group endpoint. Chat hosts skip removed members when relaying it.
+4. A forced member rotation mid-call leaves ≥ 2 s without audio (Join rate limit 1 per 2 s).
+5. A new speaker is forwarded only ~380 ms after starting when S is full (300 ms average +
+   200 ms hysteresis); the first words are lost. Proposed: forward a new speaker at once in a
+   temporary extra slot (K+1), let hysteresis decide after 200 ms. Awaiting user decision.
+6. §4's one-speaker gated numbers mix two cases: a remote speaker costs 1 stream down and N−2
+   up at H; N−1 up only when H's own user is the speaker.
+
+**Gaps the simulation had to fill** (`ASSUMPTIONS` in `group_call.rs`; to be decided here):
+G1 `CallStart` ships next to a call-host record (note + permit); G2 `Join` carries the joiner's
+signed group note (a call host that is not a chat host has no endpoint directory); G3 average
+uses only datagrams inside the 300 ms window; G4 dominance cap counts only with ≥ K other
+eligible senders; G5 "newer Join" = larger signed `issued_ms`; G6 the busy/load tie-break is a
+no-op (no load field); G7 no tier for a phone at 30–49 % on battery or a desktop on battery or
+metered (ranked last); G8 "starter itself" cannot distinguish two devices of one DID; G9 a
+takeover `CallStart` lists the previous backups minus the new host; G10 members reject a
+`Roster` listing a removed DID. Also: the pre-join "blocked person is in this call" warning
+(Q6) has no roster to read, since non-participants never receive one.
+
+**Still ignored:** GC-S01b (no signed device-list fixture), GC-S07b (packet-size plausibility
+needs a real encoder; GC-D09). On-device GC-D01..D09 wait for the call layer.
