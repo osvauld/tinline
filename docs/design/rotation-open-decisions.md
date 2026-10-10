@@ -264,3 +264,57 @@ From G-C (group persistence harness S01–S07, `docs/group-persistence-contract.
 7. S05: whole-shard eviction with an identity manifest — right granularity? Advertise availability
    or only answer on request?
 8. Re-verify every stored proof on each open, or trust AEAD + an integrity check?
+
+## 7. Wave 2 questions (W2-R, W2-Q, W2-B, W2-G — after U1–U6)
+
+Source files: `crates/group-sim/src/{host_relay,chat_request,block_in_group}.rs`,
+`crates/proto/tests/rotation_silent_block.rs`, `crates/core/tests/block_characterization.rs`.
+
+**Findings that constrain choices (tested):**
+- Hiding a blocked member's group messages must be display-only. Filtering them out of the
+  replica strands other members' replies forever (W2-G test 5).
+- A blocking *host* that withholds relay strands everyone's later replies, including its own;
+  refusing the member is de-facto removal and is observable — conflicts with U5 (W2-G 7, 8).
+- With today's single device key, every group post leaks the private endpoint to the blocked
+  member (W2-G 10). U4 (separate author key) is mandatory for blocking to work.
+- Silent block of a chat request is indistinguishable from offline/unanswered (W2-Q 8).
+- A mnemonic clone with a higher seq replaces the honest group endpoint at host and members
+  (W2-R 11) — shared-mnemonic limitation.
+- Blocking today (`remove_contact`, `node.rs:984`) is NOT silent: calls get an explicit
+  `Reject` within 1 s (offline: ~20 s timeout), `fetch_older_history` fails fast (offline:
+  timeout), ticket redemption is refused while online. Plain chat delivery looks offline (W2-B).
+
+**Blocking (G-BLOCK)**
+1. Blocker's view of a blocked member's group messages: shown, hidden, or collapsed
+   placeholder (with or without author)? Coordinator lean: collapsed, display-only.
+2. May a blocking host withhold relay? Lean: no — neutral relay only.
+3. If you block the group's host, keep syncing through it?
+4. Unblock: re-include at next rotation, or send current endpoint immediately?
+5. Linked-device sync race: a sibling that rotates before the block syncs leaks its new
+   endpoint until the next rotation (measured 110 ticks at interval 100). Accept, delay
+   rotation notes until sync settles, or bound sync lag?
+6. A note delivered just before the block stays usable until the next periodic rotation. OK?
+7. Forwarding: an unblocked contact can forward a note to a blocked one. Accept (traffic is
+   dropped anyway) or recipient-bind notes?
+8. How production makes a drop look offline: refuse the QUIC connection from the blocked
+   key, or hold until timeout? (Receiver may learn the DID only after the handshake.)
+9. Do "Unavailable" mode and ticket redemption by a blocked DID go silent too?
+
+**Chat requests (U3)**
+10. Production sealing: HPKE (RFC 9180) or a Noise pattern? (Sim uses blake3 + AES-GCM.)
+11. Decline: explicit signed refusal, or silent (looks like block/offline)?
+12. Two messages (requester's private endpoint inside the request — target sees it before
+    deciding) or three (endpoint only after accept)? Lean: three.
+13. Stale request key: drop silently, or reply with a current-key hint (reveals online)?
+14. Rate limit: host, target, or both; values?
+15. Replay set: expire requests by `sent_at` so it can be pruned? Answer timeout value?
+16. Accept that the host learns who requested whom and when (metadata) for launch?
+17. Requests dropped while blocked: may they be accepted after unblock if redelivered?
+
+**Host relay of rotation notes (U1)**
+18. Catch-up: host sends full note history or latest only; receivers accept seq gaps? (Q3)
+19. Same-seq fork: keep-first (members diverge) or freeze (any phrase holder can DoS)? (Q4)
+20. Key notes per (DID, audience) or per device path? Per-DID makes two honest linked
+    devices look like a fork.
+21. Host silently dropping notes is undetected; is a host liveness/censorship check in scope?
+22. No group path left: show explicit "lost contact — re-share" in the app?
