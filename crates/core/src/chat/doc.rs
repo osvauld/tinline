@@ -4,10 +4,14 @@
 //! A device writes only with its own Loro peer id (`peer_id`), and a received batch is judged
 //! deterministically from its own content and the receiver's copy of the same doc: the
 //! receiver imports it into a scratch fork and checks what changed (see `Shard::apply_remote`).
+//!
+//! Every message version is signed twice (P8): by the author's DID key (`did_sig`, carried as
+//! the commit message of the change that wrote it, see `DidSigNote`) and, for apps that predate
+//! it, by the writing device's key (the record's `sig`). Receivers prefer the DID signature.
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use loro::{ExportMode, LoroDoc, LoroMap, LoroValue, VersionVector};
+use loro::{CommitOptions, ExportMode, LoroDoc, LoroMap, LoroValue, VersionVector};
 use serde::{Deserialize, Serialize};
 
 pub const HOUR_MS: i64 = 3_600_000;
@@ -121,6 +125,8 @@ pub struct MsgRec {
 }
 
 const MSG_SIG_DOMAIN: &[u8] = b"tinline-chat-msg-v1";
+/// The DID-key signature of a message version covers the same bytes under its own domain.
+const MSG_DID_SIG_DOMAIN: &[u8] = b"tinline-chat-msg-did-v1";
 
 fn put_str(v: &mut Vec<u8>, s: &str) {
     v.extend_from_slice(&(s.len() as u32).to_be_bytes());
@@ -130,7 +136,16 @@ fn put_str(v: &mut Vec<u8>, s: &str) {
 /// Canonical bytes a message signature covers: doc id (so a message cannot be replayed into
 /// another day or pair), id, author, time, reply, file and the current text/edit/delete state.
 pub fn msg_sig_input(doc: &str, m: &MsgRec) -> Vec<u8> {
-    let mut v = MSG_SIG_DOMAIN.to_vec();
+    sig_input(MSG_SIG_DOMAIN, doc, m)
+}
+
+/// What the author's DID key signs: `msg_sig_input` under `MSG_DID_SIG_DOMAIN`.
+pub fn msg_did_sig_input(doc: &str, m: &MsgRec) -> Vec<u8> {
+    sig_input(MSG_DID_SIG_DOMAIN, doc, m)
+}
+
+fn sig_input(domain: &[u8], doc: &str, m: &MsgRec) -> Vec<u8> {
+    let mut v = domain.to_vec();
     put_str(&mut v, doc);
     put_str(&mut v, &m.id);
     put_str(&mut v, &m.author);
@@ -176,6 +191,100 @@ pub fn sign_msg(secret: &[u8; 32], doc: &str, m: &MsgRec) -> Vec<u8> {
 pub fn verify_msg(device: &[u8; 32], doc: &str, m: &MsgRec) -> bool {
     let Ok(sig) = <[u8; 64]>::try_from(m.sig.as_slice()) else { return false };
     cryptography::signature::verify(device, &msg_sig_input(doc, m), &sig)
+}
+
+pub fn sign_msg_did(account: &identity::Identity, doc: &str, m: &MsgRec) -> Vec<u8> {
+    account.sign(&msg_did_sig_input(doc, m)).to_vec()
+}
+
+/// `did_sig` is a signature of this version of `m` by the key of its author's DID.
+pub fn verify_msg_did(doc: &str, m: &MsgRec, did_sig: &[u8]) -> bool {
+    let Some(key) = identity::public_key_from_did(&m.author) else { return false };
+    let Ok(sig) = <[u8; 64]>::try_from(did_sig) else { return false };
+    identity::verify(&key, &msg_did_sig_input(doc, m), &sig)
+}
+
+/// The DID signature of one message version, as the commit message of the change that wrote
+/// it. Not a field of the record: an app that predates it rejects a record with any unknown
+/// field (`read_messages`), but it ignores commit messages, and Loro keeps them through
+/// updates, snapshots and relays. `sig` names the version: it is that version's device
+/// signature (Ed25519 is deterministic, so a version and its device key fix it).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct DidSigNote {
+    /// Always `DID_SIG_NOTE`.
+    t: String,
+    id: String,
+    /// Hex of the record's `sig` at this version.
+    sig: String,
+    /// Hex of the DID signature (`sign_msg_did`).
+    did_sig: String,
+}
+
+const DID_SIG_NOTE: &str = "tinline-did-sig-v1";
+/// A commit message longer than this is no note of ours.
+const MAX_NOTE: usize = 512;
+
+/// The commit message carrying `did_sig` for the version of message `id` whose device
+/// signature is `sig`.
+pub fn did_sig_note(id: &str, sig: &[u8], did_sig: &[u8]) -> String {
+    let n = DidSigNote { t: DID_SIG_NOTE.into(), id: id.into(), sig: hex::encode(sig), did_sig: hex::encode(did_sig) };
+    serde_json::to_string(&n).expect("note json")
+}
+
+fn parse_note(msg: &str) -> Option<DidSigNote> {
+    if msg.len() > MAX_NOTE {
+        return None;
+    }
+    serde_json::from_str::<DidSigNote>(msg).ok().filter(|n| n.t == DID_SIG_NOTE)
+}
+
+/// The DID signatures that the changes of `doc` beyond `from` carry, by (message id, hex of the
+/// version's device signature). A new or changed version was written by one of these changes.
+fn did_sigs_since(doc: &LoroDoc, from: &VersionVector) -> BTreeMap<(String, String), Vec<Vec<u8>>> {
+    let mut out: BTreeMap<(String, String), Vec<Vec<u8>>> = BTreeMap::new();
+    for (peer, end) in doc.oplog_vv().iter() {
+        let mut at = from.get(peer).copied().unwrap_or(0);
+        while at < *end {
+            let Some(ch) = doc.get_change(loro::ID::new(*peer, at)) else { break };
+            if let Some(n) = ch.message.as_deref().and_then(parse_note) {
+                // Junk hex counts as a signature that does not verify, not as no signature.
+                out.entry((n.id, n.sig)).or_default().push(hex::decode(&n.did_sig).unwrap_or_default());
+            }
+            let next = ch.id.counter + ch.len as i32;
+            if next <= at {
+                break;
+            }
+            at = next;
+        }
+    }
+    out
+}
+
+/// Who writes a message version and with which keys.
+pub struct Writer {
+    /// This install's device secret: the record's `sig`, still produced for apps that predate
+    /// DID signatures (and verified by them).
+    device: [u8; 32],
+    /// The account; `None` writes as such an app did (device signature only; tests).
+    account: Option<identity::Identity>,
+}
+
+impl Writer {
+    pub fn new(device: [u8; 32], account: identity::Identity) -> Self {
+        Self { device, account: Some(account) }
+    }
+
+    /// Device signature only, as before P8.
+    pub fn legacy(device: [u8; 32]) -> Self {
+        Self { device, account: None }
+    }
+
+    /// The device signature for the record and the commit message to write it with.
+    fn sign(&self, doc: &str, m: &MsgRec) -> (String, Option<String>) {
+        let sig = sign_msg(&self.device, doc, m);
+        let note = self.account.as_ref().map(|a| did_sig_note(&m.id, &sig, &sign_msg_did(a, doc, m)));
+        (hex::encode(sig), note)
+    }
 }
 
 impl MsgRec {
@@ -395,18 +504,21 @@ impl Shard {
         self.doc.get_map("messages")
     }
 
-    /// Runs a local write and returns the update it produced.
-    fn write(&self, f: impl FnOnce(&LoroMap) -> loro::LoroResult<()>) -> Result<Vec<u8>, Reject> {
+    /// Runs a local write as one change with the commit message `note`, and returns the update
+    /// it produced.
+    fn write(&self, note: Option<&str>, f: impl FnOnce(&LoroMap) -> loro::LoroResult<()>) -> Result<Vec<u8>, Reject> {
         let before = self.vv();
         f(&self.msgs_map()).map_err(|_| Reject::Structure)?;
-        self.doc.commit();
+        let mut opts = CommitOptions::new();
+        opts.commit_msg = note.map(Into::into);
+        self.doc.commit_with(opts);
         self.doc.export(ExportMode::updates(&before)).map_err(|_| Reject::Undecodable)
     }
 
     /// Adds a message; returns the update to persist and push.
-    pub fn add_message(&self, m: &MsgRec, secret: &[u8; 32]) -> Result<Vec<u8>, Reject> {
-        let sig = hex::encode(sign_msg(secret, &self.name, m));
-        self.write(|map| {
+    pub fn add_message(&self, m: &MsgRec, w: &Writer) -> Result<Vec<u8>, Reject> {
+        let (sig, note) = w.sign(&self.name, m);
+        self.write(note.as_deref(), |map| {
             let e = map.insert_container(&m.id, LoroMap::new())?;
             e.insert("id", m.id.as_str())?;
             e.insert("author", m.author.as_str())?;
@@ -431,12 +543,12 @@ impl Shard {
     }
 
     /// Re-signs `id` after `change` was applied to its record.
-    fn resign(&self, id: &str, secret: &[u8; 32], change: impl FnOnce(&mut MsgRec)) -> Result<Vec<u8>, Reject> {
+    fn resign(&self, id: &str, w: &Writer, change: impl FnOnce(&mut MsgRec)) -> Result<Vec<u8>, Reject> {
         let e = self.entry(id)?;
         let mut rec = self.messages()?.remove(id).ok_or(Reject::Structure)?;
         change(&mut rec);
-        let sig = hex::encode(sign_msg(secret, &self.name, &rec));
-        self.write(|_| {
+        let (sig, note) = w.sign(&self.name, &rec);
+        self.write(note.as_deref(), |_| {
             e.insert("text", rec.text.as_str())?;
             e.insert("deleted", rec.deleted)?;
             e.insert("edited_at", rec.edited_at.unwrap_or(0))?;
@@ -445,15 +557,15 @@ impl Shard {
         })
     }
 
-    pub fn edit(&self, id: &str, text: &str, now_ms: i64, secret: &[u8; 32]) -> Result<Vec<u8>, Reject> {
-        self.resign(id, secret, |r| {
+    pub fn edit(&self, id: &str, text: &str, now_ms: i64, w: &Writer) -> Result<Vec<u8>, Reject> {
+        self.resign(id, w, |r| {
             r.text = text.to_string();
             r.edited_at = Some(now_ms);
         })
     }
 
-    pub fn delete(&self, id: &str, now_ms: i64, secret: &[u8; 32]) -> Result<Vec<u8>, Reject> {
-        self.resign(id, secret, |r| {
+    pub fn delete(&self, id: &str, now_ms: i64, w: &Writer) -> Result<Vec<u8>, Reject> {
+        self.resign(id, w, |r| {
             r.text = String::new();
             r.deleted = true;
             r.edited_at = Some(now_ms);
@@ -560,15 +672,22 @@ impl Shard {
                 Some(_) => {}
             }
         }
-        // Every new or changed message must be signed by its author's attested device, bound to
-        // this very doc. This is what makes history snapshots safe to take from a peer. History
-        // is judged per message: one of the contact's that we cannot verify stays hidden.
+        // Every new or changed message must be signed by its author, bound to this very doc. This
+        // is what makes history snapshots safe to take from a peer. A version that carries a DID
+        // signature is judged by it alone: it must verify against the author's DID, and a valid
+        // device signature never rescues it. Only a version without one (written by an app that
+        // predates them) is judged by the device signature against the attested `keys`.
+        // History is judged per message: one of the contact's that we cannot verify stays hidden.
+        let did_sigs = did_sigs_since(&scratch, &old_vv);
         let mut hidden = self.hidden.clone();
         for new in after.values() {
             if before.get(&new.id) == Some(new) {
                 continue;
             }
-            let signed = ctx.keys.iter().any(|(did, key)| *did == new.author && verify_msg(key, &self.name, new));
+            let signed = match did_sigs.get(&(new.id.clone(), hex::encode(&new.sig))) {
+                Some(sigs) => sigs.iter().all(|s| verify_msg_did(&self.name, new, s)),
+                None => ctx.keys.iter().any(|(did, key)| *did == new.author && verify_msg(key, &self.name, new)),
+            };
             let id = &new.id;
             if signed {
                 // A hidden message now verifies (e.g. signed again with a key we know): it is

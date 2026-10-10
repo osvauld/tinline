@@ -441,6 +441,9 @@ pub(crate) struct Inner {
     pub(crate) gate: Mutex<()>,
     /// Test knob: this many state writes fail. See `Node::fail_next_writes`.
     pub(crate) fail_writes: AtomicU32,
+    /// Test knob: write chat messages as a pre-P8 app does (device signature only). See
+    /// `Node::legacy_message_signing_for_test`.
+    pub(crate) legacy_msg_sigs: AtomicBool,
     /// Held while snapshotting and writing state, so writes land in the order taken. Always
     /// taken before `shared`, never while holding it.
     pub(crate) writing: Mutex<()>,
@@ -508,6 +511,7 @@ impl Node {
             accounts,
             gate: Mutex::new(()),
             fail_writes: AtomicU32::new(0),
+            legacy_msg_sigs: AtomicBool::new(false),
             writing: Mutex::new(()),
             events,
             shared: Mutex::new(shared),
@@ -1421,6 +1425,13 @@ impl Node {
     #[doc(hidden)]
     pub fn fail_next_writes(&self, n: u32) {
         self.inner.fail_writes.store(n, Ordering::SeqCst);
+    }
+
+    /// For tests: while on, this node writes chat messages (and edits, deletes) the way an app
+    /// from before DID-signed messages (P8) did: with the device-key signature only.
+    #[doc(hidden)]
+    pub fn legacy_message_signing_for_test(&self, on: bool) {
+        self.inner.legacy_msg_sigs.store(on, Ordering::SeqCst);
     }
 }
 

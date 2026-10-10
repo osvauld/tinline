@@ -1035,7 +1035,7 @@ impl Inner {
         let conv = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-            let update = shard.add_message(&rec, &me.profile.device_secret).map_err(|e| Error::Io(e.to_string()))?;
+            let update = shard.add_message(&rec, &self.chat_writer(&me)).map_err(|e| Error::Io(e.to_string()))?;
             let mut ops = vec![core.store.put_mc_op(&pair, &day, &rec.id, shard.my_counter())?, core.store.mi_op(&pair, &rec.id, &day)?];
             if !self.is_self_did(did) {
                 ops.push(core.store.out_op(&pair, &day, true)?);
@@ -1056,6 +1056,14 @@ impl Inner {
             }
         }
         Ok(m)
+    }
+
+    /// How this install signs the messages it writes: device key and DID key (P8).
+    pub(crate) fn chat_writer(&self, me: &Me) -> Writer {
+        if self.legacy_msg_sigs.load(Ordering::SeqCst) {
+            return Writer::legacy(me.profile.device_secret);
+        }
+        Writer::new(me.profile.device_secret, me.id.clone())
     }
 
     fn chat_after_local_write(self: &Arc<Self>, core: &Arc<ChatCore>, did: &str, day: &str) {
@@ -1090,9 +1098,9 @@ impl Inner {
                     if t.len() > MAX_TEXT {
                         return Err(Error::Protocol("message too long".into()));
                     }
-                    shard.edit(id, t, now_ms(), &me.profile.device_secret)
+                    shard.edit(id, t, now_ms(), &self.chat_writer(&me))
                 }
-                None => shard.delete(id, now_ms(), &me.profile.device_secret),
+                None => shard.delete(id, now_ms(), &self.chat_writer(&me)),
             }
             .map_err(|e| Error::Io(e.to_string()))?;
             let rec = shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?;
