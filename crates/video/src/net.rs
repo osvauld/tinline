@@ -214,7 +214,8 @@ impl SendState {
             let ended = g.done.load(Ordering::Relaxed);
             // An unfinished group whose stream died can take no more frames.
             lost_current |= ended && g.data.is_some();
-            !ended && !(g.data.is_none() && g.acked >= g.written)
+            let delivered = g.data.is_none() && g.acked >= g.written;
+            !ended && !delivered
         });
         if lost_current {
             self.tx.request_keyframe();

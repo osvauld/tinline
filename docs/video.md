@@ -65,7 +65,9 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   request -> new group; oversized frame / garbage headers / duplicate and old groups / too many
   groups / too much buffered; queueing reports lower the bitrate.
 - `cargo run -p video --release --features net --example net_loopback -- [frames] [w] [h]`:
-  libaom -> iroh loopback -> rav1d, capture-to-decoded latency.
+  libaom -> iroh loopback -> rav1d, capture-to-decoded latency. Laptop, 300 frames at 30 fps,
+  2 encoder threads, rate ramped to 2 Mbps: 640x360 p50 4.8 / p95 7.5 ms, 1280x720 p50 5.4 /
+  p95 15.7 ms; 0 decode errors, 0 resets.
 
 ## Codec benchmark (i7-1165G7, synthetic camera pattern, 30 fps)
 
