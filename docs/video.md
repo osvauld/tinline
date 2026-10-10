@@ -66,6 +66,23 @@ ran on the A53 cores and everything was 3-5x slower** (720p encode 50 ms, decode
 the app the encoder/decoder threads must get big cores (foreground app, high thread priority /
 Android performance hint), and we must measure that in-app.
 
+**In the app** (debug APK, Rust built in release; `DebugReceiver` `video_bench`, Tinline in the
+foreground, 147 frames, encode p50 / decode p50 ms). The app is in the `top-app` cpuset (all 8
+cores allowed), yet the scheduler keeps the codec's worker threads on the A53s; raising thread
+priority (-8) changes nothing. Pinning the creating thread to the fastest cores
+(`video::cpu::pin_to_fast_cores`, from `cpuinfo_max_freq`; workers inherit it) fixes it:
+
+| | 320x180 | 640x360 | 960x540 | 1280x720 |
+|---|---|---|---|---|
+| in app, 4 threads, unpinned | 6.7 / 2.3 | 14.8 / 4.9 | 22.6 / 7.9 | 33.3 / 12.5 |
+| in app, 4 threads, pinned to A73s | 3.1 / 1.0 | 6.3 / 2.1 | 11.4 / 3.5 | 18.5 / 5.4 |
+| in app, 2 threads, pinned | 5.0 / 2.1 | 7.2 / 3.1 | 13.2 / 5.1 | 21.8 / 7.8 |
+
+So calls pin the encode and decode threads to the fast cores (2 encoder threads are enough up
+to 540p). Linking rav1d into `libp2pcore.so` needs `-Wl,-Bsymbolic` (`crates/core/build.rs`):
+its assembly addresses Rust statics PC-relatively, which a shared library can't do for
+preemptible symbols.
+
 rav1e on the phone (big cores, 4 threads): 24 ms at 320x180, 79 ms at 640x360, 267 ms at
 720p, 4 frames held: confirms it is out.
 

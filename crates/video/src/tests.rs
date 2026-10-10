@@ -57,6 +57,7 @@ fn garbage_is_an_error_not_a_crash() {
     }
 }
 
+#[cfg(feature = "rav1e")]
 #[test]
 fn rav1e_holds_frames_back() {
     // Why rav1e is not the call encoder: even in low-latency mode it buffers frames.

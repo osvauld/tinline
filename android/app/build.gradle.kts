@@ -100,10 +100,17 @@ val rustInputs = files(
     fileTree(File(repoRoot, "crates")) { exclude("**/target/**") },
     File(repoRoot, "Cargo.toml"), File(repoRoot, "Cargo.lock"),
 )
+// Static libaom per ABI (video encoder), built by scripts/build_libaom.py; the video crate's
+// build.rs reads AOM_DIR_<target triple>.
+val aomRoot = findProperty("aomRoot") as String? ?: "${System.getProperty("user.home")}/build-cache/p2p_chat/libaom"
+val aomTag = "v3.14.1"
+val abiTriple = mapOf("arm64-v8a" to "aarch64-linux-android", "x86_64" to "x86_64-linux-android")
 val envMap = mapOf(
     "ANDROID_NDK_HOME" to ndkDir,
     "PATH" to "$cargoBin:${System.getenv("PATH")}",
-)
+) + rustAbis.mapNotNull { abiTriple[it] }.associate {
+    "AOM_DIR_${it.replace('-', '_')}" to "$aomRoot/install-$aomTag-$it"
+}
 
 val cargoNdkBuild = tasks.register<RustExec>("cargoNdkBuild") {
     workDir.set(repoRoot.absolutePath)

@@ -58,6 +58,16 @@ class DebugReceiver : BroadcastReceiver() {
                 testLog("status online=${s.online} relay=${s.relay} id=${s.endpointId}")
             }
             "lockstate" -> testLog("lockstate=${node.lockState()}")
+            "video_bench" -> {
+                // Codec timing inside the app process. `path` is relative to filesDir (push with
+                // run-as); `prio` is an android.os.Process thread priority (e.g. -8 = display),
+                // inherited by the encoder's worker threads; `pin` = fast cores only.
+                val path = i.getStringExtra("path")?.let { java.io.File(app.filesDir, it).absolutePath }
+                android.os.Process.setThreadPriority(i.getIntExtra("prio", 0))
+                val out = uniffi.p2pcore.videoBench(path, i.getIntExtra("frames", 89).toUInt(), i.getIntExtra("threads", 4).toUInt(), i.getBooleanExtra("pin", false))
+                out.lines().filter { it.isNotBlank() }.forEach { testLog("video_bench $it") }
+                testLog("video_bench done")
+            }
             "stats" -> app.calls.logStats()
             "avail" -> {
                 val on = i.getStringExtra("on") != "0"

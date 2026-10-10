@@ -4,14 +4,25 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+default = ["rav1e"]
+# rav1e only for comparison benchmarks/tests; the app builds without it.
+rav1e = ["dep:rav1e"]
+
 [dependencies]
 thiserror.workspace = true
+libc = "0.2"
 # "asm" needs nasm on x86 hosts (and when cross-building for the x86_64 emulator).
-rav1e = { version = "0.8", default-features = false, features = ["threading", "asm"] }
+rav1e = { version = "0.8", default-features = false, features = ["threading", "asm"], optional = true }
 # Git tag, not crates.io: the published 1.1.0 lacks src/arm/asm-offsets.h (ARM asm build fails).
 rav1d = { git = "https://github.com/memorysafety/rav1d", tag = "v1.1.0", default-features = false, features = ["bitdepth_8", "bitdepth_16", "asm"] }
 # (bitdepth_16 only because rav1d 1.1 links 16bpc asm symbols even without it.)
+# Shared libraries containing rav1d need -Wl,-Bsymbolic (see crates/core/build.rs).
 
 [build-dependencies]
 cc = "1"
 pkg-config = "0.3"
+
+[[example]]
+name = "delay"
+required-features = ["rav1e"]

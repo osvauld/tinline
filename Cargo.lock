@@ -6092,6 +6092,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uniffi",
+ "video",
  "zeroize",
 ]
 
@@ -9092,6 +9093,7 @@ name = "video"
 version = "0.1.31"
 dependencies = [
  "cc",
+ "libc",
  "pkg-config",
  "rav1d",
  "rav1e",
