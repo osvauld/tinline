@@ -605,7 +605,7 @@ impl Node {
         if label.is_empty() || label.chars().count() > 64 || label.chars().any(char::is_control) {
             return Err(Error::Protocol("a device name is 1-64 characters without control characters".into()));
         }
-        self.inner.me()?;
+        let me = self.inner.me()?;
         let db = {
             let s = self.inner.shared.lock();
             match s.acct.as_ref().and_then(|a| a.backing.clone()) {
@@ -617,7 +617,21 @@ impl Node {
         if let Some(db) = db {
             store::save_label(&db, &label)?;
         }
-        self.inner.shared.lock().device_label = Some(label);
+        // Our entry in the registry carries the name to the other devices.
+        let registered = {
+            let mut s = self.inner.shared.lock();
+            s.device_label = Some(label.clone());
+            match s.state.registry.iter_mut().find(|e| e.device == me.device) {
+                Some(e) if e.label != label => {
+                    e.label = label;
+                    true
+                }
+                _ => false,
+            }
+        };
+        if registered {
+            self.inner.persist_for(Some(me.epoch))?;
+        }
         Ok(())
     }
 

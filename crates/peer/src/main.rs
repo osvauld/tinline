@@ -740,6 +740,10 @@ fn link_serve(node: &Arc<Node>, o: &Opts, rx: mpsc::Receiver<Event>) -> Result<(
                 }
                 Ok("LISTED".into())
             }
+            ["label", text] => {
+                node.set_device_label(text.to_string()).map_err(|e| e.to_string())?;
+                Ok("LABELLED".into())
+            }
             ["unlink", dev] => {
                 node.unlink_device(dev.to_string(), Some(o.passphrase.clone())).map_err(|e| e.to_string())?;
                 Ok("UNLINKED".into())
