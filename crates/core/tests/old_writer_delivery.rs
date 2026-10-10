@@ -319,3 +319,30 @@ fn a_sibling_device_forwards_an_undelivered_message_of_an_unlinked_device() {
     eventually(60, "B2 shows m2 delivered", || ticks(&b2, &a.did, &m2) == DeliveryState::Delivered);
     assert!(!a.refused_chat() && !b2.refused_chat(), "nothing refused");
 }
+
+// A live push never carries an op the contact refuses for its 24 h live window. B holds an
+// undelivered message of ours sent 30 h ago under another writer ID (as relayed by a sibling;
+// nothing pushes it), then edits it live while its session with A is up. The batch holds the
+// old message's creation, so it goes out as a catch-up `Sync`, not a live `Push`: A refuses
+// nothing, the session stays up, and A gets the message with the edit.
+#[test]
+fn a_live_edit_does_not_push_an_old_undelivered_op_of_another_writer() {
+    let a = peer("p10b-l-a", true);
+    let b = peer("p10b-l-b", true);
+    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    let m1 = b.node.send_text(a.did.clone(), "m1".into(), None).unwrap().id;
+    eventually(60, "A holds m1", || has(&a, &b.did, &m1));
+    eventually(60, "B shows m1 delivered", || ticks(&b, &a.did, &m1) == DeliveryState::Delivered);
+    std::thread::sleep(Duration::from_secs(1));
+    let ended = |p: &Peer| p.logs.lock().unwrap().iter().filter(|l| l.contains("chat session with") && l.contains("ended")).count();
+    let (a_ended, b_ended) = (ended(&a), ended(&b));
+    let now_ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64;
+    let at = now_ms - 30 * 3600 * 1000;
+    let old = b.node.write_as_sibling_for_test(a.did.clone(), "old: from a sibling".into(), at).unwrap();
+    assert_ne!(creator(&b, &a.did, &old), b.node.writer_id_for_test().unwrap(), "another writer ID");
+    b.node.edit_message(a.did.clone(), old.clone(), "old: edited live".into()).unwrap();
+    eventually(60, "A holds the edited message", || all_msgs(&a, &b.did).iter().any(|m| m.id == old && m.text == "old: edited live"));
+    eventually(60, "B shows it delivered", || ticks(&b, &a.did, &old) == DeliveryState::Delivered);
+    assert!(!a.refused_chat(), "A refused nothing");
+    assert_eq!((ended(&a), ended(&b)), (a_ended, b_ended), "the session never restarted");
+}
