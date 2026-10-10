@@ -176,6 +176,16 @@ separate Remove action: the contact-level action is Block (keeps the contact, si
 notice, refusal with the blocked reason, Unblock available). "Remove" only means removing a member
 from a group (U9 flags). Today's `remove_contact` becomes Block. Answers section 15 Q1.
 
+**U20 (user, 2026-10-10) — the blocked person's app enforces the block, and a block can request
+deletion of our contact.** Two layers: (1) our shipped app on the blocked side honours the signed
+notice — stops sending and calling, disables the composer and call button, no background retries;
+(2) the blocker's devices still refuse anything that arrives and exclude the blocked person from
+address changes (backstop for modified open-source builds). The signed block notice may also carry
+a deletion request: the blocked person's app deletes our contact entry (address, tokens, device
+list). Honoured by the shipped app; not enforceable against modified builds, and they still know
+our DID. Open: does the deletion request also remove the chat history on their side, or only the
+contact entry? Is it always sent with a block, or a separate choice in the block dialog?
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
