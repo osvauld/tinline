@@ -115,6 +115,20 @@ cut-off — the removed member's pre-removal posts are accepted until the hosts 
 cannot reach them. Open: delay length; batch several removals into one rotation; does a
 member removal also rotate members' own group endpoints (W2-F says unnecessary under U7)?
 
+**U12 detail (user):** host rotation delay after a removal = 2 days. Refusal is immediate: from
+the removal on, the removed/blocked DID cannot send new messages or call. (Under U11, posts whose
+signed frontier predates the removal are still accepted until the hosts rotate.)
+
+**U13 (user, 2026-10-10) — separate capability tokens for messaging and calling.** Some contacts
+may only message; calling needs its own token. Today a contact grant exists with one capability
+`cap = "call"` (`crates/proto/src/lib.rs:34`, `:542`, checked at `:570`), 1-year TTL
+(`crates/core/src/node.rs:33`), renewed on answered calls (`node.rs:2753`), with a revocation
+set. Proposal to model: caps `message` and `call` as separate grants (or a cap set); the
+issuer is the only verifier, so revoking = issuer refuses (local), and blocking revokes both and
+sends the visible notice (U5 revised). Open: default for new ticket contacts (message+call?);
+contacts that came via a group chat request (U3) start message-only?; how a contact asks for /
+is granted call permission; does the existing `call` grant migrate to message+call?
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
