@@ -214,6 +214,8 @@ impl Node {
         self.inner.handle.spawn(async move {
             inner.send_unlinked(dev, relay).await;
         });
+        // U8: contacts stop dialling the unlinked install.
+        self.inner.devices_changed();
         if let Some(ev) = self.inner.link_events() {
             ev.on_devices_changed();
         }

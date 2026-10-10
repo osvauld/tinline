@@ -809,6 +809,15 @@ pub enum Msg {
         grants: Vec<SignedGrant>,
     },
     TokensTaken,
+    /// Our DID-signed `DeviceList` (`sign_device_list`), pushed to a contact whenever our set of
+    /// installs changes (U8). DID-signed, so the connection proves nothing more; the receiver keeps
+    /// it only if it verifies for that DID, is newer than the one held and within
+    /// `MAX_LIST_SEQ_AHEAD_MS` of its clock. Answered `DevicesTaken` either way (the sender stops
+    /// retrying), or with the receiver's block notice.
+    Devices {
+        list: SignedBlob,
+    },
+    DevicesTaken,
 }
 
 /// The `Reject` reason a contact gets when it calls without being allowed to (no call token, or
@@ -935,6 +944,23 @@ pub fn verify_device_list(blob: &SignedBlob, expected_did: &str) -> Result<Devic
         }
     }
     Ok(list)
+}
+
+/// PROVISIONAL (coordinator): a receiver refuses a device list whose `seq` (unix ms chosen by the
+/// signer) is more than this far ahead of its own clock, so a phrase holder cannot pin contacts
+/// with a huge seq (W2-D finding: `u64::MAX` pinned them forever). A list up to a day ahead still
+/// wins until then.
+pub const MAX_LIST_SEQ_AHEAD_MS: u64 = 24 * 3600 * 1000;
+
+/// Whether a list `seq` is acceptable at the receiver's `now_ms` (see `MAX_LIST_SEQ_AHEAD_MS`).
+pub fn list_seq_in_bounds(seq: u64, now_ms: u64) -> bool {
+    seq <= now_ms.saturating_add(MAX_LIST_SEQ_AHEAD_MS)
+}
+
+/// The claims of a device list WITHOUT checking anything: only to learn which DID it names, so the
+/// caller can then `verify_device_list` against that DID.
+pub fn peek_device_list(blob: &SignedBlob) -> Option<DeviceList> {
+    serde_json::from_slice(&dec(&blob.payload).ok()?).ok()
 }
 
 /// Whether `a` should replace `b`. Both must already have passed `verify_device_list` for the

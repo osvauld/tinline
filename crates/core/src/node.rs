@@ -484,6 +484,7 @@ pub(crate) struct Inner {
     pub(crate) block: crate::block::BlockRt,
     /// Token delivery (P6, `caps.rs`).
     pub(crate) caps: crate::caps::CapsRt,
+    pub(crate) devlist: crate::devlist::DevlistRt,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -551,6 +552,7 @@ impl Node {
             link: Default::default(),
             block: Default::default(),
             caps: Default::default(),
+            devlist: Default::default(),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -1387,7 +1389,9 @@ impl Node {
                 None => reg.push(OwnDevice { device, attestation, label: String::new(), removed: false, last_seen: now(), relay: None }),
             }
         }
-        self.inner.persist_for(Some(me.epoch))
+        self.inner.persist_for(Some(me.epoch))?;
+        self.inner.devices_changed();
+        Ok(())
     }
 
     /// For tests: offers `list_json` (a `SignedBlob`) to the contact `did` as if it had arrived
@@ -1892,6 +1896,9 @@ impl Inner {
         self.selfsync_started();
         self.notices_started();
         self.tokens_started();
+        // After a restore (new device key) or a change made while we were offline: tell contacts.
+        self.devices_changed();
+        self.lists_started();
         self.sync_kick();
 
         let this = self.clone();
@@ -2088,6 +2095,7 @@ impl Inner {
         // We scanned their ticket ourselves: that is the one way back from a block.
         let contact = self.save_contact(me.epoch, new, relay, true, policy.call).await?;
         self.log(format!("contact {} added", contact.name));
+        self.list_for_new_contact(&contact.did);
         Ok(contact)
     }
 
@@ -2212,6 +2220,7 @@ impl Inner {
                         ctrl.finish();
                         drop(permit);
                         self.log(format!("contact {} added us", contact.name));
+                        self.list_for_new_contact(&contact.did);
                         // Let the joiner read the welcome and close first.
                         let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
                     }
@@ -2248,6 +2257,12 @@ impl Inner {
             Msg::Tokens { grants } => {
                 drop(permit);
                 self.tokens_incoming(ctrl, grants).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
+            Msg::Devices { list } => {
+                drop(permit);
+                self.devices_incoming(ctrl, list).await?;
                 let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                 Ok(())
             }
@@ -3340,11 +3355,15 @@ fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_b
     Ok(())
 }
 
-/// Replaces the contact's devices by `blob`'s if it verifies for their DID and is newer than the
-/// list we hold. Hints are kept for devices we knew; a device we did not know resets `verified`.
-/// Returns whether anything changed.
+/// Replaces the contact's devices by `blob`'s if it verifies for their DID, is newer than the
+/// list we hold and its seq is not too far ahead of our clock (`proto::list_seq_in_bounds`,
+/// PROVISIONAL (coordinator)). Hints are kept for devices we knew; a device we did not know resets
+/// `verified`. Returns whether anything changed.
 pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedBlob) -> bool {
     let Ok(list) = proto::verify_device_list(blob, &c.did) else { return false };
+    if !proto::list_seq_in_bounds(list.seq, now_ms()) {
+        return false;
+    }
     if c.device_list.as_ref().is_some_and(|old| !proto::newer(blob, old)) {
         return false;
     }
@@ -3431,6 +3450,8 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::NoticeTaken => "NoticeTaken",
         Msg::Tokens { .. } => "Tokens",
         Msg::TokensTaken => "TokensTaken",
+        Msg::Devices { .. } => "Devices",
+        Msg::DevicesTaken => "DevicesTaken",
     }
 }
 
