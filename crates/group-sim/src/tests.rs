@@ -24,6 +24,8 @@ mod chat_request;
 mod host_only;
 #[path = "multi_host.rs"]
 mod multi_host;
+#[path = "flags.rs"]
+mod flags;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {
