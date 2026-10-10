@@ -400,7 +400,12 @@ Loro silently and permanently diverges on a writer-ID collision — a collision 
 3. Writer IDs let members count a DID's devices and per-device activity. Accept, or require hiding?
 4. Host directory keyed per device (random slot) or per DID? (= section 7 Q20)
 5. Backup host / host succession needed for launch? Host outage stalls the whole group.
-6. Host overlap window after rotation: keep old endpoint listening? How long?
+6. ~~Host overlap window~~ DECIDED (user, 2026-10-10): after the host rotates, the HOST connects
+   to the members itself (at their current group endpoints) and hands them its new endpoint;
+   members do not need to find the host. No overlap window on the host side.
+   Remaining gap: host and member both rotated while apart (W2-H test 7). Coordinator
+   proposal: a member keeps its old group endpoint until the host acknowledges its new note,
+   so the host can always still reach it.
 7. Offline write queue while host is down: unbounded, refuse new, drop oldest? Value? UI?
 8. Chat-request encryption key: per-DID key published via the host (as modelled) or rotating
    request keys (W2-Q)?
