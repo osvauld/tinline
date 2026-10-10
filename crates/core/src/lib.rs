@@ -11,6 +11,7 @@ mod node;
 mod rekey;
 mod store;
 mod sync;
+mod version;
 #[cfg(test)]
 mod account_tests;
 mod vault;

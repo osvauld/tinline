@@ -1,4 +1,4 @@
-//! A Loro doc that own devices sync whole (`tinline/self/1`), named on the wire: the account doc
+//! A Loro doc that own devices sync whole (`tinline/self/2`), named on the wire: the account doc
 //! (`accdoc.rs`) and the call log (`callsdoc.rs`). Load, snapshot, and export/import by version.
 
 use loro::{ExportMode, LoroDoc, LoroValue, VersionVector};
@@ -35,10 +35,20 @@ pub(super) fn text(v: &LoroValue) -> Option<String> {
     }
 }
 
+/// The Loro peer id of `device` for the own-device doc `name`. (Chat docs do not use this: they
+/// are written under writer IDs, `chat::doc::writer_id`.)
+fn peer_id(device: &[u8; 32], name: &str) -> u64 {
+    let mut h = blake3::Hasher::new();
+    h.update(b"tinline-loro-peer-v1");
+    h.update(device);
+    h.update(name.as_bytes());
+    u64::from_le_bytes(h.finalize().as_bytes()[..8].try_into().unwrap())
+}
+
 impl Doc {
     /// `name` is the doc's wire name; the Loro peer id is derived from it and the device.
     pub fn new(device: &[u8; 32], name: &str) -> Self {
-        let peer = crate::chat::doc::peer_id(device, name);
+        let peer = peer_id(device, name);
         let doc = LoroDoc::new();
         doc.set_peer_id(peer).expect("peer id");
         Self { doc, peer }

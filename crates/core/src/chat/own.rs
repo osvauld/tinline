@@ -1,4 +1,4 @@
-//! Chats between a person's own devices (task 34g). The pieces the `tinline/self/1` session
+//! Chats between a person's own devices (task 34g). The pieces the `tinline/self/2` session
 //! (`sync/engine.rs`) calls: which shards we offer, exporting and validating a batch relayed by
 //! another own device, read cursors, and who may fetch blobs. See `docs/chat.md` "Own devices".
 
@@ -46,19 +46,6 @@ impl Inner {
         };
         let sessions = self.selfsync.sessions.lock();
         list.into_iter().map(|(d, r)| (d, r, sessions.contains_key(&d))).collect()
-    }
-
-    /// Attested device keys by DID for judging messages that did not come straight from their
-    /// author: all our own devices (removed ones too, their old messages stay valid) and every
-    /// device we know of the contact.
-    pub(crate) fn chat_keys(&self, me: &Me, contact: &str) -> Vec<(String, [u8; 32])> {
-        let s = self.shared.lock();
-        let mut keys = vec![(me.id.did().to_string(), me.device)];
-        keys.extend(s.state.registry.iter().map(|e| (me.id.did().to_string(), e.device)));
-        if let Some(c) = s.state.contacts.iter().find(|c| c.did == contact) {
-            keys.extend(c.devices.iter().map(|d| (c.did.clone(), d.device)));
-        }
-        keys
     }
 
     /// `pair` -> the DID of that conversation's other side (ourselves for "You"), if it is a
@@ -109,7 +96,7 @@ impl Inner {
         if theirs.partial_cmp(&mine).is_some_and(|o| o != std::cmp::Ordering::Less) {
             return Ok(None);
         }
-        self.chat_shard(&core, &me, &pair, &day).await?;
+        self.chat_shard(&core, &pair, &day).await?;
         let out = core.shards.lock().get(&(pair, day)).and_then(|s| s.export_all_since(theirs).map(|u| (u, s.vv().encode())));
         match out {
             Some((u, _)) if u.len() > MAX_OWN_BATCH => {
@@ -122,39 +109,22 @@ impl Inner {
 
     /// Judges and stores a batch of `doc` relayed by another own device (its signature was
     /// checked by the caller). The batch may hold ops of any of our devices and of the contact's
-    /// devices; each new or changed message must be signed by its author's attested device (the
-    /// rules of a vouched history snapshot), authors are only us and the contact, and the usual
-    /// per-field rules hold. `Err` = rejected, nothing stored.
+    /// devices; every op must be proven by its author's DID signature under the author's writer
+    /// ID (the rules of a vouched history snapshot), authors are only us and the contact, and the
+    /// usual per-field rules hold. `Err` = rejected, nothing stored.
     pub(crate) async fn chat_own_apply(self: &Arc<Self>, doc: &str, update: &[u8]) -> Result<(), Error> {
         let (me, core) = (self.me()?, self.chat_core()?);
         let (pair, day) = parse_doc(doc).ok_or_else(|| Error::Protocol("bad doc".into()))?;
         // Not (or no longer) a conversation of ours, e.g. a contact removed meanwhile: nothing to do.
         let Some(did) = self.pair_owner(&me, &pair) else { return Ok(()) };
-        self.chat_shard(&core, &me, &pair, &day).await?;
-        let keys = self.chat_keys(&me, &did);
+        self.chat_shard(&core, &pair, &day).await?;
         let committed = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
-            let ctx = Ctx {
-                signer_did: me.id.did().to_string(),
-                signer_peer: 0,
-                now_ms: now_ms() as i64,
-                live: false,
-                history: Some(did.clone()),
-                keys,
-                // The contact's messages are judged one by one (one we cannot verify, e.g. signed
-                // by a key of theirs only the relaying device knew, stays hidden); ours never.
-                hide_unverified: (!self.is_self_did(&did)).then(|| did.clone()),
-                known_writers: core.store.known_writers()?,
-                did_since: core.store.did_since(&[&did, me.id.did()]),
-            };
+            let ctx = Ctx { signer_did: me.id.did().to_string(), now_ms: now_ms() as i64, live: false, history: Some(did.clone()) };
             match shard.apply_remote(update, &ctx) {
                 Ok(applied) => {
-                    self.chat_note_writers(&core, &applied, None)?;
-                    if !applied.hidden.is_empty() {
-                        self.log(format!("own-device batch for {doc}: hid {} (signature does not verify)", applied.hidden.join(", ")));
-                    }
                     if shard.vv() == before {
                         None
                     } else {
@@ -167,7 +137,7 @@ impl Inner {
                                 if *added
                                     && rec.author == me.id.did()
                                     && let Some((peer, c)) = shard.creator_end(&rec.id)
-                                    && !shard.is_own_peer(peer)
+                                    && peer != shard.peer()
                                 {
                                     ops.push(core.store.put_mo_op(&pair, &day, &rec.id, peer, c)?);
                                 }
@@ -278,7 +248,7 @@ impl Inner {
             if day < from {
                 continue;
             }
-            self.chat_shard(core, me, pair, &day).await?;
+            self.chat_shard(core, pair, &day).await?;
             let msgs = core.shards.lock().get(&(pair.to_string(), day)).map(|s| s.messages());
             if let Some(Ok(msgs)) = msgs {
                 n += msgs.values().filter(|m| m.author != me.id.did() && !m.deleted && m.at > cursor).count() as u32;

@@ -7,17 +7,13 @@
 //! shard/{pair}/{day}/snap        bytes      Loro snapshot (open shards)
 //! shard/{pair}/{day}/u/{seq}     bytes      validated update batches since the snapshot
 //! ack/{pair}/{day}               bytes      the peer's last acknowledged version vector
-//! mc/{pair}/{day}/{id}           u32 BE     our op counter after creating that message
-//! mo/{pair}/{day}/{id}           u64+i32 BE our message written on another own device: (its peer, op count)
+//! mo/{pair}/{day}/{id}           u64+i32 BE our message: (writer ID it was created under, op count after)
 //! out/{pair}/{day}               empty      this day has ops of ours the peer has not acked
 //! blob/{hash}                    BlobInfo   hash -> key (+ name, size, mime, state)
 //! ref/{hash}/{pair}              empty      this conversation may read that blob
 //! pb/{pair}/{hash}               empty      the blobs a conversation uses (for deletion)
 //! snapcache/{pair}/{day}         SnapRef    a snapshot blob we made for a peer's history request
 //! set/auto_download              u64 BE
-//! wid/{writer id hex}            empty      a peer id seen proven as a writer ID (any doc)
-//! w9/{device hex}                empty      that contact device sent a note with a device value
-//! req/{did}                      i64 BE     P9b: that DID DID-signs; earliest version time seen
 //! ```
 
 use serde::{Deserialize, Serialize};
@@ -44,9 +40,6 @@ pub struct ShardMeta {
     pub n_messages: u32,
     /// Set once the day was compacted into a snapshot blob and its vault rows dropped.
     pub closed: Option<ClosedRef>,
-    /// Messages in the doc we keep hidden: their signature did not verify (`Shard::hidden`).
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub hidden: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -225,29 +218,8 @@ impl ChatStore {
         self.db.put_op(&format!("ack/{pair}/{day}"), vv).map_err(io)
     }
 
-    pub fn mc(&self, pair: &str, day: &str, id: &str) -> Result<Option<i32>, Error> {
-        Ok(self
-            .db
-            .get(&format!("mc/{pair}/{day}/{id}"))
-            .map_err(io)?
-            .and_then(|b| b.try_into().ok().map(i32::from_be_bytes)))
-    }
-
-    /// Counters of all our messages of one day.
-    pub fn mcs(&self, pair: &str, day: &str) -> Result<Vec<(String, i32)>, Error> {
-        let prefix = format!("mc/{pair}/{day}/");
-        Ok(self
-            .db
-            .scan(&prefix)
-            .map_err(io)?
-            .into_iter()
-            .filter_map(|(k, v)| Some((k.strip_prefix(&prefix)?.to_string(), i32::from_be_bytes(v.try_into().ok()?))))
-            .collect())
-    }
-
-
-    /// Our messages written on another of our devices: `(peer, op count)` that the contact must
-    /// hold for two ticks.
+    /// Our messages (written here or on another of our devices): `(writer ID, op count)` that the
+    /// contact must hold for two ticks.
     pub fn mo(&self, pair: &str, day: &str, id: &str) -> Result<Option<(u64, i32)>, Error> {
         Ok(self.db.get(&format!("mo/{pair}/{day}/{id}")).map_err(io)?.and_then(|b| decode_mo(&b)))
     }
@@ -393,56 +365,12 @@ impl ChatStore {
         self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(io)
     }
 
-    // ---- writer IDs (P9) --------------------------------------------------------------------
-
-    /// DIDs that DID-sign their messages (U17 b), with the earliest version time seen signed so
-    /// (`Ctx::did_since`).
-    pub fn did_since(&self, dids: &[&str]) -> Vec<(String, i64)> {
-        dids.iter()
-            .filter_map(|d| {
-                let b = self.db.get(&format!("req/{d}")).ok().flatten()?;
-                Some((d.to_string(), i64::from_be_bytes(b.try_into().ok()?)))
-            })
-            .collect()
-    }
-
-    /// Ops recording that `did` DID-signs from `t` on, if that is earlier than what we hold.
-    pub fn did_since_ops(&self, signed: &[(String, i64)]) -> Result<Vec<Op>, Error> {
-        let mut ops = Vec::new();
-        for (did, t) in signed {
-            let held = self.did_since(&[did]).first().map(|(_, h)| *h);
-            if held.is_none_or(|h| *t < h) {
-                ops.push(self.db.put_op(&format!("req/{did}"), &t.to_be_bytes()).map_err(io)?);
-            }
-        }
-        Ok(ops)
-    }
-
-    /// Every peer id seen proven as a writer ID.
-    pub fn known_writers(&self) -> Result<Vec<u64>, Error> {
-        Ok(self.db.scan("wid/").map_err(io)?.into_iter().filter_map(|(k, _)| u64::from_str_radix(k.strip_prefix("wid/")?, 16).ok()).collect())
-    }
-
-    pub fn put_writer_op(&self, id: u64) -> Result<Op, Error> {
-        self.db.put_op(&format!("wid/{id:016x}"), b"").map_err(io)
-    }
-
-    /// The contact device `device` writes notes with a device value: it judges writer IDs.
-    pub fn is_p9_device(&self, device: &[u8; 32]) -> bool {
-        self.db.get(&format!("w9/{}", hex::encode(device))).ok().flatten().is_some()
-    }
-
-    pub fn put_p9_device_op(&self, device: &[u8; 32]) -> Result<Op, Error> {
-        self.db.put_op(&format!("w9/{}", hex::encode(device)), b"").map_err(io)
-    }
-
     /// Everything about one conversation, except the blobs' bytes (the caller releases those).
     pub fn delete_conversation(&self, pair: &str, hashes: &[String]) -> Result<(), Error> {
         let mut ops = vec![
             Op::Delete(format!("conv/{pair}")),
             Op::DeletePrefix(format!("shard/{pair}/")),
             Op::DeletePrefix(format!("ack/{pair}/")),
-            Op::DeletePrefix(format!("mc/{pair}/")),
             Op::DeletePrefix(format!("mo/{pair}/")),
             Op::DeletePrefix(format!("out/{pair}/")),
             Op::DeletePrefix(format!("pb/{pair}/")),

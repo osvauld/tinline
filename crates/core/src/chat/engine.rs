@@ -1,4 +1,4 @@
-//! The chat runtime: sealed store, shard cache, sessions over `tinline/chat/1`, outbox/retry,
+//! The chat runtime: sealed store, shard cache, sessions over `tinline/chat/2`, outbox/retry,
 //! blob transfers. Everything hangs off `Inner` (see `node.rs`); the UniFFI methods in `api.rs`
 //! are thin wrappers over the `chat_*` functions here.
 
@@ -63,8 +63,9 @@ pub struct ChatCore {
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
     pub(crate) presence: super::presence::Presence,
-    /// This install's device ID (U16 device value; `ProfileV2::device_id`, P9b).
-    value: [u8; 32],
+    /// This install's device ID (U16; `ProfileV2::device_id`): what every version we write
+    /// carries as `dev`.
+    device_id: [u8; 32],
     /// Our writer ID: `writer_id(our DID, value)`, the Loro peer id we write chat docs with.
     pub(crate) wid: u64,
 }
@@ -198,14 +199,14 @@ impl Inner {
             dial_sem: Arc::new(Semaphore::new(4)),
             next_session: AtomicU64::new(1),
             presence: super::presence::Presence::new(),
-            value,
+            device_id: value,
             wid: writer_id(&did, &value),
         });
         *self.chat.lock() = Some(core);
     }
 
-    /// This install's device ID (`ProfileV2::device_id`, the U16 device value); a profile from
-    /// before P9b gets one here, once.
+    /// This install's device ID (`ProfileV2::device_id`, U16); made here once if the profile
+    /// has none yet.
     fn device_id(&self) -> Result<[u8; 32], Error> {
         let mut s = self.shared.lock();
         let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
@@ -389,10 +390,13 @@ impl Inner {
                     continue;
                 }
             };
-            let conn = match tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, CHAT_ALPN)).await {
+            let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CHAT)).await {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
-                    last = Error::net(e);
+                    if matches!(e, Error::Protocol(_)) {
+                        self.log(format!("chat with {did}: {e}"));
+                    }
+                    last = e;
                     continue;
                 }
                 Err(_) => {
@@ -686,7 +690,7 @@ impl Inner {
                 if !day_valid(&before) {
                     return Err(Error::Protocol("bad day".into()));
                 }
-                let days = self.chat_history_days(core, &me, &pair, &before, limit.min(14)).await?;
+                let days = self.chat_history_days(core, &pair, &before, limit.min(14)).await?;
                 writer.send(&ChatMsg::HistoryResp { days }).await
             }
             ChatMsg::HistoryResp { days } => {
@@ -704,7 +708,7 @@ impl Inner {
     }
 
     /// Loads the shard into the cache (creating an empty one) and returns whether it was there.
-    pub(crate) async fn chat_shard(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Me, pair: &str, day: &str) -> Result<(), Error> {
+    pub(crate) async fn chat_shard(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<(), Error> {
         let key = (pair.to_string(), day.to_string());
         if core.shards.lock().contains_key(&key) {
             return Ok(());
@@ -725,9 +729,7 @@ impl Inner {
             }
             _ => snap,
         };
-        let mut shard = Shard::load(pair, day, &me.device, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
-        shard.writer = Some(core.wid);
-        shard.hidden = meta.map(|m| m.hidden.into_iter().collect()).unwrap_or_default();
+        let shard = Shard::load(pair, day, core.wid, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
         let mut cache = core.shards.lock();
         if cache.len() >= MAX_SHARDS_CACHED {
             let today = day_of(now_ms());
@@ -751,7 +753,6 @@ impl Inner {
         let mut meta = core.store.shard_meta(pair, day)?.unwrap_or_default();
         meta.vv = shard.vv().encode();
         meta.n_messages = shard.messages().map(|m| m.len() as u32).unwrap_or(meta.n_messages);
-        meta.hidden = shard.hidden.iter().cloned().collect();
         if meta.n_updates + 1 > UPDATES_BEFORE_SNAPSHOT {
             extra.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
             meta.n_updates = 0;
@@ -836,7 +837,7 @@ impl Inner {
             return Err(Error::Protocol(Reject::BadSignature.to_string()));
         }
         let pair = pair_id(me.id.did(), &sess.did);
-        self.chat_shard(core, me, &pair, &day).await?;
+        self.chat_shard(core, &pair, &day).await?;
         let mut added_files = Vec::new();
         let mut unchanged: Option<VersionVector> = None;
         let mut need_history = false;
@@ -844,17 +845,7 @@ impl Inner {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
-            let ctx = Ctx {
-                signer_did: sess.did.clone(),
-                signer_peer: peer_id(&sess.device, doc),
-                now_ms: now_ms(),
-                live,
-                history: None,
-                keys: vec![(sess.did.clone(), sess.device), (me.id.did().to_string(), me.device)],
-                hide_unverified: None,
-                known_writers: core.store.known_writers()?,
-                did_since: core.store.did_since(&[&sess.did, me.id.did()]),
-            };
+            let ctx = Ctx { signer_did: sess.did.clone(), now_ms: now_ms(), live, history: None };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
                 // Their ops build on ops of ours that we lost (a reinstall): the batch cannot
@@ -869,9 +860,6 @@ impl Inner {
                     return Err(Error::Protocol(format!("rejected batch: {r}")));
                 }
             };
-            // P9: this device of the contact writes notes with a device value, so it judges
-            // writer IDs (`chat_writer`); and the writer IDs the batch proved are remembered.
-            self.chat_note_writers(core, &applied, (applied.dv_seen && !core.store.is_p9_device(&sess.device)).then_some(sess.device))?;
             if shard.vv() == before {
                 unchanged = Some(shard.vv());
                 (shard.vv(), (Vec::new(), ConvMeta::default()))
@@ -954,9 +942,6 @@ impl Inner {
     /// The peer says it holds `their_vv` of a day: our messages up to there are delivered.
     pub(super) fn chat_ack(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, day: &str, their_vv: &VersionVector) -> Result<(), Error> {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
-        let name = doc_name(pair, day);
-        let my_peer = peer_id(&me.device, &name);
-        let own = [my_peer, core.wid];
         let mut acked = match core.store.ack(pair, day)? {
             Some(b) => decode_vv(&b).unwrap_or_default(),
             None => VersionVector::default(),
@@ -968,9 +953,8 @@ impl Inner {
         }
         let moved = |peer: u64, c: i32| before.get(&peer).copied().unwrap_or(0) < c && c <= acked.get(&peer).copied().unwrap_or(0);
         let held = decode_vv(&meta.vv).unwrap_or_default();
-        let owed = own.iter().any(|p| held.get(p).copied().unwrap_or(0) > acked.get(p).copied().unwrap_or(0));
-        let mut newly: Vec<String> = core.store.mcs(pair, day)?.into_iter().filter(|(_, c)| moved(my_peer, *c)).map(|(id, _)| id).collect();
-        newly.extend(core.store.mos(pair, day)?.into_iter().filter(|(_, (p, c))| moved(*p, *c)).map(|(id, _)| id));
+        let owed = held.get(&core.wid).copied().unwrap_or(0) > acked.get(&core.wid).copied().unwrap_or(0);
+        let newly: Vec<String> = core.store.mos(pair, day)?.into_iter().filter(|(_, (p, c))| moved(*p, *c)).map(|(id, _)| id).collect();
         core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, owed)?]).map_err(io)?;
         self.selfsync_dirty(ACK_MARK);
         if let Some(ev) = self.ev() {
@@ -1004,22 +988,21 @@ impl Inner {
     ) -> Result<(), Error> {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
         let name = doc_name(pair, day);
-        // Our ops are under our legacy peer id and our writer ID (P9).
+        // Our ops are under our writer ID.
         let held = decode_vv(&meta.vv)?;
-        let own = [peer_id(&me.device, &name), core.wid];
-        if own.iter().all(|p| their_vv.get(p).copied().unwrap_or(0) >= held.get(p).copied().unwrap_or(0)) {
+        if their_vv.get(&core.wid).copied().unwrap_or(0) >= held.get(&core.wid).copied().unwrap_or(0) {
             return Ok(());
         }
-        self.chat_shard(core, me, pair, day).await?;
+        self.chat_shard(core, pair, day).await?;
         let out = {
             let shards = core.shards.lock();
             shards.get(&(pair.to_string(), day.to_string())).and_then(|s| {
                 let vv = s.vv();
-                let ends: Vec<(u64, i32)> = s.own_peers().into_iter().filter_map(|p| Some((p, *vv.get(&p)?))).collect();
-                s.export_own_since(their_vv).map(|u| (u, vv, ends))
+                let end = vv.get(&s.peer()).map(|c| (s.peer(), *c));
+                s.export_own_since(their_vv).map(|u| (u, vv, end))
             })
         };
-        let Some((update, vv, ends)) = out else { return Ok(()) };
+        let Some((update, vv, end)) = out else { return Ok(()) };
         let sig = sign_batch(&me.profile.device_secret, &name, &update);
         let msg = if sync {
             ChatMsg::Sync { doc: name, vv: vv.encode(), update, sig }
@@ -1029,7 +1012,7 @@ impl Inner {
         writer.send(&msg).await?;
         let mut pv = sess.peer_vv.lock();
         let theirs = pv.entry(day.to_string()).or_default();
-        for (p, c) in ends {
+        if let Some((p, c)) = end {
             theirs.insert(p, c);
         }
         Ok(())
@@ -1076,13 +1059,13 @@ impl Inner {
         let pair = pair_id(me.id.did(), did);
         let at = now_ms();
         let day = day_of(at);
-        self.chat_shard(&core, &me, &pair, &day).await?;
-        let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to, file, sig: Vec::new() };
+        self.chat_shard(&core, &pair, &day).await?;
+        let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to, file, dev: core.device_id, did_sig: Vec::new() };
         let conv = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-            let update = shard.add_message(&rec, &self.chat_writer(&me, &core, did)).map_err(|e| Error::Io(e.to_string()))?;
-            // The tick marker names the peer id it was written under (P9: the writer ID).
+            let update = shard.add_message(&rec, &self.chat_writer(&me, &core)).map_err(|e| Error::Io(e.to_string()))?;
+            // The tick marker names the peer id it was written under: our writer ID.
             let mut ops = vec![core.store.put_mo_op(&pair, &day, &rec.id, shard.peer(), shard.my_counter())?, core.store.mi_op(&pair, &rec.id, &day)?];
             if !self.is_self_did(did) {
                 ops.push(core.store.out_op(&pair, &day, true)?);
@@ -1091,7 +1074,6 @@ impl Inner {
             ops.extend(fo);
             let (cops, conv) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, true)])?;
             ops.extend(cops);
-            ops.extend(self.chat_own_did_signed_ops(&core, &me, version_time(&rec))?);
             self.chat_persist(&core, &pair, shard, &update, ops)?;
             conv
         };
@@ -1106,59 +1088,10 @@ impl Inner {
         Ok(m)
     }
 
-    /// How this install writes messages in the conversation with `did`: signed by the device
-    /// key and the DID key (P8), the device value in every note, and the writer ID as the Loro
-    /// peer id (P9) unless a device of the contact is not known to judge writer IDs. Such a
-    /// device (an app before P9) refuses a live batch with ops under any peer id but our legacy
-    /// one, so for it we keep writing under the legacy peer id (`Writer::p9`, `as_writer`).
-    pub(crate) fn chat_writer(&self, me: &Me, core: &ChatCore, did: &str) -> Writer {
-        if self.legacy_msg_sigs.load(Ordering::SeqCst) {
-            return Writer::legacy(me.profile.device_secret);
-        }
-        Writer::p9(me.profile.device_secret, me.id.clone(), core.value, self.chat_contact_judges_writer_ids(core, did))
-    }
-
-    /// Whether every device we know of `did` (ourselves: "You", only our own devices) has
-    /// shown that it judges writer IDs: it sent us a note carrying a device value.
-    fn chat_contact_judges_writer_ids(&self, core: &ChatCore, did: &str) -> bool {
-        if self.is_self_did(did) {
-            return true;
-        }
-        let devices: Vec<[u8; 32]> = {
-            let s = self.shared.lock();
-            match s.state.contacts.iter().find(|c| c.did == did) {
-                Some(c) => c.devices.iter().map(|d| d.device).collect(),
-                None => return false,
-            }
-        };
-        !devices.is_empty() && devices.iter().all(|d| core.store.is_p9_device(d))
-    }
-
-    /// We DID-signed a version of ours at time `t` (unless this node writes as an app from
-    /// before P8): from then on our own DID's versions need a DID signature here (U17 b).
-    fn chat_own_did_signed_ops(&self, core: &ChatCore, me: &Me, t: i64) -> Result<Vec<storage::Op>, Error> {
-        if self.legacy_msg_sigs.load(Ordering::SeqCst) {
-            return Ok(Vec::new());
-        }
-        core.store.did_since_ops(&[(me.id.did().to_string(), t)])
-    }
-
-    /// Remembers the writer IDs an accepted batch proved (`Ctx::known_writers`), the DIDs it
-    /// showed DID-signing (`Ctx::did_since`) and, if given, that a contact device judges writer
-    /// IDs.
-    pub(crate) fn chat_note_writers(&self, core: &ChatCore, applied: &Applied, p9_device: Option<[u8; 32]>) -> Result<(), Error> {
-        let known = if applied.writers.is_empty() { Vec::new() } else { core.store.known_writers()? };
-        let mut ops = core.store.did_since_ops(&applied.did_signed)?;
-        for w in applied.writers.iter().filter(|w| !known.contains(w)) {
-            ops.push(core.store.put_writer_op(*w)?);
-        }
-        if let Some(d) = p9_device {
-            ops.push(core.store.put_p9_device_op(&d)?);
-        }
-        if !ops.is_empty() {
-            core.store.db.apply(&ops).map_err(io)?;
-        }
-        Ok(())
+    /// How this install writes chat messages: signed by the account's DID key, under the writer
+    /// ID of this install's device ID (P9c: the same for every conversation).
+    pub(crate) fn chat_writer(&self, me: &Me, core: &ChatCore) -> Writer {
+        Writer::new(me.id.clone(), core.device_id)
     }
 
     fn chat_after_local_write(self: &Arc<Self>, core: &Arc<ChatCore>, did: &str, day: &str) {
@@ -1180,7 +1113,7 @@ impl Inner {
         self.chat_contact(did)?;
         let pair = pair_id(me.id.did(), did);
         let day = core.store.mi(&pair, id)?.ok_or(Error::NotFound)?;
-        self.chat_shard(&core, &me, &pair, &day).await?;
+        self.chat_shard(&core, &pair, &day).await?;
         let (rec, conv) = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
@@ -1193,9 +1126,9 @@ impl Inner {
                     if t.len() > MAX_TEXT {
                         return Err(Error::Protocol("message too long".into()));
                     }
-                    shard.edit(id, t, now_ms(), &self.chat_writer(&me, &core, did))
+                    shard.edit(id, t, now_ms(), &self.chat_writer(&me, &core))
                 }
-                None => shard.delete(id, now_ms(), &self.chat_writer(&me, &core, did)),
+                None => shard.delete(id, now_ms(), &self.chat_writer(&me, &core)),
             }
             .map_err(|e| Error::Io(e.to_string()))?;
             let rec = shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?;
@@ -1203,7 +1136,6 @@ impl Inner {
             let (cops, conv) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, false)])?;
             let mut ops = ops;
             ops.extend(cops);
-            ops.extend(self.chat_own_did_signed_ops(&core, &me, version_time(&rec))?);
             self.chat_persist(&core, &pair, shard, &update, ops)?;
             (rec, conv)
         };
@@ -1244,15 +1176,10 @@ impl Inner {
         }
     }
 
-    /// Two ticks once the contact holds the change that created our message: written here
-    /// (`mc`, our peer) or on another of our devices (`mo`, that device's peer). A message of
-    /// ours with neither (synced before `mo` existed) shows as held.
-    fn chat_delivery(core: &ChatCore, me: &Me, pair: &str, day: &str, id: &str) -> DeliveryState {
-        let mark = match core.store.mc(pair, day, id).ok().flatten() {
-            Some(c) => Some((peer_id(&me.device, &doc_name(pair, day)), c)),
-            None => core.store.mo(pair, day, id).ok().flatten(),
-        };
-        let Some((peer, c)) = mark else { return DeliveryState::Delivered };
+    /// Two ticks once the contact holds the change that created our message (`mo`: the writer
+    /// ID it was created under, here or on another of our devices, and the op count after it).
+    fn chat_delivery(core: &ChatCore, pair: &str, day: &str, id: &str) -> DeliveryState {
+        let Some((peer, c)) = core.store.mo(pair, day, id).ok().flatten() else { return DeliveryState::Delivered };
         let ack = core.store.ack(pair, day).ok().flatten().and_then(|b| decode_vv(&b).ok()).and_then(|v| v.get(&peer).copied()).unwrap_or(0);
         if c > ack { DeliveryState::Pending } else { DeliveryState::Delivered }
     }
@@ -1261,7 +1188,7 @@ impl Inner {
         let outgoing = rec.author == me.id.did();
         // "You" items go nowhere; a message written on another of our devices has no counter
         // here and shows as held (it reached this device).
-        let delivery = if outgoing && !self.is_self_did(did) { Self::chat_delivery(core, me, pair, day, &rec.id) } else { DeliveryState::Delivered };
+        let delivery = if outgoing && !self.is_self_did(did) { Self::chat_delivery(core, pair, day, &rec.id) } else { DeliveryState::Delivered };
         Message {
             id: rec.id.clone(),
             peer_did: did.to_string(),
@@ -1290,7 +1217,7 @@ impl Inner {
         let (last_outgoing, last_delivery, last_activity, preview) = match &conv.last {
             Some(l) => {
                 let delivery = match core.store.mi(&pair, &l.id).ok().flatten() {
-                    Some(day) if l.outgoing && !is_self => Self::chat_delivery(core, me, &pair, &day, &l.id),
+                    Some(day) if l.outgoing && !is_self => Self::chat_delivery(core, &pair, &day, &l.id),
                     _ => DeliveryState::Delivered,
                 };
                 (l.outgoing, delivery, l.at.max(0) as u64, l.preview.clone())
@@ -1345,7 +1272,7 @@ impl Inner {
         if core.store.shard_meta(&pair, &day)?.is_none() {
             return Ok(DayPage { day, messages: vec![], older_day });
         }
-        self.chat_shard(&core, &me, &pair, &day).await?;
+        self.chat_shard(&core, &pair, &day).await?;
         let recs = {
             let shards = core.shards.lock();
             shards.get(&(pair.clone(), day.clone())).map(|s| s.messages()).transpose().map_err(|e| Error::Io(e.to_string()))?.unwrap_or_default()
@@ -1538,8 +1465,7 @@ impl Inner {
             let rec = match rec {
                 Some(r) => r,
                 None => {
-                    let Ok(me) = this.me() else { return };
-                    if this.chat_shard(&core, &me, &pair, &day).await.is_err() {
+                    if this.chat_shard(&core, &pair, &day).await.is_err() {
                         return;
                     }
                     let shards = core.shards.lock();
@@ -1815,7 +1741,7 @@ impl Inner {
 
     // ---- history & compaction ------------------------------------------------------------------------
 
-    async fn chat_snapshot_blob(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, pair: &str, day: &str) -> Result<HistDay, Error> {
+    async fn chat_snapshot_blob(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<HistDay, Error> {
         let meta = core.store.shard_meta(pair, day)?.ok_or(Error::NotFound)?;
         let hub = self.chat_hub().await?;
         if let Some(c) = &meta.closed
@@ -1830,7 +1756,7 @@ impl Inner {
         {
             return Ok(HistDay { day: day.into(), vv: s.vv, hash: s.hash, key: s.key, size: s.size });
         }
-        self.chat_shard(core, me, pair, day).await?;
+        self.chat_shard(core, pair, day).await?;
         let snap = core.shards.lock().get(&(pair.to_string(), day.to_string())).map(|s| s.snapshot()).ok_or(Error::NotFound)?;
         let key = crypt::new_key();
         let hash = hub.add_bytes(key, snap).await?;
@@ -1849,7 +1775,7 @@ impl Inner {
         Ok(HistDay { day: day.into(), vv: meta.vv, hash: sref.hash, key: sref.key, size })
     }
 
-    async fn chat_history_days(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, pair: &str, before: &str, limit: u32) -> Result<Vec<HistDay>, Error> {
+    async fn chat_history_days(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, before: &str, limit: u32) -> Result<Vec<HistDay>, Error> {
         let mut out = Vec::new();
         for d in core.store.shard_days(pair)? {
             if d.as_str() >= before {
@@ -1858,7 +1784,7 @@ impl Inner {
             if core.store.shard_meta(pair, &d)?.is_none_or(|m| m.n_messages == 0) {
                 continue;
             }
-            out.push(self.chat_snapshot_blob(core, me, pair, &d).await?);
+            out.push(self.chat_snapshot_blob(core, pair, &d).await?);
             if out.len() as u32 >= limit {
                 break;
             }
@@ -1910,33 +1836,17 @@ impl Inner {
         Ok(added)
     }
 
-    /// A peer-vouched snapshot of a day (see `Ctx::history`): validated like a batch, merged
-    /// into whatever we hold of that day, stored as the new snapshot. The shard must be loaded.
-    /// Judged per message: the contact's messages are verified with every key we know of theirs
-    /// plus the key of this live session (attested by their DID, which their live batches are
-    /// verified with too); one of theirs that still does not verify stays hidden (logged) and
-    /// does not cost us the rest of the day.
+    /// A peer-vouched snapshot of a day (see `Ctx::history`): validated like any batch (every op
+    /// proven by its author's DID signature), merged into whatever we hold of that day, stored as
+    /// the new snapshot. The shard must be loaded.
     fn chat_apply_history(&self, core: &ChatCore, me: &Me, sess: &Session, pair: &str, day: &str, snap: &[u8]) -> Result<bool, Error> {
         let mut shards = core.shards.lock();
         let shard = shards.get_mut(&(pair.to_string(), day.to_string())).ok_or(Error::NotFound)?;
         let before = shard.vv();
-        let mut keys = self.chat_keys(me, &sess.did);
-        keys.push((sess.did.clone(), sess.device));
-        let ctx = Ctx {
-            signer_did: sess.did.clone(),
-            signer_peer: 0,
-            now_ms: now_ms(),
-            live: false,
-            history: Some(me.id.did().to_string()),
-            keys,
-            hide_unverified: Some(sess.did.clone()),
-            known_writers: core.store.known_writers()?,
-            did_since: core.store.did_since(&[&sess.did, me.id.did()]),
-        };
-        let applied = shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
-        self.chat_note_writers(core, &applied, None)?;
-        if !applied.hidden.is_empty() {
-            self.log(format!("history of {day} from {}: hid {} (signature does not verify)", sess.did, applied.hidden.join(", ")));
+        let ctx = Ctx { signer_did: sess.did.clone(), now_ms: now_ms(), live: false, history: Some(me.id.did().to_string()) };
+        if let Err(r) = shard.apply_remote(snap, &ctx) {
+            self.log(format!("rejected history of {day} from {}: {r}", sess.did));
+            return Err(Error::Protocol(format!("rejected history: {r}")));
         }
         if shard.vv() == before {
             return Ok(false);
@@ -1954,7 +1864,6 @@ impl Inner {
             n_updates: 0,
             n_messages: msgs.len() as u32,
             closed: None,
-            hidden: shard.hidden.iter().cloned().collect(),
         };
         ops.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
         ops.push(core.store.put_meta_op(pair, day, &meta)?);
@@ -2010,7 +1919,7 @@ impl Inner {
             .map_err(|e| Error::Io(e.to_string()))?
             .map_err(|e| Error::Io(e.to_string()))?;
         let _ = hub.release(&hash).await;
-        self.chat_shard(core, me, pair, &d.day).await?;
+        self.chat_shard(core, pair, &d.day).await?;
         self.chat_apply_history(core, me, sess, pair, &d.day, &snap)
     }
 
@@ -2034,7 +1943,7 @@ impl Inner {
                 if core.store.pending_days(&pair)?.contains(&day) {
                     continue;
                 }
-                self.chat_shard(&core, &me, &pair, &day).await?;
+                self.chat_shard(&core, &pair, &day).await?;
                 let snap = core.shards.lock().get(&(pair.clone(), day.clone())).map(|s| s.snapshot()).ok_or(Error::NotFound)?;
                 let hub = self.chat_hub().await?;
                 let key = crypt::new_key();

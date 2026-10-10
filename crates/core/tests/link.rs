@@ -399,7 +399,7 @@ fn redeemed_nonces_union_and_strangers_cannot_open_self_sync() {
     let nonces = e.node.redeemed_for_test();
     assert!(!nonces.is_empty());
     eventually(40, "N has the nonce", || n.node.redeemed_for_test() == nonces);
-    // A contact (other DID) is not let into tinline/self/1; our own device is.
+    // A contact (other DID) is not let into tinline/self/2; our own device is.
     assert!(!a.node.self_probe_for_test(dev(&e)));
     assert!(!x.node.self_probe_for_test(dev(&n)));
     // E and N already hold a live self-sync session, and the acceptor keeps only one per device:
@@ -682,16 +682,13 @@ fn a_forged_batch_relayed_by_an_own_device_is_rejected() {
     // Genuine control first, so the rejections below are about the forgery and nothing else.
     b2.node.forged_own_batch_for_test(a.did.clone(), 3).unwrap();
     assert!(find_msg(&b2, &a.did, "forged 3").is_some_and(|m| m.outgoing));
-    // Ours with a key that is not ours, or by a stranger: the batch is rejected.
-    for kind in 1..3u8 {
+    // The contact's or ours signed by another account's DID key, or a stranger's: the batch is
+    // rejected (P9c: every op must be proven by its author's DID signature; nothing is kept
+    // hidden, since every device reaches the same verdict on the same ops).
+    for kind in 0..3u8 {
         assert!(b2.node.forged_own_batch_for_test(a.did.clone(), kind).is_err(), "kind {kind} must be rejected");
         assert!(find_msg(&b2, &a.did, &format!("forged {kind}")).is_none());
     }
-    // The contact's with a key we do not know of theirs: history is judged per message (P1), so
-    // the batch is taken but that message stays hidden. (A device cannot tell a forgery from a
-    // message the contact signed with a key only our other device knew.)
-    b2.node.forged_own_batch_for_test(a.did.clone(), 0).unwrap();
-    assert!(find_msg(&b2, &a.did, "forged 0").is_none());
 }
 
 #[test]
