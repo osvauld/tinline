@@ -157,6 +157,71 @@ exchange had completed; there is no real handshake or session code. Bootstrap pa
 fixtures, and there is no automatic global directory refresh. Sleep keeps in-memory state, so it
 is not a process-crash test.
 
+## Group calls through one call host (`src/group_call.rs`, G6 / U21)
+
+These are the GC-S01..GC-S17 tests from `docs/design/group-call-spec.md` §7, including G6-D1.
+The module is a child of `multi_host.rs`, so it reuses that `World`:
+
+- grants and genesis
+- DID-signed group notes and the chat-host directory (U7)
+- admin ops and U9 flag removal
+- `rotate_host`/`rotate_member` (U12)
+- U5-revised block notices
+- the rogue-host fixture
+
+It adds `Cap::CallHost`, a call-host permit issued by the creator for one device slot (R05: chat
+hosting does not imply it).
+
+All §8 tunables are one named `const` block at the top of the file, marked as recommended
+defaults pending the user's answers. The spec gaps the model had to fill are listed in
+`ASSUMPTIONS` (G1-G10).
+
+- **Signed control.** CallStart, Join, Roster, Leave and End are real DID signatures bound to
+  call id, gid, host device and host_gen. Heartbeat and `Active` are unsigned.
+- **Refusals.** Refusals compare a byte snapshot of every device before and after:
+  - bad Joins (S01)
+  - bad CallStarts and permits (S02)
+  - stale gen after a redial (S03)
+  - the rogue Roster (S09)
+  - control from a revoked host (S15)
+  - the Limited and metered caps (S16)
+  - the replay and older-Join cases (S17)
+  - Join spam and oversize control (S13)
+- **Pure functions.** These are pure:
+  - the forwarder (`select`): 300 ms average, 6 dB / 200 ms hysteresis, the §6 dominance cap and
+    "lower priority"
+  - ranking (`rank`: tiers, starter, hash tie-break, TTL)
+  - the phone policy (`phone_policy`)
+- **Forwarded counts (S06).** S06 checks forwarded counts against the §4 formulas and the whole
+  §4 table, for N = 3/5/8/12 and K = 2/3.
+- **G6-D1 (S06b, S13).** H sends `Active { gen, slots }` on every change of S. Gated senders send
+  `[0x03][level]`, which H never forwards.
+- **U7 audit (S14).** S14 runs a whole lifecycle and then audits it.
+- **Failover (S08, S15, S16).**
+  - Failover redials backups[0], then backups[1] after 5 s, or ends with "host lost".
+  - A split resolves to b0.
+  - Glare (S05) resolves to the lower BLAKE3(call_id).
+- **Limitations shown.** These tests pass by showing a limitation:
+  - A level-0 spoofer still holds 75-90 % of slot time under the cap (asserted range) (S07).
+  - A muted spoofer still uses a forwarded slot (S07).
+  - A rogue host can relabel a removed member's audio under another slot (S09b).
+  - The pre-join "X is in this call" warning has no Roster to read from (S10).
+- **Findings.**
+  - A 12-entry Roster exceeds the 4 KiB control limit (S13b).
+  - The forced member-rotation re-Join waits for the 2 s Join rate limit (S12).
+  - The CallStart relay must skip removed members, or they learn a rotated call host's endpoint
+    (S11).
+- **Ignored.** Each has the reason in its `#[ignore]`:
+  - S01b: the unlinked device slot needs a signed device-list fixture.
+  - S07b: the Opus packet-size plausibility check needs a real encoder (GC-D09).
+- **Not modelled.**
+  - real timers: dial results are decided at call time, and the 5 s timeouts are elapsed-time
+    bookkeeping
+  - QUIC
+  - audio decoding and mixing (GC-U01/U02 in `crates/audio`)
+  - device lists
+  - meta-frontier verification
+
 ## Superseded tests (R1b)
 
 R1b brought the tests in line with U4 revised (no device or transport key in content), U5

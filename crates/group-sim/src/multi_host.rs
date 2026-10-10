@@ -32,6 +32,10 @@
 use super::*;
 use identity::{public_key_from_did, verify};
 
+// G6 group-call simulation; a child module so it reuses this file's private fixtures.
+#[path = "group_call.rs"]
+mod group_call;
+
 const POST_DOMAIN: &[u8] = b"tinline/group-sim/multi-host-post/not-production/v1\0";
 const NOTE_DOMAIN: &[u8] = b"tinline/group-sim/multi-host-endpoint-note/not-production/v1\0";
 const GRANT_DOMAIN: &[u8] = b"tinline/group-sim/multi-host-grant/not-production/v1\0";
@@ -130,6 +134,8 @@ enum Cap {
     Delegate,
     Admin,
     Host,
+    // G6 (`group_call.rs`): call-host permit leaf; NOT implied by `Host` (spec §2.1, R05).
+    CallHost,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct MGrantBody {
