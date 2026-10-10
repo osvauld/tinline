@@ -6,6 +6,7 @@ uniffi::setup_scaffolding!();
 pub mod accounts;
 mod chat;
 mod error;
+pub mod gcall;
 mod logging;
 mod node;
 mod rekey;
