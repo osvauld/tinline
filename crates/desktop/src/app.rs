@@ -722,6 +722,22 @@ impl App {
         (app, Task::batch(tasks))
     }
 
+    /// Test-hooks: `P2P_OPEN=calls|contacts|chat:<contact name>` picks the screen after unlock.
+    #[cfg(feature = "test-hooks")]
+    fn test_open(&mut self, v: &str) -> Task<Msg> {
+        match v {
+            "calls" => self.update_chat(Cm::Tab(chat::SideTab::Calls)),
+            "contacts" => self.update_chat(Cm::Tab(chat::SideTab::Contacts)),
+            _ => {
+                let did = v.strip_prefix("chat:").and_then(|n| self.node.contacts().into_iter().find(|c| c.name == n)).map(|c| c.did);
+                match did {
+                    Some(did) => Task::batch([self.update_chat(Cm::Tab(chat::SideTab::Chats)), self.update(Msg::Select(did))]),
+                    None => Task::none(),
+                }
+            }
+        }
+    }
+
     /// Brings the window up for the user: opens it if closed, un-minimises, and asks the
     /// compositor to put it in front of them (see `crate::raise`).
     fn show_window(&mut self) -> Task<Msg> {
@@ -942,7 +958,8 @@ impl App {
                     // Pictures decode in the background: wait for them (at most ~30 ticks).
                     let busy = self.chat.thumbs.values().any(|t| matches!(t, chat::Thumb::Loading))
                         || self.chat.viewer.as_ref().is_some_and(|v| matches!(v.body, chat::ViewBody::Loading));
-                    if self.ticks >= 3 && (!busy || self.ticks >= 30) {
+                    let after = crate::test_env("P2P_SHOT_AFTER").and_then(|v| v.parse().ok()).unwrap_or(3);
+                    if self.ticks >= after && (!busy || self.ticks >= after + 30) {
                         return window::screenshot(id).map(Msg::Shot);
                     }
                 }
@@ -1398,8 +1415,16 @@ impl App {
             Msg::Started(r) => {
                 self.status = self.node.status();
                 self.contacts = self.node.contacts();
+                // Unlocking opens the call log too; nothing else reloads it until the next call.
+                self.refresh_history();
                 match r {
-                    Ok(()) => return Task::batch([self.fetch_ticket(), self.refresh_chats(), self.check_clipboard(false)]),
+                    Ok(()) => {
+                        #[cfg(feature = "test-hooks")]
+                        if let Some(v) = crate::test_env("P2P_OPEN") {
+                            return Task::batch([self.fetch_ticket(), self.refresh_chats(), self.test_open(&v)]);
+                        }
+                        return Task::batch([self.fetch_ticket(), self.refresh_chats(), self.check_clipboard(false)]);
+                    }
                     Err(e) => self.notice = Some(format!("Could not start: {e}")),
                 }
             }
