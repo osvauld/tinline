@@ -2,6 +2,9 @@
 
 Status: coordinator plan, 2026-10-10. Approved by the user to start ("yes lets go"). Merging into
 `dev` still needs the user's explicit OK.
+Merge gate (user, 2026-10-10): before merging into `dev`, the user tests a build of
+`fixes-phase1` on their own devices (phone ZD22257P6G debug build + desktop), and groups are
+simulated first.
 
 ## Branches
 
