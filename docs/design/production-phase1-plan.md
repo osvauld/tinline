@@ -25,12 +25,16 @@ Status: coordinator plan, 2026-10-10. Approved by the user to start ("yes lets g
 | P1 | Restore chat stall: accept history per message, not all-or-nothing; contact's sibling device too | U10 (section 12 Q1 b), section 5 bugs 1, 3 | `chat/engine.rs` (~1813 `apply_remote`), `chat/own.rs`, `chat/doc.rs` | 1 |
 | P2 | Dead ticket after restore: drop/reissue the cached ticket when the device key changes | section 5 bug 2 | `node.rs` ticket (~1908, `st.ticket`) | 1 |
 | P7 | Flaky `link.rs` self-probe test (`redeemed_nonces_union_and_strangers_cannot_open_self_sync`) | test hygiene | `crates/core/tests/link.rs` only (test fix; if a real race in core, report, don't fix) | 1 |
-| P4 | Push signed device list to contacts on every change; seq bound | U8; W2-D findings | `node.rs`, chat wire, `proto` device list | 2 (after P1) |
-| P5 | Visible blocking: one signed notice on block + same reason on every later attempt (calls, chat, history fetch, ticket) | U5 revised, section 8b Q1 | `proto` (notice type), `node.rs`, `chat/engine.rs` | 3 |
-| P6 | Separate `message` / `call` tokens; defaults; legacy migration with per-DID cut-off; compatibility with old peers | U13, U15 | `proto` grant, `node.rs`, `chat/engine.rs` | 4 (after P5) |
+| P8 | Sign chat messages with the DID key (U4 revised). Verify DID signatures; keep verifying existing device-key signatures for old history. Transition: dual-sign (device `sig` for un-upgraded peers + DID signature), new peers prefer the DID signature | U4 revised; user 2026-10-10 "each message is signed with the main signing key" | `chat/doc.rs` (`sign_msg` :171, sign sites :394 :424, verify :555), `chat/engine.rs`, `chat/own.rs` | 2 (after P1; P7 may run alongside) |
+| P9 | Writer ID = hash(DID ‖ device value) as the Loro peer ID, set by the app and verified per post (U16); replaces the device-key-derived peer ID | U16 | `chat/doc.rs` peer ID, `sync/accdoc.rs`, own-device sync | 3 (after P8) |
+| P4 | Push signed device list to contacts on every change; seq bound | U8; W2-D findings | `node.rs`, chat wire, `proto` device list; lower priority after P8 (no longer needed for chat verification, still for reachability) | 4 |
+| P5 | Visible blocking: one signed notice on block + same reason on every later attempt (calls, chat, history fetch, ticket) | U5 revised, section 8b Q1 | `proto` (notice type), `node.rs`, `chat/engine.rs` | 5 |
+| P6 | Separate `message` / `call` tokens; defaults; legacy migration with per-DID cut-off; compatibility with old peers | U13, U15 | `proto` grant, `node.rs`, `chat/engine.rs` | 6 (after P5) |
 | UI | Android + desktop: "blocked" state and notice, "allow calls" toggle | U5 revised, U13 | apps | after P5/P6 core |
 
-Batches are sequential where packets share `node.rs` / `chat/engine.rs` (P4, P5, P6).
+Batches are sequential where packets share `node.rs` / `chat/engine.rs` (P8, P9, P4, P5, P6).
+Order changed 2026-10-10 (user): DID signing (P8) moved ahead of P4/P5/P6 because it removes the
+cause of the restore problems (a restore changes the device key; the DID never changes).
 
 ## Open details needing the user before their packet starts
 
@@ -45,5 +49,6 @@ Batches are sequential where packets share `node.rs` / `chat/engine.rs` (P4, P5,
 
 ## Not in phase 1
 
-Content signed by DID + writer ID (U4 revised, U16): phase 2, the foundation for groups and rotation.
+Signing of other records by the device key (account doc, own-device sync, attestations; see
+`rotation-author-key-trace.md` R3–R5) beyond chat messages: later packet.
 Ticks regression and verified flag after restore (section 5 bugs 4, 5).
