@@ -198,6 +198,30 @@ fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
     panic!("timed out waiting for {what}");
 }
 
+/// Waits until the address `p` publishes (the DNS record a caller's discovery reads) names the
+/// home relay `p` is on now. A device that comes back online may pick another home relay than
+/// the one its contacts hold for it; a call placed before the record is updated is dialled at
+/// the old relay only and times out (P11: a precondition of the call, not a sleep).
+fn published(p: &Peer) {
+    use iroh::address_lookup::AddressLookup;
+    use n0_future::StreamExt;
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let dns = iroh::address_lookup::dns::DnsAddressLookup::n0_dns().build();
+    eventually(60, "the published address to name the current home relay", || {
+        let st = p.node.status();
+        let (Some(relay), Ok(id)) = (st.relay, st.endpoint_id.parse::<iroh::PublicKey>()) else {
+            return false;
+        };
+        rt.block_on(async {
+            let Some(mut found) = dns.resolve(id) else { return false };
+            match tokio::time::timeout(Duration::from_secs(5), found.next()).await {
+                Ok(Some(Ok(item))) => item.to_endpoint_addr().relay_urls().any(|u| u.to_string() == relay),
+                _ => false,
+            }
+        })
+    });
+}
+
 /// `e` (started) links a fresh install of its account (copied from `link.rs` `link_fresh`).
 fn link_fresh(e: &Peer, name: &str) -> Peer {
     let n = blank(name);
@@ -447,6 +471,7 @@ fn sibling_fixture(tag: &str) -> Sib {
     let (_old_dev, new_dev) = restore_in_place(&mut b);
     online(&b.node);
     online(&a2.node);
+    published(&a2);
     call_answered(&b, &a2);
     eventually(20, "A2 knows only B's new key", || a2.node.contact_devices_for_test(b.did.clone()) == vec![new_dev.clone()]);
     assert!(!has(&a2, &b.did, &m1) && !has(&a2, &b.did, &r1), "precondition: A2 holds neither m1 nor r1");
