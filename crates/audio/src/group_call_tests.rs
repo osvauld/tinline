@@ -1,7 +1,9 @@
 //! G6 group-call unit tests (docs/design/group-call-spec.md §1.3, §1.4, §7).
 //!
 //! GC-U01: one `Receiver` per forwarded speaker slot, fed the stream a call host produces when
-//! it forwards only the K loudest speakers (gaps of 100 ms .. 2 s, repeated switching).
+//! it forwards only the K loudest speakers (gaps of 100 ms .. 2 s, repeated switching). The
+//! host's `Active` signal drives the slot's idle/resume path (G6-D1); one set of cases runs on
+//! the 200 ms no-datagram fallback alone.
 //! GC-U02: the client-side mixer (`mix`) for K = 1..3 slots.
 
 use super::*;
@@ -33,11 +35,13 @@ enum Gap {
     /// Speaker selection (§1.3): the sender keeps encoding, H drops its datagrams, so the
     /// forwarded `seq` jumps by the gap length (H forwards `seq` unchanged, §1.1).
     SeqJump,
-    /// Silence gate (§1.4, Q4) if the client stops *encoding*: `seq` does not advance, so the
-    /// stream resumes with the next `seq` after a pause in time.
+    /// A sender that stops *encoding* without advancing `seq` (not what G6-D1 specifies, kept
+    /// as a robustness case): the stream resumes with the next `seq` after a pause in time.
     SeqContinuous,
-    /// Silence gate while the sender stays in S: one keep-level datagram every 500 ms is
-    /// forwarded during the gap (encoder keeps running, so `seq` jumps between them).
+    /// Silence gate (§1.4, G6-D1) via `Sender::encode_group`: the sender is quiet while not
+    /// forwarded, closes its gate after 300 ms and sends a keep-level datagram every 500 ms.
+    /// `seq` keeps counting, so it jumps on resume. H uses keep-level datagrams for selection
+    /// only and never forwards them, so the slot sees nothing during the gap.
     KeepLevel,
 }
 
@@ -48,45 +52,90 @@ struct SlotRun {
     /// Mouth-to-ear latency (pull time - send time) of every frame played from a packet slot
     /// (decoded, FEC/DRED/PLC-for-lost), i.e. every pull that advanced `next_seq`.
     latency: Vec<(u64, u64)>,
+    /// Keep-level datagrams the gated sender produced (KeepLevel; never forwarded).
+    keep_level: u32,
     stats: Stats,
 }
 
+/// What reaches the slot's client: a forwarded datagram or H's `Active` signal for the slot.
+enum Ev {
+    Datagram(Vec<u8>),
+    Active(bool),
+}
+
 /// Run one slot for `total_ms`. `forwarded(t_ms)` says whether H forwards the sender at send
-/// time `t_ms`. Delivery and pull timing match `tests::Sim` (pull at tick*20 + 10).
-fn run_slot(total_ms: u64, mode: Gap, forwarded: impl Fn(u64) -> bool) -> SlotRun {
+/// time `t_ms`. With `signal`, H sends `Active` for the slot whenever that changes; it reaches
+/// the client with the same delay as datagrams, ahead of the first datagram it covers. Without
+/// it the receiver relies on the 200 ms fallback. Delivery and pull timing match `tests::Sim`
+/// (pull at tick*20 + 10).
+fn run_slot(total_ms: u64, mode: Gap, signal: bool, forwarded: impl Fn(u64) -> bool) -> SlotRun {
     let mut tx = Sender::new(CALL_BITRATE).unwrap();
-    let mut rx = Receiver::new().unwrap();
+    let mut rx = Receiver::new_group().unwrap();
     let mut tone = Tone::new(TONE_HZ, TONE_AMP);
     let mut send_time: std::collections::HashMap<u32, u64> = Default::default();
-    let mut inflight: Vec<(u64, Vec<u8>)> = vec![];
-    let mut last_sent = 0u64;
-    let mut run = SlotRun { out: vec![], target: vec![], latency: vec![], stats: Stats::default() };
+    let mut inflight: Vec<(u64, Ev)> = vec![];
+    let mut last_keep = None::<u64>;
+    let mut was_fwd = true;
+    let mut run = SlotRun { out: vec![], target: vec![], latency: vec![], keep_level: 0, stats: Stats::default() };
     for tick in 0..total_ms / FRAME_MS {
         let now = tick * FRAME_MS;
-        let mut pcm = [0i16; GC_FRAME];
-        tone.next_frame(&mut pcm);
         let fwd = forwarded(now);
-        let send = match mode {
-            Gap::SeqJump | Gap::SeqContinuous => fwd,
-            Gap::KeepLevel => fwd || now >= last_sent + KEEP_LEVEL_MS,
-        };
-        if mode == Gap::KeepLevel && !fwd {
-            pcm = [0; GC_FRAME]; // gated sender is quiet; keep-level frames carry silence
+        // The source must not itself click, or the step check measures the input, not the
+        // receiver: a paused sender (SeqContinuous) resumes the tone where it left off, and a
+        // speaker resuming from silence (KeepLevel) starts it at a zero crossing.
+        if mode == Gap::KeepLevel && fwd && !was_fwd {
+            tone = Tone::new(TONE_HZ, TONE_AMP);
         }
-        // SeqContinuous: gate closed and encoder idle, so nothing is encoded and seq stays.
-        if mode != Gap::SeqContinuous || send {
-            let seq = tx.seq;
-            let dg = tx.encode(&pcm).unwrap();
-            if send {
-                last_sent = now;
-                send_time.insert(seq, now);
-                inflight.push((now + NET_DELAY_MS, dg));
+        let mut pcm = [0i16; GC_FRAME];
+        if mode != Gap::SeqContinuous || fwd {
+            tone.next_frame(&mut pcm);
+        }
+        if signal && fwd != was_fwd {
+            inflight.push((now + NET_DELAY_MS, Ev::Active(fwd)));
+        }
+        was_fwd = fwd;
+        let seq = tx.seq;
+        let dg = match mode {
+            Gap::SeqJump => Some(tx.encode(&pcm).unwrap()),
+            // Encoder idle while not forwarded, so `seq` stays.
+            Gap::SeqContinuous => fwd.then(|| tx.encode(&pcm).unwrap()),
+            Gap::KeepLevel => {
+                if !fwd {
+                    pcm = [0; GC_FRAME]; // the speaker went quiet; that is why H dropped it
+                }
+                match tx.encode_group(&pcm).unwrap() {
+                    GroupFrame::Opus(dg) => Some(dg),
+                    GroupFrame::Gated { level } => {
+                        assert_eq!(level, 127);
+                        if last_keep.is_none_or(|t| now >= t + KEEP_LEVEL_MS) {
+                            last_keep = Some(now);
+                            run.keep_level += 1; // to H only, never forwarded
+                        }
+                        None
+                    }
+                }
             }
+        };
+        if mode != Gap::SeqContinuous {
+            // `seq` counts wall time whether or not anything is encoded or forwarded.
+            assert_eq!(seq, tick as u32);
+            assert_eq!(tx.seq, tick as u32 + 1);
+        }
+        if let Some(dg) = dg {
+            if fwd {
+                send_time.insert(seq, now);
+                inflight.push((now + NET_DELAY_MS, Ev::Datagram(dg)));
+            }
+        } else {
+            assert!(!fwd, "gate closed while speaking");
         }
         let pull_t = now + 10;
         let n = inflight.partition_point(|(t, _)| *t <= pull_t);
-        for (t, dg) in inflight.drain(..n) {
-            rx.push(&dg, t);
+        for (t, ev) in inflight.drain(..n) {
+            match ev {
+                Ev::Datagram(dg) => rx.push(&dg, t),
+                Ev::Active(a) => rx.set_active(a),
+            }
         }
         let before = rx.next_seq;
         let mut f = [0i16; GC_FRAME];
@@ -116,7 +165,7 @@ struct Baseline {
 
 /// The same slot with no forwarding gaps: what a healthy stream looks like.
 fn baseline(total_ms: u64) -> Baseline {
-    let r = run_slot(total_ms, Gap::SeqJump, |_| true);
+    let r = run_slot(total_ms, Gap::SeqJump, true, |_| true);
     // Skip the first second (start-up).
     let latency_max = r.latency.iter().filter(|(t, _)| *t >= 1000).map(|&(_, l)| l).max().unwrap();
     let step_max = max_step(&r.out[RATE as usize..]);
@@ -167,14 +216,20 @@ fn check(name: &str, r: &SlotRun, b: &Baseline) -> Vec<String> {
 }
 
 /// One gap of `gap_ms` after 2 s of speech, then 3 s of speech.
-fn single_gap(mode: Gap, gap_ms: u64) -> Vec<String> {
+fn single_gap(mode: Gap, gap_ms: u64, signal: bool) -> Vec<String> {
     let total = 2000 + gap_ms + 3000;
     let b = baseline(total);
-    let r = run_slot(total, mode, |t| !(2000..2000 + gap_ms).contains(&t));
+    let r = run_slot(total, mode, signal, |t| !(2000..2000 + gap_ms).contains(&t));
     // Resumed audio is the tone again within the last 3 s.
     let tail = &r.out[r.out.len() - 2 * RATE as usize..];
     assert!(estimate_frequency(tail).is_some_and(|f| (f - TONE_HZ).abs() < 5.0), "no tone after resume");
-    check(&format!("{mode:?} {gap_ms} ms"), &r, &b)
+    // The gap is silent once the slot has played out (no stale audio, no endless PLC).
+    let mid = (2000 + gap_ms / 2) as usize * 48;
+    if gap_ms >= 500 {
+        assert!(rms(&r.out[mid..mid + GC_FRAME]) < 1.0, "slot not silent mid-gap");
+    }
+    let how = if signal { "" } else { " fallback" };
+    check(&format!("{mode:?} {gap_ms} ms{how}"), &r, &b)
 }
 
 /// Speaker switching for 30 s: deterministic on/off spans of 200..1500 ms on and 100..2000 ms
@@ -200,7 +255,10 @@ fn switching(mode: Gap) -> Vec<String> {
     }
     let total = t + 1000;
     let b = baseline(total);
-    let r = run_slot(total, mode, |now| spans.iter().any(|&(a, e)| (a..e).contains(&now)));
+    let r = run_slot(total, mode, true, |now| spans.iter().any(|&(a, e)| (a..e).contains(&now)));
+    if mode == Gap::KeepLevel {
+        assert!(r.keep_level > 0, "sender never gated");
+    }
     check(&format!("{mode:?} switching"), &r, &b)
 }
 
@@ -217,57 +275,101 @@ fn gc_u01_baseline_is_sane() {
 }
 
 #[test]
-#[ignore = "GC-U01: gap taken as underrun (target 60->80 ms), dropped seqs played as lost frames (latency 150 vs 90 ms), PLC-to-silence click, fix pending"]
 fn gc_u01_seq_jump_100ms() {
-    assert_ok(single_gap(Gap::SeqJump, 100));
+    assert_ok(single_gap(Gap::SeqJump, 100, true));
 }
 
 #[test]
-#[ignore = "GC-U01: gap taken as underrun (target 60->80 ms), PLC-to-silence click after MAX_CONCEAL, fix pending"]
 fn gc_u01_seq_jump_500ms() {
-    assert_ok(single_gap(Gap::SeqJump, 500));
+    assert_ok(single_gap(Gap::SeqJump, 500, true));
 }
 
 #[test]
-#[ignore = "GC-U01: gap taken as underrun (target 60->80 ms), PLC-to-silence click after MAX_CONCEAL, fix pending"]
 fn gc_u01_seq_jump_2s() {
-    assert_ok(single_gap(Gap::SeqJump, 2000));
+    assert_ok(single_gap(Gap::SeqJump, 2000, true));
 }
 
 #[test]
-#[ignore = "GC-U01: gap taken as underrun (target 60->80 ms), fix pending"]
 fn gc_u01_seq_continuous_100ms() {
-    assert_ok(single_gap(Gap::SeqContinuous, 100));
+    assert_ok(single_gap(Gap::SeqContinuous, 100, true));
 }
 
 #[test]
-#[ignore = "GC-U01: gap taken as jitter and underrun (target 113 ms, latency 130 vs 90 ms), PLC-to-silence click, fix pending"]
 fn gc_u01_seq_continuous_500ms() {
-    assert_ok(single_gap(Gap::SeqContinuous, 500));
+    assert_ok(single_gap(Gap::SeqContinuous, 500, true));
 }
 
 #[test]
-#[ignore = "GC-U01: gap taken as jitter and underrun (target 200 ms, latency 230 vs 90 ms), PLC-to-silence click, fix pending"]
 fn gc_u01_seq_continuous_2s() {
-    assert_ok(single_gap(Gap::SeqContinuous, 2000));
+    assert_ok(single_gap(Gap::SeqContinuous, 2000, true));
 }
 
 #[test]
-#[ignore = "GC-U01: target ratchets to 200 ms, latency 250 vs 90 ms, PLC-to-silence clicks, fix pending"]
+fn gc_u01_keep_level_500ms() {
+    assert_ok(single_gap(Gap::KeepLevel, 500, true));
+}
+
+#[test]
+fn gc_u01_keep_level_2s() {
+    assert_ok(single_gap(Gap::KeepLevel, 2000, true));
+}
+
+#[test]
 fn gc_u01_seq_jump_switching() {
     assert_ok(switching(Gap::SeqJump));
 }
 
 #[test]
-#[ignore = "GC-U01: target ratchets to 200 ms, latency 230 vs 90 ms, clicks at cut-out and resume, fix pending"]
 fn gc_u01_seq_continuous_switching() {
     assert_ok(switching(Gap::SeqContinuous));
 }
 
 #[test]
-#[ignore = "GC-U01: each keep-level datagram is an underrun, target ratchets to 200 ms, latency 150 vs 90 ms, clicks, fix pending"]
 fn gc_u01_keep_level_switching() {
     assert_ok(switching(Gap::KeepLevel));
+}
+
+/// No `Active` signal (control message late or lost): gaps of 200 ms and more end the spurt
+/// through the 200 ms no-datagram fallback with the same guarantees. Shorter unsignalled gaps
+/// look like network loss and are concealed as such.
+#[test]
+fn gc_u01_fallback_only() {
+    let mut bad = vec![];
+    for mode in [Gap::SeqJump, Gap::SeqContinuous, Gap::KeepLevel] {
+        for gap in [500, 2000] {
+            bad.extend(single_gap(mode, gap, false));
+        }
+    }
+    assert_ok(bad);
+}
+
+/// The idle/resume path ignores stragglers of the ended spurt and restores the learned target.
+#[test]
+fn gc_u01_idle_ignores_stragglers() {
+    let mut tx = Sender::new(CALL_BITRATE).unwrap();
+    let mut rx = Receiver::new_group().unwrap();
+    let mut tone = Tone::new(TONE_HZ, TONE_AMP);
+    let mut pcm = [0i16; GC_FRAME];
+    let mut f = [0i16; GC_FRAME];
+    let mut dgs = vec![];
+    for t in 0..50u64 {
+        tone.next_frame(&mut pcm);
+        dgs.push(tx.encode(&pcm).unwrap());
+        rx.push(dgs.last().unwrap(), t * 20 + 40);
+        rx.pull(&mut f, t * 20 + 50);
+    }
+    rx.set_active(false);
+    let mut now = 1050;
+    while !rx.is_idle() {
+        rx.pull(&mut f, now);
+        now += 20;
+        assert!(now < 1300, "never went idle");
+    }
+    let target = rx.stats().target_ms;
+    rx.push(&dgs[45], now); // straggler
+    rx.pull(&mut f, now + 10);
+    assert!(rx.is_idle() && f.iter().all(|&x| x == 0));
+    assert_eq!(rx.stats().target_ms, target);
 }
 
 // ---------------------------------------------------------------------------------------------
