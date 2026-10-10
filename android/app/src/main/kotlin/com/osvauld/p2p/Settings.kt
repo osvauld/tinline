@@ -51,7 +51,11 @@ fun SettingsScreen(
     app: P2pApp, missing: List<Need>, onBack: () -> Unit, onBattery: () -> Unit, onPassphrase: () -> Unit, onPhrase: () -> Unit,
     onAbout: () -> Unit, onDiagnostics: () -> Unit, onSwitchPick: (String) -> Unit = {}, onCreateAccount: () -> Unit = {},
     onRestoreAccount: () -> Unit = {}, onDevices: () -> Unit = {}, onLinkDevice: () -> Unit = {}, onLinkAccount: () -> Unit = {},
+    /** Opens the PLACEHOLDER groups & privacy preview at a start screen (see [PRoute.parse]); debug builds only. */
+    onPreview: (String) -> Unit = {},
 ) {
+    val ctx = LocalContext.current
+    val previewOn by PreviewFlags.enabled(ctx).collectAsState()
     val avail by app.availability.collectAsState()
     val available = avail.available
     val c = Tin.c
@@ -90,9 +94,17 @@ fun SettingsScreen(
             if (hasPass) ListItem("Change passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key)
             else ListItem("Add passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key, sub = "Optional — encrypts your account")
             ListItem("Recovery phrase", onClick = onPhrase, icon = Icons.Rounded.Lock, sub = if (hasPass) "Needs your passphrase" else "Needs your screen lock")
+            if (previewOn == true) {
+                SectionLabel("PRIVACY · PREVIEW")
+                ListItem("People, requests & blocking", onClick = { onPreview("chats") }, icon = Icons.Rounded.Groups, sub = "Demo chats with Meera, Arjun, Priya · placeholder data")
+                ListItem("Blocked people", onClick = { onPreview("blocked") }, icon = Icons.Rounded.Block, sub = "Placeholder data")
+                ListItem("Address changes", onClick = { onPreview("address") }, icon = Icons.Rounded.Sync, sub = "Placeholder data")
+            }
             SectionLabel("ABOUT")
             ListItem("About Tinline", onClick = onAbout, icon = Icons.Rounded.Info, sub = "Version, licences, terms, privacy")
             if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = Icons.Rounded.BugReport, sub = "Test tone and core version (debug builds)")
+            if (PreviewFlags.available) ListItem(PreviewFlags.LABEL, icon = Icons.Rounded.Science, sub = "Debug builds only. Screens for features the core doesn’t have yet",
+                trailing = { TinSwitch(previewOn == true, { PreviewFlags.set(ctx, it) }, PreviewFlags.LABEL) })
         }
     }
     if (sheet) AccountSheet(app, onDismiss = { sheet = false }, onPick = { sheet = false; onSwitchPick(it) },

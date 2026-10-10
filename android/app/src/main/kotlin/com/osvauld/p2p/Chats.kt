@@ -23,26 +23,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.outlined.Groups as GroupsOutlined
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import uniffi.p2pcore.Chat
 import uniffi.p2pcore.Contact
 
-/** The three tabs of the bottom bar. Chats opens by default. */
-enum class HomeTab { Chats, Calls, Contacts }
+/** The tabs of the bottom bar. Chats opens by default. Groups shows only while the placeholder preview is on ([PreviewFlags]). */
+enum class HomeTab { Chats, Groups, Calls, Contacts }
 
 /** Bottom bar: Chats · Calls · Contacts, with a red count on Chats (unread) and Calls (missed since you looked). */
 @Composable
-fun TinNavBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int = 0, callBadge: Int = 0) {
+fun TinNavBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int = 0, callBadge: Int = 0, showGroups: Boolean = false, groupBadge: Int = 0) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().background(c.sf2).navigationBarsPadding().height(80.dp)) {
         listOf(
             Triple(HomeTab.Chats, Icons.Rounded.ChatBubbleOutline to Icons.Rounded.Chat, "Chats") to chatBadge,
+            Triple(HomeTab.Groups, Icons.Outlined.GroupsOutlined to Icons.Rounded.Groups, "Groups") to groupBadge,
             Triple(HomeTab.Calls, Icons.Rounded.Call to Icons.Rounded.Call, "Calls") to callBadge,
             Triple(HomeTab.Contacts, Icons.Rounded.PeopleOutline to Icons.Rounded.People, "Contacts") to 0,
-        ).forEach { (t, badge) ->
+        ).filter { showGroups || it.first.first != HomeTab.Groups }.forEach { (t, badge) ->
             val (id, icons, label) = t
             val on = id == tab
             Column(
-                Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) { onTab(id) },
+                Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) { onTab(id) }
+                    .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = "$badge new" },
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
             ) {
                 Box(Modifier.size(64.dp, 32.dp).clip(RoundedCornerShape(50)).background(if (on) c.prc else androidx.compose.ui.graphics.Color.Transparent), contentAlignment = Alignment.Center) {

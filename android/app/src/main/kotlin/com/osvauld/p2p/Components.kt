@@ -79,7 +79,7 @@ fun IconBtn(icon: ImageVector, desc: String, onClick: () -> Unit, tint: Color = 
 
 // ------------------------------------------------------------------ buttons
 
-enum class BtnStyle { Filled, Tonal, Outlined, Text, Danger, DangerFilled }
+enum class BtnStyle { Filled, Tonal, Outlined, Text, Danger, DangerFilled, OutlinedDanger }
 
 /** Pill button, 52 dp tall by default. */
 @Composable
@@ -95,8 +95,9 @@ fun TinButton(
         BtnStyle.Outlined, BtnStyle.Text -> Color.Transparent to (if (enabled) c.pr else c.ink2)
         BtnStyle.Danger -> c.erc to c.er
         BtnStyle.DangerFilled -> c.er to c.onEr
+        BtnStyle.OutlinedDanger -> Color.Transparent to c.er
     }
-    val border = if (style == BtnStyle.Outlined) BorderStroke(1.dp, c.ln2) else null
+    val border = if (style == BtnStyle.Outlined || style == BtnStyle.OutlinedDanger) BorderStroke(1.dp, c.ln2) else null
     Surface(
         onClick = onClick, enabled = enabled, shape = RoundedCornerShape(50), color = bg, contentColor = fg, border = border,
         modifier = (if (fill) modifier.fillMaxWidth() else modifier).heightIn(min = height),

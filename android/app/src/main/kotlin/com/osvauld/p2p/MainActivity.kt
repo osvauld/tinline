@@ -78,6 +78,8 @@ private sealed interface Route {
     data object Devices : Route
     data class DeviceDetail(val device: String) : Route
     data object LinkDevice : Route
+    /** PLACEHOLDER groups & privacy preview (debug builds, [PreviewFlags]). */
+    data class Preview(val start: PRoute) : Route
 }
 
 @Composable
@@ -99,6 +101,8 @@ private fun Root(app: P2pApp) {
     var pendingCall by remember { mutableStateOf<String?>(null) }
     // Back stack. Not saved: the recovery phrase may sit in it, and Home is a fine place to restart.
     val stack = remember { mutableStateListOf<Route>(Route.Home) }
+    // Home's tab survives opening a chat or group and coming back.
+    val homeTab = rememberSaveable { mutableStateOf(HomeTab.Chats) }
     fun pop() { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
     fun home() { stack.clear(); stack.add(Route.Home) }
     fun say(msg: String) { scope.launch { snack.currentSnackbarData?.dismiss(); snack.showSnackbar(msg) } }
@@ -206,6 +210,7 @@ private fun Root(app: P2pApp) {
                     app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onPaste = { stack.add(Route.Add(false, paste = true)) }, onSettings = { stack.add(Route.Settings) },
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
+                    homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
                 )
                 Route.NewChat -> {
                     val chats by app.chat.chats.collectAsState()
@@ -252,11 +257,17 @@ private fun Root(app: P2pApp) {
                     onPhrase = { stack.add(Route.PhraseGate) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
                     onSwitchPick = { stack.add(Route.SwitchConfirm(it)) }, onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) },
                     onDevices = { stack.add(Route.Devices) }, onLinkDevice = { stack.add(Route.LinkDevice) }, onLinkAccount = { addAccount(false, link = true) },
+                    onPreview = { stack.add(Route.Preview(PRoute.parse(it))) },
                 )
                 is Route.SwitchConfirm -> SwitchConfirmScreen(app, r.did, onBack = ::pop, onSwitched = { home() }, onMessage = ::say)
                 Route.Devices -> LinkedDevicesScreen(app, ::pop, onLink = { stack.add(Route.LinkDevice) }, onDetail = { stack.add(Route.DeviceDetail(it)) })
                 is Route.DeviceDetail -> DeviceDetailScreen(app, r.device, onBack = ::pop, onMessage = ::say)
                 Route.LinkDevice -> LinkSession(app, newDevice = false, label = "", onClose = ::pop)
+                is Route.Preview -> {
+                    val on by PreviewFlags.enabled(ctx).collectAsState()
+                    if (on == true) key(r) { PreviewApp(PreviewBackend.get(app.node.profile()?.name ?: ""), r.start, onExit = ::pop, onShowMyQr = { stack.add(Route.Add(false)) }, onAddContact = { stack.add(Route.Add(true)) }) }
+                    else LaunchedEffect(Unit) { pop() }
+                }
                 Route.Battery -> BatteryScreen(missing, onBack = ::pop, onFix = fix)
                 Route.Passphrase -> ChangePassphraseScreen(app, onBack = ::pop)
                 Route.PhraseGate -> PhraseGateScreen(app, onBack = ::pop, onPhrase = { p -> pop(); stack.add(Route.PhraseShown(p)) })
