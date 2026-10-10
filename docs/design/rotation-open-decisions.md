@@ -186,6 +186,16 @@ list). Honoured by the shipped app; not enforceable against modified builds, and
 our DID. Open: does the deletion request also remove the chat history on their side, or only the
 contact entry? Is it always sent with a block, or a separate choice in the block dialog?
 
+**U21 (user, 2026-10-10) — group calls are relayed through one call host, never a member mesh.**
+Members connect only to the selected call host (keeps U7: no member learns another member's
+endpoint). The host forwards Opus packets without decoding or mixing (SFU-style); clients mix
+locally. To bound host uplink, the host forwards only the 2–3 loudest speakers. The host must be
+able to run on a phone when needed (CPU near zero, bounded uplink); a desktop with a stable
+connection is preferred when one is available. Call hosting is a separate `host_call`
+capability, not implied by chat hosting. Encryption is hop-by-hop QUIC; the host can hear the
+call, accepted under U14. Launch failover: if the call host drops, the call ends and members
+redial through the next host — no live hand-off. Spec and test plan: G6 (`group-call-spec.md`).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
