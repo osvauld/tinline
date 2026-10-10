@@ -195,6 +195,8 @@ struct App {
     /// Cached so `view` never calls into the node.
     lock: LockState,
     profile_name: String,
+    /// "You" (saved items for our own devices) as a contact-shaped row for the chat UI; never a real contact.
+    me: Option<Contact>,
     busy: bool,
     notice: Option<String>,
     status: NodeStatus,
@@ -647,6 +649,7 @@ impl App {
             new_phrase: None,
             lock,
             profile_name: node.profile().map(|p| p.name).unwrap_or_default(),
+            me: node.profile().map(|p| self_contact(&p.did)),
             busy: false,
             notice: None,
             status: node.status(),
@@ -729,7 +732,10 @@ impl App {
             "calls" => self.update_chat(Cm::Tab(chat::SideTab::Calls)),
             "contacts" => self.update_chat(Cm::Tab(chat::SideTab::Contacts)),
             _ => {
-                let did = v.strip_prefix("chat:").and_then(|n| self.node.contacts().into_iter().find(|c| c.name == n)).map(|c| c.did);
+                let did = v.strip_prefix("chat:").and_then(|n| match n {
+                    "You" => self.me.as_ref().map(|m| m.did.clone()),
+                    _ => self.node.contacts().into_iter().find(|c| c.name == n).map(|c| c.did),
+                });
                 match did {
                     Some(did) => Task::batch([self.update_chat(Cm::Tab(chat::SideTab::Chats)), self.update(Msg::Select(did))]),
                     None => Task::none(),
@@ -821,6 +827,12 @@ impl App {
         }
         self.lock = self.node.lock_state();
         self.profile_name = self.node.profile().map(|p| p.name).unwrap_or_default();
+        self.me = self.node.profile().map(|p| self_contact(&p.did));
+    }
+
+    /// The "You" conversation: our own DID.
+    pub(super) fn is_me(&self, did: &str) -> bool {
+        self.me.as_ref().is_some_and(|m| m.did == did)
     }
 
     fn hide_phrase(&mut self) {
@@ -902,7 +914,7 @@ impl App {
 
     fn selected(&self) -> Option<&Contact> {
         let did = self.sel.as_ref()?;
-        self.contacts.iter().find(|c| &c.did == did)
+        self.contacts.iter().find(|c| &c.did == did).or_else(|| self.me.as_ref().filter(|m| &m.did == did))
     }
 
     fn rename(&mut self, clear: bool) -> Task<Msg> {
@@ -2061,4 +2073,11 @@ impl App {
             }),
         ])
     }
+}
+
+/// Subtitle of the "You" conversation in the list and its header.
+pub(super) const SELF_SUB: &str = "Saved items \u{b7} only on your devices";
+
+fn self_contact(did: &str) -> Contact {
+    Contact { did: did.to_string(), name: "You".into(), device: String::new(), added_at: 0, alias: None, verified: false }
 }
