@@ -18,6 +18,8 @@ mod policy_candidates;
 mod block_in_group;
 #[path = "host_relay.rs"]
 mod host_relay;
+#[path = "chat_request.rs"]
+mod chat_request;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {
