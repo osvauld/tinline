@@ -15,6 +15,9 @@ Checks, phone UI checked from the conversation header ("Connected · direct" / "
   T2 Y away: X2 sends -> one tick on X2 AND on the phone
   T3 Y back -> Y has both, two ticks everywhere
   C1 Y calls the phone after linking -> the call is in X2's call log
+  L0/L1 contact carol + her call on the phone BEFORE linking -> both reach X2 when linked
+  L2 X2 renames carol -> the phone shows the alias
+  L3 X2 removes carol -> she and her calls are gone on the phone
 Screenshots go to artifacts/presence-phone/. Needs the debug APK installed and target/release/p2p-peer.
 """
 import argparse, re, shutil, sys, tempfile, time
@@ -52,8 +55,12 @@ def peer_online(p, who):
 
 
 def peer_msgs(p, who):
-    return {t: d for d, t in (re.match(r'MSG \S+ out=\S+ delivery=(\S+) text=Some\("(.*)"\)', l).groups()
-                              for l in p.cmd(f"msgs {who}") if l.startswith("MSG ") and 'text=Some(' in l)}
+    out = {}
+    for l in p.cmd(f"msgs {who}"):
+        m = re.match(r'MSG \S+ out=\S+ delivery=(\S+) text="(.*)" att=', l)
+        if m:
+            out[m.group(2)] = m.group(1)
+    return out
 
 
 def timed(fn, timeout):
@@ -89,6 +96,17 @@ def main():
         c.ok("phone account", did is not None, did or "")
         ui.start_app(); ui.accept_terms(); ui.finish_onboarding()
 
+        # --- data from before the link: contact carol and a call from her -------------------
+        z = Peer(tmp / "z"); peers.append(z)
+        z.last("init carol")
+        carol = z.last("whoami").split()[2]
+        z.last("add " + phone("ticket", r"ticket=(\S+)"))
+        c.ok("L0 phone added carol", phone("add", r"added name=(\S+)", ticket=z.last("ticket").split(" ", 2)[-1]) == "carol")
+        pre_call = z.last(f"call {did}").split()[-1]
+        time.sleep(5)
+        z.last(f"hangup {pre_call}")
+        c.ok("L0 phone has carol's call", until(lambda: phone("history", r"(history peer=carol)", 5), 30) is not None)
+
         x2 = Peer(tmp / "x2"); peers.append(x2)
         mx = x2.mark()
         qr = x2.last("link-new-show Laptop").split()[-1]
@@ -98,6 +116,8 @@ def main():
         c.ok("X2 linked", x2.wait(r"^LINK_DONE", 60, mx) is not None)
         x2.last("commit")
         c.ok("X2 same DID", x2.last("whoami").split()[2] == did)
+        c.ok("L1 X2 got carol from before the link", until(lambda: any(carol in l for l in x2.cmd("contacts")), 60))
+        c.ok("L1 X2 got carol's call from before the link", until(lambda: any(l.startswith(f"REC {pre_call}") for l in x2.cmd("recents")), 60))
         ui.start_app()
 
         y = Peer(tmp / "y"); peers.append(y)
@@ -106,6 +126,14 @@ def main():
         y.last(f"add {ticket}")
         c.ok("phone added bob", phone("add", r"added name=(\S+)", ticket=y.last("ticket").split(" ", 2)[-1]) == "bob")
         c.ok("X2 has bob", until(lambda: any("bob" in l for l in x2.cmd("contacts")), 60))
+
+        # --- contact edits from X2 reach the phone ------------------------------------------
+        x2.last(f"alias {carol} Caroline")
+        c.ok("L2 X2's rename reaches the phone", until(lambda: phone("contacts", rf"did={carol} alias=(\S+)", 5) == "Caroline", 60))
+        x2.last(f"remove {carol}")
+        c.ok("L3 X2's removal reaches the phone", until(lambda: phone("contacts", r"(contact name=bob)", 5) and not phone("contacts", rf"(did={carol})", 3), 60))
+        c.ok("L3 carol's calls gone on the phone", until(lambda: not phone("history", r"(history peer=(?:carol|Caroline))", 3), 60))
+        z.quit(); peers.remove(z)
 
         # --- presence ---------------------------------------------------------------------
         ok, s = timed(lambda: phone_online("bob"), 60)
@@ -143,15 +171,15 @@ def main():
         c.ok("P3 SIGKILL -> X2 offline", ok, f"{s:.0f}s")
 
         # --- ticks while bob is away ------------------------------------------------------
-        phone("chat_send", r"chat_sent id=(\S+)", who="bob", text="from phone while away")
+        phone("chat_send", r"chat_sent id=(\S+)", who="bob", text="from-phone-while-away")
         x2.last("send bob from-x2-while-away")
-        c.ok("T1/T2 X2 has the phone's message", until(lambda: "from phone while away" in peer_msgs(x2, "bob"), 60))
+        c.ok("T1/T2 X2 has the phone's message", until(lambda: "from-phone-while-away" in peer_msgs(x2, "bob"), 60))
         c.ok("T1/T2 phone has X2's message", until(lambda: "from-x2-while-away" in phone_msgs("bob"), 60))
         time.sleep(3)
         pm, xm = phone_msgs("bob"), peer_msgs(x2, "bob")
         print("  phone:", pm); print("  X2:   ", xm)
-        c.ok("T1 phone-sent: one tick on phone", pm.get("from phone while away") == "PENDING")
-        c.ok("T1 phone-sent: one tick on X2", xm.get("from phone while away") == "Pending")
+        c.ok("T1 phone-sent: one tick on phone", pm.get("from-phone-while-away") == "PENDING")
+        c.ok("T1 phone-sent: one tick on X2", xm.get("from-phone-while-away") == "Pending")
         c.ok("T2 X2-sent: one tick on X2", xm.get("from-x2-while-away") == "Pending")
         c.ok("T2 X2-sent: one tick on phone", pm.get("from-x2-while-away") == "PENDING")
         ui.start_app(); ui.tap_exact("bob", 8); time.sleep(2); ui.shot("t1-away-one-tick")
@@ -159,7 +187,7 @@ def main():
 
         # --- bob comes back ---------------------------------------------------------------
         y = Peer(tmp / "y"); peers.append(y)
-        c.ok("T3 bob got both", until(lambda: {"from phone while away", "from-x2-while-away"} <= set(peer_msgs(y, did)), 90))
+        c.ok("T3 bob got both", until(lambda: {"from-phone-while-away", "from-x2-while-away"} <= set(peer_msgs(y, did)), 90))
         c.ok("T3 two ticks on phone", until(lambda: all(v == "DELIVERED" for v in phone_msgs("bob").values()), 60), str(phone_msgs("bob")))
         c.ok("T3 two ticks on X2", until(lambda: all(v == "Delivered" for k, v in peer_msgs(x2, "bob").items()), 60), str(peer_msgs(x2, "bob")))
         c.ok("T3 header Connected", header("Connected ·", "t3-back"))

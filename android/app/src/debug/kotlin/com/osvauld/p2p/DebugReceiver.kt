@@ -36,7 +36,7 @@ class DebugReceiver : BroadcastReceiver() {
                 cm.setPrimaryClip(android.content.ClipData.newPlainText("test", i.getStringExtra("text") ?: node.myTicket()))
                 testLog("clip set")
             }
-            "contacts" -> node.contacts().forEach { testLog("contact name=${it.name} did=${it.did}") }
+            "contacts" -> node.contacts().forEach { testLog("contact name=${it.name} did=${it.did} alias=${it.alias}") }
             "call" -> {
                 val who = i.getStringExtra("who") ?: ""
                 val c = node.contacts().firstOrNull { it.did == who || it.name == who }
