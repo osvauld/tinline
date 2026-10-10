@@ -200,6 +200,12 @@ redial through the next host — no live hand-off. Spec and test plan: G6 (`grou
 verdict, so an unprovable op refuses the whole batch); own-device sync protocol bumped with chat
 (`tinline/chat/2`, `tinline/self/2`). Merged into fixes-phase1 as `cf46f7a`.
 
+**U23 (user, 2026-10-10) — priority: consent-based blocking first, rotation second.** The main
+protection is blocking that our shipped apps honour on both sides (signed notice, the blocked
+person's app stops sending/calling and can delete our contact, the blocker's devices refuse).
+Endpoint rotation is the backstop for truly malicious users running modified clients; it follows
+after blocking (P5) and message/call tokens (P6).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
