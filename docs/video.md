@@ -110,6 +110,52 @@ The first version used the congestion window for the bitrate; the simulation sho
 bufferbloat (p50 256 ms on a clean link, 1.5 s after a bandwidth drop), which is why rate
 control is delay-based.
 
+## Capture/render conversion (`video::convert`)
+
+Pure Rust, safe, no dependencies; `cargo test -p video --release convert`.
+
+- **In:** `Yuv420` borrows any strided 4:2:0 picture: Android `YUV_420_888` (row stride,
+  pixel stride 1 = planar or 2 = the NV12/NV21 views where U and V overlap; planes may end
+  right after the last pixel, as Android buffers do), NV12/NV21 (`Yuv420::nv12`), or an
+  `I420`. Desktop extras: `yuyv_to_i420` (YUY2), `rgb_to_i420` (RGB/BGR/RGBA/BGRA). MJPEG
+  cameras are out of scope: decode them first (or pick the camera's YUYV/NV12 mode).
+- **`prepare`** = the capture pipeline in one pass over the camera buffer: optional crop ->
+  center-crop to the output aspect -> scale (copy, exact 2:1 box, or area average) ->
+  full->limited range -> rotate (CameraX `rotationDegrees`) / mirror. Scaling happens before
+  rotation, so rotation only touches output-sized data. Output sizes round down to even and
+  crop origins to even (chroma alignment). Send unmirrored; mirror only the self-view.
+- **Colour:** BT.601 limited range everywhere. `csrc/aom_rt.c` signals no colour description
+  (decoders then assume 601-ish limited). Android camera YUV is normally full range (JFIF), so
+  Android uses `Range::Full` (verify on the device: Y of a black/white scene should span
+  ~0..255). Alternative later: signal full range in the bitstream (`AV1E_SET_COLOR_RANGE`).
+- **Out:** `i420_to_rgba` into a caller buffer (iced `image::Handle::from_rgba` on desktop).
+- **Android render (recommended):** keep per-frame work in Rust. Kotlin hands a `Surface`
+  (SurfaceView) to Rust once; Rust does `ANativeWindow_fromSurface`,
+  `ANativeWindow_setBuffersGeometry(w, h, RGBA_8888)` at each resolution change, then per
+  frame `lock` -> `i420_to_rgba` into the locked buffer (row stride from the buffer) ->
+  `unlockAndPost`. The compositor scales to the view for free, no JNI per frame, no Bitmap.
+  Simpler fallback: `i420_to_rgba` into a direct `ByteBuffer` + `Bitmap.copyPixelsFromBuffer`
+  (`ARGB_8888` is RGBA in memory). If RGBA conversion shows up on A53-class phones at 720p,
+  move to a GL shader that samples the three planes (`GL_R8` textures), no CPU conversion.
+
+Cost per frame, `cargo run -p video --release --example convert_bench` (i7-1165G7, loadavg
+~8 from other builds, median ms):
+
+| path | ms |
+|---|---|
+| `prepare`: YUV_420_888 pixel stride 2, 640x480, R90 -> 360x640 (portrait 640x360) | 0.53 |
+| `prepare`: 640x480, R90 -> 640x360 landscape (crop 270x480, upscale) | 1.21 |
+| `prepare`: 640x480, R0 -> 640x360 (crop only) | 0.15 |
+| `prepare`: 1280x720, R90 -> 360x640 (2:1 box) | 0.93 |
+| `prepare`: 1280x720, R0 -> 960x540 (general area average) | 2.28 |
+| `i420_to_rgba` 640x360 / 1280x720 | 0.33 / 1.31 |
+| `yuyv_to_i420` 640x480 | 0.16 |
+| `rgb_to_i420` BGRA 1280x720 | 1.28 |
+
+Expect ~4-8x these on the phone's A53 cores (to be measured; keep conversion on the pinned
+fast cores too). Cheapest capture: ask CameraX for a size whose aspect matches the encoder
+(crop-only or exact 2:1), since the general (non-integer) scaler is the slow path.
+
 ## Next
 
 1. ~~Real footage, ARM numbers~~ done (above). Static libaom: `scripts/build_libaom.py` works
@@ -119,4 +165,6 @@ control is delay-based.
 3. iroh transport against `media::Sender`/`Receiver` (uni stream per group, priority by
    group, control stream for reports/keyframe requests), checked against the same scenarios.
 4. Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.
-5. Capture/render: Android CameraX -> I420, desktop camera; render on both.
+5. Capture/render: Android CameraX -> I420, desktop camera; render on both. Pure-Rust
+   conversion done (`video::convert`, above); still to do: CameraX/desktop capture glue and
+   the renderers, phone numbers for `convert_bench`.

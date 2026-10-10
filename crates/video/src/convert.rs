@@ -455,21 +455,28 @@ pub fn i420_to_rgba(src: &I420, out: &mut [u8]) -> Result<()> {
     }
     let (sy, su, sv) = src.planes();
     let (cw, _) = I420::chroma(w, h);
+    // Chroma terms expanded to luma width once per chroma row, so the pixel loop is flat.
+    let (mut rc, mut gc, mut bc) = (vec![0i32; 2 * cw], vec![0i32; 2 * cw], vec![0i32; 2 * cw]);
     for y in 0..h {
-        let yrow = &sy[y * w..(y + 1) * w];
-        let urow = &su[(y / 2) * cw..(y / 2 + 1) * cw];
-        let vrow = &sv[(y / 2) * cw..(y / 2 + 1) * cw];
-        let orow = &mut out[y * w * 4..(y + 1) * w * 4];
-        for (((o, ys), &u), &v) in orow.chunks_mut(8).zip(yrow.chunks(2)).zip(urow).zip(vrow) {
-            let (d, e) = (u as i32 - 128, v as i32 - 128);
-            let (rc, gc, bc) = (409 * e + 128, -100 * d - 208 * e + 128, 516 * d + 128);
-            for (o, &yy) in o.chunks_exact_mut(4).zip(ys) {
-                let c = 298 * (yy as i32 - 16);
-                o[0] = ((c + rc) >> 8).clamp(0, 255) as u8;
-                o[1] = ((c + gc) >> 8).clamp(0, 255) as u8;
-                o[2] = ((c + bc) >> 8).clamp(0, 255) as u8;
-                o[3] = 255;
+        if y % 2 == 0 {
+            let (u, v) = (&su[(y / 2) * cw..(y / 2 + 1) * cw], &sv[(y / 2) * cw..(y / 2 + 1) * cw]);
+            for (i, (&u, &v)) in u.iter().zip(v).enumerate() {
+                let (d, e) = (u as i32 - 128, v as i32 - 128);
+                let t = [409 * e + 128, -100 * d - 208 * e + 128, 516 * d + 128];
+                for (k, t) in [&mut rc, &mut gc, &mut bc].into_iter().zip(t) {
+                    k[2 * i] = t;
+                    k[2 * i + 1] = t;
+                }
             }
+        }
+        let yrow = &sy[y * w..(y + 1) * w];
+        let orow = &mut out[y * w * 4..(y + 1) * w * 4];
+        for ((((o, &yy), &r), &g), &b) in orow.chunks_exact_mut(4).zip(yrow).zip(&rc).zip(&gc).zip(&bc) {
+            let c = 298 * (yy as i32 - 16);
+            o[0] = ((c + r) >> 8).clamp(0, 255) as u8;
+            o[1] = ((c + g) >> 8).clamp(0, 255) as u8;
+            o[2] = ((c + b) >> 8).clamp(0, 255) as u8;
+            o[3] = 255;
         }
     }
     Ok(())
