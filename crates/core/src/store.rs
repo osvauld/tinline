@@ -11,7 +11,7 @@
 //! from the vault's data key (`Backing::Sealed`), so they exist only while unlocked. A legacy
 //! profile has no data key and keeps `state.json` / `calls.json` (`Backing::Json`) until converted.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -83,8 +83,15 @@ pub struct StoredContact {
     /// The newest signed device list we hold for them; once present it, not `note_device`,
     /// decides which devices we dial.
     pub device_list: Option<proto::SignedBlob>,
-    /// Lets us call them; replaced whenever they renew it.
+    /// Their message token for us (U13): opens chat with them. Replaced by a renewal that
+    /// outlives it. A legacy (pre-P6) `call` grant counts as message + call.
     pub grant_from_them: proto::SignedGrant,
+    /// Their call token for us, if they let us call (`None`: we can only message them).
+    /// Replaced by a renewal that outlives it; dropped when they answer "calls not allowed".
+    pub call_grant_from_them: Option<proto::SignedGrant>,
+    /// Whether WE let them call us (we issued them a call token and have not taken it back).
+    /// Ticket contacts: true; group chat-request contacts: false (U13). Synced to own devices.
+    pub calls_allowed: bool,
     pub added_at: u64,
     /// Local-only name we gave them; `name` stays what they call themselves.
     pub alias: Option<String>,
@@ -126,11 +133,19 @@ struct RawContact {
     #[serde(default)]
     device_list: Option<proto::SignedBlob>,
     grant_from_them: proto::SignedGrant,
+    #[serde(default)]
+    call_grant_from_them: Option<proto::SignedGrant>,
+    #[serde(default = "yes")]
+    calls_allowed: bool,
     added_at: u64,
     #[serde(default)]
     alias: Option<String>,
     #[serde(default)]
     verified: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 impl From<RawContact> for StoredContact {
@@ -149,7 +164,13 @@ impl From<RawContact> for StoredContact {
             name: r.name,
             devices,
             device_list: r.device_list,
+            // U13 migration: a legacy `call` grant also lets us call (records from before P6
+            // have no call slot and default to `calls_allowed`).
+            call_grant_from_them: r
+                .call_grant_from_them
+                .or_else(|| proto::peek_grant(&r.grant_from_them).filter(|g| g.is_legacy()).map(|_| r.grant_from_them.clone())),
             grant_from_them: r.grant_from_them,
+            calls_allowed: r.calls_allowed,
             added_at: r.added_at,
             alias: r.alias,
             verified: r.verified,
@@ -184,8 +205,16 @@ pub struct AvailabilityState {
 #[serde(default)]
 pub struct State {
     pub contacts: Vec<StoredContact>,
-    /// Ids of grants we issued and then took back.
+    /// Ids of grants we issued and then took back. Not written today: tokens are taken back per
+    /// DID with `cut_offs` (every renewal mints a new id, so ids would leak).
     pub revoked: HashSet<String>,
+    /// Per holder DID: tokens we issued at or before these times (unix seconds) are refused
+    /// (P6, U13). A block raises both, "disallow calls" the call one. Only ever raised; synced
+    /// to own devices (max wins). Unblocking does not lower it: the contact needs fresh tokens.
+    pub cut_offs: HashMap<String, CutOffs>,
+    /// Tokens this device still has to deliver, per DID: capability names ("message", "call").
+    /// Local (only the device that queued them delivers); fresh tokens are minted on delivery.
+    pub token_outbox: HashMap<String, BTreeSet<String>>,
     /// DIDs we block (U19: the contact is kept). Everything from them is refused with the notice
     /// in `sent_notices`. Always the DIDs whose `sent_notices` entry is a block.
     pub blocked: HashSet<String>,
@@ -206,6 +235,22 @@ pub struct State {
     pub registry: Vec<OwnDevice>,
     /// The latest `DeviceList` we signed from the registry; sent in every call hello and accept.
     pub own_list: Option<proto::SignedBlob>,
+}
+
+/// See `State::cut_offs`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CutOffs {
+    pub message: u64,
+    pub call: u64,
+}
+
+impl CutOffs {
+    /// Raises each field to the other's (merge between own devices).
+    pub fn merge(&mut self, other: &CutOffs) {
+        self.message = self.message.max(other.message);
+        self.call = self.call.max(other.call);
+    }
 }
 
 /// A notice someone sent us, with the name we knew them by (their contact entry is deleted on a
@@ -256,22 +301,27 @@ const STATE_KEY: &str = "state";
 const CALLS_KEY: &str = "calls";
 const LABEL_KEY: &str = "device_label";
 
-/// Opens (creating) the account's sealed store. It is keyed by the recovery `phrase` (see
-/// `rekey.rs`); `dek` lets a store from before that change be re-keyed on the way.
-pub fn open_sealed(dir: &Path, phrase: &str, dek: Option<&[u8; 32]>) -> Result<storage::Sealed, Error> {
-    let path = dir.join("account.redb");
-    // A previous owner of the file (a task of an account just left) may still hold it for a moment.
+/// Opens (creating) a store file. A previous owner of the file (the node of a restart, or a task
+/// of an account just left) may still hold it for a moment: retried for up to about 2 s.
+pub fn open_waiting(path: &Path) -> Result<storage::Store, Error> {
     let mut tries = 0;
-    let db = loop {
-        match storage::Store::open(&path) {
-            Ok(db) => break db,
+    loop {
+        match storage::Store::open(path) {
+            Ok(db) => return Ok(db),
             Err(e) if tries >= 20 => return Err(Error::Io(e.to_string())),
             Err(_) => {
                 tries += 1;
                 std::thread::sleep(std::time::Duration::from_millis(100));
             }
         }
-    };
+    }
+}
+
+/// Opens (creating) the account's sealed store. It is keyed by the recovery `phrase` (see
+/// `rekey.rs`); `dek` lets a store from before that change be re-keyed on the way.
+pub fn open_sealed(dir: &Path, phrase: &str, dek: Option<&[u8; 32]>) -> Result<storage::Sealed, Error> {
+    let path = dir.join("account.redb");
+    let db = open_waiting(&path)?;
     set_private(&path);
     crate::rekey::open(
         db,
@@ -657,6 +707,29 @@ mod tests {
         let _ = fs::remove_dir_all(&top);
     }
 
+    // KIND: invariant (P10)
+    // A store file another owner still holds for a moment (the node before a restart) opens once
+    // it is let go, instead of failing at once; one held for good still fails, after ~2 s.
+    #[test]
+    fn a_store_still_held_opens_once_released() {
+        let dir = tmp("held");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("chat.redb");
+        let held = storage::Store::open(&path).unwrap();
+        assert!(storage::Store::open(&path).is_err(), "redb refuses a second owner");
+        let t = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            drop(held);
+        });
+        open_waiting(&path).unwrap();
+        t.join().unwrap();
+        let _again = open_waiting(&path).unwrap();
+        let start = std::time::Instant::now();
+        assert!(open_waiting(&path).is_err());
+        assert!(start.elapsed() >= std::time::Duration::from_secs(1));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn stale_temp_files_are_removed_on_open() {
         let dir = tmp("stale");
@@ -736,6 +809,8 @@ mod tests {
         assert_eq!((c.devices[0].device, c.devices[0].relay.as_deref()), ([1u8; 32], Some("https://r.example/")));
         assert_eq!((c.devices[1].device, c.devices[1].relay.clone()), ([2u8; 32], None));
         assert!(c.device_list.is_none() && !c.verified && c.alias.is_none());
+        // Before P6: calls allowed by default; "p" is no grant at all, so nothing to migrate.
+        assert!(c.calls_allowed && c.call_grant_from_them.is_none());
         // Round trip in the new shape, and as part of a whole old State.
         let again: StoredContact = serde_json::from_slice(&serde_json::to_vec(&c).unwrap()).unwrap();
         assert_eq!(again.devices, c.devices);
@@ -745,5 +820,25 @@ mod tests {
         // No relay, and a contact with no devices at all, still load.
         let bare = serde_json::json!({"did":"d","name":"n","devices":[],"relay":null,"grant_from_them":{"payload":"p","signature":"s"},"added_at":1});
         assert!(serde_json::from_value::<StoredContact>(bare).unwrap().devices.is_empty());
+    }
+
+    // KIND: invariant (P6, U13 migration)
+    // A record from before separate tokens holds one legacy `call` grant: it loads with that
+    // grant in both slots (message and call) and calls allowed; a record with a version-2
+    // message token gets no call slot from it.
+    #[test]
+    fn a_legacy_call_grant_migrates_to_message_and_call() {
+        let (them, _) = identity::generate();
+        let legacy = proto::issue_legacy_grant_for_test(&them, "did:key:me", 1, 100);
+        let rec = |g: &proto::SignedGrant| serde_json::json!({"did":"d","name":"n","devices":[],"grant_from_them":g,"added_at":1});
+        let c: StoredContact = serde_json::from_value(rec(&legacy)).unwrap();
+        assert_eq!(c.call_grant_from_them.as_ref(), Some(&legacy));
+        assert!(c.calls_allowed);
+        let msg = proto::issue_token(&them, "did:key:me", proto::Cap::Message, 1, 100);
+        let c: StoredContact = serde_json::from_value(rec(&msg)).unwrap();
+        assert!(c.call_grant_from_them.is_none());
+        // The new shape round-trips.
+        let again: StoredContact = serde_json::from_slice(&serde_json::to_vec(&c).unwrap()).unwrap();
+        assert!(again.call_grant_from_them.is_none() && again.calls_allowed);
     }
 }

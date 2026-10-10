@@ -144,4 +144,13 @@ host"), then `Delivered`; on a host device our posts are `Delivered` at once.
 - Own-device sync of the group list (today a sibling joins with `group_device_token`).
 - The doc is one Loro doc per group (not day-sharded like 1:1 chat); a large group's full sync is
   one batch. Sharding/compaction like chat is needed before big groups.
+- Writer counters after a lost `group.redb` (P10's concern): a device never writes into a group
+  before it holds the host's copy (joins write `Join` only after the first sync; posting needs a
+  derived membership), and Loro continues our writer's counter from what the host holds, so
+  counters are not reused. A post written offline right after losing the store, before any sync,
+  is impossible today because the group is gone with the store. If chat's P10 rotation gives the
+  install a new device ID, groups simply see a new writer of the same DID.
+- `blocking_acceptance.rs::personal_block_does_not_change_group_membership` (P5's file) still
+  uses stub group helpers whose shape (`add_group_member(host, group, did)`) does not fit the
+  invite model; it stays ignored. Its intent is covered by design: blocks never touch group state.
 - The Android/desktop apps are not wired (G1 only provides the API).

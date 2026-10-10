@@ -555,7 +555,9 @@ impl Inner {
         let Some(live) = groups.get(gid) else { return };
         let ours = live.doc.vv();
         for s in core.sessions_of(gid) {
-            if Some(s.id) == from || (s.hosting && live.state.is_removed(&s.did)) {
+            // A session of a member removed just now still gets this last push (it carries the
+            // flags that removed it); `group_enforce` closes it right after.
+            if Some(s.id) == from {
                 continue;
             }
             let mut pv = s.peer_vv.lock();

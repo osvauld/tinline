@@ -30,7 +30,7 @@ use crate::Error;
 const TICKET_TTL: u64 = 7 * 24 * 3600;
 /// Long, because renewal happens on every answered call; this only bites a contact who never
 /// calls back.
-const GRANT_TTL: u64 = 365 * 24 * 3600;
+pub(crate) const GRANT_TTL: u64 = 365 * 24 * 3600;
 const DIAL_TIMEOUT: Duration = Duration::from_secs(30);
 /// All devices of one contact together; each device alone gets at most `DIAL_TIMEOUT`.
 const DIAL_TOTAL: Duration = Duration::from_secs(45);
@@ -294,6 +294,8 @@ enum LegEvent {
     GaveUp,
     /// The device answered with a notice (they block us, if it verifies).
     Blocked(proto::SignedBlob),
+    /// `Reject { CALLS_NOT_ALLOWED }`: they let us message them but not call (P6).
+    CallsNotAllowed,
     /// Could not connect, refused (`Reject`: not a contact there, blocked, unavailable), or the
     /// connection died.
     Failed(String),
@@ -322,7 +324,7 @@ impl Leg {
             Err(e) => return fail(&self.events, e.to_string()),
         };
         tracing::debug!("dialing {} at {}", self.name, addr.id);
-        let connect = tokio::time::timeout(DIAL_TIMEOUT, self.ep.connect(addr, proto::ALPN));
+        let connect = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&self.ep, addr, &crate::version::CALL));
         let conn = tokio::select! {
             c = connect => match c {
                 Ok(Ok(c)) => c,
@@ -362,6 +364,7 @@ impl Leg {
                         Ok(Some(Msg::Busy)) => LegEvent::Busy,
                         Ok(Some(Msg::Hangup)) => LegEvent::GaveUp,
                         Ok(Some(Msg::Notice { notice })) => LegEvent::Blocked(notice),
+                        Ok(Some(Msg::Reject { reason })) if reason == crate::CALLS_NOT_ALLOWED => LegEvent::CallsNotAllowed,
                         Ok(Some(Msg::Reject { reason })) => LegEvent::Failed(format!("rejected: {}", clip_reason(&reason))),
                         Ok(Some(other)) => {
                             tracing::debug!("ignoring {} before the answer", msg_name(&other));
@@ -481,6 +484,8 @@ pub(crate) struct Inner {
     pub(crate) block: crate::block::BlockRt,
     /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
     pub(crate) group: crate::group::engine::GroupRt,
+    /// Token delivery (P6, `caps.rs`).
+    pub(crate) caps: crate::caps::CapsRt,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -548,6 +553,7 @@ impl Node {
             link: Default::default(),
             block: Default::default(),
             group: Default::default(),
+            caps: Default::default(),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -1891,6 +1897,7 @@ impl Inner {
         self.selfsync_started();
         self.notices_started();
         self.group_started();
+        self.tokens_started();
         self.sync_kick();
 
         let this = self.clone();
@@ -2022,6 +2029,12 @@ impl Inner {
     }
 
     pub(crate) async fn add_contact(self: Arc<Self>, text: String) -> Result<Contact, Error> {
+        self.add_contact_from(text, crate::caps::ContactOrigin::Ticket).await
+    }
+
+    /// `add_contact`, giving them the tokens `origin` decides (P6: a group chat request gives
+    /// message only).
+    pub(crate) async fn add_contact_from(self: Arc<Self>, text: String, origin: crate::caps::ContactOrigin) -> Result<Contact, Error> {
         let me = self.me()?;
         let ticket = ContactTicket::from_text(&text)?;
         let claim = ticket.verify(now())?;
@@ -2041,23 +2054,24 @@ impl Inner {
             self.persist_async(me.epoch).await?;
             self.notice_kick(claim.iss.clone());
         }
-        let (mut hello, pending) = proto::contact_hello(
+        let policy = crate::caps::policy_for(&self.shared.lock().state, &claim.iss, origin);
+        let (mut hello, pending) = proto::contact_hello_with(
             &me.id,
             me.device,
             &ticket,
             &me.profile.name,
             now(),
             GRANT_TTL,
+            policy,
         )?;
         if let Msg::ContactHello { relay, .. } = &mut hello {
             *relay = relay_of(&ep);
         }
         let addr = addr_for(&proto::device_from_text(&claim.device)?, relay.as_deref())?;
         self.log(format!("adding contact {}: dialing {}", claim.name, addr.id));
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, proto::ALPN))
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CALL))
             .await
-            .map_err(|_| Error::Timeout)?
-            .map_err(Error::net)?;
+            .map_err(|_| Error::Timeout)??;
         let remote = *conn.remote_id().as_bytes();
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
         let mut ctrl = Ctrl::new(send, recv);
@@ -2078,7 +2092,7 @@ impl Inner {
         ctrl.finish();
         conn.close(0u32.into(), b"added");
         // We scanned their ticket ourselves: that is the one way back from a block.
-        let contact = self.save_contact(me.epoch, new, relay, true).await?;
+        let contact = self.save_contact(me.epoch, new, relay, true, policy.call).await?;
         self.log(format!("contact {} added", contact.name));
         Ok(contact)
     }
@@ -2091,8 +2105,9 @@ impl Inner {
         new: proto::NewContact,
         relay: Option<String>,
         lift_block: bool,
+        calls_allowed: bool,
     ) -> Result<Contact, Error> {
-        let stored = stored_contact(&new, relay);
+        let stored = stored_contact(&new, relay, calls_allowed);
         let contact = Contact::from(&stored);
         {
             let mut s = self.shared.lock();
@@ -2121,8 +2136,11 @@ impl Inner {
         };
         let now = now();
         let current = current_nonce(&next, now);
-        let (welcome, new) = proto::accept_contact_hello(&me.id, me.device, hello, remote, now, &next.redeemed, GRANT_TTL)
-            .map_err(|e| HelloError::Refused(e.to_string()))?;
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now, &next.redeemed, GRANT_TTL, |did| {
+            crate::caps::policy_for(&next, did, crate::caps::ContactOrigin::Ticket)
+        })
+        .map_err(|e| HelloError::Refused(e.to_string()))?;
+        let calls_allowed = matches!(&welcome, Msg::ContactWelcome { call_grant_for_you: Some(_), .. });
         // Only the ticket we hand out right now can be redeemed: an older one that leaked (or
         // was reset) is dead even though its nonce is unspent.
         if current.as_deref() != Some(new.redeemed_nonce.as_str()) {
@@ -2131,7 +2149,7 @@ impl Inner {
         if let Some(notice) = self.refusal_for(&new.did) {
             return Err(HelloError::Blocked(notice));
         }
-        let stored = stored_contact(&new, hint);
+        let stored = stored_contact(&new, hint, calls_allowed);
         let contact = Contact::from(&stored);
         let apply = |st: &mut State| {
             st.redeemed.insert(new.redeemed_nonce.clone());
@@ -2233,6 +2251,12 @@ impl Inner {
                 let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                 Ok(())
             }
+            Msg::Tokens { grants } => {
+                drop(permit);
+                self.tokens_incoming(ctrl, grants).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
             other => {
                 tracing::debug!("unexpected first message {}", msg_name(&other));
                 ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
@@ -2287,7 +2311,9 @@ impl Inner {
         let verified = {
             let s = self.shared.lock();
             let contacts = &s.state.contacts;
-            proto::accept_call_hello(
+            // Any of our tokens says who they are; which one rings is checked after the block
+            // check (P6).
+            proto::accept_hello(
                 &me.id,
                 &hello,
                 remote,
@@ -2311,6 +2337,20 @@ impl Inner {
         if let Some(notice) = self.refusal_for(&caller.did) {
             self.log("incoming call refused: blocked");
             ctrl.send(&Msg::Notice { notice }).await?;
+            ctrl.finish();
+            let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+            return Ok(());
+        }
+        // P6: a call token of ours, not taken back, and calls allowed for them. A contact that
+        // may only message is told so (never rung); a token taken back by a block gets the
+        // generic refusal.
+        if let Err(denied) = self.token_check(&caller.did, &caller.grant, proto::Cap::Call) {
+            let reason = match denied {
+                crate::caps::Denied::CallsNotAllowed => crate::CALLS_NOT_ALLOWED,
+                crate::caps::Denied::Refused => REFUSED,
+            };
+            self.log(format!("incoming call refused: {reason}"));
+            ctrl.send(&Msg::Reject { reason: reason.into() }).await?;
             ctrl.finish();
             let _ = tokio::time::timeout(LINGER, conn.closed()).await;
             return Ok(());
@@ -2672,10 +2712,12 @@ impl Inner {
                 ep: ep.clone(),
                 device: device.clone(),
                 hello: {
+                    // Our call token from them; without one, the message token (they answer "calls
+                    // not allowed" instead of a generic refusal).
                     let mut hello = proto::call_hello(
                         &me.id,
                         me.attestation.clone(),
-                        contact.grant_from_them.clone(),
+                        contact.call_grant_from_them.clone().unwrap_or_else(|| contact.grant_from_them.clone()),
                         call.info.call_id.clone(),
                     );
                     if let Msg::CallHello { relay, devices, .. } = &mut hello {
@@ -2797,6 +2839,12 @@ impl Inner {
                         LegEvent::Blocked(_) => {
                             legs[idx] = None;
                             state[idx] = LegPhase::Gone;
+                        }
+                        // They let us message, not call: ends at once (P6), our call token goes.
+                        LegEvent::CallsNotAllowed => {
+                            self.drop_call_token(call.epoch, &call.info.peer_did);
+                            cancel_others(&mut legs, Some(idx), hangup_msg.clone());
+                            break crate::CALLS_NOT_ALLOWED.into();
                         }
                     }
                 }
@@ -2920,7 +2968,7 @@ impl Inner {
                 cmd = cmds.recv() => match cmd {
                     Some(Cmd::Answer) if incoming_from.is_some() && !active => {
                         let me = match self.me() { Ok(m) => m, Err(_) => break "hangup_local".into() };
-                        let renewed = incoming_from.as_deref().map(|did| proto::issue_grant(&me.id, did, now(), GRANT_TTL));
+                        let renewed = incoming_from.as_deref().map(|did| self.fresh_token(&me, did, proto::Cap::Call));
                         let devices = self.my_device_list(&me);
                         if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices }).await {
                             self.log(format!("connection lost: {e}"));
@@ -3018,8 +3066,8 @@ impl Inner {
                 return;
             }
             match s.state.contacts.iter_mut().find(|c| c.did == did) {
-                Some(c) if grant_outlives(&c.grant_from_them, &grant, did, me.id.did(), now()) => {
-                    c.grant_from_them = grant;
+                Some(c) if crate::caps::outlives(c.call_grant_from_them.as_ref(), &grant, proto::Cap::Call, did, me.id.did(), now()) => {
+                    c.call_grant_from_them = Some(grant);
                     true
                 }
                 _ => false,
@@ -3251,13 +3299,15 @@ enum HelloError {
     Blocked(proto::SignedBlob),
 }
 
-fn stored_contact(new: &proto::NewContact, relay: Option<String>) -> StoredContact {
+fn stored_contact(new: &proto::NewContact, relay: Option<String>, calls_allowed: bool) -> StoredContact {
     StoredContact {
         did: new.did.clone(),
         name: proto::sanitize_name(&new.name),
         devices: vec![ContactDevice { device: new.device, relay }],
         device_list: None,
         grant_from_them: new.grant_from_them.clone(),
+        call_grant_from_them: new.call_grant_from_them.clone(),
+        calls_allowed,
         added_at: now(),
         alias: None,
         verified: false,
@@ -3286,7 +3336,10 @@ fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_b
             existing.devices.retain(|d| d.device != device);
             existing.devices.insert(0, ContactDevice { device, relay });
             existing.devices.truncate(MAX_DEVICES);
+            // A re-add carries fresh tokens both ways; ours to them follow `calls_allowed`,
+            // which an existing contact keeps.
             existing.grant_from_them = stored.grant_from_them;
+            existing.call_grant_from_them = stored.call_grant_from_them;
         }
         None => st.contacts.push(stored),
     }
@@ -3326,7 +3379,9 @@ fn current_nonce(state: &State, now: u64) -> Option<String> {
     Some(t.verify(now).ok()?.nonce)
 }
 
-/// Whether `new` is a good grant from `issuer` to `holder` and expires after `old`.
+/// Whether `new` is a good grant from `issuer` to `holder` and expires after `old` (any
+/// capability; the token slots use `caps::outlives`).
+#[cfg(test)]
 pub(crate) fn grant_outlives(old: &proto::SignedGrant, new: &proto::SignedGrant, issuer: &str, holder: &str, now: u64) -> bool {
     let none = std::collections::HashSet::new();
     let Ok(new) = proto::verify_grant(new, issuer, holder, now, &none) else { return false };
@@ -3380,6 +3435,8 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::Hangup => "Hangup",
         Msg::Notice { .. } => "Notice",
         Msg::NoticeTaken => "NoticeTaken",
+        Msg::Tokens { .. } => "Tokens",
+        Msg::TokensTaken => "TokensTaken",
     }
 }
 
