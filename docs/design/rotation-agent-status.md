@@ -102,7 +102,7 @@ Wave 2 regression at 198c1f1: proto 180, p2pcore 134, group-sim 113 — all pass
 | W2-Q | MERGED c954d56, +18 | rot/w2q `.claude/worktrees/rot-w2q` | group-sim/src/chat_request.rs (+ mod line, group-sim dev-deps) |
 | W2-B | MERGED 020a91e, +14 proto +5 core | rot/w2b `.claude/worktrees/rot-w2b` | proto/tests/rotation_silent_block.rs, core/tests/block_characterization.rs |
 | W2-D | RUNNING | rot/w2d `.claude/worktrees/rot-w2d` | proto/tests/rotation_device_list_push.rs, core/tests/device_list_characterization.rs |
-| W2-F | RUNNING | rot/w2f `.claude/worktrees/rot-w2f` | group-sim/src/flags.rs (+ mod line), docs/group-flag-removal-model.md |
+| W2-F | MERGED 9d0fbd2, +16 | rot/w2f `.claude/worktrees/rot-w2f` | group-sim/src/flags.rs (+ mod line), docs/group-flag-removal-model.md |
 | W2-M | MERGED eb21b91, +18 | rot/w2m `.claude/worktrees/rot-w2m` | group-sim/src/multi_host.rs (+ mod line), docs/group-multi-host-model.md, KIND relabels |
 | W2-H | MERGED 77793b1, +16 | rot/w2h `.claude/worktrees/rot-w2h` | group-sim/src/host_only.rs (+ mod line), docs/group-host-only-model.md |
 | W2-G | MERGED 380cd87, +11 | rot/w2g `.claude/worktrees/rot-w2g` | group-sim/src/block_in_group.rs (+ mod line) |

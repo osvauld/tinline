@@ -458,3 +458,33 @@ endpoints until members rotate; a rogue host can keep serving reads to a removed
    held by the rogue host stays leaked; members not yet reached keep using the rogue host
    until a legitimate host reaches them; an UNDETECTED rogue host (not yet revoked) is not
    covered.
+
+## 11. W2-F questions (flag removal + group rotation; `crates/group-sim/src/flags.rs`, `docs/group-flag-removal-model.md`)
+
+Tested: 3 flags from distinct admins remove the member and revoke the grant on every device, in
+all 120 delivery orders and across two partitioned hosts; forged / non-admin / host-only flags
+are refused; the removed member is refused by honest hosts and gets a signed notice; host
+revocation rotates the group and the revoked host reaches nobody.
+Findings that constrain choices:
+- Withdrawing a flag "before the threshold" can undo a removal some replicas already showed.
+- Flag expiry by receiver clock splits replicas permanently (like D04).
+- Removing the owner leaves the owner's grants and host permits valid — needs a rule.
+- Under U7, "signed frontier" doesn't save a removed member's honest offline posts: honest
+  hosts refuse her upload.
+- Posts sent to a revoked host before the sender heard of the revocation are lost unless members
+  re-send them.
+- A removed admin can still sign ops citing an old frontier (D02 backdating, for ops).
+Questions (U9 details in section 8 restated with new evidence):
+1. 3 distinct admin DIDs (a DID's devices count once) or any 3 flags?
+2. <3 admins: owner alone / threshold = admin count / no removal? Admin count fixed at flag time?
+3. Owner removable? If so, what happens to grants/host permits the owner issued?
+4. Flag withdrawal allowed? May a withdrawal concurrent with the 3rd flag reverse a removal?
+5. Flag expiry: none / signed time / receiver clock?
+6. Threshold fixed at 3 or per group?
+7. Rejoin after removal: who readmits; must readmission lift all flags?
+8. Posts around the 3rd flag: keep signed-frontier posts or removal wins? Should hosts accept a
+   removed member's upload of pre-removal posts?
+9. Admins flagging admins? Do a removed admin's earlier flags still count?
+10. After a host revocation, should members re-send their recent posts to remaining hosts?
+11. Is "each device rotates once when it first applies a host removal" the trigger? Should a
+    member removal also rotate the group (the model says unnecessary under U7)?
