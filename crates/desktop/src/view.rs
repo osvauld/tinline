@@ -18,6 +18,8 @@ use crate::ui::{self, Icon, Kind, Tok};
 mod chat_view;
 #[path = "link_view.rs"]
 mod link_view;
+#[path = "groups_view.rs"]
+mod groups_view;
 type El<'a> = Element<'a, Msg>;
 
 fn scroll<'a>(t: Tok, c: impl Into<El<'a>>) -> iced::widget::Scrollable<'a, Msg> {
@@ -190,7 +192,7 @@ impl App {
             }
         };
         let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
-        match self.viewer_overlay(t) {
+        match self.viewer_overlay(t).or_else(|| self.groups_overlay(t)) {
             Some(o) => iced::widget::stack![base, o].into(),
             None => base.into(),
         }
@@ -921,6 +923,9 @@ impl App {
         if self.notice.is_some() {
             main = main.push(self.notice_bar(t));
         }
+        if let Some(pane) = self.preview_pane(t) {
+            return row![self.sidebar(t), pane].into();
+        }
         if let Some(c) = self.selected().filter(|_| !self.chat.info) {
             let pane: El = match self.offer_bar(t) {
                 Some(o) => column![container(o).padding([12, 16]), self.conversation_view(t, c)].width(Fill).height(Fill).into(),
@@ -1518,7 +1523,12 @@ impl App {
             .into(),
         );
         let quit = pill(t, Kind::Danger, Some(Icon::LogOut), "Quit Tinline", Some(Msg::Quit));
-        let items = ["Account", "Linked devices", "Calls & availability", "Audio devices", "Security", "About"];
+        // (tab, name) in nav order; Privacy and Hosting are the groups & privacy preview.
+        let mut items: Vec<(u8, &str)> = vec![(0, "Account"), (1, "Linked devices"), (7, "Privacy")];
+        if self.groups.on {
+            items.push((6, "Hosting"));
+        }
+        items.extend([(2, "Calls & availability"), (3, "Audio devices"), (4, "Security"), (5, "About")]);
         let mut nav = column![
             button(row![ui::icon(Icon::ArrowLeft, 18.0, t.ink2), semi("Back", 14.0, t.ink2)].spacing(8).align_y(Alignment::Center))
                 .padding([8, 12])
@@ -1527,14 +1537,14 @@ impl App {
             Space::new().height(8),
         ]
         .spacing(2);
-        for (i, name) in items.iter().enumerate() {
-            let on = self.settings_tab as usize == i;
+        for (i, name) in items.iter().copied() {
+            let on = self.settings_tab == i;
             nav = nav.push(
-                button(semi(*name, 14.0, if on { t.on_primary_c } else { t.ink }))
+                button(semi(name, 14.0, if on { t.on_primary_c } else { t.ink }))
                     .padding([10, 14])
                     .width(Fill)
                     .style(ui::row_style(t, on))
-                    .on_press(Msg::SettingsTab(i as u8)),
+                    .on_press(Msg::SettingsTab(i)),
             );
         }
         let nav = container(nav).padding(16).width(240).height(Fill).style(ui::sidebar(t));
@@ -1544,9 +1554,12 @@ impl App {
             2 => calls,
             3 => audio,
             4 => section(t, "Security", security),
+            6 if self.groups.on => self.hosting_page(t),
+            7 => self.privacy_page(t),
             _ => column![about, quit].spacing(20).into(),
         };
-        let content = column![bold(items[(self.settings_tab as usize).min(5)], 24.0, t.ink), self.notice_bar(t), page].spacing(20);
+        let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or("About");
+        let content = column![bold(title_, 24.0, t.ink), self.notice_bar(t), page].spacing(20);
         row![
             nav,
             scroll(t, container(container(content).max_width(640).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill)

@@ -21,6 +21,8 @@ mod app;
 mod emoji;
 mod audio;
 mod flow;
+/// Placeholder data for the groups & privacy preview screens.
+mod groups_fake;
 mod keystore;
 mod raise;
 mod media;

@@ -12,6 +12,10 @@ mod chat;
 
 #[path = "link.rs"]
 mod link;
+
+#[path = "groups.rs"]
+mod groups;
+use groups::{GroupsUi, Gm};
 use link::{LinkState, Role, UnlinkedInfo};
 
 use chat::{ChatState, Cm};
@@ -62,6 +66,9 @@ struct Settings {
     input: Option<String>,
     output: Option<String>,
     tone: bool,
+    /// The groups & privacy preview switch; None follows the build (on in debug/test-hooks).
+    #[serde(default)]
+    groups_preview: Option<bool>,
 }
 
 /// Onboarding in progress between creating the identity and the first Home.
@@ -236,6 +243,8 @@ struct App {
     /// This computer joined an account by linking and has not saved it yet.
     link_joined: bool,
     unlinked: Option<UnlinkedInfo>,
+    /// Groups, hosting, blocking and permissions preview on placeholder data.
+    groups: GroupsUi,
 }
 
 /// Where a click on a notification should lead.
@@ -389,6 +398,7 @@ enum Msg {
     UnlinkedOk,
     /// Test-hooks: the window's pixels, written to P2P_SHOT.
     Shot(window::Screenshot),
+    Groups(Gm),
 }
 
 /// `Ev` carries non-Clone data from the core; Debug/Clone for the message type go through here.
@@ -563,6 +573,8 @@ impl App {
         self.refresh_identity();
         self.refresh_accounts();
         self.refresh_linked();
+        let preview_on = self.groups.on;
+        self.groups.enable(preview_on, &self.profile_name);
         self.contacts = self.node.contacts();
         self.recents = self.node.recent_calls(RECENTS);
         self.avail = self.node.availability();
@@ -597,6 +609,8 @@ impl App {
         let mut settings_devices = false;
         let test_unlock = init.test_pass.clone().filter(|_| lock == LockState::Locked);
         let forced_dark = crate::test_env("P2P_DARK").map(|v| v == "1");
+        let preview_on = settings.groups_preview.unwrap_or(groups::PREVIEW_DEFAULT);
+        let me_name = node.profile().map(|p| p.name).unwrap_or_default();
         let mut app = App {
             win: None,
             dark: forced_dark.unwrap_or(false),
@@ -678,6 +692,7 @@ impl App {
             unlink_ask: None,
             link_joined: false,
             unlinked: None,
+            groups: GroupsUi::new(preview_on, &me_name),
             node,
         };
         if has && crate::test_env("P2P_SCREEN").is_some_and(|v| v == "settings") {
@@ -1491,7 +1506,8 @@ impl App {
                     Key::Named(Named::Escape) if self.chat.rec.is_some() => return self.update_chat(Cm::RecCancel),
                     Key::Named(Named::Enter) if ringing => return self.update(Msg::Answer),
                     Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),
-                    Key::Named(Named::Escape) if self.call.is_none() && (self.sel.is_some() || self.screen != Screen::Home) => {
+                    Key::Named(Named::Escape) if self.groups.dialog.is_some() => return self.update_groups(Gm::Dismiss),
+                    Key::Named(Named::Escape) if self.call.is_none() && (self.sel.is_some() || self.groups.open.is_some() || self.screen != Screen::Home) => {
                         return self.update(Msg::Home);
                     }
                     // Only reaches here when no text input took the paste.
@@ -1614,6 +1630,7 @@ impl App {
                 Err(e) => self.notice = Some(format!("Could not call: {e}")),
             },
             Msg::Select(did) => {
+                self.groups.open = None;
                 self.sel = Some(did);
                 self.chat.info = false;
                 self.detail = Detail::View;
@@ -1626,6 +1643,8 @@ impl App {
                 return self.open_chat(&did);
             }
             Msg::Home => {
+                self.groups.open = None;
+                self.groups.dialog = None;
                 self.leave_chat();
                 self.sel = None;
                 self.detail = Detail::View;
@@ -1879,6 +1898,7 @@ impl App {
                 });
             }
             Msg::Chat(m) => return self.update_chat(m),
+            Msg::Groups(m) => return self.update_groups(m),
             m @ (Msg::LinkStartNew
             | Msg::LinkStartExisting
             | Msg::NewLink

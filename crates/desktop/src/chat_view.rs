@@ -113,6 +113,11 @@ impl App {
         // "You" is pinned first.
         rows.sort_by_key(|r| !self.is_me(&r.peer_did));
         let mut list = column![].spacing(2);
+        if let Some(b) = self.requests_block(t) {
+            list = list.push(b);
+        }
+        // Real chats and the groups preview's rows, newest first; "You" stays pinned.
+        let mut items: Vec<(bool, u64, El)> = Vec::new();
         let mut n = 0;
         for r in &rows {
             let me = self.is_me(&r.peer_did);
@@ -137,7 +142,7 @@ impl App {
             if unread {
                 sub = sub.push(count_badge(t, r.unread));
             }
-            list = list.push(
+            items.push((me, r.last_activity, 
                 button(
                     row![
                         avatar(t, &name, &r.peer_did, 40.0),
@@ -151,10 +156,18 @@ impl App {
                 .padding([8, 12])
                 .width(Fill)
                 .style(ui::row_style(t, sel))
-                .on_press(Msg::Select(r.peer_did.clone())),
-            );
+                .on_press(Msg::Select(r.peer_did.clone()))
+                .into(),
+            ));
         }
-        if n == 0 {
+        let preview = self.preview_rows(t, q);
+        let any_preview = !preview.is_empty();
+        items.extend(preview.into_iter().map(|(at, el)| (false, at, el)));
+        items.sort_by(|a, b| b.0.cmp(&a.0).then(b.1.cmp(&a.1)));
+        for (_, _, el) in items {
+            list = list.push(el);
+        }
+        if n == 0 && !any_preview {
             list = list.push(
                 container(
                     column![
