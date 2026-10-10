@@ -386,3 +386,25 @@ Source files: `crates/group-sim/src/{host_relay,chat_request,block_in_group}.rs`
    app signing-cert digest; verifiable offline by peers). Costs: excludes desktop, custom
    ROMs/unlocked bootloaders, and self-built/F-Droid builds of an open-source app; needs
    Google's revocation list. Coordinator lean: not as a gate; never rely on it for security.
+
+## 9. W2-H questions (host-only, DID-signed group model; `crates/group-sim/src/host_only.rs`)
+
+Tested: DID-signed posts with random writer IDs converge across two own devices; members receive
+no other member's device key/transport key/endpoint; the W2-G private-endpoint leak is gone.
+Changes to U1 forced by U7: members cannot forward the host's rotation note (they hold no
+addresses for each other); recovery is the host retrying a member's live endpoint, or an
+overlap window on the old host endpoint. Host and member both rotated while apart = re-share.
+Loro silently and permanently diverges on a writer-ID collision — a collision rule is required.
+1. Cross-DID writer-ID collision: first claim at the host wins, loser redraws? Tell the loser?
+2. Same-DID collision: reject later, or freeze writer (any phrase holder can stall a sibling)?
+3. Writer IDs let members count a DID's devices and per-device activity. Accept, or require hiding?
+4. Host directory keyed per device (random slot) or per DID? (= section 7 Q20)
+5. Backup host / host succession needed for launch? Host outage stalls the whole group.
+6. Host overlap window after rotation: keep old endpoint listening? How long?
+7. Offline write queue while host is down: unbounded, refuse new, drop oldest? Value? UI?
+8. Chat-request encryption key: per-DID key published via the host (as modelled) or rotating
+   request keys (W2-Q)?
+9. Sync outgoing chat requests between a DID's own devices (acceptance reaches all devices)?
+10. Host sees every member device endpoint, rotations and who-requested-whom: OK for launch?
+Superseded existing tests (device-key signing, member mesh, silent block) are listed with
+file:line in `docs/group-host-only-model.md` §4 — to be migrated, none edited yet.
