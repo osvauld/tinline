@@ -638,3 +638,20 @@ the revocation set syncs.
 5. Wire compatibility with un-upgraded peers (keep sending a `call` grant to old peers? version bump?)
 6. Show "calls not allowed" to every authenticated contact (vs today's generic refusal)?
 7. Unblock: revive old tokens or issue new ones?
+
+## 15. R1a questions (acceptance tests; fixes-phase1 `crates/core/tests/{blocking,rotation}_acceptance.rs`)
+
+1. Remove vs block: today `remove_contact` both forgets and blocks. The design keeps a blocked
+   contact with an Unblock action. Separate actions? What does a removed-but-not-blocked contact
+   see? (Tests assume block keeps the contact.) Coordinator lean: separate; remove = forget,
+   they see "not a contact"; block = keep + signed notice.
+2. Exact reason string for calls/messages/tickets: tests use "blocked".
+3. After unblock: when does "blocked you" clear; are messages sent while blocked delivered?
+4. Reason a message-only contact sees when calling (not "blocked"; no ring).
+5. "Contacts told N of M": M counts unblocked contacts only? (tests assume yes)
+6. Grace window length and default rotation interval.
+7. How "lost contact" is detected (retired endpoint looks like offline); timeout?
+8. Verified flag follows the DID and survives address changes and re-share? (tests assume yes)
+9. After the blocker rotates, the blocked side only times out ("unreachable"); UI relies on the
+   stored signed notice? (Coordinator lean: yes.)
+10. Crash before the new key is stored: it must not become current (tests assume yes).
