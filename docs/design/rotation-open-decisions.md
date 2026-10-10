@@ -48,6 +48,21 @@ which is not silent; W2-B characterises this.
 **U6 — Goal.** Working group chat for launch, with all safeties including blocking. Production
 work starts after the Wave 2 simulations pass and D01–D05 (section 6) are answered.
 
+**U4 revised (user, 2026-10-10) — no device or transport key in any content.** Group (and 1:1)
+content is signed by the DID key itself, plus a random per-device writer ID (for Loro peer ID
+and per-device ordering) that is NOT derived from any device or transport key. Rationale: today
+the device key is the iroh EndpointId (`crates/core/src/node.rs:1781`) and also signs messages
+(`crates/core/src/chat/doc.rs:172`), so every message carries a dialable address. Rule: no key
+that appears in content may ever be a network key. Replaces "separate long-lived author key".
+
+**U7 (user, 2026-10-10) — only the host knows members' group endpoints.** The host holds each
+member's group endpoint so it can deliver; members only know the host's endpoint and receive
+DID-signed content from it. Members never receive other members' endpoints or device IDs.
+1:1 chat is requested through the host (U3) and then runs directly. Consequences to model:
+no member-to-member mesh sync (all group traffic via the host); the host sees all members'
+group endpoints and delivery metadata; host offline = group stalls until it returns
+(multi-host / host succession is an open question, see D01–D06).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
