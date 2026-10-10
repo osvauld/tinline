@@ -9,6 +9,14 @@
 //! Stream layout: `[group: u64 BE]` then frames `[len: u32 BE][capture_us: u64 BE][payload]`.
 //! The transport is told what to do through [`Out`] and reports back with plain method calls,
 //! so the same code runs on iroh and in [`crate::sim`].
+//!
+//! Rate control is delay-based (the idea behind WebRTC's GCC), done at this layer so it needs
+//! nothing from the transport: the receiver compares each frame's arrival time with its capture
+//! time. The clock offset between the devices cancels out, so a *rise* over the recent minimum
+//! is queueing delay. It sends a [`RateReport`] every 100 ms; the sender backs off to the
+//! delivered rate as soon as a queue builds and only ramps up while the path is empty. A
+//! loss-based congestion controller alone fills the bottleneck buffer first (bufferbloat), which
+//! the simulation showed as seconds of delay.
 
 use std::collections::BTreeMap;
 
@@ -34,6 +42,10 @@ pub struct SenderConfig {
     pub start_bps: u32,
     /// Unsent video worth more than this much time means we are behind: drop and restart.
     pub max_backlog_us: u64,
+    /// Queueing delay above this: back off to the delivered rate.
+    pub overuse_us: u64,
+    /// Queueing delay below this: allowed to ramp up.
+    pub underuse_us: u64,
 }
 
 impl Default for SenderConfig {
@@ -44,6 +56,8 @@ impl Default for SenderConfig {
             max_bps: 2_000_000,
             start_bps: 500_000,
             max_backlog_us: 300_000,
+            overuse_us: 40_000,
+            underuse_us: 15_000,
         }
     }
 }
@@ -57,6 +71,7 @@ pub struct Sender {
     previous: Vec<u64>,
     want_key: bool,
     bitrate: u32,
+    last_decrease_us: u64,
     pub keyframes: u64,
     pub drops: u64,
 }
@@ -71,6 +86,7 @@ impl Sender {
             previous: Vec::new(),
             want_key: true,
             bitrate,
+            last_decrease_us: 0,
             keyframes: 0,
             drops: 0,
         }
@@ -116,9 +132,26 @@ impl Sender {
         out
     }
 
-    /// Transport feedback, called every few ms: bytes not yet sent once per group, and the
-    /// rate the congestion controller currently allows.
-    pub fn feedback(&mut self, unsent: &BTreeMap<u64, usize>, send_rate_bps: u64) -> Vec<Out> {
+    /// A receiver report arrived.
+    pub fn on_report(&mut self, now_us: u64, r: &RateReport) {
+        let delivered = r.delivered_bps as u64;
+        if r.queuing_us > self.cfg.overuse_us {
+            // A queue is building: send no faster than what actually gets through.
+            if now_us - self.last_decrease_us > 200_000 || self.last_decrease_us == 0 {
+                let target = (delivered * 85 / 100) as u32;
+                self.bitrate = self.bitrate.min(target).max(self.cfg.min_bps);
+                self.last_decrease_us = now_us;
+            }
+        } else if r.queuing_us < self.cfg.underuse_us && now_us - self.last_decrease_us > 500_000 {
+            // Path is empty: +8% per report, never far above what was delivered.
+            let cap = (delivered * 3 / 2).max(self.cfg.min_bps as u64) as u32;
+            let up = self.bitrate + self.bitrate * 8 / 100;
+            self.bitrate = up.min(self.bitrate.max(cap)).min(self.cfg.max_bps);
+        }
+    }
+
+    /// Transport feedback, called every few ms: bytes not yet sent, per group.
+    pub fn feedback(&mut self, unsent: &BTreeMap<u64, usize>) -> Vec<Out> {
         let mut out = Vec::new();
         // Older groups that still have unsent data are stale: the newer keyframe replaces them.
         self.previous.retain(|g| match unsent.get(g) {
@@ -131,7 +164,6 @@ impl Sender {
         });
         let backlog: usize = unsent.values().sum();
         let backlog_us = backlog as u64 * 8 * 1_000_000 / (self.bitrate.max(1) as u64);
-        let target = (send_rate_bps * 85 / 100).clamp(self.cfg.min_bps as u64, self.cfg.max_bps as u64) as u32;
         if backlog_us > self.cfg.max_backlog_us {
             // Behind: abandon the current group, restart from a keyframe at a lower rate.
             if let Some(g) = self.current.take() {
@@ -139,12 +171,7 @@ impl Sender {
             }
             self.want_key = true;
             self.drops += 1;
-            self.bitrate = (self.bitrate / 2).max(self.cfg.min_bps).min(target);
-        } else if target < self.bitrate {
-            self.bitrate = target;
-        } else {
-            // Ramp up gently: +5% per feedback at most.
-            self.bitrate = (self.bitrate + self.bitrate / 20).min(target);
+            self.bitrate = (self.bitrate / 2).max(self.cfg.min_bps);
         }
         out
     }
@@ -159,6 +186,18 @@ pub struct Frame {
     pub capture_us: u64,
     pub payload: Vec<u8>,
 }
+
+/// Receiver -> sender, every [`REPORT_US`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct RateReport {
+    /// Video bytes received over the window, as a rate.
+    pub delivered_bps: u32,
+    /// Latest frame's (arrival - capture) above the minimum of the last 10 s.
+    pub queuing_us: u64,
+}
+
+pub const REPORT_US: u64 = 100_000;
+const BASELINE_US: u64 = 10_000_000;
 
 #[derive(Default)]
 struct Group {
@@ -194,6 +233,10 @@ pub struct Receiver {
     last_progress_us: u64,
     last_request_us: Option<u64>,
     pub skipped_frames: u64,
+    window_bytes: u64,
+    window_start_us: u64,
+    /// (arrival - capture) of recent frames, for the queueing baseline.
+    transit: std::collections::VecDeque<(u64, i64)>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -210,10 +253,14 @@ impl Receiver {
             last_progress_us: 0,
             last_request_us: None,
             skipped_frames: 0,
+            window_bytes: 0,
+            window_start_us: 0,
+            transit: Default::default(),
         }
     }
 
-    pub fn on_data(&mut self, group: u64, data: &[u8]) -> Result<(), RecvError> {
+    pub fn on_data(&mut self, now_us: u64, group: u64, data: &[u8]) -> Result<(), RecvError> {
+        self.window_bytes += data.len() as u64;
         if self.current.is_some_and(|c| group < c) {
             return Ok(());
         }
@@ -236,6 +283,11 @@ impl Receiver {
             let payload = g.buf[p + FRAME_HEADER..p + FRAME_HEADER + len].to_vec();
             let index = g.frames.len() as u32;
             g.frames.push(Frame { group, index, capture_us, payload });
+            // Remote clock, so only differences of this are meaningful.
+            self.transit.push_back((now_us, now_us as i64 - capture_us as i64));
+            while self.transit.front().is_some_and(|t| now_us - t.0 > BASELINE_US) {
+                self.transit.pop_front();
+            }
             g.parsed += FRAME_HEADER + len;
         }
         if g.parsed > 0 {
@@ -272,7 +324,6 @@ impl Receiver {
                     g
                 }
             };
-            let ready = self.groups.get(&cur).is_some_and(|g| g.next < g.frames.len());
             let newer = self
                 .groups
                 .range(cur + 1..)
@@ -284,7 +335,6 @@ impl Receiver {
                 if let Some(g) = self.groups.get(&cur) {
                     self.skipped_frames += (g.frames.len() - g.next) as u64;
                 }
-                let _ = ready;
                 self.switch_to(n);
                 continue;
             }
@@ -304,6 +354,20 @@ impl Receiver {
         self.groups = self.groups.split_off(&g);
     }
 
+    /// Rate report to send, at most every [`REPORT_US`].
+    pub fn report(&mut self, now_us: u64) -> Option<RateReport> {
+        let span = now_us - self.window_start_us;
+        if span < REPORT_US {
+            return None;
+        }
+        let delivered_bps = (self.window_bytes * 8 * 1_000_000 / span) as u32;
+        self.window_bytes = 0;
+        self.window_start_us = now_us;
+        let min = self.transit.iter().map(|t| t.1).min()?;
+        let last = self.transit.back()?.1;
+        Some(RateReport { delivered_bps, queuing_us: (last - min) as u64 })
+    }
+
     /// Whether to send a keyframe request now (rate-limited to one per `stall_us`).
     pub fn wants_keyframe(&mut self, now_us: u64) -> bool {
         let stalled = now_us.saturating_sub(self.last_progress_us) > self.cfg.stall_us;
@@ -313,5 +377,103 @@ impl Receiver {
             return true;
         }
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn feed(rx: &mut Receiver, outs: &[Out], chunk: usize) {
+        for o in outs {
+            match o {
+                Out::Write { group, data } => {
+                    for c in data.chunks(chunk) {
+                        rx.on_data(0, *group, c).unwrap();
+                    }
+                }
+                Out::Finish { group } => rx.on_finish(*group),
+                Out::Reset { group } => rx.on_reset(*group),
+                Out::Open { .. } => {}
+            }
+        }
+    }
+
+    #[test]
+    fn frames_survive_any_chunking() {
+        for chunk in [1, 3, 12, 1200] {
+            let mut tx = Sender::new(SenderConfig::default());
+            let mut rx = Receiver::new(ReceiverConfig::default());
+            let mut outs = tx.frame(10, true, b"key");
+            outs.extend(tx.frame(20, false, b"delta-1"));
+            outs.extend(tx.frame(30, false, b""));
+            feed(&mut rx, &outs, chunk);
+            let got: Vec<_> = std::iter::from_fn(|| rx.poll(0)).collect();
+            assert_eq!(got.len(), 3, "chunk {chunk}");
+            assert_eq!((got[0].index, got[0].capture_us, &got[0].payload[..]), (0, 10, &b"key"[..]));
+            assert_eq!(&got[1].payload[..], b"delta-1");
+            assert!(got[2].payload.is_empty());
+        }
+    }
+
+    #[test]
+    fn delta_without_group_is_dropped() {
+        let mut tx = Sender::new(SenderConfig::default());
+        assert!(tx.wants_keyframe());
+        assert!(tx.frame(0, false, b"x").is_empty());
+    }
+
+    #[test]
+    fn newer_keyframe_skips_stale_group() {
+        let mut tx = Sender::new(SenderConfig::default());
+        let mut rx = Receiver::new(ReceiverConfig::default());
+        let mut outs = tx.frame(0, true, b"k0");
+        outs.extend(tx.frame(1, false, b"d1"));
+        outs.extend(tx.frame(2, false, b"d2"));
+        feed(&mut rx, &outs, 1200);
+        assert_eq!(rx.poll(0).unwrap().payload, b"k0");
+        feed(&mut rx, &tx.frame(3, true, b"k1"), 1200);
+        // Group 1's keyframe is in: the two queued deltas of group 0 are skipped.
+        let got: Vec<_> = std::iter::from_fn(|| rx.poll(0)).map(|f| f.payload).collect();
+        assert_eq!(got, vec![b"k1".to_vec()]);
+        assert_eq!(rx.skipped_frames, 2);
+        // Late data for the old group is ignored.
+        rx.on_data(0, 0, b"anything").unwrap();
+        assert!(rx.poll(0).is_none());
+    }
+
+    #[test]
+    fn oversized_frame_is_rejected() {
+        let mut rx = Receiver::new(ReceiverConfig { max_frame: 100, ..Default::default() });
+        let mut d = 0u64.to_be_bytes().to_vec();
+        d.extend_from_slice(&1000u32.to_be_bytes());
+        d.extend_from_slice(&0u64.to_be_bytes());
+        assert_eq!(rx.on_data(0, 0, &d), Err(RecvError::FrameTooLarge(1000)));
+    }
+
+    #[test]
+    fn backlog_resets_and_forces_keyframe() {
+        let mut tx = Sender::new(SenderConfig::default());
+        tx.frame(0, true, b"k");
+        assert!(!tx.wants_keyframe());
+        let before = tx.bitrate();
+        // 1 MB unsent at 500 kbps is 16 s of video: way past the 300 ms limit.
+        let outs = tx.feedback(&BTreeMap::from([(0, 1_000_000)]));
+        assert_eq!(outs, vec![Out::Reset { group: 0 }]);
+        assert!(tx.wants_keyframe());
+        assert!(tx.bitrate() < before);
+    }
+
+    #[test]
+    fn rate_follows_queueing_delay() {
+        let mut tx = Sender::new(SenderConfig::default());
+        let start = tx.bitrate();
+        tx.on_report(1_000_000, &RateReport { delivered_bps: 300_000, queuing_us: 100_000 });
+        assert_eq!(tx.bitrate(), 255_000, "backs off to 85% of delivered");
+        // No ramp right after a decrease, then +8% per empty-path report.
+        tx.on_report(1_100_000, &RateReport { delivered_bps: 300_000, queuing_us: 0 });
+        assert_eq!(tx.bitrate(), 255_000);
+        tx.on_report(1_600_000, &RateReport { delivered_bps: 300_000, queuing_us: 0 });
+        assert!(tx.bitrate() > 255_000 && tx.bitrate() < start);
     }
 }

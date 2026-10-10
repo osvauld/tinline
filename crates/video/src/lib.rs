@@ -19,6 +19,7 @@ use rav1e::prelude::*;
 
 pub mod aom;
 pub mod media;
+pub mod sim;
 
 /// Anything that turns camera frames into AV1 packets.
 pub trait VideoEncoder: Send {
@@ -261,7 +262,7 @@ impl Decoder {
         let mut out = Vec::new();
         loop {
             // SAFETY: ctx is open; `data` is a valid Dav1dData.
-            let r = unsafe { d::dav1d_send_data(self.ctx.clone(), Some(NonNull::from(&mut data))) };
+            let r = unsafe { d::dav1d_send_data(self.ctx, Some(NonNull::from(&mut data))) };
             let pending = r.0 == -EAGAIN;
             if r.0 < 0 && !pending {
                 // SAFETY: releases what send_data did not consume.
@@ -281,7 +282,7 @@ impl Decoder {
             let mut pic = MaybeUninit::<Dav1dPicture>::zeroed();
             // SAFETY: ctx is open; `pic` is writable.
             let r = unsafe {
-                d::dav1d_get_picture(self.ctx.clone(), Some(NonNull::new_unchecked(pic.as_mut_ptr())))
+                d::dav1d_get_picture(self.ctx, Some(NonNull::new_unchecked(pic.as_mut_ptr())))
             };
             if r.0 == -EAGAIN {
                 return Ok(());
