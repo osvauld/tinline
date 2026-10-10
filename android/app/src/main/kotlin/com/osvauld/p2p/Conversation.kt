@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -499,9 +500,12 @@ private fun Bubble(
             }
             val metaColor = if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
             if (a == null && m.text.isNotBlank()) {
-                CompactTextBubble(m.text, fg, label, tick, metaColor)
+                // Only a few emojis: big, like the other chat apps; emojis in text: a bit larger.
+                val big = Emoji.isBig(m.text)
+                val style = if (big) TinType.bodyL.copy(fontSize = 38.sp, lineHeight = 46.sp) else TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp)
+                CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, tick, metaColor)
             } else {
-                if (m.text.isNotBlank()) Text(m.text, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
+                if (m.text.isNotBlank()) Text(Emoji.styled(m.text), style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
                 Meta(label, tick, metaColor, if (photo) 8.dp else 0.dp, if (photo) 4.dp else 0.dp)
             }
         }
@@ -511,9 +515,8 @@ private fun Bubble(
 /** Reserve the last line's trailing space for time/ticks, without squeezing the message.
  * RTL uses a separate metadata row until bidi-aware trailing placement is supported. */
 @Composable
-private fun CompactTextBubble(text: String, color: Color, label: String, tick: Tick?, metaColor: Color) {
+private fun CompactTextBubble(text: AnnotatedString, style: TextStyle, color: Color, label: String, tick: Tick?, metaColor: Color) {
     val measurer = rememberTextMeasurer()
-    val style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp)
     val metaStyle = TinType.caption.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
     val tickColor = Tin.c.pr
     SubcomposeLayout { constraints ->
@@ -524,7 +527,7 @@ private fun CompactTextBubble(text: String, color: Color, label: String, tick: T
                 if (tick != null) TickIcon(tick, if (tick == Tick.Two) tickColor else metaColor)
             }
         }.single().measure(loose)
-        val result = measurer.measure(AnnotatedString(text), style = style, constraints = loose)
+        val result = measurer.measure(text, style = style, constraints = loose)
         val last = result.lineCount - 1
         val trailing = ceil(result.getLineRight(last)).toInt()
         val gap = 8.dp.roundToPx()

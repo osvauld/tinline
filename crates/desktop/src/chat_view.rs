@@ -347,7 +347,7 @@ impl App {
                 body = body.push(self.attachment_view(t, m, a, fg, dim));
             }
             if !m.text.is_empty() {
-                body = body.push(text(m.text.clone()).size(15).color(fg));
+                body = body.push(message_text(&m.text, fg));
             }
         }
         let mut meta = row![].spacing(4).align_y(Alignment::Center);
@@ -753,4 +753,16 @@ fn count_badge<'a>(t: Tok, n: u32) -> El<'a> {
         .padding([1, 7])
         .style(ui::plain(t.primary, 999.0))
         .into()
+}
+
+/// Message text: only a few emojis show big, emojis inside text a little larger (`emoji.rs`).
+fn message_text<'a>(s: &'a str, fg: Color) -> El<'a> {
+    if crate::emoji::is_big(s) {
+        return text(s.trim()).size(38).color(fg).into();
+    }
+    let spans: Vec<iced::widget::text::Span<'a, ()>> = crate::emoji::runs(s)
+        .into_iter()
+        .map(|(part, emoji)| iced::widget::span(part).size(if emoji { 15.0 * crate::emoji::INLINE_SCALE } else { 15.0 }).color(fg))
+        .collect();
+    iced::widget::rich_text(spans).into()
 }
