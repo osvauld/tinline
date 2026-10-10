@@ -92,6 +92,15 @@ from other worktrees — `touch` the crate sources before verifying group-sim.
 
 User decisions are collected in `rotation-open-decisions.md`.
 
+## Wave 2 packet board (user decisions U1–U6, 2026-10-10)
+
+| Packet | State | Branch / worktree | Owned files |
+|---|---|---|---|
+| W2-R | RUNNING | rot/w2r `.claude/worktrees/rot-w2r` | group-sim/src/host_relay.rs (+ mod line) |
+| W2-Q | RUNNING | rot/w2q `.claude/worktrees/rot-w2q` | group-sim/src/chat_request.rs (+ mod line, group-sim dev-deps) |
+| W2-B | RUNNING | rot/w2b `.claude/worktrees/rot-w2b` | proto/tests/rotation_silent_block.rs, core/tests/block_characterization.rs |
+| W2-G | RUNNING | rot/w2g `.claude/worktrees/rot-w2g` | group-sim/src/block_in_group.rs (+ mod line) |
+
 ## Per-agent result entries
 
 Append reports here or link dedicated reports after coordinator review. Include

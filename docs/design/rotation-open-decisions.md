@@ -1,11 +1,57 @@
 # Rotation + group: decisions needed from the user
 
 Status: coordinator digest, 2026-10-10. Collects the policy questions raised by the Wave 1
-packets. Nothing here is decided. "Coordinator lean" lines are recommendations to evaluate,
-not selections. Source documents hold the evidence and tests; read them before answering.
+packets. Section 0 records what the user has decided; everything after it is still open.
+"Coordinator lean" lines are recommendations to evaluate, not selections. Source documents hold
+the evidence and tests; read them before answering.
 
 Packets merged so far: A1, A2, B1, B2, B3, C1, C2, D1, D2, E1, G-A, G-B, G-C, G-H, K1, C3 — all of Wave 1. Final regression at 7ff55f0: proto 166,
 p2pcore 129, group-sim 73, Python 6 + 10 + 14 — all passing. G-B, G-C (their questions get appended when they land).
+
+## 0. Decided by the user (2026-10-10)
+
+Recorded from conversation with the user. These supersede the matching leans below.
+
+**U1 — Discovery = option I (answers Q1 / E1 §10 Q8; E1 Q6 forward pointer = ruled out).**
+No server, no lookup: each device is responsible for announcing its own rotation.
+- Private audience: the device sends a DID-signed "new endpoint" note directly to every
+  unblocked contact. Contacts that were offline get it when either side next reaches the
+  other (the side whose address is still live retries).
+- Group audience: the device sends the note to the group host, which relays it to members.
+  When the host itself rotates, members that got the note forward it to members that missed it.
+- Both sides rotated while apart: recover through a shared group's host if one exists,
+  otherwise the app shows "lost contact, re-share ticket/QR" (manual re-share).
+- No public DHT forward pointer and no predictable/derived future addresses.
+
+**U2 — Two iroh endpoints per device, one DID.** A *private* endpoint known only to accepted
+contacts, and a *group* endpoint known to group members via the host. Same DID; two separate
+transport keys, each DID-signed per audience and each rotating independently. Group traffic
+must never reveal the private endpoint. (Battery cost of two endpoints on Android to be
+measured before production; group endpoint may only need a link to each group's host.)
+
+**U3 — 1:1 chat with a group member goes through a request via the host.** Requester sends a
+chat request to the target through the host, end-to-end encrypted to the target. If the target
+accepts, the private endpoints are exchanged inside that encrypted exchange; afterwards the two
+chat directly and the host is not involved. The host must not learn the private endpoints.
+
+**U4 — Separate long-lived author key (answers Q2 = option (i)).** Content signing / Loro peer
+identity uses a long-lived per-device author key; the two transport keys rotate alone. (Implied
+by U2: content cannot depend on two rotating network keys.)
+
+**U5 — Silent blocking.** A block is not announced to the blocked party; their traffic is
+dropped. The blocked contact is excluded from the next private rotation note, so they lose
+reach to the private endpoint at the next periodic rotation ("silent until the key rotates").
+Blocking still does not *trigger* a rotation. A personal block does not change group membership.
+Note: today `crates/core/src/node.rs:280` documents an explicit `Reject` to blocked callers,
+which is not silent; W2-B characterises this.
+
+**U6 — Goal.** Working group chat for launch, with all safeties including blocking. Production
+work starts after the Wave 2 simulations pass and D01–D05 (section 6) are answered.
+
+Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
+the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
+vs silent, whether a personal block hides that member's group messages locally, unblock
+semantics).
 
 ## 1. Highest leverage (unblock the most work)
 

@@ -413,6 +413,91 @@ through buildlock, then full `cargo test -p p2pcore` (baseline 121 passed).
 
 ---
 
+## Wave 2 — host relay, chat requests, silent blocking (user decisions U1–U6)
+
+Source of truth: `docs/design/rotation-open-decisions.md` section 0 (U1–U6). Still simulation
+and characterisation only: no production code. Section 0 rules apply with these changes:
+- Base commit is the Wave 2 coordinator commit (given in the prompt), not 35564bc.
+- group-sim packets: create a NEW file `crates/group-sim/src/<name>.rs` and add exactly one
+  `#[path = "<name>.rs"] mod <name>;` pair at the end of the existing list in
+  `crates/group-sim/src/tests.rs` (that one edit is allowed). Reuse `super::*` fixtures
+  (Author, Replica, envelopes) read-only. Baseline `cargo test -p group-sim` = 73 passed.
+- Notes/requests are signed with real Ed25519 via the existing identity fixtures. A
+  "rotation note" here is a sim stand-in for a permit: DID-signed (owner, audience, endpoint,
+  monotonic seq). Do not build the real succession verifier (that is G-D, still blocked).
+- "Host" = the group's relay replica as already used in `tests.rs`/`reachability.rs`.
+
+### W2-R — Rotation notes relayed by the group host (U1, U2)
+Owns `crates/group-sim/src/host_relay.rs` (+ mod line). Tests (~10):
+1. Member rotates its group endpoint; host relays the note; online members update; an
+   offline member catches up from the host on return.
+2. Audience separation: no private-audience endpoint ever appears in host state or in any
+   group-relayed message (scan serialized host state + every relayed byte).
+3. Two members both rotated while apart recover each other's current group endpoint via the host.
+4. Host rotates: online members get it directly; an offline member recovers it from another
+   member forwarding the host's DID-signed note (verified, not trusted blindly).
+5. Forged, stale (lower seq), replayed, wrong-owner and private-audience notes are rejected
+   with host and member state byte-for-byte unchanged.
+6. A member blocked personally by another member still receives that member's group notes
+   (block does not change group membership).
+7. Limitation: host and all forwarding members unreachable -> no recovery without re-share.
+
+### W2-Q — 1:1 chat request through the host (U3, U5)
+Owns `crates/group-sim/src/chat_request.rs` (+ mod line). May add dev-deps
+`x25519-dalek = { version = "2", features = ["static_secrets"] }` and `aes-gcm = "0.10"` to
+`crates/group-sim/Cargo.toml` (+ resulting Cargo.lock lines for group-sim only; both crates
+already in the lockfile). Each member publishes a DID-signed X25519 request key in the group.
+Tests (~12):
+1. Request is E2E-encrypted to the target; host sees only routing metadata. Assert the
+   requester's and target's private endpoints never appear in host state or relayed bytes.
+2. Accept: both sides obtain each other's private endpoint, bound to the right DID (signed
+   inside the ciphertext); afterwards direct chat needs no host.
+3. Host tampering (bit flip, swapped ciphertext between targets, re-addressed request)
+   is detected; state unchanged.
+4. Replayed request/acceptance rejected; an acceptance cannot be redirected to a third party.
+5. Host drops the request -> requester sees `NoAnswer`, never `Refused`.
+6. Silent block: a blocked requester's request is dropped; what the requester observes is
+   identical to an offline/non-responding target (compare the observation values).
+7. candidate-policy G-BLOCK: explicit decline vs silent decline (both modelled).
+8. Rate limit per (requester, target); over-limit requests dropped, state unchanged.
+9. Request key rotated/stale: request to an old key is rejected or answered per a
+   candidate policy; never decrypted with a retired key after its retirement.
+
+### W2-B — Silent blocking on the private audience (U5) + current-product characterisation
+Owns NEW `crates/proto/tests/rotation_silent_block.rs` and NEW
+`crates/core/tests/block_characterization.rs`. proto part (~10, self-contained per rule 3):
+1. Blocked contact is excluded from the next private rotation note; all others receive it.
+2. Until that rotation the blocked contact can still reach the old endpoint at the network
+   level but its traffic is dropped; it observes the same as "offline" (compare observations).
+3. Blocking never triggers a rotation (schedule unchanged by block events).
+4. Block list syncs to the owner's linked devices; a sibling device also excludes the
+   blocked contact from its notes; ordering race (sibling rotates before sync) shown as a
+   limitation with the exposure window measured.
+5. Block during a rotation grace window: blocked contact does not get the new endpoint.
+6. candidate-policy G-BLOCK: unblock re-includes at next rotation vs sends current endpoint
+   immediately.
+7. A blocked contact sharing a group learns only the group endpoint, never the private one.
+core part: characterise TODAY's behaviour (no production edits), reusing helpers from
+`crates/core/tests/restore.rs`/`rotation_restore_characterization.rs` read-only: what a
+blocked contact observes on message and call attempts (explicit `Reject`, see
+`crates/core/src/node.rs:280`) vs an offline peer. Label `limitation` where it differs from U5.
+Run `cargo test -p p2pcore --test block_characterization` then full `cargo test -p p2pcore`
+(baseline 129 passed) and `cargo test -p proto` (baseline 166 passed).
+
+### W2-G — Personal block inside groups (U5, U6)
+Owns `crates/group-sim/src/block_in_group.rs` (+ mod line). Tests (~8):
+1. Personal block leaves group membership, permits and convergence unchanged for everyone
+   (state of all non-blocking replicas byte-identical with and without the block).
+2. candidate-policy G-BLOCK: blocker's local view of the blocked member's group messages —
+   (a) shown, (b) hidden, (c) collapsed placeholder. Hidden content still converges and is
+   relayed (the blocker's replica must not become a censoring relay unless policy says so;
+   model both as candidates if the blocker is the host).
+3. Blocked member cannot learn the blocker's private endpoint through group traffic.
+4. Block by an admin/owner does not revoke or alter the blocked member's grants.
+5. Blocked member's chat-request path is out of scope here (W2-Q) — reference only.
+
+---
+
 ## Coordinator checklist per returned packet
 
 - Agent's worktree branch commit touches only the packet's owned files (+ allowed mod line).
