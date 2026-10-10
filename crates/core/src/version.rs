@@ -28,12 +28,17 @@ pub struct Versioned {
     pub old: &'static [&'static [u8]],
 }
 
-/// 1:1 chat (`tinline/chat/3`; 1 = before P9c, 2 = before P10's per-writer versions).
+/// 1:1 chat (`tinline/chat/3`; 1 = before P9c, 2 = before P10's per-writer versions and P6's
+/// message tokens; one bump for both, same release).
 pub const CHAT: Versioned = Versioned { name: "chat", current: crate::chat::wire::CHAT_ALPN, old: &[b"tinline/chat/1", b"tinline/chat/2"] };
-/// Own-device sync, which relays chat docs (`tinline/self/3`; 1 = before P9c, 2 = before P10).
+/// Own-device sync, which relays chat docs and the account doc (`tinline/self/3`; 1 = before
+/// P9c, 2 = before P10 and P6's call tokens, call permissions and cut-offs).
 pub const OWN: Versioned = Versioned { name: "own-device sync", current: proto::SELF_ALPN, old: &[b"tinline/self/1", b"tinline/self/2"] };
+/// Calls, contact exchange, notices and tokens (`osvauld/p2p/1`; 0 = one `call` grant for
+/// everything, before P6).
+pub const CALL: Versioned = Versioned { name: "calls and contacts", current: proto::ALPN, old: &[b"osvauld/p2p/0"] };
 
-const ALL: [&Versioned; 2] = [&CHAT, &OWN];
+const ALL: [&Versioned; 3] = [&CHAT, &OWN, &CALL];
 
 /// The ALPNs our endpoint lists only to refuse them.
 pub fn old_alpns() -> Vec<Vec<u8>> {
@@ -121,6 +126,7 @@ mod tests {
     fn the_wire_versions_were_bumped_and_the_old_ones_are_refused() {
         assert_eq!(CHAT.current, b"tinline/chat/3");
         assert_eq!(OWN.current, b"tinline/self/3");
+        assert_eq!(CALL.current, b"osvauld/p2p/1");
         for v in ALL {
             assert!(superseded(v.current).is_none());
             for o in v.old {
@@ -130,7 +136,13 @@ mod tests {
         }
         assert_eq!(
             old_alpns(),
-            vec![b"tinline/chat/1".to_vec(), b"tinline/chat/2".to_vec(), b"tinline/self/1".to_vec(), b"tinline/self/2".to_vec()]
+            vec![
+                b"tinline/chat/1".to_vec(),
+                b"tinline/chat/2".to_vec(),
+                b"tinline/self/1".to_vec(),
+                b"tinline/self/2".to_vec(),
+                b"osvauld/p2p/0".to_vec()
+            ]
         );
         let r = reason(&CHAT, b"tinline/chat/2");
         assert!(r.contains("tinline/chat/2") && r.contains("tinline/chat/3") && r.contains("update"), "{r}");

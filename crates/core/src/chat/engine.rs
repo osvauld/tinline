@@ -386,15 +386,26 @@ impl Inner {
     }
 
     /// Verifies a peer's `Auth` like a call hello: attested device = the connection's key, a
-    /// grant we issued them, and they are a contact. Returns their DID (blocked or not: the
-    /// caller answers a blocked one with our notice).
-    fn verify_auth(&self, me: &Me, auth: &ChatMsg, remote: [u8; 32]) -> Result<(String, Option<String>), Error> {
+    /// token we issued them, and they are a contact. Returns their DID (blocked or not: the
+    /// caller answers a blocked one with our notice) and the token, which `chat_admit` checks.
+    fn verify_auth(&self, me: &Me, auth: &ChatMsg, remote: [u8; 32]) -> Result<(String, Option<String>, proto::Grant), Error> {
         let ChatMsg::Auth { attestation, grant, relay } = auth else { return Err(Error::Protocol("expected Auth".into())) };
         let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None };
         let s = self.shared.lock();
         let contacts = &s.state.contacts;
-        let who = proto::accept_call_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| contacts.iter().any(|c| c.did == did))?;
-        Ok((who.did, relay_hint(relay)))
+        let who = proto::accept_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| contacts.iter().any(|c| c.did == did))?;
+        Ok((who.did, relay_hint(relay), who.grant))
+    }
+
+    /// P6: chat needs a message token of ours that was not taken back (a block's cut-off); a
+    /// call token does not open chat. Renews the token when it is close to expiry.
+    fn chat_admit(self: &Arc<Self>, did: &str, grant: &proto::Grant) -> Result<(), Error> {
+        if self.token_check(did, grant, proto::Cap::Message).is_err() {
+            self.log(format!("chat refused: {did}: no valid message token"));
+            return Err(Error::Rejected("not accepted".into()));
+        }
+        self.renew_message_if_due(did, grant);
+        Ok(())
     }
 
     /// Whether we keep a session with `did` going: a contact that neither side blocks.
@@ -476,17 +487,18 @@ impl Inner {
                 }
                 return Err(Error::Protocol("unexpected notice".into()));
             }
-            let (did, hint) = self.verify_auth(me, &reply, remote)?;
+            let (did, hint, grant) = self.verify_auth(me, &reply, remote)?;
             if self.shared.lock().state.blocked.contains(&did) {
                 return Err(Error::Rejected(crate::BLOCKED.into()));
             }
+            self.chat_admit(&did, &grant)?;
             (did, hint)
         } else {
             let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::Protocol("peer closed before auth".into()))?;
-            let (did, hint) = self.verify_auth(me, &first, remote)?;
+            let (did, hint, grant) = self.verify_auth(me, &first, remote)?;
             // A DID we block gets our notice instead of our Auth, then the connection ends.
             if let Some(notice) = self.refusal_for(&did) {
                 self.log("chat refused: blocked");
@@ -495,6 +507,7 @@ impl Inner {
                 let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
                 return Err(Error::Rejected(crate::BLOCKED.into()));
             }
+            self.chat_admit(&did, &grant)?;
             let grant = {
                 let s = self.shared.lock();
                 s.state.contacts.iter().find(|c| c.did == did).map(|c| c.grant_from_them.clone())

@@ -44,8 +44,8 @@ const BLOCKED: &str = harness::BLOCKED;
 // Test-only harness: the API R1 must provide. Every function is a stub today.
 // ---------------------------------------------------------------------------------------------
 
-/// The R1 API for visible blocking (P5), as the tests call it. Stubs remain only for what P5 does
-/// not build: call tokens (P6) and the group API.
+/// The R1 API for visible blocking (P5) and call tokens (P6), as the tests call it. Stubs remain
+/// only for the group API.
 #[allow(dead_code)]
 mod harness {
     use p2pcore::{Error, Node};
@@ -91,13 +91,13 @@ mod harness {
     }
 
     /// U13/U15: whether `did` holds our call token (ticket contacts: true by default).
-    pub fn calls_allowed(_node: &Node, _did: &str) -> bool {
-        unimplemented!("R1/P6: separate call token")
+    pub fn calls_allowed(node: &Node, did: &str) -> bool {
+        node.calls_allowed(did.to_string())
     }
 
     /// U13: grant ("allow calls") or revoke the call token of `did`; the message token is kept.
-    pub fn set_calls_allowed(_node: &Node, _did: &str, _allowed: bool) -> Result<(), Error> {
-        unimplemented!("R1/P6: separate call token")
+    pub fn set_calls_allowed(node: &Node, did: &str, allowed: bool) -> Result<(), Error> {
+        node.allow_calls(did.to_string(), allowed)
     }
 
     // --- group stubs, only for the "block does not change group membership" test ---
@@ -696,20 +696,24 @@ fn unblock_restores_messaging() {
 }
 
 // KIND: acceptance
-// Decision: U13/U15 (separate message and call tokens) + U5 revised — unblock gives calls back
-// only to a contact that was allowed to call before the block; a message-only contact stays
-// message-only and is not told "blocked".
+// Decision: U13/U15 (separate message and call tokens) + U5 revised + U20 — unblock gives calls
+// back only to a contact that was allowed to call before the block; a message-only contact stays
+// message-only and is not told "blocked". (P6 changed the steps, not the target: the block's
+// deletion request removed their entry for a, and the block took their tokens back, so after
+// the unblock they re-add a from its ticket and get fresh tokens.)
 #[test]
-#[ignore = "P6: needs separate message and call tokens (U13/U15); P5 has one grant"]
 fn unblock_restores_calls_only_if_previously_allowed() {
     let (a, b) = pair("unblkc-b");
     let c = peer("unblkc-c");
     c.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     assert!(harness::calls_allowed(&a.node, &b.did), "ticket contacts get message+call (U13 default)");
     harness::set_calls_allowed(&a.node, &c.did, false).unwrap();
-    for d in [&b.did, &c.did] {
-        harness::block(&a.node, d).unwrap();
-        harness::unblock(&a.node, d).unwrap();
+    for p in [&b, &c] {
+        harness::block(&a.node, &p.did).unwrap();
+        eventually(40, "their app deleted a", || !p.node.contacts().iter().any(|x| x.did == a.did));
+        harness::unblock(&a.node, &p.did).unwrap();
+        eventually(40, "the unblock reached them", || harness::block_state(&p.node, &a.did).blocked_me.is_none());
+        p.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     }
     assert!(harness::calls_allowed(&a.node, &b.did));
     assert!(!harness::calls_allowed(&a.node, &c.did));
@@ -722,6 +726,7 @@ fn unblock_restores_calls_only_if_previously_allowed() {
     let call = c.node.call(a.did.clone()).unwrap();
     let (reason, took) = ended_after(&c, &call.call_id, t0, 40);
     assert_ne!(reason, BLOCKED, "c is no longer blocked, only not allowed to call");
+    assert_eq!(reason, p2pcore::CALLS_NOT_ALLOWED);
     assert!(took < QUICK, "{took:?}");
     assert!(!saw_incoming(&a));
     let m = c.node.send_text(a.did.clone(), "messages still work".into(), None).unwrap().id;
