@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 pub const ALPN: &[u8] = b"osvauld/p2p/0";
 /// Own-device sync (docs/design/device-linking.md §4); only devices of the same DID. Version 2
 /// (P9c): relays the strict DID-signed chat docs; version 1 is refused by the app.
-pub const SELF_ALPN: &[u8] = b"tinline/self/2";
+pub const SELF_ALPN: &[u8] = b"tinline/self/3";
 
 const ATTEST_DOMAIN: &[u8] = b"osvauld/p2p/attest/v1\0";
 const INVITE_DOMAIN: &[u8] = b"osvauld/p2p/invite/v1\0";
@@ -829,7 +829,7 @@ pub fn forge_block_notice_for_test(signer: &Identity, claimed_from: &str, to: &s
 
 // ---- own-device sync ---------------------------------------------------------------
 
-/// Authorization for `tinline/self/2`: the peer is another device of *our* DID, it is the
+/// Authorization for `tinline/self/3`: the peer is another device of *our* DID, it is the
 /// device the transport authenticated, and it has not been removed. No grant is involved.
 pub fn accept_self_hello(
     attestation: &SignedAttestation,

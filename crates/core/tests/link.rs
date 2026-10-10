@@ -399,7 +399,7 @@ fn redeemed_nonces_union_and_strangers_cannot_open_self_sync() {
     let nonces = e.node.redeemed_for_test();
     assert!(!nonces.is_empty());
     eventually(40, "N has the nonce", || n.node.redeemed_for_test() == nonces);
-    // A contact (other DID) is not let into tinline/self/2; our own device is.
+    // A contact (other DID) is not let into tinline/self/3; our own device is.
     assert!(!a.node.self_probe_for_test(dev(&e)));
     assert!(!x.node.self_probe_for_test(dev(&n)));
     // E and N already hold a live self-sync session, and the acceptor keeps only one per device:

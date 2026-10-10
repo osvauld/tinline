@@ -103,8 +103,8 @@ fn set(map: &LoroMap, id: &str, k: &str, v: impl Into<loro::LoroValue>) {
 }
 
 /// Writes `rec` under `peer` (a doc seeded with `from`) as one span the way a writer does: the
-/// immutable fields if `from` does not hold it, then `v` with `did_sig = sign(rec, where the
-/// span really is)`.
+/// immutable fields if `from` does not hold it, then the version under `peer`'s version key with
+/// `did_sig = sign(rec, where the span really is)`.
 fn span(from: &Shard, peer: u64, rec: &MsgRec, sign: impl FnOnce(&MsgRec, &WrittenAt) -> Vec<u8>) -> Vec<u8> {
     let doc = seeded(from, peer);
     let before = doc.oplog_vv();
@@ -120,7 +120,7 @@ fn span(from: &Shard, peer: u64, rec: &MsgRec, sign: impl FnOnce(&MsgRec, &Writt
         }
     };
     let at = WrittenAt { peer, counter: before.get(&peer).copied().unwrap_or(0), len: doc.get_pending_txn_len() as u32 + 1 };
-    e.insert("v", version_value(rec, &sign(rec, &at))).unwrap();
+    e.insert(&version_key(peer), version_value(rec, &sign(rec, &at))).unwrap();
     assert_eq!(doc.get_pending_txn_len() as u32, at.len);
     doc.commit();
     doc.export(ExportMode::updates(&before)).unwrap()
@@ -207,8 +207,9 @@ fn did_signatures_are_domain_separated_and_bound_to_doc_content_device_and_span(
 }
 
 // KIND: invariant (P9c)
-// The DID signature and the device ID are record fields (of the version value `v`); the record
-// has no device signature and no change carries a commit message. The writer ID is the only
+// The DID signature and the device ID are record fields (of the version value the writer files
+// under its own version key, `v:<writer ID>`); the record has no device signature and no change
+// carries a commit message. The writer ID is the only
 // peer id in the doc.
 #[test]
 fn records_carry_the_did_signature_and_device_id_as_fields() {
@@ -224,8 +225,9 @@ fn records_carry_the_did_signature_and_device_id_as_fields() {
     let loro::LoroValue::Map(m1) = &msgs["m1"] else { panic!() };
     let mut keys: Vec<&str> = m1.keys().map(|k| k.as_str()).collect();
     keys.sort();
-    assert_eq!(keys, vec!["at", "author", "id", "v"]);
-    let loro::LoroValue::Map(v) = &m1["v"] else { panic!() };
+    let vk = version_key(wid(0, 1));
+    assert_eq!(keys, vec!["at", "author", "id", vk.as_str()]);
+    let loro::LoroValue::Map(v) = &m1[&vk] else { panic!() };
     let mut keys: Vec<&str> = v.keys().map(|k| k.as_str()).collect();
     keys.sort();
     assert_eq!(keys, vec!["deleted", "dev", "did_sig", "edited_at", "text"]);
@@ -365,34 +367,139 @@ fn concurrent_edits_on_two_own_devices_converge_on_one_signed_version() {
     assert_eq!(third.apply_remote(&contact.snapshot(), &hist(0, 1)).unwrap().added, vec!["m1".to_string()]);
 }
 
-// KIND: limitation (pre-existing since the rollback rule; not changed by P9c; POLICY-GATED)
-// Two concurrent edits with different edit times: Loro's last-writer-wins picks the winner by
-// its own order (Lamport, then peer id), not by edit time. When the winner carries the older
-// `edited_at`, the rollback rule (`edited_at` must not go back, a delete must not be undone)
-// refuses the batch that makes it win, on a device that already shows the newer edit: the two
-// replicas then stay apart until a later edit supersedes both. Replays cannot trigger it any
-// more (every version's signature is bound to its own span), only genuine concurrency.
-// Options: drop the rollback rule (Loro's order alone decides); or order versions by
-// (`edited_at`, writer ID) in `messages()` instead of by Loro's map winner.
+// KIND: invariant (P10; replaces the flaky limitation test
+// `concurrent_edits_whose_loro_winner_is_older_are_refused`)
+// Two own devices edit the same message concurrently with different edit times. Every replica,
+// in either arrival order, accepts both edits and shows the newer one: competing versions are
+// ordered by (deleted, edited_at, writer ID), never by Loro's internal winner (Lamport, then
+// peer id), which made the old rollback rule refuse the batch on one replica only. Many device-ID
+// pairs, so both Loro peer orders occur in every run.
 #[test]
-fn concurrent_edits_whose_loro_winner_is_older_are_refused() {
-    let d1 = shard(0, 1);
-    let u = d1.add_message(&msg("m1", &did(0), NOON, "v0"), &w(0, 1)).unwrap();
-    let mut d3 = shard(0, 3);
-    d3.apply_remote(&u, &own(0, 1)).unwrap();
-    let e1 = d1.edit("m1", "from 1", NOON + 10, &w(0, 1)).unwrap();
-    let e3 = d3.edit("m1", "from 3", NOON + 11, &w(0, 3)).unwrap();
-    // Whichever edit Loro lets win, one arrival order shows the newer edit first and then
-    // refuses the older winner.
-    let mut verdicts = Vec::new();
-    for (first, second) in [(&e1, &e3), (&e3, &e1)] {
-        let mut c = shard(1, 2);
-        c.apply_remote(&u, &live(0)).unwrap();
-        c.apply_remote(first, &live(0)).unwrap();
-        verdicts.push(c.apply_remote(second, &live(0)));
+fn concurrent_edits_converge_on_the_newest_version_in_every_arrival_order() {
+    for v in 0..16u8 {
+        let (v1, v3) = (10 + 2 * v, 11 + 2 * v);
+        let mut d1 = shard(0, v1);
+        let u = d1.add_message(&msg("m1", &did(0), NOON, "v0"), &w(0, v1)).unwrap();
+        let mut d3 = shard(0, v3);
+        d3.apply_remote(&u, &own(0, 1)).unwrap();
+        let e1 = d1.edit("m1", "older", NOON + 10, &w(0, v1)).unwrap();
+        let e3 = d3.edit("m1", "newer", NOON + 11, &w(0, v3)).unwrap();
+        for (first, second) in [(&e1, &e3), (&e3, &e1)] {
+            let mut c = shard(1, 2);
+            c.apply_remote(&u, &live(0)).unwrap();
+            c.apply_remote(first, &live(0)).unwrap();
+            assert_eq!(c.apply_remote(second, &live(0)).map(|_| ()), Ok(()), "pair {v}");
+            assert_eq!(c.messages().unwrap()["m1"].text, "newer", "pair {v}");
+            assert_eq!(c.messages().unwrap()["m1"].edited_at, Some(NOON + 11));
+        }
+        d1.apply_remote(&e3, &own(0, 1)).unwrap();
+        d3.apply_remote(&e1, &own(0, 1)).unwrap();
+        assert_eq!(d1.messages().unwrap(), d3.messages().unwrap());
+        assert_eq!(d1.messages().unwrap()["m1"].text, "newer");
     }
-    assert!(verdicts.contains(&Err(Reject::Immutable("m1".into()))), "{verdicts:?}");
-    assert!(verdicts.iter().any(|v| v.is_ok()), "{verdicts:?}");
+}
+
+// KIND: invariant (P10)
+// The order of competing versions: a delete beats any concurrent edit, whatever its time; equal
+// edit times go to the higher writer ID. Every replica agrees, in either arrival order, and a
+// device's next edit supersedes whatever it shows.
+#[test]
+fn a_delete_beats_a_concurrent_edit_and_ties_go_to_the_higher_writer_id() {
+    let base = |v1: u8, v3: u8| {
+        let d1 = shard(0, v1);
+        let u = d1.add_message(&msg("m1", &did(0), NOON, "v0"), &w(0, v1)).unwrap();
+        let mut d3 = shard(0, v3);
+        d3.apply_remote(&u, &own(0, 1)).unwrap();
+        (d1, d3, u)
+    };
+    let both_orders = |u: &[u8], x: &[u8], y: &[u8]| {
+        let mut out = Vec::new();
+        for (first, second) in [(x, y), (y, x)] {
+            let mut c = shard(1, 2);
+            c.apply_remote(u, &live(0)).unwrap();
+            c.apply_remote(first, &live(0)).unwrap();
+            c.apply_remote(second, &live(0)).unwrap();
+            out.push(c.messages().unwrap()["m1"].clone());
+        }
+        assert_eq!(out[0], out[1]);
+        out.remove(0)
+    };
+    // A delete at NOON+10 against an edit at NOON+20: deleted.
+    let (d1, d3, u) = base(1, 3);
+    let del = d1.delete("m1", NOON + 10, &w(0, 1)).unwrap();
+    let ed = d3.edit("m1", "later edit", NOON + 20, &w(0, 3)).unwrap();
+    let m = both_orders(&u, &del, &ed);
+    assert!(m.deleted && m.text.is_empty());
+    // Equal edit times: the higher writer ID wins.
+    let (d1, mut d3, u) = base(1, 3);
+    let e1 = d1.edit("m1", "from 1", NOON + 10, &w(0, 1)).unwrap();
+    let e3 = d3.edit("m1", "from 3", NOON + 10, &w(0, 3)).unwrap();
+    let m = both_orders(&u, &e1, &e3);
+    assert_eq!(m.text, if wid(0, 1) > wid(0, 3) { "from 1" } else { "from 3" });
+    // The losing device's next edit, even with an older clock, wins everywhere.
+    d3.apply_remote(&e1, &own(0, 1)).unwrap();
+    let again = d3.edit("m1", "from 3 again", NOON + 5, &w(0, 3)).unwrap();
+    let mut c = shard(1, 2);
+    for b in [&u, &e1, &e3, &again] {
+        c.apply_remote(b, &live(0)).unwrap();
+    }
+    assert_eq!(c.messages().unwrap()["m1"].text, "from 3 again");
+    assert_eq!(d3.messages().unwrap(), c.messages().unwrap());
+}
+
+// KIND: invariant (P10)
+// A writer's own versions never go back: an older edit time or an undone delete under its own
+// version key is refused, whether the receiver held the newer version before or gets both in
+// one batch (the verdict comes from the ops alone). No writer may write another's version key.
+#[test]
+fn a_writer_cannot_roll_back_its_own_version_or_write_another_writers_key() {
+    let a = shard(0, 1);
+    let u = a.add_message(&msg("m1", &did(0), NOON, "v0"), &w(0, 1)).unwrap();
+    let e = a.edit("m1", "v1", NOON + 10, &w(0, 1)).unwrap();
+    let back = span(&a, wid(0, 1), &MsgRec { text: "back".into(), edited_at: Some(NOON + 5), ..rec_of("m1", 0, 1, NOON, "") }, by(0));
+    let mut c = shard(1, 2);
+    c.apply_remote(&u, &live(0)).unwrap();
+    c.apply_remote(&e, &live(0)).unwrap();
+    assert_eq!(c.apply_remote(&back, &live(0)), Err(Reject::Immutable("m1".into())));
+    let all = doc_with(&[&u, &e, &back], 99, |_| {});
+    assert_eq!(shard(1, 2).apply_remote(&all, &live(0)), Err(Reject::Immutable("m1".into())));
+    // An undone delete, even with a later edit time.
+    let del = a.delete("m1", NOON + 20, &w(0, 1)).unwrap();
+    let undo = span(&a, wid(0, 1), &MsgRec { text: "alive".into(), edited_at: Some(NOON + 30), ..rec_of("m1", 0, 1, NOON, "") }, by(0));
+    c.apply_remote(&del, &live(0)).unwrap();
+    assert_eq!(c.apply_remote(&undo, &live(0)), Err(Reject::Immutable("m1".into())));
+    assert!(c.messages().unwrap()["m1"].deleted);
+    assert_eq!(a.edit("m1", "again", NOON + 40, &w(0, 1)), Err(Reject::Immutable("m1".into())), "a writer does not edit a deleted message");
+    // A span of writer 1 that files a version under writer 3's key.
+    let other = {
+        let d = seeded(&a, wid(0, 1));
+        let before = d.oplog_vv();
+        let r = MsgRec { edited_at: Some(NOON + 50), ..rec_of("m1", 0, 3, NOON, "as 3") };
+        let at = WrittenAt { peer: wid(0, 1), counter: before.get(&wid(0, 1)).copied().unwrap_or(0), len: 1 };
+        set(&d.get_map("messages"), "m1", &version_key(wid(0, 3)), version_value(&r, &sign_msg(acct(0), &name(), &r, &at)));
+        d.commit();
+        d.export(ExportMode::updates(&before)).unwrap()
+    };
+    assert_eq!(c.apply_remote(&other, &live(0)), Err(Reject::Unsigned));
+}
+
+// KIND: limitation (Loro; why P10 never rebuilds a day under the same writer ID)
+// A day rebuilt from nothing under the same writer ID writes at (writer ID, counter) pairs the
+// contact already holds; Loro takes them for ops it has and drops them, so the new message is
+// silently lost there. Under a fresh writer ID it arrives.
+#[test]
+fn a_day_rebuilt_under_the_same_writer_id_is_silently_lost() {
+    let a = shard(0, 1);
+    let u1 = a.add_message(&msg("m1", &did(0), NOON, "first"), &w(0, 1)).unwrap();
+    let mut b = shard(1, 2);
+    b.apply_remote(&u1, &live(0)).unwrap();
+    let rebuilt = shard(0, 1);
+    let u2 = rebuilt.add_message(&msg("m2", &did(0), NOON + 1, "second"), &w(0, 1)).unwrap();
+    assert_eq!(b.apply_remote(&u2, &live(0)), Ok(Applied::default()));
+    assert!(!b.messages().unwrap().contains_key("m2"));
+    let fresh = shard(0, 4);
+    let u3 = fresh.add_message(&msg("m3", &did(0), NOON + 2, "third"), &w(0, 4)).unwrap();
+    assert_eq!(b.apply_remote(&u3, &live(0)).unwrap().added, vec!["m3".to_string()]);
 }
 
 // KIND: invariant
@@ -497,7 +604,7 @@ fn forged_batches_are_rejected_and_not_stored() {
         let map = d.get_map("messages");
         set(&map, "m6", "at", r.at);
         let at = WrittenAt { peer: wid(0, 1), counter: before.get(&wid(0, 1)).copied().unwrap_or(0), len: d.get_pending_txn_len() as u32 + 1 };
-        set(&map, "m6", "v", version_value(&r, &sign_msg(acct(0), &name(), &r, &at)));
+        set(&map, "m6", &version_key(wid(0, 1)), version_value(&r, &sign_msg(acct(0), &name(), &r, &at)));
         d.commit();
         d.export(ExportMode::updates(&before)).unwrap()
     };
@@ -585,7 +692,7 @@ fn every_op_must_belong_to_a_did_signed_span() {
         let at = WrittenAt { peer: wid(0, 1), counter: 0, len: d.get_pending_txn_len() as u32 + 2 };
         for id in ["x1", "x2"] {
             let r = rec_of(id, 0, 1, NOON, "t");
-            entry(&map, id).unwrap().insert("v", version_value(&r, &sign_msg(acct(0), &name(), &r, &at))).unwrap();
+            entry(&map, id).unwrap().insert(&version_key(wid(0, 1)), version_value(&r, &sign_msg(acct(0), &name(), &r, &at))).unwrap();
         }
         d.commit();
         d.export(ExportMode::all_updates()).unwrap()
@@ -601,7 +708,7 @@ fn every_op_must_belong_to_a_did_signed_span() {
         e.insert("author", did(0).as_str()).unwrap();
         e.insert("at", NOON).unwrap();
         let at = WrittenAt { peer: wid(0, 1), counter: 0, len: d.get_pending_txn_len() as u32 + 2 };
-        e.insert("v", version_value(&r, &sign_msg(acct(0), &name(), &r, &at))).unwrap();
+        e.insert(&version_key(wid(0, 1)), version_value(&r, &sign_msg(acct(0), &name(), &r, &at))).unwrap();
         e.insert("reply_to", "y0").unwrap();
         d.commit();
         d.export(ExportMode::all_updates()).unwrap()

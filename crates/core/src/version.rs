@@ -28,10 +28,10 @@ pub struct Versioned {
     pub old: &'static [&'static [u8]],
 }
 
-/// 1:1 chat (`tinline/chat/2`; 1 = before P9c).
-pub const CHAT: Versioned = Versioned { name: "chat", current: crate::chat::wire::CHAT_ALPN, old: &[b"tinline/chat/1"] };
-/// Own-device sync, which relays chat docs (`tinline/self/2`; 1 = before P9c).
-pub const OWN: Versioned = Versioned { name: "own-device sync", current: proto::SELF_ALPN, old: &[b"tinline/self/1"] };
+/// 1:1 chat (`tinline/chat/3`; 1 = before P9c, 2 = before P10's per-writer versions).
+pub const CHAT: Versioned = Versioned { name: "chat", current: crate::chat::wire::CHAT_ALPN, old: &[b"tinline/chat/1", b"tinline/chat/2"] };
+/// Own-device sync, which relays chat docs (`tinline/self/3`; 1 = before P9c, 2 = before P10).
+pub const OWN: Versioned = Versioned { name: "own-device sync", current: proto::SELF_ALPN, old: &[b"tinline/self/1", b"tinline/self/2"] };
 
 const ALL: [&Versioned; 2] = [&CHAT, &OWN];
 
@@ -116,11 +116,11 @@ mod tests {
         }
     }
 
-    // KIND: invariant (P9c)
+    // KIND: invariant (P9c; P10 bumped again: a record holds one version per writer)
     #[test]
     fn the_wire_versions_were_bumped_and_the_old_ones_are_refused() {
-        assert_eq!(CHAT.current, b"tinline/chat/2");
-        assert_eq!(OWN.current, b"tinline/self/2");
+        assert_eq!(CHAT.current, b"tinline/chat/3");
+        assert_eq!(OWN.current, b"tinline/self/3");
         for v in ALL {
             assert!(superseded(v.current).is_none());
             for o in v.old {
@@ -128,9 +128,12 @@ mod tests {
                 assert_eq!(superseded(o).map(|s| s.name), Some(v.name));
             }
         }
-        assert_eq!(old_alpns(), vec![b"tinline/chat/1".to_vec(), b"tinline/self/1".to_vec()]);
-        let r = reason(&CHAT, b"tinline/chat/1");
-        assert!(r.contains("tinline/chat/1") && r.contains("tinline/chat/2") && r.contains("update"), "{r}");
+        assert_eq!(
+            old_alpns(),
+            vec![b"tinline/chat/1".to_vec(), b"tinline/chat/2".to_vec(), b"tinline/self/1".to_vec(), b"tinline/self/2".to_vec()]
+        );
+        let r = reason(&CHAT, b"tinline/chat/2");
+        assert!(r.contains("tinline/chat/2") && r.contains("tinline/chat/3") && r.contains("update"), "{r}");
     }
 
     // KIND: invariant (P9c, test-first)

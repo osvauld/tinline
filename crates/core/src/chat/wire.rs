@@ -1,6 +1,7 @@
-//! Frames of `tinline/chat/2`: u32 BE length + bincode of `ChatMsg`, on one bidirectional QUIC
+//! Frames of `tinline/chat/3`: u32 BE length + bincode of `ChatMsg`, on one bidirectional QUIC
 //! stream opened by the dialer. Both sides send `Auth` first, then everything is symmetric.
-//! Version 2 (P9c) carries the strict DID-signed chat docs; `tinline/chat/1` (apps before P9c)
+//! Version 3 (P10: one version per writer in each record) carries the strict DID-signed chat docs;
+//! `tinline/chat/1` (apps before P9c) and `tinline/chat/2` (before P10)
 //! is refused clearly (`crate::version`).
 
 use iroh::endpoint::{RecvStream, SendStream};
@@ -8,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
-pub const CHAT_ALPN: &[u8] = b"tinline/chat/2";
+pub const CHAT_ALPN: &[u8] = b"tinline/chat/3";
 /// A shard snapshot of a very busy day can be large; blobs carry the rest.
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 const SIG_DOMAIN: &[u8] = b"tinline-chat-batch-v1";
