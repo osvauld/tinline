@@ -522,6 +522,34 @@ device-key signing, member-held endpoints), with file:line — do not edit them.
 
 ---
 
+### W2-M — Multi-host group model (host permits, host reconnect) + superseded-test relabel
+Owns NEW `crates/group-sim/src/multi_host.rs` (+ mod line), NEW `docs/group-multi-host-model.md`,
+and label/comment-only edits (no logic changes) to the silent-block tests listed in
+`docs/group-host-only-model.md` §4 (`chat_request.rs`, `block_in_group.rs`). Builds on
+`host_only.rs` (copy with provenance). Decisions: U4 revised, U5 revised, U7, U9, section 9
+Q5/Q6 (multiple hosts; host reconnects members after its rotation; host details). Tests (~14):
+1. Host permit: owner/admin appoints a host via the grant/delegation chain; a host without a
+   valid permit, with a revoked permit, or appointed by a non-admin is refused by members.
+2. Host need not be an admin: host can relay but cannot grant/remove (state unchanged).
+3. Host is one device of a user: a sibling device of the same DID is NOT a host.
+4. Member posts via host H1 reach members on H2 (host-to-host sync); two hosts partitioned
+   then healed converge.
+5. Member rotation note goes to every host; one host relays to another that missed it.
+6. Host rotates and itself reconnects members at their current endpoints (no overlap window).
+7. Host and member both rotated while apart: recovered via another host (invariant with ≥2
+   hosts); with one host -> candidate-policy G-TIME: member keeps old endpoint until host ack
+   vs no retention (re-share).
+8. Writer-ID collision with two hosts seeing claims in different orders: first-claim-at-host
+   diverges (limitation) vs deterministic tie-break, e.g. lowest signed claim (candidate G-FORK).
+9. Host removal by an admin: removed host's relays refused by members afterwards.
+10. U9 removal applied by every honest host; a rogue host still serving the removed member
+    is a limitation (no group-content encryption).
+11. Visible block/removal notice (U5 revised): removed member receives a signed notice.
+Relabel the silent-block tests as `// KIND: candidate-policy G-BLOCK` with a comment
+"rejected option per U5 revised" — no behaviour change; test count unchanged.
+
+---
+
 ## Coordinator checklist per returned packet
 
 - Agent's worktree branch commit touches only the packet's owned files (+ allowed mod line).
