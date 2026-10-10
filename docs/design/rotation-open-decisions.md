@@ -130,6 +130,15 @@ message+call; contacts from a group chat request (U3) start message-only; callin
 explicitly ("allow calls" sends the call token); existing `call` grants migrate to
 message+call.
 
+**U14 (user, 2026-10-10) — no per-recipient group encryption for launch; hosts are trusted members.**
+Hosts are members' devices and are trusted nodes: each keeps a full copy of the group Loro doc
+and may read it. Group updates are protected by QUIC (hop by hop) in transit and the device
+vault (AES) at rest; the host merges plain Loro updates. A host forwarding content is treated
+like any member sharing it; a misbehaving host is handled by revocation + group rotation (U12).
+Per-recipient sealing (or a rotating group key) is required only if a NON-member host binary
+(relay-only, own DID) is ever shipped — deferred. Resolves section 10 Q7 and closes the
+"undetected rogue host" item as accepted for launch.
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
