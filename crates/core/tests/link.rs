@@ -402,7 +402,14 @@ fn redeemed_nonces_union_and_strangers_cannot_open_self_sync() {
     // A contact (other DID) is not let into tinline/self/1; our own device is.
     assert!(!a.node.self_probe_for_test(dev(&e)));
     assert!(!x.node.self_probe_for_test(dev(&n)));
-    assert!(n.node.self_probe_for_test(dev(&e)));
+    // E and N already hold a live self-sync session, and the acceptor keeps only one per device:
+    // the connection dialled by the lower device key (sync/engine.rs `register_session`). The
+    // acceptor answers `Auth` and then drops a probe that loses that tie-break, so the probe would
+    // fail whenever the live session was dialled by the lower key. Probing *from* the lower key
+    // always wins, so the result reflects admission only. The retry only covers a real dial landing
+    // between the probe's Auth and its read; the stranger/contact checks above stay one-shot.
+    let (lo, hi) = if proto::device_from_text(&dev(&n)).unwrap() < proto::device_from_text(&dev(&e)).unwrap() { (&n, &e) } else { (&e, &n) };
+    eventually(20, "own device let into self-sync", || lo.node.self_probe_for_test(dev(hi)));
 }
 
 #[test]
