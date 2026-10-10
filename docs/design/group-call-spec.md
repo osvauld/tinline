@@ -510,14 +510,16 @@ gap case (before: up to 200 ms target, 250 ms latency).
 
 **Corrections to this spec** (not yet folded into the sections above):
 1. A 12-entry `Roster` exceeds the 4 KiB `MAX_CONTROL` in both JSON and `sign_blob` shape (§6
-   claim is wrong). Raise the limit or encode entries compactly.
+   claim is wrong). Raise the limit or encode entries compactly. **Fixed by compact entries
+   (§11).**
 2. 32 kbps saves about 21 % (150 B / 60 kbps per stream on the wire), not 24 % (§4).
 3. Removed members must not be sent a `CallStart`: its call-host record carries H's (possibly
    rotated) group endpoint. Chat hosts skip removed members when relaying it.
 4. A forced member rotation mid-call leaves ≥ 2 s without audio (Join rate limit 1 per 2 s).
 5. A new speaker is forwarded only ~380 ms after starting when S is full (300 ms average +
    200 ms hysteresis); the first words are lost. Proposed: forward a new speaker at once in a
-   temporary extra slot (K+1), let hysteresis decide after 200 ms. Awaiting user decision.
+   temporary extra slot (K+1), let hysteresis decide after 200 ms. **Decided G6-D2 (§10),
+   built (§11).**
 6. §4's one-speaker gated numbers mix two cases: a remote speaker costs 1 stream down and N−2
    up at H; N−1 up only when H's own user is the speaker.
 
@@ -545,3 +547,43 @@ needs a real encoder; GC-D09). On-device GC-D01..D09 wait for the call layer.
   here if wrong). The values are the named constants in `group_call.rs` and `group_call_tests.rs`.
 - The §9 gaps G1–G10 are settled by the lead in the call-engine packet (GA-P1) as modelled,
   unless one changes user-visible behaviour.
+
+## 11. Settled in the call engine (GA-P1, 2026-10-10)
+
+Code: `crates/proto/src/gcall.rs` (wire), `crates/core/src/gcall/` (sans-IO `HostEngine`,
+`ClientEngine`, `CallBoard`, `Forwarder`; not wired into `node.rs` yet). Tests: `cargo test -p
+proto gcall`, `cargo test -p p2pcore --lib gcall` (GC-S01/03/05/06/06b/08/13/16/17 and G6-D2 on
+the real engines), `cargo test -p group-sim group_call` (model updated for G6-D2).
+
+- **§9.1 fixed without raising the limit.** `MAX_CONTROL` stays 4 KiB. A Roster entry carries
+  `(slot, did, issued_ms, nonce, Join signature)`; the signed Join payload is rebuilt from the
+  Roster's `v`/`gid`/`call_id`/`host_gen`, so members still verify every Join for exactly this
+  call and generation. A 12-entry Roster with a 64-char gid is 3770 B.
+- **Signing.** One domain `tinline/gcall/v1\0`; the signed payload carries a kind tag, so a
+  signed Join cannot be replayed as a Leave (their fields overlap).
+- **New frame `Start`.** After accepting a Join the host sends its current `CallStart` on the
+  call connection. A takeover host's `CallStart{gen+1}` (new backups, G9) thus reaches its
+  members without waiting for the chat relay.
+- **Forwarding is per datagram**, not per 20 ms batch: audio from a forwarded slot goes out on
+  arrival; selection runs once per 20 ms frame.
+- **G6-D2 details.** Trigger: the first audio datagram with level < 50 from a sender outside S
+  that is not lowered/demoted, while no provisional slot exists (also when S has room, until
+  the 300 ms average admits it). `Active` is emitted before that datagram is forwarded. After
+  200 ms the provisional sender replaces S's weakest member if the mean level of its spurt so
+  far is ≥ 6 dB louder than that member's average (or joins S if S has room), else it is
+  dropped and gets no new provisional slot until its average goes back above the threshold.
+  Off while a phone host is limited (K = 1). Consequence: a loud 200 ms burst does displace a
+  speaker (it meets the "6 dB for 200 ms" rule); without D2 it never did.
+- **Redial.** A backup that cannot be reached is skipped at once; one that does not answer is
+  given `ANSWER_TIMEOUT_MS` (5 s). `End{host_leaving|host_rotating}` tries `next_host` first,
+  then the other backups.
+- **Small rules.** A replacement Join from the same DID keeps its slot; a Leave older than the
+  participant's Join is refused; the control rate (10/s) counts every frame on a connection,
+  refused ones too; a host whose own permit is revoked stops without an `End`; a limited phone
+  host returns to the announced K when conditions recover.
+- **Left for wiring:** the `tinline/gcall/1` accept/dial loop and `ConnId` mapping (the host's
+  own user is `ConnId::LOCAL`), a `CallAuthority` over real group membership, permits and
+  group endpoint notes, the chat-relay `Ephemeral` for `CallStart`/`End` with the call-host
+  record (G1), `CallHostStatus` and ranking (§2.2–2.3, still model-only), the takeover trigger
+  (`CallBoard::may_take`) and glare/split settling (`CallBoard::superseded`), and the 20 ms
+  audio loop (`on_mic`, `mix`).
