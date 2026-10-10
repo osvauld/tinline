@@ -8,27 +8,41 @@ use std::collections::{BTreeMap, BTreeSet};
 const DOMAIN: &[u8] = b"tinline/group-simulation/not-production/v1\0";
 const MAX_PENDING: usize = 16;
 
-#[path = "reachability.rs"]
-mod reachability;
+#[path = "block_in_group.rs"]
+mod block_in_group;
+#[path = "chat_request.rs"]
+mod chat_request;
+#[path = "flags.rs"]
+mod flags;
+#[path = "host_only.rs"]
+mod host_only;
+#[path = "host_relay.rs"]
+mod host_relay;
+#[path = "multi_host.rs"]
+mod multi_host;
 #[path = "persistence.rs"]
 mod persistence;
 #[path = "policy_candidates.rs"]
 mod policy_candidates;
-#[path = "block_in_group.rs"]
-mod block_in_group;
-#[path = "host_relay.rs"]
-mod host_relay;
-#[path = "chat_request.rs"]
-mod chat_request;
-#[path = "host_only.rs"]
-mod host_only;
-#[path = "multi_host.rs"]
-mod multi_host;
-#[path = "flags.rs"]
-mod flags;
+#[path = "reachability.rs"]
+mod reachability;
 #[path = "removal_rotation.rs"]
 mod removal_rotation;
 
+// LEGACY ENVELOPE FIXTURE (R1b). `Body.device`, the device-derived `peer` and the attestation
+// encode the superseded device-key-signed content model; U4 revised + U16 replace them with
+// DID-signed posts and an app-supplied writer ID (`host_only.rs`, `multi_host.rs`), and U18
+// drops compatibility with the old shape. Tests in this file, `persistence.rs`,
+// `policy_candidates.rs`, `reachability.rs`, `scheduler.rs` and `block_in_group.rs` use the
+// envelope only as a carrier for properties that do not depend on how content is signed
+// (relay, ordering, pending bounds, authority, persistence, policy candidates). R1b removed
+// the tests that asserted the superseded property itself:
+// - `attestation_must_bind_author_did_and_device_key_each_as_sole_cause` -> `host_only.rs`
+//   `did_signed_posts_with_random_writer_ids_two_own_devices_converge` (DID key alone verifies,
+//   no attestation) and `forged_tampered_wrong_group_and_replayed_posts_leave_state_unchanged`;
+// - `second_device_cannot_write_under_another_devices_loro_peer_id` -> `host_only.rs`
+//   `forged_tampered_wrong_group_and_replayed_posts_leave_state_unchanged` (ops under another
+//   writer ID: `LoroMismatch`) and `cross_did_writer_collision_first_claim_at_host_wins_and_loser_redraws`.
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {
     group: String,
@@ -886,30 +900,6 @@ fn declared_dependency_cannot_substitute_for_actual_loro_causality() {
 
 // KIND: invariant
 #[test]
-fn attestation_must_bind_author_did_and_device_key_each_as_sole_cause() {
-    let mut a = Author::new(1, "g");
-    let mut b = Author::new(2, "g");
-    let mut x = Author::new(3, "g");
-    let (mut r, _) = populated_replica(&mut a, &mut b, &[&x]);
-    // X is allowlisted, signs with its own key, and its peer/doc/group all match, so the
-    // attestation check is the only failing check in each case below.
-    let e = x.post("x1");
-    let mut did_mismatch = e.clone();
-    did_mismatch.attestation = proto::attest(&a.id, x.key.verifying_key().to_bytes(), 0);
-    r.assert_rejected_unchanged(did_mismatch);
-    let mut key_mismatch = e.clone();
-    key_mismatch.attestation = proto::attest(&x.id, a.key.verifying_key().to_bytes(), 0);
-    r.assert_rejected_unchanged(key_mismatch);
-    let mut forged = e.clone();
-    forged.attestation.signature = a.attestation.signature.clone();
-    r.assert_rejected_unchanged(forged);
-    // Positive control: the untouched envelope is accepted on the same replica.
-    assert_eq!(r.receive(e), Outcome::Accepted);
-    assert_eq!(r.accepted.len(), 3);
-}
-
-// KIND: invariant
-#[test]
 fn group_only_and_doc_only_mismatches_are_rejected_without_state_change() {
     let mut a = Author::new(1, "g");
     let mut b = Author::new(2, "g");
@@ -974,7 +964,8 @@ fn size_bounds_and_sequence_zero_are_rejected_without_state_change() {
 }
 
 // Hand-built envelope from DID `owner` using an additional device key, writing under
-// Loro peer `writer` (normally peer(device, doc)). First multi-device-per-DID fixture.
+// Loro peer `writer` (normally peer(device, doc)). Legacy fixture, still used by
+// `policy_candidates.rs` for second-device chains.
 fn second_device_envelope(
     owner: &Author,
     device: &SigningKey,
@@ -1007,25 +998,6 @@ fn second_device_envelope(
     };
     resign(&mut e, device);
     e
-}
-
-// KIND: invariant
-#[test]
-fn second_device_cannot_write_under_another_devices_loro_peer_id() {
-    let mut a = Author::new(1, "g");
-    let mut b = Author::new(2, "g");
-    let x = Author::new(3, "g");
-    let (mut r, _) = populated_replica(&mut a, &mut b, &[&x]);
-    // A's second device (validly attested by A's DID) claims X's writer peer. The update's
-    // ops really are from that peer, so only the peer = H(device, doc) binding catches it.
-    let a2 = SigningKey::from_bytes(&[9; 32]);
-    let victim = peer(&x.key.verifying_key().to_bytes(), &a.doc_name);
-    r.assert_rejected_unchanged(second_device_envelope(&a, &a2, victim, "impersonate"));
-    // Positive control: the same second device under its own bound peer is accepted.
-    let own = peer(&a2.verifying_key().to_bytes(), &a.doc_name);
-    let e = second_device_envelope(&a, &a2, own, "second device");
-    assert_eq!(r.receive(e), Outcome::Accepted);
-    assert_eq!(r.accepted.len(), 3);
 }
 
 // KIND: invariant

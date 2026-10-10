@@ -1,33 +1,40 @@
-//! Packet W2-B model: SILENT BLOCKING on the PRIVATE audience (user decision U5,
-//! `docs/design/rotation-open-decisions.md` §0). Test-only candidate semantics, NOT a production
-//! wire format, verifier, scheduler or policy decision.
+//! Packet W2-B model, rewritten by R1b: VISIBLE BLOCKING on the PRIVATE audience (user decision
+//! U5 revised + section 8b Q1, `docs/design/rotation-open-decisions.md` §0). Test-only candidate
+//! semantics, NOT a production wire format, verifier, scheduler or policy decision.
 //!
-//! What U1/U2/U5 fix and this model encodes as given:
+//! What U1/U2/U5 revised/U7 fix and this model encodes as given:
 //! - A device announces each rotation of its PRIVATE endpoint itself, with a DID-signed note sent
 //!   directly to every UNBLOCKED contact (U1). Offline contacts get it on the next contact in
 //!   either direction: the device retries its outbox, or the contact dials an endpoint of the
 //!   device that is still live and is answered with the current note ("catch-up").
-//! - Two endpoints per device, one DID: a private one (accepted contacts only) and a group one
-//!   (relayed by the group host). They rotate independently; group traffic never carries the
-//!   private endpoint (U2).
-//! - A block is not announced; the blocked DID's traffic is dropped; it is left out of the next
-//!   private note, so it loses reach at the next PERIODIC rotation. Blocking never triggers a
-//!   rotation. A personal block does not change group membership (U5).
+//! - Two endpoints per device, one DID: a private one (accepted contacts only) and a group one.
+//!   They rotate independently; group traffic never carries the private endpoint (U2).
+//! - U7: only a group's host holds members' group endpoints; members hold only the host's. Here
+//!   Alice's device is the host of the one modelled group, so members learn Alice's group
+//!   endpoint and nothing else of hers.
+//! - U5 revised: a block IS visible. The blocker sends the blocked DID exactly one DID-signed
+//!   "blocked" notice, and every later attempt by the blocked DID is refused with that same
+//!   notice (same reason). The blocked DID is still left out of later private rotation notes
+//!   and its traffic is refused. Blocking never triggers a rotation. A personal block does not
+//!   change group membership.
 //!
 //! A "rotation note" is a sim stand-in for a permit: DID-signed (owner, audience, device,
 //! endpoint, monotonic seq). The real succession verifier (G-D) is NOT built here.
 //!
 //! Model choices that are NOT decisions (flagged where used):
-//! - `Observation` is what the dialling app can tell. A silent drop and an offline device both
-//!   yield `NoAnswer`. That equality assumes the transport does not reveal that the dropped
-//!   connection reached a live endpoint; the shipped core does reveal it (see
-//!   `crates/core/tests/block_characterization.rs`). How production achieves the equality is open.
+//! - `Observation` is what the dialling app can tell: `NoAnswer` (offline, retired endpoint or
+//!   unknown caller), `Answered`, or `Refused(notice)`. The notice carries a fixed reason string;
+//!   its wording and whether it is shown at once (8b Q2/Q3) are open and not modelled.
+//! - The notice is pushed through the blocker's outbox (retried until delivered) and also
+//!   returned on every refused dial. Linked siblings receive the same notice inside the block
+//!   sync record and refuse with the byte-identical notice; they never sign a second one.
 //! - Grace window: after a rotation the previous endpoint stays live for `grace` ticks, then is
 //!   retired (unreachable at the network level). The length is G-TIME/G-RETIREMENT, a parameter.
 //! - Block-list sync between linked devices is a DID-signed, per-DID last-writer-wins record
 //!   delivered after a configurable lag. Every linked device holds the mnemonic, so this is
 //!   authentication against outsiders only, never revocation of a hostile sibling.
-//! - Unblock semantics and recipient-bound notes are open (G-BLOCK): modelled as candidates.
+//! - Unblock semantics (8b Q5, incl. whether the unblocked contact is told) and recipient-bound
+//!   notes are open (G-BLOCK): modelled as candidates.
 //!
 //! Fake `u64` ticks, deterministic fixture keys, in-memory only, real Ed25519 signatures.
 use std::collections::{BTreeMap, BTreeSet};
@@ -41,6 +48,9 @@ type Key = [u8; 32];
 
 const NOTE_DOMAIN: &[u8] = b"test-only/w2b-rotation-note/v1\0";
 const BLOCK_DOMAIN: &[u8] = b"test-only/w2b-block-sync/v1\0";
+const NOTICE_DOMAIN: &[u8] = b"test-only/r1b-block-notice/v1\0";
+/// The one reason every refusal carries (section 8b Q1). Wording is open (8b Q3).
+const REASON_BLOCKED: &str = "blocked";
 
 // ---- fixtures copied from rotation_fork_revocation.rs @75ed838; coordinator consolidates later.
 
@@ -123,14 +133,40 @@ impl Note {
     }
 }
 
+/// The DID-signed "blocked" notice (U5 revised). It names the blocker, the blocked DID and the
+/// block-record version; it carries no endpoint, device or transport key.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+struct NoticeClaims {
+    owner: String,
+    to: String,
+    reason: String,
+    version: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+struct BlockNotice {
+    claims: NoticeClaims,
+    signature: Vec<u8>,
+}
+
+impl BlockNotice {
+    fn bytes(c: &NoticeClaims) -> Vec<u8> {
+        [NOTICE_DOMAIN, &ser(c)].concat()
+    }
+    fn issue(id: &Identity, claims: NoticeClaims) -> Self {
+        let signature = id.sign(&Self::bytes(&claims)).to_vec();
+        Self { claims, signature }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 struct Known {
     endpoint: Key,
     seq: u64,
 }
 
-/// A contact's verified knowledge of one owner's endpoints. Accepting is atomic: any error leaves
-/// it byte-for-byte unchanged.
+/// A contact's verified knowledge of one owner: endpoints and, if blocked, the notice it holds.
+/// Accepting is atomic: any error leaves it byte-for-byte unchanged.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 struct View {
     me: String,
@@ -138,6 +174,8 @@ struct View {
     /// Candidate G-BLOCK: accept only notes addressed to `me`.
     require_recipient: bool,
     known: BTreeMap<String, Known>,
+    /// The verified notice from `owner`, once received. Its app shows "blocked" from this.
+    blocked_by: Option<BlockNotice>,
 }
 
 impl View {
@@ -172,6 +210,29 @@ impl View {
         );
         Ok(())
     }
+
+    fn accept_notice(&mut self, n: &BlockNotice) -> Result<(), &'static str> {
+        let c = &n.claims;
+        let key = identity::public_key_from_did(&self.owner).ok_or("owner_did")?;
+        if c.owner != self.owner
+            || !identity::verify(&key, &BlockNotice::bytes(c), &sig64(&n.signature))
+        {
+            return Err("owner_signature");
+        }
+        if c.to != self.me {
+            return Err("recipient");
+        }
+        if c.reason != REASON_BLOCKED {
+            return Err("reason");
+        }
+        if let Some(held) = &self.blocked_by
+            && c.version <= held.claims.version
+        {
+            return Err("stale");
+        }
+        self.blocked_by = Some(n.clone());
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -188,13 +249,27 @@ impl Contact {
         self.wire.push(ser(note));
         self.view.accept(note, expected)
     }
+    fn deliver_notice(&mut self, n: &BlockNotice) -> Result<(), &'static str> {
+        self.wire.push(ser(n));
+        self.view.accept_notice(n)
+    }
+    /// Every distinct block notice that ever reached this contact, as bytes.
+    fn notices_seen(&self) -> BTreeSet<Vec<u8>> {
+        self.wire
+            .iter()
+            .filter(|b| serde_json::from_slice::<BlockNotice>(b).is_ok())
+            .cloned()
+            .collect()
+    }
 }
 
-/// What the dialling app can tell. A silent drop and an offline device are both `NoAnswer`.
+/// What the dialling app can tell. An offline device, a retired endpoint and an unknown caller
+/// are `NoAnswer`; a blocker refuses with its signed notice, which the caller can tell apart.
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Observation {
     NoAnswer,
     Answered,
+    Refused(BlockNotice),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -237,12 +312,15 @@ enum Unblock {
     Immediate,
 }
 
+/// The block-list record siblings sync. A block carries the one notice the blocking device
+/// signed, so every sibling refuses with the same bytes.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 struct BlockClaims {
     owner: String,
     did: String,
     blocked: bool,
     version: u64,
+    notice: Option<BlockNotice>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -255,6 +333,12 @@ impl BlockSync {
     fn bytes(c: &BlockClaims) -> Vec<u8> {
         [BLOCK_DOMAIN, &ser(c)].concat()
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+enum Out {
+    Note(Note),
+    Notice(BlockNotice),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -271,7 +355,9 @@ struct Device {
     contacts: BTreeSet<String>,
     /// did -> (blocked, version): per-DID last-writer-wins.
     blocks: BTreeMap<String, (bool, u64)>,
-    outbox: Vec<(String, Note)>,
+    /// did -> the notice every refusal of that DID carries.
+    notices: BTreeMap<String, BlockNotice>,
+    outbox: Vec<(String, Out)>,
     /// (tick, seq) of each private rotation.
     rotations: Vec<(u64, u64)>,
     /// (tick, did) of each accepted inbound connection.
@@ -331,17 +417,31 @@ impl Device {
                 .collect();
             for c in to {
                 let n = self.note(id, Audience::Private, now, Some(&c));
-                self.outbox.push((c, n));
+                self.outbox.push((c, Out::Note(n)));
             }
         }
     }
-    fn set_block(&mut self, did: &str, blocked: bool, version: u64) -> bool {
+    fn set_block(
+        &mut self,
+        did: &str,
+        blocked: bool,
+        version: u64,
+        notice: Option<BlockNotice>,
+    ) -> bool {
         if self.blocks.get(did).is_some_and(|b| b.1 >= version) {
             return false;
         }
         self.blocks.insert(did.to_string(), (blocked, version));
         if blocked {
             self.outbox.retain(|(to, _)| to != did);
+        }
+        match (blocked, notice) {
+            (true, Some(n)) => {
+                self.notices.insert(did.to_string(), n);
+            }
+            _ => {
+                self.notices.remove(did);
+            }
         }
         true
     }
@@ -352,7 +452,12 @@ impl Device {
         {
             return Err("owner_signature");
         }
-        if !self.set_block(&s.claims.did, s.claims.blocked, s.claims.version) {
+        if !self.set_block(
+            &s.claims.did,
+            s.claims.blocked,
+            s.claims.version,
+            s.claims.notice.clone(),
+        ) {
             return Err("stale");
         }
         Ok(())
@@ -360,7 +465,8 @@ impl Device {
     fn reachable(&self, key: &Key, now: u64) -> bool {
         self.online && (self.private.live(now).contains(key) || self.group.live(now).contains(key))
     }
-    /// An authenticated inbound connection from `from` to `to`. A drop leaves the device unchanged.
+    /// An authenticated inbound connection from `from` to `to`. A refusal returns the stored
+    /// notice and leaves the device unchanged.
     fn inbound(
         &mut self,
         id: &Identity,
@@ -368,11 +474,16 @@ impl Device {
         to: &Key,
         now: u64,
     ) -> (Observation, Option<Note>) {
-        if !self.online || !self.private.live(now).contains(to) {
+        if !self.online || !self.private.live(now).contains(to) || !self.contacts.contains(from) {
             return (Observation::NoAnswer, None);
         }
-        if !self.would_accept(from) {
-            return (Observation::NoAnswer, None);
+        if self.is_blocked(from) {
+            let n = self
+                .notices
+                .get(from)
+                .cloned()
+                .expect("every block record carries its notice");
+            return (Observation::Refused(n), None);
         }
         self.accepted.push((now, from.to_string()));
         let catch_up = (*to != self.private.current)
@@ -381,7 +492,8 @@ impl Device {
     }
 }
 
-/// The group host relays group notes to every member (W2-R covers the host itself).
+/// U7: the group host holds members' group endpoints; members hold only the host's. Alice's
+/// device hosts the modelled group and sends its own group note to members.
 #[derive(Clone, Debug, Default, Serialize)]
 struct Host {
     members: BTreeSet<String>,
@@ -449,6 +561,7 @@ impl Sim {
                     group: Endpoint::new(id, Audience::Group),
                     contacts: privates.iter().cloned().collect(),
                     blocks: BTreeMap::new(),
+                    notices: BTreeMap::new(),
                     outbox: Vec::new(),
                     rotations: Vec::new(),
                     accepted: Vec::new(),
@@ -485,6 +598,7 @@ impl Sim {
                 owner: a.clone(),
                 require_recipient: false,
                 known,
+                blocked_by: None,
             };
             contacts.insert(
                 c.clone(),
@@ -539,19 +653,22 @@ impl Sim {
         }
     }
 
-    /// Delivers queued private notes to online contacts; the rest stay queued (retry).
+    /// Delivers queued notes and notices to online contacts; the rest stay queued (retry).
     fn flush(&mut self) {
         for d in &mut self.devices {
             if !d.online {
                 continue;
             }
             let mut keep = Vec::new();
-            for (to, note) in std::mem::take(&mut d.outbox) {
+            for (to, out) in std::mem::take(&mut d.outbox) {
                 match self.contacts.get_mut(&to) {
                     Some(c) if c.online => {
-                        let _ = c.deliver(&note, Audience::Private);
+                        let _ = match &out {
+                            Out::Note(n) => c.deliver(n, Audience::Private),
+                            Out::Notice(n) => c.deliver_notice(n),
+                        };
                     }
-                    _ => keep.push((to, note)),
+                    _ => keep.push((to, out)),
                 }
             }
             d.outbox = keep;
@@ -559,22 +676,43 @@ impl Sim {
     }
 
     /// Block (or unblock) on device `dev`; siblings receive the signed record after `lag` ticks.
+    /// A block signs exactly one notice, queued for the blocked DID by `dev` only.
     fn set_block(&mut self, dev: usize, who: &str, blocked: bool, lag: u64, unblock: Unblock) {
         self.block_version += 1;
+        let notice = blocked.then(|| {
+            BlockNotice::issue(
+                &self.alice,
+                NoticeClaims {
+                    owner: self.alice.did().to_string(),
+                    to: who.to_string(),
+                    reason: REASON_BLOCKED.to_string(),
+                    version: self.block_version,
+                },
+            )
+        });
         let claims = BlockClaims {
             owner: self.alice.did().to_string(),
             did: who.to_string(),
             blocked,
             version: self.block_version,
+            notice: notice.clone(),
         };
         let s = BlockSync {
             signature: self.alice.sign(&BlockSync::bytes(&claims)).to_vec(),
             claims,
         };
-        assert!(self.devices[dev].set_block(who, blocked, self.block_version));
+        assert!(self.devices[dev].set_block(who, blocked, self.block_version, notice.clone()));
+        if let Some(n) = notice {
+            self.devices[dev]
+                .outbox
+                .push((who.to_string(), Out::Notice(n)));
+            self.flush();
+        }
         if !blocked && unblock == Unblock::Immediate {
             let n = self.devices[dev].note(&self.alice, Audience::Private, self.now, Some(who));
-            self.devices[dev].outbox.push((who.to_string(), n));
+            self.devices[dev]
+                .outbox
+                .push((who.to_string(), Out::Note(n)));
             self.flush();
         }
         for i in 0..self.devices.len() {
@@ -588,7 +726,9 @@ impl Sim {
         self.set_block(dev, who, true, lag, Unblock::AtNextRotation);
     }
 
-    /// `who` dials the private endpoint it knows for device `dev`; a catch-up note is accepted.
+    /// `who` dials the private endpoint it knows for device `dev`. A catch-up note or a refusal
+    /// notice in the answer is delivered to `who`; a refusal also delivers the queued notice, so
+    /// it is dropped from the outbox.
     fn dial(&mut self, who: &str, dev: usize) -> Observation {
         let d_id = self.devices[dev].id;
         let Some(k) = self.contacts[who]
@@ -600,17 +740,20 @@ impl Sim {
             return Observation::NoAnswer;
         };
         let (obs, note) = self.devices[dev].inbound(&self.alice, who, &k.endpoint, self.now);
+        let c = self.contacts.get_mut(who).unwrap();
         if let Some(n) = note {
-            let _ = self
-                .contacts
-                .get_mut(who)
-                .unwrap()
-                .deliver(&n, Audience::Private);
+            let _ = c.deliver(&n, Audience::Private);
+        }
+        if let Observation::Refused(n) = &obs {
+            let _ = c.deliver_notice(n);
+            self.devices[dev]
+                .outbox
+                .retain(|(to, o)| !(to == who && matches!(o, Out::Notice(_))));
         }
         obs
     }
 
-    /// Rotates device `dev`'s GROUP endpoint and relays the note through the host to members.
+    /// Rotates host device `dev`'s GROUP endpoint and sends the note to the group's members.
     fn rotate_group(&mut self, dev: usize) {
         let now = self.now;
         let d = &mut self.devices[dev];
@@ -642,10 +785,131 @@ impl Sim {
             .iter()
             .any(|b| keys.iter().any(|k| leaks(b, k)))
     }
+
+    /// The notice device `dev` refuses `who` with.
+    fn notice_for(&self, dev: usize, who: &str) -> BlockNotice {
+        self.devices[dev].notices[who].clone()
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
-// 1. Exclusion from the next private rotation note.
+// 1. The notice: exactly one, DID-signed, verifiable; the same reason on every later attempt.
+
+// KIND: invariant
+// Bob is offline when blocked: the one notice waits in the outbox, reaches him on reconnect, and
+// verifies against Alice's DID independently of the view. It names bob and the fixed reason and
+// carries no endpoint key of either audience. Every later dial before the rotation is refused
+// with the byte-identical notice and changes neither side. An offline device answers nothing,
+// which bob can tell apart from the refusal.
+#[test]
+fn blocked_contact_gets_one_verifiable_notice_and_the_same_reason_on_every_attempt() {
+    let mut sim = Sim::new(&[100]);
+    sim.run_until(5);
+    sim.contacts.get_mut(&bob()).unwrap().online = false;
+    sim.block(0, &bob(), 1);
+    let n = sim.notice_for(0, &bob());
+    assert_eq!(sim.c(&bob()).view.blocked_by, None, "offline: not yet told");
+    assert_eq!(sim.devices[0].outbox.len(), 1);
+    sim.run_until(8);
+    assert_eq!(sim.devices[0].outbox.len(), 1, "retried while bob is away");
+    sim.contacts.get_mut(&bob()).unwrap().online = true;
+    sim.run_until(9);
+    assert!(sim.devices[0].outbox.is_empty());
+    assert_eq!(sim.c(&bob()).view.blocked_by.as_ref(), Some(&n));
+
+    let alice_key = identity::public_key_from_did(&sim.alice.did().to_string()).unwrap();
+    assert!(identity::verify(
+        &alice_key,
+        &BlockNotice::bytes(&n.claims),
+        &sig64(&n.signature)
+    ));
+    assert_eq!(
+        (n.claims.to.as_str(), n.claims.reason.as_str()),
+        (bob().as_str(), REASON_BLOCKED)
+    );
+    let d = &sim.devices[0];
+    for k in [d.private.current, d.group.current] {
+        assert!(!leaks(&ser(&n), &k), "the notice carries no endpoint");
+    }
+
+    for t in [10, 40, 99] {
+        sim.run_until(t);
+        let dev_before = ser(&sim.devices[0]);
+        let bob_view = ser(&sim.c(&bob()).view);
+        assert_eq!(sim.dial(&bob(), 0), Observation::Refused(n.clone()));
+        assert_eq!(
+            ser(&sim.devices[0]),
+            dev_before,
+            "a refusal leaves no trace"
+        );
+        assert_eq!(ser(&sim.c(&bob()).view), bob_view, "same notice, no change");
+    }
+    assert_eq!(sim.c(&bob()).notices_seen(), BTreeSet::from([ser(&n)]));
+
+    sim.devices[0].online = false;
+    assert_eq!(sim.dial(&bob(), 0), Observation::NoAnswer);
+    assert_eq!(sim.dial(&carol(), 0), Observation::NoAnswer);
+    sim.devices[0].online = true;
+    assert_eq!(sim.dial(&carol(), 0), Observation::Answered, "control");
+    assert_eq!(sim.c(&carol()).notices_seen(), BTreeSet::new());
+}
+
+// KIND: invariant
+// Rejection: forged, wrong-owner, tampered, truncated, misaddressed, wrong-reason, older-version
+// and duplicate notices all leave bob's full view byte-identical. Bob holds the notice of a
+// second block (version 3) after a block (1) and an unblock (2).
+#[test]
+fn forged_misaddressed_tampered_and_replayed_block_notices_leave_the_view_unchanged() {
+    let mut sim = Sim::new(&[100]);
+    sim.run_until(5);
+    sim.block(0, &bob(), 1);
+    let first = sim.notice_for(0, &bob());
+    sim.set_block(0, &bob(), false, 1, Unblock::AtNextRotation);
+    sim.block(0, &bob(), 1);
+    let current = sim.notice_for(0, &bob());
+    assert_eq!(
+        (first.claims.version, current.claims.version),
+        (1, 3),
+        "precondition"
+    );
+    assert_eq!(sim.c(&bob()).view.blocked_by.as_ref(), Some(&current));
+
+    let mallory = owner(66);
+    let forged = BlockNotice::issue(&mallory, current.claims.clone());
+    let mut wrong_owner_claims = current.claims.clone();
+    wrong_owner_claims.owner = mallory.did().to_string();
+    let wrong_owner = BlockNotice::issue(&mallory, wrong_owner_claims);
+    let mut tampered = current.clone();
+    tampered.claims.version = 9;
+    let mut short_sig = current.clone();
+    short_sig.signature.truncate(10);
+    let mut to_carol = current.claims.clone();
+    to_carol.to = carol();
+    let misaddressed = BlockNotice::issue(&sim.alice, to_carol);
+    let mut odd_reason = current.claims.clone();
+    odd_reason.reason = "spam".into();
+    odd_reason.version = 10;
+    let wrong_reason = BlockNotice::issue(&sim.alice, odd_reason);
+
+    let mut view = sim.c(&bob()).view.clone();
+    let before = ser(&view);
+    for (n, why) in [
+        (&forged, "owner_signature"),
+        (&wrong_owner, "owner_signature"),
+        (&tampered, "owner_signature"),
+        (&short_sig, "owner_signature"),
+        (&misaddressed, "recipient"),
+        (&wrong_reason, "reason"),
+        (&first, "stale"),   // replay of the first block's notice
+        (&current, "stale"), // duplicate push of the held notice
+    ] {
+        assert_eq!(view.accept_notice(n), Err(why));
+        assert_eq!(ser(&view), before);
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// 2. Exclusion from the next private rotation note.
 
 // KIND: invariant
 #[test]
@@ -653,6 +917,7 @@ fn blocked_contact_is_excluded_from_next_private_rotation_note() {
     let mut sim = Sim::new(&[100]);
     sim.run_until(5);
     sim.block(0, &bob(), 1);
+    let n = sim.notice_for(0, &bob());
     let bob_before = ser(sim.c(&bob()));
     sim.run_until(100);
 
@@ -670,8 +935,9 @@ fn blocked_contact_is_excluded_from_next_private_rotation_note() {
     assert_eq!(
         ser(sim.c(&bob())),
         bob_before,
-        "bob received nothing at all"
+        "after the notice bob received nothing at all"
     );
+    assert_eq!(sim.c(&bob()).notices_seen(), BTreeSet::from([ser(&n)]));
     assert!(!sim.wire_leaks(&bob(), &sim.private_keys_from(0, 2)));
     assert!(
         sim.devices[0].outbox.is_empty(),
@@ -680,57 +946,40 @@ fn blocked_contact_is_excluded_from_next_private_rotation_note() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// 2. Until the rotation: network-level reach to the old endpoint, but dropped == offline.
+// 3. Until the rotation: network-level reach to the old endpoint, but every attempt is refused.
 
 // KIND: invariant
+// Bob keeps network-level reach to the old endpoint until rotation + grace; every dial in that
+// window is refused with the same notice. Afterwards the old key is retired and bob's dial gets
+// no answer at all; his app still shows the block from the notice it holds.
 #[test]
-fn blocked_traffic_to_old_endpoint_is_dropped_and_observed_as_offline() {
+fn blocked_traffic_to_old_endpoint_is_refused_with_the_notice_until_retired() {
     let mut sim = Sim::new(&[100]);
     sim.run_until(5);
     sim.block(0, &bob(), 1);
-    sim.run_until(10);
+    let n = sim.notice_for(0, &bob());
     let old = sim.private_known(&bob(), 0).endpoint;
-    assert!(
-        sim.devices[0].reachable(&old, sim.now),
-        "network level: still reachable"
-    );
-
-    let dev_before = ser(&sim.devices[0]);
-    let bob_before = ser(sim.c(&bob()));
-    let blocked_obs = sim.dial(&bob(), 0);
-    assert_eq!(
-        ser(&sim.devices[0]),
-        dev_before,
-        "a drop leaves no trace on the device"
-    );
-    assert_eq!(ser(sim.c(&bob())), bob_before);
-    assert_eq!(
-        sim.dial(&carol(), 0),
-        Observation::Answered,
-        "control: unblocked contact"
-    );
-
-    // The same dial against an offline device.
-    sim.devices[0].online = false;
-    let offline_obs_carol = sim.dial(&carol(), 0);
-    let offline_obs_bob = sim.dial(&bob(), 0);
-    sim.devices[0].online = true;
-    assert_eq!(blocked_obs, offline_obs_carol);
-    assert_eq!(blocked_obs, offline_obs_bob);
-    assert_eq!(blocked_obs, Observation::NoAnswer);
-
-    // "Silent until the key rotates": after rotation + grace the old key is retired.
+    for t in [10, 100, 100 + GRACE - 1] {
+        sim.run_until(t);
+        assert!(
+            sim.devices[0].reachable(&old, sim.now),
+            "network level: still reachable"
+        );
+        assert_eq!(sim.dial(&bob(), 0), Observation::Refused(n.clone()));
+    }
     sim.run_until(100 + GRACE);
     assert!(
         !sim.devices[0].reachable(&old, sim.now),
         "network level: gone"
     );
     assert_eq!(sim.dial(&bob(), 0), Observation::NoAnswer);
+    assert_eq!(sim.c(&bob()).view.blocked_by.as_ref(), Some(&n));
+    assert_eq!(sim.c(&bob()).notices_seen(), BTreeSet::from([ser(&n)]));
     assert_eq!(sim.dial(&carol(), 0), Observation::Answered);
 }
 
 // ---------------------------------------------------------------------------------------------
-// 3. Blocking never triggers or shifts a rotation.
+// 4. Blocking never triggers or shifts a rotation.
 
 // KIND: invariant
 #[test]
@@ -750,7 +999,7 @@ fn blocking_never_triggers_or_shifts_a_rotation() {
         busy.run_until(t);
         let d0 = busy.devices[0].clone();
         busy.set_block(0, &bob(), blocked, 3, Unblock::AtNextRotation);
-        // The block itself touches only the block list (and, on block, bob's queued notes).
+        // The block itself touches only the block list, the notice and bob's queue.
         let d1 = &busy.devices[0];
         assert_eq!(
             (
@@ -794,18 +1043,24 @@ fn blocking_never_triggers_or_shifts_a_rotation() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// 4. Block list syncs to linked devices; the race when a sibling rotates first.
+// 5. Block list syncs to linked devices; the race when a sibling rotates first.
 
 // KIND: invariant
+// Before the sync the sibling still answers bob (the race window below). After it the sibling
+// refuses bob with the byte-identical notice device 0 signed; bob never sees a second notice.
 #[test]
-fn block_syncs_to_sibling_which_then_excludes_the_contact() {
+fn block_syncs_to_sibling_which_then_excludes_and_refuses_with_the_same_notice() {
     let mut sim = Sim::new(&[100, 100]);
     sim.run_until(5);
     sim.block(0, &bob(), 10);
+    let n = sim.notice_for(0, &bob());
     sim.run_until(14);
     assert!(sim.devices[1].would_accept(&bob()), "not synced yet");
+    assert_eq!(sim.dial(&bob(), 1), Observation::Answered);
     sim.run_until(15);
     assert!(!sim.devices[1].would_accept(&bob()), "synced");
+    assert_eq!(sim.dial(&bob(), 1), Observation::Refused(n.clone()));
+    assert_eq!(sim.c(&bob()).notices_seen(), BTreeSet::from([ser(&n)]));
 
     // A forged or replayed sync record changes nothing on the sibling.
     let before = ser(&sim.devices[1]);
@@ -815,6 +1070,7 @@ fn block_syncs_to_sibling_which_then_excludes_the_contact() {
         did: bob(),
         blocked: false,
         version: 99,
+        notice: None,
     };
     let forged = BlockSync {
         signature: mallory.sign(&BlockSync::bytes(&claims)).to_vec(),
@@ -826,6 +1082,7 @@ fn block_syncs_to_sibling_which_then_excludes_the_contact() {
         did: bob(),
         blocked: false,
         version: 1,
+        notice: None,
     };
     let replay = BlockSync {
         signature: sim.alice.sign(&BlockSync::bytes(&c)).to_vec(),
@@ -864,8 +1121,9 @@ fn measure(sim: &mut Sim, dev: usize, from_seq: u64, until: u64) -> (u64, u64) {
 // The sibling rotates (t=20) before the block (t=10 on device 0) reaches it (lag 30, t=40): bob
 // gets the sibling's NEW private endpoint and keeps network-level reach to it until that key is
 // retired (next rotation t=120 + grace 10), i.e. 110 ticks; the sibling also accepts bob's
-// traffic for the 30-tick sync lag. Expected-correct under U5: 0 exposure of endpoints issued
-// after the block. No ordering rule is chosen here (open: G-BLOCK sync race).
+// traffic for the 30-tick sync lag, although bob already holds the notice from device 0.
+// Expected-correct under U5 revised: 0 exposure of endpoints issued after the block. No
+// ordering rule is chosen here (open: G-BLOCK sync race).
 #[test]
 fn sibling_rotating_before_block_sync_leaks_its_new_endpoint() {
     let mut sim = Sim::new(&[100, 20]);
@@ -878,6 +1136,7 @@ fn sibling_rotating_before_block_sync_leaks_its_new_endpoint() {
         accepting, 30,
         "sibling accepted bob's traffic for the sync lag"
     );
+    assert!(sim.c(&bob()).view.blocked_by.is_some());
     assert!(sim.wire_leaks(&bob(), &[endpoint_key(2, Audience::Private, 2)]));
     assert!(
         !sim.wire_leaks(&bob(), &sim.private_keys_from(1, 3)),
@@ -893,14 +1152,15 @@ fn sibling_rotating_before_block_sync_leaks_its_new_endpoint() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// 5. Block inside a rotation's grace window.
+// 6. Block inside a rotation's grace window.
 
 // KIND: invariant
 // Bob and Dave are offline at the rotation, so their notes wait in the outbox. Bob is blocked
-// during the grace window: his queued note is dropped, and his catch-up dial to the still-live
-// old endpoint is dropped too. Dave (control) catches up by the same dial.
+// during the grace window: his queued note is replaced by the notice, and his catch-up dial to
+// the still-live old endpoint is refused with that notice (which also delivers it) instead of
+// answered with the new note. Dave (control) catches up by the same dial.
 #[test]
-fn block_during_grace_window_cancels_queued_note_and_catch_up() {
+fn block_during_grace_window_replaces_queued_note_with_notice_and_refuses_catch_up() {
     let mut sim = Sim::new(&[100]);
     sim.run_until(99);
     for c in [bob(), dave()] {
@@ -914,7 +1174,13 @@ fn block_during_grace_window_cancels_queued_note_and_catch_up() {
     );
     sim.run_until(103);
     sim.block(0, &bob(), 1);
-    assert!(sim.devices[0].outbox.iter().all(|(to, _)| *to == dave()));
+    let n = sim.notice_for(0, &bob());
+    let queued: Vec<(String, bool)> = sim.devices[0]
+        .outbox
+        .iter()
+        .map(|(to, o)| (to.clone(), matches!(o, Out::Notice(_))))
+        .collect();
+    assert_eq!(queued, [(dave(), false), (bob(), true)]);
 
     // Both come back online and dial the old endpoint, still live in the grace window, before
     // the device's next outbox retry.
@@ -923,9 +1189,10 @@ fn block_during_grace_window_cancels_queued_note_and_catch_up() {
     }
     let old = sim.private_known(&bob(), 0).endpoint;
     assert!(sim.devices[0].reachable(&old, sim.now));
-    let bob_before = ser(sim.c(&bob()));
-    assert_eq!(sim.dial(&bob(), 0), Observation::NoAnswer);
-    assert_eq!(ser(sim.c(&bob())), bob_before);
+    let bob_known = ser(&sim.c(&bob()).view.known);
+    assert_eq!(sim.dial(&bob(), 0), Observation::Refused(n.clone()));
+    assert_eq!(ser(&sim.c(&bob()).view.known), bob_known);
+    assert_eq!(sim.c(&bob()).view.blocked_by.as_ref(), Some(&n));
     assert_eq!(sim.dial(&dave(), 0), Observation::Answered);
     assert_eq!(
         sim.private_known(&dave(), 0).seq,
@@ -936,14 +1203,14 @@ fn block_during_grace_window_cancels_queued_note_and_catch_up() {
     sim.run_until(100 + GRACE);
     assert!(!sim.devices[0].reachable(&old, sim.now));
     assert!(!sim.wire_leaks(&bob(), &sim.private_keys_from(0, 2)));
+    assert_eq!(sim.c(&bob()).notices_seen(), BTreeSet::from([ser(&n)]));
 }
 
 // KIND: limitation
 // A note already delivered before the block cannot be recalled: bob, online at the rotation
 // (t=100), holds the new endpoint when blocked at t=103 and keeps network-level reach to it
-// until the NEXT periodic rotation retires it (t=200 + grace), 107 ticks. His traffic is dropped
-// throughout. This is the "silent until the key rotates" cost U5 accepts; no early-rotation
-// option is modelled because blocking must not trigger rotation.
+// until the NEXT periodic rotation retires it (t=200 + grace), 107 ticks. His traffic is refused
+// throughout. No early-rotation option is modelled because blocking must not trigger rotation.
 #[test]
 fn note_delivered_just_before_block_is_not_recalled() {
     let mut sim = Sim::new(&[100]);
@@ -956,7 +1223,8 @@ fn note_delivered_just_before_block_is_not_recalled() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// 6. Unblock: two candidates.
+// 7. Unblock: two candidates. Whether the unblocked contact is told (8b Q5) is open; in both
+// candidates bob still holds the old notice.
 
 fn blocked_then_unblocked(policy: Unblock) -> (Sim, Vec<Observation>) {
     let mut sim = Sim::new(&[100]);
@@ -1018,14 +1286,18 @@ fn unblock_sends_current_endpoint_immediately() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// 7. Group co-membership: group endpoint only, never the private one.
+// 8. Group co-membership: the host's group endpoint only, never the private one.
 
 // KIND: invariant
+// Bob is a member of the group Alice's device hosts (U7). The personal block changes no
+// membership; bob keeps receiving Alice's group notes but never a later private endpoint, and
+// the group path never carries any private endpoint or the block notice.
 #[test]
 fn blocked_group_comember_gets_group_notes_but_never_the_new_private_endpoint() {
     let mut sim = Sim::new(&[100]);
     sim.run_until(5);
     sim.block(0, &bob(), 1);
+    let n = sim.notice_for(0, &bob());
     let members_before = sim.host.members.clone();
     sim.run_until(50);
     sim.rotate_group(0);
@@ -1044,7 +1316,7 @@ fn blocked_group_comember_gets_group_notes_but_never_the_new_private_endpoint() 
         }
     );
     assert!(!sim.wire_leaks(&bob(), &sim.private_keys_from(0, 2)));
-    // The host never carries any private endpoint, old or new.
+    // The group path never carries any private endpoint, old or new, nor the notice.
     let all_private = sim.private_keys_from(0, 1);
     assert!(
         !sim.host
@@ -1052,6 +1324,7 @@ fn blocked_group_comember_gets_group_notes_but_never_the_new_private_endpoint() 
             .iter()
             .any(|b| all_private.iter().any(|k| leaks(b, k)))
     );
+    assert!(!sim.host.transcript.contains(&ser(&n)));
 }
 
 // KIND: invariant
@@ -1132,14 +1405,15 @@ fn forged_stale_wrong_owner_and_tampered_notes_leave_the_view_unchanged() {
 
 // KIND: limitation
 // An unblocked contact can forward its audience-wide note to the blocked one, which verifies it
-// (it is DID-signed, not addressed) and learns the new private endpoint, defeating "silent until
-// the key rotates" at the network level. The device still drops bob's traffic. No mechanism is
-// chosen; see the recipient-bound candidate below and the open questions.
+// (it is DID-signed, not addressed) and learns the new private endpoint: network-level reach
+// despite exclusion. The device still refuses bob's traffic with the same notice. No mechanism
+// is chosen; see the recipient-bound candidate below and the open questions.
 #[test]
 fn forwarded_note_hands_the_blocked_contact_the_new_endpoint() {
     let mut sim = Sim::new(&[100]);
     sim.run_until(5);
     sim.block(0, &bob(), 1);
+    let notice = sim.notice_for(0, &bob());
     sim.run_until(100);
     // Carol re-sends the exact bytes she received.
     let carols: Note = serde_json::from_slice(sim.c(&carol()).wire.last().unwrap()).unwrap();
@@ -1164,8 +1438,8 @@ fn forwarded_note_hands_the_blocked_contact_the_new_endpoint() {
     let before = ser(&sim.devices[0]);
     assert_eq!(
         sim.dial(&bob(), 0),
-        Observation::NoAnswer,
-        "but his traffic is still dropped"
+        Observation::Refused(notice),
+        "but his traffic is still refused with the same notice"
     );
     assert_eq!(ser(&sim.devices[0]), before);
 }

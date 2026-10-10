@@ -1,8 +1,24 @@
 //! Five-node network scheduler; addresses/succession verification remain mock adapters.
 //! In-memory replicas, bounded queues, original signed messages. No disk or real sockets.
+//!
+//! R1b (U7): nodes 0-2 are members and nodes 3-4 are hosts (multi-host is decided). A member
+//! holds routes to the hosts only, never to another member; hosts hold routes to every node.
+//! Every send, reconcile and address push between two members fails with `NoAddress` by
+//! construction, so all member traffic goes through a host. Before R1b every node held a route
+//! to every other node and members synced with each other. Content still uses the legacy
+//! device-signed `Envelope` fixture (`tests.rs`) as a carrier.
 use super::*;
 
 const NODES: usize = 5;
+// U7 topology: members [0, 3), hosts [3, NODES).
+const FIRST_HOST: usize = 3;
+fn is_host(node: usize) -> bool {
+    node >= FIRST_HOST
+}
+// Whether `from` can hold a route to `to` at all (U7): one end must be a host.
+fn linkable(from: usize, to: usize) -> bool {
+    from != to && (is_host(from) || is_host(to))
+}
 const QUEUE_LIMIT: usize = 64;
 const BINDING_LIFETIME: u64 = 30;
 
@@ -41,6 +57,7 @@ struct Counts {
     duplicates: usize,
     controls: usize,
     queue_limits: usize,
+    no_address: usize,
     // G-H: observed (not self-incremented) outcomes and typed route failures.
     retired_routes: usize,
     endpoint_gone: usize,
@@ -51,6 +68,8 @@ struct Counts {
 }
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum SendFailure {
+    // U7: two members never hold each other's address.
+    NoAddress,
     // Sleep or partition: no link right now.
     Unlinked,
     // Sender's directory has no binding live at `now` (retired); see RouteFailure.
@@ -92,8 +111,9 @@ impl Fleet {
             })
             .collect();
         // Explicit trusted genesis-era bootstrap fixtures, not automatic future discovery.
+        // U7: only member-host and host-host routes exist.
         for from in 0..NODES {
-            for to in 0..NODES {
+            for to in (0..NODES).filter(|&to| linkable(from, to)) {
                 let mut directory = HostDirectory::default();
                 assert!(directory.install(
                     &nodes[to].nomination,
@@ -133,6 +153,10 @@ impl Fleet {
     }
     fn send(&mut self, from: usize, to: usize, payload: Payload) -> Result<(), SendFailure> {
         self.counts.sends += 1;
+        if !linkable(from, to) {
+            self.counts.no_address += 1;
+            return Err(SendFailure::NoAddress);
+        }
         if !self.linked(from, to) {
             self.counts.failed_routes += 1;
             self.counts.unlinked += 1;
@@ -179,6 +203,10 @@ impl Fleet {
     fn reconcile(&mut self, from: usize, to: usize) {
         // Original envelopes only, bounded by the transport queue. No direct state injection.
         // Causal order (as a VV/frontier exchange would send); see the G-H id-order test.
+        // U7: no member-to-member sync at all.
+        if !linkable(from, to) {
+            return;
+        }
         let updates: Vec<Envelope> = self.nodes[from]
             .replica
             .accepted
@@ -263,7 +291,7 @@ impl Fleet {
     // Explicit out-of-band re-bootstrap FIXTURE (like Fleet::new's genesis-era install).
     // Not discovery: it models e.g. re-scanning an invite, which the protocol must specify.
     fn rebootstrap(&mut self, node: usize) {
-        for other in 0..NODES {
+        for other in (0..NODES).filter(|&o| linkable(node, o)) {
             for (from, to) in [(node, other), (other, node)] {
                 let path = self.nodes[to].path.clone();
                 let nomination = self.nodes[to].nomination.clone();
@@ -304,7 +332,7 @@ impl Fleet {
     // still-known destination. This method does NOT copy paths into every directory.
     fn distribute_rotation(&mut self, owner: usize) {
         for to in 0..NODES {
-            if to != owner {
+            if linkable(owner, to) {
                 let _ = self.control(owner, to);
             }
         }
@@ -313,7 +341,7 @@ impl Fleet {
     fn healthy_reconcile(&mut self) {
         for from in 0..NODES {
             for to in 0..NODES {
-                if from != to {
+                if linkable(from, to) {
                     self.reconcile(from, to);
                     self.flush();
                 }
@@ -331,11 +359,12 @@ fn five_nodes_seeded_sleep_partition_rotation_loss_and_retry_converge() {
         let mut envelopes = vec![];
         for round in 0..2 {
             if round == 1 {
-                // Establish real cross-author knowledge via scheduled message delivery.
-                f.reconcile(0, 1);
-                f.flush();
-                f.reconcile(1, 2);
-                f.flush();
+                // Establish real cross-author knowledge via scheduled message delivery,
+                // member -> host -> member (U7).
+                for (from, to) in [(0, 3), (3, 1), (1, 3), (3, 2)] {
+                    f.reconcile(from, to);
+                    f.flush();
+                }
                 b.observe(&envelopes[0]);
                 c.observe(&envelopes[0]);
                 c.observe(&envelopes[1]);
@@ -428,6 +457,19 @@ fn five_nodes_seeded_sleep_partition_rotation_loss_and_retry_converge() {
                     "altered author proof",
                 );
             }
+        }
+        // U7 by construction: members hold host routes only and cannot reach each other.
+        for m in 0..FIRST_HOST {
+            f.assert(
+                f.nodes[m].known.keys().all(|&k| is_host(k)),
+                "member holds a member route",
+            );
+            let other = (m + 1) % FIRST_HOST;
+            let sent = f.control(m, other);
+            f.assert(
+                sent == Err(SendFailure::NoAddress),
+                "member reached a member",
+            );
         }
         f.assert(
             f.counts.rotations >= 4
@@ -594,6 +636,16 @@ fn seeded_schedules_past_binding_lifetime_retire_routes_and_isolate_long_sleeper
                         f.counts.duplicate_receipts > before,
                         "duplicate not observed",
                     );
+                    // Mandatory fault (R1b): a queued frame whose receiver sleeps before
+                    // delivery is stale. The U7 star has fewer links than the old full mesh,
+                    // so random events alone no longer guarantee one for every seed.
+                    let ok = f.control(0, 3).is_ok();
+                    f.assert(ok, "mandatory stale frame not queued");
+                    f.awake(3, false);
+                    let before = f.counts.stale_packets;
+                    f.flush();
+                    f.awake(3, true);
+                    f.assert(f.counts.stale_packets > before, "stale frame not observed");
                 }
             }
             for _ in 0..3 {
@@ -665,7 +717,13 @@ fn seeded_schedules_past_binding_lifetime_retire_routes_and_isolate_long_sleeper
                     (0..NODES).map(|n| f.nodes[n].replica.accepted.len()).collect::<Vec<_>>(),
                     (0..NODES)
                         .map(|x| (0..NODES)
-                            .map(|y| x == y || f.nodes[x].known[&y].active(f.now).is_some())
+                            .map(|y| {
+                                x == y
+                                    || f.nodes[x]
+                                        .known
+                                        .get(&y)
+                                        .is_some_and(|d| d.active(f.now).is_some())
+                            })
                             .map(|k| if k { '1' } else { '0' })
                             .collect::<String>())
                         .collect::<Vec<_>>()
