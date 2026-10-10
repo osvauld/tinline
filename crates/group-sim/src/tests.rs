@@ -16,6 +16,8 @@ mod persistence;
 mod policy_candidates;
 #[path = "block_in_group.rs"]
 mod block_in_group;
+#[path = "host_relay.rs"]
+mod host_relay;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {
