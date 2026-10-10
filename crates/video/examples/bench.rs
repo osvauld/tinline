@@ -1,6 +1,9 @@
 //! Realtime AV1 benchmark: per-frame encode/decode cost, size and quality per resolution.
 //!
 //!     cargo run -p video --release --example bench -- [aom|rav1e] [frames] [threads] [speed]
+//!
+//! With `Y4M=<file>` it encodes real footage (decimated to 30 fps, scaled per resolution)
+//! instead of the synthetic pattern.
 use std::time::Instant;
 use video::{Decoder, Encoder, EncoderConfig, Pattern, VideoEncoder, aom::AomEncoder, psnr_y};
 
@@ -16,11 +19,27 @@ fn main() {
     let threads = *args.get(1).unwrap_or(&0);
     let speed = *args.get(2).unwrap_or(&10) as u8;
     println!("{kind}: frames={frames} threads={threads} (0 = auto), speed {speed}, 30 fps");
+    // Other work on the machine skews timings; show it so a noisy run is visible.
+    if let Ok(l) = std::fs::read_to_string("/proc/loadavg") {
+        println!("loadavg {}", l.split_whitespace().take(3).collect::<Vec<_>>().join(" "));
+    }
     println!(
         "{:>9} {:>7} | {:>7} {:>7} {:>7} | {:>6} {:>6} | {:>7} {:>6} {:>5} {:>4}",
         "res", "kbps", "enc p50", "p95", "max", "dec50", "dec95", "key B", "avg B", "psnr", "held"
     );
-    for (w, h, kbps) in [(320, 240, 250), (480, 360, 400), (640, 480, 600), (1280, 720, 1500)] {
+    let footage: Option<Vec<video::I420>> = std::env::var("Y4M").ok().map(|path| {
+        let mut y = video::y4m::Y4m::new(std::fs::File::open(&path).unwrap()).unwrap();
+        let step = (y.rate.0 / y.rate.1.max(1) / 30).max(1) as usize;
+        let all: Vec<_> = std::iter::from_fn(|| y.next_frame()).step_by(step).take(frames).collect();
+        println!("footage {path}: {}x{}, {} frames at 30 fps", y.width, y.height, all.len());
+        all
+    });
+    let sizes: &[(usize, usize, u32)] = if footage.is_some() {
+        &[(320, 180, 200), (480, 270, 350), (640, 360, 600), (960, 540, 1000), (1280, 720, 1500)]
+    } else {
+        &[(320, 240, 250), (480, 360, 400), (640, 480, 600), (1280, 720, 1500)]
+    };
+    for &(w, h, kbps) in sizes {
         let cfg = EncoderConfig {
             width: w,
             height: h,
@@ -37,7 +56,10 @@ fn main() {
         let mut first = true;
         let mut dec = Decoder::new(threads, 4096 * 4096).unwrap();
         let mut pat = Pattern::new(w, h);
-        let src: Vec<_> = (0..frames).map(|_| pat.next_frame()).collect();
+        let src: Vec<_> = match &footage {
+            Some(f) => f.iter().map(|p| video::y4m::scale(p, w, h)).collect(),
+            None => (0..frames).map(|_| pat.next_frame()).collect(),
+        };
         let (mut et, mut dt, mut sizes, mut q) = (vec![], vec![], vec![], vec![]);
         let mut key = 0;
         for f in &src {

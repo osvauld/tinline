@@ -20,6 +20,7 @@ use rav1e::prelude::*;
 pub mod aom;
 pub mod media;
 pub mod sim;
+pub mod y4m;
 
 /// Anything that turns camera frames into AV1 packets.
 pub trait VideoEncoder: Send {

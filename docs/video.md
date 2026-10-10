@@ -21,7 +21,10 @@ Status: design + simulation. Not wired into calls or the apps yet.
   > 40 ms and ramps +8%/report when < 15 ms. Backlog > 300 ms: reset the group, force a
   keyframe, halve the rate.
 - **Shipping**: release builds compile libaom from source and link it statically (as opus is);
-  nothing needs to be installed. The spike links the system libaom via pkg-config.
+  nothing needs to be installed. `AOM_DIR=<prefix from scripts/build_libaom.py>` links that
+  static build; without it the crate falls back to the system libaom via pkg-config.
+- **rav1d from its git tag** v1.1.0: the crates.io package lacks `src/arm/asm-offsets.h`, so
+  the ARM assembly doesn't build from it.
 
 ## Wire format (per group stream)
 
@@ -40,8 +43,36 @@ Frame 0 of a group is a keyframe. Receiver caps frame size (`max_frame`, default
 | rav1d decode p50 | 0.3 ms | 0.5 ms | 0.7 ms | 1.5 ms |
 | frames held by encoder (libaom / rav1e) | 0 / 4 | 0 / 4 | 0 / 4 | 0 / 4 |
 
-PSNR ~40 dB for both. The pattern is easier than a real camera; re-measure with real footage
-and on an ARM phone before fixing resolution/bitrate defaults.
+PSNR ~40 dB for both. The pattern is easier than real footage; see below.
+
+## Real footage: laptop vs phone
+
+Xiph `FourPeople_1280x720_60` (the standard video-conferencing clip), decimated to 30 fps,
+89 frames, scaled per row. libaom RT speed 10 encode / rav1d decode, p50 (p95) ms per frame.
+Run: `Y4M=<file> bench aom 89 <threads> 10`. Phone binary built with
+`scripts/build_libaom.py --target aarch64-linux-android` + `AOM_DIR=... cargo ndk -t arm64-v8a`.
+
+| | bitrate | frame size (key / avg) | laptop 4 thr | g52 big cores, 4 thr | g52, 2 thr | g52, 1 thr | g52 decode |
+|---|---|---|---|---|---|---|---|
+| 320x180 | 200 kbps | 5.6 KB / 0.8 KB | 0.6 | 3.0 (3.7) | 3.5 | 2.6 | 1.0 |
+| 480x270 | 350 kbps | 8.8 KB / 1.4 KB | 0.8 | 4.3 (4.9) | 4.5 | 5.7 | 1.4 |
+| 640x360 | 600 kbps | 12.5 KB / 2.4 KB | 1.4 | 7.9 (19.5) | 7.2 | 9.7 | 2.3 |
+| 960x540 | 1 Mbps | 15.9 KB / 4.1 KB | 2.4 | 10.5 (13.8) | 13.0 | 19.9 | 3.6 |
+| 1280x720 | 1.5 Mbps | 20.2 KB / 6.1 KB | 4.2 | 14.9 (20.4) | 21.7 | 33.5 | 5.1 |
+
+Laptop = i7-1165G7 (loadavg ~3.5 from other builds). Phone = moto g52 (Snapdragon 680:
+4x Cortex-A73 2.4 GHz + 4x A53), `taskset f0` = the A73 cores. **Unpinned, the shell process
+ran on the A53 cores and everything was 3-5x slower** (720p encode 50 ms, decode 19 ms): in
+the app the encoder/decoder threads must get big cores (foreground app, high thread priority /
+Android performance hint), and we must measure that in-app.
+
+rav1e on the phone (big cores, 4 threads): 24 ms at 320x180, 79 ms at 640x360, 267 ms at
+720p, 4 frames held: confirms it is out.
+
+Conclusion: on a budget 2022 phone AV1 realtime fits easily: 640x360 in ~8 ms on two big
+cores, 720p in ~15-22 ms; rav1d decodes 720p in 5 ms. Proposed ladder, chosen by the rate
+controller: 320x180 below ~250 kbps, 640x360 default, 960x540 / 720p when the link and the
+device's measured encode time allow.
 
 ## Simulation
 
@@ -64,9 +95,10 @@ control is delay-based.
 
 ## Next
 
-1. Real camera footage in the benchmark; ARM numbers (emulator is x86; a phone run needs the
-   user's OK).
-2. Static libaom build for Android (NDK, cmake) and desktop.
+1. ~~Real footage, ARM numbers~~ done (above). Static libaom: `scripts/build_libaom.py` works
+   for the benchmark; still to wire into `scripts/build_android.py` / release packaging
+   (vendored source, not fetched at build time).
+2. Resolution ladder in `media::Sender` (switch at a keyframe), added to the simulation.
 3. iroh transport against `media::Sender`/`Receiver` (uni stream per group, priority by
    group, control stream for reports/keyframe requests), checked against the same scenarios.
 4. Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.

@@ -8,7 +8,8 @@ license.workspace = true
 thiserror.workspace = true
 # "asm" needs nasm on x86 hosts (and when cross-building for the x86_64 emulator).
 rav1e = { version = "0.8", default-features = false, features = ["threading", "asm"] }
-rav1d = { version = "1.1", default-features = false, features = ["bitdepth_8", "bitdepth_16", "asm"] }
+# Git tag, not crates.io: the published 1.1.0 lacks src/arm/asm-offsets.h (ARM asm build fails).
+rav1d = { git = "https://github.com/memorysafety/rav1d", tag = "v1.1.0", default-features = false, features = ["bitdepth_8", "bitdepth_16", "asm"] }
 # (bitdepth_16 only because rav1d 1.1 links 16bpc asm symbols even without it.)
 
 [build-dependencies]
