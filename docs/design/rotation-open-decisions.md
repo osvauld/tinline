@@ -196,6 +196,10 @@ capability, not implied by chat hosting. Encryption is hop-by-hop QUIC; the host
 call, accepted under U14. Launch failover: if the call host drops, the call ends and members
 redial through the next host — no live hand-off. Spec and test plan: G6 (`group-call-spec.md`).
 
+**U22 (user, 2026-10-10) — P9c confirmed.** No per-message hiding (every device reaches the same
+verdict, so an unprovable op refuses the whole batch); own-device sync protocol bumped with chat
+(`tinline/chat/2`, `tinline/self/2`). Merged into fixes-phase1 as `cf46f7a`.
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
