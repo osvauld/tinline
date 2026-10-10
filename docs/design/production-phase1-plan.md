@@ -113,3 +113,12 @@ Integration branch `phase2` from `fixes-phase1` @ `bd5e1e9` (so the device-test 
 | UI-W | `ui/wire` / `ui-wire` (from `test/phase1-ui`) | apps use the real block API; no "remove contact"; block copy; desktop Groups nav |
 
 Still not merged into `dev`; nothing pushed.
+
+Phase 2 progress: P10 merged `c0c69a4`, P6 merged `d0df454`. Coordinator run on `phase2` @ `d0df454`
+(`cargo test -p proto; cargo test -p p2pcore --no-fail-fast`): 281 passed, 0 failed, 16 ignored.
+Started from `d0df454`: P4 (`fix/p4`, device-list push) and P10b (`fix/p10b`, undelivered own
+messages after a writer-ID change are still pushed).
+PROVISIONAL choices to confirm with the user: P10 delete beats edit, ties to higher writer ID;
+wire bumped to chat/3, self/3, calls osvauld/p2p/1. P6 "calls not allowed" shown to any contact;
+message token renews within 30 days of expiry; downgrade not announced; re-add keeps the previous
+call permission; legacy v1 grants accepted as message+call.
