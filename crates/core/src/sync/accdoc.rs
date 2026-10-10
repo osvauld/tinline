@@ -4,7 +4,8 @@
 //! ```text
 //! devices/<device_text>  { att, label, removed, relay }   the registry
 //! contacts/<did>         { rec, alias, verified }         rec = name, devices, device_list, grant, added_at
-//! tomb/<did>             unix ms the contact was removed (= blocked)
+//! sent/<did>             our latest signed block/unblock notice to <did> (JSON; newest `at` wins)
+//! notices/<did>          the latest notice <did> signed to us + their name (JSON; newest wins)
 //! redeemed/<nonce>       "1"                              set, never shrinks
 //! revoked/<grant id>     "1"                              set, never shrinks
 //! calls/<call_id>        (written by older builds, no longer read: see `callsdoc.rs`)
@@ -16,7 +17,7 @@
 //! All own devices hold the identity secret, so they trust each other fully; the merge rules
 //! below are about convergence, not defence.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use std::ops::Deref;
 
@@ -25,7 +26,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::node::{grant_outlives, merge_device_list};
 use super::doc::{Doc, entries, field, io, text};
-use crate::store::{ContactDevice, OwnDevice, State, StoredContact};
+use crate::store::{ContactDevice, HeldNotice, OwnDevice, State, StoredContact};
 use crate::Error;
 
 pub const DOC_NAME: &str = "account";
@@ -59,7 +60,7 @@ impl Deref for AccDoc {
 pub struct Changes {
     pub contacts: bool,
     pub devices: bool,
-    /// Contacts the other device removed (their chats are purged here).
+    /// Contacts the other device deleted (a block notice's deletion request); history is kept.
     pub removed: Vec<String>,
     /// Another device renamed this one.
     pub label: Option<String>,
@@ -71,19 +72,11 @@ pub struct Ctx<'a> {
     pub my_did: &'a str,
     pub me_device: [u8; 32],
     pub now: u64,
-    pub now_ms: i64,
 }
 
 
 
 
-
-fn int(v: &LoroValue) -> Option<i64> {
-    match v {
-        LoroValue::I64(n) => Some(*n),
-        _ => None,
-    }
-}
 
 fn sub(map: &LoroMap, key: &str) -> Result<LoroMap, Error> {
     match map.get(key) {
@@ -121,7 +114,7 @@ impl AccDoc {
     // ---- State -> doc -----------------------------------------------------------------
 
     /// Flushes the working copy into the doc; whether anything changed.
-    pub fn write_from(&self, st: &State, ctx: &Ctx) -> Result<bool, Error> {
+    pub fn write_from(&self, st: &State, _ctx: &Ctx) -> Result<bool, Error> {
         let before = self.vv();
 
         let devices = self.doc.get_map("devices");
@@ -139,7 +132,6 @@ impl AccDoc {
         }
 
         let contacts = self.doc.get_map("contacts");
-        let tomb = self.doc.get_map("tomb");
         let live: HashSet<&str> = st.contacts.iter().map(|c| c.did.as_str()).collect();
         for c in &st.contacts {
             let m = sub(&contacts, &c.did)?;
@@ -163,18 +155,14 @@ impl AccDoc {
                 }
             }
         }
-        for did in &st.blocked {
-            if !has_key(&tomb, did) {
-                tomb.insert(did, ctx.now_ms).map_err(io)?;
-            }
+        // Notices are never deleted: a newer one (unblock after block) replaces the older.
+        let sent = self.doc.get_map("sent");
+        for (did, n) in &st.sent_notices {
+            set_str(&sent, did, &serde_json::to_string(n).map_err(io)?)?;
         }
-        if let LoroValue::Map(tm) = tomb.get_deep_value() {
-            for (did, _) in tm.iter() {
-                // Blocked ones stay; a lifted block (the contact was added again) goes.
-                if !st.blocked.contains(did.as_str()) && live.contains(did.as_str()) {
-                    tomb.delete(did).map_err(io)?;
-                }
-            }
+        let held = self.doc.get_map("notices");
+        for (did, h) in &st.notices {
+            set_str(&held, did, &serde_json::to_string(h).map_err(io)?)?;
         }
 
         for (name, set) in [("redeemed", &st.redeemed), ("revoked", &st.revoked)] {
@@ -240,22 +228,51 @@ impl AccDoc {
         ch.devices = serde_json::to_string(&st.registry).unwrap_or_default() != before;
 
         // -- contacts
-        let before = (serde_json::to_string(&st.contacts).unwrap_or_default(), st.blocked.clone());
-        let tombs: BTreeMap<String, i64> = sect("tomb").into_iter().filter_map(|(k, v)| Some((k, int(v)?))).collect();
+        let snap = |st: &State| {
+            let mut held: Vec<(String, u64)> = st.notices.iter().map(|(d, h)| (d.clone(), h.at)).collect();
+            held.sort();
+            (serde_json::to_string(&st.contacts).unwrap_or_default(), st.blocked.clone(), held)
+        };
+        let before = snap(st);
+        // Notices first (every one verified here too, U10): they decide who is blocked and which
+        // contact entries a deletion request removed.
+        let at_of = |b: &proto::SignedBlob, to: &str| proto::verify_block_notice(b, to).ok().filter(|n| n.from == ctx.my_did).map(|n| n.at);
+        for (did, v) in sect("sent") {
+            let Some(blob) = text(v).and_then(|t| serde_json::from_str::<proto::SignedBlob>(&t).ok()) else { continue };
+            let Some(at) = at_of(&blob, &did) else { continue };
+            if st.sent_notices.get(&did).and_then(|b| at_of(b, &did)).is_none_or(|mine| at > mine) {
+                st.sent_notices.insert(did, blob);
+            }
+        }
+        st.blocked = st
+            .sent_notices
+            .iter()
+            .filter(|(did, b)| proto::verify_block_notice(b, did).is_ok_and(|n| n.blocked))
+            .map(|(did, _)| did.clone())
+            .collect();
+        for (did, v) in sect("notices") {
+            let Some(h) = text(v).and_then(|t| serde_json::from_str::<HeldNotice>(&t).ok()) else { continue };
+            let Ok(n) = proto::verify_block_notice(&h.notice, ctx.my_did) else { continue };
+            if n.from != did || st.notices.get(&did).is_some_and(|mine| mine.at >= n.at) {
+                continue;
+            }
+            st.notices.insert(did, HeldNotice { notice: h.notice, name: h.name, blocked: n.blocked, at: n.at });
+        }
+        let block_at: std::collections::HashMap<String, u64> = st.notices.iter().filter(|(_, h)| h.blocked).map(|(d, h)| (d.clone(), h.at)).collect();
+        let deleted = |did: &str, added_at: u64| block_at.get(did).is_some_and(|at| added_at.saturating_mul(1000) <= *at);
         let mut doc_alive: HashSet<String> = HashSet::new();
         for (did, m) in sect("contacts") {
             let Some(rec) = field(m, "rec").and_then(text).and_then(|t| serde_json::from_str::<CRec>(&t).ok()) else { continue };
             if did == ctx.my_did {
                 continue;
             }
-            // A removal stands unless the contact was added again afterwards.
-            if tombs.get(&did).is_some_and(|t| (rec.added_at as i64).saturating_mul(1000) <= *t) {
+            // A deletion request stands unless the contact was added again afterwards.
+            if deleted(&did, rec.added_at) {
                 continue;
             }
             doc_alive.insert(did.clone());
             let alias: Option<String> = field(m, "alias").and_then(text).and_then(|t| serde_json::from_str(&t).ok()).flatten();
             let ver: Option<Verified> = field(m, "verified").and_then(text).and_then(|t| serde_json::from_str(&t).ok());
-            st.blocked.remove(&did);
             match st.contacts.iter_mut().find(|c| c.did == did) {
                 None => {
                     let verified = ver.as_ref().is_some_and(|v| v.v && v.seq >= list_seq(&did, &rec.device_list));
@@ -298,21 +315,10 @@ impl AccDoc {
                 }
             }
         }
-        // Contacts the doc no longer vouches for: removed (and blocked) on another device.
-        let gone: Vec<String> = st
-            .contacts
-            .iter()
-            .filter(|c| !doc_alive.contains(&c.did) && tombs.contains_key(&c.did))
-            .map(|c| c.did.clone())
-            .collect();
-        for did in gone {
-            st.contacts.retain(|c| c.did != did);
-            st.blocked.insert(did.clone());
-            ch.removed.push(did);
-        }
-        for did in tombs.keys() {
-            if !doc_alive.contains(did) && !st.contacts.iter().any(|c| &c.did == did) {
-                st.blocked.insert(did.clone());
+        // Contacts a deletion request removed (here or on another device).
+        for (did, at) in block_at {
+            if crate::block::apply_block_deletion_request(st, &did, at) {
+                ch.removed.push(did);
             }
         }
         for (name, set) in [("redeemed", &mut st.redeemed), ("revoked", &mut st.revoked)] {
@@ -320,7 +326,7 @@ impl AccDoc {
                 set.insert(k);
             }
         }
-        ch.contacts = (serde_json::to_string(&st.contacts).unwrap_or_default(), st.blocked.clone()) != before || !ch.removed.is_empty();
+        ch.contacts = snap(st) != before || !ch.removed.is_empty();
 
         ch
     }

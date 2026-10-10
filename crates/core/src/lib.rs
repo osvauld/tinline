@@ -4,6 +4,7 @@
 uniffi::setup_scaffolding!();
 
 pub mod accounts;
+mod block;
 mod chat;
 mod error;
 mod logging;
@@ -19,6 +20,7 @@ mod voice;
 mod wire;
 
 pub use error::Error;
+pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};

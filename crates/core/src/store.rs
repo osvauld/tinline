@@ -11,7 +11,7 @@
 //! from the vault's data key (`Backing::Sealed`), so they exist only while unlocked. A legacy
 //! profile has no data key and keeps `state.json` / `calls.json` (`Backing::Json`) until converted.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -186,8 +186,17 @@ pub struct State {
     pub contacts: Vec<StoredContact>,
     /// Ids of grants we issued and then took back.
     pub revoked: HashSet<String>,
-    /// DIDs we removed; their calls are refused even if they still hold a valid grant.
+    /// DIDs we block (U19: the contact is kept). Everything from them is refused with the notice
+    /// in `sent_notices`. Always the DIDs whose `sent_notices` entry is a block.
     pub blocked: HashSet<String>,
+    /// The latest block / unblock notice we signed for each DID (`proto::sign_block_notice`);
+    /// synced to own devices, which hand out the same notice instead of signing their own.
+    pub sent_notices: HashMap<String, proto::SignedBlob>,
+    /// Notices this device still has to deliver (local: only the device that signed one sends it).
+    pub notice_outbox: HashSet<String>,
+    /// The latest notice each DID sent us, verified on intake; a block there is "<name> blocked
+    /// you". Kept after an unblock so an older notice replayed later is refused.
+    pub notices: HashMap<String, HeldNotice>,
     /// Invite nonces already spent; a ticket adds one contact.
     pub redeemed: HashSet<String>,
     /// The ticket we hand out until someone redeems it, so the QR stays stable across launches.
@@ -197,6 +206,17 @@ pub struct State {
     pub registry: Vec<OwnDevice>,
     /// The latest `DeviceList` we signed from the registry; sent in every call hello and accept.
     pub own_list: Option<proto::SignedBlob>,
+}
+
+/// A notice someone sent us, with the name we knew them by (their contact entry is deleted on a
+/// block, U20, but the kept conversation still needs a name).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HeldNotice {
+    pub notice: proto::SignedBlob,
+    pub name: String,
+    /// From the verified notice: a block (true) or an unblock, and its `at` (unix ms).
+    pub blocked: bool,
+    pub at: u64,
 }
 
 /// Most calls kept in the call log; the oldest fall off.
@@ -382,6 +402,7 @@ impl History {
         *self.calls.lock() = calls;
     }
 
+    #[cfg(test)]
     pub fn remove_peer(&self, did: &str) {
         self.calls.lock().retain(|r| r.peer_did != did);
     }

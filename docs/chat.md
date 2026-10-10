@@ -370,11 +370,17 @@ accepts only `dm/{its own pair}/...`, so a contact can neither request nor push 
 this row with `peer_name = "You"`. Messages are `outgoing`, `Delivered`, and never create an
 outbox marker; `fetch_older_history` is a no-op returning 0.
 
-### Removing a contact
-`remove_contact` drops the conversation (shards, blobs, rows) on this device and tombstones the
-contact in the account doc; the other devices apply the tombstone and `chat_purge` the same
-conversation. Relayed shards of a pair that is no longer a contact (and was blocked) are ignored,
-so the sync cannot bring it back.
+### Blocking
+A block keeps the conversation on every device (U19). The blocker's devices refuse the blocked
+DID's `Auth` with its signed notice (`ChatMsg::Notice`), so no session, sync, push or history
+request happens. The blocked person's app, once it holds the notice, deletes its contact entry
+for the blocker but keeps the conversation read-only (`chat_day`, `chats()` still show it; writes
+and `fetch_older_history` fail with `Rejected("blocked")`), stops retrying, and reports its
+unacknowledged messages with `not_delivered_reason = "blocked"`. Messages written before the notice
+stay in the docs; if the block is lifted and they add us again, the normal sync delivers them.
+Own devices keep syncing a blocked conversation. There is no "delete chat" action today (before
+P5 only `remove_contact` deleted history; `chat_purge` is kept but unused). See `protocol.md`
+"Blocking".
 
 ### Known limits
 Read cursors are per conversation, not per message. (A batch relayed by an own device no longer

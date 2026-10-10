@@ -196,6 +196,8 @@ pub(crate) enum Cmd {
     Answer,
     Decline,
     Hangup,
+    /// We blocked the peer: tell them with the notice and end the call (`"blocked"`).
+    Block(proto::SignedBlob),
 }
 
 pub(crate) struct Call {
@@ -277,6 +279,8 @@ enum LegEvent {
     Busy,
     /// It rang and the callee's ring timed out (it sent `Hangup`).
     GaveUp,
+    /// The device answered with a notice (they block us, if it verifies).
+    Blocked(proto::SignedBlob),
     /// Could not connect, refused (`Reject`: not a contact there, blocked, unavailable), or the
     /// connection died.
     Failed(String),
@@ -344,6 +348,7 @@ impl Leg {
                         Ok(Some(Msg::Decline { reason })) => LegEvent::Declined(reason),
                         Ok(Some(Msg::Busy)) => LegEvent::Busy,
                         Ok(Some(Msg::Hangup)) => LegEvent::GaveUp,
+                        Ok(Some(Msg::Notice { notice })) => LegEvent::Blocked(notice),
                         Ok(Some(Msg::Reject { reason })) => LegEvent::Failed(format!("rejected: {}", clip_reason(&reason))),
                         Ok(Some(other)) => {
                             tracing::debug!("ignoring {} before the answer", msg_name(&other));
@@ -457,6 +462,7 @@ pub(crate) struct Inner {
     pub(crate) selfsync: crate::sync::engine::SelfSync,
     pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
     pub(crate) link: crate::sync::link::LinkState,
+    pub(crate) block: crate::block::BlockRt,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -521,6 +527,7 @@ impl Node {
             selfsync: Default::default(),
             sync_tx: tokio::sync::watch::channel(0).0,
             link: Default::default(),
+            block: Default::default(),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -996,34 +1003,10 @@ impl Node {
         self.inner.availability()
     }
 
-    /// Forgets them and blocks their DID, so the grant we gave them no longer rings us; any
-    /// call with them ends. Adding them again lifts the block.
+    /// Superseded by `block` (U19: a contact's action is Block; the contact and history are
+    /// kept). Kept as an alias until the apps switch over.
     pub fn remove_contact(&self, did: String) -> Result<(), Error> {
-        self.inner.me()?;
-        {
-            let mut s = self.inner.shared.lock();
-            s.state.contacts.retain(|c| c.did != did);
-            s.state.blocked.insert(did.clone());
-            // A ticket they may have seen is of no further use.
-            s.state.ticket = None;
-        }
-        let history = self.inner.history();
-        history.remove_peer(&did);
-        self.inner.chat_purge(&did);
-        // The removal holds in memory whether or not it reached the disk, so act on it either
-        // way and report the failed write afterwards. (A call ending now is not logged: the
-        // peer is no longer a contact.)
-        let saved = self.inner.persist().and(history.save());
-        self.inner.sync_local(None);
-        let calls: Vec<_> = {
-            let live = self.inner.live.lock();
-            live.call.iter().chain(live.waiting.iter()).cloned().collect()
-        };
-        for call in calls.into_iter().filter(|c| c.info.peer_did == did) {
-            let _ = call.cmd.send(Cmd::Hangup);
-        }
-        self.inner.events.on_contacts_changed();
-        saved
+        self.block(did)
     }
 
     /// Starts calling `did`; progress arrives through `on_call_state`.
@@ -1857,6 +1840,7 @@ impl Inner {
         self.emit_status();
         self.chat_started();
         self.selfsync_started();
+        self.notices_started();
         self.sync_kick();
 
         let this = self.clone();
@@ -2001,6 +1985,12 @@ impl Inner {
             return Err(Error::Protocol("that ticket names a relay we won't use".into()));
         }
         let ep = self.endpoint()?;
+        // We scanned their ticket ourselves: that is a way back from our block (unblock first, so
+        // they are told).
+        if self.unblock_inner(&claim.iss)? {
+            self.persist_async(me.epoch).await?;
+            self.notice_kick(claim.iss.clone());
+        }
         let (mut hello, pending) = proto::contact_hello(
             &me.id,
             me.device,
@@ -2028,6 +2018,11 @@ impl Inner {
             .ok_or_else(|| Error::Protocol("peer closed".into()))?;
         let new = match reply {
             Msg::Reject { reason } => return Err(Error::Rejected(clip_reason(&reason))),
+            // They block us: their app's notice is the answer (and is taken here).
+            Msg::Notice { notice } if self.is_block_from(&claim.iss, &notice) => {
+                let _ = self.take_notice(&notice);
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
             other => proto::accept_contact_welcome(&me.id, &pending, &other, remote, now())?,
         };
         ctrl.finish();
@@ -2083,8 +2078,8 @@ impl Inner {
         if current.as_deref() != Some(new.redeemed_nonce.as_str()) {
             return Err(HelloError::Refused("not the current ticket".into()));
         }
-        if next.blocked.contains(&new.did) {
-            return Err(HelloError::Refused("blocked".into()));
+        if let Some(notice) = self.refusal_for(&new.did) {
+            return Err(HelloError::Blocked(notice));
         }
         let stored = stored_contact(&new, hint);
         let contact = Contact::from(&stored);
@@ -2158,6 +2153,12 @@ impl Inner {
                         // Let the joiner read the welcome and close first.
                         let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
                     }
+                    Err(HelloError::Blocked(notice)) => {
+                        self.log("refused a contact hello: blocked");
+                        ctrl.send(&Msg::Notice { notice }).await?;
+                        ctrl.finish();
+                        let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                    }
                     Err(HelloError::Refused(e)) => {
                         self.log(format!("rejected contact hello: {e}"));
                         ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
@@ -2176,6 +2177,12 @@ impl Inner {
                 Ok(())
             }
             hello @ Msg::CallHello { .. } => self.incoming_call(conn, ctrl, hello, remote, &me, permit).await,
+            Msg::Notice { notice } => {
+                drop(permit);
+                self.notice_incoming(ctrl, notice).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
             other => {
                 tracing::debug!("unexpected first message {}", msg_name(&other));
                 ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
@@ -2188,6 +2195,25 @@ impl Inner {
 
     pub(crate) fn is_contact_device(&self, device: &[u8; 32]) -> bool {
         self.shared.lock().state.contacts.iter().any(|c| c.has_device(device))
+    }
+
+    fn live_calls_with(&self, did: &str) -> Vec<Arc<Call>> {
+        let live = self.live.lock();
+        live.call.iter().chain(live.waiting.iter()).filter(|c| c.info.peer_did == did).cloned().collect()
+    }
+
+    /// We blocked `did`: a call with them tells them so and ends.
+    pub(crate) fn calls_blocked(&self, did: &str, notice: &proto::SignedBlob) {
+        for call in self.live_calls_with(did) {
+            let _ = call.cmd.send(Cmd::Block(notice.clone()));
+        }
+    }
+
+    /// Ends any call with `did` with `reason`, from outside its task.
+    pub(crate) fn end_calls_with(&self, did: &str, reason: &str) {
+        for call in self.live_calls_with(did) {
+            self.end_call(&call, reason.into());
+        }
     }
 
     pub(crate) async fn incoming_call(
@@ -2217,7 +2243,7 @@ impl Inner {
                 remote,
                 now(),
                 &s.state.revoked,
-                |did| contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did),
+                |did| contacts.iter().any(|c| c.did == did),
             )
         };
         let caller = match verified {
@@ -2230,6 +2256,15 @@ impl Inner {
                 return Ok(());
             }
         };
+        // A DID we block: refused at once with our notice, never rung (the caller's app ends the
+        // call with "blocked").
+        if let Some(notice) = self.refusal_for(&caller.did) {
+            self.log("incoming call refused: blocked");
+            ctrl.send(&Msg::Notice { notice }).await?;
+            ctrl.finish();
+            let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+            return Ok(());
+        }
         let name = {
             let s = self.shared.lock();
             s.state.contacts.iter().find(|c| c.did == caller.did).map(display_name).unwrap_or_default()
@@ -2514,15 +2549,33 @@ impl Inner {
     pub(crate) fn start_call(self: Arc<Self>, did: String) -> Result<CallInfo, Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
-        let contact = {
+        let (contact, held_name) = {
             let s = self.shared.lock();
-            s.state.contacts.iter().find(|c| c.did == did).cloned().ok_or(Error::NotFound)?
+            if s.state.blocked.contains(&did) {
+                return Err(Error::Protocol("you blocked them; unblock first".into()));
+            }
+            // They block us (U20): no dialling; the call ends at once with that reason.
+            let held = crate::block::blocked_me(&s.state, &did).then(|| crate::block::known_name(&s.state, &did).unwrap_or_default());
+            let contact = s.state.contacts.iter().find(|c| c.did == did).cloned();
+            if contact.is_none() && held.is_none() {
+                return Err(Error::NotFound);
+            }
+            (contact, held)
         };
         let info = CallInfo {
             call_id: random_id(),
             peer_did: did,
-            peer_name: display_name(&contact),
+            peer_name: contact.as_ref().map(display_name).or(held_name.clone()).unwrap_or_default(),
             incoming: false,
+        };
+        let contact = match (contact, held_name) {
+            (Some(c), None) => c,
+            _ => {
+                let (call, _cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
+                let this = self.clone();
+                self.handle.spawn(async move { this.end_call(&call, crate::BLOCKED.into()) });
+                return Ok(info);
+            }
         };
         let (call, cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
         let this = self.clone();
@@ -2685,6 +2738,16 @@ impl Inner {
                             legs[idx] = None;
                             state[idx] = LegPhase::Gone;
                         }
+                        // They block us: the call ends at once with that reason.
+                        LegEvent::Blocked(notice) if self.is_block_from(&call.info.peer_did, &notice) => {
+                            let _ = self.take_notice(&notice);
+                            cancel_others(&mut legs, Some(idx), hangup_msg.clone());
+                            break crate::BLOCKED.into();
+                        }
+                        LegEvent::Blocked(_) => {
+                            legs[idx] = None;
+                            state[idx] = LegPhase::Gone;
+                        }
                     }
                 }
                 cmd = cmds.recv() => match cmd {
@@ -2788,6 +2851,11 @@ impl Inner {
                         self.log(format!("rejected: {}", clip_reason(&reason)));
                         break "unreachable".into();
                     }
+                    // They blocked us during the call.
+                    Ok(Some(Msg::Notice { notice })) if self.is_block_from(&call.info.peer_did, &notice) => {
+                        let _ = self.take_notice(&notice);
+                        break crate::BLOCKED.into();
+                    }
                     Ok(Some(Msg::Hangup)) => {
                         // A callee only hangs up unanswered when its ring timed out; a refusal is a Decline.
                         break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "no_answer" }.into();
@@ -2812,6 +2880,10 @@ impl Inner {
                         self.set_state(&call, CallState::Active);
                     }
                     Some(Cmd::Answer) => {}
+                    Some(Cmd::Block(notice)) => {
+                        let _ = ctrl.send(&Msg::Notice { notice }).await;
+                        break crate::BLOCKED.into();
+                    }
                     // Not yet answered: the callee refusing is a decline, the caller giving up
                     // is a hangup (the callee shows it as missed).
                     Some(Cmd::Decline) | Some(Cmd::Hangup) if !active && incoming_from.is_some() => {
@@ -2992,8 +3064,9 @@ impl Inner {
             if s.epoch != call.epoch {
                 return;
             }
-            match s.state.contacts.iter().find(|c| c.did == call.info.peer_did) {
-                Some(c) => display_name(c),
+            // A contact, or one whose block notice we hold (their entry was deleted, U20).
+            match crate::block::known_name(&s.state, &call.info.peer_did) {
+                Some(n) => n,
                 None => return,
             }
         };
@@ -3124,6 +3197,8 @@ enum HelloError {
     Refused(String),
     /// Acceptable, but we could not make it durable.
     Failed(Error),
+    /// From a DID we block: answered with our notice.
+    Blocked(proto::SignedBlob),
 }
 
 fn stored_contact(new: &proto::NewContact, relay: Option<String>) -> StoredContact {
@@ -3142,9 +3217,9 @@ fn stored_contact(new: &proto::NewContact, relay: Option<String>) -> StoredConta
 /// Adds `stored`, or refreshes the contact of that DID. A device we have not seen before resets
 /// `verified`: the safety numbers were compared with another phone.
 fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_block: bool) -> Result<(), Error> {
-    if lift_block {
-        st.blocked.remove(&stored.did);
-    } else if st.blocked.contains(&stored.did) {
+    // A block is lifted only by `unblock` (which signs the notice); `add_contact` does that
+    // before it gets here.
+    if !lift_block && st.blocked.contains(&stored.did) {
         return Err(Error::Rejected(REFUSED.into()));
     }
     match st.contacts.iter_mut().find(|c| c.did == stored.did) {
@@ -3253,6 +3328,8 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::Decline { .. } => "Decline",
         Msg::Busy => "Busy",
         Msg::Hangup => "Hangup",
+        Msg::Notice { .. } => "Notice",
+        Msg::NoticeTaken => "NoticeTaken",
     }
 }
 

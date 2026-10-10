@@ -355,7 +355,7 @@ fn verified(p: &Peer, did: &str) -> Option<bool> {
 }
 
 #[test]
-fn concurrent_contact_edits_converge_and_removal_wins() {
+fn concurrent_contact_edits_converge_and_the_block_wins() {
     let a = make_peer("s1-a");
     let e = make_peer("s1-e");
     connect(&a, &e);
@@ -370,17 +370,17 @@ fn concurrent_contact_edits_converge_and_removal_wins() {
     assert_eq!(alias(&n, &a.did), Some(Some("Al".into())));
     assert_eq!(verified(&e, &a.did), Some(true));
 
-    // N offline: it edits the contact while E removes it. The removal stands.
+    // N offline: it edits the contact while E blocks it. The block stands; the contact is kept.
     n.node.stop();
     n.node.rename_contact(a.did.clone(), Some("Stale".into())).unwrap();
-    e.node.remove_contact(a.did.clone()).unwrap();
+    e.node.block(a.did.clone()).unwrap();
     n.node.start().unwrap();
     n.node.sync_now_for_test();
-    eventually(40, "N drops A", || !n.node.contacts().iter().any(|c| c.did == a.did));
     assert!(e.node.blocked_for_test().contains(&a.did));
-    eventually(20, "N blocks A", || n.node.blocked_for_test().contains(&a.did));
+    eventually(40, "N blocks A", || n.node.blocked_for_test().contains(&a.did));
+    assert!(n.node.contacts().iter().any(|c| c.did == a.did) && e.node.contacts().iter().any(|c| c.did == a.did));
 
-    // A later ticket scan brings the contact back on both devices.
+    // A later ticket scan lifts the block on both devices.
     std::thread::sleep(Duration::from_millis(1200));
     e.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     eventually(40, "N has A again", || n.node.contacts().iter().any(|c| c.did == a.did));
@@ -660,20 +660,21 @@ fn you_items_sync_between_own_devices_and_never_reach_contacts() {
 }
 
 #[test]
-fn removing_a_contact_on_one_device_removes_the_conversation_on_the_other() {
+fn blocking_a_contact_on_one_device_keeps_the_conversation_on_both() {
     let (a, b1, b2) = trio("c6");
     a.node.send_text(b1.did.clone(), "keep?".into(), None).unwrap();
     eventually(40, "b2 has it", || find_msg(&b2, &a.did, "keep?").is_some());
-    b1.node.remove_contact(a.did.clone()).unwrap();
-    eventually(40, "b2 dropped A", || !b2.node.contacts().iter().any(|c| c.did == a.did));
-    eventually(20, "b2 dropped the conversation", || {
-        b2.node.chat_day(a.did.clone(), None).is_err() && b2.node.chats().unwrap().iter().all(|c| c.peer_did != a.did)
-    });
-    eventually(20, "b2 deleted the docs", || !b2.node.has_chat_docs_for_test(&b2.did, &a.did));
-    // The sync does not bring it back.
+    b1.node.block(a.did.clone()).unwrap();
+    eventually(40, "b2 blocks A", || b2.node.block_state(a.did.clone()).blocked_by_me);
+    // U19: the contact and the history stay on both devices.
     b1.node.sync_now_for_test();
     std::thread::sleep(Duration::from_secs(3));
-    assert!(!b2.node.has_chat_docs_for_test(&b2.did, &a.did) && !b1.node.has_chat_docs_for_test(&b1.did, &a.did));
+    for p in [&b1, &b2] {
+        assert!(p.node.contacts().iter().any(|c| c.did == a.did));
+        assert!(find_msg(p, &a.did, "keep?").is_some());
+        assert!(p.node.chats().unwrap().iter().any(|c| c.peer_did == a.did));
+    }
+    assert!(b2.node.has_chat_docs_for_test(&b2.did, &a.did) && b1.node.has_chat_docs_for_test(&b1.did, &a.did));
 }
 
 #[test]
@@ -742,9 +743,10 @@ fn a_call_after_linking_reaches_the_other_device_from_the_calls_doc() {
     online(&b2.node);
     b2.node.sync_now_for_test();
     eventually(60, "b2 has the call", || b2.node.recent_calls(10).iter().any(|r| r.call_id == id));
-    // Removing the contact on b2 drops its calls on b1 as well.
-    b2.node.remove_contact(a.did.clone()).unwrap();
-    eventually(60, "b1 dropped the contact's calls", || !b1.node.recent_calls(10).iter().any(|r| r.peer_did == a.did));
+    // Blocking the contact on b2 keeps the calls with them on both devices (U19).
+    b2.node.block(a.did.clone()).unwrap();
+    eventually(60, "b1 holds the block", || b1.node.block_state(a.did.clone()).blocked_by_me);
+    assert!(b1.node.recent_calls(10).iter().any(|r| r.call_id == id));
 }
 
 // ---- linked devices: contacts, history, edits, presence, device names after linking ------------

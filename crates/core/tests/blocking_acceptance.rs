@@ -22,10 +22,10 @@
 //!   with `"R1: today ..."` stating today's outcome; they assert the TARGET, never today's value.
 //! - The rest run now and must keep passing.
 //!
-//! Today's closest thing to a block is `Node::remove_contact` (forget + block the DID). Tests
-//! about refusal use [`block_today`], which calls it; when R1 lands, switch it to
-//! `harness::block` (which keeps the contact). Whether "remove" and "block" stay separate actions
-//! is an open question (see the report for packet R1a).
+//! P5 built the block (U19: `remove_contact` became `block`; U20: every notice is also a request
+//! to delete our contact entry on their side, history kept read-only). Tests of the blocker's
+//! backstop make the blocked node ignore notices (`ignore_block_notices_for_test`), i.e. act
+//! like a modified build, so the refusal itself is what is tested.
 //!
 //! Every test carries `// KIND: acceptance` and a line naming the decision it enforces.
 
@@ -44,79 +44,50 @@ const BLOCKED: &str = harness::BLOCKED;
 // Test-only harness: the API R1 must provide. Every function is a stub today.
 // ---------------------------------------------------------------------------------------------
 
-/// Proposed R1 API for visible blocking. Each stub documents the behaviour the tests expect.
-/// When the feature lands, replace each body with the real `Node` call (or delete the stub and
-/// call the method directly) and remove the matching `#[ignore]`s.
+/// The R1 API for visible blocking (P5), as the tests call it. Stubs remain only for what P5 does
+/// not build: call tokens (P6) and the group API.
 #[allow(dead_code)]
 mod harness {
     use p2pcore::{Error, Node};
+    pub use p2pcore::BlockState;
 
     /// The single reason string carried by the notice and every later refusal.
-    pub const BLOCKED: &str = "blocked";
+    pub const BLOCKED: &str = p2pcore::BLOCKED;
 
-    /// A verified "blocked" notice as the blocked side holds it.
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct BlockNotice {
-        /// The DID that blocked us; the notice is signed by this DID's key (not a device key).
-        pub from_did: String,
-        /// Unix seconds, from the signed body.
-        pub signed_at: u64,
-        /// Always `"blocked"`.
-        pub reason: String,
+    /// Personal block of `did` (U5 revised, U19, U20): keeps the contact, one DID-signed notice
+    /// (which also asks their app to delete its contact entry for us), refusal with `BLOCKED`.
+    pub fn block(node: &Node, did: &str) -> Result<(), Error> {
+        node.block(did.to_string())
     }
 
-    /// What the UI shows for a contact, block-wise.
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct BlockState {
-        /// We blocked them: chat shows "Blocked" + Unblock; the contact is still listed.
-        pub blocked_by_me: bool,
-        /// They blocked us: "<name> blocked you", composing and calling disabled. Only set from a
-        /// notice (or a refusal carrying the reason) that verified under their DID.
-        pub blocked_me: Option<BlockNotice>,
+    /// Lifts a personal block and sends the signed unblock notice.
+    pub fn unblock(node: &Node, did: &str) -> Result<(), Error> {
+        node.unblock(did.to_string())
     }
 
-    /// Personal block of `did` (U5 revised). Keeps the contact (shown as "Blocked"), adds the DID
-    /// to the block list (synced to own devices), revokes its message and call tokens (U13),
-    /// sends ONE DID-signed notice to the contact (retried until delivered), and from now on
-    /// refuses its calls, chat sync, history fetches and ticket redemptions with `BLOCKED`.
-    /// Does NOT rotate any endpoint (U5) and does NOT change group membership.
-    pub fn block(_node: &Node, _did: &str) -> Result<(), Error> {
-        unimplemented!("R1: visible block (keep contact, one signed notice)")
+    pub fn block_state(node: &Node, did: &str) -> BlockState {
+        node.block_state(did.to_string())
     }
 
-    /// Lifts a personal block: accept messages again; calls only if the contact held a call
-    /// token before the block (U13). Sends the current device list / private endpoints (U8).
-    pub fn unblock(_node: &Node, _did: &str) -> Result<(), Error> {
-        unimplemented!("R1: unblock")
+    /// Notices signed for `did` since its last block (retries count once). Expected: 1.
+    pub fn block_notices_sent_for_test(node: &Node, did: &str) -> u32 {
+        node.block_notices_sent_for_test(did.to_string())
     }
 
-    /// Block state of `did` as the UI reads it.
-    pub fn block_state(_node: &Node, _did: &str) -> BlockState {
-        unimplemented!("R1: block state for the UI")
+    /// A block notice to `to` claiming to come from `claimed_did`, signed by `signer`'s DID key
+    /// (a forgery when the two differ), as wire JSON.
+    pub fn forge_block_notice_for_test(signer: &Node, claimed_did: &str, to: &str) -> String {
+        signer.forge_block_notice_for_test(claimed_did.to_string(), to.to_string()).unwrap()
     }
 
-    /// For tests: how many "blocked" notices this node has sent to `did` since its last block
-    /// (retries of the same undelivered notice count once). Expected: exactly 1 per block.
-    pub fn block_notices_sent_for_test(_node: &Node, _did: &str) -> u32 {
-        unimplemented!("R1: notice counter")
+    /// Hands `notice_json` to `node` as if it had arrived; whether it was taken.
+    pub fn offer_block_notice_for_test(node: &Node, notice_json: &str) -> bool {
+        node.offer_block_notice_for_test(notice_json.to_string())
     }
 
-    /// For tests: a "blocked" notice claiming to come from `claimed_did` but signed by `signer`'s
-    /// DID key (a forgery when the two differ), as wire JSON.
-    pub fn forge_block_notice_for_test(_signer: &Node, _claimed_did: &str) -> String {
-        unimplemented!("R1: notice forging for tests")
-    }
-
-    /// For tests: hands `notice_json` to `node` as if it arrived from `from_did`; whether it was
-    /// accepted (signature verified under `from_did`'s DID key, U10).
-    pub fn offer_block_notice_for_test(_node: &Node, _from_did: &str, _notice_json: &str) -> bool {
-        unimplemented!("R1: notice intake for tests")
-    }
-
-    /// Why message `msg_id` to `did` was not delivered, if it was finally refused (UI: "Not
-    /// delivered: <name> blocked you" for `Some("blocked")`). `None` while pending or delivered.
-    pub fn not_delivered_reason(_node: &Node, _did: &str, _msg_id: &str) -> Option<String> {
-        unimplemented!("R1: per-message refusal reason")
+    /// Why message `msg_id` to `did` was not delivered (`Some("blocked")` while they block us).
+    pub fn not_delivered_reason(node: &Node, did: &str, msg_id: &str) -> Option<String> {
+        node.not_delivered_reason(did.to_string(), msg_id.to_string())
     }
 
     /// U13/U15: whether `did` holds our call token (ticket contacts: true by default).
@@ -205,7 +176,6 @@ struct Peer {
     node: Arc<Node>,
     rx: mpsc::Receiver<Ev>,
     lrx: mpsc::Receiver<LEv>,
-    #[allow(dead_code)]
     logs: Arc<Mutex<Vec<String>>>,
     did: String,
     dir: std::path::PathBuf,
@@ -278,10 +248,17 @@ fn link_fresh(e: &Peer, name: &str) -> Peer {
     n
 }
 
-/// Today's block: `remove_contact` (forgets the contact and blocks the DID). Switch to
-/// `harness::block` when R1 lands.
 fn block_today(p: &Peer, did: &str) {
-    p.node.remove_contact(did.to_string()).unwrap();
+    harness::block(&p.node, did).unwrap();
+}
+
+/// `p` acts like a modified build that ignores block notices: only the blocker's refusal holds.
+fn ignores_notices(p: &Peer) {
+    p.node.ignore_block_notices_for_test(true);
+}
+
+fn refused_as_blocked<T: std::fmt::Debug>(r: Result<T, p2pcore::Error>) -> bool {
+    matches!(r, Err(p2pcore::Error::Rejected(ref why)) if why == BLOCKED)
 }
 
 fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
@@ -433,9 +410,9 @@ fn block_on_one_device_holds_on_the_linked_sibling() {
 // Decision: U5 revised + 8b Q1 — every later call attempt ends at once with the reason
 // "blocked", both live and in the call record.
 #[test]
-#[ignore = "R1: today the blocked caller ends 'unreachable' (Reject 'not accepted')"]
 fn blocked_caller_ends_at_once_with_the_blocked_reason() {
     let (a, b) = pair("callrsn");
+    ignores_notices(&b);
     block_today(&a, &b.did);
     for _ in 0..2 {
         let t0 = Instant::now();
@@ -452,7 +429,6 @@ fn blocked_caller_ends_at_once_with_the_blocked_reason() {
 // Decision: U5 revised + U12 detail — blocking during a live call ends it at once on the blocked
 // side with the reason "blocked" (not "hangup_remote").
 #[test]
-#[ignore = "R1: today the blocked side's call ends 'hangup_remote'"]
 fn blocking_mid_call_ends_it_with_the_blocked_reason() {
     let (a, b) = pair("midcall");
     let call = b.node.call(a.did.clone()).unwrap();
@@ -470,9 +446,9 @@ fn blocking_mid_call_ends_it_with_the_blocked_reason() {
 // Decision: U5 revised + 8b Q1 (same reason on every later attempt, incl. tickets) — the
 // blocked contact redeeming a fresh ticket of the blocker is refused with "blocked".
 #[test]
-#[ignore = "R1: today the ticket refusal reads 'not accepted'"]
 fn blocked_contact_redeeming_a_fresh_ticket_is_refused_as_blocked() {
     let (a, b) = pair("tktrsn");
+    ignores_notices(&b);
     block_today(&a, &b.did);
     let t0 = Instant::now();
     match b.node.add_contact(a.node.my_ticket().unwrap()) {
@@ -510,7 +486,6 @@ fn blocked_contact_is_excluded_from_device_list_notes() {
 // Decision: U5 revised + 8b Q1 — one DID-signed notice; the blocked side verifies it and shows
 // "<name> blocked you"; the blocker keeps the contact as "Blocked".
 #[test]
-#[ignore = "R1: needs visible block + notice"]
 fn block_sends_one_signed_notice_the_blocked_side_verifies() {
     let (a, b) = pair("notice");
     harness::block(&a.node, &b.did).unwrap();
@@ -529,38 +504,50 @@ fn block_sends_one_signed_notice_the_blocked_side_verifies() {
 // Decision: U10 (every device verifies every signature) applied to the U5-revised notice — a
 // notice not signed by the claimed DID is refused and changes nothing.
 #[test]
-#[ignore = "R1: needs visible block + notice"]
 fn a_forged_block_notice_is_refused() {
     let (a, b) = pair("forge");
     let x = peer("forge-x");
-    let forged = harness::forge_block_notice_for_test(&x.node, &a.did);
-    assert!(!harness::offer_block_notice_for_test(&b.node, &a.did, &forged));
+    let forged = harness::forge_block_notice_for_test(&x.node, &a.did, &b.did);
+    assert!(!harness::offer_block_notice_for_test(&b.node, &forged));
     assert!(harness::block_state(&b.node, &a.did).blocked_me.is_none());
-    let genuine = harness::forge_block_notice_for_test(&a.node, &a.did);
-    assert!(harness::offer_block_notice_for_test(&b.node, &a.did, &genuine), "control: a genuine notice is taken");
+    assert!(b.node.contacts().iter().any(|c| c.did == a.did), "a forgery deletes nothing");
+    // Genuine, but addressed to x: b must not take it.
+    let misaddressed = harness::forge_block_notice_for_test(&a.node, &a.did, &x.did);
+    assert!(!harness::offer_block_notice_for_test(&b.node, &misaddressed));
+    assert!(harness::block_state(&b.node, &a.did).blocked_me.is_none());
+    let genuine = harness::forge_block_notice_for_test(&a.node, &a.did, &b.did);
+    assert!(harness::offer_block_notice_for_test(&b.node, &genuine), "control: a genuine notice is taken");
+    // Replayed: refused, state unchanged.
+    let held = harness::block_state(&b.node, &a.did).blocked_me;
+    assert!(held.is_some());
+    assert!(!harness::offer_block_notice_for_test(&b.node, &genuine), "a replay is not taken again");
+    assert_eq!(harness::block_state(&b.node, &a.did).blocked_me, held);
 }
 
 // KIND: acceptance
 // Decision: U5 revised + 8b Q1 — a message from the blocked side is refused quickly and shows
 // "Not delivered: <name> blocked you" (reason "blocked"), never stuck pending.
 #[test]
-#[ignore = "R1: needs per-message refusal reason (today the message stays Pending)"]
 fn blocked_senders_message_shows_not_delivered_blocked() {
     let (a, b) = pair("nd");
+    // b writes while a is away, so the message exists before any notice; a blocks meanwhile.
+    a.node.stop();
+    let m = b.node.send_text(a.did.clone(), "hi".into(), None).unwrap().id;
     harness::block(&a.node, &b.did).unwrap();
     let t0 = Instant::now();
-    let m = b.node.send_text(a.did.clone(), "hi".into(), None).unwrap().id;
+    online(&a.node);
     eventually(QUICK.as_secs(), "refused", || harness::not_delivered_reason(&b.node, &a.did, &m).is_some());
     assert_eq!(harness::not_delivered_reason(&b.node, &a.did, &m).as_deref(), Some(BLOCKED));
     assert!(t0.elapsed() < QUICK);
     assert!(!holds(&a, &b.did, &m));
+    // With the notice held, a new message is refused at once with the same reason.
+    assert!(refused_as_blocked(b.node.send_text(a.did.clone(), "again".into(), None)));
 }
 
 // KIND: acceptance
 // Decision: U5 revised + 8b Q1/Q2 — messages queued while the blocked side was offline surface
 // as not delivered with the same reason once it is back, and by then it holds the notice.
 #[test]
-#[ignore = "R1: needs visible block + per-message refusal reason"]
 fn queued_messages_surface_as_not_delivered_blocked() {
     let (a, b) = pair("queued");
     b.node.stop();
@@ -580,7 +567,6 @@ fn queued_messages_surface_as_not_delivered_blocked() {
 // Decision: U5 revised + 8b Q1 — every later attempt (calls and messages, repeatedly) gets the
 // same "blocked" reason, and the blocker sends no second notice.
 #[test]
-#[ignore = "R1: needs visible block + notice counter"]
 fn every_later_attempt_gets_the_same_reason_and_no_second_notice() {
     let (a, b) = pair("repeat");
     harness::block(&a.node, &b.did).unwrap();
@@ -588,9 +574,8 @@ fn every_later_attempt_gets_the_same_reason_and_no_second_notice() {
         let t0 = Instant::now();
         let call = b.node.call(a.did.clone()).unwrap();
         assert_eq!(ended_after(&b, &call.call_id, t0, 20).0, BLOCKED, "call attempt {i}");
-        let m = b.node.send_text(a.did.clone(), format!("try {i}"), None).unwrap().id;
-        eventually(QUICK.as_secs(), "refused", || harness::not_delivered_reason(&b.node, &a.did, &m).is_some());
-        assert_eq!(harness::not_delivered_reason(&b.node, &a.did, &m).as_deref(), Some(BLOCKED));
+        // Read-only once the notice is held (it is, after a call that ended "blocked").
+        assert!(refused_as_blocked(b.node.send_text(a.did.clone(), format!("try {i}"), None)), "message attempt {i}");
     }
     assert!(!saw_incoming(&a));
     assert_eq!(harness::block_notices_sent_for_test(&a.node, &b.did), 1);
@@ -600,16 +585,18 @@ fn every_later_attempt_gets_the_same_reason_and_no_second_notice() {
 // Decision: U5 revised (block list syncs to own devices) + 8b Q1 — the linked sibling refuses
 // the blocked contact with the same "blocked" reason and shows the contact as Blocked.
 #[test]
-#[ignore = "R1: needs visible block (sibling refusal reason)"]
 fn linked_sibling_refuses_with_the_blocked_reason() {
     let a = peer("sibr-a");
     let e = peer("sibr-e");
+    // a ignores the notice, so its call really reaches the sibling.
+    ignores_notices(&a);
     e.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     let n = link_fresh(&e, "sibr-n");
     eventually(40, "N has A", || n.node.contacts().iter().any(|c| c.did == a.did));
     teach_devices_by_call(&a, &e);
     harness::block(&e.node, &a.did).unwrap();
     eventually(40, "N shows A as Blocked", || harness::block_state(&n.node, &a.did).blocked_by_me);
+    assert_eq!(harness::block_notices_sent_for_test(&n.node, &a.did), 0, "the sibling hands out E's notice; it signs none");
     e.node.stop(); // only the sibling can answer now
     let t0 = Instant::now();
     let call = a.node.call(e.did.clone()).unwrap();
@@ -619,17 +606,87 @@ fn linked_sibling_refuses_with_the_blocked_reason() {
     assert!(!saw_incoming(&n));
 }
 
+/// How many times `p` (the blocker) refused something from a blocked DID, by its own log.
+fn refusals(p: &Peer) -> usize {
+    p.logs.lock().unwrap().iter().filter(|l| l.contains("refused") && l.contains("blocked")).count()
+}
+
+// KIND: acceptance
+// Decision: U20 + U23 — the blocked person's app enforces the block: once it holds the notice it
+// deletes its contact entry for the blocker (history kept, read-only), and never dials or sends
+// again: calls end at once with "blocked", messages and history requests are refused locally,
+// and the blocker sees no further attempt at all.
+#[test]
+fn blocked_app_never_dials_or_sends_after_the_notice() {
+    let (a, b) = pair("consent");
+    let warm = b.node.send_text(a.did.clone(), "before".into(), None).unwrap().id;
+    eventually(60, "a holds the first message", || holds(&a, &b.did, &warm));
+    harness::block(&a.node, &b.did).unwrap();
+    eventually(30, "b holds the notice", || harness::block_state(&b.node, &a.did).blocked_me.is_some());
+    assert!(!b.node.contacts().iter().any(|c| c.did == a.did), "the deletion request removed the contact entry");
+    assert!(holds(&b, &a.did, &warm), "the history stays");
+    assert!(b.node.chats().unwrap().iter().any(|c| c.peer_did == a.did), "the conversation is still listed");
+    std::thread::sleep(Duration::from_secs(2));
+    let before = refusals(&a);
+    for _ in 0..2 {
+        let t0 = Instant::now();
+        let call = b.node.call(a.did.clone()).unwrap();
+        let (reason, took) = ended_after(&b, &call.call_id, t0, 10);
+        assert_eq!(reason, BLOCKED);
+        assert!(took < Duration::from_secs(1), "the app refuses locally, without dialling: {took:?}");
+        assert!(refused_as_blocked(b.node.send_text(a.did.clone(), "hello?".into(), None)));
+        assert!(refused_as_blocked(b.node.fetch_older_history(a.did.clone(), "2026-01-01".into())));
+    }
+    std::thread::sleep(Duration::from_secs(5));
+    assert_eq!(refusals(&a), before, "the blocked app must not reach the blocker at all");
+    assert!(!saw_incoming(&a));
+    assert_eq!(harness::block_notices_sent_for_test(&a.node, &b.did), 1);
+}
+
+// KIND: acceptance
+// Decision: U20 layer (2) — a modified build that ignores the notice is still refused by the
+// blocker's devices, with "blocked", for calls, messages and history requests alike.
+#[test]
+fn a_modified_app_that_ignores_the_notice_is_still_refused() {
+    let (a, b) = pair("modded");
+    ignores_notices(&b);
+    harness::block(&a.node, &b.did).unwrap();
+    std::thread::sleep(Duration::from_secs(2));
+    assert!(harness::block_state(&b.node, &a.did).blocked_me.is_none(), "this build ignores notices");
+    let t0 = Instant::now();
+    let call = b.node.call(a.did.clone()).unwrap();
+    let (reason, took) = ended_after(&b, &call.call_id, t0, 20);
+    assert_eq!(reason, BLOCKED);
+    assert!(took < QUICK, "{took:?}");
+    let m = b.node.send_text(a.did.clone(), "let me in".into(), None).unwrap().id;
+    assert!(refused_as_blocked(b.node.fetch_older_history(a.did.clone(), "2026-01-01".into())));
+    std::thread::sleep(Duration::from_secs(5));
+    assert!(!holds(&a, &b.did, &m));
+    assert!(!saw_incoming(&a));
+    assert!(refusals(&a) >= 2, "the blocker refused the call and the chat");
+}
+
 // KIND: acceptance
 // Decision: U5 revised / 8b Q5 — unblock restores messaging in both directions; the blocked
 // side's "blocked you" state clears once delivery works again.
 #[test]
-#[ignore = "R1: needs visible block + unblock"]
 fn unblock_restores_messaging() {
     let (a, b) = pair("unblk");
+    let warm = b.node.send_text(a.did.clone(), "before".into(), None).unwrap().id;
+    eventually(60, "a holds the first message", || holds(&a, &b.did, &warm));
     harness::block(&a.node, &b.did).unwrap();
     eventually(30, "b holds the notice", || harness::block_state(&b.node, &a.did).blocked_me.is_some());
+    // U20: b's app deleted its contact entry for a; the history stays, read-only.
+    assert!(!b.node.contacts().iter().any(|c| c.did == a.did));
+    assert!(holds(&b, &a.did, &warm));
     harness::unblock(&a.node, &b.did).unwrap();
     assert!(!harness::block_state(&a.node, &b.did).blocked_by_me);
+    // The unblock notice is taken from a non-contact whose block b holds: "blocked you" clears.
+    eventually(30, "b's blocked-you state clears", || harness::block_state(&b.node, &a.did).blocked_me.is_none());
+    assert!(holds(&b, &a.did, &warm));
+    // Messaging resumes once b adds a again (U20: the contact entry is gone).
+    assert!(matches!(b.node.send_text(a.did.clone(), "x".into(), None), Err(p2pcore::Error::NotFound)));
+    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     let m = b.node.send_text(a.did.clone(), "after unblock".into(), None).unwrap().id;
     eventually(60, "a holds it", || holds(&a, &b.did, &m));
     eventually(30, "b sees it delivered", || delivered(&b, &a.did, &m));
@@ -643,7 +700,7 @@ fn unblock_restores_messaging() {
 // only to a contact that was allowed to call before the block; a message-only contact stays
 // message-only and is not told "blocked".
 #[test]
-#[ignore = "R1: needs visible block + unblock + separate call token (P6)"]
+#[ignore = "P6: needs separate message and call tokens (U13/U15); P5 has one grant"]
 fn unblock_restores_calls_only_if_previously_allowed() {
     let (a, b) = pair("unblkc-b");
     let c = peer("unblkc-c");
@@ -675,7 +732,7 @@ fn unblock_restores_calls_only_if_previously_allowed() {
 // Decision: U5 revised — a personal block does not change group membership (only U9 removal
 // does); both stay members and the group keeps carrying both members' posts.
 #[test]
-#[ignore = "R1: needs group chat API (no group API in p2pcore yet)"]
+#[ignore = "needs the group chat API (none in p2pcore yet); P5 touches nothing group-related"]
 fn personal_block_does_not_change_group_membership() {
     let h = peer("grp-h");
     let a = peer("grp-a");

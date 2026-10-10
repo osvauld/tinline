@@ -246,9 +246,9 @@ fn history_and_reconnecting_over_a_real_call() {
     assert_eq!(rb[0].peer_name, "history-a");
     assert_eq!(rb[0].reason, "hangup_local");
     assert!(a.node.calls_with(a.did.clone(), 10).is_empty());
-    // Removing the contact deletes the history with them.
-    a.node.remove_contact(b.did.clone()).unwrap();
-    assert!(a.node.recent_calls(10).is_empty());
+    // Blocking them keeps the history with them (U19).
+    a.node.block(b.did.clone()).unwrap();
+    assert_eq!(a.node.recent_calls(10).len(), 1);
     assert_eq!(b.node.recent_calls(10).len(), 1);
 }
 

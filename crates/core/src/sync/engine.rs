@@ -12,7 +12,7 @@ use super::accdoc::{AccDoc, Ctx, DOC_NAME};
 use super::callsdoc::{CALLS_DOC, CallsDoc};
 use super::doc::Doc;
 use super::frames::{FrameReader, FrameWriter, SelfMsg};
-use crate::node::{Inner, Me, addr_for, now, now_ms, relay_of};
+use crate::node::{Inner, Me, addr_for, now, relay_of};
 use crate::store::{Backing, OwnDevice};
 use crate::Error;
 use crate::chat::own::{ACK_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
@@ -69,7 +69,7 @@ fn sync_period() -> Duration {
 
 impl Inner {
     fn ctx<'a>(me: &'a Me) -> Ctx<'a> {
-        Ctx { my_did: me.id.did(), me_device: me.device, now: now(), now_ms: now_ms() as i64 }
+        Ctx { my_did: me.id.did(), me_device: me.device, now: now() }
     }
 
     /// Wakes the sessions (local data changed) and the dial loop.
@@ -128,7 +128,7 @@ impl Inner {
             if let Err(e) = calls_doc.write_from(&calls) {
                 tracing::warn!("calls doc flush: {e}");
             }
-            let history = calls_doc.read_into(&mut calls, &s.state.blocked);
+            let history = calls_doc.read_into(&mut calls);
             if history {
                 s.history.replace(calls);
             }
@@ -186,7 +186,7 @@ impl Inner {
     /// Imports a batch from another own device and merges it into the working copy.
     pub(crate) fn apply_account_update(self: &Arc<Self>, epoch: u64, update: &[u8]) -> Result<(), Error> {
         let me = self.me()?;
-        let (ch, history, state_backing) = {
+        let (ch, state_backing) = {
             let mut s = self.shared.lock();
             if s.epoch != epoch || me.epoch != epoch {
                 return Err(Error::Locked);
@@ -198,41 +198,25 @@ impl Inner {
             if !acc.import(update)? {
                 return Ok(());
             }
+            // A contact entry deleted by a block notice keeps its calls and chat history (U20).
             let ch = acc.read_into(&mut s.state, &ctx);
-            // Calls with contacts removed elsewhere go too (and from the calls doc on the flush).
-            let mut calls = s.history.snapshot();
-            let n = calls.len();
-            calls.retain(|r| !ch.removed.contains(&r.peer_did));
-            let history = calls.len() != n;
-            if history {
-                s.history.replace(calls);
-            }
             if let Some(l) = &ch.label {
                 s.device_label = Some(l.clone());
             }
-            (ch, history, s.acct.as_ref().and_then(|a| a.backing.clone()))
+            (ch, s.acct.as_ref().and_then(|a| a.backing.clone()))
         };
         if let (Some(l), Some(Backing::Sealed(db))) = (&ch.label, &state_backing) {
             let _ = crate::store::save_label(db, l);
         }
         self.persist_for(Some(epoch))?;
-        if history {
-            let _ = self.history().save();
-        }
         self.save_doc();
-        for did in &ch.removed {
-            self.chat_purge(did);
-        }
         if ch.contacts {
             self.events.on_contacts_changed();
         }
-        if let Some(ev) = self.link_events() {
-            if ch.devices {
-                ev.on_devices_changed();
-            }
-            if history {
-                ev.on_history_changed();
-            }
+        if let Some(ev) = self.link_events()
+            && ch.devices
+        {
+            ev.on_devices_changed();
         }
         self.sync_bump();
         if ch.self_removed && !self.selfsync.leaving.load(std::sync::atomic::Ordering::SeqCst) {
@@ -257,7 +241,7 @@ impl Inner {
             if !calls.import(update)? {
                 return Ok(());
             }
-            let changed = calls.read_into(&mut mine, &s.state.blocked);
+            let changed = calls.read_into(&mut mine);
             if changed {
                 s.history.replace(mine);
             }
