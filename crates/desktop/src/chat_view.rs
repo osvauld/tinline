@@ -758,11 +758,14 @@ fn count_badge<'a>(t: Tok, n: u32) -> El<'a> {
 /// Message text: only a few emojis show big, emojis inside text a little larger (`emoji.rs`).
 fn message_text<'a>(s: &'a str, fg: Color) -> El<'a> {
     if crate::emoji::is_big(s) {
-        return text(s.trim()).size(38).color(fg).into();
+        return text(s.trim()).size(38).font(ui::EMOJI).color(fg).into();
     }
     let spans: Vec<iced::widget::text::Span<'a, ()>> = crate::emoji::runs(s)
         .into_iter()
-        .map(|(part, emoji)| iced::widget::span(part).size(if emoji { 15.0 * crate::emoji::INLINE_SCALE } else { 15.0 }).color(fg))
+        .map(|(part, emoji)| {
+            let sp = iced::widget::span(part).color(fg);
+            if emoji { sp.size(15.0 * crate::emoji::INLINE_SCALE).font(ui::EMOJI) } else { sp.size(15.0) }
+        })
         .collect();
     iced::widget::rich_text(spans).into()
 }
