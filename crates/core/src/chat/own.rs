@@ -147,6 +147,7 @@ impl Inner {
                 // by a key of theirs only the relaying device knew, stays hidden); ours never.
                 hide_unverified: (!self.is_self_did(&did)).then(|| did.clone()),
                 known_writers: core.store.known_writers()?,
+                did_since: core.store.did_since(&[&did, me.id.did()]),
             };
             match shard.apply_remote(update, &ctx) {
                 Ok(applied) => {

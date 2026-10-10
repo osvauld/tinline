@@ -26,6 +26,9 @@ that device's Loro peer id.
 - Loro peer id per device, per doc: the first 8 bytes of `BLAKE3("tinline-loro-peer-v1" ‖
   device key ‖ doc name)`, set before the device writes. A receiver rejects a batch carrying ops
   from any other peer id. This is what makes "who wrote this op" checkable.
+- Superseded for message content by P8/P9/P9b (section 7, "Signatures and writer IDs"): messages
+  are signed by the DID key, and devices write under a writer ID derived from the DID and a random
+  device ID, not from the device key (which is the network address and will rotate).
 
 ## 2. Phase 1: 1:1 chat
 
@@ -203,8 +206,8 @@ Blobs travel on the stock iroh-blobs ALPN of the same endpoint (iroh-blobs 0.103
 
 ### Validation (one verdict on every device)
 `Shard::apply_remote` imports into a scratch fork and rejects the whole batch (nothing stored,
-session closed) if: the blob holds ops of a peer id other than the signer's device peer id for
-that doc; ops are not self-contained; the doc has anything but `messages`; a message has an
+session closed) if: the blob holds ops under a peer id it may not use (below, "Signatures and
+writer IDs"; live: the signer's legacy peer id and the signer's proven writer IDs only); ops are not self-contained; the doc has anything but `messages`; a message has an
 unknown or ill-typed field; a new message's `author` is not the signer; `at` is outside the
 shard's day ±1 h (live pushes: also |at − now| < 24 h); an existing message changed `id`,
 `author`, `at`, `reply_to` or `file`; someone but the author changed `text/edited_at/deleted`;
@@ -256,6 +259,54 @@ updates + meta, acks, message counters, outbox markers, blob key index, read-per
   next GC run); the block already refuses later sessions.
 - No `proto` change; `crates/audio` untouched (voice encode/decode left to the apps).
 - Test knob: `P2P_CHAT_CLOCK_MS_OFFSET` shifts the chat clock (day-shard tests only).
+
+### Signatures and writer IDs (P8, P9, P9b; byte formats in docs/protocol.md)
+- **Dual signature (P8, U4 revised).** Every message version is signed by the author's **DID key**
+  and, for apps that predate that, still by the writing device key (the record's `sig`). The DID
+  signature rides in the commit message ("note") of the Loro change that writes the version, so the
+  record keeps its legacy shape and older apps keep working. A version that carries a DID signature
+  is judged by it alone (a valid device signature never rescues a bad one); a version without one
+  is judged by the device key against the attested keys. A restore changes the device key but not
+  the DID, so DID-signed messages verify on devices that never knew either key.
+- **Writer ID (P9, U16).** Devices write under `writer_id(DID, device ID)` as the Loro peer id; the
+  device ID is random per install (P9b: stored as `device_id` in `account.json`, new on create, link
+  and restore, kept when only the device key changes). Every note carries the device ID, every
+  receiver recomputes the hash; all replicas keep the sender's number. Compatibility: a device
+  writes under its legacy (device-key) peer id for a contact until every known device of that
+  contact has shown it judges writer IDs (`w9/`), because apps before P9 refuse other peer ids live.
+- **Writer bound into the DID signature (P9b, U17 a).** The DID signature also covers where the
+  version is written: the change's peer id, first counter and length. It proves "this DID wrote this
+  version as this change under this writer ID", and a genuine note copied onto another change does
+  not verify. Ops under a writer ID (remembered from earlier batches, ours, or claimed anywhere in
+  the doc) are accepted only from proven writer changes: the note's device ID hashes with the noted
+  message's author to the peer id, the version right after the change is the noted one and its DID
+  signature verifies for that change, and the change writes nothing but that message. Ops under any
+  other peer id: live, only the session's legacy peer id; in a vouched snapshot or own-device sync,
+  a legacy peer id derived from a device key of the author we know, or else only the contact's own
+  messages. So no one can place **our** messages, or copies of our notes, under a peer id we cannot
+  account for.
+- **Per-DID requirement (P9b, U17 b).** Once a DID has DID-signed a version (seen in any batch, or
+  written by us), its versions from then on need a DID signature: `req/{did}` keeps the earliest
+  version time seen DID-signed (a batch's own DID-signed versions count too), and a version at or
+  after it with only a device signature counts as unsigned: a live batch is refused, a new message
+  of the contact's in history stays hidden, anything else refuses the snapshot. Older versions
+  (fetched history from before the upgrade) are still judged by the device key. The flag outlives
+  removing the contact. Consequence: a device of the same account that is not yet upgraded is
+  refused by upgraded devices (contacts' and our own) for everything it writes after that time, and
+  if such messages sit unsent when it upgrades, its catch-up batch for that day is refused as a
+  whole (live batches are all-or-nothing). Users must upgrade every device.
+- **Limits.** (1) In a vouched snapshot, ops under a peer id we cannot account for are still
+  accepted when they write only the contact's own messages, because that is how the contact's
+  restored or never-met devices reach us (P1, P8; the first messages of every conversation are
+  written in compatibility mode). Such a peer id may be a writer ID of one of our siblings that this
+  device has not seen yet: the contact can occupy it with its own messages, and that sibling's real
+  ops under it are then lost on this device (refused once the writer ID is known here). Policy
+  options: share own devices' device IDs between them (account doc), or refuse unknown peer ids in
+  history once device lists are pushed to contacts (P4). (2) The ops of a proven change are not
+  signed one by one: a relaying contact could alter ops that leave the signed version unchanged.
+  (3) A holder of the device key (not the DID key) can still backdate a device-signed edit to before
+  the DID's cut-off time. (4) Same-DID copying by a holder of the recovery phrase is the accepted
+  shared-mnemonic limit.
 
 ## 8. Own devices (task 34g)
 

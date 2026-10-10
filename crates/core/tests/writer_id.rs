@@ -195,3 +195,28 @@ fn a_restore_makes_a_new_writer_id() {
     eventually(90, "A holds m2", || text_of(&a, &b.did, &m2).is_some());
     assert_eq!(creator(&a, &b.did, &m2), after);
 }
+
+// KIND: invariant (P9b)
+// The writer ID is tied to the install's device ID, not to the device key: replacing the device
+// key on disk without a new install (what endpoint rotation will do) keeps the writer ID, and
+// new content stays under it on the contact's side. A restore still makes a new one
+// (`a_restore_makes_a_new_writer_id`).
+#[test]
+fn a_new_device_key_without_a_new_install_keeps_the_writer_id() {
+    let mut a = peer("wid-ka");
+    let b = peer("wid-kb");
+    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    let m1 = a.node.send_text(b.did.clone(), "m1".into(), None).unwrap().id;
+    eventually(60, "B holds m1", || text_of(&b, &a.did, &m1).is_some());
+    let r1 = b.node.send_text(a.did.clone(), "r1".into(), None).unwrap().id;
+    eventually(60, "A holds r1", || text_of(&a, &b.did, &r1).is_some());
+    let (wa, key) = (a.node.writer_id_for_test().unwrap(), a.node.device_key_for_test().unwrap());
+    a.node.rotate_device_key_on_disk_for_test().unwrap();
+    restart(&mut a);
+    eventually(20, "A's chat store is open", || a.node.writer_id_for_test().is_some());
+    assert_ne!(a.node.device_key_for_test().unwrap(), key, "the device key changed");
+    assert_eq!(a.node.writer_id_for_test(), Some(wa), "the writer ID did not");
+    let m2 = a.node.send_text(b.did.clone(), "m2: new device key".into(), None).unwrap().id;
+    eventually(90, "B holds m2", || text_of(&b, &a.did, &m2).is_some());
+    assert_eq!(creator(&b, &a.did, &m2), wa);
+}

@@ -15,9 +15,9 @@
 //! pb/{pair}/{hash}               empty      the blobs a conversation uses (for deletion)
 //! snapcache/{pair}/{day}         SnapRef    a snapshot blob we made for a peer's history request
 //! set/auto_download              u64 BE
-//! set/writer                     32+32      P9: (device key it was made under, device value)
 //! wid/{writer id hex}            empty      a peer id seen proven as a writer ID (any doc)
 //! w9/{device hex}                empty      that contact device sent a note with a device value
+//! req/{did}                      i64 BE     P9b: that DID DID-signs; earliest version time seen
 //! ```
 
 use serde::{Deserialize, Serialize};
@@ -395,20 +395,27 @@ impl ChatStore {
 
     // ---- writer IDs (P9) --------------------------------------------------------------------
 
-    /// This install's device value for the account, made (randomly) on first use. It is kept
-    /// with the device key it was made under: a restore, the only thing that gives an existing
-    /// account directory a new device key, is a new install of the device and gets a new value.
-    /// The value is never derived from that key.
-    pub fn device_value(&self, device: &[u8; 32]) -> Result<[u8; 32], Error> {
-        if let Some(b) = self.db.get("set/writer").map_err(io)?
-            && b.len() == 64
-            && b[..32] == device[..]
-        {
-            return Ok(b[32..].try_into().expect("32 bytes"));
+    /// DIDs that DID-sign their messages (U17 b), with the earliest version time seen signed so
+    /// (`Ctx::did_since`).
+    pub fn did_since(&self, dids: &[&str]) -> Vec<(String, i64)> {
+        dids.iter()
+            .filter_map(|d| {
+                let b = self.db.get(&format!("req/{d}")).ok().flatten()?;
+                Some((d.to_string(), i64::from_be_bytes(b.try_into().ok()?)))
+            })
+            .collect()
+    }
+
+    /// Ops recording that `did` DID-signs from `t` on, if that is earlier than what we hold.
+    pub fn did_since_ops(&self, signed: &[(String, i64)]) -> Result<Vec<Op>, Error> {
+        let mut ops = Vec::new();
+        for (did, t) in signed {
+            let held = self.did_since(&[did]).first().map(|(_, h)| *h);
+            if held.is_none_or(|h| *t < h) {
+                ops.push(self.db.put_op(&format!("req/{did}"), &t.to_be_bytes()).map_err(io)?);
+            }
         }
-        let v = super::doc::new_device_value();
-        self.db.put("set/writer", &[&device[..], &v[..]].concat()).map_err(io)?;
-        Ok(v)
+        Ok(ops)
     }
 
     /// Every peer id seen proven as a writer ID.

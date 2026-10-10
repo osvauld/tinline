@@ -759,6 +759,7 @@ impl Node {
                     did: id.did().to_string(),
                     device_public,
                     vault,
+                    device_id: Some(crate::store::new_device_id()),
                 });
                 let store = s.acct.as_ref().ok_or(Error::NoIdentity)?.store.clone();
                 // The vault first: if we die before the state is sealed, the JSON is still
@@ -1322,6 +1323,8 @@ impl Node {
             did: did.clone(),
             device_public: me.device,
             vault,
+            // A restore over an existing directory is a new install too: new device ID, new writer ID.
+            device_id: Some(crate::store::new_device_id()),
         });
         // Without a passphrase nothing is written until the platform has saved the key.
         let acct = if durable {
@@ -1425,6 +1428,22 @@ impl Node {
     #[doc(hidden)]
     pub fn fail_next_writes(&self, n: u32) {
         self.inner.fail_writes.store(n, Ordering::SeqCst);
+    }
+
+    /// For tests: replaces this install's device key on disk, as endpoint rotation will (the
+    /// same install: same device ID, data key and passphrase). Takes effect on the next unlock
+    /// (restart the node).
+    #[doc(hidden)]
+    pub fn rotate_device_key_on_disk_for_test(&self) -> Result<(), Error> {
+        let me = self.inner.me()?;
+        let s = self.inner.shared.lock();
+        let Some(Disk::V2(cur)) = s.disk.clone() else { return Err(Error::NoIdentity) };
+        let dek = s.dek.clone().ok_or(Error::Locked)?;
+        let device_secret = proto::new_device_secret();
+        let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
+        let vault = vault::reseal(&cur.vault, &dek, &secrets)?;
+        let disk = Disk::V2(ProfileV2 { device_public: proto::device_public(&device_secret), vault, ..cur });
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)
     }
 
     /// For tests: while on, this node writes chat messages (and edits, deletes) the way an app

@@ -63,7 +63,7 @@ pub struct ChatCore {
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
     pub(crate) presence: super::presence::Presence,
-    /// This install's device value for the account (P9, `ChatStore::device_value`).
+    /// This install's device ID (U16 device value; `ProfileV2::device_id`, P9b).
     value: [u8; 32],
     /// Our writer ID: `writer_id(our DID, value)`, the Loro peer id we write chat docs with.
     pub(crate) wid: u64,
@@ -148,10 +148,10 @@ impl Inner {
 
     /// Opens the sealed chat store; called whenever the data key becomes available.
     pub(crate) fn chat_open(self: &Arc<Self>) {
-        let (dek, phrase, device, did) = {
+        let (dek, phrase, did) = {
             let s = self.shared.lock();
             match (s.dek.as_ref(), s.me.as_ref()) {
-                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.device, me.id.did().to_string()),
+                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.id.did().to_string()),
                 _ => return,
             }
         };
@@ -178,10 +178,10 @@ impl Inner {
             }
         };
         let store = ChatStore::new(sealed);
-        let value = match store.device_value(&device) {
+        let value = match self.device_id() {
             Ok(v) => v,
             Err(e) => {
-                tracing::warn!("chat store: device value: {e}");
+                tracing::warn!("chat store: device id: {e}");
                 return;
             }
         };
@@ -202,6 +202,22 @@ impl Inner {
             wid: writer_id(&did, &value),
         });
         *self.chat.lock() = Some(core);
+    }
+
+    /// This install's device ID (`ProfileV2::device_id`, the U16 device value); a profile from
+    /// before P9b gets one here, once.
+    fn device_id(&self) -> Result<[u8; 32], Error> {
+        let mut s = self.shared.lock();
+        let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
+        if let Some(i) = p.device_id_bytes() {
+            return Ok(i);
+        }
+        let mut p = p.clone();
+        p.device_id = Some(crate::store::new_device_id());
+        let disk = crate::store::Disk::V2(p.clone());
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
+        s.disk = Some(disk);
+        p.device_id_bytes().ok_or(Error::NoIdentity)
     }
 
     pub(crate) async fn chat_close(self: &Arc<Self>) {
@@ -837,6 +853,7 @@ impl Inner {
                 keys: vec![(sess.did.clone(), sess.device), (me.id.did().to_string(), me.device)],
                 hide_unverified: None,
                 known_writers: core.store.known_writers()?,
+                did_since: core.store.did_since(&[&sess.did, me.id.did()]),
             };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
@@ -1074,6 +1091,7 @@ impl Inner {
             ops.extend(fo);
             let (cops, conv) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, true)])?;
             ops.extend(cops);
+            ops.extend(self.chat_own_did_signed_ops(&core, &me, version_time(&rec))?);
             self.chat_persist(&core, &pair, shard, &update, ops)?;
             conv
         };
@@ -1116,11 +1134,21 @@ impl Inner {
         !devices.is_empty() && devices.iter().all(|d| core.store.is_p9_device(d))
     }
 
-    /// Remembers the writer IDs an accepted batch proved (`Ctx::known_writers`) and, if given,
-    /// that a contact device judges writer IDs.
+    /// We DID-signed a version of ours at time `t` (unless this node writes as an app from
+    /// before P8): from then on our own DID's versions need a DID signature here (U17 b).
+    fn chat_own_did_signed_ops(&self, core: &ChatCore, me: &Me, t: i64) -> Result<Vec<storage::Op>, Error> {
+        if self.legacy_msg_sigs.load(Ordering::SeqCst) {
+            return Ok(Vec::new());
+        }
+        core.store.did_since_ops(&[(me.id.did().to_string(), t)])
+    }
+
+    /// Remembers the writer IDs an accepted batch proved (`Ctx::known_writers`), the DIDs it
+    /// showed DID-signing (`Ctx::did_since`) and, if given, that a contact device judges writer
+    /// IDs.
     pub(crate) fn chat_note_writers(&self, core: &ChatCore, applied: &Applied, p9_device: Option<[u8; 32]>) -> Result<(), Error> {
         let known = if applied.writers.is_empty() { Vec::new() } else { core.store.known_writers()? };
-        let mut ops = Vec::new();
+        let mut ops = core.store.did_since_ops(&applied.did_signed)?;
         for w in applied.writers.iter().filter(|w| !known.contains(w)) {
             ops.push(core.store.put_writer_op(*w)?);
         }
@@ -1175,6 +1203,7 @@ impl Inner {
             let (cops, conv) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, false)])?;
             let mut ops = ops;
             ops.extend(cops);
+            ops.extend(self.chat_own_did_signed_ops(&core, &me, version_time(&rec))?);
             self.chat_persist(&core, &pair, shard, &update, ops)?;
             (rec, conv)
         };
@@ -1902,6 +1931,7 @@ impl Inner {
             keys,
             hide_unverified: Some(sess.did.clone()),
             known_writers: core.store.known_writers()?,
+            did_since: core.store.did_since(&[&sess.did, me.id.did()]),
         };
         let applied = shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
         self.chat_note_writers(core, &applied, None)?;
