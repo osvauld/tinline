@@ -55,7 +55,14 @@ impl Inner {
             return Some(me.id.did().to_string());
         }
         let s = self.shared.lock();
-        s.state.contacts.iter().find(|c| pair_id(me.id.did(), &c.did) == pair && !s.state.blocked.contains(&c.did)).map(|c| c.did.clone())
+        // Blocked either way, the history is kept (U19/U20), so own devices keep syncing it.
+        s.state
+            .contacts
+            .iter()
+            .map(|c| &c.did)
+            .chain(s.state.notices.keys())
+            .find(|did| pair_id(me.id.did(), did) == pair)
+            .cloned()
     }
 
     /// Marks `name` (a doc, or `READ_MARK`) as changed for every own-device session and wakes them.

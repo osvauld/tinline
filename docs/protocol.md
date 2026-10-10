@@ -228,7 +228,8 @@ sealed in `account.redb` under `sync/account`, with maps:
 |---|---|---|
 | `devices/<device>` | `{att, label, removed, relay}` | field LWW; `removed` is sticky (OR) |
 | `contacts/<did>` | `{rec, alias, verified}`; `rec` = name, devices, device_list, grant, added_at | alias/verified LWW; `rec`: name LWW, newer signed device list wins (S4 reset applies), grant that outlives, max added_at |
-| `tomb/<did>` | removal time (ms) | a contact is alive iff `added_at*1000 > tomb`: removal beats stale edits; a later ticket scan re-adds (and lifts the block on every device); same-second ties go to the removal |
+| `sent/<did>` | our latest signed block/unblock notice to `<did>` (SignedBlob JSON) | verified on read; highest `at` wins; `<did>` is blocked iff that notice is a block (see "Blocking") |
+| `notices/<did>` | `{notice, name, blocked, at}`: the latest notice `<did>` signed to us | verified on read (`to` = our DID, `from` = `<did>`); highest `at` wins; a block deletes the contact entry for `<did>` if `added_at*1000 <= at` (deletion request) |
 | `redeemed/<nonce>`, `revoked/<id>` | `"1"` | union, never shrink |
 | `calls/<call_id>` | CallRecord JSON | written by builds before the calls doc; no longer read |
 
@@ -239,7 +240,7 @@ the name. On the first open it is seeded from the local call log.
 
 | map | entry | merge |
 |---|---|---|
-| `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept; calls with a removed (blocked) contact are dropped |
+| `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept; calls with blocked contacts are kept |
 
 `verified` is stored with the contact's device-list `seq`; it counts only against a device set at
 least as new as the receiver's (S4). Never synced: device secret, DEK, passphrase, availability,
@@ -365,24 +366,77 @@ and close the session.
 | Grant `holder == attested DID` | A stolen grant presented by someone else |
 | Grant `iss == me` | Grants minted by third parties |
 | Revoked set | Cutting off a contact or a leaked grant |
-| Contact check | A valid grant surviving after the contact was removed |
+| Contact check | A valid grant of someone who is no longer a contact |
+| Block check (signed notice) | A blocked contact's valid grant; a forged, misaddressed or replayed notice (refused, nothing changes) |
 
-## Removing a contact (there is no revocation yet)
+## Blocking (P5; U5 revised, U19, U20, U23)
+
+There is no Remove for a contact: the contact action is Block (`Node::block`, `unblock`;
+`remove_contact` is an alias of `block` until the apps switch). A block keeps the contact, the
+chat history and the call history, and is visible to the blocked person.
+
+**Notice.** `proto::sign_block_notice` signs, with the DID key and the domain
+`osvauld/p2p/block/v1\0`, the JSON claim
+
+```text
+BlockNotice { v: 1, from: <blocker DID>, to: <blocked DID>, blocked: bool, at: <unix ms> }
+```
+
+as a `SignedBlob` (base64url payload + signature, like grants). `blocked: false` is an unblock.
+`at` is strictly increasing per (from, to). `verify_block_notice(blob, me)` checks the signature
+under the DID named in `from` and `to == me`; the receiver then keeps it only if its `at` is above
+the notice it holds from that DID (a replayed or older notice changes nothing; an unblock from
+someone whose block we never held is ignored). Every block notice is also a **deletion request**
+(U20, always sent): the receiving app deletes its contact entry for `from` (address, grant, device
+list) if it was added before `at`, and keeps the conversation read-only
+(`block::apply_block_deletion_request`). Not enforceable against modified builds.
+
+**Wire.** On the call ALPN (`osvauld/p2p/0`): `Msg::Notice { notice }` and `Msg::NoticeTaken`.
+
+- Delivery: the blocking device dials every device of the contact, sends `Notice` as the first
+  message and waits for `NoticeTaken` (also sent for a valid notice already held, so it stops).
+  Untaken notices sit in a local outbox, retried after 2, 5, 15, 30, then every 60 s while online,
+  and again at start. Exactly one notice is signed per block; own devices never sign their own.
+- Refusal (blocker side, every own device, from the synced notice): a `CallHello` or
+  `ContactHello` that verifies under a blocked DID is answered with `Notice` instead of `Ringing`
+  / `Welcome` (never rings, no call record); during a call, blocking sends `Notice` and ends the
+  call. On `tinline/chat/2` the listener answers a blocked DID's `Auth` with
+  `ChatMsg::Notice { notice }` and closes; no session, so no sync, push or history request.
+  Blobs are not served to a blocked DID.
+- Reading a refusal: a `Notice` that verifies as a block from the peer we dialled ends the call
+  with `blocked`, fails `add_contact` / chat dials with `Rejected("blocked")`, and is taken like a
+  delivered one.
+
+**Blocked side (our app enforces, U20 layer 1).** While it holds a block from a DID: `call` ends at
+once with `blocked` without dialling; `send_text` / `send_file` / `edit_message` /
+`delete_message` / `fetch_older_history` fail with `Rejected("blocked")`; no chat retries; our
+unacknowledged messages report `not_delivered_reason = "blocked"`. `block_state(did).blocked_me`
+carries the verified notice for "<name> blocked you"; `chats()` keeps listing the conversation.
+**Blocker side (U20 layer 2):** the refusals above hold for a build that ignores the notice.
+
+**Own devices.** `sent/` and `notices/` sync in the account doc (both verified on read), so a
+block made on one device is refused by all, and a notice received by one device is honoured by
+all (including the deletion request).
+
+**Unblock.** Signs a newer notice with `blocked: false`, delivered the same way. The other app
+takes it even though it no longer has us as a contact (it holds our block) and clears "blocked
+you"; messaging resumes only after they add us again (ticket/QR), since their entry was deleted.
+Scanning a blocked contact's ticket ourselves unblocks them first.
 
 Grants carry a random 16-byte id and `accept_call_hello` takes a revoked-id set, but the core
-never writes to that set: no grant is revoked individually today. Removing a contact is a local
-block instead: the contact is dropped, their DID goes on a blocked list, and the grant we gave
-them is no longer honoured because calls from a blocked DID are refused with the same generic
-"not accepted" as any other failure (so they learn nothing). The block is lifted only when *we*
-add them again by scanning their ticket; a ticket of ours that they scan does not lift it.
+never writes to that set: no grant is revoked individually (separate message/call tokens: P6).
 Grants are long-lived (a year) and renewed on every answered call; `renewed_grant` in `Accept`
 replaces the stored grant only if it is validly signed by the callee for us and expires later.
 Tickets are single-use via the redeemed-nonce set and also expire.
 
+Not in P5: blocking does not rotate any endpoint (U5) and changes no group membership; there is
+no attempt counter yet ("tried to message you N times"); the call ALPN was not bumped for the new
+messages (an older app fails to decode them, U18).
+
 ## Tickets in the core
 
 - Only the one ticket the node currently hands out can be redeemed (it remembers its nonce).
-  Redeeming it, `set_name`, `remove_contact` and `reset_ticket` all drop it; the next `my_ticket`
+  Redeeming it, `set_name`, `block` and `reset_ticket` all drop it; the next `my_ticket`
   mints a fresh one. A leaked or old ticket is dead even if its nonce was never spent.
 - The inviter makes the new contact, the spent nonce and the dropped ticket durable in one
   write (sealed account store) BEFORE it sends `ContactWelcome`; if that write fails it sends
@@ -404,7 +458,7 @@ Tickets are single-use via the redeemed-nonce set and also expire.
   1.5 s without media `CallStats.reconnecting` is true (the call is not over yet).
 - Calls are logged to `calls.json` (last 500, newest first; `recent_calls`, `calls_with`).
   The log is written before `Ended` is delivered, so the UI re-reads it on `on_call_state`
-  `Ended`. Removing a contact deletes their entries.
+  `Ended`. A block keeps their entries.
 - Safety number: per party, SHA-512 over `"tinline-safety-v1" || signing_pk`, then 5200 rounds
   of `H = SHA-512(H || signing_pk)`; the first 30 bytes give 6 groups of 5 bytes, each read as a
   big-endian integer mod 100000 and zero-padded to 5 digits. The two 30-digit halves are
@@ -423,13 +477,14 @@ Tickets are single-use via the redeemed-nonce set and also expire.
 
 | Reason | Meaning |
 |---|---|
-| `hangup_local` | Active call ended by us (also: we locked/removed the contact mid-call) |
+| `hangup_local` | Active call ended by us (also: we locked mid-call) |
 | `hangup_remote` | Active call ended by them |
 | `declined` | Caller's view: the callee (any of its devices) declined |
 | `declined_local` | Callee's view: we declined (not a missed call) |
 | `cancelled` | Callee's view: the caller gave up (`Hangup` or `Cancel{caller_hangup}`, or the link died) before we answered: missed. Caller's view: we hung up before they answered |
 | `no_answer` | Rang for 60 s (30 s for a call waiting over another call), nobody answered (either side; missed on the callee) |
-| `unreachable` | Caller's view: could not connect, or they refused (offline, blocked, or unavailable) |
+| `unreachable` | Caller's view: could not connect, or they refused (offline, unavailable, or not a contact there) |
+| `blocked` | They block us (their signed notice, held or just received), or we blocked them mid-call; ends at once, never rings |
 | `connection_lost` | Active call lost the connection or media for 30 s |
 | `busy` | Caller's view: every device we reached declined while in another call, or was already handling two calls. Callee's history: missed while busy |
 | `unavailable` | History only (callee): turned away while unavailable; `missed` is false; never an `Ended` event |

@@ -997,3 +997,44 @@ fn call_grant_and_self_sync_do_not_cross() {
         Err(Error::WrongIssuer)
     );
 }
+
+// ---- block notices -------------------------------------------------------------------
+
+#[test]
+fn block_notice_signs_and_verifies_for_its_addressee() {
+    let (a, b) = (peer(), peer());
+    let n = sign_block_notice(&a.id, b.id.did(), true, 1_000);
+    let claim = verify_block_notice(&n, b.id.did()).unwrap();
+    assert_eq!((claim.from.as_str(), claim.to.as_str(), claim.blocked, claim.at), (a.id.did(), b.id.did(), true, 1_000));
+    let u = sign_block_notice(&a.id, b.id.did(), false, 1_001);
+    assert!(!verify_block_notice(&u, b.id.did()).unwrap().blocked);
+    // It travels as a call-protocol frame.
+    let m = Msg::Notice { notice: n.clone() };
+    let (back, _) = decode_frame(&encode_frame(&m)).unwrap().unwrap();
+    assert_eq!(back, m);
+}
+
+#[test]
+fn forged_tampered_or_misaddressed_block_notices_are_refused() {
+    let (a, b, x) = (peer(), peer(), peer());
+    // Claims to be from A, signed by X.
+    let forged = forge_block_notice_for_test(&x.id, a.id.did(), b.id.did(), true, 1_000);
+    assert_eq!(verify_block_notice(&forged, b.id.did()), Err(Error::BadSignature));
+    // Control: the same helper signed by A itself is genuine.
+    let genuine = forge_block_notice_for_test(&a.id, a.id.did(), b.id.did(), true, 1_000);
+    assert!(verify_block_notice(&genuine, b.id.did()).is_ok());
+    // Addressed to someone else: B must not take it (nor X take B's).
+    assert_eq!(verify_block_notice(&genuine, x.id.did()), Err(Error::WrongHolder));
+    // A payload edit (block -> unblock, or a later `at`) breaks the signature.
+    let mut tampered = genuine.clone();
+    let mut claim: BlockNotice = serde_json::from_slice(&dec(&tampered.payload).unwrap()).unwrap();
+    claim.at += 1;
+    tampered.payload = enc(serde_json::to_vec(&claim).unwrap());
+    assert_eq!(verify_block_notice(&tampered, b.id.did()), Err(Error::BadSignature));
+    // Another signed object of A's (a grant for B) is not a notice: own signing domain.
+    let grant = issue_grant(&a.id, b.id.did(), T0, GTTL);
+    assert!(verify_block_notice(&grant, b.id.did()).is_err());
+    // A notice to oneself is meaningless.
+    let selfie = sign_block_notice(&a.id, a.id.did(), true, 5);
+    assert!(verify_block_notice(&selfie, a.id.did()).is_err());
+}

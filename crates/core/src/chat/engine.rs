@@ -325,7 +325,7 @@ impl Inner {
                     break;
                 }
                 let Ok(me) = this.me() else { break };
-                if this.shared.lock().endpoint.is_none() || !this.shared.lock().state.contacts.iter().any(|c| c.did == did) {
+                if this.shared.lock().endpoint.is_none() || !this.chat_may_dial(&did) {
                     break;
                 }
                 let permit = core.dial_sem.clone().acquire_owned().await;
@@ -358,16 +358,21 @@ impl Inner {
     }
 
     /// Verifies a peer's `Auth` like a call hello: attested device = the connection's key, a
-    /// grant we issued them, and they are a contact who is not blocked. Returns their DID.
+    /// grant we issued them, and they are a contact. Returns their DID (blocked or not: the
+    /// caller answers a blocked one with our notice).
     fn verify_auth(&self, me: &Me, auth: &ChatMsg, remote: [u8; 32]) -> Result<(String, Option<String>), Error> {
         let ChatMsg::Auth { attestation, grant, relay } = auth else { return Err(Error::Protocol("expected Auth".into())) };
         let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None };
         let s = self.shared.lock();
         let contacts = &s.state.contacts;
-        let who = proto::accept_call_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| {
-            contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did)
-        })?;
+        let who = proto::accept_call_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| contacts.iter().any(|c| c.did == did))?;
         Ok((who.did, relay_hint(relay)))
+    }
+
+    /// Whether we keep a session with `did` going: a contact that neither side blocks.
+    fn chat_may_dial(&self, did: &str) -> bool {
+        let s = self.shared.lock();
+        s.state.contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did) && !crate::block::blocked_me(&s.state, did)
     }
 
     async fn chat_dial(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, did: &str) -> Result<(), Error> {
@@ -432,13 +437,36 @@ impl Inner {
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::Protocol("peer closed".into()))?;
-            self.verify_auth(me, &reply, remote)?
+            if let ChatMsg::Notice { notice } = &reply {
+                // They block us: their notice instead of their Auth.
+                let did = self.shared.lock().state.contacts.iter().find(|c| c.has_device(&remote)).map(|c| c.did.clone());
+                if let Some(did) = did
+                    && self.is_block_from(&did, notice)
+                {
+                    let _ = self.take_notice(notice);
+                    return Err(Error::Rejected(crate::BLOCKED.into()));
+                }
+                return Err(Error::Protocol("unexpected notice".into()));
+            }
+            let (did, hint) = self.verify_auth(me, &reply, remote)?;
+            if self.shared.lock().state.blocked.contains(&did) {
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
+            (did, hint)
         } else {
             let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::Protocol("peer closed before auth".into()))?;
             let (did, hint) = self.verify_auth(me, &first, remote)?;
+            // A DID we block gets our notice instead of our Auth, then the connection ends.
+            if let Some(notice) = self.refusal_for(&did) {
+                self.log("chat refused: blocked");
+                writer.send(&ChatMsg::Notice { notice }).await?;
+                let _ = writer.0.finish();
+                let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
             let grant = {
                 let s = self.shared.lock();
                 s.state.contacts.iter().find(|c| c.did == did).map(|c| c.grant_from_them.clone())
@@ -699,6 +727,7 @@ impl Inner {
                 }
                 Ok(())
             }
+            ChatMsg::Notice { .. } => Err(Error::Protocol("unexpected notice".into())),
         }
     }
 
@@ -1032,14 +1061,25 @@ impl Inner {
         self.shared.lock().me.as_ref().is_some_and(|m| m.id.did() == did)
     }
 
-    /// A contact, or ourselves (the "You" conversation).
-    fn chat_contact(&self, did: &str) -> Result<(), Error> {
+    /// Whose conversation we may read: a contact, ourselves (the "You" conversation), or someone
+    /// whose notice we hold (they blocked us and their contact entry went, U20; the history
+    /// stays, read-only). With `write`, only a contact that neither side blocks, or ourselves.
+    fn chat_contact(&self, did: &str, write: bool) -> Result<(), Error> {
         let s = self.shared.lock();
-        if s.me.as_ref().is_some_and(|m| m.id.did() == did) || s.state.contacts.iter().any(|c| c.did == did) {
-            Ok(())
-        } else {
-            Err(Error::NotFound)
+        if s.me.as_ref().is_some_and(|m| m.id.did() == did) {
+            return Ok(());
         }
+        let contact = s.state.contacts.iter().any(|c| c.did == did);
+        if !write {
+            return if contact || s.state.notices.contains_key(did) { Ok(()) } else { Err(Error::NotFound) };
+        }
+        if crate::block::blocked_me(&s.state, did) {
+            return Err(Error::Rejected(crate::BLOCKED.into()));
+        }
+        if s.state.blocked.contains(did) {
+            return Err(Error::Protocol("you blocked them; unblock first".into()));
+        }
+        if contact { Ok(()) } else { Err(Error::NotFound) }
     }
 
     /// Adds a message of ours to today's shard, persists it, tells the session (or dials).
@@ -1052,7 +1092,7 @@ impl Inner {
     ) -> Result<Message, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        self.chat_contact(did)?;
+        self.chat_contact(did, true)?;
         if text.len() > MAX_TEXT {
             return Err(Error::Protocol("message too long".into()));
         }
@@ -1110,7 +1150,7 @@ impl Inner {
     pub(crate) async fn chat_edit(self: &Arc<Self>, did: &str, id: &str, text: Option<String>) -> Result<Message, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        self.chat_contact(did)?;
+        self.chat_contact(did, true)?;
         let pair = pair_id(me.id.did(), did);
         let day = core.store.mi(&pair, id)?.ok_or(Error::NotFound)?;
         self.chat_shard(&core, &pair, &day).await?;
@@ -1210,8 +1250,7 @@ impl Inner {
             "You".to_string()
         } else {
             let s = self.shared.lock();
-            let c = s.state.contacts.iter().find(|c| c.did == conv.peer_did)?;
-            crate::node::display_name(c)
+            crate::block::known_name(&s.state, &conv.peer_did)?
         };
         let pair = pair_id(me.id.did(), &conv.peer_did);
         let (last_outgoing, last_delivery, last_activity, preview) = match &conv.last {
@@ -1230,7 +1269,13 @@ impl Inner {
     pub(crate) fn chat_list(&self) -> Result<Vec<Chat>, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        let mut dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
+        let mut dids: Vec<String> = {
+            let s = self.shared.lock();
+            let mut v: Vec<String> = s.state.contacts.iter().map(|c| c.did.clone()).collect();
+            // Kept, read-only conversations of people whose block deleted their contact entry.
+            v.extend(s.state.notices.keys().filter(|d| !s.state.contacts.iter().any(|c| &c.did == *d)).cloned());
+            v
+        };
         dids.push(me.id.did().to_string());
         let mut out = Vec::new();
         for did in dids {
@@ -1247,7 +1292,7 @@ impl Inner {
     pub(crate) async fn chat_day(self: &Arc<Self>, did: &str, day: Option<String>) -> Result<DayPage, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        self.chat_contact(did)?;
+        self.chat_contact(did, false)?;
         let pair = pair_id(me.id.did(), did);
         let days = core.store.shard_days(&pair)?;
         let mut with_msgs = Vec::new();
@@ -1706,7 +1751,7 @@ impl Inner {
         text: Option<String>,
         voice: Option<(u32, Vec<u8>)>,
     ) -> Result<Message, Error> {
-        self.chat_contact(did)?;
+        self.chat_contact(did, true)?;
         let meta = std::fs::metadata(&path)?;
         if !meta.is_file() {
             return Err(Error::Protocol("not a file".into()));
@@ -1796,12 +1841,21 @@ impl Inner {
     pub(crate) async fn chat_fetch_history(self: &Arc<Self>, did: &str, before: String) -> Result<u32, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        self.chat_contact(did)?;
+        self.chat_contact(did, false)?;
         if !day_valid(&before) {
             return Err(Error::Protocol("bad day".into()));
         }
         if self.is_self_did(did) {
             return Ok(0);
+        }
+        {
+            let s = self.shared.lock();
+            if crate::block::blocked_me(&s.state, did) {
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
+            if s.state.blocked.contains(did) || !s.state.contacts.iter().any(|c| c.did == did) {
+                return Err(Error::Protocol("not a contact you can ask".into()));
+            }
         }
         let ep_ready = self.endpoint().is_ok();
         if !ep_ready {
@@ -1970,11 +2024,9 @@ impl Inner {
 
     // ---- contact removal ---------------------------------------------------------------------------------
 
-    /// The conversation and its blobs go away on this device.
-    pub(crate) fn chat_purge(self: &Arc<Self>, did: &str) {
+    /// Ends every chat session with `did` (a block, either way).
+    pub(crate) fn chat_close_sessions(&self, did: &str) {
         let Ok(core) = self.chat_core() else { return };
-        let Ok(me) = self.me() else { return };
-        let pair = pair_id(me.id.did(), did);
         core.sessions.lock().retain(|_, s| {
             let hit = s.did == did;
             if hit {
@@ -1982,6 +2034,25 @@ impl Inner {
             }
             !hit
         });
+    }
+
+    /// Whether `id` is a message of ours to `did` that has not reached them.
+    pub(crate) fn chat_pending(&self, did: &str, id: &str) -> bool {
+        let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return false };
+        let pair = pair_id(me.id.did(), did);
+        match core.store.mi(&pair, id).ok().flatten() {
+            Some(day) => core.store.mo(&pair, &day, id).ok().flatten().is_some() && Self::chat_delivery(&core, &pair, &day, id) == DeliveryState::Pending,
+            None => false,
+        }
+    }
+
+    /// The conversation and its blobs go away on this device.
+    #[allow(dead_code)] // No caller since a block keeps the history (U19); see docs/chat.md.
+    pub(crate) fn chat_purge(self: &Arc<Self>, did: &str) {
+        let Ok(core) = self.chat_core() else { return };
+        let Ok(me) = self.me() else { return };
+        let pair = pair_id(me.id.did(), did);
+        self.chat_close_sessions(did);
         let hashes = {
             let mut shards = core.shards.lock();
             shards.retain(|(p, _), _| *p != pair);

@@ -42,6 +42,9 @@ pub enum ChatMsg {
     /// `ChatHistory`: days older than `before` that the peer holds, newest first.
     HistoryReq { before: String, limit: u32 },
     HistoryResp { days: Vec<HistDay> },
+    /// Instead of `Auth`, from a contact that blocks us: its DID-signed block notice
+    /// (`proto::sign_block_notice`); the connection ends after it.
+    Notice { notice: proto::SignedBlob },
 }
 
 fn sig_input(doc: &str, update: &[u8]) -> Vec<u8> {
