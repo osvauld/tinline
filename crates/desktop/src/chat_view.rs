@@ -179,13 +179,13 @@ impl App {
         }
     }
 
-    fn conn_text(&self, name: &str) -> String {
+    /// The contact's presence, not ours: "Connected" only while one of their devices is live.
+    fn conn_text(&self, did: &str) -> String {
         if !self.status.started {
             "Connecting\u{2026}".into()
-        } else if self.status.online {
+        } else if self.chat.online.contains(did) {
             "Connected".into()
         } else {
-            let _ = name;
             "Not connected \u{b7} messages wait until you\u{2019}re both online".into()
         }
     }
@@ -196,7 +196,7 @@ impl App {
         let who = button(
             row![
                 avatar(t, &name, &c.did, 40.0),
-                column![bold(name.clone(), 17.0, t.ink), tx(self.conn_text(&name), 13.0, if self.status.online { t.primary } else { t.ink2 })]
+                column![bold(name.clone(), 17.0, t.ink), tx(self.conn_text(&c.did), 13.0, if self.chat.online.contains(&c.did) { t.primary } else { t.ink2 })]
                     .spacing(1),
             ]
             .spacing(12)

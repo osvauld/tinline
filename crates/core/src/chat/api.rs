@@ -111,6 +111,9 @@ pub trait ChatEvents: Send + Sync {
     /// total == 0` means the transfer ended without completing (outgoing: the peer dropped or
     /// the link died, so leave "Sending"; incoming: cancelled).
     fn on_transfer_progress(&self, peer_did: String, hash: String, done: u64, total: u64, outgoing: bool);
+    /// The contact became reachable (one of their devices is live on a chat link) or stopped
+    /// being so. Ephemeral: nothing is stored; at start every contact is offline.
+    fn on_presence_changed(&self, peer_did: String, online: bool);
 }
 
 #[uniffi::export]
@@ -153,6 +156,17 @@ impl Node {
     pub fn delete_message(&self, peer_did: String, message_id: String) -> Result<Message, Error> {
         let inner = self.inner.clone();
         self.block_on(async move { inner.chat_edit(&peer_did, &message_id, None).await })?
+    }
+
+    /// Whether the contact is reachable right now (see `ChatEvents::on_presence_changed`).
+    pub fn contact_online(&self, peer_did: String) -> bool {
+        self.inner.presence_of(&peer_did)
+    }
+
+    /// A conversation was opened: connect to the contact if we are not already, so its
+    /// presence is known.
+    pub fn watch_presence(&self, peer_did: String) {
+        self.inner.presence_watch(&peer_did);
     }
 
     /// Zeroes the local unread counter (read receipts are not sent).

@@ -662,7 +662,7 @@ fn removing_a_contact_on_one_device_removes_the_conversation_on_the_other() {
     eventually(20, "b2 dropped the conversation", || {
         b2.node.chat_day(a.did.clone(), None).is_err() && b2.node.chats().unwrap().iter().all(|c| c.peer_did != a.did)
     });
-    assert!(!b2.node.has_chat_docs_for_test(&b2.did, &a.did));
+    eventually(20, "b2 deleted the docs", || !b2.node.has_chat_docs_for_test(&b2.did, &a.did));
     // The sync does not bring it back.
     b1.node.sync_now_for_test();
     std::thread::sleep(Duration::from_secs(3));
@@ -702,4 +702,37 @@ fn a_message_held_only_by_our_other_device_is_not_delivered() {
         let c = p.node.chats().unwrap().into_iter().find(|c| c.peer_did == a.did).unwrap();
         assert_eq!(c.last_delivery, DeliveryState::Delivered);
     }
+}
+
+#[test]
+fn presence_follows_the_contact_going_offline_and_back() {
+    let a = make_peer("p1-a");
+    let b = make_peer("p1-b");
+    connect(&a, &b);
+    a.node.watch_presence(b.did.clone());
+    eventually(40, "A sees B online", || a.node.contact_online(b.did.clone()));
+    eventually(40, "B sees A online", || b.node.contact_online(a.did.clone()));
+    b.node.stop();
+    eventually(40, "A sees B offline", || !a.node.contact_online(b.did.clone()));
+    online(&b.node);
+    a.node.watch_presence(b.did.clone());
+    eventually(60, "A sees B online again", || a.node.contact_online(b.did.clone()));
+}
+
+#[test]
+fn a_call_after_linking_reaches_the_other_device_from_the_calls_doc() {
+    let (a, b1, b2) = trio("cl");
+    b2.node.stop();
+    let call = a.node.call(b1.did.clone()).unwrap();
+    let id = incoming(&b1, 30);
+    assert_eq!(id, call.call_id);
+    b1.node.decline(id.clone()).unwrap();
+    ended(&b1, &id, 20);
+    // b2 was away for the call; it gets the record when it is back.
+    online(&b2.node);
+    b2.node.sync_now_for_test();
+    eventually(60, "b2 has the call", || b2.node.recent_calls(10).iter().any(|r| r.call_id == id));
+    // Removing the contact on b2 drops its calls on b1 as well.
+    b2.node.remove_contact(a.did.clone()).unwrap();
+    eventually(60, "b1 dropped the contact's calls", || !b1.node.recent_calls(10).iter().any(|r| r.peer_did == a.did));
 }

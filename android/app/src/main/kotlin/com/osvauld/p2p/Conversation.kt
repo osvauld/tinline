@@ -152,6 +152,9 @@ fun ConversationScreen(
         owner.lifecycle.addObserver(o)
         onDispose { owner.lifecycle.removeObserver(o); if (OpenChat.peer == peerDid) OpenChat.peer = null }
     }
+    LaunchedEffect(peerDid) {
+        withContext(Dispatchers.IO) { runCatching { source.watchPresence(peerDid) } }
+    }
     LaunchedEffect(peerDid, msgs.size) {
         withContext(Dispatchers.IO) { runCatching { source.markRead(peerDid); source.refresh() } }
     }

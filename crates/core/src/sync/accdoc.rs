@@ -1,5 +1,5 @@
 //! The account-wide Loro doc that own devices sync (`tinline/self/1`), and the merge rules
-//! between it and the working copy (`State` + call log).
+//! between it and the working copy (`State`). The call log is its own doc (`callsdoc.rs`).
 //!
 //! ```text
 //! devices/<device_text>  { att, label, removed, relay }   the registry
@@ -7,7 +7,7 @@
 //! tomb/<did>             unix ms the contact was removed (= blocked)
 //! redeemed/<nonce>       "1"                              set, never shrinks
 //! revoked/<grant id>     "1"                              set, never shrinks
-//! calls/<call_id>        CallRecord JSON                  one logical record per call
+//! calls/<call_id>        (written by older builds, no longer read: see `callsdoc.rs`)
 //! ```
 //!
 //! `State` stays the working copy. Every local write is flushed into the doc (`write_from`);
@@ -18,15 +18,17 @@
 
 use std::collections::{BTreeMap, HashSet};
 
-use loro::{Container, ExportMode, LoroDoc, LoroMap, LoroValue, ValueOrContainer, VersionVector};
+use std::ops::Deref;
+
+use loro::{Container, LoroMap, LoroValue, ValueOrContainer};
 use serde::{Deserialize, Serialize};
 
 use crate::node::{grant_outlives, merge_device_list};
-use crate::store::{CallRecord, ContactDevice, OwnDevice, State, StoredContact};
+use super::doc::{Doc, entries, field, io, text};
+use crate::store::{ContactDevice, OwnDevice, State, StoredContact};
 use crate::Error;
 
 pub const DOC_NAME: &str = "account";
-const MAX_HISTORY: usize = 500;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
 struct CRec {
@@ -44,17 +46,19 @@ struct Verified {
     seq: u64,
 }
 
-pub struct AccDoc {
-    doc: LoroDoc,
-    #[allow(dead_code)]
-    peer: u64,
+pub struct AccDoc(Doc);
+
+impl Deref for AccDoc {
+    type Target = Doc;
+    fn deref(&self) -> &Doc {
+        &self.0
+    }
 }
 
 #[derive(Default, Debug)]
 pub struct Changes {
     pub contacts: bool,
     pub devices: bool,
-    pub history: bool,
     /// Contacts the other device removed (their chats are purged here).
     pub removed: Vec<String>,
     /// Another device renamed this one.
@@ -70,30 +74,9 @@ pub struct Ctx<'a> {
     pub now_ms: i64,
 }
 
-fn io<E: std::fmt::Display>(e: E) -> Error {
-    Error::Io(e.to_string())
-}
 
-fn entries(v: &LoroValue) -> Vec<(String, &LoroValue)> {
-    match v {
-        LoroValue::Map(m) => m.iter().map(|(k, v)| (k.clone(), v)).collect(),
-        _ => Vec::new(),
-    }
-}
 
-fn field<'a>(v: &'a LoroValue, k: &str) -> Option<&'a LoroValue> {
-    match v {
-        LoroValue::Map(m) => m.get(k),
-        _ => None,
-    }
-}
 
-fn text(v: &LoroValue) -> Option<String> {
-    match v {
-        LoroValue::String(s) => Some(s.to_string()),
-        _ => None,
-    }
-}
 
 fn int(v: &LoroValue) -> Option<i64> {
     match v {
@@ -126,63 +109,19 @@ fn list_seq(did: &str, blob: &Option<proto::SignedBlob>) -> u64 {
     blob.as_ref().and_then(|b| proto::verify_device_list(b, did).ok()).map_or(0, |l| l.seq)
 }
 
-/// Which of two records of one call is the better account of it: one that was answered and
-/// has a duration beats "answered elsewhere"; ties by content, so every device picks the same.
-fn rank(r: &CallRecord) -> (bool, u32, bool, String) {
-    let elsewhere = r.reason.ends_with("_elsewhere");
-    (!elsewhere, r.duration_secs, !r.missed, serde_json::to_string(r).unwrap_or_default())
-}
-
 impl AccDoc {
     pub fn new(device: &[u8; 32]) -> Self {
-        let peer = crate::chat::doc::peer_id(device, DOC_NAME);
-        let doc = LoroDoc::new();
-        doc.set_peer_id(peer).expect("peer id");
-        Self { doc, peer }
+        Self(Doc::new(device, DOC_NAME))
     }
 
     pub fn load(device: &[u8; 32], snapshot: Option<&[u8]>) -> Result<Self, Error> {
-        let d = Self::new(device);
-        if let Some(b) = snapshot {
-            d.doc.import(b).map_err(io)?;
-            d.doc.set_peer_id(d.peer).expect("peer id");
-        }
-        Ok(d)
-    }
-
-    pub fn snapshot(&self) -> Vec<u8> {
-        self.doc.export(ExportMode::Snapshot).expect("snapshot export")
-    }
-
-    pub fn vv(&self) -> VersionVector {
-        self.doc.oplog_vv()
-    }
-
-    /// The ops the peer (at `theirs`) lacks; `None` if there are none.
-    pub fn export_since(&self, theirs: &VersionVector) -> Option<(Vec<u8>, VersionVector)> {
-        let mine = self.vv();
-        if mine.partial_cmp(theirs).is_some_and(|o| o != std::cmp::Ordering::Greater) {
-            return None;
-        }
-        let bytes = self.doc.export(ExportMode::updates(theirs)).ok()?;
-        Some((bytes, mine))
-    }
-
-    /// Imports a batch; whether the doc grew. A batch with ops whose dependencies are missing is
-    /// refused (nothing is applied).
-    pub fn import(&self, bytes: &[u8]) -> Result<bool, Error> {
-        let before = self.vv();
-        let status = self.doc.import(bytes).map_err(io)?;
-        if status.pending.is_some() {
-            return Err(Error::Protocol("update with missing dependencies".into()));
-        }
-        Ok(self.vv() != before)
+        Doc::load(device, DOC_NAME, snapshot).map(Self)
     }
 
     // ---- State -> doc -----------------------------------------------------------------
 
     /// Flushes the working copy into the doc; whether anything changed.
-    pub fn write_from(&self, st: &State, calls: &[CallRecord], ctx: &Ctx) -> Result<bool, Error> {
+    pub fn write_from(&self, st: &State, ctx: &Ctx) -> Result<bool, Error> {
         let before = self.vv();
 
         let devices = self.doc.get_map("devices");
@@ -247,33 +186,13 @@ impl AccDoc {
             }
         }
 
-        let cm = self.doc.get_map("calls");
-        let have: BTreeMap<String, CallRecord> = match cm.get_deep_value() {
-            LoroValue::Map(m) => m
-                .iter()
-                .filter_map(|(k, v)| Some((k.clone(), serde_json::from_str(&text(v)?).ok()?)))
-                .collect(),
-            _ => BTreeMap::new(),
-        };
-        let mine: HashSet<&str> = calls.iter().map(|c| c.call_id.as_str()).collect();
-        for r in calls {
-            if have.get(&r.call_id).is_none_or(|old| rank(r) > rank(old)) {
-                cm.insert(&r.call_id, serde_json::to_string(r).map_err(io)?).map_err(io)?;
-            }
-        }
-        for id in have.keys() {
-            if !mine.contains(id.as_str()) {
-                cm.delete(id).map_err(io)?;
-            }
-        }
-
         self.doc.commit();
         Ok(self.vv() != before)
     }
 
     // ---- doc -> State -----------------------------------------------------------------
 
-    pub fn read_into(&self, st: &mut State, calls: &mut Vec<CallRecord>, ctx: &Ctx) -> Changes {
+    pub fn read_into(&self, st: &mut State, ctx: &Ctx) -> Changes {
         let mut ch = Changes::default();
         let root = self.doc.get_deep_value();
         let sect = |n: &str| field(&root, n).map(entries).unwrap_or_default();
@@ -389,7 +308,6 @@ impl AccDoc {
         for did in gone {
             st.contacts.retain(|c| c.did != did);
             st.blocked.insert(did.clone());
-            calls.retain(|r| r.peer_did != did);
             ch.removed.push(did);
         }
         for did in tombs.keys() {
@@ -404,27 +322,6 @@ impl AccDoc {
         }
         ch.contacts = (serde_json::to_string(&st.contacts).unwrap_or_default(), st.blocked.clone()) != before || !ch.removed.is_empty();
 
-        // -- call history
-        let before = serde_json::to_string(&*calls).unwrap_or_default();
-        let mut by_id: BTreeMap<String, CallRecord> = calls.drain(..).map(|r| (r.call_id.clone(), r)).collect();
-        let removed_peers: HashSet<&String> = ch.removed.iter().collect();
-        for (id, v) in sect("calls") {
-            let Some(r) = text(v).and_then(|t| serde_json::from_str::<CallRecord>(&t).ok()) else { continue };
-            if r.call_id != id || removed_peers.contains(&r.peer_did) {
-                continue;
-            }
-            match by_id.get(&id) {
-                Some(mine) if rank(mine) >= rank(&r) => {}
-                _ => {
-                    by_id.insert(id, r);
-                }
-            }
-        }
-        let mut all: Vec<CallRecord> = by_id.into_values().collect();
-        all.sort_by(|a, b| b.started_at.cmp(&a.started_at).then_with(|| b.call_id.cmp(&a.call_id)));
-        all.truncate(MAX_HISTORY);
-        *calls = all;
-        ch.history = serde_json::to_string(&*calls).unwrap_or_default() != before;
         ch
     }
 }

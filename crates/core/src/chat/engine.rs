@@ -62,6 +62,7 @@ pub struct ChatCore {
     pulling: Mutex<HashSet<(String, String)>>,
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
+    pub(crate) presence: super::presence::Presence,
 }
 
 pub enum Cmd {
@@ -79,6 +80,8 @@ pub struct Session {
     tx: mpsc::UnboundedSender<Cmd>,
     peer_vv: Mutex<HashMap<String, VersionVector>>,
     hist: Mutex<Option<oneshot::Sender<Vec<HistDay>>>>,
+    /// What this contact device last said about itself (presence).
+    pub(crate) presence: loro::awareness::EphemeralStore,
 }
 
 /// `dm/{pair}/{day}` -> day, if it names the conversation `pair`. A contact's session can only
@@ -182,6 +185,7 @@ impl Inner {
             pulling: Default::default(),
             dial_sem: Arc::new(Semaphore::new(4)),
             next_session: AtomicU64::new(1),
+            presence: super::presence::Presence::new(),
         });
         *self.chat.lock() = Some(core);
     }
@@ -271,7 +275,7 @@ impl Inner {
         core.sessions.lock().values().find(|s| s.did == did).cloned()
     }
 
-    fn chat_sessions_of(&self, core: &ChatCore, did: &str) -> Vec<Arc<Session>> {
+    pub(crate) fn chat_sessions_of(&self, core: &ChatCore, did: &str) -> Vec<Arc<Session>> {
         core.sessions.lock().values().filter(|s| s.did == did).cloned().collect()
     }
 
@@ -420,6 +424,7 @@ impl Inner {
             tx,
             peer_vv: Default::default(),
             hist: Default::default(),
+            presence: super::presence::session_store(),
         });
         // One session per contact: if both sides dialled at once, the one dialled by the lower
         // device key survives on both ends.
@@ -495,8 +500,17 @@ impl Inner {
                 Err(e) => break 'run e.to_string(),
             }
             self.chat_resume_downloads(&core, &sess.did);
+            let mut heartbeat = tokio::time::interval(super::presence::HEARTBEAT);
             loop {
                 tokio::select! {
+                    _ = heartbeat.tick() => {
+                        self.presence_send(&core, &conn);
+                        self.presence_update(&core, &sess.did);
+                    }
+                    d = conn.read_datagram() => match d {
+                        Ok(d) => self.presence_receive(&core, &sess, &d),
+                        Err(_) => break 'run "connection lost".into(),
+                    },
                     m = reader.recv() => match m {
                         Ok(Some(m)) => {
                             if let Err(e) = self.chat_handle(&core, &sess, m, &mut writer).await {
@@ -540,6 +554,7 @@ impl Inner {
             }
         }
         sess.hist.lock().take();
+        self.presence_update(&core, &sess.did);
         let _ = writer.0.finish();
         let c2 = conn.clone();
         tokio::spawn(async move {
@@ -692,7 +707,14 @@ impl Inner {
 
     /// Persists a shard change: the update (or a fresh snapshot every so often), the meta, and
     /// `extra` ops, in one transaction. Call with the shard cache locked.
+    /// Callers hold `core.shards`, as `chat_purge` does while it deletes: a write racing a
+    /// contact's removal either lands before the purge (and is deleted with the rest) or finds
+    /// the conversation gone, so a removed conversation is never written back.
     pub(crate) fn chat_persist(&self, core: &ChatCore, pair: &str, shard: &Shard, update: &[u8], mut extra: Vec<Op>) -> Result<(), Error> {
+        let me = self.me()?;
+        if self.pair_owner(&me, pair).is_none() {
+            return Err(Error::NotFound);
+        }
         let day = shard.day.as_str();
         let mut meta = core.store.shard_meta(pair, day)?.unwrap_or_default();
         meta.vv = shard.vv().encode();
@@ -1917,11 +1939,15 @@ impl Inner {
             }
             !hit
         });
-        core.shards.lock().retain(|(p, _), _| *p != pair);
-        let hashes = core.store.conv_blobs(&pair).unwrap_or_default();
-        if let Err(e) = core.store.delete_conversation(&pair, &hashes) {
-            tracing::warn!("deleting conversation: {e}");
-        }
+        let hashes = {
+            let mut shards = core.shards.lock();
+            shards.retain(|(p, _), _| *p != pair);
+            let hashes = core.store.conv_blobs(&pair).unwrap_or_default();
+            if let Err(e) = core.store.delete_conversation(&pair, &hashes) {
+                tracing::warn!("deleting conversation: {e}");
+            }
+            hashes
+        };
         let this = self.clone();
         self.handle.spawn(async move {
             if let Ok(hub) = this.chat_hub().await {
