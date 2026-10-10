@@ -139,6 +139,13 @@ Per-recipient sealing (or a rotating group key) is required only if a NON-member
 (relay-only, own DID) is ever shipped — deferred. Resolves section 10 Q7 and closes the
 "undetected rogue host" item as accepted for launch.
 
+**U15 (user, 2026-10-10).**
+- U9 threshold: any 3 flags count; they need NOT come from 3 different admins (section 11 Q1).
+  Consequence: a single admin can remove a member by flagging 3 times.
+- U13 token shape (G-CAPSHAPE): separate `message` and `call` tokens (section 14 Q1).
+- W2-U: no count cap on pre-removal uploads — the host rotation is the only cut-off; hosts that
+  learn late align to the earliest announced deadline (section 13 Q1, Q4).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
