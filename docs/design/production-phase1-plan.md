@@ -98,3 +98,18 @@ instead of reporting via the event; passes 3/3 alone; link code untouched by pha
   group-sim tests removed or rewritten.
 - Cleanup: 31 merged rot-*/fix-* worktrees removed (branches kept). `agent-*` worktrees belong to
   other sessions (some dirty) and were left alone.
+
+## Phase 2 (overnight, 2026-10-10; user away until morning, "you go")
+
+Integration branch `phase2` from `fixes-phase1` @ `bd5e1e9` (so the device-test build of
+`fixes-phase1` stays unchanged). Common packet rules: `/home/abe/p2p_chat/.claude/worktrees/phase2-common.md`
+(choices not covered by U1–U24 are made conservatively and marked PROVISIONAL for the user).
+
+| Packet | Branch / worktree | Scope |
+|---|---|---|
+| P6 | `fix/p6` / `fix-p6` | separate message/call tokens, allow-calls API, "calls not allowed" reason |
+| P10 | `fix/p10` / `fix-p10` | re-add divergence (writer, counter never repeat), chat_open retry, deterministic edit winner (flaky test) |
+| G1 | `grp/core` / `grp-core` | group chat in core: records + signing, group endpoint, hosts, invite/join, post, multi-device, 3-flag removal, UniFFI API |
+| UI-W | `ui/wire` / `ui-wire` (from `test/phase1-ui`) | apps use the real block API; no "remove contact"; block copy; desktop Groups nav |
+
+Still not merged into `dev`; nothing pushed.
