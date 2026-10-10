@@ -1928,9 +1928,11 @@ impl Inner {
             if let Some(text) = &s.state.ticket
                 && let Ok(t) = ContactTicket::from_text(text)
                 && let Ok(claim) = t.verify(now)
-                // Still ours (identity unchanged), still days of life left, and points at our
+                // Still ours (identity and device key unchanged: a restore makes a new key and a
+                // joiner dials the one named here), still days of life left, and points at our
                 // current relay so the joiner can dial without discovery.
                 && claim.iss == me.id.did()
+                && claim.device == proto::device_to_text(&me.device)
                 && claim.name == me.profile.name
                 && claim.exp > now + 24 * 3600
                 && (relay.is_none() || claim.relay == relay)
