@@ -550,6 +550,49 @@ Relabel the silent-block tests as `// KIND: candidate-policy G-BLOCK` with a com
 
 ---
 
+### W2-D — Device-list push to contacts (U8)
+Owns NEW `crates/proto/tests/rotation_device_list_push.rs` and NEW
+`crates/core/tests/device_list_characterization.rs`. proto model (~10, self-contained, rule 3),
+using the real `proto::sign_device_list` / `verify_device_list` where possible:
+1. Device added / unlinked / restored / rotated -> new list with higher seq pushed to every
+   unblocked contact; contacts accept and replace; blocked contact gets nothing.
+2. Contact offline: receives the latest list on reconnect (whoever reaches whom first).
+3. Stale/lower seq, forged, wrong-DID, replayed lists rejected with state unchanged.
+4. Restore case (K1 stall): contact with the old list accepts messages from the new device
+   key only after the pushed list arrives; show the stall is gone with push.
+5. Two own devices edit the list concurrently (same seq, different contents): candidate-policy
+   G-FORK options (higher-seq-wins re-sign, union merge, freeze) — model, don't decide.
+6. Limitation: any phrase holder can sign a list that drops honest devices.
+7. Visible block (U5 revised): blocked contact gets the signed block notice, not the list.
+core part: characterise today — the list travels only in call hello/accept
+(`crates/core/src/node.rs:2510`, `:2754`); adding a device updates no contact until a call;
+chat to a contact holding an old list after our restore (reuse K1 helpers read-only).
+Run `-p proto --test rotation_device_list_push`, `-p p2pcore --test device_list_characterization`,
+then full `-p proto` (180) and `-p p2pcore` (134).
+
+### W2-F — Removal by admin flags (U9) + group-level rotation on host revocation
+Owns NEW `crates/group-sim/src/flags.rs` (+ mod line) and NEW `docs/group-flag-removal-model.md`.
+Build on `multi_host.rs` (copy with provenance). Tests (~14):
+1. 3 flags from 3 distinct admins remove the member and revoke the grant; same admin flagging
+   3 times does not (candidate-policy G-AUTHORITY: distinct vs any — model both).
+2. Flags in every delivery order (and across two hosts) reach the same outcome.
+3. Forged flag, flag by non-admin, flag by a host-only (non-admin) device: rejected, unchanged.
+4. Fewer than 3 admins: candidate policies (owner alone / threshold = admin count / no removal).
+5. Owner cannot be flagged/removed (candidate) vs can.
+6. Flag withdrawal before threshold (candidate) and flag expiry (candidate).
+7. After removal: every honest host refuses the member's posts and drops its endpoint; the
+   removed member gets a signed visible notice (U5 revised).
+8. Posts around the 3rd flag: reuse D01/D02 candidates (signed frontier vs removal wins).
+9. Rejoin after removal by a new invite (candidate allowed / forbidden).
+10. Host revocation + group-level rotation (section 10 Q8 decided): a legitimate host sends the
+    signed revocation to all members; all members and remaining hosts rotate group endpoints and
+    send notes only to permitted hosts; the revoked host then reaches nobody and receives no new
+    content (invariant). Limitations: content it already held; a member not yet reached keeps
+    posting to the rogue host until reached; an undetected rogue host is not covered.
+11. Admins flagging other admins (candidate).
+
+---
+
 ## Coordinator checklist per returned packet
 
 - Agent's worktree branch commit touches only the packet's owned files (+ allowed mod line).

@@ -449,4 +449,12 @@ endpoints until members rotate; a rogue host can keep serving reads to a removed
    content per U4 revised)
 7. Rogue host serving a removed member: acceptable for launch, or require group-content
    encryption with rekey on removal?
-8. After a host is removed, should members rotate their group endpoints early?
+8. ~~Early rotation after host removal~~ DECIDED (user, 2026-10-10): yes — group-level rotation.
+   When a host is removed (e.g. rogue), a legitimate host sends the signed revocation to all
+   members, and the group rotates: every member and remaining host rotates its group endpoint
+   and sends the new note only to permitted hosts. The removed host then holds only dead
+   addresses and receives no new content. (This is a group-removal trigger, distinct from
+   personal blocking, which still never triggers rotation.) Limits to test: content already
+   held by the rogue host stays leaked; members not yet reached keep using the rogue host
+   until a legitimate host reaches them; an UNDETECTED rogue host (not yet revoked) is not
+   covered.
