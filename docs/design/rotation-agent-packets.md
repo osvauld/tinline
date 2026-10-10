@@ -593,6 +593,46 @@ Build on `multi_host.rs` (copy with provenance). Tests (~14):
 
 ---
 
+### W2-C — Separate message / call capability tokens (U13)
+Owns NEW `crates/proto/tests/capability_tokens.rs` and NEW
+`crates/core/tests/grant_characterization.rs`. proto model (~12, self-contained, rule 3; may
+call the real `proto::issue_grant` / `verify_grant` for today's `call` cap):
+1. Separate `message` and `call` grants (or cap set) issued by our DID; the issuer is the only
+   verifier; holder/issuer/cap/expiry/revocation checks; forged/wrong-holder/wrong-cap/expired/
+   revoked refused with state unchanged.
+2. Defaults: ticket/QR contact -> message+call; group chat-request contact -> message only;
+   "allow calls" upgrade issues the call token; downgrade revokes it.
+3. Message-only contact: message accepted, call refused (with a visible reason), no ring.
+4. Block revokes both and sends the signed visible notice (U5 revised); refusal immediate.
+5. Migration: existing `call` grant is treated as message+call.
+6. Linked devices: a grant issued on one own device is honoured by siblings (revocation set
+   sync) — model the sync window as a limitation.
+7. Renewal: today `call` grants renew on answered calls (`node.rs:2753`); model message-grant
+   renewal candidates (on message activity vs fixed TTL) as candidate-policy G-RENEWAL.
+core part: characterise today's grant behaviour — what a contact needs to call and to message
+now, whether messaging checks a grant at all, revocation handling, renewal on answer.
+Run `-p proto --test capability_tokens`, `-p p2pcore --test grant_characterization`, then full
+`-p proto` (197) and `-p p2pcore --no-fail-fast` (141).
+
+### W2-U — Announced, delayed host rotation after member removal (U11, U12)
+Owns NEW `crates/group-sim/src/removal_rotation.rs` (+ mod line). Build on `flags.rs` /
+`multi_host.rs` (copy with provenance). Tests (~10):
+1. On removal every host refuses the removed DID's NEW posts and calls immediately.
+2. Hosts send a signed "rotating soon" announcement to remaining members only; rotate after
+   the delay (fixture: 2 days in ticks); reconnect members themselves; removed member then
+   reaches nobody.
+3. U11: posts whose signed frontier predates removal are accepted until the hosts rotate,
+   refused after (unreachable); a backdated post after rotation cannot be delivered.
+4. Count cap candidate on pre-removal uploads (candidate-policy G-HISTORY) vs rotation-only.
+5. Several removals inside one delay window -> one rotation (batching) vs one per removal.
+6. Member offline during the whole delay: reconnected by the host afterwards.
+7. Forged/replayed announcement rejected, state unchanged; announcement never reaches the
+   removed member.
+8. Limitation: during the delay the removed member still knows live host addresses (can
+   connect, gets refused).
+
+---
+
 ## Coordinator checklist per returned packet
 
 - Agent's worktree branch commit touches only the packet's owned files (+ allowed mod line).

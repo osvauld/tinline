@@ -125,9 +125,10 @@ may only message; calling needs its own token. Today a contact grant exists with
 (`crates/core/src/node.rs:33`), renewed on answered calls (`node.rs:2753`), with a revocation
 set. Proposal to model: caps `message` and `call` as separate grants (or a cap set); the
 issuer is the only verifier, so revoking = issuer refuses (local), and blocking revokes both and
-sends the visible notice (U5 revised). Open: default for new ticket contacts (message+call?);
-contacts that came via a group chat request (U3) start message-only?; how a contact asks for /
-is granted call permission; does the existing `call` grant migrate to message+call?
+sends the visible notice (U5 revised). Defaults DECIDED (user, 2026-10-10): ticket/QR contacts get
+message+call; contacts from a group chat request (U3) start message-only; calling is upgraded
+explicitly ("allow calls" sends the call token); existing `call` grants migrate to
+message+call.
 
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
