@@ -1,4 +1,5 @@
 use super::*;
+use crate::aom::AomEncoder;
 
 fn cfg(w: usize, h: usize) -> EncoderConfig {
     EncoderConfig { width: w, height: h, keyint: 60, ..Default::default() }
@@ -7,7 +8,7 @@ fn cfg(w: usize, h: usize) -> EncoderConfig {
 #[test]
 fn round_trip_one_packet_per_frame() {
     let (w, h) = (320, 240);
-    let mut enc = Encoder::new(&cfg(w, h)).unwrap();
+    let mut enc = AomEncoder::new(&cfg(w, h)).unwrap();
     let mut dec = Decoder::new(1, 4096 * 4096).unwrap();
     let mut pat = Pattern::new(w, h);
     for i in 0..30 {
@@ -27,7 +28,7 @@ fn round_trip_one_packet_per_frame() {
 #[test]
 fn forced_keyframe_restarts_decoding() {
     let (w, h) = (320, 240);
-    let mut enc = Encoder::new(&cfg(w, h)).unwrap();
+    let mut enc = AomEncoder::new(&cfg(w, h)).unwrap();
     let mut pat = Pattern::new(w, h);
     let mut pkts = Vec::new();
     for i in 0..20 {
@@ -54,4 +55,14 @@ fn garbage_is_an_error_not_a_crash() {
             .collect();
         let _ = dec.decode(&junk);
     }
+}
+
+#[test]
+fn rav1e_holds_frames_back() {
+    // Why rav1e is not the call encoder: even in low-latency mode it buffers frames.
+    let (w, h) = (320, 240);
+    let mut enc = Encoder::new(&cfg(w, h)).unwrap();
+    let mut pat = Pattern::new(w, h);
+    let held = (0..10).take_while(|_| enc.encode(&pat.next_frame(), false).unwrap().is_empty()).count();
+    assert!(held >= 3, "rav1e held {held} frames");
 }

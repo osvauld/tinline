@@ -1,9 +1,10 @@
 //! AV1 video codec for the call path (spike).
 //!
-//! Pure and synchronous like `audio`: no I/O. The caller feeds I420 frames to [`Encoder`] and
-//! ships the returned [`Packet`]s; [`Decoder`] turns received packets back into I420.
-//! Encoder = rav1e, decoder = rav1d (Rust port of dav1d), both tuned for realtime: no lookahead,
-//! no frame reordering, one packet out per frame in.
+//! Pure and synchronous like `audio`: no I/O. The caller feeds I420 frames to a
+//! [`VideoEncoder`] and ships the returned [`Packet`]s; [`Decoder`] turns received packets back
+//! into I420. Encoders: [`aom::AomEncoder`] (libaom realtime) and [`Encoder`] (rav1e, kept for
+//! comparison: it holds ~4 frames and is too slow for calls). Decoder: rav1d (Rust port of
+//! dav1d), which is the side that parses peer-controlled bytes.
 
 use std::ffi::c_int;
 use std::mem::MaybeUninit;
@@ -16,7 +17,15 @@ use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::src::lib as d;
 use rav1e::prelude::*;
 
+pub mod aom;
 pub mod media;
+
+/// Anything that turns camera frames into AV1 packets.
+pub trait VideoEncoder: Send {
+    /// Encodes one frame; `key` forces a keyframe (after loss or for a new subscriber).
+    fn encode(&mut self, pic: &I420, key: bool) -> Result<Vec<Packet>>;
+    fn set_bitrate(&mut self, bps: u32) -> Result<()>;
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -149,7 +158,6 @@ impl Encoder {
         Ok(Self { ctx, width: cfg.width, height: cfg.height })
     }
 
-    /// Encodes one frame; `key` forces a keyframe (after loss or for a new subscriber).
     pub fn encode(&mut self, pic: &I420, key: bool) -> Result<Vec<Packet>> {
         let want = I420::len(self.width, self.height);
         if pic.width != self.width || pic.height != self.height || pic.data.len() != want {
@@ -190,6 +198,17 @@ impl Encoder {
             }
         }
         Ok(out)
+    }
+}
+
+impl VideoEncoder for Encoder {
+    fn encode(&mut self, pic: &I420, key: bool) -> Result<Vec<Packet>> {
+        Encoder::encode(self, pic, key)
+    }
+
+    fn set_bitrate(&mut self, _bps: u32) -> Result<()> {
+        // rav1e fixes the bitrate at creation; the comparison encoder doesn't adapt.
+        Ok(())
     }
 }
 
