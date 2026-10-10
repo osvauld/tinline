@@ -488,3 +488,29 @@ Questions (U9 details in section 8 restated with new evidence):
 10. After a host revocation, should members re-send their recent posts to remaining hosts?
 11. Is "each device rotates once when it first applies a host removal" the trigger? Should a
     member removal also rotate the group (the model says unnecessary under U7)?
+
+## 12. W2-D questions (device-list push; `crates/proto/tests/rotation_device_list_push.rs`, `crates/core/tests/device_list_characterization.rs`)
+
+Verified today: our device list reaches contacts ONLY inside call hello/accept
+(`node.rs:2510`, `:2754`); adding or unlinking a device reaches no contact until a call; chat
+sessions never carry it. Push (U8) works in the model: every unblocked contact gets each change,
+blocked contacts get the notice instead, stale/forged/wrong-DID lists are refused.
+**Key finding: push alone does NOT fix the K1 restore stall** when a message was pending at
+restore — the contact accepts the new list but then rejects the history snapshot that contains
+the old-key-signed message ("signature does not verify"). Confirmed against the real core.
+Also: a list with seq = u64::MAX from any phrase holder pins every contact forever.
+1. K1 stall fix (G-HISTORY): (a) receivers keep superseded keys of the same DID for verifying
+   content only (cost: an unlinked install's new content is also accepted); (b) accept history
+   per message, not all-or-nothing; (c) sender re-signs/splits pre-restore content.
+   Note: under U4 revised (content signed by the DID key) this whole class goes away for new
+   content — only legacy device-key-signed history needs (a)/(b)/(c).
+2. Concurrent list edits by two own installs (G-FORK): signature tie-break (shipped; loses one
+   edit) / union (loses removals) / freeze (DoS) / re-sign after own-device sync with
+   removal-wins tombstones?
+3. Seq bound: cap seq at now + skew, or reject large jumps?
+4. Sibling that hasn't heard of a block pushes to the blocked contact: wait for block sync, or
+   accept the window (as W2-B)?
+5. Each pushed list naming a new device clears the contact's `verified` flag
+   (`node.rs:3122`). Keep `verified` for DID-signed list updates?
+6. Must the pushed list arrive before / bundled with content from the new key, or should
+   content from an unlisted key be queued?
