@@ -285,6 +285,12 @@ impl Inner {
 
     async fn link_session(self: Arc<Self>, mut run: LinkRun, conn: Connection) {
         let id = run.id;
+        // N's temporary endpoint has this install's device key: the account's own endpoint (its
+        // `start` follows `on_link_done`) must wait until it is fully closed (P11).
+        let gate = match run.fresh {
+            Some(_) => Some(self.closing.clone().lock_owned().await),
+            None => None,
+        };
         let r = self.clone().link_inner(&mut run, &conn).await;
         // N's temporary endpoint is no longer needed (the account has the same device key).
         match r {
@@ -297,8 +303,8 @@ impl Inner {
                 self.fail(id, tok);
             }
         }
-        if let Some((_, ep)) = run.fresh.take() {
-            let _ = tokio::time::timeout(Duration::from_secs(2), ep.close()).await;
+        if let (Some((_, ep)), Some(gate)) = (run.fresh.take(), gate) {
+            self.close_fully(ep, gate).await;
         }
     }
 

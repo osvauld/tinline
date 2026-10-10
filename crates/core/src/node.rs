@@ -46,6 +46,10 @@ const RING_TIMEOUT: Duration = Duration::from_secs(60);
 /// How long a second incoming call (one that arrives during a call) waits to be answered.
 /// `P2P_WAITING_RING_SECS` overrides it, for tests.
 const WAITING_RING_TIMEOUT: Duration = Duration::from_secs(30);
+/// See `close_wait`.
+const CLOSE_WAIT: Duration = Duration::from_secs(2);
+/// Longest `start` waits for a previous endpoint to finish closing (iroh's own bound is ~3 s).
+const CLOSING_MAX: Duration = Duration::from_secs(10);
 /// An active call with no media for this long shows as `reconnecting` (a path change or a
 /// network switch), well before the no-audio timeout ends it.
 const RECONNECT_AFTER: Duration = Duration::from_millis(1500);
@@ -190,6 +194,15 @@ fn waiting_ring_timeout() -> Duration {
         .ok()
         .and_then(|v| v.parse().ok())
         .map_or(WAITING_RING_TIMEOUT, Duration::from_secs)
+}
+
+/// How long `stop`, `lock` and an account switch wait for the endpoint to close.
+/// `P2P_CLOSE_WAIT_MS` overrides it, for tests.
+fn close_wait() -> Duration {
+    std::env::var("P2P_CLOSE_WAIT_MS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .map_or(CLOSE_WAIT, Duration::from_millis)
 }
 
 pub(crate) enum Cmd {
@@ -451,6 +464,9 @@ pub(crate) struct Inner {
     pub(crate) reserved: Arc<Semaphore>,
     /// Serialises start, stop, lock and set_passphrase.
     pub(crate) lifecycle: Arc<tokio::sync::Mutex<()>>,
+    /// Held while an endpoint of ours is closing (`close_fully`); `start` binds the next one only
+    /// once it is free, so two endpoints never hold this device key at once.
+    pub(crate) closing: Arc<tokio::sync::Mutex<()>>,
     pub(crate) chat: Mutex<Option<Arc<crate::chat::engine::ChatCore>>>,
     pub(crate) chat_events: Mutex<Option<Arc<dyn crate::chat::api::ChatEvents>>>,
     pub(crate) link_events: Mutex<Option<Arc<dyn crate::sync::LinkEvents>>>,
@@ -515,6 +531,7 @@ impl Node {
             pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
             reserved: Arc::new(Semaphore::new(RESERVED_HELLOS)),
             lifecycle: Arc::new(tokio::sync::Mutex::new(())),
+            closing: Arc::new(tokio::sync::Mutex::new(())),
             chat: Mutex::new(None),
             chat_events: Mutex::new(None),
             link_events: Mutex::new(None),
@@ -1749,7 +1766,29 @@ impl Inner {
     pub(crate) async fn close_endpoint(&self) {
         let ep = self.shared.lock().endpoint.take();
         if let Some(ep) = ep {
-            let _ = tokio::time::timeout(Duration::from_secs(2), ep.close()).await;
+            let gate = self.closing.clone().lock_owned().await;
+            let _ = tokio::time::timeout(close_wait(), self.close_fully(ep, gate)).await;
+        }
+    }
+
+    /// Closes `ep` to the end on a task of its own, holding `gate` (a guard of `closing`) until
+    /// then; the returned future waits for that. iroh refuses new connections from the first
+    /// step of a close but leaves the relay connections up until the open connections have
+    /// drained (about 3 s at worst). A close abandoned half way would leave this device key
+    /// registered at its home relay, refusing every dial that arrives there, for as long as
+    /// anything holds the endpoint: after a restart on another home relay, a contact dialling the
+    /// old one would never ring us (P11).
+    pub(crate) fn close_fully(
+        &self,
+        ep: Endpoint,
+        gate: tokio::sync::OwnedMutexGuard<()>,
+    ) -> impl std::future::Future<Output = ()> + Send + 'static {
+        let task = self.handle.spawn(async move {
+            ep.close().await;
+            drop(gate);
+        });
+        async move {
+            let _ = task.await;
         }
     }
 
@@ -1808,6 +1847,11 @@ impl Inner {
         let me = self.me()?;
         if self.shared.lock().endpoint.is_some() {
             return Ok(());
+        }
+        // The previous endpoint (or the link endpoint, which has the same key) finishes closing
+        // first. Bounded: iroh's close is, but never let a stuck one keep us offline.
+        if tokio::time::timeout(CLOSING_MAX, self.closing.lock()).await.is_err() {
+            self.log("previous endpoint still closing; starting anyway");
         }
         let transport = QuicTransportConfig::builder()
             // Keeps a ringing call and NAT bindings alive; the relay link has its own pings.
