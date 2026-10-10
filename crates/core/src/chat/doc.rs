@@ -24,7 +24,7 @@
 //!   keys, device lists and remembered state play no part, so every device reaches the same
 //!   verdict on the same batch.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use loro::{ExportMode, LoroDoc, LoroMap, LoroValue, VersionVector};
 use serde::{Deserialize, Serialize};
@@ -710,22 +710,39 @@ impl Shard {
         })
     }
 
-    /// Whether `theirs` lacks ops of ours.
-    pub fn owes(&self, theirs: &VersionVector) -> bool {
-        let p = self.peer();
-        theirs.get(&p).copied().unwrap_or(0) < self.vv().get(&p).copied().unwrap_or(0)
+    /// Our writer IDs in this day: this shard's own (`peer`) and every writer ID that wrote a
+    /// version of a message authored by `me` (our DID). A writer ID is `writer_id(DID, device
+    /// ID)` and every op lies in a span its author's DID signature proves (`apply_remote`), so
+    /// these are exactly the writer IDs of our installs: before a restore, after it, or on our
+    /// other devices (P10b).
+    pub fn own_writers(&self, me: &str) -> BTreeSet<u64> {
+        let mut out: BTreeSet<u64> = read_records(&self.doc)
+            .map(|r| r.values().flat_map(|vs| vs.iter().filter(|(_, m)| m.author == me).map(|(w, _)| *w)).collect())
+            .unwrap_or_default();
+        out.insert(self.peer());
+        out
     }
 
-    /// Only our own ops (under our writer ID) beyond `theirs`; `None` if they hold all of them.
-    /// A device sends a contact no one else's ops.
-    pub fn export_own_since(&self, theirs: &VersionVector) -> Option<Vec<u8>> {
-        if !self.owes(theirs) {
+    /// Whether `theirs` lacks ops of any of `writers`.
+    pub fn owes(&self, theirs: &VersionVector, writers: &BTreeSet<u64>) -> bool {
+        let mine = self.vv();
+        writers.iter().any(|p| theirs.get(p).copied().unwrap_or(0) < mine.get(p).copied().unwrap_or(0))
+    }
+
+    /// Only our ops (under any of our writer IDs, `own_writers(me)`) beyond `theirs`; `None` if
+    /// they hold all of them. A device sends a contact no one else's ops, but every op of ours
+    /// it holds, whichever of our installs wrote it (P10b): a message written before a restore
+    /// or on another of our devices still reaches the contact. Each is proven by our DID
+    /// signature, so the contact takes it from any of our devices.
+    pub fn export_own_since(&self, theirs: &VersionVector, me: &str) -> Option<Vec<u8>> {
+        let ours = self.own_writers(me);
+        if !self.owes(theirs, &ours) {
             return None;
         }
         let mine = self.vv();
         let mut from = theirs.clone();
         for (p, c) in mine.iter() {
-            if *p != self.peer() {
+            if !ours.contains(p) {
                 from.insert(*p, *c);
             }
         }

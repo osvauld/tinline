@@ -831,6 +831,7 @@ impl Inner {
         let day = shard.day.as_str();
         let mut meta = core.store.shard_meta(pair, day)?.unwrap_or_default();
         meta.vv = shard.vv().encode();
+        meta.own = shard.own_writers(me.id.did()).into_iter().collect();
         meta.n_messages = shard.messages().map(|m| m.len() as u32).unwrap_or(meta.n_messages);
         if meta.n_updates + 1 > UPDATES_BEFORE_SNAPSHOT {
             extra.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
@@ -1034,8 +1035,7 @@ impl Inner {
             return Ok(());
         }
         let moved = |peer: u64, c: i32| before.get(&peer).copied().unwrap_or(0) < c && c <= acked.get(&peer).copied().unwrap_or(0);
-        let held = decode_vv(&meta.vv).unwrap_or_default();
-        let owed = held.get(&core.wid).copied().unwrap_or(0) > acked.get(&core.wid).copied().unwrap_or(0);
+        let owed = Self::chat_owes(core, &meta, &acked);
         let newly: Vec<String> = core.store.mos(pair, day)?.into_iter().filter(|(_, (p, c))| moved(*p, *c)).map(|(id, _)| id).collect();
         core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, owed)?]).map_err(io)?;
         self.selfsync_dirty(ACK_MARK);
@@ -1070,9 +1070,9 @@ impl Inner {
     ) -> Result<(), Error> {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
         let name = doc_name(pair, day);
-        // Our ops are under our writer ID.
-        let held = decode_vv(&meta.vv)?;
-        if their_vv.get(&core.wid).copied().unwrap_or(0) >= held.get(&core.wid).copied().unwrap_or(0) {
+        // Our ops are under any of our writer IDs: this install's, and those of our earlier or
+        // other installs whose ops we hold (P10b).
+        if !Self::chat_owes(core, &meta, their_vv) {
             return Ok(());
         }
         self.chat_shard(core, pair, day).await?;
@@ -1080,11 +1080,11 @@ impl Inner {
             let shards = core.shards.lock();
             shards.get(&(pair.to_string(), day.to_string())).and_then(|s| {
                 let vv = s.vv();
-                let end = vv.get(&s.peer()).map(|c| (s.peer(), *c));
-                s.export_own_since(their_vv).map(|u| (u, vv, end))
+                let ends: Vec<(u64, i32)> = s.own_writers(me.id.did()).into_iter().filter_map(|p| vv.get(&p).map(|c| (p, *c))).collect();
+                s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends))
             })
         };
-        let Some((update, vv, end)) = out else { return Ok(()) };
+        let Some((update, vv, ends)) = out else { return Ok(()) };
         let sig = sign_batch(&me.profile.device_secret, &name, &update);
         let msg = if sync {
             ChatMsg::Sync { doc: name, vv: vv.encode(), update, sig }
@@ -1094,10 +1094,19 @@ impl Inner {
         writer.send(&msg).await?;
         let mut pv = sess.peer_vv.lock();
         let theirs = pv.entry(day.to_string()).or_default();
-        if let Some((p, c)) = end {
-            theirs.insert(p, c);
+        for (p, c) in ends {
+            if theirs.get(&p).is_none_or(|t| *t < c) {
+                theirs.insert(p, c);
+            }
         }
         Ok(())
+    }
+
+    /// Whether a contact holding `theirs` of a day lacks ops of ours: of any of our writer IDs
+    /// in it (`ShardMeta::own`, plus this install's), not only this install's (P10b).
+    pub(crate) fn chat_owes(core: &ChatCore, meta: &ShardMeta, theirs: &VersionVector) -> bool {
+        let held = decode_vv(&meta.vv).unwrap_or_default();
+        meta.own.iter().chain(std::iter::once(&core.wid)).any(|p| theirs.get(p).copied().unwrap_or(0) < held.get(p).copied().unwrap_or(0))
     }
 
     async fn chat_push(self: &Arc<Self>, core: &Arc<ChatCore>, sess: &Arc<Session>, day: &str, writer: &mut ChatWriter) -> Result<(), Error> {
@@ -1971,6 +1980,7 @@ impl Inner {
             n_updates: 0,
             n_messages: msgs.len() as u32,
             closed: None,
+            own: shard.own_writers(me.id.did()).into_iter().collect(),
         };
         ops.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
         ops.push(core.store.put_meta_op(pair, day, &meta)?);
