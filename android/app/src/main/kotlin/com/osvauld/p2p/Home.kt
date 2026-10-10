@@ -77,13 +77,14 @@ fun HomeScreen(
     val recents = remember(history, byDid, now) { history.take(200).map { it.toRecent(byDid, now) } }
     val subs = remember(history, contacts, now) { contacts.associate { it.did to contactSubLine(it.did, history, now) } }
     val online = status?.online == true
-    val rows = remember(chats, contacts, links, online, now) { chatRows(chats, contacts, links, online, now * 1000) }
+    val myDid = remember(chats) { app.currentDid() }
+    val rows = remember(chats, contacts, links, online, now, myDid) { chatRows(chats, contacts, links, online, now * 1000, myDid) }
     HomeContent(
         contacts = contacts, online = online, connectingGrace = grace, missing = missing,
         onFix = onFix, onAdd = onAdd, onSettings = onSettings, onContact = onContact, onCall = onCall,
         onAvailability = { sheet = true }, recents = recents, callError = callError,
         available = avail.available, onTurnOn = { app.setAvailable(true) }, subLines = subs,
-        tab = tab, onTab = { tab = it }, chatRows = rows, onChat = onChat, onNewChat = onNewChat,
+        tab = tab, onTab = { tab = it }, chatRows = rows, myDid = myDid, onChat = onChat, onNewChat = onNewChat,
         chatBadge = rows.sumOf { it.unread }, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
     )
@@ -117,7 +118,7 @@ fun HomeContent(
     onAdd: (scan: Boolean) -> Unit, onSettings: () -> Unit, onContact: (Contact) -> Unit, onCall: (Contact) -> Unit,
     onAvailability: () -> Unit, recents: List<RecentCall>, callError: String?, startSearching: Boolean = false, startQuery: String = "",
     available: Boolean = true, onTurnOn: () -> Unit = {}, subLines: Map<String, String> = emptyMap(),
-    tab: HomeTab = HomeTab.Contacts, onTab: (HomeTab) -> Unit = {}, chatRows: List<ChatRowUi> = emptyList(),
+    tab: HomeTab = HomeTab.Contacts, onTab: (HomeTab) -> Unit = {}, chatRows: List<ChatRowUi> = emptyList(), myDid: String? = null,
     onChat: (String) -> Unit = {}, onNewChat: () -> Unit = {}, chatBadge: Int = 0, callBadge: Int = 0,
     firstRun: (@Composable () -> Unit)? = null,
 ) {
@@ -146,7 +147,7 @@ fun HomeContent(
                 }
                 if (firstRunShown) Column(Modifier.weight(1f)) { banner(); firstRun?.invoke() } else when (tab) {
                     HomeTab.Chats -> Box(Modifier.weight(1f)) {
-                        ChatsBody(chatRows, query, banner, onSearch = { searching = true }, onChat = onChat, onNewChat = onNewChat, searching = searching)
+                        ChatsBody(chatRows, query, banner, onSearch = { searching = true }, onChat = onChat, onNewChat = onNewChat, searching = searching, myDid = myDid)
                     }
                     HomeTab.Calls -> if (recents.isEmpty()) Column(Modifier.weight(1f)) {
                         banner()

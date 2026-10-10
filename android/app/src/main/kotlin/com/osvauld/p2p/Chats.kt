@@ -58,10 +58,15 @@ fun TinNavBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int = 0, callBa
     }
 }
 
-/** Chat list rows from the core's conversations. Only conversations that have a message; a contact's name wins over what they call themselves. */
-fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link>, online: Boolean, nowMs: Long): List<ChatRowUi> {
+/** Chat list rows from the core's conversations. Only conversations that have a message; a contact's name wins over what they call themselves.
+ *  "You" (our DID: saved items for our own devices) is always there, pinned first. */
+fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link>, online: Boolean, nowMs: Long, myDid: String? = null): List<ChatRowUi> {
     val by = contacts.associateBy { it.did }
-    return chats.filter { it.lastActivity > 0UL }.map { ch ->
+    val you = chats.firstOrNull { it.peerDid == myDid }?.let { ch ->
+        val at = ch.lastActivity.toLong()
+        ChatRowUi(ch.peerDid, "You", ch.preview.ifBlank { SELF_SUB }, if (at > 0) listTime(at, nowMs) else "", false, Tick.Two, ch.unread.toInt())
+    }
+    return listOfNotNull(you) + chats.filter { it.lastActivity > 0UL && it.peerDid != myDid }.map { ch ->
         val name = by[ch.peerDid]?.display() ?: ch.peerName.ifBlank { "Unknown" }
         val at = ch.lastActivity.toLong()
         val pending = ch.lastOutgoing && ch.lastDelivery == uniffi.p2pcore.DeliveryState.PENDING
@@ -78,9 +83,10 @@ fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link
 
 /** Chats tab body: the list, or the empty state. The FAB sits above the bar. */
 @Composable
-fun ChatsBody(rows: List<ChatRowUi>, query: String, banner: @Composable () -> Unit, onSearch: () -> Unit, onChat: (String) -> Unit, onNewChat: () -> Unit, searching: Boolean) {
+fun ChatsBody(rows: List<ChatRowUi>, query: String, banner: @Composable () -> Unit, onSearch: () -> Unit, onChat: (String) -> Unit, onNewChat: () -> Unit, searching: Boolean, myDid: String? = null) {
     val c = Tin.c
-    if (rows.isEmpty() && !searching) {
+    // Only an unused "You" row: still the empty state, with a way into "You".
+    if (rows.all { it.did == myDid && it.time.isEmpty() } && !searching) {
         Column(Modifier.fillMaxSize()) {
             banner()
             Column(
@@ -93,6 +99,7 @@ fun ChatsBody(rows: List<ChatRowUi>, query: String, banner: @Composable () -> Un
                 Spacer(Modifier.height(2.dp))
                 TinButton("Start a chat", onNewChat)
                 Hint("You can message anyone in your contacts.", align = TextAlign.Center)
+                if (myDid != null && rows.any { it.did == myDid }) TinButton("Notes to yourself", { onChat(myDid) }, style = BtnStyle.Outlined)
             }
         }
         return
