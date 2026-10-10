@@ -14,6 +14,7 @@ import uniffi.p2pcore.CallInfo
 object Notifications {
     const val CH_SERVICE = "service"
     const val CH_CALLS = "calls"
+    const val CH_ONGOING = "ongoing_calls"
     const val CH_MISSED = "missed"
     const val CH_LOCKED = "locked"
     const val CH_MESSAGES = "messages"
@@ -36,6 +37,12 @@ object Notifications {
             setSound(null, null)
             enableVibration(false)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        })
+        n.createNotificationChannel(NotificationChannel(CH_ONGOING, "Ongoing calls", NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = "Shows your current call and lets you return to it or hang up"
+            setSound(null, null)
+            enableVibration(false)
+            setShowBadge(false)
         })
         n.createNotificationChannel(NotificationChannel(CH_MISSED, "Missed calls", NotificationManager.IMPORTANCE_DEFAULT))
         n.createNotificationChannel(NotificationChannel(CH_MESSAGES, "Messages", NotificationManager.IMPORTANCE_HIGH).apply {
@@ -75,7 +82,7 @@ object Notifications {
 
     /** The always-on foreground notification; text reflects call state, availability and connectivity. */
     fun service(c: Context, inCall: String?): Notification {
-        val b = Notification.Builder(c, CH_SERVICE)
+        val b = Notification.Builder(c, if (inCall != null) CH_ONGOING else CH_SERVICE)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -86,7 +93,23 @@ object Notifications {
                 if (inCall != null) activity(c, CallActivity::class.java, 10)
                 else activity(c, MainActivity::class.java, 11))
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-        if (inCall != null) b.setCategory(Notification.CATEGORY_CALL)
+        if (inCall != null) {
+            b.setCategory(Notification.CATEGORY_CALL)
+                .setAutoCancel(false)
+            val hangup = service(c, CoreService.ACTION_HANGUP, 12)
+            val call = P2pApp.instance.calls.ui.value
+            if (Build.VERSION.SDK_INT >= 31) {
+                val person = Person.Builder().setName(inCall.ifBlank { "Call" }).setImportant(true).build()
+                b.style = Notification.CallStyle.forOngoingCall(person, hangup)
+            } else {
+                b.addAction(Notification.Action.Builder(
+                    Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel),
+                    "End call", hangup).build())
+            }
+            call?.activeSinceMs?.let { since ->
+                b.setWhen(since).setShowWhen(true).setUsesChronometer(true)
+            }
+        }
         return b.build()
     }
 
