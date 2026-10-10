@@ -757,13 +757,18 @@ fn link_serve(node: &Arc<Node>, o: &Opts, rx: mpsc::Receiver<Event>) -> Result<(
             ["msgs", who] => {
                 for m in all_messages(node, &find(node, who)?) {
                     let att = m.attachment.as_ref().map(|a| format!("{:?}", a.state)).unwrap_or_default();
-                    println!("MSG {} out={} text={:?} att={att}", m.id, m.outgoing, m.text);
+                    println!("MSG {} out={} delivery={:?} text={:?} att={att}", m.id, m.outgoing, m.delivery, m.text);
                 }
                 Ok("LISTED".into())
             }
+            ["online", who] => {
+                let did = find(node, who)?;
+                node.watch_presence(did.clone());
+                Ok(format!("ONLINE {}", node.contact_online(did)))
+            }
             ["chats"] => {
                 for c in node.chats().map_err(|e| e.to_string())? {
-                    println!("CHATROW {} name={:?} unread={} preview={:?}", c.peer_did, c.peer_name, c.unread, c.preview);
+                    println!("CHATROW {} name={:?} unread={} preview={:?} delivery={:?}", c.peer_did, c.peer_name, c.unread, c.preview, c.last_delivery);
                 }
                 Ok("LISTED".into())
             }

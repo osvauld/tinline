@@ -87,7 +87,27 @@ class DebugReceiver : BroadcastReceiver() {
             "link_approve" -> { app.links.approve(i.getStringExtra("pass")); testLog("link_approve ok") }
             "link_cancel" -> app.links.cancel()
             "devices" -> node.linkedDevices().forEach { testLog("device label=${it.label} this=${it.thisDevice} removed=${it.removed} seen=${it.lastSeen}") }
+            // Chat checks for the live tests: `who` = contact name or DID.
+            "chat_send" -> testLog("chat_sent id=${node.sendText(contact(node, i).did, i.getStringExtra("text") ?: "hi", null).id}")
+            "chat_msgs" -> {
+                val did = contact(node, i).did
+                var page: uniffi.p2pcore.DayPage? = node.chatDay(did, null)
+                while (page != null) {
+                    page.messages.forEach { testLog("msg id=${it.id} out=${it.outgoing} delivery=${it.delivery} text=${it.text}") }
+                    page = page.olderDay?.let { node.chatDay(did, it) }
+                }
+                testLog("chat_msgs done")
+            }
+            "online" -> {
+                val did = contact(node, i).did
+                node.watchPresence(did)
+                testLog("online=${node.contactOnline(did)}")
+            }
             else -> Log.w("P2PTEST", "unknown cmd $cmd")
         }
+    }
+
+    private fun contact(node: uniffi.p2pcore.Node, i: Intent) = i.getStringExtra("who").let { who ->
+        node.contacts().firstOrNull { it.did == who || it.name == who } ?: throw IllegalArgumentException("no such contact $who")
     }
 }
