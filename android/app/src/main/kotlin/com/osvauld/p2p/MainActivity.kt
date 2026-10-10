@@ -141,8 +141,9 @@ private fun Root(app: P2pApp) {
     fun place(did: String) {
         callError = null
         // Either side blocking, or someone no longer a contact: no call (the core refuses it too).
-        val bs = app.blocks.value.composer(did, contacts.any { it.did == did })
-        if (bs != ComposerState.Open) {
+        val isContact = contacts.any { it.did == did }
+        val bs = app.blocks.value.composer(did, isContact)
+        if (app.blocks.value.callGate(did, isContact) != CallGate.Ok) {
             val name = contacts.firstOrNull { it.did == did }?.display() ?: app.chat.chats.value.firstOrNull { it.peerDid == did }?.peerName ?: ""
             say(BlockCopy.cantCall(name, bs)); return
         }
@@ -233,7 +234,7 @@ private fun Root(app: P2pApp) {
                     val name = if (self) "You" else c?.display() ?: chats.firstOrNull { it.peerDid == r.did }?.peerName?.ifBlank { null } ?: "Unknown"
                     val blocks by app.blocks.collectAsState()
                     ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self,
-                        block = if (self) null else ConvBlock(blocks.of(r.did), blocks.composer(r.did, c != null)),
+                        block = if (self) null else ConvBlock(blocks.of(r.did), blocks.composer(r.did, c != null), blocks.callGate(r.did, c != null)),
                         onUnblock = { app.unblock(r.did) }, onAddContact = { stack.add(Route.Add(true)) },
                         notDelivered = { id -> app.notDeliveredReason(r.did, id) })
                 }
@@ -245,6 +246,8 @@ private fun Root(app: P2pApp) {
                     if (c == null) LaunchedEffect(Unit) { pop() }
                     else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onMessage = { stack.add(Route.Chat(c.did)) }, onVerify = { stack.add(Route.Verify(c.did)) },
                         block = app.blocks.collectAsState().value.of(c.did), onUnblock = { app.unblock(c.did) },
+                        callGate = app.blocks.collectAsState().value.callGate(c.did, true),
+                        callsAllowed = app.blocks.collectAsState().value.callsAllowed(c.did), onAllowCalls = { on -> app.allowCalls(c.did, on) },
                         history = remember(history, contacts) { val now = System.currentTimeMillis() / 1000; val by = contacts.associateBy { it.did }; history.filter { it.peerDid == c.did }.map { it.toRecent(by, now) } },
                         onRename = { a -> scope.launch(Dispatchers.IO) { runCatching { app.node.renameContact(c.did, a) }; app.refresh() } }, onBlock = {
                         // U19/U24: the contact and the chat stay; the page shows Blocked and Unblock.

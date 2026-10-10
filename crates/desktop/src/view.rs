@@ -1079,12 +1079,15 @@ impl App {
             badges = badges.push(badge(t.error_c, t.on_error_c, Some(Icon::PhoneOff), st));
         }
         let blocked_by_me = self.blocks.blocked_by_me(&c.did);
-        let can_call = self.blocks.can_call(&c.did, true);
+        // Disabled while a block is on; tapping when they haven't allowed calls says so.
+        let gate = self.blocks.call_gate(&c.did, true);
+        let can_call = self.demo || !matches!(gate, crate::blocks::CallGate::Closed(_));
+        let call_icon = if self.demo || self.blocks.can_call(&c.did, true) { Icon::Phone } else { Icon::PhoneOff };
         let head = row![avatar(t, &name, &c.did, 72.0), column![title, badges].spacing(10).width(Fill)]
             .spacing(20)
             .align_y(Alignment::Center);
         let actions = row![
-            pill(t, Kind::Primary, Some(if can_call { Icon::Phone } else { Icon::PhoneOff }), "Call", can_call.then(|| Msg::CallPressed(c.did.clone()))),
+            pill(t, Kind::Primary, Some(call_icon), "Call", can_call.then(|| Msg::CallPressed(c.did.clone()))),
             pill(t, Kind::Quiet, Some(Icon::MessageSquare), "Message", Some(Msg::Chat(super::chat::Cm::Info(false)))),
             pill(t, Kind::Quiet, Some(Icon::Pencil), "Rename", Some(Msg::SetDetail(Detail::Rename))),
             pill(t, Kind::Quiet, Some(Icon::ShieldCheck), "Safety number", Some(Msg::SetDetail(Detail::Verify))),
@@ -1096,10 +1099,22 @@ impl App {
             },
         ]
         .spacing(10);
-        // "Allow calls" (U13) comes with packet P6; until then `calls_allowed` is None and the
-        // switch is only in the groups preview.
-        let allow_calls: Option<El> = crate::blocks::calls_allowed(&self.node, &c.did).map(|on| {
-            line(t, "Allow calls", "They can ring this computer", toggler(on).style(ui::toggle_style(t)).into())
+        // "Allow calls" (U13, P6): whether they may ring us. Off while we block them (a block
+        // turns everything off; the switch comes back as it was).
+        let allow_calls: Option<El> = (!self.demo).then(|| {
+            let on = self.blocks.calls_allowed(&c.did);
+            let first = crate::blocks::first_name(&name).to_string();
+            let sub = if blocked_by_me {
+                "Blocked: nothing gets through until you unblock.".to_string()
+            } else if on {
+                format!("{first} can ring this computer and your other devices.")
+            } else {
+                format!("Off. {first} can message you; their calls don\u{2019}t ring.")
+            };
+            let did = c.did.clone();
+            let tg = toggler(on).style(ui::toggle_style(t));
+            let tg = if blocked_by_me { tg } else { tg.on_toggle(move |v| Msg::AllowCalls(did.clone(), v)) };
+            line(t, "Allow calls", &sub, tg.into())
         });
 
         let panel: Option<El> = match self.detail {

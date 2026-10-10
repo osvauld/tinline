@@ -32,13 +32,16 @@ fun ContactScreen(
     contact: Contact, onBack: () -> Unit, onCall: () -> Unit, onBlock: () -> Unit,
     history: List<RecentCall> = emptyList(), onRename: (String?) -> Unit = {}, onVerify: () -> Unit = {}, onMessage: (() -> Unit)? = null,
     block: BlockView = BlockView(), onUnblock: () -> Unit = {},
+    /** P6: whether they let us call (NotAllowed: the button is crossed out and says why), and our "Allow calls" switch. */
+    callGate: CallGate = CallGate.Ok, callsAllowed: Boolean? = null, onAllowCalls: (Boolean) -> Unit = {},
 ) {
     val alias = contact.alias?.takeIf { it.isNotBlank() }
     val verified = contact.verified
     val c = Tin.c
     var confirmBlock by remember { mutableStateOf(false) }
     val blockedMe = block.blockedMeAtSecs != null
-    val canCall = !block.blockedByMe && !blockedMe
+    val closed = block.blockedByMe || blockedMe || callGate == CallGate.Closed
+    val canCall = !closed && callGate == CallGate.Ok
     var renaming by remember { mutableStateOf(false) }
     val shown = contact.display()
     Page {
@@ -61,7 +64,7 @@ fun ContactScreen(
                         Text("Verified", style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.onPrc)
                     }
                 }
-                TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = if (canCall) Icons.Rounded.Call else Icons.Rounded.PhoneDisabled, enabled = canCall)
+                TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = if (canCall) Icons.Rounded.Call else Icons.Rounded.PhoneDisabled, enabled = !closed)
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (onMessage != null) ActionChip(Icons.Rounded.Chat, "Message", c.pr, onMessage)
                     ActionChip(Icons.Rounded.Edit, "Rename", c.pr) { renaming = true }
@@ -69,6 +72,13 @@ fun ContactScreen(
                     if (block.blockedByMe) ActionChip(Icons.Rounded.Block, "Unblock", c.pr, onUnblock)
                     else ActionChip(Icons.Rounded.Block, "Block", c.er) { confirmBlock = true }
                 }
+            }
+            if (callsAllowed != null) {
+                val f = firstName(shown)
+                SectionLabel("WHAT ${f.uppercase()} CAN DO", Modifier.padding(top = 8.dp))
+                ListItem("Allow calls", icon = Icons.Rounded.Call,
+                    sub = when { block.blockedByMe -> "Blocked: nothing gets through until you unblock."; callsAllowed -> "$f can ring this phone and your other devices."; else -> "Off. $f can message you; their calls don’t ring." },
+                    trailing = { TinSwitch(callsAllowed, { if (!block.blockedByMe) onAllowCalls(it) }, "Allow calls") })
             }
             if (history.isNotEmpty()) {
                 SectionLabel("CALLS WITH ${shown.uppercase()}", Modifier.padding(top = 8.dp))

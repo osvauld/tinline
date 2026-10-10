@@ -335,6 +335,8 @@ enum Msg {
     /// Block a contact (after the confirmation).
     Block(String),
     Unblock(String),
+    /// "Allow calls" for a contact (P6).
+    AllowCalls(String, bool),
     Done(Result<(), String>),
     Answer,
     Decline,
@@ -887,7 +889,11 @@ impl App {
                 let (direct, secs) = c.stats.as_ref().map(|s| (s.direct, s.secs)).unwrap_or((false, 0));
                 let did = c.info.peer_did.clone();
                 let mut presentation = reason::present(&reason, &who, c.info.incoming, c.answered);
-                // "blocked" ends the call on both sides: say which side blocked.
+                // "blocked" ends the call on both sides: say which side blocked. "calls not
+                // allowed" turns their call token off here.
+                if reason == p2pcore::CALLS_NOT_ALLOWED {
+                    self.refresh_blocks();
+                }
                 if reason == p2pcore::BLOCKED {
                     self.refresh_blocks();
                     if self.blocks.blocked_by_me(&did) {
@@ -1024,11 +1030,14 @@ impl App {
         if self.call.is_some() {
             return Task::none();
         }
-        if !self.demo && !self.blocks.can_call(&did, self.is_contact(&did)) {
+        use crate::blocks::{CallGate, Composer};
+        let gate = if self.demo { CallGate::Ok } else { self.blocks.call_gate(&did, self.is_contact(&did)) };
+        if gate != CallGate::Ok {
             let name = self.chat_name(&did);
-            self.notice = Some(match self.blocks.composer(&did, true) {
-                crate::blocks::Composer::BlockedByMe => format!("You blocked {name}. Unblock to call."),
-                crate::blocks::Composer::BlockedMe => format!("Can\u{2019}t call: {} blocked you", crate::blocks::first_name(&name)),
+            self.notice = Some(match gate {
+                CallGate::Closed(Composer::BlockedByMe) => format!("You blocked {name}. Unblock to call."),
+                CallGate::Closed(Composer::BlockedMe) => format!("Can\u{2019}t call: {} blocked you", crate::blocks::first_name(&name)),
+                CallGate::NotAllowed => crate::blocks::calls_not_allowed_text(&name),
                 _ => format!("{name} is no longer in your contacts."),
             });
             return Task::none();
@@ -1797,6 +1806,10 @@ impl App {
                 self.detail = Detail::View;
                 let node = self.node.clone();
                 return blocking(move || crate::blocks::BlockApi::block(&*node, did).map_err(s), Msg::Done);
+            }
+            Msg::AllowCalls(did, on) => {
+                let node = self.node.clone();
+                return blocking(move || node.allow_calls(did, on).map_err(s), Msg::Done);
             }
             Msg::Unblock(did) => {
                 let node = self.node.clone();

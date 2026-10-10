@@ -281,7 +281,7 @@ fun ConversationScreen(
     val byId = remember(msgs.toList()) { msgs.associateBy { it.id } }
     Box(Modifier.fillMaxSize()) {
         Page {
-            ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf, composerState)
+            ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf, composerState, block?.callGate ?: CallGate.Ok)
             if (link == Link.Offline && composerState == ComposerState.Open) InfoCard(
                 "$first isn’t reachable right now. Your messages stay on this phone and send by themselves when you’re both online.",
                 Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp), icon = Icons.Rounded.Schedule, kind = BannerKind.Warn,
@@ -368,7 +368,7 @@ fun ConversationScreen(
 }
 
 @Composable
-private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean, blockState: ComposerState = ComposerState.Open) {
+private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean, blockState: ComposerState = ComposerState.Open, callGate: CallGate = CallGate.Ok) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
@@ -387,7 +387,7 @@ private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> 
         }
         // Crossed out while either side blocks; tapping says why.
         if (!isSelf) {
-            if (blockState == ComposerState.Open) IconBtn(Icons.Rounded.Call, "Call $first", onCall, tint = c.pr)
+            if (blockState == ComposerState.Open && callGate == CallGate.Ok) IconBtn(Icons.Rounded.Call, "Call $first", onCall, tint = c.pr)
             else IconBtn(Icons.Rounded.PhoneDisabled, "Can’t call $first", onCall, tint = c.ink2)
         }
     }

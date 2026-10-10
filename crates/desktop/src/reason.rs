@@ -43,6 +43,8 @@ pub fn text(reason: &str, name: &str) -> Option<String> {
         // Either side's block ends the call with this token; the app says "You blocked X" when
         // it was ours.
         "blocked" => format!("{} blocked you", crate::blocks::first_name(name)),
+        // P6: they let us message them but not call.
+        "calls not allowed" => format!("{} hasn\u{2019}t allowed calls from you", crate::blocks::first_name(name)),
         "superseded" => return None,
         // Tokens from a newer core: say something rather than nothing.
         _ => "Call ended".into(),
@@ -71,6 +73,7 @@ pub fn history(reason: &str, incoming: bool, missed: bool, secs: u32, name: &str
         "answered_elsewhere" => "Answered on another device".into(),
         "declined_elsewhere" => "Declined on another device".into(),
         "blocked" => "Blocked".into(),
+        "calls not allowed" => "Calls not allowed".into(),
         _ if secs > 0 => format!("{} \u{b7} {}", if incoming { "Incoming" } else { "Outgoing" }, dur(secs)),
         r => text(r, name).unwrap_or_else(|| "Call".into()),
     }
@@ -93,6 +96,7 @@ mod tests {
         assert_eq!(history("declined_elsewhere", true, false, 0, "Ann"), "Declined on another device");
         assert_eq!(text("blocked", "Ann Lee").as_deref(), Some("Ann blocked you"));
         assert_eq!(history("blocked", false, false, 0, "Ann"), "Blocked");
+        assert_eq!(text(p2pcore::CALLS_NOT_ALLOWED, "Ann Lee").as_deref(), Some("Ann hasn\u{2019}t allowed calls from you"));
     }
 
     #[test]

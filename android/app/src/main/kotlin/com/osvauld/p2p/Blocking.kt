@@ -51,11 +51,18 @@ enum class ComposerState {
     NotContact,
 }
 
+/** Why the call button does or doesn't dial. */
+enum class CallGate { Ok, Closed, NotAllowed }
+
 data class Blocks(
     /** Only conversations with a block on either side. */
     val states: Map<String, BlockView> = emptyMap(),
     /** Newest first; one list across all our devices. */
     val list: List<BlockedRow> = emptyList(),
+    /** Contacts we let call us ("Allow calls" on; P6 Node.callsAllowed). */
+    val allowed: Set<String> = emptySet(),
+    /** Contacts whose call token we hold: they let us call them (P6 Node.canCall). */
+    val tokens: Set<String> = emptySet(),
 ) {
     fun of(did: String): BlockView = states[did] ?: list.firstOrNull { it.did == did }?.let { BlockView(true, it.blockedAtSecs) } ?: BlockView()
     fun blockedByMe(did: String) = of(did).blockedByMe
@@ -69,8 +76,17 @@ data class Blocks(
         else -> ComposerState.Open
     }
 
-    /** Calling is off while either side blocks, and for someone who is not a contact. */
-    fun canCall(did: String, contact: Boolean) = composer(did, contact) == ComposerState.Open
+    /** Closed while either side blocks or they are not a contact; NotAllowed when they let us message, not call. */
+    fun callGate(did: String, contact: Boolean): CallGate = when {
+        composer(did, contact) != ComposerState.Open -> CallGate.Closed
+        did !in tokens -> CallGate.NotAllowed
+        else -> CallGate.Ok
+    }
+
+    fun canCall(did: String, contact: Boolean) = callGate(did, contact) == CallGate.Ok
+
+    /** The "Allow calls" switch: whether we let them call us. */
+    fun callsAllowed(did: String) = did in allowed
 
     /** The red line under the name in lists and headers. */
     fun status(did: String): String? = when (composer(did, true)) {
@@ -81,13 +97,13 @@ data class Blocks(
 
     companion object {
         /** Builds the state from per-DID reads; DIDs with no block on either side are dropped. */
-        fun from(views: Map<String, BlockView>, list: List<BlockedRow>) =
-            Blocks(views.filterValues { it.blockedByMe || it.blockedMeAtSecs != null }, list.sortedByDescending { it.blockedAtSecs })
+        fun from(views: Map<String, BlockView>, list: List<BlockedRow>, allowed: Set<String> = emptySet(), tokens: Set<String> = emptySet()) =
+            Blocks(views.filterValues { it.blockedByMe || it.blockedMeAtSecs != null }, list.sortedByDescending { it.blockedAtSecs }, allowed, tokens)
     }
 }
 
 /** What a conversation needs to know about blocking. */
-data class ConvBlock(val view: BlockView, val composer: ComposerState)
+data class ConvBlock(val view: BlockView, val composer: ComposerState, val callGate: CallGate = CallGate.Ok)
 
 /** All the words of blocking in one place. */
 object BlockCopy {
@@ -114,8 +130,10 @@ object BlockCopy {
         ComposerState.BlockedByMe -> "You blocked ${firstName(name)}. Unblock to call."
         ComposerState.BlockedMe -> "Can’t call: ${firstName(name)} blocked you"
         ComposerState.NotContact -> "${firstName(name)} is no longer in your contacts."
-        ComposerState.Open -> ""
+        ComposerState.Open -> callsNotAllowed(name)
     }
+    /** Tapping call on someone who hasn't allowed calls from us, and a call that ended that way (P6). */
+    fun callsNotAllowed(name: String) = "${firstName(name)} hasn’t allowed calls from you. You can still message them."
     const val UNBLOCK_NOTE = "They are told you unblocked them and can message you again once they add you back: their app removed you from their contacts when you blocked them. Your chat history is kept either way."
 
     fun date(secs: Long, zone: ZoneId = ZoneId.systemDefault()): String =

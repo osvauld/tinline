@@ -1,5 +1,7 @@
-//! Contact blocking on the desktop, on the core's real API (`Node::block`, `unblock`,
-//! `block_state`, `blocked_contacts`, `not_delivered_reason`; `crates/core/src/block.rs`).
+//! Contact blocking and call permissions on the desktop, on the core's real API (`Node::block`,
+//! `unblock`, `block_state`, `blocked_contacts`, `not_delivered_reason`;
+//! `crates/core/src/block.rs`; and P6's `allow_calls`, `calls_allowed`, `can_call`;
+//! `crates/core/src/caps.rs`).
 //!
 //! Decisions (rotation-open-decisions.md §0): blocking is visible to the blocked person (U5
 //! revised); a contact's action is Block and there is no "Remove contact" (U19); every block
@@ -21,6 +23,10 @@ pub trait BlockApi {
     fn block_state(&self, did: String) -> BlockState;
     fn blocked_contacts(&self) -> Vec<BlockedContact>;
     fn not_delivered_reason(&self, peer_did: String, message_id: String) -> Option<String>;
+    /// We let them call us (U13, "Allow calls").
+    fn calls_allowed(&self, did: String) -> bool;
+    /// We hold their call token: the call button.
+    fn holds_call_token(&self, did: String) -> bool;
 }
 
 impl BlockApi for Node {
@@ -39,20 +45,12 @@ impl BlockApi for Node {
     fn not_delivered_reason(&self, peer_did: String, message_id: String) -> Option<String> {
         Node::not_delivered_reason(self, peer_did, message_id)
     }
-}
-
-/// "Allow calls" for a contact (U13; packet P6 adds `Node::allow_calls` / `calls_allowed`).
-/// Until then this answers `None` and the switch exists only in the groups preview, on
-/// placeholder data. Wiring P6 is one line each: `Some(node.calls_allowed(did.into()))` and
-/// `node.allow_calls(did.into(), on)`.
-pub fn calls_allowed(_node: &Node, _did: &str) -> Option<bool> {
-    None
-}
-
-/// See `calls_allowed`.
-#[allow(dead_code)]
-pub fn allow_calls(_node: &Node, _did: &str, _on: bool) -> Result<(), Error> {
-    Err(Error::Protocol("call permissions are not available yet".into()))
+    fn calls_allowed(&self, did: String) -> bool {
+        Node::calls_allowed(self, did)
+    }
+    fn holds_call_token(&self, did: String) -> bool {
+        Node::can_call(self, did)
+    }
 }
 
 /// What sits where the composer goes.
@@ -76,6 +74,20 @@ pub struct Blocks {
     states: HashMap<String, BlockState>,
     /// (peer, message id) of our messages that will not arrive because the peer blocked us.
     undelivered: HashSet<(String, String)>,
+    /// Contacts we let call us ("Allow calls" on).
+    allowed: HashSet<String>,
+    /// Contacts whose call token we hold (they let us call them).
+    tokens: HashSet<String>,
+}
+
+/// Why the call button does or doesn't dial.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallGate {
+    Ok,
+    /// Blocked on either side, or no longer a contact (`Composer` says which).
+    Closed(Composer),
+    /// They let us message them but not call (no call token from them; P6).
+    NotAllowed,
 }
 
 impl Blocks {
@@ -83,7 +95,15 @@ impl Blocks {
     pub fn refresh(&mut self, api: &dyn BlockApi, dids: impl IntoIterator<Item = String>) {
         self.list = api.blocked_contacts();
         self.states.clear();
+        self.allowed.clear();
+        self.tokens.clear();
         for did in dids {
+            if api.calls_allowed(did.clone()) {
+                self.allowed.insert(did.clone());
+            }
+            if api.holds_call_token(did.clone()) {
+                self.tokens.insert(did.clone());
+            }
             let st = api.block_state(did.clone());
             if st.blocked_by_me || st.blocked_me.is_some() {
                 self.states.insert(did, st);
@@ -137,9 +157,23 @@ impl Blocks {
         }
     }
 
-    /// Calling is off while either side blocks, and for someone who is not a contact.
+    /// Calling is off while either side blocks, for someone who is not a contact, and when they
+    /// have not allowed calls from us.
+    pub fn call_gate(&self, did: &str, contact: bool) -> CallGate {
+        match self.composer(did, contact) {
+            Composer::Open if self.tokens.contains(did) => CallGate::Ok,
+            Composer::Open => CallGate::NotAllowed,
+            other => CallGate::Closed(other),
+        }
+    }
+
     pub fn can_call(&self, did: &str, contact: bool) -> bool {
-        self.composer(did, contact) == Composer::Open
+        self.call_gate(did, contact) == CallGate::Ok
+    }
+
+    /// The "Allow calls" switch: whether we let them call us.
+    pub fn calls_allowed(&self, did: &str) -> bool {
+        self.allowed.contains(did)
     }
 
     /// The red line under the name, in lists and headers.
@@ -173,6 +207,11 @@ pub fn block_dialog(name: &str) -> (String, Vec<String>) {
             "Groups you share are not affected.".into(),
         ],
     )
+}
+
+/// Tapping call on someone who has not allowed calls from us, and a call that ended that way.
+pub fn calls_not_allowed_text(name: &str) -> String {
+    format!("{} hasn\u{2019}t allowed calls from you. You can still message them.", first_name(name))
 }
 
 /// Under one of our messages that will not arrive.
@@ -221,6 +260,9 @@ mod tests {
         pending: RefCell<HashSet<(String, String)>>,
         chats: RefCell<HashSet<String>>,
         clock: RefCell<u64>,
+        /// We let them call; their token held by us.
+        allowed: RefCell<HashSet<String>>,
+        tokens: RefCell<HashSet<String>>,
     }
 
     impl Core {
@@ -229,6 +271,9 @@ mod tests {
             for d in contacts {
                 c.contacts.borrow_mut().push(d.to_string());
                 c.chats.borrow_mut().insert(d.to_string());
+                // Ticket contacts: message + call both ways.
+                c.allowed.borrow_mut().insert(d.to_string());
+                c.tokens.borrow_mut().insert(d.to_string());
             }
             c
         }
@@ -279,6 +324,12 @@ mod tests {
         }
         fn not_delivered_reason(&self, peer: String, id: String) -> Option<String> {
             (self.notices.borrow().contains_key(&peer) && self.pending.borrow().contains(&(peer, id))).then(|| "blocked".into())
+        }
+        fn calls_allowed(&self, did: String) -> bool {
+            self.contacts.borrow().contains(&did) && self.allowed.borrow().contains(&did)
+        }
+        fn holds_call_token(&self, did: String) -> bool {
+            !self.notices.borrow().contains_key(&did) && self.contacts.borrow().contains(&did) && self.tokens.borrow().contains(&did)
         }
     }
 
@@ -373,6 +424,34 @@ mod tests {
         assert!(!b.can_call("meera", false));
         assert_eq!(b.status("meera"), None);
         assert!(not_contact_line("Meera K").contains("Add Meera again"));
+    }
+
+    #[test]
+    fn call_permissions_gate_the_call_button() {
+        let core = Core::with(&["ann", "priya"]);
+        // Priya (a group chat-request contact) let us message her, not call.
+        core.tokens.borrow_mut().remove("priya");
+        core.allowed.borrow_mut().remove("priya");
+        let mut b = Blocks::default();
+        b.refresh(&core, core.dids());
+        assert_eq!(b.call_gate("ann", true), CallGate::Ok);
+        assert!(b.calls_allowed("ann"));
+        assert_eq!(b.call_gate("priya", true), CallGate::NotAllowed);
+        assert!(!b.can_call("priya", true));
+        assert!(!b.calls_allowed("priya"));
+        assert_eq!(b.composer("priya", true), Composer::Open, "messaging is unaffected");
+        assert!(calls_not_allowed_text("Priya N").starts_with("Priya hasn"));
+
+        // We allow Priya to call us: only our switch changes.
+        core.allowed.borrow_mut().insert("priya".into());
+        b.refresh(&core, core.dids());
+        assert!(b.calls_allowed("priya"));
+        assert_eq!(b.call_gate("priya", true), CallGate::NotAllowed);
+
+        // A block closes calling whatever the tokens say.
+        core.block("ann".into()).unwrap();
+        b.refresh(&core, core.dids());
+        assert_eq!(b.call_gate("ann", true), CallGate::Closed(Composer::BlockedByMe));
     }
 
     #[test]

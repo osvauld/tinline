@@ -120,6 +120,8 @@ fun endReasonText(reason: String, peerName: String, incoming: Boolean = false, b
         "answered_elsewhere" -> "Answered on another device"
         "declined_elsewhere" -> "Declined on another device"
         // Either side's block ends the call with the same token; [blockedByMe] says which.
+        // P6: they let us message them but not call.
+        "calls not allowed" -> "${firstName(who)} hasn’t allowed calls from you"
         "blocked" -> if (blockedByMe) "You blocked ${firstName(who)}" else "${firstName(who)} blocked you"
         else -> "Call ended"
     }

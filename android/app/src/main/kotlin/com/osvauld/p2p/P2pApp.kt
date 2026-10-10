@@ -370,13 +370,21 @@ class P2pApp : Application(), NodeEvents {
                 BlockView(st.blockedByMe, st.blockedAt?.toLong(), st.blockedMe?.signedAt?.toLong())
             }
             val list = node.blockedContacts().map { BlockedRow(it.did, it.name, it.blockedAt.toLong()) }
-            _blocks.value = Blocks.from(views, list)
+            val allowed = dids.filter { node.callsAllowed(it) }.toSet()
+            val tokens = dids.filter { node.canCall(it) }.toSet()
+            _blocks.value = Blocks.from(views, list, allowed, tokens)
         } catch (e: Exception) { Log.w(TAG, "blocks: $e") }
     }
 
     /** U19: the contact action. Keeps the contact and the chat; they are told. */
     fun block(did: String) = scope.launch {
         try { node.block(did) } catch (e: Exception) { Log.w(TAG, "block: $e") }
+        refreshBlocks()
+    }
+
+    /** "Allow calls" (U13, P6): whether [did] may ring us. They keep messaging either way. */
+    fun allowCalls(did: String, allowed: Boolean) = scope.launch {
+        try { node.allowCalls(did, allowed) } catch (e: Exception) { Log.w(TAG, "allowCalls: $e") }
         refreshBlocks()
     }
 

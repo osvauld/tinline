@@ -239,12 +239,13 @@ impl App {
         .on_press_maybe((!me && contact).then_some(Msg::Chat(Cm::Info(true))));
         let mut head_row = row![who, Space::new().width(Fill)].spacing(8).align_y(Alignment::Center);
         if !me {
-            // Crossed out while either side blocks (or they are no longer a contact).
-            let can_call = self.blocks.can_call(&c.did, contact);
-            head_row = head_row.push(if can_call {
-                pill(t, Kind::Primary, Some(Icon::Phone), "Call", (!calling).then(|| Msg::CallPressed(c.did.clone())))
-            } else {
-                pill(t, Kind::Quiet, Some(Icon::PhoneOff), "Call", None)
+            // Crossed out and off while either side blocks (or they are no longer a contact);
+            // crossed out but tappable (it says why) when they haven't allowed calls from us.
+            use crate::blocks::CallGate;
+            head_row = head_row.push(match self.blocks.call_gate(&c.did, contact) {
+                CallGate::Ok => pill(t, Kind::Primary, Some(Icon::Phone), "Call", (!calling).then(|| Msg::CallPressed(c.did.clone()))),
+                CallGate::NotAllowed => pill(t, Kind::Quiet, Some(Icon::PhoneOff), "Call", Some(Msg::CallPressed(c.did.clone()))),
+                CallGate::Closed(_) => pill(t, Kind::Quiet, Some(Icon::PhoneOff), "Call", None),
             });
             if contact {
                 head_row = head_row.push(icon_btn(t, Icon::ShieldCheck, Msg::Chat(Cm::Info(true))));
