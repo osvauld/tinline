@@ -534,3 +534,14 @@ takeover `CallStart` lists the previous backups minus the new host; G10 members 
 
 **Still ignored:** GC-S01b (no signed device-list fixture), GC-S07b (packet-size plausibility
 needs a real encoder; GC-D09). On-device GC-D01..D09 wait for the call layer.
+
+## 10. Decisions after the test-first pass (user, 2026-10-10)
+
+- **G6-D2 — temporary extra slot for new speakers.** When S is full and a non-selected sender
+  crosses the speech threshold, H forwards it at once as a provisional slot K+1 (announced in
+  `Active`). After 200 ms hysteresis decides: it replaces a member of S or is dropped. At most
+  one provisional slot at a time; the §4 uplink bound becomes N×(K+1) for short bursts.
+- **G6-D3 — §8 Q1–Q14 taken as recommended** (lead's reading of the user's "1 yes"; correct
+  here if wrong). The values are the named constants in `group_call.rs` and `group_call_tests.rs`.
+- The §9 gaps G1–G10 are settled by the lead in the call-engine packet (GA-P1) as modelled,
+  unless one changes user-visible behaviour.
