@@ -1,4 +1,4 @@
-//! The chat runtime: sealed store, shard cache, sessions over `tinline/chat/2`, outbox/retry,
+//! The chat runtime: sealed store, shard cache, sessions over `tinline/chat/3`, outbox/retry,
 //! blob transfers. Everything hangs off `Inner` (see `node.rs`); the UniFFI methods in `api.rs`
 //! are thin wrappers over the `chat_*` functions here.
 
@@ -13,7 +13,7 @@ use iroh_blobs::Hash;
 use loro::VersionVector;
 use parking_lot::Mutex;
 use proto::Msg;
-use storage::{Op, Store as Db};
+use storage::Op;
 use tokio::sync::{OnceCell, Semaphore, mpsc, oneshot};
 
 use super::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
@@ -68,6 +68,8 @@ pub struct ChatCore {
     device_id: [u8; 32],
     /// Our writer ID: `writer_id(our DID, value)`, the Loro peer id we write chat docs with.
     pub(crate) wid: u64,
+    /// Test knob: the next this-many `chat_persist` calls fail, as if the disk were full.
+    pub(crate) fail_writes: std::sync::atomic::AtomicU32,
 }
 
 pub enum Cmd {
@@ -164,8 +166,21 @@ impl Inner {
             Some(a) => a.store.dir().to_path_buf(),
             None => return,
         };
+        // A chat store that is not there yet starts from nothing: whatever this install wrote
+        // before under its writer ID (a lost or deleted store) is not in it, but contacts may hold
+        // it. Writing again from counter 0 under the same writer ID would hand them ops they take
+        // for ones they have and drop (P10), so a fresh store gets a fresh device ID, hence a
+        // fresh writer ID. Saved before the file exists: a crash in between only rotates again.
+        let path = dir.join("chat.redb");
+        if !path.exists()
+            && let Err(e) = self.new_device_id()
+        {
+            tracing::warn!("chat store: device id: {e}");
+            return;
+        }
         // Keyed by the recovery phrase; a store from before that is re-keyed here (rekey.rs).
-        let sealed = match Db::open(dir.join("chat.redb")).map_err(|e| crate::Error::Io(e.to_string())).and_then(|db| {
+        // The node before a restart may still hold the file for a moment: `open_waiting`.
+        let sealed = match crate::store::open_waiting(&path).and_then(|db| {
             crate::rekey::open(
                 db,
                 crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase),
@@ -201,8 +216,21 @@ impl Inner {
             presence: super::presence::Presence::new(),
             device_id: value,
             wid: writer_id(&did, &value),
+            fail_writes: Default::default(),
         });
         *self.chat.lock() = Some(core);
+    }
+
+    /// Gives this install a new device ID (`ProfileV2::device_id`) and saves the profile.
+    fn new_device_id(&self) -> Result<(), Error> {
+        let mut s = self.shared.lock();
+        let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
+        let mut p = p.clone();
+        p.device_id = Some(crate::store::new_device_id());
+        let disk = crate::store::Disk::V2(p);
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
+        s.disk = Some(disk);
+        Ok(())
     }
 
     /// This install's device ID (`ProfileV2::device_id`, U16); made here once if the profile
@@ -750,10 +778,21 @@ impl Inner {
     }
 
     /// Loads the shard into the cache (creating an empty one) and returns whether it was there.
+    /// A cached shard that holds other ops than the store (a write whose `chat_persist` failed
+    /// after the doc took it) is dropped and loaded again: its ops were never stored, so they
+    /// must never be sent, and our next write must not build on them (P10).
     pub(crate) async fn chat_shard(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<(), Error> {
         let key = (pair.to_string(), day.to_string());
-        if core.shards.lock().contains_key(&key) {
-            return Ok(());
+        {
+            let mut cache = core.shards.lock();
+            if let Some(s) = cache.get(&key) {
+                let stored = core.store.shard_meta(pair, day)?.and_then(|m| decode_vv(&m.vv).ok()).unwrap_or_default();
+                if s.vv() == stored {
+                    return Ok(());
+                }
+                tracing::warn!("chat: cached {day} differs from the store; reloading it");
+                cache.remove(&key);
+            }
         }
         let meta = core.store.shard_meta(pair, day)?;
         let (snap, ups) = core.store.shard_rows(pair, day)?;
@@ -782,10 +821,8 @@ impl Inner {
     }
 
     /// Persists a shard change: the update (or a fresh snapshot every so often), the meta, and
-    /// `extra` ops, in one transaction. Call with the shard cache locked.
-    /// Callers hold `core.shards`, as `chat_purge` does while it deletes: a write racing a
-    /// contact's removal either lands before the purge (and is deleted with the rest) or finds
-    /// the conversation gone, so a removed conversation is never written back.
+    /// `extra` ops, in one transaction. Call with the shard cache locked. On failure the cached
+    /// shard is ahead of the store; `chat_shard` reloads it before anyone uses it again.
     pub(crate) fn chat_persist(&self, core: &ChatCore, pair: &str, shard: &Shard, update: &[u8], mut extra: Vec<Op>) -> Result<(), Error> {
         let me = self.me()?;
         if self.pair_owner(&me, pair).is_none() {
@@ -804,6 +841,9 @@ impl Inner {
             meta.n_updates += 1;
         }
         extra.push(core.store.put_meta_op(pair, day, &meta)?);
+        if core.fail_writes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
+            return Err(Error::Io("test: chat write failed".into()));
+        }
         core.store.db.apply(&extra).map_err(io)?;
         self.selfsync_dirty(&doc_name(pair, day));
         Ok(())
@@ -2057,34 +2097,6 @@ impl Inner {
             Some(day) => core.store.mo(&pair, &day, id).ok().flatten().is_some() && Self::chat_delivery(&core, &pair, &day, id) == DeliveryState::Pending,
             None => false,
         }
-    }
-
-    /// The conversation and its blobs go away on this device.
-    #[allow(dead_code)] // No caller since a block keeps the history (U19); see docs/chat.md.
-    pub(crate) fn chat_purge(self: &Arc<Self>, did: &str) {
-        let Ok(core) = self.chat_core() else { return };
-        let Ok(me) = self.me() else { return };
-        let pair = pair_id(me.id.did(), did);
-        self.chat_close_sessions(did);
-        let hashes = {
-            let mut shards = core.shards.lock();
-            shards.retain(|(p, _), _| *p != pair);
-            let hashes = core.store.conv_blobs(&pair).unwrap_or_default();
-            if let Err(e) = core.store.delete_conversation(&pair, &hashes) {
-                tracing::warn!("deleting conversation: {e}");
-            }
-            hashes
-        };
-        let this = self.clone();
-        self.handle.spawn(async move {
-            if let Ok(hub) = this.chat_hub().await {
-                for h in hashes {
-                    if let Ok(h) = parse_hash(&h) {
-                        let _ = hub.release(&h).await;
-                    }
-                }
-            }
-        });
     }
 }
 

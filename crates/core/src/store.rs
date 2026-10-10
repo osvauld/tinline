@@ -301,22 +301,27 @@ const STATE_KEY: &str = "state";
 const CALLS_KEY: &str = "calls";
 const LABEL_KEY: &str = "device_label";
 
-/// Opens (creating) the account's sealed store. It is keyed by the recovery `phrase` (see
-/// `rekey.rs`); `dek` lets a store from before that change be re-keyed on the way.
-pub fn open_sealed(dir: &Path, phrase: &str, dek: Option<&[u8; 32]>) -> Result<storage::Sealed, Error> {
-    let path = dir.join("account.redb");
-    // A previous owner of the file (a task of an account just left) may still hold it for a moment.
+/// Opens (creating) a store file. A previous owner of the file (the node of a restart, or a task
+/// of an account just left) may still hold it for a moment: retried for up to about 2 s.
+pub fn open_waiting(path: &Path) -> Result<storage::Store, Error> {
     let mut tries = 0;
-    let db = loop {
-        match storage::Store::open(&path) {
-            Ok(db) => break db,
+    loop {
+        match storage::Store::open(path) {
+            Ok(db) => return Ok(db),
             Err(e) if tries >= 20 => return Err(Error::Io(e.to_string())),
             Err(_) => {
                 tries += 1;
                 std::thread::sleep(std::time::Duration::from_millis(100));
             }
         }
-    };
+    }
+}
+
+/// Opens (creating) the account's sealed store. It is keyed by the recovery `phrase` (see
+/// `rekey.rs`); `dek` lets a store from before that change be re-keyed on the way.
+pub fn open_sealed(dir: &Path, phrase: &str, dek: Option<&[u8; 32]>) -> Result<storage::Sealed, Error> {
+    let path = dir.join("account.redb");
+    let db = open_waiting(&path)?;
     set_private(&path);
     crate::rekey::open(
         db,
@@ -700,6 +705,29 @@ mod tests {
         assert_eq!(mode(&fresh.join("state.json")), 0o600);
         let _ = fs::remove_dir_all(&dir);
         let _ = fs::remove_dir_all(&top);
+    }
+
+    // KIND: invariant (P10)
+    // A store file another owner still holds for a moment (the node before a restart) opens once
+    // it is let go, instead of failing at once; one held for good still fails, after ~2 s.
+    #[test]
+    fn a_store_still_held_opens_once_released() {
+        let dir = tmp("held");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("chat.redb");
+        let held = storage::Store::open(&path).unwrap();
+        assert!(storage::Store::open(&path).is_err(), "redb refuses a second owner");
+        let t = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            drop(held);
+        });
+        open_waiting(&path).unwrap();
+        t.join().unwrap();
+        let _again = open_waiting(&path).unwrap();
+        let start = std::time::Instant::now();
+        assert!(open_waiting(&path).is_err());
+        assert!(start.elapsed() >= std::time::Duration::from_secs(1));
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

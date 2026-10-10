@@ -1,5 +1,5 @@
 //! Several devices of one account: linking (`tinline/link/1`) and own-device sync
-//! (`tinline/self/2`). See docs/design/device-linking.md and docs/protocol.md.
+//! (`tinline/self/3`). See docs/design/device-linking.md and docs/protocol.md.
 
 pub(crate) mod accdoc;
 pub(crate) mod callsdoc;

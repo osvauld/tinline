@@ -232,7 +232,7 @@ reason. Failure tokens surfaced to the UI: `expired cancelled rejected bad_proof
 net locked busy bad_grant account_exists`. Locking E cancels its link. Env knob for tests:
 `P2P_LINK_TTL_SECS`.
 
-### Own-device sync (ALPN `tinline/self/2`, task 34d; `/1` refused since P9c, see "Protocol versions")
+### Own-device sync (ALPN `tinline/self/3`, task 34d; `/1` refused since P9c, `/2` since P10, see "Protocol versions")
 
 Frames: u32 BE length + bincode of `SelfMsg` (16 MiB cap).
 
@@ -304,7 +304,7 @@ add more docs to the `Hello` list (done in 34g, below).
 - Live updates: a write to any shard marks it dirty for every session, which pushes the ops the peer
   lacks. Blobs use the stock iroh-blobs ALPN: an own (non-removed) device is served any blob that any of our
   conversations references.
-- Contacts are unaffected: `tinline/chat/2` stays one session per contact *device*, each device sends
+- Contacts are unaffected: `tinline/chat/3` stays one session per contact *device*, each device sends
   its own ops only, and a session can name only `dm/{pair with that contact}/{day}`.
 
 | Check | Defends against |
@@ -322,19 +322,21 @@ add more docs to the `Hello` list (done in 34g, below).
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
-## Protocol versions (P9c, U18; bumped again by P6)
+## Protocol versions (P9c, U18; P10; P6)
 
-**P6 bump.** Separate message and call tokens changed what the contact exchange, calls and the
-chat `Auth` carry, and the account doc gained call tokens, call permissions and cut-offs. The
-current versions are `osvauld/p2p/1`, `tinline/chat/3` and `tinline/self/3`; `osvauld/p2p/0`,
-`tinline/chat/2` and `tinline/self/2` are refused the same way as the P9c ones below
-(`crates/core/src/version.rs`: `CALL`, `CHAT`, `OWN`). No compatibility (U18).
+**P6.** Separate message and call tokens changed what the contact exchange, calls and the chat
+`Auth` carry, and the account doc gained call tokens, call permissions and cut-offs. Chat and
+own-device sync share P10's bump (`tinline/chat/3`, `tinline/self/3`, same release); calls and
+contacts moved to `osvauld/p2p/1`, and `osvauld/p2p/0` is refused the same way
+(`crates/core/src/version.rs`: `CALL`). No compatibility (U18).
 
-The chat content format changed incompatibly (below), so the chat wire is `tinline/chat/2` and
-own-device sync, which relays chat docs, is `tinline/self/2`. There is no compatibility with apps
-or data from before P9c: installing this build means wiping the app data on every device.
+The chat content format changed incompatibly (below; P9c: DID-signed record fields, P10: one
+version per writer), so the chat wire is `tinline/chat/3` and own-device sync, which relays chat
+docs, is `tinline/self/3`. There is no compatibility with apps or data from before: installing this
+build means wiping the app data on every device.
 
-- Accepting: the endpoint lists `tinline/chat/1` and `tinline/self/1` only to refuse them. Such a
+- Accepting: the endpoint lists `tinline/chat/1`, `tinline/chat/2`, `tinline/self/1` and
+  `tinline/self/2` only to refuse them. Such a
   connection is accepted and closed at once with application close code **426** and the reason
   `"<chat|own-device sync> <old alpn> is no longer supported, this app speaks <new alpn>: update the
   app (and wipe its data)"` (`crates/core/src/version.rs` `refuse`, called from the accept loop in
@@ -350,31 +352,37 @@ Formats inside the chat docs (`dm/{pair}/{day}`); the wire batch `sig` (device k
 `"tinline-chat-batch-v1" ‖ len(doc) ‖ doc ‖ update`) authenticates the sending device only.
 Design and rules: docs/chat.md section 7 "Signatures and writer IDs".
 
-- **Record**: `{ id, author, at, reply_to?, file?, v }`; `id/author/at/reply_to/file` written once
-  at creation; `v` = the current version, one map value
-  `{ text, edited_at?, deleted, dev: hex(device ID), did_sig: hex(64 bytes) }`.
+- **Record**: `{ id, author, at, reply_to?, file?, v:<writer>... }`; `id/author/at/reply_to/file`
+  written once at creation; `v:<writer ID as 16 lowercase hex digits>` = that writer's latest
+  version, one map value `{ text, edited_at?, deleted, dev: hex(device ID), did_sig: hex(64 bytes) }`.
+  Only that writer writes its key. The message shows its highest-ranked version: `deleted`, then
+  `edited_at` (absent lowest), then writer ID (P10).
 - **DID signature** (`chat::doc::msg_sig_input`): the author's DID key (Ed25519, `did:key`) over
   `"tinline-chat-msg-v3"` ‖ len-prefixed doc ‖ id ‖ author ‖ `at` (i64 BE) ‖ text ‖ `edited_at`
   (0, or 1 + i64 BE) ‖ `deleted` (1 byte) ‖ `reply_to` (0, or 1 + string) ‖ file (0, or 1 + hash,
   key, name, size u64, mime, kind, duration u32, waveform len u32 + bytes) ‖ device ID (32 bytes) ‖
   `WrittenAt` = Loro peer id (u64 BE) ‖ counter of the span's first op (i32 BE) ‖ op count of the
   span (u32 BE). Strings are u32 BE length-prefixed. The span is the ops that write the version,
-  the last being the insert of `v`: for a new message the `messages` key, `id`, `author`, `at`,
-  `reply_to?`, `file?`, `v`; for an edit or delete only `v`. (P8/P9/P9b used
+  the last being the insert of the writer's own version key: for a new message the `messages`
+  key, `id`, `author`, `at`, `reply_to?`, `file?`, `v:<writer>`; for an edit or delete only
+  `v:<writer>`. (P8/P9/P9b used
   `"tinline-chat-msg-did-v2"` in a commit message, plus a device-key `sig`; both are gone.)
 - **Writer ID** (U16): the Loro peer id a device writes every chat doc with = first 8 bytes (LE) of
   `BLAKE3("tinline-writer-id-v1" ‖ u32 BE len(DID) ‖ DID ‖ device ID)` (`u64::MAX` maps to
   `u64::MAX - 1`). The device ID is 32 random bytes per install of the account (`account.json`
-  `device_id`): new on create, link and restore over the directory, kept when only the device key
-  changes (endpoint rotation). It is never derived from a key.
+  `device_id`): new on create, link and restore over the directory, and before a chat store is
+  created afresh (P10: a lost store must not reuse (writer ID, counter) pairs contacts hold); kept
+  when only the device key changes (endpoint rotation). It is never derived from a key.
 - **Accepting a batch** (`Shard::apply_remote`, every path): the new ops are split per peer id
-  into spans (consecutive ops on one message, ending with its `v`); any op outside one refuses
-  the batch. Each span must be proven by the message as it reads after it:
-  `writer_id(author, v.dev)` = the span's peer id and `v.did_sig` verifies for the span. Live,
+  into spans (consecutive ops on one message, ending with the insert of the span's own version
+  key; only immutable fields besides, no removals); any op outside one refuses the batch. Each
+  span must be proven by the version it wrote: `writer_id(author, dev)` = the span's peer id and
+  `did_sig` verifies for the span; and it must not go back from that writer's previous version
+  (older `edited_at`, or an undone delete). Live,
   every span's author is the session's DID. Every touched message must end as one of the proven
   versions. Nothing else is consulted (no device keys, device lists or remembered writer IDs).
 
-## Presence (on `tinline/chat/2`)
+## Presence (on `tinline/chat/3`)
 
 Whether a contact is reachable right now. Each device keeps a Loro `EphemeralStore` with one key
 (`online`), refreshed every 8 s, and sends it on every chat session as a QUIC datagram: `b"tp1"` +
@@ -439,7 +447,7 @@ list) if it was added before `at`, and keeps the conversation read-only
 - Refusal (blocker side, every own device, from the synced notice): a `CallHello` or
   `ContactHello` that verifies under a blocked DID is answered with `Notice` instead of `Ringing`
   / `Welcome` (never rings, no call record); during a call, blocking sends `Notice` and ends the
-  call. On `tinline/chat/2` the listener answers a blocked DID's `Auth` with
+  call. On `tinline/chat/3` the listener answers a blocked DID's `Auth` with
   `ChatMsg::Notice { notice }` and closes; no session, so no sync, push or history request.
   Blobs are not served to a blocked DID.
 - Reading a refusal: a `Notice` that verifies as a block from the peer we dialled ends the call

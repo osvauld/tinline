@@ -21,8 +21,8 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 /// version 0 (one `call` grant for everything) is refused by the app.
 pub const ALPN: &[u8] = b"osvauld/p2p/1";
 /// Own-device sync (docs/design/device-linking.md §4); only devices of the same DID. Version 3
-/// (P6): the account doc carries call tokens, call permissions and token cut-offs; version 2
-/// (P9c: strict DID-signed chat docs) and 1 are refused by the app.
+/// (P10 per-writer chat versions; P6: the account doc carries call tokens, call permissions and
+/// token cut-offs); versions 2 and 1 are refused by the app.
 pub const SELF_ALPN: &[u8] = b"tinline/self/3";
 
 const ATTEST_DOMAIN: &[u8] = b"osvauld/p2p/attest/v1\0";
@@ -1002,7 +1002,7 @@ pub fn forge_block_notice_for_test(signer: &Identity, claimed_from: &str, to: &s
 
 // ---- own-device sync ---------------------------------------------------------------
 
-/// Authorization for `tinline/self/2`: the peer is another device of *our* DID, it is the
+/// Authorization for `tinline/self/3`: the peer is another device of *our* DID, it is the
 /// device the transport authenticated, and it has not been removed. No grant is involved.
 pub fn accept_self_hello(
     attestation: &SignedAttestation,

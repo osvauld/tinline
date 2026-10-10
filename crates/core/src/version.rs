@@ -28,10 +28,11 @@ pub struct Versioned {
     pub old: &'static [&'static [u8]],
 }
 
-/// 1:1 chat (`tinline/chat/3`; 2 = before P6's message tokens, 1 = before P9c).
+/// 1:1 chat (`tinline/chat/3`; 1 = before P9c, 2 = before P10's per-writer versions and P6's
+/// message tokens; one bump for both, same release).
 pub const CHAT: Versioned = Versioned { name: "chat", current: crate::chat::wire::CHAT_ALPN, old: &[b"tinline/chat/1", b"tinline/chat/2"] };
-/// Own-device sync, which relays chat docs and the account doc (`tinline/self/3`; 2 = before
-/// P6's call tokens and cut-offs, 1 = before P9c).
+/// Own-device sync, which relays chat docs and the account doc (`tinline/self/3`; 1 = before
+/// P9c, 2 = before P10 and P6's call tokens, call permissions and cut-offs).
 pub const OWN: Versioned = Versioned { name: "own-device sync", current: proto::SELF_ALPN, old: &[b"tinline/self/1", b"tinline/self/2"] };
 /// Calls, contact exchange, notices and tokens (`osvauld/p2p/1`; 0 = one `call` grant for
 /// everything, before P6).
@@ -120,7 +121,7 @@ mod tests {
         }
     }
 
-    // KIND: invariant (P9c)
+    // KIND: invariant (P9c; P10 bumped again: a record holds one version per writer)
     #[test]
     fn the_wire_versions_were_bumped_and_the_old_ones_are_refused() {
         assert_eq!(CHAT.current, b"tinline/chat/3");
