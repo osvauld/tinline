@@ -171,6 +171,11 @@ DID signature + writer binding become proper record fields; every op must be in 
 proven by its author's DID signature (closes the P9b squat gap without option (a)). Old apps
 must fail clearly (protocol/version bump), not silently. Supersedes U17(b).
 
+**U19 (user, 2026-10-10) — "Block" is for contacts, "Remove" is for groups.** A contact has no
+separate Remove action: the contact-level action is Block (keeps the contact, signed visible
+notice, refusal with the blocked reason, Unblock available). "Remove" only means removing a member
+from a group (U9 flags). Today's `remove_contact` becomes Block. Answers section 15 Q1.
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
