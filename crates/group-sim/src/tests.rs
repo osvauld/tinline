@@ -20,6 +20,8 @@ mod block_in_group;
 mod host_relay;
 #[path = "chat_request.rs"]
 mod chat_request;
+#[path = "host_only.rs"]
+mod host_only;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {
