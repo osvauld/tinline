@@ -183,8 +183,8 @@ notice — stops sending and calling, disables the composer and call button, no 
 address changes (backstop for modified open-source builds). The signed block notice may also carry
 a deletion request: the blocked person's app deletes our contact entry (address, tokens, device
 list). Honoured by the shipped app; not enforceable against modified builds, and they still know
-our DID. Open: does the deletion request also remove the chat history on their side, or only the
-contact entry? Is it always sent with a block, or a separate choice in the block dialog?
+our DID. DECIDED (user): the deletion request removes the contact entry only; their chat history
+with us stays (read-only). Is it always sent with a block, or a separate choice in the block dialog?
 
 **U21 (user, 2026-10-10) — group calls are relayed through one call host, never a member mesh.**
 Members connect only to the selected call host (keeps U7: no member learns another member's
