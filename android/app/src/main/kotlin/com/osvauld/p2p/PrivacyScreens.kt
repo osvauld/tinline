@@ -275,7 +275,7 @@ private fun ColumnScope.DmItemView(src: FakeGroupsPrivacy, nav: PNav, p: Person,
 
 /** Group invite card in the inviter's 1:1 chat (board Main). */
 @Composable
-private fun ColumnScope.InviteCard(src: FakeGroupsPrivacy, nav: PNav, inv: GroupInvite) {
+internal fun ColumnScope.InviteCard(src: FakeGroupsPrivacy, nav: PNav, inv: GroupInvite) {
     val c = Tin.c
     val mine = inv.inviterDid == src.myDid
     val now = System.currentTimeMillis()
@@ -536,5 +536,28 @@ private fun KeyValue(k: String, v: String) {
     Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
         Text(k, Modifier.weight(1f), style = TinType.bodyL.copy(fontSize = 15.sp), color = c.ink)
         Text(v, style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.ink, textAlign = TextAlign.End)
+    }
+}
+
+// ------------------------------------------------------------------ requests screen
+
+/** All chat requests: incoming cards, then sent ones (board AndroidChatRequest), behind the compact row. */
+@Composable
+fun PRequestsScreen(src: FakeGroupsPrivacy, nav: PNav) {
+    val reqs by src.requests.collectAsState()
+    val now = System.currentTimeMillis()
+    LaunchedEffect(Unit) { src.expireDue() }
+    val incoming = reqs.incoming.filter { it.state == IncomingRequestState.Pending }
+    PreviewPage {
+        TopBar("Chat requests", nav.back)
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item { SectionLabel("REQUESTS · ${incoming.size}") }
+            if (incoming.isEmpty()) item { Hint("No new requests. Requests never ring.", Modifier.padding(horizontal = 20.dp)) }
+            items(incoming, key = { it.id }) { r -> Column(Modifier.padding(bottom = 8.dp)) { IncomingRequestCard(src, nav, r) } }
+            item { SectionLabel("SENT REQUESTS") }
+            if (reqs.sent.isEmpty()) item { Hint("Ask a group member for a private chat from their member sheet.", Modifier.padding(horizontal = 20.dp)) }
+            items(reqs.sent, key = { it.id }) { r -> SentRequestRow(src, r, now) }
+            item { Hint("You can send one request per person per day. A request expires after 7 days.", Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp)) }
+        }
     }
 }

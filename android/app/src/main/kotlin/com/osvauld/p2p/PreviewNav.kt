@@ -28,6 +28,7 @@ sealed interface PRoute {
     data class Contact(val did: String) : PRoute
     data object Blocked : PRoute
     data object Address : PRoute
+    data object Requests : PRoute
 
     companion object {
         /** Start screens by name, for Settings and the debug gallery (`--es pv hike`). */
@@ -45,6 +46,7 @@ sealed interface PRoute {
             "contact" -> Contact(FakeGroupsPrivacy.ARJUN)
             "blocked" -> Blocked
             "address" -> Address
+            "requests" -> Requests
             else -> Chats
         }
     }
@@ -97,6 +99,7 @@ fun PreviewApp(src: FakeGroupsPrivacy, start: PRoute, onExit: () -> Unit, onShow
             is PRoute.Contact -> PContactScreen(src, nav, r.did)
             PRoute.Blocked -> PBlockedScreen(src, nav)
             PRoute.Address -> PAddressScreen(src, nav)
+            PRoute.Requests -> PRequestsScreen(src, nav)
         }
         SnackbarHost(snack, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 80.dp))
     }

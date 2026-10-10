@@ -122,7 +122,7 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
         }
         // PLACEHOLDER groups & privacy preview: `--es screen pv_hike` (keys in PRoute.parse).
         "pv", "pv_chats", "pv_hike", "pv_family", "pv_book", "pv_removal", "pv_newgroup", "pv_info", "pv_hosts", "pv_arjun", "pv_meera",
-        "pv_sam", "pv_contact", "pv_blocked", "pv_address" ->
+        "pv_sam", "pv_contact", "pv_blocked", "pv_address", "pv_requests" ->
             PreviewApp(PreviewBackend.get(maya), PRoute.parse(which.substringAfter("pv_", "chats")), onExit = { act.finish() }, onShowMyQr = none)
         "newchat" -> NewChatScreen(contacts, mapOf(contacts[0].did to "Last message 12:41", contacts[1].did to "Last message 11:20"), none, {}, none)
         else -> if (which.startsWith("conv") || which in setOf("attach", "files", "receive", "viewer")) {

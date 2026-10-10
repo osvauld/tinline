@@ -22,6 +22,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.selected
@@ -57,6 +58,18 @@ private data class ChatEntry(
     val dim: Boolean = false, val tint: Int = 0, val previewColor: Boolean = false, val open: PRoute,
 )
 
+private fun groupEntry(g: Group): ChatEntry {
+    val last = g.items.lastOrNull()
+    val preview = when {
+        g.removal != null -> "You were removed from this group"
+        !g.hostReachable -> "Waiting for a host"
+        last is GroupItem.Msg -> (if (last.outgoing) "You" else first(last.authorName)) + ": " + last.text
+        last is GroupItem.Sys -> last.text
+        else -> ""
+    }
+    return ChatEntry(g.id, true, g.name, preview, g.lastActivityMs, g.unread, dim = g.removal != null, tint = g.tint, open = PRoute.GroupChat(g.id))
+}
+
 /** Chats with groups mixed in, filter chips, chat requests above (boards Main + AndroidChatRequest). */
 @Composable
 fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
@@ -74,16 +87,7 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
     LaunchedEffect(Unit) { src.expireDue() }
 
     val rows = remember(groups, people, blocked) {
-        groups.map { g ->
-            val last = g.items.lastOrNull()
-            val preview = when {
-                g.removal != null -> "You were removed from this group"
-                last is GroupItem.Msg -> (if (last.outgoing) "You" else first(last.authorName)) + ": " + last.text
-                last is GroupItem.Sys -> last.text
-                else -> ""
-            }
-            ChatEntry(g.id, true, g.name, preview, g.lastActivityMs, g.unread, dim = g.removal != null, tint = g.tint, open = PRoute.GroupChat(g.id))
-        } + people.map { p ->
+        groups.map(::groupEntry) + people.map { p ->
             val last = p.items.lastOrNull { it is DmItem.Text }
             val isBlocked = blocked.any { it.did == p.did }
             val preview = when {
@@ -98,8 +102,8 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
     }.sortedByDescending { it.atMs }
         .filter { when (filter) { ChatFilter.All -> true; ChatFilter.People -> !it.group; ChatFilter.Groups -> it.group } }
         .filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }
-    val incoming = reqs.incoming.filter { it.state == IncomingRequestState.Pending }.takeIf { filter != ChatFilter.Groups }.orEmpty()
-    val sent = reqs.sent.takeIf { filter != ChatFilter.Groups }.orEmpty()
+    val list = rememberLazyListState()
+    val fabWide by remember { derivedStateOf { list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset == 0 } }
 
     PreviewPage {
         if (searching) SearchBar(query, { query = it }, onClose = { searching = false; query = "" }, hint = "Search chats")
@@ -115,30 +119,12 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
             ChatFilter.entries.forEach { f -> FilterChipPill(f.name, filter == f) { filter = f } }
         }
         Box(Modifier.weight(1f)) {
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
-                if (incoming.isNotEmpty()) {
-                    item { SectionLabel("REQUESTS · ${incoming.size}") }
-                    items(incoming, key = { it.id }) { r -> IncomingRequestCard(src, nav, r) }
-                }
-                if (sent.isNotEmpty()) {
-                    item { SectionLabel("SENT REQUESTS") }
-                    items(sent, key = { it.id }) { r -> SentRequestRow(src, r, now) }
-                }
-                if (incoming.isNotEmpty() || sent.isNotEmpty()) item { SectionLabel("CHATS") }
+            LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = 96.dp)) {
+                if (filter != ChatFilter.Groups) item { RequestsRow(reqs) { nav.go(PRoute.Requests) } }
                 items(rows, key = { (if (it.group) "g" else "p") + it.key }) { r -> ChatListRow(r, now) { nav.go(r.open) } }
-                if (sent.isNotEmpty()) item {
-                    Hint("You can send one request per person per day. A request expires after 7 days.", Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp))
-                }
             }
-            Box(Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp)) {
-                Row(
-                    Modifier.heightIn(min = 56.dp).clip(RoundedCornerShape(18.dp)).background(c.prc).clickable(role = Role.Button, onClick = { newMenu = true })
-                        .padding(horizontal = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(Icons.Rounded.Add, null, tint = c.onPrc)
-                    Text("New", style = TinType.button.copy(fontSize = 15.sp), color = c.onPrc)
-                }
+            Box(Modifier.align(Alignment.BottomEnd)) {
+                ShrinkFab(Icons.Rounded.Add, "New", fabWide) { newMenu = true }
                 DropdownMenu(newMenu, { newMenu = false }, containerColor = c.sf) {
                     DropdownMenuItem({ Text("New group", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.go(PRoute.NewGroup) },
                         leadingIcon = { Icon(Icons.Rounded.GroupAdd, null, tint = c.ink2) })
@@ -654,6 +640,71 @@ fun PRemovalDetailsScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
         }
         if (contactFlagger != null) Box(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp)) {
             TinButton("Message ${first(contactFlagger.byName)} privately", { nav.go(PRoute.Dm(contactFlagger.byDid)) }, style = BtnStyle.Outlined)
+        }
+    }
+}
+
+// ------------------------------------------------------------------ Home's Groups tab + requests row
+
+/** One compact row for all chat requests ("1 new · 3 sent"); nothing when there are none. */
+@Composable
+fun RequestsRow(reqs: Requests, onClick: () -> Unit) {
+    val c = Tin.c
+    val new = reqs.incoming.count { it.state == IncomingRequestState.Pending }
+    val sent = reqs.sent.size
+    if (new == 0 && sent == 0) return
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Button, onClick = onClick).padding(start = 20.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(Modifier.size(40.dp).clip(CircleShape).background(if (new > 0) c.prc else c.sf2), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.PersonAddAlt, null, tint = if (new > 0) c.onPrc else c.ink2)
+        }
+        Text(
+            listOfNotNull("Chat requests", if (new > 0) "$new new" else null, if (sent > 0) "$sent sent" else null).joinToString(" · "),
+            Modifier.weight(1f), style = TinType.bodyL.copy(fontWeight = if (new > 0) FontWeight.SemiBold else FontWeight.Normal), color = c.ink,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+        Icon(Icons.Rounded.ChevronRight, null, tint = c.ink2)
+    }
+}
+
+/**
+ * Home's Groups tab (PLACEHOLDER data): chat requests row, pending invites, then the groups list, with a
+ * "New group" button that shrinks while scrolled. Opens the preview screens through [onOpen].
+ */
+@Composable
+fun GroupsTabBody(src: FakeGroupsPrivacy, onOpen: (PRoute) -> Unit) {
+    val c = Tin.c
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val groups by src.groups.collectAsState()
+    val reqs by src.requests.collectAsState()
+    val invites by src.invites.collectAsState()
+    val nav = remember(onOpen) {
+        PNav(go = onOpen, back = {}, replace = onOpen,
+            say = { m -> android.widget.Toast.makeText(ctx, m, android.widget.Toast.LENGTH_SHORT).show() },
+            showMyQr = {}, addContact = {}, exit = {})
+    }
+    val now = System.currentTimeMillis()
+    LaunchedEffect(Unit) { src.expireDue() }
+    val pending = invites.filter { it.state == InviteState.Pending && it.inviterDid != src.myDid && now <= it.expiresAtMs }
+    val rows = groups.map(::groupEntry).sortedByDescending { it.atMs }
+    val list = rememberLazyListState()
+    val fabWide by remember { derivedStateOf { list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset == 0 } }
+    Column(Modifier.fillMaxSize()) {
+        PlaceholderStrip()
+        Box(Modifier.weight(1f)) {
+            LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = 96.dp)) {
+                item { RequestsRow(reqs) { onOpen(PRoute.Requests) } }
+                if (pending.isNotEmpty()) {
+                    item { SectionLabel("INVITES · ${pending.size}") }
+                    items(pending, key = { it.id }) { inv -> Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) { InviteCard(src, nav, inv) } }
+                }
+                item { SectionLabel("GROUPS · ${groups.size}") }
+                if (rows.isEmpty()) item { Hint("No groups yet. Make one with New group.", Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
+                items(rows, key = { it.key }) { r -> ChatListRow(r, now) { onOpen(r.open) } }
+            }
+            ShrinkFab(Icons.Rounded.GroupAdd, "New group", fabWide, Modifier.align(Alignment.BottomEnd)) { onOpen(PRoute.NewGroup) }
         }
     }
 }

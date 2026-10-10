@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.Role
@@ -344,3 +346,21 @@ fun inWords(ms: Long, nowMs: Long): String {
 /** "Yesterday, 03:12" / "Today, 09:00" / "Oct 3, 10:00" */
 fun dayAndTime(ms: Long, nowMs: Long): String =
     if (ChronoUnit.DAYS.between(at(ms).toLocalDate(), at(nowMs).toLocalDate()) in 0..1) viewerWhen(ms, nowMs) else whenFull(ms)
+
+/**
+ * Extended FAB that shrinks to its icon while the list is scrolled ([wide] false), so it never sits on
+ * top of the last row's text. The label stays as the content description when shrunk.
+ */
+@Composable
+fun ShrinkFab(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, wide: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val c = Tin.c
+    Row(
+        modifier.padding(end = 20.dp, bottom = 20.dp).shadow(3.dp, RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp)).background(c.prc)
+            .clickable(role = Role.Button, onClick = onClick).semantics(mergeDescendants = true) {}
+            .heightIn(min = 56.dp).widthIn(min = 56.dp).animateContentSize().padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+    ) {
+        Icon(icon, if (wide) null else label, tint = c.onPrc)
+        if (wide) Text(label, style = TinType.button.copy(fontSize = 15.sp), color = c.onPrc, maxLines = 1)
+    }
+}

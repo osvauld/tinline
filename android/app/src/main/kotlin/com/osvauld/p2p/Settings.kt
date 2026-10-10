@@ -96,7 +96,7 @@ fun SettingsScreen(
             ListItem("Recovery phrase", onClick = onPhrase, icon = Icons.Rounded.Lock, sub = if (hasPass) "Needs your passphrase" else "Needs your screen lock")
             if (previewOn == true) {
                 SectionLabel("PRIVACY · PREVIEW")
-                ListItem("Groups & chat requests", onClick = { onPreview("chats") }, icon = Icons.Rounded.Groups, sub = "Placeholder data, nothing is sent")
+                ListItem("People, requests & blocking", onClick = { onPreview("chats") }, icon = Icons.Rounded.Groups, sub = "Demo chats with Meera, Arjun, Priya · placeholder data")
                 ListItem("Blocked people", onClick = { onPreview("blocked") }, icon = Icons.Rounded.Block, sub = "Placeholder data")
                 ListItem("Address changes", onClick = { onPreview("address") }, icon = Icons.Rounded.Sync, sub = "Placeholder data")
             }
