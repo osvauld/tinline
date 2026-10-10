@@ -1081,12 +1081,17 @@ impl Inner {
             shards.get(&(pair.to_string(), day.to_string())).and_then(|s| {
                 let vv = s.vv();
                 let ends: Vec<(u64, i32)> = s.own_writers(me.id.did()).into_iter().filter_map(|p| vv.get(&p).map(|c| (p, *c))).collect();
-                s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends))
+                // A live push must not create a message the contact refuses for the 24 h live
+                // window (an old one of ours not delivered yet, e.g. from another writer ID):
+                // that batch goes as a catch-up `Sync` instead, which has no such window and
+                // keeps the session up (P10b). One hour of margin for clock skew.
+                let catch_up = !sync && s.creates_outside(their_vv, me.id.did(), now_ms(), DAY_MS - HOUR_MS);
+                s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends, catch_up))
             })
         };
-        let Some((update, vv, ends)) = out else { return Ok(()) };
+        let Some((update, vv, ends, catch_up)) = out else { return Ok(()) };
         let sig = sign_batch(&me.profile.device_secret, &name, &update);
-        let msg = if sync {
+        let msg = if sync || catch_up {
             ChatMsg::Sync { doc: name, vv: vv.encode(), update, sig }
         } else {
             ChatMsg::Push { doc: name, update, sig }

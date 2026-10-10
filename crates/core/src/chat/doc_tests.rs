@@ -588,6 +588,22 @@ fn a_device_sends_a_contact_every_op_of_ours_it_holds() {
     assert_eq!(holds_r1.apply_remote(&u, &sync(0)).unwrap().added, vec!["m1".to_string(), "m2".to_string()]);
 }
 
+// KIND: invariant (P10b)
+// `creates_outside` tells the sender when a batch would create a message a live push may not
+// carry (older than the receiver's live window); only creations the receiver lacks count.
+#[test]
+fn creates_outside_names_old_creations_the_receiver_lacks() {
+    let a = shard(0, 1);
+    a.add_message(&msg("old", &did(0), NOON - 3 * HOUR_MS, "old"), &w(0, 1)).unwrap();
+    let mut b = recv();
+    let now = NOON + DAY_MS - 2 * HOUR_MS;
+    assert!(a.creates_outside(&b.vv(), &did(0), now, DAY_MS - HOUR_MS));
+    assert!(!a.creates_outside(&b.vv(), &did(0), NOON, DAY_MS - HOUR_MS));
+    b.apply_remote(&a.export_own_since(&b.vv(), &did(0)).unwrap(), &sync(0)).unwrap();
+    a.edit("old", "edited", now, &w(0, 1)).unwrap();
+    assert!(!a.creates_outside(&b.vv(), &did(0), now, DAY_MS - HOUR_MS), "an edit of a held message is fine");
+}
+
 // ---- forgeries ---------------------------------------------------------------------------------
 
 // KIND: invariant
