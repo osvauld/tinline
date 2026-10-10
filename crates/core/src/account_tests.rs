@@ -26,7 +26,8 @@ fn new_contact(who: &identity::Identity, me: &str, device: u8) -> proto::NewCont
         did: who.did().to_string(),
         name: "Contact".into(),
         device: [device; 32],
-        grant_from_them: proto::issue_grant(who, me, now(), 1000),
+        grant_from_them: proto::issue_token(who, me, proto::Cap::Message, now(), 1000),
+        call_grant_from_them: Some(proto::issue_grant(who, me, now(), 1000)),
         redeemed_nonce: "n".into(),
     }
 }
@@ -63,7 +64,7 @@ fn stale_session_cannot_write_into_next_account() {
     let (x, _) = identity::generate();
     let save = |epoch: u64, nc: proto::NewContact| {
         let i = inner.clone();
-        n.block_on(async move { i.save_contact(epoch, nc, None, true).await }).unwrap()
+        n.block_on(async move { i.save_contact(epoch, nc, None, true, true).await }).unwrap()
     };
     save(epoch_b, new_contact(&x, &b, 1)).unwrap();
     n.set_verified(x.did().to_string(), true).unwrap();

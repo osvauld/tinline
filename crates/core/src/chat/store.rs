@@ -364,25 +364,6 @@ impl ChatStore {
     pub fn set_auto_download(&self, bytes: u64) -> Result<(), Error> {
         self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(io)
     }
-
-    /// Everything about one conversation, except the blobs' bytes (the caller releases those).
-    pub fn delete_conversation(&self, pair: &str, hashes: &[String]) -> Result<(), Error> {
-        let mut ops = vec![
-            Op::Delete(format!("conv/{pair}")),
-            Op::DeletePrefix(format!("shard/{pair}/")),
-            Op::DeletePrefix(format!("ack/{pair}/")),
-            Op::DeletePrefix(format!("mo/{pair}/")),
-            Op::DeletePrefix(format!("out/{pair}/")),
-            Op::DeletePrefix(format!("pb/{pair}/")),
-            Op::DeletePrefix(format!("snapcache/{pair}/")),
-            Op::DeletePrefix(format!("mi/{pair}/")),
-        ];
-        for h in hashes {
-            ops.push(Op::Delete(format!("ref/{h}/{pair}")));
-            ops.push(Op::Delete(format!("blob/{h}")));
-        }
-        self.db.apply(&ops).map_err(io)
-    }
 }
 
 impl ChatStore {

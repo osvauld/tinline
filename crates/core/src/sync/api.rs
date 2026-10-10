@@ -239,7 +239,7 @@ impl Node {
         v
     }
 
-    /// For tests: dials `device` on `tinline/self/2` as this node and reports whether the peer
+    /// For tests: dials `device` on `tinline/self/3` as this node and reports whether the peer
     /// accepted us (answered with its `Auth`).
     #[doc(hidden)]
     pub fn self_probe_for_test(&self, device: String) -> bool {
@@ -324,6 +324,14 @@ impl Node {
             (peers, created)
         })
         .unwrap_or_default()
+    }
+
+    /// For tests (P10): the next `n` chat writes (`chat_persist`) fail, as if the disk were full.
+    #[doc(hidden)]
+    pub fn fail_next_chat_writes_for_test(&self, n: u32) {
+        if let Ok(core) = self.inner.chat_core() {
+            core.fail_writes.store(n, std::sync::atomic::Ordering::SeqCst);
+        }
     }
 
     /// For tests: does the chat store hold any "You" shard?

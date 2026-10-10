@@ -1,4 +1,4 @@
-//! u32-BE-length + bincode frames on one bidirectional QUIC stream, for `tinline/self/2`.
+//! u32-BE-length + bincode frames on one bidirectional QUIC stream, for `tinline/self/3`.
 
 use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -59,7 +59,7 @@ impl FrameWriter {
     }
 }
 
-/// Messages of `tinline/self/2`. Both sides send `Auth` first (dialer, then acceptor).
+/// Messages of `tinline/self/3`. Both sides send `Auth` first (dialer, then acceptor).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SelfMsg {
     /// `unlink`: the dialer is only here to say `Unlinked` (the acceptor skips session setup).

@@ -1,4 +1,4 @@
-//! Chats between a person's own devices (task 34g). The pieces the `tinline/self/2` session
+//! Chats between a person's own devices (task 34g). The pieces the `tinline/self/3` session
 //! (`sync/engine.rs`) calls: which shards we offer, exporting and validating a batch relayed by
 //! another own device, read cursors, and who may fetch blobs. See `docs/chat.md` "Own devices".
 
