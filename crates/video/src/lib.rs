@@ -24,6 +24,8 @@ mod rav1e_enc;
 #[cfg(feature = "rav1e")]
 pub use rav1e_enc::Encoder;
 pub mod media;
+#[cfg(feature = "net")]
+pub mod net;
 pub mod sim;
 pub mod y4m;
 

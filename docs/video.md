@@ -31,6 +31,42 @@ Status: design + simulation. Not wired into calls or the apps yet.
 `[group: u64 BE]`, then frames `[len: u32 BE][capture_us: u64 BE][AV1 temporal unit]`.
 Frame 0 of a group is a keyframe. Receiver caps frame size (`max_frame`, default 1 MiB).
 
+## Transport (`video::net`, feature `net`)
+
+Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays on datagrams).
+
+- **`VideoSend`** (`accept(conn, cfg)` waits for the receiver's control stream): `send(capture_us,
+  key, payload)` never blocks; the encoder loop reads `bitrate()` / `wants_keyframe()`. Each
+  `Out::Open` is a task: `open_uni`, `set_priority(group)` (newest first), writes, `finish`,
+  `reset` on `Out::Reset` (also after finish, while QUIC may still be sending it).
+- **`VideoRecv`** (`new(conn, cfg)` opens the control stream): `recv()` yields frames in decode
+  order and is cancel-safe; nothing is read unless it is awaited, so a stalled decoder looks
+  like a stalled link to the sender. `request_keyframe()` after a decode error.
+- **Backlog = written more than RTT + 40 ms ago and not acked by the receiver.** QUIC's send
+  buffer (`send_window`, 10 MB by default) accepts writes long before the bytes leave, so
+  "not accepted by write" only grows after seconds of queue. The receiver acks the bytes it
+  has read per group every 10 ms; this also counts the bottleneck queue and a receiver that
+  stopped reading. `Sender::feedback` runs every 10 ms on that.
+- **Control stream** (one bi stream, opened by the receiver; the sender's half is unused):
+  version byte `1`, then messages, big-endian: `1 [delivered_bps u32][queuing_us u64]` rate
+  report (every 100 ms), `2` keyframe request (explicit or receiver stall), `3 [group u64]
+  [offset u64]` ack. Unknown type ends the session.
+- **Peer-controlled bytes, bounded**: frame > `max_frame` -> that stream is stopped and a
+  keyframe requested; group id >= 2^48 or not newer than the newest seen (duplicate, late
+  stale group) -> stream stopped before anything is buffered; streams of groups older than
+  the one playing are stopped; more than `max_groups` (16) groups at or ahead of the playing
+  one, or more than `max_buffered` (32 MiB) across them -> `NetError::Protocol`. Reader tasks
+  feed a 16-slot channel, so at most `max_streams` QUIC stream windows sit in between.
+  `VideoRecv` lowers `max_concurrent_uni_streams` to 8, but QUIC can't take back credit the
+  peer already has (100 by default): the call endpoint's transport config should set it.
+- **Tests** (`cargo test -p video --release --features net net`, two endpoints on loopback):
+  300 frames in order and intact with keyframes at group starts; receiver paused 1 s -> sender
+  resets, drops the rate, forces a keyframe, receiver resumes on the new group; keyframe
+  request -> new group; oversized frame / garbage headers / duplicate and old groups / too many
+  groups / too much buffered; queueing reports lower the bitrate.
+- `cargo run -p video --release --features net --example net_loopback -- [frames] [w] [h]`:
+  libaom -> iroh loopback -> rav1d, capture-to-decoded latency.
+
 ## Codec benchmark (i7-1165G7, synthetic camera pattern, 30 fps)
 
 `cargo run -p video --release --example bench -- aom|rav1e [frames] [threads] [speed]`
@@ -116,7 +152,9 @@ control is delay-based.
    for the benchmark; still to wire into `scripts/build_android.py` / release packaging
    (vendored source, not fetched at build time).
 2. Resolution ladder in `media::Sender` (switch at a keyframe), added to the simulation.
-3. iroh transport against `media::Sender`/`Receiver` (uni stream per group, priority by
-   group, control stream for reports/keyframe requests), checked against the same scenarios.
+3. iroh transport against `media::Sender`/`Receiver`: **built** (`video::net`, see Transport,
+   loopback tests). Still to do: run it over a lossy/limited link (netem or a lossy socket) to
+   check it against the simulation's scenarios; set `max_concurrent_uni_streams` in the call
+   endpoint's transport config.
 4. Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.
 5. Capture/render: Android CameraX -> I420, desktop camera; render on both.
