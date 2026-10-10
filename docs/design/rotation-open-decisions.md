@@ -156,6 +156,12 @@ Cross-DID copying needs ~2^64 work; same-DID copying by a phrase holder is the a
 shared-mnemonic limitation. Resolves section 9 Q1/Q2 and section 10 Q4. Exact hash function and
 domain separation to be fixed in the production spec.
 
+**U17 (user, 2026-10-10).** (a) P9b before release: the writer value/ID is bound into the
+DID-signed bytes, and the device value is tied to a stable install ID, not the device key.
+(b) DID signatures become REQUIRED per contact once that contact has sent DID-signed versions
+(no fallback to the device signature for them afterwards). (c) Merge phase 1 into `dev` after
+P9b lands and the integration suite passes.
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
