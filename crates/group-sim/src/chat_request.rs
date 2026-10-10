@@ -1,4 +1,6 @@
-//! W2-Q: 1:1 chat request routed through the group host (U3), with silent blocking (U5).
+//! W2-Q: 1:1 chat request routed through the group host (U3). Blocking is visible (U5
+//! revised); what a blocker returns to a chat request is open (section 8b Q4) and modelled as
+//! the `BlockReply` candidates. R1b removed the tests that asserted the rejected silent option.
 //!
 //! Status: proposal — not approved. Simulation only; no production API, transport or UI.
 //!
@@ -144,13 +146,22 @@ enum Inner {
         request_id: String,
         request_digest: String,
     },
+    // Candidate 8b Q4 (`BlockReply::SealedNotice`): "you are blocked", bound to the request.
+    Blocked {
+        group: String,
+        from: String,
+        to: String,
+        request_id: String,
+        request_digest: String,
+    },
 }
 impl Inner {
     fn from(&self) -> &str {
         match self {
             Inner::Request { from, .. }
             | Inner::Accept { from, .. }
-            | Inner::Decline { from, .. } => from,
+            | Inner::Decline { from, .. }
+            | Inner::Blocked { from, .. } => from,
         }
     }
 }
@@ -273,6 +284,15 @@ enum DeclinePolicy {
     Explicit,
     Silent,
 }
+// G-BLOCK candidate, section 8b Q4 (open): what a blocker returns to a chat request from a
+// DID it blocked. U5 revised decides that blocking is visible; it does not decide this path.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+enum BlockReply {
+    // No reply over the host: at this layer the requester sees `NoAnswer`, as for offline.
+    Drop,
+    // A sealed, DID-signed "blocked" answer of the same kind and size as accept/decline.
+    SealedNotice,
+}
 // G-RETIREMENT candidate: what a target does with a request sealed to an unusable key.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 enum RetiredKeyPolicy {
@@ -288,6 +308,7 @@ struct RateLimit {
 #[derive(Clone, Copy, Debug, Serialize)]
 struct Policy {
     decline: DeclinePolicy,
+    block: BlockReply,
     retired_key: RetiredKeyPolicy,
     // Old request key stays usable for decrypt until rotate_time + grace (exclusive).
     grace: u64,
@@ -296,6 +317,7 @@ struct Policy {
 fn policy() -> Policy {
     Policy {
         decline: DeclinePolicy::Silent,
+        block: BlockReply::Drop,
         retired_key: RetiredKeyPolicy::Drop,
         grace: 5,
         target_rate: None,
@@ -308,6 +330,7 @@ fn policy() -> Policy {
 enum Answer {
     Accepted(String),
     Refused,
+    Blocked,
     KeyStale,
 }
 // What the requester can observe about one of its requests.
@@ -316,6 +339,7 @@ enum Observation {
     Pending,
     Accepted(String),
     Refused,
+    Blocked,
     KeyStale,
     NoAnswer,
 }
@@ -590,6 +614,7 @@ impl Member {
         match &o.answer {
             Some(Answer::Accepted(ep)) => Observation::Accepted(ep.clone()),
             Some(Answer::Refused) => Observation::Refused,
+            Some(Answer::Blocked) => Observation::Blocked,
             Some(Answer::KeyStale) => Observation::KeyStale,
             None if now >= o.sent_at + ANSWER_TIMEOUT => Observation::NoAnswer,
             None => Observation::Pending,
@@ -672,9 +697,17 @@ impl Member {
                 if self.state.seen.contains(&request_id) {
                     return dropped(DropReason::Replay);
                 }
-                // U5: silent block — dropped with no state change and no reply.
+                // Blocked requester: no state change. Whether a reply goes back is the open
+                // 8b Q4 candidate (`BlockReply`).
                 if self.state.blocked.contains(&from) {
-                    return dropped(DropReason::Blocked);
+                    let replies = match self.state.policy.block {
+                        BlockReply::Drop => vec![],
+                        BlockReply::SealedNotice => self
+                            .blocked_answer(&from, &request_id, &digest)
+                            .into_iter()
+                            .collect(),
+                    };
+                    return (Delivery::Dropped(DropReason::Blocked), replies);
                 }
                 if let Some(limit) = self.state.policy.target_rate {
                     let recent = self.state.request_times.get(&from).map_or(0, |t| {
@@ -715,6 +748,13 @@ impl Member {
                 ref to,
                 ref request_id,
                 ref request_digest,
+            }
+            | Inner::Blocked {
+                ref group,
+                ref from,
+                ref to,
+                ref request_id,
+                ref request_digest,
             } => {
                 if h.kind != WireKind::Answer || group != GROUP || *to != me || *from != h.from {
                     return dropped(DropReason::Misaddressed);
@@ -734,12 +774,48 @@ impl Member {
                         self.state.contacts.insert(from.clone(), endpoint.clone());
                         Answer::Accepted(endpoint.clone())
                     }
+                    Inner::Blocked { .. } => Answer::Blocked,
                     _ => Answer::Refused,
                 };
                 self.state.outgoing.get_mut(&rid).unwrap().answer = Some(answer);
                 (Delivery::Answered(rid), vec![])
             }
         }
+    }
+    // Candidate 8b Q4: the sealed "blocked" answer. Read-only: the ephemeral key is derived
+    // from the request ID instead of the member RNG, so refusing leaves the state unchanged.
+    fn blocked_answer(&self, to: &str, request_id: &str, digest: &str) -> Option<Relay> {
+        let note = self.state.known_keys.get(to)?;
+        let signed = SignedInner::new(
+            &self.id,
+            Inner::Blocked {
+                group: GROUP.into(),
+                from: self.did(),
+                to: to.into(),
+                request_id: request_id.into(),
+                request_digest: digest.into(),
+            },
+        );
+        let header = Header {
+            group: GROUP.into(),
+            kind: WireKind::Answer,
+            from: self.did(),
+            to: to.into(),
+            key_seq: note.claim.seq,
+            ephemeral: [0; 32],
+        };
+        let counter = u64::from_le_bytes(
+            blake3::hash(request_id.as_bytes()).as_bytes()[..8]
+                .try_into()
+                .unwrap(),
+        );
+        let eph = sim_random(self.seed, "blocked-ephemeral", counter);
+        Some(Relay::Sealed(seal(
+            header,
+            &note.claim.x25519,
+            eph,
+            &signed,
+        )))
     }
     // Test-only insider view: decrypt a wire with this member's key (a recipient can always
     // do this; used to model a malicious recipient re-encrypting what it received).
@@ -1302,7 +1378,9 @@ fn acceptance_cannot_be_redirected_to_a_third_party() {
 }
 
 // KIND: candidate-policy G-BLOCK
-// Rejected option per U5 revised (blocking is visible).
+// Kept under U5 revised: the property is that a host which drops a request cannot forge the
+// target's refusal (decline is the open explicit-vs-silent candidate); it asserts nothing
+// about whether a block is silent.
 #[test]
 fn host_drop_yields_no_answer_never_refused() {
     let explicit = Policy {
@@ -1368,18 +1446,18 @@ fn host_drop_yields_no_answer_never_refused() {
 enum TargetCase {
     Offline,
     OnlineUnanswered,
+    // Only with `BlockReply::Drop`: asserts that no reply is emitted.
     Blocked,
+    // Only with `DeclinePolicy::Silent`.
     SilentDecline,
 }
 // Runs one fresh, identically seeded world; returns (observation, requester snapshot,
 // host submit result) as seen by Alice.
-fn requester_view(decline: DeclinePolicy, case: TargetCase) -> (Observation, Vec<u8>, bool) {
-    let mut w = world(Policy {
-        decline,
-        ..policy()
-    });
+fn requester_view(p: Policy, case: TargetCase) -> (Observation, Vec<u8>, bool) {
+    let mut w = world(p);
     let (a, b) = (w.alice.did(), w.bob.did());
     if let TargetCase::Blocked = case {
+        assert_eq!(p.block, BlockReply::Drop);
         w.bob.block(&a);
     }
     let (rid, relay) = w.alice.request(&b, 1).unwrap();
@@ -1407,6 +1485,7 @@ fn requester_view(decline: DeclinePolicy, case: TargetCase) -> (Observation, Vec
             );
         }
         TargetCase::SilentDecline => {
+            assert_eq!(p.decline, DeclinePolicy::Silent);
             pump(&mut w.host, &mut w.bob, 2);
             assert!(w.bob.decline(&rid).is_none());
         }
@@ -1421,19 +1500,119 @@ fn requester_view(decline: DeclinePolicy, case: TargetCase) -> (Observation, Vec
 }
 
 // KIND: candidate-policy G-BLOCK
-// Rejected option per U5 revised (blocking is visible).
+// Section 8b Q4 (open): a chat request from a DID the target blocked. Replaces the W2-Q tests
+// that asserted the rejected silent option (U5 revised). Two candidates:
+// - `SealedNotice`: Bob answers each request through the host with a sealed, DID-signed
+//   "blocked" answer bound to that request. Alice observes `Blocked` on every attempt (same
+//   reason), which she can tell apart from an offline target, an unanswered request and an
+//   explicit decline. Bob's state is unchanged by each refused request. The host sees an
+//   Answer of the same kind and ciphertext size as an accept, so it cannot tell a block
+//   from an accept. A host-forged "blocked" answer fails the DID signature and a replayed
+//   one is refused, Alice's state unchanged in both.
+// - `Drop`: no reply; at this layer Alice sees `NoAnswer`, the same as an offline target.
+//   The block is then visible only through the private-path notice (proto
+//   `rotation_visible_block.rs`, `multi_host.rs`), if Alice is a private contact at all.
 #[test]
-fn silent_block_is_indistinguishable_from_offline_or_unanswered_target() {
-    // U5 must hold under either decline candidate.
-    for decline in [DeclinePolicy::Explicit, DeclinePolicy::Silent] {
-        let offline = requester_view(decline, TargetCase::Offline);
-        let pending = requester_view(decline, TargetCase::OnlineUnanswered);
-        let blocked = requester_view(decline, TargetCase::Blocked);
-        assert_eq!(blocked.0, Observation::NoAnswer);
-        assert!(blocked.2);
-        assert_eq!(offline, blocked, "{decline:?}: blocked vs offline");
-        assert_eq!(pending, blocked, "{decline:?}: blocked vs unanswered");
+fn candidate_blocked_requester_gets_sealed_signed_answer_vs_drop() {
+    let p = Policy {
+        decline: DeclinePolicy::Explicit,
+        block: BlockReply::SealedNotice,
+        ..policy()
+    };
+    let mut w = world(p);
+    let (a, b, c) = (w.alice.did(), w.bob.did(), w.carol.did());
+    w.bob.block(&a);
+    // Reference size: a genuine accept from Bob to Carol.
+    let rc = send(&mut w.host, &mut w.carol, &b, 1);
+    pump(&mut w.host, &mut w.bob, 1);
+    let accept = w.bob.accept(&rc).unwrap();
+    let mut first_reply = None;
+    for t in [2, 20] {
+        let rid = send(&mut w.host, &mut w.alice, &b, t);
+        let before = w.bob.snapshot();
+        assert_eq!(
+            pump(&mut w.host, &mut w.bob, t + 1),
+            vec![Delivery::Dropped(DropReason::Blocked)]
+        );
+        assert_eq!(w.bob.snapshot(), before, "refusal changed target state");
+        let reply = w.host.state.mailboxes[&a].last().unwrap().clone();
+        assert_eq!(reply.route(), (b.as_str(), a.as_str()));
+        assert_eq!(reply.wire().header.kind, accept.wire().header.kind);
+        assert_eq!(
+            reply.wire().ciphertext.len(),
+            accept.wire().ciphertext.len()
+        );
+        assert_eq!(
+            pump(&mut w.host, &mut w.alice, t + 2),
+            vec![Delivery::Answered(rid.clone())]
+        );
+        assert_eq!(w.alice.observe(&rid, t + 2), Observation::Blocked);
+        assert!(!w.alice.state.contacts.contains_key(&b));
+        first_reply.get_or_insert(reply);
     }
+    // Replay of the first sealed answer: already answered, refused unchanged.
+    assert_rejected(&mut w.alice, first_reply.unwrap(), 30, DropReason::Replay);
+    // A host-forged "blocked" answer for a fresh request fails Bob's DID signature.
+    let rid = send(&mut w.host, &mut w.alice, &b, 40);
+    let host_id = Author::new(40, GROUP).id;
+    let forged = SignedInner::new(
+        &host_id,
+        Inner::Blocked {
+            group: GROUP.into(),
+            from: b.clone(),
+            to: a.clone(),
+            request_id: rid.clone(),
+            request_digest: w.alice.state.outgoing[&rid].digest.clone(),
+        },
+    );
+    let akey = w.host.state.directory[&a].clone();
+    let forged = seal(
+        Header {
+            group: GROUP.into(),
+            kind: WireKind::Answer,
+            from: b.clone(),
+            to: a.clone(),
+            key_seq: akey.claim.seq,
+            ephemeral: [0; 32],
+        },
+        &akey.claim.x25519,
+        sim_random(40, "ephemeral", 2),
+        &forged,
+    );
+    assert_rejected(
+        &mut w.alice,
+        Relay::Sealed(forged),
+        41,
+        DropReason::BadSignature,
+    );
+    assert_eq!(w.alice.observe(&rid, 41), Observation::Pending);
+    // Carol (not blocked) is unaffected.
+    w.host.submit(accept, 3).unwrap();
+    pump(&mut w.host, &mut w.carol, 3);
+    assert!(matches!(w.carol.observe(&rc, 3), Observation::Accepted(_)));
+    assert!(w.bob.state.contacts.contains_key(&c));
+
+    // Distinguishable under SealedNotice; under Drop, blocked == offline at this layer.
+    for case in [TargetCase::Offline, TargetCase::OnlineUnanswered] {
+        assert_eq!(requester_view(p, case).0, Observation::NoAnswer);
+    }
+    let drop = Policy {
+        block: BlockReply::Drop,
+        ..p
+    };
+    let blocked = requester_view(drop, TargetCase::Blocked);
+    assert_eq!(blocked.0, Observation::NoAnswer);
+    assert_eq!(blocked, requester_view(drop, TargetCase::Offline));
+    // The silent-decline candidate (open, separate from blocking) also reads as NoAnswer, so
+    // under SealedNotice it stays distinguishable from a block.
+    let silent = Policy {
+        decline: DeclinePolicy::Silent,
+        ..p
+    };
+    assert_eq!(
+        requester_view(silent, TargetCase::SilentDecline).0,
+        Observation::NoAnswer
+    );
 }
 
 // KIND: candidate-policy G-BLOCK
@@ -1460,19 +1639,16 @@ fn candidate_explicit_decline_reports_refused_and_hides_kind_from_host() {
     assert_eq!(w.alice.observe(&r_alice, 4), Observation::Refused);
     assert!(w.alice.state.contacts.is_empty());
     assert!(!w.bob.state.contacts.contains_key(&w.alice.did()));
-    // Under this candidate a decline (Refused) is distinguishable from a block (NoAnswer).
-    let (blocked, ..) = requester_view(DeclinePolicy::Explicit, TargetCase::Blocked);
+    // Under this candidate a decline (Refused) is distinguishable from a block (NoAnswer
+    // under the `BlockReply::Drop` candidate, `Blocked` under `SealedNotice`).
+    let (blocked, ..) = requester_view(
+        Policy {
+            decline: DeclinePolicy::Explicit,
+            ..policy()
+        },
+        TargetCase::Blocked,
+    );
     assert_ne!(blocked, Observation::Refused);
-}
-
-// KIND: candidate-policy G-BLOCK
-// Rejected option per U5 revised (blocking is visible).
-#[test]
-fn candidate_silent_decline_is_indistinguishable_from_block() {
-    let declined = requester_view(DeclinePolicy::Silent, TargetCase::SilentDecline);
-    let blocked = requester_view(DeclinePolicy::Silent, TargetCase::Blocked);
-    assert_eq!(declined.0, Observation::NoAnswer);
-    assert_eq!(declined, blocked);
 }
 
 // KIND: candidate-policy G-REQUEST-RATE

@@ -6,12 +6,17 @@ Test-only first group simulation slice. No production API and no transport/UI wi
 python3 scripts/buildlock.py --who group-sim -- cargo test -p group-sim
 ```
 
-Uses real DID/device attestations, Ed25519 author signatures and Loro updates. Identities and
+Uses real DID-signed content (`host_only.rs` onward), real Ed25519 signatures and Loro updates.
+The older modules (`tests.rs`, `persistence.rs`, `policy_candidates.rs`, `reachability.rs`,
+`scheduler.rs`, `block_in_group.rs`) still use the legacy device-key-signed `Envelope` with a
+DID/device attestation, superseded by U4 revised + U16; there it is only a carrier for
+properties that do not depend on how content is signed (see "Superseded tests" below). Identities and
 schedule seeds are deterministic test fixtures (never production secrets). Message keys and
 insert-only schemas are provisional; the signing domain explicitly marks simulation data.
 
-There are thirty-five tests. Each one carries a `// KIND:` label, either `invariant` or
-`limitation`. A limitation test passes by demonstrating a missing guarantee.
+Each test carries a `// KIND:` label: `invariant`, `limitation` or `candidate-policy <gate>`.
+A limitation test passes by demonstrating a missing guarantee; a candidate-policy test encodes
+one option of an open question and selects nothing.
 
 ## Replica and authority tests (`src/tests.rs`, `src/authority.rs`)
 
@@ -32,15 +37,12 @@ There are thirty-five tests. Each one carries a `// KIND:` label, either `invari
   and after. The snapshot holds the Loro export bytes, the deep value and VV, every accepted
   and pending envelope's signed bytes, signature and attestation, and the fan-out list.
   - **Single-cause cases**, each with a positive control on the same replica:
-    - attestation DID ≠ author
-    - attested device key ≠ signing device
-    - forged attestation signature
     - group-only mismatch
     - document-only mismatch
     - text-size bound
     - dependency-count bound
-    - a second, validly attested device that writes under another device's Loro peer ID. This
-      is the first fixture with more than one device per DID.
+  - The attestation cases and the second-device peer-ID case were removed by R1b (they
+    asserted the superseded device-key model); the DID-signed equivalents are in `host_only.rs`.
   - **Rejected, but not as the only cause**, because `apply()` also refuses them: sequence 0
     and an oversized update.
   - **Rejected on a populated signed replica:**
@@ -116,7 +118,10 @@ migration. Retirement here means routing retirement, not access-grant expiry.
 
 ## Five-node scheduler (`src/scheduler.rs`)
 
-The scheduler has five tests.
+The scheduler has five tests. Since R1b the fleet follows U7: nodes 0–2 are members, 3–4 are
+hosts; a member holds routes to the hosts only, and any member-to-member send, reconcile or
+address push fails with `NoAddress`. All member traffic goes through a host. The first test
+asserts this topology at the end of every seed.
 
 1. **Ten seeded 100-event schedules.**
    - Setup: three members and two hosts. Cross-author causal writes, duplication, loss and
@@ -151,6 +156,41 @@ The scheduler uses idealized authenticated links. It selects missing envelopes a
 exchange had completed; there is no real handshake or session code. Bootstrap paths are explicit
 fixtures, and there is no automatic global directory refresh. Sleep keeps in-memory state, so it
 is not a process-crash test.
+
+## Superseded tests (R1b)
+
+R1b brought the tests in line with U4 revised (no device or transport key in content), U5
+revised (visible blocking), U7 (only hosts hold members' group endpoints) and U18 (no backward
+compatibility). Removed, with where the current-design property is covered:
+
+| Removed test | Covered by |
+|---|---|
+| `tests.rs` `attestation_must_bind_author_did_and_device_key_each_as_sole_cause` | `host_only.rs` `did_signed_posts_with_random_writer_ids_two_own_devices_converge`, `forged_tampered_wrong_group_and_replayed_posts_leave_state_unchanged` |
+| `tests.rs` `second_device_cannot_write_under_another_devices_loro_peer_id` | `host_only.rs` `forged_tampered_wrong_group_and_replayed_posts_leave_state_unchanged` (`LoroMismatch`), `cross_did_writer_collision_first_claim_at_host_wins_and_loser_redraws` |
+| `block_in_group.rs` `blocked_member_never_learns_blockers_private_endpoint_through_group` | `host_only.rs` `blocked_member_learns_no_private_endpoint_from_did_signed_group_content`, `members_receive_no_device_key_transport_key_or_endpoint_of_any_other_member` |
+| `block_in_group.rs` `author_key_equal_to_private_transport_key_leaks_private_endpoint_to_blocked_member` | `host_only.rs` `blocked_member_learns_no_private_endpoint_from_did_signed_group_content` |
+| `block_in_group.rs` `blocker_host_candidate_neutral_relay_converges_and_is_silent` | `block_in_group.rs` `personal_block_leaves_every_replica_grant_and_relayed_byte_unchanged` (host-is-blocker case); `multi_host.rs` `removed_member_and_blocked_contact_receive_verifiable_signed_notices` |
+| `chat_request.rs` `silent_block_is_indistinguishable_from_offline_or_unanswered_target`, `candidate_silent_decline_is_indistinguishable_from_block` | `chat_request.rs` `candidate_blocked_requester_gets_sealed_signed_answer_vs_drop` (section 8b Q4 candidates) |
+| `host_relay.rs` `member_rotation_is_relayed_to_online_members_and_offline_member_catches_up_from_host`, `two_members_rotated_while_apart_recover_each_other_via_host` | `host_only.rs` `member_rotation_note_goes_to_host_only_and_host_routes_to_new_endpoint`; `multi_host.rs` `member_rotation_note_reaches_every_host_and_hosts_repair_each_other`, `host_and_member_both_rotated_while_apart_recover_via_another_host` |
+| `host_relay.rs` `host_rotation_reaches_offline_member_through_verified_member_forwarding` | `host_only.rs` `host_rotation_reaches_online_members_directly_and_offline_member_by_host_retry`, `host_overlap_window_candidate_recovers_member_only_within_window`; `multi_host.rs` `rotated_host_reconnects_members_at_their_current_endpoints_without_overlap` |
+| `host_relay.rs` `host_cannot_substitute_endpoint_in_relayed_note` | `multi_host.rs` `member_rotation_note_reaches_every_host_and_hosts_repair_each_other`; forged host notes in `host_only.rs` `host_rotation_reaches_online_members_directly_and_offline_member_by_host_retry` |
+| `host_relay.rs` `host_and_all_forwarders_unreachable_means_no_recovery_without_reshare` | `host_only.rs` `host_and_member_both_rotated_while_apart_lose_each_other` |
+
+Rewritten to the current design: `host_relay.rs` (member views accept only the host's notes;
+the host relays only its own note; recovery is host retry) for
+`private_endpoints_never_appear_in_host_state_or_any_group_relayed_bytes`,
+`forged_stale_replayed_wrong_owner_private_and_foreign_notes_leave_host_and_member_unchanged`,
+`personal_block_does_not_stop_group_notes_or_change_group_state`,
+`catch_up_latest_only_vs_full_history_under_gap_policies` (now: what a member's retry sends the
+host), `same_seq_fork_keep_first_diverges_by_arrival_order_freeze_converges_but_blocks_routing`
+(now: two hosts) and `mnemonic_clone_with_higher_seq_replaces_honest_group_endpoint_at_the_host`;
+all five `scheduler.rs` tests (U7 star topology). Kept unchanged apart from comments: the
+legacy-envelope carrier tests, the two-host partition tests in `tests.rs`, and
+`chat_request.rs` `host_drop_yields_no_answer_never_refused` (it asserts that a host cannot
+forge a refusal, not that blocking is silent).
+
+The proto model of private-audience blocking is now `crates/proto/tests/rotation_visible_block.rs`
+(was `rotation_silent_block.rs`).
 
 ## Not covered
 

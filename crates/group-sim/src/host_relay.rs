@@ -7,6 +7,27 @@
 //! Membership is a fixed roster fixture; group authorization stays in `authority.rs`.
 //! Endpoint strings: group endpoints start with `grp-`, private endpoints with `PRIVATE-`, so
 //! audience leaks can be found by scanning bytes.
+//!
+//! R1b (U7: only the host knows members' group endpoints): a member's `GroupView` accepts only
+//! its own and the host's notes (`Reject::NotHost` otherwise); the host relays its own note
+//! to members but never a member's note; a returning member retries its own notes to the host
+//! and pulls the host's; recovery after a host rotation is the host's retry (`host_push`), not
+//! member forwarding. Removed by R1b, with their current-design coverage:
+//! - `member_rotation_is_relayed_to_online_members_and_offline_member_catches_up_from_host`,
+//!   `two_members_rotated_while_apart_recover_each_other_via_host`: `host_only.rs`
+//!   `member_rotation_note_goes_to_host_only_and_host_routes_to_new_endpoint`, `multi_host.rs`
+//!   `member_rotation_note_reaches_every_host_and_hosts_repair_each_other` and
+//!   `host_and_member_both_rotated_while_apart_recover_via_another_host`;
+//! - `host_rotation_reaches_offline_member_through_verified_member_forwarding`: `host_only.rs`
+//!   `host_rotation_reaches_online_members_directly_and_offline_member_by_host_retry` and
+//!   `host_overlap_window_candidate_recovers_member_only_within_window`, `multi_host.rs`
+//!   `rotated_host_reconnects_members_at_their_current_endpoints_without_overlap`;
+//! - `host_cannot_substitute_endpoint_in_relayed_note` (the host no longer relays member
+//!   notes to members): `multi_host.rs` `member_rotation_note_reaches_every_host_and_hosts_repair_each_other`
+//!   (note altered in host-to-host relay refused) and the forged-host-note cases of
+//!   `host_only.rs` `host_rotation_reaches_online_members_directly_and_offline_member_by_host_retry`;
+//! - `host_and_all_forwarders_unreachable_means_no_recovery_without_reshare`: `host_only.rs`
+//!   `host_and_member_both_rotated_while_apart_lose_each_other`.
 use super::*;
 use identity::{public_key_from_did, verify};
 
@@ -67,6 +88,7 @@ enum Reject {
     PrivateAudience,
     WrongGroup,
     NotMember,
+    NotHost,
     BadSignature,
     Frozen,
     Replay,
@@ -115,12 +137,14 @@ fn all_policies() -> Vec<Policy> {
     out
 }
 
-// Group-audience directory. The host holds one; every member holds one. Serializable so that
-// rejection tests compare full bytes.
+// Group-audience directory. The host's holds every member's notes; a member's (U7) holds only
+// its own and the host's. Serializable so that rejection tests compare full bytes.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct GroupView {
     group: String,
     roster: BTreeSet<String>,
+    // U7: `Some({self, host})` on a member, `None` on the host.
+    accept_only: Option<BTreeSet<String>>,
     history: BTreeMap<String, Vec<RotationNote>>,
     frozen: BTreeSet<String>,
 }
@@ -144,6 +168,13 @@ impl GroupView {
         }
         if !self.roster.contains(&c.owner) {
             return Err(Reject::NotMember);
+        }
+        if self
+            .accept_only
+            .as_ref()
+            .is_some_and(|o| !o.contains(&c.owner))
+        {
+            return Err(Reject::NotHost);
         }
         if !note.verify() {
             return Err(Reject::BadSignature);
@@ -176,19 +207,13 @@ impl GroupView {
             .push(note.clone());
         Ok(note)
     }
-    // Notes a sender offers on catch-up/forwarding, excluding the receiver's own path.
-    fn export(&self, mode: CatchUp, skip: &str) -> Vec<Vec<u8>> {
-        let mut out = vec![];
-        for (owner, h) in &self.history {
-            if owner == skip {
-                continue;
-            }
-            match mode {
-                CatchUp::FullHistory => out.extend(h.iter().map(RotationNote::wire)),
-                CatchUp::LatestOnly => out.extend(h.last().map(RotationNote::wire)),
-            }
+    // One owner's notes as offered on a retry/catch-up (G-HISTORY).
+    fn export_owner(&self, mode: CatchUp, owner: &str) -> Vec<Vec<u8>> {
+        let h = self.history.get(owner).map(Vec::as_slice).unwrap_or(&[]);
+        match mode {
+            CatchUp::FullHistory => h.iter().map(RotationNote::wire).collect(),
+            CatchUp::LatestOnly => h.last().map(RotationNote::wire).into_iter().collect(),
         }
-        out
     }
 }
 
@@ -247,6 +272,7 @@ fn world(policy: Policy) -> World {
         private_endpoints_ever: BTreeSet::new(),
     };
     let mut bootstrap = vec![];
+    let host_did = authors[HOST].1.id.did().to_string();
     for (name, author) in authors {
         let did = author.id.did().to_string();
         let ep = format!("grp-{name}-1");
@@ -264,6 +290,7 @@ fn world(policy: Policy) -> World {
             view: GroupView {
                 group: group.clone(),
                 roster: roster.clone(),
+                accept_only: (did != host_did).then(|| [did.clone(), host_did.clone()].into()),
                 history: BTreeMap::new(),
                 frozen: BTreeSet::new(),
             },
@@ -276,10 +303,14 @@ fn world(policy: Policy) -> World {
             relayed: vec![],
         });
     }
-    // Join bootstrap (invite/ticket) is out of scope: every view starts with every seq-1 note.
+    // Join bootstrap (invite/ticket) is out of scope: the host's view starts with every seq-1
+    // note, a member's with its own and the host's (U7).
     for node in &mut w.nodes {
         for b in &bootstrap {
-            node.view.accept(policy, b).unwrap();
+            match node.view.accept(policy, b) {
+                Ok(_) | Err(Reject::NotHost) => {}
+                Err(e) => panic!("bootstrap note refused: {e:?}"),
+            }
         }
     }
     w
@@ -294,15 +325,6 @@ impl World {
     }
     fn view_snapshot(&self, i: usize) -> Vec<u8> {
         serde_json::to_vec(&self.nodes[i].view).unwrap()
-    }
-    fn group_endpoint(&self, i: usize) -> String {
-        self.nodes[i]
-            .view
-            .current(&self.nodes[i].did)
-            .unwrap()
-            .claims
-            .endpoint
-            .clone()
     }
     fn known_endpoint(&self, viewer: usize, target: usize) -> Option<String> {
         self.nodes[viewer]
@@ -385,12 +407,17 @@ impl World {
         }
         recipients
     }
-    // Host relays a note it accepted to every member it can reach (except the owner).
+    // Host relays its OWN note to every member it can reach. U7: never a member's note.
     fn fanout(&mut self, bytes: &[u8]) -> Vec<usize> {
-        let owner: RotationNote = serde_json::from_slice(bytes).unwrap();
+        let note: RotationNote = serde_json::from_slice(bytes).unwrap();
+        assert_eq!(
+            note.claims.owner,
+            self.did(HOST),
+            "U7: host relays only its own note"
+        );
         let mut delivered = vec![];
         for j in 1..self.nodes.len() {
-            if self.nodes[j].did == owner.claims.owner || self.reach(HOST, j).is_err() {
+            if self.reach(HOST, j).is_err() {
                 continue;
             }
             self.send(HOST, j, bytes);
@@ -402,7 +429,8 @@ impl World {
         }
         delivered
     }
-    // Member sends its own group note to the host, which relays it (U1, group audience).
+    // A member sends its own group note to the host only (U1 group audience, U7); the host
+    // sends its own note to the members. Returns the members that accepted a host note.
     fn announce(&mut self, i: usize, bytes: &[u8]) -> Result<Vec<usize>, RouteErr> {
         if i == HOST {
             return Ok(self.fanout(bytes));
@@ -410,44 +438,49 @@ impl World {
         self.reach(i, HOST)?;
         self.send(i, HOST, bytes);
         let policy = self.policy;
-        match self.nodes[HOST].view.accept(policy, bytes) {
-            Ok(_) => Ok(self.fanout(bytes)),
-            Err(_) => Ok(vec![]),
-        }
+        let _ = self.nodes[HOST].view.accept(policy, bytes);
+        Ok(vec![])
     }
-    // Member returns: re-announces its current note (its live side retries) and pulls what it
-    // missed from the host. Returns number of newly accepted notes.
-    fn catch_up(&mut self, i: usize) -> Result<usize, RouteErr> {
-        self.reach(i, HOST)?;
-        let own = self.nodes[i].view.current(&self.did(i)).unwrap().wire();
-        self.announce(i, &own)?;
-        let notes = self.nodes[HOST]
+    // U7 host retry: the host dials a member at the member's current group endpoint (only the
+    // host knows it) and hands over its own current note. Returns whether it was accepted.
+    fn host_push(&mut self, j: usize) -> Result<bool, RouteErr> {
+        self.reach(HOST, j)?;
+        let bytes = self.nodes[HOST]
             .view
-            .export(self.policy.catch_up, &self.did(i));
-        let mut accepted = 0;
+            .current(&self.did(HOST))
+            .unwrap()
+            .wire();
+        self.send(HOST, j, &bytes);
+        self.nodes[HOST].relayed.push(bytes.clone());
+        let policy = self.policy;
+        Ok(self.nodes[j].view.accept(policy, &bytes).is_ok())
+    }
+    // Member returns: its live side retries its own notes to the host (latest only or full
+    // history, G-HISTORY) and pulls the host's own notes. Returns (accepted by the host,
+    // accepted by the member).
+    fn catch_up(&mut self, i: usize) -> Result<(usize, usize), RouteErr> {
+        self.reach(i, HOST)?;
+        let mode = self.policy.catch_up;
+        let own = self.nodes[i].view.export_owner(mode, &self.did(i));
+        let mut to_host = 0;
+        for bytes in own {
+            self.send(i, HOST, &bytes);
+            let policy = self.policy;
+            if self.nodes[HOST].view.accept(policy, &bytes).is_ok() {
+                to_host += 1;
+            }
+        }
+        let notes = self.nodes[HOST].view.export_owner(mode, &self.did(HOST));
+        let mut to_member = 0;
         for bytes in notes {
             self.send(HOST, i, &bytes);
             self.nodes[HOST].relayed.push(bytes.clone());
             let policy = self.policy;
             if self.nodes[i].view.accept(policy, &bytes).is_ok() {
-                accepted += 1;
+                to_member += 1;
             }
         }
-        Ok(accepted)
-    }
-    // Member-to-member forwarding of DID-signed notes (used when the host rotated).
-    fn forward(&mut self, from: usize, to: usize) -> Result<usize, RouteErr> {
-        self.reach(from, to)?;
-        let notes = self.nodes[from]
-            .view
-            .export(self.policy.catch_up, &self.did(to));
-        let mut accepted = 0;
-        for bytes in notes {
-            if self.inject(from, to, &bytes).is_ok() {
-                accepted += 1;
-            }
-        }
-        Ok(accepted)
+        Ok((to_host, to_member))
     }
     fn group_bytes_scan(&self) -> Vec<Vec<u8>> {
         let mut hay = vec![self.host_snapshot()];
@@ -466,42 +499,6 @@ fn contains(hay: &[u8], needle: &str) -> bool {
 
 // KIND: invariant
 #[test]
-fn member_rotation_is_relayed_to_online_members_and_offline_member_catches_up_from_host() {
-    for policy in all_policies() {
-        let mut w = world(policy);
-        w.nodes[D].online = false;
-        let old = w.group_endpoint(A);
-        let note = w.rotate_group(A);
-        let new = w.group_endpoint(A);
-        assert_ne!(old, new);
-        // Host relays the original signed bytes to the online member only.
-        assert_eq!(w.announce(A, &note), Ok(vec![C]));
-        assert_eq!(w.known_endpoint(HOST, A), Some(new.clone()));
-        assert_eq!(w.known_endpoint(C, A), Some(new.clone()));
-        assert_eq!(w.known_endpoint(D, A), Some(old.clone()));
-        assert!(w.nodes[HOST].relayed.iter().all(|r| r == &note));
-        assert_eq!(w.reach(C, A), Ok(()));
-        // Offline member's stale route fails (old endpoint gone), no fallback.
-        w.nodes[D].online = true;
-        assert_eq!(w.reach(D, A), Err(RouteErr::EndpointGone));
-        assert_eq!(w.catch_up(D), Ok(1));
-        assert_eq!(w.known_endpoint(D, A), Some(new.clone()));
-        assert_eq!(w.reach(D, A), Ok(()));
-        // All four group views agree on every member's current group endpoint.
-        for i in 1..4 {
-            for t in 0..4 {
-                assert_eq!(
-                    w.known_endpoint(i, t),
-                    w.known_endpoint(HOST, t),
-                    "{policy:?}"
-                );
-            }
-        }
-    }
-}
-
-// KIND: invariant
-#[test]
 fn private_endpoints_never_appear_in_host_state_or_any_group_relayed_bytes() {
     for policy in all_policies() {
         let mut w = world(policy);
@@ -514,7 +511,8 @@ fn private_endpoints_never_appear_in_host_state_or_any_group_relayed_bytes() {
             w.rotate_private(i);
         }
         w.nodes[D].online = true;
-        w.forward(A, D).unwrap();
+        // U7: the host's retry reaches dave at his still-live endpoint (no member forwarding).
+        assert_eq!(w.host_push(D), Ok(true));
         w.catch_up(D).unwrap();
         w.rotate_private(D);
         let n = w.rotate_group(D);
@@ -556,174 +554,123 @@ fn private_endpoints_never_appear_in_host_state_or_any_group_relayed_bytes() {
 }
 
 // KIND: invariant
-#[test]
-fn two_members_rotated_while_apart_recover_each_other_via_host() {
-    for policy in all_policies() {
-        let mut w = world(policy);
-        w.nodes[A].online = false;
-        w.nodes[D].online = false;
-        // Both rotate while offline: nobody learns either new endpoint yet.
-        let _ = w.rotate_group(A);
-        let _ = w.rotate_group(D);
-        let (a_new, d_new) = (w.group_endpoint(A), w.group_endpoint(D));
-        w.nodes[A].online = true;
-        assert_eq!(w.catch_up(A), Ok(0)); // host has nothing new for alice yet
-        assert_eq!(w.known_endpoint(A, D), Some("grp-dave-1".into()));
-        assert_eq!(w.reach(A, D), Err(RouteErr::EndpointGone));
-        w.nodes[D].online = true;
-        // Dave's live side retries: re-announce relays dave's note to alice (online), and
-        // the host returns alice's newer note to dave.
-        assert_eq!(w.catch_up(D), Ok(1));
-        assert_eq!(w.known_endpoint(A, D), Some(d_new.clone()));
-        assert_eq!(w.known_endpoint(D, A), Some(a_new.clone()));
-        assert_eq!(w.reach(A, D), Ok(()));
-        assert_eq!(w.reach(D, A), Ok(()));
-        assert_eq!(w.known_endpoint(C, A), Some(a_new));
-        assert_eq!(w.known_endpoint(C, D), Some(d_new));
-    }
-}
-
-// KIND: invariant
-#[test]
-fn host_rotation_reaches_offline_member_through_verified_member_forwarding() {
-    for policy in all_policies() {
-        let mut w = world(policy);
-        w.nodes[C].online = false;
-        let host_note = w.rotate_group(HOST);
-        assert_eq!(w.announce(HOST, &host_note), Ok(vec![A, D]));
-        let host_new = w.group_endpoint(HOST);
-        w.nodes[C].online = true;
-        // Carol's only known host endpoint is gone: she cannot catch up from the host.
-        assert_eq!(w.catch_up(C), Err(RouteErr::EndpointGone));
-        // Dave forwards tampered / mis-signed host notes: carol verifies and refuses them.
-        let before = w.view_snapshot(C);
-        let mut tampered: RotationNote = serde_json::from_slice(&host_note).unwrap();
-        tampered.claims.endpoint = "grp-evil".into();
-        assert_eq!(w.inject(D, C, &tampered.wire()), Err(Reject::BadSignature));
-        let mut by_dave = RotationNote::sign(
-            &w.nodes[D].author.id,
-            NoteAudience::Group(w.group.clone()),
-            "grp-evil",
-            2,
-        );
-        by_dave.claims.owner = w.did(HOST);
-        assert_eq!(w.inject(D, C, &by_dave.wire()), Err(Reject::BadSignature));
-        assert_eq!(w.view_snapshot(C), before);
-        // Alice (who got the host note directly) forwards the genuine signed note.
-        assert!(w.forward(A, C).unwrap() >= 1);
-        assert_eq!(w.known_endpoint(C, HOST), Some(host_new));
-        // What carol holds is the host's original DID-signed bytes, not a forwarder's copy.
-        let held = w.nodes[C].view.current(&w.did(HOST)).unwrap().wire();
-        assert_eq!(held, host_note);
-        assert_eq!(w.catch_up(C), Ok(0));
-        assert_eq!(w.reach(C, HOST), Ok(()));
-    }
-}
-
-// KIND: invariant
+// R1b (U7): the host accepts members' group notes; a member accepts only the host's. Every
+// malformed, forged, bit-flipped, truncated, stale, replayed, wrong-owner, non-member,
+// private-audience or foreign note leaves the host's state (for alice's notes, sent by a
+// member) and a member's view (for the host's notes, sent by a faulty relay) byte-identical.
+// A genuine note of another member is refused by a member (`NotHost`), view unchanged.
 #[test]
 fn forged_stale_replayed_wrong_owner_private_and_foreign_notes_leave_host_and_member_unchanged() {
     for policy in all_policies() {
         let mut w = world(policy);
         let n2 = w.rotate_group(A);
-        w.announce(A, &n2).unwrap();
-        let a_id = &w.nodes[A].author.id;
-        let group = NoteAudience::Group(w.group.clone());
-        let n1 = RotationNote::sign(a_id, group.clone(), "grp-alice-1", 1).wire();
-        let mut forged: RotationNote = serde_json::from_slice(&n2).unwrap();
-        forged.claims.seq = 3;
-        forged.claims.endpoint = "grp-alice-hijack".into();
-        let mut flipped: RotationNote = serde_json::from_slice(&n2).unwrap();
-        flipped.signature[7] ^= 1;
-        let mut short_sig: RotationNote = serde_json::from_slice(&n2).unwrap();
-        short_sig.signature.truncate(63);
-        let stale = RotationNote::sign(a_id, group.clone(), "grp-alice-rollback", 1).wire();
-        let mut wrong_owner =
-            RotationNote::sign(&w.nodes[C].author.id, group.clone(), "grp-alice-x", 3);
-        wrong_owner.claims.owner = w.did(A);
-        let outsider = Author::new(9, &w.group);
-        let not_member = RotationNote::sign(&outsider.id, group.clone(), "grp-out-1", 1).wire();
-        let private = RotationNote::sign(a_id, NoteAudience::Private, "PRIVATE-alice-9", 3).wire();
-        let foreign =
-            RotationNote::sign(a_id, NoteAudience::Group("other".into()), "grp-a-o", 3).wire();
-        let cases: Vec<(&str, Vec<u8>, Reject)> = vec![
-            ("forged", forged.wire(), Reject::BadSignature),
-            ("bit-flip", flipped.wire(), Reject::BadSignature),
-            ("short-sig", short_sig.wire(), Reject::BadSignature),
-            ("stale", stale, Reject::Stale),
-            ("replay-current", n2.clone(), Reject::Replay),
-            ("replay-old", n1, Reject::Replay),
-            ("wrong-owner", wrong_owner.wire(), Reject::BadSignature),
-            ("not-member", not_member, Reject::NotMember),
-            ("private", private, Reject::PrivateAudience),
-            ("wrong-group", foreign, Reject::WrongGroup),
-            ("malformed", b"{\"claims\":1}".to_vec(), Reject::Malformed),
-        ];
-        for (name, bytes, want) in cases {
-            let (host_before, c_before) = (w.host_snapshot(), w.view_snapshot(C));
-            assert_eq!(
-                w.inject(D, HOST, &bytes),
-                Err(want),
-                "host {name} {policy:?}"
-            );
-            assert_eq!(w.inject(D, C, &bytes), Err(want), "member {name}");
-            assert_eq!(w.host_snapshot(), host_before, "host mutated by {name}");
-            assert_eq!(w.view_snapshot(C), c_before, "member mutated by {name}");
+        assert_eq!(w.announce(A, &n2), Ok(vec![]));
+        let h2 = w.rotate_group(HOST);
+        assert_eq!(w.announce(HOST, &h2), Ok(vec![A, C, D]));
+        // (owner of the notes, receiver, sender, current note)
+        for (owner, to, from, current) in [(A, HOST, D, n2.clone()), (HOST, C, HOST, h2)] {
+            let id = w.nodes[owner].author.id.clone();
+            let name = w.nodes[owner].name;
+            let group = NoteAudience::Group(w.group.clone());
+            let n1 = RotationNote::sign(&id, group.clone(), &format!("grp-{name}-1"), 1).wire();
+            let mut forged: RotationNote = serde_json::from_slice(&current).unwrap();
+            forged.claims.seq = 3;
+            forged.claims.endpoint = format!("grp-{name}-hijack");
+            let mut flipped: RotationNote = serde_json::from_slice(&current).unwrap();
+            flipped.signature[7] ^= 1;
+            let mut short_sig: RotationNote = serde_json::from_slice(&current).unwrap();
+            short_sig.signature.truncate(63);
+            let stale = RotationNote::sign(&id, group.clone(), "grp-rollback", 1).wire();
+            let mut wrong_owner =
+                RotationNote::sign(&w.nodes[D].author.id, group.clone(), "grp-x", 3);
+            wrong_owner.claims.owner = w.did(owner);
+            let outsider = Author::new(9, &w.group);
+            let not_member = RotationNote::sign(&outsider.id, group.clone(), "grp-out-1", 1).wire();
+            let private = RotationNote::sign(&id, NoteAudience::Private, "PRIVATE-x-9", 3).wire();
+            let foreign =
+                RotationNote::sign(&id, NoteAudience::Group("other".into()), "grp-o", 3).wire();
+            let cases: Vec<(&str, Vec<u8>, Reject)> = vec![
+                ("forged", forged.wire(), Reject::BadSignature),
+                ("bit-flip", flipped.wire(), Reject::BadSignature),
+                ("short-sig", short_sig.wire(), Reject::BadSignature),
+                ("stale", stale, Reject::Stale),
+                ("replay-current", current.clone(), Reject::Replay),
+                ("replay-old", n1, Reject::Replay),
+                ("wrong-owner", wrong_owner.wire(), Reject::BadSignature),
+                ("not-member", not_member, Reject::NotMember),
+                ("private", private, Reject::PrivateAudience),
+                ("wrong-group", foreign, Reject::WrongGroup),
+                ("malformed", b"{\"claims\":1}".to_vec(), Reject::Malformed),
+            ];
+            for (case, bytes, want) in cases {
+                let snap = |w: &World| {
+                    if to == HOST {
+                        w.host_snapshot()
+                    } else {
+                        w.view_snapshot(to)
+                    }
+                };
+                let before = snap(&w);
+                assert_eq!(
+                    w.inject(from, to, &bytes),
+                    Err(want),
+                    "{name} {case} {policy:?}"
+                );
+                assert_eq!(snap(&w), before, "{name} {case} mutated node {to}");
+            }
         }
-        // Positive control on the same populated state.
-        let n3 = w.rotate_group(A);
-        assert_eq!(w.announce(A, &n3), Ok(vec![C, D]));
-        assert_eq!(w.known_endpoint(C, A), Some("grp-alice-3".into()));
-    }
-}
-
-// KIND: invariant
-#[test]
-fn host_cannot_substitute_endpoint_in_relayed_note() {
-    for policy in all_policies() {
-        let mut w = world(policy);
-        let note = w.rotate_group(A);
-        // Alice delivers to the host; the host then tries to relay a substituted endpoint.
-        w.reach(A, HOST).unwrap();
-        w.inject(A, HOST, &note).unwrap();
-        let mut swapped: RotationNote = serde_json::from_slice(&note).unwrap();
-        swapped.claims.endpoint = "grp-host-mitm".into();
         let before = w.view_snapshot(C);
-        assert_eq!(
-            w.inject(HOST, C, &swapped.wire()),
-            Err(Reject::BadSignature)
-        );
+        assert_eq!(w.inject(HOST, C, &n2), Err(Reject::NotHost));
         assert_eq!(w.view_snapshot(C), before);
-        assert_eq!(w.inject(HOST, C, &note).map(|n| n.claims.seq), Ok(2));
+        // Positive controls on the same populated state.
+        let n3 = w.rotate_group(A);
+        assert_eq!(w.announce(A, &n3), Ok(vec![]));
+        assert_eq!(w.known_endpoint(HOST, A), Some("grp-alice-3".into()));
+        assert_eq!(w.known_endpoint(C, A), None);
+        let h3 = w.rotate_group(HOST);
+        assert_eq!(w.announce(HOST, &h3), Ok(vec![A, C, D]));
+        assert_eq!(w.known_endpoint(C, HOST), Some("grp-host-3".into()));
     }
 }
 
 // KIND: invariant
+// R1b (U7): Alice personally blocks Carol. The host still holds both their new group
+// endpoints and reaches both; Carol still receives the host's rotation; no member holds
+// another member's group endpoint in either run; every group view and the host relay log are
+// byte-identical with and without the block. Only the private audience differs: Carol is
+// left out of Alice's private note.
 #[test]
 fn personal_block_does_not_stop_group_notes_or_change_group_state() {
     for policy in all_policies() {
         let run = |block: bool| {
             let mut w = world(policy);
             if block {
-                // Alice personally blocks carol (private audience only, U5).
+                // Alice personally blocks carol (private audience only, U5 revised).
                 let c = w.did(C);
                 w.nodes[A].blocked.insert(c);
             }
             let private_recipients = w.rotate_private(A);
-            let n = w.rotate_group(A);
-            let delivered = w.announce(A, &n).unwrap();
-            let n = w.rotate_group(C);
-            w.announce(C, &n).unwrap();
+            for i in [A, C] {
+                let n = w.rotate_group(i);
+                assert_eq!(w.announce(i, &n), Ok(vec![]));
+            }
+            let n = w.rotate_group(HOST);
+            let delivered = w.announce(HOST, &n).unwrap();
             let views: Vec<Vec<u8>> = (0..4).map(|i| w.view_snapshot(i)).collect();
             (w.host_snapshot(), views, delivered, private_recipients, w)
         };
         let (host_plain, views_plain, del_plain, priv_plain, _) = run(false);
         let (host_block, views_block, del_block, priv_block, w) = run(true);
-        // Carol still receives alice's group note and alice still receives carol's.
-        assert_eq!(del_block, vec![C, D]);
-        assert_eq!(w.known_endpoint(C, A), Some("grp-alice-2".into()));
-        assert_eq!(w.known_endpoint(A, C), Some("grp-carol-2".into()));
-        assert_eq!(w.reach(C, A), Ok(()));
+        assert_eq!(del_block, vec![A, C, D]);
+        assert_eq!(w.known_endpoint(C, HOST), Some("grp-host-2".into()));
+        assert_eq!(w.known_endpoint(HOST, A), Some("grp-alice-2".into()));
+        assert_eq!(w.known_endpoint(HOST, C), Some("grp-carol-2".into()));
+        for (x, y) in [(C, HOST), (HOST, C), (A, HOST), (HOST, A)] {
+            assert_eq!(w.reach(x, y), Ok(()));
+        }
+        assert_eq!(w.known_endpoint(C, A), None);
+        assert_eq!(w.known_endpoint(A, C), None);
+        assert_eq!(w.reach(C, A), Err(RouteErr::NoBinding));
         // Group state (roster, directories, host relay log) is byte-identical with the block.
         assert_eq!(del_plain, del_block);
         assert_eq!(host_plain, host_block);
@@ -735,88 +682,58 @@ fn personal_block_does_not_stop_group_notes_or_change_group_state() {
     }
 }
 
-// KIND: limitation
-#[test]
-fn host_and_all_forwarders_unreachable_means_no_recovery_without_reshare() {
-    let mut w = world(all_policies()[0]);
-    w.nodes[C].online = false;
-    for i in [HOST, A, D] {
-        let n = w.rotate_group(i);
-        w.announce(i, &n).unwrap();
-    }
-    // Carol also rotated while away: nobody holds her new endpoint and she holds nobody's.
-    let _ = w.rotate_group(C);
-    w.nodes[C].online = true;
-    assert_eq!(w.catch_up(C), Err(RouteErr::EndpointGone));
-    for i in [A, D] {
-        assert_eq!(w.forward(C, i), Err(RouteErr::EndpointGone));
-        assert_eq!(w.forward(i, C), Err(RouteErr::EndpointGone));
-    }
-    assert_eq!(w.reach(HOST, C), Err(RouteErr::EndpointGone));
-    // The new endpoints are live, yet nothing in carol's view names them: "lost contact".
-    for i in [HOST, A, D] {
-        let ep = w.group_endpoint(i);
-        assert!(w.live.contains_key(&ep));
-        assert_ne!(w.known_endpoint(C, i), Some(ep));
-    }
-    // Manual re-share (ticket/QR, out of band) of alice's current note restores a path; it
-    // is still verified, then normal forwarding repairs the rest.
-    let reshared = w.nodes[A].view.current(&w.did(A)).unwrap().wire();
-    let policy = w.policy;
-    w.nodes[C].view.accept(policy, &reshared).unwrap();
-    assert_eq!(w.reach(C, A), Ok(()));
-    let carol_now = w.nodes[C].view.current(&w.did(C)).unwrap().wire();
-    w.inject(C, A, &carol_now).unwrap();
-    w.forward(A, C).unwrap();
-    assert_eq!(w.catch_up(C), Ok(0));
-    assert_eq!(w.reach(D, C), Ok(()));
-}
-
 // KIND: candidate-policy G-HISTORY
+// R1b (U7): only the host holds members' group notes, so the history question is what a
+// member's retry sends the host after the host missed several of its rotations. Alice rotates
+// three times (seq 2..4) while the host is offline; when it returns, her retry sends her latest
+// note only, or her full history (seq 1..4). A strict (contiguous) host cannot use a
+// latest-only retry and keeps routing alice to her retired endpoint. Members' views are
+// untouched in every case.
 #[test]
 fn catch_up_latest_only_vs_full_history_under_gap_policies() {
-    // Carol misses three rotations of alice (seq 2..4).
     let mut results = vec![];
     for policy in all_policies()
         .into_iter()
         .filter(|p| p.fork == ForkPolicy::KeepFirst)
     {
         let mut w = world(policy);
-        w.nodes[C].online = false;
+        w.nodes[HOST].online = false;
         for _ in 0..3 {
             let n = w.rotate_group(A);
-            w.announce(A, &n).unwrap();
+            assert_eq!(w.announce(A, &n), Err(RouteErr::EndpointGone));
         }
-        w.nodes[C].online = true;
-        let before = w.view_snapshot(C);
+        w.nodes[HOST].online = true;
+        let host_before = w.view_snapshot(HOST);
+        let members_before: Vec<Vec<u8>> = [C, D].iter().map(|&i| w.view_snapshot(i)).collect();
         let wire_before = w.wire.len();
-        let accepted = w.catch_up(C).unwrap();
+        let (accepted, _) = w.catch_up(A).unwrap();
         let sent: Vec<&Frame> = w.wire[wire_before..]
             .iter()
-            .filter(|f| f.from == w.did(HOST) && f.to == w.did(C))
+            .filter(|f| f.from == w.did(A) && f.to == w.did(HOST))
             .collect();
         let bytes: usize = sent.iter().map(|f| f.bytes.len()).sum();
-        let routed = w.reach(C, A);
+        let routed = w.reach(HOST, A);
         match (policy.catch_up, policy.gap) {
             (CatchUp::LatestOnly, GapPolicy::RequireContiguous) => {
-                // Strict receiver cannot use a latest-only host: gap refused, view unchanged,
-                // carol stays stuck on alice's retired endpoint.
-                assert_eq!(accepted, 0);
-                assert_eq!(w.view_snapshot(C), before);
+                assert_eq!((accepted, sent.len()), (0, 1));
+                assert_eq!(w.view_snapshot(HOST), host_before);
                 assert_eq!(routed, Err(RouteErr::EndpointGone));
             }
             (CatchUp::LatestOnly, GapPolicy::AcceptGap) => {
-                assert_eq!((accepted, sent.len()), (1, 3));
+                assert_eq!((accepted, sent.len()), (1, 1));
                 assert_eq!(routed, Ok(()));
             }
             (CatchUp::FullHistory, _) => {
-                assert_eq!((accepted, sent.len()), (3, 6));
+                // seq 1 is a replay at the host; seq 2..4 are new.
+                assert_eq!((accepted, sent.len()), (3, 4));
                 assert_eq!(routed, Ok(()));
             }
         }
+        let members_after: Vec<Vec<u8>> = [C, D].iter().map(|&i| w.view_snapshot(i)).collect();
+        assert_eq!(members_after, members_before);
         results.push((policy.catch_up, policy.gap, sent.len(), bytes));
     }
-    // Full history costs more bytes on every catch-up and grows with rotation count.
+    // Full history costs more bytes on every retry and grows with rotation count.
     let latest = results
         .iter()
         .find(|r| r.0 == CatchUp::LatestOnly)
@@ -831,6 +748,8 @@ fn catch_up_latest_only_vs_full_history_under_gap_policies() {
 }
 
 // KIND: candidate-policy G-FORK
+// R1b: the two views are the group's two hosts (multi-host is decided; under U7 a member
+// never holds alice's note), receiving the honest and the forked seq-2 note in opposite order.
 #[test]
 fn same_seq_fork_keep_first_diverges_by_arrival_order_freeze_converges_but_blocks_routing() {
     for fork in [ForkPolicy::KeepFirst, ForkPolicy::Freeze] {
@@ -847,23 +766,26 @@ fn same_seq_fork_keep_first_diverges_by_arrival_order_freeze_converges_but_block
         let honest = RotationNote::sign(&w.nodes[A].author.id, g.clone(), "grp-alice-2", 2).wire();
         let forked = RotationNote::sign(&clone.id, g.clone(), "grp-alice-clone-2", 2).wire();
         let mut host = w.nodes[HOST].view.clone();
-        let mut dave = w.nodes[D].view.clone();
+        let mut host2 = w.nodes[HOST].view.clone();
         assert!(host.accept(policy, &honest).is_ok());
         assert_eq!(host.accept(policy, &forked), Err(Reject::ForkSameSeq));
-        assert!(dave.accept(policy, &forked).is_ok());
-        assert_eq!(dave.accept(policy, &honest), Err(Reject::ForkSameSeq));
+        assert!(host2.accept(policy, &forked).is_ok());
+        assert_eq!(host2.accept(policy, &honest), Err(Reject::ForkSameSeq));
         let a = w.did(A);
         match fork {
             ForkPolicy::KeepFirst => {
-                // Arrival order picks the winner: host and dave route alice differently.
+                // Arrival order picks the winner: the two hosts route alice differently.
                 assert_eq!(host.route(&a).unwrap().claims.endpoint, "grp-alice-2");
-                assert_eq!(dave.route(&a).unwrap().claims.endpoint, "grp-alice-clone-2");
+                assert_eq!(
+                    host2.route(&a).unwrap().claims.endpoint,
+                    "grp-alice-clone-2"
+                );
             }
             ForkPolicy::Freeze => {
                 // Order-independent, but alice's group path is frozen everywhere: any
                 // mnemonic holder can DoS it. Later honest notes are refused too.
-                assert!(host.route(&a).is_none() && dave.route(&a).is_none());
-                assert_eq!(host.frozen, dave.frozen);
+                assert!(host.route(&a).is_none() && host2.route(&a).is_none());
+                assert_eq!(host.frozen, host2.frozen);
                 let n3 = RotationNote::sign(&w.nodes[A].author.id, g, "grp-alice-3", 3).wire();
                 let before = serde_json::to_vec(&host).unwrap();
                 assert_eq!(host.accept(policy, &n3), Err(Reject::Frozen));
@@ -874,8 +796,12 @@ fn same_seq_fork_keep_first_diverges_by_arrival_order_freeze_converges_but_block
 }
 
 // KIND: limitation
+// R1b (U7): a mnemonic clone of alice signs a higher-seq group note; the host cannot tell it
+// from alice's and now routes alice's group traffic to the clone. Members never held alice's
+// group endpoint, so the effect is confined to what hosts route. Alice's next honest note
+// then looks like a fork and is refused; nothing here can tell which device is the owner's.
 #[test]
-fn mnemonic_clone_with_higher_seq_replaces_honest_group_endpoint_everywhere() {
+fn mnemonic_clone_with_higher_seq_replaces_honest_group_endpoint_at_the_host() {
     let mut w = world(all_policies()[0]);
     let clone = Author::new(1, &w.group);
     let g = NoteAudience::Group(w.group.clone());
@@ -885,12 +811,12 @@ fn mnemonic_clone_with_higher_seq_replaces_honest_group_endpoint_everywhere() {
     let hostile = RotationNote::sign(&clone.id, g, "grp-clone-3", 3).wire();
     w.live.insert("grp-clone-3".into(), w.did(A));
     assert_eq!(w.inject(D, HOST, &hostile).map(|n| n.claims.seq), Ok(3));
-    assert_eq!(w.fanout(&hostile), vec![C, D]);
-    for i in [HOST, C, D] {
-        assert_eq!(w.known_endpoint(i, A), Some("grp-clone-3".into()));
+    assert_eq!(w.known_endpoint(HOST, A), Some("grp-clone-3".into()));
+    assert_eq!(w.reach(HOST, A), Ok(()));
+    for i in [C, D] {
+        assert_eq!(w.known_endpoint(i, A), None);
     }
-    // Honest alice still believes she is at seq 2; her next rotation (seq 3) now looks
-    // like a fork, and nothing here can tell which device is the owner's.
+    // Honest alice still believes she is at seq 2; her next rotation (seq 3) is a fork.
     let honest3 = w.rotate_group(A);
     let before = w.host_snapshot();
     assert_eq!(w.inject(A, HOST, &honest3), Err(Reject::ForkSameSeq));

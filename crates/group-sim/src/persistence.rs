@@ -9,6 +9,10 @@
 //! NOT modelled: fsync, power loss, torn/partial writes, redb transactions, vault sealing/AEAD,
 //! disk-full, Android process death, real sockets. Process-crash coverage here is not evidence of
 //! filesystem or power-loss durability (docs/group-persistence-contract.md).
+//!
+//! R1b: content here uses the LEGACY device-key-signed `Envelope` fixture (`tests.rs`; superseded
+//! by U4 revised + U16 DID-signed posts with an app-supplied writer ID, see `host_only.rs`). The
+//! envelope is only a carrier; the properties tested here do not depend on how a post is signed.
 use super::*;
 use loro::{LoroValue, VersionVector};
 

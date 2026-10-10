@@ -7,9 +7,10 @@ Packet W2-H. It implements user decisions **U4 revised** and **U7**
 was changed. Model and tests: `crates/group-sim/src/host_only.rs`, wired in with one `mod` line
 at `crates/group-sim/src/tests.rs:23-24`. Line numbers below refer to the W2-H commit.
 
-The model sits alongside the existing group-sim fixtures and does not edit them. Those
-fixtures still encode the superseded design: device-key-signed envelopes with attestations, and
-members that know each other's endpoints (section 4).
+The model sits alongside the existing group-sim fixtures and did not edit them. Those fixtures
+encoded the superseded design: device-key-signed envelopes with attestations, and members that
+know each other's endpoints. Packet R1b later removed or rewrote the affected tests; the legacy
+envelope remains only as a carrier (section 4).
 
 ## 1. What the model is
 
@@ -97,83 +98,71 @@ members that know each other's endpoints (section 4).
 - **Host overlap window.** A window that keeps the old host endpoint listening is a candidate
   only. It does not derive any future endpoint.
 
-## 4. Existing group-sim tests that encode superseded assumptions (not edited)
+## 4. Existing group-sim tests that encoded superseded assumptions (resolved by R1b)
 
-Line numbers are at the W2-H commit. Every test in `tests.rs` is now 2 lines lower because of
-the added `mod` line.
+W2-H listed these tests without editing them. Packet R1b then removed or rewrote them against
+U4 revised (no device or transport key in content), U5 revised (visible blocking), U7 (only the
+host knows members' group endpoints) and U18 (no backward compatibility). The test names
+below are current; line numbers are no longer given because the files changed.
+`crates/group-sim/README.md` ("Superseded tests") has the same table.
 
-**A. Content signed by a device key and carrying an attestation.** The `Envelope` fixture
-(`tests.rs:26-56`) has a `device` field, the `peer` is derived from the device key
-(`tests.rs:61-67`), and every envelope carries an attestation. This contradicts U4 revised.
+**A. Content signed by a device key and carrying an attestation (U4 revised).** The `Envelope`
+fixture in `tests.rs` still has a `device` field, a device-derived Loro `peer` and an
+attestation. It is now labelled as a legacy fixture in `tests.rs` and in the module docs of
+every file that uses it.
 
-Some tests assert the superseded property itself:
-- `tests.rs:883` `attestation_must_bind_author_did_and_device_key_each_as_sole_cause`
-- `tests.rs:1008` `second_device_cannot_write_under_another_devices_loro_peer_id` (the peer ID
-  is derived from the device key)
-- `tests.rs:1027` `every_rejection_class_leaves_populated_signed_replica_byte_identical` (it
-  includes attestation and device-key cases)
-- `block_in_group.rs:706` `blocked_member_never_learns_blockers_private_endpoint_through_group`.
-  Its positive controls assert that the blocked member *does* learn B's author key and group
-  endpoint.
-- `block_in_group.rs:753`
-  `author_key_equal_to_private_transport_key_leaks_private_endpoint_to_blocked_member`. This is
-  the old-model limitation; its counterpart is re-run here at `host_only.rs:1561`.
+| Test | R1b | Current-design coverage |
+|---|---|---|
+| `tests.rs` `attestation_must_bind_author_did_and_device_key_each_as_sole_cause` | deleted | `host_only.rs` `did_signed_posts_with_random_writer_ids_two_own_devices_converge`, `forged_tampered_wrong_group_and_replayed_posts_leave_state_unchanged` |
+| `tests.rs` `second_device_cannot_write_under_another_devices_loro_peer_id` | deleted | `host_only.rs` `forged_tampered_wrong_group_and_replayed_posts_leave_state_unchanged` (ops under another writer ID), `cross_did_writer_collision_first_claim_at_host_wins_and_loser_redraws` |
+| `tests.rs` `every_rejection_class_leaves_populated_signed_replica_byte_identical` | kept | It has no attestation or device-key case (the W2-H note was wrong); tampered text, permits and Loro injection are still-valid carrier properties. |
+| `block_in_group.rs` `blocked_member_never_learns_blockers_private_endpoint_through_group` | deleted | `host_only.rs` `blocked_member_learns_no_private_endpoint_from_did_signed_group_content`, `members_receive_no_device_key_transport_key_or_endpoint_of_any_other_member` |
+| `block_in_group.rs` `author_key_equal_to_private_transport_key_leaks_private_endpoint_to_blocked_member` | deleted | `host_only.rs` `blocked_member_learns_no_private_endpoint_from_did_signed_group_content` (its re-run) |
+| Carrier tests: the remaining `tests.rs` tests, `persistence.rs` S01–S07, `policy_candidates.rs` D01–D05, `block_in_group.rs` (block-leaves-state, display and host-relay candidates, replica-level filter, creator/admin blocks), `reachability.rs` | kept | Legacy-envelope note added. Not re-verified on DID-signed posts. |
 
-Other tests use the device-signed `Envelope` only as a carrier. The property each one tests is
-probably transferable to DID-signed posts, but has not been re-verified:
-- `tests.rs`: 464, 478, 514, 527, 549, 601, 683, 747, 762, 807, 863, 907, 936, 1088, 1114
-- `persistence.rs`: all S01–S07 tests, 656–1378. Its wire codec serialises the attestation,
-  `persistence.rs:66-73`.
-- `policy_candidates.rs`: all D01–D05 tests, 1004–1734. Its header says "device-signed
-  `Envelope`s" (`policy_candidates.rs:11`), and its second-device chains use device keys
-  (`policy_candidates.rs:133`).
-- `block_in_group.rs`: 477, 513, 530, 564, 592, 617, 642, 672, 772.
-- `reachability.rs`: 174, 215, 260, 305, 364, 405. These post `Author` envelopes through the
-  mock directory.
+**B. Members hold other members' group endpoints, or sync member-to-member (U7).**
 
-**B. Members hold other members' group endpoints, or sync member-to-member.** This contradicts
-U7.
-- `host_relay.rs`:
-  - The `GroupView` of every node holds every member's group note (`host_relay.rs:121-195`,
-    with the bootstrap at 231-286). Members forward to each other through `forward`
-    (`host_relay.rs:439`).
-  - 469 `member_rotation_is_relayed_to_online_members_and_offline_member_catches_up_from_host`
-    asserts `known_endpoint(C, A)`.
-  - 560 `two_members_rotated_while_apart_recover_each_other_via_host`.
-  - 588 `host_rotation_reaches_offline_member_through_verified_member_forwarding`. Under U7,
-    this recovery path becomes host retry (`host_only.rs:1733`) or overlap
-    (`host_only.rs:1811`).
-  - 625 `forged_stale_replayed_wrong_owner_private_and_foreign_notes_leave_host_and_member_unchanged`
-    covers notes accepted by members.
-  - 703 `personal_block_does_not_stop_group_notes_or_change_group_state` asserts
-    `known_endpoint(C, A)` and `known_endpoint(A, C)`.
-  - 740 `host_and_all_forwarders_unreachable_means_no_recovery_without_reshare` relies on
-    member forwarders.
-  - 777, 835 and 878 cover catch-up, fork and clone notes held by members.
-- `block_in_group.rs:428-468` (`endpoint_scenario`) relays B's group note to every member,
-  C included.
-- `scheduler.rs`: every node keeps `known` routes to every other node (`scheduler.rs:9-15`,
-  `:104`), and nodes re-push addresses to each other. Affected tests: 327, 450, 478, 503, 547.
-- Multi-host or peer-to-peer replica reconciliation, in which members are not funnelled through
-  a single host: `tests.rs:568` `two_hosts_partition_then_reconcile_without_rolling_back_local_writes`
-  and `tests.rs:844` `independent_posts_and_cross_author_join_survive_host_partition`. These may
-  stay relevant if host succession or multi-host is chosen (D01–D06).
+| Test | R1b | Current-design coverage |
+|---|---|---|
+| `host_relay.rs` model | rewritten | A member's view accepts only its own and the host's notes (`Reject::NotHost`); the host relays only its own note; a returning member retries its own notes to the host; recovery after a host rotation is the host's retry (`host_push`). Member forwarding is gone. |
+| `host_relay.rs` `member_rotation_is_relayed_to_online_members_and_offline_member_catches_up_from_host` | deleted | `host_only.rs` `member_rotation_note_goes_to_host_only_and_host_routes_to_new_endpoint`; `multi_host.rs` `member_rotation_note_reaches_every_host_and_hosts_repair_each_other` |
+| `host_relay.rs` `private_endpoints_never_appear_in_host_state_or_any_group_relayed_bytes` | rewritten | Host retry replaces member forwarding. |
+| `host_relay.rs` `two_members_rotated_while_apart_recover_each_other_via_host` | deleted | `host_only.rs` `member_rotation_note_goes_to_host_only_and_host_routes_to_new_endpoint`; `multi_host.rs` `host_and_member_both_rotated_while_apart_recover_via_another_host` |
+| `host_relay.rs` `host_rotation_reaches_offline_member_through_verified_member_forwarding` | deleted | `host_only.rs` `host_rotation_reaches_online_members_directly_and_offline_member_by_host_retry`, `host_overlap_window_candidate_recovers_member_only_within_window`; `multi_host.rs` `rotated_host_reconnects_members_at_their_current_endpoints_without_overlap` |
+| `host_relay.rs` `forged_stale_replayed_wrong_owner_private_and_foreign_notes_leave_host_and_member_unchanged` | rewritten | The host is tested with a member's notes, a member with the host's notes; a genuine note of another member is refused by a member (`NotHost`). Full state compared. |
+| `host_relay.rs` `host_cannot_substitute_endpoint_in_relayed_note` | deleted | The host no longer relays member notes. `multi_host.rs` `member_rotation_note_reaches_every_host_and_hosts_repair_each_other` (note altered in host-to-host relay); forged host notes in `host_only.rs` `host_rotation_reaches_online_members_directly_and_offline_member_by_host_retry` |
+| `host_relay.rs` `personal_block_does_not_stop_group_notes_or_change_group_state` | rewritten | Members hold only the host's endpoint in both runs; group state byte-identical with and without the block. |
+| `host_relay.rs` `host_and_all_forwarders_unreachable_means_no_recovery_without_reshare` | deleted | `host_only.rs` `host_and_member_both_rotated_while_apart_lose_each_other` |
+| `host_relay.rs` `catch_up_latest_only_vs_full_history_under_gap_policies` | rewritten | G-HISTORY now asks what a member's retry sends the host after the host missed several rotations. |
+| `host_relay.rs` `same_seq_fork_keep_first_diverges_by_arrival_order_freeze_converges_but_blocks_routing` | rewritten | The two diverging views are two hosts (multi-host). |
+| `host_relay.rs` `mnemonic_clone_with_higher_seq_replaces_honest_group_endpoint_everywhere` | rewritten as `..._at_the_host` | Members never held the endpoint; only host routing is affected. |
+| `block_in_group.rs` `endpoint_scenario` | deleted | Used only by the two deleted endpoint tests above. |
+| `scheduler.rs`, all five tests | rewritten | U7 star topology: members 0–2 hold routes to hosts 3–4 only; member-to-member sends fail with `NoAddress`. Same seeds and fault coverage. |
+| `tests.rs` `two_hosts_partition_then_reconcile_without_rolling_back_local_writes`, `independent_posts_and_cross_author_join_survive_host_partition` | kept | Multi-host is decided. |
 
-**D. "Blocked looks like offline / silent" (superseded by U5 revised, coordinator commit
-73406aa).** These are W2-Q and W2-G tests that encode silent blocking. Per U5 revised they
-should become candidate-policy G-BLOCK. This packet does not edit them:
-- `chat_request.rs:1306` `host_drop_yields_no_answer_never_refused`
-- `chat_request.rs:1424` `silent_block_is_indistinguishable_from_offline_or_unanswered_target`
-- `chat_request.rs:1468` `candidate_silent_decline_is_indistinguishable_from_block`
-- `block_in_group.rs:617` `blocker_host_candidate_neutral_relay_converges_and_is_silent`, which
-  asserts that the block is silent.
+`block_in_group.rs`'s `run` trace still lets D sync directly with C once (step 4); the
+host-relay candidates measure against that path. It is kept and flagged in the module docs.
 
-W2-H itself does not model blocking on the chat path; how the notice works is open (decisions
-section 8b). Its only block-related test (`host_only.rs:1561`) relies on the part of U5 that is
-unchanged: a blocked contact is excluded from later private rotation notes. It makes no claim
-about silence.
+**D. "Blocked looks like offline / silent" (U5 revised).**
 
-**C. Not superseded, as far as this packet checked.**
+| Test | R1b | Current-design coverage |
+|---|---|---|
+| `chat_request.rs` `host_drop_yields_no_answer_never_refused` | kept | It asserts that a host cannot forge the target's refusal; it says nothing about block silence. Comment corrected. |
+| `chat_request.rs` `silent_block_is_indistinguishable_from_offline_or_unanswered_target` | deleted | Replaced by `candidate_blocked_requester_gets_sealed_signed_answer_vs_drop` |
+| `chat_request.rs` `candidate_silent_decline_is_indistinguishable_from_block` | deleted | Same replacement (silent decline still compared there) |
+| `block_in_group.rs` `blocker_host_candidate_neutral_relay_converges_and_is_silent` | deleted | `block_in_group.rs` `personal_block_leaves_every_replica_grant_and_relayed_byte_unchanged` (host-is-blocker case, full fingerprint); `multi_host.rs` `removed_member_and_blocked_contact_receive_verifiable_signed_notices` |
+
+The new chat-request test is `candidate-policy G-BLOCK` for section 8b Q4 (open): under
+`BlockReply::SealedNotice` the blocker answers each request from a blocked DID with a sealed,
+DID-signed "blocked" answer the requester can tell apart from offline, unanswered and declined
+(same kind and size as an accept at the host; forged and replayed answers refused); under
+`BlockReply::Drop` the requester sees `NoAnswer` at that layer. Neither is selected.
+
+The proto private-audience model `rotation_silent_block.rs` is now
+`crates/proto/tests/rotation_visible_block.rs`: one DID-signed notice, the same notice on every
+later attempt, and forged/misaddressed/replayed notices refused with the view unchanged.
+
+**C. Not superseded, as far as W2-H and R1b checked.**
 - `authority.rs` (genesis and grants; content-signing independent).
 - `chat_request.rs` is DID-signed and hosted as a mailbox. Its request-key directory is
   compatible with U7.

@@ -10,14 +10,24 @@
 //!   withhold relay (G-BLOCK); `Neutral` is the only option that leaves group state untouched.
 //! - Local display of a blocked member's group messages is a pure function of (replica, block
 //!   list, `Display`); the three `Display` options are candidates, none is selected.
-//! - Endpoint notes are a sim stand-in for permits: DID-signed (owner, audience, endpoint, seq).
-//!   The private note goes directly to unblocked contacts (U1/U5); the group note goes through
-//!   the host (U1/U2). No succession verifier is built here (G-D).
 //! - Chat requests from a blocked member (U3) are W2-Q's scope and are not modelled here.
+//!
+//! R1b (U4 revised, U5 revised, U7): the tests in this file use the LEGACY device-key-signed
+//! `Envelope` fixture (`tests.rs`) only as a carrier for properties that do not depend on it
+//! (a personal block never touches shared group state, grants or relay; display and
+//! host-relay candidates). The `run` trace also lets D sync directly with C (step 4), which
+//! U7 no longer allows for group traffic; it is kept as the path the host-relay candidates
+//! measure against. Removed by R1b, with their current-design coverage:
+//! - `blocker_host_candidate_neutral_relay_converges_and_is_silent` (asserted silence; the
+//!   neutral-relay fingerprint is the `host_is_blocker = true` case of
+//!   `personal_block_leaves_every_replica_grant_and_relayed_byte_unchanged`, and the visible
+//!   notice is in `multi_host.rs` `removed_member_and_blocked_contact_receive_verifiable_signed_notices`);
+//! - `blocked_member_never_learns_blockers_private_endpoint_through_group` and
+//!   `author_key_equal_to_private_transport_key_leaks_private_endpoint_to_blocked_member`
+//!   (device-key content, members holding each other's group endpoints): see `host_only.rs`
+//!   `blocked_member_learns_no_private_endpoint_from_did_signed_group_content` and
+//!   `members_receive_no_device_key_transport_key_or_endpoint_of_any_other_member`.
 use super::*;
-use identity::{public_key_from_did, verify};
-
-const NOTE_DOMAIN: &[u8] = b"tinline/group-sim/endpoint-note/not-production/v1\0";
 
 // ---- fixtures ------------------------------------------------------------------------------
 
@@ -48,12 +58,6 @@ fn replica(g: &Genesis) -> Replica {
 }
 fn did(a: &Author) -> String {
     a.id.did().to_string()
-}
-fn hex(b: &[u8]) -> String {
-    b.iter().map(|x| format!("{x:02x}")).collect()
-}
-fn endpoint(key: &SigningKey) -> String {
-    hex(&key.verifying_key().to_bytes())
 }
 // What a receiver gets on the wire for one envelope: signed bytes, signature, attestation.
 fn envelope_wire(e: &Envelope) -> Vec<u8> {
@@ -320,153 +324,6 @@ fn texts(lines: &[Line]) -> Vec<&str> {
         .collect()
 }
 
-// ---- endpoint notes (sim stand-in for permits) ---------------------------------------------
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-enum NoteAudience {
-    Group(String),
-    Private,
-}
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-struct NoteBody {
-    owner: String,
-    audience: NoteAudience,
-    endpoint: String,
-    seq: u64,
-}
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-struct Note {
-    body: NoteBody,
-    signature: Vec<u8>,
-}
-impl Note {
-    fn bytes(body: &NoteBody) -> Vec<u8> {
-        [NOTE_DOMAIN, &serde_json::to_vec(body).unwrap()].concat()
-    }
-    fn issue(owner: &Identity, audience: NoteAudience, endpoint: String, seq: u64) -> Self {
-        let body = NoteBody {
-            owner: owner.did().into(),
-            audience,
-            endpoint,
-            seq,
-        };
-        let signature = owner.sign(&Self::bytes(&body)).to_vec();
-        Self { body, signature }
-    }
-    fn verify(&self) -> bool {
-        let Some(key) = public_key_from_did(&self.body.owner) else {
-            return false;
-        };
-        let Ok(sig) = <&[u8; 64]>::try_from(self.signature.as_slice()) else {
-            return false;
-        };
-        verify(&key, &Self::bytes(&self.body), sig)
-    }
-    fn wire(&self) -> Vec<u8> {
-        serde_json::to_vec(self).unwrap()
-    }
-}
-// U5: the private note goes to accepted contacts minus the owner's block list.
-fn private_recipients(contacts: &BTreeSet<String>, blocks: &BTreeSet<String>) -> Vec<String> {
-    contacts.difference(blocks).cloned().collect()
-}
-fn contains(hay: &[u8], needle: &[u8]) -> bool {
-    hay.windows(needle.len()).any(|w| w == needle)
-}
-// Encodings of a 32-byte key that might appear in serialized data the receiver holds.
-fn encodings(key: &[u8; 32]) -> Vec<Vec<u8>> {
-    vec![
-        key.to_vec(),
-        hex(key).into_bytes(),
-        serde_json::to_vec(key).unwrap(),
-    ]
-}
-// Everything a member can extract: raw received bytes + replica export, and every key/endpoint
-// it can decode (envelope device keys, attested device keys, verified note endpoints).
-struct Learned {
-    raw: Vec<u8>,
-    endpoints: BTreeSet<String>,
-    notes: Vec<Note>,
-}
-fn learned(inbox: &[Vec<u8>], r: &Replica) -> Learned {
-    let mut raw = inbox.concat();
-    raw.extend(r.doc.export(ExportMode::all_updates()).unwrap());
-    let mut endpoints = BTreeSet::new();
-    let mut notes = vec![];
-    for e in r.accepted.values() {
-        raw.extend(envelope_wire(e));
-        endpoints.insert(hex(&e.body.device));
-        let a = proto::verify_attestation(&e.attestation).unwrap();
-        endpoints.insert(hex(&a.device_key().unwrap()));
-    }
-    for bytes in inbox {
-        if let Ok(n) = serde_json::from_slice::<Note>(bytes) {
-            if n.verify() {
-                endpoints.insert(n.body.endpoint.clone());
-                notes.push(n);
-            }
-        }
-    }
-    Learned {
-        raw,
-        endpoints,
-        notes,
-    }
-}
-fn leaks(l: &Learned, key: &[u8; 32]) -> bool {
-    l.endpoints.contains(&hex(key)) || encodings(key).iter().any(|n| contains(&l.raw, n))
-}
-
-// Group scenario for the private-endpoint tests. B's author key, group transport key and
-// private transport key(s) are given; B blocks C. Separate host H (neutral) relays.
-struct EndpointScenario {
-    c: Learned,
-    a: Learned,
-    c_replica_ids: BTreeSet<String>,
-    host_ids: BTreeSet<String>,
-}
-fn endpoint_scenario(group_key: &SigningKey, private_keys: &[SigningKey]) -> EndpointScenario {
-    let World {
-        g,
-        mut a,
-        mut b,
-        mut c,
-        d,
-    } = world();
-    let gid = g.id();
-    let contacts: BTreeSet<String> = [did(&a), did(&c), did(&d)].into();
-    let blocks: BTreeSet<String> = [did(&c)].into();
-    let mut inbox: BTreeMap<String, Vec<Vec<u8>>> = BTreeMap::new();
-    // Private notes (initial + periodic rotations): direct, unblocked contacts only.
-    for (i, key) in private_keys.iter().enumerate() {
-        let n = Note::issue(&b.id, NoteAudience::Private, endpoint(key), i as u64 + 1);
-        for to in private_recipients(&contacts, &blocks) {
-            inbox.entry(to).or_default().push(n.wire());
-        }
-    }
-    // Group note: to the host, which relays it to every member (C included: a personal block
-    // does not change group membership or the group audience).
-    let gn = Note::issue(&b.id, NoteAudience::Group(gid), endpoint(group_key), 1);
-    // Group content from B, A and C.
-    let mut host = replica(&g);
-    host.receive(a.post("hi from a"));
-    host.receive(c.post("hi from c"));
-    catch_up(&mut b, &host);
-    host.receive(b.post("hi from b"));
-    let (mut ra, mut rc) = (replica(&g), replica(&g));
-    for (to, r) in [(did(&a), &mut ra), (did(&c), &mut rc)] {
-        let w = inbox.entry(to.clone()).or_default();
-        serve(&host, &BTreeSet::new(), HostRelay::Neutral, &to, r, w);
-        w.push(gn.wire());
-    }
-    EndpointScenario {
-        c: learned(&inbox[&did(&c)], &rc),
-        a: learned(&inbox[&did(&a)], &ra),
-        c_replica_ids: ids(&rc),
-        host_ids: ids(&host),
-    }
-}
-
 // ---- tests ---------------------------------------------------------------------------------
 
 // KIND: invariant
@@ -611,30 +468,6 @@ fn replica_level_block_filter_strands_other_members_replies() {
 }
 
 // KIND: candidate-policy G-BLOCK
-// Rejected option per U5 revised (blocking is visible).
-// Host-relay option "neutral": B hosts the group and blocks C, yet relays C's posts like any
-// other. Everyone converges, and C's observation is identical to the unblocked run (silent).
-#[test]
-fn blocker_host_candidate_neutral_relay_converges_and_is_silent() {
-    let blocked = run(true, true, HostRelay::Neutral);
-    let plain = run(true, false, HostRelay::Neutral);
-    let host = &blocked.replicas["host"];
-    for r in blocked.replicas.values() {
-        host.assert_same(r);
-    }
-    assert!(
-        blocked.replicas["a"]
-            .accepted
-            .contains_key(blocked.id("c2"))
-    );
-    assert_eq!(blocked.wire["c"], plain.wire["c"]);
-    assert_eq!(
-        blocked.replicas["c"].snapshot(),
-        plain.replicas["c"].snapshot()
-    );
-}
-
-// KIND: candidate-policy G-BLOCK
 // Host-relay option "withhold blocked authors": host B stores C's posts but does not forward
 // them. Consequences measured: A never gets c1/c2 and B's OWN reply b1 and D's reply d1 are
 // stranded pending at A (both causally follow c1); D lacks c2; C cannot tell (its state and
@@ -695,73 +528,6 @@ fn blocker_host_candidate_refuse_member_is_de_facto_exclusion_and_observable() {
             .unwrap()
             .allows(&x.g, &x.c_did, Capability::Post)
     );
-}
-
-// KIND: invariant
-// With separate keys (U2 private/group transport keys, U4 long-lived author key), the blocked
-// member C never learns B's private endpoint — neither the current one nor a rotated one —
-// from anything it receives in the group (envelopes, attestations, relayed notes, replica
-// export). Positive controls: C does learn B's group endpoint and author key; A (unblocked
-// contact) gets both private notes, verified.
-#[test]
-fn blocked_member_never_learns_blockers_private_endpoint_through_group() {
-    let group_key = SigningKey::from_bytes(&[0xB1; 32]);
-    let private = [
-        SigningKey::from_bytes(&[0xB2; 32]),
-        SigningKey::from_bytes(&[0xB3; 32]),
-    ];
-    let s = endpoint_scenario(&group_key, &private);
-    for k in &private {
-        assert!(
-            !leaks(&s.c, &k.verifying_key().to_bytes()),
-            "private endpoint leaked to C"
-        );
-    }
-    assert!(
-        s.c.notes
-            .iter()
-            .all(|n| n.body.audience != NoteAudience::Private)
-    );
-    // Scanner positive controls.
-    assert!(leaks(&s.c, &group_key.verifying_key().to_bytes()));
-    let b_author = SigningKey::from_bytes(&[2; 32]).verifying_key().to_bytes();
-    assert!(leaks(&s.c, &b_author));
-    assert_eq!(
-        s.c_replica_ids, s.host_ids,
-        "C is still fully served by the group"
-    );
-    // Unblocked contact A got both private notes, verified, latest seq = 2.
-    let a_private: Vec<&Note> =
-        s.a.notes
-            .iter()
-            .filter(|n| n.body.audience == NoteAudience::Private)
-            .collect();
-    assert_eq!(a_private.len(), 2);
-    assert_eq!(a_private[1].body.endpoint, endpoint(&private[1]));
-    assert!(leaks(&s.a, &private[1].verifying_key().to_bytes()));
-    // Real signature: a tampered note does not verify.
-    let mut t = a_private[1].clone();
-    t.body.endpoint = endpoint(&group_key);
-    assert!(!t.verify());
-}
-
-// KIND: limitation
-// Today's single-key model (D1 trace R1/R4: the device key is both the iroh EndpointId and
-// the content-signing key). If the author key equals the private transport key, every group
-// post carries it (envelope `device`, attestation), so the blocked member learns the private
-// endpoint from group traffic even though it was excluded from every private note.
-#[test]
-fn author_key_equal_to_private_transport_key_leaks_private_endpoint_to_blocked_member() {
-    let group_key = SigningKey::from_bytes(&[0xB1; 32]);
-    let author_key = SigningKey::from_bytes(&[2; 32]); // B's author key in the fixture
-    let s = endpoint_scenario(&group_key, &[author_key.clone()]);
-    assert!(
-        s.c.notes
-            .iter()
-            .all(|n| n.body.audience != NoteAudience::Private)
-    );
-    assert!(s.c.endpoints.contains(&endpoint(&author_key)));
-    assert!(leaks(&s.c, &author_key.verifying_key().to_bytes()));
 }
 
 // KIND: invariant

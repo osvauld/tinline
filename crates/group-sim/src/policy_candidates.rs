@@ -19,6 +19,10 @@
 //! - Fixture simplifications: the genesis creator is always admin and cannot be removed;
 //!   unauthorized ops are retained but ineffective (their effect can depend on later knowledge
 //!   under some candidates); no pending bound on the policy layer.
+//!
+//! R1b: content here uses the LEGACY device-key-signed `Envelope` fixture (`tests.rs`; superseded
+//! by U4 revised + U16 DID-signed posts with an app-supplied writer ID, see `host_only.rs`). The
+//! envelope is only a carrier; the properties tested here do not depend on how a post is signed.
 use super::*;
 use identity::{public_key_from_did, verify};
 use std::cell::RefCell;
