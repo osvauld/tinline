@@ -404,8 +404,18 @@ Loro silently and permanently diverges on a writer-ID collision — a collision 
    other. Consequences to model: member rotation notes go to all hosts; any reachable host
    repairs the others; "first claim at the host wins" (Q1) needs a deterministic cross-host
    tie-break; removal (U9) must be applied by every host and one rogue host can still serve a
-   removed member; more parties see member endpoints/metadata. Open: who appoints hosts (owner
-   / admins, signed host list), how many, are hosts always admins, how is a host removed?
+   removed member; more parties see member endpoints/metadata.
+   Host details (user, 2026-10-10):
+   - Owner/admins appoint hosts; proof is a permit in the existing grant/delegation chain.
+   - Hosts are NOT necessarily admins (relay capability only). A host may also be a separate
+     (headless) binary.
+   - Max number of hosts: not decided (user passed).
+   - Admins can remove a host (user wrote "newer admins can remove" — confirm: any admin, or
+     only admins appointed after the host?).
+   - A host is one specific device of some user, preferably a desktop (not phones).
+   Open: does a separate host binary hold a user's recovery phrase (a linked device), or its
+   own DID with a delegated host permit? Coordinator lean: its own DID + host permit, so a
+   server never holds anyone's phrase.
 6. ~~Host overlap window~~ DECIDED (user, 2026-10-10): after the host rotates, the HOST connects
    to the members itself (at their current group endpoints) and hands them its new endpoint;
    members do not need to find the host. No overlap window on the host side.
