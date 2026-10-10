@@ -444,17 +444,19 @@ private fun Bubble(
             }
         }
     }
-    Box(Modifier.fillMaxWidth().then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
+    BoxWithConstraints(Modifier.fillMaxWidth().then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
+        // Up to 82% of the screen (capped for tablets), so text is not wrapped into a narrow column.
+        val bubbleMaxWidth = minOf(maxWidth * .82f, 480.dp)
         if (drag > 0f) Icon(Icons.AutoMirrored.Rounded.Reply, "Reply", tint = c.pr,
             modifier = Modifier.align(Alignment.CenterStart).size(24.dp))
         if (m.deleted) {
             Column(
-                Modifier.widthIn(max = 290.dp).clip(shape).let { if (out) it.border(1.dp, c.ln2, shape) else it }.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
+                Modifier.widthIn(max = bubbleMaxWidth).clip(shape).let { if (out) it.border(1.dp, c.ln2, shape) else it }.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
             ) {
                 Text(if (out) "You deleted this message" else "$first deleted this message", style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp, fontStyle = FontStyle.Italic), color = c.ink2)
                 Meta(msClock(m.at.toLong()), null, c.ink2, null)
             }
-            return@Box
+            return@BoxWithConstraints
         }
         val a = m.attachment
         val photo = a != null && a.isImage() && !broken
@@ -463,7 +465,7 @@ private fun Bubble(
         val bg = if (out) c.prc else c.sf
         val fg = if (out) c.onPrc else c.ink
         Column(
-            Modifier.offset { IntOffset(drag.roundToInt(), 0) }.widthIn(max = 290.dp)
+            Modifier.offset { IntOffset(drag.roundToInt(), 0) }.widthIn(max = bubbleMaxWidth)
                 .clip(shape).background(bg).let { if (!out) it.border(1.dp, c.ln, shape) else it }
                 .let { if (selected) it.border(3.dp, c.pr, shape) else it }
                 .combinedClickable(onClick = {}, onLongClick = onLong)
