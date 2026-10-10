@@ -482,6 +482,8 @@ pub(crate) struct Inner {
     pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
     pub(crate) link: crate::sync::link::LinkState,
     pub(crate) block: crate::block::BlockRt,
+    /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
+    pub(crate) group: crate::group::engine::GroupRt,
     /// Token delivery (P6, `caps.rs`).
     pub(crate) caps: crate::caps::CapsRt,
     pub(crate) devlist: crate::devlist::DevlistRt,
@@ -551,6 +553,7 @@ impl Node {
             sync_tx: tokio::sync::watch::channel(0).0,
             link: Default::default(),
             block: Default::default(),
+            group: Default::default(),
             caps: Default::default(),
             devlist: Default::default(),
         });
@@ -1757,6 +1760,8 @@ impl Inner {
     }
 
     pub(crate) async fn close_endpoint(&self) {
+        // G1: the group endpoint goes down with the private one (stop, lock, account switch).
+        self.group_close().await;
         let ep = self.shared.lock().endpoint.take();
         if let Some(ep) = ep {
             let gate = self.closing.clone().lock_owned().await;
@@ -1895,6 +1900,7 @@ impl Inner {
         self.chat_started();
         self.selfsync_started();
         self.notices_started();
+        self.group_started();
         self.tokens_started();
         // After a restore (new device key) or a change made while we were offline: tell contacts.
         self.devices_changed();
