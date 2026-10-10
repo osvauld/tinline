@@ -25,6 +25,7 @@ const PASS: &str = "test-passphrase";
 /// Longest gap between two delivery attempts of the outbox (its backoff tops out at 60 s).
 const RETRY_MAX: u64 = 60;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum Ev {
     Incoming(CallInfo),
@@ -283,6 +284,8 @@ fn linking_a_device_lets_the_contact_reach_it_without_a_call() {
     assert!(a.dials(&b).contains(&b.key()), "B1 still listed");
     eventually(10, "B logs the push", || b.logged("device list delivered"));
 
+    // B2 has A as a contact (own-device sync) before B1 goes away.
+    eventually(60, "B2 synced A", || b2.node.contacts().iter().any(|c| c.did == a.did));
     // Only B2 is up now: A reaches it directly.
     b.node.stop();
     call_rings_on(&a, &b.did, &b2);
