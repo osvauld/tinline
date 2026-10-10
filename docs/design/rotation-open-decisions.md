@@ -79,6 +79,16 @@ DID-signed group ops every member verifies (not host fiat); with U7 the host als
 relaying for and accepting from the removed DID and drops its group endpoint. Removal timing
 for concurrent/offline posts is still D01–D05. Open sub-questions (section 8).
 
+**U5 revised (user, 2026-10-10) — blocking is visible to the blocked party.** A contact blocked
+in individual chat, and a member removed from a group (U9), is told so explicitly. This
+replaces "silent blocking". Unchanged: a blocked contact is still excluded from later private
+rotation notes / device lists (U8) and its traffic is refused; blocking still does not
+trigger a rotation; a *personal* block still does not change group membership (only U9
+removal does, and that removal is announced to the removed member). Consequences: W2-B/W2-Q
+"indistinguishable from offline" tests now encode the rejected option (relabel as
+candidate-policy G-BLOCK); today's explicit `Reject` (`node.rs:2168-2177`) is closer to the
+decision but says "not accepted" — wording/shape of the notice is open (section 8b).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
@@ -361,3 +371,12 @@ Source files: `crates/group-sim/src/{host_relay,chat_request,block_in_group}.rs`
 7. Can a removed DID be invited back later?
 8. Posts the member made before/concurrently with the 3rd flag: kept or dropped? (= D01/D02)
 9. Can admins be flagged by other admins (removing their admin rights too)?
+
+## 8b. Visible blocking (U5 revised) — open details
+
+1. Notice shape: a DID-signed "blocked" message pushed once, or a refusal reason returned
+   whenever they try to reach you (or both)?
+2. Does the blocked person see it immediately, or only on their next attempt to contact you?
+3. Wording in the app: "X blocked you" vs neutral "You can't message X".
+4. Chat requests via host from a blocked DID: refused with the same notice?
+5. Unblock: notify them, or just start accepting again?
