@@ -63,6 +63,10 @@ pub struct ChatCore {
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
     pub(crate) presence: super::presence::Presence,
+    /// This install's device value for the account (P9, `ChatStore::device_value`).
+    value: [u8; 32],
+    /// Our writer ID: `writer_id(our DID, value)`, the Loro peer id we write chat docs with.
+    pub(crate) wid: u64,
 }
 
 pub enum Cmd {
@@ -144,10 +148,10 @@ impl Inner {
 
     /// Opens the sealed chat store; called whenever the data key becomes available.
     pub(crate) fn chat_open(self: &Arc<Self>) {
-        let (dek, phrase) = {
+        let (dek, phrase, device, did) = {
             let s = self.shared.lock();
             match (s.dek.as_ref(), s.me.as_ref()) {
-                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone())),
+                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.device, me.id.did().to_string()),
                 _ => return,
             }
         };
@@ -173,8 +177,16 @@ impl Inner {
                 return;
             }
         };
+        let store = ChatStore::new(sealed);
+        let value = match store.device_value(&device) {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::warn!("chat store: device value: {e}");
+                return;
+            }
+        };
         let core = Arc::new(ChatCore {
-            store: ChatStore::new(sealed),
+            store,
             dir,
             hub: OnceCell::new(),
             shards: Default::default(),
@@ -186,6 +198,8 @@ impl Inner {
             dial_sem: Arc::new(Semaphore::new(4)),
             next_session: AtomicU64::new(1),
             presence: super::presence::Presence::new(),
+            value,
+            wid: writer_id(&did, &value),
         });
         *self.chat.lock() = Some(core);
     }
@@ -696,6 +710,7 @@ impl Inner {
             _ => snap,
         };
         let mut shard = Shard::load(pair, day, &me.device, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
+        shard.writer = Some(core.wid);
         shard.hidden = meta.map(|m| m.hidden.into_iter().collect()).unwrap_or_default();
         let mut cache = core.shards.lock();
         if cache.len() >= MAX_SHARDS_CACHED {
@@ -821,6 +836,7 @@ impl Inner {
                 history: None,
                 keys: vec![(sess.did.clone(), sess.device), (me.id.did().to_string(), me.device)],
                 hide_unverified: None,
+                known_writers: core.store.known_writers()?,
             };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
@@ -836,6 +852,9 @@ impl Inner {
                     return Err(Error::Protocol(format!("rejected batch: {r}")));
                 }
             };
+            // P9: this device of the contact writes notes with a device value, so it judges
+            // writer IDs (`chat_writer`); and the writer IDs the batch proved are remembered.
+            self.chat_note_writers(core, &applied, (applied.dv_seen && !core.store.is_p9_device(&sess.device)).then_some(sess.device))?;
             if shard.vv() == before {
                 unchanged = Some(shard.vv());
                 (shard.vv(), (Vec::new(), ConvMeta::default()))
@@ -920,6 +939,7 @@ impl Inner {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
         let name = doc_name(pair, day);
         let my_peer = peer_id(&me.device, &name);
+        let own = [my_peer, core.wid];
         let mut acked = match core.store.ack(pair, day)? {
             Some(b) => decode_vv(&b).unwrap_or_default(),
             None => VersionVector::default(),
@@ -930,11 +950,11 @@ impl Inner {
             return Ok(());
         }
         let moved = |peer: u64, c: i32| before.get(&peer).copied().unwrap_or(0) < c && c <= acked.get(&peer).copied().unwrap_or(0);
-        let new = acked.get(&my_peer).copied().unwrap_or(0);
-        let mine = decode_vv(&meta.vv).ok().and_then(|v| v.get(&my_peer).copied()).unwrap_or(0);
+        let held = decode_vv(&meta.vv).unwrap_or_default();
+        let owed = own.iter().any(|p| held.get(p).copied().unwrap_or(0) > acked.get(p).copied().unwrap_or(0));
         let mut newly: Vec<String> = core.store.mcs(pair, day)?.into_iter().filter(|(_, c)| moved(my_peer, *c)).map(|(id, _)| id).collect();
         newly.extend(core.store.mos(pair, day)?.into_iter().filter(|(_, (p, c))| moved(*p, *c)).map(|(id, _)| id));
-        core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, mine > new)?]).map_err(io)?;
+        core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, owed)?]).map_err(io)?;
         self.selfsync_dirty(ACK_MARK);
         if let Some(ev) = self.ev() {
             for id in &newly {
@@ -967,17 +987,22 @@ impl Inner {
     ) -> Result<(), Error> {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
         let name = doc_name(pair, day);
-        let my_peer = peer_id(&me.device, &name);
-        let mine = decode_vv(&meta.vv)?.get(&my_peer).copied().unwrap_or(0);
-        if their_vv.get(&my_peer).copied().unwrap_or(0) >= mine {
+        // Our ops are under our legacy peer id and our writer ID (P9).
+        let held = decode_vv(&meta.vv)?;
+        let own = [peer_id(&me.device, &name), core.wid];
+        if own.iter().all(|p| their_vv.get(p).copied().unwrap_or(0) >= held.get(p).copied().unwrap_or(0)) {
             return Ok(());
         }
         self.chat_shard(core, me, pair, day).await?;
         let out = {
             let shards = core.shards.lock();
-            shards.get(&(pair.to_string(), day.to_string())).and_then(|s| s.export_own_since(their_vv).map(|u| (u, s.vv(), s.peer, s.my_counter())))
+            shards.get(&(pair.to_string(), day.to_string())).and_then(|s| {
+                let vv = s.vv();
+                let ends: Vec<(u64, i32)> = s.own_peers().into_iter().filter_map(|p| Some((p, *vv.get(&p)?))).collect();
+                s.export_own_since(their_vv).map(|u| (u, vv, ends))
+            })
         };
-        let Some((update, vv, peer, counter)) = out else { return Ok(()) };
+        let Some((update, vv, ends)) = out else { return Ok(()) };
         let sig = sign_batch(&me.profile.device_secret, &name, &update);
         let msg = if sync {
             ChatMsg::Sync { doc: name, vv: vv.encode(), update, sig }
@@ -985,7 +1010,11 @@ impl Inner {
             ChatMsg::Push { doc: name, update, sig }
         };
         writer.send(&msg).await?;
-        sess.peer_vv.lock().entry(day.to_string()).or_default().insert(peer, counter);
+        let mut pv = sess.peer_vv.lock();
+        let theirs = pv.entry(day.to_string()).or_default();
+        for (p, c) in ends {
+            theirs.insert(p, c);
+        }
         Ok(())
     }
 
@@ -1035,8 +1064,9 @@ impl Inner {
         let conv = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-            let update = shard.add_message(&rec, &self.chat_writer(&me)).map_err(|e| Error::Io(e.to_string()))?;
-            let mut ops = vec![core.store.put_mc_op(&pair, &day, &rec.id, shard.my_counter())?, core.store.mi_op(&pair, &rec.id, &day)?];
+            let update = shard.add_message(&rec, &self.chat_writer(&me, &core, did)).map_err(|e| Error::Io(e.to_string()))?;
+            // The tick marker names the peer id it was written under (P9: the writer ID).
+            let mut ops = vec![core.store.put_mo_op(&pair, &day, &rec.id, shard.peer(), shard.my_counter())?, core.store.mi_op(&pair, &rec.id, &day)?];
             if !self.is_self_did(did) {
                 ops.push(core.store.out_op(&pair, &day, true)?);
             }
@@ -1058,12 +1088,49 @@ impl Inner {
         Ok(m)
     }
 
-    /// How this install signs the messages it writes: device key and DID key (P8).
-    pub(crate) fn chat_writer(&self, me: &Me) -> Writer {
+    /// How this install writes messages in the conversation with `did`: signed by the device
+    /// key and the DID key (P8), the device value in every note, and the writer ID as the Loro
+    /// peer id (P9) unless a device of the contact is not known to judge writer IDs. Such a
+    /// device (an app before P9) refuses a live batch with ops under any peer id but our legacy
+    /// one, so for it we keep writing under the legacy peer id (`Writer::p9`, `as_writer`).
+    pub(crate) fn chat_writer(&self, me: &Me, core: &ChatCore, did: &str) -> Writer {
         if self.legacy_msg_sigs.load(Ordering::SeqCst) {
             return Writer::legacy(me.profile.device_secret);
         }
-        Writer::new(me.profile.device_secret, me.id.clone())
+        Writer::p9(me.profile.device_secret, me.id.clone(), core.value, self.chat_contact_judges_writer_ids(core, did))
+    }
+
+    /// Whether every device we know of `did` (ourselves: "You", only our own devices) has
+    /// shown that it judges writer IDs: it sent us a note carrying a device value.
+    fn chat_contact_judges_writer_ids(&self, core: &ChatCore, did: &str) -> bool {
+        if self.is_self_did(did) {
+            return true;
+        }
+        let devices: Vec<[u8; 32]> = {
+            let s = self.shared.lock();
+            match s.state.contacts.iter().find(|c| c.did == did) {
+                Some(c) => c.devices.iter().map(|d| d.device).collect(),
+                None => return false,
+            }
+        };
+        !devices.is_empty() && devices.iter().all(|d| core.store.is_p9_device(d))
+    }
+
+    /// Remembers the writer IDs an accepted batch proved (`Ctx::known_writers`) and, if given,
+    /// that a contact device judges writer IDs.
+    pub(crate) fn chat_note_writers(&self, core: &ChatCore, applied: &Applied, p9_device: Option<[u8; 32]>) -> Result<(), Error> {
+        let known = if applied.writers.is_empty() { Vec::new() } else { core.store.known_writers()? };
+        let mut ops = Vec::new();
+        for w in applied.writers.iter().filter(|w| !known.contains(w)) {
+            ops.push(core.store.put_writer_op(*w)?);
+        }
+        if let Some(d) = p9_device {
+            ops.push(core.store.put_p9_device_op(&d)?);
+        }
+        if !ops.is_empty() {
+            core.store.db.apply(&ops).map_err(io)?;
+        }
+        Ok(())
     }
 
     fn chat_after_local_write(self: &Arc<Self>, core: &Arc<ChatCore>, did: &str, day: &str) {
@@ -1098,9 +1165,9 @@ impl Inner {
                     if t.len() > MAX_TEXT {
                         return Err(Error::Protocol("message too long".into()));
                     }
-                    shard.edit(id, t, now_ms(), &self.chat_writer(&me))
+                    shard.edit(id, t, now_ms(), &self.chat_writer(&me, &core, did))
                 }
-                None => shard.delete(id, now_ms(), &self.chat_writer(&me)),
+                None => shard.delete(id, now_ms(), &self.chat_writer(&me, &core, did)),
             }
             .map_err(|e| Error::Io(e.to_string()))?;
             let rec = shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?;
@@ -1834,8 +1901,10 @@ impl Inner {
             history: Some(me.id.did().to_string()),
             keys,
             hide_unverified: Some(sess.did.clone()),
+            known_writers: core.store.known_writers()?,
         };
         let applied = shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
+        self.chat_note_writers(core, &applied, None)?;
         if !applied.hidden.is_empty() {
             self.log(format!("history of {day} from {}: hid {} (signature does not verify)", sess.did, applied.hidden.join(", ")));
         }

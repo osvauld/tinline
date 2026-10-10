@@ -8,6 +8,12 @@
 //! Every message version is signed twice (P8): by the author's DID key (`did_sig`, carried as
 //! the commit message of the change that wrote it, see `DidSigNote`) and, for apps that predate
 //! it, by the writing device's key (the record's `sig`). Receivers prefer the DID signature.
+//!
+//! P9 (U16): the Loro peer id a device writes with is its writer ID, `writer_id(DID, device
+//! value)`, where the device value is random per account per install. Every note carries the
+//! value; receivers recompute the hash and refuse ops under a writer ID that the change does
+//! not prove (`apply_remote`). Ops under device-derived peer ids (`peer_id`, apps before P9)
+//! stay judged by the legacy rule.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -33,7 +39,8 @@ pub fn doc_name(pair: &str, day: &str) -> String {
     format!("dm/{pair}/{day}")
 }
 
-/// The Loro peer id of `device` for the doc `name`.
+/// The Loro peer id of `device` for the doc `name`: how apps before P9 wrote (the "legacy
+/// peer"). It is derived from the device key, which is also the network address.
 pub fn peer_id(device: &[u8; 32], name: &str) -> u64 {
     let mut h = blake3::Hasher::new();
     h.update(b"tinline-loro-peer-v1");
@@ -41,6 +48,32 @@ pub fn peer_id(device: &[u8; 32], name: &str) -> u64 {
     h.update(name.as_bytes());
     let out = h.finalize();
     u64::from_le_bytes(out.as_bytes()[..8].try_into().unwrap())
+}
+
+const WRITER_ID_DOMAIN: &[u8] = b"tinline-writer-id-v1";
+
+/// The writer ID (U16) of the account `did` on the install whose random device value is
+/// `value`: the first 64 bits (little-endian) of BLAKE3 over a domain, the length-prefixed DID
+/// and the value. The app writes every chat doc with it as the Loro peer id, and every receiver
+/// recomputes it from the author's DID and the device value the post carries (`DidSigNote::dv`).
+/// It depends on no device or transport key. `u64::MAX` is not a valid Loro peer id; that one
+/// output maps to `u64::MAX - 1` (on every side alike).
+pub fn writer_id(did: &str, value: &[u8; 32]) -> u64 {
+    let mut h = blake3::Hasher::new();
+    h.update(WRITER_ID_DOMAIN);
+    h.update(&(did.len() as u32).to_be_bytes());
+    h.update(did.as_bytes());
+    h.update(value);
+    let id = u64::from_le_bytes(h.finalize().as_bytes()[..8].try_into().unwrap());
+    if id == u64::MAX { u64::MAX - 1 } else { id }
+}
+
+/// A fresh random device value: generated once per account per install, never derived.
+pub fn new_device_value() -> [u8; 32] {
+    use rand::RngCore;
+    let mut v = [0u8; 32];
+    rand::rngs::OsRng.fill_bytes(&mut v);
+    v
 }
 
 // ---- UTC days ------------------------------------------------------------------------------
@@ -209,6 +242,10 @@ pub fn verify_msg_did(doc: &str, m: &MsgRec, did_sig: &[u8]) -> bool {
 /// field (`read_messages`), but it ignores commit messages, and Loro keeps them through
 /// updates, snapshots and relays. `sig` names the version: it is that version's device
 /// signature (Ed25519 is deterministic, so a version and its device key fix it).
+///
+/// P9 adds `dv`, the writer's device value: receivers recompute `writer_id(author, dv)` and
+/// require it to be the peer id of the change carrying the note. A P8 app ignores the field
+/// (no `deny_unknown_fields`), and the note stays under `MAX_NOTE` with it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct DidSigNote {
     /// Always `DID_SIG_NOTE`.
@@ -218,16 +255,25 @@ struct DidSigNote {
     sig: String,
     /// Hex of the DID signature (`sign_msg_did`).
     did_sig: String,
+    /// Hex of the writer's device value (P9); absent in notes written by P8 apps.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    dv: Option<String>,
 }
 
 const DID_SIG_NOTE: &str = "tinline-did-sig-v1";
 /// A commit message longer than this is no note of ours.
-const MAX_NOTE: usize = 512;
+pub const MAX_NOTE: usize = 512;
 
 /// The commit message carrying `did_sig` for the version of message `id` whose device
-/// signature is `sig`.
+/// signature is `sig` (as a P8 app writes it: no device value; tests).
+#[cfg(test)]
 pub fn did_sig_note(id: &str, sig: &[u8], did_sig: &[u8]) -> String {
-    let n = DidSigNote { t: DID_SIG_NOTE.into(), id: id.into(), sig: hex::encode(sig), did_sig: hex::encode(did_sig) };
+    did_sig_note_dv(id, sig, did_sig, None)
+}
+
+/// `did_sig_note` that also carries the writer's device value `dv` (P9).
+pub fn did_sig_note_dv(id: &str, sig: &[u8], did_sig: &[u8], dv: Option<&[u8; 32]>) -> String {
+    let n = DidSigNote { t: DID_SIG_NOTE.into(), id: id.into(), sig: hex::encode(sig), did_sig: hex::encode(did_sig), dv: dv.map(hex::encode) };
     serde_json::to_string(&n).expect("note json")
 }
 
@@ -238,18 +284,27 @@ fn parse_note(msg: &str) -> Option<DidSigNote> {
     serde_json::from_str::<DidSigNote>(msg).ok().filter(|n| n.t == DID_SIG_NOTE)
 }
 
-/// The DID signatures that the changes of `doc` beyond `from` carry, by (message id, hex of the
-/// version's device signature). A new or changed version was written by one of these changes.
-fn did_sigs_since(doc: &LoroDoc, from: &VersionVector) -> BTreeMap<(String, String), Vec<Vec<u8>>> {
-    let mut out: BTreeMap<(String, String), Vec<Vec<u8>>> = BTreeMap::new();
+impl DidSigNote {
+    /// The device value, if the note carries a well-formed one.
+    fn value(&self) -> Option<[u8; 32]> {
+        self.dv.as_deref().and_then(|h| hex::decode(h).ok()).and_then(|b| b.try_into().ok())
+    }
+}
+
+/// One change of a doc: its peer and the note it carries, if any.
+struct ChangeNote {
+    peer: u64,
+    note: Option<DidSigNote>,
+}
+
+/// The changes of `doc` beyond `from`.
+fn changes_since(doc: &LoroDoc, from: &VersionVector) -> Vec<ChangeNote> {
+    let mut out = Vec::new();
     for (peer, end) in doc.oplog_vv().iter() {
         let mut at = from.get(peer).copied().unwrap_or(0);
         while at < *end {
             let Some(ch) = doc.get_change(loro::ID::new(*peer, at)) else { break };
-            if let Some(n) = ch.message.as_deref().and_then(parse_note) {
-                // Junk hex counts as a signature that does not verify, not as no signature.
-                out.entry((n.id, n.sig)).or_default().push(hex::decode(&n.did_sig).unwrap_or_default());
-            }
+            out.push(ChangeNote { peer: *peer, note: ch.message.as_deref().and_then(parse_note) });
             let next = ch.id.counter + ch.len as i32;
             if next <= at {
                 break;
@@ -260,29 +315,83 @@ fn did_sigs_since(doc: &LoroDoc, from: &VersionVector) -> BTreeMap<(String, Stri
     out
 }
 
-/// Who writes a message version and with which keys.
+/// A DID signature found in a change, with where it came from.
+struct NotedSig {
+    /// The peer id of the change carrying it.
+    peer: u64,
+    /// The device value the note carries (P9), if any.
+    dv: Option<[u8; 32]>,
+    did_sig: Vec<u8>,
+}
+
+/// The DID signatures that the changes of `doc` beyond `from` carry, by (message id, hex of the
+/// version's device signature). A new or changed version was written by one of these changes.
+fn did_sigs_since(changes: &[ChangeNote]) -> BTreeMap<(String, String), Vec<NotedSig>> {
+    let mut out: BTreeMap<(String, String), Vec<NotedSig>> = BTreeMap::new();
+    for c in changes {
+        if let Some(n) = &c.note {
+            // Junk hex counts as a signature that does not verify, not as no signature.
+            let s = NotedSig { peer: c.peer, dv: n.value(), did_sig: hex::decode(&n.did_sig).unwrap_or_default() };
+            out.entry((n.id.clone(), n.sig.clone())).or_default().push(s);
+        }
+    }
+    out
+}
+
+/// Whether the change `c` proves its peer id to be a writer ID: its note carries a device value
+/// `dv` and `writer_id(author of the noted message, dv)` is that peer id.
+fn proves_writer(c: &ChangeNote, msgs: &BTreeMap<String, MsgRec>) -> bool {
+    let Some(n) = &c.note else { return false };
+    let (Some(dv), Some(m)) = (n.value(), msgs.get(&n.id)) else { return false };
+    writer_id(&m.author, &dv) == c.peer
+}
+
+/// Who writes a message version, with which keys, and under which Loro peer id.
 pub struct Writer {
     /// This install's device secret: the record's `sig`, still produced for apps that predate
     /// DID signatures (and verified by them).
     device: [u8; 32],
     /// The account; `None` writes as such an app did (device signature only; tests).
     account: Option<identity::Identity>,
+    /// This install's device value for the account (P9): carried in every note.
+    value: Option<[u8; 32]>,
+    /// Write under the writer ID (`writer_id(did, value)`). Off: under the shard's legacy peer
+    /// id, as every writer without a writer ID does; for contacts with a device not yet known
+    /// to judge writer IDs (it would refuse the batch). The notes still carry `value`, which
+    /// tells the contact that we can.
+    as_writer: bool,
 }
 
 impl Writer {
+    /// DID and device signature, legacy peer id, no device value: as a P8 app wrote (tests).
+    #[cfg(test)]
     pub fn new(device: [u8; 32], account: identity::Identity) -> Self {
-        Self { device, account: Some(account) }
+        Self { device, account: Some(account), value: None, as_writer: false }
     }
 
-    /// Device signature only, as before P8.
+    /// Device signature only, legacy peer id, as before P8.
     pub fn legacy(device: [u8; 32]) -> Self {
-        Self { device, account: None }
+        Self { device, account: None, value: None, as_writer: false }
+    }
+
+    /// P9: DID and device signature, the device value in every note, and the writer ID as the
+    /// peer id unless `as_writer` is off (see the field).
+    pub fn p9(device: [u8; 32], account: identity::Identity, value: [u8; 32], as_writer: bool) -> Self {
+        Self { device, account: Some(account), value: Some(value), as_writer }
+    }
+
+    /// The writer ID, if this writer writes under one.
+    pub fn writer_id(&self) -> Option<u64> {
+        match (&self.account, &self.value) {
+            (Some(a), Some(v)) if self.as_writer => Some(writer_id(a.did(), v)),
+            _ => None,
+        }
     }
 
     /// The device signature for the record and the commit message to write it with.
     fn sign(&self, doc: &str, m: &MsgRec) -> (String, Option<String>) {
         let sig = sign_msg(&self.device, doc, m);
-        let note = self.account.as_ref().map(|a| did_sig_note(&m.id, &sig, &sign_msg_did(a, doc, m)));
+        let note = self.account.as_ref().map(|a| did_sig_note_dv(&m.id, &sig, &sign_msg_did(a, doc, m), self.value.as_ref()));
         (hex::encode(sig), note)
     }
 }
@@ -327,6 +436,10 @@ pub struct Applied {
     pub changed: Vec<String>,
     /// New messages kept hidden: their signature did not verify (see `Ctx::hide_unverified`).
     pub hidden: Vec<String>,
+    /// Peer ids the batch proved to be writer IDs (`proves_writer`), for `Ctx::known_writers`.
+    pub writers: Vec<u64>,
+    /// A change of the batch carried a device value: its writer judges writer IDs (P9).
+    pub dv_seen: bool,
 }
 
 impl Applied {
@@ -356,6 +469,10 @@ pub struct Ctx {
     /// failing the whole batch. Its ops are imported, since later ops may build on them, but
     /// `Shard::messages` never returns it. Anything else that does not verify still fails it.
     pub hide_unverified: Option<String>,
+    /// Peer ids known to be writer IDs (P9; seen proven in earlier batches, any doc). A change
+    /// under one of these, or under a writer ID proven anywhere in this doc, or under our own,
+    /// must prove it again; a version written under one is never judged by the legacy rule.
+    pub known_writers: Vec<u64>,
 }
 
 fn read_i64(v: &LoroValue) -> Option<i64> {
@@ -443,7 +560,11 @@ pub struct Shard {
     pub day: String,
     doc: LoroDoc,
     name: String,
-    pub peer: u64,
+    /// Our legacy peer id in this doc (`peer_id(device, name)`).
+    pub legacy: u64,
+    /// Our writer ID (P9), once the app set it or wrote under it. Our ops are under this and
+    /// `legacy` (a device that upgraded mid-day writes under both).
+    pub writer: Option<u64>,
     /// Messages in the doc whose signature we could not verify (`Ctx::hide_unverified`). Not
     /// part of the doc: persisted next to it (`ShardMeta::hidden`).
     pub hidden: BTreeSet<String>,
@@ -455,7 +576,27 @@ impl Shard {
         let peer = peer_id(device, &name);
         let doc = LoroDoc::new();
         doc.set_peer_id(peer).expect("peer id");
-        Self { day: day.to_string(), doc, name, peer, hidden: BTreeSet::new() }
+        Self { day: day.to_string(), doc, name, legacy: peer, writer: None, hidden: BTreeSet::new() }
+    }
+
+    /// The peer id the doc writes with now: the legacy one until a P9 writer wrote.
+    pub fn peer(&self) -> u64 {
+        self.doc.peer_id()
+    }
+
+    /// Our peer ids in this doc: the legacy one, our writer ID, and whatever we write with now.
+    pub fn own_peers(&self) -> Vec<u64> {
+        let mut v = vec![self.legacy];
+        for p in self.writer.into_iter().chain([self.peer()]) {
+            if !v.contains(&p) {
+                v.push(p);
+            }
+        }
+        v
+    }
+
+    pub fn is_own_peer(&self, p: u64) -> bool {
+        self.own_peers().contains(&p)
     }
 
     /// Rebuilds a shard from its snapshot and the updates appended since.
@@ -467,7 +608,7 @@ impl Shard {
         for u in updates {
             s.doc.import(u).map_err(|_| Reject::Undecodable)?;
         }
-        s.doc.set_peer_id(s.peer).expect("peer id");
+        s.doc.set_peer_id(s.legacy).expect("peer id");
         Ok(s)
     }
 
@@ -477,7 +618,7 @@ impl Shard {
 
     /// Our own device's op count (the tick marker for what we wrote so far).
     pub fn my_counter(&self) -> i32 {
-        self.vv().get(&self.peer).copied().unwrap_or(0)
+        self.vv().get(&self.peer()).copied().unwrap_or(0)
     }
 
     /// Who created message `id` (peer) and that peer's op count once the creating change is
@@ -504,9 +645,12 @@ impl Shard {
         self.doc.get_map("messages")
     }
 
-    /// Runs a local write as one change with the commit message `note`, and returns the update
-    /// it produced.
-    fn write(&self, note: Option<&str>, f: impl FnOnce(&LoroMap) -> loro::LoroResult<()>) -> Result<Vec<u8>, Reject> {
+    /// Runs a local write as one change under `peer` with the commit message `note`, and
+    /// returns the update it produced.
+    fn write(&self, peer: u64, note: Option<&str>, f: impl FnOnce(&LoroMap) -> loro::LoroResult<()>) -> Result<Vec<u8>, Reject> {
+        if self.doc.peer_id() != peer {
+            self.doc.set_peer_id(peer).map_err(|_| Reject::Structure)?;
+        }
         let before = self.vv();
         f(&self.msgs_map()).map_err(|_| Reject::Structure)?;
         let mut opts = CommitOptions::new();
@@ -518,7 +662,7 @@ impl Shard {
     /// Adds a message; returns the update to persist and push.
     pub fn add_message(&self, m: &MsgRec, w: &Writer) -> Result<Vec<u8>, Reject> {
         let (sig, note) = w.sign(&self.name, m);
-        self.write(note.as_deref(), |map| {
+        self.write(w.writer_id().unwrap_or(self.legacy), note.as_deref(), |map| {
             let e = map.insert_container(&m.id, LoroMap::new())?;
             e.insert("id", m.id.as_str())?;
             e.insert("author", m.author.as_str())?;
@@ -548,7 +692,7 @@ impl Shard {
         let mut rec = self.messages()?.remove(id).ok_or(Reject::Structure)?;
         change(&mut rec);
         let (sig, note) = w.sign(&self.name, &rec);
-        self.write(note.as_deref(), |_| {
+        self.write(w.writer_id().unwrap_or(self.legacy), note.as_deref(), |_| {
             e.insert("text", rec.text.as_str())?;
             e.insert("deleted", rec.deleted)?;
             e.insert("edited_at", rec.edited_at.unwrap_or(0))?;
@@ -572,17 +716,23 @@ impl Shard {
         })
     }
 
-    /// Only our own ops beyond `theirs`; `None` if they hold all of them. A device sends no
-    /// one else's ops, so a receiver can insist on a single peer id per batch.
-    pub fn export_own_since(&self, theirs: &VersionVector) -> Option<Vec<u8>> {
+    /// Whether `theirs` lacks ops of ours.
+    pub fn owes(&self, theirs: &VersionVector) -> bool {
         let mine = self.vv();
-        let my_end = mine.get(&self.peer).copied().unwrap_or(0);
-        if theirs.get(&self.peer).copied().unwrap_or(0) >= my_end {
+        self.own_peers().iter().any(|p| theirs.get(p).copied().unwrap_or(0) < mine.get(p).copied().unwrap_or(0))
+    }
+
+    /// Only our own ops (under our legacy peer id and our writer ID) beyond `theirs`; `None` if
+    /// they hold all of them. A device sends no one else's ops, so a receiver can insist that a
+    /// batch holds only the sender's legacy peer id and writer IDs it proves (`apply_remote`).
+    pub fn export_own_since(&self, theirs: &VersionVector) -> Option<Vec<u8>> {
+        if !self.owes(theirs) {
             return None;
         }
+        let mine = self.vv();
         let mut from = theirs.clone();
         for (p, c) in mine.iter() {
-            if *p != self.peer {
+            if !self.is_own_peer(*p) {
                 from.insert(*p, *c);
             }
         }
@@ -603,10 +753,7 @@ impl Shard {
     /// and this shard's content (hidden messages included), never on arrival order.
     pub fn apply_remote(&mut self, update: &[u8], ctx: &Ctx) -> Result<Applied, Reject> {
         let history = ctx.history.is_some();
-        let meta = LoroDoc::decode_import_blob_meta(update, true).map_err(|_| Reject::Undecodable)?;
-        if !history && meta.partial_end_vv.keys().any(|p| *p != ctx.signer_peer) {
-            return Err(Reject::ForeignPeer);
-        }
+        LoroDoc::decode_import_blob_meta(update, true).map_err(|_| Reject::Undecodable)?;
         let old_vv = self.vv();
         let scratch = self.doc.fork();
         let status = scratch.import(update).map_err(|_| Reject::Undecodable)?;
@@ -614,23 +761,42 @@ impl Shard {
             return Err(Reject::Pending);
         }
         let new_vv = scratch.oplog_vv();
-        let mut grew = false;
-        for (p, c) in new_vv.iter() {
-            if *c > old_vv.get(p).copied().unwrap_or(0) {
-                grew = true;
-                if !history && *p != ctx.signer_peer {
-                    return Err(Reject::ForeignPeer);
-                }
-            }
-        }
-        if !grew {
+        let grown: Vec<u64> = new_vv.iter().filter(|(p, c)| **c > old_vv.get(p).copied().unwrap_or(0)).map(|(p, _)| *p).collect();
+        if grown.is_empty() {
             return Ok(Applied::default());
         }
         let before = read_messages(&self.doc)?;
         let after = read_messages(&scratch)?;
+        // Writer IDs (P9). A peer id is a writer ID once a change under it carries a note whose
+        // device value hashes, with the noted message's author, to it (`proves_writer`).
+        let new_changes = changes_since(&scratch, &old_vv);
+        let mut known: BTreeSet<u64> = ctx.known_writers.iter().copied().chain(self.own_peers().into_iter().filter(|p| *p != self.legacy)).collect();
+        known.extend(changes_since(&scratch, &VersionVector::default()).iter().filter(|c| proves_writer(c, &after)).map(|c| c.peer));
+        let proven: BTreeSet<u64> = new_changes.iter().filter(|c| proves_writer(c, &after)).map(|c| c.peer).collect();
+        // A live batch holds only the signer's legacy peer id and writer IDs of the signer's
+        // DID that the batch itself proves.
+        if !history {
+            for p in &grown {
+                let signers = |c: &ChangeNote| c.peer == *p && proves_writer(c, &after) && c.note.as_ref().and_then(|n| after.get(&n.id)).is_some_and(|m| m.author == ctx.signer_did);
+                if *p != ctx.signer_peer && !new_changes.iter().any(signers) {
+                    return Err(Reject::ForeignPeer);
+                }
+            }
+        }
+        // Every new change under a writer ID proves it again, with the note of a message version
+        // that the batch writes: ops under someone's writer ID need that writer's device value
+        // and that author's message (cross-DID copying is refused).
+        for c in &new_changes {
+            if known.contains(&c.peer) {
+                let writes = c.note.as_ref().is_some_and(|n| after.get(&n.id) != before.get(&n.id));
+                if !(proves_writer(c, &after) && writes) {
+                    return Err(Reject::ForeignPeer);
+                }
+            }
+        }
         let lo = day_start(&self.day).ok_or(Reject::OutOfRange)? - HOUR_MS;
         let hi = lo + DAY_MS + 2 * HOUR_MS;
-        let mut applied = Applied::default();
+        let mut applied = Applied { writers: proven.iter().copied().collect(), dv_seen: new_changes.iter().any(|c| c.note.as_ref().is_some_and(|n| n.value().is_some())), ..Default::default() };
         for id in before.keys() {
             if !after.contains_key(id) {
                 return Err(Reject::Removed);
@@ -678,14 +844,23 @@ impl Shard {
         // device signature never rescues it. Only a version without one (written by an app that
         // predates them) is judged by the device signature against the attested `keys`.
         // History is judged per message: one of the contact's that we cannot verify stays hidden.
-        let did_sigs = did_sigs_since(&scratch, &old_vv);
+        // P9: the change carrying a DID signature must be under `writer_id(author, dv)` for the
+        // device value `dv` its note carries; a note without one (a P8 app), or with one that
+        // does not match (a P9 app writing under its legacy peer id for un-upgraded contacts),
+        // is judged by the legacy peer rule: never under a known writer ID, and live only under
+        // the signer's legacy peer id (checked above). A version failing it counts as unsigned.
+        let did_sigs = did_sigs_since(&new_changes);
+        let bound = |s: &NotedSig, author: &str| match s.dv {
+            Some(v) if writer_id(author, &v) == s.peer => true,
+            _ => !known.contains(&s.peer),
+        };
         let mut hidden = self.hidden.clone();
         for new in after.values() {
             if before.get(&new.id) == Some(new) {
                 continue;
             }
             let signed = match did_sigs.get(&(new.id.clone(), hex::encode(&new.sig))) {
-                Some(sigs) => sigs.iter().all(|s| verify_msg_did(&self.name, new, s)),
+                Some(sigs) => sigs.iter().all(|s| bound(s, &new.author) && verify_msg_did(&self.name, new, &s.did_sig)),
                 None => ctx.keys.iter().any(|(did, key)| *did == new.author && verify_msg(key, &self.name, new)),
             };
             let id = &new.id;
