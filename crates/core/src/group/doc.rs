@@ -108,6 +108,20 @@ impl GroupDoc {
         self.doc.export(ExportMode::updates(theirs)).ok()
     }
 
+    /// Every op in the causal past of the ops at `ids` (each `(peer, counter)`) that `theirs`
+    /// lacks: what a removed member may still get (everything up to its removal, nothing after).
+    pub fn export_until(&self, ids: &[(u64, i32)], theirs: &VersionVector) -> Option<Vec<u8>> {
+        let mut vv = VersionVector::default();
+        for (p, c) in ids {
+            vv.merge(&self.doc.frontiers_to_vv(&loro::Frontiers::from_id(loro::ID::new(*p, *c)))?);
+        }
+        let fork = self.doc.fork_at(&self.doc.vv_to_frontiers(&vv)).ok()?;
+        if theirs.partial_cmp(&fork.oplog_vv()).is_some_and(|o| o != std::cmp::Ordering::Less) {
+            return None;
+        }
+        fork.export(ExportMode::updates(theirs)).ok()
+    }
+
     /// Only ops written under `peer` (our own device) beyond `theirs`.
     pub fn export_peer_since(&self, peer: u64, theirs: &VersionVector) -> Option<Vec<u8>> {
         let mine = self.vv();

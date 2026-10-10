@@ -79,8 +79,9 @@ the user was away; each is listed at the end.
    member's sessions `Removed{proof, vv}` and closes them. `proof` = genesis + the owner's admin
    grants of the flaggers + the counted flags, all signed; the member's app checks them
    (`engine::proof_removes`) and shows "removed" with who flagged and when (`GroupDetail.removal`).
-2. From then on the host answers that DID's every `Hello` with `Removed` and sends it nothing
-   new. It accepts one upload per connection of that DID's own **posts whose signed frontier
+2. From then on the host answers that DID's every `Hello` with `Removed`, carrying also what the
+   member lacks of the causal past of the removing flags (so even a member that was offline
+   derives its removal from verified records in its own replica), and sends it nothing newer. It accepts one upload per connection of that DID's own **posts whose signed frontier
    predates the removal** (U11 option A), refusing the batch otherwise
    (`the_host_refuses_a_removed_member_that_ignores_its_removal`,
    `an_offline_post_written_before_the_removal_is_delivered`).

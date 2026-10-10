@@ -266,6 +266,17 @@ impl GroupCore {
         out
     }
 
+    /// What `did` (holding `theirs`) lacks of the causal past of the flags that removed it.
+    fn removal_upto(&self, live: &Live, did: &str, theirs: &VersionVector) -> Option<Vec<u8>> {
+        let flags = live.state.removed.get(did)?;
+        let ids: Vec<(u64, i32)> = flags
+            .iter()
+            .filter_map(|f| live.entries.iter().find(|e| e.id == f.id))
+            .map(|e| (e.peer, e.counter))
+            .collect();
+        live.doc.export_until(&ids, theirs)
+    }
+
     fn raw_record(&self, live: &Live, id: &str) -> Option<Vec<u8>> {
         live.doc.raw_value(id)
     }
@@ -519,7 +530,7 @@ impl Inner {
     /// Sessions with a device that no longer hosts, or (when we stopped hosting) with the
     /// members we served, are closed.
     fn group_enforce(&self, core: &GroupCore, gid: &str) {
-        let removed: Vec<(Arc<Sess>, Vec<Vec<u8>>, Vec<u8>)> = {
+        let removed: Vec<(Arc<Sess>, Vec<Vec<u8>>, Vec<u8>, Option<Vec<u8>>)> = {
             let groups = core.groups.lock();
             let Some(live) = groups.get(gid) else { return };
             if live.state.owner.is_none() {
@@ -538,12 +549,13 @@ impl Inner {
                 .filter(|s| s.hosting && live.state.is_removed(&s.did))
                 .map(|s| {
                     let proof = core.removal_proof(live, &s.did);
-                    (s, proof, live.doc.vv().encode())
+                    let upto = core.removal_upto(live, &s.did, &s.peer_vv.lock());
+                    (s, proof, live.doc.vv().encode(), upto)
                 })
                 .collect()
         };
-        for (s, records, vv) in removed {
-            let _ = s.tx.send(Out::Msg(GroupMsg::Removed { records, vv }));
+        for (s, records, vv, update) in removed {
+            let _ = s.tx.send(Out::Msg(GroupMsg::Removed { records, vv, update }));
             let _ = s.tx.send(Out::Close);
             core.sessions.lock().remove(&s.id);
         }
@@ -599,7 +611,7 @@ impl Inner {
         }
         enum Verdict {
             Refuse(&'static str),
-            Removed(Vec<Vec<u8>>, Vec<u8>),
+            Removed(Vec<Vec<u8>>, Vec<u8>, Option<Vec<u8>>),
             Welcome { joining: bool },
         }
         let verdict = {
@@ -607,7 +619,10 @@ impl Inner {
             match groups.get(&group) {
                 None => Verdict::Refuse("unknown group"),
                 Some(live) if !live.state.is_host(&core.did, &core.dev) => Verdict::Refuse("not a host of this group"),
-                Some(live) if live.state.is_removed(&auth.did) => Verdict::Removed(core.removal_proof(live, &auth.did), live.doc.vv().encode()),
+                Some(live) if live.state.is_removed(&auth.did) => {
+                    let upto = core.removal_upto(live, &auth.did, &decode_vv(&vv).unwrap_or_default());
+                    Verdict::Removed(core.removal_proof(live, &auth.did), live.doc.vv().encode(), upto)
+                }
                 Some(live) if live.state.is_member(&auth.did) => Verdict::Welcome { joining: false },
                 Some(live) => {
                     let ok = invite.as_ref().and_then(|i| i.open()).is_some_and(|i| i.group == group && i.expires >= now() && live.state.is_admin(&i.issuer));
@@ -622,8 +637,8 @@ impl Inner {
                 let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
                 Ok(())
             }
-            Verdict::Removed(records, vv) => {
-                writer.send(&GroupMsg::Removed { records, vv }).await?;
+            Verdict::Removed(records, vv, update) => {
+                writer.send(&GroupMsg::Removed { records, vv, update }).await?;
                 self.group_removed_upload(&core, &group, &auth.did, &mut writer, &mut reader).await;
                 let _ = writer.0.finish();
                 let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
@@ -801,7 +816,14 @@ impl Inner {
                 let peer_vv = decode_vv(&vv)?;
                 self.group_run(core, conn, writer, reader, gid, auth, false, false, peer_vv).await
             }
-            Some(GroupMsg::Removed { records, vv }) => {
+            Some(GroupMsg::Removed { records, vv, update }) => {
+                if let Some(u) = update {
+                    match core.apply(&gid, &u, |_, _, _| Ok(())) {
+                        Ok(Some(c)) => self.group_after(&core, c, None),
+                        Ok(None) => {}
+                        Err(e) => tracing::debug!("group {gid}: removal records: {e}"),
+                    }
+                }
                 let ignore = self.group.ignore_removal.load(Ordering::SeqCst);
                 if !ignore && proof_removes(&gid, &core.did, &records).is_some() {
                     let mut groups = core.groups.lock();

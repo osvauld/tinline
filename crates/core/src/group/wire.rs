@@ -4,7 +4,7 @@
 //!
 //! ```text
 //! member -> host  Hello { auth, group, vv, invite?, hosts }
-//! host -> member  Welcome { auth, vv, hosts }        | Removed { records, vv } | Refused { reason }
+//! host -> member  Welcome { auth, vv, hosts }        | Removed { records, vv, update? } | Refused { reason }
 //! both            Update { update } / Ack { vv } / Hosts { hosts }
 //! ```
 
@@ -24,7 +24,9 @@ pub enum GroupMsg {
     /// The member is removed: the signed records that prove it (genesis, the owner's admin
     /// grants of the flaggers, the flags) and what the host holds, so the member can still upload
     /// posts it wrote before the removal (U11). Nothing else follows from the host.
-    Removed { records: Vec<Vec<u8>>, vv: Vec<u8> },
+    /// `update`: what the member lacks of the causal past of the flags that removed it (so its
+    /// own replica derives the removal from verified records), never anything after.
+    Removed { records: Vec<Vec<u8>>, vv: Vec<u8>, update: Option<Vec<u8>> },
     Refused { reason: String },
     Update { update: Vec<u8> },
     Ack { vv: Vec<u8> },
