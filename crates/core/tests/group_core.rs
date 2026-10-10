@@ -465,3 +465,32 @@ fn an_admin_can_revoke_a_host() {
     assert!(!h.node.group_detail(g.clone()).unwrap().am_host);
     assert!(all(&a, &g).iter().any(|x| x.kind == GroupItemKind::HostRemoved && x.subject_did == h.did));
 }
+
+// ---- persistence ------------------------------------------------------------------------------------
+
+// KIND: acceptance (G1) — groups live in the sealed group store: after a process restart the
+// host still hosts (same group endpoint) and members reconnect and keep posting.
+#[test]
+fn groups_survive_a_host_restart() {
+    let mut o = peer("rs-o");
+    let a = peer("rs-a");
+    let g = group_with(&o, &[&a]);
+    a.node.group_post(g.clone(), "before the restart".into(), None).unwrap();
+    eventually(WAIT, "o has it", || has_post(&o, &g, &a.did, "before the restart"));
+    let ge = o.node.group_endpoint_id().unwrap();
+    o.node.stop();
+    std::thread::sleep(Duration::from_secs(2));
+    let node = Node::new(o.dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    let old = std::mem::replace(&mut o.node, node);
+    drop(old);
+    o.node.unlock(PASS.into()).unwrap();
+    online(&o.node);
+    assert!(has_post(&o, &g, &a.did, "before the restart"), "history reloaded");
+    let d = o.node.group_detail(g.clone()).unwrap();
+    assert!(d.am_host && d.my_role == GroupRole::Owner);
+    eventually(WAIT, "group endpoint back up", || o.node.group_endpoint_id().as_deref() == Some(ge.as_str()));
+    a.node.group_post(g.clone(), "after the restart".into(), None).unwrap();
+    eventually(WAIT, "a reconnects to the restarted host", || has_post(&o, &g, &a.did, "after the restart"));
+    o.node.group_post(g.clone(), "host is back".into(), None).unwrap();
+    eventually(WAIT, "a receives", || has_post(&a, &g, &o.did, "host is back"));
+}
