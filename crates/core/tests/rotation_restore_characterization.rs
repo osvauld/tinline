@@ -302,34 +302,22 @@ fn chat_fixture(tag: &str, a_holds_list: bool, pending: bool, a_verifies_b: bool
 
 // ---- 1. O1: the cached ticket -----------------------------------------------------------------
 
-// KIND: limitation
-// O1 confirmed. `ticket()` (node.rs, the reuse check) compares issuer, name, expiry and relay but
-// not `claim.device`, and restore keeps `State.ticket`. So after a restore the app keeps showing
-// the pre-restore ticket, which names the dead key; a joiner who scans it dials a key nobody
-// holds and fails. Asserted on the not-yet-started node, where no relay is known and the
-// relay check cannot force a re-issue. (Observed once started too, with an unchanged relay; not
-// asserted because the relay is network-dependent.)
-// Expected-correct: a ticket whose `device` is not our current device key is never handed out;
-// `my_ticket()` after a restore mints a fresh one naming the new key, and that one redeems.
+// KIND: invariant
+// O1 fixed by P2 (`ticket()` now also requires `claim.device` to be our current device key). After
+// a restore `my_ticket()` mints a fresh ticket naming the new key, not the pre-restore one. Full
+// redeem/chat coverage lives in `tests/restore_ticket.rs`.
 #[test]
-fn o1_restore_keeps_handing_out_the_cached_ticket_for_the_dead_key() {
+fn o1_restore_reissues_the_ticket_for_the_new_device_key() {
     let mut b = peer("o1-b", true);
-    let c = peer("o1-c", true);
     let before = b.node.my_ticket().unwrap();
     let (old_dev, new_dev) = restore_in_place(&mut b);
 
     let after = b.node.my_ticket().unwrap();
-    assert_eq!(after, before, "the pre-restore ticket is handed out again");
+    assert_ne!(after, before, "the pre-restore ticket is not handed out again");
     let claim = proto::ContactTicket::from_text(&after).unwrap().verify(now()).unwrap();
     assert_eq!(claim.iss, b.did);
-    assert_eq!(claim.device, old_dev, "it names the old device key");
-    assert_ne!(claim.device, new_dev);
-
-    online(&b.node);
-    // Redeeming it dials the old key: no endpoint answers (observed `Net("timed out")` ~20 s).
-    let r = c.node.add_contact(after);
-    assert!(r.is_err(), "the cached ticket cannot be redeemed: {r:?}");
-    assert!(c.node.contacts().is_empty() && b.node.contacts().is_empty());
+    assert_eq!(claim.device, new_dev, "it names the new device key");
+    assert_ne!(claim.device, old_dev);
 }
 
 // ---- 2. O3: a message sent but not yet delivered before the restore ---------------------------
