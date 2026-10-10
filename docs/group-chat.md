@@ -277,6 +277,8 @@ recipient set for an “all delivered” indicator; defer that UI rather than in
 
 ## 9. Group calls (separate implementation)
 
+Spec and test plan (U21, G6): [design/group-call-spec.md](design/group-call-spec.md).
+
 One call host forwards media; other chat hosts are candidates/backups, not simultaneous media
 leaders. Signed call control binds call ID, group, participants, selected host device and a
 host-generation identifier to avoid stale takeover signaling. Define who selects a replacement
