@@ -429,3 +429,24 @@ Loro silently and permanently diverges on a writer-ID collision — a collision 
 10. Host sees every member device endpoint, rotations and who-requested-whom: OK for launch?
 Superseded existing tests (device-key signing, member mesh, silent block) are listed with
 file:line in `docs/group-host-only-model.md` §4 — to be migrated, none edited yet.
+
+## 10. W2-M questions (multi-host model; `crates/group-sim/src/multi_host.rs`, `docs/group-multi-host-model.md`)
+
+Tested: host permits chain to an admin and are checked by members; non-admin hosts can relay but
+not change membership; with ≥2 hosts, "both rotated while apart" recovers via another host with
+no endpoint retention; removed hosts are refused; removed/blocked parties get verifiable signed
+notices. Limitations: first-claim writer-ID rule diverges permanently across hosts; a
+phrase-sharing sibling can claim the host's device slot; a removed host keeps known member
+endpoints until members rotate; a rogue host can keep serving reads to a removed member.
+1. Max hosts: cap? who enforces? (each host holds every member endpoint)
+2. Host binary: own DID + host permit (lean), or phrase-holding linked device? (A phrase-holding
+   host can post/sign as that user everywhere; an own-DID host can only relay.)
+3. Host removal: any admin, or only admins appointed after the host? Owner always can?
+4. Cross-host writer-ID tie-break: lowest claim after all hosts saw it (stalls new writers while a
+   host is unreachable; late-claim race needs an agreement round), or another rule?
+5. Member keeps old endpoint until host ack: only when every known host rotated? time limit?
+6. Separate host key so a phrase-sharing sibling can't claim the host slot? (must stay out of
+   content per U4 revised)
+7. Rogue host serving a removed member: acceptable for launch, or require group-content
+   encryption with rekey on removal?
+8. After a host is removed, should members rotate their group endpoints early?
