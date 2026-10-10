@@ -657,6 +657,7 @@ the revocation set syncs.
 6. Grace window length and default rotation interval.
 7. How "lost contact" is detected (retired endpoint looks like offline); timeout?
 8. Verified flag follows the DID and survives address changes and re-share? (tests assume yes)
-9. After the blocker rotates, the blocked side only times out ("unreachable"); UI relies on the
-   stored signed notice? (Coordinator lean: yes.)
+9. ~~UI relies on the stored notice~~ DECIDED (user): yes. The blocked person's app keeps showing
+   the signed notice it already received. Principle: apps are trusted for DISPLAY only, never for
+   security; all enforcement is on the receiving side (refusal + exclusion from address changes).
 10. Crash before the new key is stored: it must not become current (tests assume yes).
