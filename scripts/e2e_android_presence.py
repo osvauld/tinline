@@ -14,6 +14,7 @@ Checks, phone UI checked from the conversation header ("Connected · direct" / "
   T1 Y away: the phone sends -> one tick on the phone AND on X2
   T2 Y away: X2 sends -> one tick on X2 AND on the phone
   T3 Y back -> Y has both, two ticks everywhere
+  C1 Y calls the phone after linking -> the call is in X2's call log
 Screenshots go to artifacts/presence-phone/. Needs the debug APK installed and target/release/p2p-peer.
 """
 import argparse, re, shutil, sys, tempfile, time
@@ -115,6 +116,15 @@ def main():
         c.ok("P1 bob sees us online", ok, f"{s:.0f}s")
         ui.dbg("chat_send", who="bob", text="hello bob")  # so bob is in the chat list to tap
         c.ok("P1 header Connected", header("Connected ·", "p1-online"))
+
+        # --- a call after linking reaches X2's call log (calls doc) -----------------------
+        cid = y.last(f"call {did}").split()[-1]
+        time.sleep(5)
+        y.last(f"hangup {cid}")
+        ok, s = timed(lambda: phone("history", r"(history peer=bob)", 5) is not None, 30)
+        c.ok("C1 phone has bob's call", ok, f"{s:.0f}s")
+        ok, s = timed(lambda: any(l.startswith(f"REC {cid}") for l in x2.cmd("recents")), 60)
+        c.ok("C1 X2 has bob's call", ok, f"{s:.0f}s")
 
         y.quit(); peers.remove(y)
         ok, s = timed(lambda: not phone_online("bob"), 60)
