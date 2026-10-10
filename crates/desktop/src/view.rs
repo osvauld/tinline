@@ -1512,6 +1512,7 @@ impl App {
                 row![ui::logo(40.0, t.primary, t.thread), column![bold("Tinline", 18.0, t.ink), tx(format!("Version {} \u{b7} by Osvauld", env!("CARGO_PKG_VERSION")), 13.0, t.ink2)].spacing(2)].spacing(12).align_y(Alignment::Center),
                 tx("Free and open source under the GPL. No ads, no tracking, no analytics.", 14.0, t.ink2),
                 tx("Fonts: Figtree and IBM Plex Mono, SIL Open Font License 1.1. Icons: Lucide (ISC).", 13.0, t.ink2),
+                tx("Video: libaom (BSD-2-Clause, AOMedia Patent License 1.0) and rav1d (BSD-2-Clause); licence texts ship with the package.", 13.0, t.ink2),
                 tx("Not for emergency calls.", 13.0, t.ink2),
             ]
             .spacing(10)
