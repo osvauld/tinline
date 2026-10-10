@@ -40,6 +40,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.constrainWidth
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.LayoutDirection
+import kotlin.math.ceil
+import kotlin.math.max
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -453,7 +461,6 @@ private fun Bubble(
         val fg = if (out) c.onPrc else c.ink
         Column(
             Modifier.offset { IntOffset(drag.roundToInt(), 0) }.widthIn(max = 290.dp)
-                .let { if (a == null) it.width(IntrinsicSize.Max) else it }
                 .clip(shape).background(bg).let { if (!out) it.border(1.dp, c.ln, shape) else it }
                 .let { if (selected) it.border(3.dp, c.pr, shape) else it }
                 .combinedClickable(onClick = {}, onLongClick = onLong)
@@ -477,7 +484,6 @@ private fun Bubble(
                 photo -> PhotoBox(m, a, out, prog, link, source, onDownload, onCancel, onOpenPhoto, onBroken)
                 else -> FileRow(a, out, prog, link, first, m.id in requested, onDownload, onCancel, onSaveFile, onOpenFile, onLong)
             }
-            if (m.text.isNotBlank()) Text(m.text, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
             val at = msClock(m.at.toLong())
             val sendingPct = if (out && prog != null && prog.second > 0) (prog.first * 100 / prog.second).toInt() else null
             val label = when {
@@ -486,7 +492,48 @@ private fun Bubble(
                 m.editedAt != null -> "edited · $at"
                 else -> at
             }
-            Meta(label, tick, if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2, if (photo) 8.dp else 0.dp, if (photo) 4.dp else 0.dp)
+            val metaColor = if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
+            if (a == null && m.text.isNotBlank()) {
+                CompactTextBubble(m.text, fg, label, tick, metaColor)
+            } else {
+                if (m.text.isNotBlank()) Text(m.text, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
+                Meta(label, tick, metaColor, if (photo) 8.dp else 0.dp, if (photo) 4.dp else 0.dp)
+            }
+        }
+    }
+}
+
+/** Reserve the last line's trailing space for time/ticks, without squeezing the message.
+ * RTL uses a separate metadata row until bidi-aware trailing placement is supported. */
+@Composable
+private fun CompactTextBubble(text: String, color: Color, label: String, tick: Tick?, metaColor: Color) {
+    val measurer = rememberTextMeasurer()
+    val style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp)
+    val metaStyle = TinType.caption.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
+    val tickColor = Tin.c.pr
+    SubcomposeLayout { constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val meta = subcompose("meta") {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, style = metaStyle, color = metaColor)
+                if (tick != null) TickIcon(tick, if (tick == Tick.Two) tickColor else metaColor)
+            }
+        }.single().measure(loose)
+        val result = measurer.measure(AnnotatedString(text), style = style, constraints = loose)
+        val last = result.lineCount - 1
+        val trailing = ceil(result.getLineRight(last)).toInt()
+        val gap = 8.dp.roundToPx()
+        val needed = trailing + gap + meta.width
+        val inline = layoutDirection == LayoutDirection.Ltr && needed <= constraints.maxWidth
+        val width = constraints.constrainWidth(max(result.size.width, if (inline) needed else meta.width))
+        val body = subcompose("body") {
+            Text(text, style = style, color = color)
+        }.single().measure(Constraints.fixedWidth(result.size.width))
+        val metaY = if (inline) max(0, body.height - meta.height) else body.height + 3.dp.roundToPx()
+        val height = constraints.constrainHeight(max(body.height, metaY + meta.height))
+        layout(width, height) {
+            body.placeRelative(0, 0)
+            meta.placeRelative(width - meta.width, metaY)
         }
     }
 }

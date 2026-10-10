@@ -321,7 +321,9 @@ impl App {
     fn message_row<'a>(&'a self, t: Tok, m: &'a ChatMsg, name: &str) -> El<'a> {
         let (bg, fg) = if m.outgoing { (t.primary_c, t.on_primary_c) } else { (t.surface2, t.ink) };
         let dim = ui::alpha(fg, 0.7);
-        let mut body = column![].spacing(6);
+        // No Fill-width descendants: they make every bubble occupy the maximum width.
+        // Align the shrink-sized metadata to the trailing edge of the content.
+        let mut body = column![].spacing(4).width(Length::Shrink).align_x(Alignment::End);
         if m.deleted {
             body = body.push(tx(
                 if m.outgoing { "You deleted this message".to_string() } else { format!("{name} deleted this message") },
@@ -339,7 +341,7 @@ impl App {
                     q = q.push(semi(who, 12.0, fg));
                 }
                 q = q.push(tx(snippet, 13.0, dim));
-                body = body.push(container(q).padding([6, 10]).width(Fill).clip(true).style(ui::plain(ui::alpha(fg, 0.1), 8.0)));
+                body = body.push(container(q).padding([6, 10]).width(Length::Shrink).clip(true).style(ui::plain(ui::alpha(fg, 0.1), 8.0)));
             }
             if let Some(a) = &m.attachment {
                 body = body.push(self.attachment_view(t, m, a, fg, dim));
@@ -356,8 +358,8 @@ impl App {
         if m.outgoing {
             meta = meta.push(self.ticks(t, m.delivery, 14.0, dim));
         }
-        body = body.push(container(meta).align_right(Fill));
-        let bubble = container(body).padding([8, 12]).max_width(520).style(ui::plain(bg, 14.0));
+        body = body.push(meta.width(Length::Shrink));
+        let bubble = container(body).width(Length::Shrink).padding([8, 12]).max_width(520).style(ui::plain(bg, 14.0));
 
         let open = self.chat.menu.as_ref() == Some(&m.id);
         let hot = open || self.chat.hover.as_ref() == Some(&m.id);
