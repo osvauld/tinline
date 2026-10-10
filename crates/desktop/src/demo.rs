@@ -277,6 +277,41 @@ impl App {
                     at: Instant::now() + Duration::from_secs(3600),
                 });
             }
+            n if n.starts_with("groups") => {
+                // Groups & privacy preview (placeholder data): only its sample people show.
+                use groups::{Dialog, Open};
+                contacts.clear();
+                self.chat.tab = chat::SideTab::Chats;
+                self.groups.enable(true, "Maya Fernandes");
+                let p = |k: &str| format!("did:preview:{k}");
+                let gs = &mut self.groups;
+                let (open, dialog): (Option<Open>, Option<Dialog>) = match n {
+                    "groups" => (Some(Open::Group("hike".into())), None),
+                    "groups-menu" => {
+                        gs.menu = Some(p("dev"));
+                        (Some(Open::Group("hike".into())), None)
+                    }
+                    "groups-flag" => (Some(Open::Group("hike".into())), Some(Dialog::Flag { gid: "hike".into(), did: p("dev") })),
+                    "groups-request" => (Some(Open::Group("hike".into())), Some(Dialog::Request { gid: "hike".into(), did: p("omar") })),
+                    "groups-block" => (Some(Open::Person(p("meera"))), Some(Dialog::Block(p("meera")))),
+                    "groups-host-ask" => (None, Some(Dialog::HostAsk("host-climb".into()))),
+                    "groups-waiting" => (Some(Open::Group("climb".into())), None),
+                    "groups-removed" => (Some(Open::Group("book".into())), None),
+                    "groups-removal-details" => (Some(Open::Group("book".into())), Some(Dialog::RemovalDetails("book".into()))),
+                    "groups-contact" => (Some(Open::Person(p("priya"))), None),
+                    "groups-call-refused" => (Some(Open::Person(p("priya"))), Some(Dialog::CallRefused(p("priya")))),
+                    "groups-blocked" => (Some(Open::Person(p("arjun"))), None),
+                    "groups-blocked-you" => (Some(Open::Person(p("kiran"))), None),
+                    "groups-hosting" | "groups-privacy" => {
+                        self.screen = Screen::Settings;
+                        self.settings_tab = if n == "groups-hosting" { 6 } else { 7 };
+                        (None, None)
+                    }
+                    _ => (None, None),
+                };
+                self.groups.open = open;
+                self.groups.dialog = dialog;
+            }
             n if n.starts_with("chat") => {
                 use chat::chat_fake::Fake;
                 use p2pcore::TransferState;
