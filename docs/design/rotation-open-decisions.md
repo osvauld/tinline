@@ -162,6 +162,15 @@ DID-signed bytes, and the device value is tied to a stable install ID, not the d
 (no fallback to the device signature for them afterwards). (c) Merge phase 1 into `dev` after
 P9b lands and the integration suite passes.
 
+**U18 (user, 2026-10-10) — no backward compatibility before launch; data can be wiped.** The app
+is not publicly launched. Existing installs (incl. the user's devices on 0.1.31) may be wiped, so
+chat needs no compatibility with pre-P8 apps or old data. Consequences: drop the transition
+machinery from P8/P9/P9b (device-key message signature, DID signature hidden in Loro commit
+messages, legacy device-derived peer IDs, compat switch, per-DID "seen DID-signed" cut-off).
+DID signature + writer binding become proper record fields; every op must be in a change
+proven by its author's DID signature (closes the P9b squat gap without option (a)). Old apps
+must fail clearly (protocol/version bump), not silently. Supersedes U17(b).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
