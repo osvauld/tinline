@@ -397,21 +397,17 @@ fn o3_without_a_pending_message_new_messages_reach_a_contact_holding_our_device_
 
 // ---- 3. O4: delivery ticks of pre-restore messages --------------------------------------------
 
-// KIND: limitation
-// O4 confirmed. `mc` stores only a counter; `chat_delivery` pairs it with the CURRENT device's
-// peer. Right after the restore (no network involved) the already-delivered `m1` drops back to
-// one tick. Later, once A holds `m2` (via the history pull of the invariant test above) and has
-// acked `m3`, B still shows `m2` Pending: its old-peer counter is compared with the new peer's
-// ack. (Observed: one more message from B pushes the new peer's counter past it and `m2` then
-// shows Delivered: correct only by counter coincidence, and by the same mechanism a message A
-// does not hold could show two ticks.)
-// Expected-correct: a pre-restore message keeps the ticks of the peer that wrote it: `m1` stays
-// Delivered, `m2` becomes Delivered exactly when A acks the old peer's ops.
+// KIND: invariant
+// O4 fixed by P9 (was a limitation asserting that `m1` dropped back to one tick and `m2` stayed
+// Pending after A held it). A message's tick marker now names the peer id it was written under
+// (`mo`: peer and op count) instead of a bare counter paired with the current device's peer,
+// so a pre-restore message keeps the ticks of the peer that wrote it: `m1` stays Delivered,
+// `m2` is Pending while A lacks it and Delivered once A acknowledges the old peer's ops.
 #[test]
-fn o4_ticks_of_pre_restore_messages_follow_the_new_device_counter() {
+fn o4_ticks_of_pre_restore_messages_follow_the_peer_that_wrote_them() {
     let f = chat_fixture("o4", false, true, false);
     let (a, b, m1, m2) = (&f.a, &f.b, &f.m1, f.m2.clone().unwrap());
-    assert_eq!(ticks(b, &a.did, m1), DeliveryState::Pending, "m1 was Delivered before the restore");
+    assert_eq!(ticks(b, &a.did, m1), DeliveryState::Delivered, "m1 was Delivered before the restore");
     assert_eq!(ticks(b, &a.did, &m2), DeliveryState::Pending);
 
     online(&a.node);
@@ -419,9 +415,8 @@ fn o4_ticks_of_pre_restore_messages_follow_the_new_device_counter() {
     let m3 = b.node.send_text(a.did.clone(), "m3: after restore".into(), None).unwrap().id;
     eventually(90, "A holds m2 and m3", || has(a, &b.did, &m3) && has(a, &b.did, &m2));
     eventually(30, "B shows m3 delivered", || ticks(b, &a.did, &m3) == DeliveryState::Delivered);
-    std::thread::sleep(Duration::from_secs(3));
-    assert!(has(a, &b.did, &m2));
-    assert_eq!(ticks(b, &a.did, &m2), DeliveryState::Pending, "A holds m2, B still shows one tick");
+    eventually(30, "B shows m2 delivered", || ticks(b, &a.did, &m2) == DeliveryState::Delivered);
+    assert_eq!(ticks(b, &a.did, m1), DeliveryState::Delivered);
 }
 
 // ---- 4. O2: the contact's other device and our pre-restore history ----------------------------

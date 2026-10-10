@@ -276,7 +276,7 @@ impl Node {
         let rec = MsgRec { id: format!("forged{kind}"), author, at, text: format!("forged {kind}"), edited_at: None, deleted: false, reply_to: None, file: None, sig: Vec::new() };
         // Forgeries carry no DID signature (only the account could make one); the control is
         // written exactly as `send_text` writes.
-        let writer = if kind >= 3 { self.inner.chat_writer(&me) } else { crate::chat::doc::Writer::legacy(secret) };
+        let writer = if kind >= 3 { self.inner.chat_writer(&me, &*self.inner.chat_core()?, &contact) } else { crate::chat::doc::Writer::legacy(secret) };
         let update = shard.add_message(&rec, &writer).map_err(|e| Error::Io(e.to_string()))?;
         let inner = self.inner.clone();
         let doc = doc_name(&pair, &day);
@@ -290,6 +290,49 @@ impl Node {
         let Ok(core) = self.inner.chat_core() else { return false };
         let pair = crate::chat::doc::pair_id(me_did, peer_did);
         core.store.shard_days(&pair).map(|d| !d.is_empty()).unwrap_or(false)
+    }
+
+    /// For tests (P9): our writer ID (`None` while the chat store is not open).
+    #[doc(hidden)]
+    pub fn writer_id_for_test(&self) -> Option<u64> {
+        self.inner.chat_core().ok().map(|c| c.wid)
+    }
+
+    /// For tests (P9): every `(day, Loro peer id, op count)` in our copy of the conversation
+    /// with `peer_did`, and per message `(id, peer id of the change that created it)`.
+    #[doc(hidden)]
+    #[allow(clippy::type_complexity)]
+    pub fn chat_doc_peers_for_test(&self, peer_did: String) -> (Vec<(String, u64, i32)>, Vec<(String, u64)>) {
+        let inner = self.inner.clone();
+        self.block_on(async move {
+            let (Ok(me), Ok(core)) = (inner.me(), inner.chat_core()) else { return (vec![], vec![]) };
+            let pair = crate::chat::doc::pair_id(me.id.did(), &peer_did);
+            let (mut peers, mut created) = (Vec::new(), Vec::new());
+            for day in core.store.shard_days(&pair).unwrap_or_default() {
+                if inner.chat_shard(&core, &me, &pair, &day).await.is_err() {
+                    continue;
+                }
+                let shards = core.shards.lock();
+                let Some(s) = shards.get(&(pair.clone(), day.clone())) else { continue };
+                peers.extend(s.vv().iter().map(|(p, c)| (day.clone(), *p, *c)));
+                for id in s.messages().map(|m| m.into_keys().collect::<Vec<_>>()).unwrap_or_default() {
+                    if let Some((p, _)) = s.creator_end(&id) {
+                        created.push((id, p));
+                    }
+                }
+            }
+            (peers, created)
+        })
+        .unwrap_or_default()
+    }
+
+    /// For tests (P9): the legacy (device-derived) Loro peer id the device `device` (text) has
+    /// in the conversation between `a_did` and `b_did` on `day`.
+    #[doc(hidden)]
+    pub fn legacy_peer_for_test(device: String, a_did: String, b_did: String, day: String) -> Option<u64> {
+        use crate::chat::doc::{doc_name, pair_id, peer_id};
+        let dev = proto::device_from_text(&device).ok()?;
+        Some(peer_id(&dev, &doc_name(&pair_id(&a_did, &b_did), &day)))
     }
 
     /// For tests: does the chat store hold any "You" shard?

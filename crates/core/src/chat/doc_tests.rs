@@ -23,7 +23,7 @@ fn msg(id: &str, author: &str, at: i64, text: &str) -> MsgRec {
 }
 
 fn ctx(signer: &str, device: u8, live: bool) -> Ctx {
-    Ctx { signer_did: signer.into(), signer_peer: peer_id(&dev(device), &doc_name("p", DAY)), now_ms: NOON, live, history: None, keys: vec![("A".into(), dev(1)), ("B".into(), dev(2))], hide_unverified: None }
+    Ctx { signer_did: signer.into(), signer_peer: peer_id(&dev(device), &doc_name("p", DAY)), now_ms: NOON, live, history: None, keys: vec![("A".into(), dev(1)), ("B".into(), dev(2))], hide_unverified: None, known_writers: vec![] }
 }
 
 fn shard(device: u8) -> Shard {
@@ -183,7 +183,7 @@ fn snapshot_round_trip_keeps_the_peer_id() {
     a.add_message(&msg("m1", "A", NOON, "x"), &legacy(1)).unwrap();
     let c = a.my_counter();
     let back = Shard::load("p", DAY, &dev(1), Some(&a.snapshot()), &[]).unwrap();
-    assert_eq!(back.peer, a.peer);
+    assert_eq!(back.peer(), a.peer());
     back.add_message(&msg("m2", "A", NOON + 1, "y"), &legacy(1)).unwrap();
     assert!(back.my_counter() > c);
     assert_eq!(back.messages().unwrap().len(), 2);
@@ -352,7 +352,7 @@ fn writer(device: u8, n: usize) -> Writer {
 
 /// A live batch from account `signer` on `device`, judged knowing NO device key at all.
 fn dctx(signer: usize, device: u8, live: bool) -> Ctx {
-    Ctx { signer_did: did(signer), signer_peer: peer_id(&dev(device), &doc_name("p", DAY)), now_ms: NOON, live, history: None, keys: vec![], hide_unverified: None }
+    Ctx { signer_did: did(signer), signer_peer: peer_id(&dev(device), &doc_name("p", DAY)), now_ms: NOON, live, history: None, keys: vec![], hide_unverified: None, known_writers: vec![] }
 }
 
 /// A vouched snapshot from account `contact`, received by account `me`, judged per message.
@@ -531,4 +531,320 @@ fn an_un_upgraded_device_of_the_author_falls_back_to_the_device_signature_per_ve
     c.keys = vec![(did(0), dev(3))];
     assert_eq!(b.apply_remote(&e, &c).unwrap().changed, vec!["m1".to_string()]);
     assert_eq!(b.messages().unwrap()["m1"].text, "v2");
+}
+
+// ---- P9: writer ID = hash(DID || device value) as the Loro peer id -------------------------
+
+/// A device value (random in the app; fixed here).
+fn val(n: u8) -> [u8; 32] {
+    [100 + n; 32]
+}
+
+/// Account `n` on device `device` with device value `v`, writing under its writer ID.
+fn p9(device: u8, n: usize, v: u8) -> Writer {
+    Writer::p9(sec(device), acct(n).clone(), val(v), true)
+}
+
+fn wid(n: usize, v: u8) -> u64 {
+    writer_id(&did(n), &val(v))
+}
+
+/// A shard of account `n`'s device `device` that knows its own writer ID (as the app sets it).
+fn wshard(device: u8, n: usize, v: u8) -> Shard {
+    let mut s = shard(device);
+    s.writer = Some(wid(n, v));
+    s
+}
+
+/// The peer ids an update holds ops of.
+fn peers_of(u: &[u8]) -> Vec<u64> {
+    LoroDoc::decode_import_blob_meta(u, true).unwrap().partial_end_vv.keys().copied().collect()
+}
+
+/// A P9 note for `rec` written by account `n` with device secret `device` and value `v`.
+fn p9_note(rec: &MsgRec, device: u8, n: usize, v: u8) -> (Vec<u8>, String) {
+    let devsig = sign_msg(&sec(device), &name(), rec);
+    let note = did_sig_note_dv(&rec.id, &devsig, &sign_msg_did(acct(n), &name(), rec), Some(&val(v)));
+    (devsig, note)
+}
+
+#[test]
+fn writer_ids_are_domain_separated_and_derived_from_no_device_key() {
+    // Deterministic, and it changes with the DID and with the value.
+    assert_eq!(wid(0, 1), writer_id(&did(0), &val(1)));
+    assert_ne!(wid(0, 1), wid(1, 1));
+    assert_ne!(wid(0, 1), wid(0, 2));
+    // The DID is length-prefixed: moving bytes between DID and value gives another ID.
+    let mut v = [0u8; 32];
+    v[0] = b'b';
+    let mut w = [0u8; 32];
+    w[..31].copy_from_slice(&v[1..]);
+    assert_ne!(writer_id("a", &v), writer_id("ab", &w));
+    // Its own domain: not the legacy peer id of any device, and not the plain hash.
+    let h = blake3::hash(&[did(0).as_bytes(), &val(1)].concat());
+    assert_ne!(wid(0, 1), u64::from_le_bytes(h.as_bytes()[..8].try_into().unwrap()));
+    // The writer writes under it, whatever device key signs the record.
+    assert_eq!(p9(5, 0, 1).writer_id(), Some(wid(0, 1)));
+    assert_eq!(p9(6, 0, 1).writer_id(), Some(wid(0, 1)));
+    assert_eq!(writer(5, 0).writer_id(), None);
+    // Fresh values are random.
+    assert_ne!(new_device_value(), new_device_value());
+}
+
+#[test]
+fn p9_notes_stay_readable_by_p8_apps_and_under_the_note_limit() {
+    // What a P8 app parses a note into (no `deny_unknown_fields`).
+    #[derive(serde::Deserialize)]
+    #[allow(dead_code)]
+    struct P8Note {
+        t: String,
+        id: String,
+        sig: String,
+        did_sig: String,
+    }
+    let rec = msg(&"x".repeat(64), &did(0), NOON, "longest id");
+    let (devsig, note) = p9_note(&rec, 1, 0, 1);
+    assert!(note.len() < MAX_NOTE, "{}", note.len());
+    let old: P8Note = serde_json::from_str(&note).unwrap();
+    assert_eq!(old.sig, hex::encode(&devsig));
+    assert!(verify_msg_did(&name(), &rec, &hex::decode(&old.did_sig).unwrap()));
+    // A P8 note has no `dv`; P9 still reads it.
+    assert!(!did_sig_note(&rec.id, &devsig, &[0; 64]).contains("dv"));
+}
+
+#[test]
+fn p9_writes_use_the_writer_id_and_verify_with_no_device_key() {
+    let a = wshard(5, 0, 1);
+    let u = a.add_message(&msg("m1", &did(0), NOON, "hi"), &p9(5, 0, 1)).unwrap();
+    assert_eq!(a.peer(), wid(0, 1));
+    assert_eq!(peers_of(&u), vec![wid(0, 1)]);
+    // The device key's legacy peer id appears nowhere in the doc.
+    assert!(a.vv().get(&peer_id(&dev(5), &name())).is_none());
+    // A receiver that knows no device key of the author: live (signer_peer is the session's
+    // legacy peer id, which the batch does not use) and as history.
+    let mut b = shard(2);
+    let r = b.apply_remote(&u, &dctx(0, 5, true)).unwrap();
+    assert_eq!(r.added, vec!["m1".to_string()]);
+    assert_eq!(r.writers, vec![wid(0, 1)]);
+    assert!(r.dv_seen);
+    let e = a.edit("m1", "hi!", NOON + 10, &p9(5, 0, 1)).unwrap();
+    assert_eq!(b.apply_remote(&e, &dctx(0, 5, true)).unwrap().changed, vec!["m1".to_string()]);
+    let mut h = shard(3);
+    assert_eq!(h.apply_remote(&a.snapshot(), &dhist(0, 1)).unwrap().added, vec!["m1".to_string()]);
+    assert_eq!(h.messages().unwrap()["m1"].text, "hi!");
+    // Every replica keeps the sender's number unchanged.
+    assert_eq!(b.vv(), a.vv());
+    assert_eq!(h.vv(), a.vv());
+}
+
+/// Sets `deleted` to false on `id`: an op that leaves the record as it reads (absent = false).
+fn touch(map: &LoroMap, id: &str) {
+    if let Some(loro::ValueOrContainer::Container(loro::Container::Map(e))) = map.get(id) {
+        e.insert("deleted", false).unwrap();
+    }
+}
+
+#[test]
+fn forged_writer_ids_are_refused_without_any_state_change() {
+    // Account 0 (device 1, value 1) wrote m1 under its writer ID; account 1's device 2 holds it.
+    let a = wshard(1, 0, 1);
+    a.add_message(&msg("m1", &did(0), NOON, "real"), &p9(1, 0, 1)).unwrap();
+    let mut b = shard(2);
+    b.apply_remote(&a.snapshot(), &dctx(0, 1, true)).unwrap();
+    let (snap, vv) = (b.snapshot(), b.vv());
+    let unchanged = |s: &Shard| s.vv() == vv && s.snapshot() == snap && s.messages().unwrap().len() == 1;
+    let hist = dhist(0, 1);
+
+    // 1. A post whose peer id is not `writer_id(author, dv)` for the value its note carries.
+    let rec = msg("m2", &did(0), NOON + 1, "x");
+    let (devsig, note) = p9_note(&rec, 1, 0, 1);
+    let u = forge_noted(&a, wid(0, 2), &note, |m| put_signed(m, &rec, &devsig));
+    assert_eq!(b.apply_remote(&u, &dctx(0, 1, true)), Err(Reject::ForeignPeer));
+    assert!(unchanged(&b));
+    // 2. Ops under a known writer ID without any note.
+    let u = forge(&a, wid(0, 1), |m| touch(m, "m1"));
+    assert_eq!(b.apply_remote(&u, &dctx(0, 1, true)), Err(Reject::ForeignPeer));
+    assert_eq!(b.apply_remote(&u, &hist), Err(Reject::ForeignPeer));
+    assert!(unchanged(&b));
+    // 3. A genuine note replayed on a change that writes no new version.
+    let real = a.messages().unwrap()["m1"].clone();
+    let note = did_sig_note_dv("m1", &real.sig, &sign_msg_did(acct(0), &name(), &real), Some(&val(1)));
+    let u = forge_noted(&a, wid(0, 1), &note, |m| touch(m, "m1"));
+    assert_eq!(b.apply_remote(&u, &dctx(0, 1, true)), Err(Reject::ForeignPeer));
+    assert_eq!(b.apply_remote(&u, &hist), Err(Reject::ForeignPeer));
+    assert!(unchanged(&b));
+    // Control: the genuine next post of account 0 is accepted.
+    let ok = a.add_message(&msg("m5", &did(0), NOON + 5, "next"), &p9(1, 0, 1)).unwrap();
+    assert_eq!(b.apply_remote(&ok, &dctx(0, 1, true)).unwrap().added, vec!["m5".to_string()]);
+}
+
+#[test]
+fn cross_did_copying_of_a_writer_id_is_refused() {
+    // Account 0's devices 1 (value 1) and 3 (value 3); device 3 holds m1 that device 1 wrote.
+    let a = wshard(1, 0, 1);
+    a.add_message(&msg("m1", &did(0), NOON, "real"), &p9(1, 0, 1)).unwrap();
+    let mut d3 = wshard(3, 0, 3);
+    let mut own = dctx(0, 9, false);
+    own.history = Some(did(1));
+    d3.apply_remote(&a.snapshot(), &own).unwrap();
+    let (snap, vv) = (d3.snapshot(), d3.vv());
+    // The contact (account 1) posts its own, validly DID-signed message under account 0's
+    // writer ID: with account 0's value copied (the hash then names account 0, not the
+    // author), or with its own value (the hash is not that ID).
+    let rec = msg("b1", &did(1), NOON + 1, "under 0's id");
+    let devsig = sign_msg(&sec(2), &name(), &rec);
+    let did_sig = sign_msg_did(acct(1), &name(), &rec);
+    for v in [val(1), val(2)] {
+        let note = did_sig_note_dv(&rec.id, &devsig, &did_sig, Some(&v));
+        let u = forge_noted(&a, wid(0, 1), &note, |m| put_signed(m, &rec, &devsig));
+        // Live from the contact's session, and in the contact's vouched snapshot.
+        assert_eq!(d3.apply_remote(&u, &dctx(1, 2, true)), Err(Reject::ForeignPeer));
+        assert_eq!(d3.apply_remote(&u, &dhist(1, 0)), Err(Reject::ForeignPeer));
+        assert!(d3.vv() == vv && d3.snapshot() == snap);
+    }
+    // On a doc that has not seen that writer ID yet, the IDs remembered from earlier docs
+    // (`known_writers`) refuse it; without that memory the legacy rule applies (open question).
+    let note = did_sig_note_dv(&rec.id, &devsig, &did_sig, Some(&val(2)));
+    let u = forge_noted(&shard(9), wid(0, 1), &note, |m| put_signed(m, &rec, &devsig));
+    let mut fresh = wshard(4, 0, 4);
+    let mut c = dhist(1, 0);
+    c.known_writers = vec![wid(0, 1)];
+    assert_eq!(fresh.apply_remote(&u, &c), Err(Reject::ForeignPeer));
+    assert!(fresh.vv().is_empty());
+    // Its own message under its own writer ID is fine.
+    let b = wshard(2, 1, 2);
+    let u = b.add_message(&rec, &p9(2, 1, 2)).unwrap();
+    assert_eq!(d3.apply_remote(&u, &dctx(1, 2, true)).unwrap().added, vec!["b1".to_string()]);
+}
+
+#[test]
+fn a_note_whose_value_does_not_match_its_peer_falls_to_the_legacy_rule() {
+    // A correctly DID-signed P9 note under a peer id that is not its writer ID: what a P9 app
+    // writing under its legacy peer id produces. Live it must be the session's legacy peer id;
+    // in history any peer id that is not a known writer ID (the P8 rule).
+    let rec = msg("m1", &did(0), NOON, "x");
+    let (devsig, note) = p9_note(&rec, 1, 0, 1);
+    let u = forge_noted(&shard(9), 77, &note, |m| put_signed(m, &rec, &devsig));
+    assert_eq!(shard(2).apply_remote(&u, &dctx(0, 1, true)), Err(Reject::ForeignPeer));
+    assert_eq!(shard(2).apply_remote(&u, &dhist(0, 1)).unwrap().added, vec!["m1".to_string()]);
+    let mut c = dhist(0, 1);
+    c.known_writers = vec![77];
+    assert_eq!(shard(2).apply_remote(&u, &c), Err(Reject::ForeignPeer));
+    // A bad DID signature there hides the contact's message, as before P9.
+    let bad = did_sig_note_dv(&rec.id, &devsig, &sign_msg_did(acct(2), &name(), &rec), Some(&val(1)));
+    let u = forge_noted(&shard(9), 77, &bad, |m| put_signed(m, &rec, &devsig));
+    let mut h = shard(2);
+    assert_eq!(h.apply_remote(&u, &dhist(0, 1)).unwrap().hidden, vec!["m1".to_string()]);
+    assert!(h.messages().unwrap().is_empty());
+}
+
+#[test]
+fn two_own_devices_with_different_values_converge() {
+    // Account 0 on devices 1 (value 1) and 3 (value 3): two writer IDs, one DID.
+    assert_ne!(wid(0, 1), wid(0, 3));
+    let d1 = wshard(1, 0, 1);
+    let mut d3 = wshard(3, 0, 3);
+    let mut contact = shard(2);
+    let u1 = d1.add_message(&msg("a1", &did(0), NOON, "from 1"), &p9(1, 0, 1)).unwrap();
+    let u3 = d3.add_message(&msg("a3", &did(0), NOON + 1, "from 3"), &p9(3, 0, 3)).unwrap();
+    // The contact gets each device's batch live from that device's session.
+    contact.apply_remote(&u1, &dctx(0, 1, true)).unwrap();
+    contact.apply_remote(&u3, &dctx(0, 3, true)).unwrap();
+    // Own-device sync (`chat_own_apply`: signer = us, history = the contact) both ways.
+    let mut own = dctx(0, 9, false);
+    own.history = Some(did(1));
+    own.hide_unverified = Some(did(1));
+    let mut d1 = d1;
+    d3.apply_remote(&d1.export_all_since(&d3.vv()).unwrap(), &own).unwrap();
+    d1.apply_remote(&d3.export_all_since(&d1.vv()).unwrap(), &own).unwrap();
+    // Device 3 edits the message device 1 created, under its own writer ID.
+    let e = d3.edit("a1", "from 1, edited on 3", NOON + 10, &p9(3, 0, 3)).unwrap();
+    assert_eq!(peers_of(&e), vec![wid(0, 3)]);
+    contact.apply_remote(&e, &dctx(0, 3, true)).unwrap();
+    d1.apply_remote(&e, &own).unwrap();
+    for s in [&d1, &d3, &contact] {
+        assert_eq!(s.vv(), d3.vv());
+        assert_eq!(s.messages().unwrap(), d3.messages().unwrap());
+    }
+    assert_eq!(contact.messages().unwrap()["a1"].text, "from 1, edited on 3");
+    // A device sends contacts only its own writer's ops.
+    assert!(d1.export_own_since(&contact.vv()).is_none());
+}
+
+#[test]
+fn a_device_switching_from_its_legacy_peer_to_its_writer_id_keeps_working() {
+    // Device 1 of account 0 wrote m1 and m2 as a P8 app (legacy peer id); m2 never reached
+    // the contact. Then it upgrades: the app sets its writer ID and writes under it.
+    let legacy_peer = peer_id(&dev(1), &name());
+    let mut a = shard(1);
+    let u1 = a.add_message(&msg("m1", &did(0), NOON, "old"), &writer(1, 0)).unwrap();
+    a.add_message(&msg("m2", &did(0), NOON + 1, "old, unsent"), &writer(1, 0)).unwrap();
+    let mut b = shard(2);
+    b.apply_remote(&u1, &dctx(0, 1, true)).unwrap();
+    a = Shard::load("p", DAY, &dev(1), Some(&a.snapshot()), &[]).unwrap();
+    a.writer = Some(wid(0, 1));
+    assert_eq!(a.own_peers(), vec![legacy_peer, wid(0, 1)]);
+    // An edit of a message created under the old peer id, and a new message.
+    a.edit("m1", "old, edited", NOON + 10, &p9(1, 0, 1)).unwrap();
+    a.add_message(&msg("m3", &did(0), NOON + 11, "new"), &p9(1, 0, 1)).unwrap();
+    assert_eq!(a.peer(), wid(0, 1));
+    // The catch-up holds the unsent legacy op and the new ones: one batch, both own peers,
+    // accepted live from the same session (legacy peer = the session's; writer ID proven).
+    assert!(a.owes(&b.vv()));
+    let up = a.export_own_since(&b.vv()).unwrap();
+    let mut ps = peers_of(&up);
+    ps.sort();
+    let mut want = vec![legacy_peer, wid(0, 1)];
+    want.sort();
+    assert_eq!(ps, want);
+    let r = b.apply_remote(&up, &dctx(0, 1, true)).unwrap();
+    assert_eq!(r.added, vec!["m2".to_string(), "m3".to_string()]);
+    assert_eq!(r.changed, vec!["m1".to_string()]);
+    assert_eq!(b.vv(), a.vv());
+    assert!(!a.owes(&b.vv()));
+    // A snapshot of the mixed doc: reloads (counters continue under the writer ID), and is
+    // accepted as history by a receiver that knows no device key.
+    let c = a.my_counter();
+    let back = Shard::load("p", DAY, &dev(1), Some(&a.snapshot()), &[]).unwrap();
+    back.add_message(&msg("m4", &did(0), NOON + 12, "after reload"), &p9(1, 0, 1)).unwrap();
+    assert!(back.vv().get(&wid(0, 1)).unwrap() > &c);
+    let mut fresh = shard(3);
+    assert_eq!(fresh.apply_remote(&back.snapshot(), &dhist(0, 1)).unwrap().added.len(), 4);
+    assert_eq!(fresh.messages().unwrap(), back.messages().unwrap());
+    // Own-device sync of the mixed doc to another device of account 0, which then edits a
+    // message written under the legacy peer id with its own writer ID.
+    let mut d3 = wshard(3, 0, 3);
+    let mut own = dctx(0, 9, false);
+    own.history = Some(did(1));
+    d3.apply_remote(&back.snapshot(), &own).unwrap();
+    let e = d3.edit("m2", "edited on 3", NOON + 20, &p9(3, 0, 3)).unwrap();
+    b.apply_remote(&back.export_own_since(&b.vv()).unwrap(), &dctx(0, 1, true)).unwrap();
+    assert_eq!(b.apply_remote(&e, &dctx(0, 3, true)).unwrap().changed, vec!["m2".to_string()]);
+}
+
+#[test]
+fn compat_mode_writes_under_the_legacy_peer_and_still_advertises_the_value() {
+    // For a contact with a device that predates P9, which requires every op of a live batch to
+    // be under the session's legacy peer id, the app writes under the legacy peer id. The note
+    // carries the value, so an upgraded receiver learns that the writer judges writer IDs.
+    let legacy_peer = peer_id(&dev(1), &name());
+    let a = shard(1);
+    let compat = Writer::p9(sec(1), acct(0).clone(), val(1), false);
+    let u = a.add_message(&msg("m1", &did(0), NOON, "hi"), &compat).unwrap();
+    // What a pre-P9 receiver checks (`partial_end_vv` keys all equal its signer peer).
+    assert_eq!(peers_of(&u), vec![legacy_peer]);
+    let r = shard(2).apply_remote(&u, &dctx(0, 1, true)).unwrap();
+    assert!(r.dv_seen && r.writers.is_empty());
+    // Under the writer ID the same pre-P9 check fails: why compat mode exists.
+    let w = wshard(1, 0, 1);
+    let u = w.add_message(&msg("m1", &did(0), NOON, "hi"), &p9(1, 0, 1)).unwrap();
+    assert!(peers_of(&u).iter().all(|p| *p != legacy_peer));
+    // P8 notes (no value) and pre-P8 records keep the legacy rule.
+    let r = shard(2).apply_remote(&shard_with_p8(), &dctx(0, 1, true)).unwrap();
+    assert!(!r.dv_seen);
+}
+
+fn shard_with_p8() -> Vec<u8> {
+    let a = shard(1);
+    a.add_message(&msg("m1", &did(0), NOON, "p8"), &writer(1, 0)).unwrap()
 }

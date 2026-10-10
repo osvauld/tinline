@@ -15,6 +15,9 @@
 //! pb/{pair}/{hash}               empty      the blobs a conversation uses (for deletion)
 //! snapcache/{pair}/{day}         SnapRef    a snapshot blob we made for a peer's history request
 //! set/auto_download              u64 BE
+//! set/writer                     32+32      P9: (device key it was made under, device value)
+//! wid/{writer id hex}            empty      a peer id seen proven as a writer ID (any doc)
+//! w9/{device hex}                empty      that contact device sent a note with a device value
 //! ```
 
 use serde::{Deserialize, Serialize};
@@ -242,9 +245,6 @@ impl ChatStore {
             .collect())
     }
 
-    pub fn put_mc_op(&self, pair: &str, day: &str, id: &str, c: i32) -> Result<Op, Error> {
-        self.db.put_op(&format!("mc/{pair}/{day}/{id}"), &c.to_be_bytes()).map_err(io)
-    }
 
     /// Our messages written on another of our devices: `(peer, op count)` that the contact must
     /// hold for two ticks.
@@ -391,6 +391,42 @@ impl ChatStore {
 
     pub fn set_auto_download(&self, bytes: u64) -> Result<(), Error> {
         self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(io)
+    }
+
+    // ---- writer IDs (P9) --------------------------------------------------------------------
+
+    /// This install's device value for the account, made (randomly) on first use. It is kept
+    /// with the device key it was made under: a restore, the only thing that gives an existing
+    /// account directory a new device key, is a new install of the device and gets a new value.
+    /// The value is never derived from that key.
+    pub fn device_value(&self, device: &[u8; 32]) -> Result<[u8; 32], Error> {
+        if let Some(b) = self.db.get("set/writer").map_err(io)?
+            && b.len() == 64
+            && b[..32] == device[..]
+        {
+            return Ok(b[32..].try_into().expect("32 bytes"));
+        }
+        let v = super::doc::new_device_value();
+        self.db.put("set/writer", &[&device[..], &v[..]].concat()).map_err(io)?;
+        Ok(v)
+    }
+
+    /// Every peer id seen proven as a writer ID.
+    pub fn known_writers(&self) -> Result<Vec<u64>, Error> {
+        Ok(self.db.scan("wid/").map_err(io)?.into_iter().filter_map(|(k, _)| u64::from_str_radix(k.strip_prefix("wid/")?, 16).ok()).collect())
+    }
+
+    pub fn put_writer_op(&self, id: u64) -> Result<Op, Error> {
+        self.db.put_op(&format!("wid/{id:016x}"), b"").map_err(io)
+    }
+
+    /// The contact device `device` writes notes with a device value: it judges writer IDs.
+    pub fn is_p9_device(&self, device: &[u8; 32]) -> bool {
+        self.db.get(&format!("w9/{}", hex::encode(device))).ok().flatten().is_some()
+    }
+
+    pub fn put_p9_device_op(&self, device: &[u8; 32]) -> Result<Op, Error> {
+        self.db.put_op(&format!("w9/{}", hex::encode(device)), b"").map_err(io)
     }
 
     /// Everything about one conversation, except the blobs' bytes (the caller releases those).

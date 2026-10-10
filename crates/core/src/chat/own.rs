@@ -146,9 +146,11 @@ impl Inner {
                 // The contact's messages are judged one by one (one we cannot verify, e.g. signed
                 // by a key of theirs only the relaying device knew, stays hidden); ours never.
                 hide_unverified: (!self.is_self_did(&did)).then(|| did.clone()),
+                known_writers: core.store.known_writers()?,
             };
             match shard.apply_remote(update, &ctx) {
                 Ok(applied) => {
+                    self.chat_note_writers(&core, &applied, None)?;
                     if !applied.hidden.is_empty() {
                         self.log(format!("own-device batch for {doc}: hid {} (signature does not verify)", applied.hidden.join(", ")));
                     }
@@ -164,7 +166,7 @@ impl Inner {
                                 if *added
                                     && rec.author == me.id.did()
                                     && let Some((peer, c)) = shard.creator_end(&rec.id)
-                                    && peer != shard.peer
+                                    && !shard.is_own_peer(peer)
                                 {
                                     ops.push(core.store.put_mo_op(&pair, &day, &rec.id, peer, c)?);
                                 }
