@@ -214,6 +214,8 @@ impl Node {
         self.inner.handle.spawn(async move {
             inner.send_unlinked(dev, relay).await;
         });
+        // U8: contacts stop dialling the unlinked install.
+        self.inner.devices_changed();
         if let Some(ev) = self.inner.link_events() {
             ev.on_devices_changed();
         }
@@ -332,6 +334,15 @@ impl Node {
         if let Ok(core) = self.inner.chat_core() {
             core.fail_writes.store(n, std::sync::atomic::Ordering::SeqCst);
         }
+    }
+
+    /// For tests (P10b): stores a message of ours to `peer_did` sent at `at_ms`, written under
+    /// another writer ID (a fresh device ID), as if it had just arrived from a sibling device by
+    /// own-device sync: pending for the contact, not pushed. Returns its id.
+    #[doc(hidden)]
+    pub fn write_as_sibling_for_test(&self, peer_did: String, text: String, at_ms: i64) -> Result<String, Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_write_as_sibling_for_test(&peer_did, text, at_ms).await })?
     }
 
     /// For tests: does the chat store hold any "You" shard?

@@ -233,8 +233,15 @@ pub struct State {
     pub availability: AvailabilityState,
     /// Our own installs (task 34c: seeded with this device; linking fills it later).
     pub registry: Vec<OwnDevice>,
-    /// The latest `DeviceList` we signed from the registry; sent in every call hello and accept.
+    /// The latest `DeviceList` we signed from the registry; sent in every call hello and accept,
+    /// and pushed to contacts when its device set changes (U8, `devlist.rs`).
     pub own_list: Option<proto::SignedBlob>,
+    /// Contacts this device still has to send its current `own_list` to (local: the device that
+    /// saw the change pushes; the list is read fresh on each attempt).
+    pub list_outbox: HashSet<String>,
+    /// The device keys (text form, sorted) of the last list queued for every contact, so a change
+    /// is pushed once even if a call re-signed the list first.
+    pub pushed_list_keys: Vec<String>,
 }
 
 /// See `State::cut_offs`.

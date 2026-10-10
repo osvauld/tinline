@@ -213,6 +213,10 @@ impl Inner {
         if ch.contacts {
             self.events.on_contacts_changed();
         }
+        if ch.devices {
+            // U8: a sibling linked or unlinked a device; our list changes too.
+            self.devices_changed();
+        }
         if let Some(ev) = self.link_events()
             && ch.devices
         {
@@ -289,7 +293,7 @@ impl Inner {
 
     /// A valid attestation of our DID from a device the registry does not list: a device that
     /// was linked but never announced itself (or one added while we were away).
-    fn note_own_device(&self, epoch: u64, att: &proto::SignedAttestation, device: [u8; 32], relay: Option<String>) {
+    fn note_own_device(self: &Arc<Self>, epoch: u64, att: &proto::SignedAttestation, device: [u8; 32], relay: Option<String>) {
         let added = {
             let mut s = self.shared.lock();
             if s.epoch != epoch {
@@ -312,6 +316,7 @@ impl Inner {
         };
         if added {
             let _ = self.persist_for(Some(epoch));
+            self.devices_changed();
             if let Some(ev) = self.link_events() {
                 ev.on_devices_changed();
             }

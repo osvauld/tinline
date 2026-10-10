@@ -269,8 +269,8 @@ fn honest_batches_apply_once_and_converge() {
     assert_eq!(order(&a), vec!["m1", "m2", "m3"]);
     assert_eq!(order(&a), order(&b));
     // Catch-up via vv: only own ops beyond what the other holds.
-    assert!(a.export_own_since(&b.vv()).is_none());
-    let full = a.export_own_since(&loro::VersionVector::default()).unwrap();
+    assert!(a.export_own_since(&b.vv(), &did(0)).is_none());
+    let full = a.export_own_since(&loro::VersionVector::default(), &did(0)).unwrap();
     assert_eq!(peers_of(&full), vec![wid(0, 1)]);
     let mut fresh = shard(1, 3);
     fresh.apply_remote(&full, &sync(0)).unwrap();
@@ -330,7 +330,7 @@ fn merged_loro_changes_do_not_matter() {
     for u in &ups {
         b.apply_remote(u, &live(0)).unwrap();
     }
-    b.apply_remote(&a.export_own_since(&b.vv()).unwrap(), &live(0)).unwrap();
+    b.apply_remote(&a.export_own_since(&b.vv(), &did(0)).unwrap(), &live(0)).unwrap();
     let mut c = recv();
     assert_eq!(c.apply_remote(&b.export_all_since(&Default::default()).unwrap(), &hist(0, 1)).unwrap().added.len(), 4);
     let mut d = recv();
@@ -503,8 +503,8 @@ fn a_day_rebuilt_under_the_same_writer_id_is_silently_lost() {
 }
 
 // KIND: invariant
-// Two own devices write under their own writer IDs; each sends contacts only its own ops; a
-// device edits a message the other created.
+// Two own devices write under their own writer IDs; a device edits a message the other created.
+// (Which ops a device sends a contact: `a_device_sends_a_contact_every_op_of_ours_it_holds`.)
 #[test]
 fn two_own_devices_with_different_device_ids_converge() {
     assert_ne!(wid(0, 1), wid(0, 3));
@@ -526,7 +526,7 @@ fn two_own_devices_with_different_device_ids_converge() {
         assert_eq!(s.messages().unwrap(), d3.messages().unwrap());
     }
     assert_eq!(contact.messages().unwrap()["a1"].text, "from 1, edited on 3");
-    assert!(d1.export_own_since(&contact.vv()).is_none());
+    assert!(d1.export_own_since(&contact.vv(), &did(0)).is_none());
 }
 
 // KIND: invariant (P9c; replaces the P8/P9 restore tests)
@@ -549,8 +549,59 @@ fn messages_from_before_and_after_a_restore_verify_on_any_device() {
         assert_eq!(r.added, vec!["m1".to_string(), "m2".to_string()]);
         assert_eq!(fresh.messages().unwrap(), a2.messages().unwrap());
     }
-    b.apply_remote(&a2.export_own_since(&b.vv()).unwrap(), &live(0)).unwrap();
+    b.apply_remote(&a2.export_own_since(&b.vv(), &did(0)).unwrap(), &live(0)).unwrap();
     assert_eq!(b.messages().unwrap(), a2.messages().unwrap());
+}
+
+// KIND: invariant (P10b)
+// A device sends a contact every op of ours the contact lacks, whichever of our writer IDs wrote
+// it (an earlier install of this device, before a restore; another of our devices), and never
+// the contact's own ops. The contact takes them live: each is proven by our DID signature.
+#[test]
+fn a_device_sends_a_contact_every_op_of_ours_it_holds() {
+    let mut contact = shard(1, 2);
+    let r = contact.add_message(&msg("r1", &did(1), NOON, "from the contact"), &w(1, 2)).unwrap();
+    // Before a restore: m1 delivered, m2 not.
+    let mut old = shard(0, 1);
+    old.apply_remote(&r, &live(1)).unwrap();
+    contact.apply_remote(&old.add_message(&msg("m1", &did(0), NOON + 1, "delivered"), &w(0, 1)).unwrap(), &live(0)).unwrap();
+    old.add_message(&msg("m2", &did(0), NOON + 2, "not delivered"), &w(0, 1)).unwrap();
+    // After it: a new writer ID, nothing written yet. The undelivered m2 is still owed.
+    let new = Shard::load("p", DAY, wid(0, 3), Some(&old.snapshot()), &[]).unwrap();
+    assert_eq!(new.own_writers(&did(0)), [wid(0, 1), wid(0, 3)].into_iter().collect());
+    let u = new.export_own_since(&contact.vv(), &did(0)).expect("m2 is owed");
+    assert_eq!(peers_of(&u), vec![wid(0, 1)]);
+    assert_eq!(contact.apply_remote(&u, &live(0)).unwrap().added, vec!["m2".to_string()]);
+    assert!(new.export_own_since(&contact.vv(), &did(0)).is_none());
+    // A sibling device holding our ops by own-device sync forwards them too; never the
+    // contact's (a fresh contact lacking r1 gets only ours).
+    let mut sib = shard(0, 4);
+    sib.apply_remote(&old.snapshot(), &own(0, 1)).unwrap();
+    let mut fresh = recv();
+    let u = sib.export_own_since(&fresh.vv(), &did(0)).unwrap();
+    assert_eq!(peers_of(&u), vec![wid(0, 1)]);
+    assert_eq!(fresh.apply_remote(&u, &sync(0)), Err(Reject::Pending), "ours build on the contact's r1, which it must hold");
+    let mut holds_r1 = recv();
+    holds_r1.apply_remote(&r, &live(1)).unwrap();
+    let u = sib.export_own_since(&holds_r1.vv(), &did(0)).unwrap();
+    assert_eq!(peers_of(&u), vec![wid(0, 1)]);
+    assert_eq!(holds_r1.apply_remote(&u, &sync(0)).unwrap().added, vec!["m1".to_string(), "m2".to_string()]);
+}
+
+// KIND: invariant (P10b)
+// `creates_outside` tells the sender when a batch would create a message a live push may not
+// carry (older than the receiver's live window); only creations the receiver lacks count.
+#[test]
+fn creates_outside_names_old_creations_the_receiver_lacks() {
+    let a = shard(0, 1);
+    a.add_message(&msg("old", &did(0), NOON - 3 * HOUR_MS, "old"), &w(0, 1)).unwrap();
+    let mut b = recv();
+    let now = NOON + DAY_MS - 2 * HOUR_MS;
+    assert!(a.creates_outside(&b.vv(), &did(0), now, DAY_MS - HOUR_MS));
+    assert!(!a.creates_outside(&b.vv(), &did(0), NOON, DAY_MS - HOUR_MS));
+    b.apply_remote(&a.export_own_since(&b.vv(), &did(0)).unwrap(), &sync(0)).unwrap();
+    a.edit("old", "edited", now, &w(0, 1)).unwrap();
+    assert!(!a.creates_outside(&b.vv(), &did(0), now, DAY_MS - HOUR_MS), "an edit of a held message is fine");
 }
 
 // ---- forgeries ---------------------------------------------------------------------------------

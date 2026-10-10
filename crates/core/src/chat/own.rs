@@ -149,6 +149,19 @@ impl Inner {
                                     ops.push(core.store.put_mo_op(&pair, &day, &rec.id, peer, c)?);
                                 }
                             }
+                            // Ops of ours the contact has not acknowledged (written on the other
+                            // device): this device owes them too, so that they still reach the
+                            // contact if that device goes away first (P10b). Sent at the next
+                            // session with the contact; the pending sweep dials for it.
+                            // PROVISIONAL (coordinator): no immediate push or dial here, so an
+                            // own device does not dial a contact for every message its sibling
+                            // already delivers; the relayed ack usually clears it first.
+                            if let Some(meta) = core.store.shard_meta(&pair, &day)? {
+                                let acked = core.store.ack(&pair, &day)?.and_then(|b| decode_vv(&b).ok()).unwrap_or_default();
+                                if Inner::chat_owes(&core, &meta, &acked) {
+                                    ops.push(core.store.out_op(&pair, &day, true)?);
+                                }
+                            }
                             if !ops.is_empty() {
                                 core.store.db.apply(&ops).map_err(crate::chat::store::io)?;
                             }

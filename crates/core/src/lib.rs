@@ -7,6 +7,7 @@ pub mod accounts;
 mod block;
 mod caps;
 mod chat;
+mod devlist;
 mod error;
 mod logging;
 mod node;

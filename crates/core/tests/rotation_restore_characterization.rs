@@ -394,7 +394,8 @@ fn o3_pending_message_and_new_messages_reach_a_contact_holding_our_device_list()
     for id in [&f.m1, &m2, &m3, &m4] {
         assert_eq!(all.iter().filter(|m| &m.id == id).count(), 1, "exactly once: {id}");
     }
-    assert_eq!(a.node.contact_devices_for_test(b.did.clone()), vec![f.old_dev.clone()], "A's list for B is unchanged (P4)");
+    // P4: B's restored install pushed its new list; A dials only the new key.
+    assert_eq!(a.node.contact_devices_for_test(b.did.clone()), vec![f.new_dev.clone()], "A's list for B is B's pushed one (P4)");
 }
 
 // KIND: invariant
@@ -552,7 +553,8 @@ fn o2_a_pre_restore_message_reaches_a_device_that_never_knew_the_old_key() {
 // KIND: limitation
 // O6 confirmed. A marked B verified. B restores (same DID, same safety number) and its first chat
 // session presents the new key; `note_device` clears `verified` for any device it has not seen.
-// A now also dials both keys: the dead one stays in A's list (no signed list retires it).
+// (Before P4 A also dialled the dead key, since no signed list retired it; now B's pushed list
+// does, and A dials only the new key.)
 // (Observed as well when A holds B's device list: the flag is cleared although the new key is
 // not even added.)
 // Expected-correct: POLICY-GATED (verified-DID policy; handoff "enforce verified-DID policy").
@@ -568,7 +570,8 @@ fn o6_contacts_verified_flag_is_cleared_by_our_restore() {
     eventually(90, "A holds m3", || has(a, &b.did, &m3));
     assert!(!verified(a, &b.did), "the restore cleared verified");
     let devs = a.node.contact_devices_for_test(b.did.clone());
-    assert!(devs.contains(&f.new_dev) && devs.contains(&f.old_dev), "A dials both keys: {devs:?}");
+    // P4: B's pushed list retires the dead key; A dials only the new one.
+    assert_eq!(devs, vec![f.new_dev.clone()], "A dials the new key only: {devs:?}");
 }
 
 // KIND: invariant
