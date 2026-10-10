@@ -26,6 +26,8 @@ mod host_only;
 mod multi_host;
 #[path = "flags.rs"]
 mod flags;
+#[path = "removal_rotation.rs"]
+mod removal_rotation;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Body {
