@@ -78,6 +78,8 @@ private sealed interface Route {
     data object Devices : Route
     data class DeviceDetail(val device: String) : Route
     data object LinkDevice : Route
+    /** PLACEHOLDER groups & privacy preview (debug builds, [PreviewFlags]). */
+    data class Preview(val start: String) : Route
 }
 
 @Composable
@@ -252,11 +254,17 @@ private fun Root(app: P2pApp) {
                     onPhrase = { stack.add(Route.PhraseGate) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
                     onSwitchPick = { stack.add(Route.SwitchConfirm(it)) }, onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) },
                     onDevices = { stack.add(Route.Devices) }, onLinkDevice = { stack.add(Route.LinkDevice) }, onLinkAccount = { addAccount(false, link = true) },
+                    onPreview = { stack.add(Route.Preview(it)) },
                 )
                 is Route.SwitchConfirm -> SwitchConfirmScreen(app, r.did, onBack = ::pop, onSwitched = { home() }, onMessage = ::say)
                 Route.Devices -> LinkedDevicesScreen(app, ::pop, onLink = { stack.add(Route.LinkDevice) }, onDetail = { stack.add(Route.DeviceDetail(it)) })
                 is Route.DeviceDetail -> DeviceDetailScreen(app, r.device, onBack = ::pop, onMessage = ::say)
                 Route.LinkDevice -> LinkSession(app, newDevice = false, label = "", onClose = ::pop)
+                is Route.Preview -> {
+                    val on by PreviewFlags.enabled(ctx).collectAsState()
+                    if (on == true) key(r) { PreviewApp(PreviewBackend.get(app.node.profile()?.name ?: ""), PRoute.parse(r.start), onExit = ::pop, onShowMyQr = { stack.add(Route.Add(false)) }, onAddContact = { stack.add(Route.Add(true)) }) }
+                    else LaunchedEffect(Unit) { pop() }
+                }
                 Route.Battery -> BatteryScreen(missing, onBack = ::pop, onFix = fix)
                 Route.Passphrase -> ChangePassphraseScreen(app, onBack = ::pop)
                 Route.PhraseGate -> PhraseGateScreen(app, onBack = ::pop, onPhrase = { p -> pop(); stack.add(Route.PhraseShown(p)) })

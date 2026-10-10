@@ -120,6 +120,10 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
             HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, recents, null, subLines = subs, tab = tab, chatRows = rows,
                 chatBadge = rows.sumOf { it.unread }, callBadge = if (which == "calls") 0 else 1)
         }
+        // PLACEHOLDER groups & privacy preview: `--es screen pv_hike` (keys in PRoute.parse).
+        "pv", "pv_chats", "pv_hike", "pv_family", "pv_book", "pv_removal", "pv_newgroup", "pv_info", "pv_hosts", "pv_arjun", "pv_meera",
+        "pv_sam", "pv_contact", "pv_blocked", "pv_address" ->
+            PreviewApp(PreviewBackend.get(maya), PRoute.parse(which.substringAfter("pv_", "chats")), onExit = { act.finish() }, onShowMyQr = none)
         "newchat" -> NewChatScreen(contacts, mapOf(contacts[0].did to "Last message 12:41", contacts[1].did to "Last message 11:20"), none, {}, none)
         else -> if (which.startsWith("conv") || which in setOf("attach", "files", "receive", "viewer")) {
             val files = which in setOf("files", "receive", "viewer")
