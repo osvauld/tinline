@@ -69,7 +69,12 @@ instead of reporting via the event; passes 3/3 alone; link code untouched by pha
   the writer ID (P9 Q3).
 - DID-signature requirement cut-off (P8 Q1): coordinator lean = per contact, once that contact
   has sent DID-signed versions. Needs user decision.
-- Pre-existing bug: removing a contact deletes the conversation but keeps peer/counter state;
+- P10 (approved by user, after P9b): contact re-add divergence fix — a re-created conversation
+  gets a fresh epoch in the writer ID so (writer, counter) pairs never repeat. Test first:
+  remove, re-add and write the same day; the contact receives the new messages.
+  Writer ID model clarified with user: writer ID = hash(domain ‖ DID ‖ device ID), device ID =
+  stable random per-install ID (not a key), proven by the DID signature.
+- (was) Pre-existing bug: removing a contact deletes the conversation but keeps peer/counter state;
   re-adding and writing the same day reuses (peer, counter) the contact already holds -> silent
   Loro divergence (P9 Q4). Needs a test + fix packet.
 - Pre-existing: `chat_open` does not retry when `chat.redb` is still locked (P9 Q4).
