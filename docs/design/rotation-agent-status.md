@@ -101,6 +101,7 @@ Wave 2 regression at 198c1f1: proto 180, p2pcore 134, group-sim 113 — all pass
 | W2-R | MERGED fcdb335, +11 | rot/w2r `.claude/worktrees/rot-w2r` | group-sim/src/host_relay.rs (+ mod line) |
 | W2-Q | MERGED c954d56, +18 | rot/w2q `.claude/worktrees/rot-w2q` | group-sim/src/chat_request.rs (+ mod line, group-sim dev-deps) |
 | W2-B | MERGED 020a91e, +14 proto +5 core | rot/w2b `.claude/worktrees/rot-w2b` | proto/tests/rotation_silent_block.rs, core/tests/block_characterization.rs |
+| W2-H | RUNNING | rot/w2h `.claude/worktrees/rot-w2h` | group-sim/src/host_only.rs (+ mod line), docs/group-host-only-model.md |
 | W2-G | MERGED 380cd87, +11 | rot/w2g `.claude/worktrees/rot-w2g` | group-sim/src/block_in_group.rs (+ mod line) |
 
 ## Per-agent result entries

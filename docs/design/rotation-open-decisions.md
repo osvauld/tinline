@@ -63,6 +63,16 @@ no member-to-member mesh sync (all group traffic via the host); the host sees al
 group endpoints and delivery metadata; host offline = group stalls until it returns
 (multi-host / host succession is an open question, see D01–D06).
 
+**U8 (user, 2026-10-10) — push the signed device list to contacts when it changes.** Today the
+DID-signed `DeviceList` (`proto::sign_device_list`; `crates/core/src/node.rs:2316`) travels only
+inside call hello/accept (`node.rs:2510`, `node.rs:2754`), so adding a device tells no contact.
+Decision: whenever the list changes (device added, unlinked, restored, or rotated) the device
+sends the new DID-signed list (higher seq) to every unblocked contact; one message carries the
+device list and private endpoints (combined with the U1 rotation note). Group side: only the
+host receives group endpoints (U7). Any phrase holder can sign a list (shared-mnemonic
+limitation); concurrent edits by two own devices are the Q4 fork question. Also addresses the
+K1 restore stall (contacts reject a key missing from their stored list).
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock

@@ -498,6 +498,30 @@ Owns `crates/group-sim/src/block_in_group.rs` (+ mod line). Tests (~8):
 
 ---
 
+### W2-H — Host-only group model with DID-signed content (U4 revised, U7)
+Owns NEW `crates/group-sim/src/host_only.rs` (+ mod line) and NEW `docs/group-host-only-model.md`.
+Builds a parallel model next to the existing fixtures (which encode the superseded
+device-key-signed, mesh-sync design) without editing them. Tests (~12):
+1. Envelope = content signed by the DID key + random per-device writer ID (not derived from any
+   key) used as Loro peer ID and per-device seq. Two own devices writing concurrently converge.
+2. Scan every byte any member receives: no device key, transport key or endpoint of any other
+   member appears (positive control: the host's own endpoint is known to members).
+3. Re-run W2-G test 10's leak scenario under this model: no private endpoint leak.
+4. Topology: members only talk to the host; a member-to-member delivery attempt is impossible
+   (no address) — show by construction.
+5. Member rotation note goes to host only; host routes to the new endpoint; old one retired.
+6. Host rotation reaches members (direct + catch-up on return).
+7. Host offline: group stalls (limitation), writes queue locally, converge on host return.
+8. Forged DID signature, wrong group, replayed envelope, writer-ID collision across two DIDs
+   and within one DID: rejected/handled with state unchanged (collision handling may be a
+   candidate-policy G-FORK).
+9. Chat request via host still works with DID-signed content (reference W2-Q construction;
+   copy what's needed).
+Doc: list every existing group-sim test that encodes a superseded assumption (mesh sync,
+device-key signing, member-held endpoints), with file:line — do not edit them.
+
+---
+
 ## Coordinator checklist per returned packet
 
 - Agent's worktree branch commit touches only the packet's owned files (+ allowed mod line).
