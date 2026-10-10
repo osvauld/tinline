@@ -1081,12 +1081,17 @@ impl Inner {
             shards.get(&(pair.to_string(), day.to_string())).and_then(|s| {
                 let vv = s.vv();
                 let ends: Vec<(u64, i32)> = s.own_writers(me.id.did()).into_iter().filter_map(|p| vv.get(&p).map(|c| (p, *c))).collect();
-                s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends))
+                // A live push must not create a message the contact refuses for the 24 h live
+                // window (an old one of ours not delivered yet, e.g. from another writer ID):
+                // that batch goes as a catch-up `Sync` instead, which has no such window and
+                // keeps the session up (P10b). One hour of margin for clock skew.
+                let catch_up = !sync && s.creates_outside(their_vv, me.id.did(), now_ms(), DAY_MS - HOUR_MS);
+                s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends, catch_up))
             })
         };
-        let Some((update, vv, ends)) = out else { return Ok(()) };
+        let Some((update, vv, ends, catch_up)) = out else { return Ok(()) };
         let sig = sign_batch(&me.profile.device_secret, &name, &update);
-        let msg = if sync {
+        let msg = if sync || catch_up {
             ChatMsg::Sync { doc: name, vv: vv.encode(), update, sig }
         } else {
             ChatMsg::Push { doc: name, update, sig }
@@ -1188,6 +1193,32 @@ impl Inner {
             }
         }
         Ok(m)
+    }
+
+    /// Test hook (`write_as_sibling_for_test`): a message of ours sent at `at`, under a fresh
+    /// device ID's writer ID, stored like one relayed by an own device (pending, not pushed).
+    pub(crate) async fn chat_write_as_sibling_for_test(self: &Arc<Self>, did: &str, text: String, at: i64) -> Result<String, Error> {
+        let me = self.me()?;
+        let core = self.chat_core()?;
+        self.chat_contact(did, true)?;
+        let pair = pair_id(me.id.did(), did);
+        let day = day_of(at);
+        self.chat_shard(&core, &pair, &day).await?;
+        let dev = new_device_value();
+        let w = Writer::new(me.id.clone(), dev);
+        let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to: None, file: None, dev, did_sig: Vec::new() };
+        let key = (pair.clone(), day.clone());
+        let mut shards = core.shards.lock();
+        let shard = shards.get_mut(&key).ok_or(Error::NotFound)?;
+        let update = shard.add_message(&rec, &w).map_err(|e| Error::Io(e.to_string()))?;
+        let end = shard.vv().get(&w.writer_id()).copied().unwrap_or(0);
+        let mut ops = vec![core.store.put_mo_op(&pair, &day, &rec.id, w.writer_id(), end)?, core.store.mi_op(&pair, &rec.id, &day)?, core.store.out_op(&pair, &day, true)?];
+        let (cops, _) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, true)])?;
+        ops.extend(cops);
+        let r = self.chat_persist(&core, &pair, shard, &update, ops);
+        // The cached doc now writes under the sibling's writer ID: load it again for ours.
+        shards.remove(&key);
+        r.map(|_| rec.id)
     }
 
     /// How this install writes chat messages: signed by the account's DID key, under the writer

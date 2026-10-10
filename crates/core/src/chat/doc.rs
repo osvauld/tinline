@@ -749,6 +749,22 @@ impl Shard {
         self.doc.export(ExportMode::updates(&from)).ok()
     }
 
+    /// Whether what `export_own_since(theirs, me)` sends would create a message whose `at` is
+    /// `window` ms or more away from `now_ms`: one a receiver refuses in a live push (`Ctx::live`).
+    pub fn creates_outside(&self, theirs: &VersionVector, me: &str, now_ms: i64, window: i64) -> bool {
+        let Ok(msgs) = self.messages() else { return false };
+        msgs.values().any(|m| {
+            m.author == me
+                && (m.at - now_ms).abs() >= window
+                // The op that created its record (Loro may merge later ops into that change,
+                // so not `creator_end`): they lack it iff their count for its peer is not past it.
+                && self.entry(&m.id).ok().is_some_and(|e| match loro::ContainerTrait::id(&e) {
+                    loro::ContainerID::Normal { peer, counter, .. } => theirs.get(&peer).copied().unwrap_or(0) <= counter,
+                    _ => false,
+                })
+        })
+    }
+
     /// Every op beyond `theirs`, whoever wrote it; `None` if they hold all we do. For our own
     /// devices (own-device sync) and history snapshots.
     pub fn export_all_since(&self, theirs: &VersionVector) -> Option<Vec<u8>> {
