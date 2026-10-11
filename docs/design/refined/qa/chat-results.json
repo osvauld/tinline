@@ -153,7 +153,7 @@
   "page": "chat",
   "name": "chat list shows Draft marker for chat with unsent text",
   "ok": true,
-  "detail": "AOArjun Oommen22:29Draft: half written thoughtMNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
+  "detail": "AOArjun Oommen23:01Draft: half written thoughtMNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
  },
  {
   "page": "chat",
@@ -171,13 +171,13 @@
   "page": "chat",
   "name": "Enter sends; message appears; composer cleared and keeps focus",
   "ok": true,
-  "detail": "line1 line222:29Sending focus=ta"
+  "detail": "line1 line223:01Sending focus=ta"
  },
  {
   "page": "chat",
   "name": "sent message progresses to sent/delivered state",
   "ok": true,
-  "detail": "line1 line222:29Delivered"
+  "detail": "line1 line223:01Delivered"
  },
  {
   "page": "chat",
@@ -189,7 +189,7 @@
   "page": "chat",
   "name": "failed send shows failure and Retry control",
   "ok": true,
-  "detail": "goes nowhere first22:29Not delivered·Retry retryBtns=1"
+  "detail": "goes nowhere first23:01Not delivered·Retry retryBtns=1"
  },
  {
   "page": "chat",
@@ -201,37 +201,37 @@
   "page": "chat",
   "name": "retry: focus not lost to BODY",
   "ok": true,
-  "detail": "Actions for your message at 22:29: goes nowhere first"
+  "detail": "Actions for your message at 23:01: goes nowhere first"
  },
  {
   "page": "chat",
   "name": "retry succeeds (no failed message remains)",
   "ok": true,
-  "detail": "goes nowhere first22:29Delivered visibleRetry=0"
+  "detail": "goes nowhere first23:01Delivered visibleRetry=0"
  },
  {
   "page": "chat",
   "name": "contact offline: header/status changes",
   "ok": true,
-  "detail": "AOArjun OommenLast seen 22:29Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
+  "detail": "AOArjun OommenLast seen 23:01Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
  },
  {
   "page": "chat",
   "name": "send while offline shows waiting/queued state",
   "ok": true,
-  "detail": "sent while offline22:29Waiting for Arjun to be online"
+  "detail": "sent while offline23:01Waiting for Arjun to be online"
  },
  {
   "page": "chat",
   "name": "back online: queued message delivered",
   "ok": true,
-  "detail": "sent while offline22:29Delivered"
+  "detail": "sent while offline23:01Delivered"
  },
  {
   "page": "chat",
   "name": "simulate incoming adds a message or badge",
   "ok": true,
-  "detail": "AOArjun Oommen22:29Ha, that’s the best news today1MNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍S"
+  "detail": "AOArjun Oommen23:01Can you check the shared folder?1MNMeera Nair17:41No rushDPDev PatelMuted. 11:06\ud83d"
  },
  {
   "page": "chat",
@@ -530,6 +530,48 @@
  {
   "page": "chat",
   "name": "message-sent sound: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "answered call leaves a call-record bubble: phone icon, \"Voice call\", MM:SS duration, no delivery tick",
+  "ok": true,
+  "detail": "{\"cls\":\"bub\",\"fn\":\"Voice call\",\"fm\":\"00:00\",\"fmCls\":\"fm\",\"tick\":false}"
+ },
+ {
+  "page": "chat",
+  "name": "call record shows in the chat-list preview like an attachment",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "call record menu: only Delete (no Reply/Copy/Edit/Message info)",
+  "ok": true,
+  "detail": "Message optionsDelete"
+ },
+ {
+  "page": "chat",
+  "name": "tapping the call record calls back: overlay reopens",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "call ended before connecting: \"No answer\" in --danger, not a duration",
+  "ok": true,
+  "detail": "{\"t\":\"No answer\",\"cls\":\"fm missed\",\"c\":\"rgb(161, 43, 35)\"}"
+ },
+ {
+  "page": "chat",
+  "name": "missed call shows \"Missed voice call\" in the chat-list preview",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "call record sound: no console errors",
   "ok": true,
   "detail": ""
  }

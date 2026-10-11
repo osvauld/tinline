@@ -196,6 +196,8 @@ a.ib{color:var(--ink);text-decoration:none}
 .file .fn{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:20px}
 .file .fm{font-size:12px;line-height:16px;color:var(--bub-meta-in);font-variant-numeric:tabular-nums}
 .me .file .fm{color:var(--bub-meta-out)}
+.callrow{background:none;border:0;padding:0;text-align:left;width:100%;font:inherit;color:inherit}
+.file .fm.missed,.me .file .fm.missed{color:var(--danger)}
 .prog{height:4px;border-radius:2px;background:color-mix(in srgb,currentColor 14%,transparent);margin-top:8px;overflow:hidden}
 .prog i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .25s linear}
 .facts{display:flex;justify-content:flex-end;margin-top:6px;white-space:normal}
@@ -637,6 +639,7 @@ function preview(c) {
   const m = lastMsg(c);
   if (!m) { out.textContent = "No messages yet"; return out; }
   if (m.gone) { out.textContent = m.gone === "me" ? "You deleted this message" : fname(c) + " deleted this message"; return out; }
+  if (m.call) { const missed = m.call.outcome === "noanswer"; out.append(missed ? h("span", { class: "bad", text: "Missed voice call" }) : "📞 Voice call · " + TinCall.mmss(m.call.dur)); return out; }
   const body = m.file ? "📎 " + m.file.name : m.text;
   if (m.from === "me") {
     if (m.st === "failed") out.append(h("span", { class: "bad", text: "Not delivered · " }));
@@ -743,9 +746,17 @@ function minimizeCall() {
 }
 function endCall(quiet) {
   if (!call) return;
+  const snap = TinCall.get(); // read before TinCall.end() clears connected/secs
   if (!quiet) TinAudio.ending(); // the End tap plays the ended cue here
+  if (!quiet && snap && snap.kind === "direct") logCallEnd(snap);
   TinCall.end(); // clears this page via the subscriber, and every other page through call-state.js
   if (!quiet) { say("Call ended"); ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true }); }
+}
+function logCallEnd(snap) { // the WhatsApp convention: a record in the thread, not just a toast
+  const c = chatBy(snap.id); if (!c) return;
+  c.msgs.push({ id: ++seq, from: "me", time: clock(), call: { outcome: snap.connected ? "answered" : "noanswer", dur: snap.secs } });
+  if (openId === c.id) renderConv(true);
+  renderList();
 }
 TinCall.subscribe(v => {
   const was = call, focusInside = $("#callOv").contains(document.activeElement), btnFocus = document.activeElement && document.activeElement.id === "callBtn";
@@ -846,20 +857,28 @@ function metaNode(c, m) {
   const meta = h("span", { class: "meta" });
   if (m.edited && !m.gone) meta.append(h("span", { text: "edited" }));
   meta.append(h("time", { text: m.time }));
-  if (mine && m.st !== "failed" && !(m.gone && !m.pendingDelete)) {
+  if (mine && m.st !== "failed" && !(m.gone && !m.pendingDelete) && !m.call) {
     const pending = m.gone ? true : (m.st !== "delivered" || !!m.pendingEdit);
     const lbl = !pending ? "Delivered" : (m.st === "waiting" || m.pendingEdit || m.pendingDelete) ? `Waiting for ${fname(c)} to be online` : "Sending";
     meta.append(h("span", { class: "tk" }, pending ? icon("clock", "clk") : icon("check")), h("span", { class: "vh", text: lbl }));
   }
   return meta;
 }
+function callNode(c, m) { // a call record is content, like an attachment — tap it to call back
+  const missed = m.call.outcome === "noanswer", dur = missed ? "No answer" : TinCall.mmss(m.call.dur);
+  return h("button", { class: "file callrow", type: "button", onclick: () => startCall(c),
+    "aria-label": `${missed ? "Missed voice call" : "Voice call, " + dur}. Call ${fname(c)} back` },
+    h("span", { class: "ficon" }, icon("phone")),
+    h("span", { class: "fi" }, h("span", { class: "fn", text: "Voice call" }), h("span", { class: "fm" + (missed ? " missed" : ""), text: dur })));
+}
 function msgNode(c, m) {
   const mine = m.from === "me", fn = fname(c);
   const li = h("li", { class: `m ${mine ? "me" : "them"} ${grp(c, c.msgs.indexOf(m))}${m._new ? " rise" : ""}`, "data-mid": m.id });
   delete m._new;
-  const emo = !m.gone && !m.file && !m.reply && isEmoji(m.text);
+  const emo = !m.gone && !m.file && !m.call && !m.reply && isEmoji(m.text);
   const bub = h("div", { class: "bub" + (m.gone ? " gone" : "") + (emo ? " emoji" : "") });
   if (m.gone) bub.append(m.gone === "me" ? "You deleted this message" : fn + " deleted this message", metaNode(c, m));
+  else if (m.call) bub.append(callNode(c, m), metaNode(c, m));
   else {
     if (m.reply) bub.append(h("span", { class: "quote" }, h("b", { text: m.reply.who }), h("span", { text: m.reply.text })));
     if (m.file) bub.append(fileNode(c, m)); else bub.append(m.text);
@@ -996,7 +1015,7 @@ setInterval(() => { // simulated transfer
 }, 400);
 
 /* ---------- message menu ---------- */
-function msgSummary(m) { return m.text || (m.file ? m.file.name : ""); }
+function msgSummary(m) { return m.call ? (m.call.outcome === "noanswer" ? "Missed voice call" : "Voice call") : m.text || (m.file ? m.file.name : ""); }
 function placePop(d, anchor) {
   const r = anchor.getBoundingClientRect(), w = d.offsetWidth, ht = d.offsetHeight;
   let x = anchor.closest(".m.me") ? r.right - w : r.left;
@@ -1012,11 +1031,11 @@ function openActions(c, m, opener, mode) {
   body.append(h("h2", { id: "tActions", class: "vh", text: "Message options" }));
   const list = h("div", { class: "menu" });
   const add = (ic, label, fn, cls = "") => list.append(h("button", { class: "mi " + cls, type: "button", onclick: () => { d._moved = true; d.close(); fn(); } }, icon(ic), label));
-  add("reply", "Reply", () => { if (c.ctx && c.ctx.type === "edit") { c.draft = c.stash; c.stash = ""; } c.ctx = { type: "reply", id: m.id }; renderConv(); ta.focus(); });
+  if (!m.call) add("reply", "Reply", () => { if (c.ctx && c.ctx.type === "edit") { c.draft = c.stash; c.stash = ""; } c.ctx = { type: "reply", id: m.id }; renderConv(); ta.focus(); });
   if (m.text) add("copy", "Copy", async () => { try { await navigator.clipboard.writeText(m.text); say("Copied."); } catch { say("Copying isn’t available here. Select the text and copy it instead."); } });
   if (mine && m.text && m.st !== "sending") add("edit", "Edit", () => { c.stash = c.draft; c.ctx = { type: "edit", id: m.id }; c.draft = m.text; renderConv(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
   if (mine) add("trash", "Delete", () => openDelete(c, m, opener), "dangertx");
-  add("info", "Message info", () => openMsgInfo(c, m, opener));
+  if (!m.call) add("info", "Message info", () => openMsgInfo(c, m, opener));
   body.append(list);
   const li = opener && opener.closest(".m"); li && li.classList.add("menu-open");
   openDlg(d, opener);

@@ -528,7 +528,13 @@ function renderCall(){
   gStage.hidden=!CALL.people;app.append(ov);tickCall();if(keep)ov.focus()}
 function openCall(){if(!CALL)return;TinAudio.arm();callOpen=true;renderCall();$('#callOv').focus()}
 function minimizeCall(){if(!CALL)return;callOpen=false;renderCall();(HOST_BAR?($('#callBtn')||$('#convPane h2')||$('#newBtn')):callStrip).focus()}
-function endCall(){if(!CALL)return;TinAudio.ending();TinCall.end();say('Call ended');($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}
+function endCall(){
+  if(!CALL)return;
+  const snap=TinCall.get();// read before TinCall.end() clears connected/secs
+  TinAudio.ending();
+  if(snap&&snap.kind==='group'){const g=conv(snap.id);if(g){g.msgs.push({sys:1,text:'Call ended · '+TinCall.mmss(snap.secs)});if(S.cur===g.id)renderMsgs(true)}}
+  TinCall.end();say('Call ended');($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()
+}
 TinCall.subscribe(v=>{const was=CALL,inside=!!$('#callOv')?.contains(document.activeElement);CALL=v;
   const changed=!was!==!v||(was&&v&&was.ringAt!==v.ringAt);
   if(changed){renderCall();refreshCallBtn();if(!v&&inside)($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}   // ended elsewhere

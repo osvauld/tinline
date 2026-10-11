@@ -228,4 +228,12 @@ await chk('a group call is not interrupted by this page\'s own send button (file
 await s.click('#callOv .end');await sleep(s,300);
 await chk('message-sent sound in groups.html: no console errors',async()=>({ok:!s.errs.length,d:s.errs.join('|')}));
 await s.context().close()}
+{// call record left in the thread on End (WhatsApp convention) — an event line, since a group call belongs to the room
+const t=await L.page(b);await t.goto(L.BASE+'groups.html?group=hike');await sleep(t,300);
+await t.click('#callBtn');await sleep(t,3200);await t.click('#callOv .end');await sleep(t,200);
+await chk('call ended leaves an event line "Call ended · MM:SS" (same .sys style as "Kavya joined…")',async()=>{const r=await t.$eval('.sys:last-child',e=>({t:e.textContent,cls:e.className}));return {ok:/^Call ended · \d\d:\d\d$/.test(r.t)&&r.cls==='sys',d:JSON.stringify(r)}});
+await chk('group calls never ring (U21), so there is no "No answer" case here — only a duration',async()=>({ok:!/No answer/.test(await t.textContent('#msgs'))}));
+await chk('event lines never reach the chat-list preview (same rule as every other one)',async()=>({ok:!/Call ended/.test(await t.textContent('[data-row=hike]'))}));
+await chk('call record (group): no console errors',async()=>({ok:!t.errs.length,d:t.errs.join('|')}));
+await t.context().close()}
 await b.close();C.save('groups-results.json')})();

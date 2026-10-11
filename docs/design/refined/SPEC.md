@@ -198,6 +198,25 @@ no navigation away, because the core loop is call ↔ chat:
   - A Simulation-drawer "Quiet mode" switch (same control and label as
     `calls.html`'s) silences all of the above without hiding the roster or
     timer; QA keeps it on by default so headless test runs stay silent.
+- **Call record, left in the thread on End** (the WhatsApp convention —
+  calls need history too, not just a toast):
+  - Direct call (`chat.html`): a bubble, same side and timing as any other
+    message from whoever ended it — in this simulation that's always you,
+    since the header button only calls out. Content is `fileNode`'s icon
+    + title + subtitle layout (`.file.callrow`, a button): phone icon,
+    "Voice call", and either the MM:SS duration or, if End was pressed
+    before the call connected, "No answer" in `--danger`. No ✓/clock
+    delivery tick — a call already happened, it has nothing left to
+    deliver. No reply/copy/edit — only Delete, same as any bubble. Tapping
+    it calls that person back. Shows in the chat-list preview the same way
+    a `📎` attachment does.
+  - Group call (`groups.html`): an **event line** (existing rule, this
+    section), since a group call belongs to the room, not one sender —
+    "Call ended · MM:SS". A group call never rings (U21) so there is no
+    "No answer" case here. Event lines never appear in the chat-list
+    preview, same as every other one.
+  - Quiet resets (Clear/Reset in the Simulation drawer) end the call
+    without leaving a record — they're clearing the demo, not living it.
 - Deep links (`calls.html` only): `?call=<id>` / `?call=group:<id>` open an
   already-ringing screen — unaffected by the above. `calls.html` is unchanged
   apart from pulling its cues from the shared `call-audio.js`: it keeps its

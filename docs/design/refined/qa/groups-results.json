@@ -183,7 +183,7 @@
   "page": "groups",
   "name": "Accept chat request: Priya shows under Private chats",
   "ok": true,
-  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?22:30Sent requests2 totalD"
+  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?23:03Sent requests2 totalD"
  },
  {
   "page": "groups",
@@ -201,7 +201,7 @@
   "page": "groups",
   "name": "sent message reaches a delivered/relayed state (hosts online)",
   "ok": true,
-  "detail": "see you at the gate22:30Delivered"
+  "detail": "see you at the gate23:03Delivered"
  },
  {
   "page": "groups",
@@ -219,7 +219,7 @@
   "page": "groups",
   "name": "hosts offline: message shows waiting/not delivered state explaining why",
   "ok": true,
-  "detail": "nobody is hosting22:31Waiting for a host"
+  "detail": "nobody is hosting23:03Waiting for a host"
  },
  {
   "page": "groups",
@@ -345,7 +345,7 @@
   "page": "groups",
   "name": "cross-page: group call strip in chat.html; chat phone button returns to it",
   "ok": true,
-  "detail": "Weekend hike · 00:00"
+  "detail": "Weekend hike · 00:01"
  },
  {
   "page": "groups",
@@ -518,6 +518,30 @@
  {
   "page": "groups",
   "name": "message-sent sound in groups.html: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call ended leaves an event line \"Call ended · MM:SS\" (same .sys style as \"Kavya joined…\")",
+  "ok": true,
+  "detail": "{\"t\":\"Call ended · 00:00\",\"cls\":\"sys\"}"
+ },
+ {
+  "page": "groups",
+  "name": "group calls never ring (U21), so there is no \"No answer\" case here — only a duration",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "event lines never reach the chat-list preview (same rule as every other one)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call record (group): no console errors",
   "ok": true,
   "detail": ""
  }

@@ -218,4 +218,19 @@ await chk('ringback resumes on its own once the pluck finishes',async()=>{const 
 await s.click('#callStrip');await sleep(s,150);await s.click('#callEnd');await sleep(s,300);
 await chk('message-sent sound: no console errors',async()=>({ok:!s.errs.length,d:s.errs.join('|')}));
 await s.context().close()}
+{// call record left in the thread on End (WhatsApp convention) — a bubble, since every call here is outgoing
+const t=await L.page(b);await t.goto(L.BASE+'chat.html?chat=arjun');await sleep(t,300);
+await t.click('#callBtn');await sleep(t,2800);await t.click('#callEnd');await sleep(t,200);
+await chk('answered call leaves a call-record bubble: phone icon, "Voice call", MM:SS duration, no delivery tick',async()=>{const r=await t.$eval('.m:last-child',e=>({cls:e.querySelector('.bub').className,fn:e.querySelector('.fn').textContent,fm:e.querySelector('.fm').textContent,fmCls:e.querySelector('.fm').className,tick:!!e.querySelector('.tk')}));return {ok:r.fn==='Voice call'&&/^\d\d:\d\d$/.test(r.fm)&&r.fmCls==='fm'&&!r.tick,d:JSON.stringify(r)}});
+await chk('call record shows in the chat-list preview like an attachment',async()=>({ok:/Voice call ·/.test(await t.textContent('[data-chat=arjun] .pv'))}));
+await t.click('.m:last-child .more');await sleep(t,200);
+await chk('call record menu: only Delete (no Reply/Copy/Edit/Message info)',async()=>{const txt=(await t.textContent('#actionsBody')).replace(/\s+/g,' ');return {ok:/delete/i.test(txt)&&!/reply/i.test(txt)&&!/copy/i.test(txt)&&!/edit/i.test(txt)&&!/message info/i.test(txt),d:txt}});
+await t.keyboard.press('Escape');await sleep(t,150);
+await t.click('.callrow');await sleep(t,250);
+await chk('tapping the call record calls back: overlay reopens',async()=>({ok:await t.locator('#callOv').isVisible()&&(await t.textContent('#callName'))==='Arjun Oommen'}));
+await t.click('#callEnd');await sleep(t,200); // End well before connectAt (2500ms) → a second call record, this time "No answer"
+await chk('call ended before connecting: "No answer" in --danger, not a duration',async()=>{const r=await t.$eval('.m:last-child .fm',e=>({t:e.textContent,cls:e.className,c:getComputedStyle(e).color}));return {ok:r.t==='No answer'&&/missed/.test(r.cls),d:JSON.stringify(r)}});
+await chk('missed call shows "Missed voice call" in the chat-list preview',async()=>({ok:/Missed voice call/.test(await t.textContent('[data-chat=arjun] .pv'))}));
+await chk('call record sound: no console errors',async()=>({ok:!t.errs.length,d:t.errs.join('|')}));
+await t.context().close()}
 await b.close();C.save('chat-results.json')})();
