@@ -613,6 +613,29 @@ list, accept-loop branch, `push_mic`/`pull_speaker` fall-through). Test:
 - **Takeover:** the first `Join{host_gen + 1}` for a call this device is a backup of (the call
   its own client is in, else an observed CallStart) builds `HostEngine::takeover`; the device's
   own redialing client reaches it through `ConnId::LOCAL`. A refused first Join drops it.
-- **Not yet:** dialing from the group endpoint (today the device endpoint), a 1:1 call during a
-  group call is not refused, `stop`/`lock` do not end a session, glare between two hosts is
-  only followed (no `CallBoard::superseded` sweep), and no phone conditions feed `set_cond`.
+- **Not yet:** dialing from the group endpoint (today the device endpoint). The rest of the
+  GA-P4 gaps are closed by GA-P5 (below).
+
+**Hardening (GA-P5).** Tests: `cargo test -p p2pcore --test gcall` (three tests, run in
+parallel, ~11 s), `--test calls group_call_and_one_to_one`.
+
+- **One call at a time.** While this device's user is in a group call (its client is not
+  ended; hosting listen-only does not count) a 1:1 call cannot begin: incoming ones get the
+  usual `Busy`, outgoing ones `InCall`. `gcall_host`/`gcall_join` during a 1:1 call fail with
+  `InCall`. The check and the session install run under the 1:1 slot's lock.
+- **`stop` / `lock`** leave the call (signed Leave) and, when hosting, send
+  `End{host_leaving, next_host: first backup with a valid permit}`, then wait at most ~1.2 s
+  for those frames before the endpoint closes. Known CallStarts and boards are forgotten.
+  Dropping a `Node` still only closes the endpoint (members redial on the QUIC close).
+- **Conditions:** `Node::gcall_set_cond(Cond)` (for the platform's battery, charging,
+  thermal and metered reports) feeds `HostEngine::set_cond` of a hosted call and is the
+  condition a later takeover starts with. Tested on a phone host: K 2 → 1 and a late Join
+  refused at < 15 %, `End{host_leaving, next_host}` at < 8 % with everyone moving to the backup.
+- **Host loss without a close** (`Node::crash_for_test`: runtime stopped, nothing sent): the
+  member notices by 3 missed heartbeats, measured 2–3.5 s after the crash, and redials.
+- **Glare/split sweep.** Every CallStart observed (`gcall_observe_start`) and the call hosted
+  here go on a per-group `CallBoard`; when `CallBoard::superseded` names a winner the host ends
+  with `End{superseded, next_host: winner}`. Members join the winner at once if they know its
+  CallStart, else when it arrives within 30 s (`FOLLOW_WINDOW`). `gcall_observe_end` removes
+  a relayed `End{ended}` call from the board, so a dead call does not win a later glare; a call
+  whose End was never relayed still can (no freshness bound yet).
