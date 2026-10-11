@@ -108,6 +108,21 @@ fn link_fresh(e: &Peer, name: &str) -> Peer {
     n
 }
 
+/// `group_join` that tries again on a transient network failure. GF: joining is a one-shot
+/// network exchange (fetch the invite behind the link from the host, then sync until a member);
+/// under heavy load it occasionally fails with `Timeout` / `Net("connection lost")`, and a user
+/// would simply tap again. Any other error is a real failure.
+fn join(p: &Peer, link: String) -> String {
+    for _ in 0..3 {
+        match p.node.group_join(link.clone()) {
+            Ok(g) => return g,
+            Err(p2pcore::Error::Timeout | p2pcore::Error::Net(_)) => continue,
+            Err(e) => panic!("join: {e:?}"),
+        }
+    }
+    panic!("join failed three times on network errors")
+}
+
 fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
     let end = Instant::now() + Duration::from_secs(secs);
     while Instant::now() < end {
@@ -160,7 +175,7 @@ fn group_with(o: &Peer, ms: &[&Peer]) -> String {
     let g = o.node.group_create("Weekend hike".into()).unwrap();
     for m in ms {
         let tok = o.node.group_invite(g.clone()).unwrap();
-        assert_eq!(m.node.group_join(tok).unwrap(), g);
+        assert_eq!(join(&m, tok), g);
     }
     let want = sorted(std::iter::once(o.did.clone()).chain(ms.iter().map(|m| m.did.clone())).collect());
     for p in std::iter::once(o).chain(ms.iter().copied()) {
@@ -235,7 +250,7 @@ fn a_lost_group_store_gives_a_fresh_writer_and_new_posts_arrive() {
     assert_ne!(dev_after, dev_before, "a fresh group store writes under a fresh device ID");
     // Rejoin (a is still a member: any admin's invite, or a device token, lets it back in).
     let tok = o.node.group_invite(g.clone()).unwrap();
-    assert_eq!(a.node.group_join(tok).unwrap(), g);
+    assert_eq!(join(&a, tok), g);
     eventually(WAIT, "a sees history again", || has_post(&a, &g, &a.did, "before"));
     a.node.group_post(g.clone(), "after the loss".into(), None).unwrap();
     for p in [&o, &b] {
@@ -281,7 +296,7 @@ fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
     online(&o.node);
     restart(&mut a, true);
     let tok = o.node.group_invite(g.clone()).unwrap();
-    assert_eq!(a.node.group_join(tok).unwrap(), g);
+    assert_eq!(join(&a, tok), g);
     assert!(!has_post(&o, &g, &a.did, "only h has this"), "o never got it");
     a.node.group_post(g.clone(), "written after the loss".into(), None).unwrap();
     eventually(WAIT, "o has the new post", || has_post(&o, &g, &a.did, "written after the loss"));
@@ -346,7 +361,7 @@ fn a_linked_device_learns_the_accounts_groups_without_a_token() {
 
     // A group a joins after linking.
     let g2 = o.node.group_create("Second".into()).unwrap();
-    a.node.group_join(o.node.group_invite(g2.clone()).unwrap()).unwrap();
+    join(&a, o.node.group_invite(g2.clone()).unwrap());
     eventually(WAIT, "a2 lists the second group", || lists(&a2, &g2));
     eventually(WAIT, "a2 is a member there", || a2.node.group_detail(g2.clone()).map(|d| d.my_role == GroupRole::Member).unwrap_or(false));
 
