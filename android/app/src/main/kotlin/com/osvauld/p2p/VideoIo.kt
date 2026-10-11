@@ -8,18 +8,30 @@ import java.nio.ByteBuffer
 import uniffi.p2pcore.Node
 
 /**
- * The only place call video frames cross into and out of the core. Today: camera YUV_420_888 is
- * packed to I420 here and decoded I420 is turned into ARGB here, both in Kotlin. When the core
- * takes strided planes (`pushVideoFrameYuv`) and hands out RGBA (`pullVideoFrameRgba`), [push]
- * and [pull] each become one call and the conversion code below goes.
+ * The only place call video frames cross into and out of the core. By default through
+ * [VideoJni]: the camera's planes go in as the direct buffers they are (Rust copies them once)
+ * and decoded frames come out as RGBA into a direct buffer for `Bitmap.copyPixelsFromBuffer`.
+ * [jni] = false selects the UniFFI path (plane copies into ByteArrays, I420 pull + Kotlin
+ * conversion), kept to compare the two (DebugReceiver `video_path`).
  */
 class VideoIo(private val node: () -> Node) {
+    @Volatile var jni = true
+    private var handleOf: Node? = null
+    private var handle = 0L
+
+    /** The node's handle for [VideoJni] (a new node after an account switch gets its own). */
+    @Synchronized private fun handle(): Long {
+        val n = node()
+        if (n !== handleOf) { handle = n.videoFrameHandle().toLong(); handleOf = n }
+        return handle
+    }
+
     // ---- in: camera thread only
     private var yBuf = ByteArray(0)
     private var uBuf = ByteArray(0)
     private var vBuf = ByteArray(0)
     private val empty = ByteArray(0)
-    /** Average time to copy a camera frame's planes / to convert a decoded frame to the bitmap. */
+    /** Average time to copy a camera frame's planes (UniFFI path) / to fill the bitmap. */
     @Volatile var packNs = 0L; private set
     /** ... and of the push call (FFI). */
     @Volatile var pushNs = 0L; private set
@@ -32,30 +44,42 @@ class VideoIo(private val node: () -> Node) {
      * the core (camera off, no video).
      */
     fun push(img: ImageProxy): Boolean {
-        val w = img.width
-        val h = img.height
         val p = img.planes
+        val ok = pushPlanes(
+            img.width, img.height, img.imageInfo.rotationDegrees, p[0].buffer, p[0].rowStride,
+            p[1].buffer, p[2].buffer, p[1].rowStride, p[1].pixelStride,
+        )
+        inSize = "${img.width}x${img.height}"
+        if (ok) pushed++
+        return ok
+    }
+
+    /** [push] of loose planes (also the DebugReceiver `video_io_bench`). */
+    fun pushPlanes(w: Int, h: Int, rotation: Int, y: ByteBuffer, yRowStride: Int, u: ByteBuffer, v: ByteBuffer, uvRowStride: Int, ps: Int): Boolean {
         val t0 = System.nanoTime()
-        yBuf = copyAll(p[0].buffer, yBuf)
-        val ps = p[1].pixelStride
-        var u = empty
-        var v = empty
-        if (ps == 2 && interleaved(p[2].buffer, p[1].buffer)) {
-            vBuf = copyAll(p[2].buffer, vBuf, p[1].buffer); v = vBuf  // NV21: V U V U ..
-        } else if (ps == 2 && interleaved(p[1].buffer, p[2].buffer)) {
-            uBuf = copyAll(p[1].buffer, uBuf, p[2].buffer); u = uBuf  // NV12
+        if (jni) {
+            val ok = VideoJni.pushYuv(handle(), w, h, rotation, y, yRowStride, u, v, uvRowStride, ps, true)
+            packNs = 0
+            pushNs = avg(pushNs, System.nanoTime() - t0)
+            return ok
+        }
+        yBuf = copyAll(y, yBuf)
+        var uArr = empty
+        var vArr = empty
+        if (ps == 2 && interleaved(v, u)) {
+            vBuf = copyAll(v, vBuf, u); vArr = vBuf  // NV21: V U V U ..
+        } else if (ps == 2 && interleaved(u, v)) {
+            uBuf = copyAll(u, uBuf, v); uArr = uBuf  // NV12
         } else {
-            uBuf = copyAll(p[1].buffer, uBuf); vBuf = copyAll(p[2].buffer, vBuf); u = uBuf; v = vBuf
+            uBuf = copyAll(u, uBuf); vBuf = copyAll(v, vBuf); uArr = uBuf; vArr = vBuf
         }
         val t1 = System.nanoTime()
         packNs = avg(packNs, t1 - t0)
         val ok = node().pushVideoFrameYuv(
-            w.toUInt(), h.toUInt(), img.imageInfo.rotationDegrees.toUInt(), yBuf, p[0].rowStride.toUInt(),
-            u, v, p[1].rowStride.toUInt(), ps.toUInt(), true,
+            w.toUInt(), h.toUInt(), rotation.toUInt(), yBuf, yRowStride.toUInt(),
+            uArr, vArr, uvRowStride.toUInt(), ps.toUInt(), true,
         )
         pushNs = avg(pushNs, System.nanoTime() - t1)
-        inSize = "${w}x$h"
-        if (ok) pushed++
         return ok
     }
 
@@ -84,14 +108,48 @@ class VideoIo(private val node: () -> Node) {
     private val bitmaps = arrayOfNulls<Bitmap>(2)
     private var next = 0
     @Volatile var convertNs = 0L; private set
-    /** Average time of a `pullVideoFrame` that returned a frame (FFI copy of the I420 bytes). */
+    /** Average time of a pull that returned a frame (JNI: incl. the RGBA conversion in Rust). */
     @Volatile var pullNs = 0L; private set
 
     /**
      * The newest decoded frame as a bitmap, or null if none arrived since the last call. Two
      * bitmaps alternate, so the one returned last time stays intact while it is on screen.
      */
-    fun pull(): Bitmap? {
+    fun pull(): Bitmap? = if (jni) pullJni() else pullUniffi()
+
+    private var rgba: ByteBuffer = ByteBuffer.allocateDirect(0)
+    private val info = IntArray(3)
+
+    private fun pullJni(): Bitmap? {
+        val tp = System.nanoTime()
+        val h = handle()
+        var r = VideoJni.pullRgba(h, rgba, info)
+        if (r == -1) {
+            rgba = ByteBuffer.allocateDirect(info[0] * info[1] * 4)
+            r = VideoJni.pullRgba(h, rgba, info)
+        }
+        if (r != 1) return null
+        val t0 = System.nanoTime()
+        pullNs = avg(pullNs, t0 - tp)
+        val bmp = bitmap(info[0], info[1])
+        rgba.rewind()
+        bmp.copyPixelsFromBuffer(rgba)
+        next = 1 - next
+        convertNs = avg(convertNs, System.nanoTime() - t0)
+        return bmp
+    }
+
+    /** The next of the two alternating bitmaps, at [w] x [h]. */
+    private fun bitmap(w: Int, h: Int): Bitmap {
+        var bmp = bitmaps[next]
+        if (bmp == null || bmp.width != w || bmp.height != h) {
+            bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            bitmaps[next] = bmp
+        }
+        return bmp
+    }
+
+    private fun pullUniffi(): Bitmap? {
         val tp = System.nanoTime()
         val f = node().pullVideoFrame() ?: return null
         val w = f.width.toInt()
@@ -100,11 +158,7 @@ class VideoIo(private val node: () -> Node) {
         pullNs = avg(pullNs, t0 - tp)
         if (argb.size != w * h) argb = IntArray(w * h)
         i420ToArgb(f.data, w, h, argb)
-        var bmp = bitmaps[next]
-        if (bmp == null || bmp.width != w || bmp.height != h) {
-            bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            bitmaps[next] = bmp
-        }
+        val bmp = bitmap(w, h)
         bmp.setPixels(argb, 0, w, 0, 0, w, h)
         next = 1 - next
         convertNs = avg(convertNs, System.nanoTime() - t0)
@@ -147,4 +201,22 @@ class VideoIo(private val node: () -> Node) {
 
         private fun clamp(v: Int) = if (v < 0) 0 else if (v > 255) 255 else v
     }
+}
+
+/** Frame calls straight into the core (`crates/core/src/video_jni.rs`), no UniFFI copies. */
+object VideoJni {
+    init { System.loadLibrary("p2pcore") }
+
+    /** `Node.pushVideoFrameYuv` reading the planes' direct buffers in place (whole buffers). */
+    @JvmStatic external fun pushYuv(
+        handle: Long, width: Int, height: Int, rotation: Int, y: ByteBuffer, yRowStride: Int,
+        u: ByteBuffer, v: ByteBuffer, uvRowStride: Int, uvPixelStride: Int, fullRange: Boolean,
+    ): Boolean
+
+    /**
+     * The newest decoded frame as RGBA at the start of [dst] (direct). 1 = frame, [info] =
+     * width, height, seq; 0 = none; -1 = [dst] too small, [info] = width, height, frame kept;
+     * -2 = bad arguments.
+     */
+    @JvmStatic external fun pullRgba(handle: Long, dst: ByteBuffer, info: IntArray): Int
 }

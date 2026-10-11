@@ -260,6 +260,25 @@ fn plane_fits(len: usize, w: usize, h: usize, stride: usize, step: usize) -> boo
     step >= 1 && stride >= row && len >= (h - 1) * stride + row
 }
 
+/// Whether `YUV_420_888` planes as `push_video_frame_yuv` takes them hold a `width` x `height`
+/// frame.
+#[allow(clippy::too_many_arguments)]
+fn yuv_fits(width: u32, height: u32, y: &[u8], y_stride: usize, u: &[u8], v: &[u8], uv_stride: usize, uv_pixel_stride: usize) -> bool {
+    if !size_ok(width, height) {
+        return false;
+    }
+    let (w, h) = (width as usize, height as usize);
+    let (cw, ch) = I420::chroma(w, h);
+    let (cu, cv) = chroma_views(u, v);
+    let ps = uv_pixel_stride;
+    plane_fits(y.len(), w, h, y_stride, 1) && plane_fits(cu.len(), cw, ch, uv_stride, ps) && plane_fits(cv.len(), cw, ch, uv_stride, ps)
+}
+
+/// Bytes a plane of `w` x `h` samples, rows `stride` apart, samples `step` apart, spans.
+fn plane_len(w: usize, h: usize, stride: usize, step: usize) -> usize {
+    (h - 1) * stride + (w - 1) * step + 1
+}
+
 fn size_ok(width: u32, height: u32) -> bool {
     (1..=MAX_INPUT_SIDE).contains(&width) && (1..=MAX_INPUT_SIDE).contains(&height)
 }
@@ -408,6 +427,89 @@ impl Inner {
         *v.pipe.input.lock() = Some(input);
         v.pipe.wake.notify_one();
         true
+    }
+}
+
+/// Nodes reachable by the platform's direct frame calls (Android: `video_jni`), by handle: the
+/// platform never holds a pointer into Rust, so a stale or bogus handle is just "no node".
+static FRAME_PORTS: Mutex<Vec<(u64, std::sync::Weak<Inner>)>> = Mutex::new(Vec::new());
+static NEXT_FRAME_PORT: AtomicU64 = AtomicU64::new(1);
+
+/// The node behind a `Node::video_frame_handle`, while it lives.
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub(crate) fn frame_port(handle: u64) -> Option<Arc<Inner>> {
+    FRAME_PORTS.lock().iter().find(|(h, _)| *h == handle).and_then(|(_, w)| w.upgrade())
+}
+
+/// What `pull_video_frame_rgba_into` did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Pulled {
+    /// No new frame.
+    None,
+    /// A frame of this size waits but the buffer is under `width * height * 4` bytes; it stays.
+    TooSmall { width: u32, height: u32 },
+    /// The buffer starts with the frame as packed RGBA.
+    Frame { width: u32, height: u32, seq: u64 },
+}
+
+impl Inner {
+    /// `push_video_frame_yuv` from borrowed planes: each copied once, only the bytes the frame
+    /// spans.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn push_yuv_planes(
+        &self,
+        width: u32,
+        height: u32,
+        rotation: u32,
+        y: &[u8],
+        y_stride: usize,
+        u: &[u8],
+        v: &[u8],
+        uv_stride: usize,
+        uv_pixel_stride: usize,
+        full_range: bool,
+    ) -> bool {
+        if !yuv_fits(width, height, y, y_stride, u, v, uv_stride, uv_pixel_stride) {
+            return false;
+        }
+        let (w, h) = (width as usize, height as usize);
+        let (cw, ch) = I420::chroma(w, h);
+        let chroma = plane_len(cw, ch, uv_stride, uv_pixel_stride);
+        // One interleaved plane (u or v empty) spans one byte more than each of its views.
+        let take = |p: &[u8], other: &[u8]| {
+            let n = if other.is_empty() { chroma + 1 } else { chroma };
+            if p.is_empty() { Vec::new() } else { p[..n].to_vec() }
+        };
+        let src = Source::Yuv {
+            y: y[..plane_len(w, h, y_stride, 1)].to_vec(),
+            y_stride,
+            u: take(u, v),
+            v: take(v, u),
+            uv_stride,
+            uv_pixel_stride,
+            full_range,
+        };
+        self.push_input(width, height, rotation, src)
+    }
+
+    pub(crate) fn pull_rgba_into(&self, dst: &mut [u8]) -> Pulled {
+        let Some(call) = self.current_video_call() else { return Pulled::None };
+        let f = {
+            let mut slot = call.video.pipe.output.lock();
+            match slot.as_ref() {
+                None => return Pulled::None,
+                Some(f) if dst.len() < f.width as usize * f.height as usize * 4 => {
+                    return Pulled::TooSmall { width: f.width, height: f.height };
+                }
+                Some(_) => slot.take().expect("checked"),
+            }
+        };
+        let (width, height, seq) = (f.width, f.height, f.seq);
+        let pic = I420 { width: width as usize, height: height as usize, data: f.data.0 };
+        match convert::i420_to_rgba(&pic, dst) {
+            Ok(()) => Pulled::Frame { width, height, seq },
+            Err(_) => Pulled::None,
+        }
     }
 }
 
@@ -630,6 +732,30 @@ impl Node {
         let pic = I420 { width: width as usize, height: height as usize, data };
         self.inner.push_input(width, height, rotation, Source::I420(pic))
     }
+
+    /// `push_video_frame_yuv` from borrowed planes (each copied once, no FFI buffers): what
+    /// Android's JNI entry point (`video_jni`) calls with the camera's direct buffers.
+    #[allow(clippy::too_many_arguments)]
+    pub fn push_video_planes(
+        &self,
+        width: u32,
+        height: u32,
+        rotation: u32,
+        y: &[u8],
+        y_row_stride: usize,
+        u: &[u8],
+        v: &[u8],
+        uv_row_stride: usize,
+        uv_pixel_stride: usize,
+        full_range: bool,
+    ) -> bool {
+        self.inner.push_yuv_planes(width, height, rotation, y, y_row_stride, u, v, uv_row_stride, uv_pixel_stride, full_range)
+    }
+
+    /// `pull_video_frame_rgba` into the caller's buffer (no allocation for the pixels).
+    pub fn pull_video_frame_rgba_into(&self, dst: &mut [u8]) -> Pulled {
+        self.inner.pull_rgba_into(dst)
+    }
 }
 
 #[uniffi::export]
@@ -699,14 +825,8 @@ impl Node {
         uv_pixel_stride: u32,
         full_range: bool,
     ) -> bool {
-        if !size_ok(width, height) {
-            return false;
-        }
-        let (w, h) = (width as usize, height as usize);
-        let (cw, ch) = I420::chroma(w, h);
         let (ys, uvs, ps) = (y_row_stride as usize, uv_row_stride as usize, uv_pixel_stride as usize);
-        let (cu, cv) = chroma_views(&u, &v);
-        if !plane_fits(y.len(), w, h, ys, 1) || !plane_fits(cu.len(), cw, ch, uvs, ps) || !plane_fits(cv.len(), cw, ch, uvs, ps) {
+        if !yuv_fits(width, height, &y, ys, &u, &v, uvs, ps) {
             return false;
         }
         let src = Source::Yuv { y: y.0, y_stride: ys, u: u.0, v: v.0, uv_stride: uvs, uv_pixel_stride: ps, full_range };
@@ -744,6 +864,20 @@ impl Node {
     /// thread.
     pub fn pull_video_frame_rgba(&self) -> Option<VideoFrame> {
         self.pull_video_frame().map(to_rgba)
+    }
+
+    /// This node's handle for the platform's direct frame calls (Android `VideoJni`: camera
+    /// planes and the RGBA pull through direct `ByteBuffer`s, no copies through UniFFI). The
+    /// same for the life of the node; a handle of a dropped node finds nothing.
+    pub fn video_frame_handle(&self) -> u64 {
+        let mut ports = FRAME_PORTS.lock();
+        ports.retain(|(_, w)| w.strong_count() > 0);
+        if let Some((h, _)) = ports.iter().find(|(_, w)| std::ptr::eq(w.as_ptr(), Arc::as_ptr(&self.inner))) {
+            return *h;
+        }
+        let h = NEXT_FRAME_PORT.fetch_add(1, Ordering::Relaxed);
+        ports.push((h, Arc::downgrade(&self.inner)));
+        h
     }
 
     pub fn video_info(&self) -> Option<VideoInfo> {

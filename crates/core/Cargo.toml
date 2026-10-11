@@ -43,3 +43,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 paranoid-android = "0.2"
+jni = { version = "0.21", default-features = false }
