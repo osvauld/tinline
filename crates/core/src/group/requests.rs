@@ -134,15 +134,22 @@ impl Inner {
 
     /// Seals `letter` to `to` (with the key `to` published in the group) and sends it.
     fn group_letter(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, to: &str, letter: Letter) -> Result<(), Error> {
+        let m = self.group_seal(core, gid, to, letter)?;
+        self.group_send_mail(core, gid, m);
+        Ok(())
+    }
+
+    /// Seals `letter` to `to` without sending it. GF: callers record their own row first and
+    /// send after, so an answer that comes back fast (an automatic `Decline{blocked}`) never
+    /// finds the row missing (it would be dropped, its mail ID already seen).
+    fn group_seal(&self, core: &Arc<GroupCore>, gid: &str, to: &str, letter: Letter) -> Result<SignedMail, Error> {
         let key = core
             .groups
             .lock()
             .get(gid)
             .and_then(|l| l.state.enc_keys.get(to).copied())
             .ok_or_else(|| Error::Rejected("their app has not published a key in this group yet".into()))?;
-        let m = mail::seal(&core.account, gid, to, &key, letter, now_ms())?;
-        self.group_send_mail(core, gid, m);
-        Ok(())
+        mail::seal(&core.account, gid, to, &key, letter, now_ms())
     }
 
     /// Mail addressed to us arrived (from a host, or handed over by our own host side).
@@ -290,9 +297,10 @@ impl Node {
         }
         let req = new_req_id();
         let my_name = inner.me()?.profile.name.clone();
-        inner.group_letter(&core, &group_id, &did, Letter::Request { req: req_bytes(&req).expect("16 bytes"), name: my_name })?;
+        let m = inner.group_seal(&core, &group_id, &did, Letter::Request { req: req_bytes(&req).expect("16 bytes"), name: my_name })?;
         let row = ReqRow { req, group: group_id, peer: did, peer_name: name, outgoing: true, state: ReqState::Pending, at: now_ms(), ticket: None, added: false, next_try: 0 };
         inner.group_req_save(&core, &row);
+        inner.group_send_mail(&core, &row.group, m);
         Ok(inner.group_req_view(&core, &row))
     }
 
@@ -314,9 +322,10 @@ impl Node {
             let core = inner.group_core()?;
             let mut row = inner.group_req_incoming_pending(&core, &request_id)?;
             let ticket = inner.request_ticket(&row.peer, REQ_TICKET_TTL).await?;
-            inner.group_letter(&core, &row.group, &row.peer, Letter::Accept { req: req_bytes(&row.req).ok_or(Error::NotFound)?, ticket })?;
+            let m = inner.group_seal(&core, &row.group, &row.peer, Letter::Accept { req: req_bytes(&row.req).ok_or(Error::NotFound)?, ticket })?;
             row.state = ReqState::Accepted;
             inner.group_req_save(&core, &row);
+            inner.group_send_mail(&core, &row.group, m);
             Ok(inner.group_req_view(&core, &row))
         })?
     }
@@ -326,9 +335,10 @@ impl Node {
         let inner = self.inner.clone();
         let core = inner.group_core()?;
         let mut row = inner.group_req_incoming_pending(&core, &request_id)?;
-        inner.group_letter(&core, &row.group, &row.peer, Letter::Decline { req: req_bytes(&row.req).ok_or(Error::NotFound)?, blocked: false })?;
+        let m = inner.group_seal(&core, &row.group, &row.peer, Letter::Decline { req: req_bytes(&row.req).ok_or(Error::NotFound)?, blocked: false })?;
         row.state = ReqState::Declined;
         inner.group_req_save(&core, &row);
+        inner.group_send_mail(&core, &row.group, m);
         Ok(inner.group_req_view(&core, &row))
     }
 }

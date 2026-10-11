@@ -49,6 +49,10 @@ pub(crate) struct GroupRt {
     /// Delay between a removal / host revocation and the hosts' endpoint rotation, ms (U12:
     /// 2 days; 0 = that default). Test knob.
     pub(crate) rotation_delay_ms: AtomicU64,
+    /// How long a host that rotated keeps telling offline members it moved, ms (0 = the rotation
+    /// delay, as in production). Test knob: a shortened rotation delay would otherwise shrink
+    /// this window to seconds, and a member that comes back a little later is never told.
+    pub(crate) moved_window_ms: AtomicU64,
     /// G3: invitation events and the DIDs with an invitation delivery task running.
     pub(crate) inv_events: Mutex<Option<Arc<dyn super::invitations::GroupInvitationEvents>>>,
     pub(crate) inv_delivering: Mutex<HashSet<String>>,
@@ -61,6 +65,13 @@ impl GroupRt {
     pub(crate) fn rotation_delay(&self) -> u64 {
         match self.rotation_delay_ms.load(Ordering::SeqCst) {
             0 => ROTATION_DELAY_MS,
+            v => v,
+        }
+    }
+
+    pub(crate) fn moved_window(&self) -> u64 {
+        match self.moved_window_ms.load(Ordering::SeqCst) {
+            0 => self.rotation_delay(),
             v => v,
         }
     }
@@ -95,6 +106,9 @@ pub(crate) struct GroupCore {
     /// The last refusal a host gave us per group (for `group_join`).
     pub refusals: Mutex<HashMap<String, String>>,
     my_addr: Mutex<HashMap<String, SignedHostAddr>>,
+    /// Groups whose sessions `group_after` told that we host (GF: kept apart from the `my_addr`
+    /// cache, which other paths fill too, so filling it elsewhere cannot swallow the announcement).
+    announced: Mutex<HashSet<String>>,
     next: AtomicU64,
     kick: Notify,
     closed: AtomicBool,
@@ -243,6 +257,46 @@ impl GroupCore {
         out
     }
 
+    /// Sends every session of `gid` (except `from`) what it lacks.
+    pub(crate) fn push(&self, gid: &str, from: Option<u64>) {
+        let groups = self.groups.lock();
+        let Some(live) = groups.get(gid) else { return };
+        let ours = live.doc.vv();
+        for s in self.sessions_of(gid) {
+            // A session of a member removed just now still gets this last push (it carries the
+            // flags that removed it); `group_enforce` closes it right after.
+            if Some(s.id) == from {
+                continue;
+            }
+            let mut pv = s.peer_vv.lock();
+            if let Some(update) = live.doc.export_since(&pv) {
+                let _ = s.tx.send(Out::Msg(GroupMsg::Update { update }));
+                pv.merge(&ours);
+            }
+        }
+    }
+
+    /// `merge_hosts`, and on a change pass the addresses on to every other session of `gid`
+    /// (all but `from`) and wake the dialer. GF: every path that learns an address spreads it;
+    /// before, only a `Hosts` frame did, so an address learned in a Hello/Welcome (e.g. a new
+    /// host's, when its session to the first host was re-established right after it accepted)
+    /// reached that host but never its members.
+    fn merge_hosts_from(&self, gid: &str, addrs: &[SignedHostAddr], from: Option<u64>) -> bool {
+        if !self.merge_hosts(gid, addrs) {
+            return false;
+        }
+        // The records that make these hosts valid go first, on each session's ordered stream.
+        self.push(gid, None);
+        let all = self.host_addrs(gid);
+        for s in self.sessions_of(gid) {
+            if Some(s.id) != from {
+                let _ = s.tx.send(Out::Msg(GroupMsg::Hosts { hosts: all.clone() }));
+            }
+        }
+        self.kick.notify_waiters();
+        true
+    }
+
     /// Stores host addresses that are newer and belong to active hosts (or, before we hold any
     /// state, i.e. while joining, any validly signed one for this group). True if any changed.
     fn merge_hosts(&self, gid: &str, addrs: &[SignedHostAddr]) -> bool {
@@ -311,11 +365,7 @@ impl GroupCore {
     }
 
     pub(crate) fn merge_hosts_pub(&self, gid: &str, addrs: &[SignedHostAddr]) -> bool {
-        let changed = self.merge_hosts(gid, addrs);
-        if changed {
-            self.kick.notify_waiters();
-        }
-        changed
+        self.merge_hosts_from(gid, addrs, None)
     }
 
     pub(crate) fn kick_pub(&self) {
@@ -425,6 +475,7 @@ impl Inner {
             backoff: Default::default(),
             refusals: Default::default(),
             my_addr: Default::default(),
+            announced: Default::default(),
             next: AtomicU64::new(1),
             kick: Notify::new(),
             closed: AtomicBool::new(false),
@@ -564,9 +615,16 @@ impl Inner {
         self.group_push(core, &gid, from);
         self.group_enforce(core, &gid);
         // Became (or stopped being) a host: announce our address.
-        let before = core.my_addr.lock().contains_key(&gid);
         let mine = self.group_my_addr(core, &gid);
-        if mine.is_some() != before {
+        let flipped = {
+            let mut announced = core.announced.lock();
+            if mine.is_some() { announced.insert(gid.clone()) } else { announced.remove(&gid) }
+        };
+        if flipped {
+            // GF: `group_push` above skipped `from`, and that session may not have the record
+            // that makes us a host yet (it is in flight from a concurrent `group_after`); send it
+            // first, or the receiver drops our address as not a host's and never sees it again.
+            self.group_push(core, &gid, None);
             let hosts = core.host_addrs(&gid);
             for s in core.sessions_of(&gid) {
                 let _ = s.tx.send(Out::Msg(GroupMsg::Hosts { hosts: hosts.clone() }));
@@ -754,21 +812,7 @@ impl Inner {
 
     /// Sends every session of `gid` (except `from`) what it lacks.
     fn group_push(&self, core: &GroupCore, gid: &str, from: Option<u64>) {
-        let groups = core.groups.lock();
-        let Some(live) = groups.get(gid) else { return };
-        let ours = live.doc.vv();
-        for s in core.sessions_of(gid) {
-            // A session of a member removed just now still gets this last push (it carries the
-            // flags that removed it); `group_enforce` closes it right after.
-            if Some(s.id) == from {
-                continue;
-            }
-            let mut pv = s.peer_vv.lock();
-            if let Some(update) = live.doc.export_since(&pv) {
-                let _ = s.tx.send(Out::Msg(GroupMsg::Update { update }));
-                pv.merge(&ours);
-            }
-        }
+        core.push(gid, from);
     }
 
     // ---- accepting (host side) ---------------------------------------------------------------
@@ -856,7 +900,7 @@ impl Inner {
                 let relay = relay.filter(|r| r.len() <= 300);
                 let entry = DirEntry { endpoint: conn.remote_id().to_string(), seen_ms: now_ms(), relay };
                 let _ = core.store.put_dir(&group, &auth.did, &auth.dev, &entry);
-                core.merge_hosts(&group, &hosts);
+                core.merge_hosts_from(&group, &hosts, None);
                 let mine = EndpointAuth::new(&core.account, core.dev, *core.ep_id.lock().as_ref().map(|e| e.id()).ok_or(Error::NotStarted)?.as_bytes());
                 let our_vv = core.groups.lock().get(&group).map(|l| l.doc.vv().encode()).unwrap_or_default();
                 let hosts = core.host_addrs(&group);
@@ -1023,9 +1067,7 @@ impl Inner {
                     return Err(Error::Protocol("host proof does not verify".into()));
                 }
                 core.refusals.lock().remove(&gid);
-                if core.merge_hosts(&gid, &hosts) {
-                    core.kick.notify_waiters();
-                }
+                core.merge_hosts_from(&gid, &hosts, None);
                 let peer_vv = decode_vv(&vv)?;
                 self.group_run(core, conn, writer, reader, gid, auth, false, false, peer_vv).await
             }
@@ -1101,6 +1143,14 @@ impl Inner {
         self.log(format!("group {} session with {} ({})", &gid[..8.min(gid.len())], &peer.did, if hosting { "we host" } else { "they host" }));
         // Catch the other side up.
         self.group_push(&core, &gid, None);
+        // GF: the host addresses again, after the records. Those in Hello/Welcome are merged
+        // before this session's records arrive, so an address of a host the other side does not
+        // yet know as one (e.g. accepted while we were apart) was dropped there and never re-sent;
+        // here it follows the records that make it valid on the same ordered stream.
+        let hosts = core.host_addrs(&gid);
+        if !hosts.is_empty() {
+            let _ = sess.tx.send(Out::Msg(GroupMsg::Hosts { hosts }));
+        }
         self.group_mail_on_session(&core, &sess);
         if let Some(ev) = self.group_ev() {
             let g = gid.clone();
@@ -1182,15 +1232,7 @@ impl Inner {
                     }
                 }
                 GroupMsg::Hosts { hosts } => {
-                    if core.merge_hosts(&sess.gid, &hosts) {
-                        let all = core.host_addrs(&sess.gid);
-                        for s in core.sessions_of(&sess.gid) {
-                            if s.id != sess.id {
-                                let _ = s.tx.send(Out::Msg(GroupMsg::Hosts { hosts: all.clone() }));
-                            }
-                        }
-                        core.kick.notify_waiters();
-                    }
+                    core.merge_hosts_from(&sess.gid, &hosts, Some(sess.id));
                 }
                 GroupMsg::Refused { reason } => {
                     return Err(Error::Rejected(reason));
@@ -1285,7 +1327,7 @@ impl Inner {
             core.moving.lock().remove(&gid);
             return;
         };
-        let end = Instant::now() + Duration::from_millis(self.group.rotation_delay());
+        let end = Instant::now() + Duration::from_millis(self.group.moved_window());
         let mut wait = 2u64;
         loop {
             let same = core.ep_id.lock().as_ref().is_some_and(|e| e.id() == ep.id());
@@ -1354,7 +1396,7 @@ impl Inner {
         if !mine {
             return;
         }
-        core.merge_hosts(gid, hosts);
+        core.merge_hosts_from(gid, hosts, None);
         core.backoff.lock().remove(&(gid.to_string(), host_key(&auth.did, &auth.dev)));
         self.log(format!("group {}: host {} moved", &gid[..8.min(gid.len())], auth.did));
         core.kick.notify_waiters();

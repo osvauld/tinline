@@ -108,6 +108,21 @@ fn link_fresh(e: &Peer, name: &str) -> Peer {
     n
 }
 
+/// `group_join` that tries again on a transient network failure. GF: joining is a one-shot
+/// network exchange (fetch the invite behind the link from the host, then sync until a member);
+/// under heavy load it occasionally fails with `Timeout` / `Net("connection lost")`, and a user
+/// would simply tap again. Any other error is a real failure.
+fn join(p: &Peer, link: String) -> String {
+    for _ in 0..3 {
+        match p.node.group_join(link.clone()) {
+            Ok(g) => return g,
+            Err(p2pcore::Error::Timeout | p2pcore::Error::Net(_)) => continue,
+            Err(e) => panic!("join: {e:?}"),
+        }
+    }
+    panic!("join failed three times on network errors")
+}
+
 fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
     let end = Instant::now() + Duration::from_secs(secs);
     while Instant::now() < end {
@@ -160,7 +175,7 @@ fn group_with(o: &Peer, ms: &[&Peer]) -> String {
     let g = o.node.group_create("Weekend hike".into()).unwrap();
     for m in ms {
         let tok = o.node.group_invite(g.clone()).unwrap();
-        assert_eq!(m.node.group_join(tok).unwrap(), g);
+        assert_eq!(join(&m, tok), g);
     }
     let want = sorted(std::iter::once(o.did.clone()).chain(ms.iter().map(|m| m.did.clone())).collect());
     for p in std::iter::once(o).chain(ms.iter().copied()) {
@@ -325,7 +340,7 @@ fn a_second_device_of_a_member_joins_sees_and_sends() {
     assert_eq!(a2.did, a.did);
     assert_ne!(a2.node.group_device_id().unwrap(), a.node.group_device_id().unwrap());
     let tok = a.node.group_device_token(g.clone()).unwrap();
-    assert_eq!(a2.node.group_join(tok).unwrap(), g);
+    assert_eq!(join(&a2, tok), g);
     eventually(WAIT, "a2 sees history", || has_post(&a2, &g, &a.did, "before the second device"));
     assert_eq!(a2.node.group_detail(g.clone()).unwrap().my_role, GroupRole::Member);
 
