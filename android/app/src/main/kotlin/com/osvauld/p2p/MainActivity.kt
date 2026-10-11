@@ -199,6 +199,9 @@ private fun Root(app: P2pApp) {
         }
     }
 
+    // "Leo accepted your request" and the like, once.
+    val groupNotice by app.groups.notice.collectAsState()
+    LaunchedEffect(groupNotice) { groupNotice?.let { say(it); app.groups.clearNotice() } }
     val unlinkedName by app.unlinked.collectAsState()
     // The account went away (unlinked here or from another device): leave whatever screen was open.
     LaunchedEffect(has) { if (!has) home() }
@@ -227,10 +230,11 @@ private fun Root(app: P2pApp) {
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                     homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
-                    onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup) },
+                    say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup) },
                 )
                 is Route.Group -> GroupChatLive(app, r.id, onBack = ::pop, onInfo = { stack.add(Route.GroupInfo(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say)
-                is Route.GroupInfo -> GroupInfoLive(app, r.id, onBack = ::pop, onToken = { stack.add(Route.GroupToken(r.id, it)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say)
+                is Route.GroupInfo -> GroupInfoLive(app, r.id, onBack = ::pop, onToken = { stack.add(Route.GroupToken(r.id, it)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say,
+                    onChat = { stack.add(Route.Chat(it)) })
                 is Route.GroupToken -> GroupTokenLive(app, r.id, r.device, onBack = ::pop)
                 is Route.GroupRemoval -> GroupRemovalLive(app, r.id, onBack = ::pop)
                 Route.NewGroup -> NewGroupLive(app, onBack = ::pop, onCreated = { pop(); stack.add(Route.Group(it)) })

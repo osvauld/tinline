@@ -57,7 +57,7 @@ fun HomeScreen(
     /** Opens a PLACEHOLDER preview screen (Settings › Developer). */
     onPreview: (PRoute) -> Unit = {},
     /** The Groups tab (real groups, GroupsLive.kt). */
-    onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {},
+    onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {}, say: (String) -> Unit = {},
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val status by app.status.collectAsState()
@@ -72,6 +72,8 @@ fun HomeScreen(
     var tab by (homeTab ?: localTab)
     val groupList by app.groups.list.collectAsState()
     val groupBadge = GroupText.badge(groupList)
+    val requestsIn by app.groups.incoming.collectAsState()
+    val pendingRequests = requestsIn.count { it.state == uniffi.p2pcore.ChatRequestState.PENDING }
     // Relative times ("4 min ago") go stale: refresh them once a minute.
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { delay(6000); grace = false }
@@ -95,9 +97,10 @@ fun HomeScreen(
         onAvailability = { sheet = true }, recents = recents, callError = callError,
         available = avail.available, onTurnOn = { app.setAvailable(true) }, subLines = subs,
         tab = tab, onTab = { tab = it }, chatRows = rows, myDid = myDid, onChat = onChat, onNewChat = onNewChat,
-        chatBadge = rows.sumOf { it.unread }, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
+        chatBadge = rows.sumOf { it.unread } + pendingRequests, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
         groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup) }, groupBadge = groupBadge,
+        requestsBlock = { GroupRequestsBlock(app, onChat, say) },
     )
     if (sheet) AvailabilitySheet(avail.available, avail.until?.toLong(), app.node.profile()?.name ?: "", onDismiss = { sheet = false }) { available, until ->
         sheet = false
@@ -134,6 +137,8 @@ fun HomeContent(
     firstRun: (@Composable () -> Unit)? = null,
     /** The Groups tab's content; null hides the tab (the gallery and tests). */
     groupsBody: (@Composable () -> Unit)? = null, groupBadge: Int = 0,
+    /** Group chat requests (U3), above the chats; draws nothing when there are none. */
+    requestsBlock: (@Composable () -> Unit)? = null,
 ) {
     val c = Tin.c
     var searching by remember { mutableStateOf(startSearching) }
@@ -159,8 +164,9 @@ fun HomeContent(
                     }
                 }
                 if (firstRunShown) Column(Modifier.weight(1f)) { banner(); firstRun?.invoke() } else when (tab) {
-                    HomeTab.Chats -> Box(Modifier.weight(1f)) {
-                        ChatsBody(chatRows, query, banner, onSearch = { searching = true }, onChat = onChat, onNewChat = onNewChat, searching = searching, myDid = myDid)
+                    HomeTab.Chats -> Column(Modifier.weight(1f)) {
+                        if (!searching) requestsBlock?.invoke()
+                        Box(Modifier.weight(1f)) { ChatsBody(chatRows, query, banner, onSearch = { searching = true }, onChat = onChat, onNewChat = onNewChat, searching = searching, myDid = myDid) }
                     }
                     HomeTab.Groups -> Box(Modifier.weight(1f)) { groupsBody?.invoke() }
                     HomeTab.Calls -> if (recents.isEmpty()) Column(Modifier.weight(1f)) {

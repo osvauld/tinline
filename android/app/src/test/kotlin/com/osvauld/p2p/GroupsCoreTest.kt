@@ -5,6 +5,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uniffi.p2pcore.ChatRequestState
+import uniffi.p2pcore.GroupChatRequest
 import uniffi.p2pcore.GroupDetail
 import uniffi.p2pcore.GroupFlag
 import uniffi.p2pcore.GroupHost
@@ -29,8 +31,9 @@ class GroupsCoreTest {
     private fun member(did: String, owner: Boolean = false, admin: Boolean = owner, flags: Int = 0, devs: List<String> = listOf("dev-$did")) =
         CoreMember(did, did.removePrefix("did:key:"), did == me, owner, admin, false, flags.toUInt(), 1uL, null, devs)
 
-    private fun detail(role: CoreRole, members: List<CoreMember>, hosts: List<GroupHost> = emptyList(), amHost: Boolean = false, removal: GroupRemoval? = null) =
-        GroupDetail("g", "Hike", members.first { it.isOwner }.did, role, amHost, members, hosts, emptyList(), removal)
+    private fun detail(role: CoreRole, members: List<CoreMember>, hosts: List<GroupHost> = emptyList(), amHost: Boolean = false, removal: GroupRemoval? = null,
+                       hostRequests: List<GroupHost> = emptyList()) =
+        GroupDetail("g", "Hike", members.first { it.isOwner }.did, role, amHost, members, hosts, emptyList(), hostRequests, hostRequests.any { it.isMe }, removal)
 
     private fun summary(id: String, role: CoreRole, unread: Int, last: GroupMessage?) =
         GroupSummary(id, "G $id", role, 3u, 1u, false, true, last, unread.toUInt())
@@ -68,6 +71,22 @@ class GroupsCoreTest {
         override fun revokeHost(id: String, did: String, deviceId: String) {}
         override fun acceptHost(id: String, accept: Boolean) {}
         override fun deviceId() = "aa".repeat(32)
+        val reqs = mutableListOf<GroupChatRequest>()
+        val blocked = mutableListOf<String>()
+        override fun chatRequest(id: String, did: String): GroupChatRequest {
+            if (did == "did:key:contact") throw uniffi.p2pcore.Exception.Rejected("they refused: already a contact")
+            return GroupChatRequest("r${reqs.size}", id, "Hike", did, "Leo B", true, ChatRequestState.PENDING, 1uL, false).also { reqs += it }
+        }
+        override fun requestsIncoming() = reqs.filter { !it.outgoing }
+        override fun requestsOutgoing() = reqs.filter { it.outgoing }
+        private fun answer(id: String, st: ChatRequestState): GroupChatRequest {
+            val i = reqs.indexOfFirst { it.id == id && !it.outgoing }
+            if (i < 0) throw uniffi.p2pcore.Exception.NotFound("not found")
+            return reqs[i].copy(state = st).also { reqs[i] = it }
+        }
+        override fun chatAccept(requestId: String) = answer(requestId, ChatRequestState.ACCEPTED)
+        override fun chatDecline(requestId: String) = answer(requestId, ChatRequestState.DECLINED)
+        override fun block(did: String) { blocked += did }
     }
 
     @Test fun previewsAndBadgeSkipGroupsWeLeftOrWereRemovedFrom() {
@@ -96,7 +115,8 @@ class GroupsCoreTest {
         val asOwner = detail(CoreRole.OWNER, listOf(mine.copy(isOwner = true, isAdmin = true), priya.copy(isAdmin = false)).let { it + member("did:key:x") })
             .copy(ownerDid = me)
         val a = GroupText.actions(asOwner, priya)
-        assertEquals(MemberAction.MakeAdmin, a.first())
+        assertEquals(MemberAction.Message, a[0])
+        assertEquals(MemberAction.MakeAdmin, a[1])
         assertTrue(MemberAction.Flag in a)
         assertTrue(a.any { it is MemberAction.Appoint })
         assertTrue(GroupText.actions(asOwner, asOwner.members.first { it.isMe }).isEmpty())
@@ -107,7 +127,7 @@ class GroupsCoreTest {
         assertFalse(MemberAction.Flag in GroupText.actions(asAdmin, owner))
         assertTrue(MemberAction.Revoke("dev-did:key:sam") in GroupText.actions(asAdmin, owner))
 
-        assertTrue(GroupText.actions(detail(CoreRole.MEMBER, listOf(owner, mine, priya)), priya).isEmpty())
+        assertEquals(listOf(MemberAction.Message), GroupText.actions(detail(CoreRole.MEMBER, listOf(owner, mine, priya)), priya))
         assertTrue(GroupText.actions(detail(CoreRole.REMOVED, listOf(owner, mine, priya)), priya).isEmpty())
     }
 
@@ -199,5 +219,39 @@ class GroupsCoreTest {
         api.locked = true
         ctl.refresh()
         assertTrue(ctl.list.value.isEmpty())
+    }
+
+    @Test fun chatRequestsFromAGroupMember() {
+        val api = FakeApi()
+        val ctl = GroupsController(api) { me }
+        assertEquals("Request sent to Leo. It waits in Chats until they answer.", ctl.request("g", "did:key:leo").getOrThrow())
+        assertEquals(1, ctl.outgoing.value.size)
+        assertEquals("Waiting for Leo · via Hike" to false, GroupText.sentLine(ctl.outgoing.value[0]))
+        assertEquals("Leo declined" to true, GroupText.sentLine(ctl.outgoing.value[0].copy(state = ChatRequestState.DECLINED)))
+        assertEquals("Leo blocked you" to true, GroupText.sentLine(ctl.outgoing.value[0].copy(state = ChatRequestState.BLOCKED)))
+        assertEquals("You already have them as a contact. Message them from Chats.", ctl.request("g", "did:key:contact").exceptionOrNull()!!.message)
+
+        // Their answer arrives as an event: one notice when the contact is in place.
+        ctl.onChatRequest(ctl.outgoing.value[0].copy(state = ChatRequestState.ACCEPTED, contactAdded = true))
+        assertTrue(ctl.notice.value!!.startsWith("Leo accepted your request"))
+        ctl.clearNotice()
+        assertNull(ctl.notice.value)
+
+        api.reqs += GroupChatRequest("in1", "g", "Hike", "did:key:priya", "Priya N", false, ChatRequestState.PENDING, 2uL, false)
+        api.reqs += GroupChatRequest("in2", "g", "Hike", "did:key:ravi", "Ravi J", false, ChatRequestState.PENDING, 3uL, false)
+        ctl.refresh()
+        assertEquals(2, ctl.incoming.value.size)
+        assertTrue(ctl.accept("in1").getOrThrow().contains("messages only"))
+        assertTrue(ctl.blockRequester("in2", "did:key:ravi").isSuccess)
+        assertEquals(listOf("did:key:ravi"), api.blocked)
+        assertTrue(ctl.incoming.value.none { it.state == ChatRequestState.PENDING })
+    }
+
+    @Test fun anAdminAskingThisDeviceToHostShowsWhoAsked() {
+        val ms = listOf(member("did:key:sam", owner = true), member(me))
+        assertNull(GroupText.hostAsker(detail(CoreRole.MEMBER, ms)))
+        val ask = GroupHost(me, "Me", "aa", "did:key:sam", true, true)
+        assertEquals("sam", GroupText.hostAsker(detail(CoreRole.MEMBER, ms, hostRequests = listOf(ask))))
+        assertNull(GroupText.hostAsker(detail(CoreRole.REMOVED, ms, hostRequests = listOf(ask))))
     }
 }

@@ -3,7 +3,10 @@ package com.osvauld.p2p
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import uniffi.p2pcore.ChatRequestState
+import uniffi.p2pcore.GroupChatRequest
 import uniffi.p2pcore.GroupDetail
+import uniffi.p2pcore.GroupRequestEvents
 import uniffi.p2pcore.GroupEvents
 import uniffi.p2pcore.GroupInvitePeek
 import uniffi.p2pcore.GroupItemKind
@@ -46,6 +49,14 @@ interface GroupApi {
     fun revokeHost(id: String, did: String, deviceId: String)
     fun acceptHost(id: String, accept: Boolean)
     fun deviceId(): String
+    // Chat requests through the group's hosts (G2, U3).
+    fun chatRequest(id: String, did: String): GroupChatRequest
+    fun requestsIncoming(): List<GroupChatRequest>
+    fun requestsOutgoing(): List<GroupChatRequest>
+    fun chatAccept(requestId: String): GroupChatRequest
+    fun chatDecline(requestId: String): GroupChatRequest
+    /** The personal block (P5), for "Block" on an incoming request. */
+    fun block(did: String)
 }
 
 class NodeGroupApi(private val node: () -> Node) : GroupApi {
@@ -66,6 +77,12 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun revokeHost(id: String, did: String, deviceId: String) = node().groupRevokeHost(id, did, deviceId)
     override fun acceptHost(id: String, accept: Boolean) = node().groupAcceptHost(id, accept)
     override fun deviceId() = node().groupDeviceId()
+    override fun chatRequest(id: String, did: String) = node().groupChatRequest(id, did)
+    override fun requestsIncoming() = node().groupChatRequestsIncoming()
+    override fun requestsOutgoing() = node().groupChatRequestsOutgoing()
+    override fun chatAccept(requestId: String) = node().groupChatAccept(requestId)
+    override fun chatDecline(requestId: String) = node().groupChatDecline(requestId)
+    override fun block(did: String) = node().block(did)
 }
 
 /** The group on screen: its detail and the loaded window of messages (oldest first). */
@@ -73,6 +90,8 @@ data class OpenGroup(val id: String, val detail: GroupDetail, val messages: List
 
 /** What a member's sheet offers us, in order. */
 sealed interface MemberAction {
+    /** Message privately: their chat if a contact, else a chat request (U3). */
+    data object Message : MemberAction
     data object MakeAdmin : MemberAction
     data object RevokeAdmin : MemberAction
     data class Appoint(val deviceId: String) : MemberAction
@@ -145,12 +164,30 @@ object GroupText {
     fun deliveryWord(m: GroupMessage): String? =
         if (m.outgoing && m.kind == GroupItemKind.POST && m.delivery == CoreDelivery.WAITING) "Waiting for a host" else null
 
+    /** A sent request's state line and whether it is bad news. A block is visible (U5 revised, P5). */
+    fun sentLine(r: GroupChatRequest): Pair<String, Boolean> {
+        val f = firstName(someone(r.peerName))
+        return when (r.state) {
+            ChatRequestState.PENDING -> "Waiting for $f · via ${r.groupName}" to false
+            ChatRequestState.ACCEPTED -> (if (r.contactAdded) "$f accepted · messages only" else "$f accepted · connecting") to false
+            ChatRequestState.DECLINED -> "$f declined" to true
+            ChatRequestState.BLOCKED -> "$f blocked you" to true
+        }
+    }
+
+    /** Who asked this device to host [d], or null when nobody did. */
+    fun hostAsker(d: GroupDetail): String? {
+        if (!d.hostRequestedHere || !active(d.myRole)) return null
+        val by = d.hostRequests.firstOrNull { it.isMe }?.appointedBy
+        return by?.let { b -> d.members.firstOrNull { it.did == b }?.name }?.ifBlank { null } ?: "An admin"
+    }
+
     /** Unread posts in groups we are still in: the Groups tab's badge. */
     fun badge(list: List<GroupSummary>) = list.filter { active(it.myRole) }.sumOf { it.unread.toInt() }
 
     fun actions(d: GroupDetail, m: CoreMember): List<MemberAction> {
         if (m.isMe || !active(d.myRole)) return emptyList()
-        val out = mutableListOf<MemberAction>()
+        val out = mutableListOf<MemberAction>(MemberAction.Message)
         if (d.myRole == CoreRole.OWNER && !m.isOwner) out += if (m.isAdmin) MemberAction.RevokeAdmin else MemberAction.MakeAdmin
         if (isAdmin(d.myRole)) {
             m.deviceIds.forEach { dev ->
@@ -179,6 +216,9 @@ object GroupText {
                 when (r) {
                     "removed" -> "You were removed from this group."
                     "not a member" -> "You’re not a member of this group."
+                    "already a contact" -> "You already have them as a contact. Message them from Chats."
+                    "you block them" -> "You block them. Unblock them first to ask for a chat."
+                    "blocked" -> "They blocked you, so you can’t ask them for a chat."
                     "" -> "Refused."
                     else -> r.replaceFirstChar { it.uppercase() }.trimEnd('.') + "."
                 }
@@ -203,7 +243,16 @@ fun upsertGroupMessage(list: List<GroupMessage>, m: GroupMessage): List<GroupMes
  * The groups state the screens read, refreshed from the core on its [GroupEvents]. Reads are in-memory in
  * the core; actions return Result with what to tell the user, and must be called off the main thread.
  */
-class GroupsController(private val api: GroupApi, private val me: () -> String?) : GroupEvents {
+class GroupsController(private val api: GroupApi, private val me: () -> String?) : GroupEvents, GroupRequestEvents {
+    private val _incoming = MutableStateFlow<List<GroupChatRequest>>(emptyList())
+    /** Chat requests to us (blocked senders are never listed), newest first. */
+    val incoming: StateFlow<List<GroupChatRequest>> = _incoming
+    private val _outgoing = MutableStateFlow<List<GroupChatRequest>>(emptyList())
+    val outgoing: StateFlow<List<GroupChatRequest>> = _outgoing
+    private val _notice = MutableStateFlow<String?>(null)
+    /** Something to tell the user once ("Leo accepted your request"); the UI clears it. */
+    val notice: StateFlow<String?> = _notice
+    fun clearNotice() { _notice.value = null }
     private val _list = MutableStateFlow<List<GroupSummary>>(emptyList())
     val list: StateFlow<List<GroupSummary>> = _list
     private val _open = MutableStateFlow<OpenGroup?>(null)
@@ -217,6 +266,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         // A node without groups (or locked) answers with an error: an empty list.
         _list.value = try { api.groups() } catch (e: Exception) { emptyList() }
         if (myDevice.isEmpty()) myDevice = try { api.deviceId() } catch (_: Exception) { "" }
+        reloadRequests()
         reloadOpen()
     }
 
@@ -275,8 +325,35 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun appoint(id: String, did: String, dev: String) = act("Appointed. The device hosts once it agrees.") { api.appointHost(id, did, dev) }
     fun revoke(id: String, did: String, dev: String) = act("That device no longer hosts the group.") { api.revokeHost(id, did, dev) }
     fun acceptHost(id: String, accept: Boolean) = act(
-        if (accept) "This phone offered to host. It hosts once an admin appoints it." else "This phone stopped hosting the group."
+        if (accept) "This phone agreed to host. It hosts as soon as an admin has appointed it." else "This phone stopped hosting the group."
     ) { api.acceptHost(id, accept) }
+
+    private fun reloadRequests() {
+        _incoming.value = try { api.requestsIncoming() } catch (_: Exception) { emptyList() }
+        _outgoing.value = try { api.requestsOutgoing() } catch (_: Exception) { emptyList() }
+    }
+
+    /** "Message privately" for a member who is not a contact. */
+    fun request(groupId: String, did: String): Result<String> =
+        runCatching { api.chatRequest(groupId, did) }.map { "Request sent to ${firstName(it.peerName.ifBlank { "them" })}. It waits in Chats until they answer." }
+            .also { reloadRequests() }.mapError()
+
+    fun accept(requestId: String): Result<String> = runCatching { api.chatAccept(requestId) }
+        .map { "Accepted. ${firstName(it.peerName.ifBlank { "They" })} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them." }
+        .also { reloadRequests() }.mapError()
+
+    fun decline(requestId: String): Result<String> = runCatching { api.chatDecline(requestId) }
+        .map { "Declined. ${firstName(it.peerName.ifBlank { "They" })} is told “declined”." }.also { reloadRequests() }.mapError()
+
+    /** Block (P5: they are told) and decline. */
+    fun blockRequester(requestId: String, did: String): Result<String> = runCatching { api.block(did); api.chatDecline(requestId) }
+        .map { "${firstName(it.peerName.ifBlank { "They" })} is blocked and can’t send more requests." }.also { reloadRequests() }.mapError()
+
+    override fun onChatRequest(request: GroupChatRequest) {
+        reloadRequests()
+        if (request.outgoing && request.state == ChatRequestState.ACCEPTED && request.contactAdded)
+            _notice.value = "${firstName(request.peerName.ifBlank { "They" })} accepted your request. You can message each other now; calls stay off until one of you allows them."
+    }
 
     private fun act(ok: String, f: () -> Unit): Result<String> = runCatching { f(); ok }.also { refresh() }.mapError()
 
@@ -303,7 +380,9 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         }
     }
 
-    fun attach(node: Node) { try { node.setGroupEvents(this) } catch (e: Exception) { Log.w(P2pApp.TAG, "setGroupEvents: $e") } }
+    fun attach(node: Node) {
+        try { node.setGroupEvents(this); node.setGroupRequestEvents(this) } catch (e: Exception) { Log.w(P2pApp.TAG, "setGroupEvents: $e") }
+    }
 }
 
 /** A failed group action: [message] is already in the user's words. */

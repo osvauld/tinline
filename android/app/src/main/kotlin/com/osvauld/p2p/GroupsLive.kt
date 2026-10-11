@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import uniffi.p2pcore.ChatRequestState
 import uniffi.p2pcore.GroupDetail
 import uniffi.p2pcore.GroupInvitePeek
 import uniffi.p2pcore.GroupItemKind
@@ -65,6 +66,91 @@ private fun nameOf(app: P2pApp, did: String, fallback: String): String {
 private fun rememberRunner(): (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit {
     val scope = rememberCoroutineScope()
     return remember(scope) { { work, done -> scope.launch { done(withContext(Dispatchers.IO) { work() }) } } }
+}
+
+/** "X asked this phone to host <group>": Host here / Decline (G2 `host_requested_here`). */
+@Composable
+private fun HostAskCard(app: P2pApp, d: GroupDetail, say: (String) -> Unit) {
+    val by = GroupText.hostAsker(d) ?: return
+    val exec = rememberRunner()
+    val c = Tin.c
+    NoticeCard(c.warn, c.onWarn, "${firstName(by)} asked this phone to host ${d.name}",
+        "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. " +
+            "It needs to stay online and uses battery: a computer that stays on is a better host. Hosting doesn’t make you an admin.",
+        Modifier.padding(horizontal = 16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TinButton("Host here", { exec({ app.groups.acceptHost(d.id, true) }) { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) } },
+                Modifier.weight(1f), style = BtnStyle.Filled, height = 44.dp)
+            TinButton("Decline", { exec({ app.groups.acceptHost(d.id, false).map { "Declined. The admins see no answer from this phone." } }) { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) } },
+                Modifier.weight(1f), style = BtnStyle.Outlined, height = 44.dp)
+        }
+    }
+}
+
+/**
+ * Chat requests (U3) above the chats (board AndroidChatRequest): incoming with Accept / Decline / Block,
+ * then our sent ones with their state. Nothing when there are none.
+ */
+@Composable
+fun GroupRequestsBlock(app: P2pApp, onChat: (String) -> Unit, say: (String) -> Unit) {
+    val c = Tin.c
+    val incoming by app.groups.incoming.collectAsState()
+    val sent by app.groups.outgoing.collectAsState()
+    val contacts by app.contacts.collectAsState()
+    val exec = rememberRunner()
+    val pending = incoming.filter { it.state == ChatRequestState.PENDING }
+    if (pending.isEmpty() && sent.isEmpty()) return
+    val done: (Result<String>) -> Unit = { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) }
+    val now = System.currentTimeMillis()
+    Column(Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+        if (pending.isNotEmpty()) {
+            SectionLabel("REQUESTS · ${pending.size}")
+            pending.forEach { r ->
+                val name = nameOf(app, r.peerDid, r.peerName)
+                CardBox(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), radius = 20.dp) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            PersonAvatar(name, r.peerDid, 40.dp, contact = false)
+                            Column(Modifier.weight(1f)) {
+                                Text(name, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                                Text("Member of ${r.groupName}", style = TinType.bodyM, color = c.ink2)
+                            }
+                        }
+                        Hint("Accepting adds ${firstName(name)} as a contact for messages only. You can allow calls later.")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TinButton("Accept", { exec({ app.groups.accept(r.id) }, done) }, Modifier.weight(1f), height = 44.dp)
+                            TinButton("Decline", { exec({ app.groups.decline(r.id) }, done) }, Modifier.weight(1f), style = BtnStyle.Outlined, height = 44.dp)
+                        }
+                        TinButton("Block ${firstName(name)}", { exec({ app.groups.blockRequester(r.id, r.peerDid) }, done) }, style = BtnStyle.Text, fill = false, height = 40.dp)
+                    }
+                }
+            }
+        }
+        if (sent.isNotEmpty()) {
+            SectionLabel("SENT REQUESTS")
+            sent.forEach { r ->
+                val name = nameOf(app, r.peerDid, r.peerName)
+                val (line, bad) = GroupText.sentLine(r)
+                val open = r.contactAdded && contacts.any { it.did == r.peerDid }
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 64.dp).let { if (open) it.clickable(role = Role.Button) { onChat(r.peerDid) } else it }
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    PersonAvatar(name, r.peerDid, 40.dp, contact = open)
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(name, Modifier.weight(1f), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(agoOrDate(r.at.toLong(), now), style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
+                        }
+                        Text(line, style = TinType.bodyM, color = if (bad) c.er else c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            Hint("A request waits at the group’s hosts for up to 7 days.", Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+        }
+        SectionLabel("CHATS")
+    }
 }
 
 // ------------------------------------------------------------------ the Groups tab
@@ -150,6 +236,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
             d.name, onBack, sub = GroupText.status(d), subColor = if (d.myRole == CoreRole.REMOVED) c.er else if (waiting) c.threadText else c.ink2,
             avatar = { GroupAvatar(tintOf(d.id), 40.dp, dim = !GroupText.active(d.myRole), radius = 12.dp) }, onTitle = onInfo,
         ) { IconBtn(Icons.Rounded.Info, "Group info", onInfo) }
+        HostAskCard(app, d, say)
         if (waiting) InfoCard(
             if (d.hosts.isEmpty()) "This group has no host yet. Your messages are saved and send when a member’s computer hosts it."
             else "No host is online. Your messages are saved and send when one comes back.",
@@ -257,7 +344,7 @@ private fun ColumnScope.GroupItemLive(
 // ------------------------------------------------------------------ group info
 
 @Composable
-fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onToken: (device: Boolean) -> Unit, onRemoval: () -> Unit, say: (String) -> Unit) {
+fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onToken: (device: Boolean) -> Unit, onRemoval: () -> Unit, say: (String) -> Unit, onChat: (String) -> Unit = {}) {
     val c = Tin.c
     val open by app.groups.open.collectAsState()
     val blocks by app.blocks.collectAsState()
@@ -289,11 +376,20 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onToken: (device:
                     if (d.removal != null) TinButton("Why was I removed?", onRemoval, style = BtnStyle.Outlined, fill = false, height = 44.dp)
                 }
             }
+            item { HostAskCard(app, d, say) }
             item { SectionLabel("HOSTS · KEEP THE GROUP RUNNING") }
             if (d.hosts.isEmpty()) item { Hint("No host yet. Messages wait until a member’s device hosts the group; a computer that stays on is best.", Modifier.padding(horizontal = 20.dp)) }
             items(d.hosts, key = { "h" + it.did + it.deviceId }) { h ->
                 HostRow(if (h.isMe) "This phone" else "${firstName(nameOf(app, h.did, h.name))}’s device ${GroupText.shortDev(h.deviceId)}",
                     if (h.isMe) "Hosting now" else if (h.online) "Connected" else "Not connected", if (h.online) c.pr else c.ln2)
+            }
+            if (admin && d.hostRequests.isNotEmpty()) {
+                item { SectionLabel("ASKED TO HOST") }
+                items(d.hostRequests, key = { "q" + it.did + it.deviceId }) { h ->
+                    HostRow(if (h.isMe) "This phone" else "${firstName(nameOf(app, h.did, h.name))}’s device ${GroupText.shortDev(h.deviceId)}", "No answer yet", c.thread) {
+                        TinButton("Withdraw", { exec({ app.groups.revoke(id, h.did, h.deviceId) }, done) }, style = BtnStyle.Text, fill = false, height = 40.dp)
+                    }
+                }
             }
             if (admin && d.hostOffers.isNotEmpty()) {
                 item { SectionLabel("OFFERED TO HOST") }
@@ -349,6 +445,14 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onToken: (device:
             val several = m.deviceIds.size > 1
             GroupText.actions(d, m).forEach { a ->
                 when (a) {
+                    MemberAction.Message -> {
+                        val contact = app.contacts.value.any { it.did == m.did }
+                        SheetItem(Icons.Rounded.ChatBubbleOutline, "Message privately",
+                            if (contact) "Opens your chat" else "Sends ${firstName(name)} a chat request through the host") {
+                            sheetFor = null
+                            if (contact) onChat(m.did) else confirm = GroupConfirm.Request(m.did, name)
+                        }
+                    }
                     MemberAction.MakeAdmin -> SheetItem(Icons.Rounded.AdminPanelSettings, "Make admin", "Can invite, flag members and appoint hosts") { sheetFor = null; confirm = GroupConfirm.Admin(m.did, name, true) }
                     MemberAction.RevokeAdmin -> SheetItem(Icons.Rounded.AdminPanelSettings, "Remove as admin", "${firstName(name)} stays a member") { sheetFor = null; confirm = GroupConfirm.Admin(m.did, name, false) }
                     is MemberAction.Appoint -> SheetItem(Icons.Rounded.Dns, if (several) "Make device ${GroupText.shortDev(a.deviceId)} a host" else "Make host",
@@ -378,6 +482,12 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onToken: (device:
             DialogText(if (k.admin) "${firstName(k.name)} will be able to invite people, flag members (3 flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
                 else "${firstName(k.name)} stays in the group as a member. Flags they already made still count.")
         }
+        is GroupConfirm.Request -> TinDialog("Ask ${firstName(k.name)} for a private chat", { confirm = null }, "Send request",
+            { confirm = null; exec({ app.groups.request(id, k.did) }, done) }, icon = Icons.Rounded.ChatBubbleOutline) {
+            DialogText("Member of ${d.name}")
+            DialogText("${firstName(k.name)} sees your name and the group. The request goes through the group’s host sealed, so the host can’t read it.")
+            DialogText("If ${firstName(k.name)} accepts, you can message each other directly. Calls stay off until one of you allows them.")
+        }
         GroupConfirm.Leave -> TinDialog("Leave ${d.name}?", { confirm = null }, "Leave", { confirm = null; exec({ app.groups.leave(id) }, done) }, destructive = true, icon = Icons.AutoMirrored.Rounded.Logout) {
             DialogText("Members see that you left. The messages stay on this phone, read-only. To come back, an admin has to invite you again.")
         }
@@ -394,6 +504,7 @@ private sealed interface GroupConfirm {
     data class Flag(val did: String, val name: String, val flags: Int) : GroupConfirm
     data class Admin(val did: String, val name: String, val admin: Boolean) : GroupConfirm
     data object Leave : GroupConfirm
+    data class Request(val did: String, val name: String) : GroupConfirm
     data class Host(val accept: Boolean) : GroupConfirm
 }
 
