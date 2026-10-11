@@ -6090,6 +6090,7 @@ dependencies = [
  "identity",
  "iroh",
  "iroh-blobs",
+ "jni 0.21.1",
  "loro",
  "n0-future",
  "opusic-sys",
