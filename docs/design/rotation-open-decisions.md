@@ -183,8 +183,10 @@ notice — stops sending and calling, disables the composer and call button, no 
 address changes (backstop for modified open-source builds). The signed block notice may also carry
 a deletion request: the blocked person's app deletes our contact entry (address, tokens, device
 list). Honoured by the shipped app; not enforceable against modified builds, and they still know
-our DID. Open: does the deletion request also remove the chat history on their side, or only the
-contact entry? Is it always sent with a block, or a separate choice in the block dialog?
+our DID. DECIDED (user): the deletion request removes the contact entry only; their chat history
+with us stays (read-only). DECIDED (user): always sent with every block (no checkbox). Consequence: after an unblock the other
+person must re-add us (scan QR / ticket) because their contact entry for us is gone; the unblock
+notice only clears their "blocked you" state on the kept chat history.
 
 **U21 (user, 2026-10-10) — group calls are relayed through one call host, never a member mesh.**
 Members connect only to the selected call host (keeps U7: no member learns another member's
@@ -195,6 +197,22 @@ connection is preferred when one is available. Call hosting is a separate `host_
 capability, not implied by chat hosting. Encryption is hop-by-hop QUIC; the host can hear the
 call, accepted under U14. Launch failover: if the call host drops, the call ends and members
 redial through the next host — no live hand-off. Spec and test plan: G6 (`group-call-spec.md`).
+
+**U22 (user, 2026-10-10) — P9c confirmed.** No per-message hiding (every device reaches the same
+verdict, so an unprovable op refuses the whole batch); own-device sync protocol bumped with chat
+(`tinline/chat/2`, `tinline/self/2`). Merged into fixes-phase1 as `cf46f7a`.
+
+**U23 (user, 2026-10-10) — priority: consent-based blocking first, rotation second.** The main
+protection is blocking that our shipped apps honour on both sides (signed notice, the blocked
+person's app stops sending/calling and can delete our contact, the blocker's devices refuse).
+Endpoint rotation is the backstop for truly malicious users running modified clients; it follows
+after blocking (P5) and message/call tokens (P6).
+
+**U24 (user, 2026-10-10) — chats are never deleted; media can be.** No "Delete chat" action:
+chat history is kept (blocking keeps it too). Users may delete media/files to free space. The
+now-unused `chat_purge` (P5) should be removed or limited to media. Messages written before a
+block are delivered after an unblock + re-add (accepted). The "tried to message you N times"
+counter comes later with the UI wiring.
 
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline

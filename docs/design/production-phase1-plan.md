@@ -98,3 +98,45 @@ instead of reporting via the event; passes 3/3 alone; link code untouched by pha
   group-sim tests removed or rewritten.
 - Cleanup: 31 merged rot-*/fix-* worktrees removed (branches kept). `agent-*` worktrees belong to
   other sessions (some dirty) and were left alone.
+
+## Phase 2 (overnight, 2026-10-10; user away until morning, "you go")
+
+Integration branch `phase2` from `fixes-phase1` @ `bd5e1e9` (so the device-test build of
+`fixes-phase1` stays unchanged). Common packet rules: `/home/abe/p2p_chat/.claude/worktrees/phase2-common.md`
+(choices not covered by U1–U24 are made conservatively and marked PROVISIONAL for the user).
+
+| Packet | Branch / worktree | Scope |
+|---|---|---|
+| P6 | `fix/p6` / `fix-p6` | separate message/call tokens, allow-calls API, "calls not allowed" reason |
+| P10 | `fix/p10` / `fix-p10` | re-add divergence (writer, counter never repeat), chat_open retry, deterministic edit winner (flaky test) |
+| G1 | `grp/core` / `grp-core` | group chat in core: records + signing, group endpoint, hosts, invite/join, post, multi-device, 3-flag removal, UniFFI API |
+| UI-W | `ui/wire` / `ui-wire` (from `test/phase1-ui`) | apps use the real block API; no "remove contact"; block copy; desktop Groups nav |
+
+Still not merged into `dev`; nothing pushed.
+
+Phase 2 progress: P10 merged `c0c69a4`, P6 merged `d0df454`. Coordinator run on `phase2` @ `d0df454`
+(`cargo test -p proto; cargo test -p p2pcore --no-fail-fast`): 281 passed, 0 failed, 16 ignored.
+Started from `d0df454`: P4 (`fix/p4`, device-list push) and P10b (`fix/p10b`, undelivered own
+messages after a writer-ID change are still pushed).
+PROVISIONAL choices to confirm with the user: P10 delete beats edit, ties to higher writer ID;
+wire bumped to chat/3, self/3, calls osvauld/p2p/1. P6 "calls not allowed" shown to any contact;
+message token renews within 30 days of expiry; downgrade not announced; re-add keeps the previous
+call permission; legacy v1 grants accepted as message+call.
+
+Phase 2 progress (2026-10-11 early): P10b merged `618cdb7` + follow-up `84f4f04`; P4 merged `474924d`;
+UI-W done on `ui/wire` (apps use the real block API, allow calls; desktop 57 tests); G1 group core
+merged `f3b901b`. Coordinator run on `phase2` @ `f3b901b`: proto + p2pcore 343 passed, 0 failed,
+16 ignored. Test build `test/phase2-ui` (= ui/wire + phase2 before G1) built, NOT installed (wire
+bump chat/3, self/3, calls p2p/1 needs both devices updated and likely a wipe; user is device-testing
+phase 1). Started: G-UI (`ui/groups-wire`, apps on the real group API), G2 (`grp/g2`: group store
+loss, own-device group sync, U3 chat requests via host, U12 host rotation).
+PROVISIONAL choices from G1 are listed in `docs/group-core.md` (creator's device first host; only
+owner/admins invite, 7-day bearer invites; owner can't be flagged or leave; removal final; etc.).
+
+2026-10-11 morning: user chose to skip ahead of the phase 1 device test. G-UI done (`ui/groups-wire`
+@ `3771b78`: real groups in both apps; desktop 72 tests) — that build is installed on the phone
+(data wiped) and desktop (fresh). G2 merged into `phase2` @ `aa29996` (group store loss, own-device
+group sync, U3 chat requests, U12 host rotation, host requests); coordinator run 351 passed,
+0 failed, 16 ignored. G-UI continues: chat requests + host prompt in the apps.
+Open for the user: one group endpoint per install is shared by all its groups, so a removed member
+in another group hosted by the same device learns the rotated endpoint (lean: accept for launch).
