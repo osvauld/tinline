@@ -1,6 +1,7 @@
 # Video calls (spike: `crates/video`)
 
-Status: design + simulation; wired into 1:1 calls in the core; Android UI (camera, render, call screen).
+Status: design + simulation; wired into 1:1 calls in the core; Android UI (camera, render,
+call screen); desktop UI (camera + render).
 
 ## Decisions
 
@@ -492,6 +493,82 @@ Per frame, Kotlin side, emulator (moving average; ranges over runs):
   busy VM. Not reproduced on real devices yet; worth a check on the phone before blaming
   `media` (the simulated controller recovers from drops in a few seconds).
 
+## Desktop (iced, `crates/desktop`)
+
+**Camera: V4L2 directly through `linuxvideo`** (0BSD, pure Rust: `libc`, `bitflags`, `log`,
+`uoctl`; no bindgen, no libv4l, no C). Candidates:
+- `linuxvideo` 0.3: chosen. Small, safe API (`Device` -> `video_capture(PixFormat)` ->
+  `into_stream` -> `dequeue`, mmap buffers); last release 2025-07, less used (~45k downloads).
+- `v4l` 0.14 (MIT): the widely used one (~8M downloads), equivalent API, but its default
+  `v4l2-sys-mit` runs bindgen at build time (libclang on every build host); last release
+  2023-05. Fine fallback if `linuxvideo` goes stale.
+- `nokhwa` 0.10 (Apache-2.0, release 2026-05): cross-platform wrapper (V4L via `v4l`, MSMF,
+  AVFoundation, optional OpenCV); much heavier, own frame/format abstractions and MJPEG
+  decoding we don't need on Linux. The candidate for Windows/macOS later.
+- PipeWire camera portal (`ashpd` + `pipewire` bindings): the only option inside Flatpak or a
+  sandbox, and the way to share the camera with other apps. C library (libpipewire) plus
+  bindgen; deferred until we ship a Flatpak. The capture code is one small module
+  (`camera.rs`), so it can grow a portal backend next to V4L2.
+
+Capture (`camera.rs`): first `/dev/video*` node with VIDEO_CAPTURE + STREAMING and a YUYV or
+NV12 format (YUYV preferred: every UVC webcam has it), asks for 640x480 at 30 fps (the driver
+picks the nearest), and on its own thread (`tl-camera`) converts each buffer to I420
+(`frames::to_i420` = `video::convert::yuyv_to_i420` / NV12 view, stride from the driver),
+writes a mirrored 320x240 RGBA self-view into a slot and calls `push_video_frame` (rotation
+0). Stopping = dropping the handle: the thread sees the flag after its current frame and
+closes the device (never joined, so a stalled camera can't block the UI). No camera found =
+the call screen's camera button reads "No camera" and is disabled. MJPEG is not read: this
+laptop's camera (and most UVC webcams) offers YUYV 640x480 at 30 fps; 720p30 is MJPEG-only
+here (YUYV 720p is 10 fps). For 720p later: `zune-jpeg` (MIT/Apache/Zlib, pure Rust) decodes
+to YCbCr, then 4:2:2/4:4:4 -> I420. Windows/macOS: compiles, no camera yet (only the test
+pattern). Range: this camera's YUYV is limited range (luma 27..230 on a normal scene), so no
+range conversion; `to_i420` can squeeze full range if a camera needs it.
+
+Render (`vcall.rs`, `view.rs` `video_stage`): while the call is active, video negotiated and
+either camera on, a 33 ms `iced::time::every` tick pulls the newest decoded frame
+(`frames::pull` = `pull_video_frame` + `i420_to_rgba`) and wraps it in
+`image::Handle::from_rgba`; the self-view slot is taken the same way. The stage replaces the
+avatar: peer video large (`ContentFit::Contain`), our mirrored picture 220 px wide in the
+bottom-right corner (`stack!`), the peer's avatar with "Camera off" while their camera is off;
+the device pickers hide while video shows. All frame in/out is in `frames.rs`, so moving to
+the core's RGBA pull (V8) is a one-function change. Buttons: Camera (toggle; only once video
+is negotiated, starts off for every call), Settings > Calls > "Video in calls"
+(`set_video_enabled`, default on).
+
+Cost per frame, `cargo run -p desktop --release --example cam_probe [pattern]` (i7-1165G7,
+median; second number with loadavg ~11 from other builds):
+
+| step | thread | ms |
+|---|---|---|
+| YUYV -> I420 640x480 | camera | 0.15 / 0.36 |
+| self-view: 2:1 scale + mirror + RGBA 320x240 | camera | 0.24 / 0.60 |
+| I420 -> RGBA 1280x720 | UI | 1.52 / 3.10 |
+| `Handle::from_rgba` 720p (incl. a 3.7 MB copy) | UI | 0.16 / 0.45 |
+
+So at 720p the UI thread spends ~1.7 ms per remote frame (~5% of one core at 30 fps) plus
+the GPU upload; 640x360 is ~4x cheaper. Each frame is a new image id, so iced uploads a new
+texture and drops the old one; if that shows up, a custom `shader` widget with a persistent
+texture (or YUV planes sampled in the shader) is the next step.
+
+Checks: `cargo test -p desktop frames` (YUYV tight/padded, NV12 padded, full->limited, short
+buffers, self-view size and mirroring). Real camera: `cam_probe` (this laptop: YUYV 640x480,
+opened in 28 ms, 30.1 fps). Two instances: `scripts/desktop_video.py` (release build with
+`--features test-hooks` and `-p peer`; `PROFILE=release`) runs two apps in a private headless
+sway with audio on a null sink: alice calls bob (`P2P_AUTO_CALL`), bob answers, both turn the
+camera on (`P2P_AUTO_CAMERA`) with the synthetic pattern (`TINLINE_FAKE_CAMERA=pattern`;
+test-hooks builds only), then checks VSTATS (frames sent/decoded, no decode errors) on both
+sides and saves a `grim` screenshot of both windows.
+
+Results (release, direct over loopback): 50 s run, load ~6: 1470 frames sent and 1470
+decoded each way, 0 decode errors, both sides at the camera's 640x480 (540p rung, capped at
+the input size) and 2 Mbps after ~4 s, ~29 fps rendered, UI cost 0.5 ms per 640x480 frame
+(pull + RGBA + handle). Screenshot: `docs/video-screens/desktop-call.png` (alice left, bob
+right; peer large, own mirrored picture bottom right). A 20 s run at load ~8-10 stepped down
+for encode time in the first seconds (480x360 at p90 > 20 ms with two encoders, two decoders
+and two UIs on a busy machine) and stayed at 240x180 / 500 kbps for the 30 s block: the
+ladder's CPU rule doing its job, but on a shared desktop a single slow start costs 30 s of
+low resolution.
+
 ## Real transport vs simulation
 
 `video::net` over real iroh connections through an in-process UDP link emulator
@@ -575,7 +652,7 @@ Findings:
    bandwidth drop~~ done (Rate control).
 4. ~~Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.~~ done
    (see Call protocol and core API).
-5. Capture/render: Android CameraX -> I420, desktop camera; render on both. Pure-Rust
-   conversion done (`video::convert`, above). Android capture/render/UI done (see Android app);
-   still to do: use the conversion in the core's encoder thread, zero-copy FFI for frames,
-   desktop capture glue and renderer, phone numbers for `convert_bench`, a run on real phones.
+5. Capture/render: Pure-Rust conversion done (`video::convert`, above). Android
+   capture/render/UI done (see Android app); desktop camera + render done (see Desktop).
+   Still to do: use the conversion in the core's encoder thread, zero-copy FFI for frames,
+   phone numbers for `convert_bench`, a run on real phones.
