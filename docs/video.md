@@ -17,12 +17,13 @@ call screen); desktop UI (camera + render).
   Audio stays on datagrams so it never waits behind video. Group calls later: a host relays
   groups to members (MoQ is relay-shaped), same wire format.
 - **Rate control: delay-based at the app layer** (GCC idea). The receiver reports delivered
-  rate (sliding 100 ms) + queueing delay (frame arrival minus capture time, above its 10 s
-  minimum; the clock offset cancels) every 50 ms. The sender backs off to 85% of delivered
-  when queueing > 40 ms or the link is *starved* (delivered < 50% of what we sent, two reports
-  in a row), then **drains** the standing queue: below delivered until queueing < 15 ms, then
-  ramps +8% per 100 ms. Backlog > 300 ms (and not draining): reset the group, force a
-  keyframe, halve the rate. Details: [Rate control](#rate-control-drain-on-a-bandwidth-drop).
+  rate (sliding 100 ms) + queueing delay (least delayed frame of the last 100 ms, arrival
+  minus capture time, above its 10 s minimum; the clock offset cancels) every 50 ms. The
+  sender backs off to 85% of delivered when queueing > 40 ms or the link is *starved*
+  (delivered < 50% of the delta frames we sent, two reports in a row), takes a second look
+  150 ms later (median delivered; the ladder waits for it), then **drains** the standing
+  queue: below delivered until queueing < 15 ms, then ramps +8% per 100 ms. Backlog > 300 ms
+  (and not draining): reset the group, force a keyframe, halve the rate. Details: [Rate control](#rate-control-drain-on-a-bandwidth-drop).
 - **Shipping**: every shipped build links libaom statically; users never install it. See
   [Shipping libaom](#shipping-libaom).
 - **rav1d from its git tag** v1.1.0: the crates.io package lacks `src/arm/asm-offsets.h`, so
@@ -736,6 +737,26 @@ Findings:
   retransmission delay from queue build-up (e.g. ignore one-off delay spikes no longer than
   ~1 RTT, or use a robust minimum over the report window). **V11: done** (window-minimum
   queueing delay, second look with a median), see below.
+- **V11 on real iroh** (two runs, machine load 20-68 from other builds, so RTTs ran 50-90 ms
+  over the 40 ms path; "V6" = the table above):
+
+  | Scenario | V6 | V11 p50 / p95 | V11 frozen | V11 mean bitrate | V11 resets / keyframes (by cause) |
+  |---|---|---|---|---|---|
+  | clean 2 Mbps | 63 / 98, 1646 kbps, 0 / 2 | 66-67 / 105-108 | 0 | 1675 kbps | 0 / 2 (start, rate) |
+  | 3% loss | 45 / 119, 721 kbps, 4 / 7 | 48-50 / 127-138 | 0-0.24 s | 770-927 kbps | 2-4 / 4-7 (all rate) |
+  | 2 Mbps -> 300 kbps | last 15 s 65 / 97, 2-3 / 4-5 | last 15 s 65 / 113-126 | 0-0.43 s | last 10 s 247-249 kbps | 1-2 / 3-4 |
+  | 500 ms outage | 62 / 93, 1593 kbps, 2 / 4 | 65 / 106-108 | 0.67-0.70 s | 1636 kbps | 2 / 4 |
+  | relay 75 (+0-20) ms | 127 / 174, 1202 kbps, 0 / 2 | 130-131 / 191-204 | 0 | 1242-1248 kbps | 0 / 2 |
+
+  Loss: +7-29% bitrate over V6, but still 0.6-0.7x the sim's (1281 kbps) and still a
+  540 <-> 360 flap or two per 30 s (a cwnd-limited QUIC sender queues for real, which the
+  delay signal rightly sees). Drop: the first cut no longer picks the rung (traced with
+  `SIM_TRACE=1 SIM_FROM=10 SIM_TO=11`, which prints every report the sender got). 2 of 4 runs
+  went straight to 180p; the other 2 went 360p at the second look, 180p 0.4-0.8 s later. That
+  is the 360p floor, not stale bytes: 250 kbps = 85% of 294 kbps, and the 300 kbps link's
+  reports read 236-373 kbps (median 300-340), so a 300 kbps link sits on the boundary.
+  Keyframes in a steady call (issue: one every 7-10 s on the desktop): clean and relay send
+  exactly 2 (start + the 360p -> 540p step).
 - **Sim model, to adjust:** (1) congestion window under random loss (cwnd floor ~1 BDP and
   sender-side queueing when cwnd-limited; today the sim's window rarely limits); (2) loss
   detection by PTO for tail packets plus ACK delay (25 ms max_ack_delay); (3) outages in both
