@@ -479,6 +479,10 @@ fn the_host_rotates_after_a_removal_and_only_remaining_members_follow() {
     o.node.group_set_admin(g.clone(), a.did.clone(), true).unwrap();
     eventually(WAIT, "a is admin", || a.node.group_detail(g.clone()).unwrap().my_role == GroupRole::Admin);
     o.node.group_set_rotation_delay_for_test(25);
+    // GF: the host tells offline members it moved for as long as the rotation delay (2 days in
+    // production); with the delay shortened to 25 s that window closed before c came back under
+    // load. Keep it long here: what is tested is that c is told, not how fast it returns.
+    o.node.group_set_moved_window_for_test(600);
     let old = o.node.group_endpoint_id().unwrap();
     // c is offline across the rotation.
     c.node.stop();
@@ -526,6 +530,7 @@ fn a_host_revocation_rotates_the_remaining_hosts() {
     let d = h.node.group_detail(g.clone()).unwrap();
     assert!(!d.host_requested_here && d.host_requests.is_empty() && d.am_host);
     o.node.group_set_rotation_delay_for_test(5);
+    o.node.group_set_moved_window_for_test(600); // GF: see the removal test above
     let old = o.node.group_endpoint_id().unwrap();
     o.node.group_revoke_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
     eventually(WAIT + 5, "o rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));

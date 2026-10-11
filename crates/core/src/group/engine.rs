@@ -49,6 +49,10 @@ pub(crate) struct GroupRt {
     /// Delay between a removal / host revocation and the hosts' endpoint rotation, ms (U12:
     /// 2 days; 0 = that default). Test knob.
     pub(crate) rotation_delay_ms: AtomicU64,
+    /// How long a host that rotated keeps telling offline members it moved, ms (0 = the rotation
+    /// delay, as in production). Test knob: a shortened rotation delay would otherwise shrink
+    /// this window to seconds, and a member that comes back a little later is never told.
+    pub(crate) moved_window_ms: AtomicU64,
     /// G3: invitation events and the DIDs with an invitation delivery task running.
     pub(crate) inv_events: Mutex<Option<Arc<dyn super::invitations::GroupInvitationEvents>>>,
     pub(crate) inv_delivering: Mutex<HashSet<String>>,
@@ -61,6 +65,13 @@ impl GroupRt {
     pub(crate) fn rotation_delay(&self) -> u64 {
         match self.rotation_delay_ms.load(Ordering::SeqCst) {
             0 => ROTATION_DELAY_MS,
+            v => v,
+        }
+    }
+
+    pub(crate) fn moved_window(&self) -> u64 {
+        match self.moved_window_ms.load(Ordering::SeqCst) {
+            0 => self.rotation_delay(),
             v => v,
         }
     }
@@ -95,6 +106,9 @@ pub(crate) struct GroupCore {
     /// The last refusal a host gave us per group (for `group_join`).
     pub refusals: Mutex<HashMap<String, String>>,
     my_addr: Mutex<HashMap<String, SignedHostAddr>>,
+    /// Groups whose sessions `group_after` told that we host (GF: kept apart from the `my_addr`
+    /// cache, which other paths fill too, so filling it elsewhere cannot swallow the announcement).
+    announced: Mutex<HashSet<String>>,
     next: AtomicU64,
     kick: Notify,
     closed: AtomicBool,
@@ -425,6 +439,7 @@ impl Inner {
             backoff: Default::default(),
             refusals: Default::default(),
             my_addr: Default::default(),
+            announced: Default::default(),
             next: AtomicU64::new(1),
             kick: Notify::new(),
             closed: AtomicBool::new(false),
@@ -564,9 +579,12 @@ impl Inner {
         self.group_push(core, &gid, from);
         self.group_enforce(core, &gid);
         // Became (or stopped being) a host: announce our address.
-        let before = core.my_addr.lock().contains_key(&gid);
         let mine = self.group_my_addr(core, &gid);
-        if mine.is_some() != before {
+        let flipped = {
+            let mut announced = core.announced.lock();
+            if mine.is_some() { announced.insert(gid.clone()) } else { announced.remove(&gid) }
+        };
+        if flipped {
             let hosts = core.host_addrs(&gid);
             for s in core.sessions_of(&gid) {
                 let _ = s.tx.send(Out::Msg(GroupMsg::Hosts { hosts: hosts.clone() }));
@@ -1101,6 +1119,14 @@ impl Inner {
         self.log(format!("group {} session with {} ({})", &gid[..8.min(gid.len())], &peer.did, if hosting { "we host" } else { "they host" }));
         // Catch the other side up.
         self.group_push(&core, &gid, None);
+        // GF: the host addresses again, after the records. Those in Hello/Welcome are merged
+        // before this session's records arrive, so an address of a host the other side does not
+        // yet know as one (e.g. accepted while we were apart) was dropped there and never re-sent;
+        // here it follows the records that make it valid on the same ordered stream.
+        let hosts = core.host_addrs(&gid);
+        if !hosts.is_empty() {
+            let _ = sess.tx.send(Out::Msg(GroupMsg::Hosts { hosts }));
+        }
         self.group_mail_on_session(&core, &sess);
         if let Some(ev) = self.group_ev() {
             let g = gid.clone();
@@ -1285,7 +1311,7 @@ impl Inner {
             core.moving.lock().remove(&gid);
             return;
         };
-        let end = Instant::now() + Duration::from_millis(self.group.rotation_delay());
+        let end = Instant::now() + Duration::from_millis(self.group.moved_window());
         let mut wait = 2u64;
         loop {
             let same = core.ep_id.lock().as_ref().is_some_and(|e| e.id() == ep.id());
