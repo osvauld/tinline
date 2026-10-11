@@ -89,7 +89,7 @@ const results=[];function check(name,condition,detail=''){results.push({name,ok:
   check('callbar 390 tap strip → conversation with overlay open',o.ov&&o.f==='callOv'&&!o.strip&&/chat=arjun&from=home$/.test(o.url),JSON.stringify(o));
   check('callbar 390 overlay timer continues',secs(o.t)>=before,o.t+' vs '+before);
   await p.screenshot({path:shots('conversation-after-strip-390')});
-  await p.locator('#callEnd').click();await p.waitForTimeout(150);check('callbar 390 End toast',/Call ended/.test(await p.locator('#toasts').textContent()));
+  await p.locator('#callEnd').click();await p.waitForTimeout(350);check('callbar 390 End toast',/Call ended/.test(await p.locator('#toasts').textContent()));
   await p.getByRole('button',{name:'Back to chats',exact:true}).click();await p.waitForURL('**/home.html#chats');await p.waitForTimeout(150);
   check('callbar 390 after End Home has no strip',await p.locator('#callStrip').isHidden()&&await p.locator('.mobile-bar').evaluate(e=>e.getBoundingClientRect().top===0));
   // browser history Back keeps the call too
@@ -127,7 +127,7 @@ const results=[];function check(name,condition,detail=''){results.push({name,ok:
   check('callbar 1440 '+L+' strip returns to Arjun with the overlay up',/chat=arjun/.test(back.src)&&back.sel&&back.f==='convo'&&back.inner==='callOv'&&await f.locator('#callOv').isVisible(),JSON.stringify(back));
   if(!dark)await p.screenshot({path:shots('home-1440-light-overlay')});
   await f.locator('#callMin').click();await p.locator('#callStrip').click();await p.waitForTimeout(200);check('callbar 1440 '+L+' strip on the same chat reopens without reload',await f.locator('#callOv').isVisible()&&!/call=open$/.test('x'));
-  await f.locator('#callEnd').click();await p.waitForTimeout(200);check('callbar 1440 '+L+' End in the pane clears Home strip at once',await p.locator('#callStrip').isHidden()&&await stripsVisible(p)===0&&await p.locator('.rail').evaluate(e=>e.getBoundingClientRect().top===0));
+  await f.locator('#callEnd').click();await p.waitForTimeout(350);check('callbar 1440 '+L+' End in the pane clears Home strip at once',await p.locator('#callStrip').isHidden()&&await stripsVisible(p)===0&&await p.locator('.rail').evaluate(e=>e.getBoundingClientRect().top===0));
   check('callbar 1440 '+L+' no AudioContext',await audio(p)===0);check('callbar 1440 '+L+' no runtime errors',!p.errs.length,p.errs.join(';'));await p.context().close()}
  {// call started in groups shows on Home; tapping opens the group with the overlay
   const p=await mkp({w:390,h:844});await p.goto(BASE+'groups.html?group=hike&from=home');await p.waitForTimeout(300);await p.locator('#callBtn').click();await p.waitForTimeout(200);await p.locator('#callOv .cmin').click();
@@ -135,5 +135,5 @@ const results=[];function check(name,condition,detail=''){results.push({name,ok:
   check('callbar group call visible on Home',await p.locator('#callStrip').isVisible()&&/^Weekend hike · /.test(await p.locator('#callStrip').textContent())&&await p.locator('#callStrip').getAttribute('aria-label')==='Return to call with Weekend hike');
   await p.locator('#callStrip').click();await p.waitForURL('**/groups.html?**');await p.waitForTimeout(200);
   check('callbar group strip → group overlay with the roster',/group=hike&from=home$/.test(new URL(p.url()).search)&&await p.locator('#callOv').isVisible()&&await p.locator('#callOv .t-gc .t-gc-glyph').count()===1&&await p.locator('#callOv .t-gc-spk > li').count()===3);
-  await p.locator('#callOv .end').click();check('callbar group End clears',await p.locator('#callStrip').isHidden());check('callbar group no AudioContext',await audio(p)===0);check('callbar group no errors',!p.errs.length,p.errs.join(';'));await p.context().close()}
+  await p.locator('#callOv .end').click();await p.waitForTimeout(350);check('callbar group End clears',await p.locator('#callStrip').isHidden());check('callbar group no AudioContext',await audio(p)===0);check('callbar group no errors',!p.errs.length,p.errs.join(';'));await p.context().close()}
  }catch(e){results.push({name:'run completed',ok:false,detail:e.stack});console.error(e)}finally{await b.close();fs.writeFileSync(path.join(root,'home-results.json'),JSON.stringify(results,null,2));const failed=results.filter(r=>!r.ok);console.log(`${results.length-failed.length}/${results.length} home checks passed`);if(failed.length)process.exitCode=1}})();

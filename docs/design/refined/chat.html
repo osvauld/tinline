@@ -76,6 +76,10 @@ a.ib{color:var(--ink);text-decoration:none}
 .t-avatar.s96{width:96px;height:96px;font-size:32px;margin-bottom:14px}
 .callov .gglyph{display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:var(--surface-2);color:var(--accent-ink);margin-bottom:14px}.callov .gglyph svg.i{width:44px;height:44px;stroke-width:1.5}
 .callov h2{margin:0;font-size:24px;font-weight:600;line-height:30px}
+.callmark{width:52px;height:29px;margin:2px 0}
+.callmark .mk-can{fill:var(--accent)}
+.callmark .mk-str{fill:none;stroke:var(--gold);stroke-width:2.6;stroke-linecap:round;d:path("M14 20Q20 28 26 20");transition:d 260ms ease-out}
+.callmark.taut .mk-str{d:path("M14 20 L26 20")}
 .callov .cst{font-size:var(--fs-sub);color:var(--muted);line-height:18px}
 .callov .ctm{display:inline-block;min-width:6ch;font-size:var(--fs-body);font-variant-numeric:tabular-nums;color:var(--ink);line-height:22px}
 .callctl{display:flex;align-items:flex-start;justify-content:center;gap:48px}
@@ -300,6 +304,8 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
 .toast.notif{background:var(--surface);color:var(--ink);border:1px solid var(--hairline);display:flex;gap:10px;align-items:flex-start;width:100%}
 .toast.notif small{display:block;color:var(--muted)}
 @keyframes rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes callend{to{opacity:0;transform:scale(.96)}}
+.callov.ending{animation:callend 200ms ease-in forwards}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 @keyframes sheetup{from{opacity:.4;transform:translateY(24px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.bub.held{transform:none}}
@@ -399,7 +405,7 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
     <div id="callStrip" hidden></div>
     <div class="callov" id="callOv" role="dialog" aria-labelledby="callName" tabindex="-1" hidden>
       <button class="ib min" type="button" id="callMin" aria-label="Back to chat — call continues"><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg></button>
-      <div class="who2"><span id="callAv"></span><h2 id="callName"></h2><span class="cst" id="callStatus" aria-live="polite"></span><span class="ctm" id="callTime"></span></div>
+      <div class="who2"><span id="callAv"></span><h2 id="callName"></h2><svg class="callmark" id="callMark" viewBox="0 9 40 22" aria-hidden="true" focusable="false"><path class="mk-can" d="M14,11H8A5,5 0 0 0 3,16V24A5,5 0 0 0 8,29H14Z"/><path class="mk-can" d="M26,11H32A5,5 0 0 1 37,16V24A5,5 0 0 1 32,29H26Z"/><path class="mk-str" d="M14 20Q20 28 26 20"/></svg><span class="cst" id="callStatus" aria-live="polite"></span><span class="ctm" id="callTime"></span></div>
       <div class="callctl">
         <label><button class="cbtn mute" type="button" id="callMute" aria-pressed="false" aria-label="Mute"><svg class="i" aria-hidden="true"><use id="callMuteUse" href="#i-mic"/></svg></button><span aria-hidden="true" id="callMuteLbl">Mute</span></label>
         <label><button class="cbtn end" type="button" id="callEnd" aria-label="End call"><svg class="i" aria-hidden="true"><use href="#i-phone"/></svg></button><span aria-hidden="true">End</span></label>
@@ -707,10 +713,12 @@ let call = TinCall.get(), callOpen = false;
 // A group call (maybe started in groups.html) shows the shared roster from call-state.js instead of one avatar.
 const gStage = TinCall.stage(); $("#callOv .who2").after(gStage);
 TinAudio.follow(TinCall);
+function reducedMotion() { return matchMedia("(prefers-reduced-motion:reduce)").matches || document.documentElement.dataset.motion === "reduce"; }
 function callTick() {
   const t = TinCall.get(); if (!t) return;
   $("#callStatus").textContent = t.connected ? (t.muted ? "Muted" : "Connected") : t.preLabel;
   $("#callTime").textContent = t.time;
+  $("#callMark").classList.toggle("taut", !!t.connected);
 }
 function paintCall() {
   if (!call) return;
@@ -747,7 +755,14 @@ function minimizeCall() {
 function endCall(quiet) {
   if (!call) return;
   const snap = TinCall.get(); // read before TinCall.end() clears connected/secs
-  if (!quiet) TinAudio.ending(); // the End tap plays the ended cue here
+  if (!quiet) TinAudio.ending(); // the End tap plays the ended cue here, in sync with the release below
+  if (quiet || reducedMotion()) { finishEndCall(quiet, snap); return; }
+  $("#callMark").classList.remove("taut"); // the string goes slack again
+  $("#callOv").classList.add("ending");
+  setTimeout(() => finishEndCall(quiet, snap), 220);
+}
+function finishEndCall(quiet, snap) {
+  $("#callOv").classList.remove("ending");
   if (!quiet && snap && snap.kind === "direct") logCallEnd(snap);
   TinCall.end(); // clears this page via the subscriber, and every other page through call-state.js
   if (!quiet) { say("Call ended"); ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true }); }

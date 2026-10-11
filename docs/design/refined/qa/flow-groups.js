@@ -144,7 +144,7 @@ p=await L.page(b,{w:390,h:844,mobile:true});await p.goto(L.BASE+'groups.html');a
 await chk('mobile: call overlay + strip across conversation and list views at 390',async()=>{await p.locator('[data-row=hike]').click();await sleep(p,300);const w=await p.$eval('#callBtn',c=>c.offsetWidth);await p.click('#callBtn');await sleep(p,3000);await p.screenshot({path:'screenshots/groups-mobile-call-overlay.png'});
   await p.click('#callOv .cmin');await sleep(p,200);await p.screenshot({path:'screenshots/groups-mobile-call-strip.png'});const inConv=await p.locator('#callStrip').isVisible();
   await p.click('[aria-label="Back to groups"]');await sleep(p,300);const inList=await p.locator('#callStrip').isVisible();await p.screenshot({path:'screenshots/groups-mobile-call-strip-list.png'});
-  await p.click('#callStrip');await p.click('#callOv .end');await sleep(p,200);return {ok:w===44&&inConv&&inList&&!(await p.locator('#callStrip').isVisible()),d:[w,inConv,inList].join()}});
+  await p.click('#callStrip');await p.click('#callOv .end');await sleep(p,350);return {ok:w===44&&inConv&&inList&&!(await p.locator('#callStrip').isVisible()),d:[w,inConv,inList].join()}});
 await chk('mobile: Phone preview link hidden under 860px',async()=>({ok:!(await p.locator('#mobilePreview').isVisible())}));
 await p.screenshot({path:'screenshots/groups-mobile-list.png'});
 await chk('mobile list: no overflow',async()=>{const o=await L.overflow(p);return {ok:o.sw<=o.cw,d:JSON.stringify(o)}});
@@ -176,7 +176,7 @@ await chk('cross-page: group call strip in chat.html; chat phone button returns 
 await q.click('#callStrip');await sleep(q,200);
 await chk('cross-page: chat.html shows the same group roster, not one avatar (identical tiles, quiet row, +n)',async()=>{const r=await rosterInfo(q),cSig=sig(r);const one=await q.evaluate(()=>document.querySelector('#callOv .who2').hidden&&document.querySelector('#callOv').getAttribute('aria-label'));return {ok:await q.locator('#callOv').isVisible()&&cSig===gSig&&r.tiles.length===3&&one==='Call with Weekend hike',d:one+' '+(cSig===gSig?'same':cSig+' VS '+gSig)}});
 await q.screenshot({path:'screenshots/roster-chat-crosspage-1440-light.png'});
-await q.click('#callEnd');await sleep(q,150);
+await q.click('#callEnd');await sleep(q,350); // End now waits ~220ms for the string/overlay release
 await q.goto(L.BASE+'groups.html?group=hike');await sleep(q,300);
 await chk('cross-page: ended in chat → gone in groups',async()=>({ok:await q.locator('#callStrip').isHidden()&&(await q.getAttribute('#callBtn','aria-label'))==='Start group call'}));
 await chk('cross-page: no AudioContext, no errors',async()=>{const a=await L.aud(q);return {ok:!a.started&&!a.ctxStates.length&&!q.errs.length,d:JSON.stringify(a)+q.errs.join('|')}});
@@ -230,10 +230,25 @@ await chk('message-sent sound in groups.html: no console errors',async()=>({ok:!
 await s.context().close()}
 {// call record left in the thread on End (WhatsApp convention) — an event line, since a group call belongs to the room
 const t=await L.page(b);await t.goto(L.BASE+'groups.html?group=hike');await sleep(t,300);
-await t.click('#callBtn');await sleep(t,3200);await t.click('#callOv .end');await sleep(t,200);
+await t.click('#callBtn');await sleep(t,3200);await t.click('#callOv .end');await sleep(t,350); // End now waits ~220ms for the string/overlay release before the record lands
 await chk('call ended leaves an event line "Call ended · MM:SS" (same .sys style as "Kavya joined…")',async()=>{const r=await t.$eval('.sys:last-child',e=>({t:e.textContent,cls:e.className}));return {ok:/^Call ended · \d\d:\d\d$/.test(r.t)&&r.cls==='sys',d:JSON.stringify(r)}});
 await chk('group calls never ring (U21), so there is no "No answer" case here — only a duration',async()=>({ok:!/No answer/.test(await t.textContent('#msgs'))}));
 await chk('event lines never reach the chat-list preview (same rule as every other one)',async()=>({ok:!/Call ended/.test(await t.textContent('[data-row=hike]'))}));
 await chk('call record (group): no console errors',async()=>({ok:!t.errs.length,d:t.errs.join('|')}));
 await t.context().close()}
+{// the brand mark on a direct call viewed from groups.html's overlay (cross-page) — group calls themselves never show it
+const u=await L.page(b);await u.goto(L.BASE+'groups.html?group=hike');await sleep(u,300);
+await u.click('#callBtn');await sleep(u,500);
+await chk('group call has no brand mark (roster-based, not a two-can metaphor)',async()=>({ok:!(await u.evaluate(()=>!!document.querySelector('#callMark')))}));
+await u.click('#callOv .end');await sleep(u,350);
+const v=await L.page(b);await v.goto(L.BASE+'chat.html?chat=arjun');await sleep(v,300);
+await v.click('#callBtn');await sleep(v,200);
+await v.goto(L.BASE+'groups.html?group=hike');await sleep(v,400);
+await v.click('#callBtn');await sleep(v,200); // call is already live elsewhere: this means "return to call"
+await chk('cross-page: a direct call shown in groups.html\'s overlay has the mark, sagging while ringing',async()=>{const r=await v.evaluate(()=>{const m=document.querySelector('#callMark');return m&&{taut:m.classList.contains('taut')}});return {ok:r&&!r.taut,d:JSON.stringify(r)}});
+await sleep(v,2600);
+await chk('cross-page: the mark goes taut once that direct call connects',async()=>({ok:await v.evaluate(()=>document.querySelector('#callMark').classList.contains('taut'))}));
+await v.click('#callOv .end');await sleep(v,350);
+await chk('brand mark (groups.html): no console errors',async()=>({ok:!u.errs.length&&!v.errs.length,d:u.errs.concat(v.errs).join('|')}));
+await u.context().close();await v.context().close()}
 await b.close();C.save('groups-results.json')})();

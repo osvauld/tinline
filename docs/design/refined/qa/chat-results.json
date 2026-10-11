@@ -153,7 +153,7 @@
   "page": "chat",
   "name": "chat list shows Draft marker for chat with unsent text",
   "ok": true,
-  "detail": "AOArjun Oommen23:01Draft: half written thoughtMNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
+  "detail": "AOArjun Oommen23:51Draft: half written thoughtMNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
  },
  {
   "page": "chat",
@@ -171,13 +171,13 @@
   "page": "chat",
   "name": "Enter sends; message appears; composer cleared and keeps focus",
   "ok": true,
-  "detail": "line1 line223:01Sending focus=ta"
+  "detail": "line1 line223:51Sending focus=ta"
  },
  {
   "page": "chat",
   "name": "sent message progresses to sent/delivered state",
   "ok": true,
-  "detail": "line1 line223:01Delivered"
+  "detail": "line1 line223:51Delivered"
  },
  {
   "page": "chat",
@@ -189,7 +189,7 @@
   "page": "chat",
   "name": "failed send shows failure and Retry control",
   "ok": true,
-  "detail": "goes nowhere first23:01Not delivered·Retry retryBtns=1"
+  "detail": "goes nowhere first23:51Not delivered·Retry retryBtns=1"
  },
  {
   "page": "chat",
@@ -201,37 +201,37 @@
   "page": "chat",
   "name": "retry: focus not lost to BODY",
   "ok": true,
-  "detail": "Actions for your message at 23:01: goes nowhere first"
+  "detail": "Actions for your message at 23:51: goes nowhere first"
  },
  {
   "page": "chat",
   "name": "retry succeeds (no failed message remains)",
   "ok": true,
-  "detail": "goes nowhere first23:01Delivered visibleRetry=0"
+  "detail": "goes nowhere first23:51Delivered visibleRetry=0"
  },
  {
   "page": "chat",
   "name": "contact offline: header/status changes",
   "ok": true,
-  "detail": "AOArjun OommenLast seen 23:01Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
+  "detail": "AOArjun OommenLast seen 23:51Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
  },
  {
   "page": "chat",
   "name": "send while offline shows waiting/queued state",
   "ok": true,
-  "detail": "sent while offline23:01Waiting for Arjun to be online"
+  "detail": "sent while offline23:51Waiting for Arjun to be online"
  },
  {
   "page": "chat",
   "name": "back online: queued message delivered",
   "ok": true,
-  "detail": "sent while offline23:01Delivered"
+  "detail": "sent while offline23:51Delivered"
  },
  {
   "page": "chat",
   "name": "simulate incoming adds a message or badge",
   "ok": true,
-  "detail": "AOArjun Oommen23:01Can you check the shared folder?1MNMeera Nair17:41No rushDPDev PatelMuted. 11:06\ud83d"
+  "detail": "AOArjun Oommen23:51Ha, that’s the best news today1MNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍S"
  },
  {
   "page": "chat",
@@ -572,6 +572,42 @@
  {
   "page": "chat",
   "name": "call record sound: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "mark sags while ringing",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "mark goes taut the instant status reads Connected",
+  "ok": true,
+  "detail": "{\"taut\":true,\"status\":\"Connected\"}"
+ },
+ {
+  "page": "chat",
+  "name": "End: mark sags back and the overlay releases before it hides (not an instant cut)",
+  "ok": true,
+  "detail": "{\"taut\":false,\"ending\":true,\"hidden\":false}"
+ },
+ {
+  "page": "chat",
+  "name": "overlay actually hides only after the release (~220ms), not before",
+  "ok": true,
+  "detail": "hidden after 443ms"
+ },
+ {
+  "page": "chat",
+  "name": "reduced motion: skips both the mark transition and the End delay",
+  "ok": true,
+  "detail": "{\"taut\":true,\"hidden\":true}"
+ },
+ {
+  "page": "chat",
+  "name": "brand mark: no console errors",
   "ok": true,
   "detail": ""
  }

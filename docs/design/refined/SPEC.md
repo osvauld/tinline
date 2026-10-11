@@ -217,6 +217,26 @@ no navigation away, because the core loop is call ↔ chat:
     preview, same as every other one.
   - Quiet resets (Clear/Reset in the Simulation drawer) end the call
     without leaving a record — they're clearing the demo, not living it.
+- **The brand mark, animated** (direct calls only — `chat.html`'s overlay and
+  `groups.html`'s overlay when it's showing a direct call; group calls keep
+  their roster and never show this, group video is out of scope the same
+  way): the `mk-can`/`mk-str` mark from `brand.html`'s `#mark` sits between
+  the name and the status line. The string (`.mk-str`, `--gold`, quadratic
+  `M14 20Q20 28 26 20`) sags while ringing/connecting and straightens to
+  `M14 20 L26 20` — **taut** — the instant `t.connected` flips true, the same
+  read that flips the status text to "Connected" and the same moment the
+  `connected` audio cue plays: one effect, seen and heard together, not two.
+  260ms `d` transition. On End, before the overlay unmounts: the string goes
+  slack again and the whole overlay plays a 200ms scale(.96)+fade release
+  (`.ending` class) — `endCall()` waits for it before actually calling
+  `TinCall.end()`. Minimize never triggers this (the call hasn't ended);
+  reopening shows whatever taut/slack state is already current. `calls.html`
+  shows the same sag/connecting/taut states (`view()`'s `v.mark`) but, since
+  it fully redraws `#stage` on every phase change (nothing there persists
+  across a render to transition from), the change there is a cut, not a
+  tween — consistent with every other state change already being a cut on
+  that page. Reduced motion (`prefers-reduced-motion` or `?motion=reduce`):
+  no transition, no End delay — states still change correctly, just instantly.
 - Deep links (`calls.html` only): `?call=<id>` / `?call=group:<id>` open an
   already-ringing screen — unaffected by the above. `calls.html` is unchanged
   apart from pulling its cues from the shared `call-audio.js`: it keeps its
@@ -246,6 +266,14 @@ states: 2 lines max — bold short line + one plain line (e.g. "Choose a chat" /
 120–180ms ease-out; entrances fade+4px rise; `prefers-reduced-motion` and
 `data-motion=reduce` kill all of it (already in interactions.css — keep applying
 the shared classes). Animation never carries meaning alone.
+
+Press feedback (`interactions.css`, shared by every study) scales to `.97` on
+`:active` for `.btn/.ib/.b/.chip/.new-btn`, and now `.cbtn`/`.cb` too — the
+call-control buttons (Mute, End, and calls.html's Mute/End/route row) get the
+same give as every other button, with End itself squishing a touch more
+(`.cbtn.end`/`.cb.end`, `.93`) since it's the one irreversible action in that
+row. Reduced motion zeroes the transform the same way it already zeroes
+everything else here.
 
 ## QA duties per packet
 

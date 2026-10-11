@@ -64,6 +64,11 @@ a{color:var(--accent-ink);text-decoration:none}a:hover{text-decoration:underline
 .callov .cbody{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:0 16px}
 .callov .gav,.callov .t-avatar.big{width:96px;height:96px;margin-bottom:12px}.callov .t-avatar.big{font-size:32px}.callov .gav .ic svg{width:44px;height:44px;stroke-width:1.5}
 .callov h2{font-size:24px;font-weight:600;margin:0}
+.callov.ending{animation:callend 200ms ease-in forwards}
+.callmark{width:52px;height:29px;margin:2px 0}
+.callmark .mk-can{fill:var(--accent)}
+.callmark .mk-str{fill:none;stroke:var(--gold);stroke-width:2.6;stroke-linecap:round;d:path("M14 20Q20 28 26 20");transition:d 260ms ease-out}
+.callmark.taut .mk-str{d:path("M14 20 L26 20")}
 .callov .cst{font-size:var(--fs-sub);color:var(--muted)}
 .callov .ctime{font-size:15px;font-variant-numeric:tabular-nums;min-width:5ch;color:var(--ink)}
 .cctl{display:flex;align-items:flex-end;gap:40px}
@@ -196,6 +201,7 @@ dialog{border:0;padding:0;border-radius:var(--r-sheet);background:var(--surface)
 dialog::backdrop{background:rgb(10 16 14 / .5)}
 dialog[open]{display:flex;flex-direction:column;animation:pop .16s ease-out}
 @keyframes pop{from{opacity:0;transform:translateY(4px)}}
+@keyframes callend{to{opacity:0;transform:scale(.96)}}
 .dlg{min-height:0;padding:20px;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .dlg h2{font-size:19px;font-weight:650;margin:0}.dlg h2:focus{outline:none}
 .dlg p{margin:0;font-size:14.5px;color:var(--muted);line-height:1.5}
@@ -509,8 +515,11 @@ function callRoster(g){
 function startCall(g){if(CALL){openCall();return}TinAudio.arm();TinCall.start({kind:'group',id:g.id,name:g.name,...callRoster(g)});openCall()}
 const gStage=TinCall.stage();TinAudio.follow(TinCall);
 TinAudio.onQuiet(on=>{const b=$('#swQuiet');if(b)b.setAttribute('aria-checked',String(on))});
+function reducedMotion(){return matchMedia('(prefers-reduced-motion:reduce)').matches||document.documentElement.dataset.motion==='reduce'}
 function tickCall(){const t=TinCall.get();if(!t)return;
-  const tm=$('#callOv .ctime');if(tm){tm.textContent=t.time||'00:00';tm.style.visibility=t.connected?'visible':'hidden';$('#callOv .cst').textContent=t.connected?'Connected':t.preLabel}}
+  const tm=$('#callOv .ctime');if(tm){tm.textContent=t.time||'00:00';tm.style.visibility=t.connected?'visible':'hidden';$('#callOv .cst').textContent=t.connected?'Connected':t.preLabel}
+  $('#callMark')?.classList.toggle('taut',!!t.connected)}
+function callMark(){const m=h('span',{});m.innerHTML='<svg class="callmark" id="callMark" viewBox="0 9 40 22" aria-hidden="true" focusable="false"><path class="mk-can" d="M14,11H8A5,5 0 0 0 3,16V24A5,5 0 0 0 8,29H14Z"/><path class="mk-can" d="M26,11H32A5,5 0 0 1 37,16V24A5,5 0 0 1 32,29H26Z"/><path class="mk-str" d="M14 20Q20 28 26 20"/></svg>';return m}
 function setInert(on){['#listPane','#convPane'].forEach(x=>{$(x).inert=on});callStrip.inert=on}
 const callInitials=n=>n.split(' ').map(w=>w[0]).slice(0,2).join('');
 function muteIcon(b){b.setAttribute('aria-pressed',String(!!CALL?.muted));b.replaceChildren(ic(CALL?.muted?'micoff':'mic'))}
@@ -523,7 +532,7 @@ function renderCall(){
   const face=CALL.kind==='group'?h('span',{class:'gav','aria-hidden':'true'},ic('users')):h('span',{class:'t-avatar big '+hue(CALL.name),'aria-hidden':'true'},callInitials(CALL.name));
   const ov=h('div',{class:'callov',id:'callOv',role:'dialog','aria-label':'Call with '+CALL.name,tabindex:'-1',onkeydown:e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();minimizeCall()}}},
     h('button',{class:'ib cmin',type:'button','aria-label':'Back to chat — call continues',onclick:minimizeCall},ic('chev')),
-    CALL.people?gStage:h('div',{class:'cbody'},face,h('h2',null,CALL.name),h('div',{class:'cst',role:'status'},''),h('div',{class:'ctime'},'00:00')),
+    CALL.people?gStage:h('div',{class:'cbody'},face,h('h2',null,CALL.name),CALL.kind==='direct'?callMark():null,h('div',{class:'cst',role:'status'},''),h('div',{class:'ctime'},'00:00')),
     h('div',{class:'cctl'},h('label',null,mute,'Mute'),h('label',null,h('button',{class:'cbtn end',type:'button','aria-label':'End call',onclick:()=>endCall()},ic('phone')),'End')));
   gStage.hidden=!CALL.people;app.append(ov);tickCall();if(keep)ov.focus()}
 function openCall(){if(!CALL)return;TinAudio.arm();callOpen=true;renderCall();$('#callOv').focus()}
@@ -532,6 +541,12 @@ function endCall(){
   if(!CALL)return;
   const snap=TinCall.get();// read before TinCall.end() clears connected/secs
   TinAudio.ending();
+  if(reducedMotion()){finishEndCall(snap);return}
+  $('#callMark')?.classList.remove('taut');// the string goes slack again
+  $('#callOv')?.classList.add('ending');
+  setTimeout(()=>finishEndCall(snap),220)
+}
+function finishEndCall(snap){
   if(snap&&snap.kind==='group'){const g=conv(snap.id);if(g){g.msgs.push({sys:1,text:'Call ended · '+TinCall.mmss(snap.secs)});if(S.cur===g.id)renderMsgs(true)}}
   TinCall.end();say('Call ended');($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()
 }

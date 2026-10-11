@@ -20,7 +20,7 @@ await step('desktop-mobile',async()=>{const p=await page(b);await p.goto(BASE+'m
  await f.locator('#callMin').click();await p.waitForTimeout(200);
  chk('1440 embed: minimized strip above header inside the frame',await f.locator('#callStrip').evaluate(e=>{const r=e.getBoundingClientRect(),b=document.querySelector('#conv .bar').getBoundingClientRect();return r.top<2&&Math.round(r.height)===40&&b.top>=r.bottom-1}));
  await shot(p,'1440-iframe-strip');
- await f.locator('#callStrip').click();await f.locator('#callEnd').click();await p.waitForTimeout(200);
+ await f.locator('#callStrip').click();await f.locator('#callEnd').click();await p.waitForTimeout(350); // End now waits ~220ms for the string/overlay release
  chk('1440 embed: call ended',!(await f.locator('#callStrip').isVisible())&&!(await f.locator('#callOv').isVisible()));
  chk('1440 embed: app fills frame, no border/radius',await f.locator('#app').evaluate(e=>{const c=getComputedStyle(e),r=e.getBoundingClientRect();return c.borderTopWidth==='0px'&&c.borderTopLeftRadius==='0px'&&Math.abs(r.height-innerHeight)<2}));
  chk('1440 iframe shows Arjun',(await f.locator('#convTitle').innerText()).includes('Arjun'));
@@ -161,7 +161,7 @@ for(const dark of [false,true])await step('mobile-home-callbar-'+(dark?'dark':'l
  await fr().locator('#callStrip').click();await p.waitForTimeout(900);
  chk(L+' mobile home: strip → conversation with overlay open',/chat\.html\?chat=arjun&from=home$/.test(fr().url())&&await fr().locator('#callOv').isVisible()&&await strips()===0,fr().url());
  if(!dark)await p.screenshot({path:path.join(SS,'callbar-mobile-overlay-after-strip.png')});
- await fr().locator('#callEnd').click();await p.waitForTimeout(150);await fr().getByRole('button',{name:'Back to chats',exact:true}).click();await p.waitForTimeout(900);
+ await fr().locator('#callEnd').click();await p.waitForTimeout(350);await fr().getByRole('button',{name:'Back to chats',exact:true}).click();await p.waitForTimeout(900);
  chk(L+' mobile home: after End no strip anywhere',/home\.html/.test(fr().url())&&await strips()===0);
  chk(L+' mobile home: no AudioContext',(await p.evaluate(()=>0))===0&&!(await fr().evaluate(()=>window.__aud&&window.__aud.ctxs.length)));
  chk(L+' mobile home: no runtime errors',!p.errs.length,p.errs.join('|'));await p.close()});

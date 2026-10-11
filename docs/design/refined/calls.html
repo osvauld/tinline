@@ -66,6 +66,10 @@ main{max-width:1240px;margin:0 auto;padding:4px 12px 32px;display:flex;flex-dire
 .desk .av{width:80px;height:80px;font-size:28px}
 .idn h3{margin:0;font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.01em;outline:0;overflow-wrap:anywhere}
 .idle .idn h3{font-size:var(--fs-title);line-height:24px}
+.callmark{width:52px;height:29px;margin:4px 0 0}
+.callmark .mk-can{fill:var(--accent)}
+.callmark .mk-str{fill:none;stroke:var(--gold);stroke-width:2.6;stroke-linecap:round;d:path("M14 20Q20 28 26 20")}
+.callmark.taut .mk-str{d:path("M14 20 L26 20")}
 .st{margin:4px 0 0;min-height:18px;font-size:var(--fs-sub);line-height:18px;color:var(--muted);font-variant-numeric:tabular-nums}
 .st #dur{display:inline-block;min-width:5ch;font-variant-numeric:tabular-nums}
 .meta{margin:12px 0 0;display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:16px;color:var(--muted)}
@@ -582,8 +586,10 @@ function view(){
   else v.acts=[{a:'close',l:'Close',c:'tx'}];
  }
  if(grp&&v.ini)v.grp=true;
+ if(!v.grp&&['connecting','ringing','incoming','joining','active','reconnecting'].indexOf(S.phase)>=0)v.mark=S.phase==='active'?'taut':'sag';
  return v;
 }
+function markHtml(state){return '<svg class="callmark'+(state==='taut'?' taut':'')+'" viewBox="0 9 40 22" aria-hidden="true" focusable="false"><path class="mk-can" d="M14,11H8A5,5 0 0 0 3,16V24A5,5 0 0 0 8,29H14Z"/><path class="mk-can" d="M26,11H32A5,5 0 0 1 37,16V24A5,5 0 0 1 32,29H26Z"/><path class="mk-str" d="M14 20Q20 28 26 20"/></svg>'}
 function btn(x){return '<button type="button" class="b '+(x.c||'')+'" data-act="'+x.a+'"'+(x.dis?' disabled aria-disabled="true"':'')+'>'+(x.i?svg(x.i,x.ic):'')+x.l+'</button>'}
 function cbtn(x){return '<button type="button" class="cb '+(x.k||'')+'" data-act="'+x.a+'"'+(x.al?' aria-label="'+x.al+'"':'')+(x.pr!==undefined?' aria-pressed="'+x.pr+'"':'')+'><span class="cw"><span class="c">'+svg(x.i,x.ic)+'</span></span><span class="l" aria-hidden="'+(x.al?'true':'false')+'">'+x.l+'</span></button>'}
 function renderStage(){
@@ -595,7 +601,7 @@ function renderStage(){
  st.innerHTML='<section class="dev '+(P?'desk':'phone')+'" aria-label="'+(P?'Desktop call window':'Android call screen')+'">'+
   '<div class="tb">'+(S.phase==='incoming'?'Incoming call — Tinline':'Tinline')+'</div>'+
   '<div class="body '+v.cls+'">'+(v.banner?'<div class="banner">'+v.banner+'</div>':'')+top+
-  '<div class="idn"><h3 id="stage-t" tabindex="-1">'+v.name+'</h3>'+(v.status?'<p class="st">'+v.status+'</p>':'')+'</div>'+
+  '<div class="idn"><h3 id="stage-t" tabindex="-1">'+v.name+'</h3>'+(v.mark?markHtml(v.mark):'')+(v.status?'<p class="st">'+v.status+'</p>':'')+'</div>'+
   v.meta+
   (v.desc?'<p class="desc">'+v.desc+'</p>':'')+
   (v.after?'<div class="banner after">'+v.after+'</div>':'')+

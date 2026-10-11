@@ -153,7 +153,7 @@ await q.goto(L.BASE+'chat.html?chat=meera&embed=1&callbar=host');await sleep(q,3
 await chk('?callbar=host: no strip of its own (Home draws it); phone button still returns to the call',async()=>({ok:await q.locator('#callStrip').isHidden()&&(await q.getAttribute('#callBtn','aria-label'))==='Return to call with Arjun Oommen'}));
 await q.click('#callBtn');await sleep(q,150);await q.click('#callMin');await sleep(q,100);
 await chk('?callbar=host: minimise sends focus to the phone button, not a hidden strip',async()=>({ok:(await foc(q))==='callBtn'&&await q.locator('#callStrip').isHidden(),d:await foc(q)}));
-await q.goto(L.BASE+'groups.html?group=hike');await sleep(q,300);await q.click('#callStrip');await sleep(q,150);await q.click('#callOv .end');await sleep(q,150);
+await q.goto(L.BASE+'groups.html?group=hike');await sleep(q,300);await q.click('#callStrip');await sleep(q,150);await q.click('#callOv .end');await sleep(q,350); // End now waits ~220ms for the string/overlay release
 await q.goto(L.BASE+'chat.html?chat=arjun');await sleep(q,300);
 await chk('ending in groups ended it for chat too',async()=>({ok:await q.locator('#callStrip').isHidden()&&(await q.getAttribute('#callBtn','aria-label'))==='Voice call Arjun'}));
 await chk('cross-page call flow never creates an AudioContext',async()=>{const a=await L.aud(q);return {ok:!a.started&&!a.ctxStates.length,d:JSON.stringify(a)}});
@@ -220,7 +220,7 @@ await chk('message-sent sound: no console errors',async()=>({ok:!s.errs.length,d
 await s.context().close()}
 {// call record left in the thread on End (WhatsApp convention) — a bubble, since every call here is outgoing
 const t=await L.page(b);await t.goto(L.BASE+'chat.html?chat=arjun');await sleep(t,300);
-await t.click('#callBtn');await sleep(t,2800);await t.click('#callEnd');await sleep(t,200);
+await t.click('#callBtn');await sleep(t,2800);await t.click('#callEnd');await sleep(t,350); // End now waits ~220ms for the string/overlay release
 await chk('answered call leaves a call-record bubble: phone icon, "Voice call", MM:SS duration, no delivery tick',async()=>{const r=await t.$eval('.m:last-child',e=>({cls:e.querySelector('.bub').className,fn:e.querySelector('.fn').textContent,fm:e.querySelector('.fm').textContent,fmCls:e.querySelector('.fm').className,tick:!!e.querySelector('.tk')}));return {ok:r.fn==='Voice call'&&/^\d\d:\d\d$/.test(r.fm)&&r.fmCls==='fm'&&!r.tick,d:JSON.stringify(r)}});
 await chk('call record shows in the chat-list preview like an attachment',async()=>({ok:/Voice call ·/.test(await t.textContent('[data-chat=arjun] .pv'))}));
 await t.click('.m:last-child .more');await sleep(t,200);
@@ -228,9 +228,30 @@ await chk('call record menu: only Delete (no Reply/Copy/Edit/Message info)',asyn
 await t.keyboard.press('Escape');await sleep(t,150);
 await t.click('.callrow');await sleep(t,250);
 await chk('tapping the call record calls back: overlay reopens',async()=>({ok:await t.locator('#callOv').isVisible()&&(await t.textContent('#callName'))==='Arjun Oommen'}));
-await t.click('#callEnd');await sleep(t,200); // End well before connectAt (2500ms) → a second call record, this time "No answer"
+await t.click('#callEnd');await sleep(t,350); // End well before connectAt (2500ms) → a second call record, this time "No answer" (release delay included)
 await chk('call ended before connecting: "No answer" in --danger, not a duration',async()=>{const r=await t.$eval('.m:last-child .fm',e=>({t:e.textContent,cls:e.className,c:getComputedStyle(e).color}));return {ok:r.t==='No answer'&&/missed/.test(r.cls),d:JSON.stringify(r)}});
 await chk('missed call shows "Missed voice call" in the chat-list preview',async()=>({ok:/Missed voice call/.test(await t.textContent('[data-chat=arjun] .pv'))}));
 await chk('call record sound: no console errors',async()=>({ok:!t.errs.length,d:t.errs.join('|')}));
 await t.context().close()}
+{// the brand mark: sags while ringing/connecting, goes taut the instant the call connects, sags again and releases on End
+const u=await L.page(b);await u.goto(L.BASE+'chat.html?chat=arjun');await sleep(u,300);
+await u.click('#callBtn');await sleep(u,200);
+await chk('mark sags while ringing',async()=>({ok:!(await u.evaluate(()=>document.querySelector('#callMark').classList.contains('taut')))}));
+await sleep(u,2600);
+await chk('mark goes taut the instant status reads Connected',async()=>{const r=await u.evaluate(()=>({taut:document.querySelector('#callMark').classList.contains('taut'),status:document.querySelector('#callStatus').textContent}));return {ok:r.taut&&r.status==='Connected',d:JSON.stringify(r)}});
+const t0=Date.now();await u.click('#callEnd');
+await chk('End: mark sags back and the overlay releases before it hides (not an instant cut)',async()=>{const r=await u.evaluate(()=>({taut:document.querySelector('#callMark')?.classList.contains('taut'),ending:document.querySelector('#callOv').classList.contains('ending'),hidden:document.querySelector('#callOv').hidden}));return {ok:!r.taut&&r.ending&&!r.hidden,d:JSON.stringify(r)}});
+await sleep(u,400);
+const releaseMs=Date.now()-t0;
+await chk('overlay actually hides only after the release (~220ms), not before',async()=>{const hidden=await u.evaluate(()=>document.querySelector('#callOv').hidden);return {ok:hidden&&releaseMs>=200,d:'hidden after '+releaseMs+'ms'}});
+await chk('reduced motion: skips both the mark transition and the End delay',async()=>{
+ await u.goto(L.BASE+'chat.html?chat=arjun&motion=reduce');await sleep(u,300);
+ await u.click('#callBtn');await sleep(u,2700);
+ const taut=await u.evaluate(()=>document.querySelector('#callMark').classList.contains('taut'));
+ await u.click('#callEnd');await sleep(u,40);
+ const hidden=await u.evaluate(()=>document.querySelector('#callOv').hidden);
+ return {ok:taut&&hidden,d:JSON.stringify({taut,hidden})};
+});
+await chk('brand mark: no console errors',async()=>({ok:!u.errs.length,d:u.errs.join('|')}));
+await u.context().close()}
 await b.close();C.save('chat-results.json')})();

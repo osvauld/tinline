@@ -158,4 +158,15 @@ await p.click('#stopsnd');await sleep(p,1200);
 await chk('shared audio: Stop sound stops it (onchange hook updates the caption), zero live oscillators',async()=>{const r=await p.evaluate(()=>({cur:TinAudio.Snd.cur,cap:document.querySelector('#cap').textContent,live:window.__aud.osc.filter(o=>o.started&&!o.ended).length}));return {ok:r.cur===null&&/Sound stopped/.test(r.cap)&&r.live===0,d:JSON.stringify(r)}});
 await chk('shared audio: no console errors',async()=>({ok:p.errs.length===0,d:p.errs.join('|')}));
 await p.context().close();
+{// the brand mark: sags while connecting/ringing, taut once active; absent for idle and group calls
+const q=await L.page(b);await q.goto(L.BASE+'calls.html');await sleep(q,200);
+await chk('idle: no mark (nothing to be taut or slack about yet)',async()=>({ok:!(await q.evaluate(()=>!!document.querySelector('.callmark')))}));
+await q.click('[data-act=start]');await sleep(q,300);
+await chk('connecting: mark present, sagging',async()=>{const r=await q.evaluate(()=>{const m=document.querySelector('.callmark');return m&&{taut:m.classList.contains('taut')}});return {ok:r&&!r.taut,d:JSON.stringify(r)}});
+await sleep(q,7200);
+await chk('active: mark taut, in sync with the connected status',async()=>{const r=await q.evaluate(()=>({taut:document.querySelector('.callmark')?.classList.contains('taut'),st:document.querySelector('.st')?.textContent}));return {ok:r.taut&&/^\d\d:\d\d$/.test(r.st),d:JSON.stringify(r)}});
+await q.click('[data-act=end]');await sleep(q,200);
+await chk('ended: no mark (not a live call anymore)',async()=>({ok:!(await q.evaluate(()=>!!document.querySelector('.callmark')))}));
+await chk('brand mark (calls.html): no console errors',async()=>({ok:!q.errs.length,d:q.errs.join('|')}));
+await q.context().close()}
 await b.close();C.save('calls-results.json')})();
