@@ -17,7 +17,7 @@ for(const dark of [false,true]){const th=dark?'dark':'light';
  let p=await L.page(b,{w:1440,h:1000,dark});await p.goto(L.BASE+'groups.html');await sleep(p,400);
  await shot(p,'desktop-'+th+'-idle');
  if(!dark){
-  await chk('desktop: Weekend hike selected by default; header is one line "8 members"; no host strip',async()=>{const st=await p.textContent('#stLine');return {ok:(await p.textContent('#convPane h2'))==='Weekend hike'&&st==='8 members'&&(await p.locator('.strip').count())===0,d:st}});
+  await chk('desktop: Weekend hike selected by default; header is one line "12 members"; no host strip',async()=>{const st=await p.textContent('#stLine');return {ok:(await p.textContent('#convPane h2'))==='Weekend hike'&&st==='12 members'&&(await p.locator('.strip').count())===0,d:st}});
   await chk('harness: slim bar, icon-only toggles, simulation drawer closed, no disclaimer visible',async()=>{const r=await p.evaluate(()=>({sim:document.querySelector('#sim').hidden,theme:document.querySelector('#theme').textContent.trim(),simb:document.querySelector('#simBtn').textContent.trim(),body:document.body.innerText}));return {ok:r.sim&&!r.theme&&!r.simb&&!/simulated|Nothing is sent|Dark mode/i.test(r.body),d:JSON.stringify({sim:r.sim,theme:r.theme})}});
   await chk('desktop idle: no Reply/Discard text, no visible message controls',async()=>{const t=await idleText(p);const vis=await p.$$eval('.mo',e=>e.filter(x=>getComputedStyle(x).opacity!=='0').length);return {ok:!/Reply|Discard/i.test(t)&&vis===0,d:'visible .mo='+vis}});
   await chk('grouping: corner classes and 2px/10px spacing for Sam’s run and own run',async()=>{const r=await p.evaluate(()=>['m1','m1b','m1c','m2','m3','m3b'].map(id=>{const e=document.querySelector('[data-mid='+id+']');return [id,[...e.classList].find(c=>c.startsWith('g-'))||'-',getComputedStyle(e.parentNode).marginTop]}));const exp='m1,g-first,m1b,g-mid,2px,m1c,g-last,2px,m2,-,10px,m3,g-first,10px,m3b,g-last,2px';const got=r.map(x=>x[0]==='m1'?[x[0],x[1]]:x).flat().join();return {ok:got===exp,d:got}});
@@ -78,7 +78,7 @@ for(const dark of [false,true]){const th=dark?'dark':'light';
  // offline host
  await p.mouse.move(5,5);
  await simToggle(p,'host desktops offline');await sleep(p,400);
- await chk(th+' offline host: thin warn strip under header, title block unchanged',async()=>{const t=await p.textContent('.strip').catch(()=>'');return {ok:/^Host offline — messages wait/.test(t)&&(await p.textContent('#stLine'))==='8 members',d:t}});
+ await chk(th+' offline host: thin warn strip under header, title block unchanged',async()=>{const t=await p.textContent('.strip').catch(()=>'');return {ok:/^Host offline — messages wait/.test(t)&&(await p.textContent('#stLine'))==='12 members',d:t}});
  await p.fill('#ta','nobody is hosting');await p.press('#ta','Enter');await sleep(p,500);
  await shot(p,'desktop-'+th+'-offline');
  await chk(th+' queued message: pending clock glyph, no explanatory text in bubble',async()=>{const r=await p.$$eval('.bub.out',e=>{const b=e.at(-1),c=b.cloneNode(true);c.querySelectorAll('.sr').forEach(x=>x.remove());return {st:b.dataset.state,clock:!!b.querySelector('.tick.pend'),txt:c.textContent}});return {ok:r.st==='queued'&&r.clock&&!/Waiting|saved/i.test(r.txt),d:JSON.stringify(r)}});
@@ -186,4 +186,31 @@ await p.goto(L.BASE+'groups.html?group=book');await sleep(p,300);
 await chk('deep link to removed group: read-only, no menu buttons, no composer',async()=>({ok:(await p.locator('.mo').count())===0&&(await p.locator('#ta').count())===0}));
 await chk('no console errors / failed requests',async()=>({ok:p.errs.length===0&&p.fails.length===0,d:p.errs.concat(p.fails).join('|')}));
 await p.context().close();
+// group-call roster polish: tokens in both themes, keyboard path to the full roster, reduced motion, a host who is you
+for(const dark of [false,true]){const th=dark?'dark':'light';
+ const q=await L.page(b,{w:1440,h:1000,dark});await q.goto(L.BASE+'groups.html?group=hike&motion=reduce');await sleep(q,400);
+ await q.focus('#callBtn');await q.keyboard.press('Enter');await sleep(q,3000);
+ await chk(th+' roster colours come from tokens: avatar hue pairs, accent ring, muted Hosting badge, --bg overlay',async()=>{const r=await q.evaluate(()=>{const v=n=>{const d=document.createElement('i');d.style.color='var('+n+')';document.body.append(d);const c=getComputedStyle(d).color;d.remove();return c};
+   const on=document.querySelector('#callOv .t-gc-tile.on .t-avatar'),tiles=[...document.querySelectorAll('#callOv .t-gc .t-avatar')],host=document.querySelector('#callOv .t-gc-host'),ov=document.querySelector('#callOv');
+   return {hues:tiles.every(a=>{const k=[...a.classList].find(c=>/^av\d$/.test(c));return getComputedStyle(a).backgroundColor===v('--'+k+'-bg')&&getComputedStyle(a).color===v('--'+k+'-ink')}),ring:getComputedStyle(on).outlineColor===v('--accent'),host:getComputedStyle(host).color===v('--muted'),bg:getComputedStyle(ov).backgroundColor===v('--bg'),n:tiles.length}});return {ok:r.hues&&r.ring&&r.host&&r.bg&&r.n===9,d:JSON.stringify(r)}});
+ await chk(th+' reduced motion: no animation or transition on roster tiles',async()=>{const r=await q.evaluate(()=>[...document.querySelectorAll('#callOv .t-gc *')].filter(e=>{const c=getComputedStyle(e);return c.animationName!=='none'||parseFloat(c.transitionDuration)>0}).map(e=>e.className));return {ok:!r.length,d:r.join()}});
+ if(!dark){
+  let seen=[],more=false;for(let i=0;i<8&&!more;i++){await q.keyboard.press('Tab');const f=await q.evaluate(()=>document.activeElement.className||document.activeElement.id);seen.push(f);more=f==='t-gc-more'}
+  await chk('keyboard: Tab from the overlay reaches the "+1" button (with a visible focus ring)',async()=>{const ring=more&&await q.evaluate(()=>getComputedStyle(document.activeElement.firstElementChild).outlineStyle);return {ok:more&&ring==='solid',d:seen.join(' > ')+' ring='+ring}});
+  await q.keyboard.press('Enter');await sleep(q,200);
+  await chk('keyboard: Enter opens the roster sheet with focus on Done',async()=>({ok:await q.evaluate(()=>document.querySelector('dialog.t-gc-sheet').open&&document.activeElement.className==='t-gc-done')}));
+  await q.keyboard.press('Enter');await sleep(q,200);
+  await chk('keyboard: Done closes the sheet, focus returns to "+1"',async()=>({ok:await q.evaluate(()=>!document.querySelector('dialog.t-gc-sheet').open&&document.activeElement.className==='t-gc-more')}));
+  await q.click('#callOv .t-gc-more');await sleep(q,200);await q.mouse.click(8,500);await sleep(q,200);
+  await chk('scrim click closes the roster sheet; the call overlay stays',async()=>({ok:await q.evaluate(()=>!document.querySelector('dialog.t-gc-sheet').open&&!!document.querySelector('#callOv'))}));
+  await q.keyboard.press('Escape');await sleep(q,200);
+  await chk('Escape in the overlay still minimizes (never ends) a group call',async()=>({ok:await q.locator('#callStrip').isVisible()&&!(await q.locator('#callOv').count())}));
+ }
+ if(await q.locator('#callStrip').isVisible())await q.click('#callStrip');await q.click('#callOv .end');await sleep(q,200);
+ await q.goto(L.BASE+'groups.html?group=family');await sleep(q,300);await q.click('#callBtn');await sleep(q,3000);
+ await chk(th+' Family (your desktop hosts): "You" tile carries Hosting; no "+n" when everyone fits',async()=>{const r=await q.evaluate(()=>({tiles:[...document.querySelectorAll('#callOv .t-gc-spk>li')].map(li=>li.textContent),more:document.querySelectorAll('#callOv .t-gc-more').length,sub:document.querySelector('#callOv .t-gc-sub').textContent}));return {ok:r.tiles[0]==='YOYouHosting'&&r.tiles.length===3&&r.more===0&&r.sub==='5 in the call',d:JSON.stringify(r)}});
+ await q.click('#callOv .end');
+ await chk(th+' roster: no console errors',async()=>({ok:!q.errs.length,d:q.errs.join('|')}));
+ await q.context().close();
+}
 await b.close();C.save('group-polish-results.json')})();

@@ -66,7 +66,7 @@ a.ib{color:var(--ink);text-decoration:none}
 /* app frame */
 .app{flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
 .list-pane,.conv-pane{display:flex;flex-direction:column;min-height:0;min-width:0;grid-row:2}
-/* in-conversation call: overlay + minimized strip (silent simulation) */
+/* in-conversation call: overlay + minimized strip (visual simulation; cues from call-audio.js) */
 /* the strip itself is the shared .t-callbar from call-state.js; here it only takes the app frame's first row */
 #callStrip{grid-row:1;grid-column:1/-1}
 .callov{position:absolute;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:8px 16px calc(32px + env(safe-area-inset-bottom));animation:rise 180ms ease-out}
@@ -386,6 +386,7 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
     <div class="row">
       <button class="sw" type="button" role="switch" aria-checked="true" id="swOnline"><span class="track"></span><span id="swOnlineLbl">Contact online</span></button>
       <button class="sw" type="button" role="switch" aria-checked="false" id="swFail"><span class="track"></span>Next send fails</button>
+      <button class="sw" type="button" role="switch" aria-checked="true" id="swQuiet"><span class="track"></span>Quiet mode</button>
       <button class="btn" type="button" id="simIncoming">Simulate incoming message</button>
       <button class="btn" type="button" id="simClear">Empty the chat list</button>
       <button class="btn" type="button" id="simReset">Reset demo</button>
@@ -470,6 +471,7 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
 <div class="vh" id="sr" role="status" aria-live="polite"></div>
 
 <script src="call-state.js"></script>
+<script src="call-audio.js"></script>
 <script>
 "use strict";
 /* ---------- helpers ---------- */
@@ -691,7 +693,7 @@ function callBtn(c) {
   if (call) return h("button", { class: "ib live", type: "button", id: "callBtn", "aria-label": "Return to call with " + call.name, title: "Return to call", onclick: openCall }, icon("phone"));
   return h("button", { class: "ib", type: "button", id: "callBtn", "aria-label": "Voice call " + fname(c), title: "Voice call", onclick: () => startCall(c) }, icon("phone"));
 }
-/* ---------- in-conversation call (silent visual simulation; calls.html owns audio) ----------
+/* ---------- in-conversation call (visual simulation; cues come from the shared call-audio.js) ----------
    The call itself is app state in call-state.js (TinCall): it outlives this page, so a call started here
    still shows on Home and in groups.html, and a call started elsewhere shows here. Only "is the overlay
    up in this document" is local. ?call=open raises the overlay on load; ?callbar=host means the embedding
@@ -699,6 +701,9 @@ function callBtn(c) {
 const CALLQ = new URLSearchParams(location.search), HOST_BAR = CALLQ.get("callbar") === "host";
 let call = TinCall.get(), callOpen = false;
 { const s = TinCall.bar({ id: "callStrip" }); $("#callStrip").replaceWith(s); s.onclick = openCall; }
+// A group call (maybe started in groups.html) shows the shared roster from call-state.js instead of one avatar.
+const gStage = TinCall.stage(); $("#callOv .who2").after(gStage);
+TinAudio.follow(TinCall);
 function callTick() {
   const t = TinCall.get(); if (!t) return;
   $("#callStatus").textContent = t.connected ? (t.muted ? "Muted" : "Connected") : t.preLabel;
@@ -706,8 +711,12 @@ function callTick() {
 }
 function paintCall() {
   if (!call) return;
+  const roster = !!call.people, ov = $("#callOv");
   $("#callAv").replaceChildren(call.kind === "group" ? h("span", { class: "gglyph", "aria-hidden": "true" }, icon("users")) : avatar(call.name, 96));
-  $("#callName").textContent = call.name; syncMute(); callTick();
+  $("#callName").textContent = call.name; $("#callOv .who2").hidden = roster; gStage.hidden = !roster;
+  if (roster) { ov.removeAttribute("aria-labelledby"); ov.setAttribute("aria-label", "Call with " + call.name); }
+  else { ov.removeAttribute("aria-label"); ov.setAttribute("aria-labelledby", "callName"); }
+  syncMute(); callTick();
 }
 function setCallInert(on) { $$("#app > .list-pane, #app > .conv-pane, #callStrip").forEach(e => e.inert = on); }
 function syncCallUI() {
@@ -718,12 +727,13 @@ function syncCallBtn() { const c = openId && chatBy(openId), b = $("#callBtn"); 
 function startCall(c) {
   if (call) { openCall(); return; }
   if (c.messageOnly) return;
+  TinAudio.arm(); // the call button is the gesture that may start sound (unless Quiet mode is on)
   TinCall.start({ kind: "direct", id: c.id, name: c.name }); // subscriber below paints + syncs
   openCall();
 }
 function openCall() {
   if (!call) return;
-  callOpen = true; paintCall(); syncCallUI();
+  TinAudio.arm(); callOpen = true; paintCall(); syncCallUI();
   $("#callOv").focus({ preventScroll: true });
 }
 function minimizeCall() {
@@ -733,6 +743,7 @@ function minimizeCall() {
 }
 function endCall(quiet) {
   if (!call) return;
+  if (!quiet) TinAudio.ending(); // the End tap plays the ended cue here
   TinCall.end(); // clears this page via the subscriber, and every other page through call-state.js
   if (!quiet) { say("Call ended"); ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true }); }
 }
@@ -1117,6 +1128,8 @@ $("#simClear").onclick = () => { endCall(true); chats = []; openId = null; $("#a
 $("#simReset").onclick = () => { endCall(true); seed(); openId = null; failNext = false; syncSwitch("#swFail", false); syncSwitch("#swOnline", true); $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Demo reset."); };
 
 function syncSwitch(sel, on) { $(sel).setAttribute("aria-checked", on); }
+syncSwitch("#swQuiet", TinAudio.quiet()); TinAudio.onQuiet(on => syncSwitch("#swQuiet", on));
+$("#swQuiet").onclick = () => { const q = !TinAudio.quiet(); TinAudio.setQuiet(q); say(q ? "Quiet mode on. Call sounds are off." : "Quiet mode off. Call sounds play."); };
 $("#swFail").onclick = e => { failNext = e.currentTarget.getAttribute("aria-checked") !== "true"; syncSwitch("#swFail", failNext); say(failNext ? "The next message or file will fail to send." : "Sending will work normally."); };
 $("#swOnline").onclick = e => {
   if (!openId) { say("Open a chat first, then change whether that contact is online."); return; }

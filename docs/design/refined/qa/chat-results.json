@@ -153,7 +153,7 @@
   "page": "chat",
   "name": "chat list shows Draft marker for chat with unsent text",
   "ok": true,
-  "detail": "MNMeera Nair17:41No rushAOArjun Oommen16:22Draft: half written thoughtDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
+  "detail": "AOArjun Oommen21:35Draft: half written thoughtMNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
  },
  {
   "page": "chat",
@@ -171,13 +171,13 @@
   "page": "chat",
   "name": "Enter sends; message appears; composer cleared and keeps focus",
   "ok": true,
-  "detail": "line1 line216:22Sending focus=ta"
+  "detail": "line1 line221:35Sending focus=ta"
  },
  {
   "page": "chat",
   "name": "sent message progresses to sent/delivered state",
   "ok": true,
-  "detail": "line1 line216:22Delivered"
+  "detail": "line1 line221:35Delivered"
  },
  {
   "page": "chat",
@@ -189,7 +189,7 @@
   "page": "chat",
   "name": "failed send shows failure and Retry control",
   "ok": true,
-  "detail": "goes nowhere first16:23Not delivered·Retry retryBtns=1"
+  "detail": "goes nowhere first21:35Not delivered·Retry retryBtns=1"
  },
  {
   "page": "chat",
@@ -201,37 +201,37 @@
   "page": "chat",
   "name": "retry: focus not lost to BODY",
   "ok": true,
-  "detail": "Actions for your message at 16:23: goes nowhere first"
+  "detail": "Actions for your message at 21:35: goes nowhere first"
  },
  {
   "page": "chat",
   "name": "retry succeeds (no failed message remains)",
   "ok": true,
-  "detail": "goes nowhere first16:23Delivered visibleRetry=0"
+  "detail": "goes nowhere first21:35Delivered visibleRetry=0"
  },
  {
   "page": "chat",
   "name": "contact offline: header/status changes",
   "ok": true,
-  "detail": "AOArjun OommenLast seen 16:23Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
+  "detail": "AOArjun OommenLast seen 21:35Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
  },
  {
   "page": "chat",
   "name": "send while offline shows waiting/queued state",
   "ok": true,
-  "detail": "sent while offline16:23Waiting for Arjun to be online"
+  "detail": "sent while offline21:35Waiting for Arjun to be online"
  },
  {
   "page": "chat",
   "name": "back online: queued message delivered",
   "ok": true,
-  "detail": "sent while offline16:23Delivered"
+  "detail": "sent while offline21:35Delivered"
  },
  {
   "page": "chat",
   "name": "simulate incoming adds a message or badge",
   "ok": true,
-  "detail": "MNMeera Nair17:41No rushSRSana Rao16:23Are you free for a quick call?1AOArjun Oommen16:23You: sent w"
+  "detail": "SRSana Rao21:35Ha, that’s the best news today1AOArjun Oommen21:35You: sent while offlineMNMeera Nair"
  },
  {
   "page": "chat",
@@ -404,6 +404,90 @@
  {
   "page": "chat",
   "name": "cross-page: no runtime errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "quiet mode: \"Quiet mode\" switch in the Simulation drawer (role=switch, same pattern as the other switches), on by default",
+  "ok": true,
+  "detail": "{\"role\":\"switch\",\"on\":\"true\",\"t\":\"Quiet mode\",\"cls\":\"sw\"}"
+ },
+ {
+  "page": "chat",
+  "name": "quiet mode on: ring, connect and End create no AudioContext and no oscillator",
+  "ok": true,
+  "detail": "{\"played\":[],\"ctx\":\"\",\"started\":0,\"live\":0,\"back\":0,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct call: ringback (392/494 Hz two-tone) loops while \"Ringing…\"; never the incoming ring",
+  "ok": true,
+  "detail": "{\"played\":[\"back\"],\"ctx\":\"running\",\"started\":4,\"live\":4,\"back\":1,\"liveBack\":2,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct call: on connect the ringback stops and the connected cue plays once",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\"],\"ctx\":\"running\",\"started\":8,\"live\":2,\"back\":1,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct call connected: no further ringback cycles",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\"],\"ctx\":\"running\",\"started\":8,\"live\":0,\"back\":1,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "mute silences the mic, never the cues (no cue on mute)",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\"],\"ctx\":\"running\",\"started\":8,\"live\":0,\"back\":1,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct call End: ended cue once, then zero live oscillators",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\"],\"ctx\":\"running\",\"started\":12,\"live\":0,\"back\":1,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "after End: nothing scheduled (no new oscillators 4s later)",
+  "ok": true,
+  "detail": "12→12"
+ },
+ {
+  "page": "chat",
+  "name": "End while ringing: ringback stopped at once, ended cue, zero live oscillators",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\"],\"ctx\":\"running\",\"started\":20,\"live\":0,\"back\":2,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "minimized while ringing: ringback keeps going (the call continues)",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\",\"back\"],\"ctx\":\"running\",\"started\":24,\"live\":4,\"back\":3,\"liveBack\":2,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "Quiet mode turned on mid-ring: every oscillator stops, strip and timer still shown",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\",\"back\"],\"ctx\":\"running\",\"started\":24,\"live\":0,\"back\":3,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "Quiet mode off again while still ringing: ringback resumes",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\",\"back\",\"back\"],\"ctx\":\"running\",\"started\":28,\"live\":4,\"back\":4,\"liveBack\":2,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "pagehide: current sound stopped and the AudioContext closed (calls.html discipline)",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\",\"back\",\"back\"],\"ctx\":\"closed\",\"started\":28,\"live\":4,\"back\":4,\"liveBack\":2,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct sound: no console errors",
   "ok": true,
   "detail": ""
  }

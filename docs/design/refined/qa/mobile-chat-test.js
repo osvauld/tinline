@@ -170,6 +170,18 @@ await step('mobile-chat-embed-callbar',async()=>{const p=await page(b);await p.g
  await f.locator('#callBtn').click();await p.waitForTimeout(200);await f.locator('#callMin').click();
  chk('embed chat: exactly one strip, inside the frame',await f.locator('#callStrip').isVisible()&&await p.locator('.t-callbar').count()===0);
  await f.locator('#callStrip').click();await f.locator('#callEnd').click();await p.close()});
+// P. Group call inside the phone bezel: the roster (shared stage from call-state.js), not one avatar; silent by default
+for(const w of [390,320])await step('mobile-group-roster-'+w,async()=>{const p=await page(b,{w:1440,h:1000});await p.goto(BASE+'mobile.html?screen=groups&group=hike');await p.waitForTimeout(700);
+ if(w===320){await p.selectOption('#width','320');await p.waitForTimeout(200)}
+ const f=p.frameLocator('#phone');await f.locator('#callBtn').click();await p.waitForTimeout(3300);
+ const r=await f.locator('#callOv').evaluate(o=>{const tiles=[...o.querySelectorAll('.t-gc-spk>li')].map(li=>{const b=li.getBoundingClientRect();return {top:Math.round(b.top),bottom:Math.round(b.bottom),right:Math.round(b.right),host:!!li.querySelector('.t-gc-host'),mic:!!li.querySelector('.t-gc-mic[aria-label=Muted]'),on:li.classList.contains('on')}});
+  const q=[...o.querySelectorAll('.t-gc-quiet>li')].map(li=>{const b=li.getBoundingClientRect();return {top:Math.round(b.top),right:Math.round(b.right)}});const more=o.querySelector('.t-gc-more');
+  return {tiles,qTop:Math.min(...q.map(x=>x.top)),qRows:new Set(q.map(x=>x.top)).size,maxRight:Math.max(...tiles.map(t=>t.right),...q.map(x=>x.right)),iw:innerWidth,sw:document.documentElement.scrollWidth,more:more&&more.textContent,ctrl:o.querySelector('.cctl').getBoundingClientRect().top,ih:innerHeight}});
+ chk(w+' bezel group call: 3 speaking tiles in two rows (host, speaker, muted), one quiet row below ending in '+(w===390?'"+1" (6 shown)':'"+2" (5 shown)')+', nothing clipped',r.tiles.length===3&&new Set(r.tiles.map(t=>t.top)).size===2&&r.qTop>Math.max(...r.tiles.map(t=>t.bottom))&&r.tiles.some(t=>t.host)&&r.tiles.some(t=>t.on)&&r.tiles.some(t=>t.mic)&&r.more===(w===390?'+1':'+2')&&r.qRows===1&&r.maxRight<=r.iw&&r.sw<=r.iw,JSON.stringify(r));
+ const a=await p.evaluate(()=>{const n={ctx:0,started:0};for(const fr of [window,...[...document.querySelectorAll('iframe')].map(i=>i.contentWindow)]){const a=fr.__aud;if(a){n.ctx+=a.ctxs.length;n.started+=a.started}}return n});
+ chk(w+' bezel group call: Quiet mode default — no AudioContext anywhere',a.ctx===0&&a.started===0,JSON.stringify(a));
+ await p.screenshot({path:path.join(SS,'roster-mobile-bezel-'+w+'.png')});
+ await f.locator('#callOv .end').click();await p.close()});
 await b.close();
 fs.writeFileSync(path.join(__dirname,'mobile-chat-results.json'),JSON.stringify(results,null,2));
 const f=results.filter(r=>!r.ok);console.log(`${results.length-f.length}/${results.length} passed`);

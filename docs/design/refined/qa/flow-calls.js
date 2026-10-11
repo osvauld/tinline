@@ -147,4 +147,15 @@ p=await L.page(b);await p.goto(L.BASE+'calls.html?call=nobody');await sleep(p,30
 await chk('deep link unknown id: normal idle screen, no audio',async()=>{const s0=await dlState(p),a0=await L.aud(p);return {ok:s0.name==='No active call'&&a0.started===0,d:JSON.stringify(s0)}});
 await chk('deep links: no console errors',async()=>({ok:p.errs.length===0,d:p.errs.join('|')}));
 await p.context().close();
+// one sound identity: the generator lives in call-audio.js; calls.html only consumes it
+p=await L.page(b);await p.goto(L.BASE+'calls.html');await sleep(p,300);
+await chk('shared audio: calls.html loads call-audio.js and keeps no inline PAT/Snd copy',async()=>{const src=await p.evaluate(()=>fetch('calls.html').then(r=>r.text()));return {ok:/<script src="call-audio\.js"><\/script>/.test(src)&&!/var PAT=\{|var Snd=\{/.test(src)&&/var PAT=TinAudio\.PAT,Snd=TinAudio\.Snd/.test(src),d:src.length+' bytes'}});
+await chk('shared audio: the six cues keep their original notes (Hz) and labels',async()=>{const r=await p.evaluate(()=>Object.fromEntries(Object.entries(TinAudio.PAT).map(([k,v])=>[k,v.label+':'+v.period+':'+v.notes.map(n=>n[0]).join('/')])));
+ const want={ring:'Ringtone:3200:784/988/1175/1568',back:'Ringback:4000:392/494',connected:'Connected cue:0:523/784',ended:'Ended cue:0:784/523',failed:'Couldn’t connect cue:0:247/196',pulse:'Reconnecting cue:0:330'};return {ok:JSON.stringify(r)===JSON.stringify(want),d:JSON.stringify(r)}});
+await dr(p);await p.click('#pv [data-k=ring]');await sleep(p,300);
+await chk('shared audio: a drawer preview plays through the shared Snd and the caption follows it',async()=>{const r=await p.evaluate(()=>({cur:TinAudio.Snd.cur&&TinAudio.Snd.cur.kind,src:TinAudio.Snd.cur&&TinAudio.Snd.cur.src,cap:document.querySelector('#cap').textContent,pressed:document.querySelector('#pv [data-k=ring]').getAttribute('aria-pressed')}));return {ok:r.cur==='ring'&&r.src==='preview'&&/Preview: Ringtone/.test(r.cap)&&r.pressed==='true',d:JSON.stringify(r)}});
+await p.click('#stopsnd');await sleep(p,1200);
+await chk('shared audio: Stop sound stops it (onchange hook updates the caption), zero live oscillators',async()=>{const r=await p.evaluate(()=>({cur:TinAudio.Snd.cur,cap:document.querySelector('#cap').textContent,live:window.__aud.osc.filter(o=>o.started&&!o.ended).length}));return {ok:r.cur===null&&/Sound stopped/.test(r.cap)&&r.live===0,d:JSON.stringify(r)}});
+await chk('shared audio: no console errors',async()=>({ok:p.errs.length===0,d:p.errs.join('|')}));
+await p.context().close();
 await b.close();C.save('calls-results.json')})();

@@ -1007,12 +1007,12 @@
   {
     "name": "callbar 390 tap strip → conversation with overlay open",
     "ok": true,
-    "detail": "{\"ov\":true,\"f\":\"callOv\",\"strip\":false,\"t\":\"00:04\",\"url\":\"?chat=arjun&from=home\"}"
+    "detail": "{\"ov\":true,\"f\":\"callOv\",\"strip\":false,\"t\":\"00:03\",\"url\":\"?chat=arjun&from=home\"}"
   },
   {
     "name": "callbar 390 overlay timer continues",
     "ok": true,
-    "detail": "00:04 vs 3"
+    "detail": "00:03 vs 3"
   },
   {
     "name": "callbar 390 End toast",
@@ -1170,7 +1170,7 @@
     "detail": ""
   },
   {
-    "name": "callbar group strip → group overlay",
+    "name": "callbar group strip → group overlay with the roster",
     "ok": true,
     "detail": ""
   },

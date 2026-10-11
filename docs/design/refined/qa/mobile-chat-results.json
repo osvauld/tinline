@@ -757,7 +757,7 @@
   {
     "name": "light mobile home: Back → Home inside the bezel keeps the strip, timer continues",
     "ok": true,
-    "detail": "Arjun Oommen · 00:02 1"
+    "detail": "Arjun Oommen · 00:01 0"
   },
   {
     "name": "light mobile home: strip at the top of the phone, header below it",
@@ -843,5 +843,25 @@
     "name": "embed chat: exactly one strip, inside the frame",
     "ok": true,
     "detail": ""
+  },
+  {
+    "name": "390 bezel group call: 3 speaking tiles in two rows (host, speaker, muted), one quiet row below ending in \"+1\" (6 shown), nothing clipped",
+    "ok": true,
+    "detail": "{\"tiles\":[{\"top\":255,\"bottom\":375,\"right\":187,\"host\":true,\"mic\":false,\"on\":true},{\"top\":255,\"bottom\":375,\"right\":323,\"host\":false,\"mic\":false,\"on\":false},{\"top\":395,\"bottom\":491,\"right\":255,\"host\":false,\"mic\":true,\"on\":false}],\"qTop\":523,\"qRows\":1,\"maxRight\":359,\"iw\":390,\"sw\":390,\"more\":\"+1\",\"ctrl\":714.609375,\"ih\":844}"
+  },
+  {
+    "name": "390 bezel group call: Quiet mode default — no AudioContext anywhere",
+    "ok": true,
+    "detail": "{\"ctx\":0,\"started\":0}"
+  },
+  {
+    "name": "320 bezel group call: 3 speaking tiles in two rows (host, speaker, muted), one quiet row below ending in \"+2\" (5 shown), nothing clipped",
+    "ok": true,
+    "detail": "{\"tiles\":[{\"top\":255,\"bottom\":375,\"right\":152,\"host\":true,\"mic\":false,\"on\":true},{\"top\":255,\"bottom\":375,\"right\":288,\"host\":false,\"mic\":false,\"on\":false},{\"top\":395,\"bottom\":491,\"right\":220,\"host\":false,\"mic\":true,\"on\":false}],\"qTop\":523,\"qRows\":1,\"maxRight\":300,\"iw\":320,\"sw\":320,\"more\":\"+2\",\"ctrl\":714.609375,\"ih\":844}"
+  },
+  {
+    "name": "320 bezel group call: Quiet mode default — no AudioContext anywhere",
+    "ok": true,
+    "detail": "{\"ctx\":0,\"started\":0}"
   }
 ]

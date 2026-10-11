@@ -1,12 +1,13 @@
 # Group conversation polish: verification
 
 Run: `cd docs/design/refined/qa && node group-polish-test.js` (server on :8768, Playwright + /usr/sbin/chromium).
-Latest recorded result (pass 2): **141 / 141 checks pass** (`group-polish-results.json`). The companion suite `flow-groups.js` passes 48 / 48 (`groups-results.json`). The pass-1 figures were 90/90 and 30/30.
+Latest recorded result (pass 2 + the group-call roster/sound packet): **154 / 154 checks pass** (`group-polish-results.json`). The companion suite `flow-groups.js` passes 82 / 82 (`groups-results.json`). Earlier figures: 141/141 and 48/48 right after pass 2; 90/90 and 30/30 at pass 1.
 
 Viewports: 1440x1000 (fine pointer), 390x844 and 320x740 (touch), each light and dark. Screenshots: `screenshots/group-polish-*.png`.
 
 Covered:
-- Desktop defaults and harness: Weekend hike selected; header is one line "8 members" with no host strip; slim bar with icon-only toggles and the Simulation drawer closed; no Reply/Discard text and no visible message controls when idle.
+- Desktop defaults and harness: Weekend hike selected; header is one line "12 members" with no host strip; slim bar with icon-only toggles and the Simulation drawer closed; no Reply/Discard text and no visible message controls when idle. Weekend hike grew from 8 to 12 members so the group-call roster below has a real quiet row and an overflow "+n".
+- Group call: the overlay shows a roster, not one avatar — up to k speaking tiles (host tagged, current speaker ringed, muted badged), a quiet row of the rest (6 shown, or 5 at 320px so "+n" never wraps), and a "+n" button that opens the full roster in a sheet. The same roster renders identically from chat.html when a group call started in groups.html is reopened there. Joins and leaves during the call are announced politely. Sound: a quiet `pulse` on joining, `connected` once seated, a soft `pulse` on someone else joining/leaving, `ended` on leaving — never the ring/ringback cues, since a group call rings nobody. A "Quiet mode" switch in the Simulation drawer silences all of it; it defaults on, so headless runs stay silent.
 - Bubble system: corner classes and 2 px / 10 px spacing for same-author runs following the `--r-bub` / `--r-bub-tight` table; sender name only on the first bubble of a group (13 px bold, avatar-hue ink); sent mint with no border, received surface with a hairline border, canvas background; meta inline (a single-line bubble stays one line tall; 11 px tabular-nums inside the bubble); event line centred 12 px muted; day separator is a pill.
 - Composer: attach 44 px · field at least 44 px · paper-plane Send 44 px at 38% opacity when empty, enabled with a draft.
 - Sidebar: request rows are quiet rows with `.t-badge` counts, no banner.

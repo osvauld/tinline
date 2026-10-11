@@ -9,13 +9,61 @@
   "page": "groups",
   "name": "call: in-page overlay fills the app frame, no navigation, focus on overlay",
   "ok": true,
-  "detail": "{\"fill\":true,\"f\":true,\"st\":\"Connecting…\",\"av\":96,\"h2\":\"24px\",\"mute\":56,\"end\":64,\"min\":\"Back to chat — call continues\"}"
+  "detail": "{\"fill\":true,\"f\":true,\"st\":\"Connecting…\",\"av\":44,\"h2\":\"17px\",\"one\":true,\"mute\":56,\"end\":64,\"min\":\"Back to chat — call continues\"}"
  },
  {
   "page": "groups",
   "name": "call: connects (group calls do not ring) and the MM:SS timer ticks",
   "ok": true,
-  "detail": "Connected 00:01"
+  "detail": "10 in the call 00:01"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: k=3 speaking tiles (72px .t-avatar, shared hue hash), first names, never one big avatar",
+  "ok": true,
+  "detail": "[[\"arjun\",72,\"av5\"],[\"sam\",72,\"av5\"],[\"priya\",72,\"av3\"]]"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: the host (Arjun) carries one \"Hosting\" .t-badge.muted tag",
+  "ok": true,
+  "detail": "[\"Hosting\",\"\",\"\"]"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: exactly one speaking tile with a 2px solid ring, no animation on any tile",
+  "ok": true,
+  "detail": "[[\"arjun\",true,\"solid 2px\",\"none\"],[\"sam\",false,\"none 3px\",\"none\"],[\"priya\",false,\"none 3px\",\"none\"]]"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: speaking ring does not redraw between level changes (0 DOM mutations in 1.5s while the timer ticks)",
+  "ok": true,
+  "detail": "mutations=0"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: muted speaker (Priya) shows a mic-off badge named \"Muted\"",
+  "ok": true,
+  "detail": "[\"\",\"\",\"Muted\"]"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: quiet row = 6 x 40px avatars (you first, muted Kavya named) then \"+1\" (44px button, real name)",
+  "ok": true,
+  "detail": "[\"You\",\"Meera K\",\"Dev T\",\"Kavya S, muted\",\"Nisha R\",\"Omar F\",\"Show everyone in the call, 1 more\"] 10 in the call"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: \"+1\" opens the whole roster in a sheet (10 rows, tags spelled out)",
+  "ok": true,
+  "detail": "{\"open\":true,\"h\":\"10 in the call\",\"rows\":[\"Arjun OommenHosting · Speaking\",\"Sam Rao\",\"Priya NMuted\",\"You\",\"Meera K\",\"Dev T\",\"Kavya SMuted\",\"Nisha R\",\"Omar F\",\"Tara M\"],\"focus\":true}"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: Escape closes the sheet only (call overlay stays), focus back on \"+1\"",
+  "ok": true,
+  "detail": "{\"open\":false,\"ov\":true,\"f\":\"t-gc-more\"}"
  },
  {
   "page": "groups",
@@ -27,7 +75,7 @@
   "page": "groups",
   "name": "call: Escape minimizes (never ends) to a 40px accent strip with name and timer; focus on strip",
   "ok": true,
-  "detail": "{\"h\":40,\"t\":\"Weekend hike · 00:02\",\"f\":true,\"ov\":false}"
+  "detail": "{\"h\":40,\"t\":\"Weekend hike · 00:03\",\"f\":true,\"ov\":false}"
  },
  {
   "page": "groups",
@@ -135,7 +183,7 @@
   "page": "groups",
   "name": "Accept chat request: Priya shows under Private chats",
   "ok": true,
-  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?16:23Sent requests2 totalD"
+  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?21:36Sent requests2 totalD"
  },
  {
   "page": "groups",
@@ -153,7 +201,7 @@
   "page": "groups",
   "name": "sent message reaches a delivered/relayed state (hosts online)",
   "ok": true,
-  "detail": "see you at the gate16:23Delivered"
+  "detail": "see you at the gate21:36Delivered"
  },
  {
   "page": "groups",
@@ -163,7 +211,7 @@
  },
  {
   "page": "groups",
-  "name": "hosts offline: thin strip under header, title stays \"8 members\"",
+  "name": "hosts offline: thin strip under header, title stays \"12 members\"",
   "ok": true,
   "detail": "Host offline — messages waitTry again"
  },
@@ -171,7 +219,7 @@
   "page": "groups",
   "name": "hosts offline: message shows waiting/not delivered state explaining why",
   "ok": true,
-  "detail": "nobody is hosting16:23Waiting for a host"
+  "detail": "nobody is hosting21:36Waiting for a host"
  },
  {
   "page": "groups",
@@ -289,15 +337,21 @@
  },
  {
   "page": "groups",
-  "name": "cross-page: group call strip in chat.html; chat phone button returns to it",
+  "name": "cross-page: roster lives in the shared call state (sessionStorage), k=3, Arjun hosts",
   "ok": true,
-  "detail": "Weekend hike · Connecting…"
+  "detail": "[\"arjun\",\"sam\",\"priya\",\"me\",\"meera\",\"leo\",\"dev\",\"kavya\",\"nisha\",\"omar\",\"tara\"]"
  },
  {
   "page": "groups",
-  "name": "cross-page: chat overlay renders the group call with the group glyph",
+  "name": "cross-page: group call strip in chat.html; chat phone button returns to it",
   "ok": true,
-  "detail": ""
+  "detail": "Weekend hike · 00:00"
+ },
+ {
+  "page": "groups",
+  "name": "cross-page: chat.html shows the same group roster, not one avatar (identical tiles, quiet row, +n)",
+  "ok": true,
+  "detail": "Call with Weekend hike same"
  },
  {
   "page": "groups",
@@ -310,5 +364,131 @@
   "name": "cross-page: no AudioContext, no errors",
   "ok": true,
   "detail": "{\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440-light: host, speaking, muted and \"+1\" overflow all on screen",
+  "ok": true,
+  "detail": "inView=true"
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440: speaking tiles share one row",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440-light: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440-dark: host, speaking, muted and \"+1\" overflow all on screen",
+  "ok": true,
+  "detail": "inView=true"
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440: speaking tiles share one row",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440-dark: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 390-light: host, speaking, muted and \"+1\" overflow all on screen",
+  "ok": true,
+  "detail": "inView=true"
+ },
+ {
+  "page": "groups",
+  "name": "roster 390: speaking tiles wrap to two rows, quiet row starts below both",
+  "ok": true,
+  "detail": "rows=255,395 quietTop=523"
+ },
+ {
+  "page": "groups",
+  "name": "roster 390-light: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 390-dark: host, speaking, muted and \"+1\" overflow all on screen",
+  "ok": true,
+  "detail": "inView=true"
+ },
+ {
+  "page": "groups",
+  "name": "roster 390: speaking tiles wrap to two rows, quiet row starts below both",
+  "ok": true,
+  "detail": "rows=255,395 quietTop=523"
+ },
+ {
+  "page": "groups",
+  "name": "roster 390-dark: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "quiet mode: \"Quiet mode\" switch in the Simulation drawer (role=switch), on by default",
+  "ok": true,
+  "detail": "{\"role\":\"switch\",\"on\":\"true\",\"t\":\"Quiet mode\",\"h\":44}"
+ },
+ {
+  "page": "groups",
+  "name": "quiet mode on: a whole group call creates no AudioContext and no oscillator",
+  "ok": true,
+  "detail": "{\"played\":[],\"freqs\":[],\"ctx\":0,\"started\":0,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "quiet mode off: switch flips, still nothing plays until a call",
+  "ok": true,
+  "detail": "{\"played\":[],\"freqs\":[],\"ctx\":1,\"started\":0,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "sound on, after reload: no AudioContext before a gesture",
+  "ok": true,
+  "detail": "{\"played\":[],\"freqs\":[],\"ctx\":0,\"started\":0,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "group call joining: one short pulse, no ringback",
+  "ok": true,
+  "detail": "{\"played\":[\"pulse\"],\"freqs\":[330,660],\"ctx\":1,\"started\":2,\"live\":2,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "group call: connected cue once you are in the roster",
+  "ok": true,
+  "detail": "{\"played\":[\"pulse\",\"connected\"],\"freqs\":[330,523,660,784,1046,1568],\"ctx\":1,\"started\":6,\"live\":2,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "group call: Leo joins → soft pulse, \"11 in the call\", \"+2\", announced politely",
+  "ok": true,
+  "detail": "[\"pulse\",\"connected\",\"pulse:soft\"] 11 in the call Leo joined the call"
+ },
+ {
+  "page": "groups",
+  "name": "group call End: ended cue once, nothing left playing, never a ring/back oscillator",
+  "ok": true,
+  "detail": "{\"played\":[\"pulse\",\"connected\",\"pulse:soft\",\"ended\"],\"freqs\":[330,523,660,784,1046,1568],\"ctx\":1,\"started\":12,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "group sound: no console errors",
+  "ok": true,
+  "detail": ""
  }
 ]

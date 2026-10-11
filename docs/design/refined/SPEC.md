@@ -129,12 +129,26 @@ the first bubble of a group.
 
 The phone button in a conversation header starts an **in-page call overlay** —
 no navigation away, because the core loop is call ↔ chat:
-- Overlay fills the app frame (and the iframe in embed mode): `--bg`, 96px
-  `.t-avatar` (group glyph avatar for groups), name 24px semibold, status 13px
-  `--muted` ("Ringing…", then simulated connect after ~2.5s), timer MM:SS
-  tabular-nums in a fixed-width slot. Controls centered: Mute 56px quiet circle
-  (toggles), End 64px `--danger`. Top-left: 44px down-chevron, aria-label
-  "Back to chat — call continues".
+- **Direct call**: overlay fills the app frame (and the iframe in embed mode):
+  `--bg`, 96px `.t-avatar`, name 24px semibold, status 13px `--muted`
+  ("Ringing…", then simulated connect after ~2.5s), timer MM:SS tabular-nums
+  in a fixed-width slot. Controls centered: Mute 56px quiet circle (toggles),
+  End 64px `--danger`. Top-left: 44px down-chevron, aria-label "Back to chat
+  — call continues".
+- **Group call**: the single avatar is wrong — show who's actually in the
+  call. Header strip: group glyph avatar 44px, group name 17px semibold,
+  "<n> in the call" 13px `--muted`, timer. Below it, a **roster**, not a
+  bigger avatar: up to K speaking tiles (K = 3 desktop host / 2 phone host,
+  matching the host's advertised K) at 72px, each a `.t-avatar` + first name
+  under it + a mic-off glyph badge when that person is muted; the current
+  speaker's tile gets a 2px `--accent` ring that only redraws on a level
+  change (no continuous pulsing meter — these are still visual simulations).
+  The host's tile carries a small "Hosting" `.t-badge.muted`-style tag. Tiles
+  that are in the call but not currently forwarded sit in a quiet row below,
+  40px avatar only, up to 6 shown then "+<n>"; tapping it expands the full
+  roster in a sheet. Controls are the same centered row as the direct call,
+  minus Camera (group video is out of scope). Grid reflows at 390px: speaking
+  tiles wrap to two rows before the quiet row starts.
 - Minimize → **ongoing-call strip**: one full-width 40px button above the app's
   header(s), `--accent` bg, `--on-accent` text: "● <name> · MM:SS" (dot pulses;
   static under reduced motion; timer ticks, tabular-nums). Visible across list
@@ -155,9 +169,33 @@ no navigation away, because the core loop is call ↔ chat:
   detail pane the embedded page suppresses its own strip and Home's
   full-width strip is the one. Ending the call from any page clears it
   everywhere immediately.
-- These overlays are silent visual simulations — calls.html stays the only page
-  that makes sound (ringing/failure/audio study), and supports
-  `?call=<id>` / `?call=group:<id>` deep links to an already-ringing screen.
+- **Sound.** These overlays are no longer silent, but they are not a second
+  audio implementation: `call-audio.js` is the one synthesized cue set,
+  extracted verbatim from `calls.html`'s existing `PAT`/`Snd` (same
+  frequencies, timing, labels) and loaded by `calls.html`, `chat.html` and
+  `groups.html` alike, so the ringtone/ringback/connected/ended cues sound
+  identical everywhere. It only ever starts after a user gesture (the call
+  button itself is that gesture) and is fully torn down on End/minimize-
+  survives/unmount, same discipline as `calls.html`'s own `pagehide`
+  cleanup.
+  - **Direct call**: the `back` (ringback) cue loops through "Ringing…",
+    the `connected` cue plays once on connect, `ended` once on End. Mute
+    silences your mic, never these cues.
+  - **Group call**: per the rotation brief, **a group call never rings
+    anyone's phone** (U21) — so the `ring`/`back` cues never play here.
+    Starting or joining one is quiet: a single short `pulse` cue on joining
+    (reusing the existing "reconnecting" cue's one-note shape), the
+    `connected` cue once the roster has you in it, a soft version of `pulse`
+    whenever someone else joins or leaves the roster (easy to miss, not a
+    doorbell), `ended` once on leaving. No looping tone at any point.
+  - A Simulation-drawer "Quiet mode" switch (same control and label as
+    `calls.html`'s) silences all of the above without hiding the roster or
+    timer; QA keeps it on by default so headless test runs stay silent.
+- Deep links (`calls.html` only): `?call=<id>` / `?call=group:<id>` open an
+  already-ringing screen — unaffected by the above. `calls.html` is unchanged
+  apart from pulling its cues from the shared `call-audio.js`: it keeps its
+  own Android/Desktop toggle, incoming-vs-outgoing states and failure cues,
+  none of which the in-conversation overlay needs.
 - Policy states: a message-only contact has a disabled call button (calling
   needs their permission — explained in the contact sheet, not in a banner);
   a group with no live host has a disabled call button; a removed/read-only

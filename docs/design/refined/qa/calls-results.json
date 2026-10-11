@@ -135,13 +135,13 @@
   "page": "calls",
   "name": "end call: history record added",
   "ok": true,
-  "detail": "Arjun · Ended 00:0016:20Arjun · Cancelled16:20"
+  "detail": "Arjun · Ended 00:0021:33Arjun · Cancelled21:33"
  },
  {
   "page": "calls",
   "name": "declined: shows declined state, silent after cue",
   "ok": true,
-  "detail": "TinlineAOArjun declinedTry again later, or send a message instead.Try againClose {\"started\":36,\"stopped\":72,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended\"}"
+  "detail": "TinlineAOArjun declinedTry again later, or send a message instead.Try againClose {\"started\":36,\"stopped\":72,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended\"}"
  },
  {
   "page": "calls",
@@ -207,7 +207,7 @@
   "page": "calls",
   "name": "incoming timeout: silent + missed in history",
   "ok": true,
-  "detail": "Arjun · Incoming Missed16:21Arjun · Declined16:21Arjun · No answer16:21Lena · Not reached16:21Arjun  live=0"
+  "detail": "Arjun · Incoming Missed21:34Arjun · Declined21:34Arjun · No answer21:34Lena · Not reached21:33Arjun  live=0"
  },
  {
   "page": "calls",
@@ -225,7 +225,7 @@
   "page": "calls",
   "name": "platform switch mid-ring: audio stops or restarts consistently",
   "ok": true,
-  "detail": "{\"started\":124,\"stopped\":240,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop\"} Incoming call — TinlineAOArjun OommenIncoming callEnd-to-end encrypted"
+  "detail": "{\"started\":124,\"stopped\":240,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop\"} Incoming call — TinlineAOArjun OommenIncoming callEnd-to-end encrypted"
  },
  {
   "page": "calls",
@@ -404,6 +404,36 @@
  {
   "page": "calls",
   "name": "deep links: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: calls.html loads call-audio.js and keeps no inline PAT/Snd copy",
+  "ok": true,
+  "detail": "55393 bytes"
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: the six cues keep their original notes (Hz) and labels",
+  "ok": true,
+  "detail": "{\"ring\":\"Ringtone:3200:784/988/1175/1568\",\"back\":\"Ringback:4000:392/494\",\"connected\":\"Connected cue:0:523/784\",\"ended\":\"Ended cue:0:784/523\",\"failed\":\"Couldn’t connect cue:0:247/196\",\"pulse\":\"Reconnecting cue:0:330\"}"
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: a drawer preview plays through the shared Snd and the caption follows it",
+  "ok": true,
+  "detail": "{\"cur\":\"ring\",\"src\":\"preview\",\"cap\":\"♪ Preview: Ringtonesoft rising four-note chime, repeating about every 3 s.\",\"pressed\":\"true\"}"
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: Stop sound stops it (onchange hook updates the caption), zero live oscillators",
+  "ok": true,
+  "detail": "{\"cur\":null,\"cap\":\"Sound stoppedPress Replay current sound to hear it again.\",\"live\":0}"
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: no console errors",
   "ok": true,
   "detail": ""
  }

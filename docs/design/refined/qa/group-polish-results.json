@@ -1,9 +1,9 @@
 [
  {
   "page": "group-polish",
-  "name": "desktop: Weekend hike selected by default; header is one line \"8 members\"; no host strip",
+  "name": "desktop: Weekend hike selected by default; header is one line \"12 members\"; no host strip",
   "ok": true,
-  "detail": "8 members"
+  "detail": "12 members"
  },
  {
   "page": "group-polish",
@@ -153,7 +153,7 @@
   "page": "group-polish",
   "name": "light edited message shows \"edited\" in the inline meta",
   "ok": true,
-  "detail": "edited 16:15Delivered"
+  "detail": "edited 21:38Delivered"
  },
  {
   "page": "group-polish",
@@ -177,7 +177,7 @@
   "page": "group-polish",
   "name": "light queued message: pending clock glyph, no explanatory text in bubble",
   "ok": true,
-  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting16:16\"}"
+  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting21:38\"}"
  },
  {
   "page": "group-polish",
@@ -507,7 +507,7 @@
   "page": "group-polish",
   "name": "dark edited message shows \"edited\" in the inline meta",
   "ok": true,
-  "detail": "edited 16:16Delivered"
+  "detail": "edited 21:39Delivered"
  },
  {
   "page": "group-polish",
@@ -531,7 +531,7 @@
   "page": "group-polish",
   "name": "dark queued message: pending clock glyph, no explanatory text in bubble",
   "ok": true,
-  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting16:16\"}"
+  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting21:39\"}"
  },
  {
   "page": "group-polish",
@@ -842,6 +842,84 @@
  {
   "page": "group-polish",
   "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light roster colours come from tokens: avatar hue pairs, accent ring, muted Hosting badge, --bg overlay",
+  "ok": true,
+  "detail": "{\"hues\":true,\"ring\":true,\"host\":true,\"bg\":true,\"n\":9}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light reduced motion: no animation or transition on roster tiles",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "keyboard: Tab from the overlay reaches the \"+1\" button (with a visible focus ring)",
+  "ok": true,
+  "detail": "ib cmin > t-gc-more ring=solid"
+ },
+ {
+  "page": "group-polish",
+  "name": "keyboard: Enter opens the roster sheet with focus on Done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "keyboard: Done closes the sheet, focus returns to \"+1\"",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "scrim click closes the roster sheet; the call overlay stays",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "Escape in the overlay still minimizes (never ends) a group call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light Family (your desktop hosts): \"You\" tile carries Hosting; no \"+n\" when everyone fits",
+  "ok": true,
+  "detail": "{\"tiles\":[\"YOYouHosting\",\"MKMeeraSpeaking\",\"AOArjun\"],\"more\":0,\"sub\":\"5 in the call\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light roster: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark roster colours come from tokens: avatar hue pairs, accent ring, muted Hosting badge, --bg overlay",
+  "ok": true,
+  "detail": "{\"hues\":true,\"ring\":true,\"host\":true,\"bg\":true,\"n\":9}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark reduced motion: no animation or transition on roster tiles",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Family (your desktop hosts): \"You\" tile carries Hosting; no \"+n\" when everyone fits",
+  "ok": true,
+  "detail": "{\"tiles\":[\"YOYouHosting\",\"MKMeeraSpeaking\",\"AOArjun\"],\"more\":0,\"sub\":\"5 in the call\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark roster: no console errors",
   "ok": true,
   "detail": ""
  }

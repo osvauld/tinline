@@ -228,6 +228,7 @@ fieldset{border:0;padding:0;margin:8px 0}
   <div class="acts"><button class="b pri" type="button" id="route-x">Done</button></div>
 </dialog>
 
+<script src="call-audio.js"></script>
 <script>
 (function(){
 'use strict';
@@ -264,72 +265,12 @@ var DEV={
 };
 var RING_TIMEOUT=20, RECON_TIMEOUT=12, NOANS=9;
 
-/* ---------- sound ---------- */
-var PAT={
- ring:{label:'Ringtone',text:'soft rising four-note chime, repeating about every 3 s',period:3200,notes:[[784,0,1,.5,.02],[988,.18,1,.45,.02],[1175,.36,1,.4,.02],[1568,.7,1.4,.3,.02]]},
- back:{label:'Ringback',text:'calm two-tone hum, about 1 s on and 3 s off',period:4000,notes:[[392,0,1.2,.4,.18],[494,0,1.2,.35,.18]]},
- connected:{label:'Connected cue',text:'two quick rising notes',period:0,notes:[[523,0,.5,.45,.02],[784,.12,.7,.45,.02]]},
- ended:{label:'Ended cue',text:'two falling notes',period:0,notes:[[784,0,.45,.4,.02],[523,.12,.7,.4,.02]]},
- failed:{label:'Couldn’t connect cue',text:'two low falling notes',period:0,notes:[[247,0,.5,.45,.02],[196,.24,.8,.45,.02]]},
- pulse:{label:'Reconnecting cue',text:'one soft low note, once',period:0,notes:[[330,0,.6,.35,.02]]}
-};
-var Snd={ctx:null,vol:.5,cur:null,
- ensure:function(){
-  if(!this.ctx){var C=window.AudioContext||window.webkitAudioContext;if(!C)return false;try{this.ctx=new C()}catch(e){return false}}
-  if(this.ctx.state==='suspended'){this.ctx.resume()}
-  return true;
- },
- start:function(kind,max,src){
-  this.stop();
-  if(!this.ensure())return false;
-  var c=this.ctx,g=c.createGain(),lp=c.createBiquadFilter();
-  lp.type='lowpass';lp.frequency.value=3200;
-  g.gain.value=this.vol*.25;
-  lp.connect(g);g.connect(c.destination);
-  var s={kind:kind,src:src,g:g,lp:lp,oscs:[],timers:[],stopped:false};
-  this.cur=s;
-  var self=this,n=0;
-  (function cyc(){
-   if(s.stopped)return;
-   var p=PAT[kind],t=c.currentTime+.03;
-   p.notes.forEach(function(x){self.tone(s,x[0],t+x[1],x[2],x[3],x[4])});
-   n++;
-   var wait=p.period||Math.max.apply(null,p.notes.map(function(x){return(x[1]+x[2])*1000}))+80;
-   s.timers.push(setTimeout(function(){
-    if(s.stopped)return;
-    if(p.period&&n<max){cyc()}else{self.stop(s,true)}
-   },p.period&&n<max?p.period:wait));
-  })();
-  return true;
- },
- tone:function(s,f,t0,dur,peak,atk){
-  var c=this.ctx;
-  [[f,1],[f*2,.18]].forEach(function(pr){
-   var o=c.createOscillator(),e=c.createGain();
-   o.type='sine';o.frequency.value=pr[0];
-   e.gain.setValueAtTime(0,t0);
-   e.gain.linearRampToValueAtTime(peak*pr[1],t0+atk);
-   e.gain.exponentialRampToValueAtTime(.0001,t0+dur);
-   o.connect(e);e.connect(s.lp);
-   o.onended=function(){try{e.disconnect()}catch(x){}};
-   o.start(t0);o.stop(t0+dur+.05);
-   s.oscs.push(o);
-  });
- },
- stop:function(s,natural){
-  s=s||this.cur;if(!s||s.stopped)return;
-  s.stopped=true;s.timers.forEach(clearTimeout);
-  var c=this.ctx,now=c.currentTime;
-  s.g.gain.cancelScheduledValues(now);
-  s.g.gain.setTargetAtTime(0,now,.012);
-  s.oscs.forEach(function(o){try{o.stop(now+.08)}catch(x){}});
-  setTimeout(function(){try{s.g.disconnect();s.lp.disconnect()}catch(x){}},200);
-  if(this.cur===s)this.cur=null;
-  UI.soundChanged(natural?'ended':'stopped',s);
- },
- setVol:function(v){this.vol=v;if(this.cur){this.cur.g.gain.setTargetAtTime(v*.25,this.ctx.currentTime,.02)}},
- close:function(){this.stop();if(this.ctx){try{this.ctx.close()}catch(e){}this.ctx=null}}
-};
+/* ---------- sound ----------
+   The tone generator (PAT patterns + Snd synth) lives in call-audio.js, shared with the in-conversation
+   overlays in chat.html and groups.html so every page sounds the same. This page keeps its own switch,
+   captions and cleanup; Snd tells the caption when a sound ends or is stopped. */
+var PAT=TinAudio.PAT,Snd=TinAudio.Snd;
+Snd.onchange=function(how,s){UI.soundChanged(how,s)};
 
 /* ---------- state ---------- */
 var S,T=[],tickId=null,soundOn=false,lastCue=null,cap={mode:'none'},hist=[],logN=0,opener=null;

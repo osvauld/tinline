@@ -159,4 +159,40 @@ await chk('ending in groups ended it for chat too',async()=>({ok:await q.locator
 await chk('cross-page call flow never creates an AudioContext',async()=>{const a=await L.aud(q);return {ok:!a.started&&!a.ctxStates.length,d:JSON.stringify(a)}});
 await chk('cross-page: no runtime errors',async()=>({ok:!q.errs.length,d:q.errs.join('|')}));
 await q.context().close()}
+{// direct-call sound (call-audio.js): Quiet mode on by default; with it off, ringback loops while ringing, connected once, ended once
+const freqHook=p=>p.context().addInitScript(()=>{const AC=window.AudioContext;if(!AC)return;const co=AC.prototype.createOscillator;window.__oscF=[];AC.prototype.createOscillator=function(){const o=co.apply(this,arguments);window.__oscF.push(o);return o}});
+const audio=p=>p.evaluate(()=>{const f=(window.__oscF||[]).map(o=>Math.round(o.frequency.value)),a=window.__aud||{osc:[]};
+ return {played:TinAudio.played.slice(),ctx:(a.ctxs||[]).map(c=>c.state).join(),started:a.started||0,live:a.osc.filter(o=>o.started&&!o.ended).length,
+  back:f.filter(x=>x===392).length,liveBack:a.osc.filter((o,i)=>o.started&&!o.ended&&[392,494].includes(f[i])).length,ring:f.filter(x=>x===1175).length}});
+const q=await L.page(b);await freqHook(q);await q.goto(L.BASE+'chat.html?chat=arjun');await sleep(q,300);
+await q.click('#simBtn');
+await chk('quiet mode: "Quiet mode" switch in the Simulation drawer (role=switch, same pattern as the other switches), on by default',async()=>{const r=await q.evaluate(()=>{const s=document.querySelector('#swQuiet');return s&&{role:s.getAttribute('role'),on:s.getAttribute('aria-checked'),t:s.textContent.trim(),cls:s.className}});return {ok:r&&r.role==='switch'&&r.on==='true'&&r.t==='Quiet mode'&&r.cls==='sw',d:JSON.stringify(r)}});
+await q.screenshot({path:'screenshots/roster-quiet-switch-chat.png'});
+await q.click('#simBtn');await q.click('#callBtn');await sleep(q,3000);await q.click('#callEnd');await sleep(q,300);
+await chk('quiet mode on: ring, connect and End create no AudioContext and no oscillator',async()=>{const a=await audio(q);return {ok:a.ctx===''&&a.started===0&&!a.played.length,d:JSON.stringify(a)}});
+await q.click('#simBtn');await q.click('#swQuiet');await q.click('#simBtn');
+await q.click('#callBtn');await sleep(q,600);
+await chk('direct call: ringback (392/494 Hz two-tone) loops while "Ringing…"; never the incoming ring',async()=>{const a=await audio(q);return {ok:a.played.join()==='back'&&a.liveBack===2&&a.ring===0&&(await q.textContent('#callStatus'))==='Ringing…',d:JSON.stringify(a)}});
+await sleep(q,2500);
+await chk('direct call: on connect the ringback stops and the connected cue plays once',async()=>{const a=await audio(q);return {ok:a.played.join()==='back,connected'&&a.liveBack===0&&(await q.textContent('#callStatus'))==='Connected',d:JSON.stringify(a)}});
+const n0=(await audio(q)).back;await sleep(q,4200);
+await chk('direct call connected: no further ringback cycles',async()=>{const a=await audio(q);return {ok:a.back===n0&&a.live===0&&a.played.join()==='back,connected',d:JSON.stringify(a)}});
+await q.click('#callMute');await sleep(q,100);
+await chk('mute silences the mic, never the cues (no cue on mute)',async()=>{const a=await audio(q);return {ok:a.played.join()==='back,connected'&&a.live===0,d:JSON.stringify(a)}});
+await q.click('#callMute');await q.click('#callEnd');await sleep(q,1500);
+await chk('direct call End: ended cue once, then zero live oscillators',async()=>{const a=await audio(q);return {ok:a.played.join()==='back,connected,ended'&&a.live===0,d:JSON.stringify(a)}});
+const s0=(await audio(q)).started;await sleep(q,4200);
+await chk('after End: nothing scheduled (no new oscillators 4s later)',async()=>{const a=await audio(q);return {ok:a.started===s0&&a.live===0,d:s0+'→'+a.started}});
+await q.click('#callBtn');await sleep(q,800);await q.click('#callEnd');await sleep(q,1200);
+await chk('End while ringing: ringback stopped at once, ended cue, zero live oscillators',async()=>{const a=await audio(q);return {ok:a.played.slice(-2).join()==='back,ended'&&a.liveBack===0&&a.live===0,d:JSON.stringify(a)}});
+await q.click('#callBtn');await sleep(q,600);await q.click('#callMin');await sleep(q,200);
+await chk('minimized while ringing: ringback keeps going (the call continues)',async()=>{const a=await audio(q);return {ok:a.liveBack>0,d:JSON.stringify(a)}});
+await q.click('#simBtn');await q.click('#swQuiet');await sleep(q,200);
+await chk('Quiet mode turned on mid-ring: every oscillator stops, strip and timer still shown',async()=>{const a=await audio(q);return {ok:a.live===0&&(await q.getAttribute('#swQuiet','aria-checked'))==='true'&&await q.locator('#callStrip').isVisible(),d:JSON.stringify(a)}});
+await q.click('#swQuiet');await sleep(q,300);
+await chk('Quiet mode off again while still ringing: ringback resumes',async()=>{const a=await audio(q);return {ok:a.liveBack>0,d:JSON.stringify(a)}});
+await q.evaluate(()=>dispatchEvent(new PageTransitionEvent('pagehide',{persisted:false})));await sleep(q,300);
+await chk('pagehide: current sound stopped and the AudioContext closed (calls.html discipline)',async()=>{const a=await audio(q),r=await q.evaluate(()=>({cur:TinAudio.Snd.cur,ctx:TinAudio.Snd.ctx}));return {ok:/closed/.test(a.ctx)&&r.cur===null&&r.ctx===null,d:JSON.stringify(a)}});
+await chk('direct sound: no console errors',async()=>({ok:!q.errs.length,d:q.errs.join('|')}));
+await q.context().close()}
 await b.close();C.save('chat-results.json')})();

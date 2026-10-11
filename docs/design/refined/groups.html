@@ -34,6 +34,11 @@ a{color:var(--accent-ink);text-decoration:none}a:hover{text-decoration:underline
 #simBody{display:flex;flex-direction:column;gap:6px;padding-right:8px}
 #simBody .btn{justify-content:flex-start;text-align:left;width:100%}
 .sw{display:flex;align-items:center;gap:12px;min-height:44px}.sw input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+/* Quiet mode: the same role=switch control as calls.html (label left, track right) */
+.qsw{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;border:0;background:transparent;padding:0;color:var(--ink);font:inherit;font-size:14px;font-weight:600;text-align:left}
+.qsw i{flex:none;width:40px;height:24px;border-radius:12px;background:var(--line);position:relative;transition:background-color 120ms ease}
+.qsw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .2);transition:transform 120ms ease}
+.qsw[aria-checked=true] i{background:var(--accent)}.qsw[aria-checked=true] i::after{transform:translateX(16px)}
 .embed .hbar,.embed .sim{display:none!important}
 .embed .page{padding:0;max-width:none}
 .embed .app{height:100dvh;min-height:0;border:0;border-radius:0}
@@ -51,7 +56,7 @@ a{color:var(--accent-ink);text-decoration:none}a:hover{text-decoration:underline
 /* app frame */
 .app{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;height:calc(100dvh - 60px);min-height:520px}
 .pane{display:flex;flex-direction:column;min-height:0;min-width:0;grid-row:2}
-/* in-page call: ongoing-call strip + overlay (silent visual simulation) */
+/* in-page call: ongoing-call strip + overlay (visual simulation; cues from call-audio.js, group roster from call-state.js) */
 #callStrip{grid-row:1;grid-column:1/-1} /* the strip is the shared .t-callbar from call-state.js */
 .callov{position:absolute;inset:0;z-index:20;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;align-items:center;padding:8px 8px calc(40px + env(safe-area-inset-bottom,0px));animation:pop .16s ease-out}
 .callov:focus{outline:none}
@@ -267,6 +272,7 @@ button.mrow:hover{background:var(--surface-2)}
 <div id="live" class="sr" role="status" aria-live="polite"></div>
 <div id="toastHost"></div>
 <script src="call-state.js"></script>
+<script src="call-audio.js"></script>
 <script>
 'use strict';
 /* ---------- tiny helpers ---------- */
@@ -288,7 +294,8 @@ const P={
   me:{n:'You',i:'YO'},
   meera:{n:'Meera K',i:'MK'},arjun:{n:'Arjun Oommen',i:'AO'},
   sam:{n:'Sam Rao',i:'SR'},priya:{n:'Priya N',i:'PN'},
-  leo:{n:'Leo B',i:'LB'},dev:{n:'Dev T',i:'DT'},kavya:{n:'Kavya S',i:'KS'}};
+  leo:{n:'Leo B',i:'LB'},dev:{n:'Dev T',i:'DT'},kavya:{n:'Kavya S',i:'KS'},
+  nisha:{n:'Nisha R',i:'NR'},omar:{n:'Omar F',i:'OF'},tara:{n:'Tara M',i:'TM'},ravi:{n:'Ravi K',i:'RK'}};
 const first=id=>P[id].n.split(' ')[0];
 const CONTACTS=['arjun','meera','sam','priya','dev'];   // people you can invite directly
 const QS=new URLSearchParams(location.search),EMBED=QS.get('embed')==='1',FROM_HOME=QS.get('from')==='home';
@@ -298,7 +305,7 @@ function seed(){
     groups:[
       {id:'hike',name:'Weekend hike',status:'active',role:'admin',unread:2,
        hosts:[{name:'Arjun’s desktop',online:true},{name:'Meera’s desktop',online:false,note:'offline for 2 h'}],
-       members:[{id:'meera',roles:['owner'],since:'Aug 14'},{id:'arjun',roles:['host'],since:'Aug 14'},{id:'sam',roles:['admin'],since:'Aug 14'},{id:'me',roles:['admin'],since:'Aug 20'},{id:'priya',roles:['admin'],since:'Aug 21'},{id:'leo',roles:[],since:'Sep 2',by:'Sam'},{id:'dev',roles:[],since:'Sep 5',by:'Sam'},{id:'kavya',roles:[],since:'Sep 9',by:'Priya'}],
+       members:[{id:'meera',roles:['owner'],since:'Aug 14'},{id:'arjun',roles:['host'],since:'Aug 14'},{id:'sam',roles:['admin'],since:'Aug 14'},{id:'me',roles:['admin'],since:'Aug 20'},{id:'priya',roles:['admin'],since:'Aug 21'},{id:'leo',roles:[],since:'Sep 2',by:'Sam'},{id:'dev',roles:[],since:'Sep 5',by:'Sam'},{id:'kavya',roles:[],since:'Sep 9',by:'Priya'},{id:'nisha',roles:[],since:'Sep 12',by:'Priya'},{id:'omar',roles:[],since:'Sep 14',by:'Sam'},{id:'tara',roles:[],since:'Sep 20',by:'Priya'},{id:'ravi',roles:[],since:'Sep 22',by:'Sam'}],
        pending:[],flags:{leo:['sam']},
        msgs:[{sys:1,text:'Kavya joined, invited by Priya'},
         {id:'m1',from:'sam',text:'Saturday 7am at the trailhead.',t:'12:40'},
@@ -477,7 +484,7 @@ function renderConv(){
   C.append(h('div',{id:'compHost'}));
   renderBanner();renderMsgs(true);renderComposer();
 }
-/* group call: in-page overlay (silent). Needs a live host, so it is disabled (not hidden) while hosts are degraded.
+/* group call: in-page overlay with the shared roster; never rings anyone (cues: call-audio.js). Needs a live host, so it is disabled (not hidden) while hosts are degraded.
    While a call is live the button only ever returns to it. */
 function callButton(g){
   if(CALL)return h('button',{class:'ib live',type:'button',id:'callBtn','aria-label':'Return to call with '+CALL.name,onclick:openCall},ic('phone'));
@@ -490,13 +497,25 @@ const HOST_BAR=QS.get('callbar')==='host';
 let CALL=TinCall.get(),callOpen=false;
 const callStrip=TinCall.bar({id:'callStrip'});callStrip.addEventListener('click',()=>openCall());$('#app').prepend(callStrip);
 function refreshCallBtn(){const b=$('#callBtn'),g=conv(S.cur);if(b&&g&&g.type!=='private'){const f=document.activeElement===b;b.replaceWith(callButton(g));if(f)$('#callBtn').focus()}}
-function startCall(g){if(CALL){openCall();return}TinCall.start({kind:'group',id:g.id,name:g.name});openCall()}
+/* Who is in the call (SPEC "Group call"): the host's device forwards up to k speakers (3 for a desktop
+   host), everyone else sits in the quiet row. Weekend hike is hosted on Arjun's desktop; the plan is
+   simulation data, the roster itself (and its clock) lives in call-state.js so chat.html shows the same. */
+const CALLPLAN={hike:{host:'arjun',k:3,fwd:['arjun','sam','priya'],muted:['priya','kavya'],away:['ravi'],join:{leo:8000},leave:{dev:24000}}};
+function callRoster(g){
+  const ids=g.members.map(m=>m.id),hostId=(g.members.find(m=>m.roles.includes('host'))||g.members[0]||{id:'me'}).id;
+  const plan=CALLPLAN[g.id]||{host:hostId,k:3,fwd:[hostId,...ids.filter(i=>i!==hostId&&i!=='me')].slice(0,3),muted:[],away:[],join:{},leave:{}};
+  const order=[...plan.fwd,'me',...ids].filter((id,i,a)=>a.indexOf(id)===i&&(ids.includes(id)||id==='me')&&!plan.away.includes(id));
+  return {k:plan.k,roster:order.map(id=>({id,name:id==='me'?'You':P[id].n,ini:P[id].i,me:id==='me',host:id===plan.host,fwd:plan.fwd.includes(id),muted:plan.muted.includes(id),join:plan.join[id],leave:plan.leave[id]}))}}
+function startCall(g){if(CALL){openCall();return}TinAudio.arm();TinCall.start({kind:'group',id:g.id,name:g.name,...callRoster(g)});openCall()}
+const gStage=TinCall.stage();TinAudio.follow(TinCall);
+TinAudio.onQuiet(on=>{const b=$('#swQuiet');if(b)b.setAttribute('aria-checked',String(on))});
 function tickCall(){const t=TinCall.get();if(!t)return;
   const tm=$('#callOv .ctime');if(tm){tm.textContent=t.time||'00:00';tm.style.visibility=t.connected?'visible':'hidden';$('#callOv .cst').textContent=t.connected?'Connected':t.preLabel}}
 function setInert(on){['#listPane','#convPane'].forEach(x=>{$(x).inert=on});callStrip.inert=on}
 const callInitials=n=>n.split(' ').map(w=>w[0]).slice(0,2).join('');
 function muteIcon(b){b.setAttribute('aria-pressed',String(!!CALL?.muted));b.replaceChildren(ic(CALL?.muted?'micoff':'mic'))}
 function renderCall(){
+  const keep=$('#callOv')?.contains(document.activeElement);
   $('#callOv')?.remove();if(!CALL)callOpen=false;
   callStrip.hidden=!CALL||callOpen||HOST_BAR;setInert(callOpen);
   if(!callOpen)return;const app=$('#app');
@@ -504,12 +523,12 @@ function renderCall(){
   const face=CALL.kind==='group'?h('span',{class:'gav','aria-hidden':'true'},ic('users')):h('span',{class:'t-avatar big '+hue(CALL.name),'aria-hidden':'true'},callInitials(CALL.name));
   const ov=h('div',{class:'callov',id:'callOv',role:'dialog','aria-label':'Call with '+CALL.name,tabindex:'-1',onkeydown:e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();minimizeCall()}}},
     h('button',{class:'ib cmin',type:'button','aria-label':'Back to chat — call continues',onclick:minimizeCall},ic('chev')),
-    h('div',{class:'cbody'},face,h('h2',null,CALL.name),h('div',{class:'cst',role:'status'},''),h('div',{class:'ctime'},'00:00')),
+    CALL.people?gStage:h('div',{class:'cbody'},face,h('h2',null,CALL.name),h('div',{class:'cst',role:'status'},''),h('div',{class:'ctime'},'00:00')),
     h('div',{class:'cctl'},h('label',null,mute,'Mute'),h('label',null,h('button',{class:'cbtn end',type:'button','aria-label':'End call',onclick:()=>endCall()},ic('phone')),'End')));
-  app.append(ov);tickCall()}
-function openCall(){if(!CALL)return;callOpen=true;renderCall();$('#callOv').focus()}
+  gStage.hidden=!CALL.people;app.append(ov);tickCall();if(keep)ov.focus()}
+function openCall(){if(!CALL)return;TinAudio.arm();callOpen=true;renderCall();$('#callOv').focus()}
 function minimizeCall(){if(!CALL)return;callOpen=false;renderCall();(HOST_BAR?($('#callBtn')||$('#convPane h2')||$('#newBtn')):callStrip).focus()}
-function endCall(){if(!CALL)return;TinCall.end();say('Call ended');($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}
+function endCall(){if(!CALL)return;TinAudio.ending();TinCall.end();say('Call ended');($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}
 TinCall.subscribe(v=>{const was=CALL,inside=!!$('#callOv')?.contains(document.activeElement);CALL=v;
   const changed=!was!==!v||(was&&v&&was.ringAt!==v.ringAt);
   if(changed){renderCall();refreshCallBtn();if(!v&&inside)($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}   // ended elsewhere
@@ -788,6 +807,8 @@ function renderSim(){
   const B=$('#simBody');B.replaceChildren();
   B.append(h('label',{class:'sw'},h('input',{type:'checkbox',checked:S.hostsOffline?'':null,onchange:e=>{S.hostsOffline=e.target.checked;const g=conv('hike');if(!g)return;
     if(!S.hostsOffline)flush(g);else{g.msgs.push({sys:1,text:'Both host desktops went offline'});renderConv();renderList();say('Weekend hike hosts are now offline')}}}),'Weekend hike: host desktops offline'));
+  const qs=h('button',{class:'qsw',type:'button',role:'switch',id:'swQuiet','aria-checked':String(TinAudio.quiet()),onclick:()=>{const q=!TinAudio.quiet();TinAudio.setQuiet(q);say(q?'Quiet mode on. Call sounds are off.':'Quiet mode off. Call sounds play.')}},h('span',null,'Quiet mode'),h('i',{'aria-hidden':'true'}));
+  B.append(qs);
   B.append(h('label',{class:'sw'},h('input',{type:'checkbox',checked:S.empty?'':null,onchange:e=>{const on=e.target.checked;S=seed();S.open={};S.hostsOffline=false;if(on){S.empty=true;S.groups=[];S.invites=[];S.reqIn=[];S.reqOut=[];S.privates=[]}renderAll();say(on?'Empty account':'Sample data restored')}}),'Start with an empty account'));
   if(conv('hike')&&!closed(conv('hike')))B.append(h('button',{class:'btn ol sm',type:'button',onclick:()=>{const g=conv('hike');incoming(g,{id:'s'+S.uid++,from:'sam',text:CHAT[S.chat++%CHAT.length],t:clock()});say('Sam sent a message')}},'Simulate: Sam sends a message'));
   S.events.forEach(ev=>B.append(h('button',{class:'btn ol sm',type:'button',onclick:()=>{S.events=S.events.filter(x=>x.id!==ev.id&&!(ev.req&&x.req===ev.req));ev.run();renderAll();refreshMembers()}},'Simulate: '+ev.label)));
