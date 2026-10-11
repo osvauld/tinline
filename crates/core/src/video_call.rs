@@ -620,7 +620,7 @@ impl Node {
     /// width), converted on the encoder thread. Otherwise like `push_video_frame`.
     pub fn push_video_frame_yuyv(&self, width: u32, height: u32, rotation: u32, stride: u32, data: Vec<u8>) -> bool {
         let w = width as usize;
-        if !size_ok(width, height) || w % 2 != 0 || !plane_fits(data.len(), w * 2, height as usize, stride as usize, 1) {
+        if !size_ok(width, height) || !w.is_multiple_of(2) || !plane_fits(data.len(), w * 2, height as usize, stride as usize, 1) {
             return false;
         }
         self.inner.push_input(width, height, rotation, Source::Yuyv { data, stride: stride as usize })
