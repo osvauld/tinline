@@ -102,8 +102,8 @@ impl GroupsUi {
 
 }
 
-/// Some variants (the preview's group list, host and chat requests) lost their buttons when the
-/// Groups tab moved to the real core (G-UI); chat requests (U3) come back once core has them.
+/// The preview's own messages (demo screens and the privacy preview). Some lost their buttons when
+/// the Groups tab and chat requests moved to the real core (G-UI: `group_live.rs`).
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub(super) enum Gm {
@@ -132,13 +132,6 @@ pub(super) enum Gm {
     SetPerm(String, Perm, bool),
     DismissChip(String),
     Call(String),
-    /// Preview: a week passes (unanswered requests expire).
-    SimWeek,
-    AcceptReq(String),
-    DeclineReq(String),
-    BlockReq(String),
-    CancelReq(String),
-    SimReply(String, bool),
     SimAttempt(String),
     KeepRunning(bool),
     AskForHost(String),
@@ -315,17 +308,6 @@ impl App {
                 Err(gf::GErr::CallsNotAllowed(_)) => self.groups.dialog = Some(Dialog::CallRefused(did)),
                 Err(e) => said = Some(e.to_string()),
             },
-            Gm::SimWeek => f.advance(gf::REQUEST_TTL),
-            Gm::AcceptReq(id) => match f.accept_request(&id) {
-                Ok(did) => {
-                    self.open_preview(f, Open::Person(did));
-                }
-                Err(e) => said = Some(e.to_string()),
-            },
-            Gm::DeclineReq(id) => fail(&mut said, f.decline_request(&id)),
-            Gm::BlockReq(id) => fail(&mut said, f.block_request(&id)),
-            Gm::CancelReq(id) => fail(&mut said, f.cancel_request(&id)),
-            Gm::SimReply(id, yes) => fail(&mut said, f.simulate_reply(&id, yes)),
             Gm::SimAttempt(did) => fail(&mut said, f.simulate_attempt(&did).map(|_| ())),
             Gm::KeepRunning(on) => f.set_keep_running(on),
             Gm::AskForHost(gid) => {

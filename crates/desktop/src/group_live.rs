@@ -16,7 +16,7 @@
 
 use iced::Task;
 use p2pcore::{
-    Error, GroupDelivery, GroupDetail, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRole, GroupSummary, Node,
+    ChatRequestState, Error, GroupChatRequest, GroupDelivery, GroupDetail, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRole, GroupSummary, Node,
 };
 
 /// Messages loaded when a group opens, and per "Show earlier".
@@ -43,6 +43,14 @@ pub trait GroupApi {
     fn group_revoke_host(&self, id: String, did: String, device_id: String) -> Result<(), Error>;
     fn group_accept_host(&self, id: String, accept: bool) -> Result<(), Error>;
     fn group_device_id(&self) -> Result<String, Error>;
+    // Chat requests through the group's hosts (G2, U3).
+    fn group_chat_request(&self, id: String, did: String) -> Result<GroupChatRequest, Error>;
+    fn group_chat_requests_incoming(&self) -> Result<Vec<GroupChatRequest>, Error>;
+    fn group_chat_requests_outgoing(&self) -> Result<Vec<GroupChatRequest>, Error>;
+    fn group_chat_accept(&self, request_id: String) -> Result<GroupChatRequest, Error>;
+    fn group_chat_decline(&self, request_id: String) -> Result<GroupChatRequest, Error>;
+    /// The personal block (P5), for "Block" on an incoming request.
+    fn block(&self, did: String) -> Result<(), Error>;
 }
 
 impl GroupApi for Node {
@@ -97,6 +105,24 @@ impl GroupApi for Node {
     fn group_device_id(&self) -> Result<String, Error> {
         Node::group_device_id(self)
     }
+    fn group_chat_request(&self, id: String, did: String) -> Result<GroupChatRequest, Error> {
+        Node::group_chat_request(self, id, did)
+    }
+    fn group_chat_requests_incoming(&self) -> Result<Vec<GroupChatRequest>, Error> {
+        Node::group_chat_requests_incoming(self)
+    }
+    fn group_chat_requests_outgoing(&self) -> Result<Vec<GroupChatRequest>, Error> {
+        Node::group_chat_requests_outgoing(self)
+    }
+    fn group_chat_accept(&self, request_id: String) -> Result<GroupChatRequest, Error> {
+        Node::group_chat_accept(self, request_id)
+    }
+    fn group_chat_decline(&self, request_id: String) -> Result<GroupChatRequest, Error> {
+        Node::group_chat_decline(self, request_id)
+    }
+    fn block(&self, did: String) -> Result<(), Error> {
+        Node::block(self, did)
+    }
 }
 
 /// Words for a failed group call.
@@ -105,6 +131,9 @@ pub(super) fn gerr(e: Error) -> String {
         Error::Rejected(r) => match r.as_str() {
             "removed" => "You were removed from this group.".into(),
             "not a member" => "You\u{2019}re not a member of this group.".into(),
+            "already a contact" => "You already have them as a contact. Message them from Chats.".into(),
+            "you block them" => "You block them. Unblock them first to ask for a chat.".into(),
+            r if r == p2pcore::BLOCKED => "They blocked you, so you can\u{2019}t ask them for a chat.".into(),
             r => {
                 let mut c = r.chars();
                 match c.next() {
@@ -141,6 +170,8 @@ pub(super) enum LDialog {
     Leave,
     /// Why we were removed: the signed flags.
     Removal,
+    /// Ask a member (not a contact) for a private chat (U3).
+    Request { did: String },
     /// This device starts (true) or stops hosting the open group.
     Host { accept: bool },
 }
@@ -159,6 +190,11 @@ pub(super) enum Job {
     Appoint { gid: String, did: String, dev: String },
     Revoke { gid: String, did: String, dev: String },
     AcceptHost { gid: String, accept: bool },
+    Request { gid: String, did: String },
+    AcceptReq(String),
+    DeclineReq(String),
+    /// Block the sender (P5), then decline.
+    BlockReq { id: String, did: String },
 }
 
 impl Job {
@@ -184,10 +220,19 @@ impl Job {
                 "Appointed. The device hosts once it agrees (Host from this device).".into(),
             ),
             Job::Revoke { gid, did: who, dev } => did(api.group_revoke_host(gid, who, dev), "That device no longer hosts the group.".into()),
+            Job::Request { gid, did: who } => Lm::Requested(api.group_chat_request(gid, who).map_err(gerr)),
+            Job::AcceptReq(id) => Lm::Answered(api.group_chat_accept(id).map_err(gerr)),
+            Job::DeclineReq(id) => Lm::Answered(api.group_chat_decline(id).map_err(gerr)),
+            Job::BlockReq { id, did: who } => {
+                if let Err(e) = api.block(who) {
+                    return Lm::Answered(Err(gerr(e)));
+                }
+                Lm::Answered(api.group_chat_decline(id).map_err(gerr))
+            }
             Job::AcceptHost { gid, accept } => did(
                 api.group_accept_host(gid, accept),
                 if accept {
-                    "This device offered to host. It hosts once an admin appoints it.".into()
+                    "This device agreed to host. It hosts as soon as an admin has appointed it.".into()
                 } else {
                     "This device stopped hosting the group.".into()
                 },
@@ -223,6 +268,8 @@ pub(super) enum Lm {
     AskAdmin(String, bool),
     AskLeave,
     AskHost(bool),
+    /// Answer an admin's request that this device host the open group.
+    AnswerHost(bool),
     /// Settings › Hosting: open that group and ask to stop hosting it here.
     StopHostingOf(String),
     Removal,
@@ -237,6 +284,15 @@ pub(super) enum Lm {
     Posted(Result<GroupMessage, String>, String),
     /// A plain action: what to tell the user.
     Did(Result<String, String>),
+    /// Chat requests (U3).
+    AskRequest(String),
+    AcceptReq(String),
+    DeclineReq(String),
+    BlockReq(String, String),
+    /// A request appeared or changed (GroupRequestEvents).
+    RequestChanged(GroupChatRequest),
+    Requested(Result<GroupChatRequest, String>),
+    Answered(Result<GroupChatRequest, String>),
 }
 
 /// What a step asks of the app around it.
@@ -247,6 +303,8 @@ pub(super) struct Out {
     /// A group opened: close whatever else the main pane showed.
     pub opened: bool,
     pub copy: Option<String>,
+    /// Open the 1:1 chat with this DID (an accepted request).
+    pub chat: Option<String>,
 }
 
 #[derive(Default)]
@@ -277,11 +335,16 @@ pub(super) struct GroupsLive {
     pub ready: bool,
     /// The token dialog's QR.
     pub qr: Option<super::Qr>,
+    /// Chat requests (U3), newest first.
+    pub incoming: Vec<GroupChatRequest>,
+    pub outgoing: Vec<GroupChatRequest>,
 }
 
 /// Member menu entries, in order.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Action {
+    /// Message privately: their chat if a contact, else a chat request.
+    Message,
     MakeAdmin,
     RevokeAdmin,
     /// Appoint this device of theirs.
@@ -322,6 +385,11 @@ impl GroupsLive {
         self.list.iter().filter(|s| active(s.my_role)).map(|s| s.unread).sum()
     }
 
+    /// Incoming requests waiting for an answer (counted on the Chats tab, where they show).
+    pub fn pending_in(&self) -> impl Iterator<Item = &GroupChatRequest> {
+        self.incoming.iter().filter(|r| r.state == ChatRequestState::Pending)
+    }
+
     /// We can post in the open group.
     pub fn can_post(&self) -> bool {
         self.role().is_some_and(active)
@@ -346,6 +414,7 @@ impl GroupsLive {
         if m.is_me || !active(d.my_role) {
             return out;
         }
+        out.push(Action::Message);
         if d.my_role == GroupRole::Owner && !m.is_owner {
             out.push(if m.is_admin { Action::RevokeAdmin } else { Action::MakeAdmin });
         }
@@ -391,6 +460,16 @@ impl GroupsLive {
         }
         let h = d.hosts.len();
         format!("{members} \u{b7} {h} host{}", if h == 1 { "" } else { "s" })
+    }
+
+    /// An admin asked this device to host the open group: (who asked).
+    pub fn host_asked(&self) -> Option<String> {
+        let d = self.detail.as_ref()?;
+        if !d.host_requested_here || !active(d.my_role) {
+            return None;
+        }
+        let by = d.host_requests.iter().find(|h| h.is_me).and_then(|h| h.appointed_by.clone());
+        Some(by.map(|did| self.member(&did).map(|m| m.name.clone()).unwrap_or_default()).filter(|n| !n.trim().is_empty()).unwrap_or_else(|| "An admin".into()))
     }
 
     /// No host is reachable (and we are still in the group).
@@ -523,6 +602,11 @@ impl GroupsLive {
             }
             Lm::AskLeave => self.show(LDialog::Leave),
             Lm::AskHost(accept) => self.show(LDialog::Host { accept }),
+            Lm::AnswerHost(accept) => {
+                if let Some(gid) = self.open.clone() {
+                    out.job = Some(Job::AcceptHost { gid, accept });
+                }
+            }
             Lm::StopHostingOf(gid) => {
                 out = self.step(api, Lm::Open(gid));
                 self.show(LDialog::Host { accept: false });
@@ -569,6 +653,49 @@ impl GroupsLive {
                     }
                     Err(e) => self.error = Some(e),
                 }
+            }
+            Lm::AskRequest(did) => {
+                self.menu = None;
+                self.show(LDialog::Request { did });
+            }
+            Lm::AcceptReq(id) => out.job = Some(Job::AcceptReq(id)),
+            Lm::DeclineReq(id) => out.job = Some(Job::DeclineReq(id)),
+            Lm::BlockReq(id, did) => out.job = Some(Job::BlockReq { id, did }),
+            Lm::RequestChanged(r) => {
+                self.reload_requests(api);
+                if r.outgoing && r.state == ChatRequestState::Accepted && r.contact_added {
+                    out.notice = Some(format!("{} accepted your request. You can message each other now; calls stay off until one of you allows them.", first_name(or_someone(&r.peer_name))));
+                }
+            }
+            Lm::Requested(r) => {
+                self.busy = false;
+                match r {
+                    Ok(req) => {
+                        self.dialog = None;
+                        out.notice = Some(format!(
+                            "Request sent to {}. It waits in Chats until they answer.",
+                            first_name(or_someone(&req.peer_name))
+                        ));
+                    }
+                    Err(e) => self.error = Some(e),
+                }
+                self.reload_requests(api);
+            }
+            Lm::Answered(r) => {
+                match r {
+                    Ok(req) => match req.state {
+                        ChatRequestState::Accepted => {
+                            out.notice = Some(format!(
+                                "Accepted. {} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them.",
+                                first_name(or_someone(&req.peer_name))
+                            ));
+                            out.chat = Some(req.peer_did);
+                        }
+                        _ => out.notice = Some(format!("Declined. {} is told \u{201c}declined\u{201d}.", first_name(or_someone(&req.peer_name)))),
+                    },
+                    Err(e) => out.notice = Some(e),
+                }
+                self.reload_requests(api);
             }
             Lm::Did(r) => {
                 self.busy = false;
@@ -620,6 +747,7 @@ impl GroupsLive {
             LDialog::Admin { did, admin } => Job::SetAdmin { gid, did, admin },
             LDialog::Leave => Job::Leave(gid),
             LDialog::Host { accept } => Job::AcceptHost { gid, accept },
+            LDialog::Request { did } => Job::Request { gid, did },
             LDialog::Token { .. } | LDialog::Removal => {
                 self.dialog = None;
                 return None;
@@ -651,6 +779,12 @@ impl GroupsLive {
     fn reload_list(&mut self, api: &dyn GroupApi) {
         // A node without groups (or locked) answers with an error: an empty list.
         self.list = api.groups().unwrap_or_default();
+        self.reload_requests(api);
+    }
+
+    fn reload_requests(&mut self, api: &dyn GroupApi) {
+        self.incoming = api.group_chat_requests_incoming().unwrap_or_default();
+        self.outgoing = api.group_chat_requests_outgoing().unwrap_or_default();
     }
 
     /// Re-reads the open group's detail and the loaded window of messages (delivery and removal
@@ -725,6 +859,19 @@ pub(super) fn preview(s: &GroupSummary, me: &str) -> String {
     }
 }
 
+/// The state line of a request we sent ("Waiting for Leo · via Hike"), and whether it is bad news.
+/// A block is visible (U5 revised, P5): the requester is told, as on the board.
+pub(super) fn sent_line(r: &GroupChatRequest) -> (String, bool) {
+    let f = first_name(or_someone(&r.peer_name)).to_string();
+    match r.state {
+        ChatRequestState::Pending => (format!("Waiting for {f} \u{b7} via {}", r.group_name), false),
+        ChatRequestState::Accepted if r.contact_added => (format!("{f} accepted \u{b7} messages only"), false),
+        ChatRequestState::Accepted => (format!("{f} accepted \u{b7} connecting"), false),
+        ChatRequestState::Declined => (format!("{f} declined"), true),
+        ChatRequestState::Blocked => (format!("{f} blocked you"), true),
+    }
+}
+
 /// The small line under one of our posts.
 pub(super) fn delivery_word(m: &GroupMessage) -> Option<&'static str> {
     (m.outgoing && m.kind == GroupItemKind::Post && m.delivery == GroupDelivery::Waiting).then_some("Waiting for a host")
@@ -761,6 +908,11 @@ impl super::App {
             self.notice = Some(n);
         }
         let mut tasks = Vec::new();
+        if let Some(did) = out.chat {
+            if self.contacts.iter().any(|c| c.did == did) {
+                tasks.push(self.update(super::Msg::Select(did)));
+            }
+        }
         if let Some(t) = out.copy {
             tasks.push(iced::clipboard::write(t));
         }

@@ -85,7 +85,8 @@ impl App {
                 .style(ui::button_style(t, if on { Kind::Tonal } else { Kind::Ghost }, 999.0))
                 .on_press(Msg::Chat(Cm::Tab(which)))
         };
-        let tabs = row![tab("Chats", SideTab::Chats, self.chat.unread_total()), tab("Groups", SideTab::Groups, self.live_badge())].spacing(2);
+        let pending = self.live.pending_in().count() as u32;
+        let tabs = row![tab("Chats", SideTab::Chats, self.chat.unread_total() + pending), tab("Groups", SideTab::Groups, self.live_badge())].spacing(2);
         container(tabs.push(tab("Calls", SideTab::Calls, 0)).push(tab("Contacts", SideTab::Contacts, 0)))
         .padding(3)
         .width(Fill)
@@ -114,6 +115,9 @@ impl App {
         // "You" is pinned first.
         rows.sort_by_key(|r| !self.is_me(&r.peer_did));
         let mut list = column![].spacing(2);
+        if let Some(b) = self.live_requests(t) {
+            list = list.push(b);
+        }
         // Real chats and the preview's sample people, newest first; "You" stays pinned.
         let mut items: Vec<(bool, u64, El)> = Vec::new();
         let mut n = 0;

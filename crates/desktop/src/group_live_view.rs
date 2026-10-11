@@ -120,6 +120,34 @@ impl App {
         if self.notice.is_some() {
             top = top.push(container(self.notice_bar(t)).padding([8, 20]));
         }
+        if let Some(by) = self.live.host_asked() {
+            top = top.push(
+                container(
+                    container(
+                        column![
+                            row![ui::icon(Icon::Server, 18.0, t.on_warn), bold(format!("{} asked this computer to host {}", first_name(&by), d.name), 15.0, t.on_warn)]
+                                .spacing(8)
+                                .align_y(Alignment::Center),
+                            tx(
+                                "A host keeps a full copy of the group, passes messages on while members\u{2019} phones sleep and learns members\u{2019} group addresses. It needs to stay running. Hosting doesn\u{2019}t make you an admin; you can stop any time.",
+                                13.0,
+                                t.on_warn
+                            ),
+                            row![
+                                btn(t, Kind::Primary, "Host here", Some(l(Lm::AnswerHost(true)))),
+                                btn(t, Kind::Ghost, "Decline", Some(l(Lm::AnswerHost(false)))),
+                            ]
+                            .spacing(8),
+                        ]
+                        .spacing(8),
+                    )
+                    .padding(14)
+                    .width(Fill)
+                    .style(ui::outlined(t.warn, ui::alpha(t.on_warn, 0.25), 14.0)),
+                )
+                .padding([12, 20]),
+            );
+        }
         if self.live.waiting_for_host() {
             let body = if d.hosts.is_empty() {
                 "This group has no host yet. Your messages are saved here and send when a member\u{2019}s computer hosts it."
@@ -317,6 +345,27 @@ impl App {
         if d.hosts.is_empty() {
             col = col.push(container(tx("Needs a host", 13.0, t.error)).padding([4, 16]));
         }
+        if admin && !d.host_requests.is_empty() {
+            col = col.push(sec("Asked to host"));
+            for h in &d.host_requests {
+                let who = if h.is_me { "This computer".to_string() } else { format!("{}\u{2019}s device {}", first_name(&self.live_name(&h.did, &h.name)), short_dev(&h.device_id)) };
+                col = col.push(
+                    container(
+                        row![
+                            dot(t.thread),
+                            tx(who, 14.0, t.ink).width(Fill),
+                            tx("no answer yet", 13.0, t.ink2),
+                            link_btn(t, "Withdraw", t.error, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))),
+                        ]
+                        .spacing(10)
+                        .align_y(Alignment::Center),
+                    )
+                    .padding([0, 16])
+                    .height(40)
+                    .center_y(40),
+                );
+            }
+        }
         if admin && !d.host_offers.is_empty() {
             col = col.push(sec("Offered to host"));
             for h in &d.host_offers {
@@ -427,6 +476,16 @@ impl App {
         let several = m.device_ids.len() > 1;
         for a in acts {
             c = c.push(match a {
+                Action::Message => {
+                    let contact = self.contacts.iter().any(|c| c.did == m.did);
+                    if contact {
+                        item(Icon::MessageSquare, "Message privately".into(), "Opens your chat".into(), t.ink, Msg::Select(m.did.clone()))
+                    } else if self.blocks.blocked_by_me(&m.did) {
+                        item(Icon::Ban, "Message privately".into(), format!("You block {first}; unblock them first"), t.ink2, l(Lm::AskRequest(m.did.clone())))
+                    } else {
+                        item(Icon::MessageSquare, "Message privately".into(), format!("Sends {first} a chat request through the host"), t.ink, l(Lm::AskRequest(m.did.clone())))
+                    }
+                }
                 Action::MakeAdmin => item(Icon::ShieldCheck, "Make admin".into(), "Can invite, flag members and appoint hosts".into(), t.ink, l(Lm::AskAdmin(m.did.clone(), true))),
                 Action::RevokeAdmin => item(Icon::ShieldCheck, "Remove as admin".into(), format!("{first} stays a member"), t.ink, l(Lm::AskAdmin(m.did.clone(), false))),
                 Action::Appoint(dev) => item(
@@ -453,6 +512,75 @@ impl App {
             });
         }
         container(c).padding(6).width(Fill).style(ui::card(t)).into()
+    }
+
+    // ---- chat requests (U3), above the chats ----
+
+    /// Incoming requests (Accept / Decline / Block) and our sent ones, as on the
+    /// AndroidChatRequest board: a block above the chats, never mixed into conversations.
+    pub(super) fn live_requests(&self, t: Tok) -> Option<El<'_>> {
+        let incoming: Vec<_> = self.live.pending_in().collect();
+        let sent = &self.live.outgoing;
+        if incoming.is_empty() && sent.is_empty() {
+            return None;
+        }
+        let head = |s_: String| container(label(t, &s_)).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 });
+        let mut col = column![].spacing(6);
+        if !incoming.is_empty() {
+            col = col.push(head(format!("Requests \u{b7} {}", incoming.len())));
+            for r in incoming {
+                let name = self.live_name(&r.peer_did, &r.peer_name);
+                let first = first_name(&name).to_string();
+                col = col.push(
+                    container(
+                        column![
+                            row![
+                                avatar(t, &name, &r.peer_did, 36.0),
+                                column![semi(name.clone(), 14.0, t.ink), tx(format!("Member of {}", r.group_name), 12.0, t.ink2)].spacing(1).width(Fill),
+                            ]
+                            .spacing(10)
+                            .align_y(Alignment::Center),
+                            tx(format!("Accepting adds {first} as a contact for messages only. You can allow calls later."), 12.0, t.ink2),
+                            row![
+                                btn(t, Kind::Primary, "Accept", Some(l(Lm::AcceptReq(r.id.clone())))),
+                                btn(t, Kind::Quiet, "Decline", Some(l(Lm::DeclineReq(r.id.clone())))),
+                            ]
+                            .spacing(6),
+                            link_btn(t, &format!("Block {first}"), t.error, l(Lm::BlockReq(r.id.clone(), r.peer_did.clone()))),
+                        ]
+                        .spacing(8),
+                    )
+                    .padding(12)
+                    .width(Fill)
+                    .style(ui::outlined(t.surface, t.line, 12.0)),
+                );
+            }
+        }
+        if !sent.is_empty() {
+            col = col.push(head("Sent requests".into()));
+            for r in sent {
+                let name = self.live_name(&r.peer_did, &r.peer_name);
+                let (line, bad) = gl::sent_line(r);
+                let mut row_ = row![
+                    avatar(t, &name, &r.peer_did, 32.0),
+                    column![
+                        row![semi(name.clone(), 14.0, t.ink), Space::new().width(Fill), tx(short_time(r.at), 12.0, t.ink2)],
+                        tx(line, 12.0, if bad { t.error } else { t.ink2 }),
+                    ]
+                    .spacing(1)
+                    .width(Fill),
+                ]
+                .spacing(10)
+                .align_y(Alignment::Center);
+                if r.contact_added && self.contacts.iter().any(|c| c.did == r.peer_did) {
+                    row_ = row_.push(link_btn(t, "Open chat", t.primary, Msg::Select(r.peer_did.clone())));
+                }
+                col = col.push(container(row_).padding([6, 12]));
+            }
+            col = col.push(container(tx("A request waits at the group\u{2019}s hosts for up to 7 days.", 12.0, t.ink2)).padding([0, 12]));
+        }
+        col = col.push(container(label(t, "Chats")).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }));
+        Some(col.into())
     }
 
     // ---- settings ----
@@ -649,6 +777,21 @@ impl App {
                     column![title(format!("Remove {first} as admin?")), para(format!("{first} stays in the group as a member. Flags they already made still count."))].spacing(14)
                 }
             }
+            LDialog::Request { did } => {
+                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| "this member".into());
+                let first = first_name(&name).to_string();
+                column![
+                    row![
+                        avatar(t, &name, did, 40.0),
+                        column![title(format!("Ask {first} for a private chat")), tx(format!("Member of {gname}"), 13.0, t.ink2)].spacing(2),
+                    ]
+                    .spacing(12)
+                    .align_y(Alignment::Center),
+                    para(format!("{first} sees your name and the group. The request goes through the group\u{2019}s host sealed, so the host can\u{2019}t read it.")),
+                    para(format!("If {first} accepts, you can message each other directly. Calls stay off until one of you allows them.")),
+                ]
+                .spacing(14)
+            }
             LDialog::Leave => column![
                 title(format!("Leave {gname}?")),
                 para("Members see that you left. The messages stay on this computer, read-only. To come back, an admin has to invite you again.".into()),
@@ -703,6 +846,7 @@ impl App {
             LDialog::Flag { .. } => c.push(actions("Cancel", Some(("Flag", Kind::Danger)))),
             LDialog::Admin { admin, .. } => c.push(actions("Cancel", Some((if *admin { "Make admin" } else { "Remove as admin" }, Kind::Primary)))),
             LDialog::Leave => c.push(actions("Cancel", Some(("Leave", Kind::Danger)))),
+            LDialog::Request { .. } => c.push(actions("Cancel", Some(("Send request", Kind::Primary)))),
             LDialog::Host { accept } => c.push(actions("Cancel", Some(if *accept { ("Host here", Kind::Primary) } else { ("Stop hosting", Kind::Danger) }))),
             LDialog::Token { .. } | LDialog::Removal => c,
         };

@@ -36,6 +36,12 @@ struct Fake {
     /// Tokens group_join accepts, and what it answers.
     tokens: RefCell<BTreeMap<String, Result<String, String>>>,
     marked: RefCell<Vec<String>>,
+    /// Chat requests (both directions) and who we block / have as contacts.
+    reqs: RefCell<Vec<GroupChatRequest>>,
+    blocked: RefCell<Vec<String>>,
+    contacts: RefCell<Vec<String>>,
+    /// (group, admin who appointed) for "host this group?" on this device.
+    asked: RefCell<Option<(String, String)>>,
 }
 
 fn msg(gid: &str, id: &str, at: u64, author: &str, name: &str, kind: GroupItemKind, text: &str) -> GroupMessage {
@@ -166,6 +172,14 @@ impl GroupApi for Fake {
                 })
                 .collect(),
             host_offers: Vec::new(),
+            host_requests: self
+                .asked
+                .borrow()
+                .iter()
+                .filter(|(gid, _)| *gid == id)
+                .map(|(_, by)| GroupHost { did: ME.into(), name: "Me".into(), device_id: DEV.into(), appointed_by: Some(by.clone()), is_me: true, online: true })
+                .collect(),
+            host_requested_here: self.asked.borrow().as_ref().is_some_and(|(gid, _)| *gid == id),
             removal: g.removed.then(|| GroupRemoval {
                 at: 5,
                 flags: (1..=3).map(|i| GroupFlag { by_did: format!("did:key:a{i}"), by_name: format!("A{i}"), at: i }).collect(),
@@ -290,6 +304,7 @@ impl GroupApi for Fake {
         })
     }
     fn group_accept_host(&self, id: String, accept: bool) -> Result<(), Error> {
+        self.asked.borrow_mut().take();
         self.with(&id, |g| {
             if accept {
                 g.hosts.push((ME.into(), DEV.into()));
@@ -301,6 +316,51 @@ impl GroupApi for Fake {
     }
     fn group_device_id(&self) -> Result<String, Error> {
         Ok(DEV.into())
+    }
+    fn group_chat_request(&self, id: String, did: String) -> Result<GroupChatRequest, Error> {
+        if self.blocked.borrow().contains(&did) {
+            return Err(Error::Rejected("you block them".into()));
+        }
+        if self.contacts.borrow().contains(&did) {
+            return Err(Error::Rejected("already a contact".into()));
+        }
+        let name = self.with(&id, |g| g.members.get(&did).map(|m| m.0.clone()).ok_or(Error::Rejected("not a member of this group".into())))?;
+        let r = GroupChatRequest {
+            id: format!("r{}", self.tick()),
+            group_id: id.clone(),
+            group_name: format!("Group {id}"),
+            peer_did: did,
+            peer_name: name,
+            outgoing: true,
+            state: ChatRequestState::Pending,
+            at: 1,
+            contact_added: false,
+        };
+        self.reqs.borrow_mut().push(r.clone());
+        Ok(r)
+    }
+    fn group_chat_requests_incoming(&self) -> Result<Vec<GroupChatRequest>, Error> {
+        Ok(self.reqs.borrow().iter().filter(|r| !r.outgoing && r.state != ChatRequestState::Blocked).cloned().collect())
+    }
+    fn group_chat_requests_outgoing(&self) -> Result<Vec<GroupChatRequest>, Error> {
+        Ok(self.reqs.borrow().iter().filter(|r| r.outgoing).cloned().collect())
+    }
+    fn group_chat_accept(&self, request_id: String) -> Result<GroupChatRequest, Error> {
+        let mut rs = self.reqs.borrow_mut();
+        let r = rs.iter_mut().find(|r| r.id == request_id && !r.outgoing).ok_or(Error::NotFound)?;
+        r.state = ChatRequestState::Accepted;
+        self.contacts.borrow_mut().push(r.peer_did.clone());
+        Ok(r.clone())
+    }
+    fn group_chat_decline(&self, request_id: String) -> Result<GroupChatRequest, Error> {
+        let mut rs = self.reqs.borrow_mut();
+        let r = rs.iter_mut().find(|r| r.id == request_id && !r.outgoing).ok_or(Error::NotFound)?;
+        r.state = ChatRequestState::Declined;
+        Ok(r.clone())
+    }
+    fn block(&self, did: String) -> Result<(), Error> {
+        self.blocked.borrow_mut().push(did);
+        Ok(())
     }
 }
 
@@ -450,7 +510,8 @@ fn member_actions_follow_roles() {
 
     l.step(&api, Lm::Open("own".into()));
     let p = acts(&l, "did:key:priya");
-    assert_eq!(p[0], Action::MakeAdmin);
+    assert_eq!(p[0], Action::Message);
+    assert_eq!(p[1], Action::MakeAdmin);
     assert!(p.contains(&Action::Flag));
     assert!(p.iter().any(|a| matches!(a, Action::Appoint(_))));
     assert!(acts(&l, ME).is_empty(), "nothing on ourselves");
@@ -464,7 +525,7 @@ fn member_actions_follow_roles() {
     assert!(owner.iter().any(|a| matches!(a, Action::Revoke(_))), "the owner's host device can be revoked");
 
     l.step(&api, Lm::Open("mem".into()));
-    assert!(acts(&l, "did:key:priya").is_empty());
+    assert_eq!(acts(&l, "did:key:priya"), vec![Action::Message], "a plain member can only ask for a private chat");
 }
 
 #[test]
@@ -644,4 +705,97 @@ fn older_pages_go_in_front_and_a_vanished_group_closes() {
     api.g.borrow_mut().remove("a");
     l.step(&api, Lm::Changed("a".into()));
     assert_eq!(l.open, None);
+}
+
+fn incoming(api: &Fake, from: &str, gid: &str) -> String {
+    let id = format!("in{}", api.tick());
+    api.reqs.borrow_mut().push(GroupChatRequest {
+        id: id.clone(),
+        group_id: gid.into(),
+        group_name: "Hike".into(),
+        peer_did: from.into(),
+        peer_name: "Priya Nair".into(),
+        outgoing: false,
+        state: ChatRequestState::Pending,
+        at: 5,
+        contact_added: false,
+    });
+    id
+}
+
+#[test]
+fn message_privately_sends_a_request_that_waits_in_sent_requests() {
+    let api = Fake::default();
+    api.add("a", "did:key:sam", &[], &["did:key:leo"]);
+    let mut l = live();
+    l.step(&api, Lm::Open("a".into()));
+    l.step(&api, Lm::AskRequest("did:key:leo".into()));
+    assert_eq!(l.dialog, Some(LDialog::Request { did: "did:key:leo".into() }));
+    let said = run(&mut l, &api, Lm::Confirm);
+    assert_eq!(said.as_deref(), Some("Request sent to leo. It waits in Chats until they answer."));
+    assert_eq!(l.dialog, None);
+    assert_eq!(l.outgoing.len(), 1);
+    assert_eq!(sent_line(&l.outgoing[0]), ("Waiting for leo \u{b7} via Group a".to_string(), false));
+
+    // The answer arrives as an event; each end state is worded once.
+    let mut r = l.outgoing[0].clone();
+    for (st, added, want, bad) in [
+        (ChatRequestState::Declined, false, "leo declined", true),
+        (ChatRequestState::Blocked, false, "leo blocked you", true),
+        (ChatRequestState::Accepted, true, "leo accepted \u{b7} messages only", false),
+    ] {
+        r.state = st;
+        r.contact_added = added;
+        assert_eq!(sent_line(&r), (want.to_string(), bad));
+    }
+    api.reqs.borrow_mut()[0] = r.clone();
+    let out = l.step(&api, Lm::RequestChanged(r));
+    assert!(out.notice.unwrap().starts_with("leo accepted your request"));
+    assert_eq!(l.outgoing[0].state, ChatRequestState::Accepted);
+
+    // An existing contact or someone we block: the core refuses, the dialog says why.
+    api.contacts.borrow_mut().push("did:key:sam".into());
+    l.step(&api, Lm::AskRequest("did:key:sam".into()));
+    run(&mut l, &api, Lm::Confirm);
+    assert_eq!(l.error.as_deref(), Some("You already have them as a contact. Message them from Chats."));
+}
+
+#[test]
+fn incoming_requests_accept_decline_or_block() {
+    let api = Fake::default();
+    api.add("a", "did:key:sam", &[], &["did:key:priya", "did:key:dev", "did:key:ravi"]);
+    let one = incoming(&api, "did:key:priya", "a");
+    let two = incoming(&api, "did:key:dev", "a");
+    let three = incoming(&api, "did:key:ravi", "a");
+    let mut l = live();
+    l.step(&api, Lm::Reload);
+    assert_eq!(l.pending_in().count(), 3);
+
+    let out = l.step(&api, Lm::AcceptReq(one));
+    let out = l.step(&api, out.job.unwrap().run(&api));
+    assert_eq!(out.chat.as_deref(), Some("did:key:priya"), "the new chat opens");
+    assert!(out.notice.unwrap().contains("messages only"));
+    assert!(api.contacts.borrow().contains(&"did:key:priya".to_string()));
+
+    let said = run(&mut l, &api, Lm::DeclineReq(two));
+    assert_eq!(said.as_deref(), Some("Declined. Priya is told \u{201c}declined\u{201d}."));
+
+    run(&mut l, &api, Lm::BlockReq(three, "did:key:ravi".into()));
+    assert!(api.blocked.borrow().contains(&"did:key:ravi".to_string()), "block is the personal block (P5)");
+    assert_eq!(l.pending_in().count(), 0);
+}
+
+#[test]
+fn an_admin_asking_this_device_to_host_shows_a_prompt() {
+    let api = Fake::default();
+    api.add("a", "did:key:sam", &[], &[]);
+    *api.asked.borrow_mut() = Some(("a".into(), "did:key:sam".into()));
+    let mut l = live();
+    l.step(&api, Lm::Open("a".into()));
+    assert_eq!(l.host_asked().as_deref(), Some("sam"));
+    let out = l.step(&api, Lm::AnswerHost(true));
+    assert_eq!(out.job, Some(Job::AcceptHost { gid: "a".into(), accept: true }));
+    l.step(&api, out.job.unwrap().run(&api));
+    assert_eq!(l.host_asked(), None);
+    assert!(l.detail.as_ref().unwrap().am_host);
 }
