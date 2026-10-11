@@ -21,6 +21,13 @@ proto = { path = "crates/proto" }
 audio = { path = "crates/audio" }
 storage = { path = "crates/storage" }
 
+# Full debug info made every test binary ~0.5 GB and filled the build-cache disk with a dozen
+# agents building at once; line tables still give file:line in panics and backtraces.
+[profile.dev]
+debug = "line-tables-only"
+[profile.dev.package."*"]
+debug = false
+
 [profile.release]
 lto = "thin"
 codegen-units = 4
