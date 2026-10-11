@@ -114,7 +114,8 @@ def run_session(a, host_cmd, host_addr, sampler, cores):
 def analyse(a, samples, stat0, stat1, summary, cores):
     s0, s1 = samples[0], samples[-1]
     dt = s1["t"] - s0["t"]
-    r = {"label": a.label, "mode": a.cmd, "n": a.n, "k": a.k, "secs": a.secs, "sample_secs": round(dt)}
+    r = {"label": a.label, "mode": a.cmd, "n": a.n, "k": a.k, "secs": a.secs, "sample_secs": round(dt),
+         "host_args": a.host_args}
     r["host_cpu_pct_of_core"] = round(100 * (s1["ticks"] - s0["ticks"]) / CLK_TCK / dt, 2)
     r["host_cpu_pct_of_device"] = round(r["host_cpu_pct_of_core"] / cores, 2)
     busy = lambda s: s["sys_total"] - s["sys_idle"]
@@ -161,7 +162,7 @@ def emit(a, r):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cmd", choices=["push", "phone", "desktop", "direct", "clean"])
-    ap.add_argument("--serial", default="ZD22257P6G")
+    ap.add_argument("--serial", default=os.environ.get("GCALL_SERIAL", "ZD22257P6G"))
     ap.add_argument("--bin", help="host binary to push")
     ap.add_argument("--host-bin")
     ap.add_argument("--members-bin")
@@ -170,6 +171,7 @@ def main():
     ap.add_argument("--secs", type=int, default=600)
     ap.add_argument("--label", default="run")
     ap.add_argument("--out")
+    ap.add_argument("--host-args", default="", help="extra host flags, e.g. '--no-participate'")
     a = ap.parse_args()
 
     if a.cmd == "push":
@@ -190,13 +192,13 @@ def main():
     if a.cmd == "phone":
         ip = re.search(r"inet (\d+\.\d+\.\d+\.\d+)", adb(a.serial, "shell", "ip -4 addr show wlan0")).group(1)
         cores = int(adb(a.serial, "shell", "nproc").strip())
-        host_cmd = [ADB, "-s", a.serial, "shell", f"{REMOTE} --port {PORT} --k {a.k} --secs {a.secs + 30}"]
+        host_cmd = [ADB, "-s", a.serial, "shell", f"{REMOTE} --port {PORT} --k {a.k} --secs {a.secs + 30} {a.host_args}"]
         host, pid, samples, stat0, stat1, summary = run_session(
             a, host_cmd, f"{ip}:{PORT}", lambda p: sample_phone(a.serial, p), cores)
         adb(a.serial, "shell", f"kill {pid}", check=False)
     else:
         cores = os.cpu_count()
-        host_cmd = [a.host_bin, "--port", str(PORT), "--k", str(a.k), "--secs", str(a.secs + 30)]
+        host_cmd = [a.host_bin, "--port", str(PORT), "--k", str(a.k), "--secs", str(a.secs + 30), *a.host_args.split()]
         host, pid, samples, stat0, stat1, summary = run_session(a, host_cmd, f"127.0.0.1:{PORT}", sample_local, cores)
     host.kill()
     emit(a, analyse(a, samples, stat0, stat1, summary, cores))
