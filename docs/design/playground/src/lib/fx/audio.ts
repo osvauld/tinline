@@ -3,7 +3,10 @@
    fires on the same event as its visual.
    Rules: no AudioContext before a user gesture; Quiet mode (drawer) never makes one; a hidden
    tab silences the current sound. The message-sent `pluck` exists but is not wired: "no sound on send"
-   (chat.md) stands until decided otherwise. */
+   (chat.md) stands until decided otherwise.
+   Palettes: `classic` is the set above. `slack` and `triad` are the two signature candidates from the
+   sound-identity branch (docs/sound/ringtone-studio.html), same G-major note set; they replace only
+   ring/back/connected. Proposed, undecided: the drawer lets you audition them in the real flows. */
 import { onFx } from './bus';
 import { dur } from './motion';
 import { motion } from './reduced.svelte';
@@ -21,8 +24,24 @@ export const PAT: Record<string, Pattern> = {
   pluck: { label: 'Sent (not wired)', period: 0, notes: [[659, 0, .09, .5, .004]] },
 };
 
-/** Offset (s) of the connected cue's second note: the mark's string should reach taut here. */
-export const CONNECT_HIT_S = 0.12;
+export type Palette = 'classic' | 'slack' | 'triad';
+export const PALETTES: Record<Palette, { label: string; hit: number; cues: Partial<Record<string, Pattern>> }> = {
+  classic: { label: 'Classic chime', hit: 0.12, cues: {} },
+  // Slack → taut: two G4s 4 Hz apart beat like a slack string; D5 is the string pulled tight.
+  slack: { label: 'Slack → taut', hit: 0, cues: {
+    ring: { label: 'Ringtone', period: 2600, notes: [[392, 0, .9, .35, .08], [396, 0, .9, .3, .08], [587, 1.05, .45, .5, .015]] },
+    back: { label: 'Ringback', period: 2200, notes: [[392, 0, 1.1, .32, .12], [396, 0, 1.1, .28, .12]] },
+    connected: { label: 'Connected', period: 0, notes: [[587, 0, .5, .5, .015]] },
+  } },
+  triad: { label: 'Triad knock', hit: 0.14, cues: {
+    ring: { label: 'Ringtone', period: 2400, notes: [[392, 0, .32, .45, .015], [494, .16, .32, .45, .015], [587, .32, .5, .5, .015]] },
+    back: { label: 'Ringback', period: 3400, notes: [[392, 0, .4, .3, .1], [494, .22, .4, .3, .1], [587, .44, .55, .32, .1]] },
+    connected: { label: 'Connected', period: 0, notes: [[392, 0, .3, .4, .02], [587, .14, .5, .5, .02]] },
+  } },
+};
+
+const PALETTE_KEY = 'tinline.pg.palette';
+const savedPalette = (() => { try { return localStorage.getItem(PALETTE_KEY) as Palette | null; } catch { return null; } })();
 
 interface Playing { kind: string; g: GainNode; lp: BiquadFilterNode; oscs: OscillatorNode[]; timers: number[]; stopped: boolean }
 
@@ -33,6 +52,16 @@ class Audio {
   armed = false;
   cur: Playing | null = null;
   played: string[] = [];  // for tests
+  palette: Palette = savedPalette && savedPalette in PALETTES ? savedPalette : 'classic';
+
+  /** The pattern a cue plays in the current palette. Visuals (call background) read the same notes. */
+  pattern(kind: string): Pattern { return PALETTES[this.palette].cues[kind] ?? PAT[kind]; }
+  /** Offset (s) of the connect cue's landing note: the mark's string reaches taut here. */
+  get hitS() { return PALETTES[this.palette].hit; }
+  setPalette(p: Palette) {
+    this.palette = p;
+    try { localStorage.setItem(PALETTE_KEY, p); } catch { /* private mode */ }
+  }
 
   arm() {
     this.armed = true;
@@ -58,7 +87,7 @@ class Audio {
     const s: Playing = { kind, g, lp, oscs: [], timers: [], stopped: false };
     this.cur = s;
     this.played.push(kind);
-    const p = PAT[kind];
+    const p = this.pattern(kind);
     const cycle = () => {
       if (s.stopped) return;
       const t = c.currentTime + 0.03;
@@ -116,7 +145,7 @@ export function startAudio() {
       case 'incoming': if (e.on) audio.play('ring', true); else if (audio.cur?.kind === 'ring') audio.stop(); break;
       // The cue's second note lands when the string goes taut: delay by (hit − second-note offset).
       case 'connect': {
-        const lead = motion.reduced ? 0 : Math.max(0, dur('markHit') - CONNECT_HIT_S * 1000);
+        const lead = motion.reduced ? 0 : Math.max(0, dur('markHit') - audio.hitS * 1000);
         if (lead) setTimeout(() => audio.play('connected'), lead); else audio.play('connected');
         break;
       }
