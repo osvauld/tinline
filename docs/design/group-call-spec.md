@@ -1,4 +1,4 @@
-Status: proposal (G6). Docs only. No code implements it yet.
+Status: G6 call engine built and wired into group chat (GA-P1..P7, GA-I1, see §11); earlier sections are the proposal.
 
 # Group calls through one call host (G6)
 
@@ -650,3 +650,58 @@ parallel, ~11 s), `--test calls group_call_and_one_to_one`.
   CallStart, else when it arrives within 30 s (`FOLLOW_WINDOW`). `gcall_observe_end` removes
   a relayed `End{ended}` call from the board, so a dead call does not win a later glare; a call
   whose End was never relayed still can (no freshness bound yet).
+
+**Wired into group chat (GA-I1).** Code: `crates/core/src/group/{calldir,calls}.rs`, records
+in `group/record.rs`, frames in `group/wire.rs`, `proto::gcall` (`HostRequest`,
+`HostRefusal`, `GroupNote`). Tests: `cargo test -p p2pcore --test group_call` (four real nodes,
+~60 s), `--lib group` (`call_hosts_need_their_own_permit_and_acceptance`), `cargo test -p
+proto --lib gcall`; `--test gcall` still runs the engines over a `StaticDirectory`, now on the
+group endpoint.
+
+- **Permit (§2.1).** Not the multi-host `MGrant` leaf: two group records appended to
+  `record::Body`, `CallHostPermit{host, host_dev, active}` (owner/admin, latest `(at, id)`
+  wins) and `CallHostAccept{active}` (the device itself). A device hosts calls when both are
+  active and its DID is a member (`GroupState::call_hosts`); chat hosting implies nothing. A
+  separate accept (not `HostAccept`) because agreeing to relay chat is not agreeing to carry
+  calls. `HostRef` = `{holder_did, device_slot = first 8 bytes of the group device ID BE,
+  permit_digest = id of the CallHostPermit record}`: a revocation or re-issue invalidates it.
+  A call-host revocation is not a rotation trigger.
+- **Directory (§3.2).** `GroupCallDir`: `is_member` = member and not removed; `host_permit_ok`
+  = the ref resolves to an active call host; `endpoint_ok` = the chat host's member directory,
+  or the Join's DID-signed `GroupNote` (G2) naming the QUIC remote key; `host_addr` = the newest
+  DID-signed `SignedHostAddr` of that device. It looks the group runtime up on every call.
+- **Endpoint (U2/U7).** `tinline/gcall/1` is an ALPN of the group endpoint only (removed from
+  the private one). Call hosts' addresses travel like chat hosts' (`Hosts`, `Welcome`, and
+  with each CallStart), so members know chat- and call-host endpoints and nothing else
+  (U7 audited in `group_call.rs`).
+- **Relay (§2.2, §3.1).** `GroupMsg::{CallHostStatus, CallStart{start, hosts}, CallEnd,
+  CallHostRequest, CallHostRefusal}`. Members send to their chat hosts only; a host verifies
+  (signature, group, membership, permit, a member sends only what it signed) and passes
+  broadcast frames to current member sessions (never removed or joining, §9.3) and other
+  hosts, addressed ones (request: the device; refusal: the starter DID) towards the recipient.
+  Dedupe by signature. A new member session gets the fresh statuses and live calls (< 4 h).
+- **Start (§2.3).** Statuses every 30 s and on change (busy = any live call session, paused,
+  or the phone policy). The starter ranks with `expected = min(members, 12)`; asking itself
+  hosts at once with its user in; otherwise a signed request; a refusal or 5 s silence moves
+  on; exhausted = `StartFailed`. The asked device declines when paused, busy, a phone (Q11: a
+  phone hosts only calls its own user starts), or outside the policy; else hosts listen-only
+  with the request's (still permitted) backups. The starter joins on the CallStart.
+- **End.** `End{ended}` is relayed; a listen-only host ends a call nobody is in after 20 s;
+  `group_call_leave` ends a hosted call that became empty at once.
+- **Rotation (§5, Q12).** Call hosts rotate after a removal like chat hosts, but half a delay
+  later when they do not host chat (they learn the chat hosts' new endpoints by `Moved` at
+  their old one first; both at once would strand them). A due rotation waits while a call
+  session is live, at most 1 h. A chat host relays an address that changed in a `Hello`.
+- **API (UniFFI).** `group_call_start(gid) -> call_id`, `group_call_join(gid, call_id)`,
+  `group_call_leave()`, `group_call_set_muted(bool)`, `group_calls(gid) -> [GroupCall]`,
+  `group_call_hosting_enable(gid, bool)` (local pause, not persisted),
+  `set_group_call_events(GroupCallEvents)` (`Announced`, `Ended`, `StartFailed`, `Joined`,
+  `RosterChanged`, `Reconnecting`, `Left`, `HostingStarted/Ended/Limited/Unlimited`,
+  `MeteredData`), `group_appoint_call_host` / `group_revoke_call_host` (admins),
+  `group_accept_call_host(gid, bool)`; `GroupDetail.{am_call_host, call_hosts,
+  call_host_requests, call_host_requested_here}`. Test hook:
+  `group_call_hosts_advertising_for_test`. `Node::gcall_*` stays plain Rust.
+- **Left:** UI (Android, desktop); the app's 50 Hz audio threads for group calls (they use
+  `push_mic`/`pull_speaker` like 1:1); platform feeders for `gcall_set_cond` (battery,
+  charging, thermal, metered; default is a desktop on mains); `load` is always 0; the
+  pre-join "blocked person in this call" warning (Q6); persisting the hosting pause.
