@@ -110,8 +110,11 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
     let fps = sc.fps;
     let seed = sc.seed;
     let tx2 = tx.clone();
+    let device = sc.device.clone();
     let send = tokio::spawn(async move {
         let mut codec = FakeCodec::new(fps, seed);
+        let mut enc_rng = sim::Rng::new(seed ^ 0xe7c0);
+        let mut sizes: Vec<(u64, u32, u32)> = Vec::new();
         let mut iv = tokio::time::interval(Duration::from_micros(1_000_000 / fps as u64));
         iv.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let mut bitrate = Vec::new();
@@ -120,9 +123,16 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
             iv.tick().await;
             let now = now_us(epoch);
             if now >= duration {
-                return (captured, bitrate);
+                return (captured, bitrate, sizes);
             }
-            let (payload, key) = codec.encode(captured, tx2.wants_keyframe(), tx2.bitrate());
+            // Encode time is modelled (as in the sim), not spent: the ladder sees it.
+            let (w, h) = tx2.with_sender(|s| s.resolution());
+            let t = device.encode_us(now, w, h, &mut enc_rng);
+            tx2.with_sender(|s| s.encode_time(now, t));
+            if sizes.last().is_none_or(|s| (s.1, s.2) != (w, h)) {
+                sizes.push((now, w, h));
+            }
+            let (payload, key) = codec.encode(captured, tx2.wants_keyframe(), tx2.bitrate(), w, h);
             tx2.send(now, key, &payload).unwrap();
             captured += 1;
             bitrate.push((now, tx2.bitrate()));
@@ -146,9 +156,11 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
             order_violations += 1;
         }
         last = Some((f.group, f.index, seq));
-        shown.push(Shown { at_us: at + CODEC_US, capture_us: f.capture_us });
+        let w = u16::from_be_bytes(f.payload[9..11].try_into().unwrap()) as u32;
+        let h = u16::from_be_bytes(f.payload[11..13].try_into().unwrap()) as u32;
+        shown.push(Shown { at_us: at + CODEC_US, capture_us: f.capture_us, width: w, height: h });
     }
-    let (captured, bitrate) = send.await.unwrap();
+    let (captured, bitrate, sizes) = send.await.unwrap();
     let g = super::impair::DirStats::get;
     let ab = &p.proxy.a_to_b;
     let st = tx.stats();
@@ -157,6 +169,9 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
         shown,
         decode_errors: order_violations,
         keyframes: tx.with_sender(|s| s.keyframes),
+        camera_drops: 0,
+        switches: sizes.len().saturating_sub(1) as u64,
+        sizes,
         sender_drops: tx.with_sender(|s| s.drops),
         skipped: rx.rx.skipped_frames,
         keyframe_requests: st.keyframe_requests,

@@ -207,7 +207,7 @@ impl Device {
         Self { base_us: 4_900, ns_per_px: 31, jitter: 0.2, slowdowns: vec![] }
     }
 
-    fn encode_us(&self, now_us: u64, width: u32, height: u32, rng: &mut Rng) -> u64 {
+    pub(crate) fn encode_us(&self, now_us: u64, width: u32, height: u32, rng: &mut Rng) -> u64 {
         let t = (self.base_us + self.ns_per_px * width as u64 * height as u64 / 1000) as f64;
         let slow: f64 = self.slowdowns.iter().filter(|s| s.0 <= now_us).map(|s| s.1).product();
         (t * slow * (1.0 + self.jitter * (2.0 * rng.f64() - 1.0))) as u64
