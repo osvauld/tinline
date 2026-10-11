@@ -153,7 +153,7 @@
   "page": "chat",
   "name": "chat list shows Draft marker for chat with unsent text",
   "ok": true,
-  "detail": "AOArjun Oommen21:35Draft: half written thoughtMNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
+  "detail": "AOArjun Oommen22:29Draft: half written thoughtMNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
  },
  {
   "page": "chat",
@@ -171,13 +171,13 @@
   "page": "chat",
   "name": "Enter sends; message appears; composer cleared and keeps focus",
   "ok": true,
-  "detail": "line1 line221:35Sending focus=ta"
+  "detail": "line1 line222:29Sending focus=ta"
  },
  {
   "page": "chat",
   "name": "sent message progresses to sent/delivered state",
   "ok": true,
-  "detail": "line1 line221:35Delivered"
+  "detail": "line1 line222:29Delivered"
  },
  {
   "page": "chat",
@@ -189,7 +189,7 @@
   "page": "chat",
   "name": "failed send shows failure and Retry control",
   "ok": true,
-  "detail": "goes nowhere first21:35Not delivered·Retry retryBtns=1"
+  "detail": "goes nowhere first22:29Not delivered·Retry retryBtns=1"
  },
  {
   "page": "chat",
@@ -201,37 +201,37 @@
   "page": "chat",
   "name": "retry: focus not lost to BODY",
   "ok": true,
-  "detail": "Actions for your message at 21:35: goes nowhere first"
+  "detail": "Actions for your message at 22:29: goes nowhere first"
  },
  {
   "page": "chat",
   "name": "retry succeeds (no failed message remains)",
   "ok": true,
-  "detail": "goes nowhere first21:35Delivered visibleRetry=0"
+  "detail": "goes nowhere first22:29Delivered visibleRetry=0"
  },
  {
   "page": "chat",
   "name": "contact offline: header/status changes",
   "ok": true,
-  "detail": "AOArjun OommenLast seen 21:35Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
+  "detail": "AOArjun OommenLast seen 22:29Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
  },
  {
   "page": "chat",
   "name": "send while offline shows waiting/queued state",
   "ok": true,
-  "detail": "sent while offline21:35Waiting for Arjun to be online"
+  "detail": "sent while offline22:29Waiting for Arjun to be online"
  },
  {
   "page": "chat",
   "name": "back online: queued message delivered",
   "ok": true,
-  "detail": "sent while offline21:35Delivered"
+  "detail": "sent while offline22:29Delivered"
  },
  {
   "page": "chat",
   "name": "simulate incoming adds a message or badge",
   "ok": true,
-  "detail": "SRSana Rao21:35Ha, that’s the best news today1AOArjun Oommen21:35You: sent while offlineMNMeera Nair"
+  "detail": "AOArjun Oommen22:29Ha, that’s the best news today1MNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍S"
  },
  {
   "page": "chat",
@@ -375,7 +375,7 @@
   "page": "chat",
   "name": "reload mid-call: strip shows, timer never resets",
   "ok": true,
-  "detail": "Arjun Oommen · 00:02 vs 1"
+  "detail": "Arjun Oommen · 00:03 vs 1"
  },
  {
   "page": "chat",
@@ -488,6 +488,48 @@
  {
   "page": "chat",
   "name": "direct sound: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "message sent, Quiet mode on by default: no AudioContext at all",
+  "ok": true,
+  "detail": "{\"played\":[],\"ctx\":\"\",\"started\":0,\"live\":0,\"pluck\":0,\"liveBack\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "Quiet mode off: sending plays the pluck cue (E5/659Hz) at once",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\"],\"ctx\":\"running\",\"started\":2,\"live\":2,\"pluck\":1,\"liveBack\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "pluck is a one-shot: zero live oscillators once it settles",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\"],\"ctx\":\"running\",\"started\":2,\"live\":0,\"pluck\":1,\"liveBack\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "ringback loops while ringing",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\",\"back\"],\"ctx\":\"running\",\"started\":6,\"live\":4,\"pluck\":1,\"liveBack\":2}"
+ },
+ {
+  "page": "chat",
+  "name": "sending while ringing interrupts the ringback to play the pluck",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\",\"back\",\"pluck\"],\"ctx\":\"running\",\"started\":8,\"live\":2,\"pluck\":2,\"liveBack\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "ringback resumes on its own once the pluck finishes",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\",\"back\",\"pluck\",\"back\"],\"ctx\":\"running\",\"started\":12,\"live\":4,\"pluck\":2,\"liveBack\":2}"
+ },
+ {
+  "page": "chat",
+  "name": "message-sent sound: no console errors",
   "ok": true,
   "detail": ""
  }

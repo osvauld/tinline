@@ -214,4 +214,18 @@ await q.click('#callOv .end');await sleep(q,1500);
 await chk('group call End: ended cue once, nothing left playing, never a ring/back oscillator',async()=>{const a=await audio(q);return {ok:a.played.join()==='pulse,connected,pulse:soft,ended'&&a.live===0&&a.ringOrBack===0&&a.freqs.every(f=>[330,660,523,784,1046,1568].includes(f)),d:JSON.stringify(a)}});
 await chk('group sound: no console errors',async()=>({ok:!q.errs.length,d:q.errs.join('|')}));
 await q.context().close()}
+{// message-sent cue (TinAudio.sent) in groups.html: same pluck as chat.html, same Quiet-mode gate
+const s=await L.page(b);await freqHook(s);await s.goto(L.BASE+'groups.html?group=hike');await sleep(s,300);
+await s.fill('#ta','quiet send');await s.click('#sendBtn');await sleep(s,300);
+await chk('message sent, Quiet mode on by default: no AudioContext at all',async()=>{const a=await audio(s);return {ok:a.ctx===0&&a.started===0&&!a.played.length,d:JSON.stringify(a)}});
+await simOpen(s);await s.click('#swQuiet');await simClose(s);await sleep(s,100);
+await s.fill('#ta','loud send');await s.click('#sendBtn');await sleep(s,80);
+await chk('Quiet mode off: sending plays the pluck cue (659Hz) at once',async()=>{const a=await audio(s);return {ok:a.played.slice(-1)[0]==='pluck'&&a.freqs.includes(659),d:JSON.stringify(a)}});
+await sleep(s,400);
+await chk('pluck is a one-shot: zero live oscillators once it settles',async()=>{const a=await audio(s);return {ok:a.live===0,d:JSON.stringify(a)}});
+await s.click('#callBtn');await sleep(s,500); // group call now connecting: a quiet pulse plays, never ring/back
+await chk('a group call is not interrupted by this page\'s own send button (file attach reuses sendText, same path)',async()=>{const a=await audio(s);return {ok:a.played.slice(-1)[0]==='pulse',d:JSON.stringify(a)}});
+await s.click('#callOv .end');await sleep(s,300);
+await chk('message-sent sound in groups.html: no console errors',async()=>({ok:!s.errs.length,d:s.errs.join('|')}));
+await s.context().close()}
 await b.close();C.save('groups-results.json')})();

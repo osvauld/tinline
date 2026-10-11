@@ -667,7 +667,7 @@ function send(){
 function sendText(text){
   const c=conv(S.cur),g=c.type==='private'?null:c;
   const m={id:'m'+S.uid++,from:'me',text,t:clock(),state:g&&!hostsOn(g)?'queued':'sending',reply:S.replies[c.id]};
-  c.msgs.push(m);delete S.replies[c.id];S.justSent=m.id;renderComposer();renderMsgs(true);renderBanner();renderList();
+  c.msgs.push(m);delete S.replies[c.id];S.justSent=m.id;TinAudio.sent();renderComposer();renderMsgs(true);renderBanner();renderList();
   if(m.state==='queued')say('No host reachable. Message saved on this phone and will send later.');
   else{setTimeout(()=>{if(m.state==='sending'){m.state='delivered';if(S.cur===c.id){const el=document.querySelector('[data-mid="'+m.id+'"]'),t=el?.querySelector('.meta');if(t){el.dataset.state='delivered';t.querySelectorAll('.tick,.sr').forEach(x=>x.remove());t.append(...tick('delivered'))}}say(g?'Delivered':'Delivered to '+first(c.person))}},650)}}
 function incoming(g,m){g.msgs.push(m);if(S.cur!==g.id){g.unread=(g.unread||0)+1;renderList();return}

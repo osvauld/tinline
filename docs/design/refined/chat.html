@@ -941,6 +941,7 @@ function submit(c) {
   const m = { id: ++seq, from: "me", text, time: clock(), st: "sending", _new: true };
   if (c.ctx && c.ctx.type === "reply") { const r = c.msgs.find(x => x.id === c.ctx.id); m.reply = { who: r.from === "me" ? "You" : fname(c), text: r.text || (r.file && r.file.name) || "" }; }
   c.msgs.push(m); c.draft = ""; c.ctx = null;
+  TinAudio.sent(); // the Send click/Enter is its own gesture; not tied to delivery
   renderConv(true); renderList(); ta.focus();
   settle(c, m);
 }
@@ -976,7 +977,7 @@ $("#realFile").addEventListener("change", e => {
 function attach(c, s) {
   if (!c) return;
   const m = { id: ++seq, from: "me", text: "", time: clock(), st: "sending", _new: true, file: { name: s.name, size: s.size, kind: s.kind, progress: 0, state: c.online ? "sending" : "waiting" } };
-  c.msgs.push(m); renderConv(true); renderList();
+  c.msgs.push(m); TinAudio.sent(); renderConv(true); renderList();
   sr(`${s.name} added.`);
 }
 function retryFile(c, m) { m.file.progress = 0; m.file.state = c.online ? "sending" : "waiting"; m.st = "sending"; refreshMsg(c, m); say("Starting again from the beginning."); }

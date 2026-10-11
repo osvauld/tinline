@@ -98,6 +98,13 @@ the first bubble of a group.
   **No permanent hint row** under the composer.
 - Reply/edit context strip above the field: `--surface-2`, 3px accent bar, close
   button, 13px, 2-line title+snippet clamp to one line each.
+- Sending a new message (not an edit) plays a short cue from `call-audio.js`
+  (`pluck`, a bright one-shot — continuing the brand mark's string: ringback is
+  the string slack, connect is it pulled taut, send is a pluck of the same
+  string) the instant it's pushed into the thread, not tied to delivery. Same
+  Quiet-mode switch as the call cues; silent when a call's ringback is
+  interrupted, it resumes right after. An attachment plays it too; an edit
+  never does.
 
 ## Lists, badges, chips, avatars (home.html primarily)
 

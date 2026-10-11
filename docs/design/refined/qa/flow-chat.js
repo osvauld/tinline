@@ -195,4 +195,27 @@ await q.evaluate(()=>dispatchEvent(new PageTransitionEvent('pagehide',{persisted
 await chk('pagehide: current sound stopped and the AudioContext closed (calls.html discipline)',async()=>{const a=await audio(q),r=await q.evaluate(()=>({cur:TinAudio.Snd.cur,ctx:TinAudio.Snd.ctx}));return {ok:/closed/.test(a.ctx)&&r.cur===null&&r.ctx===null,d:JSON.stringify(a)}});
 await chk('direct sound: no console errors',async()=>({ok:!q.errs.length,d:q.errs.join('|')}));
 await q.context().close()}
+{// message-sent cue (TinAudio.sent): Quiet mode default on; sending plays "pluck" once and resumes an interrupted ringback
+const freqHook=p=>p.context().addInitScript(()=>{const AC=window.AudioContext;if(!AC)return;const co=AC.prototype.createOscillator;window.__oscF=[];AC.prototype.createOscillator=function(){const o=co.apply(this,arguments);window.__oscF.push(o);return o}});
+const audio=p=>p.evaluate(()=>{const f=(window.__oscF||[]).map(o=>Math.round(o.frequency.value)),a=window.__aud||{osc:[]};
+ return {played:TinAudio.played.slice(),ctx:(a.ctxs||[]).map(c=>c.state).join(),started:a.started||0,live:a.osc.filter(o=>o.started&&!o.ended).length,
+  pluck:f.filter(x=>x===659).length,liveBack:a.osc.filter((o,i)=>o.started&&!o.ended&&[392,494].includes(f[i])).length}});
+const s=await L.page(b);await freqHook(s);await s.goto(L.BASE+'chat.html?chat=arjun');await sleep(s,300);
+await s.fill('#ta','quiet send');await s.click('#sendBtn');await sleep(s,300);
+await chk('message sent, Quiet mode on by default: no AudioContext at all',async()=>{const a=await audio(s);return {ok:a.ctx===''&&a.started===0&&!a.played.length,d:JSON.stringify(a)}});
+await s.click('#simBtn');await s.click('#swQuiet');await s.click('#simBtn');await sleep(s,100);
+await s.fill('#ta','loud send');await s.click('#sendBtn');await sleep(s,80);
+await chk('Quiet mode off: sending plays the pluck cue (E5/659Hz) at once',async()=>{const a=await audio(s);return {ok:a.played.slice(-1)[0]==='pluck'&&a.pluck>0,d:JSON.stringify(a)}});
+await sleep(s,400);
+await chk('pluck is a one-shot: zero live oscillators once it settles',async()=>{const a=await audio(s);return {ok:a.live===0,d:JSON.stringify(a)}});
+await s.click('#callBtn');await sleep(s,500); // direct call now ringing: ringback loops
+await chk('ringback loops while ringing',async()=>{const a=await audio(s);return {ok:a.played.slice(-1)[0]==='back'&&a.liveBack>0,d:JSON.stringify(a)}});
+await s.click('[aria-label="Back to chat — call continues"]');await sleep(s,150); // minimize: composer is interactive again, call keeps going
+await s.fill('#ta','interrupts the ringback');await s.click('#sendBtn');await sleep(s,80);
+await chk('sending while ringing interrupts the ringback to play the pluck',async()=>{const a=await audio(s);return {ok:a.played.slice(-1)[0]==='pluck',d:JSON.stringify(a)}});
+await sleep(s,400);
+await chk('ringback resumes on its own once the pluck finishes',async()=>{const a=await audio(s);return {ok:a.liveBack>0,d:JSON.stringify(a)}});
+await s.click('#callStrip');await sleep(s,150);await s.click('#callEnd');await sleep(s,300);
+await chk('message-sent sound: no console errors',async()=>({ok:!s.errs.length,d:s.errs.join('|')}));
+await s.context().close()}
 await b.close();C.save('chat-results.json')})();

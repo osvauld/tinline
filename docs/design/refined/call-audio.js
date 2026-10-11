@@ -1,17 +1,21 @@
-/* Tinline refined studies — the one synthesized call-cue set. SPEC §In-conversation calls, "Sound".
+/* Tinline refined studies — the one synthesized sound set: calls and sending a message.
+   SPEC §In-conversation calls "Sound" and §Composer.
 
    PAT and Snd are calls.html's own tone generator, moved here verbatim (same frequencies, timing,
-   labels) so calls.html, chat.html and groups.html sound identical. Two additions, neither changes a
-   pattern: Snd.onchange (calls.html wires its caption to it) and an optional gain factor on Snd.start
-   (used only for the "soft" pulse when someone joins or leaves a group call).
+   labels for the original six) so calls.html, chat.html and groups.html sound identical. Additions,
+   none changing an existing pattern: a seventh PAT entry `pluck` (message-sent, chat/groups only —
+   calls.html's own drawer lists its six by name and never sees this one), Snd.onchange (calls.html
+   wires its caption to it) and an optional gain factor on Snd.start (the "soft" pulse when someone
+   joins or leaves a group call).
 
    Loaded by: calls.html (uses PAT/Snd directly, keeps its own switch, captions and cleanup),
-              chat.html + groups.html (use the in-conversation cue director below).
+              chat.html + groups.html (use the cue director below for calls AND for sending).
 
    API  TinAudio.PAT · Snd                       raw generator (calls.html)
         TinAudio.follow(TinCall)                 in-conversation director: plays the overlay cues from call state
         TinAudio.arm()                           call from a user gesture (call button, strip, End, Quiet switch)
         TinAudio.ending()                        call from the End click, right before TinCall.end()
+        TinAudio.sent()                           call right after pushing a new outgoing message (not an edit)
         TinAudio.quiet() · setQuiet(bool) · onQuiet(fn)   Quiet mode, on unless the person turned it off
         TinAudio.played                          cue names this document played, e.g. ["back","connected","ended"]
 
@@ -19,8 +23,11 @@
      direct  `back` loops while "Ringing…", `connected` once on connect, `ended` once on End.
      group   never `ring`/`back` (a group call rings nobody, U21). `pulse` once on joining, `connected`
              once you are in the roster, soft `pulse` when someone else joins or leaves, `ended` on leaving.
-   Nothing makes an AudioContext until arm() runs inside a gesture, and Quiet mode never makes one at all.
-   Hidden tab stops the current sound, pagehide closes the context — the calls.html discipline. */
+   Sending a new message plays `pluck` once, immediately — it is its own gesture (the Send click, or an
+   Enter keypress), so sent() does not need arm() first. If it cuts off a looping ringback (sending in
+   one chat while another call rings elsewhere), the ringback resumes right after the pluck ends.
+   Nothing makes an AudioContext until a gesture runs inside arm() or sent(), and Quiet mode never makes
+   one at all. Hidden tab stops the current sound, pagehide closes the context — the calls.html discipline. */
 (function () {
 'use strict';
 
@@ -31,7 +38,8 @@ var PAT={
  connected:{label:'Connected cue',text:'two quick rising notes',period:0,notes:[[523,0,.5,.45,.02],[784,.12,.7,.45,.02]]},
  ended:{label:'Ended cue',text:'two falling notes',period:0,notes:[[784,0,.45,.4,.02],[523,.12,.7,.4,.02]]},
  failed:{label:'Couldn’t connect cue',text:'two low falling notes',period:0,notes:[[247,0,.5,.45,.02],[196,.24,.8,.45,.02]]},
- pulse:{label:'Reconnecting cue',text:'one soft low note, once',period:0,notes:[[330,0,.6,.35,.02]]}
+ pulse:{label:'Reconnecting cue',text:'one soft low note, once',period:0,notes:[[330,0,.6,.35,.02]]},
+ pluck:{label:'Sent cue',text:'quick, bright pluck',period:0,notes:[[659,0,.09,.5,.004]]}
 };
 var Snd={ctx:null,vol:.5,cur:null,onchange:null,
  ensure:function(){
@@ -143,6 +151,17 @@ function follow(tc){
  window.addEventListener('storage',function(e){if(e.key===QKEY||e.key===null)applyQuiet()});
 }
 function ending(){arm();endPending=true}
+// Sending is its own gesture, independent of any call's armed state. If it steals the sound
+// channel from a looping ringback, put the ringback back once the short pluck has finished.
+function sent(){
+ if(quiet())return false;
+ if(!Snd.ensure())return false;
+ var wasBack=Snd.cur&&Snd.cur.kind==='back';
+ if(!Snd.start('pluck',1,'sent'))return false;
+ played.push('pluck');
+ if(wasBack)setTimeout(resume,220);
+ return true;
+}
 
-window.TinAudio={PAT:PAT,Snd:Snd,follow:follow,arm:arm,ending:ending,quiet:quiet,setQuiet:setQuiet,onQuiet:onQuiet,played:played};
+window.TinAudio={PAT:PAT,Snd:Snd,follow:follow,arm:arm,ending:ending,sent:sent,quiet:quiet,setQuiet:setQuiet,onQuiet:onQuiet,played:played};
 })();
