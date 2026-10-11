@@ -516,6 +516,16 @@ impl Drop for Node {
     }
 }
 
+impl Node {
+    /// For tests: (opens, opens that had to wait for a file still held) of the store files
+    /// (`account.redb`, `chat.redb`, `group.redb`) under this node's data directory, across every
+    /// node of this process that used it.
+    #[doc(hidden)]
+    pub fn store_stats_for_test(&self) -> (u64, u64) {
+        store::open_stats(self.inner.accounts.root())
+    }
+}
+
 #[uniffi::export]
 impl Node {
     #[uniffi::constructor]

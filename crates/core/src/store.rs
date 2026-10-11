@@ -322,11 +322,35 @@ const LABEL_KEY: &str = "device_label";
 
 /// Opens (creating) a store file. A previous owner of the file (the node of a restart, or a task
 /// of an account just left) may still hold it for a moment: retried for up to about 2 s.
+/// Opens of each store file in this process, and how many of them had to wait for the file
+/// (another owner still held it: "Database already open"). For `Node::store_stats_for_test`;
+/// keyed by path so tests running side by side in one process do not mix.
+static OPENS: parking_lot::Mutex<Option<HashMap<PathBuf, (u64, u64)>>> = parking_lot::Mutex::new(None);
+
+pub(crate) fn note_open(path: &Path, waited: bool) {
+    let mut m = OPENS.lock();
+    let e = m.get_or_insert_with(HashMap::new).entry(path.to_path_buf()).or_default();
+    e.0 += 1;
+    if waited {
+        e.1 += 1;
+        tracing::warn!("{}: had to wait for a previous owner to let go of the file", path.display());
+    }
+}
+
+/// (opens, opens that waited) of every store file under `dir`.
+pub(crate) fn open_stats(dir: &Path) -> (u64, u64) {
+    let m = OPENS.lock();
+    m.iter().flatten().filter(|(p, _)| p.starts_with(dir)).fold((0, 0), |a, (_, v)| (a.0 + v.0, a.1 + v.1))
+}
+
 pub fn open_waiting(path: &Path) -> Result<storage::Store, Error> {
     let mut tries = 0;
     loop {
         match storage::Store::open(path) {
-            Ok(db) => return Ok(db),
+            Ok(db) => {
+                note_open(path, tries > 0);
+                return Ok(db);
+            }
             Err(e) if tries >= 20 => return Err(Error::Io(e.to_string())),
             Err(_) => {
                 tries += 1;
