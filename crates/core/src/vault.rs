@@ -113,6 +113,14 @@ pub fn seal(secrets: &Secrets, pass: Option<&str>) -> Result<(Vault, Dek), Error
     Ok((vault, dek))
 }
 
+/// The same DEK and passphrase slot, sealing other secrets (e.g. a new device secret). Fast.
+pub fn reseal(v: &Vault, dek: &Dek, secrets: &Secrets) -> Result<Vault, Error> {
+    let mut plain = serde_json::to_vec(secrets)?;
+    let sealed = aead::encrypt(dek, &plain).map_err(|e| Error::Io(e.to_string()));
+    plain.zeroize();
+    Ok(Vault { sealed: sealed?, ..v.clone() })
+}
+
 /// Opens with the passphrase. Slow. A failed tag means a wrong passphrase.
 pub fn open(v: &Vault, pass: &str) -> Result<(Secrets, Dek), Error> {
     if !v.has_passphrase() {

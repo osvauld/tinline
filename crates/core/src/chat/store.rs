@@ -7,8 +7,7 @@
 //! shard/{pair}/{day}/snap        bytes      Loro snapshot (open shards)
 //! shard/{pair}/{day}/u/{seq}     bytes      validated update batches since the snapshot
 //! ack/{pair}/{day}               bytes      the peer's last acknowledged version vector
-//! mc/{pair}/{day}/{id}           u32 BE     our op counter after creating that message
-//! mo/{pair}/{day}/{id}           u64+i32 BE our message written on another own device: (its peer, op count)
+//! mo/{pair}/{day}/{id}           u64+i32 BE our message: (writer ID it was created under, op count after)
 //! out/{pair}/{day}               empty      this day has ops of ours the peer has not acked
 //! blob/{hash}                    BlobInfo   hash -> key (+ name, size, mime, state)
 //! ref/{hash}/{pair}              empty      this conversation may read that blob
@@ -41,6 +40,11 @@ pub struct ShardMeta {
     pub n_messages: u32,
     /// Set once the day was compacted into a snapshot blob and its vault rows dropped.
     pub closed: Option<ClosedRef>,
+    /// Our writer IDs in this day as of `vv` (`Shard::own_writers`): which ops the contact must
+    /// hold before the day is delivered, without loading the shard (P10b). Empty in a meta from
+    /// before P10b: then only our current writer ID is known.
+    #[serde(default)]
+    pub own: Vec<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -219,32 +223,8 @@ impl ChatStore {
         self.db.put_op(&format!("ack/{pair}/{day}"), vv).map_err(io)
     }
 
-    pub fn mc(&self, pair: &str, day: &str, id: &str) -> Result<Option<i32>, Error> {
-        Ok(self
-            .db
-            .get(&format!("mc/{pair}/{day}/{id}"))
-            .map_err(io)?
-            .and_then(|b| b.try_into().ok().map(i32::from_be_bytes)))
-    }
-
-    /// Counters of all our messages of one day.
-    pub fn mcs(&self, pair: &str, day: &str) -> Result<Vec<(String, i32)>, Error> {
-        let prefix = format!("mc/{pair}/{day}/");
-        Ok(self
-            .db
-            .scan(&prefix)
-            .map_err(io)?
-            .into_iter()
-            .filter_map(|(k, v)| Some((k.strip_prefix(&prefix)?.to_string(), i32::from_be_bytes(v.try_into().ok()?))))
-            .collect())
-    }
-
-    pub fn put_mc_op(&self, pair: &str, day: &str, id: &str, c: i32) -> Result<Op, Error> {
-        self.db.put_op(&format!("mc/{pair}/{day}/{id}"), &c.to_be_bytes()).map_err(io)
-    }
-
-    /// Our messages written on another of our devices: `(peer, op count)` that the contact must
-    /// hold for two ticks.
+    /// Our messages (written here or on another of our devices): `(writer ID, op count)` that the
+    /// contact must hold for two ticks.
     pub fn mo(&self, pair: &str, day: &str, id: &str) -> Result<Option<(u64, i32)>, Error> {
         Ok(self.db.get(&format!("mo/{pair}/{day}/{id}")).map_err(io)?.and_then(|b| decode_mo(&b)))
     }
@@ -388,26 +368,6 @@ impl ChatStore {
 
     pub fn set_auto_download(&self, bytes: u64) -> Result<(), Error> {
         self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(io)
-    }
-
-    /// Everything about one conversation, except the blobs' bytes (the caller releases those).
-    pub fn delete_conversation(&self, pair: &str, hashes: &[String]) -> Result<(), Error> {
-        let mut ops = vec![
-            Op::Delete(format!("conv/{pair}")),
-            Op::DeletePrefix(format!("shard/{pair}/")),
-            Op::DeletePrefix(format!("ack/{pair}/")),
-            Op::DeletePrefix(format!("mc/{pair}/")),
-            Op::DeletePrefix(format!("mo/{pair}/")),
-            Op::DeletePrefix(format!("out/{pair}/")),
-            Op::DeletePrefix(format!("pb/{pair}/")),
-            Op::DeletePrefix(format!("snapcache/{pair}/")),
-            Op::DeletePrefix(format!("mi/{pair}/")),
-        ];
-        for h in hashes {
-            ops.push(Op::Delete(format!("ref/{h}/{pair}")));
-            ops.push(Op::Delete(format!("blob/{h}")));
-        }
-        self.db.apply(&ops).map_err(io)
     }
 }
 

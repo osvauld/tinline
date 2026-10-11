@@ -214,6 +214,8 @@ impl Node {
         self.inner.handle.spawn(async move {
             inner.send_unlinked(dev, relay).await;
         });
+        // U8: contacts stop dialling the unlinked install.
+        self.inner.devices_changed();
         if let Some(ev) = self.inner.link_events() {
             ev.on_devices_changed();
         }
@@ -239,7 +241,7 @@ impl Node {
         v
     }
 
-    /// For tests: dials `device` on `tinline/self/1` as this node and reports whether the peer
+    /// For tests: dials `device` on `tinline/self/3` as this node and reports whether the peer
     /// accepted us (answered with its `Auth`).
     #[doc(hidden)]
     pub fn self_probe_for_test(&self, device: String) -> bool {
@@ -256,25 +258,28 @@ impl Node {
 
     /// For tests: offers a hand-made batch for today's shard with `contact` to the validator
     /// that judges batches relayed by our other devices. `kind`: 0 = a message of the contact's
-    /// signed with a random key, 1 = a message of ours signed with a random key, 2 = a message of
-    /// a stranger signed with our device key, 3 = a genuine message of ours (control).
+    /// signed by another account's DID key, 1 = a message of ours signed by another account's DID
+    /// key, 2 = a stranger's message, validly signed by the stranger, 3 = a genuine message of
+    /// ours (control). Each is written under the writer ID its author and device ID give, so only
+    /// the signature (or the author) is wrong.
     #[doc(hidden)]
     pub fn forged_own_batch_for_test(&self, contact: String, kind: u8) -> Result<(), Error> {
-        use crate::chat::doc::{MsgRec, Shard, day_of, doc_name, pair_id};
+        use crate::chat::doc::{MsgRec, Shard, Writer, day_of, doc_name, new_device_value, pair_id};
         let me = self.inner.me()?;
+        let core = self.inner.chat_core()?;
         let pair = pair_id(me.id.did(), &contact);
         let at = crate::node::now_ms() as i64;
         let day = day_of(at);
-        let random = proto::new_device_secret();
-        let (author, secret, device) = match kind {
-            0 => (contact.clone(), random, proto::device_public(&random)),
-            1 => (me.id.did().to_string(), random, proto::device_public(&random)),
-            2 => ("did:key:stranger".to_string(), me.profile.device_secret, proto::device_public(&random)),
-            _ => (me.id.did().to_string(), me.profile.device_secret, me.device),
+        let (stranger, _) = identity::generate();
+        let (author, writer) = match kind {
+            0 => (contact.clone(), Writer::forging(stranger, new_device_value(), &contact)),
+            1 => (me.id.did().to_string(), Writer::forging(stranger, new_device_value(), me.id.did())),
+            2 => (stranger.did().to_string(), Writer::new(stranger, new_device_value())),
+            _ => (me.id.did().to_string(), self.inner.chat_writer(&me, &core)),
         };
-        let shard = Shard::new(&pair, &day, &device);
-        let rec = MsgRec { id: format!("forged{kind}"), author, at, text: format!("forged {kind}"), edited_at: None, deleted: false, reply_to: None, file: None, sig: Vec::new() };
-        let update = shard.add_message(&rec, &secret).map_err(|e| Error::Io(e.to_string()))?;
+        let shard = Shard::new(&pair, &day, writer.writer_id());
+        let rec = MsgRec { id: format!("forged{kind}"), author, at, text: format!("forged {kind}"), edited_at: None, deleted: false, reply_to: None, file: None, dev: [0; 32], did_sig: Vec::new() };
+        let update = shard.add_message(&rec, &writer).map_err(|e| Error::Io(e.to_string()))?;
         let inner = self.inner.clone();
         let doc = doc_name(&pair, &day);
         self.block_on(async move { inner.chat_own_apply(&doc, &update).await })?
@@ -287,6 +292,57 @@ impl Node {
         let Ok(core) = self.inner.chat_core() else { return false };
         let pair = crate::chat::doc::pair_id(me_did, peer_did);
         core.store.shard_days(&pair).map(|d| !d.is_empty()).unwrap_or(false)
+    }
+
+    /// For tests (P9): our writer ID (`None` while the chat store is not open).
+    #[doc(hidden)]
+    pub fn writer_id_for_test(&self) -> Option<u64> {
+        self.inner.chat_core().ok().map(|c| c.wid)
+    }
+
+    /// For tests (P9): every `(day, Loro peer id, op count)` in our copy of the conversation
+    /// with `peer_did`, and per message `(id, peer id of the change that created it)`.
+    #[doc(hidden)]
+    #[allow(clippy::type_complexity)]
+    pub fn chat_doc_peers_for_test(&self, peer_did: String) -> (Vec<(String, u64, i32)>, Vec<(String, u64)>) {
+        let inner = self.inner.clone();
+        self.block_on(async move {
+            let (Ok(me), Ok(core)) = (inner.me(), inner.chat_core()) else { return (vec![], vec![]) };
+            let pair = crate::chat::doc::pair_id(me.id.did(), &peer_did);
+            let (mut peers, mut created) = (Vec::new(), Vec::new());
+            for day in core.store.shard_days(&pair).unwrap_or_default() {
+                if inner.chat_shard(&core, &pair, &day).await.is_err() {
+                    continue;
+                }
+                let shards = core.shards.lock();
+                let Some(s) = shards.get(&(pair.clone(), day.clone())) else { continue };
+                peers.extend(s.vv().iter().map(|(p, c)| (day.clone(), *p, *c)));
+                for id in s.messages().map(|m| m.into_keys().collect::<Vec<_>>()).unwrap_or_default() {
+                    if let Some((p, _)) = s.creator_end(&id) {
+                        created.push((id, p));
+                    }
+                }
+            }
+            (peers, created)
+        })
+        .unwrap_or_default()
+    }
+
+    /// For tests (P10): the next `n` chat writes (`chat_persist`) fail, as if the disk were full.
+    #[doc(hidden)]
+    pub fn fail_next_chat_writes_for_test(&self, n: u32) {
+        if let Ok(core) = self.inner.chat_core() {
+            core.fail_writes.store(n, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+
+    /// For tests (P10b): stores a message of ours to `peer_did` sent at `at_ms`, written under
+    /// another writer ID (a fresh device ID), as if it had just arrived from a sibling device by
+    /// own-device sync: pending for the contact, not pushed. Returns its id.
+    #[doc(hidden)]
+    pub fn write_as_sibling_for_test(&self, peer_did: String, text: String, at_ms: i64) -> Result<String, Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_write_as_sibling_for_test(&peer_did, text, at_ms).await })?
     }
 
     /// For tests: does the chat store hold any "You" shard?

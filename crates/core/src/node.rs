@@ -30,7 +30,7 @@ use crate::Error;
 const TICKET_TTL: u64 = 7 * 24 * 3600;
 /// Long, because renewal happens on every answered call; this only bites a contact who never
 /// calls back.
-const GRANT_TTL: u64 = 365 * 24 * 3600;
+pub(crate) const GRANT_TTL: u64 = 365 * 24 * 3600;
 const DIAL_TIMEOUT: Duration = Duration::from_secs(30);
 /// All devices of one contact together; each device alone gets at most `DIAL_TIMEOUT`.
 const DIAL_TOTAL: Duration = Duration::from_secs(45);
@@ -46,6 +46,10 @@ const RING_TIMEOUT: Duration = Duration::from_secs(60);
 /// How long a second incoming call (one that arrives during a call) waits to be answered.
 /// `P2P_WAITING_RING_SECS` overrides it, for tests.
 const WAITING_RING_TIMEOUT: Duration = Duration::from_secs(30);
+/// See `close_wait`.
+const CLOSE_WAIT: Duration = Duration::from_secs(2);
+/// Longest `start` waits for a previous endpoint to finish closing (iroh's own bound is ~3 s).
+const CLOSING_MAX: Duration = Duration::from_secs(10);
 /// An active call with no media for this long shows as `reconnecting` (a path change or a
 /// network switch), well before the no-audio timeout ends it.
 const RECONNECT_AFTER: Duration = Duration::from_millis(1500);
@@ -64,7 +68,7 @@ const MAX_PENDING_HELLOS: usize = 24;
 const RESERVED_HELLOS: usize = 8;
 /// What a peer is told when we turn it away. The real reason is logged locally: telling an
 /// unauthenticated stranger "revoked" vs "not a contact" would leak our contact list.
-const REFUSED: &str = "not accepted";
+pub(crate) const REFUSED: &str = "not accepted";
 
 /// `on_call_state` with `Ended` is also the moment the call history has changed: the UI should
 /// re-read `recent_calls` / `calls_with` then (there is no separate history callback).
@@ -192,10 +196,21 @@ fn waiting_ring_timeout() -> Duration {
         .map_or(WAITING_RING_TIMEOUT, Duration::from_secs)
 }
 
+/// How long `stop`, `lock` and an account switch wait for the endpoint to close.
+/// `P2P_CLOSE_WAIT_MS` overrides it, for tests.
+fn close_wait() -> Duration {
+    std::env::var("P2P_CLOSE_WAIT_MS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .map_or(CLOSE_WAIT, Duration::from_millis)
+}
+
 pub(crate) enum Cmd {
     Answer,
     Decline,
     Hangup,
+    /// We blocked the peer: tell them with the notice and end the call (`"blocked"`).
+    Block(proto::SignedBlob),
 }
 
 pub(crate) struct Call {
@@ -277,6 +292,10 @@ enum LegEvent {
     Busy,
     /// It rang and the callee's ring timed out (it sent `Hangup`).
     GaveUp,
+    /// The device answered with a notice (they block us, if it verifies).
+    Blocked(proto::SignedBlob),
+    /// `Reject { CALLS_NOT_ALLOWED }`: they let us message them but not call (P6).
+    CallsNotAllowed,
     /// Could not connect, refused (`Reject`: not a contact there, blocked, unavailable), or the
     /// connection died.
     Failed(String),
@@ -305,7 +324,7 @@ impl Leg {
             Err(e) => return fail(&self.events, e.to_string()),
         };
         tracing::debug!("dialing {} at {}", self.name, addr.id);
-        let connect = tokio::time::timeout(DIAL_TIMEOUT, self.ep.connect(addr, proto::ALPN));
+        let connect = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&self.ep, addr, &crate::version::CALL));
         let conn = tokio::select! {
             c = connect => match c {
                 Ok(Ok(c)) => c,
@@ -344,6 +363,8 @@ impl Leg {
                         Ok(Some(Msg::Decline { reason })) => LegEvent::Declined(reason),
                         Ok(Some(Msg::Busy)) => LegEvent::Busy,
                         Ok(Some(Msg::Hangup)) => LegEvent::GaveUp,
+                        Ok(Some(Msg::Notice { notice })) => LegEvent::Blocked(notice),
+                        Ok(Some(Msg::Reject { reason })) if reason == crate::CALLS_NOT_ALLOWED => LegEvent::CallsNotAllowed,
                         Ok(Some(Msg::Reject { reason })) => LegEvent::Failed(format!("rejected: {}", clip_reason(&reason))),
                         Ok(Some(other)) => {
                             tracing::debug!("ignoring {} before the answer", msg_name(&other));
@@ -451,12 +472,23 @@ pub(crate) struct Inner {
     pub(crate) reserved: Arc<Semaphore>,
     /// Serialises start, stop, lock and set_passphrase.
     pub(crate) lifecycle: Arc<tokio::sync::Mutex<()>>,
+    /// Held while an endpoint of ours is closing (`close_fully`); `start` binds the next one only
+    /// once it is free, so two endpoints never hold this device key at once.
+    pub(crate) closing: Arc<tokio::sync::Mutex<()>>,
     pub(crate) chat: Mutex<Option<Arc<crate::chat::engine::ChatCore>>>,
     pub(crate) chat_events: Mutex<Option<Arc<dyn crate::chat::api::ChatEvents>>>,
     pub(crate) link_events: Mutex<Option<Arc<dyn crate::sync::LinkEvents>>>,
     pub(crate) selfsync: crate::sync::engine::SelfSync,
     pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
     pub(crate) link: crate::sync::link::LinkState,
+    /// Group calls (G6), `crate::gcall::net`.
+    pub(crate) gcall: crate::gcall::net::Service,
+    pub(crate) block: crate::block::BlockRt,
+    /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
+    pub(crate) group: crate::group::engine::GroupRt,
+    /// Token delivery (P6, `caps.rs`).
+    pub(crate) caps: crate::caps::CapsRt,
+    pub(crate) devlist: crate::devlist::DevlistRt,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -472,17 +504,37 @@ impl Drop for Node {
     fn drop(&mut self) {
         let ep = self.inner.shared.lock().endpoint.take();
         if let Some(rt) = self.rt.take() {
-            if let Some(ep) = ep {
-                // Best effort: a clean close tells peers at once instead of at idle timeout.
-                if !on_core_thread() && tokio::runtime::Handle::try_current().is_err() {
-                    rt.block_on(async {
+            let can_block = !on_core_thread() && tokio::runtime::Handle::try_current().is_err();
+            if can_block {
+                let inner = self.inner.clone();
+                rt.block_on(async move {
+                    // Best effort: a clean close tells peers at once instead of at idle timeout.
+                    if let Some(ep) = ep {
                         let _ = tokio::time::timeout(Duration::from_secs(1), ep.close()).await;
-                    });
-                }
+                    }
+                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.group_close()).await;
+                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat_close()).await;
+                });
             }
+            // GL: every store file goes now, whatever task still holds a clone (the tasks are
+            // only dropped below, in the background), so a node made next on this directory
+            // opens them at once.
+            self.inner.group_close_now();
+            self.inner.chat_close_now();
+            self.inner.shared.lock().forget_session();
             // Never blocks, so it is safe even if the last reference drops on a core thread.
             rt.shutdown_background();
         }
+    }
+}
+
+impl Node {
+    /// For tests: (opens, opens that had to wait for a file still held) of the store files
+    /// (`account.redb`, `chat.redb`, `group.redb`) under this node's data directory, across every
+    /// node of this process that used it.
+    #[doc(hidden)]
+    pub fn store_stats_for_test(&self) -> (u64, u64) {
+        store::open_stats(self.inner.accounts.root())
     }
 }
 
@@ -515,12 +567,18 @@ impl Node {
             pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
             reserved: Arc::new(Semaphore::new(RESERVED_HELLOS)),
             lifecycle: Arc::new(tokio::sync::Mutex::new(())),
+            closing: Arc::new(tokio::sync::Mutex::new(())),
             chat: Mutex::new(None),
             chat_events: Mutex::new(None),
             link_events: Mutex::new(None),
             selfsync: Default::default(),
             sync_tx: tokio::sync::watch::channel(0).0,
             link: Default::default(),
+            gcall: Default::default(),
+            block: Default::default(),
+            group: Default::default(),
+            caps: Default::default(),
+            devlist: Default::default(),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -755,6 +813,7 @@ impl Node {
                     did: id.did().to_string(),
                     device_public,
                     vault,
+                    device_id: Some(crate::store::new_device_id()),
                 });
                 let store = s.acct.as_ref().ok_or(Error::NoIdentity)?.store.clone();
                 // The vault first: if we die before the state is sealed, the JSON is still
@@ -843,6 +902,7 @@ impl Node {
                 // Under the lifecycle lock, so a `start` that is binding right now finishes
                 // first and its endpoint is closed here.
                 let _life = inner.lifecycle.lock().await;
+                inner.gcall_shutdown().await;
                 inner.close_endpoint().await;
                 inner.shared.lock().forget_session();
                 inner.chat_close().await;
@@ -896,6 +956,7 @@ impl Node {
             {
                 let _life = inner.lifecycle.lock().await;
                 inner.chat_sessions_close();
+                inner.gcall_shutdown().await;
                 inner.close_endpoint().await;
             }
             inner.emit_status();
@@ -995,34 +1056,10 @@ impl Node {
         self.inner.availability()
     }
 
-    /// Forgets them and blocks their DID, so the grant we gave them no longer rings us; any
-    /// call with them ends. Adding them again lifts the block.
+    /// Superseded by `block` (U19: a contact's action is Block; the contact and history are
+    /// kept). Kept as an alias until the apps switch over.
     pub fn remove_contact(&self, did: String) -> Result<(), Error> {
-        self.inner.me()?;
-        {
-            let mut s = self.inner.shared.lock();
-            s.state.contacts.retain(|c| c.did != did);
-            s.state.blocked.insert(did.clone());
-            // A ticket they may have seen is of no further use.
-            s.state.ticket = None;
-        }
-        let history = self.inner.history();
-        history.remove_peer(&did);
-        self.inner.chat_purge(&did);
-        // The removal holds in memory whether or not it reached the disk, so act on it either
-        // way and report the failed write afterwards. (A call ending now is not logged: the
-        // peer is no longer a contact.)
-        let saved = self.inner.persist().and(history.save());
-        self.inner.sync_local(None);
-        let calls: Vec<_> = {
-            let live = self.inner.live.lock();
-            live.call.iter().chain(live.waiting.iter()).cloned().collect()
-        };
-        for call in calls.into_iter().filter(|c| c.info.peer_did == did) {
-            let _ = call.cmd.send(Cmd::Hangup);
-        }
-        self.inner.events.on_contacts_changed();
-        saved
+        self.block(did)
     }
 
     /// Starts calling `did`; progress arrives through `on_call_state`.
@@ -1167,9 +1204,9 @@ impl Node {
             return Err(Error::Protocol("blocking call made from a NodeEvents callback".into()));
         }
         let (tx, rx) = std::sync::mpsc::channel();
-        self.inner.handle.spawn(async move {
+        self.inner.handle.spawn(USER_CALL.scope((), async move {
             let _ = tx.send(fut.await);
-        });
+        }));
         rx.recv().map_err(|_| Error::Protocol("core runtime stopped".into()))
     }
 
@@ -1318,6 +1355,8 @@ impl Node {
             did: did.clone(),
             device_public: me.device,
             vault,
+            // A restore over an existing directory is a new install too: new device ID, new writer ID.
+            device_id: Some(crate::store::new_device_id()),
         });
         // Without a passphrase nothing is written until the platform has saved the key.
         let acct = if durable {
@@ -1378,7 +1417,9 @@ impl Node {
                 None => reg.push(OwnDevice { device, attestation, label: String::new(), removed: false, last_seen: now(), relay: None }),
             }
         }
-        self.inner.persist_for(Some(me.epoch))
+        self.inner.persist_for(Some(me.epoch))?;
+        self.inner.devices_changed();
+        Ok(())
     }
 
     /// For tests: offers `list_json` (a `SignedBlob`) to the contact `did` as if it had arrived
@@ -1417,10 +1458,38 @@ impl Node {
         serde_json::to_string(&self.inner.my_device_list(&me)?).ok()
     }
 
+    /// For tests: dies like a killed process. The runtime stops at once and nothing is closed,
+    /// so peers hear nothing (no QUIC close, no group-call End) and must notice by timeout.
+    #[doc(hidden)]
+    pub fn crash_for_test(mut self) {
+        if let Some(ep) = self.inner.shared.lock().endpoint.take() {
+            std::mem::forget(ep);
+        }
+        if let Some(rt) = self.rt.take() {
+            rt.shutdown_background();
+        }
+    }
+
     /// For tests: the next `n` writes of account state fail, as if the disk were full.
     #[doc(hidden)]
     pub fn fail_next_writes(&self, n: u32) {
         self.inner.fail_writes.store(n, Ordering::SeqCst);
+    }
+
+    /// For tests: replaces this install's device key on disk, as endpoint rotation will (the
+    /// same install: same device ID, data key and passphrase). Takes effect on the next unlock
+    /// (restart the node).
+    #[doc(hidden)]
+    pub fn rotate_device_key_on_disk_for_test(&self) -> Result<(), Error> {
+        let me = self.inner.me()?;
+        let s = self.inner.shared.lock();
+        let Some(Disk::V2(cur)) = s.disk.clone() else { return Err(Error::NoIdentity) };
+        let dek = s.dek.clone().ok_or(Error::Locked)?;
+        let device_secret = proto::new_device_secret();
+        let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
+        let vault = vault::reseal(&cur.vault, &dek, &secrets)?;
+        let disk = Disk::V2(ProfileV2 { device_public: proto::device_public(&device_secret), vault, ..cur });
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)
     }
 }
 
@@ -1490,8 +1559,15 @@ impl Shared {
         self.device_label = None;
         self.acc = None;
         self.calls = None;
-        if let Some(a) = self.acct.as_mut() {
-            a.backing = None;
+        if let Some(a) = self.acct.as_mut()
+            && let Some(b) = a.backing.take()
+        {
+            // GL: the file goes now, not when the last task holding a clone lets go (the next
+            // unlock or the next node on this directory opens it at once). Writes still in
+            // flight finish first; any later one fails instead of landing after the lock.
+            if let Backing::Sealed(db) = b {
+                db.close();
+            }
         }
         if !self.committed {
             self.disk = None;
@@ -1566,6 +1642,17 @@ impl Inner {
             return Err(Error::InCall);
         }
         Ok(())
+    }
+
+    /// Runs `f` while no 1:1 call is active and none can begin (a group call starting).
+    pub(crate) fn with_no_call<R>(&self, f: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
+        let live = self.live.lock();
+        if live.call.is_some() || live.waiting.is_some() {
+            return Err(Error::InCall);
+        }
+        let r = f();
+        drop(live);
+        r
     }
 
     /// Writes a new account's files: the dir (never an existing one), `account.json`, the sealed
@@ -1728,9 +1815,33 @@ impl Inner {
     }
 
     pub(crate) async fn close_endpoint(&self) {
+        // G1: the group endpoint goes down with the private one (stop, lock, account switch).
+        self.group_close().await;
         let ep = self.shared.lock().endpoint.take();
         if let Some(ep) = ep {
-            let _ = tokio::time::timeout(Duration::from_secs(2), ep.close()).await;
+            let gate = self.closing.clone().lock_owned().await;
+            let _ = tokio::time::timeout(close_wait(), self.close_fully(ep, gate)).await;
+        }
+    }
+
+    /// Closes `ep` to the end on a task of its own, holding `gate` (a guard of `closing`) until
+    /// then; the returned future waits for that. iroh refuses new connections from the first
+    /// step of a close but leaves the relay connections up until the open connections have
+    /// drained (about 3 s at worst). A close abandoned half way would leave this device key
+    /// registered at its home relay, refusing every dial that arrives there, for as long as
+    /// anything holds the endpoint: after a restart on another home relay, a contact dialling the
+    /// old one would never ring us (P11).
+    pub(crate) fn close_fully(
+        &self,
+        ep: Endpoint,
+        gate: tokio::sync::OwnedMutexGuard<()>,
+    ) -> impl std::future::Future<Output = ()> + Send + 'static {
+        let task = self.handle.spawn(async move {
+            ep.close().await;
+            drop(gate);
+        });
+        async move {
+            let _ = task.await;
         }
     }
 
@@ -1790,20 +1901,28 @@ impl Inner {
         if self.shared.lock().endpoint.is_some() {
             return Ok(());
         }
+        // The previous endpoint (or the link endpoint, which has the same key) finishes closing
+        // first. Bounded: iroh's close is, but never let a stuck one keep us offline.
+        if tokio::time::timeout(CLOSING_MAX, self.closing.lock()).await.is_err() {
+            self.log("previous endpoint still closing; starting anyway");
+        }
         let transport = QuicTransportConfig::builder()
             // Keeps a ringing call and NAT bindings alive; the relay link has its own pings.
             .keep_alive_interval(Duration::from_secs(5))
             .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
             .build();
+        let mut alpns = vec![
+            proto::ALPN.to_vec(),
+            crate::chat::wire::CHAT_ALPN.to_vec(),
+            iroh_blobs::ALPN.to_vec(),
+            proto::SELF_ALPN.to_vec(),
+            proto::link::LINK_ALPN.to_vec(),
+        ];
+        // Superseded versions (P9c): listed only so an old app is refused with a clear reason.
+        alpns.extend(crate::version::old_alpns());
         let mut builder = Endpoint::builder(presets::N0)
             .secret_key(SecretKey::from_bytes(&me.profile.device_secret))
-            .alpns(vec![
-                proto::ALPN.to_vec(),
-                crate::chat::wire::CHAT_ALPN.to_vec(),
-                iroh_blobs::ALPN.to_vec(),
-                proto::SELF_ALPN.to_vec(),
-                proto::link::LINK_ALPN.to_vec(),
-            ])
+            .alpns(alpns)
             .transport_config(transport);
         // Test knob: no UDP of our own, so every packet goes through the relay — the path a
         // call takes when hole punching fails.
@@ -1833,8 +1952,20 @@ impl Inner {
         }
         self.log(format!("endpoint {} bound", ep.id()));
         self.emit_status();
+        {
+            // GL: the group runtime may open its store from background tasks again.
+            let _slot = self.group.core.lock();
+            self.group.parked.store(false, Ordering::SeqCst);
+        }
         self.chat_started();
         self.selfsync_started();
+        self.notices_started();
+        self.group_started();
+        self.tokens_started();
+        // After a restore (new device key) or a change made while we were offline: tell contacts.
+        self.devices_changed();
+        self.lists_started();
+        self.group_invites_started();
         self.sync_kick();
 
         let this = self.clone();
@@ -1874,6 +2005,16 @@ impl Inner {
                         Ok(a) => a,
                         Err(_) => return,
                     };
+                    // An app that speaks a superseded version (P9c): closed at once with
+                    // `VERSION_MISMATCH` and a reason naming both versions.
+                    if let Some(v) = crate::version::superseded(&alpn) {
+                        drop(permit);
+                        this.log(format!("refused {} from an older app ({})", v.name, String::from_utf8_lossy(&alpn)));
+                        if let Err(e) = crate::version::refuse(accepting, v, &alpn).await {
+                            tracing::debug!("refusing an old version: {e}");
+                        }
+                        return;
+                    }
                     if alpn.as_slice() == proto::SELF_ALPN {
                         drop(permit);
                         if let Err(e) = this.clone().handle_self_incoming(accepting).await {
@@ -1928,9 +2069,11 @@ impl Inner {
             if let Some(text) = &s.state.ticket
                 && let Ok(t) = ContactTicket::from_text(text)
                 && let Ok(claim) = t.verify(now)
-                // Still ours (identity unchanged), still days of life left, and points at our
+                // Still ours (identity and device key unchanged: a restore makes a new key and a
+                // joiner dials the one named here), still days of life left, and points at our
                 // current relay so the joiner can dial without discovery.
                 && claim.iss == me.id.did()
+                && claim.device == proto::device_to_text(&me.device)
                 && claim.name == me.profile.name
                 && claim.exp > now + 24 * 3600
                 && (relay.is_none() || claim.relay == relay)
@@ -1953,7 +2096,38 @@ impl Inner {
         Ok(text)
     }
 
+    /// A one-time contact ticket of this device for `did` only (accepting a group chat request,
+    /// U3): redeemable once, by that DID, with message-only tokens, until `ttl` seconds from now.
+    pub(crate) async fn request_ticket(self: &Arc<Self>, did: &str, ttl: u64) -> Result<String, Error> {
+        let me = self.me()?;
+        let ep = self.endpoint()?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+        let relay = loop {
+            let r = relay_of(&ep);
+            if r.is_some() || tokio::time::Instant::now() > deadline {
+                break r;
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        };
+        let now = now();
+        let ticket = proto::issue_contact_ticket(&me.id, me.device, &me.profile.name, relay, now, ttl);
+        let nonce = ticket.verify(now)?.nonce;
+        {
+            let mut s = self.shared.lock();
+            s.state.req_tickets.retain(|_, t| t.exp >= now);
+            s.state.req_tickets.insert(nonce, crate::store::ReqTicket { did: did.to_string(), exp: now + ttl });
+        }
+        self.persist_async(me.epoch).await?;
+        Ok(ticket.to_text())
+    }
+
     pub(crate) async fn add_contact(self: Arc<Self>, text: String) -> Result<Contact, Error> {
+        self.add_contact_from(text, crate::caps::ContactOrigin::Ticket).await
+    }
+
+    /// `add_contact`, giving them the tokens `origin` decides (P6: a group chat request gives
+    /// message only).
+    pub(crate) async fn add_contact_from(self: Arc<Self>, text: String, origin: crate::caps::ContactOrigin) -> Result<Contact, Error> {
         let me = self.me()?;
         let ticket = ContactTicket::from_text(&text)?;
         let claim = ticket.verify(now())?;
@@ -1967,23 +2141,30 @@ impl Inner {
             return Err(Error::Protocol("that ticket names a relay we won't use".into()));
         }
         let ep = self.endpoint()?;
-        let (mut hello, pending) = proto::contact_hello(
+        // We scanned their ticket ourselves: that is a way back from our block (unblock first, so
+        // they are told).
+        if self.unblock_inner(&claim.iss)? {
+            self.persist_async(me.epoch).await?;
+            self.notice_kick(claim.iss.clone());
+        }
+        let policy = crate::caps::policy_for(&self.shared.lock().state, &claim.iss, origin);
+        let (mut hello, pending) = proto::contact_hello_with(
             &me.id,
             me.device,
             &ticket,
             &me.profile.name,
             now(),
             GRANT_TTL,
+            policy,
         )?;
         if let Msg::ContactHello { relay, .. } = &mut hello {
             *relay = relay_of(&ep);
         }
         let addr = addr_for(&proto::device_from_text(&claim.device)?, relay.as_deref())?;
         self.log(format!("adding contact {}: dialing {}", claim.name, addr.id));
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, proto::ALPN))
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CALL))
             .await
-            .map_err(|_| Error::Timeout)?
-            .map_err(Error::net)?;
+            .map_err(|_| Error::Timeout)??;
         let remote = *conn.remote_id().as_bytes();
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
         let mut ctrl = Ctrl::new(send, recv);
@@ -1994,13 +2175,19 @@ impl Inner {
             .ok_or_else(|| Error::Protocol("peer closed".into()))?;
         let new = match reply {
             Msg::Reject { reason } => return Err(Error::Rejected(clip_reason(&reason))),
+            // They block us: their app's notice is the answer (and is taken here).
+            Msg::Notice { notice } if self.is_block_from(&claim.iss, &notice) => {
+                let _ = self.take_notice(&notice);
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
             other => proto::accept_contact_welcome(&me.id, &pending, &other, remote, now())?,
         };
         ctrl.finish();
         conn.close(0u32.into(), b"added");
         // We scanned their ticket ourselves: that is the one way back from a block.
-        let contact = self.save_contact(me.epoch, new, relay, true).await?;
+        let contact = self.save_contact(me.epoch, new, relay, true, policy.call).await?;
         self.log(format!("contact {} added", contact.name));
+        self.list_for_new_contact(&contact.did);
         Ok(contact)
     }
 
@@ -2012,8 +2199,9 @@ impl Inner {
         new: proto::NewContact,
         relay: Option<String>,
         lift_block: bool,
+        calls_allowed: bool,
     ) -> Result<Contact, Error> {
-        let stored = stored_contact(&new, relay);
+        let stored = stored_contact(&new, relay, calls_allowed);
         let contact = Contact::from(&stored);
         {
             let mut s = self.shared.lock();
@@ -2042,22 +2230,36 @@ impl Inner {
         };
         let now = now();
         let current = current_nonce(&next, now);
-        let (welcome, new) = proto::accept_contact_hello(&me.id, me.device, hello, remote, now, &next.redeemed, GRANT_TTL)
-            .map_err(|e| HelloError::Refused(e.to_string()))?;
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now, &next.redeemed, GRANT_TTL, |did| {
+            // A DID we accepted a group chat request from gets message-only tokens (U3, P6).
+            let origin = if next.req_tickets.values().any(|t| t.did == did && t.exp >= now) {
+                crate::caps::ContactOrigin::GroupRequest
+            } else {
+                crate::caps::ContactOrigin::Ticket
+            };
+            crate::caps::policy_for(&next, did, origin)
+        })
+        .map_err(|e| HelloError::Refused(e.to_string()))?;
+        let by_request = next.req_tickets.get(&new.redeemed_nonce).is_some_and(|t| t.did == new.did && t.exp >= now);
+        let calls_allowed = matches!(&welcome, Msg::ContactWelcome { call_grant_for_you: Some(_), .. });
         // Only the ticket we hand out right now can be redeemed: an older one that leaked (or
         // was reset) is dead even though its nonce is unspent.
-        if current.as_deref() != Some(new.redeemed_nonce.as_str()) {
+        if !by_request && current.as_deref() != Some(new.redeemed_nonce.as_str()) {
             return Err(HelloError::Refused("not the current ticket".into()));
         }
-        if next.blocked.contains(&new.did) {
-            return Err(HelloError::Refused("blocked".into()));
+        if let Some(notice) = self.refusal_for(&new.did) {
+            return Err(HelloError::Blocked(notice));
         }
-        let stored = stored_contact(&new, hint);
+        let stored = stored_contact(&new, hint, calls_allowed);
         let contact = Contact::from(&stored);
         let apply = |st: &mut State| {
             st.redeemed.insert(new.redeemed_nonce.clone());
-            // Spent: the next `my_ticket` mints a fresh one.
-            st.ticket = None;
+            if by_request {
+                st.req_tickets.remove(&new.redeemed_nonce);
+            } else {
+                // Spent: the next `my_ticket` mints a fresh one.
+                st.ticket = None;
+            }
             apply_contact(st, stored.clone(), new.device, false)
         };
         apply(&mut next).map_err(HelloError::Failed)?;
@@ -2121,8 +2323,15 @@ impl Inner {
                         ctrl.finish();
                         drop(permit);
                         self.log(format!("contact {} added us", contact.name));
+                        self.list_for_new_contact(&contact.did);
                         // Let the joiner read the welcome and close first.
                         let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
+                    }
+                    Err(HelloError::Blocked(notice)) => {
+                        self.log("refused a contact hello: blocked");
+                        ctrl.send(&Msg::Notice { notice }).await?;
+                        ctrl.finish();
+                        let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                     }
                     Err(HelloError::Refused(e)) => {
                         self.log(format!("rejected contact hello: {e}"));
@@ -2142,6 +2351,30 @@ impl Inner {
                 Ok(())
             }
             hello @ Msg::CallHello { .. } => self.incoming_call(conn, ctrl, hello, remote, &me, permit).await,
+            Msg::Notice { notice } => {
+                drop(permit);
+                self.notice_incoming(ctrl, notice).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
+            Msg::Tokens { grants } => {
+                drop(permit);
+                self.tokens_incoming(ctrl, grants).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
+            Msg::Devices { list } => {
+                drop(permit);
+                self.devices_incoming(ctrl, list).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
+            letter @ Msg::GroupLetter { .. } => {
+                drop(permit);
+                self.group_letter_incoming(ctrl, letter, remote, &me).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
             other => {
                 tracing::debug!("unexpected first message {}", msg_name(&other));
                 ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
@@ -2154,6 +2387,25 @@ impl Inner {
 
     pub(crate) fn is_contact_device(&self, device: &[u8; 32]) -> bool {
         self.shared.lock().state.contacts.iter().any(|c| c.has_device(device))
+    }
+
+    fn live_calls_with(&self, did: &str) -> Vec<Arc<Call>> {
+        let live = self.live.lock();
+        live.call.iter().chain(live.waiting.iter()).filter(|c| c.info.peer_did == did).cloned().collect()
+    }
+
+    /// We blocked `did`: a call with them tells them so and ends.
+    pub(crate) fn calls_blocked(&self, did: &str, notice: &proto::SignedBlob) {
+        for call in self.live_calls_with(did) {
+            let _ = call.cmd.send(Cmd::Block(notice.clone()));
+        }
+    }
+
+    /// Ends any call with `did` with `reason`, from outside its task.
+    pub(crate) fn end_calls_with(&self, did: &str, reason: &str) {
+        for call in self.live_calls_with(did) {
+            self.end_call(&call, reason.into());
+        }
     }
 
     pub(crate) async fn incoming_call(
@@ -2177,13 +2429,15 @@ impl Inner {
         let verified = {
             let s = self.shared.lock();
             let contacts = &s.state.contacts;
-            proto::accept_call_hello(
+            // Any of our tokens says who they are; which one rings is checked after the block
+            // check (P6).
+            proto::accept_hello(
                 &me.id,
                 &hello,
                 remote,
                 now(),
                 &s.state.revoked,
-                |did| contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did),
+                |did| contacts.iter().any(|c| c.did == did),
             )
         };
         let caller = match verified {
@@ -2196,6 +2450,29 @@ impl Inner {
                 return Ok(());
             }
         };
+        // A DID we block: refused at once with our notice, never rung (the caller's app ends the
+        // call with "blocked").
+        if let Some(notice) = self.refusal_for(&caller.did) {
+            self.log("incoming call refused: blocked");
+            ctrl.send(&Msg::Notice { notice }).await?;
+            ctrl.finish();
+            let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+            return Ok(());
+        }
+        // P6: a call token of ours, not taken back, and calls allowed for them. A contact that
+        // may only message is told so (never rung); a token taken back by a block gets the
+        // generic refusal.
+        if let Err(denied) = self.token_check(&caller.did, &caller.grant, proto::Cap::Call) {
+            let reason = match denied {
+                crate::caps::Denied::CallsNotAllowed => crate::CALLS_NOT_ALLOWED,
+                crate::caps::Denied::Refused => REFUSED,
+            };
+            self.log(format!("incoming call refused: {reason}"));
+            ctrl.send(&Msg::Reject { reason: reason.into() }).await?;
+            ctrl.finish();
+            let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+            return Ok(());
+        }
         let name = {
             let s = self.shared.lock();
             s.state.contacts.iter().find(|c| c.did == caller.did).map(display_name).unwrap_or_default()
@@ -2449,6 +2726,10 @@ impl Inner {
                 if live.call.is_some() {
                     return Err(Error::Busy);
                 }
+                // The user is in a group call (G6): incoming 1:1 calls get Busy, outgoing InCall.
+                if self.gcall.in_call() {
+                    return Err(Error::InCall);
+                }
                 live.call = Some(call.clone());
                 live.last.take()
             };
@@ -2480,15 +2761,33 @@ impl Inner {
     pub(crate) fn start_call(self: Arc<Self>, did: String) -> Result<CallInfo, Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
-        let contact = {
+        let (contact, held_name) = {
             let s = self.shared.lock();
-            s.state.contacts.iter().find(|c| c.did == did).cloned().ok_or(Error::NotFound)?
+            if s.state.blocked.contains(&did) {
+                return Err(Error::Protocol("you blocked them; unblock first".into()));
+            }
+            // They block us (U20): no dialling; the call ends at once with that reason.
+            let held = crate::block::blocked_me(&s.state, &did).then(|| crate::block::known_name(&s.state, &did).unwrap_or_default());
+            let contact = s.state.contacts.iter().find(|c| c.did == did).cloned();
+            if contact.is_none() && held.is_none() {
+                return Err(Error::NotFound);
+            }
+            (contact, held)
         };
         let info = CallInfo {
             call_id: random_id(),
             peer_did: did,
-            peer_name: display_name(&contact),
+            peer_name: contact.as_ref().map(display_name).or(held_name.clone()).unwrap_or_default(),
             incoming: false,
+        };
+        let contact = match (contact, held_name) {
+            (Some(c), None) => c,
+            _ => {
+                let (call, _cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
+                let this = self.clone();
+                self.handle.spawn(async move { this.end_call(&call, crate::BLOCKED.into()) });
+                return Ok(info);
+            }
         };
         let (call, cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
         let this = self.clone();
@@ -2535,10 +2834,12 @@ impl Inner {
                 ep: ep.clone(),
                 device: device.clone(),
                 hello: {
+                    // Our call token from them; without one, the message token (they answer "calls
+                    // not allowed" instead of a generic refusal).
                     let mut hello = proto::call_hello(
                         &me.id,
                         me.attestation.clone(),
-                        contact.grant_from_them.clone(),
+                        contact.call_grant_from_them.clone().unwrap_or_else(|| contact.grant_from_them.clone()),
                         call.info.call_id.clone(),
                     );
                     if let Msg::CallHello { relay, devices, .. } = &mut hello {
@@ -2651,6 +2952,22 @@ impl Inner {
                             legs[idx] = None;
                             state[idx] = LegPhase::Gone;
                         }
+                        // They block us: the call ends at once with that reason.
+                        LegEvent::Blocked(notice) if self.is_block_from(&call.info.peer_did, &notice) => {
+                            let _ = self.take_notice(&notice);
+                            cancel_others(&mut legs, Some(idx), hangup_msg.clone());
+                            break crate::BLOCKED.into();
+                        }
+                        LegEvent::Blocked(_) => {
+                            legs[idx] = None;
+                            state[idx] = LegPhase::Gone;
+                        }
+                        // They let us message, not call: ends at once (P6), our call token goes.
+                        LegEvent::CallsNotAllowed => {
+                            self.drop_call_token(call.epoch, &call.info.peer_did);
+                            cancel_others(&mut legs, Some(idx), hangup_msg.clone());
+                            break crate::CALLS_NOT_ALLOWED.into();
+                        }
                     }
                 }
                 cmd = cmds.recv() => match cmd {
@@ -2754,6 +3071,11 @@ impl Inner {
                         self.log(format!("rejected: {}", clip_reason(&reason)));
                         break "unreachable".into();
                     }
+                    // They blocked us during the call.
+                    Ok(Some(Msg::Notice { notice })) if self.is_block_from(&call.info.peer_did, &notice) => {
+                        let _ = self.take_notice(&notice);
+                        break crate::BLOCKED.into();
+                    }
                     Ok(Some(Msg::Hangup)) => {
                         // A callee only hangs up unanswered when its ring timed out; a refusal is a Decline.
                         break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "no_answer" }.into();
@@ -2768,7 +3090,7 @@ impl Inner {
                 cmd = cmds.recv() => match cmd {
                     Some(Cmd::Answer) if incoming_from.is_some() && !active => {
                         let me = match self.me() { Ok(m) => m, Err(_) => break "hangup_local".into() };
-                        let renewed = incoming_from.as_deref().map(|did| proto::issue_grant(&me.id, did, now(), GRANT_TTL));
+                        let renewed = incoming_from.as_deref().map(|did| self.fresh_token(&me, did, proto::Cap::Call));
                         let devices = self.my_device_list(&me);
                         if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices }).await {
                             self.log(format!("connection lost: {e}"));
@@ -2778,6 +3100,10 @@ impl Inner {
                         self.set_state(&call, CallState::Active);
                     }
                     Some(Cmd::Answer) => {}
+                    Some(Cmd::Block(notice)) => {
+                        let _ = ctrl.send(&Msg::Notice { notice }).await;
+                        break crate::BLOCKED.into();
+                    }
                     // Not yet answered: the callee refusing is a decline, the caller giving up
                     // is a hangup (the callee shows it as missed).
                     Some(Cmd::Decline) | Some(Cmd::Hangup) if !active && incoming_from.is_some() => {
@@ -2862,8 +3188,8 @@ impl Inner {
                 return;
             }
             match s.state.contacts.iter_mut().find(|c| c.did == did) {
-                Some(c) if grant_outlives(&c.grant_from_them, &grant, did, me.id.did(), now()) => {
-                    c.grant_from_them = grant;
+                Some(c) if crate::caps::outlives(c.call_grant_from_them.as_ref(), &grant, proto::Cap::Call, did, me.id.did(), now()) => {
+                    c.call_grant_from_them = Some(grant);
                     true
                 }
                 _ => false,
@@ -2958,8 +3284,9 @@ impl Inner {
             if s.epoch != call.epoch {
                 return;
             }
-            match s.state.contacts.iter().find(|c| c.did == call.info.peer_did) {
-                Some(c) => display_name(c),
+            // A contact, or one whose block notice we hold (their entry was deleted, U20).
+            match crate::block::known_name(&s.state, &call.info.peer_did) {
+                Some(n) => n,
                 None => return,
             }
         };
@@ -3002,7 +3329,8 @@ impl Inner {
     }
 
     pub(crate) fn push_mic(&self, pcm: &[i16]) {
-        let Some((call, tone)) = self.active_call() else { return };
+        // No active 1:1 call: the microphone feeds the group call, if any.
+        let Some((call, tone)) = self.active_call() else { return self.gcall.push_mic(pcm) };
         let Some(conn) = call.conn.lock().clone() else { return };
         let mut mic = call.mic.lock();
         mic.extend_from_slice(pcm);
@@ -3032,7 +3360,8 @@ impl Inner {
 
     pub(crate) fn pull_speaker(&self) -> Vec<i16> {
         let mut out = [0i16; audio::FRAME];
-        if let Some((call, _)) = self.active_call() {
+        let Some((call, _)) = self.active_call() else { return self.gcall.pull_speaker() };
+        {
             call.receiver.lock().pull(&mut out, call.now_ms());
             let mut played = call.played.lock();
             played.extend(out.iter().copied());
@@ -3090,15 +3419,19 @@ enum HelloError {
     Refused(String),
     /// Acceptable, but we could not make it durable.
     Failed(Error),
+    /// From a DID we block: answered with our notice.
+    Blocked(proto::SignedBlob),
 }
 
-fn stored_contact(new: &proto::NewContact, relay: Option<String>) -> StoredContact {
+fn stored_contact(new: &proto::NewContact, relay: Option<String>, calls_allowed: bool) -> StoredContact {
     StoredContact {
         did: new.did.clone(),
         name: proto::sanitize_name(&new.name),
         devices: vec![ContactDevice { device: new.device, relay }],
         device_list: None,
         grant_from_them: new.grant_from_them.clone(),
+        call_grant_from_them: new.call_grant_from_them.clone(),
+        calls_allowed,
         added_at: now(),
         alias: None,
         verified: false,
@@ -3108,9 +3441,9 @@ fn stored_contact(new: &proto::NewContact, relay: Option<String>) -> StoredConta
 /// Adds `stored`, or refreshes the contact of that DID. A device we have not seen before resets
 /// `verified`: the safety numbers were compared with another phone.
 fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_block: bool) -> Result<(), Error> {
-    if lift_block {
-        st.blocked.remove(&stored.did);
-    } else if st.blocked.contains(&stored.did) {
+    // A block is lifted only by `unblock` (which signs the notice); `add_contact` does that
+    // before it gets here.
+    if !lift_block && st.blocked.contains(&stored.did) {
         return Err(Error::Rejected(REFUSED.into()));
     }
     match st.contacts.iter_mut().find(|c| c.did == stored.did) {
@@ -3127,18 +3460,25 @@ fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_b
             existing.devices.retain(|d| d.device != device);
             existing.devices.insert(0, ContactDevice { device, relay });
             existing.devices.truncate(MAX_DEVICES);
+            // A re-add carries fresh tokens both ways; ours to them follow `calls_allowed`,
+            // which an existing contact keeps.
             existing.grant_from_them = stored.grant_from_them;
+            existing.call_grant_from_them = stored.call_grant_from_them;
         }
         None => st.contacts.push(stored),
     }
     Ok(())
 }
 
-/// Replaces the contact's devices by `blob`'s if it verifies for their DID and is newer than the
-/// list we hold. Hints are kept for devices we knew; a device we did not know resets `verified`.
-/// Returns whether anything changed.
+/// Replaces the contact's devices by `blob`'s if it verifies for their DID, is newer than the
+/// list we hold and its seq is not too far ahead of our clock (`proto::list_seq_in_bounds`,
+/// PROVISIONAL (coordinator)). Hints are kept for devices we knew; a device we did not know resets
+/// `verified`. Returns whether anything changed.
 pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedBlob) -> bool {
     let Ok(list) = proto::verify_device_list(blob, &c.did) else { return false };
+    if !proto::list_seq_in_bounds(list.seq, now_ms()) {
+        return false;
+    }
     if c.device_list.as_ref().is_some_and(|old| !proto::newer(blob, old)) {
         return false;
     }
@@ -3167,7 +3507,9 @@ fn current_nonce(state: &State, now: u64) -> Option<String> {
     Some(t.verify(now).ok()?.nonce)
 }
 
-/// Whether `new` is a good grant from `issuer` to `holder` and expires after `old`.
+/// Whether `new` is a good grant from `issuer` to `holder` and expires after `old` (any
+/// capability; the token slots use `caps::outlives`).
+#[cfg(test)]
 pub(crate) fn grant_outlives(old: &proto::SignedGrant, new: &proto::SignedGrant, issuer: &str, holder: &str, now: u64) -> bool {
     let none = std::collections::HashSet::new();
     let Ok(new) = proto::verify_grant(new, issuer, holder, now, &none) else { return false };
@@ -3219,6 +3561,14 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::Decline { .. } => "Decline",
         Msg::Busy => "Busy",
         Msg::Hangup => "Hangup",
+        Msg::Notice { .. } => "Notice",
+        Msg::NoticeTaken => "NoticeTaken",
+        Msg::Tokens { .. } => "Tokens",
+        Msg::TokensTaken => "TokensTaken",
+        Msg::Devices { .. } => "Devices",
+        Msg::DevicesTaken => "DevicesTaken",
+        Msg::GroupLetter { .. } => "GroupLetter",
+        Msg::GroupLetterTaken => "GroupLetterTaken",
     }
 }
 
@@ -3227,6 +3577,17 @@ const CORE_THREAD: &str = "p2pcore";
 
 fn on_core_thread() -> bool {
     std::thread::current().name() == Some(CORE_THREAD)
+}
+
+tokio::task_local! {
+    /// Set around the future of a blocking `Node` call (`block_on`).
+    static USER_CALL: ();
+}
+
+/// Whether we run for a call the app made (its own thread, or the future of a blocking call),
+/// not for a background task of the core.
+pub(crate) fn user_call() -> bool {
+    !on_core_thread() || USER_CALL.try_with(|_| ()).is_ok()
 }
 
 pub(crate) fn now_ms() -> u64 {

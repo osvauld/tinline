@@ -2502,6 +2502,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcall-bench"
+version = "0.1.31"
+dependencies = [
+ "audio",
+ "bytes",
+ "iroh",
+ "parking_lot",
+ "tokio",
+]
+
+[[package]]
 name = "gdk"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2904,6 +2915,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fdf242682df893b86f33a73828fb09ca4b2d3bb6cc95249707fc684d27484b91"
 dependencies = [
  "bitflags 2.13.2",
+]
+
+[[package]]
+name = "group-sim"
+version = "0.1.31"
+dependencies = [
+ "aes-gcm",
+ "blake3",
+ "ed25519-dalek 2.2.0",
+ "identity",
+ "loro",
+ "proto",
+ "serde",
+ "serde_json",
+ "x25519-dalek",
 ]
 
 [[package]]
@@ -6034,6 +6060,7 @@ dependencies = [
  "base64 0.22.1",
  "bincode",
  "blake3",
+ "bs58",
  "bytes",
  "cryptography",
  "hex",

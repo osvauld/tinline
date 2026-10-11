@@ -80,10 +80,11 @@ fn unfamiliar_device_in_a_call_resets_verified_and_notifies() {
     let d1 = a.node.contacts()[0].device.clone();
 
     // A learns a signed device list of B that does not include b1 (as if B had unlinked it). Its
-    // seq is far in the future so that the list b1 signs itself on calling cannot replace it.
+    // seq is an hour ahead so that the list b1 signs itself on calling cannot replace it (P4: a
+    // seq more than a day ahead of A's clock is refused).
     // b1 is no longer dialled, but it still holds A's grant and can call.
     let bid = identity::recover(&phrase).unwrap();
-    let list = proto::sign_device_list(&bid, &[([9u8; 32], None)], 9_000_000_000_000_000);
+    let list = proto::sign_device_list(&bid, &[([9u8; 32], None)], now_ms() + 3600 * 1000);
     assert!(a.node.offer_device_list_for_test(b1.did.clone(), serde_json::to_string(&list).unwrap()));
     assert_ne!(a.node.contacts()[0].device, d1);
     // A new device in the list already reset it.
@@ -104,4 +105,8 @@ fn unfamiliar_device_in_a_call_resets_verified_and_notifies() {
     a.node.lock();
     a.node.unlock(PASS.into()).unwrap();
     assert!(!a.node.contacts()[0].verified);
+}
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
 }

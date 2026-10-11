@@ -63,17 +63,19 @@ fn reset_and_redeemed_tickets_are_dead() {
 }
 
 #[test]
-fn removed_contact_cannot_come_back_through_our_ticket() {
+fn blocked_contact_cannot_come_back_through_our_ticket() {
     let (a, b) = (peer("block-a", true), peer("block-b", true));
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    a.node.remove_contact(b.did.clone()).unwrap();
-    assert!(a.node.contacts().is_empty());
+    a.node.block(b.did.clone()).unwrap();
+    // U19: a block keeps the contact (shown as Blocked).
+    assert_eq!(a.node.contacts().len(), 1);
     let fresh = a.node.my_ticket().unwrap();
-    assert!(matches!(b.node.add_contact(fresh), Err(Error::Rejected(_))));
-    assert!(a.node.contacts().is_empty(), "still blocked");
-    // Scanning their ticket ourselves is the way back.
+    assert!(matches!(b.node.add_contact(fresh), Err(Error::Rejected(r)) if r == p2pcore::BLOCKED));
+    assert!(a.node.block_state(b.did.clone()).blocked_by_me, "still blocked");
+    // Scanning their ticket ourselves is a way back: it unblocks them.
     a.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
     assert_eq!(a.node.contacts().len(), 1);
+    assert!(!a.node.block_state(b.did.clone()).blocked_by_me);
 }
 
 #[test]

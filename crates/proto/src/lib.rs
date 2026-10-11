@@ -17,9 +17,13 @@ use identity::{Identity, public_key_from_did, verify};
 use rand::RngCore;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-pub const ALPN: &[u8] = b"osvauld/p2p/0";
-/// Own-device sync (docs/design/device-linking.md §4); only devices of the same DID.
-pub const SELF_ALPN: &[u8] = b"tinline/self/1";
+/// Calls, contact exchange and notices. Version 1 (P6): separate `message` and `call` tokens;
+/// version 0 (one `call` grant for everything) is refused by the app.
+pub const ALPN: &[u8] = b"osvauld/p2p/1";
+/// Own-device sync (docs/design/device-linking.md §4); only devices of the same DID. Version 3
+/// (P10 per-writer chat versions; P6: the account doc carries call tokens, call permissions and
+/// token cut-offs); versions 2 and 1 are refused by the app.
+pub const SELF_ALPN: &[u8] = b"tinline/self/3";
 
 const ATTEST_DOMAIN: &[u8] = b"osvauld/p2p/attest/v1\0";
 const INVITE_DOMAIN: &[u8] = b"osvauld/p2p/invite/v1\0";
@@ -27,11 +31,17 @@ const GRANT_DOMAIN: &[u8] = b"osvauld/p2p/grant/v1\0";
 const INVITE_V2_DOMAIN: &[u8] = b"osvauld/p2p/invite/v2\0";
 const BIND_DOMAIN: &[u8] = b"osvauld/p2p/bind/v1\0";
 const DEVICES_DOMAIN: &[u8] = b"osvauld/p2p/devices/v1\0";
+const BLOCK_DOMAIN: &[u8] = b"osvauld/p2p/block/v1\0";
 
 const VERSION: u8 = 1;
 const TICKET_PREFIX: &str = "osvc1.";
 const TICKET_PREFIX_V2: &str = "OSVC2:";
-const CAP_CALL: &str = "call";
+pub const CAP_MESSAGE: &str = "message";
+pub const CAP_CALL: &str = "call";
+/// Tokens (`Grant`) we issue now carry exactly one capability. Version 1 grants are the legacy
+/// single `call` grant, which counts as message + call (U13 migration).
+const GRANT_VERSION: u8 = 2;
+const LEGACY_GRANT_VERSION: u8 = 1;
 pub const MAX_FRAME: usize = 64 * 1024;
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -526,7 +536,35 @@ pub fn issue_contact_ticket(
     }
 }
 
-// ---- grant -------------------------------------------------------------------------
+// ---- grant (capability tokens) ------------------------------------------------------
+
+/// What a token lets its holder do with the issuer (U13, U15: separate tokens, one capability
+/// each). Only the issuer ever verifies its own tokens, so taking one back is local: the issuer
+/// refuses it (per-DID cut-off, see `verify_token`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Cap {
+    /// 1:1 chat (`tinline/chat`), history and delivery.
+    Message,
+    /// Ringing the issuer.
+    Call,
+}
+
+impl Cap {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Cap::Message => CAP_MESSAGE,
+            Cap::Call => CAP_CALL,
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Cap> {
+        match s {
+            CAP_MESSAGE => Some(Cap::Message),
+            CAP_CALL => Some(Cap::Call),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Grant {
@@ -539,9 +577,48 @@ pub struct Grant {
     pub exp: u64,
 }
 
-pub fn issue_grant(id: &Identity, holder_did: &str, now: u64, ttl: u64) -> SignedGrant {
+impl Grant {
+    /// A legacy (version 1) `call` grant from before separate tokens.
+    pub fn is_legacy(&self) -> bool {
+        self.v == LEGACY_GRANT_VERSION
+    }
+
+    /// Whether this token carries `cap`. A legacy `call` grant carries both (U13 migration).
+    pub fn allows(&self, cap: Cap) -> bool {
+        self.is_legacy() || Cap::parse(&self.cap) == Some(cap)
+    }
+
+    /// The capabilities it carries.
+    pub fn caps(&self) -> Vec<Cap> {
+        [Cap::Message, Cap::Call].into_iter().filter(|c| self.allows(*c)).collect()
+    }
+}
+
+/// A single-capability token from `id` to `holder_did`, issued at `iat` (the caller picks it, so
+/// it can keep tokens above a cut-off), valid for `ttl` seconds.
+pub fn issue_token(id: &Identity, holder_did: &str, cap: Cap, iat: u64, ttl: u64) -> SignedGrant {
     let claim = Grant {
-        v: VERSION,
+        v: GRANT_VERSION,
+        id: random16(),
+        iss: id.did().to_string(),
+        holder: holder_did.to_string(),
+        cap: cap.as_str().to_string(),
+        iat,
+        exp: iat.saturating_add(ttl),
+    };
+    sign_blob(id, GRANT_DOMAIN, &claim)
+}
+
+/// A call token (`issue_token` with `Cap::Call`); kept for the call paths and tests.
+pub fn issue_grant(id: &Identity, holder_did: &str, now: u64, ttl: u64) -> SignedGrant {
+    issue_token(id, holder_did, Cap::Call, now, ttl)
+}
+
+/// For tests only: a legacy version-1 `call` grant as apps before separate tokens issued it.
+#[doc(hidden)]
+pub fn issue_legacy_grant_for_test(id: &Identity, holder_did: &str, now: u64, ttl: u64) -> SignedGrant {
+    let claim = Grant {
+        v: LEGACY_GRANT_VERSION,
         id: random16(),
         iss: id.did().to_string(),
         holder: holder_did.to_string(),
@@ -552,6 +629,15 @@ pub fn issue_grant(id: &Identity, holder_did: &str, now: u64, ttl: u64) -> Signe
     sign_blob(id, GRANT_DOMAIN, &claim)
 }
 
+/// The claims of a token without checking anything (for bookkeeping such as picking which slot a
+/// stored token goes in; never for admission).
+pub fn peek_grant(g: &SignedGrant) -> Option<Grant> {
+    serde_json::from_slice(&dec(&g.payload).ok()?).ok()
+}
+
+/// Checks a token of any capability: signed by the DID it names as issuer, issuer and holder as
+/// expected, a known version/capability, unexpired, id not revoked. Which capability it carries
+/// is the caller's check (`Grant::allows`, or `verify_token`).
 pub fn verify_grant(
     g: &SignedGrant,
     expected_iss: &str,
@@ -560,15 +646,17 @@ pub fn verify_grant(
     revoked: &HashSet<String>,
 ) -> Result<Grant> {
     let grant: Grant = open_blob(g, GRANT_DOMAIN, |c: &Grant| &c.iss)?;
-    check_version(grant.v)?;
+    match grant.v {
+        GRANT_VERSION if Cap::parse(&grant.cap).is_some() => {}
+        LEGACY_GRANT_VERSION if grant.cap == CAP_CALL => {}
+        GRANT_VERSION | LEGACY_GRANT_VERSION => return Err(Error::BadCapability),
+        _ => return Err(Error::UnknownVersion),
+    }
     if grant.iss != expected_iss {
         return Err(Error::WrongIssuer);
     }
     if grant.holder != expected_holder {
         return Err(Error::WrongHolder);
-    }
-    if grant.cap != CAP_CALL {
-        return Err(Error::BadCapability);
     }
     if now >= grant.exp {
         return Err(Error::Expired);
@@ -577,6 +665,72 @@ pub fn verify_grant(
         return Err(Error::Revoked);
     }
     Ok(grant)
+}
+
+/// `verify_grant`, plus: the token carries `cap`, and it was issued after `cut_off` (unix
+/// seconds; tokens with `iat <= cut_off` were taken back by the issuer: a block, or "disallow
+/// calls" for `Cap::Call`). The cut-off is per holder DID, so it also covers tokens the issuer
+/// never recorded (every renewal mints a new id).
+pub fn verify_token(
+    g: &SignedGrant,
+    expected_iss: &str,
+    expected_holder: &str,
+    cap: Cap,
+    cut_off: u64,
+    now: u64,
+    revoked: &HashSet<String>,
+) -> Result<Grant> {
+    let grant = verify_grant(g, expected_iss, expected_holder, now, revoked)?;
+    if !grant.allows(cap) {
+        return Err(Error::BadCapability);
+    }
+    if grant.iat <= cut_off {
+        return Err(Error::Revoked);
+    }
+    Ok(grant)
+}
+
+/// The tokens one side gives the other when they become contacts (U13 defaults): a ticket/QR
+/// contact gets message + call, a contact from a group chat request message only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TokenPolicy {
+    /// Include a call token.
+    pub call: bool,
+    /// Issue above this (unix seconds): the holder's cut-off, so fresh tokens after an unblock
+    /// are not refused with the old ones.
+    pub not_before: u64,
+}
+
+impl TokenPolicy {
+    /// Message + call, no cut-off.
+    pub const TICKET: TokenPolicy = TokenPolicy { call: true, not_before: 0 };
+    /// Message only, no cut-off.
+    pub const MESSAGE_ONLY: TokenPolicy = TokenPolicy { call: false, not_before: 0 };
+
+    fn issue(self, id: &Identity, holder: &str, now: u64, ttl: u64) -> (SignedGrant, Option<SignedGrant>) {
+        let iat = now.max(self.not_before.saturating_add(1));
+        (
+            issue_token(id, holder, Cap::Message, iat, ttl),
+            self.call.then(|| issue_token(id, holder, Cap::Call, iat, ttl)),
+        )
+    }
+}
+
+/// Checks the tokens a new contact gave us: a message token, and a call token if any. A legacy
+/// grant in the message slot counts for calls too.
+fn verify_contact_tokens(
+    message: &SignedGrant,
+    call: Option<&SignedGrant>,
+    iss: &str,
+    holder: &str,
+    now: u64,
+) -> Result<()> {
+    let none = HashSet::new();
+    verify_token(message, iss, holder, Cap::Message, 0, now, &none)?;
+    if let Some(c) = call {
+        verify_token(c, iss, holder, Cap::Call, 0, now, &none)?;
+    }
+    Ok(())
 }
 
 // ---- messages ----------------------------------------------------------------------
@@ -589,7 +743,11 @@ pub enum Msg {
         name: String,
         invite: SignedBlob,
         binding: String,
+        /// The message token the joiner gives the ticket owner.
         grant_for_you: SignedGrant,
+        /// The call token, when the joiner lets the owner call (ticket default: yes).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        call_grant_for_you: Option<SignedGrant>,
         /// The joiner's relay right now: an unsigned routing hint so the ticket owner can call
         /// back without waiting on DNS discovery. A wrong one only costs a slower dial.
         #[serde(default)]
@@ -598,7 +756,11 @@ pub enum Msg {
     ContactWelcome {
         attestation: SignedAttestation,
         name: String,
+        /// The owner's message token for the joiner.
         grant_for_you: SignedGrant,
+        /// The owner's call token for the joiner, if it may call.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        call_grant_for_you: Option<SignedGrant>,
     },
     Reject {
         reason: String,
@@ -606,6 +768,8 @@ pub enum Msg {
     CallHello {
         call_id: String,
         attestation: SignedAttestation,
+        /// The caller's call token from the callee; a caller without one presents its message
+        /// token and is refused with `CALLS_NOT_ALLOWED`.
         grant: SignedGrant,
         /// The caller's current relay, same kind of hint as in `ContactHello`.
         #[serde(default)]
@@ -616,6 +780,7 @@ pub enum Msg {
     },
     Ringing,
     Accept {
+        /// A fresh call token for the caller (renew on answer).
         renewed_grant: Option<SignedGrant>,
         /// The callee's signed `DeviceList`, sent when the caller's copy is older.
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -630,7 +795,45 @@ pub enum Msg {
     },
     Busy,
     Hangup,
+    /// A DID-signed block or unblock notice (`sign_block_notice`). Sent as the first message of
+    /// a connection to deliver it (answered `NoticeTaken`), and as the answer to every attempt of
+    /// a DID we block (call hello, contact hello, and mid-call when the block happens then).
+    Notice {
+        notice: SignedBlob,
+    },
+    /// The notice arrived and was checked; the sender stops retrying.
+    NoticeTaken,
+    /// Fresh tokens from the sender for us ("allow calls", a message-token renewal). Each is
+    /// DID-signed by its issuer, so the connection proves nothing more; answered `TokensTaken`.
+    Tokens {
+        grants: Vec<SignedGrant>,
+    },
+    TokensTaken,
+    /// Our DID-signed `DeviceList` (`sign_device_list`), pushed to a contact whenever our set of
+    /// installs changes (U8). DID-signed, so the connection proves nothing more; the receiver keeps
+    /// it only if it verifies for that DID, is newer than the one held and within
+    /// `MAX_LIST_SEQ_AHEAD_MS` of its clock. Answered `DevicesTaken` either way (the sender stops
+    /// retrying), or with the receiver's block notice.
+    Devices {
+        list: SignedBlob,
+    },
+    DevicesTaken,
+    /// A group invitation or the answer to one, between two contacts over the private channel
+    /// (G3). Authenticated like `CallHello`: the sender's attestation (= the connection's device)
+    /// and a token the receiver issued to it; the receiver requires a message token (P6) and
+    /// answers its block notice to a DID it blocks. `letter` is opaque here (the core's
+    /// base64url bincode `group::invitations::Letter`). Answered `GroupLetterTaken`.
+    GroupLetter {
+        attestation: SignedAttestation,
+        grant: SignedGrant,
+        letter: String,
+    },
+    GroupLetterTaken,
 }
+
+/// The `Reject` reason a contact gets when it calls without being allowed to (no call token, or
+/// one taken back): shown as is, the call never rings.
+pub const CALLS_NOT_ALLOWED: &str = "calls not allowed";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -659,11 +862,16 @@ pub fn decode_frame(buf: &[u8]) -> Result<Option<(Msg, usize)>> {
 }
 
 fn decode_json_frame<T: DeserializeOwned>(buf: &[u8]) -> Result<Option<(T, usize)>> {
+    decode_json_frame_max(buf, MAX_FRAME)
+}
+
+/// `decode_json_frame` with a smaller body limit (`max` <= `MAX_FRAME`).
+fn decode_json_frame_max<T: DeserializeOwned>(buf: &[u8], max: usize) -> Result<Option<(T, usize)>> {
     let Some(head) = buf.first_chunk::<4>() else {
         return Ok(None);
     };
     let len = u32::from_be_bytes(*head) as usize;
-    if len > MAX_FRAME {
+    if len > max {
         return Err(Error::FrameTooLarge);
     }
     let Some(body) = buf.get(4..4 + len) else {
@@ -754,6 +962,23 @@ pub fn verify_device_list(blob: &SignedBlob, expected_did: &str) -> Result<Devic
     Ok(list)
 }
 
+/// PROVISIONAL (coordinator): a receiver refuses a device list whose `seq` (unix ms chosen by the
+/// signer) is more than this far ahead of its own clock, so a phrase holder cannot pin contacts
+/// with a huge seq (W2-D finding: `u64::MAX` pinned them forever). A list up to a day ahead still
+/// wins until then.
+pub const MAX_LIST_SEQ_AHEAD_MS: u64 = 24 * 3600 * 1000;
+
+/// Whether a list `seq` is acceptable at the receiver's `now_ms` (see `MAX_LIST_SEQ_AHEAD_MS`).
+pub fn list_seq_in_bounds(seq: u64, now_ms: u64) -> bool {
+    seq <= now_ms.saturating_add(MAX_LIST_SEQ_AHEAD_MS)
+}
+
+/// The claims of a device list WITHOUT checking anything: only to learn which DID it names, so the
+/// caller can then `verify_device_list` against that DID.
+pub fn peek_device_list(blob: &SignedBlob) -> Option<DeviceList> {
+    serde_json::from_slice(&dec(&blob.payload).ok()?).ok()
+}
+
 /// Whether `a` should replace `b`. Both must already have passed `verify_device_list` for the
 /// same DID. Higher `seq` wins; on a tie the lexicographically larger signature does, so every
 /// receiver picks the same list. An unreadable blob loses.
@@ -773,9 +998,53 @@ pub fn newer(a: &SignedBlob, b: &SignedBlob) -> bool {
     }
 }
 
+// ---- block notices ------------------------------------------------------------------
+
+/// "`from` blocked `to`" (or, with `blocked: false`, lifted that block). Signed by `from`'s DID
+/// key, never by a device key, so every device of `from` hands out the same notice and nobody
+/// re-signs it per device. A block notice is also a deletion request (U20): the receiving app
+/// deletes its contact entry for `from` and keeps the chat history read-only.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct BlockNotice {
+    pub v: u8,
+    pub from: String,
+    pub to: String,
+    pub blocked: bool,
+    /// Unix ms chosen by the signer, strictly increasing per (`from`, `to`): a receiver keeps
+    /// only the notice with the highest `at`, so a replayed older one changes nothing.
+    pub at: u64,
+}
+
+pub fn sign_block_notice(id: &Identity, to: &str, blocked: bool, at: u64) -> SignedBlob {
+    let claim = BlockNotice { v: VERSION, from: id.did().to_string(), to: to.to_string(), blocked, at };
+    sign_blob(id, BLOCK_DOMAIN, &claim)
+}
+
+/// Checks the signature under the DID the notice names as `from`, and that it is addressed to
+/// `expected_to`. Whether it is newer than one already held is the caller's check.
+pub fn verify_block_notice(blob: &SignedBlob, expected_to: &str) -> Result<BlockNotice> {
+    let n: BlockNotice = open_blob(blob, BLOCK_DOMAIN, |c: &BlockNotice| &c.from)?;
+    check_version(n.v)?;
+    if n.to != expected_to {
+        return Err(Error::WrongHolder);
+    }
+    if n.from == n.to {
+        return Err(Error::SelfContact);
+    }
+    Ok(n)
+}
+
+/// For tests only: a notice that claims to come from `claimed_from` but is signed by `signer`
+/// (a forgery unless `signer` is that DID).
+#[doc(hidden)]
+pub fn forge_block_notice_for_test(signer: &Identity, claimed_from: &str, to: &str, blocked: bool, at: u64) -> SignedBlob {
+    let claim = BlockNotice { v: VERSION, from: claimed_from.to_string(), to: to.to_string(), blocked, at };
+    sign_blob(signer, BLOCK_DOMAIN, &claim)
+}
+
 // ---- own-device sync ---------------------------------------------------------------
 
-/// Authorization for `tinline/self/1`: the peer is another device of *our* DID, it is the
+/// Authorization for `tinline/self/3`: the peer is another device of *our* DID, it is the
 /// device the transport authenticated, and it has not been removed. No grant is involved.
 pub fn accept_self_hello(
     attestation: &SignedAttestation,
@@ -813,7 +1082,10 @@ pub struct NewContact {
     pub did: String,
     pub name: String,
     pub device: [u8; 32],
+    /// Their message token for us.
     pub grant_from_them: SignedGrant,
+    /// Their call token for us, if they let us call.
+    pub call_grant_from_them: Option<SignedGrant>,
     pub redeemed_nonce: String,
 }
 
@@ -827,6 +1099,7 @@ fn binding_message(
     Ok([BIND_DOMAIN, &dec(nonce)?, joiner_device, owner_device].concat())
 }
 
+/// `contact_hello_with` for a ticket contact (message + call).
 pub fn contact_hello(
     me: &Identity,
     my_device: [u8; 32],
@@ -835,19 +1108,34 @@ pub fn contact_hello(
     now: u64,
     grant_ttl: u64,
 ) -> Result<(Msg, PendingContact)> {
+    contact_hello_with(me, my_device, ticket, my_name, now, grant_ttl, TokenPolicy::TICKET)
+}
+
+/// The joiner's hello, giving the ticket owner the tokens `policy` says.
+pub fn contact_hello_with(
+    me: &Identity,
+    my_device: [u8; 32],
+    ticket: &ContactTicket,
+    my_name: &str,
+    now: u64,
+    grant_ttl: u64,
+    policy: TokenPolicy,
+) -> Result<(Msg, PendingContact)> {
     let claim = ticket.verify(now)?;
     if claim.iss == me.did() {
         return Err(Error::SelfContact);
     }
     let their_device = dec32(&claim.device)?;
     let binding = enc(me.sign(&binding_message(&claim.nonce, &my_device, &their_device)?));
+    let (message, call) = policy.issue(me, &claim.iss, now, grant_ttl);
     let msg = Msg::ContactHello {
         relay: None,
         attestation: attest(me, my_device, now),
         name: my_name.to_string(),
         invite: ticket.invite.clone(),
         binding,
-        grant_for_you: issue_grant(me, &claim.iss, now, grant_ttl),
+        grant_for_you: message,
+        call_grant_for_you: call,
     };
     let pending = PendingContact {
         did: claim.iss,
@@ -859,6 +1147,7 @@ pub fn contact_hello(
     Ok((msg, pending))
 }
 
+/// `accept_contact_hello_with`, giving every joiner message + call (ticket default).
 pub fn accept_contact_hello(
     me: &Identity,
     my_device: [u8; 32],
@@ -868,12 +1157,30 @@ pub fn accept_contact_hello(
     redeemed_nonces: &HashSet<String>,
     grant_ttl: u64,
 ) -> Result<(Msg, NewContact)> {
+    accept_contact_hello_with(me, my_device, msg, remote_device, now, redeemed_nonces, grant_ttl, |_| TokenPolicy::TICKET)
+}
+
+/// The ticket owner's side: checks the hello and answers with the tokens `policy(joiner DID)`
+/// says (the caller knows whether that DID is an existing contact it keeps message-only, and
+/// its cut-off).
+#[allow(clippy::too_many_arguments)]
+pub fn accept_contact_hello_with(
+    me: &Identity,
+    my_device: [u8; 32],
+    msg: &Msg,
+    remote_device: [u8; 32],
+    now: u64,
+    redeemed_nonces: &HashSet<String>,
+    grant_ttl: u64,
+    policy: impl Fn(&str) -> TokenPolicy,
+) -> Result<(Msg, NewContact)> {
     let Msg::ContactHello {
         attestation,
         name,
         invite,
         binding,
         grant_for_you,
+        call_grant_for_you,
         ..
     } = msg
     else {
@@ -902,18 +1209,21 @@ pub fn accept_contact_hello(
     if !verify(&their_pub, &bind_msg, &sig) {
         return Err(Error::BadSignature);
     }
-    verify_grant(grant_for_you, &att.did, me.did(), now, &HashSet::new())?;
+    verify_contact_tokens(grant_for_you, call_grant_for_you.as_ref(), &att.did, me.did(), now)?;
 
+    let (message, call) = policy(&att.did).issue(me, &att.did, now, grant_ttl);
     let welcome = Msg::ContactWelcome {
         attestation: attest(me, my_device, now),
         name: sanitize_name(&claim.name),
-        grant_for_you: issue_grant(me, &att.did, now, grant_ttl),
+        grant_for_you: message,
+        call_grant_for_you: call,
     };
     let contact = NewContact {
         did: att.did,
         name: sanitize_name(name),
         device: remote_device,
         grant_from_them: grant_for_you.clone(),
+        call_grant_from_them: call_grant_for_you.clone(),
         redeemed_nonce: claim.nonce,
     };
     Ok((welcome, contact))
@@ -929,6 +1239,7 @@ pub fn accept_contact_welcome(
     let Msg::ContactWelcome {
         attestation,
         grant_for_you,
+        call_grant_for_you,
         ..
     } = msg
     else {
@@ -945,13 +1256,14 @@ pub fn accept_contact_welcome(
     if dev != remote_device || dev != pending.device {
         return Err(Error::DeviceMismatch);
     }
-    verify_grant(grant_for_you, &pending.did, me.did(), now, &HashSet::new())?;
+    verify_contact_tokens(grant_for_you, call_grant_for_you.as_ref(), &pending.did, me.did(), now)?;
     Ok(NewContact {
         did: pending.did.clone(),
         // The ticket's signed name, not the welcome's unsigned one.
         name: pending.name.clone(),
         device: dev,
         grant_from_them: grant_for_you.clone(),
+        call_grant_from_them: call_grant_for_you.clone(),
         redeemed_nonce: pending.nonce.clone(),
     })
 }
@@ -963,6 +1275,8 @@ pub struct Caller {
     pub did: String,
     pub device: [u8; 32],
     pub grant_id: String,
+    /// The verified token it presented (any capability: see `accept_hello`).
+    pub grant: Grant,
 }
 
 /// `_me` is unused today (the attestation and grant are already signed); kept so the call
@@ -982,6 +1296,7 @@ pub fn call_hello(
     }
 }
 
+/// `accept_hello` that also requires the presented token to carry `Cap::Call`.
 pub fn accept_call_hello(
     me: &Identity,
     msg: &Msg,
@@ -990,11 +1305,35 @@ pub fn accept_call_hello(
     revoked_grant_ids: &HashSet<String>,
     is_contact: impl Fn(&str) -> bool,
 ) -> Result<Caller> {
-    let Msg::CallHello {
-        attestation, grant, ..
-    } = msg
-    else {
-        return Err(Error::UnexpectedMessage);
+    let caller = accept_hello(me, msg, remote_device, now, revoked_grant_ids, is_contact)?;
+    if !caller.grant.allows(Cap::Call) {
+        return Err(Error::BadCapability);
+    }
+    Ok(caller)
+}
+
+/// Who is at the other end of a `CallHello` or `GroupLetter` (or a chat `Auth`, which carries the
+/// same proof):
+/// attested device = the connection's, a token we issued to that DID (any capability, unexpired,
+/// not revoked by id), and a contact. Which capability the token must carry, and the per-DID
+/// cut-off, are checked by the caller after its block check, so a blocked DID still gets the
+/// block notice rather than a generic refusal.
+pub fn accept_hello(
+    me: &Identity,
+    msg: &Msg,
+    remote_device: [u8; 32],
+    now: u64,
+    revoked_grant_ids: &HashSet<String>,
+    is_contact: impl Fn(&str) -> bool,
+) -> Result<Caller> {
+    let (attestation, grant) = match msg {
+        Msg::CallHello {
+            attestation, grant, ..
+        } => (attestation, grant),
+        Msg::GroupLetter {
+            attestation, grant, ..
+        } => (attestation, grant),
+        _ => return Err(Error::UnexpectedMessage),
     };
     let att = verify_attestation(attestation)?;
     if att.device_key()? != remote_device {
@@ -1008,12 +1347,18 @@ pub fn accept_call_hello(
     Ok(Caller {
         did: att.did,
         device: remote_device,
-        grant_id: g.id,
+        grant_id: g.id.clone(),
+        grant: g,
     })
 }
 
 pub mod link;
 pub use link::*;
+
+/// Group calls through one call host (docs/design/group-call-spec.md, G6).
+pub mod gcall;
+/// Signed call-host conditions (group-call spec §2.2).
+pub mod gcall_status;
 
 #[cfg(test)]
 mod tests;
