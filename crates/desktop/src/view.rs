@@ -20,6 +20,8 @@ mod chat_view;
 mod link_view;
 #[path = "groups_view.rs"]
 mod groups_view;
+#[path = "group_live_view.rs"]
+mod group_live_view;
 type El<'a> = Element<'a, Msg>;
 
 fn scroll<'a>(t: Tok, c: impl Into<El<'a>>) -> iced::widget::Scrollable<'a, Msg> {
@@ -192,7 +194,7 @@ impl App {
             }
         };
         let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
-        match self.viewer_overlay(t).or_else(|| self.groups_overlay(t)) {
+        match self.viewer_overlay(t).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
             Some(o) => iced::widget::stack![base, o].into(),
             None => base.into(),
         }
@@ -735,8 +737,8 @@ impl App {
         if self.chat.tab == super::chat::SideTab::Chats {
             return self.sidebar_frame(t, col, self.chat_list(t, &q));
         }
-        if self.chat.tab == super::chat::SideTab::Groups && self.groups.on {
-            return self.sidebar_frame(t, col, self.groups_list(t, &q));
+        if self.chat.tab == super::chat::SideTab::Groups {
+            return self.sidebar_frame(t, col, self.live_list(t, &q));
         }
         let calls_tab = self.chat.tab == super::chat::SideTab::Calls;
         let mut list = column![].spacing(2);
@@ -928,6 +930,9 @@ impl App {
         }
         if self.notice.is_some() {
             main = main.push(self.notice_bar(t));
+        }
+        if let Some(pane) = self.live_pane(t) {
+            return row![self.sidebar(t), pane].into();
         }
         if let Some(pane) = self.preview_pane(t) {
             return row![self.sidebar(t), pane].into();

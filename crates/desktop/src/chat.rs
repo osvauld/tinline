@@ -25,7 +25,7 @@ pub(super) mod chat_fake;
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub(super) enum SideTab {
     Chats,
-    /// Groups preview (placeholder data); shown only while the preview switch is on.
+    /// Group chat on the core (G1), always shown.
     Groups,
     Calls,
     Contacts,
@@ -542,6 +542,9 @@ impl App {
                 self.chat.tab = t;
                 if t == SideTab::Chats {
                     return self.refresh_chats();
+                }
+                if t == SideTab::Groups {
+                    return self.update_live(super::group_live::Lm::Reload);
                 }
             }
             Cm::Chats(r) => {

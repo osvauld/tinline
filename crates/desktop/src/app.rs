@@ -16,6 +16,9 @@ mod link;
 #[path = "groups.rs"]
 mod groups;
 use groups::{GroupsUi, Gm};
+#[path = "group_live.rs"]
+mod group_live;
+use group_live::{GroupsLive, Lm};
 use link::{LinkState, Role, UnlinkedInfo};
 
 use chat::{ChatState, Cm};
@@ -246,6 +249,8 @@ struct App {
     unlinked: Option<UnlinkedInfo>,
     /// Groups, hosting, blocking and permissions preview on placeholder data.
     groups: GroupsUi,
+    /// Group chat on the core (G1): the Groups tab.
+    live: GroupsLive,
     /// Real contact blocking, read from the core (`crate::blocks`).
     blocks: crate::blocks::Blocks,
     /// Kept, read-only chats of people who are no longer contacts (their block deleted our
@@ -409,6 +414,7 @@ enum Msg {
     /// Test-hooks: the window's pixels, written to P2P_SHOT.
     Shot(window::Screenshot),
     Groups(Gm),
+    Live(Lm),
 }
 
 /// `Ev` carries non-Clone data from the core; Debug/Clone for the message type go through here.
@@ -703,6 +709,7 @@ impl App {
             link_joined: false,
             unlinked: None,
             groups: GroupsUi::new(preview_on, &me_name),
+            live: GroupsLive::default(),
             blocks: Default::default(),
             kept: Vec::new(),
             node,
@@ -855,6 +862,7 @@ impl App {
         self.lock = self.node.lock_state();
         self.profile_name = self.node.profile().map(|p| p.name).unwrap_or_default();
         self.me = self.node.profile().map(|p| self_contact(&p.did));
+        self.sync_live();
     }
 
     /// The "You" conversation: our own DID.
@@ -1604,6 +1612,8 @@ impl App {
                     Key::Named(Named::Enter) if ringing => return self.update(Msg::Answer),
                     Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),
                     Key::Named(Named::Escape) if self.groups.dialog.is_some() => return self.update_groups(Gm::Dismiss),
+                    Key::Named(Named::Escape) if self.live.dialog.is_some() => return self.update_live(Lm::Dismiss),
+                    Key::Named(Named::Escape) if self.call.is_none() && self.live.open.is_some() => return self.update_live(Lm::Close),
                     Key::Named(Named::Escape) if self.call.is_none() && (self.sel.is_some() || self.groups.open.is_some() || self.screen != Screen::Home) => {
                         return self.update(Msg::Home);
                     }
@@ -1728,6 +1738,7 @@ impl App {
             },
             Msg::Select(did) => {
                 self.groups.open = None;
+                self.live.close();
                 self.sel = Some(did);
                 self.chat.info = false;
                 self.detail = Detail::View;
@@ -1741,6 +1752,8 @@ impl App {
             }
             Msg::Home => {
                 self.groups.open = None;
+                self.live.close();
+                self.live.dialog = None;
                 self.groups.dialog = None;
                 self.leave_chat();
                 self.sel = None;
@@ -2000,6 +2013,7 @@ impl App {
             }
             Msg::Chat(m) => return self.update_chat(m),
             Msg::Groups(m) => return self.update_groups(m),
+            Msg::Live(m) => return self.update_live(m),
             m @ (Msg::LinkStartNew
             | Msg::LinkStartExisting
             | Msg::NewLink
@@ -2078,6 +2092,12 @@ impl App {
                 }
             }
             Ev::Chat(c) => return self.on_chat_event(c),
+            Ev::Group(g) => {
+                return self.update_live(match g {
+                    crate::GroupEv::Message(m) => Lm::Message(m),
+                    crate::GroupEv::Changed(id) => Lm::Changed(id),
+                })
+            }
             Ev::Link(l) => return self.link_event(l),
             Ev::Incoming(info) if self.call.as_ref().is_some_and(|c| c.state == CallState::Active && c.info.call_id != info.call_id) => {
                 notify("Tinline", &format!("{} is calling", info.peer_name), Target::Show);

@@ -117,6 +117,7 @@ pub enum GroupItem {
 }
 
 impl GroupItem {
+    #[allow(dead_code)]
     pub fn at(&self) -> Ms {
         match self {
             GroupItem::Msg { at, .. } | GroupItem::Note { at, .. } => *at,
@@ -177,6 +178,7 @@ impl Group {
     pub fn reachable(&self) -> bool {
         self.active_hosts().any(|h| h.online)
     }
+    #[allow(dead_code)]
     pub fn last_at(&self) -> Ms {
         self.items.last().map(GroupItem::at).unwrap_or(0)
     }

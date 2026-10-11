@@ -102,6 +102,9 @@ impl GroupsUi {
 
 }
 
+/// Some variants (the preview's group list, host and chat requests) lost their buttons when the
+/// Groups tab moved to the real core (G-UI); chat requests (U3) come back once core has them.
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub(super) enum Gm {
     Enable(bool),
@@ -153,9 +156,6 @@ impl App {
             self.groups.enable(on, &name);
             if !on && self.settings_tab == 6 {
                 self.settings_tab = 7;
-            }
-            if !on && self.chat.tab == super::chat::SideTab::Groups {
-                self.chat.tab = super::chat::SideTab::Chats;
             }
             self.settings.groups_preview = Some(on);
             self.save_settings();

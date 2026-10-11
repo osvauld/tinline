@@ -22,16 +22,16 @@ fn local_fmt(ms: u64, fmt: &str) -> String {
 }
 
 /// "Oct 10, 15:20".
-fn when(ms: u64) -> String {
+pub(super) fn when(ms: u64) -> String {
     local_fmt(ms, "%b %-d, %H:%M")
 }
 
 /// "Oct 12".
-fn day(ms: u64) -> String {
+pub(super) fn day(ms: u64) -> String {
     local_fmt(ms, "%b %-d")
 }
 
-fn hhmm(ms: u64) -> String {
+pub(super) fn hhmm(ms: u64) -> String {
     local_fmt(ms, "%H:%M")
 }
 
@@ -44,7 +44,7 @@ fn mb(bytes: u64) -> String {
 }
 
 /// "Sam Rao, Meera K and Priya N".
-fn and_list(names: &[String]) -> String {
+pub(super) fn and_list(names: &[String]) -> String {
     match names {
         [] => String::new(),
         [a] => a.clone(),
@@ -52,12 +52,12 @@ fn and_list(names: &[String]) -> String {
     }
 }
 
-fn rule<'a>(t: Tok) -> El<'a> {
+pub(super) fn rule<'a>(t: Tok) -> El<'a> {
     container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)).into()
 }
 
 /// The group avatar: a rounded square, not a circle.
-fn gav<'a>(t: Tok, key: &str, size: f32) -> El<'a> {
+pub(super) fn gav<'a>(t: Tok, key: &str, size: f32) -> El<'a> {
     let (bg, fg) = ui::avatar_colors(t, key);
     container(ui::icon(Icon::Users, size * 0.5, fg))
         .width(size)
@@ -68,12 +68,12 @@ fn gav<'a>(t: Tok, key: &str, size: f32) -> El<'a> {
         .into()
 }
 
-fn dot<'a>(c: Color) -> El<'a> {
+pub(super) fn dot<'a>(c: Color) -> El<'a> {
     container(Space::new()).width(8).height(8).style(ui::plain(c, 4.0)).into()
 }
 
 /// Owner / Admin / Host pills and the like.
-fn tag<'a>(bg: Color, fg: Color, s: &str) -> El<'a> {
+pub(super) fn tag<'a>(bg: Color, fg: Color, s: &str) -> El<'a> {
     container(semi(s.to_string(), 11.0, fg)).padding([2, 7]).style(ui::plain(bg, 999.0)).into()
 }
 
@@ -86,7 +86,7 @@ fn role_tag<'a>(t: Tok, r: Role) -> Option<El<'a>> {
 }
 
 /// A small grey line in a conversation.
-fn sys<'a>(t: Tok, s: &str) -> El<'a> {
+pub(super) fn sys<'a>(t: Tok, s: &str) -> El<'a> {
     container(container(tx(s.to_string(), 12.0, t.ink2)).padding([4, 12]).style(ui::plain(t.surface2, 999.0)))
         .center_x(Fill)
         .padding([4, 0])
@@ -94,12 +94,12 @@ fn sys<'a>(t: Tok, s: &str) -> El<'a> {
 }
 
 /// A quiet text button.
-fn link_btn<'a>(t: Tok, s: &str, color: Color, on: Msg) -> El<'a> {
+pub(super) fn link_btn<'a>(t: Tok, s: &str, color: Color, on: Msg) -> El<'a> {
     button(semi(s.to_string(), 13.0, color)).padding([4, 8]).style(ui::button_style(t, Kind::Ghost, 999.0)).on_press(on).into()
 }
 
 /// A text-only pill for the outlined/text buttons of the boards.
-fn btn<'a>(t: Tok, kind: Kind, s: &str, on: Option<Msg>) -> El<'a> {
+pub(super) fn btn<'a>(t: Tok, kind: Kind, s: &str, on: Option<Msg>) -> El<'a> {
     pill(t, kind, None, s, on)
 }
 
@@ -123,7 +123,7 @@ fn composer_input<'a>(t: Tok, placeholder: &str, value: &str) -> El<'a> {
 }
 
 /// A footer in place of the composer.
-fn footer<'a>(t: Tok, body: El<'a>) -> El<'a> {
+pub(super) fn footer<'a>(t: Tok, body: El<'a>) -> El<'a> {
     column![rule(t), container(body).padding([12, 20]).width(Fill)].into()
 }
 
@@ -136,109 +136,6 @@ impl App {
     }
 
     // ---- chats list ----
-
-    /// The sidebar's Groups tab (preview only, like the phone's bottom-bar Groups tab): host and
-    /// chat requests, then the groups, newest first, and New group.
-    pub(super) fn groups_list(&self, t: Tok, q: &str) -> El<'_> {
-        let mut col = column![
-            container(tx("Preview: placeholder data. Nothing is sent.", 12.0, t.thread_text))
-                .padding([6, 12])
-                .width(Fill)
-                .style(ui::plain(t.surface2, 10.0)),
-        ]
-        .spacing(2);
-        if let Some(b) = self.requests_block(t) {
-            col = col.push(b);
-        } else {
-            col = col.push(container(label(t, &format!("Groups \u{b7} {}", self.groups.snap.groups.len()))).padding(Padding {
-                top: 12.0,
-                bottom: 4.0,
-                left: 12.0,
-                right: 0.0,
-            }));
-        }
-        let mut rows = self.group_rows(t, q);
-        rows.sort_by(|a, b| b.0.cmp(&a.0));
-        let none = rows.is_empty();
-        for (_, el) in rows {
-            col = col.push(el);
-        }
-        if none {
-            col = col.push(container(tx("No groups yet. Make one with New group.", 13.0, t.ink2)).padding([4, 12]));
-        }
-        col = col.push(
-            container(btn(t, Kind::Tonal, "New group", Some(g(Gm::Placeholder("New group"))))).padding(Padding {
-                top: 12.0,
-                bottom: 0.0,
-                left: 12.0,
-                right: 0.0,
-            }),
-        );
-        col.into()
-    }
-
-    /// Unread groups plus waiting requests, for the Groups tab's badge.
-    pub(super) fn groups_badge(&self) -> u32 {
-        if !self.groups.on {
-            return 0;
-        }
-        let s = &self.groups.snap;
-        let unread: u32 = s.groups.iter().filter(|gr| gr.removed.is_none()).map(|gr| gr.unread).sum();
-        unread + s.incoming.len() as u32 + s.host_requests.len() as u32
-    }
-
-    fn group_rows(&self, t: Tok, q: &str) -> Vec<(u64, El<'_>)> {
-        let s = &self.groups.snap;
-        let mut out = Vec::new();
-        for gr in &s.groups {
-            if !q.is_empty() && !gr.name.to_lowercase().contains(q) {
-                continue;
-            }
-            let sel = self.groups.open.as_ref() == Some(&Open::Group(gr.id.clone()));
-            let removed = gr.removed.is_some();
-            let preview = if removed {
-                "You were removed from this group".to_string()
-            } else {
-                match gr.items.last() {
-                    Some(GroupItem::Msg { author_did, author, text, .. }) if s.blocked_by_me(author_did) => {
-                        let _ = (author, text);
-                        "Message from someone you blocked".to_string()
-                    }
-                    Some(GroupItem::Msg { outgoing: true, text, .. }) => format!("You: {text}"),
-                    Some(GroupItem::Msg { author, text, .. }) => format!("{}: {text}", first_name(author)),
-                    Some(GroupItem::Note { text, .. }) => text.clone(),
-                    None => String::new(),
-                }
-            };
-            let fade = |c: Color| if removed { ui::alpha(c, 0.55) } else { c };
-            let (fg, dim) = if sel { (t.on_primary_c, t.on_primary_c) } else { (fade(t.ink), fade(t.ink2)) };
-            let unread = gr.unread > 0 && !sel;
-            let mut sub = row![container(tx(preview, 13.0, dim).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true)]
-                .spacing(4)
-                .align_y(Alignment::Center);
-            if unread {
-                sub = sub.push(container(semi(gr.unread.to_string(), 12.0, t.on_primary)).padding([1, 7]).style(ui::plain(t.primary, 999.0)));
-            }
-            let name = if unread { bold(gr.name.clone(), 15.0, fg) } else { semi(gr.name.clone(), 15.0, fg) };
-            out.push((
-                gr.last_at(),
-                button(
-                    row![
-                        gav(t, &gr.id, 40.0),
-                        column![row![name, Space::new().width(Fill), tx(short_time(gr.last_at()), 12.0, dim)], sub].spacing(2).width(Fill),
-                    ]
-                    .spacing(12)
-                    .align_y(Alignment::Center),
-                )
-                .padding([8, 12])
-                .width(Fill)
-                .style(ui::row_style(t, sel))
-                .on_press(g(Gm::OpenGroup(gr.id.clone())))
-                .into(),
-            ));
-        }
-        out
-    }
 
     /// The preview's sample people for the Chats tab, as (last activity, row), to merge with the
     /// real chats. Groups have their own tab.
@@ -283,120 +180,6 @@ impl App {
             ));
         }
         out
-    }
-
-    /// Host requests, incoming chat requests and our sent ones: blocks above the chats, never
-    /// mixed into conversations.
-    pub(super) fn requests_block(&self, t: Tok) -> Option<El<'_>> {
-        if !self.groups.on {
-            return None;
-        }
-        let s = &self.groups.snap;
-        if s.host_requests.is_empty() && s.incoming.is_empty() && s.sent.is_empty() {
-            return None;
-        }
-        let head = |s_: String| container(label(t, &s_)).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 });
-        fn card<'a>(t: Tok, c: El<'a>) -> El<'a> {
-            container(c).padding(12).width(Fill).style(ui::outlined(t.surface, t.line, 12.0)).into()
-        }
-        let mut col = column![].spacing(6);
-        if !s.host_requests.is_empty() {
-            col = col.push(head("Host requests".into()));
-            for r in &s.host_requests {
-                col = col.push(card(
-                    t,
-                    column![
-                        row![ui::icon(Icon::Server, 18.0, t.primary), semi(format!("Host {}?", r.group_name), 14.0, t.ink)]
-                            .spacing(8)
-                            .align_y(Alignment::Center),
-                        tx(format!("{} asked this computer to host", first_name(&r.from_name)), 13.0, t.ink2),
-                        row![
-                            btn(t, Kind::Primary, "Review", Some(g(Gm::ReviewHostRequest(r.id.clone())))),
-                            btn(t, Kind::Ghost, "Decline", Some(g(Gm::DeclineHostRequest(r.id.clone())))),
-                        ]
-                        .spacing(6),
-                    ]
-                    .spacing(6)
-                    .into(),
-                ));
-            }
-        }
-        if !s.incoming.is_empty() {
-            col = col.push(head(format!("Requests \u{b7} {}", s.incoming.len())));
-            for r in &s.incoming {
-                let first = first_name(&r.from_name).to_string();
-                let shared = if r.shared_groups == 1 { "you share 1 group".to_string() } else { format!("you share {} groups", r.shared_groups) };
-                let mut c = column![
-                    row![
-                        avatar(t, &r.from_name, &r.from_did, 36.0),
-                        column![semi(r.from_name.clone(), 14.0, t.ink), tx(format!("Member of {} \u{b7} {shared}", r.group), 12.0, t.ink2)]
-                            .spacing(1)
-                            .width(Fill),
-                    ]
-                    .spacing(10)
-                    .align_y(Alignment::Center),
-                ]
-                .spacing(8);
-                if !r.note.is_empty() {
-                    c = c.push(container(tx(r.note.clone(), 13.0, t.ink)).padding([6, 10]).width(Fill).style(ui::plain(t.surface2, 10.0)));
-                }
-                c = c
-                    .push(tx(format!("Accepting adds {first} as a contact for messages only. You can allow calls later."), 12.0, t.ink2))
-                    .push(
-                        row![
-                            btn(t, Kind::Primary, "Accept", Some(g(Gm::AcceptReq(r.id.clone())))),
-                            btn(t, Kind::Quiet, "Decline", Some(g(Gm::DeclineReq(r.id.clone())))),
-                        ]
-                        .spacing(6),
-                    )
-                    .push(link_btn(t, &format!("Block {first}"), t.error, g(Gm::BlockReq(r.id.clone()))));
-                col = col.push(card(t, c.into()));
-            }
-        }
-        if !s.sent.is_empty() {
-            col = col.push(head("Sent requests".into()));
-            for r in &s.sent {
-                let first = first_name(&r.to_name).to_string();
-                let (status, color) = match r.state {
-                    gf::SentState::Waiting => (format!("Waiting for {first} \u{b7} via {}", r.group), t.ink2),
-                    gf::SentState::Declined => (format!("{first} declined"), t.ink2),
-                    gf::SentState::Expired => ("No answer after 7 days \u{b7} request expired".to_string(), t.error),
-                };
-                let mut c = column![
-                    row![
-                        avatar(t, &r.to_name, &r.to_did, 32.0),
-                        column![
-                            row![semi(r.to_name.clone(), 14.0, t.ink), Space::new().width(Fill), tx(ago_ms(r.at), 12.0, t.ink2)],
-                            tx(status, 12.0, color),
-                        ]
-                        .spacing(1)
-                        .width(Fill),
-                    ]
-                    .spacing(10)
-                    .align_y(Alignment::Center),
-                ]
-                .spacing(4);
-                let mut actions = row![].spacing(2);
-                if r.state == gf::SentState::Waiting {
-                    actions = actions
-                        .push(link_btn(t, "Cancel", t.ink2, g(Gm::CancelReq(r.id.clone()))))
-                        .push(link_btn(t, "Preview: accepts", t.relay, g(Gm::SimReply(r.id.clone(), true))))
-                        .push(link_btn(t, "declines", t.relay, g(Gm::SimReply(r.id.clone(), false))));
-                } else {
-                    actions = actions.push(link_btn(t, "Clear", t.ink2, g(Gm::CancelReq(r.id.clone()))));
-                }
-                c = c.push(actions);
-                col = col.push(container(c).padding([6, 12]));
-            }
-            col = col.push(
-                container(tx("You can send one request per person per day. A request expires after 7 days.", 12.0, t.ink2)).padding([0, 12]),
-            );
-            if s.sent.iter().any(|r| r.state == gf::SentState::Waiting) {
-                col = col.push(container(link_btn(t, "Preview: a week passes", t.relay, g(Gm::SimWeek))).padding([0, 4]));
-            }
-        }
-        col = col.push(head(format!("Groups \u{b7} {}", s.groups.len())));
-        Some(col.into())
     }
 
     // ---- the main pane ----
@@ -1323,7 +1106,7 @@ impl App {
 
 const DAY_MS: u64 = gf::DAY;
 
-fn ordinal(n: usize) -> String {
+pub(super) fn ordinal(n: usize) -> String {
     match n {
         1 => "1st".into(),
         2 => "2nd".into(),
@@ -1333,7 +1116,7 @@ fn ordinal(n: usize) -> String {
 }
 
 /// The time today, else the day, like the real chat list.
-fn short_time(ms: u64) -> String {
+pub(super) fn short_time(ms: u64) -> String {
     if ms == 0 {
         return String::new();
     }
@@ -1346,6 +1129,6 @@ fn short_time(ms: u64) -> String {
     }
 }
 
-fn message_body<'a>(s: &str, fg: Color) -> El<'a> {
+pub(super) fn message_body<'a>(s: &str, fg: Color) -> El<'a> {
     tx(s.to_string(), 14.0, fg).into()
 }

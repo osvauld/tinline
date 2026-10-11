@@ -85,11 +85,7 @@ impl App {
                 .style(ui::button_style(t, if on { Kind::Tonal } else { Kind::Ghost }, 999.0))
                 .on_press(Msg::Chat(Cm::Tab(which)))
         };
-        let mut tabs = row![tab("Chats", SideTab::Chats, self.chat.unread_total())].spacing(2);
-        // Groups: the preview's placeholder data only, like the phone's Groups tab.
-        if self.groups.on {
-            tabs = tabs.push(tab("Groups", SideTab::Groups, self.groups_badge()));
-        }
+        let tabs = row![tab("Chats", SideTab::Chats, self.chat.unread_total()), tab("Groups", SideTab::Groups, self.live_badge())].spacing(2);
         container(tabs.push(tab("Calls", SideTab::Calls, 0)).push(tab("Contacts", SideTab::Contacts, 0)))
         .padding(3)
         .width(Fill)
