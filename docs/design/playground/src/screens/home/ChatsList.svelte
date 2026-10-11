@@ -9,11 +9,11 @@
   import { prefs } from '../../lib/model/prefs.svelte';
   import type { Chat } from '../../lib/model/types';
 
-  let filter = $state<'all' | 'unread' | 'groups'>('all');
+  let filter = $state<'all' | 'unread'>('all');
 
   const visible = $derived(
     chatsByRecent(db.chats.filter((c) => (c.kind === 'direct' || c.status === 'active')))
-      .filter((c) => filter === 'all' || (filter === 'unread' ? c.unread > 0 : c.kind === 'group'))
+      .filter((c) => filter === 'all' || c.unread > 0)
   );
 
   function preview(c: Chat) {
@@ -27,7 +27,7 @@
 </script>
 
 <div class="chips" role="group" aria-label="Filter chats">
-  {#each [['all', 'All'], ['unread', 'Unread'], ['groups', 'Groups']] as [k, l] (k)}
+  {#each [['all', 'All'], ['unread', 'Unread']] as [k, l] (k)}
     <button type="button" class="t-chip press" aria-pressed={filter === k} onclick={() => (filter = k as typeof filter)}>{l}</button>
   {/each}
 </div>
