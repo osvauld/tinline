@@ -294,11 +294,11 @@ async fn forward(
                         break;
                     }
                     let p = entry.remove();
-                    if let Some(d) = dest {
-                        if tx.send_to(&p, d).await.is_ok() {
-                            add(&st.out_pkts, 1);
-                            add(&st.out_bytes, p.len() as u64);
-                        }
+                    if let Some(d) = dest
+                        && tx.send_to(&p, d).await.is_ok()
+                    {
+                        add(&st.out_pkts, 1);
+                        add(&st.out_bytes, p.len() as u64);
                     }
                 }
             }

@@ -14,10 +14,16 @@ const S: u64 = 1_000_000;
 
 /// The transport config docs/video.md recommends for the call endpoint.
 fn call_transport() -> QuicTransportConfig {
-    QuicTransportConfig::builder()
+    let b = QuicTransportConfig::builder()
         .keep_alive_interval(Duration::from_secs(5))
-        .max_concurrent_uni_streams(VarInt::from_u32(8))
-        .build()
+        .max_concurrent_uni_streams(VarInt::from_u32(8));
+    // `VIDEO_CC=bbr|reno` to compare with the default (Cubic).
+    let b = match std::env::var("VIDEO_CC").as_deref() {
+        Ok("bbr") => b.congestion_controller_factory(Arc::new(noq_proto::congestion::Bbr3Config::default())),
+        Ok("reno") => b.congestion_controller_factory(Arc::new(noq_proto::congestion::NewRenoConfig::default())),
+        _ => b,
+    };
+    b.build()
 }
 
 struct Path {
@@ -189,6 +195,8 @@ async fn compare(name: &str, sc: &Scenario) -> (Real, Report) {
             r.mean_bitrate(0, d) / 1000.0,
             r.mean_bitrate(d - 10 * S, d) / 1000.0,
         );
+        let l = r.latencies_ms(d - 15 * S, d);
+        println!("{name:>10} {who:>4}: last 15 s p50 {:.0} p95 {:.0} ms", Report::pct(&l, 0.5), Report::pct(&l, 0.95));
     }
     let path = p.a.paths().iter().find(|x| x.is_selected()).map(|x| (x.rtt(), x.stats().cwnd));
     println!(

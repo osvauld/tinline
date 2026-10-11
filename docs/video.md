@@ -58,7 +58,25 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   one, or more than `max_buffered` (32 MiB) across them -> `NetError::Protocol`. Reader tasks
   feed a 16-slot channel, so at most `max_streams` QUIC stream windows sit in between.
   `VideoRecv` lowers `max_concurrent_uni_streams` to 8, but QUIC can't take back credit the
-  peer already has (100 by default): the call endpoint's transport config should set it.
+  peer already has (100 by default), so the endpoint's transport config must set it (below).
+- **Endpoint transport config** (`crates/core/src/node.rs`, `Node::start`; the endpoint is
+  shared by all ALPNs, and nothing in core or iroh-blobs uses uni streams, so 8 is safe):
+
+  ```rust
+  let transport = QuicTransportConfig::builder()
+      .keep_alive_interval(Duration::from_secs(5))
+      .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
+      // Video group streams (video::net): the peer's credit from the handshake on.
+      .max_concurrent_uni_streams(VarInt::from_u32(8))
+      .build();
+  ```
+
+  (`VarInt` is `iroh::endpoint::VarInt`.) Leave the rest at iroh's defaults: per-stream receive
+  window 1.25 MB (~5 s of 2 Mbps video) x 8 streams bounds QUIC's buffering per connection
+  (`VideoRecv::max_buffered` bounds the app side); the connection window is unlimited by
+  default, which is fine with the stream count capped; `send_window` (10 MB) doesn't matter
+  because backlog comes from app-level acks; keep the default congestion controller (Cubic,
+  see "Real transport vs simulation" for BBR/NewReno).
 - **Tests** (`cargo test -p video --release --features net net`, two endpoints on loopback):
   300 frames in order and intact with keyframes at group starts; receiver paused 1 s -> sender
   resets, drops the rate, forces a keyframe, receiver resumes on the new group; keyframe
@@ -148,15 +166,65 @@ The first version used the congestion window for the bitrate; the simulation sho
 bufferbloat (p50 256 ms on a clean link, 1.5 s after a bandwidth drop), which is why rate
 control is delay-based.
 
+## Real transport vs simulation
+
+`video::net` over real iroh connections through an in-process UDP link emulator
+(`crates/video/src/net/impair.rs`, test-only; netem without root): bottleneck rate with a
+drop-tail byte queue, delay + jitter (in order unless `reorder`), random loss, outages, rate
+changes, seeded. A is bound to `[::1]` only, B to `127.0.0.1` only, and the proxy has one
+socket per family, so iroh's hole punching can't find a direct path; every test asserts that
+all paths of both connections point at the proxy and that the proxy's byte counters match
+both connections' UDP counters. Same scenarios, seeds and `FakeCodec` as the simulation, 30
+fps for 30 s real time; latency = capture -> `VideoRecv::recv` + the sim's 7 ms codec time.
+Return path: same delay/jitter, no rate limit; outages hit both directions (the sim only
+drops the forward direction).
+
+`cargo test -p video --release --features net net_real -- --ignored --nocapture
+--test-threads=1` (2.5 min; `net_impair_no_bypass` and the emulator's unit tests run by
+default). `VIDEO_CC=bbr|reno` swaps the QUIC congestion controller. Laptop, load 1-3.
+
+| Scenario | sim p50 / p95 | real p50 / p95 | sim / real frozen (> 200 ms) | sim / real mean bitrate | real resets |
+|---|---|---|---|---|---|
+| clean 2 Mbps, 20 ms | 64 / 94 | 65 / 101 | 0 / 0 | 1743 / 1702 kbps | 0 |
+| 3% loss | 52 / 115 | 49 / 156 | 0 / 0-0.4 s | 1044 / 590-820 kbps | 2-3 |
+| 2 Mbps -> 300 kbps at 10 s | last 15 s 68 / 118 | last 15 s 63 / 103 | 0.7 / 0.7-1.0 s | last 10 s 256 / 248 kbps | 2 |
+| 500 ms outage at 10 s (both ways) | 63 / 98 | 63 / 89 | 0.9 / 0.7-0.8 s | 1680 / 1626 kbps | 2-3 |
+| relay 75 (+0-20) ms, 1.5 Mbps | 127 / 154 | 129 / 171 | 0 / 0 | 1263 / 1233 kbps | 0 |
+
+p50/p95 from 2 s on unless noted; ranges are over repeated runs. No decode-order violations
+in any run; no queue drops at the emulated bottleneck (the delay-based controller keeps the
+queue short; 300 kbps after the drop with no latency creep).
+
+Findings:
+
+- **Clean, rate drop, outage, relay: real matches the sim** within run-to-run noise. App-level
+  ack backlog works as modelled (1-3 resets where the sim has 0-1 drops). After the outage
+  video is back ~0.3 s after the link. The relay p95 is ~20 ms higher: the emulator also
+  jitters the return path (acks, reports), the sim doesn't.
+- **Random loss is where the sim is optimistic: real bitrate 55-80% of the sim's, p95 +40
+  ms.** QUIC's loss-based congestion window drops to about one BDP (Cubic cwnd ~10 KB at 50
+  ms RTT) and video waits in QUIC's send buffer; tail losses (last packet of a frame) are
+  only recovered by PTO, not after ~1.1 RTT as in the model. Both show up as queueing delay,
+  so the delay-based controller backs off. Congestion controller, 3% loss: NewReno cwnd 6 KB,
+  417 kbps, 0.5 s frozen; Cubic 590-820 kbps; BBRv3 580-850 kbps, p95 = sim. BBRv3 costs on
+  clean/relay links (mean 1452 / 851 kbps: its RTT probing reads as queueing delay), so it is
+  no overall win: **keep Cubic**. The fix belongs in rate control (`media`): tell
+  retransmission delay from queue build-up (e.g. ignore one-off delay spikes no longer than
+  ~1 RTT, or use a robust minimum over the report window).
+- **Sim model, to adjust:** (1) congestion window under random loss (cwnd floor ~1 BDP and
+  sender-side queueing when cwnd-limited; today the sim's window rarely limits); (2) loss
+  detection by PTO for tail packets plus ACK delay (25 ms max_ack_delay); (3) outages in both
+  directions; (4) return-path jitter. Nothing to change in `net` for these scenarios.
+
 ## Next
 
 1. ~~Real footage, ARM numbers~~ done (above). Static libaom: `scripts/build_libaom.py` works
    for the benchmark; still to wire into `scripts/build_android.py` / release packaging
    (vendored source, not fetched at build time).
 2. Resolution ladder in `media::Sender` (switch at a keyframe), added to the simulation.
-3. iroh transport against `media::Sender`/`Receiver`: **built** (`video::net`, see Transport,
-   loopback tests). Still to do: run it over a lossy/limited link (netem or a lossy socket) to
-   check it against the simulation's scenarios; set `max_concurrent_uni_streams` in the call
-   endpoint's transport config.
+3. iroh transport against `media::Sender`/`Receiver`: **built** (`video::net`) and checked
+   against the simulation's scenarios over an emulated link (see Real transport vs
+   simulation). Still to do: set `max_concurrent_uni_streams` in core's transport config
+   (snippet under Transport); rate control under random loss; sim model fixes listed there.
 4. Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.
 5. Capture/render: Android CameraX -> I420, desktop camera; render on both.
