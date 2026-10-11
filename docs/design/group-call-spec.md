@@ -713,7 +713,36 @@ group endpoint.
   `group_accept_call_host(gid, bool)`; `GroupDetail.{am_call_host, call_hosts,
   call_host_requests, call_host_requested_here}`. Test hook:
   `group_call_hosts_advertising_for_test`. `Node::gcall_*` stays plain Rust.
-- **Left:** UI (Android, desktop); the app's 50 Hz audio threads for group calls (they use
-  `push_mic`/`pull_speaker` like 1:1); platform feeders for `gcall_set_cond` (battery,
-  charging, thermal, metered; default is a desktop on mains); `load` is always 0; the
-  pre-join "blocked person in this call" warning (Q6); persisting the hosting pause.
+- **Left:** UI (Android, desktop); `load` is always 0; the pre-join "blocked person in this
+  call" warning (Q6); persisting the hosting pause. (Audio threads and condition feeders:
+  GA-A1, below.)
+
+**App audio and conditions (GA-A1).** Tests: `cargo test -p p2pcore --lib gcall`
+(`group::calls::tests`), `cargo test -p desktop hostcond`, Android
+`:app:testDebugUnitTest --tests com.osvauld.p2p.HostCondTest`.
+
+- **No conditions, no advertising.** `group_call_set_conditions(GroupCallConditions{
+  device_class, plugged, battery_pct, metered, metered_allowed, thermal})` (UniFFI for
+  `gcall_set_cond`). Until the first one (or an explicit `gcall_configure`) a call host
+  publishes no `CallHostStatus` and declines requests ("conditions not known yet"): an app
+  that never reported must not pass for a desktop on mains.
+- **`group_call_here() -> Option<GroupCallHere{group_id, call_id, in_call, hosting}>`.** The
+  apps re-read it on every `GroupCallEvents` callback rather than trusting the event (the
+  callbacks run on separate threads and can arrive out of order, e.g. a superseded call's
+  `Left` after the winner's `Joined`). `in_call` (client not ended) runs the mic and speaker;
+  `in_call || hosting` keeps the Android service in call mode.
+- **Desktop.** `audio::Ctl::on_group_call` runs the same cpal/APM call loop as 1:1 in its own
+  slot (a 1:1 call ending or the ringer never stops it); events also reach the UI channel as
+  `Ev::GroupCall`. `hostcond.rs`: desktop class; `/sys/class/power_supply` (no system battery
+  = mains; peripheral batteries ignored; plugged and not charging = mains), metered from
+  `nmcli` (a connected device with a gateway marked metered), thermal none; every 30 s,
+  pushed on change.
+- **Android.** `GroupCallAudio` (the core's sink) owns a second `AudioEngine` (communication
+  mode, voice focus, loudspeaker by default) and puts `CoreService` in call mode (microphone
+  type, wake and Wi-Fi locks) while in or hosting a group call; `prepare()` raises the service
+  from the UI before start/join (Android 14+ refuses the microphone type from the
+  background). The ongoing notification's hang-up leaves the group call when no 1:1 call is
+  up; a 1:1 `IDLE` keeps a group call's call mode. `HostConditions`: battery
+  (`ACTION_BATTERY_CHANGED`; unknown level = 0 %), plugged (any source, or charging/full),
+  thermal (`PowerManager` listener, API 29+), metered (default network capabilities,
+  temporarily-not-metered counts as unmetered); phone class; pushed on change.
