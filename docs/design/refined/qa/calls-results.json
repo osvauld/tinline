@@ -7,6 +7,24 @@
  },
  {
   "page": "calls",
+  "name": "harness: drawer closed by default, no disclaimer text visible",
+  "ok": true,
+  "detail": "hidden=true text=← Home · Calls Android Desktop No active call Calls go straight to the other device. Call Arjun Incoming call"
+ },
+ {
+  "page": "calls",
+  "name": "harness: theme toggle is icon-only with an accessible name",
+  "ok": true,
+  "detail": "{\"txt\":\"\",\"al\":\"Dark theme\",\"w\":36}"
+ },
+ {
+  "page": "calls",
+  "name": "idle: one bold line + one plain line + two actions",
+  "ok": true,
+  "detail": "{\"h\":\"No active call\",\"p\":[\"Calls go straight to the other device.\"],\"a\":[\"Call Arjun\",\"Incoming call\"]}"
+ },
+ {
+  "page": "calls",
   "name": "sound switch off by default (aria-checked=false)",
   "ok": true,
   "detail": ""
@@ -57,7 +75,7 @@
   "page": "calls",
   "name": "after cancel + 1s: zero live oscillators (no more cycles scheduled)",
   "ok": true,
-  "detail": "before 12 after 12 live 0 stage=\"TinlineAOYou cancelled the callCall cancelledNative app closes this by itself af\""
+  "detail": "before 12 after 12 live 0 stage=\"TinlineAOYou cancelled the callCall againClose\""
  },
  {
   "page": "calls",
@@ -69,7 +87,19 @@
   "page": "calls",
   "name": "answered flow: stage re-renders to connected (timer) after Connected is logged",
   "ok": true,
-  "detail": "TinlineAOArjun Oommen00:02DirectGood qualityEnd-to-end encrypted · straight to Arjun’s pho {\"started\":24,\"stopped\":48,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended\"}"
+  "detail": "TinlineAOArjun Oommen00:02End-to-end encrypted · directMuteEndEarpiece {\"started\":24,\"stopped\":48,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop\"}"
+ },
+ {
+  "page": "calls",
+  "name": "in-call: timer is tabular and does not shift layout as it ticks",
+  "ok": true,
+  "detail": "[{\"x\":501,\"w\":37,\"num\":\"tabular-nums\",\"cy\":713,\"t\":\"00:02\"},{\"x\":501,\"w\":37,\"num\":\"tabular-nums\",\"cy\":713,\"t\":\"00:04\"}]"
+ },
+ {
+  "page": "calls",
+  "name": "in-call: control cluster centered and symmetric (mute | end | output)",
+  "ok": true,
+  "detail": "{\"acts\":[\"mute\",\"end\",\"route\"],\"sizes\":[56,64,56],\"offs\":[-96,0,96],\"cy\":[745,745,745]}"
  },
  {
   "page": "calls",
@@ -105,13 +135,13 @@
   "page": "calls",
   "name": "end call: history record added",
   "ok": true,
-  "detail": "Arjun · Ended 00:0108:49Arjun · Cancelled08:49"
+  "detail": "Arjun · Ended 00:0014:04Arjun · Cancelled14:04"
  },
  {
   "page": "calls",
   "name": "declined: shows declined state, silent after cue",
   "ok": true,
-  "detail": "TinlineAOArjun declinedCall declinedTry again later, or send a message instead.Try againCl {\"started\":36,\"stopped\":72,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended\"}"
+  "detail": "TinlineAOArjun declinedTry again later, or send a message instead.Try againClose {\"started\":36,\"stopped\":72,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended\"}"
  },
  {
   "page": "calls",
@@ -123,19 +153,19 @@
   "page": "calls",
   "name": "retry re-enters connecting (focus not BODY)",
   "ok": true,
-  "detail": "TinlineLPLena P.Connecting…Finding a path to Lena. The other focus=stage-t:Lena P."
+  "detail": "TinlineLPLena P.Connecting…Cancel focus=stage-t:Lena P."
  },
  {
   "page": "calls",
   "name": "retry eventually connects (back online)",
   "ok": true,
-  "detail": "TinlineLPLena P.00:02DirectGood qualityEnd-to-end encrypted · straight to Lena’s phoneMute"
+  "detail": "TinlineLPLena P.00:02End-to-end encrypted · directMuteEndEarpiece"
  },
  {
   "page": "calls",
   "name": "no answer: timeout shows retry option and silences ringback",
   "ok": true,
-  "detail": "TinlineAONo answerNo answerTinline can’t leave messages. You can send a text message instead.Try aga live=0"
+  "detail": "TinlineAONo answerTinline can’t leave messages. You can send a text message instead.Try againClose live=0"
  },
  {
   "page": "calls",
@@ -171,13 +201,13 @@
   "page": "calls",
   "name": "answer: connected view",
   "ok": true,
-  "detail": "TinlineAOArjun Oommen00:02DirectGood qualityEnd-to-end encrypted · straight to A"
+  "detail": "TinlineAOArjun Oommen00:02End-to-end encrypted · directMuteEndEarpiece"
  },
  {
   "page": "calls",
   "name": "incoming timeout: silent + missed in history",
   "ok": true,
-  "detail": "Arjun · Incoming Missed08:50Arjun · Declined08:49Arjun · No answer08:49Lena · Not reached08:49Arjun  live=0"
+  "detail": "Arjun · Incoming Missed14:05Arjun · Declined14:05Arjun · No answer14:05Lena · Not reached14:04Arjun  live=0"
  },
  {
   "page": "calls",
@@ -189,13 +219,13 @@
   "page": "calls",
   "name": "mic denied: Not now → focus",
   "ok": true,
-  "detail": "focus=stage-t:No call stage=Tinline·No callNothing is ringingStart a call or an incoming"
+  "detail": "focus=stage-t:No active call stage=TinlineNo active callCalls go straight to the other device.C"
  },
  {
   "page": "calls",
   "name": "platform switch mid-ring: audio stops or restarts consistently",
   "ok": true,
-  "detail": "{\"started\":124,\"stopped\":240,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended\"} Incoming call — TinlineAOArjun Oommenis calling · end-to-end encrypted"
+  "detail": "{\"started\":124,\"stopped\":240,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop\"} Incoming call — TinlineAOArjun OommenIncoming callEnd-to-end encrypted"
  },
  {
   "page": "calls",
@@ -225,7 +255,7 @@
   "page": "calls",
   "name": "keyboard Enter on scenario starts it",
   "ok": true,
-  "detail": "TinlineAOArjun OommenConnecting…Finding a path to "
+  "detail": "TinlineAOArjun OommenConnecting…Cancel"
  },
  {
   "page": "calls",
@@ -261,13 +291,13 @@
   "page": "calls",
   "name": "mobile: starting a scenario brings the call screen (Answer/Decline) into view",
   "ok": true,
-  "detail": "{\"top\":527,\"vh\":844}"
+  "detail": "{\"top\":687,\"vh\":844}"
  },
  {
   "page": "calls",
   "name": "mobile: incoming answer/decline buttons ≥44px and inside viewport",
   "ok": true,
-  "detail": "[[151,48,191],[151,48,350]]"
+  "detail": "[[76,86,151],[76,86,315]]"
  },
  {
   "page": "calls",

@@ -2,141 +2,173 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>Privacy, address changes and blocking · Tinline design</title>
+<title>Privacy · Tinline refined design</title>
+<link rel="stylesheet" href="tokens.css">
 <style>
-:root{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#7C8A83;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00;--gold:#C98A1E;--focus:#2F3A75;--shadow:0 8px 28px rgba(15,21,19,.12)}
-:root[data-theme=dark]{--bg:#0F1513;--sf:#18211E;--sf2:#212C28;--ink:#E7EDE9;--ink2:#A9B6AF;--ln:#33413B;--ln2:#7F8E87;--pr:#5FCBB3;--onpr:#04201A;--prc:#12433A;--onprc:#BDEFE2;--er:#F2B8B5;--erc:#4A1E1B;--oner:#FBDAD8;--rlc:#2B3160;--onrlc:#D6DBFF;--wn:#3B2E10;--onwn:#F6DDA6;--gold:#E3B04B;--focus:#B9C2FF;--shadow:0 8px 28px rgba(0,0,0,.5)}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0F1513;--sf:#18211E;--sf2:#212C28;--ink:#E7EDE9;--ink2:#A9B6AF;--ln:#33413B;--ln2:#7F8E87;--pr:#5FCBB3;--onpr:#04201A;--prc:#12433A;--onprc:#BDEFE2;--er:#F2B8B5;--erc:#4A1E1B;--oner:#FBDAD8;--rlc:#2B3160;--onrlc:#D6DBFF;--wn:#3B2E10;--onwn:#F6DDA6;--gold:#E3B04B;--focus:#B9C2FF;--shadow:0 8px 28px rgba(0,0,0,.5)}}
 *{box-sizing:border-box}
-html{color-scheme:light dark}
-:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--pr)}
-:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:8px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 var(--fs-body)/var(--lh-body) system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button{font:inherit;color:inherit;cursor:pointer}
 h1,h2,h3,p{margin:0}
-.wrap{max-width:1200px;margin:0 auto;padding:16px 16px 64px}
-header.top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:8px 0 4px}
-.back{display:inline-flex;align-items:center;min-height:44px;gap:6px;text-decoration:none;font-weight:600}
-.back:hover{text-decoration:underline}
-.tbtn{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--ln2);background:var(--sf);display:inline-flex;align-items:center;gap:8px;font-weight:600}
-.tbtn[aria-pressed=true]{background:var(--pr);color:var(--onpr);border-color:var(--pr)}
-h1{font-size:28px;line-height:1.2;font-weight:700;margin-top:8px}
-.note{display:inline-block;margin-top:8px;font-size:13px;color:var(--ink2);background:var(--rlc);color:var(--onrlc);border-radius:999px;padding:4px 12px}
-.lead{color:var(--ink2);margin-top:12px;max-width:68ch}
-.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:20px 0 16px;padding:4px;background:var(--sf2);border-radius:24px}
-.tabs button{min-height:44px;padding:6px 10px;border-radius:20px;border:0;background:transparent;font-weight:600;line-height:1.25;text-align:center;overflow-wrap:anywhere;color:var(--ink2)}
-@media (min-width:640px){.tabs{border-radius:999px}.tabs button{border-radius:999px;padding:6px 18px}}
-.tabs button[aria-selected=true]{background:var(--sf);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18)}
-.grid{display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
-@media (min-width:1000px){.grid{grid-template-columns:minmax(0,1fr) 320px;align-items:start}.sim{position:sticky;top:16px}}
-.card{background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
-.card h2{font-size:20px;line-height:1.25}
-.card h3{font-size:15px;color:var(--ink2);font-weight:600;letter-spacing:.02em}
-.muted{color:var(--ink2)}
-.small{font-size:14px;line-height:1.45}
-.xs{font-size:13px;line-height:1.4}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* harness bar + simulation drawer (shared chrome) */
+.hb{display:flex;align-items:center;gap:4px;max-width:1240px;margin:0 auto;padding:4px 10px 4px 16px;min-height:48px}
+.hb h1{flex:1;min-width:0;margin:0;display:flex;align-items:center;gap:6px;font-size:var(--fs-sub);font-weight:400;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb h1 a{display:inline-flex;align-items:center;min-height:44px;color:var(--accent-ink);font-weight:600;text-decoration:none}
+.hb h1 a:hover{text-decoration:underline;text-underline-offset:3px}
+.hb-ib{position:relative;width:36px;height:36px;flex:none;border:0;border-radius:50%;background:transparent;color:var(--muted);display:inline-grid;place-items:center;padding:0}
+.hb-ib::before{content:"";position:absolute;inset:-4px}
+.hb-ib:hover{background:var(--surface-2);color:var(--ink)}
+.hb-ib[aria-expanded=true]{background:var(--accent-soft);color:var(--accent-ink)}
+.hb-ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#theme[aria-pressed=true] .moon,#theme[aria-pressed=false] .sun{display:none}
+.scrim{position:fixed;inset:0;background:rgb(10 16 14 / .5);z-index:29}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:30;width:min(400px,100vw);display:flex;flex-direction:column;background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--shadow-sheet)}
+.drawer[hidden],.scrim[hidden]{display:none}
+.dr-h{display:flex;align-items:center;gap:8px;min-height:56px;padding:6px 10px 6px 20px;border-bottom:1px solid var(--hairline)}
+.dr-h h2{flex:1;margin:0;font-size:var(--fs-body);font-weight:600}
+.dr-b{flex:1;overflow:auto;padding:16px 20px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:20px}
+.dr-note{margin:0;font-size:var(--fs-sub);line-height:19px;color:var(--muted);background:var(--surface-2);border-radius:var(--r-ctl);padding:10px 12px}
+@media(min-width:1100px){body.dr-open{padding-right:400px}.scrim{display:none!important}.drawer{box-shadow:none}}
+/* page */
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 64px}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:4px -16px 16px;padding:4px 16px;scroll-padding:0 16px;
+ -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 24px),transparent)}
+.chips::-webkit-scrollbar{display:none}
+.chips .t-chip{flex:none;white-space:nowrap;cursor:pointer;min-height:36px}
+.chips .t-chip[aria-selected=true]{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink)}
+.chips .t-chip:not([aria-selected=true]):hover{background:var(--surface-2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.card h2{font-size:var(--fs-title);line-height:24px;font-weight:600}
+.card h2:focus{outline:0}
+.card h3{font-size:var(--fs-sub);line-height:18px;color:var(--muted);font-weight:600;margin-top:6px}
+.muted{color:var(--muted)}
+.small{font-size:14px;line-height:20px}
+.xs{font-size:var(--fs-sub);line-height:19px}
 .row{display:flex;align-items:center;gap:12px;min-height:44px}
+.row>.ic{color:var(--muted)}
 .row .grow{flex:1;min-width:0}
-.kv{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.kv b{font-weight:600;text-align:right}
-.btn{min-height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
-.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
-.btn.tx{background:transparent;color:var(--pr)}
-.btn.dn{background:var(--er);color:var(--onpr)}
-.btn.ol.dn{background:transparent;color:var(--er);border-color:var(--er)}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
+.kv{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:14px}
+.kv span{color:var(--muted)}
+.kv b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.btn{min-height:44px;padding:0 18px;border-radius:var(--r-ctl);border:1px solid transparent;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:var(--fs-body);display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.ol{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.tx{background:transparent;color:var(--accent-ink)}
+.btn.dn{background:var(--danger);color:var(--on-danger)}
+.btn.ol.dn{background:transparent;color:var(--danger);border-color:var(--line)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
 .btns{display:flex;flex-wrap:wrap;gap:8px}
-.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;background:var(--rlc);color:var(--onrlc)}
-.pill{display:inline-flex;align-items:center;gap:4px;min-height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--sf2);color:var(--ink2)}
-.pill.ok{background:var(--prc);color:var(--onprc)}.pill.wn{background:var(--wn);color:var(--onwn)}.pill.er{background:var(--erc);color:var(--oner)}
-.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--gold);color:var(--onwn);background:var(--wn);border-radius:6px;padding:0 6px;margin-left:6px;vertical-align:middle}
-.banner{display:flex;gap:12px;border-radius:20px;padding:16px;margin-bottom:16px;align-items:flex-start}
-.banner.wn{background:var(--wn);color:var(--onwn)}.banner.er{background:var(--erc);color:var(--oner)}.banner.in{background:var(--rlc);color:var(--onrlc)}.banner.ok{background:var(--prc);color:var(--onprc)}
-.banner .body{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
-.banner b{font-size:16px}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.t-avatar.av{width:44px;height:44px;font-size:15px}
+.t-avatar.sm{width:36px;height:36px;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill .ic{width:14px;height:14px}
+.pill.ok{background:var(--accent-soft);color:var(--accent-ink)}.pill.wn{background:var(--warn-bg);color:var(--warn-ink)}.pill.er{background:var(--danger-bg);color:var(--danger)}
+.tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--warn-ink);background:var(--warn-bg);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px;line-height:16px}
+.banner{display:flex;gap:12px;border-radius:var(--r-ctl);padding:14px 16px;margin-bottom:12px;align-items:flex-start}
+.banner>.ic{margin-top:1px}
+.banner.wn{background:var(--warn-bg);color:var(--warn-ink)}.banner.er{background:var(--danger-bg);color:var(--ink)}.banner.er>.ic{color:var(--danger)}.banner.in{background:var(--surface-2);color:var(--ink)}.banner.in>.ic{color:var(--muted)}.banner.ok{background:var(--accent-soft);color:var(--accent-ink)}
+.banner .body{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.banner b{font-size:var(--fs-body);font-weight:600}
+.banner .small{line-height:20px}
 .seg{display:flex;gap:8px;flex-wrap:wrap}
-.seg label{position:relative;flex:1 1 90px}
+.seg label{position:relative;flex:1 1 80px}
 .seg input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
-.seg span{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid var(--ln2);font-weight:600;padding:0 12px}
-.seg input:checked+span{background:var(--pr);color:var(--onpr);border-color:var(--pr)}
-.seg input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
-.sw{width:56px;min-height:44px;border:0;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;flex:none}
-.sw i{width:48px;height:28px;border-radius:999px;background:var(--ln2);position:relative;transition:background .15s}
-.sw i::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
-.sw[aria-checked=true] i{background:var(--pr)}.sw[aria-checked=true] i::after{transform:translateX(20px)}
-.list{display:flex;flex-direction:column;gap:4px}
-.item{width:100%;text-align:left;display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px;border-radius:16px;border:1px solid transparent;background:transparent}
-.item:hover{background:var(--sf2)}
-.item[aria-current=true]{background:var(--sf2);border-color:var(--ln2)}
+.seg span{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r-ctl);border:1px solid var(--line);font-weight:600;font-size:14px;padding:0 12px}
+.seg input:checked+span{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.sw{width:52px;min-height:44px;border:0;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;flex:none}
+.sw i{width:40px;height:24px;border-radius:12px;background:var(--line);position:relative;transition:background-color 120ms ease}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .2);transition:transform 120ms ease}
+.sw[aria-checked=true] i{background:var(--accent)}.sw[aria-checked=true] i::after{transform:translateX(16px)}
+.list{display:flex;flex-direction:column;gap:2px;margin:0 -8px}
+.item{width:100%;text-align:left;display:flex;align-items:center;gap:12px;min-height:60px;padding:8px;border-radius:var(--r-ctl);border:0;background:transparent}
+.item:hover{background:var(--surface-2)}
+.item[aria-current=true]{background:var(--accent-soft)}
+.item b{font-weight:600}
 .steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
 .steps li{display:flex;gap:12px;align-items:flex-start}
-.dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;background:var(--sf2);color:var(--ink2);border:1px solid var(--ln2)}
-.dot.done{background:var(--pr);color:var(--onpr);border-color:var(--pr)}
+.steps b{font-weight:600}
+.dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;background:var(--surface-2);color:var(--muted)}
+.dot.done{background:var(--accent);color:var(--on-accent)}
 .dot .ic{width:16px;height:16px}
-.phone{border:1px solid var(--ln);border-radius:28px;overflow:hidden;background:var(--bg);max-width:400px;width:100%}
-.phone .pbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--ln);background:var(--sf)}
-.phone .msgs{display:flex;flex-direction:column;gap:8px;padding:12px 16px}
-.msg{max-width:85%;border-radius:18px;padding:8px 12px;font-size:15px;line-height:21px}
-.msg.in{background:var(--sf);border:1px solid var(--ln);align-self:flex-start;border-bottom-left-radius:6px}
-.msg.out{background:var(--prc);color:var(--onprc);align-self:flex-end;border-bottom-right-radius:6px}
-.tick{font-size:12px;margin-top:2px;text-align:right}
-.sys{align-self:center;font-size:12px;background:var(--sf2);color:var(--ink2);border-radius:999px;padding:4px 12px;text-align:center}
-.composer{padding:12px 16px;border-top:1px solid var(--ln);background:var(--sf);font-size:14px;color:var(--ink2);text-align:center}
-.sim{border:1px dashed var(--ln2);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
-.sim h2{font-size:16px}
-.sim fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
-.sim legend{font-weight:600;font-size:14px;padding:0 0 4px}
-.rad{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;cursor:pointer}
-.rad input{width:20px;height:20px;accent-color:var(--pr);margin:0}
-.srow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:15px}
-details.simd>summary{min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
-.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);max-width:min(520px,calc(100vw - 32px));background:var(--ink);color:var(--bg);border-radius:16px;padding:12px 16px;box-shadow:var(--shadow);font-size:15px;z-index:20;transition:opacity .2s}
+/* app frame: a phone screen inside the explainer */
+.phone{border:1px solid var(--line);border-radius:28px;overflow:hidden;background:var(--canvas);max-width:380px;width:100%;align-self:center}
+.phone .pbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--hairline);background:var(--surface)}
+.phone .pbar b{font-weight:600}
+.phone .msgs{display:flex;flex-direction:column;gap:6px;padding:12px}
+.msg{max-width:80%;border-radius:var(--r-bub);padding:7px 12px;font-size:var(--fs-body);line-height:var(--lh-body)}
+.msg.in{background:var(--bub-in);color:var(--bub-in-ink);border:1px solid var(--bub-in-line);align-self:flex-start}
+.msg.out{background:var(--bub-out);color:var(--bub-out-ink);align-self:flex-end}
+.tick{font-size:var(--fs-meta);line-height:14px;margin-top:2px;text-align:right;color:var(--bub-meta-out)}
+.sys{align-self:center;font-size:12px;background:var(--surface-2);color:var(--muted);border-radius:999px;padding:3px 10px;text-align:center}
+.notice{background:var(--danger-bg);color:var(--ink);border-radius:var(--r-ctl);padding:12px 14px;display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.notice b{font-weight:600}
+.composer{padding:12px 16px;border-top:1px solid var(--hairline);background:var(--surface);font-size:var(--fs-sub);color:var(--muted);text-align:center}
+/* drawer controls */
+.sim{display:flex;flex-direction:column;gap:16px}
+.sim fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column}
+.sim legend,.sim .lg{font-size:var(--fs-meta);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 0 4px}
+.rad{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;cursor:pointer}
+.rad input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:14px}
+.sim .btn{min-height:40px;font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(520px,calc(100vw - 32px));background:var(--ink);color:var(--bg);border-radius:var(--r-ctl);padding:10px 16px;box-shadow:var(--shadow-pop);font-size:14px;line-height:20px;z-index:40;transition:opacity .16s ease-out}
 .toast[hidden]{display:none}
-dialog{border:0;border-radius:24px;padding:0;max-width:min(480px,calc(100vw - 24px));width:100%;background:var(--sf);color:var(--ink);box-shadow:var(--shadow)}
-dialog::backdrop{background:rgba(15,21,19,.55)}
-.dlg{padding:24px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 48px);overflow:auto}
-.dlg h2{font-size:22px}
-.li{display:flex;gap:12px;align-items:flex-start;color:var(--ink2);font-size:15px;line-height:22px}
-.li .ic{margin-top:1px;width:20px;height:20px}
-.li b{color:var(--ink)}
-.grp{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink2);text-transform:uppercase;margin-top:4px}
-.qr{width:180px;height:180px;background:#fff;border-radius:12px;padding:10px;align-self:center;border:1px solid var(--ln)}
-.divider{height:1px;background:var(--ln);border:0;margin:4px 0;width:100%}
+/* dialogs: centered >=700px, bottom sheet below */
+dialog{border:0;border-radius:var(--r-sheet);padding:0;max-width:min(460px,calc(100vw - 32px));width:100%;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sheet)}
+dialog::backdrop{background:rgb(10 16 14 / .5)}
+.dlg{padding:24px;display:flex;flex-direction:column;gap:12px;max-height:calc(100dvh - 48px);overflow:auto}
+.dlg h2{font-size:20px;line-height:26px;font-weight:600}
+.dlg h2:focus{outline:0}
+.dlg .btns{justify-content:flex-end;margin-top:4px}
+.li{display:flex;gap:12px;align-items:flex-start;color:var(--muted);font-size:14px;line-height:20px}
+.li .ic{margin-top:0}
+.li b{color:var(--ink);font-weight:600}
+.grp{font-size:var(--fs-sub);font-weight:600;color:var(--muted);margin-top:6px}
+.dicon{width:44px;height:44px;border-radius:50%;background:var(--danger-bg);color:var(--danger);display:flex;align-items:center;justify-content:center}
+.qr{width:180px;height:180px;background:#fff;border-radius:12px;padding:10px;align-self:center;border:1px solid var(--line)}
+.trow{display:flex;align-items:center;gap:12px;min-height:52px;border-bottom:1px solid var(--hairline);font-size:14px}
+.divider{height:1px;background:var(--hairline);border:0;margin:4px 0;width:100%}
+@media(max-width:699px){
+ dialog{max-width:100%;margin:auto 0 0;border-radius:var(--r-sheet) var(--r-sheet) 0 0}
+ .dlg{padding:12px 20px calc(20px + env(safe-area-inset-bottom));max-height:88dvh}
+ .dlg::before{content:"";display:block;width:28px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 4px;flex:none}
+ .dlg .btns .btn{flex:1}
+ .card{padding:16px;border-radius:18px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 <link rel="stylesheet" href="interactions.css">
 </head>
 <body>
-<div class="wrap">
-<header class="top">
-<a class="back" href="./index.html"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Home</a>
-<button type="button" class="tbtn" id="theme" aria-pressed="false">Dark mode</button>
+<header class="hb">
+<h1><a href="./index.html">← Home</a><span aria-hidden="true">·</span><span>Privacy</span></h1>
+<button class="hb-ib" id="theme" type="button" aria-pressed="false" aria-label="Dark theme" title="Dark theme"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+<button class="hb-ib" id="simtog" type="button" aria-expanded="false" aria-controls="drawer" aria-label="Simulation" title="Simulation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
 </header>
-<h1>Privacy, address changes and blocking</h1>
-<span class="note">Interactive design · simulated data</span>
-<p class="lead">Nothing here changes a real address, block, contact or message. Items marked <span class="tag" style="margin-left:0">Proposed</span> are design ideas that are not yet agreed protocol behaviour.</p>
 
-<div class="tabs" role="tablist" aria-label="Sections" id="tabs">
-<button type="button" role="tab" id="tab-address" aria-controls="panel" data-act="tab" data-v="address">Address changes</button>
-<button type="button" role="tab" id="tab-people" aria-controls="panel" data-act="tab" data-v="people">People and blocking</button>
-<button type="button" role="tab" id="tab-lost" aria-controls="panel" data-act="tab" data-v="lost">Can’t reach someone</button>
+<div class="wrap">
+<div class="chips" role="tablist" aria-label="Sections" id="tabs">
+<button type="button" class="t-chip" role="tab" id="tab-address" aria-controls="panel" data-act="tab" data-v="address">Address changes</button>
+<button type="button" class="t-chip" role="tab" id="tab-people" aria-controls="panel" data-act="tab" data-v="people">People and blocking</button>
+<button type="button" class="t-chip" role="tab" id="tab-lost" aria-controls="panel" data-act="tab" data-v="lost">Can’t reach someone</button>
 </div>
-
-<div class="grid">
 <main id="panel" role="tabpanel" tabindex="-1" aria-live="off"></main>
-<aside class="sim" aria-label="Simulation controls">
-<details class="simd" id="simd" open>
-<summary>Simulation controls</summary>
-<div id="sim" style="display:flex;flex-direction:column;gap:12px;margin-top:8px"></div>
-</details>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-labelledby="dr-t">
+<div class="dr-h"><h2 id="dr-t">Simulation</h2><button class="hb-ib" id="drawer-x" type="button" aria-label="Close simulation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+<div class="dr-b">
+<p class="dr-note">Simulated. Nothing here changes a real address, block, contact or message. Items marked <span class="tag" style="margin-left:0">Proposed</span> are design ideas, not yet agreed protocol behaviour.</p>
+<div class="sim" id="sim"></div>
+</div>
 </aside>
-</div>
-</div>
 
 <div class="toast" id="toast" hidden></div>
 <div class="sr" role="status" aria-live="polite" aria-atomic="true" id="live"></div>
@@ -166,6 +198,8 @@ var P={
  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/>'
 };
+function hue(n){return 'av'+([].slice.call(n).reduce(function(a,c){return a+c.codePointAt(0)},0)%6)}
+function ava(p,cls){return '<span class="t-avatar '+(cls||'av')+' '+hue(p.name)+'" aria-hidden="true">'+p.ini+'</span>'}
 function ic(n){return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>'}
 
 /* ---------- simulated state ---------- */
@@ -239,18 +273,18 @@ function banner(kind,icon,title,body,actions){
 function viewAddress(){
  var c=counts(),h='';
  if(S.failed){
-  h+=banner('er','warn','Address change didn’t finish','Your phone couldn’t start its new address. The current one keeps working for a short while, then stops, and contacts can’t reach you until this succeeds. The app keeps trying. <span class="tag">Proposed</span> How long the current address lasts, and whether it stays on during that time, is still an open decision.','<button type="button" class="btn" data-act="retry">Try again now</button>');
+  h+=banner('er','warn','Address change didn’t finish','Your phone couldn’t start its new address. The current one keeps working for a short while, then stops. Until this succeeds, contacts can’t reach you. Tinline keeps trying. <span class="tag">Proposed</span> How long the current address lasts, and whether it stays on meanwhile, is still open.','<button type="button" class="btn" data-act="retry">Try again now</button>');
  }else if(overdue()){
-  h+=banner('wn','clock','Your address change is overdue','The phone was asleep or off past its change time. It changes once as soon as it wakes, not several times, then the schedule starts again. Until then the old address is still in use.','<button type="button" class="btn" data-act="wake">Simulate waking the phone</button>');
+  h+=banner('wn','clock','Your address change is overdue','Your phone was asleep or off at its change time. It changes once when it wakes, not several times, and the schedule starts again. Until then the old address stays in use.');
  }else if(c.waiting>0){
-  h+=banner('in','info',c.waiting+' contact'+(c.waiting>1?'s':'')+' haven’t got your address yet','They were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address while apart, see “Can’t reach someone”.');
+  h+=banner('in','info',c.waiting+(c.waiting===1?' contact hasn’t':' contacts haven’t')+' got your address yet','They were offline. They get it when either of you is next online. Nothing to do. If you both changed address while apart, see “Can’t reach someone”.');
  }
  var sel=function(v,l){return '<label><input type="radio" name="iv" data-act="interval" data-v="'+v+'"'+(S.interval===v?' checked':'')+'><span>'+l+'</span></label>'};
  h+='<section class="card" aria-labelledby="h-ac"><h2 id="h-ac" tabindex="-1">Address changes</h2>'+
   '<p class="muted">Your phone changes its network address on a schedule, whether or not anyone is blocked. Contacts and group hosts are told automatically, so chats carry on. Old addresses stop working.</p>'+
-  '<div class="banner in" style="margin:0">'+ic('shield')+'<div class="body small"><b>What this does and doesn’t do</b>It makes old addresses useless. It doesn’t hide you from people you’re talking to, and your account stays the same. Anyone you’ve allowed could pass a current address on, so blocking still matters.</div></div>'+
+  '<div class="banner in" style="margin:0">'+ic('shield')+'<div class="body small"><b>What this does and doesn’t do</b><span>It makes old addresses useless. It doesn’t hide you from people you’re talking to, and your account stays the same. Anyone you’ve allowed could pass a current address on, so blocking still matters.</span></div></div>'+
   '<div role="radiogroup" aria-labelledby="iv-l"><div id="iv-l" class="small" style="font-weight:600;margin-bottom:8px">Change my address every <span class="tag">Proposed values</span></div><div class="seg">'+sel(1,'Day')+sel(3,'3 days')+sel(7,'Week')+'</div></div>'+
-  '<p class="xs muted">Counted from the last change, so saving again can’t keep pushing it back. Choosing a shorter time can only bring the next change forward. Default and limits are not decided. Shorter means a little more battery and network use, not measured yet.</p></section>';
+  '<p class="xs muted">Counted from the last change, so saving again can’t push it back. A shorter time can only bring the next change forward. Default and limits aren’t decided. Shorter uses a little more battery and network, not yet measured.</p></section>';
  h+='<section class="card" aria-labelledby="h-st"><h2 id="h-st" tabindex="-1">Status on this phone</h2>'+
   '<div class="kv"><span>Last change</span><b>'+fmt(S.last)+'</b></div>'+
   '<div class="kv"><span>Next change</span><b>'+(S.failed?'Not completed':(overdue()?'Overdue, was '+fmt(S.next):fmt(S.next)+' ('+rel(S.next)+')'))+'</b></div>'+
@@ -260,13 +294,13 @@ function viewAddress(){
  h+='<section class="card" aria-labelledby="h-au"><h2 id="h-au">Who gets which address</h2>'+
   '<div class="row">'+ic('msg')+'<div class="grow"><b>Contacts</b><div class="small muted">Get your contact address. Only people you accepted ever see it.</div></div></div>'+
   '<div class="row">'+ic('group')+'<div class="grow"><b>Groups</b><div class="small muted">The group’s host gets a separate group address and passes your messages on. Hosts are members’ devices and can read what is shared in the group. Members never receive your addresses, and the host never learns your contact address.</div></div></div>'+
-  '<p class="xs muted">The two addresses change separately, so one never gives away the other. Both belong to the same account. Blocking someone changes only who gets your contact address; your group address and group membership are untouched.</p></section>';
+  '<p class="xs muted">The two addresses change separately, so one never gives away the other. Both belong to the same account. Blocking someone only changes who gets your contact address. Your group address and group membership are untouched.</p></section>';
  var lap=S.laptopOffline;
  h+='<section class="card" aria-labelledby="h-dv"><h2 id="h-dv">Your devices <span class="tag">Proposed</span></h2>'+
-  '<p class="small muted">Each linked device changes its own address. The schedule setting is shared. Status per device would need devices to tell each other.</p>'+
+  '<p class="small muted">Each linked device changes its own address. The schedule setting is shared. Showing status per device needs devices to tell each other.</p>'+
   devRow('This phone',S.failed?'Change didn’t finish':(overdue()?'Overdue, changes once when it wakes':'Changed '+rel(S.last)),S.failed?'er':(overdue()?'wn':'ok'),S.failed?'Needs attention':(overdue()?'Overdue':'On schedule'))+
   devRow('Laptop',lap?'Offline. Its schedule continues when it’s back':'Changed 6 hours ago',lap?'wn':'ok',lap?'Offline':'On schedule')+
-  devRow('Old tablet','Not opened for 9 days. It changes once when you next open it','wn','Overdue')+
+  devRow('Old tablet','Not opened for 9 days. Changes once when you next open it','wn','Overdue')+
   '</section>';
  return h;
 }
@@ -283,41 +317,41 @@ function pStatus(p){
 function viewPeople(){
  var h='<section class="card" aria-labelledby="h-pp"><h2 id="h-pp" tabindex="-1">People</h2><div class="list">';
  S.people.forEach(function(p){
-  h+='<button type="button" class="item" data-act="select" data-id="'+p.id+'" aria-current="'+(S.sel===p.id)+'"><span class="av" aria-hidden="true">'+p.ini+'</span><span class="grow" style="flex:1"><b>'+esc(p.name)+'</b><div class="xs muted">'+esc(p.how)+'</div></span>'+pStatus(p)+'</button>';
+  h+='<button type="button" class="item" data-act="select" data-id="'+p.id+'" aria-current="'+(S.sel===p.id)+'">'+ava(p)+'<span class="grow" style="flex:1"><b>'+esc(p.name)+'</b><div class="xs muted">'+esc(p.how)+'</div></span>'+pStatus(p)+'</button>';
  });
  h+='</div></section>';
  var bl=S.people.filter(function(p){return p.status==='blocked'});
  h+='<section class="card" aria-labelledby="h-bl"><h2 id="h-bl">Blocked people</h2>';
- if(!bl.length)h+='<p class="small muted">Nobody is blocked. People you block appear here with when you blocked them, and you can unblock them from here or from their page. The list is the same on all your devices.</p>';
- bl.forEach(function(p){h+='<div class="row"><span class="av" aria-hidden="true">'+p.ini+'</span><div class="grow"><b>'+esc(p.name)+'</b><div class="xs muted">Blocked '+fmt(p.block.at)+'</div></div><button type="button" class="btn tx" data-act="unblock-open" data-id="'+p.id+'" aria-label="Unblock '+esc(p.name)+'">Unblock</button></div>'});
+ if(!bl.length)h+='<p class="small muted">Nobody is blocked. People you block appear here with the date. You can unblock them here or from their page. The list is the same on all your devices.</p>';
+ bl.forEach(function(p){h+='<div class="row">'+ava(p)+'<div class="grow"><b>'+esc(p.name)+'</b><div class="xs muted">Blocked '+fmt(p.block.at)+'</div></div><button type="button" class="btn tx" data-act="unblock-open" data-id="'+p.id+'" aria-label="Unblock '+esc(p.name)+'">Unblock</button></div>'});
  h+='</section>';
  h+=detail(person(S.sel));
  return h;
 }
 function detail(p){
- var h='<section class="card" aria-labelledby="h-dt"><div class="row"><span class="av" aria-hidden="true">'+p.ini+'</span><div class="grow"><h2 id="h-dt" tabindex="-1">'+esc(p.name)+'</h2><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill">'+esc(p.how)+'</span>'+(p.verified?'<span class="pill ok">Verified</span>':'')+pStatus(p)+'</div></div></div>';
+ var h='<section class="card" aria-labelledby="h-dt"><div class="row">'+ava(p)+'<div class="grow"><h2 id="h-dt" tabindex="-1">'+esc(p.name)+'</h2><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill">'+esc(p.how)+'</span>'+(p.verified?'<span class="pill ok">Verified</span>':'')+pStatus(p)+'</div></div></div>';
  var gl=p.groups.length;
  if(p.status==='blocked'){
   var b=p.block;
-  h+='<h3>WHAT HAPPENS AFTER A BLOCK</h3><ol class="steps">'+
-   '<li><span class="dot done">'+ic('check')+'</span><div><b>Now</b><div class="small muted">'+esc(p.name)+' can’t message or call you, on any of your devices, and was told. Their app is built to stop sending, calling and retrying. Your phone refuses everything from them anyway, even if they still know an address or run a modified app.</div></div></li>'+
+  h+='<h3>What happens after a block</h3><ol class="steps">'+
+   '<li><span class="dot done">'+ic('check')+'</span><div><b>Now</b><div class="small muted">'+esc(p.name)+' can’t message or call you on any of your devices, and has been told. Their app is built to stop sending, calling and retrying. Your phone refuses everything from them anyway, even if they still know an address or run a modified app.</div></div></li>'+
    '<li><span class="dot'+(b.retired?' done':'')+'">'+(b.retired?ic('check'):ic('clock'))+'</span><div><b>'+(b.retired?'Done, '+fmt(b.retiredAt):'At your next scheduled address change')+'</b><div class="small muted">'+
    (b.retired?'Your address changed and '+esc(p.name)+' wasn’t sent the new one. The old address stopped working. They can’t reach you through any address they had.'
     :(S.failed?'Your address change hasn’t finished, so the old address is still in use. '+esc(p.name)+' is still refused.':(overdue()?'Your address change is overdue, so the old address is still in use. '+esc(p.name)+' is still refused.':'Due '+fmt(S.next)+' ('+rel(S.next)+'). '+esc(p.name)+' won’t get the new address and the old one stops working.')))+
    '</div></div></li></ol>'+
-   '<p class="xs muted">Blocking doesn’t change your address by itself. The refusal above is immediate and doesn’t depend on it. Someone who got your new address another way is still refused. Their app is asked to delete your contact entry; a modified app can ignore that and will still know who you are.</p>';
+   '<p class="xs muted">Blocking doesn’t change your address by itself. The refusal above is immediate and doesn’t depend on it. Someone who got your new address another way is still refused. Their app is asked to delete your contact entry. A modified app can ignore that and still know who you are.</p>';
   if(S.syncNote[p.id])h+=banner('wn','warn','Your laptop is offline','The block is on this phone now. Your laptop applies it when it’s next online, and until then it may still accept messages from '+esc(p.name)+'.');
-  h+='<hr class="divider"><h3>WHAT '+esc(p.name.toUpperCase())+' SEES</h3>'+blockedView(p)+
-   '<p class="xs muted">Shown because the agreed design tells the blocked person. Nobody else is told: not group members, not group hosts, not your other contacts.</p>';
+  h+='<hr class="divider"><h3>What '+esc(p.name)+' sees</h3>'+blockedView(p)+
+   '<p class="xs muted">The agreed design tells the blocked person. Nobody else is told: not group members, group hosts or your other contacts.</p>';
   h+='<div class="btns"><button type="button" class="btn ol" data-act="unblock-open" data-id="'+p.id+'">Unblock '+esc(p.name)+'</button></div>';
  }else if(p.status==='reconnect'){
   h+=banner('wn','refresh','Reconnect with '+esc(p.name),'You unblocked '+esc(p.name)+'. Their app was asked to delete your contact entry when the block was sent, so you’re not connected yet and nothing is delivered. Show your QR or scan theirs to chat again. Your earlier messages stay.','<button type="button" class="btn" data-act="qr-open" data-v="show" data-id="'+p.id+'">Reconnect…</button>');
  }else{
-  h+='<h3>WHAT '+esc(p.name.toUpperCase())+' CAN DO</h3>'+
+  h+='<h3>What '+esc(p.name)+' can do</h3>'+
    '<div class="row">'+ic('msg')+'<div class="grow">Message you<div class="xs muted">Always on for a contact. To stop messages, block.</div></div><span class="pill ok">On</span></div>'+
    '<div class="row">'+ic(p.call?'call':'nocall')+'<div class="grow" id="cl-'+p.id+'">Call you<div class="xs muted">'+(p.call?'On. Their calls ring your phone.':'Off. If they call, nothing rings for you and they’re told you haven’t allowed calls. <span class="tag">Proposed wording</span>')+'</div></div><button type="button" class="sw" role="switch" aria-checked="'+p.call+'" aria-labelledby="cl-'+p.id+'" data-act="call" data-id="'+p.id+'"><i></i></button></div>'+
-   '<h3>CONNECTION</h3>'+connRow(p);
-  if(gl)h+='<div class="row">'+ic('group')+'<div class="grow">Shared with '+p.groups.map(esc).join(', ')+'<div class="xs muted">Blocking is personal. It never removes anyone from a group and nobody in the group is told.</div></div></div>';
+   '<h3>Connection</h3>'+connRow(p);
+  if(gl)h+='<div class="row">'+ic('group')+'<div class="grow">Shared with '+p.groups.map(esc).join(', ')+'<div class="xs muted">Blocking is personal. It never removes anyone from a group, and nobody in the group is told.</div></div></div>';
   h+='<div class="btns"><button type="button" class="btn ol dn" data-act="block-open" data-id="'+p.id+'">Block '+esc(p.name)+'</button></div>';
  }
  return h+'</section>';
@@ -327,29 +361,28 @@ function connRow(p){
  return '<div class="row">'+ic(lost?'warn':'refresh')+'<div class="grow">'+(lost?'Can’t reach '+esc(p.name):'Has your latest address')+'<div class="xs muted">'+(lost?'Both of you changed address while apart.':'Told '+rel(S.last)+'. Their own address changes reach you the same way.')+'</div></div>'+(lost?'<button type="button" class="btn ol" data-act="tab" data-v="lost">See options</button>':'')+'</div>';
 }
 function blockedView(p){
- return '<div class="phone" role="group" aria-label="Simulated view on '+esc(p.name)+'’s phone"><div class="pbar"><span class="av" aria-hidden="true" style="width:36px;height:36px;font-size:14px;background:var(--prc);color:var(--onprc)">'+ME.slice(0,2).toUpperCase()+'</span><div><b>'+ME+'</b><div class="xs" style="color:var(--er)">Blocked you</div></div><span style="margin-left:auto;color:var(--ln2)" title="Calls unavailable">'+ic('nocall')+'</span></div>'+
+ return '<div class="phone" role="group" aria-label="Simulated view on '+esc(p.name)+'’s phone"><div class="pbar">'+ava({name:ME,ini:ME.slice(0,2).toUpperCase()},'sm')+'<div><b>'+ME+'</b><div class="xs" style="color:var(--danger)">Blocked you</div></div><span style="margin-left:auto;color:var(--muted);opacity:.6" title="Calls unavailable">'+ic('nocall')+'</span></div>'+
   '<div class="msgs"><div class="msg out">Are you coming Saturday?</div><div class="msg in">Not sure yet</div>'+
-  '<div style="background:var(--erc);color:var(--oner);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:4px"><b>'+ME+' blocked you</b><span class="small">You can’t message or call them, and nothing will be retried. Your earlier messages stay here, read-only. Your app has been asked to delete their contact entry.</span><span class="xs">Signed by '+ME+' · '+fmt(p.block.at)+'</span></div></div>'+
+  '<div class="notice"><b>'+ME+' blocked you</b><span class="small">You can’t message or call them, and nothing will be retried. Your earlier messages stay here, read-only. Your app has been asked to delete their contact entry.</span><span class="xs muted">Signed by '+ME+' · '+fmt(p.block.at)+'</span></div></div>'+
   '<div class="composer">You can’t send messages to '+ME+'. Nothing is sent or retried in the background.</div></div>';
 }
 
 function viewLost(){
  var p=person('sam'),st=S.sam==='recovered'?'recovered':(S.sharedSam?(S.hostOnline?'host':'hostoff'):'lost');
- var h='<section class="card" aria-labelledby="h-ls"><h2 id="h-ls" tabindex="-1">Can’t reach someone</h2><p class="muted">If you and a contact both changed address while neither was online, neither side knows where the other is now. The app first tries a shared group’s host. If there’s none, you reconnect by QR.</p>'+
-  '<p class="xs muted">Use the simulation controls to compare: a shared group, no shared group, a host that’s offline.</p></section>';
- h+='<section class="card" aria-labelledby="h-sc"><h2 id="h-sc" class="sr">Chat with Sam Rao</h2><div class="phone" role="group" aria-label="Simulated chat with Sam Rao"><div class="pbar"><span class="av" aria-hidden="true" style="width:36px;height:36px;font-size:14px;background:var(--wn);color:var(--onwn)">SR</span><div><b>Sam Rao</b><div class="xs" style="color:var(--onwn);background:var(--wn);border-radius:6px;padding:0 6px;display:inline-block">'+(st==='recovered'?'Connected':'Can’t reach Sam')+'</div></div></div><div class="msgs">'+
+ var h='<section class="card" aria-labelledby="h-ls"><h2 id="h-ls" tabindex="-1">Can’t reach someone</h2><p class="muted">If you and a contact both changed address while neither was online, neither knows where the other is now. Tinline first tries a shared group’s host. If there’s none, you reconnect by QR.</p></section>';
+ h+='<section class="card" aria-labelledby="h-sc"><h2 id="h-sc" class="sr">Chat with Sam Rao</h2><div class="phone" role="group" aria-label="Simulated chat with Sam Rao"><div class="pbar">'+ava(p,'sm')+'<div><b>Sam Rao</b><div class="xs '+(st==='recovered'?'muted':'')+'" style="'+(st==='recovered'?'':'color:var(--warn-ink)')+'">'+(st==='recovered'?'Connected':'Can’t reach Sam')+'</div></div></div><div class="msgs">'+
   '<div class="msg in">Back from the trek on the 20th</div><div class="msg out">Have fun<div class="tick">Delivered</div></div>'+
   '<div class="msg out">Are you back?<div class="tick">'+(st==='recovered'?'Delivered':'Waiting to reach Sam')+'</div></div>'+
   (st==='recovered'?'<div class="sys">Reconnected. Your history and verification are kept.</div>':'')+
   '</div></div>';
  if(st==='lost'){
-  h+=banner('wn','warn','You and Sam lost each other’s address','You were both offline while your addresses changed and you share no group that could pass the new ones on. Meet, or send your QR another way. Your messages wait, and your history is kept.','<button type="button" class="btn" data-act="qr-open" data-v="show" data-id="sam">Show my QR</button><button type="button" class="btn ol" data-act="qr-open" data-v="scan" data-id="sam">Scan Sam’s</button>');
+  h+=banner('wn','warn','You and Sam lost each other’s address','You were both offline while your addresses changed, and no shared group can pass the new ones on. Meet, or send your QR another way. Your messages wait and your history is kept.','<button type="button" class="btn" data-act="qr-open" data-v="show" data-id="sam">Show my QR</button><button type="button" class="btn ol" data-act="qr-open" data-v="scan" data-id="sam">Scan Sam’s</button>');
  }else if(st==='host'){
-  h+=banner('in','refresh','Reconnecting through Weekend hike','Sam’s new address is passed on by the group’s host. Nothing to do. If it takes too long, you can still use a QR.','<button type="button" class="btn ol" data-act="host-pass">Simulate: host passes it on</button><button type="button" class="btn tx" data-act="host-off">Simulate: host offline</button>');
+  h+=banner('in','refresh','Reconnecting through Weekend hike','The group’s host passes Sam’s new address on. Nothing to do. If it takes too long, you can still use a QR.');
  }else if(st==='hostoff'){
-  h+=banner('wn','warn','The group host isn’t online','Weekend hike’s host can’t be reached, so Sam’s new address can’t be passed on yet. It will be when the host returns. You can reconnect by QR meanwhile.','<button type="button" class="btn" data-act="qr-open" data-v="show" data-id="sam">Show my QR</button><button type="button" class="btn ol" data-act="qr-open" data-v="scan" data-id="sam">Scan Sam’s</button><button type="button" class="btn tx" data-act="host-on">Simulate: host back</button>');
+  h+=banner('wn','warn','The group host isn’t online','Weekend hike’s host can’t be reached, so Sam’s new address can’t be passed on yet. It will be when the host is back. Meanwhile you can reconnect by QR.','<button type="button" class="btn" data-act="qr-open" data-v="show" data-id="sam">Show my QR</button><button type="button" class="btn ol" data-act="qr-open" data-v="scan" data-id="sam">Scan Sam’s</button>');
  }else{
-  h+=banner('ok','check','Connected to Sam','Your waiting message was sent. Same contact: nothing to set up again. Whether verification always survives reconnecting is <span class="tag">Proposed</span>');
+  h+=banner('ok','check','Connected to Sam','Your waiting message was sent. It’s the same contact, so there’s nothing to set up again. Whether verification always survives reconnecting is <span class="tag">Proposed</span>');
  }
  h+='</section>';
  return h;
@@ -358,10 +391,13 @@ function viewLost(){
 function viewSim(){
  var o=function(v,l){return '<label class="rad"><input type="radio" name="sc" data-act="scenario" data-v="'+v+'"'+(S.scenario===v?' checked':'')+'>'+l+'</label>'};
  var sw=function(act,on,l){return '<div class="srow"><span id="sl-'+act+'">'+l+'</span><button type="button" class="sw" role="switch" aria-checked="'+on+'" aria-labelledby="sl-'+act+'" data-act="'+act+'"><i></i></button></div>'};
- return '<p class="xs muted">Nothing here touches a real device. Simulated time: <b>'+fmt(S.now)+'</b></p>'+
+ var st=S.sam==='recovered'?'':(S.sharedSam?(S.hostOnline?'host':'hostoff'):'');
+ return '<p class="xs muted" style="margin:0">Simulated time: <b>'+fmt(S.now)+'</b></p>'+
   '<fieldset><legend>Address change situation</legend>'+o('normal','Normal')+o('asleep','Phone was asleep')+o('failed','Change failed')+o('offline','Some contacts offline')+'</fieldset>'+
-  '<div class="btns"><button type="button" class="btn ol" data-act="advance">Jump to next scheduled change</button>'+(S.pendingOthers>0?'<button type="button" class="btn ol" data-act="online">Offline contacts come online</button>':'')+'</div>'+
-  sw('laptop',S.laptopOffline,'Laptop is offline')+sw('shared',S.sharedSam,'You share a group with Sam')+
+  '<div class="btns"><button type="button" class="btn ol" data-act="advance">Jump to next scheduled change</button>'+(overdue()?'<button type="button" class="btn ol" data-act="wake">Wake the phone</button>':'')+(S.pendingOthers>0?'<button type="button" class="btn ol" data-act="online">Offline contacts come online</button>':'')+'</div>'+
+  '<div><div class="lg">Devices and contacts</div>'+sw('laptop',S.laptopOffline,'Laptop is offline')+sw('shared',S.sharedSam,'You share a group with Sam')+'</div>'+
+  (st==='host'?'<div class="btns"><button type="button" class="btn ol" data-act="host-pass">Host passes Sam’s address on</button><button type="button" class="btn ol" data-act="host-off">Host goes offline</button></div>':'')+
+  (st==='hostoff'?'<div class="btns"><button type="button" class="btn ol" data-act="host-on">Host comes back</button></div>':'')+
   '<div class="btns"><button type="button" class="btn tx" data-act="reset">Reset everything</button></div>';
 }
 
@@ -370,7 +406,7 @@ function dialogHTML(){
  var d=S.dlg;if(!d)return '';
  var p=d.id?person(d.id):null,n=p?esc(p.name):'';
  if(d.type==='block'){
-  return '<div style="width:44px;height:44px;border-radius:50%;background:var(--erc);color:var(--er);display:flex;align-items:center;justify-content:center">'+ic('block')+'</div>'+
+  return '<div class="dicon">'+ic('block')+'</div>'+
    '<h2 id="dlg-title">Block '+n+'?</h2>'+
    '<div class="grp">Right away</div>'+
    li('msg','<b>'+n+' can’t message or call you</b>, on any of your devices. Your phone refuses them even if they keep an address.')+
@@ -379,8 +415,8 @@ function dialogHTML(){
    '<div class="grp">At your next scheduled address change</div>'+
    li('refresh','Blocking doesn’t change your address by itself. At the next scheduled change (<b>'+(S.failed?'when it succeeds':fmt(S.next))+'</b>) '+n+' isn’t sent the new one, and the old one stops working for them.')+
    (p.groups.length?'<div class="grp">Shared groups</div>'+li('group','You both stay in <b>'+p.groups.map(esc).join(', ')+'</b>. Nobody there is told. Their group messages show collapsed for you. <span class="tag">Proposed</span>'):'')+
-   (S.laptopOffline?'<div class="banner wn" style="margin:0">'+ic('warn')+'<div class="body small"><b>Your laptop is offline</b>It applies this block when it’s back online. Until then it may still accept messages from '+n+'.</div></div>':'')+
-   '<div class="btns" style="justify-content:flex-end"><button type="button" class="btn tx" data-act="close">Cancel</button><button type="button" class="btn dn" data-act="block-do" data-id="'+p.id+'">Block '+n+'</button></div>';
+   (S.laptopOffline?'<div class="banner wn" style="margin:0">'+ic('warn')+'<div class="body small"><b>Your laptop is offline</b><span>It applies this block when it’s back online. Until then it may still accept messages from '+n+'.</span></div></div>':'')+
+   '<div class="btns"><button type="button" class="btn tx" data-act="close">Cancel</button><button type="button" class="btn dn" data-act="block-do" data-id="'+p.id+'">Block '+n+'</button></div>';
  }
  if(d.type==='unblock'){
   return '<h2 id="dlg-title">Unblock '+n+'?</h2>'+
@@ -388,7 +424,7 @@ function dialogHTML(){
    li('refresh','<b>You need to reconnect.</b> Their app deletes your contact entry when the block is sent, so scan each other’s QR before chatting. Unblocking never restores messaging by itself. Unblocking alone doesn’t send them your address.')+
    li('call','Once you’ve reconnected, permissions start as for any QR contact: messages and calls on. You can change that afterwards. <span class="tag">Proposed</span>')+
    '<p class="xs muted">Nothing is delivered until you’ve reconnected. Messages written before the block are delivered then. What happens to messages written during the block is still to be agreed.</p>'+
-   '<div class="btns" style="justify-content:flex-end"><button type="button" class="btn tx" data-act="close">Cancel</button><button type="button" class="btn" data-act="unblock-do" data-id="'+p.id+'">Unblock</button></div>';
+   '<div class="btns"><button type="button" class="btn tx" data-act="close">Cancel</button><button type="button" class="btn" data-act="unblock-do" data-id="'+p.id+'">Unblock</button></div>';
  }
  if(d.type==='told'){
   var rows='',c=counts();
@@ -399,20 +435,20 @@ function dialogHTML(){
   var bl=S.people.filter(function(x){return x.status==='blocked'});
   return '<h2 id="dlg-title">Who has your new address</h2><p class="small muted">'+c.told+' of '+c.total+' contacts. This list is only on your devices.</p><div style="display:flex;flex-direction:column">'+rows+'</div>'+
    (bl.length?'<p class="xs muted">Not listed: '+bl.length+' blocked '+(bl.length>1?'people':'person')+'. They’re never sent one.</p>':'')+
-   '<div class="btns" style="justify-content:flex-end"><button type="button" class="btn" data-act="close">Done</button></div>';
+   '<div class="btns"><button type="button" class="btn" data-act="close">Done</button></div>';
  }
  if(d.type==='qr'){
   var show=d.mode==='show';
   var cells='',seed=7;
   for(var y=0;y<11;y++)for(var x=0;x<11;x++){seed=(seed*1103515245+12345)&0x7fffffff;if(seed%3===0)cells+='<rect x="'+x+'" y="'+y+'" width="1" height="1"/>'}
   return '<h2 id="dlg-title">'+(show?'Show my QR':'Scan '+n+'’s QR')+'</h2>'+
-   (show?'<svg class="qr" viewBox="0 0 11 11" role="img" aria-label="Sample pattern, not a real QR code" fill="#111">'+cells+'</svg><p class="small muted">Sample pattern only. A real QR would carry your account and current address, so '+n+' can reach you again.</p>'
-        :'<div class="qr" style="display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;color:#444">Camera preview isn’t part of this prototype</div><p class="small muted">Point the camera at '+n+'’s QR code.</p>')+
-   '<div class="btns" style="justify-content:flex-end"><button type="button" class="btn tx" data-act="close">Cancel</button><button type="button" class="btn" data-act="reconnect" data-id="'+p.id+'">Simulate: '+(show?n+' scans it':'code scanned')+'</button></div>';
+   (show?'<svg class="qr" viewBox="0 0 11 11" role="img" aria-label="Sample pattern, not a real QR code" fill="#111">'+cells+'</svg><p class="small muted">It carries your account and current address, so '+n+' can reach you again.</p>'
+        :'<div class="qr" role="img" aria-label="Camera viewfinder" style="background:#0a0e0d;border-color:transparent"></div><p class="small muted">Point the camera at '+n+'’s QR code.</p>')+
+   '<div class="btns"><button type="button" class="btn tx" data-act="close">Cancel</button><button type="button" class="btn" data-act="reconnect" data-id="'+p.id+'">'+(show?'Done':'Use scanned code')+'</button></div>';
  }
  return '';
 }
-function trow(n,ok,t){return '<div class="row" style="border-bottom:1px solid var(--ln)"><div class="grow">'+esc(n)+'<div class="xs muted">'+t+'</div></div><span class="pill '+(ok?'ok':'wn')+'">'+(ok?'Told':'Waiting')+'</span></div>'}
+function trow(n,ok,t){return '<div class="trow"><div class="grow">'+esc(n)+'<div class="xs muted">'+t+'</div></div><span class="pill '+(ok?'ok':'wn')+'">'+(ok?'Told':'Waiting')+'</span></div>'}
 function li(i,t){return '<div class="li">'+ic(i)+'<span>'+t+'</span></div>'}
 
 /* ---------- render ---------- */
@@ -423,7 +459,6 @@ function render(){
  document.getElementById('panel').innerHTML=S.tab==='address'?viewAddress():(S.tab==='people'?viewPeople():viewLost());
  document.getElementById('sim').innerHTML=viewSim();
  document.getElementById('dlgbody').innerHTML=dialogHTML();
- var th=document.getElementById('theme');th.setAttribute('aria-pressed',isDark());
  restore(fk);
  if(fk&&!document.getElementById('dlg').open){var a=document.activeElement;if(!a||a===document.body)fallbackFocus()}
 }
@@ -524,14 +559,28 @@ function isDark(){
  if(t)return t==='dark';
  return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
-(function(){try{var t=localStorage.getItem('tinline-design-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
 document.getElementById('theme').addEventListener('click',function(){
  var n=isDark()?'light':'dark';document.documentElement.setAttribute('data-theme',n);
- try{localStorage.setItem('tinline-design-theme',n)}catch(e){}
- this.setAttribute('aria-pressed',isDark());
+ paintTheme();
 });
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){document.getElementById('theme').setAttribute('aria-pressed',isDark())});
-if(window.matchMedia('(max-width:999px)').matches)document.getElementById('simd').removeAttribute('open');
+function paintTheme(){var b=document.getElementById('theme'),d=isDark(),l=d?'Light theme':'Dark theme';b.setAttribute('aria-pressed',d);b.setAttribute('aria-label',l);b.title=l}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',paintTheme);
+/* simulation drawer: docked beside the page on wide screens, overlay below */
+function docked(){return window.matchMedia('(min-width:1100px)').matches}
+function setDrawer(open,focus){
+ var d=document.getElementById('drawer');d.hidden=!open;document.getElementById('scrim').hidden=!open||docked();
+ document.getElementById('simtog').setAttribute('aria-expanded',String(open));document.body.classList.toggle('dr-open',open);
+ if(focus)document.getElementById(open?'drawer-x':'simtog').focus();
+}
+document.getElementById('simtog').addEventListener('click',function(){setDrawer(document.getElementById('drawer').hidden,true)});
+document.getElementById('drawer-x').addEventListener('click',function(){setDrawer(false,true)});
+document.getElementById('scrim').addEventListener('click',function(){setDrawer(false,true)});
+document.addEventListener('keydown',function(e){
+ var d=document.getElementById('drawer');
+ if(e.key!=='Escape'||d.hidden||document.getElementById('dlg').open)return;
+ if(d.contains(e.target)||!docked()){e.preventDefault();setDrawer(false,true)}
+});
+paintTheme();
 render();
 })();
 </script>

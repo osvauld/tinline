@@ -2,224 +2,222 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Calls · Tinline refined design</title>
+<link rel="stylesheet" href="tokens.css">
 <style>
-:root{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--rl:#4B5AA8;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00;--acc:#0E7C69;--dec:#C8372D;--sh:0 6px 18px rgba(0,0,0,.10)}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--rl:#B8C1F5;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0;--sh:0 6px 18px rgba(0,0,0,.4);color-scheme:dark}}
-:root[data-theme=dark]{--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--sf3:#26302D;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--th:#E8B04A;--er:#F2B8B5;--erc:#8C1D18;--rl:#B8C1F5;--rlc:#2F3A75;--onrlc:#E1E4F7;--wn:#4A3500;--onwn:#FFDFA0;--sh:0 6px 18px rgba(0,0,0,.4);color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--pr)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 var(--fs-body)/var(--lh-body) system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent-ink)}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer}
-:focus-visible{outline:3px solid var(--pr);outline-offset:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .hang{transform:rotate(135deg)}
-.top{max-width:1240px;margin:0 auto;padding:20px 16px 8px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
-.top h1{margin:0;font-size:28px;line-height:1.2}
-.top h1{flex-basis:100%;order:2}
-.top .sub{margin:0;color:var(--ink2);font-size:14px;flex-basis:100%;order:3}
-.back{display:inline-flex;align-items:center;min-height:44px;font-weight:600}
-.top .sp{flex:1}
-.tbtn{min-height:44px;border-radius:999px;border:1px solid var(--ln2);background:var(--sf);padding:0 16px;font-weight:600;display:inline-flex;align-items:center;gap:8px}
-.tbtn[aria-pressed=true],.tbtn[aria-checked=true]{background:var(--prc);color:var(--onprc);border-color:var(--pr)}
-main{max-width:1240px;margin:0 auto;padding:8px 16px 48px;display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
-@media (min-width:980px){main{grid-template-columns:minmax(0,1fr) 420px;align-items:start}}
-.col{display:flex;flex-direction:column;gap:20px;min-width:0}
-.card{background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:18px}
-.card h2{margin:0 0 4px;font-size:18px}
-.card .hint,.hint{margin:0 0 12px;font-size:14px;color:var(--ink2)}
-.seg{display:inline-flex;border:1px solid var(--ln2);border-radius:999px;padding:3px;background:var(--sf)}
-.seg button{border:0;background:transparent;min-height:44px;padding:0 18px;border-radius:999px;font-weight:600}
-.seg button[aria-pressed=true]{background:var(--pr);color:var(--onpr)}
-.bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:12px}
-/* device */
-.dev{margin:0 auto;background:var(--bg);border:1px solid var(--ln2);color:var(--ink);overflow:hidden;box-shadow:var(--sh)}
-.dev.phone{width:100%;max-width:390px;border-radius:32px;min-height:clamp(400px,calc(100svh - 300px),640px);display:flex;flex-direction:column}
-.dev.desk{width:100%;max-width:460px;border-radius:12px}
-.dev .tb{display:none}
-.dev.desk .tb{display:flex;height:30px;align-items:center;justify-content:center;font-size:12px;color:var(--ink2);background:var(--sf2);border-bottom:1px solid var(--ln)}
-.body{padding:28px 24px 28px;display:flex;flex-direction:column;flex:1;gap:14px;position:relative}
-.phone .body{padding-top:40px}
-.ident{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
-.desk .ident{flex-direction:row;text-align:left;gap:16px}
-.halo{align-self:center;width:132px;height:132px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid transparent}
-.desk .halo{width:84px;height:84px}
-.halo.on{border-color:var(--th);animation:pulse 1.6s ease-in-out infinite}
-.halo.wait{border:2px dashed var(--ln2)}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(201,138,30,.45)}50%{box-shadow:0 0 0 14px rgba(201,138,30,0)}}
-.av{width:104px;height:104px;border-radius:50%;background:var(--rlc);color:var(--onrlc);font-weight:700;font-size:36px;display:flex;align-items:center;justify-content:center}
-.desk .av{width:68px;height:68px;font-size:24px}
-.av.bad{background:var(--sf3);color:var(--ink2)}
-.ident h3{margin:0;font-size:28px;line-height:1.2;outline:0}
-.desk .ident h3{font-size:22px}
-.status{font-size:17px;color:var(--ink2);margin:0}
-.desk .status{font-size:14px}
-.badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.desk .badges{justify-content:flex-start}
-.pill{display:inline-flex;align-items:center;gap:5px;min-height:24px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--sf3);color:var(--ink)}
-.pill.g{background:var(--prc);color:var(--onprc)}.pill.r{background:var(--rlc);color:var(--onrlc)}.pill.w{background:var(--wn);color:var(--onwn)}.pill.k{background:var(--ink);color:var(--bg)}.pill.e{background:var(--erc);color:var(--er)}
-.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,Consolas,monospace}
-.desc{margin:0;text-align:center;color:var(--ink2);font-size:15px;max-width:34ch;align-self:center}
-.desk .desc{text-align:left;align-self:stretch;max-width:none;font-size:14px}
-.cd{font-size:13px;color:var(--ink2);text-align:center;margin:0;min-height:18px}
-.desk .cd{text-align:left}
-.sp1{flex:1}
-.ctl{display:flex;justify-content:center;gap:20px}
-.ctl button{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;min-width:72px;min-height:44px;font-size:13px;font-weight:600;color:var(--ink)}
-.ctl button .c{width:56px;height:56px;border-radius:50%;background:var(--sf3);display:flex;align-items:center;justify-content:center}
-.ctl button[aria-pressed=true] .c{background:var(--ink);color:var(--bg)}
-.desk .ctl{justify-content:flex-start;gap:8px}
-.desk .ctl button{flex-direction:row;background:var(--sf3);border-radius:999px;padding:0 14px 0 10px;min-width:0}
-.desk .ctl button .c{width:28px;height:28px;background:transparent}
-.desk .ctl button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
-.desk .ctl button[aria-pressed=true] .c{background:transparent}
-.acts{display:flex;flex-direction:column;gap:8px}
-.acts.two{flex-direction:row}
-.acts.two .b{flex:1}
-.b{min-height:44px;border-radius:999px;border:1px solid transparent;padding:0 20px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--sf3);color:var(--ink)}
-.phone .b{min-height:52px}
-.b.pri{background:var(--pr);color:var(--onpr)}
-.b.acc{background:var(--acc);color:#fff}
-.b.dec{background:var(--dec);color:#fff}
-.b.ol{background:transparent;border-color:var(--ln2)}
-.b.tx{background:transparent;color:var(--pr)}
-.b[disabled]{opacity:.55;cursor:default}
-.banner{border:1px solid var(--ln2);background:var(--sf);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--sh)}
+/* harness bar + simulation drawer (shared chrome) */
+.hb{display:flex;align-items:center;gap:4px;max-width:1240px;margin:0 auto;padding:4px 10px 4px 16px;min-height:48px}
+.hb h1{flex:1;min-width:0;margin:0;display:flex;align-items:center;gap:6px;font-size:var(--fs-sub);font-weight:400;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb h1 a{display:inline-flex;align-items:center;min-height:44px;color:var(--accent-ink);font-weight:600;text-decoration:none}
+.hb h1 a:hover{text-decoration:underline;text-underline-offset:3px}
+.hb-ib{position:relative;width:36px;height:36px;flex:none;border:0;border-radius:50%;background:transparent;color:var(--muted);display:inline-grid;place-items:center;padding:0}
+.hb-ib::before{content:"";position:absolute;inset:-4px}
+.hb-ib:hover{background:var(--surface-2);color:var(--ink)}
+.hb-ib[aria-expanded=true]{background:var(--accent-soft);color:var(--accent-ink)}
+.hb-ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#theme[aria-pressed=true] .moon,#theme[aria-pressed=false] .sun{display:none}
+.scrim{position:fixed;inset:0;background:rgb(10 16 14 / .5);z-index:29}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:30;width:min(400px,100vw);display:flex;flex-direction:column;background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--shadow-sheet)}
+.drawer[hidden],.scrim[hidden]{display:none}
+.dr-h{display:flex;align-items:center;gap:8px;min-height:56px;padding:6px 10px 6px 20px;border-bottom:1px solid var(--hairline)}
+.dr-h h2{flex:1;margin:0;font-size:var(--fs-body);font-weight:600}
+.dr-b{flex:1;overflow:auto;padding:16px 20px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:24px}
+.dr-note{margin:0;font-size:var(--fs-sub);line-height:19px;color:var(--muted);background:var(--surface-2);border-radius:var(--r-ctl);padding:10px 12px}
+.dr-sec h3{margin:0 0 8px;font-size:var(--fs-meta);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dr-sec p{margin:0 0 8px;font-size:var(--fs-sub);line-height:19px;color:var(--muted)}
+@media(min-width:1100px){body.dr-open{padding-right:400px}.scrim{display:none!important}.drawer{box-shadow:none}}
+/* stage */
+main{max-width:1240px;margin:0 auto;padding:4px 12px 32px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.plat{display:flex;gap:8px}
+.t-chip{cursor:pointer}
+.t-chip:not([aria-pressed=true]):hover{background:var(--surface-2)}
+#stage{width:100%;display:flex;justify-content:center}
+.dev{background:var(--surface);border:1px solid var(--line);color:var(--ink);overflow:hidden;box-shadow:var(--shadow-pop);display:flex;flex-direction:column}
+.dev.phone{width:min(100%,380px);height:clamp(540px,calc(100dvh - 128px),740px);border-radius:36px}
+.dev.desk{width:min(100%,460px);height:clamp(460px,calc(100dvh - 140px),560px);border-radius:12px}
+.tb{display:none}
+.dev.desk .tb{display:flex;flex:none;height:32px;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:var(--surface-2);border-bottom:1px solid var(--hairline)}
+.body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;align-items:center;text-align:center;padding:64px 24px 40px}
+.desk .body{padding:40px 24px 28px}
+.body.idle{justify-content:center;padding-top:24px}
+.halo{position:relative;width:112px;height:112px;margin-bottom:20px;flex:none;border-radius:50%;display:grid;place-items:center}
+.halo.on{box-shadow:0 0 0 2px var(--gold);animation:pulse 1.6s ease-out infinite}
+.halo.wait{box-shadow:0 0 0 1.5px var(--line)}
+.halo.wait::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px dashed var(--line)}
+@keyframes pulse{0%{box-shadow:0 0 0 2px var(--gold),0 0 0 2px rgb(201 138 30 / .45)}100%{box-shadow:0 0 0 2px var(--gold),0 0 0 18px rgb(201 138 30 / 0)}}
+.av{width:96px;height:96px;font-size:34px}
+.av.bad{background:var(--surface-2);color:var(--muted)}
+.av.grp{background:var(--surface-2);color:var(--accent-ink)}
+.av.grp .i{width:40px;height:40px}
+.qicon{width:56px;height:56px;margin-bottom:16px;border-radius:50%;background:var(--surface-2);color:var(--muted);display:grid;place-items:center;flex:none}
+.desk .halo{width:96px;height:96px;margin-bottom:20px}
+.desk .av{width:80px;height:80px;font-size:28px}
+.idn h3{margin:0;font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.01em;outline:0;overflow-wrap:anywhere}
+.idle .idn h3{font-size:var(--fs-title);line-height:24px}
+.st{margin:4px 0 0;min-height:18px;font-size:var(--fs-sub);line-height:18px;color:var(--muted);font-variant-numeric:tabular-nums}
+.st #dur{display:inline-block;min-width:5ch;font-variant-numeric:tabular-nums}
+.meta{margin:12px 0 0;display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:16px;color:var(--muted)}
+.meta .i{width:14px;height:14px}
+.meta.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:999px;padding:4px 10px}
+.desc{margin:16px 0 0;max-width:32ch;font-size:var(--fs-sub);line-height:19px;color:var(--muted)}
+.sp1{flex:1;min-height:24px}
+.ctl{display:flex;justify-content:center;align-items:flex-start;gap:20px;width:100%}
+.ctl.two{gap:88px}
+.cb{display:flex;flex-direction:column;align-items:center;gap:8px;width:76px;padding:0;border:0;background:transparent;color:var(--ink);-webkit-tap-highlight-color:transparent}
+.cb .cw{height:64px;display:grid;place-items:center}
+.cb .c{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--ink);transition:background-color 120ms ease,transform 100ms ease}
+.cb.big .c{width:64px;height:64px}
+.cb.end .c{background:var(--danger);color:var(--on-danger)}
+.cb.ans .c{background:var(--accent);color:var(--on-accent)}
+.cb[aria-pressed=true] .c{background:var(--ink);color:var(--surface)}
+.cb:active .c{transform:scale(.95)}
+.cb:hover:not(.end):not(.ans) .c{background:var(--line)}
+.cb:focus-visible{outline:0}.cb:focus-visible .c{outline:2px solid var(--accent);outline-offset:3px}
+.cb .l{max-width:76px;font-size:var(--fs-meta);line-height:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;flex-direction:column;gap:8px;width:100%;max-width:280px}
+.b{min-height:44px;border-radius:var(--r-ctl);border:1px solid transparent;padding:0 18px;font-size:var(--fs-body);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-2);color:var(--ink)}
+.b .i{width:18px;height:18px}
+.b.pri{background:var(--accent);color:var(--on-accent)}
+.b.ol{background:transparent;border-color:var(--line)}
+.b.tx{background:transparent;color:var(--accent-ink)}
+.b.dec{background:var(--danger);color:var(--on-danger)}
+.b.acc{background:var(--accent);color:var(--on-accent)}
+.b[disabled]{opacity:.45;cursor:default}
+.banner{width:100%;margin:0 0 20px;text-align:left;background:var(--surface-2);border-radius:var(--r-ctl);padding:12px 14px;display:flex;flex-direction:column;gap:4px;font-size:var(--fs-sub);line-height:19px}
 .banner p{margin:0}
-.fail .note{color:var(--ink)}
-.dev.phone .body.ended .ident{margin-top:40px}
-/* panels */
-.list{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
-.gl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin:10px 0 4px}
-.sc{width:100%;text-align:left;min-height:44px;border:1px solid var(--ln);background:var(--sf2);border-radius:14px;padding:8px 14px;display:flex;flex-direction:column}
-.sc small{color:var(--ink2);font-size:13px}
-.sc[aria-current=true]{border-color:var(--pr);background:var(--prc);color:var(--onprc)}
-.sc[aria-current=true] small{color:var(--onprc)}
-.rem{display:flex;flex-wrap:wrap;gap:8px}
-.rem .b{background:var(--rlc);color:var(--onrlc);min-height:44px;font-size:14px}
-.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0}
+.banner .acts2{display:flex;gap:8px;margin-top:8px}
+.banner .acts2 .b{flex:1;min-height:40px;font-size:14px;padding:0 10px}
+.banner.after{margin:20px 0 0}
+/* drawer contents */
+.list{display:flex;flex-direction:column;gap:6px}
+.gl{margin:10px 0 0;font-size:12px;font-weight:600;color:var(--muted)}
+.gl:first-child{margin-top:0}
+.sc{width:100%;text-align:left;min-height:44px;border:1px solid var(--hairline);background:var(--surface);border-radius:12px;padding:7px 12px;display:flex;flex-direction:column;gap:1px;font-size:14px;line-height:19px;font-weight:600}
+.sc small{font-size:12px;line-height:16px;font-weight:400;color:var(--muted)}
+.sc:hover{background:var(--surface-2)}
+.sc[aria-current=true]{border-color:transparent;background:var(--accent-soft);color:var(--accent-ink)}
+.sc[aria-current=true] small{color:var(--accent-ink)}
+.rem{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.rem .b{min-height:40px;font-size:14px;padding:0 12px;background:var(--lav);color:var(--lav-ink)}
+.rem .empty{margin:0}
+.dr-cd{min-height:19px;font-variant-numeric:tabular-nums}
+.dr-cd:empty{display:none}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
 .row label{font-weight:600;font-size:14px}
-input[type=range]{flex:1;min-width:120px;accent-color:var(--pr);min-height:44px}
-.pv{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
-.pv .b{background:var(--sf2);border-color:var(--ln);font-size:14px;padding:0 12px;justify-content:flex-start}
-.pv .b[aria-pressed=true]{background:var(--prc);color:var(--onprc);border-color:var(--pr)}
-.cap{margin-top:12px;border-radius:14px;background:var(--sf2);padding:12px 14px;font-size:14px}
-.cap b{display:block}
-.demo-note{font-size:13px;color:var(--ink2);margin:12px 0 0}
-.hist,.log{margin:0;padding:0;list-style:none;font-size:14px;display:flex;flex-direction:column;gap:6px}
-.hist li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--ln);padding-bottom:6px}
-.log{max-height:240px;overflow:auto;color:var(--ink2)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;border:0;background:transparent;padding:0;font-size:14px;font-weight:600;text-align:left}
+.sw i{flex:none;width:40px;height:24px;border-radius:12px;background:var(--line);position:relative;transition:background-color 120ms ease}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .2);transition:transform 120ms ease}
+.sw[aria-checked=true] i{background:var(--accent)}.sw[aria-checked=true] i::after{transform:translateX(16px)}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);min-height:44px}
+.mono{font-variant-numeric:tabular-nums}
+.pv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pv .b{min-height:40px;font-size:13px;padding:0 10px;justify-content:flex-start;background:var(--surface);border-color:var(--hairline)}
+.pv .b[aria-pressed=true]{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.btns .b{min-height:40px;font-size:14px}
+.cap{margin-top:10px;border-radius:12px;background:var(--surface-2);padding:10px 12px;font-size:13px;line-height:18px;color:var(--muted)}
+.cap b{display:block;color:var(--ink)}
+.hist,.log{margin:0;padding:0;list-style:none;font-size:13px;line-height:18px;display:flex;flex-direction:column;gap:6px}
+.hist li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--hairline);padding-bottom:6px}
+.hist .tag{font-size:11px;font-weight:600;border-radius:999px;padding:0 6px;background:var(--warn-bg);color:var(--warn-ink)}
+.log{max-height:240px;overflow:auto;color:var(--muted)}
 .log li span{color:var(--ink)}
-.empty{color:var(--ink2);font-size:14px;margin:0}
-dialog{border:1px solid var(--ln2);border-radius:20px;background:var(--sf);color:var(--ink);padding:20px;width:min(360px,calc(100vw - 32px))}
-dialog::backdrop{background:rgba(15,21,19,.5)}
-dialog h2{margin:0 0 4px;font-size:20px}
-fieldset{border:0;padding:0;margin:12px 0}
-.opt{display:flex;align-items:center;gap:12px;min-height:48px;border-radius:14px;padding:4px 10px;cursor:pointer}
-.opt:has(input:checked){background:var(--prc);color:var(--onprc)}
-.opt:has(input:focus-visible){outline:3px solid var(--pr)}
-.opt input{width:20px;height:20px;accent-color:var(--pr)}
-.opt small{display:block;color:inherit;opacity:.85;font-size:13px}
-@media (max-width:700px){
-.top{padding:6px 12px 2px;gap:0 8px}
-.top h1{font-size:19px;line-height:1.25;margin-top:2px}
-.top .sub{font-size:12px;line-height:1.35}
-main{padding:6px 10px 32px;gap:12px}
-.col{gap:12px}
-.card{padding:12px;border-radius:16px}
-#stage-h{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.bar{margin-bottom:8px}
-.bar .seg{width:100%}.bar .seg button{flex:1;padding:0 8px}
-.dev.phone{border-radius:24px;min-height:clamp(380px,calc(100svh - 250px),600px)}
-.body{padding:16px 16px 18px;gap:10px}
-.phone .body{padding-top:18px}
-.phone .halo{width:96px;height:96px}
-.phone .av{width:76px;height:76px;font-size:28px}
-.phone .ident h3{font-size:23px}
-.phone .status{font-size:16px}
-.phone .desc{font-size:14px}
-.phone .ctl{gap:16px}
-.phone .ctl button .c{width:52px;height:52px}
-.phone .b{min-height:48px}
-.dev.phone .body.ended .ident{margin-top:12px}
-.demo-note{font-size:12px;margin-top:8px}
-.card h2{font-size:17px}
+.empty{color:var(--muted);font-size:13px;margin:0}
+/* dialog: centered >=700px, bottom sheet below */
+dialog{border:0;border-radius:var(--r-sheet);background:var(--surface);color:var(--ink);padding:20px;width:min(380px,calc(100vw - 32px));box-shadow:var(--shadow-sheet)}
+dialog::backdrop{background:rgb(10 16 14 / .5)}
+dialog h2{margin:0 0 4px;font-size:var(--fs-title);font-weight:600}
+dialog .hint{margin:0 0 8px;font-size:var(--fs-sub);color:var(--muted)}
+dialog .acts{max-width:none;margin-top:8px}
+fieldset{border:0;padding:0;margin:8px 0}
+.opt{display:flex;align-items:center;gap:12px;min-height:52px;border-radius:var(--r-ctl);padding:4px 12px;cursor:pointer}
+.opt:has(input:checked){background:var(--accent-soft);color:var(--accent-ink)}
+.opt:has(input:focus-visible){outline:2px solid var(--accent)}
+.opt input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+.opt small{display:block;color:var(--muted);font-size:13px;line-height:17px}
+.opt:has(input:checked) small{color:inherit}
+@media(max-width:699px){
+ dialog{width:100%;max-width:100%;margin:auto 0 0;border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding:12px 20px calc(20px + env(safe-area-inset-bottom))}
+ dialog::before{content:"";display:block;width:28px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+ main{padding:0 12px 16px;gap:10px}
+ .dev.phone{height:clamp(520px,calc(100dvh - 116px),720px);border-radius:32px}
+ .body{padding-top:48px}
 }
-@media (max-width:360px){.back{font-size:14px}.tbtn{padding:0 12px;font-size:14px}.phone .halo{width:84px;height:84px}.phone .av{width:66px;height:66px;font-size:24px}.phone .ctl{gap:8px}.top h1{font-size:18px}}
+@media(max-width:360px){.ctl{gap:8px}.ctl.two{gap:56px}.body{padding-left:16px;padding-right:16px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:root[data-motion=reduce] *{animation:none!important}
 </style>
 <link rel="stylesheet" href="interactions.css">
 </head>
 <body>
-<header class="top">
-  <a class="back" href="./index.html">← Home</a>
-  <span class="sp"></span>
-  <button class="tbtn" id="theme" type="button" aria-pressed="false">Dark mode</button>
-  <h1 id="pg">Calls: ringing, answering, failing</h1>
-  <p class="sub">Interactive design · simulated data. No call is placed, no microphone is used, nothing leaves this page.</p>
+<header class="hb">
+  <h1 id="pg"><a href="./index.html">← Home</a><span aria-hidden="true">·</span><span>Calls</span></h1>
+  <button class="hb-ib" id="theme" type="button" aria-pressed="false" aria-label="Dark theme" title="Dark theme"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+  <button class="hb-ib" id="simtog" type="button" aria-expanded="false" aria-controls="drawer" aria-label="Simulation" title="Simulation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
 </header>
 
 <main aria-labelledby="pg">
-  <div class="col">
-    <section class="card" aria-labelledby="stage-h">
-      <div class="bar">
-        <h2 id="stage-h">Call screen</h2>
-        <div class="seg" role="group" aria-label="Platform">
-          <button type="button" id="p-android" aria-pressed="true">Android</button>
-          <button type="button" id="p-desk" aria-pressed="false">Desktop</button>
-        </div>
-      </div>
-      <div id="stage"></div>
-      <p class="demo-note" id="stage-note"></p>
-      <div class="row"><button class="b ol" type="button" id="restart">Replay scenario</button></div>
-    </section>
-    <section class="card" aria-labelledby="rem-h">
-      <h2 id="rem-h">Other side and network (simulated)</h2>
-      <p class="hint">What the remote person or the network does. Anything you do not press follows the scripted default.</p>
-      <div class="rem" id="rem"></div>
-    </section>
+  <div class="plat" role="group" aria-label="Platform">
+    <button type="button" class="t-chip" id="p-android" aria-pressed="true">Android</button>
+    <button type="button" class="t-chip" id="p-desk" aria-pressed="false">Desktop</button>
   </div>
-
-  <div class="col">
-    <section class="card" aria-labelledby="sc-h">
-      <h2 id="sc-h">Scenarios</h2>
-      <p class="hint">Pick one to start it. Pressing the same one again restarts it.</p>
-      <div id="scs"></div>
-    </section>
-
-    <section class="card" aria-labelledby="snd-h">
-      <h2 id="snd-h">Sound</h2>
-      <p class="hint">Nothing plays until you press a button here or turn on scenario sounds.</p>
-      <div class="row">
-        <button class="tbtn" type="button" id="son" role="switch" aria-checked="false"><span>Play sounds during scenarios</span> <span class="mono" aria-hidden="true">Off</span></button>
-      </div>
-      <div class="row"><label for="vol">Volume (kept low)</label><input type="range" id="vol" min="0" max="100" value="50" aria-describedby="volv"><span id="volv" class="mono" style="min-width:3ch">50</span></div>
-      <p class="hint" style="margin:8px 0 4px" id="pv-h">Preview a sound</p>
-      <div class="pv" role="group" aria-labelledby="pv-h" id="pv"></div>
-      <div class="row"><button class="b ol" type="button" id="replay">Replay current sound</button><button class="b ol" type="button" id="stopsnd">Stop sound</button></div>
-      <div class="cap" id="cap" aria-live="off"></div>
-      <p class="demo-note">This is a browser audio demo to judge character, level and timing. It is not the native fix: Android and desktop ringing, audio focus, volume streams and Do Not Disturb are separate work.</p>
-    </section>
-
-    <section class="card" aria-labelledby="h-h">
-      <h2 id="h-h">Call history</h2>
-      <p class="hint">One record per call, as in the multi-device design.</p>
-      <ul class="hist" id="hist"></ul>
-      <p class="empty" id="hist-e">No calls yet. Finish a scenario and it appears here.</p>
-    </section>
-
-    <section class="card" aria-labelledby="l-h">
-      <h2 id="l-h">Event log</h2>
-      <ul class="log" id="log"></ul>
-      <p class="empty" id="log-e">Events appear here, including the sound each one would make.</p>
-    </section>
-  </div>
+  <div id="stage"></div>
 </main>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-labelledby="dr-t">
+  <div class="dr-h"><h2 id="dr-t">Simulation</h2><button class="hb-ib" id="drawer-x" type="button" aria-label="Close simulation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="dr-b">
+    <p class="dr-note">Simulated. No call is placed, no microphone is used, nothing leaves this page.</p>
+    <section class="dr-sec" aria-labelledby="rem-h">
+      <h3 id="rem-h">Other side and network</h3>
+      <p class="dr-cd" id="cd"></p>
+      <div class="rem" id="rem"></div>
+      <button class="b ol" type="button" id="restart">Replay scenario</button>
+    </section>
+    <section class="dr-sec" aria-labelledby="sc-h">
+      <h3 id="sc-h">Scenarios</h3>
+      <div id="scs" class="list"></div>
+    </section>
+    <section class="dr-sec" aria-labelledby="snd-h">
+      <h3 id="snd-h">Sound</h3>
+      <button class="sw" type="button" id="son" role="switch" aria-checked="false"><span>Play sounds during scenarios</span><i aria-hidden="true"></i></button>
+      <div class="row"><label for="vol">Volume</label><input type="range" id="vol" min="0" max="100" value="50" aria-describedby="volv"><span id="volv" class="mono" style="min-width:3ch">50</span></div>
+      <p id="pv-h">Preview a sound</p>
+      <div class="pv" role="group" aria-labelledby="pv-h" id="pv"></div>
+      <div class="btns"><button class="b ol" type="button" id="replay">Replay current sound</button><button class="b ol" type="button" id="stopsnd">Stop sound</button></div>
+      <div class="cap" id="cap" aria-live="off"></div>
+    </section>
+    <section class="dr-sec" aria-labelledby="pl-h">
+      <h3 id="pl-h">Platform</h3>
+      <p id="stage-note"></p>
+      <p>The ended screen closes itself after 4 seconds in the app. Here it stays open.</p>
+      <p>The sounds are a browser demo of character, level and timing. Native ringing, audio focus, volume streams and Do Not Disturb are separate work.</p>
+    </section>
+    <section class="dr-sec" aria-labelledby="h-h">
+      <h3 id="h-h">Call history</h3>
+      <ul class="hist" id="hist"></ul>
+      <p class="empty" id="hist-e">No calls yet.</p>
+    </section>
+    <section class="dr-sec" aria-labelledby="l-h">
+      <h3 id="l-h">Event log</h3>
+      <ul class="log" id="log"></ul>
+      <p class="empty" id="log-e">Events and the sound each one makes appear here.</p>
+    </section>
+  </div>
+</aside>
 
 <div class="sr" id="live" role="status" aria-live="polite"></div>
 
@@ -239,7 +237,9 @@ var IC={
  mic:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"/>',
  micoff:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3 M3 3l18 18"/>',
  spk:'<path d="M11 5 6 9H2v6h4l5 4z M15.5 8.5a5 5 0 0 1 0 7 M19 5a10 10 0 0 1 0 14"/>',
- retry:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8 M21 3v5h-5"/>'
+ retry:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8 M21 3v5h-5"/>',
+ lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ group:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.4.3 4 1.9 4.5 4.5"/>'
 };
 function svg(n,c){return '<svg class="i '+(c||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'}
 
@@ -336,6 +336,20 @@ var S,T=[],tickId=null,soundOn=false,lastCue=null,cap={mode:'none'},hist=[],logN
 function fresh(){return{scn:null,platform:S?S.platform:'android',phase:'idle',peer:'arjun',attempt:1,route:null,extOn:true,muted:false,path:'direct',activeAt:0,deadline:0,reason:'',second:null,settings:false,asked:false,startedAt:0,group:false,host:0,hostsTried:[],blk:'',refused:false,blkDial:false}}
 S=fresh();S.platform='android';
 
+/* simulation drawer: docked beside the frame on wide screens, overlay below */
+function docked(){return matchMedia('(min-width:1100px)').matches}
+function setDrawer(open,focus){
+ var d=$('#drawer');d.hidden=!open;$('#scrim').hidden=!open||docked();
+ $('#simtog').setAttribute('aria-expanded',String(open));document.body.classList.toggle('dr-open',open);
+ if(focus)(open?$('#drawer-x'):$('#simtog')).focus();
+}
+$('#simtog').addEventListener('click',function(){setDrawer($('#drawer').hidden,true)});
+$('#drawer-x').addEventListener('click',function(){setDrawer(false,true)});
+$('#scrim').addEventListener('click',function(){setDrawer(false,true)});
+document.addEventListener('keydown',function(e){
+ if(e.key!=='Escape'||$('#drawer').hidden||$('#route').open)return;
+ if($('#drawer').contains(e.target)||!docked()){e.preventDefault();e.stopImmediatePropagation();setDrawer(false,true)}
+},true);
 function later(fn,ms){var id=setTimeout(function(){T=T.filter(function(x){return x!==id});fn();UI.all()},ms);T.push(id)}
 function clearT(){T.forEach(clearTimeout);T=[]}
 function tickStart(){tickStop();tickId=setInterval(tick,1000)}
@@ -353,7 +367,7 @@ function log(text,cue){
 function dur(){var s=Math.max(0,((Date.now()-S.activeAt)/1000)|0),m=(s/60)|0;s=s%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s}
 function addHist(peer,text,tag){
  hist.unshift({p:PEERS[peer].s,t:text,tag:tag||'',at:now()});hist=hist.slice(0,6);
- $('#hist').innerHTML=hist.map(function(h){return '<li><span>'+h.p+' · '+h.t+(h.tag?' <span class="pill '+(h.tag==='Missed'?'w':'g')+'">'+h.tag+'</span>':'')+'</span><span class="mono">'+h.at+'</span></li>'}).join('');
+ $('#hist').innerHTML=hist.map(function(h){return '<li><span>'+h.p+' · '+h.t+(h.tag?' <span class="tag">'+h.tag+'</span>':'')+'</span><span class="mono">'+h.at+'</span></li>'}).join('');
  $('#hist-e').hidden=true;
 }
 
@@ -391,6 +405,7 @@ function begin(id){
  UI.all();
  // A scenario can be started far below the call panel on a phone.
  // Move focus and the viewport together so ringing never hides its controls.
+ if(!docked())setDrawer(false);
  $('#stage-t').focus({preventScroll:true});
  if(matchMedia('(max-width:700px)').matches) $('#stage').scrollIntoView({block:'start',behavior:'instant'});
 }
@@ -445,6 +460,7 @@ function remote(k){
  }else if(k==='back'&&ph==='reconnecting'){
   clearT();S.phase='active';S.deadline=0;log('Line restored');say('Reconnected.');cue('connected');
  }else if(k==='giveup'&&ph==='reconnecting'){endCall('lost')}
+ else if(k==='micok'&&ph==='mic-needed'){ACT.micok();return}
  else if(k==='path'&&ph==='active'){S.path=S.path==='direct'?'relayed':'direct';log('Path is now '+S.path);say('Call is now '+S.path+(S.path==='relayed'?', encrypted through a relay.':'.'))}
  else if(k==='hostdrop'&&ph==='active'&&S.group){S.hostsTried.push(S.host);endCall('host-lost')}
  else if(k==='hostdown'&&ph==='connecting'&&S.group){S.hostsTried.push(S.host);endCall('host-unreachable')}
@@ -487,7 +503,7 @@ var REASONS={
  'unreachable':{t:function(p){return 'Couldn’t reach '+p.s},h:'Couldn’t reach',kind:'fail',hist:'Not reached',cue:'failed',d:'May be offline, out of signal, or not taking calls right now. Tinline can’t leave messages.'},
  'lost':{t:function(){return 'Connection lost'},h:'Call ended',kind:'fail',hist:'Dropped',cue:'failed',d:'Tinline could not find the line again in time.'},
  'missed-cancel':{t:function(p){return 'Missed call from '+p.n},h:'Missed',kind:'miss',hist:'Incoming',tag:'Missed',cue:null,d:'The caller hung up before you answered.'},
- 'missed-timeout':{t:function(p){return 'Missed call from '+p.n},h:'Missed',kind:'miss',hist:'Incoming',tag:'Missed',cue:null,d:'It stopped ringing after '+RING_TIMEOUT+' seconds (shortened for this demo).'},
+ 'missed-timeout':{t:function(p){return 'Missed call from '+p.n},h:'Missed',kind:'miss',hist:'Incoming',tag:'Missed',cue:null,d:'It stopped ringing.'},
  'elsewhere':{t:function(){return 'Answered on another device'},h:'Answered elsewhere',kind:'end',hist:'Answered elsewhere',cue:null,d:'One of your other devices took this call. No missed call is recorded, and this device stopped ringing.'},
  'host-lost':{t:function(){return 'The call host dropped'},h:'Call ended',kind:'fail',hist:'Host lost',cue:'failed',d:'A group call ends when its call host drops. Tinline does not reconnect or hand the live call to another host.'},
  'host-unreachable':{t:function(){return 'Couldn’t reach the call host'},h:'Couldn’t reach',kind:'fail',hist:'Host not reached',cue:'failed',d:'Nothing was started. The members did not hear anything.'},
@@ -545,7 +561,7 @@ document.addEventListener('click',function(e){
  var a=e.target.closest('[data-act]');
  if(a&&a.closest('#stage')){ACT[a.dataset.act]&&ACT[a.dataset.act](a);UI.all();return}
  var r=e.target.closest('[data-rem]');
- if(r){remote(r.dataset.rem);return}
+ if(r){remote(r.dataset.rem);if(!docked())setDrawer(false);return}
  var s=e.target.closest('[data-scn]');
  if(s){begin(s.dataset.scn);return}
 });
@@ -569,103 +585,98 @@ $('#route').addEventListener('click',function(e){if(e.target===this)this.close()
 $('#route').addEventListener('close',function(){if(opener){var o=document.querySelector('[data-act=route]')||opener;o.focus()}opener=null});
 
 /* ---------- view ---------- */
+function hue(n){return 'av'+([].slice.call(n).reduce(function(a,c){return a+c.codePointAt(0)},0)%6)}
+function shortRoute(){var n=routeName();return n==='Phone earpiece'?'Earpiece':n==='Laptop speakers'?'Speakers':n}
 function view(){
- var p=PEERS[S.peer],P=S.platform==='desk',v={name:p.n,ini:p.i,status:'',badges:[],desc:'',cd:'',ctl:false,acts:[],halo:'',bad:false,banner:'',two:false,cls:''};
- var DECL={a:'dec',l:'Decline',i:'phone',ic:'hang'},ANS={a:'answer',l:'Answer',c:'acc',i:'phone'};
+ var p=PEERS[S.peer],P=S.platform==='desk',v={name:p.n,ini:p.i,icon:'',status:'',meta:'',desc:'',ctl:[],acts:[],halo:'',bad:false,banner:'',after:'',two:false,cls:''};
+ var grp=S.group||S.peer==='family';
+ var END={a:'end',l:'End',al:'End call',k:'end big',i:'phone',ic:'hang'};
+ var CTL=function(){return [{a:'mute',l:S.muted?'Unmute':'Mute',k:'',i:S.muted?'micoff':'mic',pr:S.muted},END,{a:'route',l:shortRoute(),al:'Audio output: '+routeName(),k:'',i:'spk'}]};
  switch(S.phase){
- case 'idle':v.name='No call';v.ini='·';v.bad=true;v.halo='wait';v.status='Nothing is ringing';v.desc='Start a call or an incoming ring here, or pick a scenario. Nothing is dialled and nothing rings outside this page.';v.acts=[{a:'start',l:'Call Arjun (simulated)',c:'pri',i:'phone'},{a:'startin',l:'Incoming call (simulated)',c:'ol',i:'phone'}];break;
- case 'mic-needed':v.name='Tinline can’t use the microphone';v.ini='';v.status='';v.bad=true;v.desc='Without it, '+p.s+' won’t hear you. Tinline only listens during calls, never in the background.';
-  v.acts=[{a:'settings',l:'Open settings',c:'pri'}];
-  if(S.settings)v.acts.push({a:'micok',l:'Simulate: I allowed the microphone',c:'ol'});
-  v.acts.push({a:'notnow',l:'Not now',c:'tx'});v.cd=S.settings?'Then go to Permissions › Microphone and allow it. Here, press Simulate to continue.':'';v.cls='fail';break;
- case 'not-allowed':v.name=p.s+' hasn’t allowed calls from you';v.status='Messages only';v.bad=true;v.desc='You can still message '+p.s+'. Tapping call never dials, so '+p.s+'’s phone does not ring.';
+ case 'idle':v.cls='idle';v.ini='';v.icon='phone';v.name='No active call';v.desc='Calls go straight to the other device.';
+  v.acts=[{a:'start',l:'Call Arjun',c:'pri',i:'phone'},{a:'startin',l:'Incoming call',c:'ol'}];break;
+ case 'mic-needed':v.ini='';v.icon='micoff';v.name='Tinline can’t use the microphone';v.desc='Without it, '+p.s+' won’t hear you. Tinline only listens during calls, never in the background.';
+  v.acts=[{a:'settings',l:'Open settings',c:'pri'},{a:'notnow',l:'Not now',c:'tx'}];break;
+ case 'not-allowed':v.bad=true;v.name=p.s+' hasn’t allowed calls from you';v.status='Messages only';v.desc='You can still message '+p.s+'. Nothing was dialled, so '+p.s+'’s phone didn’t ring.';
   v.acts=S.asked?[{a:'close',l:'Close',c:'tx'}]:[{a:'ask',l:'Ask '+p.s+' to allow calls',c:'pri'},{a:'close',l:'Close',c:'tx'}];
-  if(S.asked)v.banner='<p><b>Request sent as a message (simulated).</b> '+p.s+' sees an Allow button. Nothing else happened.</p>';break;
- case 'host-denied':v.name='Family group call';v.ini='FG';v.bad=true;v.status='Can’t start through '+HOSTS[S.host].n;v.badges=['<span class="pill w">No call-hosting permission</span>'];
-  v.desc=HOSTS[S.host].n+' hosts the chat but is not allowed to host calls. Hosting a call is a separate permission, because the host can hear it.';
-  v.acts=[{a:'usehost',l:'Start via '+HOSTS[0].n,c:'pri',i:'phone'},{a:'close',l:'Close',c:'tx'}];v.cls='fail';break;
+  if(S.asked)v.after='<p><b>Request sent as a message.</b> '+p.s+' sees an Allow button.</p>';break;
+ case 'host-denied':v.name='Family group';v.status='Can’t start through '+HOSTS[S.host].n;
+  v.desc=HOSTS[S.host].n+' hosts the chat but isn’t allowed to host calls. Hosting a call is a separate permission, because the host can hear it.';
+  v.acts=[{a:'usehost',l:'Start via '+HOSTS[0].n,c:'pri',i:'phone'},{a:'close',l:'Close',c:'tx'}];break;
  case 'blocked-by':
-  v.bad=true;v.cls='fail';
-  if(S.blk==='blocked'){v.name=p.s+' has blocked you';v.status='Calls and messages are off';v.badges=['<span class="pill e">Blocked by '+p.s+'</span>'];
-   v.desc='Tinline does not dial or retry. Calling works again only after '+p.s+' unblocks you and you add '+p.s+' again with their QR or ticket.';
+  v.bad=true;
+  if(S.blk==='blocked'){v.name=p.s+' has blocked you';v.status='Calls and messages are off';
+   v.desc='Tinline won’t dial or retry. Calling works again only after '+p.s+' unblocks you and you add '+p.s+' again with their QR or ticket.';
    v.acts=[{a:'noop',l:'Call unavailable',c:'ol',dis:1},{a:'close',l:'Close',c:'tx'}];
-   if(S.refused)v.banner='<p><b>Refused: blocked.</b> '+p.s+'’s app turned the call away with the reason “blocked”. It will not be tried again.</p>'}
-  else if(S.blk==='unblocked'){v.name=p.s+' unblocked you';v.status='Calls still off';v.badges=['<span class="pill w">Add '+p.s+' again</span>'];
-   v.desc='Your contact entry for '+p.s+' was removed when they blocked you. The old chat stays readable. Add them again to call.';
-   v.acts=[{a:'addleo',l:'Add '+p.s+' again (scan QR, simulated)',c:'pri'},{a:'close',l:'Close',c:'tx'}]}
-  else{v.name=p.n;v.bad=false;v.cls='';v.status='Contact added again';v.badges=['<span class="pill g">Calls on</span>'];v.desc='You can call '+p.s+' now.';v.acts=[{a:'calleo',l:'Call '+p.s,c:'pri',i:'phone'},{a:'close',l:'Close',c:'tx'}]}
+   if(S.refused)v.after='<p><b>Refused: blocked.</b> '+p.s+'’s app turned the call away. It won’t be tried again.</p>'}
+  else if(S.blk==='unblocked'){v.name=p.s+' unblocked you';v.status='Calls still off';
+   v.desc='Your contact entry for '+p.s+' was removed when they blocked you. The old chat stays readable. Add '+p.s+' again to call.';
+   v.acts=[{a:'addleo',l:'Scan '+p.s+'’s QR',c:'pri'},{a:'close',l:'Close',c:'tx'}]}
+  else{v.bad=false;v.status='Contact added again';v.desc='You can call '+p.s+' now.';v.acts=[{a:'calleo',l:'Call '+p.s,c:'pri',i:'phone'},{a:'close',l:'Close',c:'tx'}]}
   break;
- case 'connecting':v.status='Connecting…';v.desc='Finding a path to '+p.s+'. The other device is not ringing yet, so you will hear nothing.';v.halo='wait';v.acts=[{a:'cancel',l:'Cancel',c:'ol'}];
-  if(S.group){v.desc='Connecting to '+HOSTS[S.host].n+', the call host. Other members never connect to you directly.'}
-  if(S.blkDial){v.desc='Dialling '+p.s+'.'}
+ case 'connecting':v.status=S.blkDial?'Calling…':'Connecting…';v.halo='wait';
+  if(S.group)v.meta='<span class="meta">Via '+HOSTS[S.host].n+'</span>';
+  v.ctl=[{a:'cancel',l:'Cancel',al:'Cancel call',k:'end big',i:'phone',ic:'hang'}];break;
+ case 'ringing':v.status='Ringing…';v.halo='on';v.ctl=[{a:'cancel',l:'Cancel',al:'Cancel call',k:'end big',i:'phone',ic:'hang'}];break;
+ case 'incoming':v.status='Incoming call';v.halo='on';v.meta='<span class="meta">'+svg('lock')+'End-to-end encrypted</span>';v.two=true;
+  v.ctl=[{a:'decline',l:'Decline',k:'end big',i:'phone',ic:'hang'},{a:'answer',l:'Answer',k:'ans big',i:'phone'}];break;
+ case 'joining':v.status='Connecting…';v.halo='wait';v.ctl=CTL();break;
+ case 'active':v.status='<span id="dur">'+dur()+'</span>';v.ctl=CTL();
+  if(S.group){v.meta='<span class="meta warn">Via '+HOSTS[S.host].n+' · host can hear</span>';v.desc='Not end-to-end. '+HOSTS[S.host].n+' passes the audio on and can hear it. If it drops, the call ends.'}
+  else if(S.path==='direct')v.meta='<span class="meta">'+svg('lock')+'End-to-end encrypted · direct</span>';
+  else{v.meta='<span class="meta">'+svg('lock')+'End-to-end encrypted · relayed</span>';v.desc='A direct line wasn’t possible on this network. An encrypted relay passes the call along. It can’t hear you.'}
+  if(S.second){var q=PEERS[S.second];v.banner='<p><b>'+q.n+' is calling</b></p><p>Your call with '+p.s+' continues until you choose. Decline tells '+q.s+' you’re busy.</p><div class="acts2"><button class="b" type="button" data-act="decl2">Decline</button><button class="b acc" type="button" data-act="eanda">End &amp; answer</button></div>'}
   break;
- case 'ringing':v.status='Ringing on '+p.s+'’s device';v.halo='on';v.desc='The other device has confirmed it is ringing.';v.cd='<span id="cd"></span>';v.acts=[{a:'cancel',l:'Cancel call',c:'dec',i:'phone',ic:'hang'}];break;
- case 'incoming':v.status='is calling · end-to-end encrypted';v.halo='on';v.desc='If you have linked devices, they ring too. The first to answer wins.';v.cd='<span id="cd"></span>';v.two=true;v.acts=[{a:'decline',l:'Decline',c:'dec',i:'phone',ic:'hang'},{a:'answer',l:'Answer',c:'acc',i:'phone'}];break;
- case 'joining':v.status=S.group?'Joined · connecting audio…':'Answered · connecting audio…';v.halo='wait';v.acts=[{a:'end',l:'End call',c:'dec',i:'phone',ic:'hang'}];break;
- case 'active':v.status='<span id="dur" class="mono">'+dur()+'</span>';
-  v.badges=[S.path==='direct'?'<span class="pill g">Direct</span>':'<span class="pill r">Relayed · encrypted</span>','<span class="pill">Good quality</span>'];
-  if(S.muted)v.badges.push('<span class="pill k">Muted</span>');
-  if(S.group){v.badges=['<span class="pill r">Group · via '+HOSTS[S.host].n+'</span>','<span class="pill w">Host can hear</span>'].concat(S.muted?['<span class="pill k">Muted</span>']:[])}
-  v.ctl=true;v.desc=S.path==='direct'?'End-to-end encrypted · straight to '+p.s+'’s '+(P?'device':'phone'):'A direct line wasn’t possible on this network, so an encrypted relay passes the call along. It can’t hear you.';
-  v.acts=[{a:'end',l:'End call',c:'dec',i:'phone',ic:'hang'}];
-  if(S.second){var q=PEERS[S.second];v.banner='<p><b>'+q.n+' is calling</b></p><p class="hint" style="margin:0">Your call with '+p.s+' continues until you choose. Decline tells '+q.s+' you’re busy. No hold, no call waiting.</p><div class="acts two"><button class="b dec" type="button" data-act="decl2">Decline</button><button class="b acc" type="button" data-act="eanda">End &amp; answer</button></div>'}
-  if(S.group)v.desc='Encrypted hop by hop to '+HOSTS[S.host].n+', not end-to-end. The call host can hear the call and passes audio to the others. If it drops, the call ends.';
-  break;
- case 'reconnecting':v.status='Reconnecting…';v.halo='wait';v.badges=['<span class="pill w">Audio paused</span>'].concat(S.muted?['<span class="pill k">Muted</span>']:[]);
-  v.desc='Your network changed. Hold on, Tinline is finding the line again.';v.cd='<span id="cd"></span>';v.ctl=true;v.acts=[{a:'end',l:'End call',c:'dec',i:'phone',ic:'hang'}];break;
+ case 'reconnecting':v.status='Reconnecting…';v.halo='wait';v.meta='<span class="meta warn">Audio paused</span>';v.ctl=CTL();break;
  case 'ended':
-  var r=REASONS[S.reason];v.name=r.t(p);v.bad=r.kind!=='end'&&r.kind!=='miss'?true:false;v.cls='ended '+(r.kind==='fail'?'fail':'');v.status=r.kind==='miss'?'':r.h;
-  if(S.len)v.badges=['<span class="pill mono">'+S.len+'</span>'];
+  var r=REASONS[S.reason];v.name=r.t(p);v.bad=true;
+  v.status=S.len?r.h+' · <span class="mono">'+S.len+'</span>':(r.h==='Call ended'?r.h:'');
   v.desc=r.d||'';
   var hostEnd=S.reason==='host-lost'||S.reason==='host-unreachable';
   if(hostEnd){var nx=nextHost();v.desc=r.d+(nx>=0?' Redialling through '+HOSTS[nx].n+' is your choice; nothing is retried for you.':' No other call host is allowed to host calls right now.');
    v.acts=nx>=0?[{a:'redialhost',l:'Redial via '+HOSTS[nx].n,c:'pri',i:'retry'},{a:'close',l:'Close',c:'tx'}]:[{a:'close',l:'Close',c:'pri'}]}
   else if(r.kind==='fail')v.acts=[{a:'retry',l:'Try again',c:'pri',i:'retry'},{a:'close',l:'Close',c:'tx'}];
   else if(r.kind==='miss')v.acts=[{a:'callback',l:'Call back',c:'pri',i:'phone'},{a:'close',l:'Dismiss',c:'tx'}];
-  else if(S.reason==='remote-hangup'||S.reason==='local-hangup'||S.reason==='cancelled')v.acts=[{a:'again',l:'Call again',c:'ol'},{a:'close',l:'Close',c:'tx'}];
+  else if(S.reason==='remote-hangup'||S.reason==='local-hangup'||S.reason==='cancelled')v.acts=[{a:'again',l:'Call again',c:'ol',i:'phone'},{a:'close',l:'Close',c:'tx'}];
   else v.acts=[{a:'close',l:'Close',c:'tx'}];
-  v.cd=(r.kind==='fail'||r.kind==='miss')?'':'Native app closes this by itself after 4 seconds. The prototype keeps it open so you can look.';
  }
+ if(grp&&v.ini)v.grp=true;
  return v;
 }
 function btn(x){return '<button type="button" class="b '+(x.c||'')+'" data-act="'+x.a+'"'+(x.dis?' disabled aria-disabled="true"':'')+'>'+(x.i?svg(x.i,x.ic):'')+x.l+'</button>'}
+function cbtn(x){return '<button type="button" class="cb '+(x.k||'')+'" data-act="'+x.a+'"'+(x.al?' aria-label="'+x.al+'"':'')+(x.pr!==undefined?' aria-pressed="'+x.pr+'"':'')+'><span class="cw"><span class="c">'+svg(x.i,x.ic)+'</span></span><span class="l" aria-hidden="'+(x.al?'true':'false')+'">'+x.l+'</span></button>'}
 function renderStage(){
  var v=view(),P=S.platform==='desk',st=$('#stage'),fa=document.activeElement,fkey=null,inside=false;
  if(fa&&st.contains(fa)){inside=true;fkey=fa.dataset.act||null}
- var ctl='';
- if(v.ctl){
-  ctl='<div class="ctl"><button type="button" data-act="mute" aria-pressed="'+S.muted+'"><span class="c">'+svg(S.muted?'micoff':'mic')+'</span>'+(S.muted?'Unmute':'Mute')+'</button>'+
-   '<button type="button" data-act="route"><span class="c">'+svg('spk')+'</span><span>'+routeName()+'</span></button></div>';
- }
- var hasLive=v.halo==='on';
- var ini=v.ini?'<div class="halo '+v.halo+'"><div class="av'+(v.bad?' bad':'')+'" aria-hidden="true">'+v.ini+'</div></div>':'';
- st.innerHTML='<section class="dev '+(P?'desk':'phone')+'" aria-label="'+(P?'Desktop call window':'Android call screen')+' (simulated)">'+
+ var p=PEERS[S.peer],top;
+ if(v.icon)top='<div class="qicon" aria-hidden="true">'+svg(v.icon)+'</div>';
+ else top='<div class="halo '+v.halo+'"><div class="t-avatar av'+(v.grp?' grp':v.bad?' bad':' '+hue(p.n))+'" aria-hidden="true">'+(v.grp?svg('group'):v.ini)+'</div></div>';
+ st.innerHTML='<section class="dev '+(P?'desk':'phone')+'" aria-label="'+(P?'Desktop call window':'Android call screen')+'">'+
   '<div class="tb">'+(S.phase==='incoming'?'Incoming call — Tinline':'Tinline')+'</div>'+
-  '<div class="body '+v.cls+'">'+ini+
-  '<div class="ident"'+'>'+(P?'':'')+'<div style="min-width:0"><h3 id="stage-t" tabindex="-1">'+v.name+'</h3>'+(v.status?'<p class="status">'+v.status+'</p>':'')+(v.badges.length?'<div class="badges">'+v.badges.join('')+'</div>':'')+'</div></div>'+
-  (v.desc?'<p class="desc note">'+v.desc+'</p>':'')+
-  (v.cd?'<p class="cd">'+v.cd+'</p>':'')+
-  (v.banner?'<div class="banner">'+v.banner+'</div>':'')+
-  '<div class="sp1"></div>'+ctl+
-  '<div class="acts'+(v.two?' two':'')+'">'+v.acts.map(btn).join('')+'</div>'+
-  (P&&S.phase==='incoming'?'<p class="cd" style="text-align:center">Enter answers · Esc declines</p>':'')+
+  '<div class="body '+v.cls+'">'+(v.banner?'<div class="banner">'+v.banner+'</div>':'')+top+
+  '<div class="idn"><h3 id="stage-t" tabindex="-1">'+v.name+'</h3>'+(v.status?'<p class="st">'+v.status+'</p>':'')+'</div>'+
+  v.meta+
+  (v.desc?'<p class="desc">'+v.desc+'</p>':'')+
+  (v.after?'<div class="banner after">'+v.after+'</div>':'')+
+  (v.cls==='idle'?'<div style="height:28px"></div>':'<div class="sp1"></div>')+
+  (v.ctl.length?'<div class="ctl'+(v.two?' two':'')+'">'+v.ctl.map(cbtn).join('')+'</div>':'')+
+  (v.acts.length?'<div class="acts">'+v.acts.map(btn).join('')+'</div>':'')+
   '</div></section>';
- /* desktop: avatar and text sit side by side */
- if(P){var id=st.querySelector('.body'),h=st.querySelector('.halo'),idn=st.querySelector('.ident');if(h&&idn){idn.insertBefore(h,idn.firstChild)}}
  if(inside){
   var t=fkey&&st.querySelector('[data-act="'+fkey+'"]');
   (t||st.querySelector('#stage-t')).focus();
  }
- $('#stage-note').textContent=P?'Desktop: an always-on-top window, also shown as a system notification. Tray and window both show call state.':'Android: full-screen intent on the lock screen, heads-up notification while the phone is in use.';
+ $('#stage-note').textContent=P?'Desktop: an always-on-top window, also shown as a system notification. Tray and window both show call state. Enter answers and Esc declines while the window has focus.':'Android: full-screen intent on the lock screen, heads-up notification while the phone is in use.';
  tick();
 }
 function renderRem(){
  var b=[],ph=S.phase,d=DEV[S.platform];
  function a(k,l){b.push('<button type="button" class="b" data-rem="'+k+'">'+l+'</button>')}
  var n=PEERS[S.peer].s;
+ if(ph==='mic-needed')a('micok','Microphone allowed in settings');
  if(ph==='connecting'&&S.group)a('hostdown','Call host can’t be reached');
  if(ph==='connecting'&&!S.group&&!S.blkDial){a('ring','Device starts ringing');a('offline','Can’t be reached')}
- if(ph==='ringing'){if(ph==='ringing'){a('answer',n+' answers');a('decline',n+' declines');a('noanswer','Ring times out');a('offline','Can’t be reached')}}
+ if(ph==='ringing'){a('answer',n+' answers');a('decline',n+' declines');a('noanswer','Ring times out');a('offline','Can’t be reached')}
  if(ph==='incoming'){a('cancel','Caller hangs up first');a('elsewhere','Answered on another device');a('timeout','Stops ringing (timeout)')}
  if(ph==='active'){a('drop','Network drops');if(S.group)a('hostdrop','Call host drops ('+HOSTS[S.host].n+')');else{a('path','Path switches to '+(S.path==='direct'?'relayed':'direct'));a('hangup',n+' hangs up')}}
  if(ph==='blocked-by'&&S.blk==='blocked'){if(!S.refused)a('dialanyway','Dial anyway (older or modified app)');a('unblock',n+' unblocks you')}
@@ -673,7 +684,7 @@ function renderRem(){
  if(S.second)a('rosa-cancel','Rosa hangs up first');
  if(ph==='active'||ph==='reconnecting'||ph==='joining')a('ext',S.extOn?d.ext+' disconnects':d.ext+' reconnects');
  var el=$('#rem'),fa=document.activeElement,key=fa&&el.contains(fa)?fa.dataset.rem:null;
- el.innerHTML=b.length?b.join(''):'<p class="empty">Nothing to simulate right now. Start a scenario, or press Replay scenario.</p>';
+ el.innerHTML=b.length?b.join(''):'<p class="empty">Nothing to simulate right now. Pick a scenario below.</p>';
  if(key){var t=el.querySelector('[data-rem="'+key+'"]');if(t)t.focus();else $('#restart').focus()}
 }
 function tick(){
@@ -681,7 +692,7 @@ function tick(){
  var c=$('#cd');
  if(c&&S.deadline){
   var s=Math.max(0,Math.ceil((S.deadline-Date.now())/1000));
-  c.textContent=S.phase==='reconnecting'?'Gives up in '+s+' s':S.phase==='ringing'?'No answer in '+s+' s (shortened for the demo)':'Stops ringing in '+s+' s (shortened for the demo)';
+  c.textContent=S.phase==='reconnecting'?'Gives up in '+s+' s':S.phase==='ringing'?'Rings out in '+s+' s (shortened)':'Stops ringing in '+s+' s (shortened)';
  }else if(c){c.textContent=''}
 }
 function renderCap(){
@@ -715,7 +726,7 @@ var UI={
  var h='',g='';
  SCN.forEach(function(s){
   if(s.g){h+='<p class="gl">'+s.g+'</p>'}
-  h+='<button type="button" class="sc" data-scn="'+s.id+'"><span>'+s.t+'</span><small>'+s.d+'</small></button><div style="height:8px"></div>';
+  h+='<button type="button" class="sc" data-scn="'+s.id+'"><span>'+s.t+'</span><small>'+s.d+'</small></button>';
  });
  $('#scs').innerHTML=h;
  var k=['ring','back','connected','ended','failed','pulse'];
@@ -745,7 +756,6 @@ $('#stopsnd').addEventListener('click',function(){
 });
 $('#son').addEventListener('click',function(){
  soundOn=!soundOn;this.setAttribute('aria-checked',String(soundOn));
- this.lastChild.textContent=soundOn?'On':'Off';
  if(soundOn){
   if(Snd.start('connected',1,'preview')){cap={mode:'preview',kind:'connected'}}else cap={mode:'unsupported'};
   say('Scenario sounds on. Ringtone, ringback and cues play during scenarios.');
@@ -764,11 +774,11 @@ function setPlat(p){
 $('#p-android').addEventListener('click',function(){setPlat('android')});
 $('#p-desk').addEventListener('click',function(){setPlat('desk')});
 
-/* theme */
+/* theme (icon-only, follows system until chosen) */
 (function(){
- var m=window.matchMedia('(prefers-color-scheme: dark)'),b=$('#theme'),chosen=false;
- function paint(){var dark=document.documentElement.getAttribute('data-theme')==='dark'||(!chosen&&m.matches);b.setAttribute('aria-pressed',String(dark))}
- b.addEventListener('click',function(){var dark=b.getAttribute('aria-pressed')==='true';chosen=true;document.documentElement.setAttribute('data-theme',dark?'light':'dark');paint()});
+ var m=window.matchMedia('(prefers-color-scheme: dark)'),b=$('#theme'),root=document.documentElement;
+ function paint(){var t=root.getAttribute('data-theme'),dark=t?t==='dark':m.matches;b.setAttribute('aria-pressed',String(dark));var l=dark?'Light theme':'Dark theme';b.setAttribute('aria-label',l);b.title=l}
+ b.addEventListener('click',function(){var dark=b.getAttribute('aria-pressed')==='true';root.setAttribute('data-theme',dark?'light':'dark');paint()});
  if(m.addEventListener)m.addEventListener('change',paint);
  paint();
 })();

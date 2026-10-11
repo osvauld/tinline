@@ -34,7 +34,10 @@ const overflow=p=>p.evaluate(()=>{const de=document.documentElement;const bad=[.
  return {doc:de.scrollWidth-de.clientWidth,bad}});
 const tab=async(p,id)=>{await p.click(`[data-act=tab][data-v=${id}]`)};
 const ids=(p,sel)=>p.$(sel);
-async function reset(p){await p.click('#reset')}
+// Simulation-only controls live in the harness drawer (closed by default). Open it, act, close it again on narrow screens.
+async function sim(p,sel,how){if(await p.locator('#drawer').isHidden())await p.click('#simtog');if(how==='check')await p.check(sel);else await p.click(sel);if(await p.locator('#drawer').isVisible()&&p.viewportSize().width<1100)await p.click('#drawer-x')}
+async function reset(p){await sim(p,'#reset')}
+const drawerTxt=p=>p.evaluate(()=>document.querySelector('#drawer').textContent);
 async function say(p){return p.evaluate(()=>document.querySelector('#status').textContent)}
 async function dlgOpen(p){return p.evaluate(()=>!!document.querySelector('dialog[open]'))}
 const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to access|guarantee)/i;
@@ -60,8 +63,8 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
    ['unlock-wait',async()=>{for(let i=0;i<2;i++){await p.fill('#u-pass','x');await p.press('#u-pass','Enter')}}],
    ['link-choose',async()=>{await tab(p,'link')}],
    ['link-qr-show',async()=>{await p.check('#role-existing');await p.check('#method-show');await p.click('form[data-form=l-start] button.pri')}],
-   ['link-qr-expired',async()=>{await p.click('[data-act=l-expire]')}],
-   ['link-verify',async()=>{await p.click('[data-act=l-newqr]');await p.click('[data-act=l-simscan]')}],
+   ['link-qr-expired',async()=>{await sim(p,'[data-act=l-expire]')}],
+   ['link-verify',async()=>{await p.click('[data-act=l-newqr]');await sim(p,'[data-act=l-simscan]')}],
    ['link-authorize',async()=>{await p.click('[data-act=l-match]')}],
    ['link-transfer',async()=>{await p.fill('#f-link-pass','demo-pass');await p.press('#f-link-pass','Enter')}],
    ['link-done',async()=>{await p.waitForSelector('[data-act=l-todevices]',{timeout:8000})}],
@@ -69,7 +72,7 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
    ['devices-unlink-dialog',async()=>{await p.click('[data-id=d3][data-act=dv-unlink]')}],
    ['devices-unlink-wrong',async()=>{await p.fill('#ul-pass','bad');await p.click('dialog button.dng')}],
    ['accounts',async()=>{await p.keyboard.press('Escape');await tab(p,'accounts')}],
-   ['accounts-switch-call',async()=>{await p.check('[data-bind-check="acct.call"]');await p.click('[data-act=ac-switch]')}]];
+   ['accounts-switch-call',async()=>{await sim(p,'[data-bind-check="acct.call"]','check');await p.click('[data-act=ac-switch]')}]];
   for(const [n,fn] of states){
    await t(G,n,async()=>{await fn();await p.waitForTimeout(150);await shot(p,vn+'-'+n);const o=await overflow(p);return {ok:o.doc<=0&&o.bad.length===0,d:o.doc>0||o.bad.length?JSON.stringify(o):''}});
   }
@@ -81,6 +84,11 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
  // ---- 2. Behavioural flows (390x844 mobile, light; theme toggled inside) ----
  let p=await mk(b,{fast:true,dark:false});
  // Setup create
+ await t('harness','drawer closed by default; no disclaimer or designer voice visible',async()=>{const h=await p.locator('#drawer').isHidden();const x=await p.evaluate(()=>document.body.innerText);return {ok:h&&!/simulat|prototype|We tell you now|Interactive design/i.test(x),d:'hidden='+h}});
+ await t('harness','theme toggle icon-only 36px with accessible name',async()=>{const r=await p.evaluate(()=>{const b=document.querySelector('#theme');return {t:b.textContent.trim(),l:b.getAttribute('aria-label'),w:Math.round(b.getBoundingClientRect().width)}});return {ok:r.t===''&&!!r.l&&r.w===36,d:JSON.stringify(r)}});
+ for(const W of [390,320]){await p.setViewportSize({width:W,height:740});
+  await t('harness',`chip row at ${W}px: scrolls, every chip reachable with its full label`,async()=>{const r=await p.evaluate(()=>{const n=document.querySelector('#nav');const o=[];for(const c of n.querySelectorAll('.t-chip')){c.scrollIntoView({inline:'nearest',block:'nearest'});const b=c.getBoundingClientRect(),nr=n.getBoundingClientRect();o.push(b.left>=nr.left-1&&b.right<=nr.right+1&&c.scrollWidth<=c.clientWidth)}n.scrollLeft=0;return {ovx:getComputedStyle(n).overflowX,o}});return {ok:r.ovx==='auto'&&r.o.every(Boolean),d:JSON.stringify(r)}})}
+ await p.setViewportSize({width:390,height:844});
  await t('setup','welcome states no-server loss in one sentence',async()=>/losing every device and your recovery phrase/i.test(await panel(p)));
  await t('setup','choose create focuses name step heading',async()=>{await p.click('[data-v=create]');return (await focusIsH2(p))&&/Name your account/.test(await h2(p))});
  await t('setup','empty name -> alert + focus on account field',async()=>{await p.click('[data-act=s-next]');return {ok:await p.evaluate(()=>document.activeElement.id==='f-setup-acct'&&!!document.querySelector('#e-acct[role=alert]')&&document.activeElement.getAttribute('aria-invalid')==='true')}});
@@ -88,7 +96,7 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
  await t('setup','suggestion chip fills device name only',async()=>{await p.fill('#f-setup-acct','Maya');await p.click('[data-act=s-suggest][data-v="Work desktop"]');return (await p.inputValue('#f-setup-device'))==='Work desktop'&&(await p.inputValue('#f-setup-acct'))==='Maya'});
  await p.click('[data-act=s-next]');
  await t('phrase','hidden by default: words absent from DOM/innerText/aria',async()=>{const h=await p.evaluate(()=>document.querySelector('.words').outerHTML);return {ok:!/orchid|lantern|harbor|signal|willow/.test(h)&&/hidden/.test(h),d:''}});
- await t('phrase','ribbon says example only',async()=>/Example only/i.test(await panel(p)));
+ await t('phrase','drawer says example words only; frame has no simulation talk',async()=>/Example words only/i.test(await drawerTxt(p))&&!/example only|simulat/i.test(await panel(p)));
  await t('phrase','no copy button / no select-all affordance',async()=>{const n=await p.evaluate(()=>[...document.querySelectorAll('button,a')].filter(e=>/copy|clipboard|paste|share|export|download/i.test(e.textContent+e.getAttribute('aria-label')+e.title)).map(e=>e.textContent));return {ok:n.length===0,d:n.join(',')}});
  await t('phrase','continue without ticking box -> error + focus on checkbox',async()=>{await p.click('[data-act=s-next]');return p.evaluate(()=>!!document.querySelector('#e-ph[role=alert]')&&document.activeElement.hasAttribute('data-bind-check'))});
  await t('phrase','reveal shows words, aria-pressed true, countdown',async()=>{await p.click('[data-act=s-reveal]');return p.evaluate(()=>document.querySelector('[data-fk=reveal]').getAttribute('aria-pressed')==='true'&&/orchid/.test(document.querySelector('.words').innerText)&&!!document.querySelector('#rv-left'))});
@@ -106,7 +114,7 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
  await t('protect','short passphrase / mismatch errors with focus',async()=>{await p.fill('#f-setup-p1','abc');await p.fill('#f-setup-p2','abc');await p.click('[data-act=s-next]');const a=/at least 8/.test(await panel(p))&&await p.evaluate(()=>document.activeElement.id==='f-setup-p1');await p.fill('#f-setup-p1','longenough1');await p.fill('#f-setup-p2','different12');await p.click('[data-act=s-next]');return a&&/don't match/.test(await panel(p))&&await p.evaluate(()=>document.activeElement.id==='f-setup-p2')});
  await t('protect','device lock removes passphrase fields; keeps radio focus',async()=>{await p.check('input[name=mode][value=device]');const ok=await p.evaluate(()=>!document.querySelector('#f-setup-p1')&&document.activeElement.name==='mode');await p.check('input[name=mode][value=pass]');return ok});
  await t('protect','passphrase fields are type=password',async()=>p.evaluate(()=>document.querySelector('#f-setup-p1').type==='password'));
- await t('done','create done: phrase is only backup, simulated',async()=>{await p.fill('#f-setup-p1','longenough1');await p.fill('#f-setup-p2','longenough1');await p.click('[data-act=s-next]');const x=await panel(p);return /Account created/.test(x)&&/only backup/i.test(x)&&/Simulated/.test(x)});
+ await t('done','create done: phrase is only backup, no simulation talk in the frame',async()=>{await p.fill('#f-setup-p1','longenough1');await p.fill('#f-setup-p2','longenough1');await p.click('[data-act=s-next]');const x=await panel(p);return /Account created/.test(x)&&/only backup/i.test(x)&&!/simulat/i.test(x)});
  await t('done','status live region announced',async()=>/created \(simulated\)/.test(await say(p)));
  // Restore
  await reset(p);await p.click('[data-v=restore]');await p.fill('#f-setup-acct','Maya');await p.fill('#f-setup-device','Tab');await p.click('[data-act=s-next]');
@@ -114,7 +122,7 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
  await t('restore','wrong count reports count',async()=>{await p.fill('#f-restore','one two three');await p.click('[data-act=s-next]');return /You entered 3 words/.test(await panel(p))});
  await t('restore','non-letters rejected',async()=>{await p.fill('#f-restore',Array(24).fill('wor1d').join(' '));await p.click('[data-act=s-next]');return /only letters/.test(await panel(p))});
  await t('restore','24 letters but bad checksum rejected',async()=>{await p.fill('#f-restore',Array(24).fill('word').join(' '));await p.click('[data-act=s-next]');return /valid phrase/.test(await panel(p))});
- await t('restore','example fill + clipboard untouched',async()=>{await p.click('[data-act=s-fill]');await p.click('[data-act=s-next]');return /Protect this device/.test(await panel(p))&&(await p.evaluate(()=>window.__clip)).length===0});
+ await t('restore','example fill + clipboard untouched',async()=>{await sim(p,'[data-act=s-fill]');await p.click('[data-act=s-next]');return /Protect this device/.test(await panel(p))&&(await p.evaluate(()=>window.__clip)).length===0});
  await p.fill('#f-setup-p1','longenough1');await p.fill('#f-setup-p2','longenough1');await p.click('[data-act=s-next]');
  await t('restore','done says identity only, offers link',async()=>{const x=await panel(p);return /Identity restored/.test(x)&&/none of your contacts or chats/.test(x)&&/Link from another device/.test(x)});
  await t('restore','link button routes to Link with new-device preselected',async()=>{await p.click('[data-act=s-tolink]');return p.evaluate(()=>document.querySelector('#role-new').checked&&!!document.querySelector('#f-link-label'))});
@@ -141,37 +149,37 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
  await t('link','diagram marks "You are here"',async()=>/You are here/.test(await panel(p)));
  // QR show flow
  await p.click('form[data-form=l-start] button.pri');
- await t('qr-show','QR labelled not scannable, timer 5:00 -> counts',async()=>{const x=await panel(p);return /not scannable/i.test(x)&&await p.evaluate(()=>/[0-5]:\d\d/.test(document.querySelector('#qr-time').textContent))});
+ await t('qr-show','QR labelled not scannable, timer 5:00 -> counts',async()=>{const x=await p.evaluate(()=>document.querySelector('svg.qr').getAttribute('aria-label'));return /not scannable/i.test(x)&&await p.evaluate(()=>/[0-5]:\d\d/.test(document.querySelector('#qr-time').textContent))});
  await t('qr-show','timer text is not in a live region',async()=>p.evaluate(()=>!document.querySelector('#qr-time').closest('[aria-live],[role=status],[role=alert]')));
  await t('qr-show','QR expires on its own (timers sped) -> expired state, focus heading',async()=>{await p.waitForFunction(()=>/expired/.test(document.querySelector('#panel h2').textContent),null,{timeout:12000});return (await focusIsH2(p))&&/Nothing was shared/.test(await panel(p))&&/expired/.test(await say(p))});
  await shot(p,'flow-qr-expired');
  await t('qr-show','regenerate -> fresh timer and new QR',async()=>{const before=await p.evaluate(()=>document.querySelector('svg.qr').innerHTML.length);await p.click('[data-act=l-newqr]');const after=await p.evaluate(()=>document.querySelector('svg.qr').innerHTML.length);return /Show this QR/.test(await h2(p))&&before!==after||/Show this QR/.test(await h2(p))});
- await t('qr-show','manual expire button -> expired',async()=>{await p.click('[data-act=l-expire]');return /expired/.test(await h2(p))});
+ await t('qr-show','manual expire button -> expired',async()=>{await sim(p,'[data-act=l-expire]');return /expired/.test(await h2(p))});
  await p.click('[data-act=l-newqr]');
  await t('cancel','cancel (before anything shared) opens dialog; Keep linking keeps state + focus on Cancel',async()=>{await p.click('[data-act=l-cancel]');const x=await p.evaluate(()=>document.querySelector('dialog').innerText);await p.click('dialog button[data-i="0"]');return /Nothing has been copied/.test(x)&&/Show this QR/.test(await h2(p))&&(await fkFocus(p))==='l-cancel'});
  await t('cancel','Escape on cancel dialog keeps linking, focus restored',async()=>{await p.click('[data-act=l-cancel]');await p.keyboard.press('Escape');return !(await dlgOpen(p))&&/Show this QR/.test(await h2(p))&&(await fkFocus(p))==='l-cancel'});
  await t('cancel','Stop linking -> back to choose, nothing copied announced',async()=>{await p.click('[data-act=l-cancel]');await p.click('dialog button[data-i="1"]');return /Link a device/.test(await h2(p))&&/Nothing was copied/.test(await say(p))&&await focusIsH2(p)});
  // verify flow, existing
- await p.check('#role-existing');await p.check('#method-show');await p.click('form[data-form=l-start] button.pri');await p.click('[data-act=l-simscan]');
- await t('verify','shows both codes, existing sees device name, match is a button (not automatic)',async()=>{const x=await panel(p);return /483 291/.test(x)&&/917|483 291/.test(x)&&/Device name/.test(x)&&/Codes match/.test(x)&&/Check the code matches/.test(x)});
+ await p.check('#role-existing');await p.check('#method-show');await p.click('form[data-form=l-start] button.pri');await sim(p,'[data-act=l-simscan]');
+ await t('verify','shows both codes, existing sees device name, match is a button (not automatic)',async()=>{const x=await panel(p),dt=await drawerTxt(p);return /483 291/.test(x)&&/917 204|483 291/.test(dt)&&/Request from/.test(x)&&/Codes match/.test(x)&&/Check the code matches/.test(x)});
  await t('verify','still on verify after 2.5s (no auto-advance)',async()=>{await p.waitForTimeout(2500);return /Check the code matches/.test(await h2(p))});
  await t("verify","'They don't match' -> mismatch failure, says nothing shared, Try again works",async()=>{await p.click('[data-act=l-nomatch]');const x=await panel(p);const ok=/codes didn't match/i.test(x)&&/Nothing was shared/.test(x);await p.click('[data-act=l-retry]');return ok&&/Show this QR/.test(await h2(p))});
- await p.click('[data-act=l-simscan]');await p.click('[data-act=l-match]');
+ await sim(p,'[data-act=l-simscan]');await p.click('[data-act=l-match]');
  await t('authorize','warns that approving sends the phrase',async()=>/sends your recovery phrase/.test(await panel(p)));
  await t('authorize','wrong passphrase: error, nothing shared, focus back',async()=>{await p.fill('#f-link-pass','nope');await p.press('#f-link-pass','Enter');return /Nothing was shared/.test(await panel(p))&&await p.evaluate(()=>document.activeElement.id==='f-link-pass'&&document.activeElement.type==='password')});
  await t('authorize',"'Don't link' opens stop dialog, Stop -> choose",async()=>{await p.click('[data-act=l-cancel]');await p.click('dialog button[data-i="1"]');return /Link a device/.test(await h2(p))});
  // Full success existing, with transfer cancel after sent in separate pass
- const toAuthorize=async()=>{await p.check('#role-existing');await p.check('#method-show');await p.click('form[data-form=l-start] button.pri');await p.click('[data-act=l-simscan]');await p.click('[data-act=l-match]')};
+ const toAuthorize=async()=>{await p.check('#role-existing');await p.check('#method-show');await p.click('form[data-form=l-start] button.pri');await sim(p,'[data-act=l-simscan]');await p.click('[data-act=l-match]')};
  await toAuthorize();await p.fill('#f-link-pass','demo-pass');await p.press('#f-link-pass','Enter');
  await t('transfer','four text-status steps (done / in progress / waiting)',async()=>{const x=await p.evaluate(()=>document.querySelector('#xfer').innerText);return /in progress/.test(x)&&/waiting/.test(x)});
  await t('transfer','cancel after account sent: dialog warns account may already be on device',async()=>{await p.waitForFunction(()=>/Account transfer · in progress/.test(document.querySelector('#xfer').innerText.replace(/\s+/g,' ')),null,{timeout:4000});await p.click('[data-act=l-cancel]');const x=await p.evaluate(()=>document.querySelector('dialog').innerText);await p.click('dialog button[data-i="1"]');const f=await panel(p);return /may already be on the other device/.test(x)&&/may already be on the new device/.test(f)&&!/Nothing was copied\./.test(f)});
  await t('transfer','failed page has no overclaiming copy',async()=>!FORBID.test(await panel(p)));
  await p.click('[data-act=l-restart]');
  // dropped
- await t('transfer','connection drop after send -> "may already be on the new device" + unlink advice',async()=>{await p.evaluate(()=>0);await p.check('#role-existing');await p.check('#method-show');await p.click('summary:has-text("Simulation controls")');await p.check('input[name=sim-net][value=drop]');await p.click('form[data-form=l-start] button.pri');await p.click('[data-act=l-simscan]');await p.click('[data-act=l-match]');await p.fill('#f-link-pass','demo-pass');await p.press('#f-link-pass','Enter');await p.waitForSelector('[data-act=l-retry]',{timeout:6000});const x=await panel(p);return /Connection lost/.test(x)&&/may already be on the new device/.test(x)&&/unlink it/.test(x)});
- await p.click('[data-act=l-restart]');await p.click('summary:has-text("Simulation controls")');await p.check('input[name=sim-net][value=ok]').catch(()=>{});
+ await t('transfer','connection drop after send -> "may already be on the new device" + unlink advice',async()=>{await p.evaluate(()=>0);await p.check('#role-existing');await p.check('#method-show');await sim(p,'input[name=sim-net][value=drop]','check');await p.click('form[data-form=l-start] button.pri');await sim(p,'[data-act=l-simscan]');await p.click('[data-act=l-match]');await p.fill('#f-link-pass','demo-pass');await p.press('#f-link-pass','Enter');await p.waitForSelector('[data-act=l-retry]',{timeout:6000});const x=await panel(p);return /Connection lost/.test(x)&&/may already be on the new device/.test(x)&&/unlink it/.test(x)});
+ await p.click('[data-act=l-restart]');await sim(p,'input[name=sim-net][value=ok]','check');
  await reset(p);await tab(p,'link');
- await t('transfer','success -> done, simulated, device appears in My devices',async()=>{await p.evaluate(()=>0);await p.check('#role-existing');await p.check('#method-show');await p.click('form[data-form=l-start] button.pri');await p.click('[data-act=l-simscan]');await p.click('[data-act=l-match]');await p.fill('#f-link-pass','demo-pass');await p.press('#f-link-pass','Enter');await p.waitForSelector('[data-act=l-todevices]',{timeout:8000});const x=await panel(p);await shot(p,'flow-link-done');await p.click('[data-act=l-todevices]');const dv=await panel(p);return {ok:/Simulated/.test(x)&&/updated device list/.test(x)&&/Pixel tablet/.test(dv),d:x.slice(0,80)+'|'+dv.slice(0,60)}});
+ await t('transfer','success -> done, simulated, device appears in My devices',async()=>{await p.evaluate(()=>0);await p.check('#role-existing');await p.check('#method-show');await p.click('form[data-form=l-start] button.pri');await sim(p,'[data-act=l-simscan]');await p.click('[data-act=l-match]');await p.fill('#f-link-pass','demo-pass');await p.press('#f-link-pass','Enter');await p.waitForSelector('[data-act=l-todevices]',{timeout:8000});const x=await panel(p);await shot(p,'flow-link-done');await p.click('[data-act=l-todevices]');const dv=await panel(p);return {ok:!/simulat/i.test(x)&&/updated device list/.test(x)&&/Pixel tablet/.test(dv),d:x.slice(0,80)+'|'+dv.slice(0,60)}});
  // Scan flow + camera
  await tab(p,'link');await reset(p);await tab(p,'link');
  await t('scan','camera ask -> prompt dialog; Deny shows 3 fallbacks',async()=>{await p.check('#role-new');await p.check('#method-scan');await p.click('form[data-form=l-start] button.pri');await p.click('[data-act=l-cam]');const d=await dlgOpen(p);await p.click('dialog button[data-i="0"]');const x=await panel(p);return d&&/Camera access is off/.test(x)&&/Show a QR on this device instead/.test(x)&&/Type the link code/.test(x)&&/Allow camera in settings/.test(x)});
@@ -181,10 +189,10 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
  await t('scan','settings sheet can turn camera on',async()=>{await p.evaluate(()=>0);return true});
  await tab(p,'link');await reset(p);await tab(p,'link');
  await p.check('#role-new');await p.check('#method-scan');await p.click('form[data-form=l-start] button.pri');
- await t('scan','Allow camera -> simulated viewfinder says no camera used',async()=>{await p.click('[data-act=l-cam]');await p.click('dialog button[data-i="1"]');return /No camera is used/.test(await panel(p))});
- await t('scan','valid example code -> verify; new device waits (nothing copied), cancel available',async()=>{await p.click('[data-act=l-manual]');await p.click('[data-act=l-example]');await p.press('#f-link-manual','Enter');const a=/Check the code matches/.test(await h2(p));await p.click('[data-act=l-match]');const x=await panel(p);return a&&/Waiting for approval/.test(x)&&/Nothing has been copied to this device yet/.test(x)&&!!(await p.$('[data-act=l-cancel]'))});
- await t('waiting','refused -> declined, nothing copied',async()=>{await p.click('[data-act=l-declined]');return /didn't approve/.test(await panel(p))&&/Nothing was copied to this device/.test(await panel(p))});
- await t('waiting','approved -> transfer -> done on new device',async()=>{await p.click('[data-act=l-retry]');await p.click('[data-act=l-simscan]').catch(()=>{});return true});
+ await t('scan','Allow camera -> simulated viewfinder says no camera used',async()=>{await p.click('[data-act=l-cam]');await p.click('dialog button[data-i="1"]');return /No camera is used/.test(await p.evaluate(()=>document.querySelector('.view').getAttribute('aria-label')))});
+ await t('scan','valid example code -> verify; new device waits (nothing copied), cancel available',async()=>{await p.click('[data-act=l-manual]');await sim(p,'[data-act=l-example]');await p.press('#f-link-manual','Enter');const a=/Check the code matches/.test(await h2(p));await p.click('[data-act=l-match]');const x=await panel(p);return a&&/Waiting for approval/.test(x)&&/Nothing has been copied to this device yet/.test(x)&&!!(await p.$('[data-act=l-cancel]'))});
+ await t('waiting','refused -> declined, nothing copied',async()=>{await sim(p,'[data-act=l-declined]');return /didn't approve/.test(await panel(p))&&/Nothing was copied to this device/.test(await panel(p))});
+ await t('waiting','approved -> transfer -> done on new device',async()=>{await p.click('[data-act=l-retry]');await sim(p,'[data-act=l-simscan]').catch(()=>{});return true});
  // Theme + Escape/focus
  await t('theme','toggle switches theme, aria-pressed, label, persists across tabs',async()=>{const before=await p.getAttribute('#theme','aria-pressed');await p.click('#theme');const after=await p.getAttribute('#theme','aria-pressed');const dt=await p.evaluate(()=>document.documentElement.dataset.theme);await tab(p,'devices');return before!==after&&dt==='dark'&&await p.evaluate(()=>getComputedStyle(document.body).backgroundColor)==='rgb(15, 21, 19)'});
  await t('theme','toggle back to light',async()=>{await p.click('#theme');return (await p.evaluate(()=>getComputedStyle(document.body).backgroundColor))==='rgb(245, 246, 243)'});
@@ -206,19 +214,19 @@ const FORBID=/\b(secure|securely|revoked|permanently removed|no longer able to a
  await t('devices','unlink: backdrop click cancels',async()=>{await p.click('[data-id=d3][data-act=dv-unlink]');await p.mouse.click(2,2);return /Work laptop/.test(await panel(p))&&!(await dlgOpen(p))});
  await t('devices','unlink: empty/wrong passphrase keeps dialog + device, focus in field',async()=>{await p.click('[data-id=d3][data-act=dv-unlink]');await p.click('dialog button.dng');const a=/Nothing was unlinked/.test(await p.evaluate(()=>document.querySelector('dialog').innerText));await p.fill('#ul-pass','wrong');await p.click('dialog button.dng');return a&&(await dlgOpen(p))&&await p.evaluate(()=>document.activeElement.id==='ul-pass')&&/Work laptop/.test(await panel(p))});
  await t('devices','unlink: correct passphrase removes row, announces, focus lands on heading/list (not body)',async()=>{await p.fill('#ul-pass','demo-pass');await p.click('dialog button.dng');const gone=!/Work laptop/.test(await panel(p));const f=await p.evaluate(()=>document.activeElement.tagName);return gone&&/unlinked \(simulated\)/.test(await say(p))&&f!=='BODY'});
- await t('devices','unlink online device: dialog wording differs and is not an overclaim',async()=>{await p.click('[data-id=d2][data-act=dv-unlink]');const x=await p.evaluate(()=>document.querySelector('dialog').innerText);await p.keyboard.press('Escape');return /It is online/.test(x)&&!FORBID.test(x)});
+ await t('devices','unlink online device: dialog wording differs and is not an overclaim',async()=>{await p.click('[data-id=d2][data-act=dv-unlink]');const x=await p.evaluate(()=>document.querySelector('dialog').innerText);await p.keyboard.press('Escape');return /appears online/.test(x)&&!FORBID.test(x)});
  await t('devices','page never says unlink revokes / excludes phrase holder',async()=>{const x=await txt(p);return {ok:!FORBID.test(x)&&/not a lock/i.test(x)&&/Anyone with your recovery phrase can still act as you/.test(x),d:(x.match(FORBID)||[''])[0]}});
  await t('devices','remove this device (multi): no ack needed, wrong pass rejected',async()=>{await p.click('[data-id=d1][data-act=dv-unlink]');const hasAck=await p.evaluate(()=>!!document.querySelector('#rm-ack'));await p.fill('#rm-pass','x');await p.click('dialog button.dng');const e=/not right/.test(await p.evaluate(()=>document.querySelector('dialog').innerText));await p.keyboard.press('Escape');return !hasAck&&e});
  // Remove only device
  await t('devices','only device: remove needs recovery-phrase acknowledgement',async()=>{await p.click('[data-id=d2][data-act=dv-unlink]');await p.fill('#ul-pass','demo-pass');await p.click('dialog button.dng');await p.click('[data-id=d4][data-act=dv-unlink]');await p.fill('#ul-pass','demo-pass');await p.click('dialog button.dng');
    const only=/only device with your account/.test(await panel(p));await p.click('[data-id=d1][data-act=dv-unlink]');const ack=await p.evaluate(()=>!!document.querySelector('#rm-ack'));await p.fill('#rm-pass','demo-pass');await p.click('dialog button.dng');const msg=/Confirm you have your recovery phrase/.test(await p.evaluate(()=>document.querySelector('dialog').innerText));await shot(p,'flow-only-device-remove');await p.check('#rm-ack');await p.click('dialog button.dng');return only&&ack&&msg&&/No account on this device/.test(await h2(p))});
- await t('devices','after removal: focus on heading, restore demo works',async()=>{const f=await focusIsH2(p);await p.click('[data-act=dv-restore]');return f&&/My devices/.test(await h2(p))});
+ await t('devices','after removal: focus on heading, restore demo works',async()=>{const f=await focusIsH2(p);await sim(p,'[data-act=dv-restore]');return f&&/My devices/.test(await h2(p))});
  // Accounts
  await reset(p);await tab(p,'accounts');
  await t('accounts','switch dialog states one-online, draft kept, own passphrase',async()=>{await p.fill('#ac-draft','hello draft');await p.click('[data-act=ac-switch]');const x=await p.evaluate(()=>document.querySelector('dialog').innerText);return /Only one account is online/.test(x)&&/draft is kept/i.test(x)&&/own passphrase/.test(x)&&/stay on this device/i.test(x)});
  await t('accounts','wrong passphrase leaves you on current account',async()=>{await p.fill('#sw-pass','bad');await p.click('dialog button.pri');return /still on Maya/.test(await p.evaluate(()=>document.querySelector('dialog').innerText))&&(await dlgOpen(p))});
  await t('accounts','switch ok: draft saved per account, switching back restores draft',async()=>{await p.fill('#sw-pass','demo-pass');await p.click('dialog button.pri');const a=(await p.inputValue('#ac-draft'))==='';await p.click('[data-act=ac-switch]');await p.fill('#sw-pass','demo-pass');await p.click('dialog button.pri');return a&&(await p.inputValue('#ac-draft'))==='hello draft'});
- await t('accounts','call active: End call and switch warning',async()=>{await p.check('[data-bind-check="acct.call"]');await p.click('[data-act=ac-switch]');const x=await p.evaluate(()=>document.querySelector('dialog').innerText);await p.keyboard.press('Escape');return /on a call/.test(x)&&/End call and switch/.test(x)});
+ await t('accounts','call active: End call and switch warning',async()=>{await sim(p,'[data-bind-check="acct.call"]','check');await p.click('[data-act=ac-switch]');const x=await p.evaluate(()=>document.querySelector('dialog').innerText);await p.keyboard.press('Escape');return /on a call/.test(x)&&/End call and switch/.test(x)});
  await t('accounts','add account never replaces; Escape restores focus',async()=>{await p.click('[data-act=ac-add]');const x=await p.evaluate(()=>document.querySelector('dialog').innerText);await p.keyboard.press('Escape');return /never replaces/.test(x)&&(await fkFocus(p))==='ac-add'});
 
  // Keyboard-only: tabs reachable and activatable

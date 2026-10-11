@@ -3,10 +3,11 @@ const chk=C.mk('privacy');const sleep=(p,ms)=>p.waitForTimeout(ms);
 const foc=p=>p.evaluate(()=>{const a=document.activeElement;return a&&a!==document.body?(a.id||a.dataset.act+'/'+(a.dataset.id||'')||a.tagName):'BODY'});
 const dtxt=p=>p.evaluate(()=>{const d=document.querySelector('dialog[open]');return d?d.textContent.replace(/\s+/g,' ').trim():'NO DIALOG'});
 const panel=async p=>(await p.textContent('#panel')).replace(/\s+/g,' ');
-const simOpen=async p=>{const d=p.locator('details',{hasText:'Simulation controls'}).first();if(!(await d.evaluate(e=>e.open)))await d.locator('summary').click()};
+const simOpen=async p=>{if(await p.locator('#drawer').isHidden())await p.click('#simtog')};
 const T=o=>({ok:o[0],d:o[1]});
 (async()=>{const b=await L.launch();
 let p=await L.page(b);await p.goto(L.BASE+'privacy.html');await sleep(p,400);
+await chk('harness: drawer closed by default, no disclaimer visible, theme icon-only',async()=>{const h=await p.locator('#drawer').isHidden();const t=await p.evaluate(()=>document.body.innerText);const th=(await p.textContent('#theme')).trim();return T([h&&!/simulat|Nothing here changes|Interactive design/i.test(t)&&th==='',`hidden=${h} theme="${th}"`])});
 // tabs
 await chk('tabs: roles, aria-selected on exactly one',async()=>{const r=await p.$$eval('[role=tab]',e=>e.map(x=>x.getAttribute('aria-selected')));return T([r.filter(x=>x==='true').length===1&&r.length===3,r.join()])});
 await p.focus('#tab-address');await p.keyboard.press('ArrowRight');await sleep(p,200);
@@ -41,6 +42,12 @@ for(const [lab,re] of [['Phone was asleep',/overdue/i],['Change failed',/fail|co
   if(await p.locator('[data-act=retry]:visible').count()){await p.locator('[data-act=retry]:visible').first().click();await sleep(p,1200);await chk('Retry resolves the failure (retry button gone / status changes)',async()=>{const a2=await panel(p);const r=await p.locator('[data-act=retry]:visible').count();return T([r===0||a2!==a,a2.slice(0,160)+' retry='+r])});
    await chk('focus after Retry not lost to BODY',async()=>{const f=await foc(p);return T([f!=='BODY',f])})}}
 }
+await p.locator('#sim label',{hasText:'Normal'}).first().click();
+await p.click('[data-act=reset]');await sleep(p,500);
+await p.locator('#sim label',{hasText:'Some contacts offline'}).first().click();await sleep(p,300);
+await chk('grammar: plural "N contacts haven’t got your address yet"',async()=>{const a=await panel(p);return T([/\b[2-9] contacts haven’t got your address yet/.test(a),a.slice(0,60)])});
+await p.locator('#sim label',{hasText:'Normal'}).first().click();await sleep(p,300);
+await chk('grammar: singular "1 contact hasn’t got your address yet"',async()=>{const a=await panel(p);return T([/\b1 contact hasn’t got your address yet/.test(a)&&!/1 contact haven/.test(a),a.slice(0,60)])});
 await p.locator('#sim label',{hasText:'Normal'}).first().click();
 await p.click('[data-act=reset]');await sleep(p,500);
 // people / block
@@ -87,7 +94,8 @@ for(const t of ['address','people','lost']){await p.click('#tab-'+t);await sleep
 await p.click('#tab-people');await p.locator('[data-act=block-open]').first().click();await sleep(p,300);await p.screenshot({path:'screenshots/privacy-mobile-block.png'});
 await chk('mobile block dialog fits viewport and buttons ≥44px',async()=>{const r=await p.evaluate(()=>{const d=document.querySelector('dialog[open]');const b=d.getBoundingClientRect();return {box:[Math.round(b.left),Math.round(b.right),Math.round(b.top),Math.round(b.bottom)],btn:[...d.querySelectorAll('button')].map(x=>Math.round(x.getBoundingClientRect().height)),scroll:d.scrollHeight>d.clientHeight}});return T([r.box[0]>=0&&r.box[1]<=390&&r.btn.every(h=>h>=44),JSON.stringify(r)])});
 await p.keyboard.press('Escape');
-await chk('mobile tab strip: all three tabs reachable without clipping',async()=>{const r=await p.$$eval('[role=tab]',e=>e.map(x=>{const b=x.getBoundingClientRect();return [Math.round(b.left),Math.round(b.right)]}));return T([r.every(x=>x[0]>=0&&x[1]<=390),JSON.stringify(r)])});
+for(const W of [390,320]){await p.setViewportSize({width:W,height:740});await sleep(p,100);
+ await chk(`mobile ${W}: chip row scrolls, each chip reachable with full label (no text clipped inside a chip)`,async()=>{const r=await p.evaluate(()=>{const row=document.querySelector('#tabs');const out=[];for(const x of row.querySelectorAll('[role=tab]')){x.scrollIntoView({inline:'nearest',block:'nearest'});const b=x.getBoundingClientRect(),rr=row.getBoundingClientRect();out.push({l:Math.round(b.left),r:Math.round(b.right),in:b.left>=rr.left-1&&b.right<=rr.right+1,fit:x.scrollWidth<=x.clientWidth})}return {ovx:getComputedStyle(row).overflowX,out,doc:document.documentElement.scrollWidth-document.documentElement.clientWidth}});return T([r.ovx==='auto'&&r.doc<=0&&r.out.every(o=>o.in&&o.fit),JSON.stringify(r)])})}
 await p.context().close();
 for(const [dk,nm] of [[true,'dark']]){p=await L.page(b,{dark:true});await p.goto(L.BASE+'privacy.html');await sleep(p,300);await p.screenshot({path:'screenshots/privacy-desktop-dark-address.png'});await p.click('#tab-people');await p.locator('[data-act=block-open]').first().click();await sleep(p,300);await p.screenshot({path:'screenshots/privacy-desktop-dark-block.png'});await p.keyboard.press('Escape');await p.context().close()}
 p=await L.page(b,{w:390,h:844,mobile:true,dark:true});await p.goto(L.BASE+'privacy.html');await sleep(p,300);await p.screenshot({path:'screenshots/privacy-mobile-dark-address.png',fullPage:true});

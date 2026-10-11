@@ -1104,6 +1104,30 @@
   "detail": ""
  },
  {
+  "group": "harness",
+  "name": "drawer closed by default; no disclaimer or designer voice visible",
+  "ok": true,
+  "detail": "hidden=true"
+ },
+ {
+  "group": "harness",
+  "name": "theme toggle icon-only 36px with accessible name",
+  "ok": true,
+  "detail": "{\"t\":\"\",\"l\":\"Dark theme\",\"w\":36}"
+ },
+ {
+  "group": "harness",
+  "name": "chip row at 390px: scrolls, every chip reachable with its full label",
+  "ok": true,
+  "detail": "{\"ovx\":\"auto\",\"o\":[true,true,true,true,true]}"
+ },
+ {
+  "group": "harness",
+  "name": "chip row at 320px: scrolls, every chip reachable with its full label",
+  "ok": true,
+  "detail": "{\"ovx\":\"auto\",\"o\":[true,true,true,true,true]}"
+ },
+ {
   "group": "setup",
   "name": "welcome states no-server loss in one sentence",
   "ok": true,
@@ -1141,7 +1165,7 @@
  },
  {
   "group": "phrase",
-  "name": "ribbon says example only",
+  "name": "drawer says example words only; frame has no simulation talk",
   "ok": true,
   "detail": ""
  },
@@ -1237,7 +1261,7 @@
  },
  {
   "group": "done",
-  "name": "create done: phrase is only backup, simulated",
+  "name": "create done: phrase is only backup, no simulation talk in the frame",
   "ok": true,
   "detail": ""
  },
@@ -1491,7 +1515,7 @@
   "group": "transfer",
   "name": "success -> done, simulated, device appears in My devices",
   "ok": true,
-  "detail": "Pixel tablet is linked\n\nSimulated. No device was linked and nothing was sent.\n\nP|My devices\n\nNames are private to your devices. Contacts neve"
+  "detail": "Pixel tablet is linked\n\nPixel tablet now has your account. It starts syncing con|My devices\n\nNames are private to your devices. Contacts neve"
  },
  {
   "group": "scan",
@@ -1743,7 +1767,7 @@
   "group": "secrets",
   "name": "no real network traffic (only same-origin page)",
   "ok": true,
-  "detail": "http://127.0.0.1:8768/refined/devices.html"
+  "detail": "http://127.0.0.1:8768/refined/devices.html http://127.0.0.1:8768/refined/tokens.css http://127.0.0.1:8768/refined/interactions.css"
  },
  {
   "group": "console",

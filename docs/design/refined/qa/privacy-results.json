@@ -1,6 +1,12 @@
 [
  {
   "page": "privacy",
+  "name": "harness: drawer closed by default, no disclaimer visible, theme icon-only",
+  "ok": true,
+  "detail": "hidden=true theme=\"\""
+ },
+ {
+  "page": "privacy",
   "name": "tabs: roles, aria-selected on exactly one",
   "ok": true,
   "detail": "true,false,false"
@@ -27,7 +33,7 @@
   "page": "privacy",
   "name": "changing interval updates the explanation/next-change text",
   "ok": true,
-  "detail": "1 contact haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address whil"
+  "detail": "1 contact hasn’t got your address yetThey were offline. They get it when either of you is next online. Nothing to do. If you both changed address while apart, s"
  },
  {
   "page": "privacy",
@@ -39,25 +45,25 @@
   "page": "privacy",
   "name": "Jump to next scheduled change updates status (rotation happened)",
   "ok": true,
-  "detail": "1 contact haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address while apart, see “Can’t reach someone”.Addre"
+  "detail": "1 contact hasn’t got your address yetThey were offline. They get it when either of you is next online. Nothing to do. If you both changed address while apart, see “Can’t reach someone”.Address changes"
  },
  {
   "page": "privacy",
   "name": "scenario \"Phone was asleep\" shows distinct honest state",
   "ok": true,
-  "detail": "Your address change is overdueThe phone was asleep or off past its change time. It changes once as soon as it wakes, not several times, then the schedule starts again. Until then the old address is still in use.Simulate "
+  "detail": "Your address change is overdueYour phone was asleep or off at its change time. It changes once when it wakes, not several times, and the schedule starts again. Until then the old address stays in use.Address changesYour "
  },
  {
   "page": "privacy",
   "name": "Simulate waking the phone resolves overdue state, focus not BODY",
   "ok": true,
-  "detail": "focus=h-st 1 contact haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you "
+  "detail": "focus=h-st 1 contact hasn’t got your address yetThey were offline. They get it when either of you is next online. Nothing to do. If you both changed ad"
  },
  {
   "page": "privacy",
   "name": "scenario \"Change failed\" shows distinct honest state",
   "ok": true,
-  "detail": "Address change didn’t finishYour phone couldn’t start its new address. The current one keeps working for a short while, then stops, and contacts can’t reach you until this succeeds. The app keeps trying. Proposed How lon"
+  "detail": "Address change didn’t finishYour phone couldn’t start its new address. The current one keeps working for a short while, then stops. Until this succeeds, contacts can’t reach you. Tinline keeps trying. Proposed How long t"
  },
  {
   "page": "privacy",
@@ -69,7 +75,7 @@
   "page": "privacy",
   "name": "Retry resolves the failure (retry button gone / status changes)",
   "ok": true,
-  "detail": "1 contact haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address whil retry=0"
+  "detail": "1 contact hasn’t got your address yetThey were offline. They get it when either of you is next online. Nothing to do. If you both changed address while apart, s retry=0"
  },
  {
   "page": "privacy",
@@ -81,7 +87,19 @@
   "page": "privacy",
   "name": "scenario \"Some contacts offline\" shows distinct honest state",
   "ok": true,
-  "detail": "3 contacts haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address while apart, see “Can’t reach someone”.Address changesYour phon"
+  "detail": "3 contacts haven’t got your address yetThey were offline. They get it when either of you is next online. Nothing to do. If you both changed address while apart, see “Can’t reach someone”.Address changesYour phone changes"
+ },
+ {
+  "page": "privacy",
+  "name": "grammar: plural \"N contacts haven’t got your address yet\"",
+  "ok": true,
+  "detail": "3 contacts haven’t got your address yetThey were offline. Th"
+ },
+ {
+  "page": "privacy",
+  "name": "grammar: singular \"1 contact hasn’t got your address yet\"",
+  "ok": true,
+  "detail": "1 contact hasn’t got your address yetThey were offline. They"
  },
  {
   "page": "privacy",
@@ -105,7 +123,7 @@
   "page": "privacy",
   "name": "confirm block: listed under Blocked people with date and Unblock",
   "ok": true,
-  "detail": "Blocked peoplePNPriya NBlocked Oct 10, 15:20UnblockPNPriya NFrom Weekend hikeVerifiedBlockedWHAT HAP"
+  "detail": "Blocked peoplePNPriya NBlocked Oct 10, 15:20UnblockPNPriya NFrom Weekend hikeVerifiedBlockedWhat hap"
  },
  {
   "page": "privacy",
@@ -135,7 +153,7 @@
   "page": "privacy",
   "name": "recovery QR dialog opens with focus inside and explains what the QR contains",
   "ok": true,
-  "detail": "Show my QRSample pattern only. A real QR would carry your account and current address, so Sam Rao can reach you again.CancelSimulate: Sam Rao scans it"
+  "detail": "Show my QRIt carries your account and current address, so Sam Rao can reach you again.CancelDone"
  },
  {
   "page": "privacy",
@@ -153,7 +171,7 @@
   "page": "privacy",
   "name": "recovery with \"laptop\" changes the guidance",
   "ok": true,
-  "detail": "Can’t reach someoneIf you and a contact both changed address while neither was online, neither side knows where the other is now. The app first tries a shared group’s host. If there’s none, you reconn"
+  "detail": "Can’t reach someoneIf you and a contact both changed address while neither was online, neither knows where the other is now. Tinline first tries a shared group’s host. If there’s none, you reconnect b"
  },
  {
   "page": "privacy",
@@ -165,7 +183,7 @@
   "page": "privacy",
   "name": "recovery with \"shared\" changes the guidance",
   "ok": true,
-  "detail": "Can’t reach someoneIf you and a contact both changed address while neither was online, neither side knows where the other is now. The app first tries a shared group’s host. If there’s none, you reconn"
+  "detail": "Can’t reach someoneIf you and a contact both changed address while neither was online, neither knows where the other is now. Tinline first tries a shared group’s host. If there’s none, you reconnect b"
  },
  {
   "page": "privacy",
@@ -201,12 +219,18 @@
   "page": "privacy",
   "name": "mobile block dialog fits viewport and buttons ≥44px",
   "ok": true,
-  "detail": "{\"box\":[12,378,24,820],\"btn\":[44,44],\"scroll\":false}"
+  "detail": "{\"box\":[0,390,153,844],\"btn\":[44,44],\"scroll\":false}"
  },
  {
   "page": "privacy",
-  "name": "mobile tab strip: all three tabs reachable without clipping",
+  "name": "mobile 390: chip row scrolls, each chip reachable with full label (no text clipped inside a chip)",
   "ok": true,
-  "detail": "[[20,134],[138,252],[256,370]]"
+  "detail": "{\"ovx\":\"auto\",\"out\":[{\"l\":16,\"r\":153,\"in\":true,\"fit\":true},{\"l\":161,\"r\":319,\"in\":true,\"fit\":true},{\"l\":211,\"r\":374,\"in\":true,\"fit\":true}],\"doc\":0}"
+ },
+ {
+  "page": "privacy",
+  "name": "mobile 320: chip row scrolls, each chip reachable with full label (no text clipped inside a chip)",
+  "ok": true,
+  "detail": "{\"ovx\":\"auto\",\"out\":[{\"l\":16,\"r\":153,\"in\":true,\"fit\":true},{\"l\":146,\"r\":304,\"in\":true,\"fit\":true},{\"l\":141,\"r\":304,\"in\":true,\"fit\":true}],\"doc\":0}"
  }
 ]
