@@ -155,6 +155,8 @@ const STARVE_START_US: u64 = 1_000_000;
 /// See `Sender::queuing`.
 const BASELINE_PROBE_US: u64 = 5_000_000;
 const MAX_Q_OFFSET_US: u64 = 100_000;
+/// After a decrease, the second look comes this much later (three more reports).
+const SETTLE_US: u64 = RATE_WINDOW_US + REPORT_US;
 
 /// Encode times kept (about a second of video); a step down for encode time needs a full window.
 const ENCODE_WINDOW: usize = 30;
@@ -381,6 +383,8 @@ pub struct Sender {
     /// the estimate before that decrease.
     settle_until: Option<u64>,
     pre_cut: u32,
+    /// Delivered rates reported since that decrease.
+    settle_delivered: Vec<u64>,
     /// Delta-frame bytes handed to the transport since the last report, and in the report
     /// interval before.
     sent: u64,
@@ -393,6 +397,8 @@ pub struct Sender {
     ladder: Ladder,
     now_us: u64,
     pub keyframes: u64,
+    /// When set, every report with the encoder bitrate and rung after it (for tests).
+    pub report_log: Option<Vec<(u64, RateReport, u32, usize)>>,
     pub drops: u64,
 }
 
@@ -418,6 +424,7 @@ impl Sender {
             high_q: None,
             settle_until: None,
             pre_cut: 0,
+            settle_delivered: Vec::new(),
             sent: 0,
             sent_prev: (0, 0),
             last_report_us: None,
@@ -426,6 +433,7 @@ impl Sender {
             ladder,
             now_us: 0,
             keyframes: 0,
+            report_log: None,
             drops: 0,
         }
     }
@@ -539,6 +547,10 @@ impl Sender {
         self.now_us = self.now_us.max(now_us);
         self.rate(now_us, r);
         self.relayer();
+        let (br, rung) = (self.bitrate(), self.ladder.index());
+        if let Some(log) = &mut self.report_log {
+            log.push((now_us, r.clone(), br, rung));
+        }
     }
 
     /// What we sent over the last two report intervals, as a rate.
@@ -592,7 +604,18 @@ impl Sender {
             && sent - delivered >= self.cfg.starve_min_bps as u64;
         self.starved_n = if short { self.starved_n + 1 } else { 0 };
         let starved = self.starved_n >= self.cfg.starve_reports;
+        if self.settle_until.is_some() {
+            self.settle_delivered.push(delivered);
+        }
         let second_look = self.settle_until.is_some_and(|t| now_us >= t);
+        // At the second look: the median of what got through in the reports since the first (a
+        // 100 ms window holds three or four packets at 300 kbps, so one report is +-30%, and a
+        // stream stalled on a lost packet reads low in one).
+        let settled = {
+            let v = &mut self.settle_delivered;
+            v.sort_unstable();
+            (v.get(v.len().saturating_sub(1) / 2).copied().unwrap_or(delivered) * 85 / 100) as u32
+        };
         if queuing_us > self.cfg.overuse_us || starved {
             // A queue is building: send no faster than what actually gets through, and below it
             // until the queue is gone (each 100 ms of it delays every frame). One rate window
@@ -603,12 +626,13 @@ impl Sender {
                 if second_look {
                     // Replaces the first cut, which may have been too deep as well (a gap in
                     // what the encoder sent).
-                    self.bitrate = self.pre_cut.min(target).max(self.cfg.min_bps);
+                    self.bitrate = self.pre_cut.min(settled).max(self.cfg.min_bps);
                     self.settle_until = None;
                 } else {
                     if self.settle_until.is_none() {
                         self.pre_cut = self.bitrate;
-                        self.settle_until = Some(now_us + RATE_WINDOW_US);
+                        self.settle_until = Some(now_us + SETTLE_US);
+                        self.settle_delivered.clear();
                     }
                     self.bitrate = self.bitrate.min(target).max(self.cfg.min_bps);
                 }
@@ -629,8 +653,7 @@ impl Sender {
         if second_look {
             // The queue was gone a rate window later: a blip, keep no more of the cut than the
             // delivered rate asks for.
-            let target = (delivered * 85 / 100) as u32;
-            self.bitrate = self.bitrate.max(self.pre_cut.min(target));
+            self.bitrate = self.bitrate.max(self.pre_cut.min(settled));
             self.settle_until = None;
         }
         if queuing_us < self.cfg.underuse_us && self.drain.take().is_some() {
@@ -1030,7 +1053,7 @@ mod tests {
         assert!(tx.draining());
         assert_eq!(tx.bitrate(), 50_000, "25% of delivered while the queue drains");
         assert_eq!(tx.resolution(), (1280, 720), "the ladder waits for a second look");
-        reports(&mut tx, 2_100 * MS, 2_200 * MS, 50_000, RateReport { delivered_bps: 200_000, queuing_us: 20_000 });
+        reports(&mut tx, 2_100 * MS, 2_250 * MS, 50_000, RateReport { delivered_bps: 200_000, queuing_us: 20_000 });
         assert_eq!(tx.resolution(), (320, 180), "the ladder follows the estimate, 170 kbps");
         assert_eq!(tx.bitrate(), 50_000);
     }
@@ -1260,12 +1283,14 @@ mod tests {
         tx.frame(0, true, b"k");
         assert!(!tx.wants_keyframe());
         // A queue builds and the rate falls below 540p's floor: smaller, from a new keyframe,
-        // once the next report (a rate window later) confirms the rate.
+        // once the reports over the next 150 ms confirm the rate.
         tx.on_report(1_000_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
         assert_eq!(tx.resolution(), (960, 540));
         tx.on_report(1_050_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
         assert_eq!(tx.resolution(), (960, 540));
         tx.on_report(1_100_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
+        assert_eq!(tx.resolution(), (960, 540));
+        tx.on_report(1_150_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
         assert_eq!(tx.resolution(), (640, 360));
         assert!(tx.wants_keyframe());
         assert!(tx.bitrate() <= 1_200_000);
