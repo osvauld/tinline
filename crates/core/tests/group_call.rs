@@ -142,8 +142,12 @@ fn call_hosts(o: &Peer, c: &Peer, a: &Peer, g: &str) {
     assert_eq!(d.hosts.len(), 1, "o is still the only chat host");
 }
 
-/// Starts a call from `p` once the call hosts' statuses arrived.
-fn start_call(p: &Peer, g: &str) -> String {
+/// Starts a call from `p` once the statuses of the call hosts `hosts` arrived.
+fn start_call(p: &Peer, g: &str, hosts: &[&Peer]) -> String {
+    eventually(WAIT, "the call hosts' statuses", || {
+        let have = p.node.group_call_hosts_advertising_for_test(g.into());
+        hosts.iter().all(|h| have.contains(&h.did))
+    });
     let mut id = None;
     eventually(WAIT, "a call host to pick", || {
         id = p.node.group_call_start(g.into()).ok();
@@ -230,7 +234,7 @@ fn a_member_starts_a_call_the_call_host_carries_it_and_a_removed_member_is_eject
     eprintln!("group and call hosts after {:?}", t0.elapsed());
 
     // ---- a starts: c is picked, everyone gets the CallStart and joins ----------------------
-    let call = start_call(&a, &g);
+    let call = start_call(&a, &g, &[&o, &c]);
     for p in [&o, &b, &c] {
         eventually(WAIT, "the CallStart reaches every member", || knows_call(p, &g, &call));
     }
@@ -282,7 +286,7 @@ fn a_member_starts_a_call_the_call_host_carries_it_and_a_removed_member_is_eject
     for p in [&a, &o] {
         eventually(WAIT, "the End is relayed", || !knows_call(p, &g, &call));
     }
-    let call2 = start_call(&a, &g);
+    let call2 = start_call(&a, &g, &[&o, &c]);
     for p in [&o, &c] {
         eventually(WAIT, "the second call reaches the members", || knows_call(p, &g, &call2));
     }
@@ -321,7 +325,7 @@ fn the_next_call_follows_a_rotated_call_host_and_a_revoked_call_host_hands_over(
     eprintln!("rotated after {:?}", t0.elapsed());
 
     // ---- the next call is hosted by c at its new endpoint ----------------------------------
-    let call = start_call(&a, &g);
+    let call = start_call(&a, &g, &[&o, &c]);
     for p in [&o, &c] {
         eventually(WAIT, "the CallStart reaches the members", || knows_call(p, &g, &call));
         p.node.group_call_join(g.clone(), call.clone()).unwrap();

@@ -7,6 +7,7 @@
 //! host -> member  Moved { auth, group, hosts }       (own connection, after a rotation, U12)
 //! host -> member  Welcome { auth, vv, hosts }        | Removed { records, vv, update? } | Refused { reason }
 //! both            Update { update } / Ack { vv } / Hosts { hosts } / Mail { mail } / MailAck { id }
+//! both            CallHostStatus / CallStart / CallEnd / CallHostRequest / CallHostRefusal (GA-I1)
 //! ```
 
 use iroh::endpoint::{RecvStream, SendStream};
@@ -43,6 +44,22 @@ pub enum GroupMsg {
     /// DID-signed host addresses. The member checks the sender is an active host, keeps the
     /// addresses and dials. Only current members are told; a removed member never is.
     Moved { auth: EndpointAuth, group: String, hosts: Vec<SignedHostAddr> },
+    // ---- group calls (GA-I1, G6 §2.2, §2.3, §3.1). Members send these only to hosts; a host
+    // verifies each (signature, group, membership, call-host permit) and passes it on: the
+    // broadcast ones to every current member session (never to a removed or joining one,
+    // §9.3) and to other hosts, the addressed ones towards their one recipient. Every device
+    // drops a blob it has seen (signature), so host-to-host relay ends.
+    /// A call-host candidate's signed conditions (`proto::gcall_status`), every 30 s.
+    CallHostStatus { status: proto::SignedBlob },
+    /// A call began (or a backup took it over): the host's signed CallStart and the
+    /// DID-signed group addresses of it and its backups (G1: what members dial).
+    CallStart { start: proto::SignedBlob, hosts: Vec<SignedHostAddr> },
+    /// The call ended (`End{ended}`, signed by its host).
+    CallEnd { end: proto::SignedBlob },
+    /// Starter -> one call-host candidate (`proto::gcall::HostRequest`).
+    CallHostRequest { request: proto::SignedBlob },
+    /// Candidate -> starter: declined (`proto::gcall::HostRefusal`). Accepting is a CallStart.
+    CallHostRefusal { refusal: proto::SignedBlob },
 }
 
 pub struct Writer(pub SendStream);

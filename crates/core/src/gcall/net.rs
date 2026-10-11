@@ -42,7 +42,7 @@ use std::time::{Duration, Instant};
 use bytes::Bytes;
 use identity::Identity;
 use iroh::endpoint::{Accepting, Connection, ConnectionError, RecvStream, SendStream};
-use iroh::{Endpoint, EndpointAddr};
+use iroh::EndpointAddr;
 use parking_lot::Mutex;
 use proto::SignedBlob;
 use proto::gcall::{self as w, CallStart, GCALL_ALPN, GroupCallMsg};
@@ -83,10 +83,21 @@ pub fn close_code(r: CloseReason) -> u32 {
 }
 
 /// What the wiring needs to know about groups: the [`CallAuthority`] checks plus where a call
-/// host can be reached. Group chat implements this later from the signed host records (G1).
+/// host can be reached. Group chat implements it over its derived state
+/// (`group::calldir::GroupCallDir`, GA-I1); [`StaticDirectory`] is the fixed one for tests.
 pub trait CallDirectory: CallAuthority + Send + Sync {
     /// The transport address of `host`'s group endpoint, if known.
     fn host_addr(&self, host: &HostRef) -> Option<EndpointAddr>;
+    /// This device's call-host ref in `gid`, when [`GcallConfig::host_ref`] is not set (a
+    /// device may host calls of several groups, each under its own permit).
+    fn my_host_ref(&self, _gid: &str) -> Option<HostRef> {
+        None
+    }
+    /// This device's DID-signed group endpoint note for a Join, when [`GcallConfig::note`] is
+    /// not set.
+    fn my_note(&self) -> Option<SignedBlob> {
+        None
+    }
 }
 
 /// A [`CallDirectory`] over a [`StaticAuthority`] and a fixed host address book; for tests and
@@ -155,6 +166,17 @@ pub struct GcallConfig {
     pub note: Option<SignedBlob>,
 }
 
+impl GcallConfig {
+    /// This device's host ref for `gid`: the configured one, else the directory's.
+    pub fn host_ref_for(&self, gid: &str) -> Option<HostRef> {
+        self.host_ref.clone().or_else(|| self.dir.my_host_ref(gid))
+    }
+
+    fn note_now(&self) -> Option<SignedBlob> {
+        self.note.clone().or_else(|| self.dir.my_note())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClientStatus {
     pub state: ClientState,
@@ -191,6 +213,8 @@ pub struct GcallStatus {
 #[derive(Default)]
 pub(crate) struct Service {
     cfg: Mutex<Option<Arc<GcallConfig>>>,
+    /// The latest `gcall_set_cond`, also before any configuration.
+    cond: Mutex<Option<Cond>>,
     cur: Mutex<Option<Arc<Session>>>,
     known: Known,
 }
@@ -238,6 +262,30 @@ impl Service {
 
     fn known_start(&self, call_id: &str) -> Option<CallStart> {
         self.known.lock().starts.get(call_id).cloned()
+    }
+
+    /// A session is live (in a call, or hosting one).
+    pub(crate) fn busy(&self) -> bool {
+        self.live().is_some()
+    }
+
+    /// The current local hosting conditions.
+    pub(crate) fn cond(&self) -> Cond {
+        let set = *self.cond.lock();
+        set.or_else(|| self.cfg.lock().as_ref().map(|c| c.cond)).unwrap_or_else(Cond::desktop)
+    }
+
+    /// Configures unless something (a test, the app) already did. True if this configured.
+    pub(crate) fn configure_if_unset(&self, mut cfg: GcallConfig) -> bool {
+        let mut slot = self.cfg.lock();
+        if slot.is_some() {
+            return false;
+        }
+        if let Some(c) = *self.cond.lock() {
+            cfg.cond = c;
+        }
+        *slot = Some(Arc::new(cfg));
+        true
     }
 }
 
@@ -301,7 +349,8 @@ pub(crate) struct Session {
     call_id: String,
     id: Identity,
     cfg: Arc<GcallConfig>,
-    ep: Endpoint,
+    /// Calls run on the group endpoint (U2/U7), looked up at each dial: it may rotate (U12).
+    inner: std::sync::Weak<Inner>,
     handle: tokio::runtime::Handle,
     /// Session clock: Unix ms at creation plus monotonic elapsed time.
     t0: Instant,
@@ -315,13 +364,13 @@ fn is_ended(c: &ClientEngine) -> bool {
 }
 
 impl Session {
-    fn new(call_id: &str, id: Identity, cfg: Arc<GcallConfig>, ep: Endpoint, handle: tokio::runtime::Handle, known: Known) -> Arc<Self> {
+    fn new(call_id: &str, id: Identity, cfg: Arc<GcallConfig>, inner: std::sync::Weak<Inner>, handle: tokio::runtime::Handle, known: Known) -> Arc<Self> {
         let cond = cfg.cond;
         Arc::new(Session {
             call_id: call_id.into(),
             id,
             cfg,
-            ep,
+            inner,
             handle,
             t0: Instant::now(),
             t0_unix: crate::node::now_ms(),
@@ -487,7 +536,7 @@ impl Session {
         if st.host.is_some() {
             return Err(Refusal::Refused);
         }
-        let me = self.cfg.host_ref.clone().ok_or(Refusal::Refused)?;
+        let me = self.cfg.host_ref_for(&prev.gid).ok_or(Refusal::Refused)?;
         let own = st.client.as_ref().is_some_and(|c| !is_ended(c) && c.call_start().call_id == prev.call_id);
         let eng = HostEngine::takeover(self.id.clone(), prev, me, st.cond, own, self.now())?;
         let s = eng.call_start();
@@ -505,7 +554,7 @@ impl Session {
             let mine = h.eng.call_start().clone();
             let winner = {
                 let mut k = s.known.lock();
-                let b = k.boards.entry(mine.gid.clone()).or_insert_with(|| CallBoard::new(&mine.gid, s.cfg.host_ref.clone()));
+                let b = k.boards.entry(mine.gid.clone()).or_insert_with(|| CallBoard::new(&mine.gid, s.cfg.host_ref_for(&mine.gid)));
                 let _ = b.accept_start(h.eng.start_blob(), s.auth());
                 b.superseded(&mine)
             };
@@ -585,7 +634,7 @@ impl Session {
                     st.events.push(GcallEvent::Reconnecting { call_id: prev.call_id.clone() });
                 }
                 self.drop_link(st);
-                if self.cfg.host_ref.as_ref() == Some(&host) {
+                if self.cfg.host_ref_for(&prev.gid).as_ref() == Some(&host) {
                     // Our own host engine, through ConnId::LOCAL; as a backup, take over first.
                     let have = st.host.as_ref().is_some_and(|h| {
                         let s = h.eng.call_start();
@@ -683,7 +732,7 @@ impl Session {
                     found
                 });
                 if let Some(start) = next
-                    && let Ok((c, acts)) = ClientEngine::new(self.id.clone(), start, self.cfg.note.clone(), now, auth)
+                    && let Ok((c, acts)) = ClientEngine::new(self.id.clone(), start, self.cfg.note_now(), now, auth)
                 {
                     st.client = Some(c);
                     q.push_back(Work::C(acts));
@@ -700,7 +749,8 @@ impl Session {
 
     async fn dial(self: Arc<Self>, seq: u64, addr: EndpointAddr) {
         let connected = async {
-            let conn = self.ep.connect(addr, GCALL_ALPN).await.map_err(Error::net)?;
+            let ep = self.inner.upgrade().and_then(|i| i.group_endpoint()).ok_or(Error::NotStarted)?;
+            let conn = ep.connect(addr, GCALL_ALPN).await.map_err(Error::net)?;
             let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
             Ok::<_, Error>((conn, send, recv))
         };
@@ -995,8 +1045,8 @@ impl Inner {
         // Listen-only takeover by a backup that was not in the call.
         let prev = svc.known_start(&j.call_id).filter(|p| p.host_gen + 1 == j.host_gen)?;
         let cfg = svc.cfg.lock().clone()?;
-        let (me, ep) = (self.me().ok()?, self.endpoint().ok()?);
-        let s = Session::new(&j.call_id, me.id.clone(), cfg, ep, self.handle.clone(), svc.known.clone());
+        let me = self.me().ok()?;
+        let s = Session::new(&j.call_id, me.id.clone(), cfg, Arc::downgrade(self), self.handle.clone(), svc.known.clone());
         {
             let mut cur = svc.cur.lock();
             if cur.as_ref().is_some_and(|c| !c.finished()) {
@@ -1012,28 +1062,30 @@ impl Inner {
     }
 }
 
-/// Group calls on a [`crate::Node`]. **Unstable**: not exported through uniffi; the UI and
-/// group chat will build on it.
-impl crate::Node {
+/// The group-call service on `Inner` (the group layer, `group::calls`, drives it from core
+/// threads); `Node` wraps it below.
+impl Inner {
     /// Sets the directory, event sink, own host ref and conditions. Applies to sessions
     /// started afterwards.
-    pub fn gcall_configure(&self, cfg: GcallConfig) {
-        *self.inner.gcall.cfg.lock() = Some(Arc::new(cfg));
+    pub(crate) fn gcall_configure(&self, cfg: GcallConfig) {
+        *self.gcall.cfg.lock() = Some(Arc::new(cfg));
     }
 
-    fn gcall_cfg(&self) -> Result<Arc<GcallConfig>, Error> {
-        self.inner.gcall.cfg.lock().clone().ok_or_else(|| Error::Protocol("group calls not configured".into()))
+    pub(crate) fn gcall_cfg(&self) -> Result<Arc<GcallConfig>, Error> {
+        self.gcall.cfg.lock().clone().ok_or_else(|| Error::Protocol("group calls not configured".into()))
     }
 
     /// A new session, unless a group call or a 1:1 call is going on.
-    fn gcall_new_session(&self, call_id: &str) -> Result<Arc<Session>, Error> {
+    fn gcall_new_session(self: &Arc<Self>, call_id: &str) -> Result<Arc<Session>, Error> {
         let cfg = self.gcall_cfg()?;
-        let me = self.inner.me()?;
-        let ep = self.inner.endpoint()?;
-        let s = Session::new(call_id, me.id.clone(), cfg, ep, self.inner.handle.clone(), self.inner.gcall.known.clone());
+        let me = self.me()?;
+        if self.group_endpoint().is_none() {
+            return Err(Error::NotStarted);
+        }
+        let s = Session::new(call_id, me.id.clone(), cfg, Arc::downgrade(self), self.handle.clone(), self.gcall.known.clone());
         // Under the 1:1 slot's lock, so that no 1:1 call begins meanwhile (it checks `in_call`).
-        self.inner.with_no_call(|| {
-            let mut cur = self.inner.gcall.cur.lock();
+        self.with_no_call(|| {
+            let mut cur = self.gcall.cur.lock();
             if cur.as_ref().is_some_and(|c| !c.finished()) {
                 return Err(Error::Busy);
             }
@@ -1046,13 +1098,14 @@ impl crate::Node {
     /// New local hosting conditions (§2.4: battery, charging, thermal, metered), from the
     /// platform. A call hosted here degrades as the policy says (K = 1 and no new Joins, or
     /// `End{host_leaving, next_host}`); later takeovers start with them.
-    pub fn gcall_set_cond(&self, cond: Cond) {
-        if let Some(c) = self.inner.gcall.cfg.lock().as_mut() {
+    pub(crate) fn gcall_set_cond(self: &Arc<Self>, cond: Cond) {
+        *self.gcall.cond.lock() = Some(cond);
+        if let Some(c) = self.gcall.cfg.lock().as_mut() {
             let mut n = (**c).clone();
             n.cond = cond;
             *c = Arc::new(n);
         }
-        if let Some(s) = self.inner.gcall.live() {
+        if let Some(s) = self.gcall.live() {
             s.with(|s, st, q| {
                 st.cond = cond;
                 if let Some(h) = st.host.as_mut() {
@@ -1065,15 +1118,15 @@ impl crate::Node {
     /// A CallStart relayed through the chat hosts: remembered so that this device can take
     /// over as a backup, or follow a `Superseded`. Verified (signature, permit, starter).
     /// When it beats the call hosted here (glare, split), that call ends `superseded`.
-    pub fn gcall_observe_start(&self, start: &SignedBlob) -> Result<(), Error> {
+    pub(crate) fn gcall_observe_start(self: &Arc<Self>, start: &SignedBlob) -> Result<(), Error> {
         let cfg = self.gcall_cfg()?;
         let s = w::open_start(start).map_err(|e| Error::Protocol(e.to_string()))?;
         if !cfg.dir.host_permit_ok(&s.gid, &s.host_ref) || !cfg.dir.is_member(&s.gid, &s.starter_did) {
             return Err(Error::Rejected("call host not permitted".into()));
         }
         let follow = {
-            let mut k = self.inner.gcall.known.lock();
-            let b = k.boards.entry(s.gid.clone()).or_insert_with(|| CallBoard::new(&s.gid, cfg.host_ref.clone()));
+            let mut k = self.gcall.known.lock();
+            let b = k.boards.entry(s.gid.clone()).or_insert_with(|| CallBoard::new(&s.gid, cfg.host_ref_for(&s.gid)));
             let _ = b.accept_start(start, &*cfg.dir);
             let follow = k.follow.as_ref().is_some_and(|(by, gid, t)| *by == s.host_ref && *gid == s.gid && t.elapsed() < FOLLOW_WINDOW);
             if follow {
@@ -1084,7 +1137,7 @@ impl crate::Node {
             }
             follow
         };
-        if let Some(cur) = self.inner.gcall.live() {
+        if let Some(cur) = self.gcall.live() {
             cur.sweep();
         }
         if follow && let Err(e) = self.gcall_join(start, None) {
@@ -1094,20 +1147,20 @@ impl crate::Node {
     }
 
     /// A relayed `End{ended}`: the call leaves the group's board (it no longer wins a glare).
-    pub fn gcall_observe_end(&self, end: &SignedBlob) -> Result<(), Error> {
+    pub(crate) fn gcall_observe_end(&self, end: &SignedBlob) -> Result<(), Error> {
         let cfg = self.gcall_cfg()?;
         let e = w::open_end(end).map_err(|e| Error::Protocol(e.to_string()))?;
-        let mut k = self.inner.gcall.known.lock();
-        let b = k.boards.entry(e.gid.clone()).or_insert_with(|| CallBoard::new(&e.gid, cfg.host_ref.clone()));
+        let mut k = self.gcall.known.lock();
+        let b = k.boards.entry(e.gid.clone()).or_insert_with(|| CallBoard::new(&e.gid, cfg.host_ref_for(&e.gid)));
         b.accept_end(end, &*cfg.dir).map_err(|r| Error::Rejected(format!("{r:?}")))
     }
 
     /// Host a call. `cfg.host_ref` must be this device's configured host ref. With
     /// `own_user_in` this device's user joins at once through `ConnId::LOCAL`. Returns the
     /// signed CallStart to announce (also delivered as `HostingStarted`).
-    pub fn gcall_host(&self, cfg: HostConfig) -> Result<SignedBlob, Error> {
+    pub(crate) fn gcall_host(self: &Arc<Self>, cfg: HostConfig) -> Result<SignedBlob, Error> {
         let gc = self.gcall_cfg()?;
-        if gc.host_ref.as_ref() != Some(&cfg.host_ref) {
+        if gc.host_ref_for(&cfg.gid).as_ref() != Some(&cfg.host_ref) {
             return Err(Error::Protocol("host_ref is not this device's".into()));
         }
         let own = cfg.own_user_in;
@@ -1120,7 +1173,7 @@ impl crate::Node {
             st.events.push(GcallEvent::HostingStarted { call_id: start.call_id.clone(), host_gen: start.host_gen, start: blob.clone() });
             st.host = Some(HostSide { eng, conns: BTreeMap::new(), taking: false });
             if own {
-                let (c, acts) = ClientEngine::new(s.id.clone(), start, s.cfg.note.clone(), now, &*s.cfg.dir).map_err(|e| Error::Rejected(format!("{e:?}")))?;
+                let (c, acts) = ClientEngine::new(s.id.clone(), start, s.cfg.note_now(), now, &*s.cfg.dir).map_err(|e| Error::Rejected(format!("{e:?}")))?;
                 st.client = Some(c);
                 q.push_back(Work::C(acts));
             }
@@ -1128,27 +1181,27 @@ impl crate::Node {
         });
         match res {
             Ok(_) => s.spawn_ticker(),
-            Err(_) => *self.inner.gcall.cur.lock() = None,
+            Err(_) => *self.gcall.cur.lock() = None,
         }
         res
     }
 
     /// Join the call announced by `start`. `host_addr` is where its host can be reached (else
     /// the directory is asked). Progress arrives as `GcallEvent`s.
-    pub fn gcall_join(&self, start: &SignedBlob, host_addr: Option<EndpointAddr>) -> Result<(), Error> {
+    pub(crate) fn gcall_join(self: &Arc<Self>, start: &SignedBlob, host_addr: Option<EndpointAddr>) -> Result<(), Error> {
         let gc = self.gcall_cfg()?;
         let s = w::open_start(start).map_err(|e| Error::Protocol(e.to_string()))?;
         self.gcall_observe_start(start)?;
         // Joining the call this device already hosts listen-only: add the user to it.
-        if let Some(cur) = self.inner.gcall.live() {
-            self.inner.not_in_call()?;
+        if let Some(cur) = self.gcall.live() {
+            self.not_in_call()?;
             return cur.with(|cur, st, q| {
                 let hosts_it = st.host.as_ref().is_some_and(|h| h.eng.call_start().call_id == s.call_id);
                 if !hosts_it || st.client.as_ref().is_some_and(|c| !is_ended(c)) {
                     return Err(Error::Busy);
                 }
                 let start = st.host.as_ref().expect("checked").eng.call_start().clone();
-                let (c, acts) = ClientEngine::new(cur.id.clone(), start, gc.note.clone(), cur.now(), &*gc.dir).map_err(|e| Error::Rejected(format!("{e:?}")))?;
+                let (c, acts) = ClientEngine::new(cur.id.clone(), start, gc.note_now(), cur.now(), &*gc.dir).map_err(|e| Error::Rejected(format!("{e:?}")))?;
                 st.client = Some(c);
                 q.push_back(Work::C(acts));
                 Ok(())
@@ -1160,22 +1213,22 @@ impl crate::Node {
             if let Some(a) = host_addr {
                 st.addrs.insert(host, a);
             }
-            let (c, acts) = ClientEngine::new(sess.id.clone(), s, gc.note.clone(), sess.now(), &*gc.dir).map_err(|e| Error::Rejected(format!("{e:?}")))?;
+            let (c, acts) = ClientEngine::new(sess.id.clone(), s, gc.note_now(), sess.now(), &*gc.dir).map_err(|e| Error::Rejected(format!("{e:?}")))?;
             st.client = Some(c);
             q.push_back(Work::C(acts));
             Ok(())
         });
         match res {
             Ok(()) => sess.spawn_ticker(),
-            Err(_) => *self.inner.gcall.cur.lock() = None,
+            Err(_) => *self.gcall.cur.lock() = None,
         }
         res
     }
 
     /// Leave the call (signed Leave). A desktop host keeps hosting listen-only; a phone host
     /// ends the call with `host_leaving` (§2.4, done by the engine).
-    pub fn gcall_leave(&self) {
-        if let Some(s) = self.inner.gcall.live() {
+    pub(crate) fn gcall_leave(self: &Arc<Self>) {
+        if let Some(s) = self.gcall.live() {
             s.with(|s, st, q| {
                 if let Some(c) = st.client.as_mut() {
                     q.push_back(Work::C(c.leave(s.now())));
@@ -1185,8 +1238,8 @@ impl crate::Node {
     }
 
     /// As host: end the call for everyone (`End{ended}`).
-    pub fn gcall_end(&self) {
-        if let Some(s) = self.inner.gcall.live() {
+    pub(crate) fn gcall_end(self: &Arc<Self>) {
+        if let Some(s) = self.gcall.live() {
             s.with(|_, st, q| {
                 if let Some(h) = st.host.as_mut() {
                     q.push_back(Work::H(h.eng.end(EndReason::Ended, None)));
@@ -1197,15 +1250,15 @@ impl crate::Node {
 
     /// Mute this device's microphone: silence is sent instead, so the sender gate closes and
     /// only level-only datagrams go out.
-    pub fn gcall_set_mic_muted(&self, muted: bool) {
-        if let Some(s) = self.inner.gcall.live() {
+    pub(crate) fn gcall_set_mic_muted(&self, muted: bool) {
+        if let Some(s) = self.gcall.live() {
             s.st.lock().mic_muted = muted;
         }
     }
 
     /// Local mute of one participant (§3.4, §6); the host is not told.
-    pub fn gcall_mute_participant(&self, did: &str, muted: bool) {
-        if let Some(s) = self.inner.gcall.live()
+    pub(crate) fn gcall_mute_participant(&self, did: &str, muted: bool) {
+        if let Some(s) = self.gcall.live()
             && let Some(c) = s.st.lock().client.as_mut()
         {
             c.set_muted(did, muted);
@@ -1214,27 +1267,112 @@ impl crate::Node {
 
     /// Microphone PCM, 48 kHz mono, any length (what `Node::push_mic` does when no 1:1 call
     /// is active).
-    pub fn gcall_push_mic(&self, pcm: &[i16]) {
-        self.inner.gcall.push_mic(pcm);
+    pub(crate) fn gcall_push_mic(&self, pcm: &[i16]) {
+        self.gcall.push_mic(pcm);
     }
 
     /// The next 20 ms of the group-call mix.
-    pub fn gcall_pull_speaker(&self) -> Vec<i16> {
-        self.inner.gcall.pull_speaker()
+    pub(crate) fn gcall_pull_speaker(&self) -> Vec<i16> {
+        self.gcall.pull_speaker()
     }
 
-    pub fn gcall_status(&self) -> Option<GcallStatus> {
-        self.inner.gcall.cur.lock().clone().map(|s| s.status())
+    pub(crate) fn gcall_status(&self) -> Option<GcallStatus> {
+        self.gcall.cur.lock().clone().map(|s| s.status())
     }
 
-    /// This node's endpoint on loopback (direct, no relay): for tests and same-machine hosts.
-    pub fn gcall_loopback_addr(&self) -> Result<EndpointAddr, Error> {
-        let ep = self.inner.endpoint()?;
+    /// This node's group endpoint on loopback (direct, no relay). It must be up.
+    pub(crate) fn gcall_loopback_addr(&self) -> Result<EndpointAddr, Error> {
+        let ep = self.group_endpoint().ok_or(Error::NotStarted)?;
         let mut a = EndpointAddr::new(ep.id());
         for s in ep.bound_sockets() {
             let ip: std::net::IpAddr = if s.is_ipv4() { std::net::Ipv4Addr::LOCALHOST.into() } else { std::net::Ipv6Addr::LOCALHOST.into() };
             a = a.with_ip_addr(std::net::SocketAddr::new(ip, s.port()));
         }
         Ok(a)
+    }
+}
+
+/// Group calls on a [`crate::Node`]. **Unstable** plain Rust; the app API is the group layer's
+/// UniFFI calls (`group::calls`). Calls run on the group endpoint (U2/U7): the calls that start
+/// a session bring it up first.
+impl crate::Node {
+    /// Sets the directory, event sink, own host ref and conditions. Applies to sessions
+    /// started afterwards. Group chat configures itself (`GroupCallDir`) unless this was called.
+    pub fn gcall_configure(&self, cfg: GcallConfig) {
+        self.inner.gcall_configure(cfg)
+    }
+
+    /// The group endpoint, bound (otherwise it is bound only once the account has a group).
+    fn gcall_ensure_endpoint(&self) -> Result<(), Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move {
+            let core = inner.group_core()?;
+            inner.group_ensure(&core).await.map(|_| ())
+        })?
+    }
+
+    /// New local hosting conditions (§2.4: battery, charging, thermal, metered), from the
+    /// platform. A call hosted here degrades as the policy says (K = 1 and no new Joins, or
+    /// `End{host_leaving, next_host}`); later takeovers and the advertised `CallHostStatus`
+    /// use them.
+    pub fn gcall_set_cond(&self, cond: Cond) {
+        self.inner.gcall_set_cond(cond)
+    }
+
+    /// A CallStart relayed through the chat hosts (`Inner::gcall_observe_start`).
+    pub fn gcall_observe_start(&self, start: &SignedBlob) -> Result<(), Error> {
+        self.inner.gcall_observe_start(start)
+    }
+
+    /// A relayed `End{ended}`: the call leaves the group's board.
+    pub fn gcall_observe_end(&self, end: &SignedBlob) -> Result<(), Error> {
+        self.inner.gcall_observe_end(end)
+    }
+
+    /// Host a call (`Inner::gcall_host`).
+    pub fn gcall_host(&self, cfg: HostConfig) -> Result<SignedBlob, Error> {
+        self.gcall_ensure_endpoint()?;
+        self.inner.gcall_host(cfg)
+    }
+
+    /// Join the call announced by `start` (`Inner::gcall_join`).
+    pub fn gcall_join(&self, start: &SignedBlob, host_addr: Option<EndpointAddr>) -> Result<(), Error> {
+        self.gcall_ensure_endpoint()?;
+        self.inner.gcall_join(start, host_addr)
+    }
+
+    pub fn gcall_leave(&self) {
+        self.inner.gcall_leave()
+    }
+
+    pub fn gcall_end(&self) {
+        self.inner.gcall_end()
+    }
+
+    pub fn gcall_set_mic_muted(&self, muted: bool) {
+        self.inner.gcall_set_mic_muted(muted)
+    }
+
+    pub fn gcall_mute_participant(&self, did: &str, muted: bool) {
+        self.inner.gcall_mute_participant(did, muted)
+    }
+
+    pub fn gcall_push_mic(&self, pcm: &[i16]) {
+        self.inner.gcall_push_mic(pcm)
+    }
+
+    pub fn gcall_pull_speaker(&self) -> Vec<i16> {
+        self.inner.gcall_pull_speaker()
+    }
+
+    pub fn gcall_status(&self) -> Option<GcallStatus> {
+        self.inner.gcall_status()
+    }
+
+    /// This node's group endpoint on loopback (direct, no relay), bound if needed: for tests
+    /// and same-machine hosts.
+    pub fn gcall_loopback_addr(&self) -> Result<EndpointAddr, Error> {
+        self.gcall_ensure_endpoint()?;
+        self.inner.gcall_loopback_addr()
     }
 }

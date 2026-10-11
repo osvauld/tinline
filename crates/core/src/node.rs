@@ -1890,7 +1890,6 @@ impl Inner {
             iroh_blobs::ALPN.to_vec(),
             proto::SELF_ALPN.to_vec(),
             proto::link::LINK_ALPN.to_vec(),
-            proto::gcall::GCALL_ALPN.to_vec(),
         ];
         // Superseded versions (P9c): listed only so an old app is refused with a clear reason.
         alpns.extend(crate::version::old_alpns());
@@ -1987,14 +1986,6 @@ impl Inner {
                         drop(permit);
                         if let Err(e) = this.clone().handle_self_incoming(accepting).await {
                             tracing::debug!("incoming self-sync: {e}");
-                        }
-                        return;
-                    }
-                    // Group calls (G6): routed to crate::gcall::net.
-                    if alpn.as_slice() == proto::gcall::GCALL_ALPN {
-                        drop(permit);
-                        if let Err(e) = this.clone().handle_gcall_incoming(accepting).await {
-                            tracing::debug!("incoming gcall: {e}");
                         }
                         return;
                     }
