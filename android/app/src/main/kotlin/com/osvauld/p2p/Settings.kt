@@ -84,6 +84,9 @@ fun SettingsScreen(
             SectionLabel("CALLS")
             ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = Icons.Rounded.Call,
                 trailing = { TinSwitch(available, { on -> scope.launch(Dispatchers.IO) { app.setAvailable(on) } }, "Available for calls") })
+            var video by remember { mutableStateOf(app.videoEnabled) }
+            ListItem("Video in calls", sub = if (video) "You can turn your camera on in a call" else "Calls are voice only", icon = Icons.Rounded.Videocam,
+                trailing = { TinSwitch(video, { on -> video = on; app.videoEnabled = on }, "Video in calls") })
             ListItem("Background & battery", onClick = onBattery, icon = Icons.Rounded.BatteryChargingFull,
                 sub = if (bgOk) "All set — calls will ring" else "Needs attention")
             SectionLabel("SECURITY")
