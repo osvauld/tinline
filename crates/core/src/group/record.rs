@@ -54,6 +54,10 @@ pub enum Body {
     /// The author's own device `dev` agrees to host (or stops hosting). Hosting is opt-in per
     /// device: a host is active only with both a permit and this.
     HostAccept { active: bool },
+    /// The author's encryption public key (`identity::Identity::encryption_public_key`, derived
+    /// from the recovery phrase; not a network key), so other members can seal mail to it (U3
+    /// chat requests, `mail.rs`). The latest per author counts.
+    EncKey { key: [u8; 32] },
 }
 
 /// One group op, as signed.
@@ -100,6 +104,14 @@ fn sig_input(domain: &[u8], body: &[u8]) -> Vec<u8> {
     let mut v = domain.to_vec();
     put_bytes(&mut v, body);
     v
+}
+
+pub(crate) fn put_bytes_pub(v: &mut Vec<u8>, b: &[u8]) {
+    put_bytes(v, b)
+}
+
+pub(crate) fn verify_did_pub(did: &str, msg: &[u8], sig: &[u8]) -> bool {
+    verify_did(did, msg, sig)
 }
 
 fn verify_did(did: &str, msg: &[u8], sig: &[u8]) -> bool {

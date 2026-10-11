@@ -242,6 +242,18 @@ pub struct State {
     /// The device keys (text form, sorted) of the last list queued for every contact, so a change
     /// is pushed once even if a call re-signed the list first.
     pub pushed_list_keys: Vec<String>,
+    /// One-time contact tickets we handed out by accepting a group chat request (U3), by
+    /// invite nonce: only that DID may redeem one, and it gets message-only tokens (P6). Local:
+    /// the ticket names this device's private endpoint.
+    pub req_tickets: HashMap<String, ReqTicket>,
+}
+
+/// See `State::req_tickets`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReqTicket {
+    pub did: String,
+    /// Unix seconds.
+    pub exp: u64,
 }
 
 /// See `State::cut_offs`.

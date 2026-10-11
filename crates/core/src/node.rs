@@ -2035,6 +2035,31 @@ impl Inner {
         Ok(text)
     }
 
+    /// A one-time contact ticket of this device for `did` only (accepting a group chat request,
+    /// U3): redeemable once, by that DID, with message-only tokens, until `ttl` seconds from now.
+    pub(crate) async fn request_ticket(self: &Arc<Self>, did: &str, ttl: u64) -> Result<String, Error> {
+        let me = self.me()?;
+        let ep = self.endpoint()?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+        let relay = loop {
+            let r = relay_of(&ep);
+            if r.is_some() || tokio::time::Instant::now() > deadline {
+                break r;
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        };
+        let now = now();
+        let ticket = proto::issue_contact_ticket(&me.id, me.device, &me.profile.name, relay, now, ttl);
+        let nonce = ticket.verify(now)?.nonce;
+        {
+            let mut s = self.shared.lock();
+            s.state.req_tickets.retain(|_, t| t.exp >= now);
+            s.state.req_tickets.insert(nonce, crate::store::ReqTicket { did: did.to_string(), exp: now + ttl });
+        }
+        self.persist_async(me.epoch).await?;
+        Ok(ticket.to_text())
+    }
+
     pub(crate) async fn add_contact(self: Arc<Self>, text: String) -> Result<Contact, Error> {
         self.add_contact_from(text, crate::caps::ContactOrigin::Ticket).await
     }
@@ -2145,13 +2170,20 @@ impl Inner {
         let now = now();
         let current = current_nonce(&next, now);
         let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now, &next.redeemed, GRANT_TTL, |did| {
-            crate::caps::policy_for(&next, did, crate::caps::ContactOrigin::Ticket)
+            // A DID we accepted a group chat request from gets message-only tokens (U3, P6).
+            let origin = if next.req_tickets.values().any(|t| t.did == did && t.exp >= now) {
+                crate::caps::ContactOrigin::GroupRequest
+            } else {
+                crate::caps::ContactOrigin::Ticket
+            };
+            crate::caps::policy_for(&next, did, origin)
         })
         .map_err(|e| HelloError::Refused(e.to_string()))?;
+        let by_request = next.req_tickets.get(&new.redeemed_nonce).is_some_and(|t| t.did == new.did && t.exp >= now);
         let calls_allowed = matches!(&welcome, Msg::ContactWelcome { call_grant_for_you: Some(_), .. });
         // Only the ticket we hand out right now can be redeemed: an older one that leaked (or
         // was reset) is dead even though its nonce is unspent.
-        if current.as_deref() != Some(new.redeemed_nonce.as_str()) {
+        if !by_request && current.as_deref() != Some(new.redeemed_nonce.as_str()) {
             return Err(HelloError::Refused("not the current ticket".into()));
         }
         if let Some(notice) = self.refusal_for(&new.did) {
@@ -2161,8 +2193,12 @@ impl Inner {
         let contact = Contact::from(&stored);
         let apply = |st: &mut State| {
             st.redeemed.insert(new.redeemed_nonce.clone());
-            // Spent: the next `my_ticket` mints a fresh one.
-            st.ticket = None;
+            if by_request {
+                st.req_tickets.remove(&new.redeemed_nonce);
+            } else {
+                // Spent: the next `my_ticket` mints a fresh one.
+                st.ticket = None;
+            }
             apply_contact(st, stored.clone(), new.device, false)
         };
         apply(&mut next).map_err(HelloError::Failed)?;
