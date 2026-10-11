@@ -2,8 +2,9 @@ const L=require('./lib'),C=require('./check');
 const chk=C.mk('groups');const sleep=(p,ms)=>p.waitForTimeout(ms);
 const foc=p=>p.evaluate(()=>{const a=document.activeElement;return a&&a!==document.body?(a.id||a.getAttribute('aria-label')||(a.textContent||'').trim().slice(0,22)||a.tagName):'BODY'});
 const dtxt=p=>p.evaluate(()=>{const ds=document.querySelectorAll('dialog[open]');const d=ds[ds.length-1];return d?d.textContent.replace(/\s+/g,' ').trim():'NO DIALOG'});
-const simOpen=async(p)=>{const d=p.locator('details',{hasText:'Simulation'}).last();if(!(await d.evaluate(e=>e.open)))await d.locator('summary').click()};
-const open=async(p)=>{for(const s of ['Invitations','Chat requests','Sent requests']){const d=p.locator('details',{hasText:s}).first();if(await d.count()&&!(await d.evaluate(e=>e.open)))await d.locator('summary').click()}};
+const simOpen=async(p)=>{if(await p.$eval('#sim',e=>e.hidden))await p.click('#simBtn')};
+const simClose=async(p)=>{if(!(await p.$eval('#sim',e=>e.hidden)))await p.click('#simClose')};
+const open=async(p)=>{for(const k of ['inv','req','sent']){const d=p.locator('#fold-'+k);if(await d.count()&&(await d.getAttribute('aria-expanded'))!=='true')await d.click()}};
 (async()=>{const b=await L.launch();
 let p=await L.page(b);await p.goto(L.BASE+'groups.html');await sleep(p,400);
 // new group
@@ -47,7 +48,8 @@ await chk('group message sent: appears in transcript, composer cleared',async()=
 await sleep(p,3500);
 await chk('sent message reaches a delivered/relayed state (hosts online)',async()=>{const t=(await p.textContent('#convPane')).replace(/\s+/g,' ');const i=t.indexOf('see you at the gate');return {ok:/deliver|relay|sent|host/i.test(t.slice(i,i+120)),d:t.slice(i,i+120)}});
 // hosts offline sim
-await simOpen(p);await p.locator('#simBody label:has-text("host desktops offline")').click();await sleep(p,500);
+await simOpen(p);await p.locator('#simBody label:has-text("host desktops offline")').click();await sleep(p,500);await simClose(p);
+await chk('hosts offline: thin strip under header, title stays "8 members"',async()=>{const t=await p.textContent('.strip').catch(()=>'');return {ok:/Host offline/.test(t)&&(await p.textContent('#stLine'))==='8 members',d:t}});
 await p.fill('#ta','nobody is hosting');await p.press('#ta','Enter');await sleep(p,3500);
 await p.screenshot({path:'screenshots/groups-desktop-hosts-offline.png'});
 await chk('hosts offline: message shows waiting/not delivered state explaining why',async()=>{const t=(await p.textContent('#convPane')).replace(/\s+/g,' ');const i=t.indexOf('nobody is hosting');return {ok:/wait|offline|not delivered|queued|couldn/i.test(t.slice(i,i+120))&&!/Delivered/.test(t.slice(i,i+60)),d:t.slice(i,i+160)}});

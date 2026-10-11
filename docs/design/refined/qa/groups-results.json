@@ -15,7 +15,7 @@
   "page": "groups",
   "name": "Create with empty name is blocked with an explanation",
   "ok": true,
-  "detail": "New groupGroup nameGive the group a name.Add people (contacts only)AOArjun OommenMKMeera KSRSam RaoPNPriya NDTDev T0 selectedWho hosts it?Use my desktop (online)Ask a member laterYour linked desktop k"
+  "detail": "New groupGroup nameGive the group a name.Add peopleAOArjun OommenMKMeera KSRSam RaoPNPriya NDTDev T0 selectedWho hosts it?My desktopAsk a member laterYour desktop keeps the group running. The group’s "
  },
  {
   "page": "groups",
@@ -27,7 +27,7 @@
   "page": "groups",
   "name": "group created: appears in list, dialog closed",
   "ok": true,
-  "detail": "GroupsNew groupWaiting for you: 2 invitations · 1 chat request · ShowGroupsClimbing crewNo messages yetWeekend hikeSam: "
+  "detail": "GroupsInvitations2 waitingChat requests1 waitingGroupsClimbing crewNo messages yetWeekend hikeKavya: First hike with you"
  },
  {
   "page": "groups",
@@ -39,13 +39,13 @@
   "page": "groups",
   "name": "new group conversation shows invite-pending/hosts honest state",
   "ok": true,
-  "detail": "Climbing crew1 member · 1 of 1 host onlineMembersYou created the group. Invites sent to Arjun, Sam (simulated)."
+  "detail": "Climbing crew1 memberYou created the group. Invited Arjun, Sam"
  },
  {
   "page": "groups",
   "name": "invitation dialog discloses hosts can read content",
   "ok": true,
-  "detail": "Join “Trail runners”?Invited by Sam · 6 members · owner Meera K · hosts Arjun’s desktop, Meera’s desktop. Signed by Sam,"
+  "detail": "Join “Trail runners”?Invited by Sam · 6 members · owner Meera K. Expires in 6 days.The group’s hosts can read everything"
  },
  {
   "page": "groups",
@@ -57,7 +57,7 @@
   "page": "groups",
   "name": "Join: group appears in Groups, invitation count decreases",
   "ok": true,
-  "detail": "GroupsNew groupWaiting for you: 1 invitation · 1 chat request · ShowGroupsTrail runnersSam: Welcome! Long run Sunday 6:30.Climbing crewNo messages yetWeekend hikeSam: Map attached: trail-loop.gpxFamil"
+  "detail": "GroupsInvitations1 waitingPhoto walkExpired · ask Dev againDismissChat requests1 waitingPNPriya NHi, it’s Priya. Can I ask about the lift?ReviewGroupsTrail runnersSam: Welcome. Long run Sunday 6:30.09"
  },
  {
   "page": "groups",
@@ -69,7 +69,7 @@
   "page": "groups",
   "name": "Accept chat request: Priya shows under Private chats",
   "ok": true,
-  "detail": "Private chatsAOArjun OommenSee you at 6PNPriya NMessages only · Hi, it’s Priya. Can I ask about the lift?Invitations1Pho"
+  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?13:52Sent requests2 totalD"
  },
  {
   "page": "groups",
@@ -87,13 +87,19 @@
   "page": "groups",
   "name": "sent message reaches a delivered/relayed state (hosts online)",
   "ok": true,
-  "detail": "see you at the gate08:51DeliveredReply"
+  "detail": "see you at the gate13:52Delivered"
+ },
+ {
+  "page": "groups",
+  "name": "hosts offline: thin strip under header, title stays \"8 members\"",
+  "ok": true,
+  "detail": "Host offline — messages waitTry again"
  },
  {
   "page": "groups",
   "name": "hosts offline: message shows waiting/not delivered state explaining why",
   "ok": true,
-  "detail": "nobody is hosting08:51Waiting for a host · saved on this phoneReplyDiscard"
+  "detail": "nobody is hosting13:52Waiting for a host"
  },
  {
   "page": "groups",
@@ -105,7 +111,7 @@
   "page": "groups",
   "name": "Leave group asks for confirmation with consequences",
   "ok": true,
-  "detail": "Leave “Weekend hike”?You stop receiving messages. The group sees “You left”. The chat stays on this phone, read-only.To come back, an admin has to invite you again.CancelLeave group"
+  "detail": "Leave “Weekend hike”?You stop receiving messages and the group sees that you left. The chat stays on this phone, read-only.To come back, an admin has to invite you again.CancelLeave group"
  },
  {
   "page": "groups",
@@ -123,7 +129,7 @@
   "page": "groups",
   "name": "confirmed leave: group shows left/removed state and composer disabled or hidden",
   "ok": true,
-  "detail": "GroupsNew groupWaiting for you: 1 invitation · ShowGroupsTrail runnersSam: Welcome! Long run Sunday 6:30.Climbing crewNo messages yetWeekend hikeYou left this g taDisabled=true"
+  "detail": "GroupsInvitations1 waitingPhoto walkExpired · ask Dev againDismissGroupsTrail runnersSam: Welcome. Long run Sunday 6:30.09:10Climbing crewNo messages yetWeekend taDisabled=true"
  },
  {
   "page": "groups",
@@ -147,7 +153,7 @@
   "page": "groups",
   "name": "empty account: empty state with a New group action",
   "ok": true,
-  "detail": "GroupsNew groupGroupsNo groups yetCreate one with people you already know, or wait for an invite. Invites are listed below and arrive as a card in the sender’s chat.Create a group"
+  "detail": "GroupsNo groups yetStart one with people you already know.New group"
  },
  {
   "page": "groups",
@@ -159,19 +165,19 @@
   "page": "groups",
   "name": "mobile conversation: composer within first viewport",
   "ok": true,
-  "detail": "ta.bottom=832"
+  "detail": "ta.bottom=834"
  },
  {
   "page": "groups",
   "name": "mobile Back returns to list with focus on opened row",
   "ok": true,
-  "detail": "focus=Weekend hikeSam: Map a"
+  "detail": "focus=Weekend hikeKavya: Fir"
  },
  {
   "page": "groups",
   "name": "mobile new-group dialog fits viewport",
   "ok": true,
-  "detail": "[0,390,84,844]"
+  "detail": "[0,390,101,844]"
  },
  {
   "page": "groups",
