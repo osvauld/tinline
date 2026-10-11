@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tinline · Setup &amp; devices</title>
+<style>
+:root{color-scheme:light;--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#7E8B85;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--lav:#E1E4F7;--onlav:#25285A;--gold:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--wn:#FCEFD2;--onwn:#5C3B00;--bd:rgba(23,32,29,.45);--dbg:#B3261E;--dfg:#fff}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--lav:#2A2E55;--onlav:#D9DCFA;--gold:#E8B04A;--er:#F2B8B5;--erc:#5E1612;--oner:#FFDAD6;--wn:#4A3500;--onwn:#FFDFA0;--bd:rgba(0,0,0,.65);--dbg:#5E1612;--dfg:#FFDAD6}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){color-scheme:dark;--bg:#0F1513;--sf:#161D1B;--sf2:#1D2623;--ink:#E6ECE9;--ink2:#A6B2AD;--ln:#33403B;--ln2:#7C8984;--pr:#6FD3BD;--onpr:#00382E;--prc:#0E4E43;--onprc:#BDEFE2;--lav:#2A2E55;--onlav:#D9DCFA;--gold:#E8B04A;--er:#F2B8B5;--erc:#5E1612;--oner:#FFDAD6;--wn:#4A3500;--onwn:#FFDFA0;--bd:rgba(0,0,0,.65);--dbg:#5E1612;--dfg:#FFDAD6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--pr);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--pr);outline-offset:2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+header.top{max-width:1180px;margin:auto;padding:20px 24px 8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header.top .grow{flex:1 1 200px;min-width:min(200px,100%)}
+.back{display:inline-flex;align-items:center;min-height:44px;font-weight:600}
+h1{font-size:clamp(26px,4vw,38px);line-height:1.15;letter-spacing:-.8px;margin:0}
+.sim{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--ink2);border:1px dashed var(--ln2);border-radius:99px;padding:3px 12px;margin-top:6px}
+.shell{max-width:1180px;margin:auto;padding:12px 24px 56px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px;align-items:start}
+nav.tabs{position:sticky;top:12px;display:flex;flex-direction:column;gap:4px}
+nav.tabs button{justify-content:flex-start;text-align:left;border-radius:14px;border:1px solid transparent;background:transparent;color:var(--ink);min-height:48px;padding:8px 14px;font-weight:550;display:flex;gap:10px;align-items:center}
+nav.tabs button[aria-current=page]{background:var(--prc);color:var(--onprc);border-color:var(--pr)}
+nav.tabs button:hover{background:var(--sf2)}nav.tabs button[aria-current=page]:hover{background:var(--prc)}
+main{min-width:0}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:24px;margin-bottom:16px}
+.card.narrow{max-width:640px}
+h2{font-size:24px;line-height:1.25;letter-spacing:-.4px;margin:0 0 8px}h2:focus{outline:none}
+h3{font-size:16px;margin:0 0 6px}
+p{margin:0 0 12px;color:var(--ink2)}p.ink{color:var(--ink)}
+.small{font-size:13px;color:var(--ink2)}
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{font:inherit;cursor:pointer}
+.btn{min-height:44px;padding:8px 20px;border-radius:99px;border:1px solid var(--ln2);background:transparent;color:var(--pr);font-weight:650;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{background:var(--sf2)}
+.btn.pri{background:var(--pr);color:var(--onpr);border-color:var(--pr)}.btn.pri:hover{filter:brightness(1.08)}
+.btn.dng{background:var(--dbg,var(--er));border-color:var(--er);color:var(--dfg,#fff)}
+.btn.out-dng{color:var(--er);border-color:var(--er)}
+.btn.tx{border-color:transparent}
+.btn.sm{min-height:44px;padding:6px 14px;font-size:14px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+label.f{display:block;font-size:14px;font-weight:650;margin:0 0 4px}
+input[type=text],input[type=password],textarea{width:100%;min-height:48px;border-radius:12px;border:1.5px solid var(--ln2);background:var(--sf);color:var(--ink);font:inherit;padding:10px 14px}
+textarea{min-height:110px;resize:vertical}
+input.bad,textarea.bad{border-color:var(--er)}
+.err{display:flex;gap:8px;color:var(--oner);background:var(--erc);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:8px}
+.err svg{margin-top:2px}
+.warn{display:flex;gap:10px;background:var(--wn);color:var(--onwn);border-radius:14px;padding:12px 14px;font-size:14px}
+.warn p,.info p{color:inherit;margin:0}
+.warn svg,.info svg{margin-top:2px}
+.info{display:flex;gap:10px;background:var(--lav);color:var(--onlav);border-radius:14px;padding:12px 14px;font-size:14px}
+.opt{display:flex;gap:12px;align-items:flex-start;border:1.5px solid var(--ln);border-radius:16px;padding:14px;background:var(--sf);cursor:pointer;min-height:44px}
+.opt:has(input:checked){border-color:var(--pr);background:var(--prc);color:var(--onprc)}
+.opt:has(input:focus-visible){outline:3px solid var(--pr);outline-offset:2px}
+.opt input{margin-top:4px;width:20px;height:20px;accent-color:var(--pr);flex:none}
+.opt b{display:block}.opt span.d{font-size:14px;color:var(--ink2)}.opt:has(input:checked) span.d{color:var(--onprc)}
+.bigbtn{width:100%;text-align:left;display:flex;gap:14px;align-items:center;border:1.5px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:16px;padding:14px 16px;min-height:64px}
+.bigbtn:hover{border-color:var(--pr)}.bigbtn .d{display:block;font-size:14px;color:var(--ink2)}.bigbtn b{display:block}
+.bigbtn .ico{color:var(--pr);width:24px;height:24px}
+.progress{height:6px;background:var(--sf2);border-radius:3px;overflow:hidden;margin:6px 0 18px}.progress i{display:block;height:100%;background:var(--pr);border-radius:3px;transition:width .25s}
+.words{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.words li{display:flex;gap:6px;align-items:baseline;border:1px solid var(--ln);border-radius:10px;padding:7px 10px;font:500 15px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);min-height:38px}
+.words li span{font-size:11px;color:var(--ink2);width:18px;text-align:right}
+.ribbon{display:inline-block;background:var(--wn);color:var(--onwn);font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;border-radius:8px;padding:3px 10px}
+.chip{border:1px solid var(--ln2);background:var(--sf);color:var(--ink);border-radius:99px;min-height:44px;padding:4px 14px;font-size:14px}.chip:hover{border-color:var(--pr)}
+.dia{display:grid;grid-template-columns:1fr 36px 1fr;gap:6px;align-items:center;margin:4px 0}
+.dev{min-width:0;overflow-wrap:anywhere;border:1.5px solid var(--ln);border-radius:16px;padding:12px;text-align:center;font-size:13px;color:var(--ink2)}
+.dev b{display:block;color:var(--ink);font-size:14px}.dev .ico{width:30px;height:30px;color:var(--pr)}
+.dev.me{border-color:var(--pr);background:var(--prc);color:var(--onprc)}.dev.me b{color:var(--onprc)}.dev.me .ico{color:var(--onprc)}
+.dia .arrow{color:var(--ink2);text-align:center}
+@media (max-width:300px){.dia{grid-template-columns:minmax(0,1fr)}.dia .arrow{transform:rotate(90deg)}}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.steps{margin:0;padding-left:22px;color:var(--ink)}.steps li{margin:6px 0}
+.qrbox{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px;border:1px solid var(--ln);border-radius:20px;background:var(--bg)}
+.qrbox svg.qr{width:min(100%,250px);height:auto;border-radius:12px;display:block}
+.code{font:700 clamp(32px,9vw,46px)/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-align:center;padding:16px 8px;border-radius:16px;background:var(--bg);border:1px solid var(--ln)}
+.simbox{border:1.5px dashed var(--ln2);border-radius:16px;padding:12px 14px;background:transparent}
+.simbox legend,.simbox>.t{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink2)}
+.view{position:relative;background:#0A0E0D;border-radius:20px;aspect-ratio:4/3;max-width:360px;margin:0 auto;display:grid;place-items:center;color:#cfd8d4;text-align:center;font-size:14px;padding:16px}
+.view i{position:absolute;width:44px;height:44px;border:4px solid #6FD3BD}
+.view i:nth-child(1){left:14px;top:14px;border-right:0;border-bottom:0;border-radius:18px 0 0 0}.view i:nth-child(2){right:14px;top:14px;border-left:0;border-bottom:0;border-radius:0 18px 0 0}.view i:nth-child(3){left:14px;bottom:14px;border-right:0;border-top:0;border-radius:0 0 0 18px}.view i:nth-child(4){right:14px;bottom:14px;border-left:0;border-top:0;border-radius:0 0 18px 0}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--pr)}.dot.off{background:transparent;border:2px solid var(--ln2)}
+.dlist{list-style:none;margin:0;padding:0}
+.dlist li{display:flex;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--ln);flex-wrap:wrap}.dlist li:first-child{border-top:0}
+.dlist .info1{flex:1;min-width:min(190px,100%);overflow-wrap:anywhere}.dlist .info1 b{display:block}
+.pill{display:inline-block;font-size:12px;font-weight:700;border-radius:99px;padding:1px 10px;background:var(--lav);color:var(--onlav);margin-left:6px;vertical-align:middle}
+.ava{width:44px;height:44px;border-radius:14px;background:var(--prc);color:var(--onprc);display:grid;place-items:center;font-weight:700;flex:none}
+.xl li{display:flex;gap:10px;align-items:center;padding:8px 0;list-style:none}.xl{padding:0;margin:0}
+.xl .ico{color:var(--ink2)}.xl li.done .ico{color:var(--pr)}.xl li.cur{font-weight:650}
+details.notes{border:1px solid var(--ln);border-radius:16px;padding:4px 16px;background:var(--sf)}
+details.notes summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:650}
+details.notes ul{margin:0 0 12px;padding-left:20px;color:var(--ink2);font-size:14px}details.notes li{margin:6px 0}
+.tag{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;border-radius:6px;padding:1px 6px;margin-right:6px}.tag.est{background:var(--prc);color:var(--onprc)}.tag.prop{background:var(--lav);color:var(--onlav)}
+.status{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);max-width:min(560px,calc(100vw - 24px));background:var(--ink);color:var(--bg);border-radius:16px;padding:12px 18px;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.25);z-index:5}
+.status.off{opacity:0;pointer-events:none}
+dialog{border:1px solid var(--ln);border-radius:20px;background:var(--sf);color:var(--ink);padding:0;width:min(480px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto}
+dialog::backdrop{background:var(--bd)}
+dialog .dc{padding:22px}dialog .acts{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+dialog ul{padding-left:20px;margin:0 0 12px;color:var(--ink2);font-size:15px}dialog li{margin:6px 0}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pulse{animation:pulse 1.6s ease-in-out infinite}@keyframes pulse{50%{opacity:.35}}
+@media (max-width:820px){
+ .shell{grid-template-columns:1fr;gap:12px;padding:8px 16px 56px}
+ header.top{padding:16px 16px 4px}
+ nav.tabs{position:static;flex-direction:row;overflow-x:auto;padding-bottom:4px;gap:6px}
+ nav.tabs button{flex:none;border-color:var(--ln)}
+ .card{padding:18px}.cols2{grid-template-columns:1fr}
+}
+@media (max-width:300px){.shell{padding:8px 8px 48px}header.top{padding:12px 8px 4px}.card{padding:12px}.opt{padding:10px;gap:8px}.bigbtn{padding:10px}dialog .dc{padding:14px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style><link rel="stylesheet" href="interactions.css">
+</head><body>
+<header class="top">
+ <a class="back" href="./index.html">← Home</a>
+ <div class="grow"><h1>Setup &amp; devices</h1><span class="sim"><svg class="ico" style="width:14px;height:14px" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>Interactive design · simulated data</span></div>
+ <button class="btn sm" id="reset" data-fk="reset">Reset demo</button>
+ <button class="btn sm" id="theme" aria-pressed="false" data-fk="theme">Dark theme</button>
+</header>
+<div class="shell">
+ <nav class="tabs" aria-label="Parts of this study" id="nav"></nav>
+ <main id="panel"></main>
+</div>
+<div class="status off" id="status" role="status" aria-live="polite"></div>
+<noscript><p style="padding:24px">This interactive design needs JavaScript. Nothing is sent anywhere.</p></noscript>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PASS='demo-pass',EXAMPLE_CODE='OSVL1-DEMO-K7QF-29XM';
+const WORDS=['example','only','not','real','demo','words','for','design','review','never','use','this','as','your','phrase','orchid','lantern','harbor','quiet','maple','ember','willow','thread','signal'];
+const CHK=[3,16]; /* word #4 and #17 */
+const I={
+ phone:'<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',
+ desktop:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 21h8M12 16v5"/>',
+ laptop:'<rect x="5" y="5" width="14" height="10" rx="2"/><path d="M2 19h20"/>',
+ tablet:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M11 18h2"/>',
+ check:'<path d="m5 12 5 5 9-10"/>',alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/>',
+ info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+ eyeoff:'<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.5A17 17 0 0 0 2 12s3.5 7 10 7a9.700 9.700 0 0 0 4-.9"/>',
+ camera:'<path d="M3 8a2 2 0 0 1 2-2h2l1.500-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.500"/>',
+ link:'<path d="M10 14a4 4 0 0 0 5.700 0l3-3a4 4 0 0 0-5.700-5.700l-1 1M14 10a4 4 0 0 0-5.700 0l-3 3a4 4 0 0 0 5.700 5.700l1-1"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',plus:'<path d="M12 5v14M5 12h14"/>',
+ arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3"/>',
+ shield:'<path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6z"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+};
+const ic=(n,x='')=>`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" ${x}>${I[n]}</svg>`;
+const TABS=[['setup','First setup','user'],['unlock','Unlock','lock'],['link','Link a device','link'],['devices','My devices','phone'],['accounts','Accounts','key']];
+
+/* ---------- state ---------- */
+let S;
+function fresh(){return{
+ tab:'setup',notice:'',
+ setup:{step:'welcome',path:'create',acct:'',device:'',revealed:false,left:0,saved:false,a:'',b:'',restore:'',mode:'pass',p1:'',p2:'',err:null},
+ unlock:{show:false,pass:'',err:'',tries:0,wait:0,open:false,via:''},
+ link:{step:'choose',role:'',method:'',label:'Pixel tablet',remaining:300,seed:7,manual:'',err:'',reason:'',t:0,run:0,showManual:false,pass:'',bad:0},
+ sim:{scan:'good',codes:'match',net:'ok',cam:'ask'},
+ devices:[
+  {id:'d1',name:"Maya's phone",kind:'phone',here:true,online:true,seen:'This device'},
+  {id:'d2',name:'Home desktop',kind:'desktop',online:true,seen:'Online now'},
+  {id:'d3',name:'Work laptop',kind:'laptop',online:false,seen:'Last seen 3 days ago'},
+  {id:'d4',name:'Old tablet',kind:'tablet',online:false,seen:'Last seen 41 days ago',stale:true}],
+ removedHere:false,
+ acct:{cur:'maya',call:false,list:[{id:'maya',name:'Maya',did:'…a41f'},{id:'work',name:'Maya · Work',did:'…7c02'}],drafts:{maya:'Running late, start without me?',work:''}}
+};}
+S=fresh();
+
+/* ---------- helpers ---------- */
+let timers={qr:0,rv:0,lock:0},statusT=0;
+function say(msg){const el=$('#status');el.textContent=msg;el.classList.toggle('off',!msg);clearTimeout(statusT);if(msg)statusT=setTimeout(()=>{el.classList.add('off')},9000)}
+function clearTimers(){clearInterval(timers.qr);clearInterval(timers.rv);clearInterval(timers.lock)}
+function bindVal(path,v){const p=path.split('.');let o=S;while(p.length>1)o=o[p.shift()];o[p[0]]=v}
+function getVal(path){return path.split('.').reduce((o,k)=>o[k],S)}
+function mmss(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function err(msg,id){return `<div class="err" role="alert" ${id?`id="${id}"`:''}>${ic('alert')}<span>${msg}</span></div>`}
+function field(label,path,o={}){const id='f-'+path.replace('.','-');return `<div><label class="f" for="${id}">${label}</label><input id="${id}" type="${o.type||'text'}" data-bind="${path}" value="${esc(getVal(path))}" autocomplete="off" autocapitalize="off" spellcheck="false" ${o.bad?'class="bad" aria-invalid="true"':''} ${o.desc?`aria-describedby="${o.desc}"`:''}>${o.hint?`<div class="small" id="${id}-h">${o.hint}</div>`:''}</div>`}
+function notes(items){return `<details class="notes"><summary>Decided vs. proposed</summary><ul>${items.map(([k,t])=>`<li><span class="tag ${k==='e'?'est':'prop'}">${k==='e'?'Established':'Proposed'}</span>${t}</li>`).join('')}</ul></details>`}
+function simLabel(){return '<span class="small">Prototype only: nothing real is created, scanned, copied or sent.</span>'}
+
+function render(sel,keepFocus){
+ clearTimers();
+ $('#nav').innerHTML=TABS.map(([id,l,i])=>`<button type="button" data-act="tab" data-v="${id}" data-fk="tab-${id}" ${S.tab===id?'aria-current="page"':''}>${ic(i)}${l}</button>`).join('');
+ $('#panel').innerHTML=V[S.tab]();
+ if(S.tab==='link'&&S.link.step==='qr'&&S.link.method==='show'&&S.link.remaining>0)timers.qr=setInterval(qrTick,1000);
+ if(S.tab==='setup'&&S.setup.revealed)timers.rv=setInterval(rvTick,1000);
+ if(S.tab==='unlock'&&S.unlock.wait>0)timers.lock=setInterval(lockTick,1000);
+ const cur=$('#nav [aria-current=page]');if(cur&&cur.scrollIntoView)cur.scrollIntoView({block:'nearest',inline:'nearest'});
+ if(keepFocus)return;
+ const el=sel?$(sel):$('#panel h2');if(el)el.focus();
+}
+function go(tab,sel){if(S.tab==='setup'&&tab!=='setup')S.setup.revealed=false;S.tab=tab;history.replaceState(null,'','#'+tab);render(sel);scrollTo({top:0})}
+
+/* ---------- dialog (native <dialog>: trapped focus, Esc closes, focus restored) ---------- */
+function dlg({title,body,actions,focus,wide}){
+ const opener=document.activeElement,fk=opener&&opener.dataset?opener.dataset.fk:'';
+ const d=document.createElement('dialog');d.setAttribute('aria-labelledby','dt');
+ d.innerHTML=`<div class="dc"><h2 id="dt" style="font-size:21px">${title}</h2><div>${body}</div><div class="acts">${actions.map((a,i)=>`<button type="button" class="btn ${a.cls||''}" data-i="${i}">${a.label}</button>`).join('')}</div></div>`;
+ document.body.appendChild(d);
+ d.addEventListener('click',e=>{
+  if(e.target===d){d.close();return}
+  const b=e.target.closest('button[data-i]');if(!b)return;
+  const a=actions[+b.dataset.i];
+  if(!a.run){d.close();return}
+  if(a.run(d)!==false)d.close();
+ });
+ d.addEventListener('close',()=>{d.remove();let t=opener&&opener.isConnected?opener:(fk?document.querySelector(`[data-fk="${fk}"]`):null);if(t&&!d.dataset.keep)t.focus();else if(document.activeElement===document.body){const h=document.querySelector('#panel h2');if(h)h.focus()}});
+ d.showModal();
+ const f=focus?d.querySelector(focus):d.querySelector('input,textarea');
+ (f||d.querySelector('button[data-i]')).focus();
+ return d;
+}
+function dErr(d,msg,input){let e=d.querySelector('[data-err]');if(!e){e=document.createElement('div');e.dataset.err=1;e.className='err';e.setAttribute('role','alert');(input?input.parentElement:d.querySelector('.acts').parentElement).appendChild(e)}e.textContent=msg;if(input){input.classList.add('bad');input.setAttribute('aria-invalid','true');input.focus()}}
+function passField(id,label){return `<div style="margin-top:10px"><label class="f" for="${id}">${label||'Passphrase'}</label><input id="${id}" type="password" autocomplete="off"><div class="small">Prototype passphrase: <code>${PASS}</code></div></div>`}
+
+/* ---------- views ---------- */
+const V={};
+
+/* SETUP */
+V.setup=()=>{
+ const s=S.setup,order=s.path==='restore'?['welcome','name','enter','protect','done']:['welcome','name','phrase','check','protect','done'];
+ const idx=order.indexOf(s.step),pct=Math.round(idx/(order.length-1)*100);
+ const back=idx>0&&s.step!=='done'?`<button class="btn tx sm" data-act="s-back" data-fk="s-back">← Back</button>`:'';
+ const head=idx>0&&s.step!=='done'?`<div class="small" style="margin-bottom:2px">Step ${idx} of ${order.length-2}</div><div class="progress" role="progressbar" aria-label="Setup progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>`:'';
+ let b='';
+ if(s.step==='welcome')b=`<h2 tabindex="-1">Welcome to Tinline</h2><p>Calls and chats go straight between devices. There is no Tinline server holding your account.</p>
+  <div class="stack">
+  <button class="bigbtn" data-act="s-path" data-v="create" data-fk="p-create">${ic('plus')}<span><b>Create a new account</b><span class="d">You'll get a recovery phrase to keep.</span></span></button>
+  <button class="bigbtn" data-act="s-path" data-v="restore" data-fk="p-restore">${ic('key')}<span><b>Restore from a recovery phrase</b><span class="d">Brings back your identity on this device.</span></span></button>
+  <button class="bigbtn" data-act="s-link" data-fk="p-link">${ic('link')}<span><b>Link to an existing account</b><span class="d">Scan a QR from a device that already has it. Brings your contacts and chats.</span></span></button></div>
+  <div class="info" style="margin-top:16px">${ic('info')}<p>With no server, losing every device <em>and</em> your recovery phrase means nobody can bring the account back. We tell you now, not later.</p></div>`;
+ else if(s.step==='name'){const e=s.err||{};
+  b=`<h2 tabindex="-1">${s.path==='restore'?'Name this device':'Name your account and device'}</h2><p>Names help you tell your devices apart. Contacts never see device names.</p><div class="stack">
+  ${field('Your name (shown to contacts)','setup.acct',{bad:e.acct,desc:e.acct?'e-acct':''})}${e.acct?err(e.acct,'e-acct'):''}
+  ${field('Device name','setup.device',{bad:e.device,desc:e.device?'e-dev':''})}${e.device?err(e.device,'e-dev'):''}
+  <div class="row" role="group" aria-label="Device name suggestions">${['Personal phone','Work desktop','Home tablet'].map(n=>`<button type="button" class="chip" data-act="s-suggest" data-v="${n}">${n}</button>`).join('')}</div>
+  <button class="btn pri" data-act="s-next">Continue</button></div>`}
+ else if(s.step==='phrase')b=`<h2 tabindex="-1">Your recovery phrase</h2><p>These words are your account. Anyone who has them can be you, and they're the only way back if every device is lost.</p>
+  <div class="stack"><div class="row"><span class="ribbon">Example only · not a real phrase</span></div>
+  <div class="warn">${ic('alert')}<p>Write the words on paper, in order. Don't screenshot, photograph or paste them into notes or chat. There is deliberately no copy button.</p></div>
+  <ol class="words" ${s.revealed?'':'aria-label="24 words, hidden"'}>${WORDS.map((w,i)=>`<li><span>${i+1}</span>${s.revealed?esc(w):'<b aria-hidden="true">••••••</b><i class="vh">hidden</i>'}</li>`).join('')}</ol>
+  <div class="row"><button class="btn ${s.revealed?'':'pri'}" data-act="s-reveal" data-fk="reveal" aria-pressed="${s.revealed}">${ic(s.revealed?'eyeoff':'eye')}${s.revealed?'Hide words':'Show words'}</button>${s.revealed?`<span class="small">Hides itself in <span id="rv-left">${s.left}</span>s, or when you leave this screen.</span>`:'<span class="small">Make sure nobody is looking.</span>'}</div>
+  <label class="opt"><input type="checkbox" data-bind-check="setup.saved" ${s.saved?'checked':''}><span><b>I've written them down</b><span class="d">On paper, somewhere only I can reach.</span></span></label>
+  ${s.err&&s.err.phrase?err(s.err.phrase,'e-ph'):''}
+  <button class="btn pri" data-act="s-next">Continue</button></div>`;
+ else if(s.step==='check'){const e=s.err||{};
+  b=`<h2 tabindex="-1">Check your copy</h2><p>Enter two words from your paper copy. This proves you wrote them correctly, before it's too late to fix.</p><div class="stack">
+  ${field('Word #'+(CHK[0]+1),'setup.a',{bad:e.a})}${field('Word #'+(CHK[1]+1),'setup.b',{bad:e.b})}
+  ${e.msg?err(e.msg,'e-chk'):''}<p class="small">Prototype answers: word #${CHK[0]+1} is <code>${WORDS[CHK[0]]}</code>, word #${CHK[1]+1} is <code>${WORDS[CHK[1]]}</code>. Try a wrong one first.</p>
+  <div class="row"><button class="btn pri" data-act="s-next">Check</button><button class="btn" data-act="s-again" data-fk="s-again">Show the words again</button></div></div>`}
+ else if(s.step==='enter'){const e=s.err||{};
+  b=`<h2 tabindex="-1">Enter your recovery phrase</h2><p>Type your 24 words separated by spaces. Restoring brings back your <b>identity only</b>. Contacts and chats come from another linked device afterwards.</p><div class="stack">
+  <div><label class="f" for="f-restore">24 words</label><textarea id="f-restore" data-bind="setup.restore" autocomplete="off" autocapitalize="off" spellcheck="false" ${e.msg?'class="bad" aria-invalid="true" aria-describedby="e-rs"':''}>${esc(s.restore)}</textarea></div>
+  ${e.msg?err(e.msg,'e-rs'):''}
+  <div class="row"><button type="button" class="btn sm" data-act="s-fill">Fill with the example words</button><span class="small">Simulated: only the example words pass the check. Nothing is read from your clipboard.</span></div>
+  <div class="warn">${ic('alert')}<p>Make sure nobody can see this screen. Tinline never asks for your phrase anywhere else.</p></div>
+  <button class="btn pri" data-act="s-next">Restore identity</button></div>`}
+ else if(s.step==='protect'){const e=s.err||{};
+  b=`<h2 tabindex="-1">Protect this device</h2><p>Your account is stored encrypted here. Choose how it opens.</p><div class="stack"><div role="radiogroup" aria-label="Unlock method" class="stack">
+  <label class="opt"><input type="radio" name="mode" value="pass" data-change="s-mode" ${s.mode==='pass'?'checked':''}><span><b>Passphrase</b><span class="d">Asked each time the app starts.</span></span></label>
+  <label class="opt"><input type="radio" name="mode" value="device" data-change="s-mode" ${s.mode==='device'?'checked':''}><span><b>Device lock only (Android)</b><span class="d">Use your fingerprint, face or screen lock. If this phone's lock is reset, use your recovery phrase.</span></span></label></div>
+  ${s.mode==='pass'?`${field('Passphrase','setup.p1',{type:'password',bad:e.p1,hint:'At least 8 characters. It can\'t be reset: your recovery phrase is the way back.'})}${field('Repeat passphrase','setup.p2',{type:'password',bad:e.p2})}`:''}
+  ${e.msg?err(e.msg,'e-pr'):''}<button class="btn pri" data-act="s-next">Finish setup</button></div>`}
+ else b=`<h2 tabindex="-1">${s.path==='restore'?'Identity restored':'Account created'}</h2><div class="info" style="margin-bottom:14px">${ic('info')}<p>Simulated. Nothing was created, stored or sent.</p></div>
+  <p class="ink"><b>${esc(s.acct||'Maya')}</b> on <b>${esc(s.device||'Personal phone')}</b>, protected by ${s.mode==='pass'?'a passphrase':'your device lock'}.</p>
+  ${s.path==='restore'?`<p>This device has your identity but none of your contacts or chats yet. They live on your other devices. If no other device still has them, there is nothing to bring back.</p>`:`<p>Your recovery phrase is the only backup of the account itself. Chats stay on your devices.</p>`}
+  <div class="row"><button class="btn pri" data-act="s-tolink" data-fk="s-tolink">${s.path==='restore'?'Link from another device to bring contacts and chats':'Link another device'}</button><button class="btn" data-act="s-restart">Start over</button></div>`;
+ return `<div class="card narrow">${back}${head}${b}</div>`+notes([
+  ['e','Recovery phrase = identity. Restoring gives the same account with a new device key and empty data.'],
+  ['e','Without another surviving device there is no data to restore. The product says so at onboarding.'],
+  ['e','Device names are private to your own devices.'],
+  ['p','Hide-on-leave, 30 s auto-hide, no copy button, and a two-word check are design proposals. Android should also block screenshots on this screen (FLAG_SECURE).'],
+  ['p','The passphrase / device-lock choice mirrors the vault design; exact copy is open.']]);
+};
+
+/* UNLOCK */
+V.unlock=()=>{
+ const u=S.unlock;
+ if(u.open)return `<div class="card narrow"><h2 tabindex="-1">Unlocked</h2><div class="info" style="margin-bottom:12px">${ic('info')}<p>Simulated. This would open Maya's chats${u.via?` using ${u.via}`:''}.</p></div><p>Calls can reach this device again.</p><button class="btn pri" data-act="u-lock" data-fk="u-lock">Lock again</button></div>`;
+ const lock=u.wait>0;
+ return `<div class="card narrow ${u.shake?'shake':''}"><div style="text-align:center;margin-bottom:6px"><svg viewBox="0 0 108 108" width="72" height="72" style="border-radius:22px" aria-hidden="true"><rect width="108" height="108" fill="#0B6B5B"/><rect x="20" y="43" width="20" height="22" rx="4" fill="#F5F6F3"/><rect x="68" y="43" width="20" height="22" rx="4" fill="#F5F6F3"/><path d="M44 54Q54 62 64 54" fill="none" stroke="#E8B04A" stroke-width="3" stroke-linecap="round"/></svg></div>
+ <h2 tabindex="-1" style="text-align:center">Welcome back, Maya</h2><p style="text-align:center">Enter your passphrase to open Tinline. Calls can't reach you until you do.</p>
+ <form data-form="u-submit" class="stack" novalidate>
+  <div><label class="f" for="u-pass">Passphrase</label><div style="position:relative"><input id="u-pass" type="${u.show?'text':'password'}" data-bind="unlock.pass" value="${esc(u.pass)}" autocomplete="off" spellcheck="false" ${lock?'disabled':''} ${u.err?'class="bad" aria-invalid="true" aria-describedby="u-err"':''} style="padding-right:56px">
+  <button type="button" class="btn tx" data-act="u-show" data-fk="u-show" aria-pressed="${u.show}" aria-label="Show passphrase" style="position:absolute;right:2px;top:2px;min-height:44px;width:44px;padding:0;border-radius:12px">${ic(u.show?'eyeoff':'eye')}</button></div></div>
+  ${lock?`<div class="err" role="alert" id="u-err">${ic('clock')}<span>Too many tries. You can try again in <b id="lock-left">${u.wait}</b>s. Nothing was erased, and no number of wrong tries will erase anything.</span></div>`:(u.err?err(u.err,'u-err'):'')}
+  <button class="btn pri" style="width:100%" ${lock?'disabled':''}>Unlock</button></form>
+ <div class="row" style="justify-content:center;margin-top:8px"><button class="btn" data-act="u-device" data-fk="u-device">${ic('lock')}Use device lock</button><button class="btn tx" data-act="u-forgot" data-fk="u-forgot">Forgot passphrase?</button></div>
+ <div class="simbox" style="margin-top:16px"><div class="t">Simulation</div><p class="small" style="margin:4px 0 8px">The passphrase is <code>${PASS}</code>. Try a wrong one to see the retry state. After 3 misses, a short wait starts.</p>${lock?'<button class="btn sm" data-act="u-skip">Skip the wait (simulation)</button>':''}</div></div>`+notes([
+  ['e','The passphrase can\'t be recovered; recovery is by phrase. Unlock also restores calls reachability.'],
+  ['p','Wrong-attempt wait (3 tries → 30 s, growing). Never wipes data. Shake only when motion is allowed.'],
+  ['p','Device lock as an alternative on Android; "forgot" explains consequences instead of offering a reset.']]);
+};
+
+/* LINK */
+function deviceDiagram(role){
+ const you=(r)=>role===r;
+ return `<div class="dia" role="img" aria-label="Linking runs from your existing device to your new device. ${role?(role==='existing'?'You are on the existing device.':'You are on the new device.'):''}">
+  <div class="dev ${you('existing')?'me':''}">${ic('phone')}<b>Existing device</b>${you('existing')?'You are here':'Has your account'}</div><div class="arrow">${ic('arrow')}</div>
+  <div class="dev ${you('new')?'me':''}">${ic('tablet')}<b>New device</b>${you('new')?'You are here':'Wants your account'}</div></div>`;
+}
+function directions(role,method){
+ const show=method==='show';
+ const E='Open <b>Settings → Linked devices → Link a device</b>.',N='Install Tinline and choose <b>Link to an existing account</b>.';
+ const SHOWQ='Choose <b>Show a QR code</b>.',SCANQ='Choose <b>Scan QR code</b>.';
+ const mine=[role==='existing'?E:N,show?SHOWQ:SCANQ],other=[role==='existing'?N:E,show?SCANQ:SHOWQ];
+ const li=a=>a.map(x=>`<li>${x}</li>`).join('');
+ return `<div class="cols2"><div><h3>On this device</h3><ol class="steps">${li(mine)}</ol></div><div><h3>On the other device</h3><ol class="steps">${li(other)}</ol></div></div>`;
+}
+function qrSvg(seed,expired){
+ const n=25;let x=seed*7919+13;const r=()=>{x=(x*9301+49297)%233280;return x/233280};let s='';
+ const fin=(a,b)=>`<rect x="${a}" y="${b}" width="7" height="7" fill="#111"/><rect x="${a+1}" y="${b+1}" width="5" height="5" fill="#fff"/><rect x="${a+2}" y="${b+2}" width="3" height="3" fill="#111"/>`;
+ for(let i=0;i<n;i++)for(let j=0;j<n;j++){if((i<8&&j<8)||(i<8&&j>n-9)||(i>n-9&&j<8))continue;if(r()>.52)s+=`<rect x="${j}" y="${i}" width="1" height="1" fill="#111"/>`}
+ return `<svg class="qr" viewBox="-2 -2 29 29" shape-rendering="crispEdges" role="img" aria-label="${expired?'Expired simulated QR code':'Simulated QR code, not scannable'}"><rect x="-2" y="-2" width="29" height="29" fill="#fff"/><g ${expired?'opacity=".12"':''}>${s}${fin(0,0)}${fin(18,0)}${fin(0,18)}</g>${expired?'<text x="12.5" y="14" text-anchor="middle" font-size="3.4" font-family="system-ui" font-weight="700" fill="#17201D">Expired</text>':''}</svg>`;
+}
+function simPanel(){const m=S.sim;
+ const rg=(name,label,opts)=>`<fieldset style="border:0;padding:0;margin:8px 0 0"><legend class="small" style="font-weight:650;color:var(--ink)">${label}</legend><div class="row">${opts.map(([v,l])=>`<label class="chip" style="display:inline-flex;align-items:center;gap:6px"><input type="radio" name="sim-${name}" value="${v}" data-change="sim" data-k="${name}" ${m[name]===v?'checked':''} style="accent-color:var(--pr)"> ${l}</label>`).join('')}</div></fieldset>`;
+ return `<details class="simbox" style="margin-top:14px"><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:650">Simulation controls</summary>
+ <p class="small">Pick what the pretend other device and network do next. No real camera, clipboard or network is used.</p>
+ ${rg('cam','Camera permission',[['ask','Not asked yet'],['denied','Denied'],['granted','Allowed']])}
+ ${rg('scan','A scanned code is',[['good','Valid'],['expired','Expired'],['used','Already used']])}
+ ${rg('codes','Confirmation codes',[['match','Match'],['differ','Differ']])}
+ ${rg('net','Connection during transfer',[['ok','Stays up'],['drop','Drops']])}</details>`;
+}
+const XFER=['Private connection','Account transfer','Identity check','First sync'];
+function xferList(){const l=S.link;return XFER.map((t,i)=>{const done=i<l.t,cur=i===l.t;return `<li class="${done?'done':cur?'cur':''}">${done?ic('check'):cur?'<span class="dot pulse"></span>':ic('clock')}<span>${t} <span class="small">· ${done?'done':cur?'in progress':'waiting'}</span></span></li>`}).join('')}
+V.link=()=>{
+ const l=S.link,role=l.role,show=l.method==='show',lab=esc(l.label);
+ let b='';
+ if(l.step==='choose'){
+  b=`<h2 tabindex="-1">Link a device</h2><p>Your contacts, chats and call history stay in step on every device you link. Both devices must be near you.</p>
+  ${deviceDiagram(role)}
+  <form data-form="l-start" class="stack" novalidate>
+  <fieldset style="border:0;padding:0;margin:0"><legend class="f">Which device are you holding?</legend><div class="stack">
+   <label class="opt"><input type="radio" name="role" id="role-existing" value="existing" data-change="l-role" ${role==='existing'?'checked':''}><span><b>The one that already has my account</b><span class="d">Unlocked, with your chats.</span></span></label>
+   <label class="opt"><input type="radio" name="role" id="role-new" value="new" data-change="l-role" ${role==='new'?'checked':''}><span><b>The new one</b><span class="d">Fresh install, or adding another account.</span></span></label></div></fieldset>
+  <fieldset style="border:0;padding:0;margin:0"><legend class="f">Which device has the camera?</legend><p class="small" style="margin:0 0 6px">Whichever device can't scan shows the QR. Usually a desktop shows, a phone scans.</p><div class="stack">
+   <label class="opt"><input type="radio" name="method" id="method-show" value="show" data-change="l-method" ${l.method==='show'?'checked':''}><span><b>This device shows the QR</b><span class="d">The other device scans it.</span></span></label>
+   <label class="opt"><input type="radio" name="method" id="method-scan" value="scan" data-change="l-method" ${l.method==='scan'?'checked':''}><span><b>This device scans</b><span class="d">The other device shows the QR.</span></span></label></div></fieldset>
+  ${role==='new'?field('Name for this device','link.label',{hint:'Your existing device will show this name so you can recognise it.',bad:!!l.err&&/name/i.test(l.err)}):''}
+  ${l.err?err(l.err,'l-err'):''}
+  ${role&&l.method?`<div>${directions(role,l.method)}</div>`:''}
+  <div class="warn">${ic('alert')}<p>A linked device becomes you: it can call, chat and see your recovery phrase. Only link devices you own. Only the account that's unlocked on the existing device is shared.</p></div>
+  <button class="btn pri">Continue</button></form>`;
+ }
+ else if(l.step==='qr'&&show){const exp=l.remaining<=0;
+  b=`<h2 tabindex="-1">${exp?'This QR code expired':'Show this QR on '+(role==='existing'?'your existing device':'the new device')}</h2>
+  <div class="qrbox">${qrSvg(l.seed,exp)}<div class="small" style="text-align:center">Simulated QR, not scannable.${exp?'':` Valid for <time id="qr-time"><b>${mmss(l.remaining)}</b></time>, one use.`}</div>
+   <div class="progress" style="width:100%;max-width:250px;margin:0"><i id="qr-bar" style="width:${Math.max(0,l.remaining/3)}%"></i></div></div>
+  ${exp?`<div class="stack" style="margin-top:14px"><p>Codes stop working after 5 minutes so a photo of one is useless later. Nothing was shared.</p><button class="btn pri" data-act="l-newqr" data-fk="l-newqr">Show a new QR code</button></div>`:`<div style="margin:14px 0"><p class="ink"><span class="dot pulse"></span>Waiting for the other device to scan…</p>${directions(role,'show')}</div>
+  <div class="simbox"><div class="t">Simulation</div><div class="row" style="margin-top:6px"><button class="btn sm" data-act="l-simscan" data-fk="l-simscan">Pretend the other device scans now</button><button class="btn sm" data-act="l-expire" data-fk="l-expire">Let this QR expire</button></div></div>`}
+  <div class="row" style="margin-top:14px"><button class="btn" data-act="l-cancel" data-fk="l-cancel">Cancel</button></div>`;
+ }
+ else if(l.step==='qr'){const cam=S.sim.cam;
+  b=`<h2 tabindex="-1">Scan the QR on the ${role==='existing'?'new device':'existing device'}</h2>`;
+  if(cam==='ask')b+=`<p>Tinline needs the camera once to read the QR. Photos aren't taken or kept.</p><div class="view" aria-hidden="true">${ic('camera','style="width:36px;height:36px"')}</div><div class="row" style="margin-top:14px"><button class="btn pri" data-act="l-cam" data-fk="l-cam">${ic('camera')}Allow camera</button><button class="btn" data-act="l-manual" data-fk="l-manual">Enter a code instead</button></div>`;
+  else if(cam==='denied')b+=`<div class="warn" role="alert" style="margin-bottom:14px">${ic('alert')}<p><b>Camera access is off.</b> You can still link. Pick one of these:</p></div><div class="stack">
+   <button class="bigbtn" data-act="l-flip" data-fk="l-flip">${ic('arrow')}<span><b>Show a QR on this device instead</b><span class="d">The other device scans it.</span></span></button>
+   <button class="bigbtn" data-act="l-manual" data-fk="l-manual">${ic('key')}<span><b>Type the link code</b><span class="d">Shown under the QR on the other device.</span></span></button>
+   <button class="bigbtn" data-act="l-settings" data-fk="l-settings">${ic('camera')}<span><b>Allow camera in settings</b><span class="d">Opens system settings (simulated).</span></span></button></div>`;
+  else b+=`<div class="view" role="img" aria-label="Simulated camera view, no camera in use"><i></i><i></i><i></i><i></i><span>Simulated camera view<br>No camera is used</span></div><p class="small" style="text-align:center">Hold steady until the code fills the frame.</p>
+   <div class="simbox"><div class="t">Simulation</div><div class="row" style="margin-top:6px"><button class="btn sm" data-act="l-simscan" data-fk="l-simscan">Pretend a QR was read</button><button class="btn sm" data-act="l-manual" data-fk="l-manual">Enter a code instead</button></div></div>`;
+  if(l.showManual||l.err)b+=`<form data-form="l-code" class="stack" style="margin-top:14px" novalidate><div><label class="f" for="f-link-manual">Link code</label><input id="f-link-manual" type="text" data-bind="link.manual" value="${esc(l.manual)}" autocomplete="off" autocapitalize="characters" spellcheck="false" ${l.err?'class="bad" aria-invalid="true" aria-describedby="l-err"':''}><div class="small">Looks like <code>OSVL1-…</code>. Type it; nothing is read from your clipboard.</div></div>${l.err?err(l.err,'l-err'):''}<div class="row"><button class="btn pri">Use code</button><button type="button" class="btn sm" data-act="l-example">Fill example code</button></div></form>`;
+  b+=`<div class="row" style="margin-top:14px"><button class="btn" data-act="l-cancel" data-fk="l-cancel">Cancel</button></div>`;
+ }
+ else if(l.step==='verify'){const other=S.sim.codes==='match'?'483 291':'917 204';
+  b=`<h2 tabindex="-1">Check the code matches</h2><p>Both screens should show the same 6 digits. This catches someone who photographed the QR and raced you.</p>
+  <div class="code" role="img" aria-label="Your code: 4, 8, 3, 2, 9, 1">483 291</div>
+  <div class="card" style="margin:14px 0 0;background:var(--bg)"><h3>${role==='existing'?esc(l.label)+' shows (simulated)':'Your existing device shows (simulated)'}</h3><div class="code" style="font-size:28px;padding:10px" role="img" aria-label="Other device code: ${other.replace(/\D/g,'').split('').join(', ')}">${other}</div>
+  ${role==='existing'?`<p class="small" style="margin-top:8px">Device name: <b>${lab}</b>. Is that the device in your hand?</p>`:''}</div>
+  <div class="row" style="margin-top:14px"><button class="btn pri" data-act="l-match" data-fk="l-match">${role==='existing'?'Codes match':'Codes match, wait for approval'}</button><button class="btn out-dng" data-act="l-nomatch" data-fk="l-nomatch">They don't match</button></div>`;
+ }
+ else if(l.step==='authorize'){
+  b=`<h2 tabindex="-1">Approve ${lab}</h2><div class="warn" style="margin-bottom:14px">${ic('alert')}<p>Approving sends your recovery phrase, your whole identity, to <b>${lab}</b>. It will be able to call, chat and approve more devices as you. This is as serious as showing the phrase itself.</p></div>
+  <form data-form="l-approve" class="stack" novalidate><div><label class="f" for="f-link-pass">Your passphrase</label><input id="f-link-pass" type="password" data-bind="link.pass" value="${esc(l.pass)}" autocomplete="off" ${l.err?'class="bad" aria-invalid="true" aria-describedby="l-err"':''}><div class="small">Prototype passphrase: <code>${PASS}</code></div></div>${l.err?err(l.err,'l-err'):''}
+  <div class="row"><button class="btn pri">Approve and link</button><button type="button" class="btn" data-act="l-cancel" data-fk="l-cancel">Don't link</button></div></form>`;
+ }
+ else if(l.step==='waiting'){
+  b=`<h2 tabindex="-1">Waiting for approval</h2><p class="ink"><span class="dot pulse"></span>Your existing device is asking you to approve <b>${lab}</b> with your passphrase.</p><p>Nothing has been copied to this device yet. You can stop at any time.</p>
+  <div class="simbox"><div class="t">Simulation</div><div class="row" style="margin-top:6px"><button class="btn sm" data-act="l-approved" data-fk="l-approved">Pretend it was approved</button><button class="btn sm" data-act="l-declined" data-fk="l-declined">Pretend it was refused</button></div></div>
+  <div class="row" style="margin-top:14px"><button class="btn" data-act="l-cancel" data-fk="l-cancel">Cancel</button></div>`;
+ }
+ else if(l.step==='transfer'){
+  b=`<h2 tabindex="-1">Linking ${lab}</h2><p>Keep both devices near you and on.</p><ul class="xl" id="xfer" aria-label="Linking progress">${xferList()}</ul><div class="row"><button class="btn" data-act="l-cancel" data-fk="l-cancel">Stop linking</button></div>`;
+ }
+ else if(l.step==='done'){
+  b=`<h2 tabindex="-1">${lab} is linked</h2><div class="info" style="margin-bottom:12px">${ic('info')}<p>Simulated. No device was linked and nothing was sent.</p></div>
+  <p>${role==='existing'?`<b>${lab}</b> now has your account. It starts syncing contacts, chats and call history whenever both devices are online together.`:`This device now has your account. It starts syncing contacts, chats and call history from your existing device.`}</p>
+  <p>Contacts stop and start ringing devices as they receive your updated device list. Contacts who are offline catch up when they're next reachable.</p>
+  <div class="row"><button class="btn pri" data-act="l-todevices" data-fk="l-todevices">See my devices</button><button class="btn" data-act="l-restart">Link another</button></div>`;
+ }
+ else{const R=LINKFAIL(l);
+  b=`<h2 tabindex="-1">${R.title}</h2><div class="warn" style="margin-bottom:14px">${ic('alert')}<p>${R.body}</p></div><p class="ink">${R.safe}</p><div class="row"><button class="btn pri" data-act="l-retry" data-fk="l-retry">Try again</button><button class="btn" data-act="l-restart">Back to start</button></div>`;
+ }
+ const wide=l.step==='choose';
+ return `<div class="card ${wide?'':'narrow'}">${b}${l.step==='choose'||l.step==='qr'||l.step==='verify'?simPanel():''}</div>`+notes([
+  ['e','The QR is a bearer secret: 5-minute expiry, single use, shown in person. Wrong secret burns it.'],
+  ['e','Both screens show a 6-digit code; the existing device must confirm it and then authorise with passphrase or device lock.'],
+  ['e','Linking transfers your recovery phrase. A linked device is a full peer of your identity.'],
+  ['e','Cancelling before the phrase is sent leaves nothing on the new device. A crash after import leaves a valid account that appears in the list at the next sync.'],
+  ['p','The wording, the explicit camera-denied fallbacks (show QR instead, type the code), the "wait for approval" screen on the new device, and the failure copy are proposals.']]);
+};
+function LINKFAIL(l){
+ const sent=l.t>=1;
+ const M={
+  expired:{title:'That code expired',body:'Codes last 5 minutes and work once, so an old photo of one is useless.',safe:'Nothing was shared.'},
+  used:{title:'That code was already used',body:'Each QR works once. If you did not scan it yourself, someone else may have had a look at it.',safe:'Nothing was shared. Make a fresh code and try again.'},
+  mismatch:{title:"The codes didn't match",body:"Linking was stopped and that QR is now burned. This can happen when someone photographed the QR and scanned it before you.",safe:'Nothing was shared. If this was unexpected, try again somewhere private.'},
+  declined:{title:"Your existing device didn't approve",body:'The request was refused or timed out on the existing device.',safe:'Nothing was copied to this device.'},
+  dropped:{title:'Connection lost',body:'Linking did not finish.',safe:sent?'The account may already be on the new device even though it is not in your list yet. It will appear once both devices are online together. If you do not want that device to have your account, unlink it as soon as it shows up.':'Nothing was copied before the connection dropped.'},
+  cancelled:{title:'Linking stopped',body:'You stopped linking.',safe:sent?'Your account may already be on the new device. Check Linked devices and unlink it if you did not mean to link it.':'Nothing was copied.'}};
+ return M[l.reason]||M.cancelled;
+}
+
+/* DEVICES */
+V.devices=()=>{
+ if(S.removedHere)return `<div class="card narrow"><h2 tabindex="-1">No account on this device</h2><div class="info" style="margin-bottom:12px">${ic('info')}<p>Simulated. This is what you'd see after removing the account from this device.</p></div><p>Your other devices still have your account and data. To come back, restore from your recovery phrase, or link from one of them.</p><div class="row"><button class="btn pri" data-act="dv-restore" data-fk="dv-restore">Restore the demo</button><button class="btn" data-act="tab" data-v="setup">Go to first setup</button></div></div>`;
+ const D=S.devices,only=D.length===1;
+ return `<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2 tabindex="-1">My devices</h2><p style="margin:0">Names are private to your devices. Contacts never see them.</p></div><button class="btn pri" data-act="dv-link" data-fk="dv-link">${ic('plus')}Link a device</button></div>
+ <ul class="dlist" aria-label="Linked devices" style="margin-top:12px">${D.map(d=>`<li><div class="ava">${ic(d.kind)}</div><div class="info1"><b>${esc(d.name)}${d.here?'<span class="pill">This device</span>':''}</b><span class="small"><span class="dot ${d.online?'':'off'}"></span>${d.online?'Online':'Offline'} · ${esc(d.seen)}</span>${d.stale?'<div class="small" style="color:var(--onwn)">Not seen for a long time. If you no longer have it, unlink it.</div>':''}</div>
+  <div class="row"><button class="btn sm" data-act="dv-rename" data-id="${d.id}" data-fk="rn-${d.id}" aria-label="Rename ${esc(d.name)}">Rename</button><button class="btn sm out-dng" data-act="dv-unlink" data-id="${d.id}" data-fk="ul-${d.id}" aria-label="${d.here?'Remove account from this device':'Unlink '+esc(d.name)}">${d.here?'Remove from this device':'Unlink'}</button></div></li>`).join('')}</ul>
+ ${only?`<div class="info" style="margin-top:8px">${ic('info')}<p>This is the only device with your account. Link another to keep a copy of your contacts and chats. Your recovery phrase brings back your identity, but not your chats.</p></div>`:''}</div>
+ <div class="info">${ic('shield')}<p>Unlinking stops syncing and ringing. It is not a lock. Anyone with your recovery phrase can still act as you; only moving to a new identity fully cuts a device off.</p></div>`+notes([
+  ['e','Unlink = stop sync and ringing for that device, and contacts stop dialing it. It is not cryptographic revocation.'],
+  ['e','Unlinking needs local authorisation (passphrase or device lock). The target is told if reachable; delivery is best effort.'],
+  ['e','Labels stay private to your own devices.'],
+  ['p','"Not seen for a long time" nudge (30+ days), the offline wording, and the single-device explainer are proposals.'],
+  ['p','A cap on linked devices is still an open question (5 proposed, 8 is the current technical limit).']]);
+};
+
+/* ACCOUNTS */
+V.accounts=()=>{
+ const A=S.acct,cur=A.list.find(a=>a.id===A.cur);
+ return `<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2 tabindex="-1">Accounts on this device</h2><p style="margin:0">Only one account is online here at a time.</p></div><button class="btn" data-act="ac-add" data-fk="ac-add">${ic('plus')}Add account</button></div>
+ <ul class="dlist" aria-label="Accounts" style="margin-top:12px">${A.list.map(a=>{const on=a.id===A.cur,dr=A.drafts[a.id];return `<li><div class="ava">${esc(a.name[0])}</div><div class="info1"><b>${esc(a.name)}${on?'<span class="pill">Active</span>':''}</b><span class="small"><span class="dot ${on?'':'off'}"></span>${on?'Online on this device':'Not online here, so calls won\'t ring this device'}${dr?' · Draft saved':''}</span></div>${on?'':`<button class="btn sm" data-act="ac-switch" data-id="${a.id}" data-fk="sw-${a.id}" aria-label="Switch to ${esc(a.name)}">Switch</button>`}</li>`}).join('')}</ul></div>
+ <div class="card"><h3>Try it: a draft that survives switching</h3><label class="f" for="ac-draft">Message to Sam, as ${esc(cur.name)}</label><textarea id="ac-draft" data-draft="1" placeholder="Type something, then switch accounts and back">${esc(A.drafts[A.cur])}</textarea>
+ <div class="small" id="ac-saved" style="margin-top:4px">${A.drafts[A.cur]?'Saved on this device.':'Nothing to save yet.'}</div>
+ <label class="opt" style="margin-top:12px"><input type="checkbox" data-bind-check="acct.call" ${A.call?'checked':''}><span><b>Simulate: I'm on a call as ${esc(cur.name)}</b><span class="d">Switching during a call must be handled, not silently dropped.</span></span></label></div>`+notes([
+  ['e','Only the selected account is online per install. Each account has its own storage and passphrase; switching drops the earlier account\'s secrets.'],
+  ['e','Adding an account never replaces an existing one.'],
+  ['p','Drafts are saved per account on this device, return when you switch back, and are not synced to other devices.'],
+  ['p','Switching during a call asks you to end the call first. The earlier boards left reject-vs-end open.'],
+  ['p','Calls to an offline-here account still ring its other linked devices; this follows the device-list model but isn\'t shown anywhere yet.']]);
+};
+
+/* ---------- timers ---------- */
+function qrTick(){const l=S.link;l.remaining--;
+ if(l.remaining===60)say('One minute left on this QR code.');
+ if(l.remaining<=0){clearInterval(timers.qr);say('The QR code expired.');render('#panel h2');return}
+ const t=$('#qr-time b');if(t)t.textContent=mmss(l.remaining);const bar=$('#qr-bar');if(bar)bar.style.width=l.remaining/3+'%'}
+function rvTick(){const s=S.setup;s.left--;if(s.left<=0){s.revealed=false;say('Recovery words hidden.');render('#rv-focus-fallback');const b=$('[data-fk=reveal]');if(b)b.focus();return}const e=$('#rv-left');if(e)e.textContent=s.left}
+function lockTick(){const u=S.unlock;u.wait--;if(u.wait<=0){say('You can try your passphrase again.');render('#u-pass');return}const e=$('#lock-left');if(e)e.textContent=u.wait}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.setup.revealed){S.setup.revealed=false;if(S.tab==='setup')render(null,true)}});
+
+/* ---------- link flow helpers ---------- */
+function failLink(reason){const l=S.link;l.run++;l.reason=reason;l.step='failed';render();say({expired:'That code expired.',used:'That code was already used.',mismatch:"Codes didn't match. Linking stopped.",declined:'Not approved. Nothing was copied.',dropped:'Connection lost.',cancelled:'Linking stopped.'}[reason])}
+function startQr(){const l=S.link;l.step='qr';l.err='';l.showManual=false;l.manual='';l.remaining=300;l.seed=(l.seed*31+7)%997;render()}
+function scanOutcome(){const o=S.sim.scan;if(o==='good'){S.link.step='verify';render();say('Connected. Check the 6-digit codes match.');}else if(o==='expired'){if(S.link.method==='show'){S.link.remaining=0;render('#panel h2');say('The QR code expired.')}else failLink('expired')}else failLink('used')}
+function startTransfer(){const l=S.link,id=++l.run;l.step='transfer';l.t=0;render();const tick=()=>{if(l.run!==id||l.step!=='transfer')return;
+  if(l.t===2&&S.sim.net==='drop'){failLink('dropped');return}
+  l.t++;if(l.t>=XFER.length){finishLink();return}
+  const x=$('#xfer');if(x)x.innerHTML=xferList();setTimeout(tick,1000)};
+ setTimeout(tick,1000)}
+function finishLink(){const l=S.link;l.step='done';l.run++;
+ if(l.role==='existing'&&!S.devices.some(d=>d.name===l.label))S.devices.push({id:'n'+Date.now(),name:l.label,kind:'tablet',online:true,seen:'Online now'});
+ render();say(l.label+' linked (simulated).')}
+function cancelLink(){const l=S.link;
+ const sent=l.step==='transfer'&&l.t>=1;
+ dlg({title:'Stop linking?',body:sent?`<p>Your account may already be on the other device. If you stop now it can still end up in your list. Check <b>My devices</b> afterwards and unlink it if you didn't want it.</p>`:`<p>Nothing has been copied yet. You can start again any time; the current code won't work a second time.</p>`,
+  actions:[{label:'Keep linking'},{label:'Stop linking',cls:'out-dng',run:()=>{l.run++;l.reason='cancelled';if(sent){l.step='failed'}else{l.step='choose';l.err=''}render();say(sent?'Linking stopped. Check My devices.':'Linking cancelled. Nothing was copied.')}}],focus:'button[data-i="0"]'});
+}
+
+/* ---------- actions ---------- */
+const A={
+ tab:b=>go(b.dataset.v),
+ /* setup */
+ 's-path':b=>{S.setup.path=b.dataset.v;S.setup.step='name';S.setup.err=null;render()},
+ 's-link':()=>{S.link.role='new';S.link.step='choose';go('link')},
+ 's-back':()=>{const s=S.setup,o=s.path==='restore'?['welcome','name','enter','protect','done']:['welcome','name','phrase','check','protect','done'];s.step=o[Math.max(0,o.indexOf(s.step)-1)];s.revealed=false;s.err=null;render()},
+ 's-suggest':b=>{S.setup.device=b.dataset.v;render('#f-setup-device')},
+ 's-reveal':()=>{const s=S.setup;s.revealed=!s.revealed;s.left=30;render('[data-fk=reveal]');say(s.revealed?'Recovery words shown. They hide in 30 seconds.':'Recovery words hidden.')},
+ 's-again':()=>{S.setup.step='phrase';S.setup.err=null;render()},
+ 's-fill':()=>{S.setup.restore=WORDS.join(' ');render('#f-restore');say('Example words filled in.')},
+ 's-tolink':()=>{S.link.role=S.setup.path==='restore'?'new':'existing';S.link.step='choose';go('link')},
+ 's-restart':()=>{S.setup=fresh().setup;render()},
+ 's-next':()=>{
+  const s=S.setup;s.err=null;
+  if(s.step==='name'){const e={};if(!s.acct.trim())e.acct='Enter the name contacts will see.';else if(s.acct.length>32)e.acct='Keep it under 32 characters.';if(!s.device.trim())e.device='Name this device so you can recognise it later.';else if(s.device.length>32)e.device='Keep it under 32 characters.';
+   if(e.acct||e.device){s.err=e;render(e.acct?'#f-setup-acct':'#f-setup-device');return}
+   s.step=s.path==='restore'?'enter':'phrase';render();return}
+  if(s.step==='phrase'){if(!s.saved){s.err={phrase:'Tick the box once you have written the words down.'};render('[data-bind-check="setup.saved"]');return}s.revealed=false;s.step='check';render();return}
+  if(s.step==='check'){const e={};const ok=[s.a,s.b].map((v,i)=>v.trim().toLowerCase()===WORDS[CHK[i]]);
+   if(!ok[0]||!ok[1]){e.a=!ok[0];e.b=!ok[1];e.msg=`${!ok[0]&&!ok[1]?'Neither word matches':'Word #'+(CHK[!ok[0]?0:1]+1)+" doesn't match"}. Check your paper copy, or show the words again. You can try as many times as you like.`;s.err=e;render(!ok[0]?'#f-setup-a':'#f-setup-b');return}
+   s.step='protect';render();return}
+  if(s.step==='enter'){const w=s.restore.trim().split(/\s+/).filter(Boolean);let m='';
+   if(!w.length)m='Enter your 24 words.';else if(w.length!==24)m=`You entered ${w.length} word${w.length===1?'':'s'}. A recovery phrase has 24.`;else if(w.some(x=>!/^[a-z]+$/i.test(x)))m='Words contain only letters. Check for stray punctuation or numbers.';else if(w.join(' ').toLowerCase()!==WORDS.join(' '))m="These words don't make a valid phrase (the built-in check failed). Check the spelling and order. In this prototype only the example words pass.";
+   if(m){s.err={msg:m};render('#f-restore');return}
+   s.step='protect';render();return}
+  if(s.step==='protect'){if(s.mode==='pass'){const e={};if(s.p1.length<8){e.p1=true;e.msg='Use at least 8 characters.'}else if(s.p1!==s.p2){e.p2=true;e.msg="The two passphrases don't match.";}
+    if(e.msg){s.err=e;render(e.p1?'#f-setup-p1':'#f-setup-p2');return}}
+   s.step='done';render();say(s.path==='restore'?'Identity restored (simulated).':'Account created (simulated).')}
+ },
+ /* unlock */
+ 'u-show':()=>{S.unlock.show=!S.unlock.show;render('[data-fk=u-show]')},
+ 'u-skip':()=>{S.unlock.wait=0;S.unlock.tries=0;render('#u-pass')},
+ 'u-lock':()=>{S.unlock.open=false;S.unlock.pass='';S.unlock.err='';render()},
+ 'u-device':()=>dlg({title:'Device lock (simulated)',body:'<p>On Android this is the system fingerprint, face or screen-lock sheet. It is only offered if you chose device lock when setting up.</p>',actions:[{label:'Cancel',run:()=>{say('Device lock cancelled. Your passphrase still works.')}},{label:'Pretend it succeeded',cls:'pri',run:()=>{S.unlock.open=true;S.unlock.via='device lock';render();say('Unlocked (simulated).');}}]}),
+ 'u-forgot':()=>dlg({title:'Forgot your passphrase?',body:`<p>It can't be reset: there's no server that holds it, and that's what keeps your account private.</p><ul><li><b>Device lock</b>, if you set it up, opens the app without it.</li><li><b>Your recovery phrase</b> brings back your identity on this device. Chats come from another linked device; if none exists, they can't be restored.</li></ul><p>Nothing is erased unless you choose to.</p>`,actions:[{label:'Close'},{label:'Restore from phrase',cls:'pri',run:()=>{S.setup.path='restore';S.setup.step='name';go('setup');}}]}),
+ /* link */
+ 'l-newqr':startQr,
+ 'l-expire':()=>{S.link.remaining=0;render('#panel h2');say('The QR code expired.')},
+ 'l-simscan':scanOutcome,
+ 'l-cancel':cancelLink,
+ 'l-cam':()=>dlg({title:'Allow Tinline to use the camera?',body:'<p class="small"><span class="ribbon">Simulated system prompt</span></p><p>Only while scanning a link code. No photos are saved.</p>',actions:[{label:"Don't allow",run:()=>{S.sim.cam='denied';render('#panel h2');say('Camera denied. Other ways to link are available.')}},{label:'Allow',cls:'pri',run:()=>{S.sim.cam='granted';render('#panel h2');say('Camera allowed (simulated).')}}]}),
+ 'l-settings':()=>dlg({title:'App settings (simulated)',body:'<p class="small"><span class="ribbon">Simulated</span></p><p>On a phone this opens the system page for Tinline. Turn Camera on, then come back.</p>',actions:[{label:'Stay off'},{label:'Turn camera on',cls:'pri',run:()=>{S.sim.cam='granted';render('#panel h2');say('Camera allowed (simulated).')}}]}),
+ 'l-manual':()=>{S.link.showManual=true;S.link.err='';render('#f-link-manual')},
+ 'l-example':()=>{S.link.manual=EXAMPLE_CODE;render('#f-link-manual')},
+ 'l-flip':()=>{S.link.method='show';startQr()},
+ 'l-match':()=>{if(S.link.role==='existing'){S.link.step='authorize';S.link.pass='';S.link.err='';render()}else{S.link.step='waiting';render()}},
+ 'l-nomatch':()=>failLink('mismatch'),
+ 'l-approved':startTransfer,
+ 'l-declined':()=>failLink('declined'),
+ 'l-retry':()=>{const l=S.link;l.err='';if(l.reason==='declined'||l.reason==='dropped'||l.reason==='cancelled'||l.reason==='mismatch'||l.reason==='expired'||l.reason==='used')startQr()},
+ 'l-restart':()=>{const l=S.link;Object.assign(l,{step:'choose',role:'',method:'',err:'',t:0});l.run++;render()},
+ 'l-todevices':()=>go('devices'),
+ /* devices */
+ 'dv-link':()=>{S.link.step='choose';S.link.role='existing';go('link')},
+ 'dv-restore':()=>{S.removedHere=false;render();say('Demo restored.')},
+ 'dv-rename':b=>{const d=S.devices.find(x=>x.id===b.dataset.id);
+  dlg({title:'Rename device',body:`<label class="f" for="rn-in">Device name</label><input id="rn-in" type="text" value="${esc(d.name)}" maxlength="40" autocomplete="off"><div class="small">Only your own devices see this.</div>`,focus:'#rn-in',
+   actions:[{label:'Cancel'},{label:'Save',cls:'pri',run:dd=>{const i=dd.querySelector('#rn-in'),v=i.value.trim();
+    if(!v){dErr(dd,'Enter a name.',i);return false}
+    if(S.devices.some(x=>x.id!==d.id&&x.name.toLowerCase()===v.toLowerCase())){dErr(dd,'Another device already has that name.',i);return false}
+    d.name=v;render(null,true);say('Renamed to '+v+'.')}}]});
+  dlgFocusSelect();},
+ 'dv-unlink':b=>{const d=S.devices.find(x=>x.id===b.dataset.id);
+  if(d.here){const lastOne=S.devices.length===1;
+   dlg({title:'Remove this account from this device?',body:`<ul><li>${lastOne?'This is your <b>only</b> device with this account. Your chats and contacts are not stored anywhere else.':'Chats and contacts stay on your other devices.'}</li><li>Unsent drafts and anything not yet synced are deleted here.</li><li>You can restore the identity later with your recovery phrase.</li></ul>${passField('rm-pass')}${lastOne?'<label class="opt" style="margin-top:12px"><input type="checkbox" id="rm-ack"><span><b>I have my recovery phrase</b><span class="d">Without it or another device, this account is gone.</span></span></label>':''}`,
+    focus:'button[data-i="0"]',actions:[{label:'Keep it'},{label:'Remove account',cls:'dng',run:dd=>{const p=dd.querySelector('#rm-pass');
+     if(p.value!==PASS){dErr(dd,'That passphrase is not right. Try again.',p);return false}
+     const ack=dd.querySelector('#rm-ack');if(ack&&!ack.checked){dErr(dd,'Confirm you have your recovery phrase first.');ack.focus();return false}
+     dd.dataset.keep=1;S.removedHere=true;render();say('Account removed from this device (simulated).')}}]});return}
+  dlg({title:`Unlink ${esc(d.name)}?`,body:`<p><b>What happens</b></p><ul><li>It stops syncing and stops ringing.</li><li>Contacts stop dialing it once they get your updated device list.</li>${d.online?'<li>It appears online. Tinline will try to ask it to lock and delete this account\'s data. Delivery is not guaranteed, and a modified app can ignore the request.</li>':'<li>It is offline, so it can\'t be told yet. It keeps your account and data until it reconnects, and a device someone controls can ignore the request.</li>'}</ul><div class="warn" style="margin:0 0 4px">${ic('alert')}<p><b>This is not a lock.</b> Anyone with your recovery phrase, or this device's unlock, can still act as you. If it was lost or stolen, the only complete fix is moving to a new identity.</p></div>${passField('ul-pass','Your passphrase to confirm')}`,
+   focus:'button[data-i="0"]',actions:[{label:'Cancel'},{label:'Unlink',cls:'dng',run:dd=>{const p=dd.querySelector('#ul-pass');
+    if(p.value!==PASS){dErr(dd,'That passphrase is not right. Nothing was unlinked. Try again.',p);return false}
+    dd.dataset.keep=1;S.devices=S.devices.filter(x=>x.id!==d.id);render();say(d.name+' unlinked (simulated).')}}]})},
+ /* accounts */
+ 'ac-add':()=>dlg({title:'Add an account',body:'<p>Adding an account never replaces the ones you have. Each has its own passphrase and storage.</p>',focus:'button[data-i="0"]',actions:[{label:'Cancel'},{label:'Restore or create',run:()=>{S.setup=fresh().setup;go('setup')}},{label:'Link from a device',cls:'pri',run:()=>{S.link.role='new';S.link.step='choose';go('link')}}]}),
+ 'ac-switch':b=>{const A2=S.acct,to=A2.list.find(a=>a.id===b.dataset.id),from=A2.list.find(a=>a.id===A2.cur),dr=A2.drafts[A2.cur];
+  const call=A2.call;
+  dlg({title:`Switch to ${esc(to.name)}?`,body:`${call?`<div class="warn" style="margin-bottom:12px">${ic('alert')}<p>You're on a call as ${esc(from.name)}. Switching ends it for everyone on the call.</p></div>`:''}<ul><li><b>Only one account is online here.</b> While ${esc(to.name)} is active, calls to ${esc(from.name)} won't ring this device.</li><li><b>Your draft is kept.</b> ${dr?'The message to Sam is saved for '+esc(from.name)+' and is waiting here when you switch back.':'Drafts you start are saved per account and wait for you here.'} Drafts stay on this device.</li><li>${esc(to.name)} has its own passphrase.</li></ul>${passField('sw-pass',esc(to.name)+' passphrase')}`,
+   focus:'#sw-pass',actions:[{label:'Stay on '+esc(from.name)},{label:call?'End call and switch':'Switch',cls:call?'dng':'pri',run:dd=>{const p=dd.querySelector('#sw-pass');
+    if(p.value!==PASS){dErr(dd,'That passphrase is not right. You are still on '+from.name+'. Try again.',p);return false}
+    A2.cur=to.id;A2.call=false;dd.dataset.keep=1;render();say(`Switched to ${to.name}.${dr?' '+from.name+"'s draft is saved.":''}`)}}]})}
+};
+function dlgFocusSelect(){const i=document.querySelector('dialog #rn-in');if(i)i.select()}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const f=A[b.dataset.act];if(f)f(b,e)});
+document.addEventListener('input',e=>{const t=e.target;
+ if(t.dataset.bind)bindVal(t.dataset.bind,t.value);
+ if(t.dataset.draft){S.acct.drafts[S.acct.cur]=t.value;const s=$('#ac-saved');if(s)s.textContent=t.value?'Saved on this device.':'Nothing to save yet.'}});
+document.addEventListener('change',e=>{const t=e.target;
+ if(t.dataset.bindCheck){bindVal(t.dataset.bindCheck,t.checked);if(t.dataset.bindCheck==='acct.call')say(t.checked?'Simulating a call in progress.':'Call ended.')}
+ const c=t.dataset.change;if(!c)return;
+ if(c==='s-mode'){S.setup.mode=t.value;render('input[name=mode]:checked')}
+ if(c==='l-role'){S.link.role=t.value;S.link.err='';render('#role-'+t.value)}
+ if(c==='l-method'){S.link.method=t.value;S.link.err='';render('#method-'+t.value)}
+ if(c==='sim'){S.sim[t.dataset.k]=t.value;render(`input[name="sim-${t.dataset.k}"]:checked`);const d=$('details.simbox');if(d)d.open=true;const r=$(`input[name="sim-${t.dataset.k}"]:checked`);if(r)r.focus()}
+});
+document.addEventListener('submit',e=>{e.preventDefault();const f=e.target.dataset.form;
+ if(f==='u-submit'){const u=S.unlock;if(u.pass===PASS){u.open=true;u.via='';u.tries=0;u.err='';u.pass='';render();say('Unlocked (simulated).');return}
+  u.tries++;u.pass='';
+  if(u.tries>=3){u.wait=30;u.err='';render('#u-pass');say('Too many tries. Wait 30 seconds before trying again.');return}
+  u.err=`That passphrase isn't right. ${3-u.tries} ${3-u.tries===1?'try':'tries'} left before a short wait.`;u.shake=true;render('#u-pass');u.shake=false;say('Wrong passphrase.')}
+ if(f==='l-start'){const l=S.link;
+  if(!l.role){l.err='Choose which device you are holding first.';render('#role-existing');return}
+  if(!l.method){l.err='Choose which device has the camera.';render('#method-show');return}
+  if(l.role==='new'&&!l.label.trim()){l.err='Name this device so your existing device can show it.';render('#f-link-label');return}
+  l.err='';startQr();}
+ if(f==='l-code'){const l=S.link,v=l.manual.trim().toUpperCase();
+  if(!v){l.err='Enter the code shown under the QR.';render('#f-link-manual');return}
+  if(!/^OSVL1-[A-Z0-9-]{4,}$/.test(v)){l.err="That doesn't look like a link code. It starts with OSVL1- and has no spaces.";render('#f-link-manual');return}
+  l.err='';l.showManual=false;
+  if(v.includes('EXPIRED')){failLink('expired')}else if(v.includes('USED')){failLink('used')}else{l.step='verify';render();say('Connected. Check the 6-digit codes match.')}}
+ if(f==='l-approve'){const l=S.link;if(l.pass!==PASS){l.bad++;l.err='That passphrase is not right. Nothing was shared. Try again.';render('#f-link-pass');return}l.err='';l.pass='';startTransfer()}
+});
+$('#reset').onclick=()=>{S=fresh();go('setup');say('Demo reset.')};
+const root=document.documentElement,tb=$('#theme');
+function paintTheme(){const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;tb.setAttribute('aria-pressed',String(dark));tb.textContent=dark?'Light theme':'Dark theme'}
+tb.onclick=()=>{const dark=tb.getAttribute('aria-pressed')==='true';root.dataset.theme=dark?'light':'dark';paintTheme()};
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(!root.dataset.theme)paintTheme()});
+paintTheme();
+const h=location.hash.slice(1);if(TABS.some(t=>t[0]===h))S.tab=h;
+render(null,true);
+</script></body></html>

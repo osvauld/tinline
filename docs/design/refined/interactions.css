@@ -1,0 +1,16 @@
+/* Shared design-only surface and input feedback. No sound or vibration on taps. */
+:root{--elevation-control:0 1px 2px rgb(15 35 27 / .07),0 3px 8px rgb(15 35 27 / .05);--elevation-sheet:0 2px 6px rgb(9 23 17 / .08),0 18px 56px rgb(9 23 17 / .18);--press-wash:rgb(11 107 91 / .09)}
+@media(prefers-color-scheme:dark){:root{--elevation-control:0 1px 2px rgb(0 0 0 / .25),0 3px 9px rgb(0 0 0 / .12);--elevation-sheet:0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);--press-wash:rgb(111 211 189 / .12)}}
+:where(button,a,input,select,textarea){-webkit-tap-highlight-color:transparent}
+:where(button,.btn,.ib,.b,.chip,.row,.card){transition:background-color 120ms ease,border-color 120ms ease,box-shadow 160ms ease,transform 100ms ease}
+:where(button:not(:disabled):not([aria-disabled=true])):active{filter:brightness(.96)}
+:where(.btn,.ib,.b,.chip,.new-btn):not(:disabled):not([aria-disabled=true]):active{transform:scale(.97);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+:where(button.row):not(:disabled):active{background:var(--press-wash)}
+:where(.btn:not(.secondary):not(.quiet):not(.ol):not(.tx),.new-btn,.b.pri){box-shadow:var(--elevation-control)}
+:where(dialog){box-shadow:var(--elevation-sheet)}
+:where(input,textarea,select){transition:border-color 120ms ease,box-shadow 120ms ease}
+:where(input,textarea,select):focus-visible{box-shadow:0 0 0 3px var(--press-wash)}
+@media(hover:hover) and (pointer:fine){:where(.btn:not(.secondary):not(.quiet):not(.ol):not(.tx),.new-btn,.b.pri):not(:disabled):hover{box-shadow:0 2px 4px rgb(15 35 27 / .1),0 5px 14px rgb(15 35 27 / .1)}}
+@media(prefers-reduced-motion:reduce){:where(button,.btn,.ib,.b,.chip,.row,.card,input,textarea,select){transition:none!important}:where(.btn,.ib,.b,.chip,.new-btn):active{transform:none!important}}
+:root[data-motion=reduce] :where(.btn,.ib,.b,.chip,.new-btn):active{transform:none!important}
+@media(forced-colors:active){:where(dialog,.btn,.b.pri,.new-btn){box-shadow:none;border:1px solid ButtonText}:where(button):active{filter:none;outline:2px solid Highlight;outline-offset:-3px}}

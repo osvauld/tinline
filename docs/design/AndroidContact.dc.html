@@ -52,12 +52,12 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="display:flex;justify-content:center;gap:12px;margin-top:10px">
 <button class="act"><span><svg class="i" viewBox="0 0 24 24"><path d="M17 3l4 4L7 21H3v-4z"></path></svg></span>Rename</button>
 <button class="act"><span><svg class="i" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg></span>Verify</button>
-<button class="act"><span style="color:var(--er)"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg></span>Remove</button>
+<button class="act"><span style="color:var(--er)"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg></span>Block</button>
 </div>
 </div>
 <div class="sec">CALLS WITH ARJUN</div>
 <sc-for list="{{hist}}" as="h" hint-placeholder-count="5"><div class="hr"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;color:{{h.ic}}"><path d="{{h.d}}"></path></svg><div style="flex:1"><div style="color:{{h.tc}}">{{h.what}}</div><div class="s">{{h.when}}</div></div><span class="pill" style="{{h.ps}}">{{h.path}}</span></div></sc-for>
-<div class="hint" style="padding:8px 20px">History stays on this phone only.</div>
+<div class="hint" style="padding:8px 20px">History stays on this phone only. Chats are never deleted (U24).</div>
 </div>
 </div>
 
@@ -78,7 +78,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="flex:1"></div>
 <button class="btn"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M20 6 9 17l-5-5"></path></svg>They match</button>
 <button class="btn tx">They don’t match</button>
-<div class="hint" style="text-align:center">If they don’t match, remove Arjun and add him again face to face.</div>
+<div class="hint" style="text-align:center">If they don’t match, block Arjun and add him again face to face.</div>
 </div>
 </div>
 </div>
@@ -103,7 +103,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 
 <div class="col">
-<div class="lbl">Remove contact <span>· dialog</span></div>
+<div class="lbl">Block contact <span>· dialog · replaces the old “Remove contact” (U19: contacts are blocked, never removed; U24: no chat delete)</span></div>
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
 <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 24px">
@@ -111,12 +111,12 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="font-size:28px;font-weight:700;margin-top:6px">Arjun Oommen</div>
 </div>
 <div class="scrim"></div>
-<div role="dialog" aria-label="Remove Arjun" style="position:absolute;left:28px;right:28px;top:260px;background:var(--sf);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<div role="dialog" aria-label="Block Arjun" style="position:absolute;left:28px;right:28px;top:260px;background:var(--sf);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px">
 <div style="width:44px;height:44px;border-radius:50%;background:var(--erc);color:var(--er);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18 M8 6V4h8v2 M6 6l1 15h10l1-15"></path></svg></div>
-<div style="font-size:22px;font-weight:700">Remove Arjun?</div>
-<div style="font-size:15px;line-height:22px;color:var(--ink2)">He won’t be able to call you, and you won’t be able to call him. Your call history with him is deleted from this phone.</div>
-<div style="font-size:15px;line-height:22px;color:var(--ink2)">To talk again, you’ll need to add each other again.</div>
-<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><button class="btn tx" style="width:auto">Cancel</button><button class="btn" style="width:auto;background:var(--er);color:#FFFFFF;padding:0 24px">Remove</button></div>
+<div style="font-size:22px;font-weight:700">Block Arjun?</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink2)">He is told you blocked him. His Tinline stops sending and calling, and anything that still arrives is refused. You can’t call him either.</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink2)">Your chat and call history stay on both phones, read-only. We also ask his Tinline to delete you from his contacts, so after an unblock you’ll need to add each other again. A modified app may ignore this.</div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><button class="btn tx" style="width:auto">Cancel</button><button class="btn" style="width:auto;background:var(--er);color:#FFFFFF;padding:0 24px">Block</button></div>
 </div>
 </div>
 </div>

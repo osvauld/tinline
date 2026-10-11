@@ -1,0 +1,622 @@
+[
+  {
+    "name": "1440 mobile.html iframe src deep-links chat",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe composer visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe Back button visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe shows Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe width 390",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 outer no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe inner no overflow",
+    "ok": true,
+    "detail": "{\"sw\":390,\"iw\":390,\"bw\":390}"
+  },
+  {
+    "name": "1440 phone fits in viewport",
+    "ok": true,
+    "detail": "{\"x\":525,\"y\":101,\"width\":390,\"height\":842}"
+  },
+  {
+    "name": "1440 composer inside iframe",
+    "ok": true,
+    "detail": "{\"x\":525,\"y\":887,\"width\":390,\"height\":56}"
+  },
+  {
+    "name": "toggle 320 iframe width",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 iframe inner no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 iframe composer visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dimension caption updates",
+    "ok": true,
+    "detail": "320 × 842 CSS pixels."
+  },
+  {
+    "name": "toggle back to 390",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "desktop link href",
+    "ok": true,
+    "detail": "chat.html?chat=arjun"
+  },
+  {
+    "name": "desktop link opens desktop chat (split)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mobile.html chat=meera selects Meera",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mobile.html invalid chat \"nobody\" safe fallback",
+    "ok": true,
+    "detail": "Arjun Oommen\nOnline · direct "
+  },
+  {
+    "name": "mobile.html invalid chat \"<script>alert(1)</script>\" safe fallback",
+    "ok": true,
+    "detail": "Arjun Oommen\nOnline · direct "
+  },
+  {
+    "name": "mobile.html invalid chat \"\" safe fallback",
+    "ok": true,
+    "detail": "Arjun Oommen\nOnline · direct "
+  },
+  {
+    "name": "mobile.html invalid chat \"__proto__\" safe fallback",
+    "ok": true,
+    "detail": "Arjun Oommen\nOnline · direct "
+  },
+  {
+    "name": "chat.html invalid param shows list, no errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "chat.html invalid param no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 native conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 native selected Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 no overflow",
+    "ok": true,
+    "detail": "{\"sw\":390,\"iw\":390,\"bw\":390}"
+  },
+  {
+    "name": "390 composer within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":788,\"width\":390,\"height\":56}"
+  },
+  {
+    "name": "390 back target >=44",
+    "ok": true,
+    "detail": "{\"x\":6,\"y\":6.859375,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "390 #sendBtn >=44px",
+    "ok": true,
+    "detail": "{\"x\":338,\"y\":794,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "390 [aria-label=\"Attach a file\"] >=44px",
+    "ok": true,
+    "detail": "{\"x\":8,\"y\":794,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "390 send enabled with draft",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 back (no from) shows list",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 draft preview in list",
+    "ok": true,
+    "detail": "AO\nArjun Oommen\n12:41\nDraft: Draft for QA"
+  },
+  {
+    "name": "390 draft restored",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 send adds message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 composer cleared",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 new message above composer",
+    "ok": true,
+    "detail": "{\"x\":184.40625,\"y\":509.25,\"width\":193.59375,\"height\":61.28125}"
+  },
+  {
+    "name": "390 empty send gives no message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 long draft composer stays in viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":692,\"width\":390,\"height\":152}"
+  },
+  {
+    "name": "390 long draft no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 attach sheet within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":436.21875,\"width\":390,\"height\":407.78125}"
+  },
+  {
+    "name": "390 attachment adds message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 attach sheet closes",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 focus returns sensible after attach",
+    "ok": true,
+    "detail": "<textarea id=\"ta\" rows=\"1\" aria-label=\"Message to Arjun Oommen\" placeholder=\"Mes"
+  },
+  {
+    "name": "390 message menu opens",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 message menu within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":565.265625,\"width\":390,\"height\":278.734375}"
+  },
+  {
+    "name": "390 menu Escape closes",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 details sheet within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":191.5625,\"width\":390,\"height\":652.4375}"
+  },
+  {
+    "name": "390 keyboard-height: composer visible",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":366,\"width\":390,\"height\":56}"
+  },
+  {
+    "name": "390 keyboard-height: header visible",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":0,\"width\":390,\"height\":58.734375}"
+  },
+  {
+    "name": "390 keyboard-height: message list has room (>=40px)",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":58.734375,\"width\":390,\"height\":307.265625}"
+  },
+  {
+    "name": "390 native no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 native conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 native selected Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 no overflow",
+    "ok": true,
+    "detail": "{\"sw\":320,\"iw\":320,\"bw\":320}"
+  },
+  {
+    "name": "320 composer within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":584,\"width\":320,\"height\":56}"
+  },
+  {
+    "name": "320 back target >=44",
+    "ok": true,
+    "detail": "{\"x\":6,\"y\":6.859375,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "320 #sendBtn >=44px",
+    "ok": true,
+    "detail": "{\"x\":268,\"y\":590,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "320 [aria-label=\"Attach a file\"] >=44px",
+    "ok": true,
+    "detail": "{\"x\":8,\"y\":590,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "320 send enabled with draft",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 back (no from) shows list",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 draft preview in list",
+    "ok": true,
+    "detail": "AO\nArjun Oommen\n12:41\nDraft: Draft for QA"
+  },
+  {
+    "name": "320 draft restored",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 send adds message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 composer cleared",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 new message above composer",
+    "ok": true,
+    "detail": "{\"x\":114.40625,\"y\":510.4375,\"width\":193.59375,\"height\":61.28125}"
+  },
+  {
+    "name": "320 empty send gives no message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 long draft composer stays in viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":488,\"width\":320,\"height\":152}"
+  },
+  {
+    "name": "320 long draft no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 attach sheet within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":219.09375,\"width\":320,\"height\":420.90625}"
+  },
+  {
+    "name": "320 attachment adds message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 attach sheet closes",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 focus returns sensible after attach",
+    "ok": true,
+    "detail": "<textarea id=\"ta\" rows=\"1\" aria-label=\"Message to Arjun Oommen\" placeholder=\"Mes"
+  },
+  {
+    "name": "320 message menu opens",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 message menu within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":361.265625,\"width\":320,\"height\":278.734375}"
+  },
+  {
+    "name": "320 menu Escape closes",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 details sheet within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":32,\"width\":320,\"height\":608}"
+  },
+  {
+    "name": "320 keyboard-height: composer visible",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":264,\"width\":320,\"height\":56}"
+  },
+  {
+    "name": "320 keyboard-height: header visible",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":0,\"width\":320,\"height\":58.734375}"
+  },
+  {
+    "name": "320 keyboard-height: message list has room (>=40px)",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":58.734375,\"width\":320,\"height\":205.265625}"
+  },
+  {
+    "name": "320 native no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 home->Arjun lands on chat.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "390 from=home in URL",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "390 no modal open after navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 direct chat conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 chat shows Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 no overflow after nav",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 Back returns home.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "390 Back lands on Chats tab",
+    "ok": true,
+    "detail": "Chats"
+  },
+  {
+    "name": "390 home list rows after Back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 home no modal after back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 home launch not blocking after Back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 home->Meera correct person",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 browser Back returns home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "390 group row stays on home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#groups"
+  },
+  {
+    "name": "390 Escape in from=home chat returns home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "390 home flow no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 home->Arjun lands on chat.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "320 from=home in URL",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "320 no modal open after navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 direct chat conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 chat shows Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 no overflow after nav",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 Back returns home.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "320 Back lands on Chats tab",
+    "ok": true,
+    "detail": "Chats"
+  },
+  {
+    "name": "320 home list rows after Back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 home no modal after back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 home launch not blocking after Back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 home->Meera correct person",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 browser Back returns home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "320 group row stays on home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#groups"
+  },
+  {
+    "name": "320 Escape in from=home chat returns home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "320 home flow no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 home click stays on home with detail",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html"
+  },
+  {
+    "name": "home 1440 has link to mobile preview (informational)",
+    "ok": true,
+    "detail": "count 1"
+  },
+  {
+    "name": "chat.html mobilePreview href resolves to mobile.html chat=arjun",
+    "ok": true,
+    "detail": "mobile.html?screen=chat&chat=arjun"
+  },
+  {
+    "name": "mobilePreview click loads mobile iframe with Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mobile.html at 390: fills viewport no overflow",
+    "ok": true,
+    "detail": "{\"sw\":390,\"iw\":390,\"bw\":390}"
+  },
+  {
+    "name": "mobile.html at 390: iframe composer visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mobile.html at 390: iframe within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":61,\"width\":390,\"height\":783}"
+  },
+  {
+    "name": "mobile.html at 320: no overflow",
+    "ok": true,
+    "detail": "{\"sw\":320,\"iw\":320,\"bw\":320}"
+  },
+  {
+    "name": "links runtime errors",
+    "ok": true,
+    "detail": ""
+  }
+]

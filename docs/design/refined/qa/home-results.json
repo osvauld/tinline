@@ -1,0 +1,617 @@
+[
+  {
+    "name": "320-light entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light bottom navigation visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light home opens conversation directly",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light conversation Back returns home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light bottom navigation visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light home opens conversation directly",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light conversation Back returns home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark bottom navigation visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark home opens conversation directly",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark conversation Back returns home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "pause shows nonblocking banner",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "resume hides pause banner",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "expired ticket inline recovery",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "ticket requires consent",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "confirm opens contacts, no real network",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "offline state has distinct copy",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "reconnect clears banner",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "slow loading marks busy",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "skeleton layout preserves row geometry",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "loading resolves to content",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "load failure gives retry",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "load retry succeeds",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "switch cancels stale loading result",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "opening replay visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "skip releases input immediately",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "opening hidden after skip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "opening does not repeat during same session",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "empty account has add path",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "manual reduced motion skips opening",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "reduced motion keeps press still",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "system reduced motion skips first opening",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "system reduced motion removes entry animations",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "button gives a visible pressed transform",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "raised control has layered shadow",
+    "ok": true,
+    "detail": ""
+  }
+]

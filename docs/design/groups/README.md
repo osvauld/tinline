@@ -1,5 +1,7 @@
 # Groups, blocking and address-change design
 
+**Refinement study:** [Groups](../refined/groups.html), [Privacy & address rotation](../refined/privacy.html), and [Calls including group-call host loss](../refined/calls.html) are interactive, simulated design proposals. Targeted copy corrections below follow the later U1–U24 decisions; the original remote canvas has not been changed. [Review guide](../refined/README.md).
+
 Copied from the "Tinline groups, blocking & rotation design" canvas
 (https://claude.ai/artifact/KS9HUDfQzRFX9tpayTt76a), 2026-10-10. Same tokens and style as
 `docs/design/Main.dc.html`. Each `*.dc.html` is one board (open in a browser); the paragraph under

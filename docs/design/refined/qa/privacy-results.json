@@ -1,0 +1,212 @@
+[
+ {
+  "page": "privacy",
+  "name": "tabs: roles, aria-selected on exactly one",
+  "ok": true,
+  "detail": "true,false,false"
+ },
+ {
+  "page": "privacy",
+  "name": "tabs: ArrowRight moves to next tab (roving keyboard)",
+  "ok": true,
+  "detail": "focus=tab-people peopleSelected=true"
+ },
+ {
+  "page": "privacy",
+  "name": "\"See who has it\" dialog opens with focus inside, list of contacts",
+  "ok": true,
+  "detail": "inside=true"
+ },
+ {
+  "page": "privacy",
+  "name": "Escape restores focus to See-who-has-it button",
+  "ok": true,
+  "detail": "told-open/"
+ },
+ {
+  "page": "privacy",
+  "name": "changing interval updates the explanation/next-change text",
+  "ok": true,
+  "detail": "1 contact haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address whil"
+ },
+ {
+  "page": "privacy",
+  "name": "interval options are a labelled radio group (fieldset/legend or radiogroup)",
+  "ok": true,
+  "detail": "true"
+ },
+ {
+  "page": "privacy",
+  "name": "Jump to next scheduled change updates status (rotation happened)",
+  "ok": true,
+  "detail": "1 contact haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address while apart, see “Can’t reach someone”.Addre"
+ },
+ {
+  "page": "privacy",
+  "name": "scenario \"Phone was asleep\" shows distinct honest state",
+  "ok": true,
+  "detail": "Your address change is overdueThe phone was asleep or off past its change time. It changes once as soon as it wakes, not several times, then the schedule starts again. Until then the old address is still in use.Simulate "
+ },
+ {
+  "page": "privacy",
+  "name": "Simulate waking the phone resolves overdue state, focus not BODY",
+  "ok": true,
+  "detail": "focus=h-st 1 contact haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you "
+ },
+ {
+  "page": "privacy",
+  "name": "scenario \"Change failed\" shows distinct honest state",
+  "ok": true,
+  "detail": "Address change didn’t finishYour phone couldn’t start its new address. The current one keeps working for a short while, then stops, and contacts can’t reach you until this succeeds. The app keeps trying. Proposed How lon"
+ },
+ {
+  "page": "privacy",
+  "name": "failure state offers Retry",
+  "ok": true,
+  "detail": "retryBtns=1"
+ },
+ {
+  "page": "privacy",
+  "name": "Retry resolves the failure (retry button gone / status changes)",
+  "ok": true,
+  "detail": "1 contact haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address whil retry=0"
+ },
+ {
+  "page": "privacy",
+  "name": "focus after Retry not lost to BODY",
+  "ok": true,
+  "detail": "h-st"
+ },
+ {
+  "page": "privacy",
+  "name": "scenario \"Some contacts offline\" shows distinct honest state",
+  "ok": true,
+  "detail": "3 contacts haven’t got your address yetThey were offline. They get it as soon as you or they next come online. Nothing to do. If both of you changed address while apart, see “Can’t reach someone”.Address changesYour phon"
+ },
+ {
+  "page": "privacy",
+  "name": "block dialog: explains consequences, focus inside, Block button named with person",
+  "ok": true,
+  "detail": "focus=dlg-title"
+ },
+ {
+  "page": "privacy",
+  "name": "block dialog discloses honest limits (modified app / what stays)",
+  "ok": true,
+  "detail": "Block Priya N?Right awayPriya N can’t message or call you, on any of your devices. Your phone refuses them even if they keep an address.They’re told you blocked"
+ },
+ {
+  "page": "privacy",
+  "name": "Escape cancels block: nobody blocked, focus restored to Block button",
+  "ok": true,
+  "detail": "focus=block-open/priya want=block-open/priya"
+ },
+ {
+  "page": "privacy",
+  "name": "confirm block: listed under Blocked people with date and Unblock",
+  "ok": true,
+  "detail": "Blocked peoplePNPriya NBlocked Oct 10, 15:20UnblockPNPriya NFrom Weekend hikeVerifiedBlockedWHAT HAP"
+ },
+ {
+  "page": "privacy",
+  "name": "focus after block not lost to BODY",
+  "ok": true,
+  "detail": "h-pp"
+ },
+ {
+  "page": "privacy",
+  "name": "call button for blocked person disabled/removed",
+  "ok": true,
+  "detail": "count=0 disabled=true"
+ },
+ {
+  "page": "privacy",
+  "name": "unblock dialog states that reconnecting by QR is needed",
+  "ok": true,
+  "detail": "Unblock Priya N?They’re told the block is lifted, which clears “blocked you” on their kept history.You need to reconnect. Their app deletes your contact entry when the block is sen"
+ },
+ {
+  "page": "privacy",
+  "name": "unblock: person back in list, Blocked people empty, focus not BODY",
+  "ok": true,
+  "detail": "focus=h-pp PeoplePNPriya NFrom Weekend hikeReconnect neededAOArjun OommenAdded by QRLBLeo BFrom a chat requestSRSam RaoAdded by QRC"
+ },
+ {
+  "page": "privacy",
+  "name": "recovery QR dialog opens with focus inside and explains what the QR contains",
+  "ok": true,
+  "detail": "Show my QRSample pattern only. A real QR would carry your account and current address, so Sam Rao can reach you again.CancelSimulate: Sam Rao scans it"
+ },
+ {
+  "page": "privacy",
+  "name": "Escape on QR dialog restores focus to its trigger",
+  "ok": true,
+  "detail": "qr-open/sam"
+ },
+ {
+  "page": "privacy",
+  "name": "recovery sim toggle \"laptop\" (unlabelled) has an accessible name",
+  "ok": true,
+  "detail": "\"Laptop is offline\""
+ },
+ {
+  "page": "privacy",
+  "name": "recovery with \"laptop\" changes the guidance",
+  "ok": true,
+  "detail": "Can’t reach someoneIf you and a contact both changed address while neither was online, neither side knows where the other is now. The app first tries a shared group’s host. If there’s none, you reconn"
+ },
+ {
+  "page": "privacy",
+  "name": "recovery sim toggle \"shared\" (unlabelled) has an accessible name",
+  "ok": true,
+  "detail": "\"You share a group with Sam\""
+ },
+ {
+  "page": "privacy",
+  "name": "recovery with \"shared\" changes the guidance",
+  "ok": true,
+  "detail": "Can’t reach someoneIf you and a contact both changed address while neither was online, neither side knows where the other is now. The app first tries a shared group’s host. If there’s none, you reconn"
+ },
+ {
+  "page": "privacy",
+  "name": "no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "privacy",
+  "name": "no failed/404 requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "privacy",
+  "name": "mobile address: no horizontal overflow",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "privacy",
+  "name": "mobile people: no horizontal overflow",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "privacy",
+  "name": "mobile lost: no horizontal overflow",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "privacy",
+  "name": "mobile block dialog fits viewport and buttons ≥44px",
+  "ok": true,
+  "detail": "{\"box\":[12,378,24,820],\"btn\":[44,44],\"scroll\":false}"
+ },
+ {
+  "page": "privacy",
+  "name": "mobile tab strip: all three tabs reachable without clipping",
+  "ok": true,
+  "detail": "[[20,134],[138,252],[256,370]]"
+ }
+]

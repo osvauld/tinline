@@ -1,0 +1,542 @@
+[
+ {
+  "page": "group-polish",
+  "name": "desktop: Weekend hike selected by default",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "desktop idle: no Reply/Discard text anywhere in the transcript",
+  "ok": true,
+  "detail": "Kavya joined, invited by Priya Sam Rao Saturday 7am at the trailhead. Bring rain jackets. 12:40 Priy"
+ },
+ {
+  "page": "group-polish",
+  "name": "desktop idle: overflow controls hidden, no reserved action row (row height = bubble height)",
+  "ok": true,
+  "detail": "[[0,\"0\"],[0,\"0\"],[0,\"0\"],[0,\"0\"]]"
+ },
+ {
+  "page": "group-polish",
+  "name": "desktop: no pre-existing .macts element",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light desktop hover reveals overflow beside bubble, bubble size unchanged",
+  "ok": true,
+  "detail": "op=1 bubble 407.140625x52->407.140625x52 mo.x=898.140625 bubbleRight=892.140625"
+ },
+ {
+  "page": "group-polish",
+  "name": "light keyboard Tab reaches overflow control and reveals it",
+  "ok": true,
+  "detail": "Actions for message from Sam op=1"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Enter opens native dialog sheet; focus on Reply; has Reply+Cancel only for sent message",
+  "ok": true,
+  "detail": "{\"f\":\"Reply\",\"btns\":[\"Reply\",\"Cancel\"],\"lab\":\"actTitle\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Escape closes sheet and restores focus to overflow control",
+  "ok": true,
+  "detail": "Actions for message from Sam vs Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Shift+F10 opens sheet from focused control",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light Cancel restores focus to overflow control",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Reply: composer shows quote, textarea focused, no dialog",
+  "ok": true,
+  "detail": "Replying to Sam: Saturday 7am at the trailhead. Bring rain jackets. focus=ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Escape cancels reply, textarea keeps focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light send reply: quote inside bubble, composer reply bar gone, idle again",
+  "ok": true,
+  "detail": "rq=1 bar=0"
+ },
+ {
+  "page": "group-polish",
+  "name": "light desktop: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":1440,\"cw\":1440,\"mw\":874,\"mc\":874}"
+ },
+ {
+  "page": "group-polish",
+  "name": "queued message: dashed bubble keeps explicit waiting state; sheet offers Discard waiting message + Cancel",
+  "ok": true,
+  "detail": "[\"Reply\",\"Discard waiting messageIt ha\",\"Cancel\"]"
+ },
+ {
+  "page": "group-polish",
+  "name": "discard removes only the queued message, with undo toast; focus is not lost",
+  "ok": true,
+  "detail": "msgs"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: opens on list (no deep link)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 idle: no Reply/Discard text; full-height conversation",
+  "ok": true,
+  "detail": "app h=844"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: overflow target ≥44px, icon visible outside bubble",
+  "ok": true,
+  "detail": "[[44,44,true,true],[44,44,true,true],[44,44,true,true],[44,44,true,true]]"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":390,\"cw\":390,\"mw\":390,\"mc\":390}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 long-press opens action sheet; sheet fits; focus in dialog",
+  "ok": true,
+  "detail": "{\"l\":0,\"r\":390,\"b\":844,\"f\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 Escape closes long-press sheet, focus restored to overflow control",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 long-press cancelled by finger movement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 short press (tap) does not open sheet",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: transcript scrolls and composer stays visible",
+  "ok": true,
+  "detail": "[true,834]"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 long-press cancelled by scroll",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 long-press cancelled by pointercancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 sheet Reply: composer quote visible, textarea focused; cancel button works",
+  "ok": true,
+  "detail": "ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 after sends: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":390,\"cw\":390,\"mw\":390,\"mc\":390}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: textarea selection unaffected by long-press handler (select all works)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: opens on list (no deep link)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 idle: no Reply/Discard text; full-height conversation",
+  "ok": true,
+  "detail": "app h=740"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: overflow target ≥44px, icon visible outside bubble",
+  "ok": true,
+  "detail": "[[44,44,true,true],[44,44,true,true],[44,44,true,true],[44,44,true,true]]"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":320,\"cw\":320,\"mw\":320,\"mc\":320}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 long-press opens action sheet; sheet fits; focus in dialog",
+  "ok": true,
+  "detail": "{\"l\":0,\"r\":320,\"b\":740,\"f\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 Escape closes long-press sheet, focus restored to overflow control",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 long-press cancelled by finger movement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 short press (tap) does not open sheet",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: transcript scrolls and composer stays visible",
+  "ok": true,
+  "detail": "[true,730]"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 long-press cancelled by scroll",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 long-press cancelled by pointercancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 sheet Reply: composer quote visible, textarea focused; cancel button works",
+  "ok": true,
+  "detail": "ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 after sends: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":320,\"cw\":320,\"mw\":320,\"mc\":320}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: textarea selection unaffected by long-press handler (select all works)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light deep link ?group=hike opens real mobile conversation",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark desktop hover reveals overflow beside bubble, bubble size unchanged",
+  "ok": true,
+  "detail": "op=1 bubble 407.140625x52->407.140625x52 mo.x=898.140625 bubbleRight=892.140625"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark keyboard Tab reaches overflow control and reveals it",
+  "ok": true,
+  "detail": "Actions for message from Sam op=1"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Enter opens native dialog sheet; focus on Reply; has Reply+Cancel only for sent message",
+  "ok": true,
+  "detail": "{\"f\":\"Reply\",\"btns\":[\"Reply\",\"Cancel\"],\"lab\":\"actTitle\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Escape closes sheet and restores focus to overflow control",
+  "ok": true,
+  "detail": "Actions for message from Sam vs Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Shift+F10 opens sheet from focused control",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Cancel restores focus to overflow control",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Reply: composer shows quote, textarea focused, no dialog",
+  "ok": true,
+  "detail": "Replying to Sam: Saturday 7am at the trailhead. Bring rain jackets. focus=ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Escape cancels reply, textarea keeps focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark send reply: quote inside bubble, composer reply bar gone, idle again",
+  "ok": true,
+  "detail": "rq=1 bar=0"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark desktop: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":1440,\"cw\":1440,\"mw\":874,\"mc\":874}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: opens on list (no deep link)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 idle: no Reply/Discard text; full-height conversation",
+  "ok": true,
+  "detail": "app h=844"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: overflow target ≥44px, icon visible outside bubble",
+  "ok": true,
+  "detail": "[[44,44,true,true],[44,44,true,true],[44,44,true,true],[44,44,true,true]]"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":390,\"cw\":390,\"mw\":390,\"mc\":390}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 long-press opens action sheet; sheet fits; focus in dialog",
+  "ok": true,
+  "detail": "{\"l\":0,\"r\":390,\"b\":844,\"f\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 Escape closes long-press sheet, focus restored to overflow control",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 long-press cancelled by finger movement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 short press (tap) does not open sheet",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: transcript scrolls and composer stays visible",
+  "ok": true,
+  "detail": "[true,834]"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 long-press cancelled by scroll",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 long-press cancelled by pointercancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 sheet Reply: composer quote visible, textarea focused; cancel button works",
+  "ok": true,
+  "detail": "ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 after sends: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":390,\"cw\":390,\"mw\":390,\"mc\":390}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: textarea selection unaffected by long-press handler (select all works)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: opens on list (no deep link)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 idle: no Reply/Discard text; full-height conversation",
+  "ok": true,
+  "detail": "app h=740"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: overflow target ≥44px, icon visible outside bubble",
+  "ok": true,
+  "detail": "[[44,44,true,true],[44,44,true,true],[44,44,true,true],[44,44,true,true]]"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":320,\"cw\":320,\"mw\":320,\"mc\":320}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 long-press opens action sheet; sheet fits; focus in dialog",
+  "ok": true,
+  "detail": "{\"l\":0,\"r\":320,\"b\":740,\"f\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 Escape closes long-press sheet, focus restored to overflow control",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 long-press cancelled by finger movement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 short press (tap) does not open sheet",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: transcript scrolls and composer stays visible",
+  "ok": true,
+  "detail": "[true,730]"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 long-press cancelled by scroll",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 long-press cancelled by pointercancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 sheet Reply: composer quote visible, textarea focused; cancel button works",
+  "ok": true,
+  "detail": "ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 after sends: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":320,\"cw\":320,\"mw\":320,\"mc\":320}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: textarea selection unaffected by long-press handler (select all works)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark deep link ?group=hike opens real mobile conversation",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link invalid \"nope\" falls back to list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link invalid \"%3Cscript%3E\" falls back to list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link invalid \"hike%22%3E\" falls back to list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link invalid \"../x\" falls back to list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link to removed group opens read-only conversation with no overflow controls",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ }
+]

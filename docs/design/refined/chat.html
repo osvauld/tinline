@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Chat · Tinline refined design</title>
+<style>
+:root{
+  --bg:#F5F6F3;--surface:#fff;--surface2:#EEF0EC;--ink:#17201D;--muted:#4D5853;--line:#D9DED8;
+  --teal:#0B6B5B;--teal-ink:#fff;--teal-text:#0B6B5B;--lav:#E1E4F7;--gold:#B8892B;--danger:#A32B2B;--danger-bg:#F8E3E1;
+  --mine:#0B6B5B;--mine-ink:#fff;--shadow:0 8px 30px rgba(23,32,29,.14);
+  --r:20px;--btn:44px;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0F1513;--surface:#19211E;--surface2:#222B28;--ink:#E8EEEB;--muted:#A9B5AF;--line:#33403B;
+  --teal:#2FA58F;--teal-ink:#04201A;--teal-text:#5ACDB6;--lav:#2A2E4D;--gold:#D3AB55;--danger:#F0A09A;--danger-bg:#3A2321;
+  --mine:#0B6B5B;--mine-ink:#fff;--shadow:0 8px 30px rgba(0,0,0,.5);}}
+:root[data-theme=dark]{
+  --bg:#0F1513;--surface:#19211E;--surface2:#222B28;--ink:#E8EEEB;--muted:#A9B5AF;--line:#33403B;
+  --teal:#2FA58F;--teal-ink:#04201A;--teal-text:#5ACDB6;--lav:#2A2E4D;--gold:#D3AB55;--danger:#F0A09A;--danger-bg:#3A2321;
+  --mine:#0B6B5B;--mine-ink:#fff;--shadow:0 8px 30px rgba(0,0,0,.5);}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{color-scheme:light dark}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.45;font-size:16px}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--teal-text);outline-offset:2px;border-radius:8px}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:16px;height:16px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* page chrome */
+.page{max-width:1240px;margin:0 auto;padding:12px 12px 28px}
+.top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.top h1{font-size:1.25rem;margin:0;flex:1 1 auto}
+.back{display:inline-flex;align-items:center;gap:4px;min-height:var(--btn);padding:0 12px 0 6px;color:var(--teal-text);text-decoration:none;font-weight:600;border-radius:12px}
+.back:hover{background:var(--lav)}
+.note{margin:0 0 10px;font-size:.85rem;color:var(--muted)}
+.btn{min-height:var(--btn);min-width:var(--btn);display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:var(--danger-bg);border-color:transparent;color:var(--danger)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface2)}
+.btn.icon{padding:0;border-radius:50%}
+.btn[aria-disabled=true]{opacity:.5}
+
+/* simulation */
+.sim{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);margin-bottom:12px}
+.sim summary{min-height:var(--btn);display:flex;align-items:center;padding:0 16px;font-weight:600;cursor:pointer;color:var(--muted)}
+.sim .row{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 14px}
+.sim p{margin:0;padding:0 16px 12px;font-size:.85rem;color:var(--muted)}
+.sw{display:inline-flex;align-items:center;gap:10px;min-height:var(--btn);padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+.sw .track{width:36px;height:20px;border-radius:999px;background:var(--line);position:relative;transition:background .15s}
+.sw .track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 0 0 1px var(--muted);transition:transform .15s}
+.sw[aria-checked=true] .track{background:var(--teal)}
+.sw[aria-checked=true] .track::after{transform:translateX(16px);box-shadow:none}
+
+/* app shell */
+.app{display:grid;grid-template-columns:1fr;height:calc(100dvh - 190px);min-height:560px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;position:relative}
+.list-pane,.conv-pane{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--bg)}
+.list-pane{background:var(--surface)}
+.app[data-view=list] .conv-pane{display:none}
+.app[data-view=conv] .list-pane{display:none}
+@media (min-width:860px){
+  .app{grid-template-columns:360px 1fr}
+  .app[data-view] .conv-pane,.app[data-view] .list-pane{display:flex}
+  .back-list{display:none!important}
+}
+.bar{display:flex;align-items:center;gap:6px;padding:8px 10px;min-height:64px;border-bottom:1px solid var(--line);background:var(--surface)}
+.bar h2{font-size:1.1rem;margin:0;flex:1;min-width:0}
+.bar .who{flex:1;min-width:0;text-align:left;border:0;background:none;padding:4px 8px;border-radius:12px;min-height:var(--btn)}
+.bar .who:hover{background:var(--surface2)}
+.who b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who span{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--teal);flex:none}
+.dot.off{background:transparent;box-shadow:inset 0 0 0 2px var(--muted)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--lav);color:var(--ink);flex:none}
+.search{display:flex;align-items:center;gap:8px;margin:10px 12px;padding:0 6px 0 14px;min-height:var(--btn);border-radius:999px;background:var(--surface2);border:1px solid transparent}
+.search:focus-within{border-color:var(--teal-text)}
+.search input{flex:1;min-width:0;border:0;background:none;outline:0;min-height:var(--btn)}
+.chats{list-style:none;margin:0;padding:0 6px 6px;overflow:auto;flex:1}
+.chat-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:68px;padding:8px 10px;border:0;border-radius:16px;background:none}
+.chat-row:hover{background:var(--surface2)}
+.chat-row[aria-current=true]{background:var(--lav)}
+.chat-row .mid{flex:1;min-width:0}
+.chat-row .t{display:flex;justify-content:space-between;gap:8px}
+.chat-row .t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-row .t time,.chat-row .pv{font-size:.85rem;color:var(--muted)}
+.chat-row .pv{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-row .pv .dr{color:var(--teal-text);font-weight:600}
+.chat-row .pv .bad{color:var(--danger);font-weight:600}
+.badge{min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--teal);color:var(--teal-ink);font-size:.8rem;font-weight:700;display:grid;place-items:center}
+.badge.quiet{background:var(--surface2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.empty{margin:auto;padding:28px 24px;text-align:center;max-width:340px;color:var(--muted)}
+.empty h3{color:var(--ink);margin:10px 0 6px;font-size:1.1rem}
+.empty .art{width:56px;height:56px;border-radius:20px;background:var(--lav);color:var(--teal-text);display:grid;place-items:center;margin:0 auto}
+.empty .btn{margin-top:14px}
+.list-foot{padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:8px}
+.list-foot .btn{flex:1}
+
+/* conversation */
+.banner{display:flex;gap:10px;align-items:flex-start;margin:8px 12px 0;padding:10px 14px;border-radius:16px;background:var(--lav);font-size:.9rem}
+.banner.warn{background:var(--surface2);box-shadow:inset 0 0 0 1px var(--line)}
+.banner svg{margin-top:2px}
+.banner a{color:var(--teal-text);font-weight:600}
+.msgs{list-style:none;margin:0;padding:12px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
+.day{align-self:center;font-size:.8rem;color:var(--muted);padding:4px 0}
+.m{display:flex;align-items:flex-end;gap:2px;max-width:min(82%,480px)}
+.m.me{align-self:flex-end;flex-direction:row-reverse}
+.m.them{align-self:flex-start}
+.bub{padding:8px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--line);min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.me .bub{background:var(--mine);color:var(--mine-ink);border-color:transparent;border-bottom-right-radius:6px}
+.them .bub{border-bottom-left-radius:6px}
+.bub.gone{background:transparent;border-style:dashed;color:var(--muted);font-style:italic}
+.me .bub.gone{color:var(--muted)}
+.quote{display:block;margin:0 0 6px;padding:6px 10px;border-radius:12px;background:var(--lav);color:var(--ink);font-size:.85rem;border-left:3px solid var(--teal-text);white-space:normal}
+.quote b{display:block;font-size:.8rem}
+.quote span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{white-space:normal;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-top:2px;font-size:.78rem;opacity:.85;white-space:normal;font-style:normal}
+.me .meta{justify-content:flex-end}
+.meta .st{display:inline-flex;align-items:center;gap:4px}
+.me .bub .meta .bad{background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:0 6px;font-weight:600;opacity:1}
+.more{width:var(--btn);height:var(--btn);border-radius:50%;border:0;background:none;color:var(--muted);display:grid;place-items:center;flex:none;opacity:.8}
+.more:hover{background:var(--surface2);opacity:1}
+@media (hover:hover) and (min-width:860px){.m:not(:hover):not(:focus-within) .more{opacity:0}}
+.file{display:flex;gap:10px;align-items:center;min-width:220px}
+.file .ficon{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}
+.them .file .ficon{background:var(--lav)}
+.file .fi{min-width:0;flex:1}
+.file .fn{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file .fm{font-size:.8rem;opacity:.9}
+.prog{height:6px;border-radius:3px;background:rgba(255,255,255,.3);margin-top:6px;overflow:hidden}
+.prog i{display:block;height:100%;background:currentColor;transition:width .25s linear}
+.facts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;white-space:normal}
+.facts .btn{min-height:var(--btn);padding:0 14px;font-size:.9rem;background:rgba(255,255,255,.14);color:inherit;border-color:rgba(255,255,255,.35)}
+.them .facts .btn{background:var(--surface2);border-color:var(--line)}
+
+/* composer */
+.ctx{display:flex;align-items:center;gap:8px;margin:0 12px;padding:6px 6px 6px 12px;border-radius:16px 16px 0 0;background:var(--lav);font-size:.88rem}
+.ctx .tx{flex:1;min-width:0}
+.ctx .tx b{display:block}
+.ctx .tx span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.composer{display:flex;gap:6px;align-items:flex-end;padding:8px 10px 10px;background:var(--bg)}
+.composer textarea{flex:1;min-width:0;resize:none;max-height:140px;min-height:var(--btn);padding:10px 16px;border-radius:22px;border:1px solid var(--line);background:var(--surface);line-height:1.35}
+.composer textarea:focus{outline:0;border-color:var(--teal-text);box-shadow:0 0 0 2px var(--teal-text)}
+.hint{padding:0 18px 8px;font-size:.78rem;color:var(--muted);margin-top:-4px}
+.noconv{margin:auto}
+
+/* dialogs */
+dialog{border:0;padding:0;border-radius:var(--r);background:var(--surface);color:var(--ink);width:min(480px,calc(100vw - 24px));max-height:calc(100dvh - 32px);box-shadow:var(--shadow);overflow:auto}
+dialog::backdrop{background:rgba(10,16,14,.5)}
+.dlg{padding:18px 18px 16px}
+.dlg h2{margin:0 0 4px;font-size:1.2rem}
+.dlg p{margin:6px 0;color:var(--muted)}
+.dlg .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.dlg .list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.dlg .list .btn{justify-content:flex-start;border-radius:16px;text-align:left;width:100%;font-weight:500}
+.dlg .list .btn b{font-weight:600}
+.dlg .list .btn.danger{font-weight:600}
+@media (max-width:700px){dialog{margin:auto auto 0;width:100%;max-width:none;border-radius:var(--r) var(--r) 0 0}}
+fieldset{border:0;margin:14px 0 0;padding:0}
+legend{font-weight:700;padding:0;margin-bottom:6px}
+.opt{display:flex;align-items:center;gap:12px;min-height:var(--btn);padding:4px 12px;border-radius:14px;cursor:pointer}
+.opt:hover{background:var(--surface2)}
+.opt input{width:20px;height:20px;accent-color:var(--teal);margin:0;flex:none}
+.opt .d{display:block;font-size:.85rem;color:var(--muted)}
+.opt .grow{flex:1}
+.opt:has(input:focus-visible){outline:3px solid var(--teal-text);outline-offset:1px}
+.row2{display:flex;align-items:center;gap:8px}
+.kv{margin:10px 0 0;display:grid;gap:8px}
+.kv div{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--surface2)}
+.kv div b{display:block}
+.kv div span{color:var(--muted);font-size:.9rem}
+.kv a{color:var(--teal-text);font-weight:600}
+
+/* toast */
+.toasts{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;z-index:50;width:min(440px,calc(100vw - 24px));pointer-events:none}
+.toast{pointer-events:none;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:16px;box-shadow:var(--shadow);font-size:.92rem;animation:pop .18s ease-out;width:100%}
+.toast.notif{background:var(--surface);color:var(--ink);border:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.toast.notif small{display:block;color:var(--muted)}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (max-width:859px){
+  .page{padding:8px}
+  .top{gap:4px;margin-bottom:4px}.top h1{font-size:1.05rem}
+  .note{margin-bottom:6px}.sim{margin-bottom:8px}
+  .app{height:auto;min-height:0}
+  .app[data-view=list] .chats{overflow:visible}
+  body:has(.app[data-view=conv]){overflow:hidden}
+  body:has(.app[data-view=conv]) .toasts{top:70px;bottom:auto}
+  body:has(.app[data-view=conv]) .toasts .toast:not(:last-child){display:none}
+  body:has(.app[data-view=conv]) .page{padding:0}
+  body:has(.app[data-view=conv]) :is(.top,.note,.sim){display:none}
+  .app[data-view=conv]{position:fixed;inset:0;height:100dvh;border:0;border-radius:0;z-index:5}
+  .app[data-view=conv] .bar{position:sticky;top:0;z-index:2;min-height:56px;padding:4px 6px;flex:none}
+  .app[data-view=conv] .msgs{min-height:0}
+  .composer{padding:6px 8px calc(6px + env(safe-area-inset-bottom));flex:none}
+  .hint{display:none}
+}
+</style>
+<link rel="stylesheet" href="interactions.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<defs>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><path d="M21 11l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2.5"/><circle cx="9" cy="12" r="2.5"/><circle cx="17" cy="18" r="2.5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-reply" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13 7l4 4"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2L12 3zM12 10v5M12 18v.01"/></symbol>
+<symbol id="i-retry" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+<symbol id="i-devices" viewBox="0 0 24 24"><path d="M3 6h13v9H3zM1 18h17M18 9h4v9h-4z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-off" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+<symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16.5 9a4 4 0 0 1 0 6"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+</defs>
+</svg>
+
+<div class="page">
+  <div class="top">
+    <a class="back" href="./index.html"><svg class="i"><use href="#i-back"/></svg>Home</a>
+    <h1>Chat: daily conversation</h1>
+    <a class="btn" id="mobilePreview" href="mobile.html?screen=chat&amp;chat=arjun" style="text-decoration:none">Mobile preview</a>
+    <button class="btn" id="themeBtn" type="button" aria-pressed="false"><svg class="i"><use id="themeUse" href="#i-moon"/></svg><span id="themeLbl">Dark mode</span></button>
+    <button class="btn" id="settingsBtn" type="button"><svg class="i"><use href="#i-sliders"/></svg>Chat settings</button>
+  </div>
+  <p class="note">Interactive design · simulated data. Nothing is sent, stored on a server, or encrypted here.</p>
+
+  <details class="sim" id="sim">
+    <summary>Simulation controls</summary>
+    <p>Change the conditions, then try the conversation. These stand in for the network; the real app decides them itself.</p>
+    <div class="row">
+      <button class="sw" type="button" role="switch" aria-checked="true" id="swOnline"><span class="track"></span><span id="swOnlineLbl">Contact online</span></button>
+      <button class="sw" type="button" role="switch" aria-checked="false" id="swFail"><span class="track"></span>Next send fails</button>
+      <button class="btn" type="button" id="simIncoming"><svg class="i"><use href="#i-bell"/></svg>Simulate incoming message</button>
+      <button class="btn" type="button" id="simClear">Empty the chat list</button>
+      <button class="btn" type="button" id="simReset">Reset demo</button>
+    </div>
+  </details>
+
+  <main class="app" id="app" data-view="list">
+    <section class="list-pane" aria-label="Chats">
+      <div class="bar"><h2>Chats</h2>
+        <button class="btn icon ghost" type="button" id="newBtn" aria-label="New chat"><svg class="i"><use href="#i-plus"/></svg></button>
+      </div>
+      <form class="search" role="search" id="searchForm" onsubmit="return false">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <label class="vh" for="q">Search chats</label>
+        <input id="q" type="search" placeholder="Search chats" autocomplete="off">
+        <button class="btn icon ghost" type="button" id="qClear" aria-label="Clear search" hidden><svg class="i"><use href="#i-x"/></svg></button>
+      </form>
+      <ul class="chats" id="chats"></ul>
+      <div id="listEmpty"></div>
+    </section>
+    <section class="conv-pane" id="conv" aria-label="Conversation"></section>
+  </main>
+</div>
+
+<!-- Settings -->
+<dialog id="dSettings" aria-labelledby="tSettings"><div class="dlg">
+  <h2 id="tSettings">Chat settings</h2>
+  <p>Design simulation: choices are kept in this browser only.</p>
+  <fieldset><legend>Notification preview</legend>
+    <label class="opt"><input type="radio" name="preview" value="full"><span class="grow">Name and message<span class="d">Shows who wrote and what they said.</span></span></label>
+    <label class="opt"><input type="radio" name="preview" value="name"><span class="grow">Name only<span class="d">“Meera sent a message.”</span></span></label>
+    <label class="opt"><input type="radio" name="preview" value="none"><span class="grow">Hidden<span class="d">“New message.” Best for shared lock screens.</span></span></label>
+  </fieldset>
+  <fieldset><legend>Message sound</legend>
+    <div class="opt"><label class="row2 grow" style="cursor:pointer"><input type="radio" name="sound" value="chime"><span>Soft chime</span></label><button class="btn" type="button" data-play="chime" aria-label="Play soft chime"><svg class="i"><use href="#i-vol"/></svg>Play</button></div>
+    <div class="opt"><label class="row2 grow" style="cursor:pointer"><input type="radio" name="sound" value="pop"><span>Pop</span></label><button class="btn" type="button" data-play="pop" aria-label="Play pop"><svg class="i"><use href="#i-vol"/></svg>Play</button></div>
+    <label class="opt"><input type="radio" name="sound" value="off"><span class="grow">Silent<span class="d">Badge and notification only.</span></span></label>
+    <label class="opt"><input type="checkbox" id="vib"><span class="grow">Vibrate on new message<span class="d" id="vibD"></span></span></label>
+  </fieldset>
+  <p style="font-size:.85rem">Muted chats never play a sound. Calls ring separately and follow Background &amp; battery.</p>
+  <fieldset><legend>Enter key</legend>
+    <label class="opt"><input type="radio" name="enter" value="send"><span class="grow">Enter sends<span class="d">Shift + Enter adds a new line.</span></span></label>
+    <label class="opt"><input type="radio" name="enter" value="newline"><span class="grow">Enter adds a new line<span class="d">Ctrl or ⌘ + Enter sends. Default on touch screens.</span></span></label>
+  </fieldset>
+  <fieldset><legend>Appearance</legend>
+    <label class="opt"><input type="radio" name="theme" value="system"><span class="grow">Match this device</span></label>
+    <label class="opt"><input type="radio" name="theme" value="light"><span class="grow">Light</span></label>
+    <label class="opt"><input type="radio" name="theme" value="dark"><span class="grow">Dark</span></label>
+  </fieldset>
+  <div class="acts"><button class="btn primary" type="button" data-close>Done</button></div>
+</div></dialog>
+
+<!-- Chat info -->
+<dialog id="dInfo" aria-labelledby="tInfo"><div class="dlg" id="infoBody"></div></dialog>
+<!-- Message actions / delete / attach / new chat -->
+<dialog id="dActions" aria-labelledby="tActions"><div class="dlg" id="actionsBody"></div></dialog>
+<dialog id="dDelete" aria-labelledby="tDelete"><div class="dlg" id="deleteBody"></div></dialog>
+<dialog id="dAttach" aria-labelledby="tAttach"><div class="dlg">
+  <h2 id="tAttach">Attach a file</h2>
+  <p>Pick a sample, or choose a real file: only its name and size are read, and nothing leaves this page.</p>
+  <div class="list" id="samples"></div>
+  <div class="list"><button class="btn" type="button" id="pickReal"><svg class="i"><use href="#i-clip"/></svg><span>Choose a file from this device…</span></button></div>
+  <input type="file" id="realFile" class="vh" tabindex="-1" aria-hidden="true">
+  <div class="acts"><button class="btn" type="button" data-close>Cancel</button></div>
+</div></dialog>
+<dialog id="dNew" aria-labelledby="tNew"><div class="dlg">
+  <h2 id="tNew">New chat</h2>
+  <p>Contacts on this phone. Add people from the Contacts tab in the real app.</p>
+  <div class="list" id="contacts"></div>
+  <div class="acts"><button class="btn" type="button" data-close>Cancel</button></div>
+</div></dialog>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === false || v == null) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k === "text") e.textContent = v;
+    else e.setAttribute(k, v === true ? (k.startsWith("aria-") ? "true" : "") : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(k));
+  return e;
+}
+const icon = (n, c = "") => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("class", "i " + c); s.setAttribute("aria-hidden", "true"); const u = document.createElementNS("http://www.w3.org/2000/svg", "use"); u.setAttribute("href", "#i-" + n); s.append(u); return s; };
+const pad = n => String(n).padStart(2, "0");
+const clock = (d = new Date()) => pad(d.getHours()) + ":" + pad(d.getMinutes());
+const fmtSize = b => b >= 1e6 ? (b / 1e6).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1e3)) + " KB";
+const store = { get(k, d) { try { const v = localStorage.getItem("tinline-chat-" + k); return v == null ? d : v; } catch { return d; } }, set(k, v) { try { localStorage.setItem("tinline-chat-" + k, v); } catch {} } };
+
+/* ---------- state ---------- */
+const COLORS = {};
+const CONTACTS = [
+  { id: "arjun", name: "Arjun Oommen", devices: ["Phone"] },
+  { id: "meera", name: "Meera Nair", devices: ["Phone"] },
+  { id: "dev", name: "Dev Patel", devices: ["Phone"] },
+  { id: "sana", name: "Sana Rao", devices: ["Phone", "Laptop"] },
+  { id: "kavya", name: "Kavya Iyer", devices: ["Phone"] },
+  { id: "ravi", name: "Ravi Menon", devices: ["Phone"] },
+];
+let seq = 100, chats, openId = null, ctxMsg = null;
+const prefs = {
+  preview: store.get("preview", "full"), sound: store.get("sound", "chime"), vib: store.get("vib", "0") === "1",
+  enter: store.get("enter", matchMedia("(pointer:coarse)").matches ? "newline" : "send"), theme: store.get("theme", "system"),
+};
+let failNext = false;
+
+function mkChat(id, online, msgs, extra) {
+  const c = CONTACTS.find(x => x.id === id);
+  return Object.assign({ id, name: c.name, devices: c.devices, online, muted: false, unread: 0, draft: "", stash: "", ctx: null, msgs: msgs.map(m => Object.assign({ id: ++seq }, m)) }, extra);
+}
+function seed() {
+  chats = [
+    mkChat("arjun", true, [
+      { from: "them", text: "Did you get home ok?", time: "09:12", st: "in" },
+      { from: "me", text: "Yes! Train was on time for once", time: "09:14", st: "delivered" },
+      { from: "them", text: "Are we still on for the call about the flat?", time: "12:38", st: "in" },
+      { from: "me", text: "Yes, after 6 works for me", time: "12:40", st: "delivered", edited: true },
+      { from: "them", text: "I have the landlord’s numbers now", time: "12:41", st: "in" },
+    ]),
+    mkChat("meera", false, [
+      { from: "them", text: "Can you send the scan when you’re back online?", time: "17:40", st: "in" },
+      { from: "me", text: "Running 10 min late, sorry", time: "17:58", st: "waiting" },
+    ], { unread: 2 }),
+    mkChat("dev", true, [
+      { from: "me", text: "Lunch Thursday?", time: "11:02", st: "delivered" },
+      { from: "them", text: "Thursday works. The place near the station?", time: "11:05", st: "in" },
+    ]),
+    mkChat("sana", true, [
+      { from: "them", text: "Sent the draft to your laptop too", time: "08:20", st: "in" },
+    ], { laptopOffline: true }),
+  ];
+  chats[2].muted = true; chats[2].unread = 1;
+}
+seed();
+const chatBy = id => chats.find(c => c.id === id);
+const lastTime = c => c.msgs.length ? c.msgs[c.msgs.length - 1].time : "";
+const lastActivity = c => c.msgs.length ? c.msgs[c.msgs.length - 1].id : 0;
+
+/* ---------- live feedback ---------- */
+function say(text, opts = {}) {
+  const t = h("div", { class: "toast" + (opts.notif ? " notif" : "") });
+  if (opts.notif) { t.append(icon("bell"), h("div", {}, h("b", { text: opts.title }), opts.body ? h("small", { text: opts.body }) : null)); }
+  else t.textContent = text;
+  const box = $("#toasts"); box.append(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => t.remove(), opts.notif ? 6000 : 4200);
+}
+
+/* ---------- sound (simulated preview; short synthesized tones, created only on user action) ---------- */
+let ac;
+function tone(kind) {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  try {
+    ac = ac || new AC(); if (ac.state === "suspended") ac.resume();
+    const t0 = ac.currentTime + 0.02;
+    const notes = kind === "pop" ? [[520, 0, .12, .16]] : [[784, 0, .5, .14], [1047, .14, .7, .12]];
+    for (const [f, at, dur, vol] of notes) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = kind === "pop" ? "triangle" : "sine"; o.frequency.setValueAtTime(f, t0 + at);
+      if (kind === "pop") o.frequency.exponentialRampToValueAtTime(260, t0 + at + dur);
+      g.gain.setValueAtTime(0.0001, t0 + at); g.gain.exponentialRampToValueAtTime(vol, t0 + at + .02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+      o.connect(g).connect(ac.destination); o.start(t0 + at); o.stop(t0 + at + dur + .05);
+    }
+    return true;
+  } catch { return false; }
+}
+
+/* ---------- theme ---------- */
+const mq = matchMedia("(prefers-color-scheme:dark)");
+const isDark = () => prefs.theme === "dark" || (prefs.theme === "system" && mq.matches);
+function applyTheme() {
+  const r = document.documentElement;
+  if (prefs.theme === "system") r.removeAttribute("data-theme"); else r.dataset.theme = prefs.theme;
+  const d = isDark();
+  $("#themeBtn").setAttribute("aria-pressed", d); $("#themeLbl").textContent = d ? "Light mode" : "Dark mode";
+  $("#themeUse").setAttribute("href", d ? "#i-sun" : "#i-moon");
+}
+mq.addEventListener("change", applyTheme);
+$("#themeBtn").onclick = () => { prefs.theme = isDark() ? "light" : "dark"; store.set("theme", prefs.theme); applyTheme(); say("Theme: " + prefs.theme); };
+
+/* ---------- dialogs ---------- */
+function openDlg(d, opener) {
+  d._opener = opener || document.activeElement;
+  d._sel = d._opener && d._opener.closest && d._opener.closest("[data-mid]") ? d._opener.closest("[data-mid]").dataset.mid : null;
+  d.showModal();
+}
+$$("dialog").forEach(d => {
+  d.addEventListener("close", () => {
+    const a = document.activeElement;
+    if (a && a !== document.body && a !== document.documentElement) return; // focus was moved on purpose
+    let o = d._opener;
+    if (o && !o.isConnected && o.id) o = document.getElementById(o.id);
+    if (!o || !o.isConnected) o = (d._sel && $(`[data-mid="${d._sel}"] .more`)) || $("#ta") || $("#settingsBtn");
+    if (o) o.focus({ preventScroll: true });
+  });
+  d.addEventListener("click", e => { if (e.target === d) d.close(); });
+  d.addEventListener("click", e => { if (e.target.closest("[data-close]")) d.close(); });
+});
+
+/* ---------- list ---------- */
+function preview(c) {
+  const out = h("span", { class: "pv" });
+  if (c.draft.trim()) { out.append(h("span", { class: "dr", text: "Draft: " }), c.draft.trim().replace(/\s+/g, " ")); return out; }
+  const m = c.msgs[c.msgs.length - 1];
+  if (!m) { out.textContent = "No messages yet"; return out; }
+  if (m.gone) { out.textContent = m.gone === "me" ? "You deleted this message" : c.name.split(" ")[0] + " deleted this message"; return out; }
+  const body = m.file ? "📎 " + m.file.name : m.text;
+  if (m.from === "me") {
+    if (m.st === "failed") out.append(h("span", { class: "bad", text: "Not sent · " }));
+    else if (m.st === "waiting") out.append("Waiting · ");
+    else out.append("You: ");
+  }
+  out.append(body.replace(/\s+/g, " ")); return out;
+}
+function renderList() {
+  const q = $("#q").value.trim().toLowerCase();
+  $("#qClear").hidden = !q;
+  const ul = $("#chats"); ul.replaceChildren();
+  const le = $("#listEmpty"); le.replaceChildren();
+  const rows = chats.filter(c => !q || c.name.toLowerCase().includes(q) || c.msgs.some(m => !m.gone && (m.text || (m.file && m.file.name) || "").toLowerCase().includes(q)))
+    .sort((a, b) => lastActivity(b) - lastActivity(a));
+  for (const c of rows) {
+    const b = h("button", { class: "chat-row", type: "button", "data-chat": c.id, "aria-current": c.id === openId, onclick: e => openChat(c.id, e.currentTarget) },
+      h("span", { class: "avatar", "aria-hidden": "true", text: c.name.split(" ").map(w => w[0]).join("") }),
+      h("span", { class: "mid" }, h("span", { class: "t" }, h("b", { text: c.name }), h("time", { text: lastTime(c) })), preview(c)),
+      c.muted ? h("span", { class: "vh", text: "Muted" }) : null,
+      c.unread ? h("span", { class: "badge" + (c.muted ? " quiet" : ""), "aria-label": c.unread + " unread" }, String(c.unread)) : null);
+    ul.append(h("li", {}, b));
+  }
+  if (!rows.length) {
+    if (q) le.append(h("div", { class: "empty" }, h("div", { class: "art" }, icon("search")), h("h3", { text: "No chats match “" + $("#q").value.trim() + "”" }),
+      h("p", { text: "Search looks at names and messages on this phone. Messages that are only on their phone aren’t searched." }),
+      h("button", { class: "btn", type: "button", onclick: () => { $("#q").value = ""; renderList(); $("#q").focus(); } }, "Clear search")));
+    else le.append(h("div", { class: "empty" }, h("div", { class: "art" }, icon("chat")), h("h3", { text: "No chats yet" }),
+      h("p", { text: "Messages go straight from your phone to theirs, end-to-end encrypted. Nothing is stored on a server." }),
+      h("button", { class: "btn primary", type: "button", onclick: e => openNew(e.currentTarget) }, "Start a chat")));
+  }
+}
+$("#q").addEventListener("input", renderList);
+$("#qClear").onclick = () => { $("#q").value = ""; renderList(); $("#q").focus(); };
+$("#q").addEventListener("keydown", e => { if (e.key === "Escape" && $("#q").value) { e.preventDefault(); $("#qClear").click(); } });
+
+/* ---------- conversation ---------- */
+let ta = null;
+function openChat(id, opener) {
+  openId = id; const c = chatBy(id);
+  $('#mobilePreview').href = 'mobile.html?screen=chat&chat=' + encodeURIComponent(id);
+  c.unread = 0;
+  $("#app").dataset.view = "conv";
+  renderList(); renderConv(true);
+  if (matchMedia("(min-width:860px)").matches) ta && ta.focus({ preventScroll: true });
+  else { const t = $("#convTitle"); t && t.focus(); }
+}
+function closeChat() {
+  if (new URLSearchParams(location.search).get('from') === 'home') { location.href = 'home.html#chats'; return; }
+  const id = openId; openId = null; $("#app").dataset.view = "list"; renderList(); renderConv();
+  const r = $(`[data-chat="${id}"]`); (r || $("#q")).focus();
+}
+function statusLine(c) {
+  if (c.online) return ["Online · direct", false];
+  return ["Offline · messages wait on this phone", true];
+}
+function renderConv(keepScroll) {
+  const root = $("#conv"); root.replaceChildren(); ta = null;
+  const c = openId && chatBy(openId);
+  if (!c) {
+    root.append(h("div", { class: "empty noconv" }, h("div", { class: "art" }, icon("chat")), h("h3", { text: chats.length ? "Choose a chat" : "No chats yet" }),
+      h("p", { text: chats.length ? "Pick a conversation on the left. Drafts you leave unfinished stay put." : "Start a chat from your contacts." }),
+      chats.length ? null : h("button", { class: "btn primary", type: "button", onclick: e => openNew(e.currentTarget) }, "Start a chat")));
+    return;
+  }
+  if (c.ctx) { const cm = c.msgs.find(x => x.id === c.ctx.id); if (!cm || cm.gone) { if (c.ctx.type === "edit") { c.draft = c.stash; c.stash = ""; } c.ctx = null; } }
+  const [st, off] = statusLine(c);
+  root.append(h("div", { class: "bar" },
+    h("button", { class: "btn icon ghost back-list", type: "button", "aria-label": "Back to chats", onclick: closeChat }, icon("back")),
+    h("button", { class: "who", type: "button", id: "convTitle", "aria-label": c.name + ". " + st + ". Chat details", onclick: e => openInfo(e.currentTarget) },
+      h("b", { text: c.name }), h("span", {}, h("i", { class: "dot" + (off ? " off" : ""), "aria-hidden": "true" }), st, c.muted ? " · Muted" : "")),
+    h("button", { class: "btn icon ghost", type: "button", "aria-label": "Chat details", onclick: e => openInfo(e.currentTarget) }, icon("info"))));
+  if (off) root.append(h("div", { class: "banner warn", id: "bnOff" }, icon("off"), h("div", {}, h("b", { text: c.name.split(" ")[0] + " isn’t reachable right now. " }), "Your messages stay on this phone and send by themselves when you’re both online.")));
+  if (c.laptopOffline) root.append(h("div", { class: "banner" }, icon("devices"), h("div", {}, `${c.name.split(" ")[0]}’s laptop is offline. Messages reach her phone now and show on the laptop after it reconnects. `, h("a", { href: "./privacy.html" }, "What linked devices can see"))));
+  const list = h("ul", { class: "msgs", id: "msgs", role: "log", "aria-label": "Messages with " + c.name });
+  if (!c.msgs.length) list.append(h("li", { class: "empty" }, h("div", { class: "art" }, icon("shield")), h("h3", { text: "Say hello to " + c.name.split(" ")[0] }), h("p", { text: "This conversation is end-to-end encrypted and goes straight to their phone. Nothing is kept on a server." })));
+  else list.append(h("li", { class: "day", text: "Today" }));
+  c.msgs.forEach(m => list.append(msgNode(c, m)));
+  root.append(list);
+  // context strip + composer
+  if (c.ctx) {
+    const m = c.msgs.find(x => x.id === c.ctx.id);
+    root.append(h("div", { class: "ctx" }, icon(c.ctx.type === "edit" ? "edit" : "reply", "sm"),
+      h("div", { class: "tx" }, h("b", { text: c.ctx.type === "edit" ? "Editing message" : "Replying to " + (m.from === "me" ? "yourself" : c.name.split(" ")[0]) }), h("span", { text: m.text || (m.file && m.file.name) || "" })),
+      h("button", { class: "btn icon ghost", type: "button", "aria-label": c.ctx.type === "edit" ? "Cancel edit" : "Cancel reply", onclick: () => cancelCtx(c) }, icon("x"))));
+  }
+  ta = h("textarea", { id: "ta", rows: "1", "aria-label": "Message to " + c.name, placeholder: "Message", maxlength: "4000", enterkeyhint: prefs.enter === "send" ? "send" : "enter" });
+  ta.value = c.draft;
+  const send = h("button", { class: "btn primary icon", type: "button", id: "sendBtn", "aria-label": c.ctx && c.ctx.type === "edit" ? "Save edit" : "Send", "aria-disabled": !c.draft.trim(), onclick: () => submit(c) }, icon(c.ctx && c.ctx.type === "edit" ? "check" : "send"));
+  root.append(h("div", { class: "composer" },
+    h("button", { class: "btn icon ghost", type: "button", "aria-label": "Attach a file", onclick: e => { buildSamples(c); openDlg($("#dAttach"), e.currentTarget); }, disabled: !!(c.ctx && c.ctx.type === "edit") }, icon("clip")),
+    ta, send));
+  root.append(h("div", { class: "hint", id: "hint", text: prefs.enter === "send" ? "Enter sends · Shift + Enter for a new line" : "Enter adds a line · Ctrl or ⌘ + Enter sends" }));
+  autosize();
+  ta.addEventListener("input", () => { c.draft = ta.value; send.setAttribute("aria-disabled", !ta.value.trim()); autosize(); renderListSoft(); });
+  ta.addEventListener("keydown", e => {
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Enter") {
+      const wantSend = prefs.enter === "send" ? !e.shiftKey : (e.ctrlKey || e.metaKey);
+      if (wantSend) { e.preventDefault(); submit(c); }
+    } else if (e.key === "Escape" && c.ctx) { e.preventDefault(); cancelCtx(c); }
+  });
+  if (!keepScroll || true) list.scrollTop = list.scrollHeight;
+}
+function renderListSoft() { // refresh draft previews without stealing focus
+  const row = $(`[data-chat="${openId}"] .mid`); const c = chatBy(openId);
+  if (row && c) { const old = row.querySelector(".pv"); old.replaceWith(preview(c)); }
+}
+function autosize() { if (!ta) return; ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight + 2, 140) + "px"; }
+
+function stateLabel(c, m) {
+  const first = c.name.split(" ")[0];
+  switch (m.st) {
+    case "sending": return ["clock", "Sending…"];
+    case "waiting": return ["clock", `Waiting for ${first} to be online`];
+    case "failed": return ["alert", "Not sent"];
+    case "delivered": return ["check", `Delivered to ${first}’s phone`];
+  }
+  return null;
+}
+function msgNode(c, m) {
+  const mine = m.from === "me";
+  const first = c.name.split(" ")[0];
+  const li = h("li", { class: "m " + (mine ? "me" : "them"), "data-mid": m.id });
+  const bub = h("div", { class: "bub" + (m.gone ? " gone" : "") });
+  if (m.gone) {
+    bub.append(m.gone === "me" ? "You deleted this message" : first + " deleted this message");
+    if (m.gone === "me" && m.pendingDelete) bub.append(h("span", { class: "meta" }, h("span", { class: "st" }, icon("clock", "sm"), `Waiting to reach ${first}’s phone`)));
+  } else {
+    if (m.reply) bub.append(h("span", { class: "quote" }, h("b", { text: m.reply.who }), h("span", { text: m.reply.text })));
+    if (m.file) bub.append(fileNode(c, m)); else bub.append(m.text);
+    const meta = h("span", { class: "meta" }, m.time);
+    if (m.edited) meta.append(h("span", { text: m.pendingEdit ? "edited · waiting to reach " + first : "edited" }));
+    // only show a status where it adds information: last own message, or anything not yet delivered
+    const lastMine = [...c.msgs].reverse().find(x => x.from === "me" && !x.gone);
+    if (mine && !m.file || mine && m.file && m.file.state === "done") {
+      const s = stateLabel(c, m);
+      if (s && (m.st !== "delivered" || lastMine === m)) meta.append(h("span", { class: "st" + (m.st === "failed" ? " bad" : "") }, icon(s[0], "sm"), s[1]));
+    }
+    bub.append(meta);
+    if (mine && m.st === "failed" && !m.file) bub.append(h("div", { class: "facts" }, h("button", { class: "btn", type: "button", "data-act": "retry", onclick: () => retry(c, m) }, icon("retry", "sm"), "Retry"), h("button", { class: "btn", type: "button", onclick: () => removeMsg(c, m, true) }, "Remove")));
+  }
+  li.append(bub);
+  if (!m.gone) li.append(h("button", { class: "more", type: "button", "aria-label": `Actions for ${mine ? "your" : first + "’s"} message at ${m.time}: ${(m.text || (m.file && m.file.name) || "").slice(0, 40)}`, onclick: e => openActions(c, m, e.currentTarget) }, icon("more")));
+  return li;
+}
+function fileNode(c, m) {
+  const f = m.file, first = c.name.split(" ")[0];
+  const kind = f.kind === "image" ? "Photo" : f.kind === "video" ? "Video" : "File";
+  const wrap = h("div", {});
+  const stateTxt = { sending: `Sending · ${Math.round(f.progress * 100)}%`, waiting: `Waiting for ${first} to be online · ${Math.round(f.progress * 100)}%`, done: m.st === "delivered" ? `Delivered to ${first}’s phone` : "", failed: "Not sent", cancelled: "Cancelled. Not sent." }[f.state];
+  wrap.append(h("div", { class: "file" }, h("span", { class: "ficon" }, icon(f.kind === "image" ? "image" : "file")),
+    h("span", { class: "fi" }, h("span", { class: "fn", dir: "auto", title: f.name, text: f.name }), h("span", { class: "fm", text: `${kind} · ${fmtSize(f.size)} · ${stateTxt}` }))));
+  if (f.state === "sending" || f.state === "waiting") {
+    wrap.append(h("div", { class: "prog", role: "progressbar", "aria-label": "Sending " + f.name, "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": Math.round(f.progress * 100) }, h("i", { style: `width:${f.progress * 100}%` })));
+    wrap.append(h("div", { class: "facts" }, h("button", { class: "btn", type: "button", "data-act": "cancel", onclick: () => cancelFile(c, m) }, icon("x", "sm"), "Cancel")));
+  }
+  if (f.state === "failed" || f.state === "cancelled") wrap.append(h("div", { class: "facts" },
+    h("button", { class: "btn", type: "button", "data-act": "retry", onclick: () => retryFile(c, m) }, icon("retry", "sm"), "Retry from start"),
+    h("button", { class: "btn", type: "button", onclick: () => removeMsg(c, m, true) }, "Remove")));
+  return wrap;
+}
+function refreshMsg(c, m) {
+  if (openId !== c.id) { renderList(); return; }
+  const old = $(`.m[data-mid="${m.id}"]`); if (!old) { renderConv(); return; }
+  const act = document.activeElement && old.contains(document.activeElement) ? (document.activeElement.dataset.act || (document.activeElement.classList.contains("more") ? "more" : null)) : null;
+  const nl = $("#msgs"), atEnd = nl.scrollHeight - nl.scrollTop - nl.clientHeight < 80;
+  const nn = msgNode(c, m); old.replaceWith(nn);
+  if (act) { const t = nn.querySelector(act === "more" ? ".more" : `[data-act="${act}"]`) || nn.querySelector(".more"); t && t.focus({ preventScroll: true }); }
+  if (atEnd) nl.scrollTop = nl.scrollHeight;
+  renderListSoft();
+}
+
+/* ---------- sending ---------- */
+const sleep = (ms, f) => setTimeout(f, ms);
+function submit(c) {
+  const text = ta.value.trim();
+  if (!text) { say("Type a message first."); ta.focus(); return; }
+  if (c.ctx && c.ctx.type === "edit") {
+    const m = c.msgs.find(x => x.id === c.ctx.id);
+    if (text !== m.text) { m.text = text; m.edited = true; m.pendingEdit = !c.online; }
+    c.draft = c.stash; c.stash = ""; c.ctx = null; renderConv(); renderList();
+    say(c.online ? "Edit sent." : `Edit saved. It reaches ${c.name.split(" ")[0]} when you’re both online.`); ta.focus(); return;
+  }
+  const m = { id: ++seq, from: "me", text, time: clock(), st: "sending" };
+  if (c.ctx && c.ctx.type === "reply") { const r = c.msgs.find(x => x.id === c.ctx.id); m.reply = { who: r.from === "me" ? "You" : c.name.split(" ")[0], text: r.text || (r.file && r.file.name) || "" }; }
+  c.msgs.push(m); c.draft = ""; c.ctx = null;
+  renderConv(); renderList(); ta.focus();
+  settle(c, m);
+}
+function settle(c, m) { // simulated transport
+  m.st = "sending";
+  sleep(650, () => {
+    if (!chatBy(c.id) || !c.msgs.includes(m) || m.st !== "sending") return;
+    if (!c.online) m.st = "waiting";
+    else if (failNext) { failNext = false; syncSwitch("#swFail", false); m.st = "failed"; say("A message couldn’t be sent. Retry it from the chat."); }
+    else m.st = "delivered";
+    refreshMsg(c, m);
+  });
+}
+function retry(c, m) { settle(c, m); refreshMsg(c, m); say("Retrying…"); }
+function removeMsg(c, m, own) { c.msgs.splice(c.msgs.indexOf(m), 1); if (openId === c.id) { const i = $(`.m[data-mid="${m.id}"]`); const nxt = i && (i.nextElementSibling || i.previousElementSibling); i && i.remove(); if (!c.msgs.length) renderConv(); const f = nxt && nxt.querySelector(".more"); (f || $("#ta"))?.focus(); } renderList(); say("Removed from this phone. It was never sent."); }
+function cancelCtx(c) { if (c.ctx && c.ctx.type === "edit") { c.draft = c.stash; c.stash = ""; } c.ctx = null; renderConv(); ta.focus(); }
+
+/* ---------- attachments ---------- */
+const SAMPLES = [
+  { name: "holiday-coast.jpg", size: 2.4e6, kind: "image", note: "Photo · 2.4 MB" },
+  { name: "flat-lease.pdf", size: 6.4e5, kind: "file", note: "Document · 640 KB" },
+  { name: "wedding-clip.mp4", size: 48e6, kind: "video", note: "Video · 48 MB, takes a while" },
+];
+function buildSamples(c) {
+  const box = $("#samples"); box.replaceChildren();
+  SAMPLES.forEach(s => box.append(h("button", { class: "btn", type: "button", onclick: () => { $("#dAttach").close(); attach(c, s); } }, icon(s.kind === "image" ? "image" : "file"), h("span", {}, h("b", { text: s.name }), " ", h("span", { style: "color:var(--muted)", text: s.note })))));
+}
+$("#pickReal").onclick = () => $("#realFile").click();
+$("#realFile").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return; e.target.value = "";
+  const kind = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : "file";
+  $("#dAttach").close(); attach(chatBy(openId), { name: f.name, size: f.size, kind });
+});
+function attach(c, s) {
+  if (!c) return;
+  const m = { id: ++seq, from: "me", text: "", time: clock(), st: "sending", file: { name: s.name, size: s.size, kind: s.kind, progress: 0, state: c.online ? "sending" : "waiting" } };
+  c.msgs.push(m); renderConv(); renderList();
+  say(`${s.name} added. Progress below is simulated.`);
+}
+function retryFile(c, m) { m.file.progress = 0; m.file.state = c.online ? "sending" : "waiting"; m.st = "sending"; refreshMsg(c, m); say("Starting again from the beginning."); }
+function cancelFile(c, m) { m.file.state = "cancelled"; m.st = "failed"; refreshMsg(c, m); say(`Cancelled ${m.file.name}. Nothing was left on ${c.name.split(" ")[0]}’s phone.`); const b = $(`.m[data-mid="${m.id}"] [data-act="retry"]`); b && b.focus(); }
+setInterval(() => { // simulated transfer
+  for (const c of chats) for (const m of c.msgs) {
+    const f = m.file; if (!f) continue;
+    if (f.state === "waiting" && c.online) f.state = "sending";
+    if (f.state === "sending" && !c.online) { f.state = "waiting"; refreshMsg(c, m); continue; }
+    if (f.state !== "sending") continue;
+    f.progress = Math.min(1, f.progress + Math.max(0.01, 1.5e6 / f.size * 0.12) * (f.size > 1e7 ? 1 : 2));
+    if (failNext && f.progress > 0.5) { failNext = false; syncSwitch("#swFail", false); f.state = "failed"; m.st = "failed"; say(`${f.name} couldn’t be sent. Retry it from the chat.`); }
+    else if (f.progress >= 1) { f.state = "done"; m.st = "delivered"; }
+    refreshMsg(c, m);
+  }
+}, 400);
+
+/* ---------- message actions ---------- */
+function msgSummary(m) { return m.text || (m.file ? m.file.name : ""); }
+function openActions(c, m, opener) {
+  const mine = m.from === "me", first = c.name.split(" ")[0];
+  const body = $("#actionsBody"); body.replaceChildren(h("h2", { id: "tActions", text: "Message" }),
+    h("p", { style: "overflow-wrap:anywhere;color:var(--ink)", text: msgSummary(m).slice(0, 120) }));
+  const list = h("div", { class: "list" });
+  const add = (ic, label, fn, cls = "") => list.append(h("button", { class: "btn " + cls, type: "button", onclick: () => { $("#dActions").close(); fn(); } }, icon(ic), label));
+  add("reply", "Reply", () => { c.ctx && c.ctx.type === "edit" && (c.draft = c.stash); c.ctx = { type: "reply", id: m.id }; renderConv(); ta.focus(); });
+  if (m.text) add("copy", "Copy text", async () => { try { await navigator.clipboard.writeText(m.text); say("Copied."); } catch { say("Copying isn’t available here. Select the text and copy it instead."); } });
+  if (mine && m.text && m.st !== "sending") add("edit", "Edit", () => { c.stash = c.draft; c.ctx = { type: "edit", id: m.id }; c.draft = m.text; renderConv(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
+  add("trash", "Delete…", () => openDelete(c, m, opener), "danger");
+  body.append(list);
+  if (mine) body.append(h("p", { style: "font-size:.85rem", text: m.st === "delivered" ? `Delivered to ${first}’s phone at ${m.time}. Tinline doesn’t show whether it was opened or read.` : "Not yet on " + first + "’s phone." }));
+  body.append(h("div", { class: "acts" }, h("button", { class: "btn", type: "button", "data-close": "" }, "Close")));
+  openDlg($("#dActions"), opener);
+}
+function openDelete(c, m, opener) {
+  const mine = m.from === "me", first = c.name.split(" ")[0];
+  const b = $("#deleteBody");
+  b.replaceChildren(h("h2", { id: "tDelete", text: "Delete this message?" }),
+    h("p", { style: "font-size:.85rem", text: "Proposed: per-message deletion is not a decided Tinline feature. Chats themselves are never deleted, and a deletion request never removes history." }),
+    h("p", { style: "overflow-wrap:anywhere;color:var(--ink)", text: "“" + msgSummary(m).slice(0, 100) + "”" }));
+  const list = h("div", { class: "list" });
+  list.append(h("button", { class: "btn danger", type: "button", onclick: () => doDelete(c, m, false) }, icon("trash"), h("span", {}, h("b", { text: "Delete for me" }), h("br"), h("span", { style: "font-weight:400", text: `Removes it from this phone only. ${first} keeps their copy.` }))));
+  if (mine && m.st !== "failed") list.append(h("button", { class: "btn danger", type: "button", onclick: () => doDelete(c, m, true) }, icon("trash"), h("span", {}, h("b", { text: "Delete for both of you (Proposed)" }), h("br"), h("span", { style: "font-weight:400", text: c.online ? `Asks ${first}’s phone to remove it and leaves a “you deleted this message” note here. Not guaranteed.` : `${first} is offline. It is removed here now and the request reaches their phone when you’re both online. Not guaranteed.` }))));
+  b.append(list, h("p", { style: "font-size:.85rem", text: "A deleted message can’t be brought back here. Nothing can make another phone, backup or screenshot forget it." }),
+    h("div", { class: "acts" }, h("button", { class: "btn", type: "button", "data-close": "", id: "delCancel" }, "Keep message")));
+  openDlg($("#dDelete"), opener);
+  $("#delCancel").focus();
+}
+function doDelete(c, m, both) {
+  $("#dDelete").close();
+  if (both) { m.gone = "me"; m.pendingDelete = !c.online; delete m.file; m.text = ""; refreshMsg(c, m); say(c.online ? "Deleted for both of you." : `Deleted here. It will reach ${c.name.split(" ")[0]}’s phone when you’re both online.`); }
+  else { const i = $(`.m[data-mid="${m.id}"]`); const nx = i && (i.nextElementSibling || i.previousElementSibling); c.msgs.splice(c.msgs.indexOf(m), 1); renderConv(); renderList(); say("Deleted from this phone."); const t = nx && $(`.m[data-mid="${nx.dataset.mid}"] .more`); (t || $("#ta"))?.focus(); }
+}
+
+/* ---------- info ---------- */
+function openInfo(opener) {
+  const c = chatBy(openId), first = c.name.split(" ")[0];
+  const b = $("#infoBody"); b.replaceChildren(h("h2", { id: "tInfo", text: c.name }));
+  const kv = h("div", { class: "kv" });
+  kv.append(h("div", {}, icon("shield"), h("span", {}, h("b", { text: "End-to-end encrypted" }), "Messages go directly between your devices and theirs. No server keeps them.")));
+  kv.append(h("div", {}, icon("devices"), h("span", {}, h("b", { text: "Reachable on" }), c.devices.map((d, i) => d + (d === "Laptop" && c.laptopOffline ? " (offline)" : (i === 0 ? (c.online ? " (online)" : " (offline)") : " (online)"))).join(", ") + ". If one device is offline it catches up later. ", h("a", { href: "./privacy.html" }, "What linked devices can see"))));
+  kv.append(h("div", {}, icon("check"), h("span", {}, h("b", { text: "Delivery, not read receipts" }), `“Delivered” means it reached ${first}’s phone. Tinline doesn’t tell you when it’s opened or read, and doesn’t tell ${first} about you.`)));
+  kv.append(h("div", {}, icon("clock"), h("span", {}, h("b", { text: "Older messages" }), "This phone keeps messages from when you started using it. Messages sent before that, or from another device that’s offline, may be missing here.")));
+  b.append(kv);
+  b.append(h("fieldset", {}, h("label", { class: "opt" }, h("input", { type: "checkbox", id: "muteBox", checked: c.muted }), h("span", { class: "grow" }, "Mute this chat", h("span", { class: "d", text: "No sound or notification preview. The unread count still shows." })))));
+  b.append(h("div", { class: "acts" }, h("button", { class: "btn primary", type: "button", "data-close": "" }, "Done")));
+  openDlg($("#dInfo"), opener);
+  $("#muteBox").addEventListener("change", e => { c.muted = e.target.checked; renderList(); renderConv(); say(c.muted ? `${first} muted.` : `${first} unmuted.`); });
+}
+
+/* ---------- new chat ---------- */
+function openNew(opener) {
+  const box = $("#contacts"); box.replaceChildren();
+  CONTACTS.forEach(k => box.append(h("button", { class: "btn", type: "button", onclick: () => {
+    $("#dNew").close(); let c = chatBy(k.id);
+    if (!c) { c = mkChat(k.id, k.id !== "ravi", []); chats.push(c); }
+    $("#q").value = ""; openChat(k.id, null);
+  } }, h("span", { class: "avatar", style: "width:36px;height:36px", "aria-hidden": "true", text: k.name.split(" ").map(w => w[0]).join("") }), h("span", {}, h("b", { text: k.name }), chatBy(k.id) ? " · open chat" : ""))));
+  openDlg($("#dNew"), opener);
+}
+$("#newBtn").onclick = e => openNew(e.currentTarget);
+
+/* ---------- incoming (simulated) ---------- */
+const INCOMING = ["Are you free for a quick call?", "Just landed. Will message when I’m home.", "Can you check the shared folder?", "Ha, that’s the best news today"];
+$("#simIncoming").onclick = () => {
+  if (!chats.length) { say("No chats to receive in. Start a chat first."); return; }
+  const live = chats.filter(c => c.online); if (!live.length) { say("Everyone is offline, so nothing can arrive. Turn a contact online first."); return; }
+  const others = live.filter(c => c.id !== openId); const c = others.length ? others[Math.floor(Math.random() * others.length)] : live[0];
+  const m = { id: ++seq, from: "them", text: INCOMING[Math.floor(Math.random() * INCOMING.length)], time: clock(), st: "in" };
+  c.msgs.push(m);
+  const viewing = openId === c.id;
+  if (!viewing) c.unread++;
+  if (viewing) { renderConv(); say(`New message from ${c.name.split(" ")[0]}.`); }
+  else if (c.muted) say(`${c.name.split(" ")[0]} is muted: badge only, no sound or preview.`);
+  else {
+    const p = prefs.preview;
+    say("", { notif: true, title: p === "none" ? "New message" : c.name, body: p === "full" ? m.text : p === "name" ? "Sent a message" : "" });
+    if (prefs.sound !== "off") { if (!tone(prefs.sound)) say("Sound isn’t available in this browser."); }
+    if (prefs.vib) { if (navigator.vibrate) navigator.vibrate(120); }
+  }
+  renderList();
+};
+$("#simClear").onclick = () => { chats = []; openId = null; $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Chat list emptied. Previewing the first-run state."); };
+$("#simReset").onclick = () => { seed(); openId = null; failNext = false; syncSwitch("#swFail", false); syncSwitch("#swOnline", true); $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Demo reset."); };
+
+function syncSwitch(sel, on) { $(sel).setAttribute("aria-checked", on); }
+$("#swFail").onclick = e => { failNext = e.currentTarget.getAttribute("aria-checked") !== "true"; syncSwitch("#swFail", failNext); say(failNext ? "The next message or file will fail to send." : "Sending will work normally."); };
+$("#swOnline").onclick = e => {
+  if (!openId) { say("Open a chat first, then change whether that contact is online."); return; }
+  const c = chatBy(openId); c.online = !c.online; syncOnline(); renderConv(); renderList();
+  say(c.online ? `${c.name.split(" ")[0]} is online. Waiting messages send now.` : `${c.name.split(" ")[0]} went offline.`);
+  if (c.online) c.msgs.filter(m => m.from === "me" && m.st === "waiting" && !m.file).forEach((m, i) => { m.st = "sending"; sleep(500 + i * 350, () => { if (c.msgs.includes(m)) { m.st = "delivered"; refreshMsg(c, m); } }); });
+  if (c.online) c.msgs.filter(m => m.pendingDelete || m.pendingEdit).forEach(m => { delete m.pendingDelete; delete m.pendingEdit; });
+  renderConv();
+};
+function syncOnline() { const c = openId && chatBy(openId); syncSwitch("#swOnline", c ? c.online : true); $("#swOnlineLbl").textContent = c ? c.name.split(" ")[0] + " online" : "Contact online"; }
+const _openChat = openChat; openChat = function (id, o) { _openChat(id, o); syncOnline(); };
+const _closeChat = closeChat; closeChat = function () { _closeChat(); syncOnline(); };
+
+/* ---------- settings ---------- */
+$("#settingsBtn").onclick = e => { syncSettings(); openDlg($("#dSettings"), e.currentTarget); };
+function syncSettings() {
+  for (const k of ["preview", "sound", "enter", "theme"]) $$(`input[name=${k}]`).forEach(r => r.checked = r.value === prefs[k]);
+  $("#vib").checked = prefs.vib;
+  $("#vibD").textContent = navigator.vibrate ? "Short buzz for chats that aren’t muted." : "This browser can’t vibrate, so it can’t be previewed here. Phones can.";
+}
+$("#dSettings").addEventListener("change", e => {
+  const t = e.target;
+  if (t.name) { prefs[t.name] = t.value; store.set(t.name, t.value);
+    if (t.name === "theme") applyTheme();
+    if (t.name === "enter") { const h2 = $("#hint"); if (h2) h2.textContent = prefs.enter === "send" ? "Enter sends · Shift + Enter for a new line" : "Enter adds a line · Ctrl or ⌘ + Enter sends"; say(prefs.enter === "send" ? "Enter now sends." : "Enter now adds a new line."); }
+    if (t.name === "sound") { if (t.value === "off") say("Message sound is silent."); else if (!tone(t.value)) say("Sound isn’t available in this browser."); }
+    if (t.name === "preview") say("Notification preview: " + { full: "name and message", name: "name only", none: "hidden" }[t.value] + ".");
+  } else if (t.id === "vib") { prefs.vib = t.checked; store.set("vib", t.checked ? "1" : "0"); if (t.checked && navigator.vibrate) navigator.vibrate(120); say(t.checked ? "Vibration on." : "Vibration off."); }
+});
+$$("[data-play]").forEach(b => b.onclick = () => { if (!tone(b.dataset.play)) say("Sound isn’t available in this browser. The real app plays it through your phone."); else say("Playing sound preview (simulated)."); });
+
+/* ---------- init ---------- */
+applyTheme(); renderList(); renderConv();
+const requestedChat = new URLSearchParams(location.search).get('chat');
+if (requestedChat && chatBy(requestedChat)) {
+  openChat(requestedChat, null);
+  // Announce the incoming screen without painting an initial pointer-style selection.
+  const title = $('#convTitle');
+  if (title && document.activeElement === title) {
+    title.style.outline = 'none';
+    const revealFocus = () => title.style.removeProperty('outline');
+    document.addEventListener('keydown', revealFocus, { once: true });
+    document.addEventListener('pointerdown', revealFocus, { once: true });
+  }
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !document.querySelector("dialog[open]") && $("#app").dataset.view === "conv" && !matchMedia("(min-width:860px)").matches && document.activeElement && document.activeElement.id !== "ta") closeChat(); });
+</script>
+</body>
+</html>

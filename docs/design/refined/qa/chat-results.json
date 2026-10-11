@@ -1,0 +1,200 @@
+[
+ {
+  "page": "chat",
+  "name": "simulation controls reachable & switches have role/aria-checked",
+  "ok": true,
+  "detail": "switch:true:null switch:false:null"
+ },
+ {
+  "page": "chat",
+  "name": "open chat: composer visible, Send not enabled when empty",
+  "ok": true,
+  "detail": "disabled=true"
+ },
+ {
+  "page": "chat",
+  "name": "switch chat: composer empty for other chat",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "chat list shows Draft marker for chat with unsent text",
+  "ok": true,
+  "detail": "SRSana Rao08:20Draft: half written thoughtDPDev Patel11:05Thursday works. The place near the station?MutedMNMeera Nair17:58Waiting · Running 10 min late, sorry2"
+ },
+ {
+  "page": "chat",
+  "name": "draft restored on returning to chat",
+  "ok": true,
+  "detail": "half written thought"
+ },
+ {
+  "page": "chat",
+  "name": "Shift+Enter inserts newline, does not send",
+  "ok": true,
+  "detail": "\"line1\\nline2\""
+ },
+ {
+  "page": "chat",
+  "name": "Enter sends; message appears; composer cleared and keeps focus",
+  "ok": true,
+  "detail": "line1 line208:50Sending… focus=ta"
+ },
+ {
+  "page": "chat",
+  "name": "sent message progresses to sent/delivered state",
+  "ok": true,
+  "detail": "line1 line208:50Delivered to Sana’s phone"
+ },
+ {
+  "page": "chat",
+  "name": "Next send fails switch on",
+  "ok": true,
+  "detail": "true"
+ },
+ {
+  "page": "chat",
+  "name": "failed send shows failure and Retry control",
+  "ok": true,
+  "detail": "goes nowhere first08:50Not sentRetryRemove retryBtns=1"
+ },
+ {
+  "page": "chat",
+  "name": "Next send fails switch resets after one failure (one-shot)",
+  "ok": true,
+  "detail": "false"
+ },
+ {
+  "page": "chat",
+  "name": "retry: focus not lost to BODY",
+  "ok": true,
+  "detail": "Actions for your message at 08:50: goes nowhere first"
+ },
+ {
+  "page": "chat",
+  "name": "retry succeeds (no failed message remains)",
+  "ok": true,
+  "detail": "goes nowhere first08:50Delivered to Sana’s phone visibleRetry=0"
+ },
+ {
+  "page": "chat",
+  "name": "contact offline: header/status changes",
+  "ok": true,
+  "detail": "Sana RaoOffline · messages wait on this phoneSana isn’t reachable right now. Your messages stay on this phone and send by themselves when yo"
+ },
+ {
+  "page": "chat",
+  "name": "send while offline shows waiting/queued state",
+  "ok": true,
+  "detail": "sent while offline08:50Waiting for Sana to be online"
+ },
+ {
+  "page": "chat",
+  "name": "back online: queued message delivered",
+  "ok": true,
+  "detail": "sent while offline08:50Delivered to Sana’s phone"
+ },
+ {
+  "page": "chat",
+  "name": "simulate incoming adds a message or badge",
+  "ok": true,
+  "detail": "AOArjun Oommen08:50Are you free for a quick call?1SRSana Rao08:50You: sent while offlineDPDev Patel1"
+ },
+ {
+  "page": "chat",
+  "name": "search no match: empty state shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "dialog settings: opens with focus inside, Escape closes, focus returns to trigger",
+  "ok": true,
+  "detail": "open=true focusInside=true closed=true focus=settingsBtn want=settingsBtn"
+ },
+ {
+  "page": "chat",
+  "name": "dialog new chat: opens with focus inside, Escape closes, focus returns to trigger",
+  "ok": true,
+  "detail": "open=true focusInside=true closed=true focus=newBtn want=newBtn"
+ },
+ {
+  "page": "chat",
+  "name": "dialog attach: opens with focus inside, Escape closes, focus returns to trigger",
+  "ok": true,
+  "detail": "open=true focusInside=true closed=true focus=Attach a file want=Attach a file"
+ },
+ {
+  "page": "chat",
+  "name": "dialog info: opens with focus inside, Escape closes, focus returns to trigger",
+  "ok": true,
+  "detail": "open=true focusInside=true closed=true focus=Chat details want=Chat details"
+ },
+ {
+  "page": "chat",
+  "name": "message actions dialog lists Reply/Copy/Delete",
+  "ok": true,
+  "detail": "MessageLunch Thursday?ReplyCopy textEditDelete…Delivered to Dev’s phone at 11:02. Tinline doesn’t show whether it was op"
+ },
+ {
+  "page": "chat",
+  "name": "actions Escape restores focus to the actions button",
+  "ok": true,
+  "detail": "Actions for your message at 11:02: Lunch Thursday?"
+ },
+ {
+  "page": "chat",
+  "name": "Tab from filled composer reaches Send button",
+  "ok": true,
+  "detail": "sendBtn > BODY > A"
+ },
+ {
+  "page": "chat",
+  "name": "Reset demo restores initial state",
+  "ok": true,
+  "detail": "rows=4"
+ },
+ {
+  "page": "chat",
+  "name": "Empty the chat list shows empty state with action",
+  "ok": true,
+  "detail": "No chats yetMessages go straight from your phone to theirs, end-to-end encrypted. Nothing is stored "
+ },
+ {
+  "page": "chat",
+  "name": "no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "no failed/404 requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "mobile list: no horizontal overflow",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "chat",
+  "name": "mobile conversation: composer inside viewport, no overflow",
+  "ok": true,
+  "detail": "[58,332,838]{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "chat",
+  "name": "mobile conversation: Back button present and returns to list, focus restored to opened row",
+  "ok": true,
+  "detail": "listVisible=true focus=dev"
+ },
+ {
+  "page": "chat",
+  "name": "mobile: ≥44px touch targets on primary controls",
+  "ok": true,
+  "detail": "[]"
+ }
+]

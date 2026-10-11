@@ -50,15 +50,15 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div role="dialog" aria-label="Block Arjun" style="position:absolute;left:20px;right:20px;top:150px;background:var(--sf);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px">
 <div style="width:44px;height:44px;border-radius:50%;background:var(--erc);color:var(--er);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M18.4 5.6 5.6 18.4"></path></svg></div>
 <div style="font-size:22px;font-weight:700">Block Arjun?</div>
-<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z M3 3l18 18"></path></svg><span>He can’t message or call you, on any of your devices.</span></div>
-<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10 21h4"></path></svg><span>He is told you blocked him.</span></div>
-<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"></path></svg><span>He won’t get your new address next time it changes, so he loses any way to reach this phone.</span></div>
-<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"></path><circle cx="17" cy="9" r="2.5"></circle></svg><span>You both stay in <b style="color:var(--ink)">Weekend hike</b>. His group messages show collapsed for you.</span></div>
-<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M4 4h16v16H4z M4 9h16"></path></svg><span>Your chat history stays on this phone.</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z M3 3l18 18"></path></svg><span>Arjun can’t message or call you, on any of your devices. This happens right away.</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10 21h4"></path></svg><span>Arjun is told you blocked them. Their app stops sending, calling and retrying, and is asked to delete your contact entry. A modified app can ignore that; your phone still refuses it.</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"></path></svg><span>Blocking doesn’t change your address. At your next scheduled change (Oct 12) Arjun isn’t sent the new one and the old one stops working for them.</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"></path><circle cx="17" cy="9" r="2.5"></circle></svg><span>You both stay in <b style="color:var(--ink)">Weekend hike</b>. Nobody there is told. Their group messages show collapsed for you (proposed, display only).</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M4 4h16v16H4z M4 9h16"></path></svg><span>Your chat history stays on this phone. Chats can’t be deleted; only media can.</span></div>
 <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><button class="btn tx" style="width:auto">Cancel</button><button class="btn" style="width:auto;background:var(--er);color:#FFFFFF;padding:0 24px">Block</button></div>
 </div>
 </div>
-<p class="desc">Every consequence is listed before the tap, including the ones people don’t expect: he is told, he loses your address at your next change (not immediately), and shared groups are unaffected. Blocking applies to all your linked devices.</p>
+<p class="desc">Every consequence is listed before the tap, in two steps: refusal is immediate, address retirement happens only at your next scheduled change (blocking never triggers one). The blocked person is told (agreed decision); nobody else is. Shared groups are unaffected. Blocking applies to all your linked devices. Interactive version: <a href="../refined/privacy.html">refined/privacy.html</a>.</p>
 </div>
 
 <div class="col">
@@ -69,14 +69,13 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="msg in">Are you coming Saturday?</div>
 <div class="msg out">Not sure yet<div class="tick" style="color:var(--onprc)">Read</div></div>
 <div class="sys">You blocked Arjun · Oct 10, 15:20</div>
-<div class="sys">Arjun tried to message you 2 times since</div>
 </div>
 <div style="padding:12px 16px 28px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--ln);flex:none">
-<div class="hint" style="text-align:center">You blocked Arjun. He can’t message or call you.</div>
+<div class="hint" style="text-align:center">You blocked Arjun. They can’t message or call you.</div>
 <button class="btn ol" style="height:44px">Unblock</button>
 </div>
 </div>
-<p class="desc">The chat stays, with a red “Blocked” under the name and the composer replaced by an Unblock button. Attempts are counted in one quiet line, not shown as messages and never notified. Calls from him are refused without ringing.</p>
+<p class="desc">The chat stays, with a red “Blocked” under the name and the composer replaced by an Unblock button. There is no Delete chat: history is kept (decision U24). A “tried to message you N times” line is deferred until the UI is wired (U24) and is not drawn. Anything still arriving from a modified app, or a call, is refused without ringing.</p>
 </div>
 
 <div class="col">
@@ -88,14 +87,14 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="msg in">Not sure yet</div>
 <div style="background:var(--erc);color:var(--oner);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px;margin-top:8px">
 <div style="font-size:16px;font-weight:700">Meera blocked you</div>
-<div style="font-size:14px;line-height:20px">You can’t message or call her. Your earlier messages stay here. You’re both still in Weekend hike.</div>
+<div style="font-size:14px;line-height:20px">You can’t message or call them, and nothing will be retried. Your earlier messages stay here, read-only. Your app removed Meera from your contacts, as the notice asks. You’re both still in Weekend hike.</div>
 <div style="font-size:12px;opacity:.8">Signed by Meera · Oct 10, 15:20</div>
 </div>
 <div class="msg out" style="background:var(--sf2);color:var(--ink2)">Hello?<div class="tick" style="color:var(--er)"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16h.01"></path></svg>Not delivered: Meera blocked you</div></div>
 </div>
 <div style="padding:12px 16px 28px;border-top:1px solid var(--ln);flex:none"><div class="hint" style="text-align:center">You can’t send messages to Meera.</div></div>
 </div>
-<p class="desc">The blocked person sees a clear signed notice in the chat, a red “Blocked you” under the name, a crossed-out call button and no composer. Anything already queued shows “Not delivered: Meera blocked you”. A call attempt ends at once with the same reason. Contact verification and history are kept.</p>
+<p class="desc">The blocked person sees a clear signed notice in the chat, a red “Blocked you” under the name, a crossed-out call button and no composer. Anything already queued shows “Not delivered: Meera blocked you”. The shipped app disables sending, calling and background retries. History is kept read-only; the contact entry for Meera is deleted on this phone by the app (decision U20, always requested with a block, history never). A modified app can ignore the request and keep the entry, but Meera’s phone still refuses it. After an unblock a reconnect needs a new QR or ticket; messaging is never restored by the unblock alone.</p>
 </div>
 
 <div class="col">
@@ -106,10 +105,10 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="row"><div class="av" style="width:44px;height:44px;font-size:16px;background:var(--sf2);color:var(--ink2)">DT</div><div style="flex:1"><div style="font-size:16px;font-weight:600">Dev T</div><div class="hint">Blocked Oct 3 · from a chat request</div></div><button class="btn tx" style="width:auto;height:40px;padding:0 12px">Unblock</button></div>
 <div style="margin:20px;background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:8px">
 <div style="font-size:15px;font-weight:700">Unblocking</div>
-<div style="font-size:14px;line-height:20px;color:var(--ink2)">They can message you again and get your current address. Calls come back only if they were allowed before. They’re told they’re unblocked.</div>
+<div style="font-size:14px;line-height:20px;color:var(--ink2)">They’re told the block is lifted. Their app deleted your contact entry, so you both scan a QR (or share a ticket) again before chatting. Unblocking alone never restores messaging and doesn’t send them your address.</div>
 </div>
 </div>
-<p class="desc">One list across all your devices: a block made on the desktop shows here too. Each row says when and how you knew them. The Unblock explanation answers what they get back: messages and your current address, calls only if they were allowed before.</p>
+<p class="desc">One list across all your devices: a block made on the desktop shows here too. Each row says when and how you knew them. The Unblock explanation says what really happens: they are told, and you must reconnect by QR because their contact entry for you was deleted at block time. Messages written during the block and the permissions after reconnect are still open decisions.</p>
 </div>
 
 </div>
