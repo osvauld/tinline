@@ -67,7 +67,7 @@ pub fn push(node: &Node, pic: I420) -> bool {
 /// The peer's newest decoded frame as RGBA, if there is a new one.
 pub fn pull(node: &Node) -> Option<Rgba> {
     let f = node.pull_video_frame()?;
-    let pic = I420 { width: f.width as usize, height: f.height as usize, data: f.data };
+    let pic = I420 { width: f.width as usize, height: f.height as usize, data: f.data.into_inner() };
     (pic.data.len() == I420::len(pic.width, pic.height)).then(|| rgba(&pic))
 }
 
