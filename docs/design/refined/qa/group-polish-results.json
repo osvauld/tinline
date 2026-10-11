@@ -153,7 +153,7 @@
   "page": "group-polish",
   "name": "light edited message shows \"edited\" in the inline meta",
   "ok": true,
-  "detail": "edited 13:50Delivered"
+  "detail": "edited 14:07Delivered"
  },
  {
   "page": "group-polish",
@@ -177,7 +177,7 @@
   "page": "group-polish",
   "name": "light queued message: pending clock glyph, no explanatory text in bubble",
   "ok": true,
-  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting13:50\"}"
+  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting14:07\"}"
  },
  {
   "page": "group-polish",
@@ -507,7 +507,7 @@
   "page": "group-polish",
   "name": "dark edited message shows \"edited\" in the inline meta",
   "ok": true,
-  "detail": "edited 13:51Delivered"
+  "detail": "edited 14:07Delivered"
  },
  {
   "page": "group-polish",
@@ -531,7 +531,7 @@
   "page": "group-polish",
   "name": "dark queued message: pending clock glyph, no explanatory text in bubble",
   "ok": true,
-  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting13:51\"}"
+  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting14:07\"}"
  },
  {
   "page": "group-polish",

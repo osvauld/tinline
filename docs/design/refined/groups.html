@@ -23,6 +23,8 @@ a{color:var(--accent-ink);text-decoration:none}a:hover{text-decoration:underline
 .hbar{display:flex;align-items:center;gap:2px;height:48px;font-size:var(--fs-sub);color:var(--muted)}
 .crumb{flex:1;min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap}
 .crumb a{display:inline-flex;align-items:center;min-height:36px;font-weight:600}
+.plink{color:var(--accent-ink);font-weight:600;border-radius:8px;padding:6px 4px;margin-right:6px}
+@media (max-width:859px){.plink{display:none}}
 .hb{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--muted);display:inline-grid;place-items:center;padding:0;flex:none}
 .hb .ic svg{width:18px;height:18px}
 .hb:hover,.hb[aria-expanded=true]{background:var(--surface-2);color:var(--ink)}
@@ -226,6 +228,7 @@ button.mrow:hover{background:var(--surface-2)}
 <div class="page">
 <header class="hbar" id="hbar">
   <nav class="crumb" aria-label="Study"><a href="./index.html">← Home</a><span aria-hidden="true">·</span><span>Groups</span></nav>
+  <a class="plink" id="mobilePreview" href="mobile.html?screen=groups&amp;group=hike">Phone preview ↗</a>
   <button class="hb" id="theme" type="button" aria-pressed="false" aria-label="Dark theme"></button>
   <button class="hb" id="simBtn" type="button" aria-expanded="false" aria-controls="sim" aria-label="Simulation"></button>
 </header>
@@ -436,6 +439,7 @@ function closeConv(){if(FROM_HOME&&deep){location.href='home.html';return}const 
 /* ---------- conversation ---------- */
 function renderAll(){renderList();renderConv();renderSim();applyView()}
 function renderConv(){
+  $('#mobilePreview').href='mobile.html?screen=groups&group='+encodeURIComponent(S.groups.some(x=>x.id===S.cur)?S.cur:'hike');
   const C=$('#convPane');C.replaceChildren();const c=conv(S.cur);
   if(!c){C.append(h('div',{class:'placeholder'},h('div',{class:'empty'},h('h3',null,'Choose a group'),h('p',null,'Messages stay on your devices.'))));return}
   const g=c.type==='private'?null:c;

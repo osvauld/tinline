@@ -7,6 +7,7 @@ const simClose=async(p)=>{if(!(await p.$eval('#sim',e=>e.hidden)))await p.click(
 const open=async(p)=>{for(const k of ['inv','req','sent']){const d=p.locator('#fold-'+k);if(await d.count()&&(await d.getAttribute('aria-expanded'))!=='true')await d.click()}};
 (async()=>{const b=await L.launch();
 let p=await L.page(b);await p.goto(L.BASE+'groups.html');await sleep(p,400);
+await chk('harness: Phone preview link visible at 1440, points at the open group',async()=>{const v=await p.locator('#mobilePreview').isVisible();const h0=await p.getAttribute('#mobilePreview','href');await p.click('[data-row=family]');await sleep(p,200);const h1=await p.getAttribute('#mobilePreview','href');await p.screenshot({path:'screenshots/groups-desktop-phone-preview-link.png'});await p.click('[data-row=hike]');await sleep(p,200);return {ok:v&&h0==='mobile.html?screen=groups&group=hike'&&h1==='mobile.html?screen=groups&group=family',d:h0+' '+h1}});
 // new group
 await p.focus('#newBtn');await p.click('#newBtn');await sleep(p,300);
 await chk('new group dialog opens, focus inside',async()=>({ok:/New group/.test(await dtxt(p))&&await p.evaluate(()=>!!document.activeElement.closest('dialog[open]')),d:'focus='+await foc(p)}));
@@ -83,6 +84,7 @@ await chk('empty account: empty state with a New group action',async()=>{const t
 await p.context().close();
 // mobile
 p=await L.page(b,{w:390,h:844,mobile:true});await p.goto(L.BASE+'groups.html');await sleep(p,400);
+await chk('mobile: Phone preview link hidden under 860px',async()=>({ok:!(await p.locator('#mobilePreview').isVisible())}));
 await p.screenshot({path:'screenshots/groups-mobile-list.png'});
 await chk('mobile list: no overflow',async()=>{const o=await L.overflow(p);return {ok:o.sw<=o.cw,d:JSON.stringify(o)}});
 await p.locator('[data-row]').first().click();await sleep(p,500);
@@ -93,6 +95,9 @@ await chk('mobile Back returns to list with focus on opened row',async()=>{const
 await p.click('#newBtn');await sleep(p,300);await p.screenshot({path:'screenshots/groups-mobile-newgroup.png'});
 await chk('mobile new-group dialog fits viewport',async()=>{const r=await p.evaluate(()=>{const d=document.querySelector('dialog[open]');const b=d.getBoundingClientRect();return [Math.round(b.left),Math.round(b.right),Math.round(b.top),Math.round(b.bottom)]});return {ok:r[0]>=0&&r[1]<=390&&r[3]<=844,d:JSON.stringify(r)}});
 await chk('mobile: touch targets ≥44px for visible buttons/inputs in dialog',async()=>{const r=await p.$$eval('dialog[open] button, dialog[open] input[type=text]',e=>e.filter(x=>x.offsetParent).map(x=>{const b=x.getBoundingClientRect();return [(x.getAttribute('aria-label')||x.textContent||x.id).trim().slice(0,16),Math.round(b.width),Math.round(b.height)]}).filter(x=>x[2]<40));return {ok:r.length===0,d:JSON.stringify(r)}});
+await p.context().close();
+p=await L.page(b);await p.goto(L.BASE+'groups.html?embed=1&group=hike');await sleep(p,300);
+await chk('embed=1: Phone preview link not shown',async()=>({ok:!(await p.locator('#mobilePreview').isVisible())}));
 await p.context().close();
 p=await L.page(b,{dark:true});await p.goto(L.BASE+'groups.html');await sleep(p,300);await p.screenshot({path:'screenshots/groups-desktop-dark-open.png'});
 await b.close();C.save('groups-results.json')})();
