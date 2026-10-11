@@ -125,15 +125,18 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
             if now >= duration {
                 return (captured, bitrate, sizes);
             }
-            // Encode time is modelled (as in the sim), not spent: the ladder sees it.
-            let (w, h) = tx2.with_sender(|s| s.resolution());
-            let t = device.encode_us(now, w, h, &mut enc_rng);
-            tx2.with_sender(|s| s.encode_time(now, t));
+            // Size, rate and keyframe in one go: a ladder switch in between would encode a
+            // keyframe at the old size and then another one at the new size.
+            let (w, h, bps, want_key) =
+                tx2.with_sender(|s| (s.resolution().0, s.resolution().1, s.bitrate(), s.wants_keyframe()));
             if sizes.last().is_none_or(|s| (s.1, s.2) != (w, h)) {
                 sizes.push((now, w, h));
             }
-            let (payload, key) = codec.encode(captured, tx2.wants_keyframe(), tx2.bitrate(), w, h);
+            let (payload, key) = codec.encode(captured, want_key, bps, w, h);
             tx2.send(now, key, &payload).unwrap();
+            // Encode time is modelled (as in the sim), not spent; known once the frame is done.
+            let t = device.encode_us(now, w, h, &mut enc_rng);
+            tx2.with_sender(|s| s.encode_time(now, t));
             captured += 1;
             bitrate.push((now, tx2.bitrate()));
         }
@@ -179,6 +182,7 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
         lost_packets: g(&ab.drop_queue) + g(&ab.drop_loss) + g(&ab.drop_outage),
         sent_packets: g(&ab.in_pkts),
         bitrate,
+        ..Default::default()
     };
     (Real { rep, resets: st.resets, order_violations }, p)
 }

@@ -25,13 +25,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.camera.view.PreviewView
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallState
@@ -60,14 +68,22 @@ const val ENDED_AUTOCLOSE_MS = 4000L
 
 class CallActivity : ComponentActivity() {
     private lateinit var answerWithMic: () -> Unit
+    private lateinit var cameraOn: () -> Unit
 
     override fun onStart() {
         super.onStart()
         P2pApp.get(this).calls.callScreenShown = true
+        P2pApp.get(this).video.screenShown()
         Notifications.cancelWaiting(this)  // the banner is here now
     }
 
-    override fun onStop() { P2pApp.get(this).calls.callScreenShown = false; super.onStop() }
+    override fun onStop() {
+        val app = P2pApp.get(this)
+        app.calls.callScreenShown = false
+        // No capture in the background: the camera pauses with the screen (and resumes with it).
+        app.video.screenHidden()
+        super.onStop()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,6 +92,13 @@ class CallActivity : ComponentActivity() {
         showOverLock()
         val app = P2pApp.get(this)
         answerWithMic = registerMicThen { app.calls.answer() }
+        val cameraLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { ok ->
+            if (ok) { app.video.setCamera(true); app.calls.speakerForVideo() } else app.video.cameraDenied()
+        }
+        cameraOn = {
+            if (Perms.granted(this, android.Manifest.permission.CAMERA)) { app.video.setCamera(true); app.calls.speakerForVideo() }
+            else cameraLauncher.launch(android.Manifest.permission.CAMERA)
+        }
         // Only a fresh launch answers: a recreation (rotation) must not answer a second time.
         if (savedInstanceState == null) handle(intent)
         val meName = app.node.profile()?.name ?: ""
@@ -101,7 +124,7 @@ class CallActivity : ComponentActivity() {
                     u != null && u.info.incoming && u.state is CallState.Ringing ->
                         IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() })
                     u != null -> {
-                        InCallScreen(u, meName, app.calls, onMinimise = { finish() })
+                        InCallScreen(u, meName, app, onCameraOn = cameraOn, onMinimise = { finish() })
                         val w by app.calls.waiting.collectAsState()
                         w?.let { WaitingBanner(it.peerName.ifBlank { "Unknown" }, it.peerDid, onDecline = { app.calls.declineWaiting() }, onEndAnswer = { app.calls.endAndAnswer() }) }
                     }
@@ -219,18 +242,40 @@ fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer:
 }
 
 @Composable
-fun InCallScreen(ui: CallUi, meName: String, calls: CallController, onMinimise: () -> Unit) {
+fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit, onMinimise: () -> Unit) {
+    val calls = app.calls
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(500); now = System.currentTimeMillis() } }
     val secs = ((now - (ui.activeSinceMs ?: now)) / 1000).coerceAtLeast(0)
     val s = ui.stats
     val loss = s?.let { val t = (it.received + it.lost).toDouble(); if (t > 0) 100.0 * it.lost.toDouble() / t else 0.0 }
-    InCallContent(
-        name = ui.info.peerName.ifBlank { "Unknown" }, did = ui.info.peerDid, meName = meName,
-        active = ui.state is CallState.Active, ringing = ui.state is CallState.Ringing, secs = secs,
-        direct = s?.direct, bars = if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null,
-        muted = ui.muted, speaker = ui.speaker, micProblem = ui.micProblem, reconnecting = s?.reconnecting == true,
+    val active = ui.state is CallState.Active
+    val vi by app.video.info.collectAsState()
+    val front by app.video.front.collectAsState()
+    val videoProblem by app.video.problem.collectAsState()
+    val v = vi?.takeIf { active && it.negotiated && it.callId == ui.info.callId }
+    val onCamera = { if (v?.localCamera == true) app.video.setCamera(false) else onCameraOn() }
+    val name = ui.info.peerName.ifBlank { "Unknown" }
+    val bars = if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null
+    if (v != null && (v.localCamera || v.remoteCamera)) {
+        TinlineTheme(dark = true) {
+            VideoCallContent(
+                name = name, did = ui.info.peerDid, secs = secs, direct = s?.direct, bars = bars, reconnecting = s?.reconnecting == true,
+                muted = ui.muted, speaker = ui.speaker, localCamera = v.localCamera, remoteCamera = v.remoteCamera,
+                problem = ui.micProblem ?: videoProblem,
+                onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onCamera = onCamera,
+                onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
+                remote = { m -> RemoteVideo(app, calls, m) },
+                selfView = { m -> SelfView(app, front, m) },
+            )
+        }
+    } else InCallContent(
+        name = name, did = ui.info.peerDid, meName = meName,
+        active = active, ringing = ui.state is CallState.Ringing, secs = secs,
+        direct = s?.direct, bars = bars,
+        muted = ui.muted, speaker = ui.speaker, micProblem = ui.micProblem ?: videoProblem, reconnecting = s?.reconnecting == true,
         onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
+        onCamera = if (v != null) onCamera else null,
     )
 }
 
@@ -240,6 +285,8 @@ fun InCallContent(
     muted: Boolean, speaker: Boolean, micProblem: String?,
     onMute: () -> Unit, onSpeaker: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit, startWithSheet: Boolean = false,
     reconnecting: Boolean = false,
+    /** Set when the call has video: the camera button (the camera is off on this screen). */
+    onCamera: (() -> Unit)? = null,
 ) {
     val c = Tin.c
     var sheet by remember { mutableStateOf(startWithSheet) }
@@ -278,6 +325,9 @@ fun InCallContent(
                 RoundBtn(if (muted) Icons.Rounded.MicOff else Icons.Rounded.Mic, if (muted) "Unmute" else "Mute",
                     if (muted) c.ink else c.sf3, if (muted) c.bg else c.ink, onMute, size = 64.dp, iconSize = 26.dp)
             }
+            if (onCamera != null) LabeledRound("Camera") {
+                RoundBtn(Icons.Rounded.VideocamOff, "Turn camera on", c.sf3, c.ink, onCamera, size = 64.dp, iconSize = 26.dp)
+            }
             LabeledRound(routeLabel(speaker)) {
                 RoundBtn(if (speaker) Icons.Rounded.VolumeUp else Icons.Rounded.PhoneInTalk, "Audio: ${routeLabel(speaker)}", c.sf3, c.ink, { sheet = true }, size = 64.dp, iconSize = 26.dp)
             }
@@ -313,6 +363,115 @@ private fun RouteOption(icon: ImageVector, label: String, on: Boolean, onClick: 
         Text(label, Modifier.weight(1f), style = TinType.bodyL, color = if (on) c.onPrc else c.ink)
         if (on) Icon(Icons.Rounded.Check, "Selected", tint = c.onPrc, modifier = Modifier.padding(end = 8.dp))
     }
+}
+
+// ------------------------------------------------------------------ video call
+
+private val VideoBg = Color(0xFF0B100F)
+
+/**
+ * In-call screen with video: the peer's picture full screen (their avatar while their camera is
+ * off), our camera small in the corner, controls over a scrim. Always dark.
+ */
+@Composable
+fun VideoCallContent(
+    name: String, did: String, secs: Long, direct: Boolean?, bars: Int?, reconnecting: Boolean,
+    muted: Boolean, speaker: Boolean, localCamera: Boolean, remoteCamera: Boolean, problem: String?,
+    onMute: () -> Unit, onSpeaker: () -> Unit, onCamera: () -> Unit, onFlip: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit,
+    remote: @Composable (Modifier) -> Unit, selfView: @Composable (Modifier) -> Unit,
+) {
+    val c = Tin.c
+    var sheet by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize().background(VideoBg)) {
+        if (remoteCamera) remote(Modifier.fillMaxSize())
+        else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
+            Avatar(name, did, 120.dp)
+            Text("$name’s camera is off", style = TinType.bodyL.copy(fontSize = 17.sp), color = c.ink2)
+        }
+        // Top: scrim, minimise, name and time, path badges.
+        Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent)))
+            .statusBarsPadding().padding(bottom = 24.dp)) {
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 12.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                IconBtn(Icons.Rounded.KeyboardArrowDown, "Minimise", onMinimise, tint = Color.White)
+                Column(Modifier.weight(1f)) {
+                    Text(name, style = TinType.titleM, color = Color.White, maxLines = 1)
+                    Text(if (reconnecting) "Reconnecting…" else clock(secs), style = TinType.mono.copy(fontSize = 14.sp), color = Color.White.copy(alpha = 0.8f))
+                }
+                if (!reconnecting) {
+                    if (direct == true) Badge("Direct", BadgeKind.Direct, Glyphs.Direct)
+                    if (direct == false) Badge("Relayed", BadgeKind.Relayed, Glyphs.Relayed)
+                    if (bars != null) Badge(qualityLabel(bars), BadgeKind.Neutral) { QualityBars(bars, warn = bars <= 1) }
+                }
+            }
+        }
+        // Self-view: our camera (the front one mirrored), top right under the bar.
+        if (localCamera) Box(Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 72.dp, end = 12.dp)
+            .size(width = 104.dp, height = 140.dp).clip(RoundedCornerShape(16.dp)).background(Color.Black)
+            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(16.dp))) { selfView(Modifier.fillMaxSize()) }
+        // Bottom: problem line and controls.
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
+            .navigationBarsPadding().padding(top = 32.dp, bottom = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (problem != null) Text(problem, Modifier.padding(horizontal = 24.dp), style = TinType.bodyM, color = c.er, textAlign = TextAlign.Center)
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                val off = Color.White.copy(alpha = 0.18f)
+                RoundBtn(if (muted) Icons.Rounded.MicOff else Icons.Rounded.Mic, if (muted) "Unmute" else "Mute",
+                    if (muted) Color.White else off, if (muted) VideoBg else Color.White, onMute, size = 56.dp, iconSize = 24.dp)
+                RoundBtn(if (localCamera) Icons.Rounded.Videocam else Icons.Rounded.VideocamOff, if (localCamera) "Turn camera off" else "Turn camera on",
+                    if (localCamera) off else Color.White, if (localCamera) Color.White else VideoBg, onCamera, size = 56.dp, iconSize = 24.dp)
+                if (localCamera) RoundBtn(Icons.Rounded.Cameraswitch, "Switch camera", off, Color.White, onFlip, size = 56.dp, iconSize = 24.dp)
+                RoundBtn(if (speaker) Icons.Rounded.VolumeUp else Icons.Rounded.PhoneInTalk, "Audio: ${routeLabel(speaker)}", off, Color.White,
+                    { sheet = true }, size = 56.dp, iconSize = 24.dp)
+                RoundBtn(Icons.Rounded.CallEnd, "End call", c.callEnd, Color.White, onEnd, size = 56.dp, iconSize = 24.dp)
+            }
+        }
+    }
+    if (sheet) AudioRouteSheet(speaker, relayed = direct == false, onDismiss = { sheet = false }, onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); sheet = false })
+}
+
+/** The peer's decoded frames, pulled on the display clock by a [RemoteRenderer] while shown. */
+@Composable
+private fun RemoteVideo(app: P2pApp, calls: CallController, modifier: Modifier) {
+    var frame by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var n by remember { mutableLongStateOf(0L) }
+    DisposableEffect(Unit) {
+        val r = RemoteRenderer(app.video.io) { b -> frame = b; n++ }
+        calls.renderer = r
+        onDispose { r.stop(); if (calls.renderer === r) calls.renderer = null }
+    }
+    val b = frame
+    if (b == null) Box(modifier, contentAlignment = Alignment.Center) {
+        Text("Connecting video…", style = TinType.bodyL, color = Color.White.copy(alpha = 0.7f))
+    } else Canvas(modifier) {
+        // Read every frame: the two bitmaps alternate, so the object alone doesn't always change.
+        if (n < 0) return@Canvas
+        val img = b.asImageBitmap()
+        // Fill the screen, cropping the picture's overflow and keeping its aspect.
+        val scale = maxOf(size.width / img.width, size.height / img.height)
+        val w = (img.width * scale).toInt()
+        val h = (img.height * scale).toInt()
+        drawImage(img, dstOffset = IntOffset((size.width.toInt() - w) / 2, (size.height.toInt() - h) / 2), dstSize = IntSize(w, h))
+    }
+}
+
+/** Our camera: CameraX preview (mirrored for the front camera) plus the analysis feed to the core. */
+@Composable
+private fun SelfView(app: P2pApp, front: Boolean, modifier: Modifier) {
+    val ctx = LocalContext.current
+    val owner = LocalLifecycleOwner.current
+    val view = remember {
+        PreviewView(ctx).apply {
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            scaleType = PreviewView.ScaleType.FILL_CENTER
+        }
+    }
+    DisposableEffect(front, owner) {
+        app.video.startCamera(owner, view.surfaceProvider, front)
+        onDispose { app.video.stopCamera() }
+    }
+    AndroidView({ view }, modifier)
 }
 
 // ------------------------------------------------------------------ ended / couldn't reach / mic needed

@@ -69,6 +69,19 @@ class DebugReceiver : BroadcastReceiver() {
                 testLog("video_bench done")
             }
             "stats" -> app.calls.logStats()
+            // Call video: state and counters (also logged every second during a video call).
+            "video_stats" -> testLog(app.video.statsLine(app.calls.renderer))
+            // Camera on/off as the button does (permission must already be granted); `on=0` = off.
+            "camera" -> {
+                val on = i.getStringExtra("on") != "0"
+                app.video.setCamera(on)
+                if (on) app.calls.speakerForVideo()
+                testLog("camera on=$on problem=${app.video.problem.value}")
+            }
+            "flip" -> { app.video.flip(); testLog("flip front=${app.video.front.value}") }
+            "video_enabled" -> { app.videoEnabled = i.getStringExtra("on") != "0"; testLog("video_enabled=${app.videoEnabled}") }
+            // Brings the call screen up (the app must be in the foreground to start activities).
+            "callscreen" -> app.startActivity(android.content.Intent(app, CallActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
             "avail" -> {
                 val on = i.getStringExtra("on") != "0"
                 val mins = i.getStringExtra("mins")?.toLongOrNull()
