@@ -586,4 +586,33 @@ the real engines), `cargo test -p group-sim group_call` (model updated for G6-D2
   group endpoint notes, the chat-relay `Ephemeral` for `CallStart`/`End` with the call-host
   record (G1), `CallHostStatus` and ranking (§2.2–2.3, still model-only), the takeover trigger
   (`CallBoard::may_take`) and glare/split settling (`CallBoard::superseded`), and the 20 ms
-  audio loop (`on_mic`, `mix`).
+  audio loop (`on_mic`, `mix`). The first, the takeover trigger and the audio loop are done in
+  GA-P4 (below).
+
+**Wired on iroh (GA-P4).** Code: `crates/core/src/gcall/net.rs`, hooks in `node.rs` (ALPN
+list, accept-loop branch, `push_mic`/`pull_speaker` fall-through). Test:
+`cargo test -p p2pcore --test gcall` (four real nodes on loopback, no relay, tones for mics).
+
+- **API (unstable, plain Rust on `Node`, no uniffi yet):** `gcall_configure(GcallConfig {
+  dir: CallDirectory, events, host_ref, cond, note })`, `gcall_host(HostConfig) -> CallStart
+  blob`, `gcall_join(start, host_addr)`, `gcall_observe_start(start)` (relayed CallStarts, for
+  takeover and following `Superseded`), `gcall_leave`, `gcall_end`, `gcall_set_mic_muted`,
+  `gcall_mute_participant`, `gcall_status`. Events: `Joined`, `RosterChanged`, `Reconnecting`,
+  `Superseded`, `Ended`, `HostingStarted`/`HostingEnded` (carry the blobs to relay), `Notice`.
+  `CallDirectory` = `CallAuthority` + `host_addr(HostRef)`; `StaticDirectory` until group chat.
+- **One session per node**, both engines behind one lock; actions run synchronously, so the
+  host's own user is fed engine-to-engine through `ConnId::LOCAL` with no hop. One reader and
+  one writer task per connection; control frames go through the writer, datagrams out at once.
+- **Audio** follows the 1:1 idiom: the app's 50 Hz threads call `push_mic`/`pull_speaker`, which
+  feed the group call when no 1:1 call is active. A 20 ms ticker drives engine ticks and sends a
+  level-only keepalive when the app pushes nothing, so a member is not dropped after 5 s.
+- **Close codes** (QUIC application codes): 0 bye, `0x10` ended, `0x11` answered elsewhere,
+  `0x12` removed, `0x13` dropped, `0x14` Join refused. A client maps `0x11` to
+  `on_closed(true)`; any other close redials (§5). A host closes a connection whose Join was
+  refused at once, so the client moves to the next candidate without the 5 s answer timeout.
+- **Takeover:** the first `Join{host_gen + 1}` for a call this device is a backup of (the call
+  its own client is in, else an observed CallStart) builds `HostEngine::takeover`; the device's
+  own redialing client reaches it through `ConnId::LOCAL`. A refused first Join drops it.
+- **Not yet:** dialing from the group endpoint (today the device endpoint), a 1:1 call during a
+  group call is not refused, `stop`/`lock` do not end a session, glare between two hosts is
+  only followed (no `CallBoard::superseded` sweep), and no phone conditions feed `set_cond`.
