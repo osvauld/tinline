@@ -2,21 +2,26 @@
   /* Android: a stack. Home shows the tab list + bottom bar; other routes cover it full-screen. */
   import { nav } from '../../lib/nav/router.svelte';
   import { db } from '../../lib/model/store.svelte';
-  import { TAB_LISTS, SCREENS } from '../registry';
+  import { TAB_LISTS, SCREENS, GATE } from '../registry';
   import { TABS, TAB_ICON } from './TabIcon';
   import Icon from '../../lib/ui/Icon.svelte';
   import IconButton from '../../lib/ui/IconButton.svelte';
   import Mark from '../../lib/brand/Mark.svelte';
+  import { statusLook } from '../../lib/brand/status.svelte';
+  const look = $derived(statusLook());
 
   const top = $derived(nav.top);
   const unread = $derived(db.chats.reduce((n, c) => n + (c.muted ? 0 : c.unread), 0));
 </script>
 
+{#if db.account.gate !== 'ready'}
+  <div class="gate" data-form-gate><GATE.component {...GATE.props(null)} /></div>
+{:else}
 <div class="phone">
   {#if top.name === 'home'}
     {@const L = TAB_LISTS[top.tab]}
     <header class="appbar">
-      <span class="brand"><Mark size={28} /><b>Tinline</b></span>
+      <span class="brand"><span class="st" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /><span class="vh" aria-live="polite">{look.label}</span></span><b>Tinline</b></span>
       <span class="acts">
         <IconButton icon="search" label="Search" onclick={() => nav.push({ name: 'search' })} />
         <IconButton icon="gear" label="Settings" onclick={() => nav.push({ name: 'settings' })} />
@@ -36,14 +41,17 @@
     {@const S = SCREENS[top.name]}
     {#key top}
       <section class="screen" class:push={nav.dir === 'push'}>
-        <header class="appbar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /></header>
+        {#if top.name !== 'conversation'}<header class="appbar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /></header>{/if}
         <main class="body"><S.component {...S.props(top)} /></main>
       </section>
     {/key}
   {/if}
 </div>
+{/if}
 
 <style>
+  .st { display: inline-flex; }
+  .gate { height: 100%; overflow: auto; background: var(--bg); }
   .phone { position: relative; display: flex; flex-direction: column; height: 100%; background: var(--bg); overflow: hidden; }
   .appbar { display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 4px 8px 0 12px; }
   .brand { display: inline-flex; align-items: center; gap: 8px; font-size: 19px; }

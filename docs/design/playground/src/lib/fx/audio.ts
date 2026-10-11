@@ -5,6 +5,8 @@
    tab silences the current sound. The message-sent `pluck` exists but is not wired: "no sound on send"
    (chat.md) stands until decided otherwise. */
 import { onFx } from './bus';
+import { dur } from './motion';
+import { motion } from './reduced.svelte';
 
 type Note = [freq: number, at: number, dur: number, peak: number, attack: number];
 interface Pattern { label: string; period: number; notes: Note[] }
@@ -112,7 +114,12 @@ export function startAudio() {
     switch (e.type) {
       case 'ring': if (e.on) audio.play('back', true); else if (audio.cur?.kind === 'back') audio.stop(); break;
       case 'incoming': if (e.on) audio.play('ring', true); else if (audio.cur?.kind === 'ring') audio.stop(); break;
-      case 'connect': audio.play('connected'); break;
+      // The cue's second note lands when the string goes taut: delay by (hit − second-note offset).
+      case 'connect': {
+        const lead = motion.reduced ? 0 : Math.max(0, dur('markHit') - CONNECT_HIT_S * 1000);
+        if (lead) setTimeout(() => audio.play('connected'), lead); else audio.play('connected');
+        break;
+      }
       case 'end': audio.play('ended'); break;
       case 'failed': audio.play('failed'); break;
       case 'reconnecting': audio.play('pulse'); break;

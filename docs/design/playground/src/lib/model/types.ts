@@ -39,6 +39,8 @@ export interface Message {
   delivery?: Delivery;     // mine only
   replyTo?: Id;
   edited?: boolean;        // 1:1 only; group posts cannot be edited (core: Post{text, reply_to})
+  editedAt?: number;       // sim-clock ms of the last edit
+  deliveredAt?: number;    // sim-clock ms when delivery was confirmed
   deleted?: boolean;       // 1:1 only
   file?: FileInfo;         // 1:1 only
   call?: CallRecord;       // a call left in the thread
@@ -95,6 +97,8 @@ export interface Account {
   name: string;
   hue: number;
   availability: 'available' | 'busy' | 'offline';
+  /** Before the app proper: 'onboarding' (no account on this device), 'locked' (needs passphrase), 'ready'. */
+  gate: 'onboarding' | 'locked' | 'ready';
 }
 
 export type FormFactor = 'android' | 'desktop';

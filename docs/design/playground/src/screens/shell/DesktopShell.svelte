@@ -2,20 +2,25 @@
   /* Desktop: sidebar (sections) | list | detail pane. Same routes as Android. */
   import { nav } from '../../lib/nav/router.svelte';
   import { db } from '../../lib/model/store.svelte';
-  import { TAB_LISTS, SCREENS } from '../registry';
+  import { TAB_LISTS, SCREENS, GATE } from '../registry';
   import { TABS, TAB_ICON } from './TabIcon';
   import Icon from '../../lib/ui/Icon.svelte';
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Mark from '../../lib/brand/Mark.svelte';
+  import { statusLook } from '../../lib/brand/status.svelte';
+  const look = $derived(statusLook());
 
   const L = $derived(TAB_LISTS[nav.tab]);
   const d = $derived(nav.detail);
   const unread = $derived(db.chats.reduce((n, c) => n + (c.muted ? 0 : c.unread), 0));
 </script>
 
+{#if db.account.gate !== 'ready'}
+  <div class="gate" data-form-gate><GATE.component {...GATE.props(null)} /></div>
+{:else}
 <div class="win">
   <aside class="side">
-    <div class="brand"><Mark size={28} /><b>Tinline</b></div>
+    <div class="brand"><span class="st" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /><span class="vh" aria-live="polite">{look.label}</span></span><b>Tinline</b></div>
     <nav aria-label="Main">
       {#each TABS as t (t)}
         <button type="button" class="nav press" aria-current={nav.tab === t ? 'page' : undefined} onclick={() => nav.setTab(t)}>
@@ -42,8 +47,11 @@
     {/if}
   </section>
 </div>
+{/if}
 
 <style>
+  .st { display: inline-flex; }
+  .gate { height: 100%; overflow: auto; background: var(--bg); }
   .win { display: grid; grid-template-columns: 232px 380px 1fr; height: 100%; background: var(--bg); }
   .side { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; border-inline-end: 1px solid var(--hairline); }
   .brand { display: flex; align-items: center; gap: 8px; font-size: 19px; padding: 4px 8px 16px; }

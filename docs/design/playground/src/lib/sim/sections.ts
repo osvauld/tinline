@@ -2,7 +2,9 @@
    the drawer renders them in order under their titles. Sim controls never appear inside the app frame. */
 import type { Component } from 'svelte';
 import CoreSim from './CoreSim.svelte';
+import ChatSim from './ChatSim.svelte';
 
 export const simSections: { title: string; component: Component }[] = [
   { title: 'Environment', component: CoreSim },
+  { title: 'Chat', component: ChatSim },
 ];

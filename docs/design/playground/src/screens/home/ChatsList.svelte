@@ -19,7 +19,7 @@
   function preview(c: Chat) {
     const m = lastMessage(c);
     if (!m) return '';
-    if (m.call) return (m.call.kind === 'video' ? 'Video call' : 'Voice call');
+    if (m.call) return m.call.direction === 'in' && (m.call.outcome === 'missed' || m.call.outcome === 'cancelled') ? 'Missed call' : (m.call.kind === 'video' ? 'Video call' : 'Voice call');
     const who = c.kind === 'group' && !m.system ? (m.from === 'me' ? 'You: ' : firstName(m.from) + ': ') : '';
     return who + (m.file ? m.file.name : m.text);
   }

@@ -33,5 +33,14 @@ export const ICONS: Record<string, string> = {
   "users": "<circle cx=\"9\" cy=\"8\" r=\"3.5\"/><path d=\"M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5\"/><circle cx=\"17\" cy=\"9\" r=\"2.5\"/><path d=\"M16.5 14.6c2.6.2 4.5 2 5 4.9\"/>",
   "chat": "<path d=\"M4 5h16v11H9l-5 4z\"/>",
   contact: "<rect x=\"4\" y=\"3\" width=\"16\" height=\"18\" rx=\"2\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/><path d=\"M7.5 17c.8-2 2.5-3 4.5-3s3.7 1 4.5 3\"/><path d=\"M2 7h2M2 12h2M2 17h2\"/>",
+  "eye": "<path d=\"M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>",
+  "eyeoff": "<path d=\"M3 3l18 18M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6.5 0 10 6.5 10 6.5a17 17 0 0 1-3.2 3.9M6.4 6.9A16.6 16.6 0 0 0 2 12s3.5 6.5 10 6.5a9.5 9.5 0 0 0 4-.9M9.9 9.9a3 3 0 0 0 4.2 4.2\"/>",
+  "key": "<circle cx=\"8\" cy=\"15\" r=\"4\"/><path d=\"M11 12l9-9M16 7l3 3M14 9l2 2\"/>",
+  "lock": "<rect x=\"5\" y=\"11\" width=\"14\" height=\"10\" rx=\"2\"/><path d=\"M8 11V8a4 4 0 0 1 8 0v3\"/>",
+  "warning": "<path d=\"M12 3l10 18H2zM12 10v5M12 18v.01\"/>",
+  "camera": "<path d=\"M4 8h3l2-3h6l2 3h3v12H4z\"/><circle cx=\"12\" cy=\"13.5\" r=\"3.5\"/>",
+  "battery": "<rect x=\"2\" y=\"7\" width=\"17\" height=\"10\" rx=\"2\"/><path d=\"M22 11v2M6 10v4M10 10v4\"/>",
+  "qr": "<path d=\"M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2M14 18h2v2h4v-2\"/>",
+  "link": "<path d=\"M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1\"/>",
 };
 export type IconName = keyof typeof ICONS;

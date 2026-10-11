@@ -2,10 +2,14 @@
 import type { Component } from 'svelte';
 import type { Route, Tab } from '../lib/nav/router.svelte';
 import ChatsList from './home/ChatsList.svelte';
+import Conversation from './chat/Conversation.svelte';
 import Placeholder from './Placeholder.svelte';
 
 type Entry = { component: Component<any>; props: (r: any) => Record<string, unknown> };
 const ph = (title: string, step: string): Entry => ({ component: Placeholder, props: () => ({ title, step }) });
+
+/** Shown instead of the app while db.account.gate !== 'ready' (sign-up, unlock). Step 2b. */
+export const GATE: Entry = ph('Sign-up and unlock', '2b');
 
 /** Home tab lists (left pane on desktop, the home screen body on Android). */
 export const TAB_LISTS: Record<Tab, Entry & { title: string }> = {
@@ -16,7 +20,7 @@ export const TAB_LISTS: Record<Tab, Entry & { title: string }> = {
 };
 
 export const SCREENS: Record<Exclude<Route['name'], 'home'>, Entry> = {
-  conversation: ph('Conversation', '2'),
+  conversation: { component: Conversation, props: (r) => ({ chatId: r.chat }) },
   groupInfo: ph('Group info', '4'),
   contact: ph('Contact', '8'),
   search: ph('Search', '7'),

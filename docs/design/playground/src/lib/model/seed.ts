@@ -14,7 +14,7 @@ let seq = 0;
 const msg = (m: Omit<Message, 'id'>): Message => ({ id: 'm' + ++seq, ...m });
 
 export function seedAccount(): Account {
-  return { id: 'me', name: 'Maya Kurian', hue: 0, availability: 'available' };
+  return { id: 'me', name: 'Maya Kurian', hue: 0, availability: 'available', gate: 'ready' };
 }
 
 export function seedPeople(): Person[] {

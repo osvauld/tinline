@@ -20,6 +20,8 @@ export const DUR = {
   stripIn: 160,
   callEnd: 300,        // total release on End (string release + fade)
   bubbleIn: 160,
+  /** Measured: the mark's string reaches taut this long after connect() (verify.js check e). */
+  markHit: 217,
 } as const;
 
 export type DurName = keyof typeof DUR;
