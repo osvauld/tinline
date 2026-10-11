@@ -97,5 +97,63 @@ differ. Indexing a message is idempotent: delete its old row/postings, write the
 - Android: a search field at the top of Chats (and Groups); results in two sections, People &
   groups, then Messages (avatar, name, snippet with bold matches, date). Tapping a message opens
   the conversation at that day and scrolls to the message, briefly highlighted.
+- Jumping to a hit: a DM hit opens with `chat_day(conv, Some(day))` (the message is in that
+  page; `id` finds it). A group hit has `day = "-"`: `group_messages(conv, before =
+  "{at}:{id}~", limit)` returns the page that ends with the post (the `~` sorts after any id, so
+  the post itself is included); older pages follow from its `older` cursor as usual, newer items
+  from `group_messages(conv, None, …)`.
 - Desktop (iced): the same, a search box above the conversation list; Ctrl+K / Ctrl+F focuses it.
 - Debounce 150 ms; minimum 2 characters for message search (names from 1).
+
+## Implementation notes (S1, `crates/core/src/search/`)
+
+Where the code differs from the plan above, and why.
+
+- **API** (`search/api.rs`): `Node::search(query, limit, cursor) -> SearchResults { names:
+  Vec<NameHit { kind: SearchNameKind (Contact|Group|Me), id, name }>, messages: Vec<MessageHit {
+  kind: SearchConvKind (Dm|Group), conv, conv_name, day, id, at, author, author_name, snippet,
+  highlights: Vec<HitRange { start, end }> }>, next }`. `HitRange` rather than `Range` (Swift has
+  a `Range` type). `conv_name` / `author_name` added so the apps need no second lookup. Names
+  come with the first page only (`cursor = None`). `limit` is clamped to 1..=100; one call looks
+  at most 20 000 postings (a very common prefix returns a partial page with `next` set).
+- **Names are not indexed** (no `n/` rows): contacts, kept histories (people whose block deleted
+  their contact entry), groups and "You" are all in memory already, so the query matches them
+  there (folded like messages, substring). Nothing to hook on add/rename/block/leave, and never
+  stale. "You" also matches our own profile name.
+- **Layout**: message keys use a doc hash instead of `{src}/{id}`, to keep postings small (a
+  message has ~60 postings): `d/{h}` (DocRow), `s/{src}/{h}` (empty, the docs of a
+  conversation), `t/{tok}/{rev_at}/{h}` (empty), `w/{src}/{day}` (sealed vv), `v` (sealed
+  u32). `h` = 16 hex of `blake3::keyed_hash(index_key, "doc\0" src "/" id)`; `tok` = 32 hex of
+  `keyed_hash(index_key, "term\0" term)`. The cursor is `{rev_at}/{h}`.
+- **No `toks` in DocRow**: a doc's postings are re-derived from its stored text, which is
+  deterministic for one format version (a tokenizer change bumps `v`, and the index is rebuilt).
+- **Indexed text**: the message text, plus the file name of a non-voice attachment. Deleted
+  messages and texts without words have no row.
+- **CJK single characters**: a 1-char query term in a bigram script only finds 1-char runs
+  (there is no unigram index); the apps search messages from 2 characters anyway.
+- **1:1 hook**: in `chat_persist` (it gained a `recs` argument: the messages the change touched)
+  rather than around `chat_conv_ops`: every `chat_conv_ops` path ends there, except history
+  import (`chat_apply_history`), which indexes the whole day itself. The watermark moves only from
+  the shard's previous version (`Mark::prev`), so a hook never marks a shard whose older changes
+  are missing from the index.
+- **Group hook**: `GroupCore::write` / `apply` diff the posts by id and text (`Changed::posts`:
+  added or changed posts, ids no longer shown, vv before and after); `group_after` indexes them.
+  The groups' state is in memory whole, so group reconcile diffs every group whose watermark
+  differs against the index (`s/g.{gid}/`), run when the index or the group store opens.
+- **Removal**: there is no `chat_purge` in the code: blocking keeps the history (U19), and a
+  block's deletion request removes the contact entry but keeps the history read-only (U20). So no
+  1:1 removal hook exists; instead DM hits are filtered at query time to the conversations the
+  chat list shows (contacts, kept histories, "You"), and group hits to groups this device holds.
+  `Inner::search_forget(src)` is there for a future purge; group forget (a refused or timed-out
+  join) calls it.
+- **Lifecycle**: opened in `chat_open` (same key material), closed in `chat_close` /
+  `chat_close_now` (lock, account switch, drop). Like `chat.redb` it stays open across
+  `stop`. Reconcile runs in the background after every open. A closed day is read from its
+  snapshot blob; if the blob is not local the day is skipped (its watermark stays behind, so the
+  next open tries again).
+- **Rekey**: `search.redb` was always under a phrase-derived key, so it is never migrated or
+  quarantined; any file whose `v` row is missing, unreadable or of another version is emptied
+  and rebuilt. Account removal deletes it with the account directory.
+- **Writes** are synchronous, one redb transaction per change, after the chat/group commit; a
+  failure is logged and left to reconcile. A reconcile racing a live edit can leave the older
+  text indexed until the next open (its watermark then still differs, so it heals).
