@@ -17,6 +17,7 @@ mod rekey;
 mod search;
 mod store;
 mod sync;
+pub mod synth;
 mod version;
 #[cfg(test)]
 mod account_tests;

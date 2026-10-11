@@ -1,0 +1,253 @@
+diff --git a/crates/core/src/node.rs b/crates/core/src/node.rs
+index f11df8c..d08f967 100644
+--- a/crates/core/src/node.rs
++++ b/crates/core/src/node.rs
+@@ -1278,15 +1278,18 @@ impl Node {
+             let store = s.acct.as_ref().ok_or(Error::NoIdentity)?.store.clone();
+             (store, p.did.clone(), p.name.clone(), s.epoch)
+         };
++        let _tt = std::time::Instant::now();
+         let me = Me::load(
+             Profile { mnemonic: secrets.mnemonic.clone(), name, device_secret: secrets.device_secret },
+             0,
+         )?;
++        eprintln!("TRACE Me::load {:?}", _tt.elapsed());
+         if me.id.did() != did {
+             return Err(Error::Io("vault does not match profile".into()));
+         }
+         // The sealed state is read (and a first-time import from JSON done) outside `shared`.
+         let (db, loaded) = store::load_sealed(&store, &secrets.mnemonic, Some(&dek))?;
++        eprintln!("TRACE load_sealed {:?}", _tt.elapsed());
+         let mut me = me;
+         let mut s = self.inner.shared.lock();
+         if s.epoch != started {
+@@ -1305,8 +1308,11 @@ impl Node {
+         s.me = Some(Arc::new(me));
+         s.dek = Some(dek);
+         drop(s);
++        eprintln!("TRACE state installed {:?}", _tt.elapsed());
+         self.inner.chat_open();
++        eprintln!("TRACE chat_open {:?}", _tt.elapsed());
+         self.inner.acc_open();
++        eprintln!("TRACE acc_open {:?}", _tt.elapsed());
+         Ok(())
+     }
+ 
+diff --git a/crates/core/src/store.rs b/crates/core/src/store.rs
+index 345908d..96dd89d 100644
+--- a/crates/core/src/store.rs
++++ b/crates/core/src/store.rs
+@@ -410,7 +410,9 @@ pub struct Loaded {
+ /// Anything that fails leaves the JSON in place. A record that does not open is an error, never
+ /// an empty state.
+ pub fn load_sealed(store: &Store, phrase: &str, dek: Option<&[u8; 32]>) -> Result<(storage::Sealed, Loaded), Error> {
++    let _t = std::time::Instant::now();
+     let db = open_sealed(store.dir(), phrase, dek)?;
++    eprintln!("TRACE open_sealed {:?}", _t.elapsed());
+     let mut ops = Vec::new();
+     if db.get(STATE_KEY).map_err(io)?.is_none() && store.dir().join("state.json").exists() {
+         ops.push(db.put_op(STATE_KEY, &zeroizing_json(&store.state()?)?).map_err(io)?);
+@@ -421,11 +423,17 @@ pub fn load_sealed(store: &Store, phrase: &str, dek: Option<&[u8; 32]>) -> Resul
+     if !ops.is_empty() {
+         db.apply(&ops).map_err(io)?;
+     }
++    eprintln!("TRACE pre remove_json {:?}", _t.elapsed());
+     store.remove_json_state();
++    eprintln!("TRACE remove_json {:?}", _t.elapsed());
+     let state = match db.get(STATE_KEY).map_err(io)? {
+-        Some(b) => serde_json::from_slice(&b)?,
++        Some(b) => {
++            eprintln!("TRACE state bytes {} {:?}", b.len(), _t.elapsed());
++            serde_json::from_slice(&b)?
++        }
+         None => State::default(),
+     };
++    eprintln!("TRACE state parsed {:?}", _t.elapsed());
+     let calls = match db.get(CALLS_KEY).map_err(io)? {
+         Some(b) => serde_json::from_slice(&b)?,
+         None => Vec::new(),
+diff --color -ru pa/crates/core/src/chat/engine.rs pb/crates/core/src/chat/engine.rs
+--- pa/crates/core/src/chat/engine.rs	2026-10-12 02:57:50.641551688 +0530
++++ pb/crates/core/src/chat/engine.rs	2026-10-12 02:57:50.647613598 +0530
+@@ -182,6 +182,7 @@
+         }
+         // Keyed by the recovery phrase; a store from before that is re-keyed here (rekey.rs).
+         // The node before a restart may still hold the file for a moment: `open_waiting`.
++        let _t = std::time::Instant::now();
+         let sealed = match crate::store::open_waiting(&path).and_then(|db| {
+             crate::rekey::open(
+                 db,
+@@ -195,6 +196,7 @@
+                 return;
+             }
+         };
++        eprintln!("TRACE chat redb open+rekey {:?}", _t.elapsed());
+         let store = ChatStore::new(sealed);
+         let value = match self.device_id() {
+             Ok(v) => v,
+@@ -203,7 +205,9 @@
+                 return;
+             }
+         };
++        eprintln!("TRACE pre search_open {:?}", _t.elapsed());
+         self.search_open(&dir, &phrase);
++        eprintln!("TRACE search_open {:?}", _t.elapsed());
+         let core = Arc::new(ChatCore {
+             store,
+             dir,
+diff --color -ru pa/crates/core/src/group/doc.rs pb/crates/core/src/group/doc.rs
+--- pa/crates/core/src/group/doc.rs	2026-10-12 02:57:50.646849450 +0530
++++ pb/crates/core/src/group/doc.rs	2026-10-12 02:57:50.649100588 +0530
+@@ -159,10 +159,14 @@
+     /// `admit` may refuse the batch on its new entries (a host's per-connection policy). Returns
+     /// the new entries (records seen for the first time). On any `Err` nothing was imported.
+     pub fn apply_remote(&mut self, update: &[u8], admit: impl FnOnce(&[Entry]) -> Result<(), String>) -> Result<Vec<Entry>, Reject> {
++        let _t = std::time::Instant::now();
+         LoroDoc::decode_import_blob_meta(update, true).map_err(|_| Reject::Undecodable)?;
+         let old_vv = self.vv();
++        let t0 = _t.elapsed();
+         let scratch = self.doc.fork();
++        let t1 = _t.elapsed();
+         let status = scratch.import(update).map_err(|_| Reject::Undecodable)?;
++        let t2 = _t.elapsed();
+         if status.pending.is_some() {
+             return Err(Reject::Pending);
+         }
+@@ -171,6 +175,7 @@
+             return Ok(Vec::new());
+         }
+         let new = ops_between(&scratch, &old_vv, &new_vv, &self.group)?;
++        let t3 = _t.elapsed();
+         let root = self.doc.get_map(ROOT);
+         let mut fresh: Vec<Entry> = Vec::new();
+         for e in new {
+@@ -178,8 +183,10 @@
+                 fresh.push(e);
+             }
+         }
++        let t4 = _t.elapsed();
+         admit(&fresh).map_err(Reject::Policy)?;
+         self.doc.import(update).map_err(|_| Reject::Undecodable)?;
++        eprintln!("TRACE apply_remote meta+vv {t0:?} fork {:?} scratch.import {:?} ops_between {:?} dedupe {:?} admit+doc.import {:?}", t1 - t0, t2 - t1, t3 - t2, t4 - t3, _t.elapsed() - t4);
+         Ok(fresh)
+     }
+ 
+@@ -243,7 +250,11 @@
+ fn ops_between(doc: &LoroDoc, from: &VersionVector, to: &VersionVector, group: &str) -> Result<Vec<Entry>, Reject> {
+     let root = loro::ContainerID::new_root(ROOT, loro::ContainerType::Map);
+     let mut out = Vec::new();
+-    for c in doc.export_json_updates_without_peer_compression(from, to).changes {
++    let _t = std::time::Instant::now();
++    let json = doc.export_json_updates_without_peer_compression(from, to);
++    let t_json = _t.elapsed();
++    let mut t_open = std::time::Duration::ZERO;
++    for c in json.changes {
+         for op in c.ops {
+             if op.container != root {
+                 return Err(Reject::Structure);
+@@ -253,13 +264,18 @@
+             if record_id(bytes) != *key {
+                 return Err(Reject::WrongKey);
+             }
++            let _o = std::time::Instant::now();
+             let rec = SignedRecord::open(bytes, group).map_err(Reject::Record)?;
++            t_open += _o.elapsed();
+             if writer_id(&rec.author, &rec.dev) != c.id.peer {
+                 return Err(Reject::ForeignPeer);
+             }
+             out.push(Entry { id: key.clone(), rec, peer: c.id.peer, counter: op.counter });
+         }
+     }
++    if out.len() > 1000 {
++        eprintln!("TRACE ops_between n={} export_json {t_json:?} SignedRecord::open total {t_open:?} all {:?}", out.len(), _t.elapsed());
++    }
+     Ok(out)
+ }
+ 
+diff --color -ru pa/crates/core/src/group/engine.rs pb/crates/core/src/group/engine.rs
+--- pa/crates/core/src/group/engine.rs	2026-10-12 02:57:50.644197010 +0530
++++ pb/crates/core/src/group/engine.rs	2026-10-12 02:57:50.648354236 +0530
+@@ -265,15 +265,22 @@
+         let mut groups = self.groups.lock();
+         let live = groups.get_mut(gid).ok_or(Error::NotFound)?;
+         let rec = Record { v: 1, group: gid.to_string(), author: self.did.clone(), dev: self.dev, at: now_ms() as i64, seen: live.doc.seen(), body };
++        let _t = Instant::now();
+         let (prev, posts_before) = (live.doc.vv(), posts_of(&live.state));
++        let t1 = _t.elapsed();
+         let (entry, update) = live.doc.write(&self.account, &rec).map_err(|e| Error::Protocol(e.to_string()))?;
++        let t2 = _t.elapsed();
+         let before: HashSet<String> = live.state.items.iter().map(|i| i.id.clone()).collect();
++        let t3 = _t.elapsed();
+         live.entries.push(entry.clone());
+         live.rederive(gid);
++        let t4 = _t.elapsed();
+         let doc = &live.doc;
+         self.store.append(gid, &mut live.meta, &update, || doc.snapshot())?;
++        let t5 = _t.elapsed();
+         let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
+         let posts = post_diff(&posts_before, &prev, live);
++        eprintln!("TRACE write items={} posts_of {t1:?} doc.write {:?} ids-set {:?} rederive {:?} store.append {:?} new_items+post_diff {:?}", live.state.items.len(), t2 - t1, t3 - t2, t4 - t3, t5 - t4, _t.elapsed() - t5);
+         Ok((entry, Changed { gid: gid.to_string(), new_items, posts }))
+     }
+ 
+@@ -282,24 +289,30 @@
+     fn apply(&self, gid: &str, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+         let mut groups = self.groups.lock();
+         let Some(live) = groups.get_mut(gid) else { return Err(Reject::Policy("unknown group".into())) };
++        let _t = Instant::now();
+         let prev = live.doc.vv();
+         let fresh = {
+             let Live { doc, entries, state, .. } = &mut *live;
+             doc.apply_remote(update, |fresh| admit(state, entries, fresh))?
+         };
++        let t1 = _t.elapsed();
+         if fresh.is_empty() {
+             return Ok(None);
+         }
+         let before: HashSet<String> = live.state.items.iter().map(|i| i.id.clone()).collect();
+         let posts_before = posts_of(&live.state);
++        let t2 = _t.elapsed();
+         live.entries.extend(fresh);
+         live.rederive(gid);
++        let t3 = _t.elapsed();
+         let doc = &live.doc;
+         if let Err(e) = self.store.append(gid, &mut live.meta, update, || doc.snapshot()) {
+             tracing::warn!("group store: {e}");
+         }
++        let t4 = _t.elapsed();
+         let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
+         let posts = post_diff(&posts_before, &prev, live);
++        eprintln!("TRACE apply items={} apply_remote {t1:?} ids+posts_of {:?} rederive {:?} store.append {:?} new_items+post_diff {:?}", live.state.items.len(), t2 - t1, t3 - t2, t4 - t3, _t.elapsed() - t4);
+         Ok(Some(Changed { gid: gid.to_string(), new_items, posts }))
+     }
+ 
+@@ -554,8 +567,12 @@
+         let did = me.id.did().to_string();
+         let wid = writer_id(&did, &dev);
+         let mut groups = HashMap::new();
++        let (mut t_rows, mut t_load, mut t_entries, mut t_derive) = (Duration::ZERO, Duration::ZERO, Duration::ZERO, Duration::ZERO);
+         for (gid, meta) in store.groups()? {
++            let t = Instant::now();
+             let (snap, ups) = store.doc_rows(&gid)?;
++            t_rows += t.elapsed();
++            let t = Instant::now();
+             let doc = match GroupDoc::load(&gid, wid, snap.as_deref(), &ups) {
+                 Ok(d) => d,
+                 Err(e) => {
+@@ -563,10 +580,16 @@
+                     continue;
+                 }
+             };
++            t_load += t.elapsed();
++            let t = Instant::now();
+             let entries = doc.entries().unwrap_or_default();
++            t_entries += t.elapsed();
++            let t = Instant::now();
+             let state = derive(&gid, &entries);
++            t_derive += t.elapsed();
+             groups.insert(gid, Live { doc, entries, state, meta });
+         }
++        eprintln!("TRACE group_core: store.doc_rows {t_rows:?}  GroupDoc::load {t_load:?}  doc.entries {t_entries:?}  derive {t_derive:?}");
+         let core = Arc::new(GroupCore {
+             epoch,
+             store,

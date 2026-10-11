@@ -26,6 +26,8 @@ use super::own::{ACK_MARK, READ_MARK};
 use crate::Error;
 use crate::node::{Inner, Me, addr_for, now, relay_hint, relay_of};
 
+mod synth;
+
 const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
 const HELLO_DAYS: i64 = 7;

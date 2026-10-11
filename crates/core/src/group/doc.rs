@@ -183,6 +183,13 @@ impl GroupDoc {
         Ok(fresh)
     }
 
+    /// Test hook (`synth`): imports `update` unchecked, to merge batches written by several
+    /// member docs into one before it goes through `apply_remote`.
+    #[doc(hidden)]
+    pub(crate) fn import_for_test(&self, update: &[u8]) {
+        self.doc.import(update).expect("import");
+    }
+
     /// The stored bytes of record `id`.
     pub fn raw_value(&self, id: &str) -> Option<Vec<u8>> {
         match self.doc.get_map(ROOT).get(id) {

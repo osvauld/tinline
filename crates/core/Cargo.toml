@@ -15,6 +15,10 @@ path = "src/bin/uniffi-bindgen.rs"
 name = "search-bench"
 path = "src/bin/search-bench.rs"
 
+[[bin]]
+name = "year-bench"
+path = "src/bin/year-bench.rs"
+
 [dependencies]
 proto.workspace = true
 audio.workspace = true
