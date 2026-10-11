@@ -157,3 +157,67 @@ Where the code differs from the plan above, and why.
 - **Writes** are synchronous, one redb transaction per change, after the chat/group commit; a
   failure is logged and left to reconcile. A reconcile racing a live edit can leave the older
   text indexed until the next open (its watermark then still differs, so it heals).
+
+## Benchmarks
+
+`search-bench` (crates/core/src/search/bench.rs, binary `crates/core/src/bin/search-bench.rs`)
+drives `SearchIndex` directly: no node, no network, no names or conversation lookups. Corpus:
+synthetic, seeded, 5-40 words a message, Zipf word frequencies; 72% English (8k pseudo-words plus
+common ones), 10% Hindi, 6% Malayalam, 8% CJK runs, 4% mixed Hindi/English; 50 conversations (10
+groups), spread over 730 days. About 87 postings a message. Query times are the loop of
+`Inner::search` (page, row read, normalise, match, snippet) at 20 hits a page, warm cache, 30 runs.
+
+```
+python3 scripts/buildlock.py --who me -- cargo build --release -p p2pcore --bin search-bench
+python3 scripts/buildlock.py --who me --run -- $PWD/target/release/search-bench 100000 /path/to/scratch/dir
+# Android x86_64 emulator (libaom install as in android/app/build.gradle.kts):
+ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/28.2.13676358 AOM_DIR_x86_64_linux_android=$HOME/build-cache/p2p_chat/libaom/install-v3.14.1-x86_64-linux-android \
+  python3 scripts/buildlock.py --who me -- cargo ndk -t x86_64 -P 28 build --release -p p2pcore --bin search-bench
+adb -s emulator-5554 push target/x86_64-linux-android/release/search-bench /data/local/tmp/
+python3 scripts/buildlock.py --who me --device emulator-5554 -- adb -s emulator-5554 shell /data/local/tmp/search-bench 10000 /data/local/tmp/sb
+```
+
+Results (2026-10-12, release build, `/home/abe/build-cache` NVMe ext4; desktop = i7-1165G7, 8
+threads, 38 GB, other agents' jobs running at times; emulator = osvauld-api35 x86_64, 4 vCPU on the
+same host, so its fsync is cheap and it is not a phone figure):
+
+| | desktop 10k | desktop 100k | emulator 10k |
+|---|---|---|---|
+| live write per message p50 / p95 / p99 | 5.6 / 29.8 / 150 ms | 9.8 / 50.1 / 198 ms | 4.6 / 8.5 / 20 ms |
+| live write max | 670 ms | 6.1 s | 2.4 s |
+| rebuild, per day-shard batches (avg 1.5 msgs at 10k, 4.2 at 100k) | 91 msgs/s | 69 msgs/s | 209 msgs/s |
+| rebuild, one batch per conversation (~200-2000 msgs) | 339 msgs/s | 312 msgs/s | 485 msgs/s |
+| query "th" (2-char common prefix) p50 / p95 | 0.72 / 0.76 ms | 1.05 / 1.16 ms | 2.1 / 2.6 ms |
+| query rare word p50 / p95 | 0.07 / 0.09 ms | 0.36 / 0.38 ms | 0.20 / 0.22 ms |
+| query 2-word AND "meeting tomorrow" p50 / p95 | 5.0 / 5.2 ms | 7.5 / 8.9 ms | 8.2 / 10.5 ms |
+| query 2-word AND "the call" p50 / p95 | 0.95 / 0.98 ms | 1.25 / 1.32 ms | 1.6 / 1.7 ms |
+| query no hit p50 / p95 | 0.003 / 0.003 ms | 0.003 / 0.004 ms | 0.005 / 0.005 ms |
+| "th" page 5 alone p50 / p95 (pages 1-5 total) | 0.94 / 1.4 ms (4.8 / 5.6) | 1.2 / 2.0 ms (6.3 / 9.7) | 1.4 / 1.8 ms (7.3 / 8.6) |
+| `search.redb` after live writes | 129 MiB (13.5 KB/msg) | 1542 MiB (16.2 KB/msg) | 129 MiB |
+| `search.redb` after rebuild (day-shard / per-conversation) | 257 MiB | 2056 / 4096 MiB | 257 MiB |
+
+The 100k desktop run was not repeated on the emulator (it would write 1.5-4 GB there). File sizes
+step in powers of two (redb grows the file in doubling regions), so they are upper steps, not
+exact; the live-write 100k index fits in 1542 MiB.
+
+### Where the time goes
+
+- Queries are fine: every case is under 10 ms at 100k, "th" 1.1 ms. The 2-word AND is the slowest
+  (7-9 ms) because it scans the postings of the longer word and reads and matches a row for each
+  until 20 contain both.
+- **Write latency is over budget** (desktop p95 30-50 ms, p99 150-200 ms, p50 6-10 ms; emulator
+  p95 8.5 ms). The work in `apply` is not it: building the ~87 postings (term set plus keyed
+  blake3) costs 0.05 ms a message, and a one-key commit costs 1.2 ms (the fsync floor). The rest is
+  the redb transaction: a posting key is `t/<hashed term>/<rev time>/<doc>`, so the 87 keys of one
+  message land in 87 unrelated leaf pages of the B-tree. Every commit copy-on-writes those pages
+  (about 4 KB each, plus branch pages) and flushes them, hence the roughly 15 KB written per message
+  that also shows in the file size, and the cost growing with the index (more pages, less cached).
+  Tail stalls (hundreds of ms to seconds) are redb's page allocation and file growth plus the
+  disk's flushes under load.
+- **Rebuild** is bound by the same per-commit cost: 70-90 msgs/s with the real reconcile shape
+  (one transaction per day shard, small shards in this synthetic spread), 310-340 msgs/s with
+  conversation-sized batches. A 100k-message history would take about 20 minutes to reconcile
+  per-shard on this desktop, 5 minutes in big batches. The rebuild file is larger than the live
+  one (free pages from copy-on-write are not returned to the file).
+- **Size**: 13-16 KB a message for about 87 postings of ~75-byte keys (~6.5 KB of raw keys) plus the
+  sealed row; 1.5 GB at 100k messages on disk is the number to look at before launch.
