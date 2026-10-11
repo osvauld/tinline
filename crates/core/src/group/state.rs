@@ -329,6 +329,40 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
         }
     }
 
+    // Call hosts (U21): the same rule over their own permit / acceptance records.
+    let mut cpermits: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
+    let mut caccepts: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
+    for e in entries {
+        match &e.rec.body {
+            Body::CallHostPermit { host, host_dev, .. } if admin_as_of(&e.rec.author, Some(&e.rec.seen)) => {
+                let k = (host.clone(), *host_dev);
+                if cpermits.get(&k).is_none_or(|p| order(p) < order(e)) {
+                    cpermits.insert(k, e);
+                }
+            }
+            Body::CallHostAccept { .. } => {
+                let k = (e.rec.author.clone(), e.rec.dev);
+                if caccepts.get(&k).is_none_or(|p| order(p) < order(e)) {
+                    caccepts.insert(k, e);
+                }
+            }
+            _ => {}
+        }
+    }
+    for ((did, dev), p) in &cpermits {
+        let Body::CallHostPermit { active: true, .. } = p.rec.body else { continue };
+        if !st.members.contains_key(did) {
+            continue;
+        }
+        let acc = caccepts.get(&(did.clone(), *dev));
+        let info = CallHostInfo { did: did.clone(), dev: *dev, appointed_by: p.rec.author.clone(), at: p.rec.at, permit: p.id.clone() };
+        if acc.is_some_and(|a| matches!(a.rec.body, Body::CallHostAccept { active: true })) {
+            st.call_hosts.push(info);
+        } else if !acc.is_some_and(|a| order(a) > order(p)) {
+            st.call_host_requests.push(info);
+        }
+    }
+
     // The conversation.
     for e in entries {
         let r = &e.rec;
