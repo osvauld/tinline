@@ -339,3 +339,56 @@ fn hosts_refuse_unknown_and_revoked_codes_and_limit_guessing() {
     o.node.group_post(g.clone(), "welcome".into(), None).unwrap();
     eventually(WAIT, "a sees it", || posts(&a, &g).iter().any(|m| m.text == "welcome"));
 }
+
+// KIND: acceptance (G3 stage 2, GA-F3) — an admin whose device hosts only the group's calls (not
+// its chat) shares a link, a direct invitation and a device token: each names CHAT hosts only (a
+// short link names one host, G3 PROVISIONAL 5; a call-only host refuses fetches and joiners), and
+// each works: the link is fetched from the chat host and joined, the invited contact joins, and
+// the admin's new device joins with the device token.
+#[test]
+fn a_call_only_hosts_links_and_invitations_name_chat_hosts() {
+    let o = peer("ch-o");
+    let a = peer("ch-a");
+    let c = peer("ch-c");
+    let d = peer("ch-d");
+    contacts(&a, &d);
+    let g = o.node.group_create("Calls".into()).unwrap();
+    a.node.group_join(o.node.group_invite(g.clone()).unwrap()).unwrap();
+    eventually(WAIT, "a is a member", || members(&o, &g).contains(&a.did));
+    o.node.group_set_admin(g.clone(), a.did.clone(), true).unwrap();
+    eventually(WAIT, "a knows it is admin", || a.node.group_detail(g.clone()).unwrap().members.iter().any(|m| m.did == a.did && m.is_admin));
+    o.node.group_appoint_call_host(g.clone(), a.did.clone(), a.node.group_device_id().unwrap()).unwrap();
+    eventually(WAIT, "a is asked to host calls", || a.node.group_detail(g.clone()).unwrap().call_host_requested_here);
+    a.node.group_accept_call_host(g.clone(), true).unwrap();
+    eventually(WAIT, "o sees a as call host", || o.node.group_detail(g.clone()).unwrap().call_hosts.len() == 1);
+    let det = a.node.group_detail(g.clone()).unwrap();
+    assert!(det.am_call_host && !det.am_host, "a hosts calls only");
+    let o_ep = o.node.group_endpoint_id().unwrap();
+
+    // The link: names the chat host, whose answer lists chat hosts only, and joins.
+    let link = a.node.group_invite(g.clone()).unwrap();
+    assert_eq!(a.node.group_link_endpoint_for_test(link.clone()), Some(o_ep.clone()), "the link names the chat host");
+    let peek = c.node.group_peek_invite(link.clone()).expect("the chat host answers");
+    assert_eq!(peek.issuer_did.as_deref(), Some(a.did.as_str()));
+    assert_eq!(peek.host_count, 1, "the fetched token lists chat hosts only");
+    assert_eq!(c.node.group_join(link).unwrap(), g);
+    eventually(WAIT, "c is a member", || members(&o, &g).contains(&c.did));
+
+    // A direct invitation: its token lists chat hosts only, and the contact joins.
+    let sent = a.node.group_invite_contacts(g.clone(), vec![d.did.clone()]).unwrap();
+    assert_eq!(a.node.group_invitation_hosts_for_test(sent[0].id.clone()), vec![o_ep.clone()], "the invitation names chat hosts only");
+    eventually(WAIT, "the invitation arrives", || incoming(&d, &g).is_some());
+    let id = incoming(&d, &g).unwrap().id;
+    assert_eq!(d.node.group_invitation_accept(id).unwrap().state, GroupInvitationState::Joined);
+    eventually(WAIT, "d is a member", || members(&o, &g).contains(&d.did));
+
+    // Own devices: the device token names the chat host; a new device joins with it.
+    let tok = a.node.group_device_token(g.clone()).unwrap();
+    assert_eq!(a.node.group_link_endpoint_for_test(tok.clone()), Some(o_ep.clone()));
+    let peek = c.node.group_peek_invite(tok.clone()).expect("the chat host answers");
+    assert!(peek.issuer_did.is_none());
+    assert_eq!(peek.host_count, 1, "the device token lists chat hosts only");
+    let a2 = link_fresh(&a, "ch-a2");
+    assert_eq!(a2.node.group_join(tok).unwrap(), g);
+    eventually(WAIT, "a2 has the group's members", || members(&a2, &g) == members(&o, &g));
+}

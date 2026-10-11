@@ -515,6 +515,12 @@ impl Node {
 /// Test hooks (not for apps).
 #[uniffi::export]
 impl Node {
+    /// The group endpoint id of the host `link` names.
+    pub fn group_link_endpoint_for_test(&self, link: String) -> Option<String> {
+        let sc = ShortCode::parse(&link)?;
+        iroh::PublicKey::from_bytes(&sc.endpoint).ok().map(|k| k.to_string())
+    }
+
     /// Sends `n` random codes to the host `link` names over ONE connection; the host's answers
     /// (refusal reasons) until it closes.
     pub fn group_guess_codes_for_test(&self, link: String, n: u32) -> Vec<String> {
