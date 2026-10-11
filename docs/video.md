@@ -174,10 +174,16 @@ frame is encoded). The endpoint's transport config sets `max_concurrent_uni_stre
 (nothing else in the core uses uni streams).
 
 **Threads**: encoder thread (`tl-video-enc`, pinned with `video::cpu::pin_to_fast_cores`,
-libaom 2 threads, speed 10, keyint 300): takes the newest pushed frame, rotates it upright,
-fits it into `Sender::resolution()` keeping aspect and orientation (never upscaling; even
-sizes; `video::y4m::scale` until the conversion module lands), (re)creates the encoder on a
-size change, sets the bitrate, encodes, reports `encode_time`, sends. Decoder thread
+libaom 2 threads, speed 10, keyint 300): takes the newest pushed frame (as pushed: I420,
+raw `YUV_420_888` planes, RGBA or YUYV), and turns it upright and into the size it picks with
+`video::convert::prepare` in one pass (range conversion for full-range Android frames too).
+The size: the upright picture fit inside `Sender::resolution()` (rung turned to the picture's
+orientation), keeping aspect, never upscaling, even sides (`video_call::fit`). Fit, not
+crop-to-rung: a 4:3 camera stays 4:3 (640x480 -> 480x360 on the 640x360 rung) so nothing of
+the picture is lost and no pixels are spent on bars; `prepare`'s center crop then only trims
+what even rounding loses. RGBA/YUYV take one extra pass (`rgb_to_i420`/`yuyv_to_i420`) first.
+It (re)creates the encoder on a size change, sets the bitrate, encodes, reports the encode
+time (`VideoSend::encode_time`, stamped on the sender's clock), sends. Decoder thread
 (`tl-video-dec`, pinned, rav1d 2 threads, `frame_size_limit` 720p) fed through a 2-slot
 channel by the task awaiting `VideoRecv::recv` (a slow decoder backs up into the link, where
 the sender sees it); after a decode error it skips to the next keyframe and requests one.
@@ -190,7 +196,10 @@ the sender sees it); after a decode error it skips to the next keyframe and requ
 | `set_video_enabled(bool)` / `video_enabled()` | offer/take video in calls (default on) |
 | `set_camera(on) -> Result` | also before the call is answered; `NotFound` without a call, `Protocol` once active without video |
 | `push_video_frame(width, height, rotation, i420) -> bool` | packed I420 straight from the camera, any size up to 4096 a side, `rotation` = degrees clockwise to upright (CameraX `rotationDegrees`); latest wins; false = dropped (no video, camera off, bad size) |
+| `push_video_frame_yuv(width, height, rotation, y, y_row_stride, u, v, uv_row_stride, uv_pixel_stride, full_range) -> bool` | Android: CameraX `YUV_420_888` planes copied as they are (one copy across FFI); pixel stride 1 or 2, planes may end after the last pixel; `full_range` = JFIF samples (normal for Android cameras). Conversion runs on the encoder thread. Else like `push_video_frame` |
+| `push_video_frame_rgba(width, height, rotation, rgba)`, `push_video_frame_yuyv(width, height, rotation, stride, yuyv)` | desktop cameras: packed RGBA / YUY2 (even width), converted on the encoder thread |
 | `pull_video_frame() -> Option<VideoFrame { width, height, data, seq }>` | newest decoded upright I420 frame not pulled yet; poll on the display clock |
+| `pull_video_frame_rgba() -> Option<VideoFrame>` | the same frame as packed RGBA (`convert::i420_to_rgba`, on the caller's thread): iced `image::Handle::from_rgba`, Android `Bitmap` fallback |
 | `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size |
 
 Pull, not a callback, for frames: decoded video is latest-wins like a display, so a pull on
@@ -416,5 +425,6 @@ Findings:
 4. ~~Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.~~ done
    (see Call protocol and core API).
 5. Capture/render: Android CameraX -> I420, desktop camera; render on both. Pure-Rust
-   conversion done (`video::convert`, above); still to do: use it in the core's encoder thread,
-   CameraX/desktop capture glue and the renderers, phone numbers for `convert_bench`.
+   conversion done (`video::convert`, above) and used by the core's encoder thread
+   (`push_video_frame_yuv`, `pull_video_frame_rgba`); still to do: CameraX/desktop capture
+   glue and the renderers, phone numbers for `convert_bench`.

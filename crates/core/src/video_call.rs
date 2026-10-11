@@ -5,9 +5,11 @@
 //! `VideoRecv`, for the whole call. The camera only decides whether frames are pushed:
 //! `Msg::Video { camera }` tells the peer, so its UI can show the picture or the avatar.
 //!
-//! Platform side: `push_video_frame` (I420 from the camera, any size and rotation) feeds a
-//! latest-wins slot; the encoder thread (pinned to the fast cores, 2 libaom threads) rotates,
-//! scales to the sender's ladder size, encodes and sends. The decoder thread (pinned, rav1d)
+//! Platform side: `push_video_frame` (I420), `push_video_frame_yuv` (Android `YUV_420_888`
+//! planes as they come), `push_video_frame_rgba`/`_yuyv` (desktop cameras), any size and
+//! rotation, feed a latest-wins slot; the encoder thread (pinned to the fast cores, 2 libaom
+//! threads) converts it with `video::convert::prepare` (crop, scale to the sender's ladder
+//! size, range, rotate in one pass), encodes and sends. The decoder thread (pinned, rav1d)
 //! puts decoded frames into another latest-wins slot that the renderer reads with
 //! `pull_video_frame` on its own clock (vsync), like `pull_speaker` for audio: a slow renderer
 //! drops frames instead of queueing them, and no platform code runs on the codec threads.
@@ -22,6 +24,7 @@ use proto::VideoOffer;
 use tokio::sync::{Notify, mpsc, watch};
 use tokio::task::JoinHandle;
 use video::aom::AomEncoder;
+use video::convert::{self, Prepare, Range, RgbLayout, Rotation, Yuv420};
 use video::media::{Frame, LadderConfig, SenderConfig};
 use video::net::{RecvConfig, VideoRecv, VideoSend};
 use video::{Decoder, EncoderConfig, I420, VideoEncoder};
@@ -91,10 +94,84 @@ impl Default for NodeVideo {
     }
 }
 
+/// A camera frame as pushed; converted on the encoder thread.
+enum Source {
+    I420(I420),
+    /// Android `YUV_420_888` planes (`u`/`v` with pixel stride 2 are the NV12/NV21 views).
+    Yuv {
+        y: Vec<u8>,
+        y_stride: usize,
+        u: Vec<u8>,
+        v: Vec<u8>,
+        uv_stride: usize,
+        uv_pixel_stride: usize,
+        full_range: bool,
+    },
+    Rgba(Vec<u8>),
+    Yuyv { data: Vec<u8>, stride: usize },
+}
+
 struct Input {
-    pic: I420,
+    width: usize,
+    height: usize,
+    src: Source,
     rotation: u32,
     at: Instant,
+}
+
+impl Input {
+    /// Upright and fit into the rung `rw` x `rh` (see [`fit`]); `prepare`'s center crop then
+    /// only trims what even rounding loses.
+    fn prepare(&self, rw: usize, rh: usize) -> video::Result<I420> {
+        let rotate = Rotation::from_degrees(self.rotation as i32);
+        let (sw, sh) = if matches!(rotate, Rotation::R90 | Rotation::R270) {
+            (self.height, self.width)
+        } else {
+            (self.width, self.height)
+        };
+        let (width, height) = fit(sw, sh, rw, rh);
+        let mut p = Prepare { rotate, mirror: false, width, height, range: Range::Limited };
+        let (w, h) = (self.width, self.height);
+        let packed;
+        let yuv = match &self.src {
+            Source::I420(pic) => Yuv420::from_i420(pic),
+            Source::Yuv { y, y_stride, u, v, uv_stride, uv_pixel_stride, full_range } => {
+                if *full_range {
+                    p.range = Range::Full;
+                }
+                Yuv420 {
+                    y,
+                    y_stride: *y_stride,
+                    u,
+                    v,
+                    uv_stride: *uv_stride,
+                    uv_pixel_stride: *uv_pixel_stride,
+                    width: w,
+                    height: h,
+                }
+            }
+            Source::Rgba(data) => {
+                packed = convert::rgb_to_i420(data, w * 4, w, h, RgbLayout::Rgba)?;
+                Yuv420::from_i420(&packed)
+            }
+            Source::Yuyv { data, stride } => {
+                packed = convert::yuyv_to_i420(data, *stride, w, h)?;
+                Yuv420::from_i420(&packed)
+            }
+        };
+        convert::prepare(&yuv, None, &p)
+    }
+}
+
+/// Whether `len` bytes hold a plane of `w` x `h` samples, rows `stride` apart, samples `step`
+/// apart (the last row may end right after its last sample).
+fn plane_fits(len: usize, w: usize, h: usize, stride: usize, step: usize) -> bool {
+    let row = (w - 1) * step + 1;
+    step >= 1 && stride >= row && len >= (h - 1) * stride + row
+}
+
+fn size_ok(width: u32, height: u32) -> bool {
+    (1..=MAX_INPUT_SIDE).contains(&width) && (1..=MAX_INPUT_SIDE).contains(&height)
 }
 
 /// Between the platform's threads and the codec threads of one call.
@@ -229,6 +306,19 @@ impl Inner {
     fn current_video_call(&self) -> Option<Arc<crate::node::Call>> {
         self.live.lock().call.clone()
     }
+
+    /// Hands a checked frame to the current call's encoder thread (latest wins).
+    fn push_input(&self, width: u32, height: u32, rotation: u32, src: Source) -> bool {
+        let Some(call) = self.current_video_call() else { return false };
+        let v = &call.video;
+        if !v.negotiated() || !v.camera() || v.pipe.stop.load(Ordering::SeqCst) {
+            return false;
+        }
+        let input = Input { width: width as usize, height: height as usize, src, rotation, at: Instant::now() };
+        *v.pipe.input.lock() = Some(input);
+        v.pipe.wake.notify_one();
+        true
+    }
 }
 
 /// Ladder rung cap for a peer that takes at most `max_pixels`.
@@ -282,10 +372,15 @@ fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
             return;
         }
         let capture_us = input.at.saturating_duration_since(epoch).as_micros() as u64;
-        let pic = rotate(input.pic, input.rotation);
         let (rw, rh) = send.with_sender(|s| s.resolution());
-        let (w, h) = fit(pic.width, pic.height, rw as usize, rh as usize);
-        let pic = video::y4m::scale(&pic, w, h);
+        let pic = match input.prepare(rw as usize, rh as usize) {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::debug!("video frame: {e}");
+                continue;
+            }
+        };
+        let (w, h) = (pic.width, pic.height);
         let bitrate = send.bitrate();
         let mut key = send.wants_keyframe() | pipe.resume.swap(false, Ordering::SeqCst);
         if enc.as_ref().is_none_or(|e| (e.1, e.2) != (w, h)) {
@@ -320,7 +415,7 @@ fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
             }
         };
         let took = t.elapsed();
-        send.with_sender(|s| s.encode_time(epoch.elapsed().as_micros() as u64, took.as_micros() as u64));
+        send.encode_time(took.as_micros() as u64);
         let mut st = pipe.stats.lock();
         for p in packets {
             if send.send(capture_us, p.key, &p.data).is_err() {
@@ -412,6 +507,12 @@ fn decode_loop(pipe: Arc<Pipe>, mut rx: mpsc::Receiver<Frame>) {
     }
 }
 
+/// An I420 `VideoFrame` as RGBA.
+fn to_rgba(f: VideoFrame) -> VideoFrame {
+    let pic = I420 { width: f.width as usize, height: f.height as usize, data: f.data };
+    VideoFrame { data: convert::to_rgba(&pic), ..f }
+}
+
 /// Largest even size of `sw` x `sh`'s aspect within the rung `rw` x `rh` (turned to match the
 /// picture's orientation), never upscaled.
 pub(crate) fn fit(sw: usize, sh: usize, rw: usize, rh: usize) -> (usize, usize) {
@@ -424,48 +525,6 @@ pub(crate) fn fit(sw: usize, sh: usize, rw: usize, rh: usize) -> (usize, usize) 
         (w, sh * w / sw)
     };
     ((w & !1).max(2), (h & !1).max(2))
-}
-
-/// Rotates clockwise by `deg` (0, 90, 180, 270; anything else is taken as 0).
-pub(crate) fn rotate(pic: I420, deg: u32) -> I420 {
-    if !matches!(deg, 90 | 180 | 270) {
-        return pic;
-    }
-    let (w, h) = (pic.width, pic.height);
-    let (nw, nh) = if deg == 180 { (w, h) } else { (h, w) };
-    let mut out = I420::new(nw, nh);
-    let (cw, ch) = I420::chroma(w, h);
-    let (sy, su, sv) = pic.planes();
-    let (dy, du, dv) = out.planes_mut();
-    rotate_plane(sy, w, h, dy, deg);
-    rotate_plane(su, cw, ch, du, deg);
-    rotate_plane(sv, cw, ch, dv, deg);
-    out
-}
-
-fn rotate_plane(src: &[u8], w: usize, h: usize, dst: &mut [u8], deg: u32) {
-    match deg {
-        180 => {
-            for (d, s) in dst.iter_mut().zip(src.iter().rev()) {
-                *d = *s;
-            }
-        }
-        90 => {
-            // dst is h wide: row y is source column y, read bottom-up.
-            for y in 0..w {
-                for x in 0..h {
-                    dst[y * h + x] = src[(h - 1 - x) * w + y];
-                }
-            }
-        }
-        _ => {
-            for y in 0..w {
-                for x in 0..h {
-                    dst[y * h + x] = src[x * w + (w - 1 - y)];
-                }
-            }
-        }
-    }
 }
 
 #[uniffi::export]
@@ -509,21 +568,62 @@ impl Node {
     /// scaled to what the link carries. Latest wins: a frame not yet taken by the encoder is
     /// replaced. False if not sent (no video running, camera off, or a malformed frame).
     pub fn push_video_frame(&self, width: u32, height: u32, rotation: u32, data: Vec<u8>) -> bool {
-        if width == 0 || height == 0 || width > MAX_INPUT_SIDE || height > MAX_INPUT_SIDE {
+        if !size_ok(width, height) || data.len() != I420::len(width as usize, height as usize) {
+            return false;
+        }
+        let pic = I420 { width: width as usize, height: height as usize, data };
+        self.inner.push_input(width, height, rotation, Source::I420(pic))
+    }
+
+    /// One CameraX `YUV_420_888` frame as its three planes (`ImageProxy.planes[i].buffer`,
+    /// `rowStride`, `pixelStride`; U and V share theirs), copied as they are: the conversion
+    /// (crop, scale, range, rotate) runs on the encoder thread. `full_range`: the samples are
+    /// full range (JFIF), as Android cameras normally deliver. Otherwise like
+    /// `push_video_frame`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn push_video_frame_yuv(
+        &self,
+        width: u32,
+        height: u32,
+        rotation: u32,
+        y: Vec<u8>,
+        y_row_stride: u32,
+        u: Vec<u8>,
+        v: Vec<u8>,
+        uv_row_stride: u32,
+        uv_pixel_stride: u32,
+        full_range: bool,
+    ) -> bool {
+        if !size_ok(width, height) {
             return false;
         }
         let (w, h) = (width as usize, height as usize);
-        if data.len() != I420::len(w, h) {
+        let (cw, ch) = I420::chroma(w, h);
+        let (ys, uvs, ps) = (y_row_stride as usize, uv_row_stride as usize, uv_pixel_stride as usize);
+        if !plane_fits(y.len(), w, h, ys, 1) || !plane_fits(u.len(), cw, ch, uvs, ps) || !plane_fits(v.len(), cw, ch, uvs, ps) {
             return false;
         }
-        let Some(call) = self.inner.current_video_call() else { return false };
-        let v = &call.video;
-        if !v.negotiated() || !v.camera() || v.pipe.stop.load(Ordering::SeqCst) {
+        let src = Source::Yuv { y, y_stride: ys, u, v, uv_stride: uvs, uv_pixel_stride: ps, full_range };
+        self.inner.push_input(width, height, rotation, src)
+    }
+
+    /// One frame of packed RGBA (`width * height * 4` bytes), converted on the encoder thread.
+    /// Otherwise like `push_video_frame`.
+    pub fn push_video_frame_rgba(&self, width: u32, height: u32, rotation: u32, data: Vec<u8>) -> bool {
+        if !size_ok(width, height) || data.len() != width as usize * height as usize * 4 {
             return false;
         }
-        *v.pipe.input.lock() = Some(Input { pic: I420 { width: w, height: h, data }, rotation, at: Instant::now() });
-        v.pipe.wake.notify_one();
-        true
+        self.inner.push_input(width, height, rotation, Source::Rgba(data))
+    }
+
+    /// One frame of packed YUYV (YUY2), rows `stride` bytes apart (at least `width * 2`; even
+    /// width), converted on the encoder thread. Otherwise like `push_video_frame`.
+    pub fn push_video_frame_yuyv(&self, width: u32, height: u32, rotation: u32, stride: u32, data: Vec<u8>) -> bool {
+        let w = width as usize;
+        if !size_ok(width, height) || w % 2 != 0 || !plane_fits(data.len(), w * 2, height as usize, stride as usize, 1) {
+            return false;
+        }
+        self.inner.push_input(width, height, rotation, Source::Yuyv { data, stride: stride as usize })
     }
 
     /// The newest decoded frame of the peer's video not pulled yet, else `None`. Poll it on the
@@ -531,6 +631,13 @@ impl Node {
     pub fn pull_video_frame(&self) -> Option<VideoFrame> {
         let call = self.inner.current_video_call()?;
         call.video.pipe.output.lock().take()
+    }
+
+    /// Like `pull_video_frame`, but `data` is packed RGBA (`width * height * 4` bytes; Android
+    /// `ARGB_8888` bitmaps and iced images use this byte order), converted on the caller's
+    /// thread.
+    pub fn pull_video_frame_rgba(&self) -> Option<VideoFrame> {
+        self.pull_video_frame().map(to_rgba)
     }
 
     pub fn video_info(&self) -> Option<VideoInfo> {
@@ -558,20 +665,113 @@ mod tests {
         assert_eq!(fit(1279, 721, 1280, 720), (1276, 720));
     }
 
+    fn input(width: usize, height: usize, rotation: u32, src: Source) -> Input {
+        Input { width, height, src, rotation, at: Instant::now() }
+    }
+
+    fn numbered(w: usize, h: usize) -> I420 {
+        let mut pic = I420::new(w, h);
+        for (i, b) in pic.data.iter_mut().enumerate() {
+            *b = 16 + (i % 200) as u8;
+        }
+        pic
+    }
+
     #[test]
     fn rotations_compose() {
-        let mut pic = I420::new(6, 4);
-        for (i, b) in pic.data.iter_mut().enumerate() {
-            *b = i as u8;
-        }
-        let r90 = rotate(pic.clone(), 90);
+        let pic = numbered(6, 4);
+        let turn = |p: &I420, deg| input(p.width, p.height, deg, Source::I420(p.clone())).prepare(1280, 720).unwrap();
+        let r90 = turn(&pic, 90);
         assert_eq!((r90.width, r90.height), (4, 6));
         // Top-left after a clockwise turn is the old bottom-left.
         assert_eq!(r90.data[0], pic.data[3 * 6]);
-        assert_eq!(rotate(rotate(pic.clone(), 90), 270), pic);
-        assert_eq!(rotate(rotate(pic.clone(), 180), 180), pic);
-        assert_eq!(rotate(r90, 90), rotate(pic.clone(), 180));
-        assert_eq!(rotate(pic.clone(), 45), pic);
+        assert_eq!(turn(&r90, 270), pic);
+        assert_eq!(turn(&turn(&pic, 180), 180), pic);
+        assert_eq!(turn(&r90, 90), turn(&pic, 180));
+        assert_eq!(turn(&pic, 45), pic);
+    }
+
+    #[test]
+    fn frames_fit_the_rung_upright() {
+        let pic = numbered(1280, 720);
+        let p = input(1280, 720, 0, Source::I420(pic.clone())).prepare(640, 360).unwrap();
+        assert_eq!((p.width, p.height), (640, 360));
+        let p = input(1280, 720, 90, Source::I420(pic)).prepare(640, 360).unwrap();
+        assert_eq!((p.width, p.height), (360, 640));
+        let p = input(640, 480, 270, Source::I420(numbered(640, 480))).prepare(640, 360).unwrap();
+        assert_eq!((p.width, p.height), (360, 480));
+    }
+
+    /// A camera frame as Android's `YUV_420_888` with pixel stride 2 (NV21 memory: V then U
+    /// interleaved, `u` = `v[1..]`), padded rows, last row unpadded; full range.
+    fn android_planes(pic: &I420) -> (Vec<u8>, usize, Vec<u8>, Vec<u8>, usize) {
+        let (w, h) = (pic.width, pic.height);
+        let (cw, ch) = I420::chroma(w, h);
+        let (sy, su, sv) = pic.planes();
+        let ys = w + 16;
+        let mut y = vec![0u8; (h - 1) * ys + w];
+        for r in 0..h {
+            y[r * ys..r * ys + w].copy_from_slice(&sy[r * w..(r + 1) * w]);
+        }
+        let uvs = 2 * cw + 8;
+        let mut vu = vec![0u8; (ch - 1) * uvs + 2 * cw];
+        for r in 0..ch {
+            for c in 0..cw {
+                vu[r * uvs + 2 * c] = sv[r * cw + c];
+                vu[r * uvs + 2 * c + 1] = su[r * cw + c];
+            }
+        }
+        let u = vu[1..].to_vec();
+        vu.pop();
+        (y, ys, u, vu, uvs)
+    }
+
+    #[test]
+    fn android_yuv_arrives_upright() {
+        // Landscape sensor frame, phone held upright: rotation 90.
+        let pic = numbered(640, 480);
+        let (y, ys, u, v, uvs) = android_planes(&pic);
+        assert!(plane_fits(y.len(), 640, 480, ys, 1) && plane_fits(u.len(), 320, 240, uvs, 2) && plane_fits(v.len(), 320, 240, uvs, 2));
+        let src = Source::Yuv { y, y_stride: ys, u, v, uv_stride: uvs, uv_pixel_stride: 2, full_range: false };
+        let got = input(640, 480, 90, src).prepare(1280, 720).unwrap();
+        assert_eq!((got.width, got.height), (480, 640));
+        let want = convert::transform(&pic, Rotation::R90, false);
+        assert_eq!(got, want);
+        // Scaled into a rung, still portrait and 3:4.
+        let (y, ys, u, v, uvs) = android_planes(&pic);
+        let src = Source::Yuv { y, y_stride: ys, u, v, uv_stride: uvs, uv_pixel_stride: 2, full_range: true };
+        let got = input(640, 480, 90, src).prepare(640, 360).unwrap();
+        assert_eq!((got.width, got.height), (360, 480));
+        assert!(got.data.iter().all(|&b| (16..=240).contains(&b)), "limited range");
+    }
+
+    #[test]
+    fn short_planes_are_refused() {
+        assert!(plane_fits(10, 4, 2, 6, 1));
+        assert!(!plane_fits(9, 4, 2, 6, 1));
+        assert!(!plane_fits(100, 4, 2, 3, 1));
+        assert!(plane_fits(7, 2, 2, 4, 2) && !plane_fits(6, 2, 2, 4, 2));
+    }
+
+    #[test]
+    fn rgba_and_yuyv_inputs() {
+        let rgba: Vec<u8> = (0..64 * 48).flat_map(|_| [200, 40, 40, 255]).collect();
+        let got = input(64, 48, 180, Source::Rgba(rgba)).prepare(1280, 720).unwrap();
+        assert_eq!((got.width, got.height), (64, 48));
+        let yuyv: Vec<u8> = (0..64 * 48 / 2).flat_map(|_| [100, 90, 110, 160]).collect();
+        let got = input(64, 48, 90, Source::Yuyv { data: yuyv, stride: 128 }).prepare(1280, 720).unwrap();
+        assert_eq!((got.width, got.height), (48, 64));
+        assert_eq!(got.data[0], 100);
+    }
+
+    #[test]
+    fn rgba_pull_converts() {
+        let mut pic = I420::new(4, 2);
+        pic.data.fill(128);
+        pic.data[..8].fill(235);
+        let f = to_rgba(VideoFrame { width: 4, height: 2, data: pic.data, seq: 7 });
+        assert_eq!((f.width, f.height, f.seq, f.data.len()), (4, 2, 7, 32));
+        assert!(f.data.chunks(4).all(|p| p == [255, 255, 255, 255]));
     }
 
     #[test]
