@@ -25,6 +25,8 @@ rav1d = { git = "https://github.com/memorysafety/rav1d", tag = "v1.1.0", default
 # Shared libraries containing rav1d need -Wl,-Bsymbolic (see crates/core/build.rs).
 
 [dev-dependencies]
+# Congestion controller choice in the net scenario tests (same version iroh 1.3 uses).
+noq-proto = { version = "1.3", default-features = false }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
 
 [build-dependencies]
