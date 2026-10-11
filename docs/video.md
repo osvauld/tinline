@@ -1,6 +1,6 @@
 # Video calls (spike: `crates/video`)
 
-Status: design + simulation. Not wired into calls or the apps yet.
+Status: design + simulation; wired into 1:1 calls in the core (no UI yet).
 
 ## Decisions
 
@@ -150,6 +150,60 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   libaom -> iroh loopback -> rav1d, capture-to-decoded latency. Laptop, 300 frames at 30 fps,
   2 encoder threads, rate ramped to 2 Mbps: 640x360 p50 4.8 / p95 7.5 ms, 1280x720 p50 5.4 /
   p95 15.7 ms; 0 decode errors, 0 resets.
+
+## Call protocol and core API (`crates/core/src/video_call.rs`)
+
+**Negotiation** (`proto::Msg`, JSON on the call's control stream):
+- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels }>`. Presence = "this
+  device does AV1 video in this call"; `max_pixels` = largest picture it wants to receive
+  (today 1280x720). The callee answers with an offer only if the hello had one and video is
+  enabled on it (`set_video_enabled`, default on); the caller ignores an offer it didn't ask
+  for. Both present = video negotiated, else the call is audio only (nothing else changes).
+- The sender caps its ladder (`LadderConfig::max_rung`) at the highest rung within the peer's
+  `max_pixels`.
+- Mid-call `Msg::Video { camera: bool }`, only once video is negotiated: sent when the call
+  goes active (current state) and on every change. Keyframe requests and pausing need no call
+  message: the video control stream has keyframe requests, and "camera off" is just no frames.
+
+**Streams**: when the call goes active with video negotiated, each side runs one `VideoSend`
+and one `VideoRecv` on the call connection for the whole call (the call's control bi stream
+is already accepted, so the next `accept_bi` is the peer's video control stream). With the
+camera off nothing is encoded; turning it on forces a keyframe (new group). The receiver's
+stall detector asks for keyframes every 600 ms meanwhile; harmless (1 byte, ignored until a
+frame is encoded). The endpoint's transport config sets `max_concurrent_uni_streams = 16`
+(nothing else in the core uses uni streams).
+
+**Threads**: encoder thread (`tl-video-enc`, pinned with `video::cpu::pin_to_fast_cores`,
+libaom 2 threads, speed 10, keyint 300): takes the newest pushed frame, rotates it upright,
+fits it into `Sender::resolution()` keeping aspect and orientation (never upscaling; even
+sizes; `video::y4m::scale` until the conversion module lands), (re)creates the encoder on a
+size change, sets the bitrate, encodes, reports `encode_time`, sends. Decoder thread
+(`tl-video-dec`, pinned, rav1d 2 threads, `frame_size_limit` 720p) fed through a 2-slot
+channel by the task awaiting `VideoRecv::recv` (a slow decoder backs up into the link, where
+the sender sees it); after a decode error it skips to the next keyframe and requests one.
+
+**API** (UniFFI, on `Node`; all about the current call):
+
+| | |
+|---|---|
+| `set_video_events(VideoEvents)` | `on_video_state(VideoInfo { call_id, negotiated, local_camera, remote_camera })`: when the call goes active (if we offered video) and on any camera change |
+| `set_video_enabled(bool)` / `video_enabled()` | offer/take video in calls (default on) |
+| `set_camera(on) -> Result` | also before the call is answered; `NotFound` without a call, `Protocol` once active without video |
+| `push_video_frame(width, height, rotation, i420) -> bool` | packed I420 straight from the camera, any size up to 4096 a side, `rotation` = degrees clockwise to upright (CameraX `rotationDegrees`); latest wins; false = dropped (no video, camera off, bad size) |
+| `pull_video_frame() -> Option<VideoFrame { width, height, data, seq }>` | newest decoded upright I420 frame not pulled yet; poll on the display clock |
+| `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size |
+
+Pull, not a callback, for frames: decoded video is latest-wins like a display, so a pull on
+vsync drops what the renderer can't show for free; no platform code runs on the pinned codec
+threads (a callback would run Kotlin/JNA on them); it matches `pull_speaker`. Low-rate state
+changes are callbacks, in their own `VideoEvents` trait so existing `NodeEvents` implementors
+are untouched.
+
+**Tests** (`crates/core/tests/video_calls.rs`, two nodes over iroh like `calls.rs`):
+`cargo test -p p2pcore --release --test video_calls`: video both ways (pattern 640x480 pushed
+at 30 fps, >= 45 decoded frames in 3 s each way, 4:3 kept, 0 decode errors); camera off/on
+mid-call (remote state events, no frames while off, frames resume on a new group); video
+refused by the callee -> audio-only call continues.
 
 ## Codec benchmark (i7-1165G7, synthetic camera pattern, 30 fps)
 
@@ -356,9 +410,11 @@ Findings:
    done (above).
 3. iroh transport against `media::Sender`/`Receiver`: **built** (`video::net`) and checked
    against the simulation's scenarios over an emulated link (see Real transport vs
-   simulation). Still to do: set `max_concurrent_uni_streams` in core's transport config
-   (snippet under Transport); rate control under random loss; sim model fixes listed there.
-4. Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.
+   simulation). ~~`max_concurrent_uni_streams` in the call endpoint's transport config~~ done
+   (16). Still to do: rate control under random loss; freeze at ladder step-up on the real
+   transport; sim model fixes listed there.
+4. ~~Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.~~ done
+   (see Call protocol and core API).
 5. Capture/render: Android CameraX -> I420, desktop camera; render on both. Pure-Rust
-   conversion done (`video::convert`, above); still to do: CameraX/desktop capture glue and
-   the renderers, phone numbers for `convert_bench`.
+   conversion done (`video::convert`, above); still to do: use it in the core's encoder thread,
+   CameraX/desktop capture glue and the renderers, phone numbers for `convert_bench`.
