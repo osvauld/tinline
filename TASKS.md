@@ -52,6 +52,12 @@ has re-run its acceptance command.
 | 34g | Core: chats + "You" saved items sync between own devices over tinline/self/1 (dm shards, You doc, blobs on demand) | sonnet (worktree) | `crates/core` | stopped by user; WIP 3083577 on task-34g-chatsync |
 | 34h | Platforms: linking UI (QR show/scan, code confirm, approve with passphrase/device auth, syncing, linked devices rename/unlink, unlinked screen) per canvas | sonnet x2 (worktrees) | `android/`, `crates/desktop` | done, merged (desktop + Android); lead verified Android on emulator with scripts/e2e_android_link.py (26/26, both directions, wrong pass, cancel, unlink), Kotlin unit tests, Rust tests, clippy |
 
+## Group work handoff
+
+Current status: [`docs/STATUS-group-chat.md`](docs/STATUS-group-chat.md). Dedicated `group-chat`
+worktree; 24 simulation tests pass; changes uncommitted; G1 incomplete; persistence/crash tests
+next. Rotation/blocking integration and causal revocation remain explicit gates.
+
 ## Roadmap (after the redesign)
 
 | # | Item | Notes |
@@ -59,9 +65,9 @@ has re-run its acceptance command.
 | R1 | 1:1 chat on Loro — FIRST | design in `docs/chat.md` §2, tests C1–C8 written first |
 | R2 | Time-based sharding | one doc per conversation per time window; recent shards sync first, old ones on demand |
 | R3 | File sending with iroh-blobs | messages carry BLAKE3 hash + name + size; content streams device to device, resumable |
-| R4 | Group chats — after R1 (admins may create admins) | shared doc with a DID-signed member list; group encryption and member add/remove need a design doc first |
-| R5 | Offline delivery: members relay for each other (pure P2P, no node) | an online member who holds an update forwards it; delivery needs some member overlap |
+| R4 | Group chats — after R1 (admins may create admins) | design: `docs/group-chat.md`; fixed Rust schemas, creator-rooted permits, original signed envelopes; G1 pure validator/tests first, causal removal policy is a security gate |
+| R5 | Offline delivery: member-hosted relay/cache (pure P2P, no sovereign node) | multiple opt-in desktop/member hosts; kunki sync/fan-out reference without host authority; direct member fallback; delivery needs replica overlap |
 
 Reuse first (user, 2026-10-07): `~/osvauld2/courier` has the permits (node-rooted delegation tokens `token.rs`, `policy.rs`, `role.rs`, per-doc read/write rules `access.rs`) and the Loro sync engine (`sync.rs`, `subscribe.rs`, `publish.rs`); `~/osvauld2/docs/design/group-chat-sync.md` (shards, permissions, ephemeral; steps 0-6 built) and `app-permissions.md`, `loro-notes.md` are the design. Courier is transport-free, so it can ride Tinline's iroh endpoint.
 
-Decided (user, 2026-10-07): **pure P2P, no sovereign node (no kunki)**. A group's permit chains root at the creator's DID (`verify_chain` takes the root as a parameter); the permit set lives in the group doc so every member holds it; every Loro update travels with its author's permit chain + a signature by the author's attested device, and each peer verifies (identity via proto attestations, chain, `access.rs` rules) before importing. Open design points: concurrent revocation/removal semantics, member relay, shard holding.
+Decided (user, 2026-10-07): **pure P2P, no sovereign node (no kunki)**. A group's permit chains root at the creator's DID (`verify_chain` takes the root as a parameter); the permit set lives in the group doc so every member holds it; every Loro update travels with its author's permit chain + a signature by the author's attested device, and each peer verifies (identity via proto attestations, chain, `access.rs` rules) before importing. Member relay/shard holding direction: `docs/group-chat.md` — multiple member hosts cache and reconcile without authority; no gossip in v1. Concurrent revocation/removal enforcement, stale-frontier abuse and proof-preserving history remain security gates before implementation.

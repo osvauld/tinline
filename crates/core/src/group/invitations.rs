@@ -678,3 +678,15 @@ impl Node {
         Ok(self.inner.inv_view(&r))
     }
 }
+
+/// Test hooks (not for apps).
+#[uniffi::export]
+impl Node {
+    /// The group endpoint ids of the hosts the token of invitation `id` names.
+    pub fn group_invitation_hosts_for_test(&self, id: String) -> Vec<String> {
+        let Ok(core) = self.inner.group_core() else { return vec![] };
+        let row = core.store.invs().unwrap_or_default().into_iter().find(|r| r.id == id);
+        let Some(t) = row.and_then(|r| bincode::deserialize::<InviteToken>(&r.token).ok()) else { return vec![] };
+        t.hosts.iter().filter_map(|h| h.open()).filter_map(|a| iroh::PublicKey::from_bytes(&a.endpoint).ok()).map(|k| k.to_string()).collect()
+    }
+}

@@ -119,6 +119,13 @@ that may read a doc referencing that hash. Auto-download limits per network type
 
 ## 4. Phase 3: groups
 
+**Updated direction:** [group-chat.md](group-chat.md) specifies member-hosted group sync:
+multiple opt-in desktop/member hosts cache and relay, every client validates original author
+proofs, and fixed Rust schemas replace kunki's generic manifest/Lua layer. No authoritative
+host, no rollback to host state, direct member sync fallback, no gossip in v1. The summary
+below is subordinate to that design; causal revocation and proof-preserving history are
+security gates, not solved merely by a meta frontier or message signatures.
+
 ### Genesis and permits
 - The creator signs `{created_at, creator DID, nonce}`; the group id is its hash, so it can't be
   claimed or forged later.
@@ -135,18 +142,22 @@ meta doc **checked out at that frontier**; Loro can check out any past version, 
 makes the verdict the same on every device.
 
 ### Removal
-Removal = a revocation in meta. Posts **concurrent** with the removal are accepted; anything the
-removed member writes with the removal in its causal past is rejected. ("Erase concurrent
-posts too" is not done: later changes depend on earlier ones and would be lost with them.)
+Removal = a revocation in meta. Intended policy: posts genuinely concurrent with removal
+remain valid; writes with removal in their causal past are rejected. A signer-selected stale
+meta frontier cannot prove concurrency or prevent malicious backdating. The enforcement and
+partition semantics must be resolved and tested before implementing this policy; see
+[group-chat.md §6](group-chat.md#6-validation-and-causal-policy).
 
 ### Delivery
-- v1 (groups up to ~50): direct member-to-member sync over authenticated connections,
-  `ChatHello` reconciliation with every online member, and any member forwards what it holds.
-  No group key: every hop is an end-to-end encrypted link between two verified members.
-- Later, large groups: iroh-gossip per group for fan-out. Gossip may route via non-members, so
-  that needs a group key rotated on every removal.
-- Ticks: one = held by at least one other member (from then on it reaches the rest without
-  you); two = held by all.
+- v1: authenticated member-host sync; multiple nominated devices cache and forward original
+  signed envelopes, with direct member sync as fallback. Hosts reconcile symmetrically using
+  version vectors and original author proofs, not host-signed aggregate snapshots.
+- QUIC protects each hop between verified peers. Member hosts can read group content;
+  forwarding through a host is not participant-to-participant secrecy from that host.
+- Later: optional iroh-gossip fan-out needs group payload encryption and a designed key/epoch
+  rotation protocol. It is only an acceleration layer, never durable storage or authorization.
+- Delivery distinguishes local writes, replica storage receipts and recipient receipts.
+  Host storage does not mean all members received it; offline delivery needs replica overlap.
 
 ### History for new members
 Per-group setting from courier's manifest: `history all` or `since_join` (day precision).

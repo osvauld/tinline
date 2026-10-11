@@ -2,6 +2,8 @@
 //! group endpoint, U2) between members and hosts only (U7). See `docs/group-core.md`.
 
 pub mod api;
+pub mod calldir;
+pub mod calls;
 pub mod doc;
 pub mod code;
 pub mod engine;

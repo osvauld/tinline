@@ -862,11 +862,16 @@ pub fn decode_frame(buf: &[u8]) -> Result<Option<(Msg, usize)>> {
 }
 
 fn decode_json_frame<T: DeserializeOwned>(buf: &[u8]) -> Result<Option<(T, usize)>> {
+    decode_json_frame_max(buf, MAX_FRAME)
+}
+
+/// `decode_json_frame` with a smaller body limit (`max` <= `MAX_FRAME`).
+fn decode_json_frame_max<T: DeserializeOwned>(buf: &[u8], max: usize) -> Result<Option<(T, usize)>> {
     let Some(head) = buf.first_chunk::<4>() else {
         return Ok(None);
     };
     let len = u32::from_be_bytes(*head) as usize;
-    if len > MAX_FRAME {
+    if len > max {
         return Err(Error::FrameTooLarge);
     }
     let Some(body) = buf.get(4..4 + len) else {
@@ -1349,6 +1354,11 @@ pub fn accept_hello(
 
 pub mod link;
 pub use link::*;
+
+/// Group calls through one call host (docs/design/group-call-spec.md, G6).
+pub mod gcall;
+/// Signed call-host conditions (group-call spec §2.2).
+pub mod gcall_status;
 
 #[cfg(test)]
 mod tests;

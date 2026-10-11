@@ -137,6 +137,15 @@ pub struct GroupDetail {
     pub host_requested_here: bool,
     /// Admins see who was flagged how often in `members`; this is our own removal, if any.
     pub removal: Option<GroupRemoval>,
+    /// This device hosts the group's calls (U21: a separate capability from `am_host`).
+    pub am_call_host: bool,
+    /// Devices that host the group's calls (`online`: this device or a live session).
+    pub call_hosts: Vec<GroupHost>,
+    /// Devices an admin allowed to host calls that have not accepted yet.
+    pub call_host_requests: Vec<GroupHost>,
+    /// An admin allowed THIS device to host the group's calls and it has not answered: show
+    /// "host calls for this group?" and call `group_accept_call_host(group, true/false)`.
+    pub call_host_requested_here: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
@@ -314,6 +323,9 @@ impl Inner {
         let host_offers = s.host_offers.iter().map(|(d, v)| host(d, v, None)).collect();
         let host_requests = s.host_requests.iter().map(|h| host(&h.did, &h.dev, Some(h.appointed_by.clone()))).collect();
         let host_requested_here = s.host_requests.iter().any(|h| h.did == core.did && h.dev == core.dev);
+        let call_hosts = s.call_hosts.iter().map(|h| host(&h.did, &h.dev, Some(h.appointed_by.clone()))).collect();
+        let call_host_requests = s.call_host_requests.iter().map(|h| host(&h.did, &h.dev, Some(h.appointed_by.clone()))).collect();
+        let call_host_requested_here = s.call_host_requests.iter().any(|h| h.did == core.did && h.dev == core.dev);
         let flags_on_me = s.removed.get(&core.did).map(|f| f.iter().map(|f| (f.by.clone(), f.at)).collect::<Vec<_>>()).or_else(|| proof_removes(gid, &core.did, &proof));
         let removal = flags_on_me.map(|mut f| {
             f.sort_by_key(|(_, at)| *at);
@@ -334,6 +346,10 @@ impl Inner {
             host_requests,
             host_requested_here,
             removal,
+            am_call_host: s.is_call_host(&core.did, &core.dev),
+            call_hosts,
+            call_host_requests,
+            call_host_requested_here,
         })
     }
 
@@ -389,14 +405,9 @@ impl Inner {
             let l = groups.get(gid).ok_or(Error::NotFound)?;
             (l.state.name.clone(), l.state.owner.clone().unwrap_or_default())
         };
-        let hosts = core.store.hosts(gid).unwrap_or_default();
-        let mut all: Vec<SignedHostAddr> = hosts
-            .into_iter()
-            .filter(|s| s.open().is_some_and(|a| core.groups.lock().get(gid).is_some_and(|l| l.state.is_host(&a.did, &a.dev))))
-            .collect();
-        if let Some(mine) = self.group_my_addr(core, gid) {
-            all.push(mine);
-        }
+        // Chat hosts only (ours when we host the chat; never our call-only address): a call-only
+        // host refuses joiners.
+        let all = core.chat_host_addrs(gid);
         if all.is_empty() {
             return Err(Error::Rejected("the group has no reachable host yet".into()));
         }
@@ -616,6 +627,39 @@ impl Node {
             inner.group_member_check(&core, &group_id)?;
             inner.group_ensure(&core).await?;
             inner.group_write(&core, &group_id, Body::HostAccept { active: accept }).map(|_| ())
+        })?
+    }
+
+    /// Admin: device `device_id` of member `did` may host the group's CALLS (U21; separate
+    /// from chat hosting). It hosts calls once it accepts (`group_accept_call_host`).
+    pub fn group_appoint_call_host(&self, group_id: String, did: String, device_id: String) -> Result<(), Error> {
+        let dev = parse_dev(&device_id)?;
+        let core = self.inner.group_core()?;
+        self.inner.group_admin_check(&core, &group_id)?;
+        if !core.groups.lock().get(&group_id).is_some_and(|l| l.state.is_member(&did)) {
+            return Err(Error::Rejected("call hosts must be members".into()));
+        }
+        self.inner.group_write(&core, &group_id, Body::CallHostPermit { host: did, host_dev: dev, active: true }).map(|_| ())
+    }
+
+    /// Admin: device `device_id` of `did` stops hosting calls. A call it hosts moves to a
+    /// backup (members redial, G6 §5).
+    pub fn group_revoke_call_host(&self, group_id: String, did: String, device_id: String) -> Result<(), Error> {
+        let dev = parse_dev(&device_id)?;
+        let core = self.inner.group_core()?;
+        self.inner.group_admin_check(&core, &group_id)?;
+        self.inner.group_write(&core, &group_id, Body::CallHostPermit { host: did, host_dev: dev, active: false }).map(|_| ())
+    }
+
+    /// This device agrees to host the group's calls (or stops). Needs this and an admin's
+    /// call-host permit. Hosting exposes this device's group endpoint to every caller.
+    pub fn group_accept_call_host(&self, group_id: String, accept: bool) -> Result<(), Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move {
+            let core = inner.group_core()?;
+            inner.group_member_check(&core, &group_id)?;
+            inner.group_ensure(&core).await?;
+            inner.group_write(&core, &group_id, Body::CallHostAccept { active: accept }).map(|_| ())
         })?
     }
 

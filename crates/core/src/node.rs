@@ -481,6 +481,8 @@ pub(crate) struct Inner {
     pub(crate) selfsync: crate::sync::engine::SelfSync,
     pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
     pub(crate) link: crate::sync::link::LinkState,
+    /// Group calls (G6), `crate::gcall::net`.
+    pub(crate) gcall: crate::gcall::net::Service,
     pub(crate) block: crate::block::BlockRt,
     /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
     pub(crate) group: crate::group::engine::GroupRt,
@@ -572,6 +574,7 @@ impl Node {
             selfsync: Default::default(),
             sync_tx: tokio::sync::watch::channel(0).0,
             link: Default::default(),
+            gcall: Default::default(),
             block: Default::default(),
             group: Default::default(),
             caps: Default::default(),
@@ -899,6 +902,7 @@ impl Node {
                 // Under the lifecycle lock, so a `start` that is binding right now finishes
                 // first and its endpoint is closed here.
                 let _life = inner.lifecycle.lock().await;
+                inner.gcall_shutdown().await;
                 inner.close_endpoint().await;
                 inner.shared.lock().forget_session();
                 inner.chat_close().await;
@@ -952,6 +956,7 @@ impl Node {
             {
                 let _life = inner.lifecycle.lock().await;
                 inner.chat_sessions_close();
+                inner.gcall_shutdown().await;
                 inner.close_endpoint().await;
             }
             inner.emit_status();
@@ -1453,6 +1458,18 @@ impl Node {
         serde_json::to_string(&self.inner.my_device_list(&me)?).ok()
     }
 
+    /// For tests: dies like a killed process. The runtime stops at once and nothing is closed,
+    /// so peers hear nothing (no QUIC close, no group-call End) and must notice by timeout.
+    #[doc(hidden)]
+    pub fn crash_for_test(mut self) {
+        if let Some(ep) = self.inner.shared.lock().endpoint.take() {
+            std::mem::forget(ep);
+        }
+        if let Some(rt) = self.rt.take() {
+            rt.shutdown_background();
+        }
+    }
+
     /// For tests: the next `n` writes of account state fail, as if the disk were full.
     #[doc(hidden)]
     pub fn fail_next_writes(&self, n: u32) {
@@ -1625,6 +1642,17 @@ impl Inner {
             return Err(Error::InCall);
         }
         Ok(())
+    }
+
+    /// Runs `f` while no 1:1 call is active and none can begin (a group call starting).
+    pub(crate) fn with_no_call<R>(&self, f: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
+        let live = self.live.lock();
+        if live.call.is_some() || live.waiting.is_some() {
+            return Err(Error::InCall);
+        }
+        let r = f();
+        drop(live);
+        r
     }
 
     /// Writes a new account's files: the dir (never an existing one), `account.json`, the sealed
@@ -2698,6 +2726,10 @@ impl Inner {
                 if live.call.is_some() {
                     return Err(Error::Busy);
                 }
+                // The user is in a group call (G6): incoming 1:1 calls get Busy, outgoing InCall.
+                if self.gcall.in_call() {
+                    return Err(Error::InCall);
+                }
                 live.call = Some(call.clone());
                 live.last.take()
             };
@@ -3297,7 +3329,8 @@ impl Inner {
     }
 
     pub(crate) fn push_mic(&self, pcm: &[i16]) {
-        let Some((call, tone)) = self.active_call() else { return };
+        // No active 1:1 call: the microphone feeds the group call, if any.
+        let Some((call, tone)) = self.active_call() else { return self.gcall.push_mic(pcm) };
         let Some(conn) = call.conn.lock().clone() else { return };
         let mut mic = call.mic.lock();
         mic.extend_from_slice(pcm);
@@ -3327,7 +3360,8 @@ impl Inner {
 
     pub(crate) fn pull_speaker(&self) -> Vec<i16> {
         let mut out = [0i16; audio::FRAME];
-        if let Some((call, _)) = self.active_call() {
+        let Some((call, _)) = self.active_call() else { return self.gcall.pull_speaker() };
+        {
             call.receiver.lock().pull(&mut out, call.now_ms());
             let mut played = call.played.lock();
             played.extend(out.iter().copied());

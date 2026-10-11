@@ -280,7 +280,11 @@ impl Inner {
     pub(crate) async fn group_issue_code(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, invite: Option<SignedInvite>) -> Result<String, Error> {
         let code: [u8; CODE_LEN] = rand::random();
         let expires = invite.as_ref().and_then(|i| i.open()).map_or(now() + INVITE_TTL, |i| i.expires);
-        if let Some(mine) = self.group_my_addr(core, gid)
+        // Only a CHAT host keeps codes (`group_fetch_answer` checks `is_host`); `group_my_addr`
+        // is also Some for a device that only hosts calls (GA-I1), which registers at a host.
+        let chat_host = core.groups.lock().get(gid).is_some_and(|l| l.state.is_host(&core.did, &core.dev));
+        if chat_host
+            && let Some(mine) = self.group_my_addr(core, gid)
             && let Some(a) = mine.open()
         {
             if core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
@@ -391,7 +395,7 @@ impl Inner {
             Some(b) => Some(bincode::deserialize::<SignedInvite>(b).map_err(|_| UNKNOWN_CODE.to_string())?),
             None => None,
         };
-        Ok(InviteToken { group: row.gid.clone(), name, owner, invite, hosts: core.host_addrs_pub(&row.gid) })
+        Ok(InviteToken { group: row.gid.clone(), name, owner, invite, hosts: core.chat_host_addrs(&row.gid) })
     }
 
     /// Host side: a connection that opened with `Fetch`. Answers up to `MAX_BAD_PER_CONN` unknown
@@ -540,6 +544,12 @@ impl Node {
 /// Test hooks (not for apps).
 #[uniffi::export]
 impl Node {
+    /// The group endpoint id of the host `link` names.
+    pub fn group_link_endpoint_for_test(&self, link: String) -> Option<String> {
+        let sc = ShortCode::parse(&link)?;
+        iroh::PublicKey::from_bytes(&sc.endpoint).ok().map(|k| k.to_string())
+    }
+
     /// Sends `n` random codes to the host `link` names over ONE connection; the host's answers
     /// (refusal reasons) until it closes.
     pub fn group_guess_codes_for_test(&self, link: String, n: u32) -> Vec<String> {

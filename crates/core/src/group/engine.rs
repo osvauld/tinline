@@ -49,6 +49,8 @@ pub(crate) struct GroupRt {
     /// Delay between a removal / host revocation and the hosts' endpoint rotation, ms (U12:
     /// 2 days; 0 = that default). Test knob.
     pub(crate) rotation_delay_ms: AtomicU64,
+    /// Group calls over this runtime (GA-I1, `calls.rs`).
+    pub(crate) calls: super::calls::GroupCalls,
     /// How long a host that rotated keeps telling offline members it moved, ms (0 = the rotation
     /// delay, as in production). Test knob: a shortened rotation delay would otherwise shrink
     /// this window to seconds, and a member that comes back a little later is never told.
@@ -72,6 +74,8 @@ pub(crate) fn injected(n: &std::sync::atomic::AtomicU32) -> bool {
 
 /// U12: hosts rotate their group endpoint this long after a removal or a host revocation.
 pub const ROTATION_DELAY_MS: u64 = 2 * 24 * 3600 * 1000;
+/// G6 §5 / Q12: a due rotation waits for a running group call, at most this long.
+pub const CALL_ROTATION_DEFER_MS: u64 = 3600 * 1000;
 
 impl GroupRt {
     pub(crate) fn rotation_delay(&self) -> u64 {
@@ -132,19 +136,19 @@ pub(crate) struct GroupCore {
 }
 
 pub(crate) struct Sess {
-    id: u64,
-    gid: String,
-    did: String,
-    dev: [u8; 32],
+    pub(crate) id: u64,
+    pub(crate) gid: String,
+    pub(crate) did: String,
+    pub(crate) dev: [u8; 32],
     /// We accepted it: we host this session's member.
-    hosting: bool,
+    pub(crate) hosting: bool,
     /// Host side: the member was joining (not yet a member) at Hello.
     joining: bool,
-    tx: mpsc::UnboundedSender<Out>,
+    pub(crate) tx: mpsc::UnboundedSender<Out>,
     peer_vv: Mutex<VersionVector>,
 }
 
-enum Out {
+pub(crate) enum Out {
     Msg(GroupMsg),
     Close,
 }
@@ -189,7 +193,7 @@ impl GroupCore {
         self.store.db.close();
     }
 
-    fn sessions_of(&self, gid: &str) -> Vec<Arc<Sess>> {
+    pub(crate) fn sessions_of(&self, gid: &str) -> Vec<Arc<Sess>> {
         self.sessions.lock().values().filter(|s| s.gid == gid).cloned().collect()
     }
 
@@ -267,8 +271,8 @@ impl GroupCore {
         Ok(Some(Changed { gid: gid.to_string(), new_items }))
     }
 
-    /// Host addresses we pass on for `gid`: active hosts only (never a member's endpoint), ours
-    /// included when we host.
+    /// Host addresses we pass on for `gid`: active chat and call hosts only (never a plain
+    /// member's endpoint), ours included when we host either.
     fn host_addrs(&self, gid: &str) -> Vec<SignedHostAddr> {
         let groups = self.groups.lock();
         let Some(live) = groups.get(gid) else { return Vec::new() };
@@ -277,9 +281,9 @@ impl GroupCore {
             .hosts(gid)
             .unwrap_or_default()
             .into_iter()
-            .filter(|s| s.open().is_some_and(|a| live.state.is_host(&a.did, &a.dev) && !(a.did == self.did && a.dev == self.dev)))
+            .filter(|s| s.open().is_some_and(|a| hosts_or_calls(&live.state, &a.did, &a.dev) && !(a.did == self.did && a.dev == self.dev)))
             .collect();
-        if live.state.is_host(&self.did, &self.dev)
+        if hosts_or_calls(&live.state, &self.did, &self.dev)
             && let Some(mine) = self.my_addr.lock().get(gid).cloned()
         {
             out.push(mine);
@@ -327,8 +331,9 @@ impl GroupCore {
         true
     }
 
-    /// Stores host addresses that are newer and belong to active hosts (or, before we hold any
-    /// state, i.e. while joining, any validly signed one for this group). True if any changed.
+    /// Stores host addresses that are newer and belong to active chat or call hosts (or, before
+    /// we hold any state, i.e. while joining, any validly signed one for this group). True if any
+    /// changed.
     fn merge_hosts(&self, gid: &str, addrs: &[SignedHostAddr]) -> bool {
         let groups = self.groups.lock();
         let Some(live) = groups.get(gid) else { return false };
@@ -340,7 +345,7 @@ impl GroupCore {
             if a.group != gid || (a.did == self.did && a.dev == self.dev) {
                 continue;
             }
-            if live.state.owner.is_some() && !live.state.is_host(&a.did, &a.dev) {
+            if live.state.owner.is_some() && !hosts_or_calls(&live.state, &a.did, &a.dev) {
                 continue;
             }
             if stored.get(&host_key(&a.did, &a.dev)).is_some_and(|old| old.at >= a.at) {
@@ -390,8 +395,25 @@ impl GroupCore {
         live.doc.raw_value(id)
     }
 
-    pub(crate) fn host_addrs_pub(&self, gid: &str) -> Vec<SignedHostAddr> {
-        self.host_addrs(gid)
+    /// Addresses for a token (invite link answer, direct invitation, own-device sync): active
+    /// CHAT hosts only, ours included when we host the chat. A call-only host refuses joiners
+    /// and fetches; the joiner learns call hosts from a chat host's Welcome.
+    pub(crate) fn chat_host_addrs(&self, gid: &str) -> Vec<SignedHostAddr> {
+        let groups = self.groups.lock();
+        let Some(live) = groups.get(gid) else { return Vec::new() };
+        let mut out: Vec<SignedHostAddr> = self
+            .store
+            .hosts(gid)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|s| s.open().is_some_and(|a| live.state.is_host(&a.did, &a.dev) && !(a.did == self.did && a.dev == self.dev)))
+            .collect();
+        if live.state.is_host(&self.did, &self.dev)
+            && let Some(mine) = self.my_addr.lock().get(gid).cloned()
+        {
+            out.push(mine);
+        }
+        out
     }
 
     pub(crate) fn merge_hosts_pub(&self, gid: &str, addrs: &[SignedHostAddr]) -> bool {
@@ -415,6 +437,12 @@ impl GroupCore {
     pub(crate) fn send_to_host(&self, gid: &str, did: &str, dev: &[u8; 32], msg: GroupMsg) -> bool {
         self.sessions_of(gid).into_iter().find(|s| !s.hosting && s.did == did && &s.dev == dev).is_some_and(|s| s.tx.send(Out::Msg(msg)).is_ok())
     }
+}
+
+/// Device `dev` of `did` hosts the group's chat or its calls: the devices whose group endpoint
+/// members may know (U7, U21).
+pub(crate) fn hosts_or_calls(st: &GroupState, did: &str, dev: &[u8; 32]) -> bool {
+    st.is_host(did, dev) || st.is_call_host(did, dev)
 }
 
 /// Checks a removal proof against our own DID: a genesis for `gid`, and at least 3 flags on us
@@ -609,7 +637,7 @@ impl Inner {
             .build();
         let mut builder = Endpoint::builder(presets::N0)
             .secret_key(SecretKey::from_bytes(&core.store.endpoint_secret()?))
-            .alpns(vec![GROUP_ALPN.to_vec()])
+            .alpns(vec![GROUP_ALPN.to_vec(), proto::gcall::GCALL_ALPN.to_vec()])
             .transport_config(transport);
         if std::env::var_os("P2P_RELAY_ONLY").is_some() {
             builder = builder.clear_ip_transports();
@@ -640,9 +668,10 @@ impl Inner {
         self.group.core.lock().as_ref().and_then(|c| c.ep_id.lock().clone())
     }
 
-    /// Our signed host address for `gid` (refreshed when the relay changes), if we host it.
+    /// Our signed host address for `gid` (refreshed when the relay changes), if we host its chat
+    /// or its calls.
     pub(crate) fn group_my_addr(&self, core: &GroupCore, gid: &str) -> Option<SignedHostAddr> {
-        let hosting = core.groups.lock().get(gid).is_some_and(|l| l.state.is_host(&core.did, &core.dev));
+        let hosting = core.groups.lock().get(gid).is_some_and(|l| hosts_or_calls(&l.state, &core.did, &core.dev));
         if !hosting {
             core.my_addr.lock().remove(gid);
             return None;
@@ -883,7 +912,15 @@ impl Inner {
             }
             let (this, core) = (self.clone(), core.clone());
             tokio::spawn(async move {
-                let Ok(accepting) = incoming.accept() else { return };
+                let Ok(mut accepting) = incoming.accept() else { return };
+                let Ok(Ok(alpn)) = tokio::time::timeout(HELLO_TIMEOUT, accepting.alpn()).await else { return };
+                // Group calls (G6) run on the group endpoint (U2/U7): `crate::gcall::net`.
+                if alpn.as_slice() == proto::gcall::GCALL_ALPN {
+                    if let Err(e) = this.handle_gcall_incoming(accepting).await {
+                        tracing::debug!("incoming gcall: {e}");
+                    }
+                    return;
+                }
                 let Ok(conn) = tokio::time::timeout(HELLO_TIMEOUT, accepting).await else { return };
                 let Ok(conn) = conn else { return };
                 if let Err(e) = this.group_host_session(core, conn).await {
@@ -959,6 +996,8 @@ impl Inner {
                 let relay = relay.filter(|r| r.len() <= 300);
                 let entry = DirEntry { endpoint: conn.remote_id().to_string(), seen_ms: now_ms(), relay };
                 let _ = core.store.put_dir(&group, &auth.did, &auth.dev, &entry);
+                // A host (or call host) that rotated shows its new address in its Hello: pass it
+                // on to everyone else at once (records first, then the addresses).
                 core.merge_hosts_from(&group, &hosts, None);
                 let mine = EndpointAuth::new(&core.account, core.dev, *core.ep_id.lock().as_ref().map(|e| e.id()).ok_or(Error::NotStarted)?.as_bytes());
                 let our_vv = core.groups.lock().get(&group).map(|l| l.doc.vv().encode()).unwrap_or_default();
@@ -1016,6 +1055,7 @@ impl Inner {
                 break;
             }
             self.group_req_tick(&core);
+            self.group_calls_tick(&core);
             self.group_codes_tick(&core);
             if let Err(e) = self.group_rotation_tick(&core).await {
                 tracing::warn!("group endpoint rotation: {e}");
@@ -1214,6 +1254,7 @@ impl Inner {
             let _ = sess.tx.send(Out::Msg(GroupMsg::Hosts { hosts }));
         }
         self.group_mail_on_session(&core, &sess);
+        self.group_calls_on_session(&core, &sess);
         if let Some(ev) = self.group_ev() {
             let g = gid.clone();
             self.handle.spawn_blocking(move || ev.on_group_changed(g));
@@ -1307,6 +1348,13 @@ impl Inner {
                         let _ = core.store.drop_out(&sess.gid, &super::mail::id_hex(&id));
                     }
                 }
+                m @ (GroupMsg::CallHostStatus { .. }
+                | GroupMsg::CallStart { .. }
+                | GroupMsg::CallEnd { .. }
+                | GroupMsg::CallHostRequest { .. }
+                | GroupMsg::CallHostRefusal { .. }) => {
+                    self.group_call_msg(core, &sess.gid, m, Some(sess));
+                }
                 m @ (GroupMsg::Code { .. } | GroupMsg::RevokeCode { .. }) if sess.hosting => {
                     // G3: a member has us keep (or forget) an invite code; members only.
                     let ack = self.group_code_in(core, &sess.gid, &sess.did, m);
@@ -1331,16 +1379,26 @@ impl Inner {
         core.groups
             .lock()
             .values()
-            .filter(|l| l.state.is_host(&core.did, &core.dev))
-            .flat_map(|l| l.state.rotation_triggers.iter().copied())
-            .filter(|t| *t > 0 && *t as u64 > made)
+            .filter(|l| hosts_or_calls(&l.state, &core.did, &core.dev))
+            .flat_map(|l| {
+                // A call host that does not host chat moves half a delay after the chat hosts:
+                // it learns their new endpoints through their `Moved` at its old one, then
+                // shows its own new address in its next Hello (GA-I1). Both at once would leave
+                // each knowing only the other's closed endpoint.
+                let extra = if l.state.is_host(&core.did, &core.dev) { 0 } else { delay / 2 };
+                l.state.rotation_triggers.iter().filter(|t| **t > 0 && **t as u64 > made).map(move |t| *t as u64 + delay + extra).collect::<Vec<_>>()
+            })
             .min()
-            .map(|t| t as u64 + delay)
     }
 
     async fn group_rotation_tick(self: &Arc<Self>, core: &Arc<GroupCore>) -> Result<(), Error> {
         let Some(due) = self.group_rotation_due(core) else { return Ok(()) };
         if due > now_ms() || core.ep_id.lock().is_none() {
+            return Ok(());
+        }
+        // G6 §5: not while a group call runs on this endpoint (it would cut it), for at most
+        // an hour past the deadline.
+        if self.gcall.busy() && now_ms() < due + CALL_ROTATION_DEFER_MS {
             return Ok(());
         }
         self.group_rotate(core).await
@@ -1367,10 +1425,13 @@ impl Inner {
         let ep = self.group_bind(core).await?;
         self.group_relay_ready().await;
         self.log(format!("group endpoint rotated to {}", ep.id()));
-        let hosted: Vec<String> = core.groups.lock().iter().filter(|(_, l)| l.state.is_host(&core.did, &core.dev)).map(|(g, _)| g.clone()).collect();
-        for gid in hosted {
+        let hosted: Vec<(String, bool)> =
+            core.groups.lock().iter().filter(|(_, l)| hosts_or_calls(&l.state, &core.did, &core.dev)).map(|(g, l)| (g.clone(), l.state.is_host(&core.did, &core.dev))).collect();
+        for (gid, chat_host) in hosted {
             let _ = self.group_my_addr(core, &gid);
-            if core.moving.lock().insert(gid.clone()) {
+            // A call host that does not host chat has no member directory: its new address
+            // reaches the members through the chat hosts (its next Hello, relayed as `Hosts`).
+            if chat_host && core.moving.lock().insert(gid.clone()) {
                 let (this, core) = (self.clone(), core.clone());
                 self.handle.spawn(async move { this.group_tell_moved(core, gid).await });
             }

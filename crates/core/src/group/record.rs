@@ -58,6 +58,15 @@ pub enum Body {
     /// from the recovery phrase; not a network key), so other members can seal mail to it (U3
     /// chat requests, `mail.rs`). The latest per author counts.
     EncKey { key: [u8; 32] },
+    /// Owner or admin: device `host_dev` of `host` may (or may no longer) host group CALLS
+    /// (U21: a separate `host_call` capability, never implied by `HostPermit`). Latest by
+    /// `(author clock, id)` per device wins, like `HostPermit`.
+    CallHostPermit { host: String, host_dev: [u8; 32], active: bool },
+    /// The author's own device `dev` agrees to host group calls (or stops). Separate from
+    /// `HostAccept`: agreeing to relay chat is not agreeing to carry calls (battery, uplink, the
+    /// group endpoint shown to every caller), so a call host needs both a `CallHostPermit` and
+    /// this.
+    CallHostAccept { active: bool },
 }
 
 /// One group op, as signed.
@@ -134,7 +143,7 @@ impl Record {
             Body::Join { name, .. } if name.len() > MAX_NAME => bad,
             Body::Post { text, reply_to } if text.len() > MAX_TEXT || text.is_empty() || reply_to.as_ref().is_some_and(|r| r.len() > 64) => bad,
             Body::Admin { member, .. } | Body::Flag { member } if member.len() > 200 => bad,
-            Body::HostPermit { host, .. } if host.len() > 200 => bad,
+            Body::HostPermit { host, .. } | Body::CallHostPermit { host, .. } if host.len() > 200 => bad,
             _ => Ok(()),
         }
     }
@@ -351,6 +360,7 @@ mod tests {
             Body::Post { text: String::new(), reply_to: None },
             Body::Post { text: "x".repeat(MAX_TEXT + 1), reply_to: None },
             Body::Genesis { name: " ".into(), nonce: [0; 16], owner_name: "o".into() },
+            Body::CallHostPermit { host: "d".repeat(201), host_dev: [0; 32], active: true },
         ];
         for b in cases {
             assert_eq!(SignedRecord::open(&rec(&a, "g", b).sign(&a).to_bytes(), "g"), Err(RecordError::Malformed));

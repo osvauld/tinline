@@ -231,6 +231,26 @@ sync, direct invitations).
   host: if that host is offline (or rotated its endpoint, U12), the link does not work; ask for a
   new one (PROVISIONAL).
 
+## Group calls (GA-I1, U21)
+
+Code: `calldir.rs`, `calls.rs`; spec `docs/design/group-call-spec.md` §11 (GA-I1). Test:
+`crates/core/tests/group_call.rs`.
+
+- **Call hosts** are a separate capability: `CallHostPermit{host, host_dev, active}`
+  (owner/admins) + `CallHostAccept{active}` (the device) + a member DID, derived like hosts
+  (`GroupState::call_hosts`, `call_host_requests`). Chat hosting implies nothing about calls.
+- **Calls run on the group endpoint** (ALPN `tinline/gcall/1`, U2). Members dial only the call
+  host; call hosts' DID-signed addresses travel like chat hosts' (U7).
+- **Control through the chat hosts:** `GroupMsg::CallHostStatus` (every 30 s and on change),
+  `CallHostRequest` / `CallHostRefusal` (the starter's pick, §2.3), `CallStart{start, hosts}`,
+  `CallEnd`. Hosts verify and relay; removed and joining members never get them.
+- Call hosts rotate after a removal too (half a delay after chat hosts when they host no
+  chat); rotation waits for a running call (≤ 1 h).
+- API: `group_call_start/join/leave/set_muted`, `group_calls`, `group_call_hosting_enable`,
+  `set_group_call_events`, `group_appoint_call_host` / `group_revoke_call_host` /
+  `group_accept_call_host`, `GroupDetail.{am_call_host, call_hosts, call_host_requests,
+  call_host_requested_here}`.
+
 ## API (UniFFI, `api.rs`)
 
 `set_group_events(GroupEvents{on_group_message, on_group_changed})`, `groups() ->
@@ -312,7 +332,7 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
   and revocation trigger one today).
 - The group endpoint is one per install for all groups: a removed member that shares another
   group hosted by the same device learns the rotated endpoint through that group.
-- Group calls (U21), files/voice in groups, edits/deletes of posts, mute, group rename/photo,
+- Group-call UI and platform condition feeders (GA-I1 wired the core), files/voice in groups, edits/deletes of posts, mute, group rename/photo,
   "who can invite" setting, readmission after removal, host-side limits (max hosts, upload caps).
 - The doc is one Loro doc per group (not day-sharded like 1:1 chat); a large group's full sync is
   one batch. Sharding/compaction like chat is needed before big groups.

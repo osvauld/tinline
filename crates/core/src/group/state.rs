@@ -21,6 +21,8 @@
 //! - Hosts: device `dev` of `did` hosts when the latest `HostPermit` for it (by an owner/admin
 //!   as of the permit's frontier) is active, the device's own latest `HostAccept` is active,
 //!   and `did` is a member (not removed).
+//! - Call hosts (U21, G6 §2.1): the same rule over the separate `CallHostPermit` /
+//!   `CallHostAccept` records. Chat hosting never implies call hosting, nor the reverse.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -51,6 +53,18 @@ pub struct HostInfo {
     pub dev: [u8; 32],
     pub appointed_by: String,
     pub at: i64,
+}
+
+/// A device that may host group calls (or was asked to): `permit` is the id of the admin's
+/// latest `CallHostPermit` for it, the `permit_digest` of its `gcall::HostRef`, so a re-issued
+/// permit is a new reference and a revoked one stops verifying.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CallHostInfo {
+    pub did: String,
+    pub dev: [u8; 32],
+    pub appointed_by: String,
+    pub at: i64,
+    pub permit: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -100,6 +114,11 @@ pub struct GroupState {
     /// Devices an admin appointed (active permit) that have not accepted (yet), with who
     /// appointed them: the "host this group?" prompt on that device.
     pub host_requests: Vec<HostInfo>,
+    /// Devices that host group calls: an active admin `CallHostPermit`, their own active
+    /// `CallHostAccept`, and a member DID (U21; separate from `hosts`).
+    pub call_hosts: Vec<CallHostInfo>,
+    /// Devices an admin allowed to host calls that have not accepted (yet).
+    pub call_host_requests: Vec<CallHostInfo>,
     /// Posts and system lines, ordered by `(at, id)`.
     pub items: Vec<Item>,
     /// When something happened that makes hosts rotate their group endpoint (U12): each
@@ -124,6 +143,14 @@ impl GroupState {
 
     pub fn is_removed(&self, did: &str) -> bool {
         self.removed.contains_key(did)
+    }
+
+    pub fn call_host(&self, did: &str, dev: &[u8; 32]) -> Option<&CallHostInfo> {
+        self.call_hosts.iter().find(|h| h.did == did && &h.dev == dev)
+    }
+
+    pub fn is_call_host(&self, did: &str, dev: &[u8; 32]) -> bool {
+        self.call_host(did, dev).is_some()
     }
 }
 
@@ -299,6 +326,40 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
             && !st.hosts.iter().any(|h| &h.did == did && &h.dev == dev)
         {
             st.host_offers.push((did.clone(), *dev));
+        }
+    }
+
+    // Call hosts (U21): the same rule over their own permit / acceptance records.
+    let mut cpermits: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
+    let mut caccepts: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
+    for e in entries {
+        match &e.rec.body {
+            Body::CallHostPermit { host, host_dev, .. } if admin_as_of(&e.rec.author, Some(&e.rec.seen)) => {
+                let k = (host.clone(), *host_dev);
+                if cpermits.get(&k).is_none_or(|p| order(p) < order(e)) {
+                    cpermits.insert(k, e);
+                }
+            }
+            Body::CallHostAccept { .. } => {
+                let k = (e.rec.author.clone(), e.rec.dev);
+                if caccepts.get(&k).is_none_or(|p| order(p) < order(e)) {
+                    caccepts.insert(k, e);
+                }
+            }
+            _ => {}
+        }
+    }
+    for ((did, dev), p) in &cpermits {
+        let Body::CallHostPermit { active: true, .. } = p.rec.body else { continue };
+        if !st.members.contains_key(did) {
+            continue;
+        }
+        let acc = caccepts.get(&(did.clone(), *dev));
+        let info = CallHostInfo { did: did.clone(), dev: *dev, appointed_by: p.rec.author.clone(), at: p.rec.at, permit: p.id.clone() };
+        if acc.is_some_and(|a| matches!(a.rec.body, Body::CallHostAccept { active: true })) {
+            st.call_hosts.push(info);
+        } else if !acc.is_some_and(|a| order(a) > order(p)) {
+            st.call_host_requests.push(info);
         }
     }
 
@@ -569,6 +630,75 @@ mod tests {
         let (m2, dev2) = (ms[2 - 1].did(), [77u8; 32]);
         o.write(Body::HostPermit { host: m2.clone(), host_dev: dev2, active: true });
         assert!(o.state().host_requests.iter().any(|h| h.did == m2 && h.dev == dev2));
+    }
+
+    // KIND: unit (GA-I1) — U21 / G6 §2.1: call hosting needs its own admin permit AND the
+    // device's own call-host acceptance; chat hosting implies nothing about calls, and the
+    // reverse; non-admin permits are inert; a revocation or a removal ends it; a re-issued
+    // permit is a new reference.
+    #[test]
+    fn call_hosts_need_their_own_permit_and_acceptance() {
+        let (_g, mut o, mut ms) = group(3);
+        let (m0, dev0) = (ms[0].did(), ms[0].dev);
+        let (m1, dev1) = (ms[1].did(), ms[1].dev);
+        // The owner hosts chat: not a call host.
+        o.write(Body::HostPermit { host: o.did(), host_dev: o.dev, active: true });
+        o.write(Body::HostAccept { active: true });
+        assert!(o.state().is_host(&o.did(), &o.dev) && !o.state().is_call_host(&o.did(), &o.dev));
+        // A call permit without the device's acceptance: asked, not hosting.
+        o.write(Body::CallHostPermit { host: m0.clone(), host_dev: dev0, active: true });
+        sync(&mut o, &mut ms[0]);
+        let s = ms[0].state();
+        assert!(!s.is_call_host(&m0, &dev0));
+        assert!(s.call_host_requests.iter().any(|h| h.did == m0 && h.dev == dev0 && h.appointed_by == o.did()));
+        // A chat-host acceptance is not a call-host acceptance.
+        ms[0].write(Body::HostAccept { active: true });
+        assert!(!ms[0].state().is_call_host(&m0, &dev0));
+        ms[0].write(Body::CallHostAccept { active: true });
+        sync(&mut ms[0], &mut o);
+        let s = o.state();
+        assert!(s.is_call_host(&m0, &dev0), "permit + call acceptance");
+        assert!(!s.is_host(&m0, &dev0), "call hosting does not imply chat hosting");
+        assert!(s.call_host_requests.is_empty());
+        let first = s.call_host(&m0, &dev0).unwrap().permit.clone();
+        assert!(s.entries_have(&o.doc, &first));
+        // A chat-host permit + acceptance does not make a call host.
+        o.write(Body::HostPermit { host: m1.clone(), host_dev: dev1, active: true });
+        sync(&mut o, &mut ms[1]);
+        ms[1].write(Body::HostAccept { active: true });
+        ms[1].write(Body::CallHostAccept { active: true });
+        sync(&mut ms[1], &mut o);
+        assert!(o.state().is_host(&m1, &dev1) && !o.state().is_call_host(&m1, &dev1));
+        // A non-admin's call permit is inert.
+        ms[1].write(Body::CallHostPermit { host: m1.clone(), host_dev: dev1, active: true });
+        sync(&mut ms[1], &mut o);
+        assert!(!o.state().is_call_host(&m1, &dev1));
+        // Revoked: gone; re-issued: back under a new permit id.
+        o.write(Body::CallHostPermit { host: m0.clone(), host_dev: dev0, active: false });
+        assert!(!o.state().is_call_host(&m0, &dev0));
+        o.write(Body::CallHostPermit { host: m0.clone(), host_dev: dev0, active: true });
+        let again = o.state().call_host(&m0, &dev0).unwrap().permit.clone();
+        assert_ne!(again, first);
+        // The device withdraws: gone.
+        sync(&mut o, &mut ms[0]);
+        ms[0].write(Body::CallHostAccept { active: false });
+        sync(&mut ms[0], &mut o);
+        assert!(!o.state().is_call_host(&m0, &dev0));
+        ms[0].write(Body::CallHostAccept { active: true });
+        sync(&mut ms[0], &mut o);
+        assert!(o.state().is_call_host(&m0, &dev0));
+        // Removed by 3 flags: no longer a call host.
+        for _ in 0..3 {
+            o.write(Body::Flag { member: m0.clone() });
+        }
+        assert!(!o.state().is_call_host(&m0, &dev0));
+        let _ = &mut ms[2];
+    }
+
+    impl GroupState {
+        fn entries_have(&self, doc: &GroupDoc, id: &str) -> bool {
+            doc.entries().unwrap().iter().any(|e| e.id == id && matches!(e.rec.body, Body::CallHostPermit { .. }))
+        }
     }
 
     // KIND: unit (G1 stage 1) — leaving ends membership; a left member's later post is inert.
