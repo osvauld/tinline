@@ -30,7 +30,7 @@ import androidx.compose.ui.semantics.stateDescription
 import uniffi.p2pcore.Chat
 import uniffi.p2pcore.Contact
 
-/** The tabs of the bottom bar. Chats opens by default. Groups shows only while the placeholder preview is on ([PreviewFlags]). */
+/** The tabs of the bottom bar. Chats opens by default. Groups is group chat on the core (GroupsLive.kt). */
 enum class HomeTab { Chats, Groups, Calls, Contacts }
 
 /** Bottom bar: Chats · Calls · Contacts, with a red count on Chats (unread) and Calls (missed since you looked). */

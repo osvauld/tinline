@@ -54,8 +54,10 @@ fun HomeScreen(
     onChat: (String) -> Unit = {}, onNewChat: () -> Unit = {}, callError: String? = null, onPaste: () -> Unit = {},
     /** Hoisted tab, so coming back from a chat or group lands on the same tab. Null keeps it local. */
     homeTab: MutableState<HomeTab>? = null,
-    /** Opens a PLACEHOLDER groups screen (Groups tab, shown only while [PreviewFlags] is on). */
+    /** Opens a PLACEHOLDER preview screen (Settings › Developer). */
     onPreview: (PRoute) -> Unit = {},
+    /** The Groups tab (real groups, GroupsLive.kt). */
+    onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {},
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val status by app.status.collectAsState()
@@ -68,17 +70,8 @@ fun HomeScreen(
     var sheet by remember { mutableStateOf(false) }
     val localTab = rememberSaveable { mutableStateOf(HomeTab.Chats) }
     var tab by (homeTab ?: localTab)
-    val previewOn by PreviewFlags.enabled(ctx).collectAsState()
-    val groupsSrc = if (previewOn == true) remember { PreviewBackend.get(app.node.profile()?.name ?: "") } else null
-    // The Groups tab goes away with the preview switch.
-    LaunchedEffect(previewOn) { if (previewOn != true && tab == HomeTab.Groups) tab = HomeTab.Chats }
-    val groupBadge = groupsSrc?.let { src ->
-        val gs by src.groups.collectAsState()
-        val rq by src.requests.collectAsState()
-        val inv by src.invites.collectAsState()
-        gs.filter { it.removal == null }.sumOf { it.unread } + rq.incoming.count { it.state == IncomingRequestState.Pending } +
-            inv.count { it.state == InviteState.Pending && it.inviterDid != src.myDid }
-    } ?: 0
+    val groupList by app.groups.list.collectAsState()
+    val groupBadge = GroupText.badge(groupList)
     // Relative times ("4 min ago") go stale: refresh them once a minute.
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { delay(6000); grace = false }
@@ -104,7 +97,7 @@ fun HomeScreen(
         tab = tab, onTab = { tab = it }, chatRows = rows, myDid = myDid, onChat = onChat, onNewChat = onNewChat,
         chatBadge = rows.sumOf { it.unread }, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
-        groupsBody = groupsSrc?.let { src -> { GroupsTabBody(src, onPreview) } }, groupBadge = groupBadge,
+        groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup) }, groupBadge = groupBadge,
     )
     if (sheet) AvailabilitySheet(avail.available, avail.until?.toLong(), app.node.profile()?.name ?: "", onDismiss = { sheet = false }) { available, until ->
         sheet = false
@@ -139,7 +132,7 @@ fun HomeContent(
     tab: HomeTab = HomeTab.Contacts, onTab: (HomeTab) -> Unit = {}, chatRows: List<ChatRowUi> = emptyList(), myDid: String? = null,
     onChat: (String) -> Unit = {}, onNewChat: () -> Unit = {}, chatBadge: Int = 0, callBadge: Int = 0,
     firstRun: (@Composable () -> Unit)? = null,
-    /** The Groups tab's content; null hides the tab (core groups don't exist yet: placeholder preview only). */
+    /** The Groups tab's content; null hides the tab (the gallery and tests). */
     groupsBody: (@Composable () -> Unit)? = null, groupBadge: Int = 0,
 ) {
     val c = Tin.c

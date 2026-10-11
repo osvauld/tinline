@@ -82,6 +82,13 @@ private sealed interface Route {
     data class Preview(val start: PRoute) : Route
     /** Settings › Blocked people (real data). */
     data object Blocked : Route
+    /** Group chat on the core (GroupsLive.kt). */
+    data class Group(val id: String) : Route
+    data class GroupInfo(val id: String) : Route
+    data class GroupToken(val id: String, val device: Boolean) : Route
+    data class GroupRemoval(val id: String) : Route
+    data object NewGroup : Route
+    data object JoinGroup : Route
 }
 
 @Composable
@@ -220,7 +227,14 @@ private fun Root(app: P2pApp) {
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                     homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
+                    onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup) },
                 )
+                is Route.Group -> GroupChatLive(app, r.id, onBack = ::pop, onInfo = { stack.add(Route.GroupInfo(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say)
+                is Route.GroupInfo -> GroupInfoLive(app, r.id, onBack = ::pop, onToken = { stack.add(Route.GroupToken(r.id, it)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say)
+                is Route.GroupToken -> GroupTokenLive(app, r.id, r.device, onBack = ::pop)
+                is Route.GroupRemoval -> GroupRemovalLive(app, r.id, onBack = ::pop)
+                Route.NewGroup -> NewGroupLive(app, onBack = ::pop, onCreated = { pop(); stack.add(Route.Group(it)) })
+                Route.JoinGroup -> JoinGroupLive(app, onBack = ::pop, onJoined = { pop(); stack.add(Route.Group(it)); say("You joined the group.") })
                 Route.NewChat -> {
                     val chats by app.chat.chats.collectAsState()
                     val last = remember(chats) { chats.filter { it.lastActivity > 0UL }.associate { it.peerDid to "Last message ${listTime(it.lastActivity.toLong(), System.currentTimeMillis())}" } }

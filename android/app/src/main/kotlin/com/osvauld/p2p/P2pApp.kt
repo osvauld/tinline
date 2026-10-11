@@ -33,6 +33,9 @@ class P2pApp : Application(), NodeEvents {
         private set
     lateinit var realChat: CoreChatSource
         private set
+    /** Group chat on the core (GroupsCore.kt): the Groups tab. */
+    lateinit var groups: GroupsController
+        private set
     /** Device linking: the state machine behind the Link a device screens, and the core's LinkEvents. */
     lateinit var links: LinkController
         private set
@@ -72,6 +75,7 @@ class P2pApp : Application(), NodeEvents {
         links = LinkController(this)
         node.setLinkEvents(links)
         realChat = CoreChatSource(this).also { it.attach() }
+        groups = GroupsController(NodeGroupApi { node }) { currentDid() }.also { it.attach(node) }
         selectLastAccountIfNone()
         UnlockStore.migrateLegacy(this, currentDid())
         tryAutoUnlock()
@@ -114,6 +118,7 @@ class P2pApp : Application(), NodeEvents {
         _contacts.value = node.contacts()
         refreshBlocks()
         _status.value = node.status()
+        scope.launch { groups.refresh() }
         if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
         else { _history.value = emptyList(); _availability.value = Availability(true, null) }
         // The account to come back to if the app dies while a new one is being added.
