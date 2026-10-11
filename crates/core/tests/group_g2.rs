@@ -108,6 +108,21 @@ fn link_fresh(e: &Peer, name: &str) -> Peer {
     n
 }
 
+/// `group_join` that tries again on a transient network failure. GF: joining is a one-shot
+/// network exchange (fetch the invite behind the link from the host, then sync until a member);
+/// under heavy load it occasionally fails with `Timeout` / `Net("connection lost")`, and a user
+/// would simply tap again. Any other error is a real failure.
+fn join(p: &Peer, link: String) -> String {
+    for _ in 0..3 {
+        match p.node.group_join(link.clone()) {
+            Ok(g) => return g,
+            Err(p2pcore::Error::Timeout | p2pcore::Error::Net(_)) => continue,
+            Err(e) => panic!("join: {e:?}"),
+        }
+    }
+    panic!("join failed three times on network errors")
+}
+
 fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
     let end = Instant::now() + Duration::from_secs(secs);
     while Instant::now() < end {
@@ -160,7 +175,7 @@ fn group_with(o: &Peer, ms: &[&Peer]) -> String {
     let g = o.node.group_create("Weekend hike".into()).unwrap();
     for m in ms {
         let tok = o.node.group_invite(g.clone()).unwrap();
-        assert_eq!(m.node.group_join(tok).unwrap(), g);
+        assert_eq!(join(&m, tok), g);
     }
     let want = sorted(std::iter::once(o.did.clone()).chain(ms.iter().map(|m| m.did.clone())).collect());
     for p in std::iter::once(o).chain(ms.iter().copied()) {
@@ -235,7 +250,7 @@ fn a_lost_group_store_gives_a_fresh_writer_and_new_posts_arrive() {
     assert_ne!(dev_after, dev_before, "a fresh group store writes under a fresh device ID");
     // Rejoin (a is still a member: any admin's invite, or a device token, lets it back in).
     let tok = o.node.group_invite(g.clone()).unwrap();
-    assert_eq!(a.node.group_join(tok).unwrap(), g);
+    assert_eq!(join(&a, tok), g);
     eventually(WAIT, "a sees history again", || has_post(&a, &g, &a.did, "before"));
     a.node.group_post(g.clone(), "after the loss".into(), None).unwrap();
     for p in [&o, &b] {
@@ -281,7 +296,7 @@ fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
     online(&o.node);
     restart(&mut a, true);
     let tok = o.node.group_invite(g.clone()).unwrap();
-    assert_eq!(a.node.group_join(tok).unwrap(), g);
+    assert_eq!(join(&a, tok), g);
     assert!(!has_post(&o, &g, &a.did, "only h has this"), "o never got it");
     a.node.group_post(g.clone(), "written after the loss".into(), None).unwrap();
     eventually(WAIT, "o has the new post", || has_post(&o, &g, &a.did, "written after the loss"));
@@ -293,6 +308,31 @@ fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
             has_post(p, &g, &a.did, "only h has this") && has_post(p, &g, &a.did, "written after the loss")
         });
     }
+}
+
+// KIND: regression (GF, flake root cause) — a new host's signed address must not be lost when it
+// arrives before the records that make it a host. Here h accepts while the first host o is away,
+// so h's address first reaches o in the Hello of h's next session, before o has h's acceptance;
+// o used to drop it and nobody ever re-sent it, so members never learned h's endpoint (the
+// `a knows h's group endpoint` timeout above, under load, when h's session to o was reconnecting).
+#[test]
+fn a_host_that_accepts_while_the_first_host_is_away_still_reaches_members() {
+    let o = peer("ha-o");
+    let h = peer("ha-h");
+    let a = peer("ha-a");
+    let g = group_with(&o, &[&h, &a]);
+    o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
+    eventually(WAIT, "h is asked to host", || h.node.group_detail(g.clone()).unwrap().host_requested_here);
+    o.node.stop();
+    h.node.group_accept_host(g.clone(), true).unwrap();
+    assert!(h.node.group_detail(g.clone()).unwrap().am_host);
+    online(&o.node);
+    for p in [&o, &a] {
+        eventually(WAIT, "two hosts everywhere", || p.node.group_detail(g.clone()).unwrap().hosts.len() == 2);
+    }
+    let he = h.node.group_endpoint_id().unwrap();
+    eventually(WAIT, "o knows h's group endpoint", || o.node.group_known_endpoints_for_test(g.clone()).contains(&he));
+    eventually(WAIT, "a knows h's group endpoint", || a.node.group_known_endpoints_for_test(g.clone()).contains(&he));
 }
 
 // ---- stage 2: own-device sync of the group list ---------------------------------------------------
@@ -321,7 +361,7 @@ fn a_linked_device_learns_the_accounts_groups_without_a_token() {
 
     // A group a joins after linking.
     let g2 = o.node.group_create("Second".into()).unwrap();
-    a.node.group_join(o.node.group_invite(g2.clone()).unwrap()).unwrap();
+    join(&a, o.node.group_invite(g2.clone()).unwrap());
     eventually(WAIT, "a2 lists the second group", || lists(&a2, &g2));
     eventually(WAIT, "a2 is a member there", || a2.node.group_detail(g2.clone()).map(|d| d.my_role == GroupRole::Member).unwrap_or(false));
 
@@ -350,6 +390,22 @@ fn is_contact(p: &Peer, did: &str) -> bool {
     p.node.contacts().iter().any(|c| c.did == did)
 }
 
+/// Asks `did` for a chat once the request can be sealed to them: a member's encryption key is a
+/// separate record their app writes after it sees itself as a member, so it can trail the
+/// membership the test waited for (the API refuses with this transient reason until then).
+fn request_chat(p: &Peer, g: &str, did: &str) -> p2pcore::GroupChatRequest {
+    let mut out = None;
+    eventually(WAIT, "their key is published in the group", || match p.node.group_chat_request(g.into(), did.into()) {
+        Ok(r) => {
+            out = Some(r);
+            true
+        }
+        Err(p2pcore::Error::Rejected(why)) if why.contains("not published a key") => false,
+        Err(e) => panic!("chat request: {e:?}"),
+    });
+    out.unwrap()
+}
+
 fn chat_has(p: &Peer, peer_did: &str, text: &str) -> bool {
     p.node.chat_day(peer_did.into(), None).map(|d| d.messages.iter().any(|m| m.text == text)).unwrap_or(false)
 }
@@ -363,7 +419,7 @@ fn a_chat_request_accepted_makes_message_only_contacts_that_chat_directly() {
     let a = peer("cr-a");
     let b = peer("cr-b");
     let g = group_with(&o, &[&a, &b]);
-    let r = a.node.group_chat_request(g.clone(), b.did.clone()).unwrap();
+    let r = request_chat(&a, &g, &b.did);
     assert!(r.outgoing && r.state == p2pcore::ChatRequestState::Pending && r.peer_did == b.did);
     // Asking again returns the pending request.
     assert_eq!(a.node.group_chat_request(g.clone(), b.did.clone()).unwrap().id, r.id);
@@ -402,7 +458,7 @@ fn chat_requests_can_be_declined_and_blocked_senders_are_refused() {
     let b = peer("cd-b");
     let c = peer("cd-c");
     let g = group_with(&o, &[&a, &b, &c]);
-    let r = a.node.group_chat_request(g.clone(), b.did.clone()).unwrap();
+    let r = request_chat(&a, &g, &b.did);
     eventually(WAIT, "b sees it", || incoming(&b).iter().any(|x| x.id == r.id));
     b.node.group_chat_decline(r.id.clone()).unwrap();
     eventually(WAIT, "a sees declined", || outgoing(&a).iter().any(|x| x.id == r.id && x.state == p2pcore::ChatRequestState::Declined));
@@ -415,7 +471,7 @@ fn chat_requests_can_be_declined_and_blocked_senders_are_refused() {
     eventually(WAIT, "b has c", || is_contact(&b, &c.did));
     b.node.block(c.did.clone()).unwrap();
     c.node.group_skip_request_checks_for_test(true);
-    let rc = c.node.group_chat_request(g.clone(), b.did.clone()).unwrap();
+    let rc = request_chat(&c, &g, &b.did);
     eventually(WAIT, "c sees blocked", || outgoing(&c).iter().any(|x| x.id == rc.id && x.state == p2pcore::ChatRequestState::Blocked));
     assert!(!incoming(&b).iter().any(|x| x.peer_did == c.did), "never shown to b");
     // The shipped app refuses locally: we do not ask someone we block.
@@ -438,6 +494,10 @@ fn the_host_rotates_after_a_removal_and_only_remaining_members_follow() {
     o.node.group_set_admin(g.clone(), a.did.clone(), true).unwrap();
     eventually(WAIT, "a is admin", || a.node.group_detail(g.clone()).unwrap().my_role == GroupRole::Admin);
     o.node.group_set_rotation_delay_for_test(25);
+    // GF: the host tells offline members it moved for as long as the rotation delay (2 days in
+    // production); with the delay shortened to 25 s that window closed before c came back under
+    // load. Keep it long here: what is tested is that c is told, not how fast it returns.
+    o.node.group_set_moved_window_for_test(600);
     let old = o.node.group_endpoint_id().unwrap();
     // c is offline across the rotation.
     c.node.stop();
@@ -485,6 +545,7 @@ fn a_host_revocation_rotates_the_remaining_hosts() {
     let d = h.node.group_detail(g.clone()).unwrap();
     assert!(!d.host_requested_here && d.host_requests.is_empty() && d.am_host);
     o.node.group_set_rotation_delay_for_test(5);
+    o.node.group_set_moved_window_for_test(600); // GF: see the removal test above
     let old = o.node.group_endpoint_id().unwrap();
     o.node.group_revoke_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
     eventually(WAIT + 5, "o rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));

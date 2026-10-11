@@ -708,6 +708,12 @@ impl Node {
         self.inner.group.rotation_delay_ms.store(secs.max(1) * 1000, std::sync::atomic::Ordering::SeqCst);
     }
 
+    /// How long a rotated host keeps telling offline members it moved, in seconds (default: the
+    /// rotation delay).
+    pub fn group_set_moved_window_for_test(&self, secs: u64) {
+        self.inner.group.moved_window_ms.store(secs.max(1) * 1000, std::sync::atomic::Ordering::SeqCst);
+    }
+
     /// Behave like a modified app that ignores its own removal (keeps posting and dialing).
     pub fn group_ignore_removal_for_test(&self, ignore: bool) {
         self.inner.group.ignore_removal.store(ignore, std::sync::atomic::Ordering::SeqCst);

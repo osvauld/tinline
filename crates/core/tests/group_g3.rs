@@ -120,6 +120,21 @@ fn link_fresh(e: &Peer, name: &str) -> Peer {
     n
 }
 
+/// `group_join` that tries again on a transient network failure. GF: joining is a one-shot
+/// network exchange (fetch the invite behind the link from the host, then sync until a member);
+/// under heavy load it occasionally fails with `Timeout` / `Net("connection lost")`, and a user
+/// would simply tap again. Any other error is a real failure.
+fn join(p: &Peer, link: String) -> String {
+    for _ in 0..3 {
+        match p.node.group_join(link.clone()) {
+            Ok(g) => return g,
+            Err(p2pcore::Error::Timeout | p2pcore::Error::Net(_)) => continue,
+            Err(e) => panic!("join: {e:?}"),
+        }
+    }
+    panic!("join failed three times on network errors")
+}
+
 fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
     let end = Instant::now() + Duration::from_secs(secs);
     while Instant::now() < end {
@@ -284,9 +299,9 @@ fn short_invite_links_peek_and_join() {
     assert_eq!(peek.owner_did, o.did);
     assert_eq!(peek.issuer_did.as_deref(), Some(o.did.as_str()));
     assert!(peek.expires.is_some_and(|e| e > 0));
-    assert_eq!(a.node.group_join(link.clone()).unwrap(), g);
+    assert_eq!(join(&a, link.clone()), g);
     let bare = link.strip_prefix("tinline://g/").unwrap().to_string();
-    assert_eq!(b.node.group_join(bare).unwrap(), g);
+    assert_eq!(join(&b, bare), g);
     eventually(WAIT, "both joined", || members(&o, &g).len() == 3);
     // The old long format is gone.
     assert!(a.node.group_peek_invite("tlgroup1:AAAA".into()).is_none());
@@ -300,14 +315,14 @@ fn a_non_host_admins_link_registers_at_a_host() {
     let a = peer("nh-a");
     let c = peer("nh-c");
     let g = o.node.group_create("Admins".into()).unwrap();
-    a.node.group_join(o.node.group_invite(g.clone()).unwrap()).unwrap();
+    join(&a, o.node.group_invite(g.clone()).unwrap());
     eventually(WAIT, "a is a member", || members(&o, &g).contains(&a.did));
     o.node.group_set_admin(g.clone(), a.did.clone(), true).unwrap();
     eventually(WAIT, "a knows it is admin", || a.node.group_detail(g.clone()).unwrap().members.iter().any(|m| m.did == a.did && m.is_admin));
     let link = a.node.group_invite(g.clone()).unwrap();
     assert!(link.len() <= 90, "{link}");
     assert_eq!(c.node.group_peek_invite(link.clone()).unwrap().issuer_did.as_deref(), Some(a.did.as_str()));
-    assert_eq!(c.node.group_join(link).unwrap(), g);
+    assert_eq!(join(&c, link), g);
     let tok = a.node.group_device_token(g.clone()).unwrap();
     assert!(tok.starts_with("tinline://g/") && tok.len() <= 90, "{tok}");
     let peek = c.node.group_peek_invite(tok).unwrap();
@@ -335,7 +350,7 @@ fn hosts_refuse_unknown_and_revoked_codes_and_limit_guessing() {
     assert!(answers.len() < 10, "the host closed the connection: {answers:?}");
     assert!(answers.iter().all(|r| r.contains("unknown or expired")), "{answers:?}");
     // A fresh link still works.
-    assert_eq!(a.node.group_join(o.node.group_invite(g.clone()).unwrap()).unwrap(), g);
+    assert_eq!(join(&a, o.node.group_invite(g.clone()).unwrap()), g);
     o.node.group_post(g.clone(), "welcome".into(), None).unwrap();
     eventually(WAIT, "a sees it", || posts(&a, &g).iter().any(|m| m.text == "welcome"));
 }
