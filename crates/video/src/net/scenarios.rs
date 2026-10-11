@@ -172,6 +172,7 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
         shown,
         decode_errors: order_violations,
         keyframes: tx.with_sender(|s| s.keyframes),
+        key_causes: tx.with_sender(|s| s.key_causes),
         camera_drops: 0,
         switches: sizes.len().saturating_sub(1) as u64,
         sizes,
