@@ -670,6 +670,16 @@ impl Node {
         self.inner.group.moved_window_ms.store(secs.max(1) * 1000, std::sync::atomic::Ordering::SeqCst);
     }
 
+    /// The next `n` invite fetches (one network attempt each) fail as if the connection was lost.
+    pub fn group_fail_next_fetches_for_test(&self, n: u32) {
+        self.inner.group.fail_fetches.store(n, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// The next `n` dials to a host fail as if the connection was lost.
+    pub fn group_fail_next_dials_for_test(&self, n: u32) {
+        self.inner.group.fail_dials.store(n, std::sync::atomic::Ordering::SeqCst);
+    }
+
     /// Behave like a modified app that ignores its own removal (keeps posting and dialing).
     pub fn group_ignore_removal_for_test(&self, ignore: bool) {
         self.inner.group.ignore_removal.store(ignore, std::sync::atomic::Ordering::SeqCst);

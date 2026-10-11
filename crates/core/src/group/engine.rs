@@ -60,6 +60,14 @@ pub(crate) struct GroupRt {
     /// a call the app made opens the group store (`group_core`); a background task left over
     /// from the stopped session never does. Read and written under `core`'s lock.
     pub(crate) parked: AtomicBool,
+    /// Test knobs (GL): this many invite fetches / host dials fail as if the connection was lost.
+    pub(crate) fail_fetches: std::sync::atomic::AtomicU32,
+    pub(crate) fail_dials: std::sync::atomic::AtomicU32,
+}
+
+/// Takes one injected failure from a test knob, if any is left.
+pub(crate) fn injected(n: &std::sync::atomic::AtomicU32) -> bool {
+    n.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |v| v.checked_sub(1)).is_ok()
 }
 
 /// U12: hosts rotate their group endpoint this long after a removal or a host revocation.
@@ -1091,6 +1099,9 @@ impl Inner {
     async fn group_dial(self: Arc<Self>, core: Arc<GroupCore>, gid: String, host: HostAddr) -> Result<(), Error> {
         // Not `group_ensure` (the dial loop is started by it): the endpoint is up while it runs.
         let ep = core.ep_id.lock().clone().ok_or(Error::NotStarted)?;
+        if injected(&self.group.fail_dials) {
+            return Err(Error::Net("connection lost (injected)".into()));
+        }
         let addr = addr_for(&host.endpoint, host.relay.as_deref())?;
         let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, GROUP_ALPN)).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;

@@ -268,3 +268,55 @@ fn account_switch_cycles_release_and_reopen_the_stores_at_once() {
     still_works(&o, &a, &c, &g, "switches");
     no_waits(&o.node, "switches, end");
 }
+
+// ---- transient network failures in joins ------------------------------------------------------
+
+// KIND: acceptance (GL) — fetching an invite (peek, join) rides out lost connections inside its
+// own deadline; a refusal is not retried.
+#[test]
+fn peek_and_join_ride_out_lost_connections() {
+    let o = peer("tr-o");
+    let a = peer("tr-a");
+    let g = o.node.group_create("Flaky".into()).unwrap();
+    let link = o.node.group_invite(g.clone()).unwrap();
+
+    a.node.group_fail_next_fetches_for_test(2);
+    let peek = a.node.group_peek_invite(link.clone()).expect("peek after two lost connections");
+    assert_eq!(peek.group_id, g);
+
+    a.node.group_fail_next_fetches_for_test(2);
+    a.node.group_fail_next_dials_for_test(5);
+    let t = Instant::now();
+    assert_eq!(a.node.group_join(link.clone()).expect("join after lost connections"), g);
+    assert!(t.elapsed() < Duration::from_secs(60), "within the join deadline");
+
+    // A refusal (a revoked link: the host no longer knows its code) comes back at once, not
+    // retried.
+    let c = peer("tr-c");
+    let revoked = o.node.group_invite(g.clone()).unwrap();
+    o.node.group_revoke_invite(revoked.clone()).unwrap();
+    let t = Instant::now();
+    match c.node.group_join(revoked) {
+        Err(p2pcore::Error::Rejected(_)) => {}
+        other => panic!("a revoked link: {other:?}"),
+    }
+    assert!(t.elapsed() < Duration::from_secs(15), "not retried: {:?}", t.elapsed());
+}
+
+// KIND: acceptance (GL) — accepting a direct invitation rides out failed dials to the host
+// (the join keeps dialling at a short interval while the user waits, not at the slow backoff).
+#[test]
+fn accepting_an_invitation_rides_out_failed_dials() {
+    let o = peer("ta-o");
+    let b = peer("ta-b");
+    contacts(&o, &b);
+    let g = o.node.group_create("Flaky too".into()).unwrap();
+    o.node.group_invite_contacts(g.clone(), vec![b.did.clone()]).unwrap();
+    let inv = || b.node.group_invitations_incoming().unwrap().into_iter().find(|i| i.group_id == g);
+    eventually(WAIT, "the invitation arrives", || inv().is_some());
+    b.node.group_fail_next_dials_for_test(5);
+    let t = Instant::now();
+    let r = b.node.group_invitation_accept(inv().unwrap().id).expect("accept after failed dials");
+    assert_eq!(r.state, GroupInvitationState::Joined);
+    assert!(t.elapsed() < Duration::from_secs(45), "joined well inside the deadline: {:?}", t.elapsed());
+}

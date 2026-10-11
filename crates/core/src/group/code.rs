@@ -327,6 +327,9 @@ impl Inner {
             // Our own link: answer from our own store.
             return self.group_fetch_answer(&core, &sc.code).map_err(Error::Rejected);
         }
+        if super::engine::injected(&self.group.fail_fetches) {
+            return Err(Error::Net("connection lost (injected)".into()));
+        }
         let addr = addr_for(&sc.endpoint, sc.relay.as_deref())?;
         let conn = tokio::time::timeout(FETCH_TIMEOUT, ep.connect(addr, GROUP_ALPN)).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
