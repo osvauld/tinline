@@ -130,6 +130,8 @@ fn on_battery() -> Cond {
 /// backup. Waits until `a` sees both call hosts.
 fn call_hosts(o: &Peer, c: &Peer, a: &Peer, g: &str) {
     o.node.gcall_set_cond(on_battery());
+    // Hosting waits for the platform's conditions (GA-A1).
+    c.node.gcall_set_cond(Cond::desktop());
     o.node.group_appoint_call_host(g.into(), c.did.clone(), c.node.group_device_id().unwrap()).unwrap();
     eventually(WAIT, "c is asked to host calls", || c.node.group_detail(g.into()).unwrap().call_host_requested_here);
     assert!(!a.node.group_detail(g.into()).unwrap().call_host_requested_here);
