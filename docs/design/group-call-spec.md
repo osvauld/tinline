@@ -345,9 +345,21 @@ the whole table (Q3).
   about 130-byte payloads. The worst row above is 1550 + 550 ≈ 2100 packets/s.
 - As a participant, H also does what every participant does: 1 encode and ≤ K decodes per
   20 ms.
-- On a phone, the cost is expected to come mostly from the radio (uplink) rather than the CPU.
-  No measurement exists yet. GC-D02 and GC-D03 measure CPU, battery %/h and thermal state
-  against this table.
+- **Measured (GA-P2, `docs/design/group-call-bench.md`, moto g52 on Wi-Fi, charging, K = 2,
+  32 kbps, silence gate).** The table above is a worst case; with the gate, N = 8 measured
+  383 kbps up / 155 kbps down (~240 MB/h) at the phone host, vs 988 / 532 above.
+  - **CPU is not near zero on a phone:** ~0.5 ms per packet (≈ 15× a desktop) plus ~12 % of one
+    core for the host's own participation. Host CPU, % of one core avg: N = 3 → 20, N = 5 → 31,
+    N = 8 → 42 (forwarding only at N = 8: 29). Thermal status stayed 0; battery 34 °C.
+  - **QUIC ACKs:** about one ACK-only packet per two forwarded datagrams (≈ 60–70 kbps at
+    N = 8, one stream's worth) arrives at H. Budget term: forwarded pps / 2 × ~45 B.
+  - **Delay:** median added delay through the phone host +11 to +22 ms vs a direct 1:1 call
+    (GC-D09 passes). GC-D09's "added delay" = mouth-to-ear through H minus mouth-to-ear direct.
+  - **Data warning on metered (cap 4):** ~100 MB/h (interpolated from N = 3 and 5).
+  - Caps 8 (Wi-Fi) and K = 2 hold with headroom; do not raise to 12 before measuring N = 12 and
+    an on-battery run. To try: fewer ACKs on the call connection (larger `max_ack_delay` / ACK
+    frequency) and batched datagram sends. Still unmeasured: battery %/h on battery (GC-D02) and
+    foreground service / Doze (GC-D03); both need the real app and a manual unplug.
 
 ## 5. Failure handling [P]
 
