@@ -25,6 +25,7 @@ mod client;
 mod host;
 pub mod net;
 mod policy;
+pub mod rank;
 mod select;
 #[cfg(test)]
 mod tests;
