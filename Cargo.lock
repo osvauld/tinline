@@ -6133,6 +6133,8 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "unicode-normalization",
+ "unicode-segmentation",
  "uniffi",
  "video",
  "zeroize",

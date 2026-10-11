@@ -201,7 +201,7 @@ fn parse_dev(hexs: &str) -> Result<[u8; 32], Error> {
 }
 
 impl Inner {
-    fn group_name_of(&self, core: &GroupCore, gid: &str, did: &str) -> String {
+    pub(crate) fn group_name_of(&self, core: &GroupCore, gid: &str, did: &str) -> String {
         if did == core.did {
             return self.me().map(|m| m.profile.name.clone()).unwrap_or_default();
         }
@@ -742,6 +742,7 @@ impl Inner {
     fn group_forget(&self, core: &GroupCore, gid: &str) {
         core.groups.lock().remove(gid);
         let _ = core.store.forget(gid);
+        self.search_forget(&crate::search::api::group_src(gid));
     }
 }
 

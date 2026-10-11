@@ -492,6 +492,8 @@ pub(crate) struct Inner {
     pub(crate) caps: crate::caps::CapsRt,
     pub(crate) devlist: crate::devlist::DevlistRt,
     pub(crate) video: crate::video_call::NodeVideo,
+    /// The selected account's search index (`search.redb`), open while its chat store is.
+    pub(crate) search: Mutex<Option<Arc<crate::search::index::SearchIndex>>>,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -533,8 +535,8 @@ impl Drop for Node {
 
 impl Node {
     /// For tests: (opens, opens that had to wait for a file still held) of the store files
-    /// (`account.redb`, `chat.redb`, `group.redb`) under this node's data directory, across every
-    /// node of this process that used it.
+    /// (`account.redb`, `chat.redb`, `group.redb`, `search.redb`) under this node's data
+    /// directory, across every node of this process that used it.
     #[doc(hidden)]
     pub fn store_stats_for_test(&self) -> (u64, u64) {
         store::open_stats(self.inner.accounts.root())
@@ -583,6 +585,7 @@ impl Node {
             caps: Default::default(),
             devlist: Default::default(),
             video: Default::default(),
+            search: Mutex::new(None),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
