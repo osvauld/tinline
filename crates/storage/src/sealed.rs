@@ -24,6 +24,11 @@ impl Sealed {
         &self.store
     }
 
+    /// [`Store::close`] of the store underneath (for every clone).
+    pub fn close(&self) {
+        self.store.close();
+    }
+
     pub fn seal(&self, path: &str, value: &[u8]) -> Result<Vec<u8>, StorageError> {
         let mut plain = Zeroizing::new(Vec::with_capacity(2 + path.len() + value.len()));
         plain.extend_from_slice(&(path.len() as u16).to_be_bytes());

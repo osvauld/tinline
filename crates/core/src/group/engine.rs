@@ -56,6 +56,10 @@ pub(crate) struct GroupRt {
     /// G3: invitation events and the DIDs with an invitation delivery task running.
     pub(crate) inv_events: Mutex<Option<Arc<dyn super::invitations::GroupInvitationEvents>>>,
     pub(crate) inv_delivering: Mutex<HashSet<String>>,
+    /// GL: set by `group_close` (stop, lock, account switch), cleared by `start`. While set, only
+    /// a call the app made opens the group store (`group_core`); a background task left over
+    /// from the stopped session never does. Read and written under `core`'s lock.
+    pub(crate) parked: AtomicBool,
 }
 
 /// U12: hosts rotate their group endpoint this long after a removal or a host revocation.
@@ -157,6 +161,17 @@ pub(crate) struct Changed {
 impl GroupCore {
     pub fn closed(&self) -> bool {
         self.closed.load(Ordering::SeqCst)
+    }
+
+    /// Marks the core closed, ends its sessions and loops, and closes its store (for every
+    /// holder, after the operations in flight). The endpoint is the caller's.
+    pub(crate) fn shut(&self) {
+        self.closed.store(true, Ordering::SeqCst);
+        self.kick.notify_waiters();
+        for s in self.sessions.lock().values() {
+            let _ = s.tx.send(Out::Close);
+        }
+        self.store.db.close();
     }
 
     fn sessions_of(&self, gid: &str) -> Vec<Arc<Sess>> {
@@ -417,6 +432,10 @@ impl Inner {
     // ---- lifecycle -------------------------------------------------------------------------
 
     /// The group runtime of the unlocked account, opened on first use.
+    ///
+    /// GL: a core of another session (an earlier unlock, another account) lets its store go
+    /// before the new one opens, and while the runtime is parked (after stop / lock / a switch,
+    /// until the next start) only the app's own calls open it, never a leftover task.
     pub(crate) fn group_core(self: &Arc<Self>) -> Result<Arc<GroupCore>, Error> {
         let epoch = self.shared.lock().epoch;
         // Held while opening, so two callers never open the store twice.
@@ -426,6 +445,19 @@ impl Inner {
             && !c.closed()
         {
             return Ok(c);
+        }
+        if let Some(old) = slot.take() {
+            old.shut();
+            if let Ok(mut ep) = old.ep.try_lock()
+                && let Some(ep) = ep.take()
+            {
+                self.handle.spawn(async move {
+                    let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
+                });
+            }
+        }
+        if self.group.parked.load(Ordering::SeqCst) && !crate::node::user_call() {
+            return Err(Error::NotStarted);
         }
         let me = self.me()?;
         let (dir, profile_dev) = {
@@ -483,27 +515,39 @@ impl Inner {
             moving: Default::default(),
             codes: Default::default(),
         });
-        if let Some(old) = slot.take() {
-            old.closed.store(true, Ordering::SeqCst);
-        }
         *slot = Some(core.clone());
         Ok(core)
     }
 
-    /// Stops everything of the group runtime (lock, stop, account switch).
+    /// Stops everything of the group runtime (lock, stop, account switch). The store is closed
+    /// before this returns (GL): tasks still holding the core find it closed and cannot keep the
+    /// file, and none opens it again until the next start (`parked`).
     pub(crate) async fn group_close(&self) {
-        let core = self.group.core.lock().take();
+        let core = {
+            let mut slot = self.group.core.lock();
+            self.group.parked.store(true, Ordering::SeqCst);
+            slot.take()
+        };
         if let Some(core) = core {
-            core.closed.store(true, Ordering::SeqCst);
-            core.kick.notify_waiters();
-            for s in core.sessions.lock().values() {
-                let _ = s.tx.send(Out::Close);
-            }
+            core.shut();
             let ep = core.ep.lock().await.take();
             *core.ep_id.lock() = None;
             if let Some(ep) = ep {
                 let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
             }
+        }
+    }
+
+    /// `group_close` without waiting (for `Node`'s drop on a core thread): the store closes; the
+    /// group endpoint is closed on a task.
+    pub(crate) fn group_close_now(&self) {
+        let core = {
+            let mut slot = self.group.core.lock();
+            self.group.parked.store(true, Ordering::SeqCst);
+            slot.take()
+        };
+        if let Some(core) = core {
+            core.shut();
         }
     }
 

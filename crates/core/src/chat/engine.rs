@@ -258,6 +258,19 @@ impl Inner {
             if let Some(h) = core.hub.get() {
                 h.shutdown().await;
             }
+            // GL: the file goes now, whatever task still holds the core.
+            core.store.db.close();
+        }
+    }
+
+    /// `chat_close` without waiting (for `Node`'s drop on a core thread): the store closes, the
+    /// blob store is left to its drop.
+    pub(crate) fn chat_close_now(&self) {
+        if let Some(core) = self.chat.lock().take() {
+            for s in core.sessions.lock().values() {
+                let _ = s.tx.send(Cmd::Close);
+            }
+            core.store.db.close();
         }
     }
 
