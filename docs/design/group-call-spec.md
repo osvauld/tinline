@@ -166,20 +166,31 @@ The **starter's** device (the member who taps "Start call") picks. It ranks the 
 that have a fresh status, are not busy, and have `max_participants` at least the expected
 size:
 
+Built in GA-P7 (`proto::gcall_status`, `p2pcore::gcall::rank`, `0ec04da`); this table
+supersedes the original proposal and settles §9 G6–G8:
+
 | Tier | Candidate |
 |---|---|
-| 0 | desktop or headless, on mains, unmetered |
-| 1 | phone, charging, unmetered |
-| 2 | phone, battery ≥ 50 %, unmetered |
-| 3 | phone on metered/mobile data (any power); only if N ≤ the metered cap (Q1) |
-| (excluded) | `thermal_ok = false`, or a phone on battery below 30 % |
+| 0 | desktop or headless on mains or charging, unmetered |
+| 1 | phone charging, unmetered |
+| 2 | phone on battery ≥ 50 %, or desktop/headless on battery ≥ 30 %, unmetered |
+| 3 | phone on battery 30–49 %, or desktop/headless on battery < 30 %, unmetered |
+| 4 | any metered host; only if expected N ≤ `CAP_PHONE_METERED` (4) |
+| (excluded) | busy, thermal ≥ Moderate, load ≥ 90, `max_participants` < expected, phone on battery < 30 % |
 
 Tie-breaks, in order:
 
-1. The starter itself, if it is in the best tier. This saves one hop for the starter.
-2. Lower `busy`/load.
-3. Lowest `BLAKE3(call_id || host_ref)`. This is deterministic, so every member computes the
-   same order for the backup list.
+1. The starter's own **device** (`holder_did` + `device_slot`, G8), only if it is in the best
+   non-empty tier.
+2. Lower load, in 25 % buckets (G6: `load` = share of the device already used by other work;
+   hosting another call is `busy`).
+3. Lowest `BLAKE3(call_id ‖ 0 ‖ did ‖ 0 ‖ slot ‖ permit_digest)` — deterministic, so every
+   member computes the same backup order.
+
+Status: signed, TTL ≤ 60 s (refused above), refreshed every 30 s and on any condition change,
+≤ 5 s future skew, ≤ 1 KiB. Only the latest status per device counts. Backups in each request
+skip candidates that already refused or timed out. Open for tuning after the phone benchmark:
+whether thermal Moderate should exclude (some phones reach it in normal use).
 
 After ranking:
 
