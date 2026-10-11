@@ -55,40 +55,7 @@ impl<R: Read> Y4m<R> {
     }
 }
 
-/// Area-average downscale (or nearest-neighbour upscale) of every plane to `w` x `h`.
-pub fn scale(src: &I420, w: usize, h: usize) -> I420 {
-    if (src.width, src.height) == (w, h) {
-        return src.clone();
-    }
-    let mut out = I420::new(w, h);
-    let (sy, su, sv) = src.planes();
-    let (scw, sch) = I420::chroma(src.width, src.height);
-    let (dcw, dch) = I420::chroma(w, h);
-    let (dy, du, dv) = out.planes_mut();
-    scale_plane(sy, src.width, src.height, dy, w, h);
-    scale_plane(su, scw, sch, du, dcw, dch);
-    scale_plane(sv, scw, sch, dv, dcw, dch);
-    out
-}
-
-fn scale_plane(src: &[u8], sw: usize, sh: usize, dst: &mut [u8], dw: usize, dh: usize) {
-    for y in 0..dh {
-        let y0 = y * sh / dh;
-        let y1 = ((y + 1) * sh / dh).max(y0 + 1);
-        for x in 0..dw {
-            let x0 = x * sw / dw;
-            let x1 = ((x + 1) * sw / dw).max(x0 + 1);
-            let mut sum = 0u32;
-            for yy in y0..y1 {
-                for xx in x0..x1 {
-                    sum += src[yy * sw + xx] as u32;
-                }
-            }
-            let n = ((y1 - y0) * (x1 - x0)) as u32;
-            dst[y * dw + x] = ((sum + n / 2) / n) as u8;
-        }
-    }
-}
+pub use crate::convert::scale;
 
 #[cfg(test)]
 mod tests {

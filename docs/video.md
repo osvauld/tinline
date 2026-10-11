@@ -1,6 +1,6 @@
 # Video calls (spike: `crates/video`)
 
-Status: design + simulation. Not wired into calls or the apps yet.
+Status: design + simulation; wired into 1:1 calls in the core (no UI yet).
 
 ## Decisions
 
@@ -20,11 +20,45 @@ Status: design + simulation. Not wired into calls or the apps yet.
   offset cancels) every 100 ms; the sender backs off to 85% of delivered when queueing
   > 40 ms and ramps +8%/report when < 15 ms. Backlog > 300 ms: reset the group, force a
   keyframe, halve the rate.
-- **Shipping**: release builds compile libaom from source and link it statically (as opus is);
-  nothing needs to be installed. `AOM_DIR=<prefix from scripts/build_libaom.py>` links that
-  static build; without it the crate falls back to the system libaom via pkg-config.
+- **Shipping**: every shipped build links libaom statically; users never install it. See
+  [Shipping libaom](#shipping-libaom).
 - **rav1d from its git tag** v1.1.0: the crates.io package lacks `src/arm/asm-offsets.h`, so
   the ARM assembly doesn't build from it.
+
+## Shipping libaom
+
+- **Source pin: release tarball + SHA-256**, not git-at-commit. `scripts/build_libaom.py` fetches
+  `libaom-3.14.1.tar.gz` from `storage.googleapis.com/aom-releases` (the official release, also
+  GPG-signed upstream) and checks its SHA-256 on every run before using the tree; a mismatch
+  deletes the download and fails. Why: SHA-256 rather than git's SHA-1, no git needed, 6 MB
+  instead of a clone, and a stamp ties the extracted tree to the hash. The tarball was checked
+  byte-identical to tag v3.14.1 = commit `03087864cf4b`. Vendoring the tree is ruled out (size).
+  Bumping: change `VERSION`/`SHA256`/`COMMIT` in the script and `aomTag` in
+  `android/app/build.gradle.kts`.
+- **Build**: `python3 scripts/build_libaom.py --target host|<android triple>` (cmake + Ninja +
+  nasm; NDK for Android) builds a static realtime-only encoder under
+  `~/build-cache/p2p_chat/libaom/install-v3.14.1-<target>` and prints that prefix. Idempotent;
+  a rerun re-verifies and is a no-op build. A build dir configured from another source tree
+  is wiped.
+- **Linking** (`crates/video/build.rs`): `AOM_DIR_<triple>` (dashes as underscores) or
+  `AOM_DIR` links `<prefix>/lib/libaom.a`. Without either, dev host builds fall back to the
+  system libaom via pkg-config (dynamic); `AOM_STATIC_REQUIRED=1` turns that fallback into a
+  build error, and Android always requires the static build.
+- **Where it is wired**: `scripts/build_android.py` (per ABI, every build) and gradle's
+  `AOM_DIR_<triple>`; `scripts/package_linux_tarball.sh` and `scripts/package_deb.sh` (host
+  build, `AOM_STATIC_REQUIRED=1`, then fail if `readelf -d` shows a `libaom` NEEDED entry);
+  `.github/workflows/release.yml` (linux job via the package scripts, plus an `ldd` check; android
+  job builds both ABIs before gradle); `.github/workflows/ci.yml` (cached, sets `AOM_DIR`).
+- **Windows**: there is no Windows build yet. When there is: MSVC target, same script with a
+  `--target x86_64-pc-windows-msvc` branch running cmake with the Visual Studio/Ninja generator
+  from a VS dev prompt (nasm on PATH), producing `aom.lib`; build.rs's static link line works
+  unchanged (`static=aom`). Cross-building from Linux (mingw) is possible with libaom's
+  `build/cmake/toolchains/x86_64-mingw-gcc.cmake` but would make Rust use the gnu target.
+- **Licences**: libaom is BSD-2-Clause plus the Alliance for Open Media Patent License 1.0;
+  rav1d is BSD-2-Clause. Texts in `packaging/licenses/` (installed by the deb to
+  `/usr/share/doc/tinline/third-party/`, in the tarball's `licenses/`, AUR
+  `/usr/share/licenses/tinline/`) and in Android's `assets/licenses/` (shown in Settings ->
+  About -> Open-source licences). Desktop About names both.
 
 ## Wire format (per group stream)
 
@@ -88,7 +122,25 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   one, or more than `max_buffered` (32 MiB) across them -> `NetError::Protocol`. Reader tasks
   feed a 16-slot channel, so at most `max_streams` QUIC stream windows sit in between.
   `VideoRecv` lowers `max_concurrent_uni_streams` to 8, but QUIC can't take back credit the
-  peer already has (100 by default): the call endpoint's transport config should set it.
+  peer already has (100 by default), so the endpoint's transport config must set it (below).
+- **Endpoint transport config** (`crates/core/src/node.rs`, `Node::start`; the endpoint is
+  shared by all ALPNs, and nothing in core or iroh-blobs uses uni streams, so 8 is safe):
+
+  ```rust
+  let transport = QuicTransportConfig::builder()
+      .keep_alive_interval(Duration::from_secs(5))
+      .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
+      // Video group streams (video::net): the peer's credit from the handshake on.
+      .max_concurrent_uni_streams(VarInt::from_u32(8))
+      .build();
+  ```
+
+  (`VarInt` is `iroh::endpoint::VarInt`.) Leave the rest at iroh's defaults: per-stream receive
+  window 1.25 MB (~5 s of 2 Mbps video) x 8 streams bounds QUIC's buffering per connection
+  (`VideoRecv::max_buffered` bounds the app side); the connection window is unlimited by
+  default, which is fine with the stream count capped; `send_window` (10 MB) doesn't matter
+  because backlog comes from app-level acks; keep the default congestion controller (Cubic,
+  see "Real transport vs simulation" for BBR/NewReno).
 - **Tests** (`cargo test -p video --release --features net net`, two endpoints on loopback):
   300 frames in order and intact with keyframes at group starts; receiver paused 1 s -> sender
   resets, drops the rate, forces a keyframe, receiver resumes on the new group; keyframe
@@ -98,6 +150,60 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   libaom -> iroh loopback -> rav1d, capture-to-decoded latency. Laptop, 300 frames at 30 fps,
   2 encoder threads, rate ramped to 2 Mbps: 640x360 p50 4.8 / p95 7.5 ms, 1280x720 p50 5.4 /
   p95 15.7 ms; 0 decode errors, 0 resets.
+
+## Call protocol and core API (`crates/core/src/video_call.rs`)
+
+**Negotiation** (`proto::Msg`, JSON on the call's control stream):
+- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels }>`. Presence = "this
+  device does AV1 video in this call"; `max_pixels` = largest picture it wants to receive
+  (today 1280x720). The callee answers with an offer only if the hello had one and video is
+  enabled on it (`set_video_enabled`, default on); the caller ignores an offer it didn't ask
+  for. Both present = video negotiated, else the call is audio only (nothing else changes).
+- The sender caps its ladder (`LadderConfig::max_rung`) at the highest rung within the peer's
+  `max_pixels`.
+- Mid-call `Msg::Video { camera: bool }`, only once video is negotiated: sent when the call
+  goes active (current state) and on every change. Keyframe requests and pausing need no call
+  message: the video control stream has keyframe requests, and "camera off" is just no frames.
+
+**Streams**: when the call goes active with video negotiated, each side runs one `VideoSend`
+and one `VideoRecv` on the call connection for the whole call (the call's control bi stream
+is already accepted, so the next `accept_bi` is the peer's video control stream). With the
+camera off nothing is encoded; turning it on forces a keyframe (new group). The receiver's
+stall detector asks for keyframes every 600 ms meanwhile; harmless (1 byte, ignored until a
+frame is encoded). The endpoint's transport config sets `max_concurrent_uni_streams = 16`
+(nothing else in the core uses uni streams).
+
+**Threads**: encoder thread (`tl-video-enc`, pinned with `video::cpu::pin_to_fast_cores`,
+libaom 2 threads, speed 10, keyint 300): takes the newest pushed frame, rotates it upright,
+fits it into `Sender::resolution()` keeping aspect and orientation (never upscaling; even
+sizes; `video::y4m::scale` until the conversion module lands), (re)creates the encoder on a
+size change, sets the bitrate, encodes, reports `encode_time`, sends. Decoder thread
+(`tl-video-dec`, pinned, rav1d 2 threads, `frame_size_limit` 720p) fed through a 2-slot
+channel by the task awaiting `VideoRecv::recv` (a slow decoder backs up into the link, where
+the sender sees it); after a decode error it skips to the next keyframe and requests one.
+
+**API** (UniFFI, on `Node`; all about the current call):
+
+| | |
+|---|---|
+| `set_video_events(VideoEvents)` | `on_video_state(VideoInfo { call_id, negotiated, local_camera, remote_camera })`: when the call goes active (if we offered video) and on any camera change |
+| `set_video_enabled(bool)` / `video_enabled()` | offer/take video in calls (default on) |
+| `set_camera(on) -> Result` | also before the call is answered; `NotFound` without a call, `Protocol` once active without video |
+| `push_video_frame(width, height, rotation, i420) -> bool` | packed I420 straight from the camera, any size up to 4096 a side, `rotation` = degrees clockwise to upright (CameraX `rotationDegrees`); latest wins; false = dropped (no video, camera off, bad size) |
+| `pull_video_frame() -> Option<VideoFrame { width, height, data, seq }>` | newest decoded upright I420 frame not pulled yet; poll on the display clock |
+| `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size |
+
+Pull, not a callback, for frames: decoded video is latest-wins like a display, so a pull on
+vsync drops what the renderer can't show for free; no platform code runs on the pinned codec
+threads (a callback would run Kotlin/JNA on them); it matches `pull_speaker`. Low-rate state
+changes are callbacks, in their own `VideoEvents` trait so existing `NodeEvents` implementors
+are untouched.
+
+**Tests** (`crates/core/tests/video_calls.rs`, two nodes over iroh like `calls.rs`):
+`cargo test -p p2pcore --release --test video_calls`: video both ways (pattern 640x480 pushed
+at 30 fps, >= 45 decoded frames in 3 s each way, 4:3 kept, 0 decode errors); camera off/on
+mid-call (remote state events, no frames while off, frames resume on a new group); video
+refused by the callee -> audio-only call continues.
 
 ## Codec benchmark (i7-1165G7, synthetic camera pattern, 30 fps)
 
@@ -200,16 +306,115 @@ The first version used the congestion window for the bitrate; the simulation sho
 bufferbloat (p50 256 ms on a clean link, 1.5 s after a bandwidth drop), which is why rate
 control is delay-based.
 
+## Capture/render conversion (`video::convert`)
+
+Pure Rust, safe, no dependencies; `cargo test -p video --release convert`.
+
+- **In:** `Yuv420` borrows any strided 4:2:0 picture: Android `YUV_420_888` (row stride,
+  pixel stride 1 = planar or 2 = the NV12/NV21 views where U and V overlap; planes may end
+  right after the last pixel, as Android buffers do), NV12/NV21 (`Yuv420::nv12`), or an
+  `I420`. Desktop extras: `yuyv_to_i420` (YUY2), `rgb_to_i420` (RGB/BGR/RGBA/BGRA). MJPEG
+  cameras are out of scope: decode them first (or pick the camera's YUYV/NV12 mode).
+- **`prepare`** = the capture pipeline in one pass over the camera buffer: optional crop ->
+  center-crop to the output aspect -> scale (copy, exact 2:1 box, or area average) ->
+  full->limited range -> rotate (CameraX `rotationDegrees`) / mirror. Scaling happens before
+  rotation, so rotation only touches output-sized data. Output sizes round down to even and
+  crop origins to even (chroma alignment). Send unmirrored; mirror only the self-view.
+- **Colour:** BT.601 limited range everywhere. `csrc/aom_rt.c` signals no colour description
+  (decoders then assume 601-ish limited). Android camera YUV is normally full range (JFIF), so
+  Android uses `Range::Full` (verify on the device: Y of a black/white scene should span
+  ~0..255). Alternative later: signal full range in the bitstream (`AV1E_SET_COLOR_RANGE`).
+- **Out:** `i420_to_rgba` into a caller buffer (iced `image::Handle::from_rgba` on desktop).
+- **Android render (recommended):** keep per-frame work in Rust. Kotlin hands a `Surface`
+  (SurfaceView) to Rust once; Rust does `ANativeWindow_fromSurface`,
+  `ANativeWindow_setBuffersGeometry(w, h, RGBA_8888)` at each resolution change, then per
+  frame `lock` -> `i420_to_rgba` into the locked buffer (row stride from the buffer) ->
+  `unlockAndPost`. The compositor scales to the view for free, no JNI per frame, no Bitmap.
+  Simpler fallback: `i420_to_rgba` into a direct `ByteBuffer` + `Bitmap.copyPixelsFromBuffer`
+  (`ARGB_8888` is RGBA in memory). If RGBA conversion shows up on A53-class phones at 720p,
+  move to a GL shader that samples the three planes (`GL_R8` textures), no CPU conversion.
+
+Cost per frame, `cargo run -p video --release --example convert_bench` (i7-1165G7, loadavg
+~8 from other builds, median ms):
+
+| path | ms |
+|---|---|
+| `prepare`: YUV_420_888 pixel stride 2, 640x480, R90 -> 360x640 (portrait 640x360) | 0.53 |
+| `prepare`: 640x480, R90 -> 640x360 landscape (crop 270x480, upscale) | 1.21 |
+| `prepare`: 640x480, R0 -> 640x360 (crop only) | 0.15 |
+| `prepare`: 1280x720, R90 -> 360x640 (2:1 box) | 0.93 |
+| `prepare`: 1280x720, R0 -> 960x540 (general area average) | 2.28 |
+| `i420_to_rgba` 640x360 / 1280x720 | 0.33 / 1.31 |
+| `yuyv_to_i420` 640x480 | 0.16 |
+| `rgb_to_i420` BGRA 1280x720 | 1.28 |
+
+Expect ~4-8x these on the phone's A53 cores (to be measured; keep conversion on the pinned
+fast cores too). Cheapest capture: ask CameraX for a size whose aspect matches the encoder
+(crop-only or exact 2:1), since the general (non-integer) scaler is the slow path.
+
+## Real transport vs simulation
+
+`video::net` over real iroh connections through an in-process UDP link emulator
+(`crates/video/src/net/impair.rs`, test-only; netem without root): bottleneck rate with a
+drop-tail byte queue, delay + jitter (in order unless `reorder`), random loss, outages, rate
+changes, seeded. A is bound to `[::1]` only, B to `127.0.0.1` only, and the proxy has one
+socket per family, so iroh's hole punching can't find a direct path; every test asserts that
+all paths of both connections point at the proxy and that the proxy's byte counters match
+both connections' UDP counters. Same scenarios, seeds and `FakeCodec` as the simulation, 30
+fps for 30 s real time; latency = capture -> `VideoRecv::recv` + the sim's 7 ms codec time.
+Return path: same delay/jitter, no rate limit; outages hit both directions (the sim only
+drops the forward direction).
+
+`cargo test -p video --release --features net net_real -- --ignored --nocapture
+--test-threads=1` (2.5 min; `net_impair_no_bypass` and the emulator's unit tests run by
+default). `VIDEO_CC=bbr|reno` swaps the QUIC congestion controller. Laptop, load 1-3.
+
+| Scenario | sim p50 / p95 | real p50 / p95 | sim / real frozen (> 200 ms) | sim / real mean bitrate | real resets |
+|---|---|---|---|---|---|
+| clean 2 Mbps, 20 ms | 64 / 94 | 65 / 101 | 0 / 0 | 1743 / 1702 kbps | 0 |
+| 3% loss | 52 / 115 | 49 / 156 | 0 / 0-0.4 s | 1044 / 590-820 kbps | 2-3 |
+| 2 Mbps -> 300 kbps at 10 s | last 15 s 68 / 118 | last 15 s 63 / 103 | 0.7 / 0.7-1.0 s | last 10 s 256 / 248 kbps | 2 |
+| 500 ms outage at 10 s (both ways) | 63 / 98 | 63 / 89 | 0.9 / 0.7-0.8 s | 1680 / 1626 kbps | 2-3 |
+| relay 75 (+0-20) ms, 1.5 Mbps | 127 / 154 | 129 / 171 | 0 / 0 | 1263 / 1233 kbps | 0 |
+
+p50/p95 from 2 s on unless noted; ranges are over repeated runs. No decode-order violations
+in any run; no queue drops at the emulated bottleneck (the delay-based controller keeps the
+queue short; 300 kbps after the drop with no latency creep).
+
+Findings:
+
+- **Clean, rate drop, outage, relay: real matches the sim** within run-to-run noise. App-level
+  ack backlog works as modelled (1-3 resets where the sim has 0-1 drops). After the outage
+  video is back ~0.3 s after the link. The relay p95 is ~20 ms higher: the emulator also
+  jitters the return path (acks, reports), the sim doesn't.
+- **Random loss is where the sim is optimistic: real bitrate 55-80% of the sim's, p95 +40
+  ms.** QUIC's loss-based congestion window drops to about one BDP (Cubic cwnd ~10 KB at 50
+  ms RTT) and video waits in QUIC's send buffer; tail losses (last packet of a frame) are
+  only recovered by PTO, not after ~1.1 RTT as in the model. Both show up as queueing delay,
+  so the delay-based controller backs off. Congestion controller, 3% loss: NewReno cwnd 6 KB,
+  417 kbps, 0.5 s frozen; Cubic 590-820 kbps; BBRv3 580-850 kbps, p95 = sim. BBRv3 costs on
+  clean/relay links (mean 1452 / 851 kbps: its RTT probing reads as queueing delay), so it is
+  no overall win: **keep Cubic**. The fix belongs in rate control (`media`): tell
+  retransmission delay from queue build-up (e.g. ignore one-off delay spikes no longer than
+  ~1 RTT, or use a robust minimum over the report window).
+- **Sim model, to adjust:** (1) congestion window under random loss (cwnd floor ~1 BDP and
+  sender-side queueing when cwnd-limited; today the sim's window rarely limits); (2) loss
+  detection by PTO for tail packets plus ACK delay (25 ms max_ack_delay); (3) outages in both
+  directions; (4) return-path jitter. Nothing to change in `net` for these scenarios.
+
 ## Next
 
-1. ~~Real footage, ARM numbers~~ done (above). Static libaom: `scripts/build_libaom.py` works
-   for the benchmark; still to wire into `scripts/build_android.py` / release packaging
-   (vendored source, not fetched at build time).
+1. ~~Real footage, ARM numbers~~ done (above). ~~Static libaom in every shipped build~~ done:
+   pinned tarball + SHA-256, Android, deb/tarball packaging and CI (see Shipping libaom).
 2. ~~Resolution ladder in `media::Sender` (switch at a keyframe), added to the simulation.~~
    done (above).
-3. iroh transport against `media::Sender`/`Receiver`: **built** (`video::net`, see Transport,
-   loopback tests). Still to do: run it over a lossy/limited link (netem or a lossy socket) to
-   check it against the simulation's scenarios; set `max_concurrent_uni_streams` in the call
-   endpoint's transport config.
-4. Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.
-5. Capture/render: Android CameraX -> I420, desktop camera; render on both.
+3. iroh transport against `media::Sender`/`Receiver`: **built** (`video::net`) and checked
+   against the simulation's scenarios over an emulated link (see Real transport vs
+   simulation). ~~`max_concurrent_uni_streams` in the call endpoint's transport config~~ done
+   (16). Still to do: rate control under random loss; freeze at ladder step-up on the real
+   transport; sim model fixes listed there.
+4. ~~Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.~~ done
+   (see Call protocol and core API).
+5. Capture/render: Android CameraX -> I420, desktop camera; render on both. Pure-Rust
+   conversion done (`video::convert`, above); still to do: use it in the core's encoder thread,
+   CameraX/desktop capture glue and the renderers, phone numbers for `convert_bench`.

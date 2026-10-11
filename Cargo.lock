@@ -9096,6 +9096,7 @@ dependencies = [
  "cc",
  "iroh",
  "libc",
+ "noq-proto",
  "pkg-config",
  "rav1d",
  "rav1e",

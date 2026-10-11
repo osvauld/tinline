@@ -748,4 +748,8 @@ async fn read_group(mut s: RecvStream, events: mpsc::Sender<Event>, highest: Arc
 }
 
 #[cfg(test)]
+mod impair;
+#[cfg(test)]
+mod scenarios;
+#[cfg(test)]
 mod tests;

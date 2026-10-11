@@ -18,6 +18,7 @@ use rav1d::src::lib as d;
 
 pub mod aom;
 pub mod bench;
+pub mod convert;
 pub mod cpu;
 #[cfg(feature = "rav1e")]
 mod rav1e_enc;

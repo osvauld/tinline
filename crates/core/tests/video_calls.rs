@@ -1,0 +1,265 @@
+//! Video in 1:1 calls: two real nodes in one process over iroh (needs network for relays and
+//! discovery, like `calls.rs`). A synthetic camera (`video::Pattern`) is pushed on one side and
+//! decoded frames are pulled on the other.
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, mpsc};
+use std::time::{Duration, Instant};
+
+use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus, VideoEvents, VideoInfo};
+
+const PASS: &str = "test-passphrase";
+
+#[derive(Debug, Clone)]
+enum Ev {
+    Incoming(CallInfo),
+    State(String, CallState),
+    Video(VideoInfo),
+}
+
+struct Tap(Mutex<mpsc::Sender<Ev>>);
+
+impl NodeEvents for Tap {
+    fn on_status(&self, _: NodeStatus) {}
+    fn on_contacts_changed(&self) {}
+    fn on_incoming_call(&self, c: CallInfo) {
+        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
+    }
+    fn on_call_state(&self, id: String, s: CallState) {
+        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
+    }
+    fn on_log(&self, _: String) {}
+}
+
+impl VideoEvents for Tap {
+    fn on_video_state(&self, info: VideoInfo) {
+        let _ = self.0.lock().unwrap().send(Ev::Video(info));
+    }
+}
+
+struct Peer {
+    node: Arc<Node>,
+    rx: mpsc::Receiver<Ev>,
+    did: String,
+    _dir: Dir,
+}
+
+struct Dir(std::path::PathBuf);
+
+impl Drop for Dir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn peer(name: &str) -> Peer {
+    let p = std::env::temp_dir().join(format!("p2pcore-test-{name}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&p);
+    let dir = Dir(p);
+    let (tx, rx) = mpsc::channel();
+    let tap = Arc::new(Tap(Mutex::new(tx)));
+    let node = Node::new(dir.0.to_string_lossy().into(), tap.clone()).unwrap();
+    node.set_video_events(tap);
+    node.create_identity(name.into(), PASS.into()).unwrap();
+    node.start().unwrap();
+    let t = Instant::now();
+    while !node.status().online && t.elapsed() < Duration::from_secs(10) {
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    let did = node.profile().unwrap().did;
+    Peer { node, rx, did, _dir: dir }
+}
+
+fn pair(tag: &str) -> (Peer, Peer) {
+    let a = peer(&format!("{tag}-a"));
+    let b = peer(&format!("{tag}-b"));
+    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    (a, b)
+}
+
+fn expect<T>(p: &Peer, secs: u64, what: &str, mut f: impl FnMut(&Ev) -> Option<T>) -> T {
+    let end = Instant::now() + Duration::from_secs(secs);
+    loop {
+        match p.rx.recv_timeout(end.saturating_duration_since(Instant::now())) {
+            Ok(ev) => {
+                if let Some(t) = f(&ev) {
+                    return t;
+                }
+            }
+            Err(_) => panic!("timed out waiting for {what}"),
+        }
+    }
+}
+
+fn video_ev(p: &Peer, what: &str, f: impl Fn(&VideoInfo) -> bool) -> VideoInfo {
+    expect(p, 15, what, |e| match e {
+        Ev::Video(v) if f(v) => Some(v.clone()),
+        _ => None,
+    })
+}
+
+/// b calls a, a answers; returns the call id once both are active.
+fn connect(a: &Peer, b: &Peer) -> String {
+    let call = b.node.call(a.did.clone()).unwrap();
+    let inc = expect(a, 40, "incoming", |e| match e {
+        Ev::Incoming(c) => Some(c.call_id.clone()),
+        _ => None,
+    });
+    assert_eq!(inc, call.call_id);
+    a.node.answer(inc).unwrap();
+    for p in [a, b] {
+        expect(p, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
+    }
+    call.call_id
+}
+
+/// Pushes 640x480 pattern frames at 30 fps until dropped.
+struct Camera {
+    run: Arc<AtomicBool>,
+    thread: Option<std::thread::JoinHandle<u32>>,
+}
+
+impl Camera {
+    fn start(node: Arc<Node>) -> Self {
+        let run = Arc::new(AtomicBool::new(true));
+        let r = run.clone();
+        let thread = std::thread::spawn(move || {
+            let mut pat = video::Pattern::new(640, 480);
+            let mut accepted = 0;
+            while r.load(Ordering::SeqCst) {
+                let f = pat.next_frame();
+                accepted += node.push_video_frame(640, 480, 0, f.data) as u32;
+                std::thread::sleep(Duration::from_millis(33));
+            }
+            accepted
+        });
+        Self { run, thread: Some(thread) }
+    }
+
+    fn stop(mut self) -> u32 {
+        self.run.store(false, Ordering::SeqCst);
+        self.thread.take().unwrap().join().unwrap()
+    }
+}
+
+/// Pulls frames for `d`, like a renderer polling at ~100 Hz: (count, last size).
+fn watch(p: &Peer, d: Duration) -> (u32, Option<(u32, u32)>) {
+    let end = Instant::now() + d;
+    let (mut n, mut size, mut last_seq) = (0, None, 0);
+    while Instant::now() < end {
+        if let Some(f) = p.node.pull_video_frame() {
+            assert_eq!(f.data.len(), (f.width * f.height + 2 * f.width.div_ceil(2) * f.height.div_ceil(2)) as usize);
+            assert!(f.seq > last_seq);
+            last_seq = f.seq;
+            n += 1;
+            size = Some((f.width, f.height));
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    (n, size)
+}
+
+#[test]
+fn video_both_ways() {
+    let (a, b) = pair("vboth");
+    let id = connect(&a, &b);
+    for p in [&a, &b] {
+        let v = video_ev(p, "negotiated", |v| v.negotiated);
+        assert_eq!(v.call_id, id);
+        p.node.set_camera(true).unwrap();
+    }
+    for p in [&a, &b] {
+        video_ev(p, "remote camera on", |v| v.remote_camera && v.local_camera);
+    }
+    let cams = [Camera::start(a.node.clone()), Camera::start(b.node.clone())];
+    // Let the first keyframes through, then count.
+    std::thread::sleep(Duration::from_millis(500));
+    for p in [&a, &b] {
+        let (n, size) = watch(p, Duration::from_secs(3));
+        let (w, h) = size.expect("decoded frames");
+        assert!(n >= 45, "{n} frames in 3 s");
+        // 4:3 kept: 480x360 at the 360p rung, 640x480 (never upscaled) above it.
+        assert_eq!(w * 3, h * 4, "{w}x{h}");
+        let s = p.node.video_stats().unwrap();
+        assert_eq!(s.decode_errors, 0, "{s:?}");
+        assert!(s.frames_sent >= 60 && s.keyframes_sent >= 1, "{s:?}");
+        println!("{s:?}");
+    }
+    for c in cams {
+        assert!(c.stop() > 60);
+    }
+    b.node.hangup(id.clone()).unwrap();
+    for p in [&a, &b] {
+        expect(p, 10, "ended", |e| matches!(e, Ev::State(i, CallState::Ended { .. }) if *i == id).then_some(()));
+    }
+    // Gone with the call.
+    assert!(a.node.pull_video_frame().is_none() && a.node.video_info().is_none());
+    assert!(!a.node.push_video_frame(640, 480, 0, vec![0; 640 * 480 * 3 / 2]));
+}
+
+#[test]
+fn camera_off_and_on_mid_call() {
+    let (a, b) = pair("vcam");
+    // Camera on before the call is even answered: applies once video runs.
+    let call = b.node.call(a.did.clone()).unwrap();
+    b.node.set_camera(true).unwrap();
+    let inc = expect(&a, 40, "incoming", |e| match e {
+        Ev::Incoming(c) => Some(c.call_id.clone()),
+        _ => None,
+    });
+    a.node.answer(inc).unwrap();
+    video_ev(&a, "b's camera on", |v| v.negotiated && v.remote_camera && !v.local_camera);
+    let cam = Camera::start(b.node.clone());
+    std::thread::sleep(Duration::from_millis(500));
+    let (n, _) = watch(&a, Duration::from_secs(2));
+    assert!(n >= 30, "{n} frames before off");
+
+    b.node.set_camera(false).unwrap();
+    video_ev(&a, "b's camera off", |v| !v.remote_camera);
+    std::thread::sleep(Duration::from_millis(300));
+    while a.node.pull_video_frame().is_some() {}
+    let (n, _) = watch(&a, Duration::from_secs(1));
+    assert_eq!(n, 0, "frames while the camera is off");
+    let before = a.node.video_stats().unwrap();
+
+    b.node.set_camera(true).unwrap();
+    video_ev(&a, "b's camera on again", |v| v.remote_camera);
+    std::thread::sleep(Duration::from_millis(300));
+    let (n, size) = watch(&a, Duration::from_secs(2));
+    assert!(n >= 30, "{n} frames after on");
+    assert!(size.is_some());
+    let after = a.node.video_stats().unwrap();
+    assert_eq!(after.decode_errors, 0, "{after:?}");
+    // Resuming starts a new group.
+    let sent = b.node.video_stats().unwrap();
+    assert!(sent.keyframes_sent >= 2, "{sent:?}");
+    assert!(after.frames_decoded > before.frames_decoded);
+    cam.stop();
+    b.node.hangup(call.call_id).unwrap();
+}
+
+#[test]
+fn video_refused_call_stays_audio_only() {
+    let (a, b) = pair("vrefuse");
+    a.node.set_video_enabled(false);
+    let id = connect(&a, &b);
+    let v = video_ev(&b, "video decided", |_| true);
+    assert!(!v.negotiated);
+    assert!(!a.node.video_info().unwrap().negotiated);
+    assert!(b.node.set_camera(true).is_err());
+    assert!(!b.node.push_video_frame(640, 480, 0, vec![0; 640 * 480 * 3 / 2]));
+    // Audio still flows.
+    for _ in 0..50 {
+        b.node.push_mic(vec![0i16; 960]);
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    let s = a.node.call_stats().unwrap();
+    assert!(s.received > 10 && !s.reconnecting, "{s:?}");
+    assert_eq!(a.node.call_stats().unwrap().state, CallState::Active);
+    b.node.hangup(id.clone()).unwrap();
+    let reason = expect(&a, 10, "ended", |e| match e {
+        Ev::State(i, CallState::Ended { reason }) if *i == id => Some(reason.clone()),
+        _ => None,
+    });
+    assert_eq!(reason, "hangup_remote");
+}
