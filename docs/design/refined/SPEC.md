@@ -143,6 +143,18 @@ no navigation away, because the core loop is call ↔ chat:
 - While a call is live, the header phone button means "return to call" (never a
   second call). Escape minimizes, never ends. Focus: overlay open → container;
   minimize → the strip; end → back to the phone button. Toast "Call ended" on End.
+- **The call outlives the page.** A live call is app state, not page state:
+  it persists across every navigation between `home.html`, `chat.html` and
+  `groups.html` (incl. inside `mobile.html` and Home's desktop detail pane)
+  via one shared `call-state.js` (sessionStorage, timer derived from the
+  stored connect time so it never resets or jumps). Every app screen —
+  Home on all four tabs, chat list, conversation, group list — shows the
+  same 40px strip at the very top while a call is live; tapping it reopens
+  the overlay for that call (from Home: opens the conversation with the
+  overlay up). Exactly one strip is ever visible: inside Home's desktop
+  detail pane the embedded page suppresses its own strip and Home's
+  full-width strip is the one. Ending the call from any page clears it
+  everywhere immediately.
 - These overlays are silent visual simulations — calls.html stays the only page
   that makes sound (ringing/failure/audio study), and supports
   `?call=<id>` / `?call=group:<id>` deep links to an already-ringing screen.

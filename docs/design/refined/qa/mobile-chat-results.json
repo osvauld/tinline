@@ -697,7 +697,7 @@
   {
     "name": "home 1440 embeds chat.html with embed=1",
     "ok": true,
-    "detail": "chat.html?chat=arjun&embed=1"
+    "detail": "chat.html?chat=arjun&embed=1&callbar=host"
   },
   {
     "name": "home 1440 embedded chat has no back button or harness",
@@ -736,6 +736,111 @@
   },
   {
     "name": "links runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: Arjun opens chat.html inside the bezel",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "light mobile home: overlay up, no strip yet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: one strip in the conversation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: Back → Home inside the bezel keeps the strip, timer continues",
+    "ok": true,
+    "detail": "Arjun Oommen · 00:02 1"
+  },
+  {
+    "name": "light mobile home: strip at the top of the phone, header below it",
+    "ok": true,
+    "detail": "[{\"x\":0,\"y\":0,\"width\":390,\"height\":40,\"top\":0,\"right\":390,\"bottom\":40,\"left\":0},40]"
+  },
+  {
+    "name": "light mobile home: strip on Calls tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: strip → conversation with overlay open",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "light mobile home: after End no strip anywhere",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: Arjun opens chat.html inside the bezel",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "dark mobile home: overlay up, no strip yet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: one strip in the conversation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: Back → Home inside the bezel keeps the strip, timer continues",
+    "ok": true,
+    "detail": "Arjun Oommen · 00:01 0"
+  },
+  {
+    "name": "dark mobile home: strip at the top of the phone, header below it",
+    "ok": true,
+    "detail": "[{\"x\":0,\"y\":0,\"width\":390,\"height\":40,\"top\":0,\"right\":390,\"bottom\":40,\"left\":0},40]"
+  },
+  {
+    "name": "dark mobile home: strip on Calls tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: strip → conversation with overlay open",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "dark mobile home: after End no strip anywhere",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "embed chat: exactly one strip, inside the frame",
     "ok": true,
     "detail": ""
   }

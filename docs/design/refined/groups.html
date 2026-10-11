@@ -52,14 +52,12 @@ a{color:var(--accent-ink);text-decoration:none}a:hover{text-decoration:underline
 .app{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;height:calc(100dvh - 60px);min-height:520px}
 .pane{display:flex;flex-direction:column;min-height:0;min-width:0;grid-row:2}
 /* in-page call: ongoing-call strip + overlay (silent visual simulation) */
-.callstrip{grid-row:1;grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:40px;border:0;background:var(--accent);color:var(--on-accent);font-size:var(--fs-sub);font-weight:600;font-variant-numeric:tabular-nums;padding:0 16px}
-.callstrip .pd{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1.4s ease-in-out infinite}
-@keyframes pulse{50%{opacity:.35}}
+#callStrip{grid-row:1;grid-column:1/-1} /* the strip is the shared .t-callbar from call-state.js */
 .callov{position:absolute;inset:0;z-index:20;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;align-items:center;padding:8px 8px calc(40px + env(safe-area-inset-bottom,0px));animation:pop .16s ease-out}
 .callov:focus{outline:none}
 .callov .cmin{align-self:flex-start;color:var(--ink)}
 .callov .cbody{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:0 16px}
-.callov .gav{width:96px;height:96px;margin-bottom:12px}.callov .gav .ic svg{width:44px;height:44px;stroke-width:1.5}
+.callov .gav,.callov .t-avatar.big{width:96px;height:96px;margin-bottom:12px}.callov .t-avatar.big{font-size:32px}.callov .gav .ic svg{width:44px;height:44px;stroke-width:1.5}
 .callov h2{font-size:24px;font-weight:600;margin:0}
 .callov .cst{font-size:var(--fs-sub);color:var(--muted)}
 .callov .ctime{font-size:15px;font-variant-numeric:tabular-nums;min-width:5ch;color:var(--ink)}
@@ -268,6 +266,7 @@ button.mrow:hover{background:var(--surface-2)}
 </div>
 <div id="live" class="sr" role="status" aria-live="polite"></div>
 <div id="toastHost"></div>
+<script src="call-state.js"></script>
 <script>
 'use strict';
 /* ---------- tiny helpers ---------- */
@@ -484,34 +483,39 @@ function callButton(g){
   if(CALL)return h('button',{class:'ib live',type:'button',id:'callBtn','aria-label':'Return to call with '+CALL.name,onclick:openCall},ic('phone'));
   if(!g.hosts.length||!hostsOn(g))return h('button',{class:'ib',type:'button',id:'callBtn','aria-disabled':'true','aria-label':'Group call unavailable while no host is online',title:'Needs a host online'},ic('phone'));
   return h('button',{class:'ib',type:'button',id:'callBtn','aria-label':'Start group call','aria-haspopup':'dialog',onclick:()=>startCall(g)},ic('phone'))}
-let CALL=null;
-const mmss=s=>pad(Math.floor(s/60))+':'+pad(s%60);
-const callSecs=()=>CALL&&CALL.t0?Math.floor((Date.now()-CALL.t0)/1000):0;
-function refreshCallBtn(){const b=$('#callBtn'),g=conv(S.cur);if(b&&g&&g.type!=='private')b.replaceWith(callButton(g))}
-function startCall(g){
-  CALL={gid:g.id,name:g.name,t0:null,muted:false,open:true};
-  CALL.cto=setTimeout(()=>{if(!CALL)return;CALL.t0=Date.now();tickCall()},2500);
-  CALL.iv=setInterval(tickCall,1000);
-  renderCall();refreshCallBtn()}
-function tickCall(){if(!CALL)return;const t=mmss(callSecs());
-  const tm=$('#callOv .ctime');if(tm){tm.textContent=t;tm.style.visibility=CALL.t0?'visible':'hidden';$('#callOv .cst').textContent=CALL.t0?'Connected':'Connecting…'}
-  const st=$('#callStrip span:last-child');if(st)st.textContent=CALL.name+' · '+(CALL.t0?t:'Connecting…')}
-function setInert(on){['#listPane','#convPane'].forEach(x=>{$(x).inert=on})}
+/* The call is app state in call-state.js (TinCall): it outlives this page and may have been started in
+   chat.html (a direct call) — the overlay renders whichever call is live. Only "overlay up here" is local.
+   ?call=open raises the overlay on load; ?callbar=host means Home's desktop pane draws the strip instead. */
+const HOST_BAR=QS.get('callbar')==='host';
+let CALL=TinCall.get(),callOpen=false;
+const callStrip=TinCall.bar({id:'callStrip'});callStrip.addEventListener('click',()=>openCall());$('#app').prepend(callStrip);
+function refreshCallBtn(){const b=$('#callBtn'),g=conv(S.cur);if(b&&g&&g.type!=='private'){const f=document.activeElement===b;b.replaceWith(callButton(g));if(f)$('#callBtn').focus()}}
+function startCall(g){if(CALL){openCall();return}TinCall.start({kind:'group',id:g.id,name:g.name});openCall()}
+function tickCall(){const t=TinCall.get();if(!t)return;
+  const tm=$('#callOv .ctime');if(tm){tm.textContent=t.time||'00:00';tm.style.visibility=t.connected?'visible':'hidden';$('#callOv .cst').textContent=t.connected?'Connected':t.preLabel}}
+function setInert(on){['#listPane','#convPane'].forEach(x=>{$(x).inert=on});callStrip.inert=on}
+const callInitials=n=>n.split(' ').map(w=>w[0]).slice(0,2).join('');
+function muteIcon(b){b.setAttribute('aria-pressed',String(!!CALL?.muted));b.replaceChildren(ic(CALL?.muted?'micoff':'mic'))}
 function renderCall(){
-  $('#callOv')?.remove();$('#callStrip')?.remove();setInert(false);
-  if(!CALL)return;const app=$('#app');
-  if(!CALL.open){
-    app.prepend(h('button',{class:'callstrip',id:'callStrip',type:'button','aria-label':'Return to call with '+CALL.name,onclick:openCall},h('span',{class:'pd','aria-hidden':'true'}),h('span',null,'')));
-    tickCall();return}
-  const mute=h('button',{class:'cbtn mute',type:'button','aria-pressed':String(CALL.muted),'aria-label':'Mute',onclick:()=>{CALL.muted=!CALL.muted;mute.setAttribute('aria-pressed',String(CALL.muted));mute.replaceChildren(ic(CALL.muted?'micoff':'mic'));$('#live').textContent=CALL.muted?'Muted':'Unmuted'}},ic(CALL.muted?'micoff':'mic'));
+  $('#callOv')?.remove();if(!CALL)callOpen=false;
+  callStrip.hidden=!CALL||callOpen||HOST_BAR;setInert(callOpen);
+  if(!callOpen)return;const app=$('#app');
+  const mute=h('button',{class:'cbtn mute',type:'button','aria-label':'Mute',onclick:()=>{if(!CALL)return;TinCall.update({muted:!CALL.muted});$('#live').textContent=CALL.muted?'Muted':'Unmuted'}});muteIcon(mute);
+  const face=CALL.kind==='group'?h('span',{class:'gav','aria-hidden':'true'},ic('users')):h('span',{class:'t-avatar big '+hue(CALL.name),'aria-hidden':'true'},callInitials(CALL.name));
   const ov=h('div',{class:'callov',id:'callOv',role:'dialog','aria-label':'Call with '+CALL.name,tabindex:'-1',onkeydown:e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();minimizeCall()}}},
     h('button',{class:'ib cmin',type:'button','aria-label':'Back to chat — call continues',onclick:minimizeCall},ic('chev')),
-    h('div',{class:'cbody'},h('span',{class:'gav','aria-hidden':'true'},ic('users')),h('h2',null,CALL.name),h('div',{class:'cst',role:'status'},''),h('div',{class:'ctime'},'00:00')),
-    h('div',{class:'cctl'},h('label',null,mute,'Mute'),h('label',null,h('button',{class:'cbtn end',type:'button','aria-label':'End call',onclick:endCall},ic('phone')),'End')));
-  app.append(ov);setInert(true);tickCall();ov.focus()}
-function openCall(){if(!CALL)return;CALL.open=true;renderCall()}
-function minimizeCall(){if(!CALL)return;CALL.open=false;renderCall();$('#callStrip').focus()}
-function endCall(){if(!CALL)return;clearTimeout(CALL.cto);clearInterval(CALL.iv);CALL=null;renderCall();refreshCallBtn();say('Call ended');($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}
+    h('div',{class:'cbody'},face,h('h2',null,CALL.name),h('div',{class:'cst',role:'status'},''),h('div',{class:'ctime'},'00:00')),
+    h('div',{class:'cctl'},h('label',null,mute,'Mute'),h('label',null,h('button',{class:'cbtn end',type:'button','aria-label':'End call',onclick:()=>endCall()},ic('phone')),'End')));
+  app.append(ov);tickCall()}
+function openCall(){if(!CALL)return;callOpen=true;renderCall();$('#callOv').focus()}
+function minimizeCall(){if(!CALL)return;callOpen=false;renderCall();(HOST_BAR?($('#callBtn')||$('#convPane h2')||$('#newBtn')):callStrip).focus()}
+function endCall(){if(!CALL)return;TinCall.end();say('Call ended');($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}
+TinCall.subscribe(v=>{const was=CALL,inside=!!$('#callOv')?.contains(document.activeElement);CALL=v;
+  const changed=!was!==!v||(was&&v&&was.ringAt!==v.ringAt);
+  if(changed){renderCall();refreshCallBtn();if(!v&&inside)($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}   // ended elsewhere
+  else{const m=$('#callOv .mute');if(m)muteIcon(m)}});
+TinCall.onTick(tickCall);
+addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.type==='tinline-call-open')openCall()});   // Home's strip, desktop pane
 /* degraded-host strip: only shown when something is actually wrong */
 function renderBanner(){
   const g=conv(S.cur);const B=$('#bannerHost');if(!B)return;B.replaceChildren();
@@ -801,6 +805,8 @@ function syncTheme(){const b=$('#theme');b.setAttribute('aria-pressed',String(da
 $('#theme').addEventListener('click',()=>{document.documentElement.dataset.theme=dark()?'light':'dark';syncTheme()});
 mq.addEventListener('change',syncTheme);syncTheme();
 renderAll();
+if(CALL){if(QS.get('call')==='open')openCall();else renderCall()}   // a call that is already live (maybe started in chat.html)
+if(QS.has('call')){QS.delete('call');history.replaceState(history.state,'',location.pathname+(QS.toString()?'?'+QS:'')+location.hash)}
 </script>
 </body>
 </html>

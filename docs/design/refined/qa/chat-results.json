@@ -63,7 +63,7 @@
   "page": "chat",
   "name": "call: connects after ~2.5s and timer ticks MM:SS",
   "ok": true,
-  "detail": "00:00 -> 00:01"
+  "detail": "00:01 -> 00:02"
  },
  {
   "page": "chat",
@@ -75,7 +75,7 @@
   "page": "chat",
   "name": "Escape minimizes (call continues) into strip; focus on strip",
   "ok": true,
-  "detail": "Arjun Oommen·00:02 h=40"
+  "detail": "Arjun Oommen · 00:02 h=40"
  },
  {
   "page": "chat",
@@ -153,7 +153,7 @@
   "page": "chat",
   "name": "chat list shows Draft marker for chat with unsent text",
   "ok": true,
-  "detail": "MNMeera Nair17:41No rushAOArjun Oommen14:32Draft: half written thoughtDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
+  "detail": "MNMeera Nair17:41No rushAOArjun Oommen16:22Draft: half written thoughtDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
  },
  {
   "page": "chat",
@@ -171,13 +171,13 @@
   "page": "chat",
   "name": "Enter sends; message appears; composer cleared and keeps focus",
   "ok": true,
-  "detail": "line1 line214:32Sending focus=ta"
+  "detail": "line1 line216:22Sending focus=ta"
  },
  {
   "page": "chat",
   "name": "sent message progresses to sent/delivered state",
   "ok": true,
-  "detail": "line1 line214:32Delivered"
+  "detail": "line1 line216:22Delivered"
  },
  {
   "page": "chat",
@@ -189,7 +189,7 @@
   "page": "chat",
   "name": "failed send shows failure and Retry control",
   "ok": true,
-  "detail": "goes nowhere first14:32Not delivered·Retry retryBtns=1"
+  "detail": "goes nowhere first16:23Not delivered·Retry retryBtns=1"
  },
  {
   "page": "chat",
@@ -201,37 +201,37 @@
   "page": "chat",
   "name": "retry: focus not lost to BODY",
   "ok": true,
-  "detail": "Actions for your message at 14:32: goes nowhere first"
+  "detail": "Actions for your message at 16:23: goes nowhere first"
  },
  {
   "page": "chat",
   "name": "retry succeeds (no failed message remains)",
   "ok": true,
-  "detail": "goes nowhere first14:32Delivered visibleRetry=0"
+  "detail": "goes nowhere first16:23Delivered visibleRetry=0"
  },
  {
   "page": "chat",
   "name": "contact offline: header/status changes",
   "ok": true,
-  "detail": "AOArjun OommenLast seen 14:32Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
+  "detail": "AOArjun OommenLast seen 16:23Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
  },
  {
   "page": "chat",
   "name": "send while offline shows waiting/queued state",
   "ok": true,
-  "detail": "sent while offline14:32Waiting for Arjun to be online"
+  "detail": "sent while offline16:23Waiting for Arjun to be online"
  },
  {
   "page": "chat",
   "name": "back online: queued message delivered",
   "ok": true,
-  "detail": "sent while offline14:32Delivered"
+  "detail": "sent while offline16:23Delivered"
  },
  {
   "page": "chat",
   "name": "simulate incoming adds a message or badge",
   "ok": true,
-  "detail": "MNMeera Nair17:41No rushSRSana Rao14:32Just landed. Will message when I’m home.1AOArjun Oommen14:32Y"
+  "detail": "MNMeera Nair17:41No rushSRSana Rao16:23Are you free for a quick call?1AOArjun Oommen16:23You: sent w"
  },
  {
   "page": "chat",
@@ -346,5 +346,65 @@
   "name": "mobile: ≥44px touch targets on primary controls",
   "ok": true,
   "detail": "[]"
+ },
+ {
+  "page": "chat",
+  "name": "cross-page: a chat call shows as the strip in groups; group phone button returns to it (no second call)",
+  "ok": true,
+  "detail": "Arjun Oommen · 00:00 | Return to call with Arjun Oommen"
+ },
+ {
+  "page": "chat",
+  "name": "cross-page: groups overlay renders the direct call with the person avatar",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "?call=open raises the overlay on load, then leaves the URL",
+  "ok": true,
+  "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun"
+ },
+ {
+  "page": "chat",
+  "name": "mute state travels with the call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "reload mid-call: strip shows, timer never resets",
+  "ok": true,
+  "detail": "Arjun Oommen · 00:02 vs 1"
+ },
+ {
+  "page": "chat",
+  "name": "?callbar=host: no strip of its own (Home draws it); phone button still returns to the call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "?callbar=host: minimise sends focus to the phone button, not a hidden strip",
+  "ok": true,
+  "detail": "callBtn"
+ },
+ {
+  "page": "chat",
+  "name": "ending in groups ended it for chat too",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "cross-page call flow never creates an AudioContext",
+  "ok": true,
+  "detail": "{\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "chat",
+  "name": "cross-page: no runtime errors",
+  "ok": true,
+  "detail": ""
  }
 ]

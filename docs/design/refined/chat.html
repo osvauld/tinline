@@ -67,16 +67,14 @@ a.ib{color:var(--ink);text-decoration:none}
 .app{flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
 .list-pane,.conv-pane{display:flex;flex-direction:column;min-height:0;min-width:0;grid-row:2}
 /* in-conversation call: overlay + minimized strip (silent simulation) */
-.callstrip{grid-row:1;grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;height:40px;width:100%;border:0;padding:0 16px;background:var(--accent);color:var(--on-accent);font-size:var(--fs-sub);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
-.callstrip:hover{filter:brightness(1.08)}
-.callstrip .nm{overflow:hidden;text-overflow:ellipsis}
-.callstrip .dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none;animation:pulse 1.6s ease-in-out infinite}
-.callstrip:focus-visible{outline-offset:-4px;outline-color:var(--on-accent)}
+/* the strip itself is the shared .t-callbar from call-state.js; here it only takes the app frame's first row */
+#callStrip{grid-row:1;grid-column:1/-1}
 .callov{position:absolute;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:8px 16px calc(32px + env(safe-area-inset-bottom));animation:rise 180ms ease-out}
 .callov:focus{outline:0}
 .callov .min{align-self:flex-start;color:var(--ink)}
 .callov .who2{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;min-height:0}
 .t-avatar.s96{width:96px;height:96px;font-size:32px;margin-bottom:14px}
+.callov .gglyph{display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:var(--surface-2);color:var(--accent-ink);margin-bottom:14px}.callov .gglyph svg.i{width:44px;height:44px;stroke-width:1.5}
 .callov h2{margin:0;font-size:24px;font-weight:600;line-height:30px}
 .callov .cst{font-size:var(--fs-sub);color:var(--muted);line-height:18px}
 .callov .ctm{display:inline-block;min-width:6ch;font-size:var(--fs-body);font-variant-numeric:tabular-nums;color:var(--ink);line-height:22px}
@@ -89,7 +87,6 @@ a.ib{color:var(--ink);text-decoration:none}
 .cbtn.end svg.i{transform:rotate(135deg)}
 .cbtn.end:hover{filter:brightness(1.08)}
 #callBtn.live{color:var(--accent-ink);background:var(--accent-soft)}
-@keyframes pulse{50%{opacity:.35}}
 .list-pane{background:var(--surface)}
 .conv-pane{background:var(--canvas);position:relative}
 .app[data-view=list] .conv-pane{display:none}
@@ -369,6 +366,7 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
 <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h3.5l1.5 4.5-2.2 1.4a11 11 0 0 0 6.3 6.3l1.4-2.2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z"/></symbol>
 <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
 <symbol id="i-micoff" viewBox="0 0 24 24"><path d="M15 9.3V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 4.6 2.5M5 11a7 7 0 0 0 11.5 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.6.2 4.5 2 5 4.9"/></symbol>
 <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
 </defs>
 </svg>
@@ -395,7 +393,7 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
   </section>
 
   <main class="app" id="app" data-view="list">
-    <button class="callstrip" id="callStrip" type="button" hidden><span class="dot" aria-hidden="true"></span><span class="nm" id="callStripName"></span><span aria-hidden="true">·</span><span id="callStripTime"></span></button>
+    <div id="callStrip" hidden></div>
     <div class="callov" id="callOv" role="dialog" aria-labelledby="callName" tabindex="-1" hidden>
       <button class="ib min" type="button" id="callMin" aria-label="Back to chat — call continues"><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg></button>
       <div class="who2"><span id="callAv"></span><h2 id="callName"></h2><span class="cst" id="callStatus" aria-live="polite"></span><span class="ctm" id="callTime"></span></div>
@@ -471,6 +469,7 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
 <div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
 <div class="vh" id="sr" role="status" aria-live="polite"></div>
 
+<script src="call-state.js"></script>
 <script>
 "use strict";
 /* ---------- helpers ---------- */
@@ -689,54 +688,70 @@ function closeChat() {
 }
 function callBtn(c) {
   if (c.messageOnly) return h("button", { class: "ib", type: "button", id: "callBtn", "aria-disabled": true, "aria-label": `Voice call unavailable. Calling ${fname(c)} needs their permission`, title: "Calling needs their permission", onclick: () => openInfo($("#callBtn")) }, icon("phone"));
-  if (call) return h("button", { class: "ib live", type: "button", id: "callBtn", "aria-label": "Return to call with " + chatBy(call.cid).name, title: "Return to call", onclick: openCall }, icon("phone"));
+  if (call) return h("button", { class: "ib live", type: "button", id: "callBtn", "aria-label": "Return to call with " + call.name, title: "Return to call", onclick: openCall }, icon("phone"));
   return h("button", { class: "ib", type: "button", id: "callBtn", "aria-label": "Voice call " + fname(c), title: "Voice call", onclick: () => startCall(c) }, icon("phone"));
 }
-/* ---------- in-conversation call (silent visual simulation; calls.html owns audio) ---------- */
-let call = null;
-const mmss = s => pad(Math.floor(s / 60)) + ":" + pad(s % 60);
+/* ---------- in-conversation call (silent visual simulation; calls.html owns audio) ----------
+   The call itself is app state in call-state.js (TinCall): it outlives this page, so a call started here
+   still shows on Home and in groups.html, and a call started elsewhere shows here. Only "is the overlay
+   up in this document" is local. ?call=open raises the overlay on load; ?callbar=host means the embedding
+   page (Home's detail pane) draws the strip, so this page must not draw a second one. */
+const CALLQ = new URLSearchParams(location.search), HOST_BAR = CALLQ.get("callbar") === "host";
+let call = TinCall.get(), callOpen = false;
+{ const s = TinCall.bar({ id: "callStrip" }); $("#callStrip").replaceWith(s); s.onclick = openCall; }
 function callTick() {
+  const t = TinCall.get(); if (!t) return;
+  $("#callStatus").textContent = t.connected ? (t.muted ? "Muted" : "Connected") : t.preLabel;
+  $("#callTime").textContent = t.time;
+}
+function paintCall() {
   if (!call) return;
-  const secs = call.start ? Math.floor((Date.now() - call.start) / 1000) : 0;
-  $("#callStatus").textContent = call.start ? (call.muted ? "Muted" : "Connected") : "Ringing…";
-  $("#callTime").textContent = call.start ? mmss(secs) : "";
-  $("#callStripTime").textContent = call.start ? mmss(secs) : "Ringing…";
+  $("#callAv").replaceChildren(call.kind === "group" ? h("span", { class: "gglyph", "aria-hidden": "true" }, icon("users")) : avatar(call.name, 96));
+  $("#callName").textContent = call.name; syncMute(); callTick();
 }
 function setCallInert(on) { $$("#app > .list-pane, #app > .conv-pane, #callStrip").forEach(e => e.inert = on); }
+function syncCallUI() {
+  if (!call) callOpen = false;
+  $("#callOv").hidden = !callOpen; $("#callStrip").hidden = !call || callOpen || HOST_BAR; setCallInert(callOpen);
+}
 function syncCallBtn() { const c = openId && chatBy(openId), b = $("#callBtn"); if (c && b) b.replaceWith(callBtn(c)); }
 function startCall(c) {
   if (call) { openCall(); return; }
   if (c.messageOnly) return;
-  call = { cid: c.id, start: 0, muted: false };
-  call.connect = setTimeout(() => { if (call) { call.start = Date.now(); callTick(); } }, 2500);
-  call.tick = setInterval(callTick, 1000);
-  $("#callAv").replaceChildren(avatar(c.name, 96)); $("#callName").textContent = c.name; $("#callStripName").textContent = c.name;
-  $("#callStrip").setAttribute("aria-label", "Return to call with " + c.name);
-  syncMute(); callTick(); openCall(); syncCallBtn();
+  TinCall.start({ kind: "direct", id: c.id, name: c.name }); // subscriber below paints + syncs
+  openCall();
 }
 function openCall() {
   if (!call) return;
-  $("#callOv").hidden = false; $("#callStrip").hidden = true; setCallInert(true);
+  callOpen = true; paintCall(); syncCallUI();
   $("#callOv").focus({ preventScroll: true });
 }
 function minimizeCall() {
   if (!call) return;
-  $("#callOv").hidden = true; $("#callStrip").hidden = false; setCallInert(false);
-  $("#callStrip").focus({ preventScroll: true });
+  callOpen = false; syncCallUI();
+  (HOST_BAR ? ($("#callBtn") || $("#ta") || $("#q")) : $("#callStrip")).focus({ preventScroll: true });
 }
 function endCall(quiet) {
   if (!call) return;
-  clearTimeout(call.connect); clearInterval(call.tick); call = null;
-  $("#callOv").hidden = true; $("#callStrip").hidden = true; setCallInert(false);
-  syncCallBtn(); if (!quiet) say("Call ended");
-  if (!quiet) ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true });
+  TinCall.end(); // clears this page via the subscriber, and every other page through call-state.js
+  if (!quiet) { say("Call ended"); ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true }); }
 }
+TinCall.subscribe(v => {
+  const was = call, focusInside = $("#callOv").contains(document.activeElement), btnFocus = document.activeElement && document.activeElement.id === "callBtn";
+  call = v;
+  const changed = !was !== !call || (was && call && was.ringAt !== call.ringAt);
+  if (call && changed) paintCall(); else syncMute();
+  syncCallUI(); callTick();
+  if (changed) { syncCallBtn(); if (btnFocus && $("#callBtn")) $("#callBtn").focus({ preventScroll: true }); }
+  if (!call && focusInside) ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true }); // ended elsewhere
+});
+TinCall.onTick(callTick);
 function syncMute() { const m = !!(call && call.muted); $("#callMute").setAttribute("aria-pressed", m); $("#callMuteUse").setAttribute("href", m ? "#i-micoff" : "#i-mic"); $("#callMuteLbl").textContent = m ? "Unmute" : "Mute"; }
-$("#callMute").onclick = () => { if (!call) return; call.muted = !call.muted; syncMute(); callTick(); };
+$("#callMute").onclick = () => { if (call) TinCall.update({ muted: !call.muted }); };
 $("#callEnd").onclick = () => endCall();
 $("#callMin").onclick = minimizeCall;
-$("#callStrip").onclick = openCall;
 $("#callOv").addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); minimizeCall(); } });
+addEventListener("message", e => { if (e.source === parent && e.data && e.data.type === "tinline-call-open") openCall(); }); // Home's strip, desktop pane
 
 const presence = c => c.online ? "Online" : c.lastSeen ? "Last seen " + c.lastSeen : "Offline";
 function renderConv(toEnd) {
@@ -1147,6 +1162,9 @@ if (requestedChat && chatBy(requestedChat)) {
     document.addEventListener("pointerdown", revealFocus, { once: true });
   }
 }
+// A call that is already live (started on another page) shows as the strip; ?call=open raises its overlay.
+if (call) { paintCall(); if (CALLQ.get("call") === "open") openCall(); else syncCallUI(); }
+if (CALLQ.has("call")) { CALLQ.delete("call"); history.replaceState(history.state, "", location.pathname + (CALLQ.toString() ? "?" + CALLQ : "") + location.hash); }
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !document.documentElement.classList.contains("embed") && !document.querySelector("dialog[open]") && $("#app").dataset.view === "conv" && !matchMedia("(min-width:860px)").matches && document.activeElement && document.activeElement.id !== "ta") closeChat(); });
 </script>
 </body>

@@ -537,7 +537,7 @@
   {
     "name": "1440-light selecting chat embeds chat.html with embed=1",
     "ok": true,
-    "detail": "chat.html?chat=arjun&embed=1"
+    "detail": "chat.html?chat=arjun&embed=1&callbar=host"
   },
   {
     "name": "1440-light iframe titled",
@@ -567,7 +567,7 @@
   {
     "name": "1440-light selecting group embeds groups.html with embed=1",
     "ok": true,
-    "detail": "groups.html?group=hike&embed=1"
+    "detail": "groups.html?group=hike&embed=1&callbar=host"
   },
   {
     "name": "1440-light groups navigation",
@@ -702,7 +702,7 @@
   {
     "name": "1440-dark selecting chat embeds chat.html with embed=1",
     "ok": true,
-    "detail": "chat.html?chat=arjun&embed=1"
+    "detail": "chat.html?chat=arjun&embed=1&callbar=host"
   },
   {
     "name": "1440-dark iframe titled",
@@ -732,7 +732,7 @@
   {
     "name": "1440-dark selecting group embeds groups.html with embed=1",
     "ok": true,
-    "detail": "groups.html?group=hike&embed=1"
+    "detail": "groups.html?group=hike&embed=1&callbar=host"
   },
   {
     "name": "1440-dark groups navigation",
@@ -926,6 +926,266 @@
   },
   {
     "name": "raised control has layered shadow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 no strip without a call",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 conversation strip ticking before Back",
+    "ok": true,
+    "detail": 1
+  },
+  {
+    "name": "callbar 390 Back keeps the call: strip on Home",
+    "ok": true,
+    "detail": "{\"vis\":true,\"t\":\"Arjun Oommen · 00:01\",\"name\":\"Return to call with Arjun Oommen\",\"r\":{\"x\":0,\"y\":0,\"width\":390,\"height\":40,\"top\":0,\"right\":390,\"bottom\":40,\"left\":0},\"live\":null}"
+  },
+  {
+    "name": "callbar 390 timer continues, never resets",
+    "ok": true,
+    "detail": "Arjun Oommen · 00:01 vs 1"
+  },
+  {
+    "name": "callbar 390 strip full width 40px at the very top",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":0,\"width\":390,\"height\":40,\"top\":0,\"right\":390,\"bottom\":40,\"left\":0}"
+  },
+  {
+    "name": "callbar 390 accessible name, not a live region",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 header sits below the strip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip pushes the app down without overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 FAB still 16px above tab bar",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 Home strip ticks",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip on Groups tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip on Calls tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip on Contacts tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip on Chats tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip first in tab order, focus visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 tap strip → conversation with overlay open",
+    "ok": true,
+    "detail": "{\"ov\":true,\"f\":\"callOv\",\"strip\":false,\"t\":\"00:04\",\"url\":\"?chat=arjun&from=home\"}"
+  },
+  {
+    "name": "callbar 390 overlay timer continues",
+    "ok": true,
+    "detail": "00:04 vs 3"
+  },
+  {
+    "name": "callbar 390 End toast",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 after End Home has no strip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 history Back keeps the call",
+    "ok": true,
+    "detail": "Meera Nair · Ringing…"
+  },
+  {
+    "name": "callbar 390 one strip only",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 no AudioContext created",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar light no layout shift Ringing… → MM:SS",
+    "ok": true,
+    "detail": "Arjun Oommen · Ringing… Arjun Oommen · 00:00 99,16,8,8|115,11,97,18|232,11,59,18 / 99,16,8,8|115,11,97,18|232,11,59,18"
+  },
+  {
+    "name": "callbar light strip identical on Home, chat, groups, embed",
+    "ok": true,
+    "detail": "{\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(11, 107, 91)|rgb(255, 255, 255)\",\"dot\":\"8px|8px|50%|rgb(255, 255, 255)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(11, 107, 91)|rgb(255, 255, 255)\",\"dot\":\"8px|8px|50%|rgb(255, 255, 255)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(11, 107, 91)|rgb(255, 255, 255)\",\"dot\":\"8px|8px|50%|rgb(255, 255, 255)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(11, 107, 91)|rgb(255, 255, 255)\",\"dot\":\"8px|8px|50%|rgb(255, 255, 255)\",\"pos\":[98.9,114.9,231.7]}"
+  },
+  {
+    "name": "callbar dark no layout shift Ringing… → MM:SS",
+    "ok": true,
+    "detail": "Arjun Oommen · Ringing… Arjun Oommen · 00:00 99,16,8,8|115,11,97,18|232,11,59,18 / 99,16,8,8|115,11,97,18|232,11,59,18"
+  },
+  {
+    "name": "callbar dark strip identical on Home, chat, groups, embed",
+    "ok": true,
+    "detail": "{\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(17, 126, 107)|rgb(242, 255, 251)\",\"dot\":\"8px|8px|50%|rgb(242, 255, 251)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(17, 126, 107)|rgb(242, 255, 251)\",\"dot\":\"8px|8px|50%|rgb(242, 255, 251)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(17, 126, 107)|rgb(242, 255, 251)\",\"dot\":\"8px|8px|50%|rgb(242, 255, 251)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(17, 126, 107)|rgb(242, 255, 251)\",\"dot\":\"8px|8px|50%|rgb(242, 255, 251)\",\"pos\":[98.9,114.9,231.7]}"
+  },
+  {
+    "name": "callbar 1440 light embedded page is told Home hosts the strip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light call starts in the pane, Home strip on top",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light switching chats keeps the call",
+    "ok": true,
+    "detail": "{\"strip\":{\"x\":0,\"y\":0,\"width\":1440,\"height\":40,\"top\":0,\"right\":1440,\"bottom\":40,\"left\":0},\"rail\":40,\"list\":40,\"detail\":[40,960],\"t\":\"Arjun Oommen · 00:01\",\"src\":\"chat.html?chat=meera&embed=1&callbar=host\"}"
+  },
+  {
+    "name": "callbar 1440 light exactly one strip (pane suppresses its own)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light strip spans the app; three columns start below it",
+    "ok": true,
+    "detail": "{\"strip\":{\"x\":0,\"y\":0,\"width\":1440,\"height\":40,\"top\":0,\"right\":1440,\"bottom\":40,\"left\":0},\"rail\":40,\"list\":40,\"detail\":[40,960],\"t\":\"Arjun Oommen · 00:01\",\"src\":\"chat.html?chat=meera&embed=1&callbar=host\"}"
+  },
+  {
+    "name": "callbar 1440 light strip returns to Arjun with the overlay up",
+    "ok": true,
+    "detail": "{\"src\":\"chat.html?chat=arjun&embed=1&callbar=host&call=open\",\"sel\":true,\"f\":\"convo\",\"inner\":\"callOv\"}"
+  },
+  {
+    "name": "callbar 1440 light strip on the same chat reopens without reload",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light End in the pane clears Home strip at once",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark embedded page is told Home hosts the strip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark call starts in the pane, Home strip on top",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark switching chats keeps the call",
+    "ok": true,
+    "detail": "{\"strip\":{\"x\":0,\"y\":0,\"width\":1440,\"height\":40,\"top\":0,\"right\":1440,\"bottom\":40,\"left\":0},\"rail\":40,\"list\":40,\"detail\":[40,960],\"t\":\"Arjun Oommen · 00:01\",\"src\":\"chat.html?chat=meera&embed=1&callbar=host\"}"
+  },
+  {
+    "name": "callbar 1440 dark exactly one strip (pane suppresses its own)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark strip spans the app; three columns start below it",
+    "ok": true,
+    "detail": "{\"strip\":{\"x\":0,\"y\":0,\"width\":1440,\"height\":40,\"top\":0,\"right\":1440,\"bottom\":40,\"left\":0},\"rail\":40,\"list\":40,\"detail\":[40,960],\"t\":\"Arjun Oommen · 00:01\",\"src\":\"chat.html?chat=meera&embed=1&callbar=host\"}"
+  },
+  {
+    "name": "callbar 1440 dark strip returns to Arjun with the overlay up",
+    "ok": true,
+    "detail": "{\"src\":\"chat.html?chat=arjun&embed=1&callbar=host&call=open\",\"sel\":true,\"f\":\"convo\",\"inner\":\"callOv\"}"
+  },
+  {
+    "name": "callbar 1440 dark strip on the same chat reopens without reload",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark End in the pane clears Home strip at once",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group call visible on Home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group strip → group overlay",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group End clears",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group no errors",
     "ok": true,
     "detail": ""
   }

@@ -136,4 +136,27 @@ await chk('mobile conversation: Back button present and returns to list, focus r
 await chk('mobile: ≥44px touch targets on primary controls',async()=>{const r=await p.$$eval('button:not([hidden]),input',e=>e.filter(x=>x.offsetParent&&!x.closest('.harness,.sim')&&!x.classList.contains('more')).map(x=>{const b=x.getBoundingClientRect();return [(x.id||x.getAttribute('aria-label')||x.textContent||'').trim().slice(0,18),Math.round(b.width),Math.round(b.height)]}).filter(x=>x[2]<40||x[1]<40));return {ok:r.length===0,d:JSON.stringify(r)}});
 await p.context().close();
 p=await L.page(b,{dark:true});await p.goto(L.BASE+'chat.html');await p.locator('[data-chat=arjun]').click();await sleep(p,300);await p.screenshot({path:'screenshots/chat-desktop-dark-open.png'});
+{// the call outlives the page (call-state.js): chat ↔ groups ↔ reload, ?call=open, ?callbar=host
+const q=await L.page(b),secs=t=>{const m=/(\d\d):(\d\d)/.exec(t||'');return m?+m[1]*60+ +m[2]:-1};
+await q.goto(L.BASE+'chat.html?chat=arjun');await sleep(q,300);await q.click('#callBtn');await sleep(q,200);await q.keyboard.press('Escape');await sleep(q,2600);
+await q.goto(L.BASE+'groups.html?group=hike');await sleep(q,300);
+await chk('cross-page: a chat call shows as the strip in groups; group phone button returns to it (no second call)',async()=>{const t=await q.textContent('#callStrip'),l=await q.getAttribute('#callBtn','aria-label');return {ok:await q.locator('#callStrip').isVisible()&&/^Arjun Oommen · /.test(t)&&l==='Return to call with Arjun Oommen',d:t+' | '+l}});
+await q.click('#callBtn');await sleep(q,200);
+await chk('cross-page: groups overlay renders the direct call with the person avatar',async()=>({ok:await q.locator('#callOv').isVisible()&&(await q.textContent('#callOv .t-avatar'))==='AO'&&(await q.textContent('#callOv h2'))==='Arjun Oommen'}));
+await q.click('#callOv .mute');await sleep(q,100);await q.click('#callOv .cmin');
+await q.goto(L.BASE+'chat.html?chat=arjun&call=open');await sleep(q,300);
+await chk('?call=open raises the overlay on load, then leaves the URL',async()=>({ok:await q.locator('#callOv').isVisible()&&(await foc(q))==='callOv'&&!/call=open/.test(q.url())&&/chat=arjun/.test(q.url()),d:q.url()}));
+await chk('mute state travels with the call',async()=>({ok:(await q.getAttribute('#callMute','aria-pressed'))==='true'&&(await q.textContent('#callStatus'))==='Muted'}));
+const t1=secs(await q.textContent('#callTime'));await sleep(q,1100);await q.reload();await sleep(q,300);
+await chk('reload mid-call: strip shows, timer never resets',async()=>{const t=await q.textContent('#callStrip');return {ok:await q.locator('#callStrip').isVisible()&&!(await q.locator('#callOv').isVisible())&&t1>=1&&secs(t)>t1,d:t+' vs '+t1}});
+await q.goto(L.BASE+'chat.html?chat=meera&embed=1&callbar=host');await sleep(q,300);
+await chk('?callbar=host: no strip of its own (Home draws it); phone button still returns to the call',async()=>({ok:await q.locator('#callStrip').isHidden()&&(await q.getAttribute('#callBtn','aria-label'))==='Return to call with Arjun Oommen'}));
+await q.click('#callBtn');await sleep(q,150);await q.click('#callMin');await sleep(q,100);
+await chk('?callbar=host: minimise sends focus to the phone button, not a hidden strip',async()=>({ok:(await foc(q))==='callBtn'&&await q.locator('#callStrip').isHidden(),d:await foc(q)}));
+await q.goto(L.BASE+'groups.html?group=hike');await sleep(q,300);await q.click('#callStrip');await sleep(q,150);await q.click('#callOv .end');await sleep(q,150);
+await q.goto(L.BASE+'chat.html?chat=arjun');await sleep(q,300);
+await chk('ending in groups ended it for chat too',async()=>({ok:await q.locator('#callStrip').isHidden()&&(await q.getAttribute('#callBtn','aria-label'))==='Voice call Arjun'}));
+await chk('cross-page call flow never creates an AudioContext',async()=>{const a=await L.aud(q);return {ok:!a.started&&!a.ctxStates.length,d:JSON.stringify(a)}});
+await chk('cross-page: no runtime errors',async()=>({ok:!q.errs.length,d:q.errs.join('|')}));
+await q.context().close()}
 await b.close();C.save('chat-results.json')})();

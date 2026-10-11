@@ -142,6 +142,34 @@ await step('chatlinks',async()=>{const p=await page(b);await p.goto(BASE+'chat.h
  const ib=await p.locator('#phone').boundingBox();chk('mobile.html at 390: iframe within viewport',ib.x>=0&&ib.x+ib.width<=390&&ib.y+ib.height<=844+1,JSON.stringify(ib));await shot(p,'mobile-page-390');
  await p.setViewportSize({width:320,height:640});await p.waitForTimeout(400);chk('mobile.html at 320: no overflow',(o=>o.sw<=o.iw)(await ovf(p)),JSON.stringify(await ovf(p)));await shot(p,'mobile-page-320');
  chk('links runtime errors',!p.errs.length,p.errs.join('|'));await p.close()});
+// N. Phone preview of Home: the call outlives every page inside the bezel, and there is never a second strip
+for(const dark of [false,true])await step('mobile-home-callbar-'+(dark?'dark':'light'),async()=>{const L=dark?'dark':'light';const p=await page(b,{dark});await p.goto(BASE+'mobile.html?screen=home');await p.waitForTimeout(900);
+ const fr=()=>p.frames().find(f=>/refined\/(home|chat|groups)\.html/.test(f.url()));
+ const strips=async()=>{let n=0;for(const f of p.frames()){try{n+=await f.evaluate(()=>[...document.querySelectorAll('.t-callbar')].filter(e=>e.getClientRects().length&&!e.hidden).length)}catch{}}return n};
+ const secs=t=>{const m=/(\d\d):(\d\d)/.exec(t||'');return m?+m[1]*60+ +m[2]:-1};
+ await fr().locator('#list [data-person=arjun]').click();await p.waitForTimeout(800);
+ chk(L+' mobile home: Arjun opens chat.html inside the bezel',/chat\.html\?chat=arjun&from=home/.test(fr().url()),fr().url());
+ await fr().locator('#callBtn').click();await p.waitForTimeout(3300);chk(L+' mobile home: overlay up, no strip yet',await fr().locator('#callOv').isVisible()&&await strips()===0);
+ await fr().locator('#callMin').click();await p.waitForTimeout(150);const t0=secs(await fr().locator('#callStrip').textContent());chk(L+' mobile home: one strip in the conversation',await strips()===1&&t0>=0);
+ await fr().getByRole('button',{name:'Back to chats',exact:true}).click();await p.waitForTimeout(900);
+ const t1=await fr().locator('#callStrip').textContent();
+ chk(L+' mobile home: Back → Home inside the bezel keeps the strip, timer continues',/home\.html/.test(fr().url())&&/^Arjun Oommen · \d\d:\d\d$/.test(t1)&&secs(t1)>=t0&&await strips()===1,t1+' '+t0);
+ const r=await fr().evaluate(()=>[document.querySelector('#callStrip').getBoundingClientRect().toJSON(),document.querySelector('.mobile-bar').getBoundingClientRect().top]);
+ chk(L+' mobile home: strip at the top of the phone, header below it',r[0].top===0&&r[0].height===40&&Math.round(r[1])===40,JSON.stringify(r));
+ await p.waitForTimeout(300);await p.screenshot({path:path.join(SS,'callbar-mobile-home-'+L+'.png')});
+ await fr().locator('#mobile-nav [data-tab=calls]').click();chk(L+' mobile home: strip on Calls tab',await fr().locator('#callStrip').isVisible()&&await strips()===1);
+ await fr().locator('#callStrip').click();await p.waitForTimeout(900);
+ chk(L+' mobile home: strip → conversation with overlay open',/chat\.html\?chat=arjun&from=home$/.test(fr().url())&&await fr().locator('#callOv').isVisible()&&await strips()===0,fr().url());
+ if(!dark)await p.screenshot({path:path.join(SS,'callbar-mobile-overlay-after-strip.png')});
+ await fr().locator('#callEnd').click();await p.waitForTimeout(150);await fr().getByRole('button',{name:'Back to chats',exact:true}).click();await p.waitForTimeout(900);
+ chk(L+' mobile home: after End no strip anywhere',/home\.html/.test(fr().url())&&await strips()===0);
+ chk(L+' mobile home: no AudioContext',(await p.evaluate(()=>0))===0&&!(await fr().evaluate(()=>window.__aud&&window.__aud.ctxs.length)));
+ chk(L+' mobile home: no runtime errors',!p.errs.length,p.errs.join('|'));await p.close()});
+// O. mobile.html?screen=chat (embed=1 page): its own strip is the only one
+await step('mobile-chat-embed-callbar',async()=>{const p=await page(b);await p.goto(BASE+'mobile.html?chat=meera');await p.waitForTimeout(700);const f=p.frameLocator('#phone');
+ await f.locator('#callBtn').click();await p.waitForTimeout(200);await f.locator('#callMin').click();
+ chk('embed chat: exactly one strip, inside the frame',await f.locator('#callStrip').isVisible()&&await p.locator('.t-callbar').count()===0);
+ await f.locator('#callStrip').click();await f.locator('#callEnd').click();await p.close()});
 await b.close();
 fs.writeFileSync(path.join(__dirname,'mobile-chat-results.json'),JSON.stringify(results,null,2));
 const f=results.filter(r=>!r.ok);console.log(`${results.length-f.length}/${results.length} passed`);

@@ -25,7 +25,7 @@ await p.screenshot({path:'screenshots/groups-desktop-call-strip.png'});
 await p.click('#callStrip');await sleep(p,200);
 await chk('call: strip returns to the overlay',async()=>({ok:await p.locator('#callOv').isVisible()}));
 await p.click('#callOv .end');await sleep(p,300);
-await chk('call: End closes overlay + strip, toast "Call ended", focus back on phone button',async()=>({ok:(await p.locator('#callOv,#callStrip').count())===0&&/Call ended/.test(await p.textContent('#toastHost'))&&(await foc(p))==='callBtn',d:await foc(p)}));
+await chk('call: End closes overlay + strip, toast "Call ended", focus back on phone button',async()=>({ok:(await p.locator('#callOv').count())===0&&!(await p.locator('#callStrip').isVisible())&&/Call ended/.test(await p.textContent('#toastHost'))&&(await foc(p))==='callBtn',d:await foc(p)}));
 await p.click('[data-row=book]');await sleep(p,200);
 await chk('group call: no call button in the removed (read-only) group',async()=>({ok:(await p.locator('#callBtn').count())===0}));
 await p.click('[data-row=hike]');await sleep(p,200);
@@ -111,7 +111,7 @@ p=await L.page(b,{w:390,h:844,mobile:true});await p.goto(L.BASE+'groups.html');a
 await chk('mobile: call overlay + strip across conversation and list views at 390',async()=>{await p.locator('[data-row=hike]').click();await sleep(p,300);const w=await p.$eval('#callBtn',c=>c.offsetWidth);await p.click('#callBtn');await sleep(p,3000);await p.screenshot({path:'screenshots/groups-mobile-call-overlay.png'});
   await p.click('#callOv .cmin');await sleep(p,200);await p.screenshot({path:'screenshots/groups-mobile-call-strip.png'});const inConv=await p.locator('#callStrip').isVisible();
   await p.click('[aria-label="Back to groups"]');await sleep(p,300);const inList=await p.locator('#callStrip').isVisible();await p.screenshot({path:'screenshots/groups-mobile-call-strip-list.png'});
-  await p.click('#callStrip');await p.click('#callOv .end');await sleep(p,200);return {ok:w===44&&inConv&&inList&&(await p.locator('#callStrip').count())===0,d:[w,inConv,inList].join()}});
+  await p.click('#callStrip');await p.click('#callOv .end');await sleep(p,200);return {ok:w===44&&inConv&&inList&&!(await p.locator('#callStrip').isVisible()),d:[w,inConv,inList].join()}});
 await chk('mobile: Phone preview link hidden under 860px',async()=>({ok:!(await p.locator('#mobilePreview').isVisible())}));
 await p.screenshot({path:'screenshots/groups-mobile-list.png'});
 await chk('mobile list: no overflow',async()=>{const o=await L.overflow(p);return {ok:o.sw<=o.cw,d:JSON.stringify(o)}});
@@ -133,4 +133,15 @@ await p.click('#callStrip');await p.click('#callOv .end');await sleep(p,200);
 await chk('embed=1: Phone preview link not shown',async()=>({ok:!(await p.locator('#mobilePreview').isVisible())}));
 await p.context().close();
 p=await L.page(b,{dark:true});await p.goto(L.BASE+'groups.html');await sleep(p,300);await p.screenshot({path:'screenshots/groups-desktop-dark-open.png'});
+{// a group call outlives the page: it shows in chat.html and comes back to groups
+const q=await L.page(b);await q.goto(L.BASE+'groups.html?group=hike');await sleep(q,300);await q.click('#callBtn');await sleep(q,200);await q.keyboard.press('Escape');
+await q.goto(L.BASE+'chat.html?chat=arjun');await sleep(q,300);
+await chk('cross-page: group call strip in chat.html; chat phone button returns to it',async()=>{const t=await q.textContent('#callStrip');return {ok:await q.locator('#callStrip').isVisible()&&/^Weekend hike · /.test(t)&&(await q.getAttribute('#callBtn','aria-label'))==='Return to call with Weekend hike',d:t}});
+await q.click('#callStrip');await sleep(q,200);
+await chk('cross-page: chat overlay renders the group call with the group glyph',async()=>({ok:await q.locator('#callOv').isVisible()&&await q.locator('#callAv .gglyph').count()===1&&(await q.textContent('#callName'))==='Weekend hike'&&/Connecting…|Connected/.test(await q.textContent('#callStatus'))}));
+await q.click('#callEnd');await sleep(q,150);
+await q.goto(L.BASE+'groups.html?group=hike');await sleep(q,300);
+await chk('cross-page: ended in chat → gone in groups',async()=>({ok:await q.locator('#callStrip').isHidden()&&(await q.getAttribute('#callBtn','aria-label'))==='Start group call'}));
+await chk('cross-page: no AudioContext, no errors',async()=>{const a=await L.aud(q);return {ok:!a.started&&!a.ctxStates.length&&!q.errs.length,d:JSON.stringify(a)+q.errs.join('|')}});
+await q.context().close()}
 await b.close();C.save('groups-results.json')})();
