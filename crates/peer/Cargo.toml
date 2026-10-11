@@ -12,3 +12,4 @@ path = "src/main.rs"
 p2pcore = { path = "../core" }
 audio.workspace = true
 hound = "3.5"
+video = { path = "../video", default-features = false }
