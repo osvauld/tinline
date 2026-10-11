@@ -20,6 +20,9 @@ export const DUR = {
   stripIn: 160,
   callEnd: 300,        // total release on End (string release + fade)
   bubbleIn: 160,
+  tabOut: 90,          // fade-through between peer tabs: old content out…
+  tabIn: 210,          // …then new content in (starts after tabOut)
+  indicator: 200,      // nav highlight grows (Android pill) / glides (desktop)
   /** Measured: the mark's string reaches taut this long after connect() (verify.js check e). */
   markHit: 217,
 } as const;

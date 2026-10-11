@@ -7,6 +7,7 @@
   import Icon from '../../lib/ui/Icon.svelte';
   import IconButton from '../../lib/ui/IconButton.svelte';
   import Mark from '../../lib/brand/Mark.svelte';
+  import TabPanel, { rememberScroll } from '../../lib/ui/TabPanel.svelte';
   import { statusLook } from '../../lib/brand/status.svelte';
   const look = $derived(statusLook());
 
@@ -27,8 +28,10 @@
         <IconButton icon="gear" label="Settings" onclick={() => nav.push({ name: 'settings' })} />
       </span>
     </header>
-    <h1 class="title">{L.title}</h1>
-    <main class="body"><L.component {...L.props(top)} /></main>
+    <TabPanel key={top.tab}>
+      <h1 class="title">{L.title}</h1>
+      <main class="body" use:rememberScroll={top.tab}><L.component {...L.props(top)} /></main>
+    </TabPanel>
     <nav class="bar" aria-label="Main">
       {#each TABS as t (t)}
         <button type="button" class="tab press" aria-current={nav.tab === t ? 'page' : undefined} onclick={() => nav.setTab(t)}>
@@ -63,9 +66,14 @@
   @keyframes push { from { translate: 24px 0; opacity: .6; } }
   .bar { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--hairline); background: var(--surface); padding: 6px 0 10px; }
   .tab { display: grid; justify-items: center; gap: 2px; border: 0; background: transparent; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); min-height: 56px; }
-  .pill { position: relative; display: grid; place-items: center; width: 56px; height: 30px; border-radius: 15px; transition: background-color var(--dur-switch) var(--ease-out); }
+  .pill { position: relative; display: grid; place-items: center; width: 56px; height: 30px; }
+  /* Active indicator grows out from the icon's centre (Material 3), never a hard swap. */
+  .pill::before { content: ''; position: absolute; inset: 0; border-radius: 15px; background: var(--accent-soft);
+    transform: scaleX(.3); opacity: 0; transition: transform var(--dur-indicator) var(--ease-out), opacity var(--dur-indicator) var(--ease-out); }
+  .pill > :global(svg) { position: relative; }
+  .tab { transition: color var(--dur-indicator) var(--ease-out); }
   .tab[aria-current='page'] { color: var(--accent-ink); }
-  .tab[aria-current='page'] .pill { background: var(--accent-soft); }
+  .tab[aria-current='page'] .pill::before { transform: none; opacity: 1; }
   .dot { position: absolute; inset-block-start: -4px; inset-inline-end: 4px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
     background: var(--accent); color: var(--on-accent); font-size: 11px; line-height: 18px; text-align: center; }
 </style>
