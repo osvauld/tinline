@@ -135,7 +135,7 @@
   "page": "groups",
   "name": "Accept chat request: Priya shows under Private chats",
   "ok": true,
-  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?14:20Sent requests2 totalD"
+  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?14:33Sent requests2 totalD"
  },
  {
   "page": "groups",
@@ -153,7 +153,7 @@
   "page": "groups",
   "name": "sent message reaches a delivered/relayed state (hosts online)",
   "ok": true,
-  "detail": "see you at the gate14:20Delivered"
+  "detail": "see you at the gate14:33Delivered"
  },
  {
   "page": "groups",
@@ -171,7 +171,7 @@
   "page": "groups",
   "name": "hosts offline: message shows waiting/not delivered state explaining why",
   "ok": true,
-  "detail": "nobody is hosting14:20Waiting for a host"
+  "detail": "nobody is hosting14:33Waiting for a host"
  },
  {
   "page": "groups",

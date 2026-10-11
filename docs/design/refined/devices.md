@@ -2,6 +2,8 @@
 
 Prototype: [`devices.html`](./devices.html). Interactive design with simulated data; no camera, clipboard, network, storage or sound is used, and nothing is created or linked for real.
 
+Harness: one slim bar `← Home · Setup and devices` with an icon-only theme toggle and an icon-only Simulation toggle. The study's parts (First setup, Unlock, Link a device, My devices, Accounts) are a chip row that scrolls horizontally at narrow widths. The Simulation drawer (closed by default) holds the disclaimer, the demo passphrase, per-screen helpers and the "Other device and network" controls; nothing inside the app screens talks about simulation.
+
 Sources: `device-linking.md` (§0–§9), `multi-device.md`, the Android onboarding / unlock / accounts / link / linked-devices boards, and `endpoint-rotation-blocking` decisions section 0 through U24 (the ones that touch devices: U8, U10, U13, U18).
 
 This spec keeps two things apart:
@@ -53,10 +55,10 @@ Steps: Welcome → Name → (Create: Phrase → Check) / (Restore: Enter) → Pr
 |---|---|
 | Welcome | Three equal choices. States E2 in one sentence before anything is created. |
 | Name | Account name and device name required, ≤32 chars. Inline error is announced (`role=alert`) and focus moves to the offending field. Suggestion chips fill the device name only. |
-| Phrase, hidden | Slots show masked bullets with a visually-hidden "hidden". Ribbon reads **Example only · not a real phrase**. Continue needs the "written down" box, otherwise an error. |
+| Phrase, hidden | Slots show masked bullets with a visually-hidden "hidden". The Simulation drawer says these are example words only, not a real phrase; the screen itself does not. Continue needs the "written down" box, otherwise an error. |
 | Phrase, shown | Toggle is `aria-pressed`. Countdown visible, not announced every second. Hides on timer, on background, and when leaving the step. |
 | Check | Wrong word names which word failed. No lockout. "Show the words again" goes back and keeps entered values. |
-| Restore enter | Errors: empty, wrong count (reports how many entered), non-letters, failed checksum. Textarea is not auto-filled from clipboard; the "example words" button is the only shortcut. |
+| Restore enter | Errors: empty, wrong count (reports how many entered), non-letters, failed checksum. Textarea is not auto-filled from clipboard; "Fill with the example words" in the Simulation drawer is the only shortcut. |
 | Protect | Passphrase (≥8, repeat must match) or device lock (Android). Copy repeats E11. |
 | Done (create) | States the phrase is the only backup of the account itself. |
 | Done (restore) | States only identity returned; offers link to bring contacts and chats (E1, E2). |
@@ -67,7 +69,7 @@ Steps: Welcome → Name → (Create: Phrase → Check) / (Restore: Enter) → Pr
 |---|---|
 | Idle | Passphrase field, show/hide toggle (`aria-pressed`, 44 px target), device-lock button, "Forgot passphrase?". |
 | Wrong | Message with tries left; field cleared; focus back in the field; one short shake only when motion is allowed. |
-| Waiting (P8) | After 3 misses: field and button disabled, remaining seconds visible, text says nothing is erased. "Skip the wait" exists only in the prototype. |
+| Waiting (P8) | After 3 misses: field and button disabled, remaining seconds visible, text says nothing is erased. "Skip the wait" exists only in the Simulation drawer. |
 | Device lock | Simulated sheet. Cancel returns with a note that the passphrase still works. |
 | Forgot | Dialog explains no reset exists; options are device lock and restore from phrase. Does not offer to delete anything. |
 | Unlocked | Simulated confirmation, then "Lock again". |
@@ -83,13 +85,13 @@ any step ─▶ failed(expired | used | mismatch | declined | dropped | cancelle
 ```
 
 - **Choose.** Two radio groups (which device you hold; which has the camera). Diagram highlights "You are here". The directions panel lists "On this device" and "On the other device" and updates as radios change. Validation asks for a role and a method; N must name the device.
-- **QR (show).** Simulated QR labelled "not scannable". Timer `m:ss` plus bar; only a one-minute warning and the expiry are announced. Expired: QR greyed, "Show a new QR code" regenerates it and resets the timer. Cancel is always visible.
-- **QR (scan).** Permission states: not asked → simulated system prompt (dialog); allowed → simulated viewfinder; denied → three fallbacks (P5). Manual code accepts `OSVL1-…`; empty and malformed codes get distinct errors.
-- **Verify.** Large code and the other device's code (simulated) side by side; E also sees N's name. "Codes match" is a button, **never automatic**. "They don't match" burns the code and shows the mismatch state (a photographed QR raced by a third device, E5). If a user taps "match" while codes differ, the prototype continues: a human check cannot be enforced in UI, and the spec says so.
+- **QR (show).** Generated pattern whose accessible name is "Simulated QR code, not scannable". "Valid for `m:ss` · one use" plus a bar; only a one-minute warning and the expiry are announced. Expired: QR greyed, "Show a new QR code" regenerates it and resets the timer. Cancel is always visible. The other device's scan is triggered from the Simulation drawer ("The other device scans now", "Let this QR expire").
+- **QR (scan).** Permission states: not asked → simulated system prompt (dialog); allowed → simulated viewfinder (accessible name says no camera is used); denied → three fallbacks (P5). Manual code accepts `OSVL1-…`; empty and malformed codes get distinct errors.
+- **Verify.** Large code on this device ("Check the code matches"); the other device's code is shown in the Simulation drawer; E also sees N's name. "Codes match" is a button, **never automatic**. "They don't match" burns the code and shows the mismatch state (a photographed QR raced by a third device, E5). If a user taps "match" while codes differ, the prototype continues: a human check cannot be enforced in UI, and the spec says so.
 - **Authorize (E only).** Plain warning that approving sends the phrase. Wrong passphrase: error, retry, focus returns. Cancel is "Don't link".
 - **Waiting (N only).** Says nothing has been copied yet; cancel available.
 - **Transfer.** Four steps with text status (done / in progress / waiting) so colour is not the only cue. Cancel opens a dialog whose copy depends on whether the account has already been sent (P7).
-- **Done.** Says "Simulated". States that sync starts when both devices are online together and that contacts catch up as they get the updated list (E12).
+- **Done.** "{Device} is linked". States that sync starts when both devices are online together and that contacts catch up as they get the updated list (E12). The status announcement adds "(simulated)"; the screen does not.
 
 ### 3.4 My devices
 
@@ -157,9 +159,9 @@ Everything below is a stand-in:
 | Recovery phrase | 24 plainly fictional words, labelled as an example |
 | QR code | Generated pattern, labelled "not scannable" |
 | Camera and permission | Fake viewfinder and fake system prompt |
-| Other device | A "Simulation" strip with buttons to scan, expire, approve, refuse |
-| Passphrase | `demo-pass`, printed beside every field |
-| Network drop, expired or used codes | Radio switches in "Simulation controls" |
+| Other device | Buttons in the Simulation drawer to scan, expire, approve, refuse |
+| Passphrase | `demo-pass`, stated once in the Simulation drawer note |
+| Camera permission, network drop, expired or used codes, code match | Radio chips under "Other device and network" in the Simulation drawer |
 | Clipboard | Not used |
 
 ## 8. Open questions

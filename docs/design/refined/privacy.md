@@ -1,6 +1,8 @@
 # Privacy, address changes and blocking: refined design
 
-Prototype: [`privacy.html`](./privacy.html) (interactive, simulated data, no network).
+Prototype: [`privacy.html`](./privacy.html) (interactive, simulated data, no network). Harness: one slim bar
+`← Home · Privacy` with an icon-only theme toggle and an icon-only Simulation toggle; the disclaimer and every
+scenario control live in the Simulation drawer, closed by default.
 Sources: `groups/AndroidPrivacy.dc.html`, `groups/AndroidBlocking.dc.html`, and the decisions in
 `endpoint-rotation-blocking:docs/design/rotation-open-decisions.md` section 0 (U1-U24),
 `endpoint-rotation-blocking.md`, `rotation-time-contract.md`, `rotation-storage-failure-contract.md`.
@@ -27,8 +29,10 @@ Items marked **Proposed** are design ideas, not agreed protocol behaviour.
    is told: not group members, not hosts, not other contacts. Nothing in group UI reflects a personal
    block, except a local display choice. Copy never describes a block as silent or invisible.
 6. **Block, not Remove, for contacts (U19).** Remove exists only for group members.
-7. **Honest simulation.** Every simulated action is labelled "Simulate" or sits in the dashed
-   Simulation panel. No QR is real. Nothing claims a real send.
+7. **Honest simulation.** Every simulated action sits in the Simulation drawer, whose note says nothing
+   here changes a real address, block, contact or message. The app frame carries no simulation talk; the
+   sample QR and the "What X sees" mock say they are samples in their accessible names. Nothing claims a
+   real send.
 
 > **Superseded brief.** An early brief said never to expose blocked status to the remote user. That was
 > replaced by the user's decisions (U5 revised, 8b item 1, U19, U20, U24). The prototype follows the
@@ -47,16 +51,22 @@ Items marked **Proposed** are design ideas, not agreed protocol behaviour.
 | People and blocking | Contact list, per-contact permissions, connection state, Block dialog, post-block timeline, "What X sees" card, Unblock dialog, Reconnect flow |
 | Can't reach someone | Both sides changed address while apart: via a shared group host, host offline, or no shared group (QR) |
 
-Simulation controls: address situation (normal / phone was asleep / change failed / some contacts
-offline), jump to the next scheduled change, laptop offline, share a group with Sam, reset.
+The three tabs are a row of chips (`role=tablist`). At 390 and 320 px the row scrolls horizontally with an
+edge fade, so every chip keeps its full label.
+
+Simulation drawer: simulated time, address situation (normal / phone was asleep / change failed / some
+contacts offline), "Jump to next scheduled change", "Wake the phone" (while overdue), "Offline contacts come
+online" (while some are waiting), "Laptop is offline" and "You share a group with Sam" switches, host controls
+for the reconnect tab ("Host passes Sam’s address on", "Host goes offline", "Host comes back"), and
+"Reset everything".
 
 ## 3. Address change states
 
 | State | Trigger in prototype | UI | Rule |
 |---|---|---|---|
 | On schedule | Normal | Last/next time, N of M told | Block/unblock never touch the schedule (time contract T1) |
-| Contacts waiting | "Some contacts offline" | Info banner, "Waiting" per contact | Whichever side's address is still live retries; nothing for the user to do (U1) |
-| Overdue (phone slept) | "Phone was asleep" | Warning banner; "Simulate waking the phone" | **One** change on wake, no catch-up changes; next = wake + interval (candidate ResumePlusInterval, open) |
+| Contacts waiting | "Some contacts offline" | Info banner ("1 contact hasn’t got your address yet" / "N contacts haven’t…"), "Waiting" per contact | Whichever side's address is still live retries; nothing for the user to do (U1) |
+| Overdue (phone slept) | "Phone was asleep" | Warning banner; "Wake the phone" in the Simulation drawer | **One** change on wake, no catch-up changes; next = wake + interval (candidate ResumePlusInterval, open) |
 | Failed | "Change failed" | Error banner; "Try again now" fails once more, then succeeds | Current address is not extended silently; fail-closed vs short grace is open (C2). Banner says the length is undecided |
 | Interval changed | Radio group | Live message with the new next date | Counted from last change with a floor; shortening can only bring the next change forward; overdue/failed changes are not postponed (T3, FromLastRotation) |
 | Both sides rotated while apart | Tab 3 | See section 5 | U1 |
@@ -115,26 +125,27 @@ Detection of "lost" (timeout, number of tries) is open (R1a 7); the prototype on
 | No shared group | Warning with Show my QR / Scan; messages show "Waiting to reach Sam" |
 | Recovered | Success banner; "Delivered"; history kept; keeping the verified flag is **Proposed** (R1a assumes yes) |
 
-Dialogs: Show my QR (sample pattern, labelled not real), Scan (no camera in prototype). Both have a
-Cancel and a "Simulate" completion; Escape and backdrop click cancel.
+Dialogs: Show my QR (sample pattern; its accessible name says it is not a real QR code), Scan (a dark
+viewfinder; no camera in the prototype). Both have Cancel and a completion button ("Done" / "Use scanned
+code"); Escape and backdrop click cancel.
 
 ## 6. Interaction, accessibility and sound states
 
 - **Dialogs:** native `<dialog>` modal; Escape and backdrop click close; focus lands on the title; on close,
   focus returns to the control that opened it, or to the contact heading if that control no longer exists
   (e.g. Block was replaced by Unblock).
-- **Focus after a rerender:** if the control you used disappears ("Simulate waking the phone", "Try again now" once
+- **Focus after a rerender:** if the control you used disappears ("Wake the phone", "Try again now" once
   the banner resolves), focus moves to the "Status on this phone" heading, where the result is shown; the polite live
   region still announces it. Focus is never left on the page body.
 - **Live feedback:** every action posts a sentence to a polite live region and a visible toast (6 s). Banners
   are persistent state; toasts are not the only record.
 - **Keyboard:** tablist with arrow keys / Home / End; radios and switches are native radio / `role=switch` buttons;
   buttons >= 44 px. Status is never colour-only (icon + words).
-  The three tabs are a wrapping three-column segmented control (labels wrap to two or more lines), so none is
-  scrolled off or clipped at 390 px, 320 px or 200% text.
-- **Motion:** only a 150 ms switch slide and toast fade; both removed under `prefers-reduced-motion`.
-- **Theme:** follows `prefers-color-scheme`, plus a visible toggle (`aria-pressed`), remembered in
-  `localStorage` (`tinline-design-theme`) when available.
+  The three tabs are a single chip row that scrolls horizontally with an edge fade at narrow widths; each chip
+  keeps its full label on one line (checked at 390 and 320 px).
+- **Motion:** only a 120 ms switch slide and the toast fade; both removed under `prefers-reduced-motion`.
+- **Theme:** follows `prefers-color-scheme`, plus an icon-only toggle (`aria-pressed`). The choice is not
+  stored.
 - **Sound:** none is added here. By design: a blocked caller and a caller without call permission never ring the
   receiver; address changes, blocks and unblocks are silent (no notification sound, no vibration). A queued
   message that becomes undeliverable ("blocked you") is a status line on that message, not a notification.
