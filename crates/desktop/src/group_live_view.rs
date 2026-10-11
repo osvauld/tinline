@@ -7,7 +7,7 @@ use p2pcore::{GroupDelivery, GroupItemKind, GroupMessage, GroupRole};
 
 use super::groups_view::{btn, dot, footer, gav, hhmm, link_btn, message_body, ordinal, rule, short_time, sys, tag, when};
 use super::*;
-use crate::app::group_live::{self as gl, first_name, short_dev, Action, LDialog, Lm, TokenKind, FLAGS_TO_REMOVE};
+use crate::app::group_live::{self as gl, first_name, short_dev, Action, LDialog, Lm, FLAGS_TO_REMOVE};
 
 fn l(m: Lm) -> Msg {
     Msg::Live(m)
@@ -44,6 +44,34 @@ impl App {
         ]
         .spacing(2);
         let ready = self.live.ready;
+        // G3: invitations to us, with Join / Decline, above the groups.
+        let pending: Vec<_> = self.live.pending_invitations().collect();
+        if !pending.is_empty() {
+            col = col.push(container(label(t, &format!("Invitations \u{b7} {}", pending.len()))).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }));
+            for i in pending {
+                let who = first_name(&self.live_name(&i.inviter_did, &i.inviter_name)).to_string();
+                let joining = self.live.joining.as_deref() == Some(i.id.as_str());
+                let busy = self.live.joining.is_some();
+                col = col.push(
+                    container(
+                        column![
+                            row![gav(t, &i.group_id, 36.0), column![semi(i.group_name.clone(), 14.0, t.ink), tx(format!("{who} invited you"), 12.0, t.ink2)].spacing(1).width(Fill)]
+                                .spacing(10)
+                                .align_y(Alignment::Center),
+                            row![
+                                btn(t, Kind::Primary, if joining { "Joining\u{2026}" } else { "Join" }, (!busy).then(|| l(Lm::AcceptInv(i.id.clone())))),
+                                btn(t, Kind::Quiet, "Decline", (!busy).then(|| l(Lm::DeclineInv(i.id.clone())))),
+                            ]
+                            .spacing(6),
+                        ]
+                        .spacing(8),
+                    )
+                    .padding(10)
+                    .width(Fill)
+                    .style(ui::card(t)),
+                );
+            }
+        }
         col = col.push(
             container(label(t, &format!("Groups \u{b7} {}", self.live.list.len()))).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }),
         );
@@ -386,6 +414,22 @@ impl App {
                 );
             }
         }
+        let sent: Vec<_> = self.live.sent.iter().filter(|i| !d.members.iter().any(|m| m.did == i.invitee_did)).collect();
+        if admin && !sent.is_empty() {
+            col = col.push(sec(&format!("Invited \u{b7} {}", sent.len())));
+            for i in sent {
+                let name = self.live_name(&i.invitee_did, &i.invitee_name);
+                let (line, bad) = gl::sent_invitation_line(i);
+                col = col.push(
+                    container(
+                        row![avatar(t, &name, &i.invitee_did, 28.0), column![semi(name.clone(), 14.0, t.ink), tx(line, 12.0, if bad { t.error } else { t.ink2 })].spacing(1)]
+                            .spacing(8)
+                            .align_y(Alignment::Center),
+                    )
+                    .padding([6, 16]),
+                );
+            }
+        }
         col = col.push(sec(&format!("Members \u{b7} {}", d.members.len())));
         for m in &d.members {
             let name = self.live_name(&m.did, &m.name);
@@ -428,9 +472,8 @@ impl App {
         let mut foot = column![tx(role_word, 12.0, t.ink2)].spacing(6);
         if gl::active(d.my_role) {
             if admin {
-                foot = foot.push(btn(t, Kind::Tonal, "Invite people", Some(l(Lm::Invite))));
+                foot = foot.push(row![btn(t, Kind::Tonal, "Add members", Some(l(Lm::AddMembers))), btn(t, Kind::Quiet, "Invite link", Some(l(Lm::Invite)))].spacing(6));
             }
-            foot = foot.push(btn(t, Kind::Quiet, "Add my other device", Some(l(Lm::DeviceToken))));
             let offered = d.host_offers.iter().any(|h| h.is_me);
             foot = foot.push(if d.am_host || offered {
                 btn(t, Kind::Quiet, if d.am_host { "Stop hosting here" } else { "Withdraw host offer" }, Some(l(Lm::AskHost(false))))
@@ -636,6 +679,19 @@ impl App {
 
     pub(super) fn live_overlay(&self, t: Tok) -> Option<El<'_>> {
         let d = self.live.dialog.as_ref()?;
+        // The invite QR at full size (click anywhere to go back).
+        if self.live.qr_full
+            && let Some(q) = &self.live.qr
+        {
+            let big = container(canvas(super::QrView(q)).width(Length::Fixed(560.0)).height(Length::Fixed(560.0))).padding(24).style(ui::plain(Color::WHITE, 16.0));
+            let layer = container(column![big, tx("Click anywhere to go back", 14.0, Color::WHITE)].spacing(12).align_x(Alignment::Center))
+                .center_x(Fill)
+                .center_y(Fill)
+                .width(Fill)
+                .height(Fill)
+                .style(ui::plain(Color { r: 0.0, g: 0.0, b: 0.0, a: 0.85 }, 0.0));
+            return Some(opaque(mouse_area(layer).on_press(l(Lm::QrFull(false)))));
+        }
         let title = |x: String| bold(x, 22.0, t.ink);
         let para = |x: String| tx(x, 14.0, t.ink2);
         let busy = self.live.busy;
@@ -660,10 +716,10 @@ impl App {
                 para("Then invite people from the members pane.".into()),
             ]
             .spacing(14),
-            LDialog::Join { token, peek } => {
+            LDialog::Join { token, peek, checking } => {
                 let mut c = column![
                     title("Join a group".into()),
-                    text_input("Paste the invite you were sent", token)
+                    text_input("Paste the invite link (tinline://g/\u{2026}) or code", token)
                         .on_input(|v| l(Lm::TokenIn(v)))
                         .on_paste(|v| l(Lm::TokenIn(v)))
                         .on_submit(l(Lm::Confirm))
@@ -693,54 +749,80 @@ impl App {
                                 .into(),
                         ));
                     }
-                    None if !token.is_empty() => c = c.push(tx("That isn\u{2019}t a group invite. Paste the whole text you were sent.", 13.0, t.error)),
+                    None if *checking => c = c.push(para("Checking with the group\u{2019}s host\u{2026}".into())),
+                    None if !token.is_empty() => c = c.push(tx("That link didn\u{2019}t work: it isn\u{2019}t a group invite, it expired, or its host is offline.", 13.0, t.error)),
                     None => c = c.push(para("Admins of a group can make an invite. It works for 7 days.".into())),
                 }
                 c
             }
-            LDialog::Token { kind, text } => {
-                let (head, body) = match kind {
-                    TokenKind::Invite => (
-                        format!("Invite people to {gname}"),
-                        "Send this to the people you want in the group, over an app you trust. Anyone holding it can join until it expires in 7 days; you can see who joined and flag them out.",
-                    ),
-                    TokenKind::Device => (
-                        format!("Add your other device to {gname}"),
-                        "On your other device (same account), open Groups \u{203a} Join and paste or scan this. It joins as you, not as a new member.",
-                    ),
-                };
-                let mut c = column![title(head), para(body.into())].spacing(14);
+            LDialog::Token { text } => {
+                let mut c = column![
+                    title(format!("Invite link for {gname}")),
+                    para("Anyone with this link or QR can join for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members.".into()),
+                ]
+                .spacing(14);
                 match (text, &self.live.qr) {
                     (Some(tok), q) => {
                         if let Some(q) = q {
+                            // Large and high contrast; click for full size.
                             c = c.push(
-                                container(
-                                    container(canvas(super::QrView(q)).width(Length::Fixed(220.0)).height(Length::Fixed(220.0)))
-                                        .padding(8)
+                                button(
+                                    container(canvas(super::QrView(q)).width(Length::Fixed(400.0)).height(Length::Fixed(400.0)))
+                                        .padding(12)
                                         .style(ui::plain(Color::WHITE, 12.0)),
                                 )
-                                .center_x(Fill),
+                                .padding(0)
+                                .style(button::text)
+                                .on_press(l(Lm::QrFull(true))),
                             );
+                            c = c.push(tx("Click the code to show it full size.", 12.0, t.ink2));
                         }
-                        c = c.push(
-                            container(mono(tok.clone(), 11.0, t.ink2).wrapping(iced::widget::text::Wrapping::Glyph))
-                                .padding(10)
-                                .width(Fill)
-                                .max_height(90)
-                                .clip(true)
-                                .style(ui::plain(t.surface2, 10.0)),
-                        );
+                        c = c.push(container(mono(tok.clone(), 13.0, t.ink).wrapping(iced::widget::text::Wrapping::Glyph)).padding(10).width(Fill).style(ui::plain(t.surface2, 10.0)));
                         c = c.push(row![
                             Space::new().width(Fill),
                             btn(t, Kind::Ghost, "Close", Some(l(Lm::Dismiss))),
-                            pill(t, Kind::Primary, Some(Icon::Copy), "Copy", Some(l(Lm::CopyToken))),
+                            pill(t, Kind::Primary, Some(Icon::Copy), "Copy link", Some(l(Lm::CopyToken))),
                         ]
                         .spacing(8));
                     }
                     (None, _) if self.live.error.is_none() => c = c.push(para("Making it\u{2026}".into())),
                     (None, _) => c = c.push(row![Space::new().width(Fill), btn(t, Kind::Ghost, "Close", Some(l(Lm::Dismiss)))]),
                 }
-                c
+                c.align_x(Alignment::Center)
+            }
+            LDialog::AddMembers { picked } => {
+                let d = self.live.detail.as_ref()?;
+                let contacts: Vec<(String, String)> = self.contacts.iter().map(|c| (c.did.clone(), Self::display(c))).collect();
+                let rows = gl::pick_rows(&contacts, d, &self.live.sent, |did| self.blocks.blocked_by_me(did) || self.blocks.blocked_me(did).is_some());
+                let mut list = column![].spacing(2);
+                if rows.is_empty() {
+                    list = list.push(para("No contacts to add. People you block, or who block you, aren\u{2019}t listed.".into()));
+                }
+                for r in rows {
+                    let on = picked.contains(&r.did);
+                    let sub = r.why.map(str::to_string).or_else(|| r.invited.as_ref().map(|i| gl::sent_invitation_line(i).0.to_string()));
+                    let mut info = column![semi(r.name.clone(), 14.0, if r.why.is_none() { t.ink } else { t.ink2 })].spacing(1);
+                    if let Some(sub) = sub {
+                        info = info.push(tx(sub, 12.0, t.ink2));
+                    }
+                    let mut line = row![avatar(t, &r.name, &r.did, 32.0), info.width(Fill)].spacing(10).align_y(Alignment::Center);
+                    if r.why.is_none() {
+                        line = line.push(ui::icon(if on { Icon::Check } else { Icon::UserPlus }, 18.0, if on { t.primary } else { t.ink2 }));
+                    }
+                    list = list.push(
+                        button(line)
+                            .padding([6, 10])
+                            .width(Fill)
+                            .style(ui::row_style(t, on))
+                            .on_press_maybe(r.why.is_none().then(|| l(Lm::Pick(r.did.clone())))),
+                    );
+                }
+                column![
+                    title(format!("Add to {gname}")),
+                    para("Each person gets the invitation in your 1:1 chat and joins when they accept. It is valid for 7 days.".into()),
+                    scroll(t, list).height(Length::Fixed(320.0)),
+                ]
+                .spacing(14)
             }
             LDialog::Flag { did } => {
                 let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| "this member".into());
@@ -843,6 +925,16 @@ impl App {
         c = match d {
             LDialog::NewGroup { .. } => c.push(actions("Cancel", Some(("Create", Kind::Primary)))),
             LDialog::Join { peek, .. } => c.push(actions("Cancel", peek.as_ref().map(|_| ("Join", Kind::Primary)))),
+            LDialog::AddMembers { picked } => {
+                let label_ = if picked.len() > 1 { format!("Invite {} people", picked.len()) } else { "Invite".to_string() };
+                let busy = self.live.busy;
+                c.push(row![
+                    Space::new().width(Fill),
+                    btn(t, Kind::Ghost, "Cancel", (!busy).then(|| l(Lm::Dismiss))),
+                    btn(t, Kind::Primary, if busy { "Sending\u{2026}" } else { &label_ }, (!busy && !picked.is_empty()).then(|| l(Lm::Confirm))),
+                ]
+                .spacing(8))
+            }
             LDialog::Flag { .. } => c.push(actions("Cancel", Some(("Flag", Kind::Danger)))),
             LDialog::Admin { admin, .. } => c.push(actions("Cancel", Some((if *admin { "Make admin" } else { "Remove as admin" }, Kind::Primary)))),
             LDialog::Leave => c.push(actions("Cancel", Some(("Leave", Kind::Danger)))),

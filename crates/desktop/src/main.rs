@@ -102,6 +102,8 @@ pub enum GroupEv {
     Changed(String),
     /// A chat request appeared or changed (G2, U3).
     Request(p2pcore::GroupChatRequest),
+    /// A group invitation appeared or changed (G3).
+    Invitation(p2pcore::GroupInvitation),
 }
 
 /// Bridges `GroupEvents` into the same channel as `NodeEvents`.
@@ -110,6 +112,12 @@ pub struct GroupBridge(pub mpsc::UnboundedSender<Ev>);
 impl p2pcore::GroupRequestEvents for GroupBridge {
     fn on_chat_request(&self, request: p2pcore::GroupChatRequest) {
         let _ = self.0.send(Ev::Group(GroupEv::Request(request)));
+    }
+}
+
+impl p2pcore::GroupInvitationEvents for GroupBridge {
+    fn on_group_invitation(&self, invitation: p2pcore::GroupInvitation) {
+        let _ = self.0.send(Ev::Group(GroupEv::Invitation(invitation)));
     }
 }
 
@@ -344,6 +352,7 @@ fn main() -> Result<(), String> {
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
     node.set_group_events(Arc::new(GroupBridge(tx.clone())));
     node.set_group_request_events(Arc::new(GroupBridge(tx.clone())));
+    node.set_group_invitation_events(Arc::new(GroupBridge(tx.clone())));
     node.set_link_events(Arc::new(LinkBridge(tx.clone())));
     // The single pre-accounts key entry belongs to the account core just migrated.
     keystore::migrate_legacy(keystore::system(), &data, &node);

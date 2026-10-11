@@ -42,6 +42,8 @@ struct Fake {
     contacts: RefCell<Vec<String>>,
     /// (group, admin who appointed) for "host this group?" on this device.
     asked: RefCell<Option<(String, String)>>,
+    /// Invitations, both directions (G3).
+    invs: RefCell<Vec<GroupInvitation>>,
 }
 
 fn msg(gid: &str, id: &str, at: u64, author: &str, name: &str, kind: GroupItemKind, text: &str) -> GroupMessage {
@@ -214,10 +216,7 @@ impl GroupApi for Fake {
         Ok(gid)
     }
     fn group_invite(&self, id: String) -> Result<String, Error> {
-        self.with(&id, |g| Fake::check_admin(g).map(|_| format!("TLGRP1:{id}")))
-    }
-    fn group_device_token(&self, id: String) -> Result<String, Error> {
-        self.with(&id, |_| Ok(format!("TLGRP1:dev:{id}")))
+        self.with(&id, |g| Fake::check_admin(g).map(|_| format!("tinline://g/{id}")))
     }
     fn group_peek_invite(&self, token: String) -> Option<GroupInvitePeek> {
         self.tokens.borrow().contains_key(&token).then(|| GroupInvitePeek {
@@ -361,6 +360,63 @@ impl GroupApi for Fake {
     fn block(&self, did: String) -> Result<(), Error> {
         self.blocked.borrow_mut().push(did);
         Ok(())
+    }
+    fn group_invite_contacts(&self, id: String, dids: Vec<String>) -> Result<Vec<GroupInvitation>, Error> {
+        self.with(&id, |g| Fake::check_admin(g))?;
+        if dids.iter().any(|d| self.blocked.borrow().contains(d)) {
+            return Err(Error::Rejected("you block them".into()));
+        }
+        let mut out = Vec::new();
+        for d in dids {
+            let i = inv(&format!("i{}", self.tick()), &id, true, &d, GroupInvitationState::Pending);
+            self.invs.borrow_mut().push(i.clone());
+            out.push(i);
+        }
+        Ok(out)
+    }
+    fn group_invitations_incoming(&self) -> Result<Vec<GroupInvitation>, Error> {
+        Ok(self.invs.borrow().iter().filter(|i| !i.outgoing).cloned().collect())
+    }
+    fn group_invitations_outgoing(&self, id: String) -> Result<Vec<GroupInvitation>, Error> {
+        Ok(self.invs.borrow().iter().filter(|i| i.outgoing && i.group_id == id).cloned().collect())
+    }
+    fn group_invitation_accept(&self, id: String) -> Result<GroupInvitation, Error> {
+        let i = self.answer_inv(&id, GroupInvitationState::Joined)?;
+        self.add(&i.group_id, &i.inviter_did, &[], &[]);
+        Ok(i)
+    }
+    fn group_invitation_decline(&self, id: String) -> Result<GroupInvitation, Error> {
+        self.answer_inv(&id, GroupInvitationState::Declined)
+    }
+}
+
+impl Fake {
+    fn answer_inv(&self, id: &str, st: GroupInvitationState) -> Result<GroupInvitation, Error> {
+        let mut v = self.invs.borrow_mut();
+        let i = v.iter_mut().find(|i| i.id == id).ok_or(Error::NotFound)?;
+        if i.state != GroupInvitationState::Pending {
+            return Err(Error::Rejected("already answered".into()));
+        }
+        i.state = st;
+        Ok(i.clone())
+    }
+}
+
+fn inv(id: &str, gid: &str, outgoing: bool, other: &str, state: GroupInvitationState) -> GroupInvitation {
+    let name = other.trim_start_matches("did:key:").to_string();
+    GroupInvitation {
+        id: id.into(),
+        group_id: gid.into(),
+        group_name: format!("Group {gid}"),
+        inviter_did: if outgoing { ME.into() } else { other.into() },
+        inviter_name: if outgoing { "Me".into() } else { name.clone() },
+        invitee_did: if outgoing { other.into() } else { ME.into() },
+        invitee_name: if outgoing { name } else { "Me".into() },
+        outgoing,
+        state,
+        at: 1,
+        expires: 7 * 86400,
+        delivered: true,
     }
 }
 
@@ -581,21 +637,29 @@ fn new_group_needs_a_name_then_opens_it_hosted_here() {
 #[test]
 fn join_peeks_the_token_then_joins_or_shows_the_refusal() {
     let api = Fake::default();
-    api.tokens.borrow_mut().insert("TLGRP1:good".into(), Ok("joined".into()));
-    api.tokens.borrow_mut().insert("TLGRP1:old".into(), Err("invite expired or invalid".into()));
+    api.tokens.borrow_mut().insert("tinline://g/good".into(), Ok("joined".into()));
+    api.tokens.borrow_mut().insert("tinline://g/old".into(), Err("invite expired or invalid".into()));
     let mut l = live();
     l.step(&api, Lm::JoinOpen);
-    l.step(&api, Lm::TokenIn("garbage".into()));
-    assert!(matches!(&l.dialog, Some(LDialog::Join { peek: None, .. })));
+    // Peeking is network: a job, never a call on the UI thread; "checking" until it answers.
+    let out = l.step(&api, Lm::TokenIn("garbage".into()));
+    assert_eq!(out.job, Some(Job::Peek("garbage".into())));
+    assert!(matches!(&l.dialog, Some(LDialog::Join { peek: None, checking: true, .. })));
+    l.step(&api, out.job.unwrap().run(&api));
+    assert!(matches!(&l.dialog, Some(LDialog::Join { peek: None, checking: false, .. })));
     assert_eq!(l.step(&api, Lm::Confirm).job, None, "nothing to join");
 
-    l.step(&api, Lm::TokenIn(" TLGRP1:old \n".into()));
+    // A stale answer (for what was in the field before) is ignored.
+    let stale = l.step(&api, Lm::TokenIn("tinline://g/good".into())).job.unwrap();
+    run(&mut l, &api, Lm::TokenIn(" tinline://g/old \n".into()));
+    l.step(&api, Lm::Peeked("tinline://g/good".into(), None));
     assert!(matches!(&l.dialog, Some(LDialog::Join { peek: Some(p), .. }) if p.name == "Hike club"));
+    drop(stale);
     run(&mut l, &api, Lm::Confirm);
     assert_eq!(l.error.as_deref(), Some("Invite expired or invalid."));
     assert!(l.dialog.is_some());
 
-    l.step(&api, Lm::TokenIn("TLGRP1:good".into()));
+    run(&mut l, &api, Lm::TokenIn("tinline://g/good".into()));
     let said = run(&mut l, &api, Lm::Confirm);
     assert_eq!(said.as_deref(), Some("You joined the group."));
     assert_eq!(l.open.as_deref(), Some("joined"));
@@ -603,25 +667,91 @@ fn join_peeks_the_token_then_joins_or_shows_the_refusal() {
 }
 
 #[test]
-fn invite_and_device_tokens_come_back_into_the_dialog_and_copy() {
+fn the_invite_link_comes_back_into_the_dialog_copies_and_shows_full_size() {
     let api = Fake::default();
     api.add("own", ME, &[], &[]);
     api.add("mem", "did:key:sam", &[], &[]);
     let mut l = live();
     l.step(&api, Lm::Open("own".into()));
+    l.step(&api, Lm::QrFull(true));
+    assert!(!l.qr_full, "nothing to show yet");
     let out = l.step(&api, Lm::Invite);
     assert!(l.busy);
-    assert_eq!(l.dialog, Some(LDialog::Token { kind: TokenKind::Invite, text: None }));
+    assert_eq!(l.dialog, Some(LDialog::Token { text: None }));
     l.step(&api, out.job.unwrap().run(&api));
-    assert_eq!(l.dialog, Some(LDialog::Token { kind: TokenKind::Invite, text: Some("TLGRP1:own".into()) }));
-    assert_eq!(l.step(&api, Lm::CopyToken).copy.as_deref(), Some("TLGRP1:own"));
+    assert_eq!(l.dialog, Some(LDialog::Token { text: Some("tinline://g/own".into()) }));
+    assert_eq!(l.step(&api, Lm::CopyToken).copy.as_deref(), Some("tinline://g/own"));
+    l.step(&api, Lm::QrFull(true));
+    assert!(l.qr_full);
+    // The first dismiss closes the full-size code, the second the dialog.
+    l.step(&api, Lm::Dismiss);
+    assert!(!l.qr_full && l.dialog.is_some());
+    l.step(&api, Lm::Dismiss);
+    assert_eq!(l.dialog, None);
 
-    // A plain member can't invite, but can add their own other device.
+    // A plain member can't invite.
     l.step(&api, Lm::Open("mem".into()));
     run(&mut l, &api, Lm::Invite);
     assert_eq!(l.error.as_deref(), Some("Only admins can do that."));
-    run(&mut l, &api, Lm::DeviceToken);
-    assert_eq!(l.dialog, Some(LDialog::Token { kind: TokenKind::Device, text: Some("TLGRP1:dev:mem".into()) }));
+}
+
+#[test]
+fn the_picker_hides_blocked_contacts_and_shows_members_and_pending_invitations() {
+    let api = Fake::default();
+    api.add("own", ME, &[], &["did:key:sam"]);
+    api.invs.borrow_mut().push(inv("x1", "own", true, "did:key:leo", GroupInvitationState::Pending));
+    api.invs.borrow_mut().push(inv("x2", "own", true, "did:key:zoe", GroupInvitationState::Declined));
+    let mut l = live();
+    l.step(&api, Lm::Open("own".into()));
+    let contacts: Vec<(String, String)> = ["sam", "leo", "priya", "ravi", "zoe"].iter().map(|n| (format!("did:key:{n}"), n.to_string())).collect();
+    let rows = pick_rows(&contacts, l.detail.as_ref().unwrap(), &l.sent, |d| d == "did:key:priya" || d == "did:key:ravi");
+    let dids: Vec<&str> = rows.iter().map(|r| r.did.as_str()).collect();
+    assert_eq!(dids, ["did:key:zoe", "did:key:leo", "did:key:sam"]);
+    assert_eq!(rows[0].why, None, "declined before: can be asked again");
+    assert_eq!(rows[1].why, Some("Invited \u{b7} waiting"));
+    assert_eq!(rows[2].why, Some("Already a member"));
+    assert_eq!(sent_invitation_line(&l.sent[1]), ("Declined", true));
+}
+
+#[test]
+fn adding_members_sends_invitations_and_shows_their_state() {
+    let api = Fake::default();
+    api.add("own", ME, &[], &[]);
+    let mut l = live();
+    l.step(&api, Lm::Open("own".into()));
+    l.step(&api, Lm::AddMembers);
+    assert_eq!(l.step(&api, Lm::Confirm).job, None);
+    assert_eq!(l.error.as_deref(), Some("Pick someone first."));
+    l.step(&api, Lm::Pick("did:key:leo".into()));
+    l.step(&api, Lm::Pick("did:key:zoe".into()));
+    l.step(&api, Lm::Pick("did:key:zoe".into()));
+    assert_eq!(l.dialog, Some(LDialog::AddMembers { picked: vec!["did:key:leo".into()] }));
+    let said = run(&mut l, &api, Lm::Confirm);
+    assert_eq!(said.as_deref(), Some("Invitation sent to leo. They join when they accept."));
+    assert_eq!(l.dialog, None);
+    assert_eq!(l.sent.len(), 1);
+    assert_eq!(sent_invitation_line(&l.sent[0]), ("Invited \u{b7} waiting for an answer", false));
+}
+
+#[test]
+fn invitations_to_us_count_on_the_badge_and_join_or_decline() {
+    let api = Fake::default();
+    api.invs.borrow_mut().push(inv("in1", "hike", false, "did:key:sam", GroupInvitationState::Pending));
+    api.invs.borrow_mut().push(inv("in2", "chess", false, "did:key:ravi", GroupInvitationState::Pending));
+    let mut l = live();
+    run(&mut l, &api, Lm::Reload);
+    assert_eq!(l.badge(), 2);
+    let said = run(&mut l, &api, Lm::AcceptInv("in1".into()));
+    assert_eq!(said.as_deref(), Some("You joined Group hike."));
+    assert_eq!(l.open.as_deref(), Some("hike"));
+    let said = run(&mut l, &api, Lm::DeclineInv("in2".into()));
+    assert_eq!(said.as_deref(), Some("Declined. ravi sees that you declined."));
+    assert_eq!(l.pending_invitations().count(), 0);
+    assert_eq!(run(&mut l, &api, Lm::DeclineInv("in2".into())).as_deref(), Some("Already answered."));
+    // An event re-reads the list.
+    api.invs.borrow_mut().push(inv("in3", "x", false, "did:key:sam", GroupInvitationState::Pending));
+    l.step(&api, Lm::InvitationChanged(inv("in3", "x", false, "did:key:sam", GroupInvitationState::Pending)));
+    assert_eq!(l.badge(), 1);
 }
 
 #[test]

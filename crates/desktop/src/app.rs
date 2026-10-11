@@ -2097,6 +2097,7 @@ impl App {
                     crate::GroupEv::Message(m) => Lm::Message(m),
                     crate::GroupEv::Changed(id) => Lm::Changed(id),
                     crate::GroupEv::Request(r) => Lm::RequestChanged(r),
+                    crate::GroupEv::Invitation(i) => Lm::InvitationChanged(i),
                 })
             }
             Ev::Link(l) => return self.link_event(l),

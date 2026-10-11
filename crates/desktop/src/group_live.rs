@@ -11,12 +11,15 @@
 //! Decisions (rotation-open-decisions.md §0): 3 admin flags remove a member (U9/U15) and the
 //! removed member sees the signed flags; a post written before a removal still shows, marked
 //! (U11); only hosts know member endpoints (U7), so "Waiting for a host" is the honest state of
-//! our posts until a host acknowledges them. Chat requests through the host (U3) are not in core
-//! yet and have no live UI.
+//! our posts until a host acknowledges them. G3: admins invite contacts directly ("Add members",
+//! blocked contacts never offered); invitations to us show on top of the Groups tab with Join /
+//! Decline; invite links are short (`tinline://g/...`) and the core fetches the invite from a host,
+//! so peeking is a job, never a UI-thread call. No "add my other device": own-device sync (G2) brings
+//! groups to linked devices.
 
 use iced::Task;
 use p2pcore::{
-    ChatRequestState, Error, GroupChatRequest, GroupDelivery, GroupDetail, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRole, GroupSummary, Node,
+    ChatRequestState, Error, GroupChatRequest, GroupDelivery, GroupDetail, GroupInvitation, GroupInvitationState, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRole, GroupSummary, Node,
 };
 
 /// Messages loaded when a group opens, and per "Show earlier".
@@ -32,7 +35,7 @@ pub trait GroupApi {
     fn group_mark_read(&self, id: String) -> Result<(), Error>;
     fn group_create(&self, name: String) -> Result<String, Error>;
     fn group_invite(&self, id: String) -> Result<String, Error>;
-    fn group_device_token(&self, id: String) -> Result<String, Error>;
+    /// Network (fetches from the link's host): only from a job.
     fn group_peek_invite(&self, token: String) -> Option<GroupInvitePeek>;
     fn group_join(&self, token: String) -> Result<String, Error>;
     fn group_post(&self, id: String, text: String, reply_to: Option<String>) -> Result<GroupMessage, Error>;
@@ -51,6 +54,12 @@ pub trait GroupApi {
     fn group_chat_decline(&self, request_id: String) -> Result<GroupChatRequest, Error>;
     /// The personal block (P5), for "Block" on an incoming request.
     fn block(&self, did: String) -> Result<(), Error>;
+    // Direct invitations to contacts (G3).
+    fn group_invite_contacts(&self, id: String, dids: Vec<String>) -> Result<Vec<GroupInvitation>, Error>;
+    fn group_invitations_incoming(&self) -> Result<Vec<GroupInvitation>, Error>;
+    fn group_invitations_outgoing(&self, id: String) -> Result<Vec<GroupInvitation>, Error>;
+    fn group_invitation_accept(&self, id: String) -> Result<GroupInvitation, Error>;
+    fn group_invitation_decline(&self, id: String) -> Result<GroupInvitation, Error>;
 }
 
 impl GroupApi for Node {
@@ -71,9 +80,6 @@ impl GroupApi for Node {
     }
     fn group_invite(&self, id: String) -> Result<String, Error> {
         Node::group_invite(self, id)
-    }
-    fn group_device_token(&self, id: String) -> Result<String, Error> {
-        Node::group_device_token(self, id)
     }
     fn group_peek_invite(&self, token: String) -> Option<GroupInvitePeek> {
         Node::group_peek_invite(self, token)
@@ -123,6 +129,21 @@ impl GroupApi for Node {
     fn block(&self, did: String) -> Result<(), Error> {
         Node::block(self, did)
     }
+    fn group_invite_contacts(&self, id: String, dids: Vec<String>) -> Result<Vec<GroupInvitation>, Error> {
+        Node::group_invite_contacts(self, id, dids)
+    }
+    fn group_invitations_incoming(&self) -> Result<Vec<GroupInvitation>, Error> {
+        Node::group_invitations_incoming(self)
+    }
+    fn group_invitations_outgoing(&self, id: String) -> Result<Vec<GroupInvitation>, Error> {
+        Node::group_invitations_outgoing(self, id)
+    }
+    fn group_invitation_accept(&self, id: String) -> Result<GroupInvitation, Error> {
+        Node::group_invitation_accept(self, id)
+    }
+    fn group_invitation_decline(&self, id: String) -> Result<GroupInvitation, Error> {
+        Node::group_invitation_decline(self, id)
+    }
 }
 
 /// Words for a failed group call.
@@ -133,6 +154,7 @@ pub(super) fn gerr(e: Error) -> String {
             "not a member" => "You\u{2019}re not a member of this group.".into(),
             "already a contact" => "You already have them as a contact. Message them from Chats.".into(),
             "you block them" => "You block them. Unblock them first to ask for a chat.".into(),
+            "unknown or expired invite code" => "That invite isn\u{2019}t valid any more. Ask for a new one.".into(),
             r if r == p2pcore::BLOCKED => "They blocked you, so you can\u{2019}t ask them for a chat.".into(),
             r => {
                 let mut c = r.chars();
@@ -149,22 +171,58 @@ pub(super) fn gerr(e: Error) -> String {
     }
 }
 
-/// What the token dialog shows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum TokenKind {
-    /// An admin's 7-day invite.
-    Invite,
-    /// For our own other devices (same DID, no invite).
-    Device,
+/// One row of the "Add members" picker: who, and why they can't be picked (`None`: pickable).
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct PickRow {
+    pub did: String,
+    pub name: String,
+    pub why: Option<&'static str>,
+    pub invited: Option<GroupInvitation>,
+}
+
+/// The picker's rows: contacts we block or that block us (P5) are not offered at all; members show
+/// as already in; someone with a pending invitation can't be picked again. Pickable first, by name.
+pub(super) fn pick_rows(contacts: &[(String, String)], d: &GroupDetail, sent: &[GroupInvitation], blocked: impl Fn(&str) -> bool) -> Vec<PickRow> {
+    let mut rows: Vec<PickRow> = contacts
+        .iter()
+        .filter(|(did, _)| !blocked(did))
+        .map(|(did, name)| {
+            let invited = sent.iter().filter(|i| &i.invitee_did == did).max_by_key(|i| i.at).cloned();
+            let why = if d.members.iter().any(|m| &m.did == did) {
+                Some("Already a member")
+            } else if invited.as_ref().is_some_and(|i| i.state == GroupInvitationState::Pending) {
+                Some("Invited \u{b7} waiting")
+            } else {
+                None
+            };
+            PickRow { did: did.clone(), name: name.clone(), why, invited }
+        })
+        .collect();
+    rows.sort_by_key(|r| (r.why.is_some(), r.name.to_lowercase()));
+    rows
+}
+
+/// An invitation we sent, in words, and whether it is bad news.
+pub(super) fn sent_invitation_line(i: &GroupInvitation) -> (&'static str, bool) {
+    match i.state {
+        GroupInvitationState::Pending if i.delivered => ("Invited \u{b7} waiting for an answer", false),
+        GroupInvitationState::Pending => ("Invited \u{b7} not delivered yet", false),
+        GroupInvitationState::Joined => ("Joined", false),
+        GroupInvitationState::Declined => ("Declined", true),
+        GroupInvitationState::Expired => ("Invitation expired", true),
+        GroupInvitationState::Blocked => ("Blocked you", true),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub(super) enum LDialog {
     NewGroup { name: String },
-    /// Paste a token; `peek` once it parses.
-    Join { token: String, peek: Option<GroupInvitePeek> },
-    /// `text` is None while the core makes it.
-    Token { kind: TokenKind, text: Option<String> },
+    /// Paste a link or code; `checking` while the host is asked, then `peek` if it is valid.
+    Join { token: String, peek: Option<GroupInvitePeek>, checking: bool },
+    /// The invite link; `text` is None while the core makes it.
+    Token { text: Option<String> },
+    /// Pick contacts to invite (G3).
+    AddMembers { picked: Vec<String> },
     Flag { did: String },
     Admin { did: String, admin: bool },
     Leave,
@@ -182,7 +240,11 @@ pub(super) enum Job {
     Create(String),
     Join(String),
     Invite(String),
-    DeviceToken(String),
+    /// Ask the link's host what it is for (network).
+    Peek(String),
+    InviteContacts { gid: String, dids: Vec<String> },
+    AcceptInv(String),
+    DeclineInv(String),
     Post { gid: String, text: String, reply: Option<String> },
     Flag { gid: String, did: String },
     SetAdmin { gid: String, did: String, admin: bool },
@@ -204,7 +266,10 @@ impl Job {
             Job::Create(name) => Lm::Created(api.group_create(name).map_err(gerr)),
             Job::Join(token) => Lm::Joined(api.group_join(token).map_err(gerr)),
             Job::Invite(gid) => Lm::Token(api.group_invite(gid).map_err(gerr)),
-            Job::DeviceToken(gid) => Lm::Token(api.group_device_token(gid).map_err(gerr)),
+            Job::Peek(token) => Lm::Peeked(token.clone(), api.group_peek_invite(token)),
+            Job::InviteContacts { gid, dids } => Lm::Invited(api.group_invite_contacts(gid, dids).map_err(gerr)),
+            Job::AcceptInv(id) => Lm::InvJoined(api.group_invitation_accept(id).map_err(gerr)),
+            Job::DeclineInv(id) => Lm::InvDeclined(api.group_invitation_decline(id).map_err(gerr)),
             Job::Post { gid, text, reply } => {
                 let r = api.group_post(gid, text.clone(), reply).map_err(gerr);
                 Lm::Posted(r, text)
@@ -261,9 +326,21 @@ pub(super) enum Lm {
     NameIn(String),
     JoinOpen,
     TokenIn(String),
+    Peeked(String, Option<GroupInvitePeek>),
     Invite,
-    DeviceToken,
     CopyToken,
+    /// Show the invite QR full size (or close it).
+    QrFull(bool),
+    /// G3: the contact picker, a toggle in it, and the outcomes.
+    AddMembers,
+    Pick(String),
+    Invited(Result<Vec<GroupInvitation>, String>),
+    AcceptInv(String),
+    DeclineInv(String),
+    InvJoined(Result<GroupInvitation, String>),
+    InvDeclined(Result<GroupInvitation, String>),
+    /// An invitation appeared or changed (GroupInvitationEvents).
+    InvitationChanged(GroupInvitation),
     AskFlag(String),
     AskAdmin(String, bool),
     AskLeave,
@@ -338,6 +415,13 @@ pub(super) struct GroupsLive {
     /// Chat requests (U3), newest first.
     pub incoming: Vec<GroupChatRequest>,
     pub outgoing: Vec<GroupChatRequest>,
+    /// Invitations to us (G3), newest first; and the ones we sent for the open group.
+    pub invitations: Vec<GroupInvitation>,
+    pub sent: Vec<GroupInvitation>,
+    /// The invitation being joined (its Join button says "Joining...").
+    pub joining: Option<String>,
+    /// The invite QR fills the window.
+    pub qr_full: bool,
 }
 
 /// Member menu entries, in order.
@@ -380,9 +464,14 @@ impl GroupsLive {
         self.detail.as_ref().map(|d| d.my_role)
     }
 
-    /// The Groups tab's badge: unread posts in groups we are still in.
+    /// The Groups tab's badge: unread posts in groups we are still in, plus invitations to answer.
     pub fn badge(&self) -> u32 {
-        self.list.iter().filter(|s| active(s.my_role)).map(|s| s.unread).sum()
+        self.list.iter().filter(|s| active(s.my_role)).map(|s| s.unread).sum::<u32>() + self.pending_invitations().count() as u32
+    }
+
+    /// Invitations to us still to answer.
+    pub fn pending_invitations(&self) -> impl Iterator<Item = &GroupInvitation> {
+        self.invitations.iter().filter(|i| !i.outgoing && i.state == GroupInvitationState::Pending)
     }
 
     /// Incoming requests waiting for an answer (counted on the Chats tab, where they show).
@@ -562,24 +651,104 @@ impl GroupsLive {
                     *name = v.chars().take(100).collect();
                 }
             }
-            Lm::JoinOpen => self.show(LDialog::Join { token: String::new(), peek: None }),
+            Lm::JoinOpen => self.show(LDialog::Join { token: String::new(), peek: None, checking: false }),
             Lm::TokenIn(v) => {
-                if let Some(LDialog::Join { token, peek }) = &mut self.dialog {
-                    *token = v.trim().to_string();
-                    *peek = if token.is_empty() { None } else { api.group_peek_invite(token.clone()) };
+                if let Some(LDialog::Join { token, peek, checking }) = &mut self.dialog {
+                    let v = v.trim().to_string();
+                    if v == *token {
+                        return out;
+                    }
+                    *token = v;
+                    *peek = None;
+                    *checking = !token.is_empty();
+                    self.error = None;
+                    if *checking {
+                        out.job = Some(Job::Peek(token.clone()));
+                    }
+                }
+            }
+            Lm::Peeked(tok, p) => {
+                // Only the answer for what is in the field now counts.
+                if let Some(LDialog::Join { token, peek, checking }) = &mut self.dialog
+                    && *token == tok
+                {
+                    *peek = p;
+                    *checking = false;
+                }
+            }
+            Lm::Invite => {
+                let Some(gid) = self.open.clone() else { return out };
+                self.show(LDialog::Token { text: None });
+                self.qr_full = false;
+                self.busy = true;
+                out.job = Some(Job::Invite(gid));
+            }
+            Lm::QrFull(on) => self.qr_full = on && matches!(self.dialog, Some(LDialog::Token { text: Some(_) })),
+            Lm::AddMembers => {
+                if self.open.is_some() {
+                    self.reload_sent(api);
+                    self.show(LDialog::AddMembers { picked: Vec::new() });
+                }
+            }
+            Lm::Pick(did) => {
+                if let Some(LDialog::AddMembers { picked }) = &mut self.dialog {
+                    if let Some(i) = picked.iter().position(|d| *d == did) {
+                        picked.remove(i);
+                    } else {
+                        picked.push(did);
+                    }
                     self.error = None;
                 }
             }
-            Lm::Invite | Lm::DeviceToken => {
-                let Some(gid) = self.open.clone() else { return out };
-                let kind = if matches!(m, Lm::Invite) { TokenKind::Invite } else { TokenKind::Device };
-                self.show(LDialog::Token { kind, text: None });
-                self.busy = true;
-                out.job = Some(if kind == TokenKind::Invite { Job::Invite(gid) } else { Job::DeviceToken(gid) });
+            Lm::Invited(r) => {
+                self.busy = false;
+                match r {
+                    Ok(v) => {
+                        self.dialog = None;
+                        out.notice = Some(match v.as_slice() {
+                            [one] => format!("Invitation sent to {}. They join when they accept.", first_name(or_someone(&one.invitee_name))),
+                            v => format!("{} invitations sent. Each person joins when they accept.", v.len()),
+                        });
+                    }
+                    Err(e) => self.error = Some(e),
+                }
+                self.reload_sent(api);
+            }
+            Lm::AcceptInv(id) => {
+                if self.joining.is_none() {
+                    self.joining = Some(id.clone());
+                    out.job = Some(Job::AcceptInv(id));
+                }
+            }
+            Lm::DeclineInv(id) => out.job = Some(Job::DeclineInv(id)),
+            Lm::InvJoined(r) => {
+                self.joining = None;
+                match r {
+                    Ok(i) => {
+                        out = self.step(api, Lm::Open(i.group_id.clone()));
+                        out.notice = Some(format!("You joined {}.", i.group_name));
+                    }
+                    Err(e) => out.notice = Some(e),
+                }
+                self.reload_invitations(api);
+            }
+            Lm::InvDeclined(r) => {
+                match r {
+                    Ok(i) => out.notice = Some(format!("Declined. {} sees that you declined.", first_name(or_someone(&i.inviter_name)))),
+                    Err(e) => out.notice = Some(e),
+                }
+                self.reload_invitations(api);
+            }
+            Lm::InvitationChanged(i) => {
+                if i.outgoing {
+                    self.reload_sent(api);
+                } else {
+                    self.reload_invitations(api);
+                }
             }
             Lm::Token(r) => {
                 self.busy = false;
-                if let Some(LDialog::Token { text, .. }) = &mut self.dialog {
+                if let Some(LDialog::Token { text }) = &mut self.dialog {
                     match r {
                         Ok(t) => *text = Some(t),
                         Err(e) => self.error = Some(e),
@@ -587,7 +756,7 @@ impl GroupsLive {
                 }
             }
             Lm::CopyToken => {
-                if let Some(LDialog::Token { text: Some(t), .. }) = &self.dialog {
+                if let Some(LDialog::Token { text: Some(t) }) = &self.dialog {
                     out.copy = Some(t.clone());
                     out.notice = Some("Copied. Send it over an app you trust; anyone holding it can use it.".into());
                 }
@@ -624,6 +793,7 @@ impl GroupsLive {
                     out.job = Some(Job::Revoke { gid, did, dev });
                 }
             }
+            Lm::Dismiss if self.qr_full => self.qr_full = false,
             Lm::Dismiss => {
                 if !self.busy {
                     self.dialog = None;
@@ -736,12 +906,19 @@ impl GroupsLive {
                 }
                 Job::Create(name)
             }
-            LDialog::Join { token, peek } => {
+            LDialog::Join { token, peek, .. } => {
                 if peek.is_none() {
-                    self.error = Some("That isn\u{2019}t a group invite. Paste the whole text you were sent.".into());
+                    self.error = Some("That link didn\u{2019}t work: it isn\u{2019}t a group invite, it expired, or its host is offline.".into());
                     return None;
                 }
                 Job::Join(token)
+            }
+            LDialog::AddMembers { picked } => {
+                if picked.is_empty() {
+                    self.error = Some("Pick someone first.".into());
+                    return None;
+                }
+                Job::InviteContacts { gid, dids: picked }
             }
             LDialog::Flag { did } => Job::Flag { gid, did },
             LDialog::Admin { did, admin } => Job::SetAdmin { gid, did, admin },
@@ -750,6 +927,7 @@ impl GroupsLive {
             LDialog::Request { did } => Job::Request { gid, did },
             LDialog::Token { .. } | LDialog::Removal => {
                 self.dialog = None;
+                self.qr_full = false;
                 return None;
             }
         };
@@ -770,6 +948,7 @@ impl GroupsLive {
 
     pub fn reload(&mut self, api: &dyn GroupApi) {
         self.reload_list(api);
+        self.reload_invitations(api);
         if let Ok(d) = api.group_device_id() {
             self.my_device = d;
         }
@@ -782,6 +961,18 @@ impl GroupsLive {
         self.reload_requests(api);
     }
 
+    fn reload_invitations(&mut self, api: &dyn GroupApi) {
+        self.invitations = api.group_invitations_incoming().unwrap_or_default();
+        self.reload_sent(api);
+    }
+
+    fn reload_sent(&mut self, api: &dyn GroupApi) {
+        self.sent = match &self.open {
+            Some(g) => api.group_invitations_outgoing(g.clone()).unwrap_or_default(),
+            None => Vec::new(),
+        };
+    }
+
     fn reload_requests(&mut self, api: &dyn GroupApi) {
         self.incoming = api.group_chat_requests_incoming().unwrap_or_default();
         self.outgoing = api.group_chat_requests_outgoing().unwrap_or_default();
@@ -791,6 +982,7 @@ impl GroupsLive {
     /// marks change in place).
     fn reload_open(&mut self, api: &dyn GroupApi) {
         let Some(gid) = self.open.clone() else { return };
+        self.reload_sent(api);
         match api.group_detail(gid.clone()) {
             Ok(d) => self.detail = Some(d),
             Err(_) => {
@@ -897,7 +1089,7 @@ impl super::App {
             self.screen = super::Screen::Home;
         }
         match &self.live.dialog {
-            Some(LDialog::Token { text: Some(t), .. }) => {
+            Some(LDialog::Token { text: Some(t) }) => {
                 if self.live.qr.is_none() {
                     self.live.qr = super::view::qr_of(t);
                 }
