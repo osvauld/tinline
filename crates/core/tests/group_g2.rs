@@ -298,3 +298,44 @@ fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
         });
     }
 }
+
+// ---- stage 2: own-device sync of the group list ---------------------------------------------------
+
+fn lists(p: &Peer, g: &str) -> bool {
+    p.node.groups().unwrap().iter().any(|s| s.id == g)
+}
+
+// KIND: acceptance (G2 stage 2) — a linked device learns the account's groups through own-device
+// sync (no `group_device_token`): groups joined before and after linking, and a group created on
+// the new device reaches the old one. Contents come from the hosts (U7), verified (U10).
+#[test]
+fn a_linked_device_learns_the_accounts_groups_without_a_token() {
+    let o = peer("os-o");
+    let a = peer("os-a");
+    let g = group_with(&o, &[&a]);
+    a.node.group_post(g.clone(), "before linking".into(), None).unwrap();
+    eventually(WAIT, "o has it", || has_post(&o, &g, &a.did, "before linking"));
+
+    let a2 = link_fresh(&a, "os-a2");
+    eventually(WAIT, "a2 lists the group", || lists(&a2, &g));
+    eventually(WAIT, "a2 sees history", || has_post(&a2, &g, &a.did, "before linking"));
+    assert_eq!(a2.node.group_detail(g.clone()).unwrap().my_role, GroupRole::Member);
+    a2.node.group_post(g.clone(), "from a2".into(), None).unwrap();
+    eventually(WAIT, "o sees a2's post", || has_post(&o, &g, &a.did, "from a2"));
+
+    // A group a joins after linking.
+    let g2 = o.node.group_create("Second".into()).unwrap();
+    a.node.group_join(o.node.group_invite(g2.clone()).unwrap()).unwrap();
+    eventually(WAIT, "a2 lists the second group", || lists(&a2, &g2));
+    eventually(WAIT, "a2 is a member there", || a2.node.group_detail(g2.clone()).map(|d| d.my_role == GroupRole::Member).unwrap_or(false));
+
+    // A group created on a2 (a2 is its host) reaches a.
+    let g3 = a2.node.group_create("Made on a2".into()).unwrap();
+    eventually(WAIT, "a lists a2's group", || lists(&a, &g3));
+    eventually(WAIT, "a is its owner too", || a.node.group_detail(g3.clone()).map(|d| d.my_role == GroupRole::Owner).unwrap_or(false));
+    a.node.group_post(g3.clone(), "hello from a".into(), None).unwrap();
+    eventually(WAIT, "a2 (the host) has it", || has_post(&a2, &g3, &a.did, "hello from a"));
+    // The device token still works.
+    assert!(a.node.group_device_token(g.clone()).is_ok());
+}
+
