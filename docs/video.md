@@ -17,12 +17,13 @@ call screen); desktop UI (camera + render).
   Audio stays on datagrams so it never waits behind video. Group calls later: a host relays
   groups to members (MoQ is relay-shaped), same wire format.
 - **Rate control: delay-based at the app layer** (GCC idea). The receiver reports delivered
-  rate (sliding 100 ms) + queueing delay (frame arrival minus capture time, above its 10 s
-  minimum; the clock offset cancels) every 50 ms. The sender backs off to 85% of delivered
-  when queueing > 40 ms or the link is *starved* (delivered < 50% of what we sent, two reports
-  in a row), then **drains** the standing queue: below delivered until queueing < 15 ms, then
-  ramps +8% per 100 ms. Backlog > 300 ms (and not draining): reset the group, force a
-  keyframe, halve the rate. Details: [Rate control](#rate-control-drain-on-a-bandwidth-drop).
+  rate (sliding 100 ms) + queueing delay (least delayed frame of the last 100 ms, arrival
+  minus capture time, above its 10 s minimum; the clock offset cancels) every 50 ms. The
+  sender backs off to 85% of delivered when queueing > 40 ms or the link is *starved*
+  (delivered < 50% of the delta frames we sent, two reports in a row), takes a second look
+  150 ms later (median delivered; the ladder waits for it), then **drains** the standing
+  queue: below delivered until queueing < 15 ms, then ramps +8% per 100 ms. Backlog > 300 ms
+  (and not draining): reset the group, force a keyframe, halve the rate. Details: [Rate control](#rate-control-drain-on-a-bandwidth-drop).
 - **Shipping**: every shipped build links libaom statically; users never install it. See
   [Shipping libaom](#shipping-libaom).
 - **rav1d from its git tag** v1.1.0: the crates.io package lacks `src/arm/asm-offsets.h`, so
@@ -83,12 +84,17 @@ it, and rav1d follows it with the same decoder instance.
 - **Down at once**, skipping rungs, as soon as the target bitrate falls below the floor.
 - **Up one rung at a time**, after the bitrate has stayed above the up threshold for 2.5 s
   without a break, and not within 4 s of a step down.
-- **Encode time**: the app reports each frame's encode time (`Sender::encode_time`). If the
-  p90 of the last 30 frames (>= 10 samples) exceeds 60% of the frame interval (20 ms at
-  30 fps), step down and block the rung above for 30 s. Stepping up also needs the p90
-  scaled by the pixel ratio to fit the budget, so a device that can't encode the next rung
-  never tries it (phone pinned: 540p p90 ~13 ms -> 720p predicted ~24 ms, so it stays at
-  540p; unpinned it stays at 360p).
+- **Encode time**: the app reports each frame's encode time (`Sender::encode_time`). The
+  first 15 frames after a new encoder (start, size change) are ignored (libaom's first
+  frames are slower, and so is a machine that is just setting up the call). If the
+  **median** of a full window of 30 frames (1 s) exceeds 60% of the frame interval (20 ms
+  at 30 fps), step down and block the rung above for 5 s, doubling with each further CPU
+  step down (5, 10, 20, 30 s max), back to 5 s after a minute without one. The median, not
+  the p90: on a busy desktop one frame in ~15 is preempted for 15-45 ms, and a smaller
+  picture doesn't help with that. Stepping up needs the **p75** (>= 10 samples) scaled by
+  the pixel ratio to fit the budget, so a device that can't encode the next rung never
+  tries it (phone pinned: 540p ~13 ms -> 720p predicted ~24 ms, so it stays at 540p;
+  unpinned it stays at 360p).
 - **Ceiling**: the encoder bitrate is clamped to the rung's `max_bps`; without it a step
   down for CPU sends a keyframe sized for the old bitrate, which flooded the link in the
   simulation and dropped a further rung.
@@ -361,15 +367,46 @@ device's measured encode time allow.
 - On overuse the **estimate** (`bitrate`, drives the ladder) goes to 85% of delivered (at most
   every 200 ms), and the encoder gets the **drain** rate: delivered minus the queue
   (queueing x delivered) spread over `drain_us` (500 ms), at least `drain_pct` (25%) of
-  delivered; when starved straight to 25%, since the queue is bigger than the delay shows.
-  `Sender::bitrate()` = min(estimate, drain); `Sender::draining()`.
+  delivered (and never below 25% of `min_bps`: with a slow decoder what gets through follows
+  what we send, and the drain spiralled to 1 kbps); when starved straight to 25%, since the
+  queue is bigger than the delay shows. `Sender::bitrate()` = min(estimate, drain);
+  `Sender::draining()`.
+- **Second look** (V11): 150 ms after a decrease (three more reports) the estimate is set again
+  from the *median* delivered of those reports, min(estimate before the cut, 85% of it), and
+  the ladder waits for it. The first cut's 100 ms window can still hold bytes from before a
+  drop (real iroh went 540p -> 360p -> 180p, a keyframe each), a single 100 ms window at
+  300 kbps holds 3-4 packets (+-30%), and a stream stalled ~100 ms on a tail loss reads as two
+  starved reports (the sim with PTO went straight to 180p under 3% loss). The encoder rate
+  (drain) drops at once; only the estimate and the ladder wait. If the queue is gone by the
+  second look the cut was a blip and the estimate comes back up to that median.
+- **Starvation counts delta frames only.** A keyframe takes several report intervals to cross
+  the link; counting it, our own step up to 720p (16 KB keyframe) looked like a starved link
+  and stepped straight back down (the busy-desktop flapping below).
+- **Queueing delay** (receiver): the least delayed frame of the last 100 ms against the 10 s
+  minimum (was the latest frame). A queue delays every frame; one late frame (a preempted
+  encoder, a retransmission) is not a queue. Costs about a frame of reaction to a slow
+  build-up (worst frame after the 300 kbps drop 152 ms, was < 150).
+- **Learned baseline** (sender): a queueing delay that hasn't been under `underuse_us` for 5 s
+  while the estimate is below half of `max_bps` is not a queue we cause (every cut drains
+  the path within a second or two): its minimum over those 5 s joins a baseline that is
+  subtracted from reports (at most 100 ms; any lower report lowers it). Without it a
+  receiver clock running 0.5% fast (a VM, the emulator) reads ~50 ms of queueing forever and
+  the call sat at 180p / the floor. Not above half of `max_bps`: there a delay between the
+  thresholds is our own standing queue at the link's capacity, and learning it let it grow
+  (2 Mbps -> 300 kbps drop: max 814 ms).
+- **Stale queue reset**: draining for more than `drain_us` while still sending at least half
+  of what gets through means the queue is not in the network (a receiver that decodes slower
+  than we send: `VideoRecv` only reads when its decoder takes frames). A lower rate can't
+  drain it; once frames wait > `max_backlog_us` the sender resets the group and sends a
+  keyframe the receiver can jump to (no rate halving). Bounds latency at ~0.5 s instead of
+  growing 7 ms per frame.
 - The drain ends when queueing < 15 ms; the ramp (+8% per 100 ms, at most 1.5 x delivered)
   starts 500 ms after the last decrease.
-- **No backlog reset while draining** (and the last report showed bytes arriving): with
-  `video::net`'s ack-based backlog the queue in the path counts as backlog, and resetting
+- **No backlog reset while draining** (and the last report showed bytes arriving, and not
+  stale, above): with `video::net`'s ack-based backlog the queue in the path counts as backlog, and resetting
   the group can't pull bytes back out of the network; it only threw away frames and sent
   another keyframe into the queue. A stalled receiver (nothing delivered) still resets.
-- The ladder follows the estimate and steps down at once. Measured and rejected: holding the
+- The ladder follows the estimate (at the second look). Measured and rejected: holding the
   old size until the drain ends (so the smaller keyframe goes into an empty queue). With real
   AV1, libaom at 540p can't get near a 50 kbps target; the queue grew and the AV1 switch
   scenario froze 5.4 s with 9.7% loss. A small picture is what drains.
@@ -442,11 +479,53 @@ run (43 / 95 ms, 0.6 s). Open issues:
   frames at 540p / 1.4 Mbps are bursty; the 64 KB buffer fills in ~0.2 s). Shorter needs an
   earlier signal (per-packet arrival timing at the receiver, i.e. GCC's transport-wide
   feedback; QUIC ack timing in `net`) or AV1 reference scaling (libaom `resize_mode`).
-- Real transport steps down in two steps on the 300 kbps drop (540 -> 360 -> 180, an extra
-  keyframe; the sim goes straight to 180): the first cut uses a delivered rate that still
-  includes pre-drop bytes.
-- The ladder only steps down for CPU after 10 frames at the new speed; a sudden 2x slowdown
-  at 720p costs ~1/3 s of late frames.
+- ~~Real transport steps down in two steps on the 300 kbps drop~~: fixed by the second look
+  (V11, below).
+- The ladder only steps down for CPU after half a second of frames at the new speed (V11:
+  median of a full 1 s window, was p90 of 10 frames); a sudden 2x slowdown costs ~0.6 s of
+  late frames (throttle scenario: 540p -> 360p at 15.7 s, was 15.1 s).
+
+**V11 sim model changes** (all scenarios below use them):
+- The receiver app is pull-based like `VideoRecv` + the core's 2-slot decoder channel: QUIC
+  data is read only while the decoder queue has room, acks (every 10 ms) and reports only go
+  out while it is being awaited, a reset drops the unread data of its stream. Before, the
+  sim read everything on arrival, so a slow decoder couldn't be modelled.
+- Loss detection like QUIC: a dropped packet is found lost when a later packet is acked and
+  9/8 RTT have passed, or at the PTO (srtt + 4 rttvar + 25 ms max_ack_delay) for a tail loss.
+  Before: always ~1.1 RTT. Tail losses now stall a stream ~100 ms, as on real iroh.
+- The congestion window only grows while at least half used (QUIC doesn't grow it when
+  app-limited). Before, it grew on every ack and never limited.
+- `Device::spikes` (preempted frames), `Device::busy_desktop()`, `Scenario::decode_changes`
+  (slow receiver), `Scenario::receiver_clock_ppm`, `KeyCauses` in the report (why each
+  keyframe: start, rate, cpu, request, backlog, other), `SIM_TRACE=reports`.
+
+With these the existing scenarios move little (same controller, loss 3%: 1085 -> 1017 kbps,
+p95 110 -> 110); the sim's loss case is still more optimistic than real iroh, see below.
+
+**V11 before / after** (`cargo test -p video --release --features net sim -- --nocapture`;
+"before" = V6 controller on the V11 sim model; latency p50 / p95 / max ms over the run,
+frozen > 250 ms, wire kbps, keyframes by cause):
+
+| Scenario | before | after |
+|---|---|---|
+| slow start (4x slower for 1 s), new | 180p from 0.3 s for the whole call, 530 kbps, keys 2 (cpu 1) | 360 -> 540p at 4.2 s, 1766 kbps, keys 2 (rate 1) |
+| busy desktop steady call (50 s), new | 360 -> 180p at 1.6 s (cpu), 720p never; keys 4 (cpu 2) | 540p 3.6 s -> 720p 7.8 s, stays; keys 3 (rate 2), 1624 kbps |
+| busy desktop, CPU fix only (intermediate) | | flaps 540 <-> 360 every 4-7 s: keys 9 (rate 8) |
+| slow receiver (25 fps decode 5-15 s), new | 54 / 1235 / 1486, backlog 3, recovers 540p at 22 s | 54 / 395 / 475, backlog 3, recovers 540p at 22.9 s |
+| receiver clock 0.5% fast, new | stuck at 180p from 8.9 s, 331 kbps (V11 without the learned baseline) | 180p 9.3 s -> 360p 14.8 -> 540p 18.2, 958 kbps |
+| clean 2 Mbps | 65 / 98 / 146, 1655 kbps, keys 2 | 68 / 105 / 146, 1719 kbps, keys 2 |
+| 3% loss | 53 / 110 / 196, 1017 kbps, keys 5, 540 -> 360 -> 540 -> 360 | 61 / 125 / 245, **1281 kbps, keys 2**, 540p from 5 s |
+| 2 M -> 300 k | 56 / 92 / 588, 180p at 10.2 s | 61 / 110 / 610, 180p at 10.3 s (one step) |
+| 2 M -> 200 k -> 2 M, 40 s | 55 / 90 / 930, 0.3 s | 57 / 99 / 963, 0.3 s, same sizes |
+| 500 ms outage | 64 / 95 / 192, 0.6 s | 66 / 103 / 170, 0.6 s |
+| relay 75 +-20 ms, 1.5 Mbps | 126 / 148 / 239, 1120 kbps | 133 / 183 / 238, 1313 kbps |
+| throttles 2x at 15 s | 540 -> 360 at 15.1 s | 540 -> 360 at 15.7 s |
+| real AV1, 2% loss + outage | 38 / 85, 0.6 s, 537 kbps | 41 / 91, 0.7 s, 685 kbps |
+| real AV1, 2 M -> 200 k -> 2 M | 49 / 1220 / 1736, 1.4 s | 49 / 1459 / 2017, 1.7 s |
+
+Costs: clean/relay run at a higher rate with ~10-35 ms more p95 (the window-minimum queueing
+delay sees a building queue a frame later); the AV1 drop freezes 0.3 s longer (its 180p
+keyframe waits for the second look behind 540p frames).
 
 The first version used the congestion window for the bitrate; the simulation showed
 bufferbloat (p50 256 ms on a clean link, 1.5 s after a bandwidth drop), which is why rate
@@ -566,6 +645,15 @@ CPU.
   So the phone's receiver keeps reporting queueing delay: the emulator's NAT (slirp) path and a
   busy VM. Not reproduced on real devices yet; worth a check on the phone before blaming
   `media` (the simulated controller recovers from drops in a few seconds).
+  **V11**: two ways `media` could get stuck like this are now simulated and handled (see Rate
+  control): a receiver clock running fast (the VM's; 0.5% reads as ~50 ms of queueing
+  forever and the sim sat at 180p) -> the sender's learned baseline; and a receiver that
+  decodes slower than we send (~20 fps decoded here; `VideoRecv` only reads when the decoder
+  takes frames, so it looks like a slow link whose queue no bitrate drains) -> the drain no
+  longer spirals below 25 kbps, and a stale queue is reset to a keyframe (latency bounded
+  ~0.5 s). What the sender can't fix: a receiver that keeps decoding fewer frames than we
+  send gets a keyframe every ~2 s; the real fix is a lower frame rate (the core would ask
+  the sender whether to encode a frame; not built).
 
 ## Desktop (iced, `crates/desktop`)
 
@@ -641,7 +729,22 @@ right; peer large, own mirrored picture bottom right). A 20 s run at load ~8-10 
 for encode time in the first seconds (480x360 at p90 > 20 ms with two encoders, two decoders
 and two UIs on a busy machine) and stayed at 240x180 / 500 kbps for the 30 s block: the
 ladder's CPU rule doing its job, but on a shared desktop a single slow start costs 30 s of
-low resolution.
+low resolution. The 50 s run also sent a keyframe every 7-10 s (1 -> 8).
+
+**V11** (simulated as `slow_start` and `busy_desktop_steady_call`, see Simulation): the first
+15 encode times after a new encoder are ignored, a step down for CPU needs the median of a
+full second over budget (preempted frames don't count), and the block is 5 s, doubling on
+repeats. The periodic keyframes were ladder flapping, not the receiver's stall detector
+(KeyCauses: all `rate`, no `request`): an encoder preempted for 15-45 ms makes one frame
+late and a 100 ms delivered window short, which read as queueing (-> 85% of a short
+delivered rate, below the 720p/540p floor -> step down, keyframe; 2.5 s + 4 s later step up,
+keyframe); and the 720p step-up keyframe itself counted as "sent", so the link looked
+starved and the ladder stepped straight back down. Fixed by the window-minimum queueing
+delay, delta-only starvation and the second look; the sim's busy desktop now stays at 720p
+for 42 s with 3 keyframes. Not yet re-measured in the two-instance desktop run (it is an
+e2e script; the lead's to run). Note for the core: with a 640x480 camera the 540p and 720p
+rungs encode the same 640x480 picture, yet a switch between them still forces a keyframe;
+`set_max_rung` to the first rung that covers the camera would avoid those.
 
 ## Real transport vs simulation
 
@@ -706,11 +809,35 @@ Findings:
   clean/relay links (mean 1452 / 851 kbps: its RTT probing reads as queueing delay), so it is
   no overall win: **keep Cubic**. The fix belongs in rate control (`media`): tell
   retransmission delay from queue build-up (e.g. ignore one-off delay spikes no longer than
-  ~1 RTT, or use a robust minimum over the report window).
+  ~1 RTT, or use a robust minimum over the report window). **V11: done** (window-minimum
+  queueing delay, second look with a median), see below.
+- **V11 on real iroh** (two runs, machine load 20-68 from other builds, so RTTs ran 50-90 ms
+  over the 40 ms path; "V6" = the table above):
+
+  | Scenario | V6 | V11 p50 / p95 | V11 frozen | V11 mean bitrate | V11 resets / keyframes (by cause) |
+  |---|---|---|---|---|---|
+  | clean 2 Mbps | 63 / 98, 1646 kbps, 0 / 2 | 66-67 / 105-108 | 0 | 1675 kbps | 0 / 2 (start, rate) |
+  | 3% loss | 45 / 119, 721 kbps, 4 / 7 | 48-50 / 127-138 | 0-0.24 s | 770-927 kbps | 2-4 / 4-7 (all rate) |
+  | 2 Mbps -> 300 kbps | last 15 s 65 / 97, 2-3 / 4-5 | last 15 s 65 / 113-126 | 0-0.43 s | last 10 s 247-249 kbps | 1-2 / 3-4 |
+  | 500 ms outage | 62 / 93, 1593 kbps, 2 / 4 | 65 / 106-108 | 0.67-0.70 s | 1636 kbps | 2 / 4 |
+  | relay 75 (+0-20) ms | 127 / 174, 1202 kbps, 0 / 2 | 130-131 / 191-204 | 0 | 1242-1248 kbps | 0 / 2 |
+
+  Loss: +7-29% bitrate over V6, but still 0.6-0.7x the sim's (1281 kbps) and still a
+  540 <-> 360 flap or two per 30 s (a cwnd-limited QUIC sender queues for real, which the
+  delay signal rightly sees). Drop: the first cut no longer picks the rung (traced with
+  `SIM_TRACE=1 SIM_FROM=10 SIM_TO=11`, which prints every report the sender got). 2 of 4 runs
+  went straight to 180p; the other 2 went 360p at the second look, 180p 0.4-0.8 s later. That
+  is the 360p floor, not stale bytes: 250 kbps = 85% of 294 kbps, and the 300 kbps link's
+  reports read 236-373 kbps (median 300-340), so a 300 kbps link sits on the boundary.
+  Keyframes in a steady call (issue: one every 7-10 s on the desktop): clean and relay send
+  exactly 2 (start + the 360p -> 540p step).
 - **Sim model, to adjust:** (1) congestion window under random loss (cwnd floor ~1 BDP and
   sender-side queueing when cwnd-limited; today the sim's window rarely limits); (2) loss
   detection by PTO for tail packets plus ACK delay (25 ms max_ack_delay); (3) outages in both
   directions; (4) return-path jitter. Nothing to change in `net` for these scenarios.
+  **V11:** (2) PTO / time-threshold loss detection and (1) no window growth while
+  app-limited are in; still optimistic under loss (sim 1281 vs real ~930 kbps): Cubic's
+  window after a loss is still Reno-like and nothing models ACK delay; (3) and (4) open.
 
 ## Next
 

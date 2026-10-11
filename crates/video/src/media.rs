@@ -116,10 +116,15 @@ pub struct LadderConfig {
     pub up_hold_us: u64,
     /// and no sooner than this after stepping down.
     pub up_after_down_us: u64,
-    /// p90 encode time above this % of the frame interval: too slow for the rung.
+    /// Median encode time over a second above this % of the frame interval: too slow for the
+    /// rung. Stepping up needs the p75 scaled to the bigger picture to fit it.
     pub encode_budget_pct: u32,
-    /// After stepping down for encode time, the rung stays out of reach this long.
+    /// After stepping down for encode time, the rung stays out of reach this long, doubling
+    /// with every further step down for encode time up to `cpu_block_max_us`...
     pub cpu_block_us: u64,
+    pub cpu_block_max_us: u64,
+    /// ...and back to `cpu_block_us` after this long without one.
+    pub cpu_forget_us: u64,
 }
 
 impl Default for LadderConfig {
@@ -137,7 +142,9 @@ impl Default for LadderConfig {
             up_hold_us: 2_500_000,
             up_after_down_us: 4_000_000,
             encode_budget_pct: 60,
-            cpu_block_us: 30_000_000,
+            cpu_block_us: 5_000_000,
+            cpu_block_max_us: 30_000_000,
+            cpu_forget_us: 60_000_000,
         }
     }
 }
@@ -145,11 +152,19 @@ impl Default for LadderConfig {
 /// See `Sender::starve_after_us`: after a drain, and at the start (first keyframe, ramp).
 const STARVE_QUIET_US: u64 = 300_000;
 const STARVE_START_US: u64 = 1_000_000;
+/// See `Sender::queuing`.
+const BASELINE_PROBE_US: u64 = 5_000_000;
+const MAX_Q_OFFSET_US: u64 = 100_000;
+/// After a decrease, the second look comes this much later (three more reports).
+const SETTLE_US: u64 = RATE_WINDOW_US + REPORT_US;
 
-/// Encode times kept for the p90 (about a second of video).
+/// Encode times kept (about a second of video); a step down for encode time needs a full window.
 const ENCODE_WINDOW: usize = 30;
-/// Samples needed before encode time is trusted.
+/// Samples needed before encode time is trusted for a step up.
 const ENCODE_MIN: usize = 10;
+/// Frames ignored after a new encoder (start, size change): libaom's first frames are slower,
+/// and so is a machine that is just starting the call.
+const ENCODE_WARMUP: u32 = 15;
 
 /// Picks the resolution from the bitrate and the measured encode time. Steps down at once,
 /// up one rung at a time and only after the bitrate has held above the next rung's threshold.
@@ -159,10 +174,13 @@ pub struct Ladder {
     cur: usize,
     above_since: Option<u64>,
     last_down_us: Option<u64>,
-    /// Encode times (us) at the current rung.
+    /// Encode times (us) at the current rung, after the first `warmup` frames.
     encode: std::collections::VecDeque<u64>,
+    warmup: u32,
     /// Rungs above this are blocked until the time, for being too slow to encode.
     cpu_cap: Option<(usize, u64)>,
+    /// Current block length and when it was last applied.
+    cpu_block: (u64, u64),
     pub switches: u64,
 }
 
@@ -176,7 +194,9 @@ impl Ladder {
             above_since: None,
             last_down_us: None,
             encode: Default::default(),
+            warmup: ENCODE_WARMUP,
             cpu_cap: None,
+            cpu_block: (0, 0),
             switches: 0,
         };
         l.cur = l.fit(start_bps);
@@ -210,13 +230,14 @@ impl Ladder {
         (0..=top).rev().find(|&i| self.cfg.rungs[i].min_bps <= bps).unwrap_or(0)
     }
 
-    fn p90(&self) -> Option<u64> {
-        if self.encode.len() < ENCODE_MIN {
+    /// `pct` percentile of the encode times, given at least `min` of them.
+    fn encode_pct(&self, pct: usize, min: usize) -> Option<u64> {
+        if self.encode.len() < min {
             return None;
         }
         let mut v: Vec<u64> = self.encode.iter().copied().collect();
         v.sort_unstable();
-        Some(v[(v.len() - 1) * 9 / 10])
+        Some(v[(v.len() - 1) * pct / 100])
     }
 
     fn budget_us(&self) -> u64 {
@@ -230,17 +251,31 @@ impl Ladder {
         self.cur = to;
         self.above_since = None;
         self.encode.clear();
+        self.warmup = ENCODE_WARMUP;
         self.switches += 1;
     }
 
     /// One frame took `us` to encode. Returns true if the rung changed.
     pub fn encode_time(&mut self, now_us: u64, us: u64) -> bool {
+        if self.warmup > 0 {
+            self.warmup -= 1;
+            return false;
+        }
         self.encode.push_back(us);
         if self.encode.len() > ENCODE_WINDOW {
             self.encode.pop_front();
         }
-        if self.cur > 0 && self.p90().is_some_and(|p| p > self.budget_us()) {
-            self.cpu_cap = Some((self.cur - 1, now_us + self.cfg.cpu_block_us));
+        // Sustained: half the frames of the last second were too slow (a busy machine preempting
+        // the odd frame isn't helped by a smaller picture).
+        if self.cur > 0 && self.encode_pct(50, ENCODE_WINDOW).is_some_and(|p| p > self.budget_us()) {
+            let (block, last) = self.cpu_block;
+            let block = if block == 0 || now_us.saturating_sub(last) > self.cfg.cpu_forget_us {
+                self.cfg.cpu_block_us
+            } else {
+                (block * 2).min(self.cfg.cpu_block_max_us)
+            };
+            self.cpu_block = (block, now_us);
+            self.cpu_cap = Some((self.cur - 1, now_us + block));
             self.set(now_us, self.cur - 1);
             return true;
         }
@@ -249,11 +284,22 @@ impl Ladder {
 
     /// Re-evaluates for the current target bitrate. Returns true if the rung changed.
     pub fn update(&mut self, now_us: u64, bps: u32) -> bool {
+        self.update_held(now_us, bps, false)
+    }
+
+    /// [`Self::update`], but with `hold` nothing changes yet.
+    pub fn update_held(&mut self, now_us: u64, bps: u32, hold: bool) -> bool {
+        if hold {
+            return false;
+        }
         let max = self.max(now_us);
         let down = self.fit(bps).min(max);
         if down < self.cur {
             self.set(now_us, down);
             return true;
+        }
+        if hold {
+            return false;
         }
         let next = self.cur + 1;
         if next > max {
@@ -263,7 +309,7 @@ impl Ladder {
         let r = self.cfg.rungs[next];
         let above = bps as u64 * 100 >= r.min_bps as u64 * self.cfg.up_margin_pct as u64;
         // Would the bigger picture still encode in time? Assume time grows with pixels.
-        let fast = match self.p90() {
+        let fast = match self.encode_pct(75, ENCODE_MIN) {
             Some(p) => p * r.pixels() / self.rung().pixels() <= self.budget_us(),
             None => false,
         };
@@ -281,6 +327,31 @@ impl Ladder {
     }
 }
 
+/// Why keyframes were sent (`Sender::key_causes`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct KeyCauses {
+    /// First frame, or the first after the transport lost the open group.
+    pub start: u64,
+    /// Ladder step for the bitrate.
+    pub rate: u64,
+    /// Ladder step down for encode time.
+    pub cpu: u64,
+    /// Asked for by the receiver (stall, decode error) or the transport.
+    pub request: u64,
+    /// The sender reset a group that fell behind.
+    pub backlog: u64,
+    /// The encoder made one nobody asked for.
+    pub other: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum KeyCause {
+    Rate,
+    Cpu,
+    Request,
+    Backlog,
+}
+
 pub struct Sender {
     cfg: SenderConfig,
     next_group: u64,
@@ -289,6 +360,8 @@ pub struct Sender {
     /// Older groups whose streams the transport may still be sending.
     previous: Vec<u64>,
     want_key: bool,
+    key_cause: Option<KeyCause>,
+    pub key_causes: KeyCauses,
     /// Estimate of what the path carries; drives the ladder.
     bitrate: u32,
     last_decrease_us: u64,
@@ -296,7 +369,24 @@ pub struct Sender {
     drain: Option<u32>,
     /// Last report showed bytes getting through.
     delivering: bool,
-    /// Bytes handed to the transport since the last report, and in the report interval before.
+    /// Since when we have been draining while still sending at least half of what gets
+    /// through: a drain that deep queueing doesn't make deeper means the queue is not in the
+    /// network (a receiver that decodes slower than we send), so a lower rate can't empty it.
+    drain_stuck_since: Option<u64>,
+    /// Last report's queueing delay (less `q_offset`).
+    queuing_us: u64,
+    /// Learned queueing baseline, and (since, lowest queueing above it) while it stays above
+    /// `underuse_us` (see `queuing`).
+    q_offset: u64,
+    high_q: Option<(u64, u64)>,
+    /// After a decrease, the report at or after this takes a second look (see `rate`), and
+    /// the estimate before that decrease.
+    settle_until: Option<u64>,
+    pre_cut: u32,
+    /// Delivered rates reported since that decrease.
+    settle_delivered: Vec<u64>,
+    /// Delta-frame bytes handed to the transport since the last report, and in the report
+    /// interval before.
     sent: u64,
     sent_prev: (u64, u64),
     last_report_us: Option<u64>,
@@ -307,6 +397,8 @@ pub struct Sender {
     ladder: Ladder,
     now_us: u64,
     pub keyframes: u64,
+    /// When set, every report with the encoder bitrate and rung after it (for tests).
+    pub report_log: Option<Vec<(u64, RateReport, u32, usize)>>,
     pub drops: u64,
 }
 
@@ -320,10 +412,19 @@ impl Sender {
             current: None,
             previous: Vec::new(),
             want_key: true,
+            key_cause: None,
+            key_causes: KeyCauses::default(),
             bitrate,
             last_decrease_us: 0,
             drain: None,
             delivering: false,
+            drain_stuck_since: None,
+            queuing_us: 0,
+            q_offset: 0,
+            high_q: None,
+            settle_until: None,
+            pre_cut: 0,
+            settle_delivered: Vec::new(),
             sent: 0,
             sent_prev: (0, 0),
             last_report_us: None,
@@ -332,6 +433,7 @@ impl Sender {
             ladder,
             now_us: 0,
             keyframes: 0,
+            report_log: None,
             drops: 0,
         }
     }
@@ -367,14 +469,25 @@ impl Sender {
     pub fn encode_time(&mut self, now_us: u64, us: u64) {
         self.now_us = self.now_us.max(now_us);
         if self.ladder.encode_time(now_us, us) {
-            self.want_key = true;
+            self.want(KeyCause::Cpu);
         }
         self.relayer();
     }
 
-    fn relayer(&mut self) {
-        if self.ladder.update(self.now_us, self.bitrate) {
+    fn want(&mut self, cause: KeyCause) {
+        if !self.want_key {
             self.want_key = true;
+            self.key_cause = Some(cause);
+        }
+    }
+
+    fn relayer(&mut self) {
+        // The ladder waits for the second look: without it a drop went 540p -> 360p -> 180p (a
+        // keyframe each), and a stream stalled ~100 ms on a tail loss (two starved reports)
+        // went straight to 180p. Not forever if reports stop coming.
+        let settling = self.settle_until.is_some_and(|t| self.now_us < t + RATE_WINDOW_US);
+        if self.ladder.update_held(self.now_us, self.bitrate, settling) {
+            self.want(KeyCause::Rate);
         }
         self.bitrate = self.bitrate.min(self.ladder.rung().max_bps);
     }
@@ -386,13 +499,23 @@ impl Sender {
 
     /// The receiver asked for a keyframe (it stalled or just joined).
     pub fn request_keyframe(&mut self) {
-        self.want_key = true;
+        self.want(KeyCause::Request);
     }
 
     /// One encoded frame. Delta frames with no open group are dropped (they can't be decoded).
     pub fn frame(&mut self, capture_us: u64, key: bool, payload: &[u8]) -> Vec<Out> {
         let mut out = Vec::new();
         if key {
+            let c = &mut self.key_causes;
+            match self.key_cause.take() {
+                _ if self.keyframes == 0 => c.start += 1,
+                Some(KeyCause::Rate) => c.rate += 1,
+                Some(KeyCause::Cpu) => c.cpu += 1,
+                Some(KeyCause::Request) => c.request += 1,
+                Some(KeyCause::Backlog) => c.backlog += 1,
+                None if self.current.is_none() => c.start += 1,
+                None => c.other += 1,
+            }
             if let Some(g) = self.current.take() {
                 out.push(Out::Finish { group: g });
                 self.previous.push(g);
@@ -406,7 +529,11 @@ impl Sender {
             out.push(Out::Write { group: g, data: g.to_be_bytes().to_vec() });
         }
         let Some(g) = self.current else { return out };
-        self.sent += (FRAME_HEADER + payload.len()) as u64;
+        // A keyframe takes several report intervals to cross the link: counting it made our own
+        // step up look like a starved link (and step straight back down).
+        if !key {
+            self.sent += (FRAME_HEADER + payload.len()) as u64;
+        }
         let mut data = Vec::with_capacity(FRAME_HEADER + payload.len());
         data.extend_from_slice(&(payload.len() as u32).to_be_bytes());
         data.extend_from_slice(&capture_us.to_be_bytes());
@@ -420,6 +547,10 @@ impl Sender {
         self.now_us = self.now_us.max(now_us);
         self.rate(now_us, r);
         self.relayer();
+        let (br, rung) = (self.bitrate(), self.ladder.index());
+        if let Some(log) = &mut self.report_log {
+            log.push((now_us, r.clone(), br, rung));
+        }
     }
 
     /// What we sent over the last two report intervals, as a rate.
@@ -436,37 +567,99 @@ impl Sender {
         (span > 0).then(|| bytes * 8 * 1_000_000 / span)
     }
 
+    /// The report's queueing delay less a learned baseline. Every rate cut drains the path
+    /// below `underuse_us` within a second or two, so a delay that hasn't been that low for
+    /// `BASELINE_PROBE_US` is not a queue we cause (a receiver clock running fast, a path with
+    /// a standing queue) and would otherwise pin us at the floor: its minimum over that time
+    /// joins the baseline (at most `MAX_Q_OFFSET_US` in all). Lower reports lower it again.
+    fn queuing(&mut self, now_us: u64, q: u64) -> u64 {
+        self.q_offset = self.q_offset.min(q);
+        let above = q - self.q_offset;
+        // Only below half the top rate: higher up, a delay that stays between the thresholds is
+        // usually our own standing queue at the link's capacity, and learning it lets it grow.
+        if above < self.cfg.underuse_us || self.bitrate > self.cfg.max_bps / 2 {
+            self.high_q = None;
+        } else {
+            let (since, low) = self.high_q.get_or_insert((now_us, above));
+            *low = (*low).min(above);
+            if now_us - *since >= BASELINE_PROBE_US {
+                self.q_offset = (self.q_offset + *low).min(MAX_Q_OFFSET_US);
+                self.high_q = None;
+            }
+        }
+        q.saturating_sub(self.q_offset)
+    }
+
     fn rate(&mut self, now_us: u64, r: &RateReport) {
         let delivered = r.delivered_bps as u64;
         let sent = self.sent_bps(now_us).unwrap_or(0);
         self.delivering = delivered > 0;
+        let queuing_us = self.queuing(now_us, r.queuing_us);
+        self.queuing_us = queuing_us;
+        let stuck = self.drain.is_some() && sent * 2 >= delivered;
+        self.drain_stuck_since = if stuck { self.drain_stuck_since.or(Some(now_us)) } else { None };
         let short = now_us >= self.starve_after_us
             && delivered > 0
             && delivered * 100 < sent * self.cfg.starve_pct as u64
             && sent - delivered >= self.cfg.starve_min_bps as u64;
         self.starved_n = if short { self.starved_n + 1 } else { 0 };
         let starved = self.starved_n >= self.cfg.starve_reports;
-        if r.queuing_us > self.cfg.overuse_us || starved {
+        if self.settle_until.is_some() {
+            self.settle_delivered.push(delivered);
+        }
+        let second_look = self.settle_until.is_some_and(|t| now_us >= t);
+        // At the second look: the median of what got through in the reports since the first (a
+        // 100 ms window holds three or four packets at 300 kbps, so one report is +-30%, and a
+        // stream stalled on a lost packet reads low in one).
+        let settled = {
+            let v = &mut self.settle_delivered;
+            v.sort_unstable();
+            (v.get(v.len().saturating_sub(1) / 2).copied().unwrap_or(delivered) * 85 / 100) as u32
+        };
+        if queuing_us > self.cfg.overuse_us || starved {
             // A queue is building: send no faster than what actually gets through, and below it
-            // until the queue is gone (each 100 ms of it delays every frame).
-            if now_us - self.last_decrease_us > 200_000 || self.last_decrease_us == 0 {
+            // until the queue is gone (each 100 ms of it delays every frame). One rate window
+            // after a decrease, look again: the first delivered rate still held bytes from
+            // before a drop, and the ladder waits for this one.
+            if second_look || now_us - self.last_decrease_us > 200_000 || self.last_decrease_us == 0 {
                 let target = (delivered * 85 / 100) as u32;
-                self.bitrate = self.bitrate.min(target).max(self.cfg.min_bps);
+                if second_look {
+                    // Replaces the first cut, which may have been too deep as well (a gap in
+                    // what the encoder sent).
+                    self.bitrate = self.pre_cut.min(settled).max(self.cfg.min_bps);
+                    self.settle_until = None;
+                } else {
+                    if self.settle_until.is_none() {
+                        self.pre_cut = self.bitrate;
+                        self.settle_until = Some(now_us + SETTLE_US);
+                        self.settle_delivered.clear();
+                    }
+                    self.bitrate = self.bitrate.min(target).max(self.cfg.min_bps);
+                }
                 self.last_decrease_us = now_us;
             }
             // Starved: the queue is bigger than the delay shows yet, drain as fast as allowed.
-            let queue_pct = if starved { 100 } else { r.queuing_us * 100 / self.cfg.drain_us.max(1) };
+            let queue_pct = if starved { 100 } else { queuing_us * 100 / self.cfg.drain_us.max(1) };
             let pct = 100u64.saturating_sub(queue_pct).max(self.cfg.drain_pct as u64);
             if pct < 100 {
-                let d = (delivered * pct / 100) as u32;
+                // Not below `drain_pct` of the floor: with a receiver that is slow to decode,
+                // what gets through follows what we send and the drain would spiral to nothing.
+                let floor = self.cfg.min_bps as u64 * self.cfg.drain_pct as u64 / 100;
+                let d = (delivered * pct / 100).max(floor) as u32;
                 self.drain = Some(self.drain.map_or(d, |old| old.min(d)));
             }
             return;
         }
-        if r.queuing_us < self.cfg.underuse_us && self.drain.take().is_some() {
+        if second_look {
+            // The queue was gone a rate window later: a blip, keep no more of the cut than the
+            // delivered rate asks for.
+            self.bitrate = self.bitrate.max(self.pre_cut.min(settled));
+            self.settle_until = None;
+        }
+        if queuing_us < self.cfg.underuse_us && self.drain.take().is_some() {
             self.starve_after_us = now_us + STARVE_QUIET_US;
         }
-        if self.drain.is_none() && r.queuing_us < self.cfg.underuse_us && now_us - self.last_decrease_us > 500_000 {
+        if self.drain.is_none() && queuing_us < self.cfg.underuse_us && now_us - self.last_decrease_us > 500_000 {
             // Path is empty: +8% per 100 ms, never far above what was delivered.
             let cap = (delivered * 3 / 2).max(self.cfg.min_bps as u64) as u32;
             let dt = self.sent_prev.1.min(200_000);
@@ -493,15 +686,25 @@ impl Sender {
         let backlog_us = backlog as u64 * 8 * 1_000_000 / (self.bitrate.max(1) as u64);
         // While draining, the backlog is the queue in the path, already on its way out.
         let draining = self.drain.is_some() && self.delivering;
-        if backlog_us > self.cfg.max_backlog_us && !draining {
+        // Frames wait in a queue our rate doesn't drain (a slow decoder): a lower bitrate can't
+        // help, only a keyframe the receiver can jump to.
+        let stuck = self.drain_stuck_since.is_some_and(|t| self.now_us.saturating_sub(t) > self.cfg.drain_us);
+        let stale = stuck && self.queuing_us > self.cfg.max_backlog_us;
+        if (backlog_us > self.cfg.max_backlog_us && !draining) || stale {
             // Behind: abandon the current group, restart from a keyframe at a lower rate.
             if let Some(g) = self.current.take() {
                 out.push(Out::Reset { group: g });
             }
-            self.want_key = true;
+            self.want(KeyCause::Backlog);
             self.drops += 1;
-            self.bitrate = (self.bitrate / 2).max(self.cfg.min_bps);
-            self.relayer();
+            if stale {
+                self.drain_stuck_since = None;
+                self.queuing_us = 0;
+            } else {
+                self.bitrate = (self.bitrate / 2).max(self.cfg.min_bps);
+                self.settle_until = None;
+                self.relayer();
+            }
         }
         out
     }
@@ -522,7 +725,8 @@ pub struct Frame {
 pub struct RateReport {
     /// Video bytes received over the window, as a rate.
     pub delivered_bps: u32,
-    /// Latest frame's (arrival - capture) above the minimum of the last 10 s.
+    /// (arrival - capture) above the minimum of the last 10 s, for the least delayed frame
+    /// that arrived in the rate window (the latest frame if none did).
     pub queuing_us: u64,
 }
 
@@ -705,7 +909,10 @@ impl Receiver {
         let bytes: usize = self.arrivals.iter().map(|a| a.1).sum();
         let delivered_bps = (bytes as u64 * 8 * 1_000_000 / span) as u32;
         let min = self.transit.iter().map(|t| t.1).min()?;
-        let last = self.transit.back()?.1;
+        // The least delayed frame of the rate window: a queue delays every frame, while one late
+        // frame (a retransmission, an encoder that was preempted) is not a queue.
+        let recent = self.transit.iter().rev().take_while(|t| t.0 > from).map(|t| t.1).min();
+        let last = recent.unwrap_or(self.transit.back()?.1);
         Some(RateReport { delivered_bps, queuing_us: (last - min) as u64 })
     }
 
@@ -845,7 +1052,10 @@ mod tests {
         reports(&mut tx, 2_050 * MS, 2_100 * MS, 1_500_000, slow);
         assert!(tx.draining());
         assert_eq!(tx.bitrate(), 50_000, "25% of delivered while the queue drains");
+        assert_eq!(tx.resolution(), (1280, 720), "the ladder waits for a second look");
+        reports(&mut tx, 2_100 * MS, 2_250 * MS, 50_000, RateReport { delivered_bps: 200_000, queuing_us: 20_000 });
         assert_eq!(tx.resolution(), (320, 180), "the ladder follows the estimate, 170 kbps");
+        assert_eq!(tx.bitrate(), 50_000);
     }
 
     #[test]
@@ -883,16 +1093,34 @@ mod tests {
 
     const MS: u64 = 1_000;
 
+    /// A ladder past its encoder warm-up, with enough fast encode times to step up.
     fn ladder(start_bps: u32) -> Ladder {
-        Ladder::new(LadderConfig::default(), 30, start_bps)
+        let mut l = Ladder::new(LadderConfig::default(), 30, start_bps);
+        for _ in 0..ENCODE_WARMUP as usize + ENCODE_MIN {
+            l.encode_time(0, 3 * MS);
+        }
+        l
     }
 
-    /// Feeds a fast encode time and `bps` every 100 ms over `[from, to)`; returns switches.
+    /// Encode times of `us` at 30 fps from `*t` while the rung is `rung`; returns when it changed.
+    fn encode_at(l: &mut Ladder, t: &mut u64, rung: usize, us: u64) -> u64 {
+        while l.index() == rung {
+            l.encode_time(*t, us);
+            l.update(*t, 5_000_000);
+            *t += 33 * MS;
+        }
+        *t
+    }
+
+    /// Feeds three fast encode times (30 fps) and `bps` every 100 ms over `[from, to)`; returns
+    /// switches.
     fn hold(l: &mut Ladder, from: u64, to: u64, bps: u32) -> u64 {
         let mut switches = 0;
         let mut t = from;
         while t < to {
-            l.encode_time(t, 3 * MS);
+            for _ in 0..3 {
+                l.encode_time(t, 3 * MS);
+            }
             switches += l.update(t, bps) as u64;
             t += 100 * MS;
         }
@@ -958,24 +1186,64 @@ mod tests {
 
     #[test]
     fn ladder_steps_down_when_encoding_is_too_slow() {
-        let mut l = ladder(5_000_000);
+        let mut l = Ladder::new(LadderConfig::default(), 30, 5_000_000);
         assert_eq!(l.index(), 3);
-        // 30 fps: budget is 60% of 33.3 ms = 20 ms. 25 ms frames: down once p90 is known.
+        // 30 fps: budget is 60% of 33.3 ms = 20 ms. 25 ms frames: down after the encoder's
+        // warm-up and a full second of them.
         let mut t = 0;
         while l.index() == 3 {
             l.encode_time(t, 25 * MS);
             t += 33 * MS;
         }
-        assert_eq!(t, ENCODE_MIN as u64 * 33 * MS);
+        assert_eq!(t, (ENCODE_WARMUP as usize + ENCODE_WINDOW) as u64 * 33 * MS);
         assert_eq!(l.index(), 2);
-        // Fast again (throttling ended): 720p stays blocked for 30 s, then returns after the hold.
-        while l.index() == 2 {
-            l.encode_time(t, 6 * MS);
+        // Fast again (throttling ended): 720p stays blocked for 5 s, then returns after the hold.
+        let down = t;
+        encode_at(&mut l, &mut t, 2, 6 * MS);
+        assert!(t - down > 7_400 * MS && t - down < 8_500 * MS, "back up after {} ms", (t - down) / MS);
+        assert_eq!(l.index(), 3);
+    }
+
+    #[test]
+    fn ladder_cpu_block_backs_off() {
+        // A device that is too slow for 720p every time it gets there: blocked 5, 10, 20, 30 s.
+        let mut l = Ladder::new(LadderConfig::default(), 30, 5_000_000);
+        let mut t = 0;
+        let mut blocks = vec![];
+        for _ in 0..5 {
+            let down = encode_at(&mut l, &mut t, 3, 25 * MS);
+            let up = encode_at(&mut l, &mut t, 2, 6 * MS);
+            blocks.push((up - down) / 1_000_000);
+        }
+        // Block + 2.5 s hold.
+        assert_eq!(blocks, vec![7, 12, 22, 32, 32]);
+        // A minute without trouble: back to 5 s.
+        encode_at_for(&mut l, &mut t, 70_000 * MS);
+        let down = encode_at(&mut l, &mut t, 3, 25 * MS);
+        let up = encode_at(&mut l, &mut t, 2, 6 * MS);
+        assert_eq!((up - down) / 1_000_000, 7);
+    }
+
+    fn encode_at_for(l: &mut Ladder, t: &mut u64, us: u64) {
+        let end = *t + us;
+        while *t < end {
+            l.encode_time(*t, 6 * MS);
+            l.update(*t, 5_000_000);
+            *t += 33 * MS;
+        }
+    }
+
+    #[test]
+    fn ladder_ignores_preempted_frames() {
+        // Fast encodes with one frame in 8 preempted for 40 ms: a smaller picture wouldn't help.
+        let mut l = ladder(5_000_000);
+        let mut t = 0;
+        for i in 0..1800u64 {
+            l.encode_time(t, if i % 8 == 0 { 40 * MS } else { 8 * MS });
             l.update(t, 5_000_000);
             t += 33 * MS;
         }
-        assert!(t > 30_300 * MS && t < 33_500 * MS, "back up at {} ms", t / MS);
-        assert_eq!(l.index(), 3);
+        assert_eq!((l.index(), l.switches), (3, 0));
     }
 
     #[test]
@@ -1014,8 +1282,15 @@ mod tests {
         assert_eq!(tx.resolution(), (960, 540));
         tx.frame(0, true, b"k");
         assert!(!tx.wants_keyframe());
-        // A queue builds and the rate falls below 540p's floor: smaller, from a new keyframe.
+        // A queue builds and the rate falls below 540p's floor: smaller, from a new keyframe,
+        // once the reports over the next 150 ms confirm the rate.
         tx.on_report(1_000_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
+        assert_eq!(tx.resolution(), (960, 540));
+        tx.on_report(1_050_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
+        assert_eq!(tx.resolution(), (960, 540));
+        tx.on_report(1_100_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
+        assert_eq!(tx.resolution(), (960, 540));
+        tx.on_report(1_150_000, &RateReport { delivered_bps: 400_000, queuing_us: 100_000 });
         assert_eq!(tx.resolution(), (640, 360));
         assert!(tx.wants_keyframe());
         assert!(tx.bitrate() <= 1_200_000);

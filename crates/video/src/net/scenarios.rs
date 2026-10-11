@@ -104,6 +104,9 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
         VideoRecv::new(p.b.clone(), RecvConfig { media: sc.receiver.clone(), ..Default::default() })
     );
     let (tx, mut rx) = (Arc::new(tx.unwrap()), rx.unwrap());
+    if std::env::var_os("SIM_TRACE").is_some() {
+        tx.with_sender(|s| s.report_log = Some(vec![]));
+    }
     let epoch = Instant::now();
     p.proxy.start_clock();
     let duration = sc.duration_us;
@@ -172,6 +175,7 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
         shown,
         decode_errors: order_violations,
         keyframes: tx.with_sender(|s| s.keyframes),
+        key_causes: tx.with_sender(|s| s.key_causes),
         camera_drops: 0,
         switches: sizes.len().saturating_sub(1) as u64,
         sizes,
@@ -184,6 +188,15 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
         bitrate,
         ..Default::default()
     };
+    // `SIM_TRACE=1 SIM_FROM=<s> SIM_TO=<s>`: every report the sender got in that window.
+    let secs = |k: &str, d: f64| std::env::var(k).ok().and_then(|v| v.parse::<f64>().ok()).unwrap_or(d);
+    let (from, to) = ((secs("SIM_FROM", 0.0) * 1e6) as u64, (secs("SIM_TO", 0.0) * 1e6) as u64);
+    for (at, r, br, rung) in tx.with_sender(|s| s.report_log.take()).unwrap_or_default() {
+        if at >= from && at < to {
+            let (d, q) = (r.delivered_bps / 1000, r.queuing_us / 1000);
+            println!("  {:7.3}s delivered {d:5} kbps queuing {q:4} ms | br after {:5} kbps rung {rung}", at as f64 / 1e6, br / 1000);
+        }
+    }
     (Real { rep, resets: st.resets, order_violations }, p)
 }
 
