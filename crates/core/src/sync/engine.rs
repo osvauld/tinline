@@ -45,6 +45,8 @@ struct PeerChat {
     hello: bool,
     /// The group list last sent (G2), to send only changes.
     groups: Option<Vec<Vec<u8>>>,
+    /// The invitation rows last sent (G3).
+    invitations: Option<Vec<Vec<u8>>>,
 }
 
 impl SelfSlot {
@@ -585,6 +587,12 @@ impl Inner {
                             }
                             self.group_own_apply(&groups);
                         }
+                        SelfMsg::Invitations { rows } => {
+                            if rows.len() > crate::group::invitations::MAX_OWN_INVITATIONS {
+                                return Err(Error::Protocol("too many invitations".into()));
+                            }
+                            self.group_own_invitations_apply(&rows);
+                        }
                         SelfMsg::Unlinked => {
                             self.clone().remove_self_account(epoch).await;
                             return Ok(());
@@ -611,6 +619,8 @@ impl Inner {
                                 self.push_read(&mut peer, writer).await?;
                             } else if name == GROUPS_MARK {
                                 self.push_groups(&mut peer, writer).await?;
+                            } else if name == crate::group::invitations::INVITES_MARK {
+                                self.push_invitations(&mut peer, writer).await?;
                             } else if name == ACK_MARK {
                                 self.push_acks(&mut peer, writer).await?;
                             } else {
@@ -630,7 +640,18 @@ impl Inner {
         }
         self.push_read(peer, writer).await?;
         self.push_acks(peer, writer).await?;
-        self.push_groups(peer, writer).await
+        self.push_groups(peer, writer).await?;
+        self.push_invitations(peer, writer).await
+    }
+
+    /// Our group invitations, if they changed since the last ones this session sent (G3).
+    async fn push_invitations(self: &Arc<Self>, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        let rows = self.group_own_invitations();
+        if peer.invitations.as_ref() == Some(&rows) || (rows.is_empty() && peer.invitations.is_none()) {
+            return Ok(());
+        }
+        peer.invitations = Some(rows.clone());
+        writer.send(&SelfMsg::Invitations { rows }).await
     }
 
     /// Our group list, if it changed since the last one this session sent (G2).

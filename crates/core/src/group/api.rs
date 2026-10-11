@@ -371,7 +371,7 @@ impl Inner {
         Ok(())
     }
 
-    fn group_admin_check(&self, core: &GroupCore, gid: &str) -> Result<(), Error> {
+    pub(crate) fn group_admin_check(&self, core: &GroupCore, gid: &str) -> Result<(), Error> {
         self.group_member_check(core, gid)?;
         if !core.groups.lock().get(gid).is_some_and(|l| l.state.is_admin(&core.did)) {
             return Err(Error::Rejected("only admins can do that".into()));
@@ -379,8 +379,10 @@ impl Inner {
         Ok(())
     }
 
-    /// The token for `gid`: our signed invite (admins) or none (own devices), and the hosts.
-    fn group_token(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, invite: Option<SignedInvite>) -> Result<String, Error> {
+    /// The full token for `gid`: our signed invite (admins) or none (own devices), and the hosts.
+    /// G3: it no longer travels as text; a host keeps it behind a short code (`code.rs`), and
+    /// direct invitations carry it over the private channel (`invitations.rs`).
+    pub(crate) fn group_token(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, invite: Option<SignedInvite>) -> Result<InviteToken, Error> {
         let _ = self.group_my_addr(core, gid);
         let (name, owner) = {
             let groups = core.groups.lock();
@@ -398,7 +400,7 @@ impl Inner {
         if all.is_empty() {
             return Err(Error::Rejected("the group has no reachable host yet".into()));
         }
-        Ok(InviteToken { group: gid.to_string(), name, owner, invite, hosts: all }.to_text())
+        Ok(InviteToken { group: gid.to_string(), name, owner, invite, hosts: all })
     }
 }
 
@@ -484,7 +486,10 @@ impl Node {
         })?
     }
 
-    /// An invite token (text for a card, link or QR) signed by us; admins only. Valid 7 days.
+    /// A short invite link (`tinline://g/...`, about 77 characters; for a card, a share sheet or a
+    /// QR) for an invite signed by us; admins only. Valid 7 days. A host keeps the invite behind
+    /// the link's code (we, if we host; else a host we are connected to, which can take up to 30
+    /// s to reach). See `code.rs`.
     pub fn group_invite(&self, group_id: String) -> Result<String, Error> {
         let inner = self.inner.clone();
         self.block_on(async move {
@@ -493,11 +498,12 @@ impl Node {
             inner.group_ensure(&core).await?;
             inner.group_relay_ready().await;
             let invite = Invite { group: group_id.clone(), issuer: core.did.clone(), expires: now() + INVITE_TTL, nonce: rand::random() }.sign(&core.account);
-            inner.group_token(&core, &group_id, Some(invite))
+            inner.group_issue_code(&core, &group_id, Some(invite)).await
         })?
     }
 
-    /// A token for our own other devices (same DID): the group and its hosts, no invite.
+    /// A short link for our own other devices (same DID): it admits only this account. Valid 7
+    /// days.
     pub fn group_device_token(&self, group_id: String) -> Result<String, Error> {
         let inner = self.inner.clone();
         self.block_on(async move {
@@ -505,12 +511,16 @@ impl Node {
             inner.group_member_check(&core, &group_id)?;
             inner.group_ensure(&core).await?;
             inner.group_relay_ready().await;
-            inner.group_token(&core, &group_id, None)
+            inner.group_issue_code(&core, &group_id, None).await
         })?
     }
 
+    /// What an invite link is for, fetched from the host it names (blocks up to about 20 s;
+    /// `None` if the link is not one, the host refuses it, or cannot be reached).
     pub fn group_peek_invite(&self, token: String) -> Option<GroupInvitePeek> {
-        let t = InviteToken::from_text(&token)?;
+        let sc = super::code::ShortCode::parse(&token)?;
+        let inner = self.inner.clone();
+        let t = self.block_on(async move { inner.group_fetch(&sc).await }).ok()?.ok()?;
         let inv = t.invite.as_ref().and_then(|i| i.open());
         if t.invite.is_some() && inv.as_ref().is_none_or(|i| i.group != t.group) {
             return None;
@@ -525,63 +535,15 @@ impl Node {
         })
     }
 
-    /// Joins through a host named in the token and waits (up to about a minute) until this
+    /// Joins with an invite link (or its bare code): fetches the invite from the host the link
+    /// names, then joins through the group's hosts and waits (up to about a minute) until this
     /// device holds the group as a member. A host refusal comes back as `Rejected(reason)`.
     pub fn group_join(&self, token: String) -> Result<String, Error> {
-        let t = InviteToken::from_text(&token).ok_or_else(|| Error::Protocol("not a group invite".into()))?;
+        let sc = super::code::ShortCode::parse(&token).ok_or_else(|| Error::Protocol("not a group invite".into()))?;
         let inner = self.inner.clone();
         self.block_on(async move {
-            let core = inner.group_core()?;
-            let gid = t.group.clone();
-            if let Some(inv) = &t.invite
-                && inv.open().is_none_or(|i| i.group != gid || i.expires < now())
-            {
-                return Err(Error::Rejected("invite expired or invalid".into()));
-            }
-            let already = core.groups.lock().get(&gid).map(|l| l.state.is_member(&core.did));
-            match already {
-                Some(true) => return Ok(gid),
-                Some(false) => {}
-                None => {
-                    let meta = GroupMeta { joining: t.invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), ..Default::default() };
-                    let live = super::engine::Live { doc: super::doc::GroupDoc::new(&gid, core.wid), entries: Vec::new(), state: Default::default(), meta: meta.clone() };
-                    core.groups.lock().insert(gid.clone(), live);
-                    core.store.put_meta(&gid, &meta)?;
-                }
-            }
-            for h in &t.hosts {
-                if let Some(a) = h.open()
-                    && a.group == gid
-                {
-                    core.store.put_host(&gid, &a.did, &a.dev, h)?;
-                }
-            }
-            core.refusals.lock().remove(&gid);
-            inner.group_ensure(&core).await?;
-            let end = std::time::Instant::now() + Duration::from_secs(60);
-            loop {
-                let (member, joined) = {
-                    let groups = core.groups.lock();
-                    let l = groups.get(&gid).ok_or(Error::NotFound)?;
-                    (l.state.is_member(&core.did), l.meta.joining.is_none())
-                };
-                let acked = !inner.group_owes_pub(&core, &gid);
-                if member && joined && acked {
-                    return Ok(gid);
-                }
-                let refused = core.refusals.lock().get(&gid).cloned();
-                if let Some(why) = refused.filter(|_| !member) {
-                    inner.group_forget(&core, &gid);
-                    return Err(Error::Rejected(why));
-                }
-                if std::time::Instant::now() > end {
-                    if !member {
-                        inner.group_forget(&core, &gid);
-                    }
-                    return Err(Error::Timeout);
-                }
-                tokio::time::sleep(Duration::from_millis(200)).await;
-            }
+            let t = inner.group_fetch(&sc).await?;
+            inner.group_join_token(t).await
         })?
     }
 
@@ -720,5 +682,63 @@ impl Inner {
     fn group_forget(&self, core: &GroupCore, gid: &str) {
         core.groups.lock().remove(gid);
         let _ = core.store.forget(gid);
+    }
+}
+
+impl Inner {
+    /// Joins with a full (fetched or delivered) token: the same checks whatever brought it.
+    pub(crate) async fn group_join_token(self: &Arc<Self>, t: InviteToken) -> Result<String, Error> {
+        let inner = self;
+        let core = inner.group_core()?;
+        let gid = t.group.clone();
+        if let Some(inv) = &t.invite
+            && inv.open().is_none_or(|i| i.group != gid || i.expires < now())
+        {
+            return Err(Error::Rejected("invite expired or invalid".into()));
+        }
+        let already = core.groups.lock().get(&gid).map(|l| l.state.is_member(&core.did));
+        match already {
+            Some(true) => return Ok(gid),
+            Some(false) => {}
+            None => {
+                let meta = GroupMeta { joining: t.invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), ..Default::default() };
+                let live = super::engine::Live { doc: super::doc::GroupDoc::new(&gid, core.wid), entries: Vec::new(), state: Default::default(), meta: meta.clone() };
+                core.groups.lock().insert(gid.clone(), live);
+                core.store.put_meta(&gid, &meta)?;
+            }
+        }
+        for h in &t.hosts {
+            if let Some(a) = h.open()
+                && a.group == gid
+            {
+                core.store.put_host(&gid, &a.did, &a.dev, h)?;
+            }
+        }
+        core.refusals.lock().remove(&gid);
+        inner.group_ensure(&core).await?;
+        let end = std::time::Instant::now() + Duration::from_secs(60);
+        loop {
+            let (member, joined) = {
+                let groups = core.groups.lock();
+                let l = groups.get(&gid).ok_or(Error::NotFound)?;
+                (l.state.is_member(&core.did), l.meta.joining.is_none())
+            };
+            let acked = !inner.group_owes_pub(&core, &gid);
+            if member && joined && acked {
+                return Ok(gid);
+            }
+            let refused = core.refusals.lock().get(&gid).cloned();
+            if let Some(why) = refused.filter(|_| !member) {
+                inner.group_forget(&core, &gid);
+                return Err(Error::Rejected(why));
+            }
+            if std::time::Instant::now() > end {
+                if !member {
+                    inner.group_forget(&core, &gid);
+                }
+                return Err(Error::Timeout);
+            }
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
     }
 }

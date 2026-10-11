@@ -818,6 +818,17 @@ pub enum Msg {
         list: SignedBlob,
     },
     DevicesTaken,
+    /// A group invitation or the answer to one, between two contacts over the private channel
+    /// (G3). Authenticated like `CallHello`: the sender's attestation (= the connection's device)
+    /// and a token the receiver issued to it; the receiver requires a message token (P6) and
+    /// answers its block notice to a DID it blocks. `letter` is opaque here (the core's
+    /// base64url bincode `group::invitations::Letter`). Answered `GroupLetterTaken`.
+    GroupLetter {
+        attestation: SignedAttestation,
+        grant: SignedGrant,
+        letter: String,
+    },
+    GroupLetterTaken,
 }
 
 /// The `Reject` reason a contact gets when it calls without being allowed to (no call token, or
@@ -1296,7 +1307,8 @@ pub fn accept_call_hello(
     Ok(caller)
 }
 
-/// Who is at the other end of a `CallHello` (or a chat `Auth`, which carries the same proof):
+/// Who is at the other end of a `CallHello` or `GroupLetter` (or a chat `Auth`, which carries the
+/// same proof):
 /// attested device = the connection's, a token we issued to that DID (any capability, unexpired,
 /// not revoked by id), and a contact. Which capability the token must carry, and the per-DID
 /// cut-off, are checked by the caller after its block check, so a blocked DID still gets the
@@ -1309,11 +1321,14 @@ pub fn accept_hello(
     revoked_grant_ids: &HashSet<String>,
     is_contact: impl Fn(&str) -> bool,
 ) -> Result<Caller> {
-    let Msg::CallHello {
-        attestation, grant, ..
-    } = msg
-    else {
-        return Err(Error::UnexpectedMessage);
+    let (attestation, grant) = match msg {
+        Msg::CallHello {
+            attestation, grant, ..
+        } => (attestation, grant),
+        Msg::GroupLetter {
+            attestation, grant, ..
+        } => (attestation, grant),
+        _ => return Err(Error::UnexpectedMessage),
     };
     let att = verify_attestation(attestation)?;
     if att.device_key()? != remote_device {

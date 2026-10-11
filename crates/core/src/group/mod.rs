@@ -3,7 +3,9 @@
 
 pub mod api;
 pub mod doc;
+pub mod code;
 pub mod engine;
+pub mod invitations;
 pub mod mail;
 pub mod own;
 pub mod record;
