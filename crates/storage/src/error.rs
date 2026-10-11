@@ -15,4 +15,7 @@ pub enum StorageError {
     /// A sealed record did not open: wrong key, tampered bytes, or a record moved to another path.
     #[error("sealed record at {0} does not open")]
     Unseal(String),
+    /// The store was closed (`Store::close`): the session that owned it ended.
+    #[error("store closed")]
+    Closed,
 }

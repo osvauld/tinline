@@ -59,6 +59,8 @@ const BAD_DELAY: Duration = Duration::from_millis(300);
 /// Codes one group may hold at a host (PROVISIONAL (coordinator)).
 pub const MAX_CODES_PER_GROUP: usize = 256;
 const FETCH_TIMEOUT: Duration = Duration::from_secs(20);
+/// The whole of `group_fetch`, retries included.
+const FETCH_DEADLINE: Duration = Duration::from_secs(40);
 const ACK_TIMEOUT: Duration = Duration::from_secs(15);
 /// How long `group_invite` waits for a session with a host when we do not host.
 const HOST_WAIT: Duration = Duration::from_secs(30);
@@ -319,21 +321,46 @@ impl Inner {
         Ok(ShortCode { endpoint: addr.endpoint, relay: addr.relay, code }.to_link())
     }
 
-    /// Asks the host a link names for the invite behind it.
+    /// Asks the host a link names for the invite behind it. GL: a lost connection or a timeout
+    /// is tried again (pauses of 0.5, 1, 2, 4 s) until `FETCH_DEADLINE`, the worst case of a single
+    /// attempt before (connect + answer); a refusal or anything else comes back at once.
     pub(crate) async fn group_fetch(self: &Arc<Self>, sc: &ShortCode) -> Result<InviteToken, Error> {
+        let end = Instant::now() + FETCH_DEADLINE;
+        let mut pause = Duration::from_millis(500);
+        loop {
+            let step = end.saturating_duration_since(Instant::now()).min(FETCH_TIMEOUT);
+            match self.group_fetch_once(sc, step).await {
+                Err(e @ (Error::Timeout | Error::Net(_))) => {
+                    if Instant::now() + pause + Duration::from_secs(1) >= end {
+                        return Err(e);
+                    }
+                    tracing::info!("fetching an invite: {e}; trying again");
+                    tokio::time::sleep(pause).await;
+                    pause = (pause * 2).min(Duration::from_secs(4));
+                }
+                r => return r,
+            }
+        }
+    }
+
+    /// One attempt of `group_fetch`, each network step bounded by `step`.
+    async fn group_fetch_once(self: &Arc<Self>, sc: &ShortCode, step: Duration) -> Result<InviteToken, Error> {
         let core = self.group_core()?;
         let ep = self.group_ensure(&core).await?;
         if ep.id().as_bytes() == &sc.endpoint {
             // Our own link: answer from our own store.
             return self.group_fetch_answer(&core, &sc.code).map_err(Error::Rejected);
         }
+        if super::engine::injected(&self.group.fail_fetches) {
+            return Err(Error::Net("connection lost (injected)".into()));
+        }
         let addr = addr_for(&sc.endpoint, sc.relay.as_deref())?;
-        let conn = tokio::time::timeout(FETCH_TIMEOUT, ep.connect(addr, GROUP_ALPN)).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
+        let conn = tokio::time::timeout(step, ep.connect(addr, GROUP_ALPN)).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
         let mut w = Writer(send);
         let mut r = Reader::new(recv);
         w.send(&GroupMsg::Fetch { code: sc.code }).await?;
-        let reply = tokio::time::timeout(FETCH_TIMEOUT, r.recv()).await.map_err(|_| Error::Timeout)??;
+        let reply = tokio::time::timeout(step, r.recv()).await.map_err(|_| Error::Timeout)??;
         let _ = w.0.finish();
         conn.close(0u32.into(), b"bye");
         match reply {
@@ -342,6 +369,8 @@ impl Inner {
                 Ok(token)
             }
             Some(GroupMsg::Refused { reason }) => Err(Error::Rejected(reason.chars().take(200).collect())),
+            // The host's side went away before answering: as transient as a lost connection.
+            None => Err(Error::Net("connection closed before an answer".into())),
             _ => Err(Error::Protocol("unexpected answer to an invite code".into())),
         }
     }

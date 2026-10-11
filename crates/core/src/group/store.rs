@@ -79,7 +79,10 @@ impl GroupStore {
         let mut tries = 0;
         let store = loop {
             match Store::open(&path) {
-                Ok(s) => break s,
+                Ok(s) => {
+                    crate::store::note_open(&path, tries > 0);
+                    break s;
+                }
                 Err(e) if tries >= 50 => return Err(io(e)),
                 Err(_) => {
                     tries += 1;

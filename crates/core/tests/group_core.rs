@@ -108,19 +108,11 @@ fn link_fresh(e: &Peer, name: &str) -> Peer {
     n
 }
 
-/// `group_join` that tries again on a transient network failure. GF: joining is a one-shot
-/// network exchange (fetch the invite behind the link from the host, then sync until a member);
-/// under heavy load it occasionally fails with `Timeout` / `Net("connection lost")`, and a user
-/// would simply tap again. Any other error is a real failure.
+/// `group_join`, unwrapped. GL: the product rides out transient network failures itself (the
+/// fetch retries within its deadline, the join re-dials every 2 s while it waits), so the test-side
+/// retry GF added is gone: any error here is a real failure.
 fn join(p: &Peer, link: String) -> String {
-    for _ in 0..3 {
-        match p.node.group_join(link.clone()) {
-            Ok(g) => return g,
-            Err(p2pcore::Error::Timeout | p2pcore::Error::Net(_)) => continue,
-            Err(e) => panic!("join: {e:?}"),
-        }
-    }
-    panic!("join failed three times on network errors")
+    p.node.group_join(link).unwrap_or_else(|e| panic!("join: {e:?}"))
 }
 
 fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {

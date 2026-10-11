@@ -502,17 +502,37 @@ impl Drop for Node {
     fn drop(&mut self) {
         let ep = self.inner.shared.lock().endpoint.take();
         if let Some(rt) = self.rt.take() {
-            if let Some(ep) = ep {
-                // Best effort: a clean close tells peers at once instead of at idle timeout.
-                if !on_core_thread() && tokio::runtime::Handle::try_current().is_err() {
-                    rt.block_on(async {
+            let can_block = !on_core_thread() && tokio::runtime::Handle::try_current().is_err();
+            if can_block {
+                let inner = self.inner.clone();
+                rt.block_on(async move {
+                    // Best effort: a clean close tells peers at once instead of at idle timeout.
+                    if let Some(ep) = ep {
                         let _ = tokio::time::timeout(Duration::from_secs(1), ep.close()).await;
-                    });
-                }
+                    }
+                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.group_close()).await;
+                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat_close()).await;
+                });
             }
+            // GL: every store file goes now, whatever task still holds a clone (the tasks are
+            // only dropped below, in the background), so a node made next on this directory
+            // opens them at once.
+            self.inner.group_close_now();
+            self.inner.chat_close_now();
+            self.inner.shared.lock().forget_session();
             // Never blocks, so it is safe even if the last reference drops on a core thread.
             rt.shutdown_background();
         }
+    }
+}
+
+impl Node {
+    /// For tests: (opens, opens that had to wait for a file still held) of the store files
+    /// (`account.redb`, `chat.redb`, `group.redb`) under this node's data directory, across every
+    /// node of this process that used it.
+    #[doc(hidden)]
+    pub fn store_stats_for_test(&self) -> (u64, u64) {
+        store::open_stats(self.inner.accounts.root())
     }
 }
 
@@ -1179,9 +1199,9 @@ impl Node {
             return Err(Error::Protocol("blocking call made from a NodeEvents callback".into()));
         }
         let (tx, rx) = std::sync::mpsc::channel();
-        self.inner.handle.spawn(async move {
+        self.inner.handle.spawn(USER_CALL.scope((), async move {
             let _ = tx.send(fut.await);
-        });
+        }));
         rx.recv().map_err(|_| Error::Protocol("core runtime stopped".into()))
     }
 
@@ -1522,8 +1542,15 @@ impl Shared {
         self.device_label = None;
         self.acc = None;
         self.calls = None;
-        if let Some(a) = self.acct.as_mut() {
-            a.backing = None;
+        if let Some(a) = self.acct.as_mut()
+            && let Some(b) = a.backing.take()
+        {
+            // GL: the file goes now, not when the last task holding a clone lets go (the next
+            // unlock or the next node on this directory opens it at once). Writes still in
+            // flight finish first; any later one fails instead of landing after the lock.
+            if let Backing::Sealed(db) = b {
+                db.close();
+            }
         }
         if !self.committed {
             self.disk = None;
@@ -1897,6 +1924,11 @@ impl Inner {
         }
         self.log(format!("endpoint {} bound", ep.id()));
         self.emit_status();
+        {
+            // GL: the group runtime may open its store from background tasks again.
+            let _slot = self.group.core.lock();
+            self.group.parked.store(false, Ordering::SeqCst);
+        }
         self.chat_started();
         self.selfsync_started();
         self.notices_started();
@@ -3511,6 +3543,17 @@ const CORE_THREAD: &str = "p2pcore";
 
 fn on_core_thread() -> bool {
     std::thread::current().name() == Some(CORE_THREAD)
+}
+
+tokio::task_local! {
+    /// Set around the future of a blocking `Node` call (`block_on`).
+    static USER_CALL: ();
+}
+
+/// Whether we run for a call the app made (its own thread, or the future of a blocking call),
+/// not for a background task of the core.
+pub(crate) fn user_call() -> bool {
+    !on_core_thread() || USER_CALL.try_with(|_| ()).is_ok()
 }
 
 pub(crate) fn now_ms() -> u64 {
