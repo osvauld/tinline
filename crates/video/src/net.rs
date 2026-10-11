@@ -366,6 +366,14 @@ impl VideoSend {
         self.lock().tx.wants_keyframe()
     }
 
+    /// How long encoding one frame took, stamped on this sender's clock (drives the ladder's
+    /// CPU cap).
+    pub fn encode_time(&self, us: u64) {
+        let mut st = self.lock();
+        let now = now_us(st.epoch);
+        st.tx.encode_time(now, us);
+    }
+
     /// Direct access to the sans-IO sender (e.g. its counters).
     pub fn with_sender<R>(&self, f: impl FnOnce(&mut Sender) -> R) -> R {
         f(&mut self.lock().tx)
