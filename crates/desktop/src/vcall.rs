@@ -95,7 +95,7 @@ impl App {
 
     /// The core's video state for the current call changed.
     pub(super) fn video_state(&mut self, info: VideoInfo) -> Task<Msg> {
-        if !self.call.as_ref().is_some_and(|c| c.info.call_id == info.call_id) {
+        if self.call.as_ref().is_none_or(|c| c.info.call_id != info.call_id) {
             return Task::none();
         }
         let first = self.video.info.is_none();
@@ -152,7 +152,7 @@ impl App {
             let v = &mut self.video;
             v.cost_ms = if v.shown == 0 { ms } else { 0.9 * v.cost_ms + 0.1 * ms };
             v.shown += 1;
-            if v.shown % 150 == 0 {
+            if v.shown.is_multiple_of(150) {
                 crate::tlog!("VRENDER shown={} ms={:.2} {}x{}", v.shown, v.cost_ms, r.width, r.height);
             }
         }
