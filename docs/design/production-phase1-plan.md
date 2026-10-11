@@ -122,3 +122,13 @@ PROVISIONAL choices to confirm with the user: P10 delete beats edit, ties to hig
 wire bumped to chat/3, self/3, calls osvauld/p2p/1. P6 "calls not allowed" shown to any contact;
 message token renews within 30 days of expiry; downgrade not announced; re-add keeps the previous
 call permission; legacy v1 grants accepted as message+call.
+
+Phase 2 progress (2026-10-11 early): P10b merged `618cdb7` + follow-up `84f4f04`; P4 merged `474924d`;
+UI-W done on `ui/wire` (apps use the real block API, allow calls; desktop 57 tests); G1 group core
+merged `f3b901b`. Coordinator run on `phase2` @ `f3b901b`: proto + p2pcore 343 passed, 0 failed,
+16 ignored. Test build `test/phase2-ui` (= ui/wire + phase2 before G1) built, NOT installed (wire
+bump chat/3, self/3, calls p2p/1 needs both devices updated and likely a wipe; user is device-testing
+phase 1). Started: G-UI (`ui/groups-wire`, apps on the real group API), G2 (`grp/g2`: group store
+loss, own-device group sync, U3 chat requests via host, U12 host rotation).
+PROVISIONAL choices from G1 are listed in `docs/group-core.md` (creator's device first host; only
+owner/admins invite, 7-day bearer invites; owner can't be flagged or leave; removal final; etc.).
