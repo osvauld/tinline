@@ -55,6 +55,13 @@ def main():
     if a.debug_rust:
         gradle.append("-PrustRelease=false")
     lock = [sys.executable, str(ROOT / "scripts/buildlock.py"), "--who", "build_android", "--"]
+    # Static libaom (video encoder) per ABI from the pinned, verified source; gradle points cargo at
+    # these install dirs. Idempotent: an up-to-date build only re-checks the tarball hash.
+    env.setdefault("ANDROID_NDK_HOME", str(sdk / "ndk/28.2.13676358"))
+    triples = {"arm64-v8a": "aarch64-linux-android", "x86_64": "x86_64-linux-android"}
+    for abi in (a.abis or "x86_64,arm64-v8a").split(","):
+        subprocess.run(lock + [sys.executable, str(ROOT / "scripts/build_libaom.py"), "--target", triples[abi.strip()]],
+                       cwd=ROOT, env=env, check=True, stdout=subprocess.DEVNULL)
     subprocess.run(lock + gradle, cwd=ROOT / "android", env=env, check=True)
     if a.bundle:
         OUT.mkdir(exist_ok=True)

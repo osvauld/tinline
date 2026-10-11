@@ -186,6 +186,10 @@ impl GroupApi for Fake {
                 at: 5,
                 flags: (1..=3).map(|i| GroupFlag { by_did: format!("did:key:a{i}"), by_name: format!("A{i}"), at: i }).collect(),
             }),
+            am_call_host: false,
+            call_hosts: Vec::new(),
+            call_host_requests: Vec::new(),
+            call_host_requested_here: false,
         })
     }
     fn group_messages(&self, id: String, before: Option<String>, limit: u32) -> Result<GroupPage, Error> {

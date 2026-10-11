@@ -95,6 +95,7 @@ class CallController(private val app: P2pApp) {
         }
         testLog("incoming id=${call.callId} from=${call.peerName.ifBlank { call.peerDid }}")
         everActive = false; _ended.value = null
+        app.video.reset()
         _ui.value = CallUi(call, CallState.Ringing)
         CoreService.ensureRunning(app)
         Notifications.incoming(app, call)
@@ -148,6 +149,7 @@ class CallController(private val app: P2pApp) {
                 ringTimeout?.cancel()
                 stopRinging(); Notifications.cancelIncoming(app)
                 statsJob?.cancel(); audio.stop(); updateProximity(false)
+                app.video.reset()
                 val cur = _ui.value
                 if (cur != null && cur.info.callId == callId) {
                     val reason = state.reason
@@ -175,6 +177,7 @@ class CallController(private val app: P2pApp) {
 
     fun place(did: String): Result<CallInfo> = runCatching {
         if (!Perms.granted(app, Manifest.permission.RECORD_AUDIO)) throw MicPermissionNeeded()
+        app.video.reset()
         synchronized(lock) { early.clear(); placing = true }
         val info = try { app.node.call(did) } catch (e: Throwable) {
             synchronized(lock) { placing = false; early.clear() }
@@ -257,6 +260,12 @@ class CallController(private val app: P2pApp) {
         audio.muted = n.muted
     }
 
+    /** The call screen's remote-video renderer while it shows video; read by the stats log. */
+    @Volatile var renderer: RemoteRenderer? = null
+
+    /** Video calls are held away from the ear: the camera going on also moves audio to the speaker. */
+    fun speakerForVideo() { if (_ui.value?.speaker == false) toggleSpeaker() }
+
     fun toggleSpeaker() {
         val n = _ui.updateAndGet { it?.copy(speaker = !it.speaker) } ?: return
         audio.setSpeaker(n.speaker)
@@ -293,6 +302,7 @@ class CallController(private val app: P2pApp) {
                 delay(1000)
                 val s = try { app.node.callStats() } catch (_: Exception) { null } ?: continue
                 testLog(statsLine(s))
+                if (app.video.info.value?.negotiated == true) testLog(app.video.statsLine(renderer))
                 _ui.update { it?.copy(stats = s) }
             }
         }

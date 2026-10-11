@@ -777,6 +777,9 @@ pub enum Msg {
         /// The caller's signed `DeviceList` (see `sign_device_list`); absent from old peers.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         devices: Option<SignedBlob>,
+        /// The caller can do video in this call; absent = audio only.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        video: Option<VideoOffer>,
     },
     Ringing,
     Accept {
@@ -785,6 +788,10 @@ pub enum Msg {
         /// The callee's signed `DeviceList`, sent when the caller's copy is older.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         devices: Option<SignedBlob>,
+        /// Video for this call: only when the hello offered it and the callee takes it. Both
+        /// present = both sides run the video streams (`docs/video.md`); else audio only.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        video: Option<VideoOffer>,
     },
     /// Caller to a sibling device of the callee: stop ringing (design: device-linking §7).
     Cancel {
@@ -829,6 +836,19 @@ pub enum Msg {
         letter: String,
     },
     GroupLetterTaken,
+    /// Mid-call, only once both sides offered video: the sender's camera turned on or off.
+    /// Sent when the call goes active if the camera is on, then on every change.
+    Video {
+        camera: bool,
+    },
+}
+
+/// What a device can take in a video call. Its presence means AV1 decoding (`video` crate).
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub struct VideoOffer {
+    /// Largest picture (width x height) this device wants to receive; the peer's sender keeps
+    /// its resolution ladder at or below it.
+    pub max_pixels: u32,
 }
 
 /// The `Reject` reason a contact gets when it calls without being allowed to (no call token, or
@@ -1293,6 +1313,7 @@ pub fn call_hello(
         grant: grant_from_them,
         relay: None,
         devices: None,
+        video: None,
     }
 }
 

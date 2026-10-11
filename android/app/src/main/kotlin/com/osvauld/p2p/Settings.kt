@@ -89,6 +89,9 @@ fun SettingsScreen(
             SectionLabel("CALLS")
             ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = Icons.Rounded.Call,
                 trailing = { TinSwitch(available, { on -> scope.launch(Dispatchers.IO) { app.setAvailable(on) } }, "Available for calls") })
+            var video by remember { mutableStateOf(app.videoEnabled) }
+            ListItem("Video in calls", sub = if (video) "You can turn your camera on in a call" else "Calls are voice only", icon = Icons.Rounded.Videocam,
+                trailing = { TinSwitch(video, { on -> video = on; app.videoEnabled = on }, "Video in calls") })
             ListItem("Background & battery", onClick = onBattery, icon = Icons.Rounded.BatteryChargingFull,
                 sub = if (bgOk) "All set — calls will ring" else "Needs attention")
             SectionLabel("SECURITY")
@@ -297,12 +300,17 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
 fun LicencesScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
     val c = Tin.c
-    val fonts = remember {
-        listOf("Figtree-OFL.txt" to "Figtree (SIL Open Font License 1.1)", "IBMPlexMono-OFL.txt" to "IBM Plex Mono (SIL Open Font License 1.1)")
+    val texts = remember {
+        listOf(
+            "libaom-LICENSE.txt" to "libaom (BSD-2-Clause)", "libaom-PATENTS.txt" to "libaom (Alliance for Open Media Patent License 1.0)",
+            "rav1d-COPYING.txt" to "rav1d (BSD-2-Clause)",
+            "Figtree-OFL.txt" to "Figtree (SIL Open Font License 1.1)", "IBMPlexMono-OFL.txt" to "IBM Plex Mono (SIL Open Font License 1.1)",
+        )
             .map { (f, t) -> t to runCatching { ctx.assets.open("licenses/$f").bufferedReader().readText() }.getOrDefault("") }
     }
     val libs = listOf(
         "Tinline — GPL-3.0-or-later", "iroh and the Rust crates in the core — Apache-2.0 / MIT", "Opus — BSD-3-Clause",
+        "libaom AV1 encoder — BSD-2-Clause + AOMedia Patent License 1.0", "rav1d AV1 decoder — BSD-2-Clause",
         "ZXing and zxing-android-embedded — Apache-2.0", "JNA — Apache-2.0 / LGPL-2.1", "AndroidX, Jetpack Compose, Material Symbols — Apache-2.0",
         "BIP-39 English word list — MIT",
     )
@@ -310,7 +318,7 @@ fun LicencesScreen(onBack: () -> Unit) {
         TopBar("Open-source licences", onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             libs.forEach { Text(it, style = TinType.bodyL.copy(fontSize = 15.sp), color = c.ink) }
-            fonts.forEach { (t, body) ->
+            texts.forEach { (t, body) ->
                 Text(t, Modifier.padding(top = 12.dp), style = TinType.titleM, color = c.ink)
                 Text(body, style = TinType.mono.copy(fontSize = 11.sp, lineHeight = 15.sp, fontWeight = FontWeight.Normal), color = c.ink2)
             }

@@ -31,6 +31,8 @@ class P2pApp : Application(), NodeEvents {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     lateinit var calls: CallController
         private set
+    lateinit var video: CallVideo
+        private set
     lateinit var realChat: CoreChatSource
         private set
     /** Group chat on the core (GroupsCore.kt): the Groups tab. */
@@ -71,7 +73,10 @@ class P2pApp : Application(), NodeEvents {
         Notifications.createChannels(this)
         ChatMedia.clear(this)
         calls = CallController(this)
+        video = CallVideo(this)
         node = newNode()
+        node.setVideoEvents(video)
+        node.setVideoEnabled(videoEnabled)
         links = LinkController(this)
         node.setLinkEvents(links)
         realChat = CoreChatSource(this).also { it.attach() }
@@ -152,6 +157,12 @@ class P2pApp : Application(), NodeEvents {
     }
 
     private val lastPrefs by lazy { getSharedPreferences("accounts", Context.MODE_PRIVATE) }
+    private val callPrefs by lazy { getSharedPreferences("calls", Context.MODE_PRIVATE) }
+
+    /** Offer and take video in calls (Settings); the core's default is on and it isn't stored there. */
+    var videoEnabled: Boolean
+        get() = callPrefs.getBoolean("video", true)
+        set(on) { callPrefs.edit().putBoolean("video", on).apply(); node.setVideoEnabled(on) }
 
     fun currentDid(): String? = try { node.profile()?.did } catch (_: Exception) { null }
 

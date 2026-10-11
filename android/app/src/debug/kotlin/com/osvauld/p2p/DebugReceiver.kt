@@ -58,7 +58,57 @@ class DebugReceiver : BroadcastReceiver() {
                 testLog("status online=${s.online} relay=${s.relay} id=${s.endpointId}")
             }
             "lockstate" -> testLog("lockstate=${node.lockState()}")
+            "video_bench" -> {
+                // Codec timing inside the app process. `path` is relative to filesDir (push with
+                // run-as); `prio` is an android.os.Process thread priority (e.g. -8 = display),
+                // inherited by the encoder's worker threads; `pin` = fast cores only.
+                val path = i.getStringExtra("path")?.let { java.io.File(app.filesDir, it).absolutePath }
+                android.os.Process.setThreadPriority(i.getIntExtra("prio", 0))
+                val out = uniffi.p2pcore.videoBench(path, i.getIntExtra("frames", 89).toUInt(), i.getIntExtra("threads", 4).toUInt(), i.getBooleanExtra("pin", false))
+                out.lines().filter { it.isNotBlank() }.forEach { testLog("video_bench $it") }
+                testLog("video_bench done")
+            }
             "stats" -> app.calls.logStats()
+            // Call video: state and counters (also logged every second during a video call).
+            "video_stats" -> testLog(app.video.statsLine(app.calls.renderer))
+            // Camera on/off as the button does (permission must already be granted); `on=0` = off.
+            "camera" -> {
+                val on = i.getStringExtra("on") != "0"
+                app.video.setCamera(on)
+                if (on) app.calls.speakerForVideo()
+                testLog("camera on=$on problem=${app.video.problem.value}")
+            }
+            // Frames through VideoJni (`jni=1`, default) or UniFFI (`jni=0`), to compare.
+            "video_path" -> { app.video.io.jni = i.getStringExtra("jni") != "0"; testLog("video_path jni=${app.video.io.jni}") }
+            // Push cost per path without a call (the planes are copied, then dropped): 640x480
+            // NV21-shaped direct buffers like CameraX's, `n` pushes each way; median ms.
+            "video_io_bench" -> Thread {
+                val n = i.getStringExtra("n")?.toIntOrNull() ?: 200
+                val (w, h) = 640 to 480
+                val y = java.nio.ByteBuffer.allocateDirect(w * h)
+                val vu = java.nio.ByteBuffer.allocateDirect(w * h / 2)
+                val v = vu.duplicate().apply { limit(w * h / 2 - 1) }.slice()
+                val u = vu.duplicate().apply { position(1) }.slice()
+                val io = app.video.io
+                val was = io.jni
+                for (jni in listOf(false, true, false, true)) {
+                    io.jni = jni
+                    val t = LongArray(n)
+                    for (k in 0 until n) {
+                        val t0 = System.nanoTime()
+                        io.pushPlanes(w, h, 90, y, w, u, v, w, 2)
+                        t[k] = System.nanoTime() - t0
+                    }
+                    t.sort()
+                    testLog("video_io_bench path=${if (jni) "jni" else "uniffi"} push_ms_median=${"%.3f".format(t[n / 2] / 1e6)} p90=${"%.3f".format(t[n * 9 / 10] / 1e6)} copy_ms=${"%.3f".format(io.packNs / 1e6)}")
+                }
+                io.jni = was
+                testLog("video_io_bench done")
+            }.start()
+            "flip" -> { app.video.flip(); testLog("flip front=${app.video.front.value}") }
+            "video_enabled" -> { app.videoEnabled = i.getStringExtra("on") != "0"; testLog("video_enabled=${app.videoEnabled}") }
+            // Brings the call screen up (the app must be in the foreground to start activities).
+            "callscreen" -> app.startActivity(android.content.Intent(app, CallActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
             "avail" -> {
                 val on = i.getStringExtra("on") != "0"
                 val mins = i.getStringExtra("mins")?.toLongOrNull()

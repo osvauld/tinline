@@ -22,13 +22,20 @@
 //!
 //! AUDIO: `--tone HZ` or `--wav in.wav` (48 kHz mono) as the mic; `--record out.wav` saves
 //! what was heard. Each second of a call prints a `STATS` line; the end prints `RESULT`.
+//!
+//! VIDEO (calls): `--video-pattern WxH` turns the camera on and sends `video::Pattern` at 30 fps;
+//! `--video-snap out.ppm` saves the last decoded peer frame; `--no-video` refuses video. With
+//! video, each second also prints a `VIDEO` line and the end a `VRESULT` line.
 
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{
+    CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus, VideoEvents,
+    VideoInfo,
+};
 
 enum Event {
     Incoming(CallInfo),
@@ -127,6 +134,9 @@ struct Opts {
     wait: u64,
     duration_ms: u32,
     listen_for: Option<u64>,
+    video: Option<(usize, usize)>,
+    video_snap: Option<PathBuf>,
+    no_video: bool,
 }
 
 fn parse() -> Result<Opts, String> {
@@ -151,6 +161,13 @@ fn parse() -> Result<Opts, String> {
     let wait = take("--wait")?.map(|v| v.parse().map_err(|_| "bad --wait")).transpose()?.unwrap_or(20);
     let duration_ms = take("--duration-ms")?.map(|v| v.parse().map_err(|_| "bad --duration-ms")).transpose()?.unwrap_or(1000);
     let listen_for = take("--for")?.map(|v| v.parse().map_err(|_| "bad --for")).transpose()?;
+    let video = take("--video-pattern")?
+        .map(|v| {
+            let (w, h) = v.split_once('x').ok_or("bad --video-pattern")?;
+            Ok::<_, String>((w.parse().map_err(|_| "bad width")?, h.parse().map_err(|_| "bad height")?))
+        })
+        .transpose()?;
+    let video_snap = take("--video-snap")?.map(PathBuf::from);
     let mut flag = |name: &str| match args.iter().position(|a| a == name) {
         Some(i) => {
             args.remove(i);
@@ -160,7 +177,11 @@ fn parse() -> Result<Opts, String> {
     };
     let verbose = flag("-v");
     let once = flag("--once");
-    Ok(Opts { data, passphrase, tone, wav, record, secs, answer_after, rest: args, verbose, once, second, wait, duration_ms, listen_for })
+    let no_video = flag("--no-video");
+    Ok(Opts {
+        data, passphrase, tone, wav, record, secs, answer_after, rest: args, verbose, once, second, wait, duration_ms,
+        listen_for, video, video_snap, no_video,
+    })
 }
 
 fn main() {
@@ -186,6 +207,10 @@ fn run() -> Result<(), String> {
         }
     }
     node.set_chat_events(Arc::new(ChatPrinter::default()));
+    node.set_video_enabled(!o.no_video);
+    if o.video.is_some() {
+        node.set_video_events(Arc::new(VideoPrinter));
+    }
     match rest.as_slice() {
         ["link-serve"] => link_serve(&node, &o, rx)?,
         ["chat-send", who, text] => {
@@ -327,7 +352,7 @@ fn start_online(node: &Node) -> Result<(), String> {
 
 /// Runs the 20 ms audio clock for one active call until it ends or `--secs` pass, then hangs
 /// up and prints a summary.
-fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) -> Result<Option<String>, String> {
+fn converse(node: &Arc<Node>, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) -> Result<Option<String>, String> {
     let mut swapped = None;
     node.set_test_tone(o.tone);
     let mic: Vec<i16> = match &o.wav {
@@ -336,6 +361,8 @@ fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) ->
     };
     let mut heard: Vec<i16> = Vec::new();
     let frame = audio::FRAME;
+    let pusher = o.video.map(|size| VideoPusher::start(node, size));
+    let mut vin = VideoIn::default();
     let start = Instant::now();
     let mut next = start;
     let mut tick = 0usize;
@@ -349,7 +376,13 @@ fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) ->
         pcm.resize(frame, 0);
         node.push_mic(pcm);
         heard.extend(node.pull_speaker());
+        if pusher.is_some() {
+            vin.pull(node);
+        }
         tick += 1;
+        if pusher.is_some() && tick.is_multiple_of(50) {
+            video_line("VIDEO", node, &vin);
+        }
         if tick.is_multiple_of(50)
             && let Some(s) = node.call_stats()
         {
@@ -389,6 +422,13 @@ fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) ->
             std::thread::sleep(wait);
         }
     }
+    if let Some(p) = pusher {
+        video_line("VRESULT", node, &vin);
+        p.stop();
+        if let (Some(path), Some(f)) = (&o.video_snap, &vin.last) {
+            write_ppm(path, f)?;
+        }
+    }
     if ended.is_none() {
         let _ = node.hangup(call_id.to_string());
         // Let the hangup reach the peer.
@@ -421,6 +461,96 @@ fn converse(node: &Node, o: &Opts, rx: &mpsc::Receiver<Event>, call_id: &str) ->
         s.as_ref().map(|s| s.concealed).unwrap_or(0),
     );
     Ok(swapped)
+}
+
+struct VideoPrinter;
+
+impl VideoEvents for VideoPrinter {
+    fn on_video_state(&self, i: VideoInfo) {
+        println!("VSTATE negotiated={} local={} remote={}", i.negotiated, i.local_camera, i.remote_camera);
+    }
+}
+
+/// Feeds `video::Pattern` frames at 30 fps from its own thread (a frame costs a few ms to draw).
+struct VideoPusher {
+    stop: Arc<std::sync::atomic::AtomicBool>,
+    thread: std::thread::JoinHandle<()>,
+}
+
+impl VideoPusher {
+    fn start(node: &Arc<Node>, (w, h): (usize, usize)) -> Self {
+        if let Err(e) = node.set_camera(true) {
+            eprintln!("set_camera: {e}");
+        }
+        let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let (node, flag) = (node.clone(), stop.clone());
+        let thread = std::thread::spawn(move || {
+            let mut pat = video::Pattern::new(w, h);
+            let mut next = Instant::now();
+            while !flag.load(std::sync::atomic::Ordering::SeqCst) {
+                let f = pat.next_frame();
+                node.push_video_frame(w as u32, h as u32, 0, f.data);
+                next += Duration::from_micros(33_333);
+                if let Some(d) = next.checked_duration_since(Instant::now()) {
+                    std::thread::sleep(d);
+                }
+            }
+        });
+        Self { stop, thread }
+    }
+
+    fn stop(self) {
+        self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
+        let _ = self.thread.join();
+    }
+}
+
+#[derive(Default)]
+struct VideoIn {
+    pulled: u64,
+    last: Option<p2pcore::VideoFrame>,
+}
+
+impl VideoIn {
+    fn pull(&mut self, node: &Node) {
+        if let Some(f) = node.pull_video_frame() {
+            self.pulled += 1;
+            self.last = Some(f);
+        }
+    }
+}
+
+fn video_line(tag: &str, node: &Node, vin: &VideoIn) {
+    let s = node.video_stats().unwrap_or_default();
+    let i = node.video_info();
+    let size = vin.last.as_ref().map(|f| format!("{}x{}", f.width, f.height)).unwrap_or_else(|| "-".into());
+    println!(
+        "{tag} negotiated={} local={} remote={} sent={} keys={} send={}x{} kbps={} enc_ms={:.1} decoded={} errors={} recv={}x{} pulled={} last={size}",
+        i.as_ref().is_some_and(|i| i.negotiated),
+        i.as_ref().is_some_and(|i| i.local_camera),
+        i.as_ref().is_some_and(|i| i.remote_camera),
+        s.frames_sent, s.keyframes_sent, s.send_width, s.send_height, s.bitrate_bps / 1000, s.encode_ms,
+        s.frames_decoded, s.decode_errors, s.recv_width, s.recv_height, vin.pulled,
+    );
+}
+
+/// The frame as a binary PPM (BT.601 limited range).
+fn write_ppm(p: &PathBuf, f: &p2pcore::VideoFrame) -> Result<(), String> {
+    let (w, h) = (f.width as usize, f.height as usize);
+    let cw = w.div_ceil(2);
+    let (y, uv) = f.data.split_at(w * h);
+    let (u, v) = uv.split_at(cw * h.div_ceil(2));
+    let mut out = format!("P6\n{w} {h}\n255\n").into_bytes();
+    for r in 0..h {
+        for c in 0..w {
+            let yy = 1.164 * (y[r * w + c] as f32 - 16.0);
+            let (uu, vv) = (u[r / 2 * cw + c / 2] as f32 - 128.0, v[r / 2 * cw + c / 2] as f32 - 128.0);
+            for x in [yy + 1.596 * vv, yy - 0.392 * uu - 0.813 * vv, yy + 2.017 * uu] {
+                out.push(x.clamp(0.0, 255.0) as u8);
+            }
+        }
+    }
+    std::fs::write(p, out).map_err(|e| e.to_string())
 }
 
 fn read_wav(p: &PathBuf) -> Result<Vec<i16>, String> {

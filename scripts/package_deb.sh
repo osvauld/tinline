@@ -21,8 +21,15 @@ for tool in dpkg-deb dpkg-shlibdeps; do
   command -v "$tool" >/dev/null || { echo "missing $tool; build on Debian/Ubuntu with dpkg-dev installed" >&2; exit 1; }
 done
 
+# Static libaom (video encoder) from the pinned, verified source: no libaom.so at runtime.
+HOST_TRIPLE="$(rustc -vV | sed -n 's/^host: //p')"
+AOM_PREFIX="$(python3 scripts/buildlock.py --who deb-package -- python3 scripts/build_libaom.py --target host | tail -n1)"
+export "AOM_DIR_${HOST_TRIPLE//-/_}=$AOM_PREFIX" AOM_STATIC_REQUIRED=1
 python3 scripts/buildlock.py --who deb-package -- \
   cargo build --locked --release -p desktop --target-dir target/distribution
+if readelf -d target/distribution/release/p2p-desktop | grep -q 'NEEDED.*libaom'; then
+  echo "p2p-desktop links libaom dynamically; it must be static" >&2; exit 1
+fi
 
 PKGROOT="target/package/deb/tinline_${VERSION}_${DEB_ARCH}"
 rm -rf "$PKGROOT"
@@ -36,6 +43,7 @@ install -m 0755 target/distribution/release/p2p-desktop "$PKGROOT/usr/bin/tinlin
 install -m 0644 packaging/linux/tinline.desktop "$PKGROOT/usr/share/applications/tinline.desktop"
 install -m 0644 packaging/linux/tinline.png "$PKGROOT/usr/share/icons/hicolor/512x512/apps/tinline.png"
 install -m 0644 LICENSE "$PKGROOT/usr/share/doc/tinline/copyright"
+install -Dm 0644 -t "$PKGROOT/usr/share/doc/tinline/third-party" packaging/licenses/*.txt
 
 # Resolve versioned runtime dependencies against the build distro, not a guessed list.
 DEPS_DIR="$(mktemp -d)"

@@ -71,6 +71,10 @@ dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     // JVM unit tests (src/test): the placeholder groups & privacy state machine.
     testImplementation("junit:junit:4.13.2")
+    // Call video: ImageAnalysis (YUV_420_888 to the core) + Preview (self-view).
+    implementation("androidx.camera:camera-camera2:1.4.2")
+    implementation("androidx.camera:camera-lifecycle:1.4.2")
+    implementation("androidx.camera:camera-view:1.4.2")
 }
 
 // ---- Rust (cargo-ndk + uniffi-bindgen) wiring ----
@@ -102,10 +106,17 @@ val rustInputs = files(
     fileTree(File(repoRoot, "crates")) { exclude("**/target/**") },
     File(repoRoot, "Cargo.toml"), File(repoRoot, "Cargo.lock"),
 )
+// Static libaom per ABI (video encoder), built by scripts/build_libaom.py; the video crate's
+// build.rs reads AOM_DIR_<target triple>.
+val aomRoot = findProperty("aomRoot") as String? ?: "${System.getProperty("user.home")}/build-cache/p2p_chat/libaom"
+val aomTag = "v3.14.1"
+val abiTriple = mapOf("arm64-v8a" to "aarch64-linux-android", "x86_64" to "x86_64-linux-android")
 val envMap = mapOf(
     "ANDROID_NDK_HOME" to ndkDir,
     "PATH" to "$cargoBin:${System.getenv("PATH")}",
-)
+) + rustAbis.mapNotNull { abiTriple[it] }.associate {
+    "AOM_DIR_${it.replace('-', '_')}" to "$aomRoot/install-$aomTag-$it"
+}
 
 val cargoNdkBuild = tasks.register<RustExec>("cargoNdkBuild") {
     workDir.set(repoRoot.absolutePath)

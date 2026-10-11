@@ -35,7 +35,7 @@ class GroupsCoreTest {
 
     private fun detail(role: CoreRole, members: List<CoreMember>, hosts: List<GroupHost> = emptyList(), amHost: Boolean = false, removal: GroupRemoval? = null,
                        hostRequests: List<GroupHost> = emptyList()) =
-        GroupDetail("g", "Hike", members.first { it.isOwner }.did, role, amHost, members, hosts, emptyList(), hostRequests, hostRequests.any { it.isMe }, removal)
+        GroupDetail("g", "Hike", members.first { it.isOwner }.did, role, amHost, members, hosts, emptyList(), hostRequests, hostRequests.any { it.isMe }, removal, false, emptyList(), emptyList(), false)
 
     private fun summary(id: String, role: CoreRole, unread: Int, last: GroupMessage?) =
         GroupSummary(id, "G $id", role, 3u, 1u, false, true, last, unread.toUInt())

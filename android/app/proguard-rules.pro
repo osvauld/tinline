@@ -9,3 +9,5 @@
 -keep class com.osvauld.p2p.P2pApp { *; }
 -keep class * implements uniffi.p2pcore.NodeEvents { *; }
 # zxing-android-embedded uses reflection-free code; nothing else to keep.
+# JNI entry points in libp2pcore are named after this class and its methods.
+-keep class com.osvauld.p2p.VideoJni { native <methods>; }

@@ -19,6 +19,9 @@ use groups::{GroupsUi, Gm};
 #[path = "group_live.rs"]
 mod group_live;
 use group_live::{GroupsLive, Lm};
+#[path = "vcall.rs"]
+mod vcall;
+use vcall::{VideoUi, Vm};
 use link::{LinkState, Role, UnlinkedInfo};
 
 use chat::{ChatState, Cm};
@@ -72,6 +75,9 @@ struct Settings {
     /// The groups & privacy preview switch; None follows the build (on in debug/test-hooks).
     #[serde(default)]
     groups_preview: Option<bool>,
+    /// Calls are audio only (no video offered or taken).
+    #[serde(default)]
+    no_video: bool,
 }
 
 /// Onboarding in progress between creating the identity and the first Home.
@@ -256,6 +262,7 @@ struct App {
     /// Kept, read-only chats of people who are no longer contacts (their block deleted our
     /// entry for them, U20), as contact-shaped rows for the chat screens; never real contacts.
     kept: Vec<Contact>,
+    video: VideoUi,
 }
 
 /// Where a click on a notification should lead.
@@ -415,6 +422,7 @@ enum Msg {
     Shot(window::Screenshot),
     Groups(Gm),
     Live(Lm),
+    Video(Vm),
 }
 
 /// `Ev` carries non-Clone data from the core; Debug/Clone for the message type go through here.
@@ -712,6 +720,7 @@ impl App {
             live: GroupsLive::default(),
             blocks: Default::default(),
             kept: Vec::new(),
+            video: VideoUi::default(),
             node,
         };
         if has && crate::test_env("P2P_SCREEN").is_some_and(|v| v == "settings") {
@@ -720,6 +729,7 @@ impl App {
         }
         *app.ctl.devices.lock().unwrap() = (app.settings.input.clone(), app.settings.output.clone());
         *app.ctl.tone.lock().unwrap() = app.tone_hz();
+        app.node.set_video_enabled(!app.settings.no_video);
         let mut tasks = vec![
             system::theme().map(Msg::Theme),
         ];
@@ -909,6 +919,7 @@ impl App {
                     }
                 }
                 self.call = None;
+                self.video_reset();
                 // End & answer: straight on to the new call, no "call ended" screen in between.
                 if let Some(next) = self.takeover.take() {
                     self.call = Some(CallView { info: next, state: CallState::Ringing, answered: false, stats: None });
@@ -1129,7 +1140,8 @@ impl App {
                 if let Some(c) = self.call.as_mut() {
                     c.stats = self.node.call_stats();
                 }
-                return self.link_drive();
+                let auto = self.auto_call();
+                return Task::batch([self.link_drive(), auto]);
             }
             Msg::WindowOpened(id) => return window::scale_factor(id).map(Msg::Scale),
             Msg::Scale(f) => ui::set_scale(f),
@@ -2042,6 +2054,7 @@ impl App {
             | Msg::UnlinkGo
             | Msg::Unlinked(_)
             | Msg::UnlinkedOk) => return self.link_update(m),
+            Msg::Video(m) => return self.video_update(m),
             Msg::Shot(shot) => {
                 if let Some(path) = crate::test_env("P2P_SHOT") {
                     let mut ok = false;
@@ -2173,6 +2186,7 @@ impl App {
                 }
             }
             Ev::AudioNotice(m) => self.notice = Some(m),
+            Ev::Video(info) => return self.video_state(info),
             Ev::Tray(TrayCmd::Show) => return self.show_window(),
             Ev::Open(target) => {
                 let mut tasks = vec![self.show_window()];
@@ -2205,6 +2219,11 @@ impl App {
                 iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::Chat(Cm::DropHover(false))),
                 _ => None,
             }),
+            if self.video_ticking() {
+                iced::time::every(Duration::from_millis(33)).map(|_| Msg::Video(Vm::Tick))
+            } else {
+                Subscription::none()
+            },
             if self.chat.rec.is_some() || self.chat.player.is_some() {
                 iced::time::every(Duration::from_millis(100)).map(|_| Msg::Chat(Cm::Nop))
             } else {
