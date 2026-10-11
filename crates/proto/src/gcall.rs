@@ -149,6 +149,57 @@ pub struct End {
     pub next_host: Option<HostRef>,
 }
 
+/// The starter asks one call-host candidate to host a new call (§2.3); relayed through the
+/// chat hosts to that device. Signed by `starter_did`. `backups` go into the CallStart.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HostRequest {
+    pub v: u8,
+    pub gid: String,
+    pub call_id: String,
+    pub starter_did: String,
+    /// The device asked.
+    pub host: HostRef,
+    pub backups: Vec<HostRef>,
+    /// Participants the starter expects (2..=`MAX_PARTICIPANTS`).
+    pub expected: u8,
+    pub issued_ms: u64,
+}
+
+/// The asked device declines a `HostRequest` (busy, paused, conditions, a phone whose user is
+/// not in the call); relayed back to the starter. Signed by `host.holder_did`. A device that
+/// accepts answers with the call's `CallStart` instead.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HostRefusal {
+    pub v: u8,
+    pub gid: String,
+    pub call_id: String,
+    pub starter_did: String,
+    pub host: HostRef,
+    pub reason: String,
+}
+
+/// A device's group endpoint note (§9 G2): "group endpoint `endpoint` is device `dev` of
+/// `did`", signed by `did`. Sent with every `Join`, so a call host that holds no member
+/// directory (it is not a chat host) can still check the connecting endpoint. Both keys are
+/// base64url of 32 bytes. Only call hosts ever see it (U7).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GroupNote {
+    pub v: u8,
+    pub did: String,
+    pub dev: String,
+    pub endpoint: String,
+    pub issued_ms: u64,
+}
+
+impl GroupNote {
+    pub fn dev_bytes(&self) -> Option<[u8; 32]> {
+        dec32(&self.dev).ok()
+    }
+    pub fn endpoint_bytes(&self) -> Option<[u8; 32]> {
+        dec32(&self.endpoint).ok()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "t", rename_all = "snake_case")]
 enum Claim {
@@ -157,6 +208,9 @@ enum Claim {
     Roster(Roster),
     Leave(Leave),
     End(End),
+    HostRequest(HostRequest),
+    HostRefusal(HostRefusal),
+    Note(GroupNote),
 }
 
 impl Claim {
@@ -167,6 +221,9 @@ impl Claim {
             Claim::Roster(c) => &c.host_did,
             Claim::Leave(c) => &c.did,
             Claim::End(c) => &c.host_did,
+            Claim::HostRequest(c) => &c.starter_did,
+            Claim::HostRefusal(c) => &c.host.holder_did,
+            Claim::Note(c) => &c.did,
         }
     }
 }
@@ -333,6 +390,34 @@ pub fn open_end(blob: &SignedBlob) -> Result<End> {
         return Err(Error::Decode);
     }
     Ok(c)
+}
+
+pub fn sign_host_request(id: &Identity, req: HostRequest) -> SignedBlob {
+    sign_claim(id, &Claim::HostRequest(req))
+}
+
+/// Signature (by `starter_did`), version and bounds.
+pub fn open_host_request(blob: &SignedBlob) -> Result<HostRequest> {
+    todo!("{blob:?}")
+}
+
+pub fn sign_host_refusal(id: &Identity, refusal: HostRefusal) -> SignedBlob {
+    sign_claim(id, &Claim::HostRefusal(refusal))
+}
+
+/// Signature (by `host.holder_did`), version and bounds.
+pub fn open_host_refusal(blob: &SignedBlob) -> Result<HostRefusal> {
+    todo!("{blob:?}")
+}
+
+pub fn sign_note(id: &Identity, dev: &[u8; 32], endpoint: &[u8; 32], issued_ms: u64) -> SignedBlob {
+    let note = GroupNote { v: GCALL_VERSION, did: id.did().into(), dev: enc(dev), endpoint: enc(endpoint), issued_ms };
+    sign_claim(id, &Claim::Note(note))
+}
+
+/// Signature (by `did`), version and the two 32-byte keys.
+pub fn open_note(blob: &SignedBlob) -> Result<GroupNote> {
+    todo!("{blob:?}")
 }
 
 // ---- control frames ----------------------------------------------------------------
@@ -552,6 +637,56 @@ mod tests {
         let mut bad = start(&h, &cid);
         bad.v = 2;
         assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::UnknownVersion));
+    }
+
+    fn request(starter: &Identity, host: &Identity, cid: &str) -> HostRequest {
+        HostRequest {
+            v: GCALL_VERSION,
+            gid: gid(),
+            call_id: cid.into(),
+            starter_did: starter.did().into(),
+            host: host_ref(host),
+            backups: vec![host_ref(&ident(90)), host_ref(&ident(91))],
+            expected: 12,
+            issued_ms: 1_800_000_000_000,
+        }
+    }
+
+    // GA-I1: the starter's CallHostRequest, the candidate's refusal and the group endpoint note
+    // round-trip, are bound to their signer and kind, and are bounded.
+    #[test]
+    fn gcall_host_request_refusal_and_note_verify_and_are_bounded() {
+        let a = ident(1);
+        let h = ident(2);
+        let cid = new_call_id();
+        let r = request(&a, &h, &cid);
+        let rb = sign_host_request(&a, r.clone());
+        assert_eq!(open_host_request(&rb).unwrap(), r);
+        // Not by the starter; not another kind.
+        assert_eq!(open_host_request(&sign_blob(&h, GCALL_DOMAIN, &Claim::HostRequest(r.clone()))), Err(Error::BadSignature));
+        assert_eq!(open_start(&rb), Err(Error::UnexpectedMessage));
+        assert_eq!(open_host_refusal(&rb), Err(Error::UnexpectedMessage));
+        for bad in [
+            HostRequest { backups: vec![host_ref(&ident(90)); 3], ..r.clone() },
+            HostRequest { expected: 1, ..r.clone() },
+            HostRequest { expected: 13, ..r.clone() },
+            HostRequest { call_id: "x".into(), ..r.clone() },
+            HostRequest { host: HostRef { permit_digest: String::new(), ..host_ref(&h) }, ..r.clone() },
+        ] {
+            assert_eq!(open_host_request(&sign_host_request(&a, bad)), Err(Error::Decode));
+        }
+        let f = HostRefusal { v: GCALL_VERSION, gid: gid(), call_id: cid.clone(), starter_did: a.did().into(), host: host_ref(&h), reason: "busy".into() };
+        let fb = sign_host_refusal(&h, f.clone());
+        assert_eq!(open_host_refusal(&fb).unwrap(), f);
+        assert_eq!(open_host_refusal(&sign_blob(&a, GCALL_DOMAIN, &Claim::HostRefusal(f.clone()))), Err(Error::BadSignature));
+        let long = HostRefusal { reason: "r".repeat(MAX_TEXT + 1), ..f };
+        assert_eq!(open_host_refusal(&sign_host_refusal(&h, long)), Err(Error::Decode));
+        let nb = sign_note(&a, &[7; 32], &[9; 32], 5);
+        let n = open_note(&nb).unwrap();
+        assert_eq!((n.did.as_str(), n.dev_bytes(), n.endpoint_bytes()), (a.did(), Some([7; 32]), Some([9; 32])));
+        assert_eq!(open_join(&nb), Err(Error::UnexpectedMessage));
+        let short = GroupNote { endpoint: enc([1u8; 31]), ..n };
+        assert_eq!(open_note(&sign_blob(&a, GCALL_DOMAIN, &Claim::Note(short))), Err(Error::Decode));
     }
 
     #[test]
