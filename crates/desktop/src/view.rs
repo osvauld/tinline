@@ -4,9 +4,9 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use iced::widget::{
-    button, canvas, checkbox, column, container, pick_list, row, text, text_input, toggler, Space,
+    button, canvas, checkbox, column, container, image, pick_list, row, stack, text, text_input, toggler, Space,
 };
-use iced::{Alignment, Border, Color, Element, Fill, Length, Padding, Point, Rectangle, Renderer, Size, Theme};
+use iced::{Alignment, Border, Color, ContentFit, Element, Fill, Length, Padding, Point, Rectangle, Renderer, Size, Theme};
 use p2pcore::{CallRecord, CallState, LockState};
 
 use super::{
@@ -1409,6 +1409,11 @@ impl App {
                     if self.avail.available { "Your line is open" } else { "Calls won\u{2019}t ring until you turn it back on" },
                     toggler(self.avail.available).on_toggle(|on| Msg::SetAvail(on, None)).style(ui::toggle_style(t)).into(),
                 ),
+                line(t,
+                    "Video in calls",
+                    "Your camera stays off until you turn it on in the call",
+                    toggler(!self.settings.no_video).on_toggle(|on| Msg::Video(super::Vm::Enabled(on))).style(ui::toggle_style(t)).into(),
+                ),
             ]
             .spacing(12)
             .into(),
@@ -1557,8 +1562,11 @@ impl App {
 
     // ---- calls ----
 
-    fn call_shell<'a>(&'a self, t: Tok, top: El<'a>, middle: El<'a>, bottom: El<'a>) -> El<'a> {
-        container(
+    /// `fill`: the middle takes all the height (the video stage) instead of floating centred.
+    fn call_shell<'a>(&'a self, t: Tok, top: El<'a>, middle: El<'a>, bottom: El<'a>, fill: bool) -> El<'a> {
+        let col = if fill {
+            column![container(top).center_x(Fill), middle, bottom, self.notice_bar(t)]
+        } else {
             column![
                 container(top).center_x(Fill),
                 Space::new().height(Fill),
@@ -1567,10 +1575,9 @@ impl App {
                 bottom,
                 self.notice_bar(t),
             ]
-            .spacing(16)
-            .align_x(Alignment::Center),
-        )
-        .padding(40)
+        };
+        container(col.spacing(16).align_x(Alignment::Center))
+        .padding(if fill { 24 } else { 40 })
         .width(Fill)
         .height(Fill)
         .center_x(Fill)
@@ -1668,14 +1675,27 @@ impl App {
         } else {
             Space::new().into()
         };
-        let middle = column![
-            avatar(t, &c.info.peer_name, &c.info.peer_did, 128.0),
-            bold(c.info.peer_name.clone(), 32.0, t.ink),
-            status,
-            note,
-        ]
-        .spacing(12)
-        .align_x(Alignment::Center);
+        let live = active && self.video.live();
+        let middle: El = if live {
+            column![
+                self.video_stage(t, &c.info),
+                row![bold(c.info.peer_name.clone(), 20.0, t.ink), status].spacing(14).align_y(Alignment::Center),
+            ]
+            .spacing(12)
+            .align_x(Alignment::Center)
+            .height(Fill)
+            .into()
+        } else {
+            column![
+                avatar(t, &c.info.peer_name, &c.info.peer_did, 128.0),
+                bold(c.info.peer_name.clone(), 32.0, t.ink),
+                status,
+                note,
+            ]
+            .spacing(12)
+            .align_x(Alignment::Center)
+            .into()
+        };
 
         let muted = self.ctl.muted.load(Ordering::Relaxed);
         let bottom: El = if incoming_ring {
@@ -1686,19 +1706,33 @@ impl App {
             .spacing(48)
             .into()
         } else {
-            row![
-                self.round_btn(
+            let mut r = row![self.round_btn(
+                t,
+                Kind::Quiet,
+                if muted { Icon::MicOff } else { Icon::Mic },
+                if muted { "Muted" } else { "Mute" },
+                active.then_some(Msg::ToggleMute),
+                muted
+            )];
+            if active && self.video.negotiated() {
+                let on = self.video.local_on();
+                let label = match (self.video.source.as_ref(), on) {
+                    (Some(None), _) => "No camera",
+                    (_, true) => "Camera on",
+                    _ => "Camera",
+                };
+                r = r.push(self.round_btn(
                     t,
                     Kind::Quiet,
-                    if muted { Icon::MicOff } else { Icon::Mic },
-                    if muted { "Muted" } else { "Mute" },
-                    active.then_some(Msg::ToggleMute),
-                    muted
-                ),
-                self.round_btn(t, Kind::End, Icon::PhoneOff, if active { "Hang up" } else { "Cancel" }, Some(Msg::Hangup), false),
-            ]
-            .spacing(48)
-            .into()
+                    if on { Icon::Video } else { Icon::VideoOff },
+                    label,
+                    self.video.has_camera().then_some(Msg::Video(super::Vm::ToggleCamera)),
+                    on,
+                ));
+            }
+            r.push(self.round_btn(t, Kind::End, Icon::PhoneOff, if active { "Hang up" } else { "Cancel" }, Some(Msg::Hangup), false))
+                .spacing(48)
+                .into()
         };
         let hint = if incoming_ring {
             "Enter answers \u{b7} Esc declines"
@@ -1708,7 +1742,7 @@ impl App {
             "Ctrl E cancels"
         };
         let mut bottom_col = column![bottom].spacing(18).align_x(Alignment::Center);
-        if active {
+        if active && !live {
             let (ins, outs) = &self.devices;
             let opts = |v: &Vec<String>| {
                 let mut o = vec![DEFAULT_LABEL.to_string()];
@@ -1733,11 +1767,36 @@ impl App {
             bottom_col = bottom_col.push(tx("Device changes apply from the next call.", 12.0, t.ink2));
         }
         bottom_col = bottom_col.push(tx(hint, 12.0, t.ink2));
-        let shell = self.call_shell(t, top, middle.into(), bottom_col.into());
+        let shell = self.call_shell(t, top, middle, bottom_col.into(), live);
         match &self.waiting {
             Some(w) => column![self.waiting_banner(t, w), shell].into(),
             None => shell,
         }
+    }
+
+    /// The peer's video large, ours mirrored in the corner; their avatar while their camera is off.
+    fn video_stage<'a>(&'a self, t: Tok, peer: &p2pcore::CallInfo) -> El<'a> {
+        let v = &self.video;
+        let main: El = match (&v.remote, v.remote_on()) {
+            (Some(h), true) => image(h.clone()).content_fit(ContentFit::Contain).width(Fill).height(Fill).into(),
+            (_, on) => column![
+                avatar(t, &peer.peer_name, &peer.peer_did, 112.0),
+                tx(if on { "Video is starting\u{2026}" } else { "Camera off" }, 15.0, t.ink2),
+            ]
+            .spacing(14)
+            .align_x(Alignment::Center)
+            .into(),
+        };
+        let mut st = stack![container(main).center_x(Fill).center_y(Fill).style(ui::plain(t.surface2, 16.0))];
+        if let Some(h) = v.local.as_ref().filter(|_| v.local_on()) {
+            st = st.push(
+                container(image(h.clone()).width(220).border_radius(10.0))
+                    .align_right(Fill)
+                    .align_bottom(Fill)
+                    .padding(14),
+            );
+        }
+        st.width(Fill).height(Fill).into()
     }
 
     /// "Arjun is calling" over the call: no hold, so the choice is to refuse or to swap.
@@ -1799,7 +1858,7 @@ impl App {
         ]
         .spacing(10)
         .align_x(Alignment::Center);
-        self.call_shell(t, Space::new().into(), mid.into(), bottom.into())
+        self.call_shell(t, Space::new().into(), mid.into(), bottom.into(), false)
     }
 }
 

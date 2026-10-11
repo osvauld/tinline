@@ -24,6 +24,8 @@ mod flow;
 mod keystore;
 mod raise;
 mod media;
+mod camera;
+mod frames;
 mod reason;
 mod single;
 mod tray;
@@ -35,7 +37,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus, VideoInfo};
 use tokio::sync::mpsc;
 
 /// Everything the node and the tray report, funnelled into the UI's update loop.
@@ -51,6 +53,17 @@ pub enum Ev {
     /// A notification was clicked.
     Open(app::Target),
     Link(LinkEv),
+    Video(VideoInfo),
+}
+
+/// Bridges `VideoEvents` into the same channel as `NodeEvents`.
+pub struct VideoBridge(pub mpsc::UnboundedSender<Ev>);
+
+impl p2pcore::VideoEvents for VideoBridge {
+    fn on_video_state(&self, info: VideoInfo) {
+        tlog!("VIDEO {} negotiated={} local={} remote={}", info.call_id, info.negotiated, info.local_camera, info.remote_camera);
+        let _ = self.0.send(Ev::Video(info));
+    }
 }
 
 /// What the core's `LinkEvents` report (device linking and own-device sync).
@@ -312,6 +325,7 @@ fn main() -> Result<(), String> {
     audio.attach(&node);
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
     node.set_link_events(Arc::new(LinkBridge(tx.clone())));
+    node.set_video_events(Arc::new(VideoBridge(tx.clone())));
     // The single pre-accounts key entry belongs to the account core just migrated.
     keystore::migrate_legacy(keystore::system(), &data, &node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
@@ -333,6 +347,13 @@ fn main() -> Result<(), String> {
                     "STATS t={} direct={} rtt={}ms sent={} recv={} lost={} recovered={} concealed={} buf={}ms freq={:.1} rms={:.0}",
                     st.secs, st.direct, st.rtt_ms, st.sent, st.received, st.lost,
                     st.recovered, st.concealed, st.buffered_ms, st.rx_freq_hz, st.rx_rms
+                );
+            }
+            if let Some(v) = node.video_stats() {
+                tlog!(
+                    "VSTATS sent={} key={} send={}x{} kbps={} enc_ms={:.1} decoded={} errors={} recv={}x{}",
+                    v.frames_sent, v.keyframes_sent, v.send_width, v.send_height, v.bitrate_bps / 1000,
+                    v.encode_ms, v.frames_decoded, v.decode_errors, v.recv_width, v.recv_height
                 );
             }
         });
