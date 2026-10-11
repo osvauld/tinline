@@ -90,6 +90,10 @@ impl AccountDirs {
         self.root.join("accounts")
     }
 
+    pub(crate) fn root(&self) -> &std::path::Path {
+        &self.root
+    }
+
     pub fn dir(&self, id: &str) -> Result<PathBuf, Error> {
         valid_id(id)?;
         Ok(self.accounts().join(id))

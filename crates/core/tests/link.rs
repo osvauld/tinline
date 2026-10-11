@@ -145,6 +145,21 @@ pub fn incoming(p: &Peer, secs: u64) -> String {
     })
 }
 
+/// Waits for the incoming call `id`. GL: a device can still have an `Incoming` of an earlier call
+/// queued (it rang there too, e.g. once the caller learned this device from a pushed device list
+/// rather than from the answer); those are skipped, but only ids in `earlier`: any other call id
+/// is a real failure (a call this test never placed).
+pub fn incoming_call(p: &Peer, id: &str, earlier: &[&str], secs: u64) {
+    expect(p, secs, "incoming", |e| match e {
+        Ev::Incoming(c) if c.call_id == id => Some(()),
+        Ev::Incoming(c) => {
+            assert!(earlier.contains(&c.call_id.as_str()), "an incoming call nobody placed: {} (waiting for {id})", c.call_id);
+            None
+        }
+        _ => None,
+    })
+}
+
 pub fn ended(p: &Peer, id: &str, secs: u64) -> String {
     expect(p, secs, "ended", |e| match e {
         Ev::State(i, CallState::Ended { reason }) if i == id => Some(reason.clone()),
@@ -231,9 +246,10 @@ fn link_n_shows_e_scans_and_contacts_learn_the_new_device() {
     connect(&a, &e);
     let n = link_fresh(&e, "h2-n", false);
     eventually(40, "N has the contact", || n.node.contacts().iter().any(|c| c.did == a.did));
-    // A learns N from the list that rides on the answer of a call to E.
+    // A learns N from the list that rides on the answer of a call to E (or, if it comes first,
+    // from the list E pushes to its contacts after the link: then this call rings N as well).
     let call = a.node.call(e.did.clone()).unwrap();
-    incoming(&e, 30);
+    incoming_call(&e, &call.call_id, &[], 30);
     e.node.answer(call.call_id.clone()).unwrap();
     eventually(20, "active", || a.node.current_call().is_some());
     std::thread::sleep(Duration::from_millis(500));
@@ -242,8 +258,8 @@ fn link_n_shows_e_scans_and_contacts_learn_the_new_device() {
     eventually(20, "A knows both devices", || a.node.contact_devices_for_test(e.did.clone()).contains(&dev(&n)));
     // Next call rings both.
     let call2 = a.node.call(e.did.clone()).unwrap();
-    assert_eq!(incoming(&e, 30), call2.call_id);
-    assert_eq!(incoming(&n, 30), call2.call_id);
+    incoming_call(&e, &call2.call_id, &[&call.call_id], 30);
+    incoming_call(&n, &call2.call_id, &[&call.call_id], 30);
     a.node.hangup(call2.call_id.clone()).unwrap();
     // The history converges to one record per call, the better one winning.
     eventually(30, "histories agree", || {

@@ -176,13 +176,23 @@ fn wait_link(p: &Peer, what: &str, mut f: impl FnMut(&LEv) -> Option<String>) ->
     }
 }
 
-fn incoming(p: &Peer, secs: u64) -> String {
+/// Every call id `call_answered` placed in this process.
+static PLACED: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// Waits for the incoming call `id`. GL: a device can still have an `Incoming` of an earlier call
+/// queued (it rang there too: e.g. A2, once B learned it from A's pushed device list before
+/// A1's answer carried it); those are skipped, but only calls this process placed: any other id
+/// is a real failure.
+fn incoming_call(p: &Peer, id: &str, secs: u64) {
     let end = Instant::now() + Duration::from_secs(secs);
     loop {
         match p.rx.recv_timeout(end.saturating_duration_since(Instant::now())) {
-            Ok(Ev::Incoming(c)) => return c.call_id,
+            Ok(Ev::Incoming(c)) if c.call_id == id => return,
+            Ok(Ev::Incoming(c)) => {
+                assert!(PLACED.lock().unwrap().contains(&c.call_id), "an incoming call nobody placed: {} (waiting for {id})", c.call_id);
+            }
             Ok(_) => {}
-            Err(_) => panic!("timed out waiting for an incoming call"),
+            Err(_) => panic!("timed out waiting for incoming call {id}"),
         }
     }
 }
@@ -276,7 +286,8 @@ fn now() -> u64 {
 /// it and dials the callee by that list only (`note_device` no longer adds unknown devices).
 fn call_answered(caller: &Peer, callee: &Peer) {
     let call = caller.node.call(callee.did.clone()).unwrap();
-    assert_eq!(incoming(callee, 30), call.call_id);
+    PLACED.lock().unwrap().push(call.call_id.clone());
+    incoming_call(callee, &call.call_id, 30);
     callee.node.answer(call.call_id.clone()).unwrap();
     eventually(20, "call active", || caller.node.current_call().is_some());
     std::thread::sleep(Duration::from_millis(500));
@@ -394,8 +405,9 @@ fn o3_pending_message_and_new_messages_reach_a_contact_holding_our_device_list()
     for id in [&f.m1, &m2, &m3, &m4] {
         assert_eq!(all.iter().filter(|m| &m.id == id).count(), 1, "exactly once: {id}");
     }
-    // P4: B's restored install pushed its new list; A dials only the new key.
-    assert_eq!(a.node.contact_devices_for_test(b.did.clone()), vec![f.new_dev.clone()], "A's list for B is B's pushed one (P4)");
+    // P4: B's restored install pushed its new list; A dials only the new key. GL: the list travels
+    // as its own push, apart from the chat, so it may land after m4.
+    eventually(30, "A's list for B is B's pushed one (P4)", || a.node.contact_devices_for_test(b.did.clone()) == vec![f.new_dev.clone()]);
 }
 
 // KIND: invariant
@@ -571,9 +583,9 @@ fn o6_contacts_verified_flag_is_cleared_by_our_restore() {
     let m3 = b.node.send_text(a.did.clone(), "m3: after restore".into(), None).unwrap().id;
     eventually(90, "A holds m3", || has(a, &b.did, &m3));
     assert!(!verified(a, &b.did), "the restore cleared verified");
-    let devs = a.node.contact_devices_for_test(b.did.clone());
-    // P4: B's pushed list retires the dead key; A dials only the new one.
-    assert_eq!(devs, vec![f.new_dev.clone()], "A dials the new key only: {devs:?}");
+    // P4: B's pushed list retires the dead key; A dials only the new one. GL: the list travels
+    // apart from the chat (its own push), so it may land after `m3`.
+    eventually(30, "A dials the new key only", || a.node.contact_devices_for_test(b.did.clone()) == vec![f.new_dev.clone()]);
 }
 
 // KIND: invariant
