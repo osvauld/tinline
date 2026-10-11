@@ -579,7 +579,11 @@ fn hosting_from_this_device_and_appointing_others() {
     assert!(l.actions(l.member("did:key:priya").unwrap()).contains(&Action::Revoke(dev.clone())));
     run(&mut l, &api, Lm::Revoke("did:key:priya".into(), dev.clone()));
     assert!(l.actions(l.member("did:key:priya").unwrap()).contains(&Action::Appoint(dev)));
-    l.step(&api, Lm::AskHost(false));
+    // Settings › Hosting: opens the group and asks.
+    l.close();
+    let out = l.step(&api, Lm::StopHostingOf("a".into()));
+    assert!(out.opened);
+    assert_eq!(l.dialog, Some(LDialog::Host { accept: false }));
     run(&mut l, &api, Lm::Confirm);
     assert!(!l.detail.as_ref().unwrap().am_host);
 }

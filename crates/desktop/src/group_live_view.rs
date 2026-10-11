@@ -455,6 +455,55 @@ impl App {
         container(c).padding(6).width(Fill).style(ui::card(t)).into()
     }
 
+    // ---- settings ----
+
+    /// Settings › Hosting: the groups this computer hosts.
+    pub(super) fn live_hosting_page(&self, t: Tok) -> El<'_> {
+        let mut c = column![tx(
+            "A host keeps a full copy of a group and passes messages on while members\u{2019} phones sleep. Members connect to hosts, not to each other; only hosts learn members\u{2019} group addresses. Tinline keeps hosting while the window is closed (it stays in the tray).",
+            14.0,
+            t.ink2
+        )]
+        .spacing(16);
+        let hosted: Vec<_> = self.live.list.iter().filter(|s| s.hosted_here).collect();
+        if hosted.is_empty() {
+            c = c.push(
+                container(tx("This computer doesn\u{2019}t host any groups. To host one, open it and choose Host from this computer in the members pane.", 14.0, t.ink2))
+                    .padding(16)
+                    .width(Fill)
+                    .style(ui::card(t)),
+            );
+            return c.into();
+        }
+        let mut list = column![].spacing(0);
+        for (i, s) in hosted.iter().enumerate() {
+            if i > 0 {
+                list = list.push(rule(t));
+            }
+            let only = s.host_count <= 1;
+            let sub = format!(
+                "{} member{} \u{b7} {}",
+                s.member_count,
+                if s.member_count == 1 { "" } else { "s" },
+                if only { "the only host".to_string() } else { format!("{} hosts", s.host_count) }
+            );
+            list = list.push(
+                container(
+                    row![
+                        gav(t, &s.id, 36.0),
+                        column![semi(s.name.clone(), 15.0, t.ink), tx(sub, 13.0, if only { t.thread_text } else { t.ink2 })].spacing(2).width(Fill),
+                        link_btn(t, "Open", t.primary, l(Lm::Open(s.id.clone()))),
+                        link_btn(t, "Stop hosting", t.error, l(Lm::StopHostingOf(s.id.clone()))),
+                    ]
+                    .spacing(12)
+                    .align_y(Alignment::Center),
+                )
+                .padding([14, 16]),
+            );
+        }
+        c.push(container(list).width(Fill).style(ui::card(t))).into()
+    }
+
     // ---- dialogs ----
 
     pub(super) fn live_overlay(&self, t: Tok) -> Option<El<'_>> {

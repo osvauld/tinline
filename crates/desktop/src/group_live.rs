@@ -223,6 +223,8 @@ pub(super) enum Lm {
     AskAdmin(String, bool),
     AskLeave,
     AskHost(bool),
+    /// Settings › Hosting: open that group and ask to stop hosting it here.
+    StopHostingOf(String),
     Removal,
     Appoint(String, String),
     Revoke(String, String),
@@ -521,6 +523,10 @@ impl GroupsLive {
             }
             Lm::AskLeave => self.show(LDialog::Leave),
             Lm::AskHost(accept) => self.show(LDialog::Host { accept }),
+            Lm::StopHostingOf(gid) => {
+                out = self.step(api, Lm::Open(gid));
+                self.show(LDialog::Host { accept: false });
+            }
             Lm::Removal => self.show(LDialog::Removal),
             Lm::Appoint(did, dev) => {
                 self.menu = None;

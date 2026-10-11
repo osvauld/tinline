@@ -1565,11 +1565,9 @@ impl App {
             .into(),
         );
         let quit = pill(t, Kind::Danger, Some(Icon::LogOut), "Quit Tinline", Some(Msg::Quit));
-        // (tab, name) in nav order; Privacy and Hosting are the groups & privacy preview.
-        let mut items: Vec<(u8, &str)> = vec![(0, "Account"), (1, "Linked devices"), (7, "Privacy")];
-        if self.groups.on {
-            items.push((6, "Hosting"));
-        }
+        // (tab, name) in nav order. Hosting lists the groups this computer hosts (the demo shows
+        // the preview's placeholder page instead).
+        let mut items: Vec<(u8, &str)> = vec![(0, "Account"), (1, "Linked devices"), (7, "Privacy"), (6, "Hosting")];
         items.extend([(2, "Calls & availability"), (3, "Audio devices"), (4, "Security"), (5, "About")]);
         let mut nav = column![
             button(row![ui::icon(Icon::ArrowLeft, 18.0, t.ink2), semi("Back", 14.0, t.ink2)].spacing(8).align_y(Alignment::Center))
@@ -1596,7 +1594,8 @@ impl App {
             2 => calls,
             3 => audio,
             4 => section(t, "Security", security),
-            6 if self.groups.on => self.hosting_page(t),
+            6 if self.demo && self.groups.on => self.hosting_page(t),
+            6 => self.live_hosting_page(t),
             7 => self.privacy_page(t),
             _ => column![about, quit].spacing(20).into(),
         };
