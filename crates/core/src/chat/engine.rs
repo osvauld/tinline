@@ -2145,6 +2145,24 @@ impl Inner {
         Ok(())
     }
 
+    /// For tests: `chat_compact` now; how many days are closed (a snapshot blob, no rows).
+    pub(crate) async fn chat_compact_for_test(self: &Arc<Self>) -> Result<u32, Error> {
+        self.chat_compact().await?;
+        let (me, core) = (self.me()?, self.chat_core()?);
+        let mut dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
+        dids.push(me.id.did().to_string());
+        let mut closed = 0;
+        for did in dids {
+            let pair = pair_id(me.id.did(), &did);
+            for day in core.store.shard_days(&pair)? {
+                if core.store.shard_meta(&pair, &day)?.is_some_and(|m| m.closed.is_some()) && core.store.shard_rows(&pair, &day)?.0.is_none() {
+                    closed += 1;
+                }
+            }
+        }
+        Ok(closed)
+    }
+
     // ---- contact removal ---------------------------------------------------------------------------------
 
     /// Ends every chat session with `did` (a block, either way).

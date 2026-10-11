@@ -92,7 +92,40 @@ impl Node {
     /// `next` of the previous page. Names come with the first page only. Fails `Locked` while
     /// locked.
     pub fn search(&self, query: String, limit: u32, cursor: Option<String>) -> Result<SearchResults, Error> {
-        self.inner.search(&query, limit, cursor.as_deref())
+        self.inner.search(&query, limit, cursor.as_deref(), SCAN_BUDGET)
+    }
+}
+
+/// For tests only.
+impl Node {
+    /// `search` with another per-call posting budget.
+    #[doc(hidden)]
+    pub fn search_with_budget_for_test(&self, query: String, limit: u32, cursor: Option<String>, budget: u32) -> Result<SearchResults, Error> {
+        self.inner.search(&query, limit, cursor.as_deref(), budget as usize)
+    }
+
+    /// The next `n` index writes of the chat and group hooks are skipped, as if the process died
+    /// between the store commit and the index write.
+    #[doc(hidden)]
+    pub fn search_skip_next_writes_for_test(&self, n: u32) {
+        self.inner.search_skip.store(n, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// Puts a stale post row (as an older version of the post, or a post no longer shown) into
+    /// the index of a group and forgets the group's watermark, so the next reconcile has to fix it.
+    #[doc(hidden)]
+    pub fn search_plant_group_post_for_test(&self, group_id: String, post_id: String, text: String) -> Result<(), Error> {
+        let me = self.inner.me()?;
+        let ix = self.inner.search_ix().ok_or(Error::Locked)?;
+        let row = DocRow { src: group_src(&group_id), conv: group_id.clone(), day: "-".into(), id: post_id, at: 1, author: me.id.did().to_string(), text };
+        ix.apply(&[row], &[], &[Mark { src: group_src(&group_id), day: "-".into(), prev: None, vv: Vec::new() }])
+    }
+
+    /// Compacts the old days now (otherwise every hour); returns how many days are closed.
+    #[doc(hidden)]
+    pub fn compact_now_for_test(&self) -> Result<u32, Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_compact_for_test().await })?
     }
 }
 
@@ -153,6 +186,12 @@ impl Inner {
         self.search.lock().clone().filter(|s| !s.is_closed())
     }
 
+    /// Test switch: this hook write is to be skipped.
+    fn search_skipped(&self) -> bool {
+        use std::sync::atomic::Ordering;
+        self.search_skip.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok()
+    }
+
     fn search_log(e: Error) {
         tracing::warn!("search index: {e}");
     }
@@ -162,6 +201,9 @@ impl Inner {
     /// After a committed 1:1 change: index the touched messages; the shard's watermark moves
     /// from `prev` to `vv` only if it was at `prev`.
     pub(crate) fn search_dm(&self, did: &str, pair: &str, day: &str, recs: &[&MsgRec], prev: Option<Vec<u8>>, vv: Vec<u8>) {
+        if self.search_skipped() {
+            return;
+        }
         let Some(ix) = self.search_ix() else { return };
         let rows: Vec<DocRow> = recs.iter().map(|r| dm_row(did, pair, day, r)).collect();
         let mark = Mark { src: dm_src(pair), day: day.to_string(), prev, vv };
@@ -172,6 +214,9 @@ impl Inner {
 
     /// After a group change (`group_after`): index new and changed posts, drop hidden ones.
     pub(crate) fn search_group(&self, gid: &str, d: &PostDiff) {
+        if self.search_skipped() {
+            return;
+        }
         let Some(ix) = self.search_ix() else { return };
         let src = group_src(gid);
         let rows: Vec<DocRow> = d.put.iter().map(|i| group_row(gid, i)).collect();
@@ -281,7 +326,7 @@ impl Inner {
 
     // ---- query -----------------------------------------------------------------------------
 
-    pub(crate) fn search(self: &Arc<Self>, query: &str, limit: u32, cursor: Option<&str>) -> Result<SearchResults, Error> {
+    pub(crate) fn search(self: &Arc<Self>, query: &str, limit: u32, cursor: Option<&str>, budget: usize) -> Result<SearchResults, Error> {
         let me = self.me()?;
         self.chat_core()?;
         let ix = self.search_ix().ok_or(Error::Locked)?;
@@ -316,7 +361,7 @@ impl Inner {
                         break 'scan;
                     }
                 }
-                if looked >= SCAN_BUDGET {
+                if looked >= budget {
                     next = Some(cur);
                     break 'scan;
                 }
