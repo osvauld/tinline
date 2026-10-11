@@ -405,8 +405,9 @@ fn o3_pending_message_and_new_messages_reach_a_contact_holding_our_device_list()
     for id in [&f.m1, &m2, &m3, &m4] {
         assert_eq!(all.iter().filter(|m| &m.id == id).count(), 1, "exactly once: {id}");
     }
-    // P4: B's restored install pushed its new list; A dials only the new key.
-    assert_eq!(a.node.contact_devices_for_test(b.did.clone()), vec![f.new_dev.clone()], "A's list for B is B's pushed one (P4)");
+    // P4: B's restored install pushed its new list; A dials only the new key. GL: the list travels
+    // as its own push, apart from the chat, so it may land after m4.
+    eventually(30, "A's list for B is B's pushed one (P4)", || a.node.contact_devices_for_test(b.did.clone()) == vec![f.new_dev.clone()]);
 }
 
 // KIND: invariant
