@@ -243,7 +243,7 @@ var IC={
 };
 function svg(n,c){return '<svg class="i '+(c||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'}
 
-var PEERS={arjun:{n:'Arjun Oommen',s:'Arjun',i:'AO'},lena:{n:'Lena P.',s:'Lena',i:'LP'},rosa:{n:'Rosa Silva',s:'Rosa',i:'RS'},leo:{n:'Leo B.',s:'Leo',i:'LB'},family:{n:'Family group',s:'Family',i:'FG'}};
+var PEERS={arjun:{n:'Arjun Oommen',s:'Arjun',i:'AO'},lena:{n:'Lena P.',s:'Lena',i:'LP'},rosa:{n:'Rosa Silva',s:'Rosa',i:'RS'},leo:{n:'Leo B.',s:'Leo',i:'LB'},family:{n:'Family group',s:'Family',i:'FG'},meera:{n:'Meera Nair',s:'Meera',i:'MN'},dev:{n:'Dev Patel',s:'Dev',i:'DP'},sana:{n:'Sana Rao',s:'Sana',i:'SR'},hike:{n:'Weekend hike',s:'Weekend hike',i:'WH'}};
 var HOSTS=[{n:'Kofi’s desktop',hc:true},{n:'Mina’s phone',hc:true},{n:'Raj’s laptop',hc:false}];
 var SCN=[
  {id:'out-answer',g:'Outgoing',t:'Answered',d:'Connecting, remote ringing, connected.',peer:'arjun'},
@@ -806,6 +806,26 @@ window.addEventListener('pagehide',function(){clearT();tickStop();Snd.close()});
 
 S.route=DEV.android.def.id;
 renderCap();UI.all();
+
+/* deep link from chat/groups headers: calls.html?call=<id> | ?call=group:hike
+   Starts visually (ringing pulse) and silent: no AudioContext exists before a user gesture.
+   The Sound controls in the drawer can start audio afterwards. Unknown ids stay idle. */
+(function(){
+ var id=new URLSearchParams(location.search).get('call');if(!id)return;
+ var one={arjun:1,meera:1,dev:1,sana:1},grp=id==='group:hike';
+ if(!one[id]&&!grp)return;
+ var plat=matchMedia('(max-width:859px)').matches?'android':'desk';
+ S.platform=plat;S.route=DEV[plat].def.id;
+ $('#p-android').setAttribute('aria-pressed',String(plat==='android'));$('#p-desk').setAttribute('aria-pressed',String(plat==='desk'));
+ reset();S.scn='deeplink';S.attempt=1;
+ if(grp){S.peer='hike';S.group=true;S.host=0;S.hostsTried=[];log('Group call from Weekend hike');gdial()}
+ else{
+  S.peer=id;log('Call '+PEERS[id].s+' from the chat');
+  S.phase='connecting';tickStart();remote('ring');
+  later(function(){remote('answer')},6000);
+ }
+ UI.all();$('#stage-t').focus({preventScroll:true});
+})();
 })();
 </script>
 </body>

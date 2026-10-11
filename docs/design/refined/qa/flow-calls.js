@@ -120,4 +120,31 @@ await p.context().close();
 // dark desktop incoming
 p=await L.page(b,{dark:true});await p.goto(L.BASE+'calls.html');await scn(p,'in-second');await sleep(p,3000);await p.screenshot({path:'screenshots/calls-desktop-dark-second.png'});
 await scn(p,'out-offline');await sleep(p,3000);await p.screenshot({path:'screenshots/calls-desktop-dark-unreachable.png'});
+// deep links from chat/groups headers: calls.html?call=<id>
+const HUE=n=>'av'+([...n].reduce((a,c)=>a+c.codePointAt(0),0)%6);
+const dlState=p=>p.evaluate(()=>({name:(document.querySelector('#stage-t')||{}).textContent,st:((document.querySelector('#stage .st')||{}).textContent||''),av:((document.querySelector('#stage .t-avatar')||{}).className||''),ring:!!document.querySelector('#stage .halo.on'),and:document.querySelector('#p-android').getAttribute('aria-pressed'),desk:document.querySelector('#p-desk').getAttribute('aria-pressed'),drawer:document.querySelector('#drawer').hidden}));
+for(const [id,nm] of [['arjun','Arjun Oommen'],['meera','Meera Nair'],['dev','Dev Patel'],['sana','Sana Rao']])for(const [w,h,mob,plat] of [[390,844,true,'android'],[1440,1000,false,'desk']])for(const dark of [false,true]){
+ p=await L.page(b,{w,h,dark,mobile:mob});await p.goto(L.BASE+'calls.html?call='+id);await sleep(p,400);
+ const s0=await dlState(p),a0=await L.aud(p);
+ if(!dark)await chk(`deep link ?call=${id} @${w}: outgoing ringing to ${nm}, hue ${HUE(nm)}, ${plat} picked, silent (no AudioContext)`,async()=>({ok:s0.name===nm&&s0.st==='Ringing…'&&s0.ring&&s0.av.includes(HUE(nm))&&(plat==='android'?s0.and==='true':s0.desk==='true')&&s0.drawer&&a0.started===0&&a0.ctxStates.length===0,d:JSON.stringify(s0)+' '+JSON.stringify(a0)}));
+ if(id==='meera'||id==='arjun')await p.screenshot({path:`screenshots/calls-deeplink-${id}-${w}-${dark?'dark':'light'}.png`});
+ if(id==='arjun'&&w===390&&!dark){
+  await p.click('#p-desk');await sleep(p,200);
+  await chk('deep link: platform still switchable',async()=>{const s1=await dlState(p);return {ok:s1.desk==='true'&&s1.name==='Arjun Oommen',d:JSON.stringify(s1)}});
+  await chk('deep link: sound starts only after a gesture (switch on) and Cancel stops every oscillator',async()=>{await dr(p);await p.click('#son');await sleep(p,300);const a1=await L.aud(p);await p.click('#drawer-x').catch(()=>{});await p.click('[data-act=cancel]');await sleep(p,1500);const live=await p.evaluate(()=>window.__aud.osc.filter(o=>o.started&&!o.ended).length);return {ok:a1.started>0&&live===0,d:'afterGesture='+a1.started+' notEnded='+live}});
+ }
+ await p.context().close();
+}
+for(const [w,h,mob] of [[390,844,true],[1440,1000,false]])for(const dark of [false,true]){
+ p=await L.page(b,{w,h,dark,mobile:mob});await p.goto(L.BASE+'calls.html?call=group:hike');await sleep(p,400);
+ const s0=await dlState(p),a0=await L.aud(p);
+ if(!dark)await chk(`deep link ?call=group:hike @${w}: Weekend hike group call screen, group glyph, silent`,async()=>({ok:s0.name==='Weekend hike'&&/grp/.test(s0.av)&&/Connecting/.test(s0.st)&&a0.started===0,d:JSON.stringify(s0)+' '+JSON.stringify(a0)}));
+ await p.screenshot({path:`screenshots/calls-deeplink-hike-${w}-${dark?'dark':'light'}.png`});
+ if(!dark&&w===1440){await sleep(p,3000);await chk('deep link group: reaches the active group call via the host',async()=>{const t=(await p.textContent('#stage')).replace(/\s+/g,' ');return {ok:/\d\d:\d\d/.test(t)&&/host can hear/.test(t),d:t.slice(0,100)}});await p.screenshot({path:'screenshots/calls-deeplink-hike-1440-light-active.png'})}
+ await p.context().close();
+}
+p=await L.page(b);await p.goto(L.BASE+'calls.html?call=nobody');await sleep(p,300);
+await chk('deep link unknown id: normal idle screen, no audio',async()=>{const s0=await dlState(p),a0=await L.aud(p);return {ok:s0.name==='No active call'&&a0.started===0,d:JSON.stringify(s0)}});
+await chk('deep links: no console errors',async()=>({ok:p.errs.length===0,d:p.errs.join('|')}));
+await p.context().close();
 await b.close();C.save('calls-results.json')})();
