@@ -192,7 +192,9 @@ fn contacts_invited_directly_join_or_decline() {
         assert_eq!(i.state, GroupInvitationState::Pending);
         assert!(!i.outgoing);
         assert!(i.expires > 0);
-        assert!(p.inv.0.lock().unwrap().iter().any(|e| e.group_id == g), "an event was raised");
+        // The event is raised on a blocking task after the row is saved (GL: seen arriving after
+        // the row under load), so it is waited for.
+        eventually(10, "an event was raised", || p.inv.0.lock().unwrap().iter().any(|e| e.group_id == g));
     }
     let ia = incoming(&a, &g).unwrap();
     let joined = a.node.group_invitation_accept(ia.id.clone()).unwrap();
