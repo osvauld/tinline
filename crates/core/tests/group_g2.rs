@@ -341,3 +341,90 @@ fn a_linked_device_learns_the_accounts_groups_without_a_token() {
     assert!(a.node.group_device_token(g.clone()).is_ok());
 }
 
+
+// ---- stage 3: 1:1 chat requests through the host (U3) ---------------------------------------------
+
+fn incoming(p: &Peer) -> Vec<p2pcore::GroupChatRequest> {
+    p.node.group_chat_requests_incoming().unwrap()
+}
+
+fn outgoing(p: &Peer) -> Vec<p2pcore::GroupChatRequest> {
+    p.node.group_chat_requests_outgoing().unwrap()
+}
+
+fn is_contact(p: &Peer, did: &str) -> bool {
+    p.node.contacts().iter().any(|c| c.did == did)
+}
+
+fn chat_has(p: &Peer, peer_did: &str, text: &str) -> bool {
+    p.node.chat_day(peer_did.into(), None).map(|d| d.messages.iter().any(|m| m.text == text)).unwrap_or(false)
+}
+
+// KIND: acceptance (G2 stage 3) — U3 + P6: a member asks another for a 1:1 chat through the
+// host; the host relays mail it cannot read and never sees the recipient's private endpoint; on
+// accept both become message-only contacts (no calls) and chat directly.
+#[test]
+fn a_chat_request_accepted_makes_message_only_contacts_that_chat_directly() {
+    let o = peer("cr-o");
+    let a = peer("cr-a");
+    let b = peer("cr-b");
+    let g = group_with(&o, &[&a, &b]);
+    let r = a.node.group_chat_request(g.clone(), b.did.clone()).unwrap();
+    assert!(r.outgoing && r.state == p2pcore::ChatRequestState::Pending && r.peer_did == b.did);
+    // Asking again returns the pending request.
+    assert_eq!(a.node.group_chat_request(g.clone(), b.did.clone()).unwrap().id, r.id);
+    eventually(WAIT, "b sees the request", || incoming(&b).iter().any(|x| x.id == r.id && x.peer_did == a.did));
+    let x = incoming(&b).into_iter().find(|x| x.id == r.id).unwrap();
+    assert_eq!(x.peer_name, "cr-a");
+    assert_eq!(x.group_id, g);
+    assert!(!is_contact(&a, &b.did) && !is_contact(&b, &a.did), "nothing before accepting");
+    b.node.group_chat_accept(r.id.clone()).unwrap();
+    eventually(WAIT, "a's request is accepted and the contact added", || {
+        outgoing(&a).iter().any(|x| x.id == r.id && x.state == p2pcore::ChatRequestState::Accepted && x.contact_added)
+    });
+    eventually(WAIT, "contacts both ways", || is_contact(&a, &b.did) && is_contact(&b, &a.did));
+    assert!(!a.node.calls_allowed(b.did.clone()) && !b.node.calls_allowed(a.did.clone()), "P6: message only");
+    assert!(!a.node.can_call(b.did.clone()) && !b.node.can_call(a.did.clone()));
+    a.node.send_text(b.did.clone(), "hi, directly".into(), None).unwrap();
+    eventually(WAIT, "b gets the direct message", || chat_has(&b, &a.did, "hi, directly"));
+    b.node.send_text(a.did.clone(), "hi back".into(), None).unwrap();
+    eventually(WAIT, "a gets the reply", || chat_has(&a, &b.did, "hi back"));
+    // The host relayed sealed mail and never held b's (or a's) private endpoint.
+    assert!(o.node.group_relayed_mail_count_for_test(g.clone()) >= 2);
+    for p in [&a, &b] {
+        assert!(!o.node.group_relayed_mail_contains_for_test(g.clone(), p.node.status().endpoint_id));
+    }
+    assert!(!is_contact(&o, &a.did) && !is_contact(&o, &b.did));
+}
+
+// KIND: acceptance (G2 stage 3) — a declined request shows "declined" to the requester
+// (PROVISIONAL), and nobody becomes a contact. A request from a DID the recipient blocks is
+// refused with the blocked reason and never shown to the recipient (P5), even from a modified
+// app that skips its own checks.
+#[test]
+fn chat_requests_can_be_declined_and_blocked_senders_are_refused() {
+    let o = peer("cd-o");
+    let a = peer("cd-a");
+    let b = peer("cd-b");
+    let c = peer("cd-c");
+    let g = group_with(&o, &[&a, &b, &c]);
+    let r = a.node.group_chat_request(g.clone(), b.did.clone()).unwrap();
+    eventually(WAIT, "b sees it", || incoming(&b).iter().any(|x| x.id == r.id));
+    b.node.group_chat_decline(r.id.clone()).unwrap();
+    eventually(WAIT, "a sees declined", || outgoing(&a).iter().any(|x| x.id == r.id && x.state == p2pcore::ChatRequestState::Declined));
+    assert!(!is_contact(&a, &b.did) && !is_contact(&b, &a.did));
+    assert!(b.node.group_chat_accept(r.id.clone()).is_err(), "already answered");
+
+    // b knows c from a ticket and blocks c; c's app is modified (ignores the notice, skips checks).
+    c.node.ignore_block_notices_for_test(true);
+    c.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
+    eventually(WAIT, "b has c", || is_contact(&b, &c.did));
+    b.node.block(c.did.clone()).unwrap();
+    c.node.group_skip_request_checks_for_test(true);
+    let rc = c.node.group_chat_request(g.clone(), b.did.clone()).unwrap();
+    eventually(WAIT, "c sees blocked", || outgoing(&c).iter().any(|x| x.id == rc.id && x.state == p2pcore::ChatRequestState::Blocked));
+    assert!(!incoming(&b).iter().any(|x| x.peer_did == c.did), "never shown to b");
+    // The shipped app refuses locally: we do not ask someone we block.
+    assert!(b.node.group_chat_request(g.clone(), c.did.clone()).is_err());
+}
+
