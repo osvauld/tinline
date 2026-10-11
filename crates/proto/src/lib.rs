@@ -1022,6 +1022,8 @@ pub use link::*;
 
 /// Group calls through one call host (docs/design/group-call-spec.md, G6).
 pub mod gcall;
+/// Signed call-host conditions (group-call spec §2.2).
+pub mod gcall_status;
 
 #[cfg(test)]
 mod tests;
