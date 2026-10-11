@@ -201,6 +201,7 @@ impl Inner {
                 return;
             }
         };
+        self.search_open(&dir, &phrase);
         let core = Arc::new(ChatCore {
             store,
             dir,
@@ -219,6 +220,7 @@ impl Inner {
             fail_writes: Default::default(),
         });
         *self.chat.lock() = Some(core);
+        self.search_reconcile();
     }
 
     /// Gives this install a new device ID (`ProfileV2::device_id`) and saves the profile.
@@ -261,6 +263,7 @@ impl Inner {
             // GL: the file goes now, whatever task still holds the core.
             core.store.db.close();
         }
+        self.search_close();
     }
 
     /// `chat_close` without waiting (for `Node`'s drop on a core thread): the store closes, the
@@ -272,6 +275,7 @@ impl Inner {
             }
             core.store.db.close();
         }
+        self.search_close();
     }
 
     pub(crate) fn chat_sessions_close(self: &Arc<Self>) {
@@ -807,6 +811,18 @@ impl Inner {
                 cache.remove(&key);
             }
         }
+        let shard = self.chat_load_shard(core, pair, day).await?;
+        let mut cache = core.shards.lock();
+        if cache.len() >= MAX_SHARDS_CACHED {
+            let today = day_of(now_ms());
+            cache.retain(|(_, d), _| *d == today);
+        }
+        cache.entry(key).or_insert(shard);
+        Ok(())
+    }
+
+    /// A shard as stored (a closed one from its snapshot blob), not cached.
+    pub(crate) async fn chat_load_shard(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<Shard, Error> {
         let meta = core.store.shard_meta(pair, day)?;
         let (snap, ups) = core.store.shard_rows(pair, day)?;
         let base = match (&snap, meta.as_ref().and_then(|m| m.closed.clone())) {
@@ -823,26 +839,22 @@ impl Inner {
             }
             _ => snap,
         };
-        let shard = Shard::load(pair, day, core.wid, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
-        let mut cache = core.shards.lock();
-        if cache.len() >= MAX_SHARDS_CACHED {
-            let today = day_of(now_ms());
-            cache.retain(|(_, d), _| *d == today);
-        }
-        cache.entry(key).or_insert(shard);
-        Ok(())
+        Shard::load(pair, day, core.wid, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))
     }
 
     /// Persists a shard change: the update (or a fresh snapshot every so often), the meta, and
     /// `extra` ops, in one transaction. Call with the shard cache locked. On failure the cached
     /// shard is ahead of the store; `chat_shard` reloads it before anyone uses it again.
-    pub(crate) fn chat_persist(&self, core: &ChatCore, pair: &str, shard: &Shard, update: &[u8], mut extra: Vec<Op>) -> Result<(), Error> {
+    /// `recs`: the messages the change touched, for the search index (written after the
+    /// commit; a failure there is only logged, reconcile heals it).
+    pub(crate) fn chat_persist(&self, core: &ChatCore, pair: &str, shard: &Shard, update: &[u8], mut extra: Vec<Op>, recs: &[&MsgRec]) -> Result<(), Error> {
         let me = self.me()?;
-        if self.pair_owner(&me, pair).is_none() {
+        let Some(did) = self.pair_owner(&me, pair) else {
             return Err(Error::NotFound);
-        }
+        };
         let day = shard.day.as_str();
         let mut meta = core.store.shard_meta(pair, day)?.unwrap_or_default();
+        let prev = meta.vv.clone();
         meta.vv = shard.vv().encode();
         meta.own = shard.own_writers(me.id.did()).into_iter().collect();
         meta.n_messages = shard.messages().map(|m| m.len() as u32).unwrap_or(meta.n_messages);
@@ -860,6 +872,7 @@ impl Inner {
         }
         core.store.db.apply(&extra).map_err(io)?;
         self.selfsync_dirty(&doc_name(pair, day));
+        self.search_dm(&did, pair, day, recs, Some(prev), meta.vv);
         Ok(())
     }
 
@@ -1030,7 +1043,7 @@ impl Inner {
         let flags: Vec<(&MsgRec, bool)> = touched.iter().map(|r| (*r, applied.added.contains(&r.id))).collect();
         let (cops, conv) = self.chat_conv_ops(core, me, did, pair, &flags)?;
         ops.extend(cops);
-        self.chat_persist(core, pair, shard, update, ops)?;
+        self.chat_persist(core, pair, shard, update, ops, &touched)?;
         let owned: Vec<(MsgRec, bool)> = flags.iter().map(|(r, a)| ((*r).clone(), *a)).collect();
         Ok((owned, conv, files))
     }
@@ -1194,7 +1207,7 @@ impl Inner {
             ops.extend(fo);
             let (cops, conv) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, true)])?;
             ops.extend(cops);
-            self.chat_persist(&core, &pair, shard, &update, ops)?;
+            self.chat_persist(&core, &pair, shard, &update, ops, &[&rec])?;
             conv
         };
         let m = self.chat_api_message(&core, &me, did, &pair, &day, &rec);
@@ -1228,7 +1241,7 @@ impl Inner {
         let mut ops = vec![core.store.put_mo_op(&pair, &day, &rec.id, w.writer_id(), end)?, core.store.mi_op(&pair, &rec.id, &day)?, core.store.out_op(&pair, &day, true)?];
         let (cops, _) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, true)])?;
         ops.extend(cops);
-        let r = self.chat_persist(&core, &pair, shard, &update, ops);
+        let r = self.chat_persist(&core, &pair, shard, &update, ops, &[&rec]);
         // The cached doc now writes under the sibling's writer ID: load it again for ours.
         shards.remove(&key);
         r.map(|_| rec.id)
@@ -1282,7 +1295,7 @@ impl Inner {
             let (cops, conv) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, false)])?;
             let mut ops = ops;
             ops.extend(cops);
-            self.chat_persist(&core, &pair, shard, &update, ops)?;
+            self.chat_persist(&core, &pair, shard, &update, ops, &[&rec])?;
             (rec, conv)
         };
         let m = self.chat_api_message(&core, &me, did, &pair, &day, &rec);
@@ -2032,8 +2045,11 @@ impl Inner {
         let recs: Vec<(&MsgRec, bool)> = msgs.values().map(|r| (r, false)).collect();
         let (cops, _) = self.chat_conv_ops(core, me, &sess.did, pair, &recs)?;
         ops.extend(cops);
+        let prev = core.store.shard_meta(pair, day)?.map(|m| m.vv).unwrap_or_default();
         core.store.db.apply(&ops).map_err(io)?;
         self.selfsync_dirty(&doc_name(pair, day));
+        let all: Vec<&MsgRec> = msgs.values().collect();
+        self.search_dm(&sess.did, pair, day, &all, Some(prev), meta.vv);
         Ok(true)
     }
 

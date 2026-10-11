@@ -168,6 +168,31 @@ fn decode_vv(b: &[u8]) -> Result<VersionVector, Error> {
 pub(crate) struct Changed {
     pub gid: String,
     pub new_items: Vec<super::state::Item>,
+    /// For the search index (`search/api.rs`).
+    pub posts: PostDiff,
+}
+
+/// The posts a change added or changed, the post ids it hid, and the doc's version vector
+/// before and after it.
+pub(crate) struct PostDiff {
+    pub put: Vec<super::state::Item>,
+    pub gone: Vec<String>,
+    pub prev: Vec<u8>,
+    pub vv: Vec<u8>,
+}
+
+fn posts_of(st: &GroupState) -> HashMap<String, String> {
+    st.items.iter().filter(|i| i.kind == super::state::ItemKind::Post).map(|i| (i.id.clone(), i.text.clone())).collect()
+}
+
+fn post_diff(before: &HashMap<String, String>, prev: &VersionVector, live: &Live) -> PostDiff {
+    let after = posts_of(&live.state);
+    PostDiff {
+        put: live.state.items.iter().filter(|i| after.contains_key(&i.id) && before.get(&i.id) != Some(&i.text)).cloned().collect(),
+        gone: before.keys().filter(|id| !after.contains_key(*id)).cloned().collect(),
+        prev: prev.encode(),
+        vv: live.doc.vv().encode(),
+    }
 }
 
 impl GroupCore {
@@ -238,6 +263,7 @@ impl GroupCore {
         let mut groups = self.groups.lock();
         let live = groups.get_mut(gid).ok_or(Error::NotFound)?;
         let rec = Record { v: 1, group: gid.to_string(), author: self.did.clone(), dev: self.dev, at: now_ms() as i64, seen: live.doc.seen(), body };
+        let (prev, posts_before) = (live.doc.vv(), posts_of(&live.state));
         let (entry, update) = live.doc.write(&self.account, &rec).map_err(|e| Error::Protocol(e.to_string()))?;
         let before: HashSet<String> = live.state.items.iter().map(|i| i.id.clone()).collect();
         live.entries.push(entry.clone());
@@ -245,7 +271,8 @@ impl GroupCore {
         let doc = &live.doc;
         self.store.append(gid, &mut live.meta, &update, || doc.snapshot())?;
         let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
-        Ok((entry, Changed { gid: gid.to_string(), new_items }))
+        let posts = post_diff(&posts_before, &prev, live);
+        Ok((entry, Changed { gid: gid.to_string(), new_items, posts }))
     }
 
     /// Validates and applies a remote update; `admit` is the session's policy, asked with the
@@ -253,6 +280,7 @@ impl GroupCore {
     fn apply(&self, gid: &str, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
         let mut groups = self.groups.lock();
         let Some(live) = groups.get_mut(gid) else { return Err(Reject::Policy("unknown group".into())) };
+        let prev = live.doc.vv();
         let fresh = {
             let Live { doc, entries, state, .. } = &mut *live;
             doc.apply_remote(update, |fresh| admit(state, entries, fresh))?
@@ -261,6 +289,7 @@ impl GroupCore {
             return Ok(None);
         }
         let before: HashSet<String> = live.state.items.iter().map(|i| i.id.clone()).collect();
+        let posts_before = posts_of(&live.state);
         live.entries.extend(fresh);
         live.rederive(gid);
         let doc = &live.doc;
@@ -268,7 +297,8 @@ impl GroupCore {
             tracing::warn!("group store: {e}");
         }
         let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
-        Ok(Some(Changed { gid: gid.to_string(), new_items }))
+        let posts = post_diff(&posts_before, &prev, live);
+        Ok(Some(Changed { gid: gid.to_string(), new_items, posts }))
     }
 
     /// Host addresses we pass on for `gid`: active chat and call hosts only (never a plain
@@ -559,6 +589,7 @@ impl Inner {
             codes: Default::default(),
         });
         *slot = Some(core.clone());
+        self.search_reconcile_groups(&core);
         Ok(core)
     }
 
@@ -697,6 +728,7 @@ impl Inner {
     /// announcements.
     pub(crate) fn group_after(self: &Arc<Self>, core: &Arc<GroupCore>, changed: Changed, from: Option<u64>) {
         let gid = changed.gid.clone();
+        self.search_group(&gid, &changed.posts);
         // Order matters: the records first (a removed member gets the flags that removed it,
         // a new host's acceptance reaches others before its address), then enforcement, then
         // address announcements.
@@ -1216,6 +1248,7 @@ impl Inner {
                 if stale {
                     core.groups.lock().remove(&gid);
                     let _ = core.store.forget(&gid);
+                    self.search_forget(&crate::search::api::group_src(&gid));
                 }
                 Err(Error::Rejected(reason))
             }

@@ -492,6 +492,8 @@ pub(crate) struct Inner {
     pub(crate) caps: crate::caps::CapsRt,
     pub(crate) devlist: crate::devlist::DevlistRt,
     pub(crate) video: crate::video_call::NodeVideo,
+    /// The selected account's search index (`search.redb`), open while its chat store is.
+    pub(crate) search: Mutex<Option<Arc<crate::search::index::SearchIndex>>>,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -583,6 +585,7 @@ impl Node {
             caps: Default::default(),
             devlist: Default::default(),
             video: Default::default(),
+            search: Mutex::new(None),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }

@@ -14,6 +14,7 @@ pub mod gcall;
 mod logging;
 mod node;
 mod rekey;
+mod search;
 mod store;
 mod sync;
 mod version;
@@ -33,6 +34,7 @@ pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents
 pub use group::calls::{GroupCall, GroupCallConditions, GroupCallDeviceClass, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupCallHere, GroupCallThermal};
 pub use group::invitations::{GroupInvitation, GroupInvitationEvents, GroupInvitationState};
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
+pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameKind, SearchResults};
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};

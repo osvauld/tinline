@@ -76,6 +76,11 @@ impl Sealed {
         self.store.list_prefixed(prefix)
     }
 
+    /// [`Store::keys_after`]: one page of the keys under `prefix`.
+    pub fn keys_after(&self, prefix: &str, after: Option<&str>, limit: usize) -> Result<Vec<String>, StorageError> {
+        self.store.keys_after(prefix, after, limit)
+    }
+
     /// Opened values under `prefix`, sorted by path. A record that does not open fails the scan.
     pub fn scan(&self, prefix: &str) -> Result<Vec<(String, Vec<u8>)>, StorageError> {
         self.store

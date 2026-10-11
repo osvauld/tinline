@@ -143,6 +143,28 @@ impl Store {
         Ok(keys)
     }
 
+    /// At most `limit` keys under `prefix` that sort after `after` (all of them from the start
+    /// with `None`), in sorted order: one page of a prefix scan.
+    pub fn keys_after(&self, prefix: &str, after: Option<&str>, limit: usize) -> Result<Vec<String>, StorageError> {
+        let db = self.db()?;
+        let txn = db.begin_read()?;
+        let table = txn.open_table(TABLE)?;
+        let start = after.filter(|a| *a >= prefix).unwrap_or(prefix);
+        let mut keys = Vec::new();
+        for item in table.range(start..)? {
+            let (key, _) = item?;
+            let key = key.value();
+            if !key.starts_with(prefix) || keys.len() >= limit {
+                break;
+            }
+            if after == Some(key) {
+                continue;
+            }
+            keys.push(key.to_string());
+        }
+        Ok(keys)
+    }
+
     /// Keys and values under `prefix`, sorted.
     pub fn scan(&self, prefix: &str) -> Result<Vec<(String, Vec<u8>)>, StorageError> {
         let db = self.db()?;
@@ -164,6 +186,18 @@ impl Store {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn keys_after_pages_a_prefix() {
+        let s = Store::open_in_memory().unwrap();
+        for k in ["a/1", "a/2", "a/3", "b/1"] {
+            s.put(k, b"").unwrap();
+        }
+        assert_eq!(s.keys_after("a/", None, 2).unwrap(), ["a/1", "a/2"]);
+        assert_eq!(s.keys_after("a/", Some("a/2"), 5).unwrap(), ["a/3"]);
+        assert!(s.keys_after("a/", Some("a/3"), 5).unwrap().is_empty());
+        assert_eq!(s.keys_after("b/", Some("a/9"), 5).unwrap(), ["b/1"]);
+    }
 
     // KIND: invariant (GL) — `close` lets the file go for every clone at once: the next owner opens
     // it without waiting, and the old clones fail cleanly instead of holding it.
