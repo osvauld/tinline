@@ -15,7 +15,17 @@
     "detail": ""
   },
   {
-    "name": "1440 iframe Back button visible",
+    "name": "1440 iframe uses embed=1",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: no in-frame back, no harness chrome",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: app fills frame, no border/radius",
     "ok": true,
     "detail": ""
   },
@@ -42,12 +52,12 @@
   {
     "name": "1440 phone fits in viewport",
     "ok": true,
-    "detail": "{\"x\":525,\"y\":101,\"width\":390,\"height\":842}"
+    "detail": "{\"x\":525,\"y\":59,\"width\":390,\"height\":844}"
   },
   {
     "name": "1440 composer inside iframe",
     "ok": true,
-    "detail": "{\"x\":525,\"y\":887,\"width\":390,\"height\":56}"
+    "detail": "{\"x\":525,\"y\":845,\"width\":390,\"height\":58}"
   },
   {
     "name": "toggle 320 iframe width",
@@ -63,11 +73,6 @@
     "name": "320 iframe composer visible",
     "ok": true,
     "detail": ""
-  },
-  {
-    "name": "dimension caption updates",
-    "ok": true,
-    "detail": "320 × 842 CSS pixels."
   },
   {
     "name": "toggle back to 390",
@@ -92,22 +97,22 @@
   {
     "name": "mobile.html invalid chat \"nobody\" safe fallback",
     "ok": true,
-    "detail": "Arjun Oommen\nOnline · direct "
+    "detail": "AO\nArjun Oommen\nOnline "
   },
   {
     "name": "mobile.html invalid chat \"<script>alert(1)</script>\" safe fallback",
     "ok": true,
-    "detail": "Arjun Oommen\nOnline · direct "
+    "detail": "AO\nArjun Oommen\nOnline "
   },
   {
     "name": "mobile.html invalid chat \"\" safe fallback",
     "ok": true,
-    "detail": "Arjun Oommen\nOnline · direct "
+    "detail": "AO\nArjun Oommen\nOnline "
   },
   {
     "name": "mobile.html invalid chat \"__proto__\" safe fallback",
     "ok": true,
-    "detail": "Arjun Oommen\nOnline · direct "
+    "detail": "AO\nArjun Oommen\nOnline "
   },
   {
     "name": "chat.html invalid param shows list, no errors",
@@ -142,22 +147,22 @@
   {
     "name": "390 composer within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":788,\"width\":390,\"height\":56}"
+    "detail": "{\"x\":0,\"y\":786,\"width\":390,\"height\":58}"
   },
   {
     "name": "390 back target >=44",
     "ok": true,
-    "detail": "{\"x\":6,\"y\":6.859375,\"width\":44,\"height\":44}"
+    "detail": "{\"x\":6,\"y\":6,\"width\":44,\"height\":44}"
   },
   {
     "name": "390 #sendBtn >=44px",
     "ok": true,
-    "detail": "{\"x\":338,\"y\":794,\"width\":44,\"height\":44}"
+    "detail": "{\"x\":338,\"y\":792,\"width\":44,\"height\":44}"
   },
   {
     "name": "390 [aria-label=\"Attach a file\"] >=44px",
     "ok": true,
-    "detail": "{\"x\":8,\"y\":794,\"width\":44,\"height\":44}"
+    "detail": "{\"x\":8,\"y\":792,\"width\":44,\"height\":44}"
   },
   {
     "name": "390 send enabled with draft",
@@ -172,7 +177,7 @@
   {
     "name": "390 draft preview in list",
     "ok": true,
-    "detail": "AO\nArjun Oommen\n12:41\nDraft: Draft for QA"
+    "detail": "AO\nArjun Oommen\n12:44\nDraft: Draft for QA"
   },
   {
     "name": "390 draft restored",
@@ -192,7 +197,7 @@
   {
     "name": "390 new message above composer",
     "ok": true,
-    "detail": "{\"x\":184.40625,\"y\":509.25,\"width\":193.59375,\"height\":61.28125}"
+    "detail": "{\"x\":10,\"y\":739,\"width\":370,\"height\":37}"
   },
   {
     "name": "390 empty send gives no message",
@@ -202,7 +207,7 @@
   {
     "name": "390 long draft composer stays in viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":692,\"width\":390,\"height\":152}"
+    "detail": "{\"x\":0,\"y\":690,\"width\":390,\"height\":154}"
   },
   {
     "name": "390 long draft no overflow",
@@ -212,7 +217,7 @@
   {
     "name": "390 attach sheet within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":436.21875,\"width\":390,\"height\":407.78125}"
+    "detail": "{\"x\":0,\"y\":498,\"width\":390,\"height\":346}"
   },
   {
     "name": "390 attachment adds message",
@@ -230,14 +235,34 @@
     "detail": "<textarea id=\"ta\" rows=\"1\" aria-label=\"Message to Arjun Oommen\" placeholder=\"Mes"
   },
   {
-    "name": "390 message menu opens",
+    "name": "390 no visible per-message menu buttons",
     "ok": true,
     "detail": ""
   },
   {
-    "name": "390 message menu within viewport",
+    "name": "390 long-press cancelled by >10px move",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":565.265625,\"width\":390,\"height\":278.734375}"
+    "detail": ""
+  },
+  {
+    "name": "390 short press does not open menu",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 long-press (500ms) opens message sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 sheet docked to bottom, within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":554,\"width\":390,\"height\":290}"
+  },
+  {
+    "name": "390 sheet items Reply/Copy/Edit/Delete/Message info",
+    "ok": true,
+    "detail": "Message optionsReplyCopyEditDeleteMessage info"
   },
   {
     "name": "390 menu Escape closes",
@@ -245,24 +270,49 @@
     "detail": ""
   },
   {
+    "name": "390 focus returns to the message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 contextmenu opens sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 scrim tap closes sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 keyboard: hidden menu button opens sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 Message info sheet opens",
+    "ok": true,
+    "detail": ""
+  },
+  {
     "name": "390 details sheet within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":191.5625,\"width\":390,\"height\":652.4375}"
+    "detail": "{\"x\":0,\"y\":293.8125,\"width\":390,\"height\":550.1875}"
   },
   {
     "name": "390 keyboard-height: composer visible",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":366,\"width\":390,\"height\":56}"
+    "detail": "{\"x\":0,\"y\":364,\"width\":390,\"height\":58}"
   },
   {
     "name": "390 keyboard-height: header visible",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":0,\"width\":390,\"height\":58.734375}"
+    "detail": "{\"x\":0,\"y\":0,\"width\":390,\"height\":57}"
   },
   {
     "name": "390 keyboard-height: message list has room (>=40px)",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":58.734375,\"width\":390,\"height\":307.265625}"
+    "detail": "{\"x\":0,\"y\":57,\"width\":390,\"height\":307}"
   },
   {
     "name": "390 native no runtime errors",
@@ -287,22 +337,22 @@
   {
     "name": "320 composer within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":584,\"width\":320,\"height\":56}"
+    "detail": "{\"x\":0,\"y\":582,\"width\":320,\"height\":58}"
   },
   {
     "name": "320 back target >=44",
     "ok": true,
-    "detail": "{\"x\":6,\"y\":6.859375,\"width\":44,\"height\":44}"
+    "detail": "{\"x\":6,\"y\":6,\"width\":44,\"height\":44}"
   },
   {
     "name": "320 #sendBtn >=44px",
     "ok": true,
-    "detail": "{\"x\":268,\"y\":590,\"width\":44,\"height\":44}"
+    "detail": "{\"x\":268,\"y\":588,\"width\":44,\"height\":44}"
   },
   {
     "name": "320 [aria-label=\"Attach a file\"] >=44px",
     "ok": true,
-    "detail": "{\"x\":8,\"y\":590,\"width\":44,\"height\":44}"
+    "detail": "{\"x\":8,\"y\":588,\"width\":44,\"height\":44}"
   },
   {
     "name": "320 send enabled with draft",
@@ -317,7 +367,7 @@
   {
     "name": "320 draft preview in list",
     "ok": true,
-    "detail": "AO\nArjun Oommen\n12:41\nDraft: Draft for QA"
+    "detail": "AO\nArjun Oommen\n12:44\nDraft: Draft for QA"
   },
   {
     "name": "320 draft restored",
@@ -337,7 +387,7 @@
   {
     "name": "320 new message above composer",
     "ok": true,
-    "detail": "{\"x\":114.40625,\"y\":510.4375,\"width\":193.59375,\"height\":61.28125}"
+    "detail": "{\"x\":10,\"y\":535,\"width\":300,\"height\":37}"
   },
   {
     "name": "320 empty send gives no message",
@@ -347,7 +397,7 @@
   {
     "name": "320 long draft composer stays in viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":488,\"width\":320,\"height\":152}"
+    "detail": "{\"x\":0,\"y\":486,\"width\":320,\"height\":154}"
   },
   {
     "name": "320 long draft no overflow",
@@ -357,7 +407,7 @@
   {
     "name": "320 attach sheet within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":219.09375,\"width\":320,\"height\":420.90625}"
+    "detail": "{\"x\":0,\"y\":294,\"width\":320,\"height\":346}"
   },
   {
     "name": "320 attachment adds message",
@@ -375,14 +425,34 @@
     "detail": "<textarea id=\"ta\" rows=\"1\" aria-label=\"Message to Arjun Oommen\" placeholder=\"Mes"
   },
   {
-    "name": "320 message menu opens",
+    "name": "320 no visible per-message menu buttons",
     "ok": true,
     "detail": ""
   },
   {
-    "name": "320 message menu within viewport",
+    "name": "320 long-press cancelled by >10px move",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":361.265625,\"width\":320,\"height\":278.734375}"
+    "detail": ""
+  },
+  {
+    "name": "320 short press does not open menu",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 long-press (500ms) opens message sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 sheet docked to bottom, within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":350,\"width\":320,\"height\":290}"
+  },
+  {
+    "name": "320 sheet items Reply/Copy/Edit/Delete/Message info",
+    "ok": true,
+    "detail": "Message optionsReplyCopyEditDeleteMessage info"
   },
   {
     "name": "320 menu Escape closes",
@@ -390,24 +460,49 @@
     "detail": ""
   },
   {
+    "name": "320 focus returns to the message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 contextmenu opens sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 scrim tap closes sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 keyboard: hidden menu button opens sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 Message info sheet opens",
+    "ok": true,
+    "detail": ""
+  },
+  {
     "name": "320 details sheet within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":32,\"width\":320,\"height\":608}"
+    "detail": "{\"x\":0,\"y\":52.625,\"width\":320,\"height\":587.375}"
   },
   {
     "name": "320 keyboard-height: composer visible",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":264,\"width\":320,\"height\":56}"
+    "detail": "{\"x\":0,\"y\":262,\"width\":320,\"height\":58}"
   },
   {
     "name": "320 keyboard-height: header visible",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":0,\"width\":320,\"height\":58.734375}"
+    "detail": "{\"x\":0,\"y\":0,\"width\":320,\"height\":57}"
   },
   {
     "name": "320 keyboard-height: message list has room (>=40px)",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":58.734375,\"width\":320,\"height\":205.265625}"
+    "detail": "{\"x\":0,\"y\":57,\"width\":320,\"height\":205}"
   },
   {
     "name": "320 native no runtime errors",
@@ -480,9 +575,9 @@
     "detail": "http://127.0.0.1:8768/refined/home.html#chats"
   },
   {
-    "name": "390 group row stays on home",
+    "name": "390 group row opens groups.html",
     "ok": true,
-    "detail": "http://127.0.0.1:8768/refined/home.html#groups"
+    "detail": "http://127.0.0.1:8768/refined/groups.html?group=hike&from=home"
   },
   {
     "name": "390 Escape in from=home chat returns home",
@@ -560,9 +655,9 @@
     "detail": "http://127.0.0.1:8768/refined/home.html#chats"
   },
   {
-    "name": "320 group row stays on home",
+    "name": "320 group row opens groups.html",
     "ok": true,
-    "detail": "http://127.0.0.1:8768/refined/home.html#groups"
+    "detail": "http://127.0.0.1:8768/refined/groups.html?group=hike&from=home"
   },
   {
     "name": "320 Escape in from=home chat returns home",
@@ -580,9 +675,14 @@
     "detail": "http://127.0.0.1:8768/refined/home.html"
   },
   {
-    "name": "home 1440 has link to mobile preview (informational)",
+    "name": "home 1440 embeds chat.html with embed=1",
     "ok": true,
-    "detail": "count 1"
+    "detail": "chat.html?chat=arjun&embed=1"
+  },
+  {
+    "name": "home 1440 embedded chat has no back button or harness",
+    "ok": true,
+    "detail": ""
   },
   {
     "name": "chat.html mobilePreview href resolves to mobile.html chat=arjun",
@@ -607,7 +707,7 @@
   {
     "name": "mobile.html at 390: iframe within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":61,\"width\":390,\"height\":783}"
+    "detail": "{\"x\":0,\"y\":48,\"width\":390,\"height\":796}"
   },
   {
     "name": "mobile.html at 320: no overflow",

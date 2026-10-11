@@ -11,7 +11,9 @@ await step('desktop-mobile',async()=>{const p=await page(b);await p.goto(BASE+'m
  chk('1440 mobile.html iframe src deep-links chat',(await p.locator('#phone').getAttribute('src')).includes('chat=arjun'));
  chk('1440 iframe conv view',await f.locator('#app[data-view=conv]').count()===1);
  chk('1440 iframe composer visible',await f.locator('#ta').isVisible());
- chk('1440 iframe Back button visible',await f.locator('.back-list').isVisible());
+ chk('1440 iframe uses embed=1',(await p.locator('#phone').getAttribute('src')).includes('embed=1'));
+ chk('1440 embed: no in-frame back, no harness chrome',!(await f.locator('.back-list').isVisible())&&!(await f.locator('.harness').isVisible()));
+ chk('1440 embed: app fills frame, no border/radius',await f.locator('#app').evaluate(e=>{const c=getComputedStyle(e),r=e.getBoundingClientRect();return c.borderTopWidth==='0px'&&c.borderTopLeftRadius==='0px'&&Math.abs(r.height-innerHeight)<2}));
  chk('1440 iframe shows Arjun',(await f.locator('#convTitle').innerText()).includes('Arjun'));
  chk('1440 iframe width 390',await p.locator('#phone').evaluate(e=>e.clientWidth)===390);
  chk('1440 outer no overflow',(o=>o.sw<=o.iw)(await ovf(p)));
@@ -25,7 +27,6 @@ await step('desktop-mobile',async()=>{const p=await page(b);await p.goto(BASE+'m
  chk('toggle 320 iframe width',await p.locator('#phone').evaluate(e=>e.clientWidth)===320);
  chk('320 iframe inner no overflow',(o=>o.sw<=o.iw)(await ovf(p.frames().find(x=>x.url().includes('chat.html')))));
  chk('320 iframe composer visible',await f.locator('#ta').isVisible());
- chk('dimension caption updates',(await p.locator('#dimensions').innerText()).includes('320'),await p.locator('#dimensions').innerText());
  await shot(p,'1440-iframe-320');
  await p.selectOption('#width','390');await p.waitForTimeout(200);chk('toggle back to 390',await p.locator('#phone').evaluate(e=>e.clientWidth)===390);
  // desktop link
@@ -71,9 +72,23 @@ for(const w of [390,320]){await step('native'+w,async()=>{const h=w===390?844:64
  chk(w+' attachment adds message',await p.locator('#msgs .m').count()===before+2);chk(w+' attach sheet closes',await p.locator('#dAttach[open]').count()===0);
  chk(w+' focus returns sensible after attach',await p.evaluate(()=>!!document.activeElement&&document.activeElement!==document.body),await p.evaluate(()=>document.activeElement.outerHTML.slice(0,80)));await shot(p,'native-'+w+'-attached');
  // message menu
- const more=p.locator('#msgs .m .more').last();await more.click();await p.waitForTimeout(250);
- const open=await p.locator('dialog[open]').count();chk(w+' message menu opens',open===1);
- if(open){const mb=await p.locator('dialog[open]').boundingBox();chk(w+' message menu within viewport',mb.x>=-1&&mb.x+mb.width<=w+1&&mb.y>=-1&&mb.y+mb.height<=h+1,JSON.stringify(mb));await shot(p,'native-'+w+'-menu');await p.keyboard.press('Escape');await p.waitForTimeout(150);chk(w+' menu Escape closes',await p.locator('dialog[open]').count()===0)}
+ chk(w+' no visible per-message menu buttons',await p.$$eval('#msgs .more',e=>e.every(x=>x.getBoundingClientRect().width<=1)));
+ const tbub=p.locator('#msgs .m.me .bub').first();const tb=await tbub.boundingBox();
+ const lp=(dx,ms)=>tbub.evaluate(async(el,[dx,ms])=>{const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,o={bubbles:true,pointerType:'touch',isPrimary:true,pointerId:7};
+  el.dispatchEvent(new PointerEvent('pointerdown',{...o,clientX:x,clientY:y,button:0}));if(dx)el.dispatchEvent(new PointerEvent('pointermove',{...o,clientX:x+dx,clientY:y}));
+  await new Promise(r=>setTimeout(r,ms));el.dispatchEvent(new PointerEvent('pointerup',{...o,clientX:x+dx,clientY:y}))},[dx,ms]);
+ await lp(14,650);chk(w+' long-press cancelled by >10px move',await p.locator('dialog[open]').count()===0);
+ await lp(0,300);chk(w+' short press does not open menu',await p.locator('dialog[open]').count()===0);
+ await lp(0,650);await p.waitForTimeout(250);
+ const open=await p.locator('#dActions[open]').count();chk(w+' long-press (500ms) opens message sheet',open===1&&(await p.getAttribute('#dActions','class'))==='sheet');
+ if(open){const mb=await p.locator('dialog[open]').boundingBox();chk(w+' sheet docked to bottom, within viewport',mb.x>=-1&&mb.x+mb.width<=w+1&&mb.y>=-1&&Math.abs(mb.y+mb.height-h)<=2,JSON.stringify(mb));
+  const t=(await p.textContent('#actionsBody')).replace(/\s+/g,' ');chk(w+' sheet items Reply/Copy/Edit/Delete/Message info',/Reply.*Copy.*Edit.*Delete.*Message info/.test(t),t);
+  await shot(p,'native-'+w+'-menu');await p.keyboard.press('Escape');await p.waitForTimeout(150);chk(w+' menu Escape closes',await p.locator('dialog[open]').count()===0);
+  chk(w+' focus returns to the message',await p.evaluate(()=>!!document.activeElement.closest('.m')))}
+ await tbub.dispatchEvent('contextmenu');await p.waitForTimeout(250);chk(w+' contextmenu opens sheet',await p.locator('#dActions[open].sheet').count()===1);
+ await p.mouse.click(w/2,40);await p.waitForTimeout(200);chk(w+' scrim tap closes sheet',await p.locator('dialog[open]').count()===0);
+ await p.locator('#msgs .m.me .more').first().focus();await p.keyboard.press('Enter');await p.waitForTimeout(250);chk(w+' keyboard: hidden menu button opens sheet',await p.locator('#dActions[open]').count()===1);
+ if(await p.locator('#dActions[open]').count()){await p.locator('#dActions .mi',{hasText:'Message info'}).click();await p.waitForTimeout(250);chk(w+' Message info sheet opens',await p.locator('#dMsgInfo[open]').count()===1);await shot(p,'native-'+w+'-msginfo');await p.keyboard.press('Escape');await p.waitForTimeout(150)}
  // info sheet
  await p.locator('#convTitle').click();await p.waitForTimeout(250);const ib=await p.locator('dialog[open]').boundingBox().catch(()=>null);
  chk(w+' details sheet within viewport',ib&&ib.x>=-1&&ib.x+ib.width<=w+1&&ib.y>=-1&&ib.y+ib.height<=h+1,JSON.stringify(ib));await shot(p,'native-'+w+'-info');await p.keyboard.press('Escape');
@@ -97,16 +112,17 @@ for(const w of [390,320]){await step('home'+w,async()=>{const p=await page(b,{w,
  // browser back history
  await p.locator('#list [data-person=meera]').click();await p.waitForTimeout(400);chk(w+' home->Meera correct person',(await p.locator('#convTitle').innerText()).includes('Meera'));
  await p.goBack();await p.waitForTimeout(600);chk(w+' browser Back returns home',p.url().includes('home.html'),p.url());
- // group row doesn't navigate to chat.html
- await p.locator('#mobile-nav [data-tab=groups]').click();const g=await p.locator('#list [data-person]').first();await g.click();await p.waitForTimeout(300);
- chk(w+' group row stays on home',p.url().includes('home.html'),p.url());
+ // group row opens the groups study
+ await p.locator('#mobile-nav [data-tab=groups]').click();const g=await p.locator('#list [data-person]').first();await g.click();await p.waitForTimeout(500);
+ chk(w+' group row opens groups.html',p.url().includes('groups.html'),p.url());
  // Escape key in chat from home
  await p.goto(BASE+'chat.html?chat=dev&from=home');await p.waitForTimeout(300);await p.locator('#convTitle').focus();await p.keyboard.press('Escape');await p.waitForTimeout(600);chk(w+' Escape in from=home chat returns home',p.url().includes('home.html'),p.url());
  chk(w+' home flow no runtime errors',!p.errs.length,p.errs.join('|'));await p.close()})}
 // 4. 760px home boundary and desktop home
 await step('home1440',async()=>{const p=await page(b);await p.goto(BASE+'home.html');await p.waitForTimeout(900);await p.locator('#list [data-person=arjun]').click();await p.waitForTimeout(400);
  chk('1440 home click stays on home with detail',p.url().includes('home.html'),p.url());await shot(p,'home-1440');
- const links=await p.locator('a[href*="mobile.html"]').count();chk('home 1440 has link to mobile preview (informational)',links>0,'count '+links);await p.close()});
+ const src=await p.locator('#convo').getAttribute('src');chk('home 1440 embeds chat.html with embed=1',/chat\.html\?chat=arjun&embed=1/.test(src||''),src);
+ const fr=p.frameLocator('#convo');chk('home 1440 embedded chat has no back button or harness',!(await fr.locator('.back-list').isVisible())&&!(await fr.locator('.harness').isVisible()));await p.close()});
 await step('chatlinks',async()=>{const p=await page(b);await p.goto(BASE+'chat.html?chat=arjun');await p.waitForTimeout(400);const h=await p.locator('#mobilePreview').getAttribute('href');
  chk('chat.html mobilePreview href resolves to mobile.html chat=arjun',/mobile\.html\?.*chat=arjun/.test(h),h);await p.locator('#mobilePreview').click();await p.waitForTimeout(600);
  chk('mobilePreview click loads mobile iframe with Arjun',(await p.frameLocator('#phone').locator('#convTitle').innerText()).includes('Arjun'));

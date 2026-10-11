@@ -1,9 +1,45 @@
 [
  {
   "page": "chat",
+  "name": "harness: slim bar, drawer closed by default, no disclaimers visible, no hint row",
+  "ok": true,
+  "detail": "drawerVisible=false"
+ },
+ {
+  "page": "chat",
+  "name": "no default-blue links",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
   "name": "simulation controls reachable & switches have role/aria-checked",
   "ok": true,
   "detail": "switch:true:null switch:false:null"
+ },
+ {
+  "page": "chat",
+  "name": "bubbles: meta inline (short message is one line, meta inside last line box)",
+  "ok": true,
+  "detail": "[[37,8],[37,8],[37,8]]"
+ },
+ {
+  "page": "chat",
+  "name": "bubbles: sent uses --bub-out, no delivery prose in bubbles",
+  "ok": true,
+  "detail": "rgb(205, 235, 227)"
+ },
+ {
+  "page": "chat",
+  "name": "grouping: 2px inside a group, tight stack-facing corner",
+  "ok": true,
+  "detail": "[[\"2px\",\"6px\"],[\"2px\",\"6px\"],[\"2px\",\"6px\"]]"
+ },
+ {
+  "page": "chat",
+  "name": "no persistent menu buttons (chevrons hidden until hover)",
+  "ok": true,
+  "detail": "0,0,0,0"
  },
  {
   "page": "chat",
@@ -21,7 +57,7 @@
   "page": "chat",
   "name": "chat list shows Draft marker for chat with unsent text",
   "ok": true,
-  "detail": "SRSana Rao08:20Draft: half written thoughtDPDev Patel11:05Thursday works. The place near the station?MutedMNMeera Nair17:58Waiting · Running 10 min late, sorry2"
+  "detail": "MNMeera Nair17:41No rush2AOArjun Oommen12:44Draft: half written thoughtDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
  },
  {
   "page": "chat",
@@ -39,13 +75,13 @@
   "page": "chat",
   "name": "Enter sends; message appears; composer cleared and keeps focus",
   "ok": true,
-  "detail": "line1 line208:50Sending… focus=ta"
+  "detail": "line1 line213:51Sending focus=ta"
  },
  {
   "page": "chat",
   "name": "sent message progresses to sent/delivered state",
   "ok": true,
-  "detail": "line1 line208:50Delivered to Sana’s phone"
+  "detail": "line1 line213:51Delivered"
  },
  {
   "page": "chat",
@@ -57,7 +93,7 @@
   "page": "chat",
   "name": "failed send shows failure and Retry control",
   "ok": true,
-  "detail": "goes nowhere first08:50Not sentRetryRemove retryBtns=1"
+  "detail": "goes nowhere first13:51Not delivered·Retry retryBtns=1"
  },
  {
   "page": "chat",
@@ -69,37 +105,37 @@
   "page": "chat",
   "name": "retry: focus not lost to BODY",
   "ok": true,
-  "detail": "Actions for your message at 08:50: goes nowhere first"
+  "detail": "Actions for your message at 13:51: goes nowhere first"
  },
  {
   "page": "chat",
   "name": "retry succeeds (no failed message remains)",
   "ok": true,
-  "detail": "goes nowhere first08:50Delivered to Sana’s phone visibleRetry=0"
+  "detail": "goes nowhere first13:51Delivered visibleRetry=0"
  },
  {
   "page": "chat",
   "name": "contact offline: header/status changes",
   "ok": true,
-  "detail": "Sana RaoOffline · messages wait on this phoneSana isn’t reachable right now. Your messages stay on this phone and send by themselves when yo"
+  "detail": "AOArjun OommenLast seen 13:51Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
  },
  {
   "page": "chat",
   "name": "send while offline shows waiting/queued state",
   "ok": true,
-  "detail": "sent while offline08:50Waiting for Sana to be online"
+  "detail": "sent while offline13:51Waiting for Arjun to be online"
  },
  {
   "page": "chat",
   "name": "back online: queued message delivered",
   "ok": true,
-  "detail": "sent while offline08:50Delivered to Sana’s phone"
+  "detail": "sent while offline13:51Delivered"
  },
  {
   "page": "chat",
   "name": "simulate incoming adds a message or badge",
   "ok": true,
-  "detail": "AOArjun Oommen08:50Are you free for a quick call?1SRSana Rao08:50You: sent while offlineDPDev Patel1"
+  "detail": "MNMeera Nair17:41No rush2SRSana Rao13:51Ha, that’s the best news today1AOArjun Oommen13:51You: sent "
  },
  {
   "page": "chat",
@@ -133,15 +169,33 @@
  },
  {
   "page": "chat",
-  "name": "message actions dialog lists Reply/Copy/Delete",
+  "name": "desktop: chevron appears on hover",
   "ok": true,
-  "detail": "MessageLunch Thursday?ReplyCopy textEditDelete…Delivered to Dev’s phone at 11:02. Tinline doesn’t show whether it was op"
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "message menu is an anchored popover listing Reply/Copy/Edit/Delete/Message info",
+  "ok": true,
+  "detail": "pop Message optionsReplyCopyEditDeleteMessage info"
  },
  {
   "page": "chat",
   "name": "actions Escape restores focus to the actions button",
   "ok": true,
   "detail": "Actions for your message at 11:02: Lunch Thursday?"
+ },
+ {
+  "page": "chat",
+  "name": "right-click opens the same popover",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "Message info shows sent time and per-device delivery",
+  "ok": true,
+  "detail": "Message infoLunch Thursday?Sent11:02Dev’s phoneDelivered 11:02Tinline shows when a message reaches Dev’s devices, not when it’s read.Done"
  },
  {
   "page": "chat",
@@ -159,7 +213,7 @@
   "page": "chat",
   "name": "Empty the chat list shows empty state with action",
   "ok": true,
-  "detail": "No chats yetMessages go straight from your phone to theirs, end-to-end encrypted. Nothing is stored "
+  "detail": "No chats yetMessages stay on your devices.Start a chat"
  },
  {
   "page": "chat",
@@ -183,13 +237,13 @@
   "page": "chat",
   "name": "mobile conversation: composer inside viewport, no overflow",
   "ok": true,
-  "detail": "[58,332,838]{\"sw\":390,\"cw\":390,\"bw\":390}"
+  "detail": "[58,332,836]{\"sw\":390,\"cw\":390,\"bw\":390}"
  },
  {
   "page": "chat",
   "name": "mobile conversation: Back button present and returns to list, focus restored to opened row",
   "ok": true,
-  "detail": "listVisible=true focus=dev"
+  "detail": "listVisible=true focus=arjun"
  },
  {
   "page": "chat",
