@@ -30,7 +30,7 @@
   /* secondary accents */
   --lav:#e1e4f7;  --lav-ink:#374582;
   --gold:#c98a1e; --gold-ink:#8a5f12; --warn-bg:#fcefd2; --warn-ink:#5c3b00;
-  --danger:#a12b23; --danger-bg:#f8e3e1; --on-danger:#ffffff;
+  --danger:#a12b23; --danger-bg:#f8e3e1; --on-danger:#ffffff; --danger-btn:#a12b23; --on-danger-btn:#ffffff;
 
   /* avatar hue pairs — pick via hash, see SPEC.md §Avatars */
   --av0-bg:#d7ece6; --av0-ink:#0b5447;
@@ -65,7 +65,7 @@
   --bub-meta-in:#95a19b; --bub-meta-out:#8fc9b9;
   --lav:#2f3a75; --lav-ink:#dfe3ff;
   --gold:#e8b04a; --gold-ink:#e8b04a; --warn-bg:#4a3500; --warn-ink:#ffdfa0;
-  --danger:#f2b8b5; --danger-bg:#4d201c; --on-danger:#2b0906;
+  --danger:#f2b8b5; --danger-bg:#4d201c; --on-danger:#2b0906; --danger-btn:#c73a30; --on-danger-btn:#ffffff;
   --av0-bg:#164f45; --av0-ink:#b7e6d8;
   --av1-bg:#2f3a75; --av1-ink:#dfe3ff;
   --av2-bg:#5c2a35; --av2-ink:#ffd9e0;
@@ -85,7 +85,7 @@
   --bub-meta-in:#95a19b; --bub-meta-out:#8fc9b9;
   --lav:#2f3a75; --lav-ink:#dfe3ff;
   --gold:#e8b04a; --gold-ink:#e8b04a; --warn-bg:#4a3500; --warn-ink:#ffdfa0;
-  --danger:#f2b8b5; --danger-bg:#4d201c; --on-danger:#2b0906;
+  --danger:#f2b8b5; --danger-bg:#4d201c; --on-danger:#2b0906; --danger-btn:#c73a30; --on-danger-btn:#ffffff;
   --av0-bg:#164f45; --av0-ink:#b7e6d8;
   --av1-bg:#2f3a75; --av1-ink:#dfe3ff;
   --av2-bg:#5c2a35; --av2-ink:#ffd9e0;

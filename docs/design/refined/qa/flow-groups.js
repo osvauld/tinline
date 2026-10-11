@@ -7,6 +7,28 @@ const simClose=async(p)=>{if(!(await p.$eval('#sim',e=>e.hidden)))await p.click(
 const open=async(p)=>{for(const k of ['inv','req','sent']){const d=p.locator('#fold-'+k);if(await d.count()&&(await d.getAttribute('aria-expanded'))!=='true')await d.click()}};
 (async()=>{const b=await L.launch();
 let p=await L.page(b);await p.goto(L.BASE+'groups.html');await sleep(p,400);
+await chk('group call: 44px phone button left of Members',async()=>{const r=await p.evaluate(()=>{const c=document.querySelector('#callBtn'),m=document.querySelector('#memBtn');return c&&{tag:c.tagName,w:c.offsetWidth,h:c.offsetHeight,left:c.getBoundingClientRect().right<=m.getBoundingClientRect().left,dis:c.getAttribute('aria-disabled')}});return {ok:!!r&&r.tag==='BUTTON'&&r.w===44&&r.h===44&&r.left&&!r.dis,d:JSON.stringify(r)}});
+const url0=p.url();await p.click('#callBtn');await sleep(p,300);
+await chk('call: in-page overlay fills the app frame, no navigation, focus on overlay',async()=>{const r=await p.evaluate(()=>{const o=document.querySelector('#callOv'),a=document.querySelector('#app').getBoundingClientRect(),b=o.getBoundingClientRect();return {fill:Math.abs(a.width-b.width)<3&&Math.abs(a.height-b.height)<3,f:document.activeElement===o,st:o.querySelector('.cst').textContent,av:o.querySelector('.gav').offsetWidth,h2:getComputedStyle(o.querySelector('h2')).fontSize,mute:o.querySelector('.mute').offsetWidth,end:o.querySelector('.end').offsetWidth,min:o.querySelector('.cmin').getAttribute('aria-label')}});return {ok:p.url()===url0&&r.fill&&r.f&&r.st==='Connecting…'&&r.av===96&&r.h2==='24px'&&r.mute===56&&r.end===64&&r.min==='Back to chat — call continues',d:JSON.stringify(r)}});
+await sleep(p,3700);
+await chk('call: connects (group calls do not ring) and the MM:SS timer ticks',async()=>{const r=await p.evaluate(()=>[document.querySelector('#callOv .cst').textContent,document.querySelector('#callOv .ctime').textContent]);return {ok:r[0]==='Connected'&&/^00:0[1-3]$/.test(r[1]),d:r.join(' ')}});
+await p.click('#callOv .mute');await sleep(p,100);
+await chk('call: Mute toggles (aria-pressed)',async()=>({ok:(await p.getAttribute('#callOv .mute','aria-pressed'))==='true'}));
+await p.screenshot({path:'screenshots/groups-desktop-call-overlay.png'});
+await p.keyboard.press('Escape');await sleep(p,250);
+await chk('call: Escape minimizes (never ends) to a 40px accent strip with name and timer; focus on strip',async()=>{const r=await p.evaluate(()=>{const s=document.querySelector('#callStrip');return s&&{h:s.offsetHeight,t:s.textContent,f:document.activeElement===s,ov:!!document.querySelector('#callOv')}});return {ok:!!r&&r.h===40&&/^Weekend hike · \d\d:\d\d$/.test(r.t)&&r.f&&!r.ov,d:JSON.stringify(r)}});
+await p.fill('#ta','typing during the call');await p.press('#ta','Enter');await sleep(p,300);
+await chk('call minimized: chatting works; header phone button now returns to the call',async()=>({ok:/typing during the call/.test(await p.textContent('#msgs'))&&/Return to call/.test(await p.getAttribute('#callBtn','aria-label'))}));
+await p.click('[data-row=family]');await sleep(p,200);
+await chk('call minimized: strip stays when switching chats; other group phone button also returns (no second call)',async()=>({ok:await p.locator('#callStrip').isVisible()&&/Return to call with Weekend hike/.test(await p.getAttribute('#callBtn','aria-label'))}));
+await p.screenshot({path:'screenshots/groups-desktop-call-strip.png'});
+await p.click('#callStrip');await sleep(p,200);
+await chk('call: strip returns to the overlay',async()=>({ok:await p.locator('#callOv').isVisible()}));
+await p.click('#callOv .end');await sleep(p,300);
+await chk('call: End closes overlay + strip, toast "Call ended", focus back on phone button',async()=>({ok:(await p.locator('#callOv,#callStrip').count())===0&&/Call ended/.test(await p.textContent('#toastHost'))&&(await foc(p))==='callBtn',d:await foc(p)}));
+await p.click('[data-row=book]');await sleep(p,200);
+await chk('group call: no call button in the removed (read-only) group',async()=>({ok:(await p.locator('#callBtn').count())===0}));
+await p.click('[data-row=hike]');await sleep(p,200);
 await chk('harness: Phone preview link visible at 1440, points at the open group',async()=>{const v=await p.locator('#mobilePreview').isVisible();const h0=await p.getAttribute('#mobilePreview','href');await p.click('[data-row=family]');await sleep(p,200);const h1=await p.getAttribute('#mobilePreview','href');await p.screenshot({path:'screenshots/groups-desktop-phone-preview-link.png'});await p.click('[data-row=hike]');await sleep(p,200);return {ok:v&&h0==='mobile.html?screen=groups&group=hike'&&h1==='mobile.html?screen=groups&group=family',d:h0+' '+h1}});
 // new group
 await p.focus('#newBtn');await p.click('#newBtn');await sleep(p,300);
@@ -50,6 +72,8 @@ await sleep(p,3500);
 await chk('sent message reaches a delivered/relayed state (hosts online)',async()=>{const t=(await p.textContent('#convPane')).replace(/\s+/g,' ');const i=t.indexOf('see you at the gate');return {ok:/deliver|relay|sent|host/i.test(t.slice(i,i+120)),d:t.slice(i,i+120)}});
 // hosts offline sim
 await simOpen(p);await p.locator('#simBody label:has-text("host desktops offline")').click();await sleep(p,500);await simClose(p);
+await chk('group call: disabled (aria-disabled, muted) while hosts are degraded; no extra banner; click does nothing',async()=>{const r=await p.evaluate(()=>{const c=document.querySelector('#callBtn');return {dis:c.getAttribute('aria-disabled'),op:getComputedStyle(c).opacity,strips:document.querySelectorAll('.strip').length}});await p.click('#callBtn',{force:true});await sleep(p,200);return {ok:r.dis==='true'&&r.op==='0.38'&&r.strips===1&&(await p.locator('#callOv').count())===0,d:JSON.stringify(r)}});
+await p.screenshot({path:'screenshots/groups-desktop-call-disabled.png'});
 await chk('hosts offline: thin strip under header, title stays "8 members"',async()=>{const t=await p.textContent('.strip').catch(()=>'');return {ok:/Host offline/.test(t)&&(await p.textContent('#stLine'))==='8 members',d:t}});
 await p.fill('#ta','nobody is hosting');await p.press('#ta','Enter');await sleep(p,3500);
 await p.screenshot({path:'screenshots/groups-desktop-hosts-offline.png'});
@@ -84,6 +108,10 @@ await chk('empty account: empty state with a New group action',async()=>{const t
 await p.context().close();
 // mobile
 p=await L.page(b,{w:390,h:844,mobile:true});await p.goto(L.BASE+'groups.html');await sleep(p,400);
+await chk('mobile: call overlay + strip across conversation and list views at 390',async()=>{await p.locator('[data-row=hike]').click();await sleep(p,300);const w=await p.$eval('#callBtn',c=>c.offsetWidth);await p.click('#callBtn');await sleep(p,3000);await p.screenshot({path:'screenshots/groups-mobile-call-overlay.png'});
+  await p.click('#callOv .cmin');await sleep(p,200);await p.screenshot({path:'screenshots/groups-mobile-call-strip.png'});const inConv=await p.locator('#callStrip').isVisible();
+  await p.click('[aria-label="Back to groups"]');await sleep(p,300);const inList=await p.locator('#callStrip').isVisible();await p.screenshot({path:'screenshots/groups-mobile-call-strip-list.png'});
+  await p.click('#callStrip');await p.click('#callOv .end');await sleep(p,200);return {ok:w===44&&inConv&&inList&&(await p.locator('#callStrip').count())===0,d:[w,inConv,inList].join()}});
 await chk('mobile: Phone preview link hidden under 860px',async()=>({ok:!(await p.locator('#mobilePreview').isVisible())}));
 await p.screenshot({path:'screenshots/groups-mobile-list.png'});
 await chk('mobile list: no overflow',async()=>{const o=await L.overflow(p);return {ok:o.sw<=o.cw,d:JSON.stringify(o)}});
@@ -97,6 +125,11 @@ await chk('mobile new-group dialog fits viewport',async()=>{const r=await p.eval
 await chk('mobile: touch targets ≥44px for visible buttons/inputs in dialog',async()=>{const r=await p.$$eval('dialog[open] button, dialog[open] input[type=text]',e=>e.filter(x=>x.offsetParent).map(x=>{const b=x.getBoundingClientRect();return [(x.getAttribute('aria-label')||x.textContent||x.id).trim().slice(0,16),Math.round(b.width),Math.round(b.height)]}).filter(x=>x[2]<40));return {ok:r.length===0,d:JSON.stringify(r)}});
 await p.context().close();
 p=await L.page(b);await p.goto(L.BASE+'groups.html?embed=1&group=hike');await sleep(p,300);
+await p.click('#callBtn');await sleep(p,300);
+await chk('embed=1: call overlay fills the iframe viewport, stays in page',async()=>{const r=await p.evaluate(()=>{const b=document.querySelector('#callOv').getBoundingClientRect();return [b.top,b.left,Math.round(b.width)===innerWidth,Math.round(b.height)===innerHeight]});return {ok:r[0]===0&&r[1]===0&&r[2]&&r[3]&&/groups\.html/.test(p.url()),d:JSON.stringify(r)}});
+await p.keyboard.press('Escape');await sleep(p,200);
+await chk('embed=1: minimized strip sits above the conversation header',async()=>{const r=await p.evaluate(()=>[document.querySelector('#callStrip').getBoundingClientRect().bottom,document.querySelector('.chead').getBoundingClientRect().top]);return {ok:Math.abs(r[0]-r[1])<1,d:r.join()}});
+await p.click('#callStrip');await p.click('#callOv .end');await sleep(p,200);
 await chk('embed=1: Phone preview link not shown',async()=>({ok:!(await p.locator('#mobilePreview').isVisible())}));
 await p.context().close();
 p=await L.page(b,{dark:true});await p.goto(L.BASE+'groups.html');await sleep(p,300);await p.screenshot({path:'screenshots/groups-desktop-dark-open.png'});

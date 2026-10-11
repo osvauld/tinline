@@ -1,6 +1,66 @@
 [
  {
   "page": "groups",
+  "name": "group call: 44px phone button left of Members",
+  "ok": true,
+  "detail": "{\"tag\":\"BUTTON\",\"w\":44,\"h\":44,\"left\":true,\"dis\":null}"
+ },
+ {
+  "page": "groups",
+  "name": "call: in-page overlay fills the app frame, no navigation, focus on overlay",
+  "ok": true,
+  "detail": "{\"fill\":true,\"f\":true,\"st\":\"Connecting…\",\"av\":96,\"h2\":\"24px\",\"mute\":56,\"end\":64,\"min\":\"Back to chat — call continues\"}"
+ },
+ {
+  "page": "groups",
+  "name": "call: connects (group calls do not ring) and the MM:SS timer ticks",
+  "ok": true,
+  "detail": "Connected 00:01"
+ },
+ {
+  "page": "groups",
+  "name": "call: Mute toggles (aria-pressed)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call: Escape minimizes (never ends) to a 40px accent strip with name and timer; focus on strip",
+  "ok": true,
+  "detail": "{\"h\":40,\"t\":\"Weekend hike · 00:01\",\"f\":true,\"ov\":false}"
+ },
+ {
+  "page": "groups",
+  "name": "call minimized: chatting works; header phone button now returns to the call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call minimized: strip stays when switching chats; other group phone button also returns (no second call)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call: strip returns to the overlay",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call: End closes overlay + strip, toast \"Call ended\", focus back on phone button",
+  "ok": true,
+  "detail": "callBtn"
+ },
+ {
+  "page": "groups",
+  "name": "group call: no call button in the removed (read-only) group",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
   "name": "harness: Phone preview link visible at 1440, points at the open group",
   "ok": true,
   "detail": "mobile.html?screen=groups&group=hike mobile.html?screen=groups&group=family"
@@ -33,7 +93,7 @@
   "page": "groups",
   "name": "group created: appears in list, dialog closed",
   "ok": true,
-  "detail": "GroupsInvitations2 waitingChat requests1 waitingGroupsClimbing crewNo messages yetWeekend hikeKavya: First hike with you"
+  "detail": "GroupsInvitations2 waitingChat requests1 waitingGroupsClimbing crewNo messages yetWeekend hikeYou: typing during the cal"
  },
  {
   "page": "groups",
@@ -75,7 +135,7 @@
   "page": "groups",
   "name": "Accept chat request: Priya shows under Private chats",
   "ok": true,
-  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?14:11Sent requests2 totalD"
+  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?14:20Sent requests2 totalD"
  },
  {
   "page": "groups",
@@ -93,7 +153,13 @@
   "page": "groups",
   "name": "sent message reaches a delivered/relayed state (hosts online)",
   "ok": true,
-  "detail": "see you at the gate14:11Delivered"
+  "detail": "see you at the gate14:20Delivered"
+ },
+ {
+  "page": "groups",
+  "name": "group call: disabled (aria-disabled, muted) while hosts are degraded; no extra banner; click does nothing",
+  "ok": true,
+  "detail": "{\"dis\":\"true\",\"op\":\"0.38\",\"strips\":1}"
  },
  {
   "page": "groups",
@@ -105,7 +171,7 @@
   "page": "groups",
   "name": "hosts offline: message shows waiting/not delivered state explaining why",
   "ok": true,
-  "detail": "nobody is hosting14:11Waiting for a host"
+  "detail": "nobody is hosting14:20Waiting for a host"
  },
  {
   "page": "groups",
@@ -163,6 +229,12 @@
  },
  {
   "page": "groups",
+  "name": "mobile: call overlay + strip across conversation and list views at 390",
+  "ok": true,
+  "detail": "44,true,true"
+ },
+ {
+  "page": "groups",
   "name": "mobile: Phone preview link hidden under 860px",
   "ok": true,
   "detail": ""
@@ -196,6 +268,18 @@
   "name": "mobile: touch targets ≥44px for visible buttons/inputs in dialog",
   "ok": true,
   "detail": "[]"
+ },
+ {
+  "page": "groups",
+  "name": "embed=1: call overlay fills the iframe viewport, stays in page",
+  "ok": true,
+  "detail": "[0,0,true,true]"
+ },
+ {
+  "page": "groups",
+  "name": "embed=1: minimized strip sits above the conversation header",
+  "ok": true,
+  "detail": "40,40"
  },
  {
   "page": "groups",
