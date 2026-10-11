@@ -5,3 +5,4 @@
 pub mod api;
 pub mod index;
 pub mod text;
+pub mod bench;

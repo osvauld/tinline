@@ -28,6 +28,13 @@ mod voice;
 mod wire;
 
 pub use error::Error;
+
+/// Benchmark entry for the `search-bench` binary.
+#[doc(hidden)]
+pub fn search_bench(n: usize, dir: &std::path::Path) {
+    search::bench::run(n, dir)
+}
+
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
 pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary};
 pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents};
