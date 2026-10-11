@@ -21,6 +21,7 @@ mod app;
 mod emoji;
 mod audio;
 mod flow;
+mod hostcond;
 mod keystore;
 mod raise;
 mod media;
@@ -35,7 +36,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, GroupCallEvent, GroupCallEvents, LockState, Message, Node, NodeEvents, NodeStatus};
 use tokio::sync::mpsc;
 
 /// Everything the node and the tray report, funnelled into the UI's update loop.
@@ -51,6 +52,8 @@ pub enum Ev {
     /// A notification was clicked.
     Open(app::Target),
     Link(LinkEv),
+    /// A group-call event (the audio already followed it; the call UI comes next).
+    GroupCall(GroupCallEvent),
 }
 
 /// What the core's `LinkEvents` report (device linking and own-device sync).
@@ -151,6 +154,20 @@ impl NodeEvents for Events {
         let _ = self.tx.send(Ev::State(id, state));
     }
     fn on_log(&self, _line: String) {}
+}
+
+/// Group-call events: the audio follows them on the core's thread, the UI through the channel.
+pub struct GroupCallBridge {
+    pub tx: mpsc::UnboundedSender<Ev>,
+    pub audio: Arc<audio::Ctl>,
+}
+
+impl GroupCallEvents for GroupCallBridge {
+    fn on_group_call(&self, e: GroupCallEvent) {
+        tlog!("GROUP_CALL {:?} {} {}", e.kind, e.call_id, e.detail);
+        self.audio.on_group_call();
+        let _ = self.tx.send(Ev::GroupCall(e));
+    }
 }
 
 pub struct Init {
@@ -312,6 +329,8 @@ fn main() -> Result<(), String> {
     audio.attach(&node);
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
     node.set_link_events(Arc::new(LinkBridge(tx.clone())));
+    node.set_group_call_events(Arc::new(GroupCallBridge { tx: tx.clone(), audio: audio.clone() }));
+    hostcond::spawn(&node);
     // The single pre-accounts key entry belongs to the account core just migrated.
     keystore::migrate_legacy(keystore::system(), &data, &node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
