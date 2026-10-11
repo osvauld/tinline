@@ -285,15 +285,14 @@ impl Ladder {
         self.update_held(now_us, bps, false)
     }
 
-    /// [`Self::update`], but with `hold` a step down for the bitrate waits (and nothing else
-    /// happens), unless it goes to the bottom rung.
+    /// [`Self::update`], but with `hold` nothing changes yet.
     pub fn update_held(&mut self, now_us: u64, bps: u32, hold: bool) -> bool {
+        if hold {
+            return false;
+        }
         let max = self.max(now_us);
         let down = self.fit(bps).min(max);
         if down < self.cur {
-            if hold && self.fit(bps) > 0 {
-                return false;
-            }
             self.set(now_us, down);
             return true;
         }
@@ -475,9 +474,9 @@ impl Sender {
     }
 
     fn relayer(&mut self) {
-        // A step down for the rate waits for the second look (unless it can't go lower anyway);
-        // without it a drop went 540p -> 360p -> 180p, a keyframe each. Not forever if reports
-        // stop coming.
+        // The ladder waits for the second look: without it a drop went 540p -> 360p -> 180p (a
+        // keyframe each), and a stream stalled ~100 ms on a tail loss (two starved reports)
+        // went straight to 180p. Not forever if reports stop coming.
         let settling = self.settle_until.is_some_and(|t| self.now_us < t + RATE_WINDOW_US);
         if self.ladder.update_held(self.now_us, self.bitrate, settling) {
             self.want(KeyCause::Rate);
@@ -887,7 +886,7 @@ impl Receiver {
         let bytes: usize = self.arrivals.iter().map(|a| a.1).sum();
         let delivered_bps = (bytes as u64 * 8 * 1_000_000 / span) as u32;
         let min = self.transit.iter().map(|t| t.1).min()?;
-        // The least delayed frame of the window: a queue delays every frame, while one late
+        // The least delayed frame of the rate window: a queue delays every frame, while one late
         // frame (a retransmission, an encoder that was preempted) is not a queue.
         let recent = self.transit.iter().rev().take_while(|t| t.0 > from).map(|t| t.1).min();
         let last = recent.unwrap_or(self.transit.back()?.1);
@@ -1030,7 +1029,10 @@ mod tests {
         reports(&mut tx, 2_050 * MS, 2_100 * MS, 1_500_000, slow);
         assert!(tx.draining());
         assert_eq!(tx.bitrate(), 50_000, "25% of delivered while the queue drains");
+        assert_eq!(tx.resolution(), (1280, 720), "the ladder waits for a second look");
+        reports(&mut tx, 2_100 * MS, 2_200 * MS, 50_000, RateReport { delivered_bps: 200_000, queuing_us: 20_000 });
         assert_eq!(tx.resolution(), (320, 180), "the ladder follows the estimate, 170 kbps");
+        assert_eq!(tx.bitrate(), 50_000);
     }
 
     #[test]
