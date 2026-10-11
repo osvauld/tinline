@@ -49,6 +49,9 @@ pub(crate) struct GroupRt {
     /// Delay between a removal / host revocation and the hosts' endpoint rotation, ms (U12:
     /// 2 days; 0 = that default). Test knob.
     pub(crate) rotation_delay_ms: AtomicU64,
+    /// G3: invitation events and the DIDs with an invitation delivery task running.
+    pub(crate) inv_events: Mutex<Option<Arc<dyn super::invitations::GroupInvitationEvents>>>,
+    pub(crate) inv_delivering: Mutex<HashSet<String>>,
 }
 
 /// U12: hosts rotate their group endpoint this long after a removal or a host revocation.
@@ -98,6 +101,8 @@ pub(crate) struct GroupCore {
     loops: AtomicBool,
     /// Groups whose members we are still telling about our new endpoint (U12).
     moving: Mutex<HashSet<String>>,
+    /// G3: invite codes (waiters for host answers, the wrong-code limiter).
+    pub(crate) codes: super::code::CodeRt,
 }
 
 pub(crate) struct Sess {
@@ -316,6 +321,20 @@ impl GroupCore {
     pub(crate) fn kick_pub(&self) {
         self.kick.notify_waiters();
     }
+
+    /// Sends `msg` on a session with one of `gid`'s active hosts (we are the member side);
+    /// returns which host, or `None` if we have no such session.
+    pub(crate) fn send_to_a_host(&self, gid: &str, msg: GroupMsg) -> Option<(String, [u8; 32])> {
+        let hosts: Vec<(String, [u8; 32])> = self.groups.lock().get(gid).map(|l| l.state.hosts.iter().map(|h| (h.did.clone(), h.dev)).collect()).unwrap_or_default();
+        let s = self.sessions_of(gid).into_iter().find(|s| !s.hosting && hosts.contains(&(s.did.clone(), s.dev)))?;
+        s.tx.send(Out::Msg(msg)).ok()?;
+        Some((s.did.clone(), s.dev))
+    }
+
+    /// Sends `msg` on our session with host device `did`/`dev` of `gid`, if there is one.
+    pub(crate) fn send_to_host(&self, gid: &str, did: &str, dev: &[u8; 32], msg: GroupMsg) -> bool {
+        self.sessions_of(gid).into_iter().find(|s| !s.hosting && s.did == did && &s.dev == dev).is_some_and(|s| s.tx.send(Out::Msg(msg)).is_ok())
+    }
 }
 
 /// Checks a removal proof against our own DID: a genesis for `gid`, and at least 3 flags on us
@@ -411,6 +430,7 @@ impl Inner {
             closed: AtomicBool::new(false),
             loops: AtomicBool::new(false),
             moving: Default::default(),
+            codes: Default::default(),
         });
         if let Some(old) = slot.take() {
             old.closed.store(true, Ordering::SeqCst);
@@ -556,6 +576,8 @@ impl Inner {
         // Our other devices learn the group list (stage 2; deduplicated per session).
         self.selfsync_dirty(crate::chat::own::GROUPS_MARK);
         self.group_publish_key(core, &gid);
+        // G3: invitees that became members read Joined.
+        self.group_invitations_changed(core, &gid);
         if let Some(ev) = self.group_ev() {
             let msgs: Vec<_> = changed.new_items.iter().filter_map(|i| self.group_message(core, &gid, i)).collect();
             let handle = self.handle.clone();
@@ -776,6 +798,12 @@ impl Inner {
         let hello = tokio::time::timeout(HELLO_TIMEOUT, reader.recv()).await.map_err(|_| Error::Timeout)??;
         let (auth, group, vv, invite, hosts, relay) = match hello {
             Some(GroupMsg::Hello { auth, group, vv, invite, hosts, relay }) => (auth, group, vv, invite, hosts, relay),
+            Some(GroupMsg::Fetch { code }) => {
+                // G3: someone with a short invite link asks for the invite behind it.
+                self.group_fetch_session(&core, writer, reader, code).await;
+                let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
+                return Ok(());
+            }
             Some(GroupMsg::Moved { auth, group, hosts }) => {
                 self.group_moved_in(&core, remote, auth, &group, &hosts);
                 let _ = writer.send(&GroupMsg::Ack { vv: Vec::new() }).await;
@@ -885,6 +913,7 @@ impl Inner {
                 break;
             }
             self.group_req_tick(&core);
+            self.group_codes_tick(&core);
             if let Err(e) = self.group_rotation_tick(&core).await {
                 tracing::warn!("group endpoint rotation: {e}");
             }
@@ -1173,6 +1202,14 @@ impl Inner {
                     if !sess.hosting {
                         let _ = core.store.drop_out(&sess.gid, &super::mail::id_hex(&id));
                     }
+                }
+                m @ (GroupMsg::Code { .. } | GroupMsg::RevokeCode { .. }) if sess.hosting => {
+                    // G3: a member has us keep (or forget) an invite code; members only.
+                    let ack = self.group_code_in(core, &sess.gid, &sess.did, m);
+                    let _ = sess.tx.send(Out::Msg(ack));
+                }
+                GroupMsg::CodeAck { code, ok, reason } if !sess.hosting => {
+                    self.group_code_ack_in(core, code, ok, reason);
                 }
                 _ => return Err(Error::Protocol("unexpected group frame".into())),
             }
