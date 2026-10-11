@@ -280,6 +280,22 @@ impl GroupCore {
     fn raw_record(&self, live: &Live, id: &str) -> Option<Vec<u8>> {
         live.doc.raw_value(id)
     }
+
+    pub(crate) fn host_addrs_pub(&self, gid: &str) -> Vec<SignedHostAddr> {
+        self.host_addrs(gid)
+    }
+
+    pub(crate) fn merge_hosts_pub(&self, gid: &str, addrs: &[SignedHostAddr]) -> bool {
+        let changed = self.merge_hosts(gid, addrs);
+        if changed {
+            self.kick.notify_waiters();
+        }
+        changed
+    }
+
+    pub(crate) fn kick_pub(&self) {
+        self.kick.notify_waiters();
+    }
 }
 
 /// Checks a removal proof against our own DID: a genesis for `gid`, and at least 3 flags on us
@@ -509,6 +525,8 @@ impl Inner {
             }
         }
         core.kick.notify_waiters();
+        // Our other devices learn the group list (stage 2; deduplicated per session).
+        self.selfsync_dirty(crate::chat::own::GROUPS_MARK);
         if let Some(ev) = self.group_ev() {
             let msgs: Vec<_> = changed.new_items.iter().filter_map(|i| self.group_message(core, &gid, i)).collect();
             let handle = self.handle.clone();
@@ -848,6 +866,13 @@ impl Inner {
             Some(GroupMsg::Refused { reason }) => {
                 core.refusals.lock().insert(gid.clone(), reason.clone());
                 conn.close(0u32.into(), b"refused");
+                // Learned from an own device (stage 2) and refused before we ever held it (the
+                // account left meanwhile, or a stale list): forget it again.
+                let stale = core.groups.lock().get(&gid).is_some_and(|l| l.meta.from_own && l.state.owner.is_none() && reason == "not a member");
+                if stale {
+                    core.groups.lock().remove(&gid);
+                    let _ = core.store.forget(&gid);
+                }
                 Err(Error::Rejected(reason))
             }
             _ => Err(Error::Protocol("unexpected reply".into())),

@@ -15,7 +15,7 @@ use super::frames::{FrameReader, FrameWriter, SelfMsg};
 use crate::node::{Inner, Me, addr_for, now, relay_of};
 use crate::store::{Backing, OwnDevice};
 use crate::Error;
-use crate::chat::own::{ACK_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
+use crate::chat::own::{ACK_MARK, GROUPS_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
 
 const DOC_KEY: &str = "sync/account";
 const CALLS_KEY: &str = "sync/calls";
@@ -43,6 +43,8 @@ struct PeerChat {
     read: HashMap<String, i64>,
     acks: HashMap<String, VersionVector>,
     hello: bool,
+    /// The group list last sent (G2), to send only changes.
+    groups: Option<Vec<Vec<u8>>>,
 }
 
 impl SelfSlot {
@@ -577,6 +579,12 @@ impl Inner {
                                 tracing::debug!("own-device read cursors: {e}");
                             }
                         }
+                        SelfMsg::Groups { groups } => {
+                            if groups.len() > crate::group::own::MAX_OWN_GROUPS {
+                                return Err(Error::Protocol("too many groups".into()));
+                            }
+                            self.group_own_apply(&groups);
+                        }
                         SelfMsg::Unlinked => {
                             self.clone().remove_self_account(epoch).await;
                             return Ok(());
@@ -601,6 +609,8 @@ impl Inner {
                         for name in names {
                             if name == READ_MARK {
                                 self.push_read(&mut peer, writer).await?;
+                            } else if name == GROUPS_MARK {
+                                self.push_groups(&mut peer, writer).await?;
                             } else if name == ACK_MARK {
                                 self.push_acks(&mut peer, writer).await?;
                             } else {
@@ -619,7 +629,18 @@ impl Inner {
             self.push_chat_doc(me, &name, peer, writer).await?;
         }
         self.push_read(peer, writer).await?;
-        self.push_acks(peer, writer).await
+        self.push_acks(peer, writer).await?;
+        self.push_groups(peer, writer).await
+    }
+
+    /// Our group list, if it changed since the last one this session sent (G2).
+    async fn push_groups(self: &Arc<Self>, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        let groups = self.group_own_tokens();
+        if peer.groups.as_ref() == Some(&groups) || (groups.is_empty() && peer.groups.is_none()) {
+            return Ok(());
+        }
+        peer.groups = Some(groups.clone());
+        writer.send(&SelfMsg::Groups { groups }).await
     }
 
     async fn push_chat_doc(self: &Arc<Self>, me: &Arc<Me>, name: &str, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {

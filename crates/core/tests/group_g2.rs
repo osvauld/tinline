@@ -255,7 +255,7 @@ fn a_lost_group_store_gives_a_fresh_writer_and_new_posts_arrive() {
 #[test]
 fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
     let o = peer("lh-o");
-    let mut h = peer("lh-h");
+    let h = peer("lh-h");
     let mut a = peer("lh-a");
     let b = peer("lh-b");
     let g = group_with(&o, &[&h, &a, &b]);
@@ -275,6 +275,8 @@ fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
     h.node.group_dial_only_for_test(Some(h.did.clone()));
     b.node.group_dial_only_for_test(Some(o.did.clone()));
     a.node.group_dial_only_for_test(Some(h.did.clone()));
+    // The other side of each closed session notices over the network.
+    std::thread::sleep(Duration::from_secs(4));
     a.node.group_post(g.clone(), "only h has this".into(), None).unwrap();
     eventually(WAIT, "h acknowledged it", || delivered(&a, &g, "only h has this"));
     std::thread::sleep(Duration::from_secs(1));
