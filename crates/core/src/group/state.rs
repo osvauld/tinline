@@ -92,11 +92,19 @@ pub struct GroupState {
     /// Counted flags per member not (yet) removed.
     pub flags: BTreeMap<String, Vec<FlagInfo>>,
     pub left: BTreeSet<String>,
+    /// Each member's published encryption key (`Body::EncKey`, latest by `(at, id)`).
+    pub enc_keys: BTreeMap<String, [u8; 32]>,
     pub hosts: Vec<HostInfo>,
     /// Devices that accepted hosting but hold no active permit.
     pub host_offers: Vec<(String, [u8; 32])>,
+    /// Devices an admin appointed (active permit) that have not accepted (yet), with who
+    /// appointed them: the "host this group?" prompt on that device.
+    pub host_requests: Vec<HostInfo>,
     /// Posts and system lines, ordered by `(at, id)`.
     pub items: Vec<Item>,
+    /// When something happened that makes hosts rotate their group endpoint (U12): each
+    /// removal (its 3rd counted flag's `at`) and each counted host revocation (`at`). Unix ms.
+    pub rotation_triggers: Vec<i64>,
 }
 
 pub const REMOVAL_FLAGS: usize = 3;
@@ -245,6 +253,15 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
         }
     }
 
+    // Encryption keys of members (U3 mail).
+    let mut keys: Vec<&Entry> = entries.iter().filter(|e| matches!(e.rec.body, Body::EncKey { .. }) && st.members.contains_key(&e.rec.author)).collect();
+    keys.sort_by(|a, b| order(a).cmp(&order(b)));
+    for e in keys {
+        if let Body::EncKey { key } = &e.rec.body {
+            st.enc_keys.insert(e.rec.author.clone(), *key);
+        }
+    }
+
     // Hosts.
     let mut permits: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
     let mut accepts: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
@@ -268,8 +285,12 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
     for ((did, dev), p) in &permits {
         let Body::HostPermit { active: true, .. } = p.rec.body else { continue };
         let accepted = accepts.get(&(did.clone(), *dev)).is_some_and(|a| matches!(a.rec.body, Body::HostAccept { active: true }));
+        let info = HostInfo { did: did.clone(), dev: *dev, appointed_by: p.rec.author.clone(), at: p.rec.at };
         if accepted && st.members.contains_key(did) {
-            st.hosts.push(HostInfo { did: did.clone(), dev: *dev, appointed_by: p.rec.author.clone(), at: p.rec.at });
+            st.hosts.push(info);
+        } else if st.members.contains_key(did) && !accepts.get(&(did.clone(), *dev)).is_some_and(|a| order(a) > order(p)) {
+            // Not accepted, and not declined after this permit: still asking.
+            st.host_requests.push(info);
         }
     }
     for ((did, dev), a) in &accepts {
@@ -308,6 +329,9 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
                 st.items.push(item(if *admin { ItemKind::AdminGranted } else { ItemKind::AdminRevoked }, member, String::new(), None, false))
             }
             Body::HostPermit { host, active, .. } if admin_as_of(&r.author, Some(&r.seen)) => {
+                if !*active {
+                    st.rotation_triggers.push(r.at);
+                }
                 st.items.push(item(if *active { ItemKind::HostAdded } else { ItemKind::HostRemoved }, host, String::new(), None, false))
             }
             _ => {}
@@ -317,6 +341,7 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
     for (did, f) in &flags {
         if f.len() >= REMOVAL_FLAGS {
             let third = f[REMOVAL_FLAGS - 1];
+            st.rotation_triggers.push(third.rec.at);
             st.items.push(Item {
                 id: format!("removed-{}", third.id),
                 kind: ItemKind::Removed,
@@ -521,7 +546,10 @@ mod tests {
         o.write(Body::HostPermit { host: m0.clone(), host_dev: dev0, active: true });
         sync(&mut o, &mut ms[0]);
         assert!(!ms[0].state().is_host(&m0, &dev0));
+        // The appointed device sees the request until it answers (G2: accept/decline prompt).
+        assert!(ms[0].state().host_requests.iter().any(|h| h.did == m0 && h.dev == dev0 && h.appointed_by == o.did()));
         ms[0].write(Body::HostAccept { active: true });
+        assert!(ms[0].state().host_requests.is_empty());
         sync(&mut ms[0], &mut o);
         assert!(o.state().is_host(&m0, &dev0));
         // A non-admin's permit is inert; an admin can revoke.
@@ -535,6 +563,12 @@ mod tests {
         o.write(Body::HostPermit { host: m0.clone(), host_dev: dev0, active: false });
         assert!(!o.state().is_host(&m0, &dev0));
         assert_eq!(o.state().hosts.len(), 1);
+        // A device that declines (HostAccept false after the permit) is no longer asked.
+        o.write(Body::HostPermit { host: m1.clone(), host_dev: dev1, active: true });
+        assert!(!o.state().host_requests.iter().any(|h| h.did == m1), "m1 had offered: it hosts now");
+        let (m2, dev2) = (ms[2 - 1].did(), [77u8; 32]);
+        o.write(Body::HostPermit { host: m2.clone(), host_dev: dev2, active: true });
+        assert!(o.state().host_requests.iter().any(|h| h.did == m2 && h.dev == dev2));
     }
 
     // KIND: unit (G1 stage 1) — leaving ends membership; a left member's later post is inert.

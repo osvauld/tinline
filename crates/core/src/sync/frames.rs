@@ -78,4 +78,8 @@ pub enum SelfMsg {
     /// What the contact confirmed holding, `(doc, VersionVector::encode)`: a device that is not
     /// talking to the contact itself still shows two ticks (a max-register per doc, merged).
     Acks { acks: Vec<(String, Vec<u8>)> },
+    /// The groups this account is in, as seen by the sender (G2): per group a bincode
+    /// `group::record::InviteToken` without invite (group, name, owner, DID-signed host
+    /// addresses). The receiver adds groups it lacks and dials their hosts (`group/own.rs`).
+    Groups { groups: Vec<Vec<u8>> },
 }

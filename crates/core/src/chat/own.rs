@@ -17,6 +17,8 @@ use crate::node::{Inner, Me, now_ms};
 pub(crate) const READ_MARK: &str = "!read";
 /// The dirty-set entry that means "a contact acknowledged more".
 pub(crate) const ACK_MARK: &str = "!ack";
+/// The dirty-set entry that means "our group list or a group's hosts may have changed" (G2).
+pub(crate) const GROUPS_MARK: &str = "!groups";
 /// Shards offered per session (newest days first); the rest are not synced until the next
 /// session finds room (older days are normally closed and rarely change).
 pub(crate) const MAX_OWN_DOCS: usize = 4096;
