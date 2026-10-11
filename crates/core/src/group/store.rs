@@ -9,6 +9,12 @@
 //! dir/{gid}/{did}/{dev}         DirEntry   host side only: a member device's group endpoint
 //! ack/{gid}/{did}/{dev}         bytes      the version vector that host acknowledged holding
 //! ep/secret                     32 bytes   this account's group endpoint key on this install
+//! ep/made                       u64 BE     when that key was made (unix ms; rotation, U12)
+//! dev/id                        32 bytes   this store's device ID (U16 device value, G2 stage 1)
+//! req/{id}                      ReqRow     a 1:1 chat request we sent or got (U3)
+//! out/{gid}/{mail id}           bytes      sealed mail of ours not yet taken by a host
+//! mail/{gid}/{to}/{mail id}     bytes      host side: (expiry ms, sealed mail) to deliver
+//! seen/{mail id}                u64        mail we already handled (recipient side)
 //! ```
 
 use serde::{Deserialize, Serialize};
@@ -20,7 +26,7 @@ use crate::Error;
 const STORE_DOMAIN: &str = "tinline/group-store/v1";
 const UPDATES_BEFORE_SNAPSHOT: u64 = 64;
 
-fn io(e: StorageError) -> Error {
+pub(crate) fn io(e: StorageError) -> Error {
     Error::Io(e.to_string())
 }
 
@@ -43,6 +49,10 @@ pub struct GroupMeta {
     /// Items read up to this `(at)`.
     #[serde(default)]
     pub read_upto: i64,
+    /// Learned from one of our own devices (stage 2): forgotten again if a host refuses us
+    /// before we ever held the group.
+    #[serde(default)]
+    pub from_own: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -53,10 +63,10 @@ pub struct DirEntry {
 
 #[derive(Clone)]
 pub struct GroupStore {
-    db: Sealed,
+    pub(crate) db: Sealed,
 }
 
-fn json<T: Serialize>(v: &T) -> Vec<u8> {
+pub(crate) fn json<T: Serialize>(v: &T) -> Vec<u8> {
     serde_json::to_vec(v).expect("serialises")
 }
 
@@ -161,6 +171,8 @@ impl GroupStore {
                 Op::DeletePrefix(format!("hosts/{gid}/")),
                 Op::DeletePrefix(format!("dir/{gid}/")),
                 Op::DeletePrefix(format!("ack/{gid}/")),
+                Op::DeletePrefix(format!("out/{gid}/")),
+                Op::DeletePrefix(format!("mail/{gid}/")),
             ])
             .map_err(io)
     }
@@ -172,8 +184,34 @@ impl GroupStore {
         {
             return Ok(k);
         }
+        self.rotate_endpoint_secret(crate::node::now_ms())
+    }
+
+    /// This store's device ID: the group writer ID is `writer_id(DID, this)` (U16). A store
+    /// made from nothing gets a fresh random one (G2 stage 1, like P10 for chat): whatever this
+    /// install wrote before under an older ID (a lost or deleted `group.redb`) may still sit at
+    /// some host, and writing again from counter 0 under the same writer ID would collide with
+    /// it. A store from before this row existed keeps `adopt` (the profile's device ID it used).
+    pub fn device_id(&self, adopt: Option<[u8; 32]>) -> Result<[u8; 32], Error> {
+        if let Some(b) = self.db.get("dev/id").map_err(io)?
+            && let Ok(k) = <[u8; 32]>::try_from(b.as_slice())
+        {
+            return Ok(k);
+        }
+        let k = adopt.unwrap_or_else(crate::chat::doc::new_device_value);
+        self.db.put("dev/id", &k).map_err(io)?;
+        Ok(k)
+    }
+
+    /// When the endpoint key was made (unix ms; 0 = unknown, before rotation existed).
+    pub fn endpoint_made(&self) -> u64 {
+        self.db.get("ep/made").ok().flatten().and_then(|b| <[u8; 8]>::try_from(b.as_slice()).ok()).map(u64::from_be_bytes).unwrap_or(0)
+    }
+
+    /// Replaces the endpoint key (U12 rotation); returns the new one.
+    pub fn rotate_endpoint_secret(&self, made_ms: u64) -> Result<[u8; 32], Error> {
         let k = proto::new_device_secret();
-        self.db.put("ep/secret", &k).map_err(io)?;
+        self.db.apply(&[self.db.put_op("ep/secret", &k).map_err(io)?, self.db.put_op("ep/made", &made_ms.to_be_bytes()).map_err(io)?]).map_err(io)?;
         Ok(k)
     }
 

@@ -323,7 +323,7 @@ impl Inner {
             return Ok(c);
         }
         let me = self.me()?;
-        let (dir, dev) = {
+        let (dir, profile_dev) = {
             let s = self.shared.lock();
             let dir = s.acct.as_ref().ok_or(Error::Locked)?.store.dir().to_path_buf();
             let dev = match s.disk.as_ref() {
@@ -332,18 +332,13 @@ impl Inner {
             };
             (dir, dev)
         };
-        let dev = match dev {
-            Some(d) => d,
-            None => {
-                // The chat store makes the device ID on open; make sure it ran.
-                self.chat_open();
-                match self.shared.lock().disk.as_ref() {
-                    Some(crate::store::Disk::V2(p)) => p.device_id_bytes().ok_or(Error::NoIdentity)?,
-                    _ => return Err(Error::NoIdentity),
-                }
-            }
-        };
-        let store = GroupStore::open(dir.join("group.redb"), &me.profile.mnemonic)?;
+        // G2 stage 1 (P10 for groups): a group store made from nothing writes under a fresh
+        // device ID, so a lost `group.redb` never makes us reuse a (writer ID, counter) that some
+        // host may still hold. A store from G1 (no `dev/id` row yet) keeps the profile's ID.
+        let path = dir.join("group.redb");
+        let existed = path.exists();
+        let store = GroupStore::open(path, &me.profile.mnemonic)?;
+        let dev = store.device_id(if existed { profile_dev } else { None })?;
         let did = me.id.did().to_string();
         let wid = writer_id(&did, &dev);
         let mut groups = HashMap::new();
