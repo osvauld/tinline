@@ -455,6 +455,8 @@ pub(crate) struct Inner {
     pub(crate) selfsync: crate::sync::engine::SelfSync,
     pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
     pub(crate) link: crate::sync::link::LinkState,
+    /// Group calls (G6), `crate::gcall::net`.
+    pub(crate) gcall: crate::gcall::net::Service,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -519,6 +521,7 @@ impl Node {
             selfsync: Default::default(),
             sync_tx: tokio::sync::watch::channel(0).0,
             link: Default::default(),
+            gcall: Default::default(),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -1785,6 +1788,7 @@ impl Inner {
                 iroh_blobs::ALPN.to_vec(),
                 proto::SELF_ALPN.to_vec(),
                 proto::link::LINK_ALPN.to_vec(),
+                proto::gcall::GCALL_ALPN.to_vec(),
             ])
             .transport_config(transport);
         // Test knob: no UDP of our own, so every packet goes through the relay — the path a
@@ -1860,6 +1864,14 @@ impl Inner {
                         drop(permit);
                         if let Err(e) = this.clone().handle_self_incoming(accepting).await {
                             tracing::debug!("incoming self-sync: {e}");
+                        }
+                        return;
+                    }
+                    // Group calls (G6): routed to crate::gcall::net.
+                    if alpn.as_slice() == proto::gcall::GCALL_ALPN {
+                        drop(permit);
+                        if let Err(e) = this.clone().handle_gcall_incoming(accepting).await {
+                            tracing::debug!("incoming gcall: {e}");
                         }
                         return;
                     }
@@ -2984,7 +2996,8 @@ impl Inner {
     }
 
     pub(crate) fn push_mic(&self, pcm: &[i16]) {
-        let Some((call, tone)) = self.active_call() else { return };
+        // No active 1:1 call: the microphone feeds the group call, if any.
+        let Some((call, tone)) = self.active_call() else { return self.gcall.push_mic(pcm) };
         let Some(conn) = call.conn.lock().clone() else { return };
         let mut mic = call.mic.lock();
         mic.extend_from_slice(pcm);
@@ -3014,7 +3027,8 @@ impl Inner {
 
     pub(crate) fn pull_speaker(&self) -> Vec<i16> {
         let mut out = [0i16; audio::FRAME];
-        if let Some((call, _)) = self.active_call() {
+        let Some((call, _)) = self.active_call() else { return self.gcall.pull_speaker() };
+        {
             call.receiver.lock().pull(&mut out, call.now_ms());
             let mut played = call.played.lock();
             played.extend(out.iter().copied());
