@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
         intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
-        if (savedInstanceState == null) CardInbox.take(intent)
+        if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent) }
         setContent { TinlineTheme { Root(app) } }
     }
 
@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
         CardInbox.take(intent)
+        GroupLinkInbox.take(intent)
     }
 }
 
@@ -85,10 +86,14 @@ private sealed interface Route {
     /** Group chat on the core (GroupsLive.kt). */
     data class Group(val id: String) : Route
     data class GroupInfo(val id: String) : Route
-    data class GroupToken(val id: String, val device: Boolean) : Route
+    /** The invite link with its QR (G3). */
+    data class GroupToken(val id: String) : Route
+    /** Pick contacts to invite (G3). */
+    data class AddMembers(val id: String) : Route
     data class GroupRemoval(val id: String) : Route
     data object NewGroup : Route
-    data object JoinGroup : Route
+    /** [token]: a tapped tinline://g/ link, prefilled. */
+    data class JoinGroup(val token: String? = null) : Route
 }
 
 @Composable
@@ -199,6 +204,12 @@ private fun Root(app: P2pApp) {
         }
     }
 
+    // A tapped tinline://g/ link opens Join with it (G3).
+    val groupLink by GroupLinkInbox.link.collectAsState()
+    LaunchedEffect(groupLink, has, lock) {
+        val l = groupLink ?: return@LaunchedEffect
+        if (has && lock == LockState.UNLOCKED) { GroupLinkInbox.link.value = null; stack.add(Route.JoinGroup(l)) }
+    }
     // "Leo accepted your request" and the like, once.
     val groupNotice by app.groups.notice.collectAsState()
     LaunchedEffect(groupNotice) { groupNotice?.let { say(it); app.groups.clearNotice() } }
@@ -230,15 +241,16 @@ private fun Root(app: P2pApp) {
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                     homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
-                    say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup) },
+                    say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
                 )
                 is Route.Group -> GroupChatLive(app, r.id, onBack = ::pop, onInfo = { stack.add(Route.GroupInfo(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say)
-                is Route.GroupInfo -> GroupInfoLive(app, r.id, onBack = ::pop, onToken = { stack.add(Route.GroupToken(r.id, it)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say,
+                is Route.GroupInfo -> GroupInfoLive(app, r.id, onBack = ::pop, onLink = { stack.add(Route.GroupToken(r.id)) }, onAddMembers = { stack.add(Route.AddMembers(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say,
                     onChat = { stack.add(Route.Chat(it)) })
-                is Route.GroupToken -> GroupTokenLive(app, r.id, r.device, onBack = ::pop)
+                is Route.GroupToken -> GroupTokenLive(app, r.id, onBack = ::pop)
+                is Route.AddMembers -> AddMembersLive(app, r.id, onBack = ::pop, say = ::say)
                 is Route.GroupRemoval -> GroupRemovalLive(app, r.id, onBack = ::pop)
                 Route.NewGroup -> NewGroupLive(app, onBack = ::pop, onCreated = { pop(); stack.add(Route.Group(it)) })
-                Route.JoinGroup -> JoinGroupLive(app, onBack = ::pop, onJoined = { pop(); stack.add(Route.Group(it)); say("You joined the group.") })
+                is Route.JoinGroup -> JoinGroupLive(app, r.token, onBack = ::pop, onJoined = { pop(); stack.add(Route.Group(it)); say("You joined the group.") })
                 Route.NewChat -> {
                     val chats by app.chat.chats.collectAsState()
                     val last = remember(chats) { chats.filter { it.lastActivity > 0UL }.associate { it.peerDid to "Last message ${listTime(it.lastActivity.toLong(), System.currentTimeMillis())}" } }

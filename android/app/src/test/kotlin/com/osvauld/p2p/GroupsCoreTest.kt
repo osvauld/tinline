@@ -10,6 +10,8 @@ import uniffi.p2pcore.GroupChatRequest
 import uniffi.p2pcore.GroupDetail
 import uniffi.p2pcore.GroupFlag
 import uniffi.p2pcore.GroupHost
+import uniffi.p2pcore.GroupInvitation
+import uniffi.p2pcore.GroupInvitationState
 import uniffi.p2pcore.GroupInvitePeek
 import uniffi.p2pcore.GroupItemKind
 import uniffi.p2pcore.GroupMessage
@@ -55,9 +57,8 @@ class GroupsCoreTest {
         }
         override fun markRead(id: String) { marked += id }
         override fun create(name: String) = "new"
-        override fun invite(id: String) = "TLGRP1:$id"
-        override fun deviceToken(id: String) = "TLGRP1:dev:$id"
-        override fun peek(token: String) = if (token.startsWith("TLGRP1:")) GroupInvitePeek("g", "Hike", "did:key:sam", "did:key:sam", 1uL, 1u) else null
+        override fun invite(id: String) = "tinline://g/$id"
+        override fun peek(token: String) = if (token.startsWith("tinline://g/")) GroupInvitePeek("g", "Hike", "did:key:sam", "did:key:sam", 1uL, 1u) else null
         override fun join(token: String): String = throw uniffi.p2pcore.Exception.Rejected("they refused: invite expired or invalid")
         override fun post(id: String, text: String, replyTo: String?): GroupMessage {
             postError?.let { throw it }
@@ -87,6 +88,72 @@ class GroupsCoreTest {
         override fun chatAccept(requestId: String) = answer(requestId, ChatRequestState.ACCEPTED)
         override fun chatDecline(requestId: String) = answer(requestId, ChatRequestState.DECLINED)
         override fun block(did: String) { blocked += did }
+        val invs = mutableListOf<GroupInvitation>()
+        override fun inviteContacts(id: String, dids: List<String>): List<GroupInvitation> {
+            if (dids.any { it in blocked }) throw uniffi.p2pcore.Exception.Rejected("they refused: you block them")
+            return dids.map { d -> GroupInvitation("i${invs.size}", id, "Hike", me, "Me", d, d.removePrefix("did:key:").replaceFirstChar { it.uppercase() } + " K", true,
+                GroupInvitationState.PENDING, 1uL, 9uL, false).also { invs += it } }
+        }
+        override fun invitationsIncoming() = invs.filter { !it.outgoing }
+        override fun invitationsOutgoing(id: String) = invs.filter { it.outgoing && it.groupId == id }
+        private fun answerInv(id: String, st: GroupInvitationState): GroupInvitation {
+            val i = invs.indexOfFirst { it.id == id }
+            if (invs[i].state != GroupInvitationState.PENDING) throw uniffi.p2pcore.Exception.Rejected("they refused: already answered")
+            return invs[i].copy(state = st).also { invs[i] = it }
+        }
+        override fun invitationAccept(invitationId: String) = answerInv(invitationId, GroupInvitationState.JOINED)
+        override fun invitationDecline(invitationId: String) = answerInv(invitationId, GroupInvitationState.DECLINED)
+        private val me = "did:key:me"
+    }
+
+    private fun inv(id: String, state: GroupInvitationState, outgoing: Boolean = false, invitee: String = me, delivered: Boolean = true) =
+        GroupInvitation(id, "g", "Hike", if (outgoing) me else "did:key:sam", if (outgoing) "Me" else "Sam Rao", invitee, "Leo B", outgoing, state, 1uL, 9uL, delivered)
+
+    @Test fun invitationsCountOnTheBadgeUntilAnswered() {
+        val a = summary("a", CoreRole.MEMBER, 2, null)
+        val list = listOf(inv("1", GroupInvitationState.PENDING), inv("2", GroupInvitationState.DECLINED), inv("3", GroupInvitationState.PENDING, outgoing = true))
+        assertEquals(3, GroupText.badge(listOf(a), list))
+        assertEquals(listOf("1"), GroupText.pendingInvitations(list).map { it.id })
+    }
+
+    @Test fun thePickerHidesBlockedContactsAndShowsMembersAndPendingInvites() {
+        val d = detail(CoreRole.OWNER, listOf(member(me, owner = true), member("did:key:sam")))
+        val contacts = listOf("sam", "leo", "priya", "ravi", "zoe").map { InviteCandidate("did:key:$it", it.replaceFirstChar { c -> c.uppercase() }) }
+        val sent = listOf(inv("1", GroupInvitationState.PENDING, outgoing = true, invitee = "did:key:leo"), inv("2", GroupInvitationState.DECLINED, outgoing = true, invitee = "did:key:zoe"))
+        val rows = GroupText.pickRows(contacts, d, sent, { it == "did:key:priya" }, { it == "did:key:ravi" })
+        assertEquals(listOf("did:key:zoe", "did:key:leo", "did:key:sam"), rows.map { it.did })
+        assertNull(rows[0].why) // declined before: can be invited again
+        assertEquals("Invited · waiting", rows[1].why)
+        assertEquals("Already a member", rows[2].why)
+        assertEquals("Declined" to true, GroupText.sentInvitationLine(sent[1]))
+        assertEquals("Invited · not delivered yet" to false, GroupText.sentInvitationLine(sent[0].copy(delivered = false)))
+        assertEquals("Joined" to false, GroupText.sentInvitationLine(sent[0].copy(state = GroupInvitationState.JOINED)))
+    }
+
+    @Test fun invitingContactsAndAnsweringAnInvitation() {
+        val api = FakeApi()
+        val ctl = GroupsController(api) { me }
+        assertEquals("Pick someone first.", ctl.inviteContacts("g", emptyList()).exceptionOrNull()!!.message)
+        assertEquals("Invitation sent to Leo. They join when they accept.", ctl.inviteContacts("g", listOf("did:key:leo")).getOrThrow())
+        assertEquals("2 invitations sent. Each person joins when they accept.", ctl.inviteContacts("g", listOf("did:key:a", "did:key:b")).getOrThrow())
+        api.blocked += "did:key:x"
+        assertTrue(ctl.inviteContacts("g", listOf("did:key:x")).isFailure)
+        api.invs += inv("in1", GroupInvitationState.PENDING)
+        api.invs += inv("in2", GroupInvitationState.PENDING)
+        ctl.onGroupInvitation(api.invs.last())
+        assertEquals(2, GroupText.pendingInvitations(ctl.invitations.value).size)
+        assertEquals("g", ctl.acceptInvitation("in1").getOrThrow())
+        assertTrue(ctl.declineInvitation("in2").getOrThrow().startsWith("Declined. Sam sees"))
+        assertTrue(GroupText.pendingInvitations(ctl.invitations.value).isEmpty())
+        assertEquals("Already answered.", ctl.declineInvitation("in2").exceptionOrNull()!!.message)
+    }
+
+    @Test fun groupLinksAreRecognised() {
+        assertTrue(GroupLinks.isLink("tinline://g/3xK9abc"))
+        assertTrue(GroupLinks.isLink(" TINLINE://G/3xK9abc "))
+        assertFalse(GroupLinks.isLink("tinline://g/"))
+        assertFalse(GroupLinks.isLink("tlgroup1:AAAA"))
+        assertFalse(GroupLinks.isLink(null))
     }
 
     @Test fun previewsAndBadgeSkipGroupsWeLeftOrWereRemovedFrom() {
@@ -195,10 +262,10 @@ class GroupsCoreTest {
         assertTrue(ctl.post("g", "   ", null).isFailure)
 
         assertEquals("Only admins can do that.", ctl.flag("g", "did:key:sam").exceptionOrNull()!!.message)
-        assertEquals("Invite expired or invalid.", ctl.join("TLGRP1:x").exceptionOrNull()!!.message)
-        assertEquals("TLGRP1:g", ctl.invite("g").getOrThrow())
+        assertEquals("Invite expired or invalid.", ctl.join("tinline://g/x").exceptionOrNull()!!.message)
+        assertEquals("tinline://g/g", ctl.invite("g").getOrThrow())
         assertNull(ctl.peek("garbage"))
-        assertEquals("Hike", ctl.peek(" TLGRP1:x ")!!.name)
+        assertEquals("Hike", ctl.peek(" tinline://g/x ")!!.name)
 
         ctl.close("g")
         assertNull(ctl.open.value)

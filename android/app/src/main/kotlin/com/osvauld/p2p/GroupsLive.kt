@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -31,6 +33,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import uniffi.p2pcore.ChatRequestState
 import uniffi.p2pcore.GroupDetail
+import uniffi.p2pcore.GroupInvitation
 import uniffi.p2pcore.GroupInvitePeek
 import uniffi.p2pcore.GroupItemKind
 import uniffi.p2pcore.GroupMessage
@@ -50,8 +57,10 @@ import uniffi.p2pcore.GroupRole as CoreRole
 
 /*
  * Group chat screens on the core (state: GroupsCore.kt), after the boards in docs/design/groups
- * (Main, AndroidGroupInfo, AndroidRemoval): the Groups tab, a group's chat, group info with member
- * actions, new group, join (paste or scan), the invite / own-device token, and why-removed.
+ * (Main, AndroidGroupInfo, AndroidRemoval): the Groups tab (with invitations to us on top), a group's
+ * chat, group info with member actions and the invitations we sent, add members (contact picker, G3),
+ * new group, join (paste, scan or a tapped tinline://g/ link), the invite link with a large QR, and
+ * why-removed. No "add my other device": linked devices get the group by own-device sync (G2).
  */
 
 /** A DID as the user knows it: their contact name, else what the group calls them. */
@@ -156,9 +165,13 @@ fun GroupRequestsBlock(app: P2pApp, onChat: (String) -> Unit, say: (String) -> U
 // ------------------------------------------------------------------ the Groups tab
 
 @Composable
-fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJoin: () -> Unit) {
+fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJoin: () -> Unit, say: (String) -> Unit = {}) {
     val c = Tin.c
     val list by app.groups.list.collectAsState()
+    val invitations by app.groups.invitations.collectAsState()
+    val pendingInv = GroupText.pendingInvitations(invitations)
+    val exec = rememberRunner()
+    var joining by remember { mutableStateOf<String?>(null) }
     val me = app.groups.myDid
     val now = System.currentTimeMillis()
     val state = rememberLazyListState()
@@ -167,6 +180,17 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
     LaunchedEffect(Unit) { withContext(Dispatchers.IO) { app.groups.refresh() } }
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), state = state, contentPadding = PaddingValues(bottom = 96.dp)) {
+            if (pendingInv.isNotEmpty()) {
+                item { SectionLabel("INVITATIONS · ${pendingInv.size}") }
+                items(pendingInv, key = { "i" + it.id }) { inv ->
+                    InvitationCard(app, inv, busy = joining == inv.id,
+                        onJoin = {
+                            joining = inv.id
+                            exec({ app.groups.acceptInvitation(inv.id) }) { r -> joining = null; r.onSuccess { onOpen(it); say("You joined ${inv.groupName}.") }.onFailure { say(it.message ?: "Couldn’t join") } }
+                        },
+                        onDecline = { exec({ app.groups.declineInvitation(inv.id) }) { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) } })
+                }
+            }
             item { SectionLabel("GROUPS · ${list.size}") }
             if (list.isEmpty()) item {
                 Hint("No groups yet. Make one, or join with an invite someone sent you.", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
@@ -210,6 +234,29 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
 }
 
 private fun tintOf(id: String) = (id.hashCode() and 0x7fffffff) % 2
+
+/** "Sam invited you to Hike": Join / Decline (G3, an invitation sent over the 1:1 chat). */
+@Composable
+private fun InvitationCard(app: P2pApp, inv: GroupInvitation, busy: Boolean, onJoin: () -> Unit, onDecline: () -> Unit) {
+    val c = Tin.c
+    val who = nameOf(app, inv.inviterDid, inv.inviterName)
+    CardBox(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), radius = 20.dp) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                GroupAvatar(tintOf(inv.groupId), 44.dp, radius = 14.dp)
+                Column(Modifier.weight(1f)) {
+                    Text(inv.groupName, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("${firstName(who)} invited you", style = TinType.bodyM, color = c.ink2)
+                }
+            }
+            Hint("Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone.")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TinButton(if (busy) "Joining…" else "Join", onJoin, Modifier.weight(1f), height = 44.dp, enabled = !busy)
+                TinButton("Decline", onDecline, Modifier.weight(1f), style = BtnStyle.Outlined, height = 44.dp, enabled = !busy)
+            }
+        }
+    }
+}
 
 // ------------------------------------------------------------------ chat
 
@@ -344,9 +391,10 @@ private fun ColumnScope.GroupItemLive(
 // ------------------------------------------------------------------ group info
 
 @Composable
-fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onToken: (device: Boolean) -> Unit, onRemoval: () -> Unit, say: (String) -> Unit, onChat: (String) -> Unit = {}) {
+fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Unit, onAddMembers: () -> Unit, onRemoval: () -> Unit, say: (String) -> Unit, onChat: (String) -> Unit = {}) {
     val c = Tin.c
     val open by app.groups.open.collectAsState()
+    val sent by app.groups.sent.collectAsState()
     val blocks by app.blocks.collectAsState()
     val exec = rememberRunner()
     LaunchedEffect(id) { withContext(Dispatchers.IO) { if (app.groups.open.value?.id != id) app.groups.open(id) } }
@@ -369,8 +417,8 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onToken: (device:
                     }
                     Text("${d.members.size} members$role", style = TinType.bodyM, color = c.ink2)
                     if (active) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                        if (admin) InfoActionLive(Icons.Rounded.PersonAdd, "Invite", c.pr) { onToken(false) }
-                        InfoActionLive(Icons.Rounded.Devices, "My device", c.pr) { onToken(true) }
+                        if (admin) InfoActionLive(Icons.Rounded.PersonAdd, "Add members", c.pr, onAddMembers)
+                        if (admin) InfoActionLive(Icons.Rounded.Link, "Invite link", c.pr, onLink)
                         if (d.myRole != CoreRole.OWNER) InfoActionLive(Icons.AutoMirrored.Rounded.Logout, "Leave", c.er) { confirm = GroupConfirm.Leave }
                     }
                     if (d.removal != null) TinButton("Why was I removed?", onRemoval, style = BtnStyle.Outlined, fill = false, height = 44.dp)
@@ -406,6 +454,22 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onToken: (device:
                     else {
                         TinButton("Host from this phone", { confirm = GroupConfirm.Host(true) }, style = BtnStyle.Outlined, height = 44.dp)
                         Hint("A computer that stays on is a better host: a phone sleeps and runs on battery.")
+                    }
+                }
+            }
+            val shownSent = sent.filter { it.groupId == id && d.members.none { m -> m.did == it.inviteeDid } }
+            if (admin && shownSent.isNotEmpty()) {
+                item { SectionLabel("INVITED · ${shownSent.size}") }
+                items(shownSent, key = { "s" + it.id }) { inv ->
+                    val n = nameOf(app, inv.inviteeDid, inv.inviteeName)
+                    val (line, bad) = GroupText.sentInvitationLine(inv)
+                    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 20.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        PersonAvatar(n, inv.inviteeDid, 40.dp)
+                        Column(Modifier.weight(1f)) {
+                            Text(n, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(line, style = TinType.bodyM, color = if (bad) c.er else c.ink2)
+                        }
                     }
                 }
             }
@@ -592,19 +656,83 @@ fun NewGroupLive(app: P2pApp, onBack: () -> Unit, onCreated: (String) -> Unit) {
     }
 }
 
+// ------------------------------------------------------------------ add members (G3)
+
+/**
+ * Pick contacts to invite: blocked contacts (either direction) are not offered; members and people with
+ * a pending invitation show why they can't be picked. Each invitation goes over the 1:1 chat.
+ */
+@Composable
+fun AddMembersLive(app: P2pApp, id: String, onBack: () -> Unit, say: (String) -> Unit) {
+    val c = Tin.c
+    val open by app.groups.open.collectAsState()
+    val sent by app.groups.sent.collectAsState()
+    val contacts by app.contacts.collectAsState()
+    val blocks by app.blocks.collectAsState()
+    LaunchedEffect(id) { withContext(Dispatchers.IO) { if (app.groups.open.value?.id != id) app.groups.open(id) } }
+    val d = open?.takeIf { it.id == id }?.detail ?: run { Page { TopBar("Add members", onBack) }; return }
+    val picked = remember { mutableStateListOf<String>() }
+    var busy by remember { mutableStateOf(false) }
+    val exec = rememberRunner()
+    val rows = remember(contacts, d, sent, blocks) {
+        GroupText.pickRows(contacts.map { InviteCandidate(it.did, it.display()) }, d, sent, { blocks.blockedByMe(it) }, { blocks.blockedMeAt(it) != null })
+    }
+    Page {
+        TopBar("Add to ${d.name}", onBack)
+        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            item { SectionLabel("CONTACTS · ${picked.size} SELECTED", Modifier.padding(start = 0.dp)) }
+            if (rows.isEmpty()) item { Hint("No contacts to add. People you block, or who block you, aren’t listed.") }
+            items(rows, key = { it.did }) { r ->
+                val on = r.did in picked
+                val can = r.why == null
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp))
+                        .let { if (can) it.clickable(role = Role.Checkbox) { if (on) picked.remove(r.did) else picked.add(r.did) }.semantics(mergeDescendants = true) { toggleableState = ToggleableState(on) } else it },
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    PersonAvatar(r.name, r.did, 40.dp)
+                    Column(Modifier.weight(1f)) {
+                        Text(r.name, style = TinType.bodyL.copy(fontSize = 15.sp), color = if (can) c.ink else c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        val sub = r.why ?: r.invited?.let { GroupText.sentInvitationLine(it).first }
+                        if (sub != null) Text(sub, style = TinType.bodyM, color = c.ink2)
+                    }
+                    if (can) Checkbox(on, null, colors = CheckboxDefaults.colors(checkedColor = c.pr, uncheckedColor = c.ln2, checkmarkColor = c.onPr))
+                }
+            }
+            item { Hint("Each person gets the invitation in your 1:1 chat, and joins when they accept. It is valid for 7 days.", Modifier.padding(top = 8.dp)) }
+        }
+        Box(Modifier.padding(20.dp)) {
+            TinButton(if (busy) "Sending…" else if (picked.size > 1) "Invite ${picked.size} people" else "Invite", {
+                busy = true
+                val dids = picked.toList()
+                exec({ app.groups.inviteContacts(id, dids) }) { r -> busy = false; r.onSuccess { say(it); onBack() }.onFailure { say(it.message ?: "Couldn’t invite") } }
+            }, enabled = picked.isNotEmpty() && !busy)
+        }
+    }
+}
+
 // ------------------------------------------------------------------ join
 
 @Composable
-fun JoinGroupLive(app: P2pApp, onBack: () -> Unit, onJoined: (String) -> Unit) {
+fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJoined: (String) -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
-    var token by rememberSaveable { mutableStateOf("") }
+    var token by rememberSaveable { mutableStateOf(initial ?: "") }
     var scanning by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var err by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     var peek by remember { mutableStateOf<GroupInvitePeek?>(null) }
-    LaunchedEffect(token) { peek = withContext(Dispatchers.IO) { app.groups.peek(token) } }
+    // The details come from the group's host over the network: wait for typing to settle, show progress.
+    var checking by remember { mutableStateOf(false) }
+    LaunchedEffect(token) {
+        peek = null
+        if (token.isBlank()) { checking = false; return@LaunchedEffect }
+        checking = true
+        kotlinx.coroutines.delay(400)
+        peek = withContext(Dispatchers.IO) { app.groups.peek(token) }
+        checking = false
+    }
     if (scanning) {
         Page {
             TopBar("Scan the invite", { scanning = false })
@@ -612,12 +740,13 @@ fun JoinGroupLive(app: P2pApp, onBack: () -> Unit, onJoined: (String) -> Unit) {
         }
         return
     }
+    val bad = token.isNotBlank() && !checking && peek == null
     Page {
         TopBar("Join a group", onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            TinField(token, { token = it.trim(); err = null }, "Invite", mono = true, singleLine = false, minHeight = 96.dp, placeholder = "Paste the invite you were sent",
-                state = if (token.isNotBlank() && peek == null) FieldState.Error else FieldState.Normal,
-                hint = if (token.isNotBlank() && peek == null) "That isn’t a group invite. Paste the whole text you were sent." else null)
+            TinField(token, { token = it.trim(); err = null }, "Invite link or code", mono = true, singleLine = false, minHeight = 72.dp, placeholder = "tinline://g/…",
+                state = if (bad) FieldState.Error else FieldState.Normal,
+                hint = when { checking -> "Checking with the group’s host…"; bad -> "That link didn’t work: it isn’t a group invite, it expired, or its host is offline."; else -> null })
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TinButton("Paste", {
                     val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
@@ -632,7 +761,7 @@ fun JoinGroupLive(app: P2pApp, onBack: () -> Unit, onJoined: (String) -> Unit) {
                             GroupAvatar(tintOf(p.groupId), 44.dp, radius = 14.dp)
                             Text(p.name, style = TinType.titleM, color = c.ink)
                         }
-                        Text(p.issuerDid?.let { "Invited by ${nameOf(app, it, "someone who isn’t in your contacts")}" } ?: "A link for your own other device", style = TinType.bodyM, color = c.ink2)
+                        Text(p.issuerDid?.let { "Invited by ${nameOf(app, it, "someone who isn’t in your contacts")}" } ?: "A link for your own account", style = TinType.bodyM, color = c.ink2)
                         Text("Owner: ${nameOf(app, p.ownerDid, "someone who isn’t in your contacts")}", style = TinType.bodyM, color = c.ink2)
                         p.expires?.let { Text("Valid until ${whenFull(it.toLong() * 1000)}", style = TinType.bodyM, color = c.ink2) }
                     }
@@ -654,40 +783,53 @@ fun JoinGroupLive(app: P2pApp, onBack: () -> Unit, onJoined: (String) -> Unit) {
     }
 }
 
-// ------------------------------------------------------------------ invite / own-device token
+// ------------------------------------------------------------------ invite link (G3: short, large QR)
 
 @Composable
-fun GroupTokenLive(app: P2pApp, id: String, device: Boolean, onBack: () -> Unit) {
+fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
     val name = app.groups.open.collectAsState().value?.takeIf { it.id == id }?.detail?.name ?: "the group"
     var token by remember { mutableStateOf<String?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(id, device) {
-        val r = withContext(Dispatchers.IO) { if (device) app.groups.deviceToken(id) else app.groups.invite(id) }
+    var full by remember { mutableStateOf(false) }
+    LaunchedEffect(id) {
+        val r = withContext(Dispatchers.IO) { app.groups.invite(id) }
         r.onSuccess { token = it }.onFailure { err = it.message }
     }
     Page {
-        TopBar(if (device) "Add my other device" else "Invite to $name", onBack)
+        TopBar("Invite link", onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Hint(if (device) "On your other device (same account), open Groups › Join with an invite and scan or paste this. It joins as you, not as a new member."
-                else "Send this to the people you want in $name, over an app you trust. Anyone holding it can join for 7 days; you see who joined and can flag them out.")
+            Hint("Anyone with this link or QR can join $name for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members.")
             val t = token
-            Box(Modifier.size(260.dp).clip(RoundedCornerShape(14.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+            // Large, high contrast, the full width: easy to scan from another phone. Tap for full screen.
+            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(Color.White)
+                .let { m -> if (t != null) m.clickable(role = Role.Button, onClickLabel = "Show full screen") { full = true } else m },
+                contentAlignment = Alignment.Center) {
                 when {
                     t != null -> {
-                        val bmp = remember(t) { qrBitmap(t, 720, fg = 0xFF17201D.toInt()) }
-                        Image(bmp.asImageBitmap(), if (device) "QR code to add your other device" else "QR code of the group invite", Modifier.fillMaxSize().padding(10.dp))
+                        val bmp = remember(t) { qrBitmap(t, 1024, fg = 0xFF000000.toInt()) }
+                        Image(bmp.asImageBitmap(), "QR code of the group invite link", Modifier.fillMaxSize().padding(12.dp))
                     }
                     err != null -> Text(err!!, Modifier.padding(16.dp), style = TinType.bodyM, color = c.er, textAlign = TextAlign.Center)
                     else -> Text("Making it…", style = TinType.bodyM, color = Color(0xFF4D5853))
                 }
             }
+            t?.let { Text(it, style = TinType.bodyM.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace), color = c.ink2, textAlign = TextAlign.Center) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TinButton("Share", {
-                    token?.let { tk -> runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, tk), "Share group invite")) } }
+                    token?.let { tk -> runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Join $name on Tinline: $tk"), "Share group invite")) } }
                 }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = Icons.Rounded.Share, enabled = token != null)
                 CopyButton(token, Modifier.weight(1f))
+            }
+        }
+    }
+    val t = token
+    if (full && t != null) {
+        Dialog({ full = false }, DialogProperties(usePlatformDefaultWidth = false)) {
+            Box(Modifier.fillMaxSize().background(Color.White).clickable(role = Role.Button, onClickLabel = "Close") { full = false }.padding(16.dp), contentAlignment = Alignment.Center) {
+                val bmp = remember(t) { qrBitmap(t, 1024, fg = 0xFF000000.toInt()) }
+                Image(bmp.asImageBitmap(), "QR code of the group invite link, full screen", Modifier.fillMaxWidth().aspectRatio(1f))
             }
         }
     }

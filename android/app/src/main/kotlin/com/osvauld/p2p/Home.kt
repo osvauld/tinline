@@ -71,7 +71,8 @@ fun HomeScreen(
     val localTab = rememberSaveable { mutableStateOf(HomeTab.Chats) }
     var tab by (homeTab ?: localTab)
     val groupList by app.groups.list.collectAsState()
-    val groupBadge = GroupText.badge(groupList)
+    val groupInvitations by app.groups.invitations.collectAsState()
+    val groupBadge = GroupText.badge(groupList, groupInvitations)
     val requestsIn by app.groups.incoming.collectAsState()
     val pendingRequests = requestsIn.count { it.state == uniffi.p2pcore.ChatRequestState.PENDING }
     // Relative times ("4 min ago") go stale: refresh them once a minute.
@@ -99,7 +100,7 @@ fun HomeScreen(
         tab = tab, onTab = { tab = it }, chatRows = rows, myDid = myDid, onChat = onChat, onNewChat = onNewChat,
         chatBadge = rows.sumOf { it.unread } + pendingRequests, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
-        groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup) }, groupBadge = groupBadge,
+        groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup, say) }, groupBadge = groupBadge,
         requestsBlock = { GroupRequestsBlock(app, onChat, say) },
     )
     if (sheet) AvailabilitySheet(avail.available, avail.until?.toLong(), app.node.profile()?.name ?: "", onDismiss = { sheet = false }) { available, until ->

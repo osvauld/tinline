@@ -8,6 +8,9 @@ import uniffi.p2pcore.GroupChatRequest
 import uniffi.p2pcore.GroupDetail
 import uniffi.p2pcore.GroupRequestEvents
 import uniffi.p2pcore.GroupEvents
+import uniffi.p2pcore.GroupInvitation
+import uniffi.p2pcore.GroupInvitationEvents
+import uniffi.p2pcore.GroupInvitationState
 import uniffi.p2pcore.GroupInvitePeek
 import uniffi.p2pcore.GroupItemKind
 import uniffi.p2pcore.GroupMessage
@@ -26,8 +29,10 @@ import uniffi.p2pcore.GroupRole as CoreRole
  *
  * Decisions (rotation-open-decisions.md §0): 3 admin flags remove a member (U9/U15) and the removed member
  * sees the signed flags; a post written before a removal still shows, marked (U11); only hosts know member
- * endpoints (U7), so our posts honestly say "Waiting for a host" until a host acknowledges them. Chat
- * requests through the host (U3) are not in core yet and have no live UI.
+ * endpoints (U7), so our posts honestly say "Waiting for a host" until a host acknowledges them.
+ * G3: admins invite contacts directly (the invitation travels over the 1:1 channel; blocked contacts are
+ * never offered); invite links are short (tinline://g/…) and the core fetches the invite from a host.
+ * There is no "add my other device" step: own-device sync (G2) brings groups to linked devices.
  */
 
 /** The core's group calls. Blocking ones (create, invite, join, accept host) are for IO threads. */
@@ -38,7 +43,7 @@ interface GroupApi {
     fun markRead(id: String)
     fun create(name: String): String
     fun invite(id: String): String
-    fun deviceToken(id: String): String
+    /** Fetches from the host the link names: network, IO threads only. */
     fun peek(token: String): GroupInvitePeek?
     fun join(token: String): String
     fun post(id: String, text: String, replyTo: String?): GroupMessage
@@ -57,6 +62,12 @@ interface GroupApi {
     fun chatDecline(requestId: String): GroupChatRequest
     /** The personal block (P5), for "Block" on an incoming request. */
     fun block(did: String)
+    // Direct invitations to contacts (G3).
+    fun inviteContacts(id: String, dids: List<String>): List<GroupInvitation>
+    fun invitationsIncoming(): List<GroupInvitation>
+    fun invitationsOutgoing(id: String): List<GroupInvitation>
+    fun invitationAccept(invitationId: String): GroupInvitation
+    fun invitationDecline(invitationId: String): GroupInvitation
 }
 
 class NodeGroupApi(private val node: () -> Node) : GroupApi {
@@ -66,7 +77,6 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun markRead(id: String) = node().groupMarkRead(id)
     override fun create(name: String) = node().groupCreate(name)
     override fun invite(id: String) = node().groupInvite(id)
-    override fun deviceToken(id: String) = node().groupDeviceToken(id)
     override fun peek(token: String) = node().groupPeekInvite(token)
     override fun join(token: String) = node().groupJoin(token)
     override fun post(id: String, text: String, replyTo: String?) = node().groupPost(id, text, replyTo)
@@ -83,7 +93,18 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun chatAccept(requestId: String) = node().groupChatAccept(requestId)
     override fun chatDecline(requestId: String) = node().groupChatDecline(requestId)
     override fun block(did: String) = node().block(did)
+    override fun inviteContacts(id: String, dids: List<String>) = node().groupInviteContacts(id, dids)
+    override fun invitationsIncoming() = node().groupInvitationsIncoming()
+    override fun invitationsOutgoing(id: String) = node().groupInvitationsOutgoing(id)
+    override fun invitationAccept(invitationId: String) = node().groupInvitationAccept(invitationId)
+    override fun invitationDecline(invitationId: String) = node().groupInvitationDecline(invitationId)
 }
+
+/** A contact as the "Add members" picker sees it. */
+data class InviteCandidate(val did: String, val name: String)
+
+/** One row of the picker: who, and why they can't be picked (null: pickable). */
+data class PickRow(val did: String, val name: String, val why: String?, val invited: GroupInvitation?)
 
 /** The group on screen: its detail and the loaded window of messages (oldest first). */
 data class OpenGroup(val id: String, val detail: GroupDetail, val messages: List<GroupMessage>, val older: String?)
@@ -182,8 +203,36 @@ object GroupText {
         return by?.let { b -> d.members.firstOrNull { it.did == b }?.name }?.ifBlank { null } ?: "An admin"
     }
 
-    /** Unread posts in groups we are still in: the Groups tab's badge. */
-    fun badge(list: List<GroupSummary>) = list.filter { active(it.myRole) }.sumOf { it.unread.toInt() }
+    /** Unread posts in groups we are still in, plus invitations waiting for an answer: the Groups tab's badge. */
+    fun badge(list: List<GroupSummary>, invitations: List<GroupInvitation> = emptyList()) =
+        list.filter { active(it.myRole) }.sumOf { it.unread.toInt() } + pendingInvitations(invitations).size
+
+    /** Incoming invitations still to answer (Join / Decline). */
+    fun pendingInvitations(invitations: List<GroupInvitation>) = invitations.filter { !it.outgoing && it.state == GroupInvitationState.PENDING }
+
+    /**
+     * The "Add members" picker: blocked contacts (either direction, P5) are not offered at all; members show
+     * as already in; someone with a live invitation shows its state and can't be picked again.
+     */
+    fun pickRows(contacts: List<InviteCandidate>, d: GroupDetail, sent: List<GroupInvitation>, blockedByMe: (String) -> Boolean, blocksMe: (String) -> Boolean): List<PickRow> =
+        contacts.filter { !blockedByMe(it.did) && !blocksMe(it.did) }.map { c ->
+            val inv = sent.filter { it.inviteeDid == c.did }.maxByOrNull { it.at }
+            val why = when {
+                d.members.any { it.did == c.did } -> "Already a member"
+                inv != null && inv.state == GroupInvitationState.PENDING -> "Invited · waiting"
+                else -> null
+            }
+            PickRow(c.did, c.name, why, inv)
+        }.sortedWith(compareBy({ it.why != null }, { it.name.lowercase() }))
+
+    /** An invitation we sent, in words, and whether it is bad news. */
+    fun sentInvitationLine(i: GroupInvitation): Pair<String, Boolean> = when (i.state) {
+        GroupInvitationState.PENDING -> (if (i.delivered) "Invited · waiting for an answer" else "Invited · not delivered yet") to false
+        GroupInvitationState.JOINED -> "Joined" to false
+        GroupInvitationState.DECLINED -> "Declined" to true
+        GroupInvitationState.EXPIRED -> "Invitation expired" to true
+        GroupInvitationState.BLOCKED -> "Blocked you" to true
+    }
 
     fun actions(d: GroupDetail, m: CoreMember): List<MemberAction> {
         if (m.isMe || !active(d.myRole)) return emptyList()
@@ -219,6 +268,7 @@ object GroupText {
                     "already a contact" -> "You already have them as a contact. Message them from Chats."
                     "you block them" -> "You block them. Unblock them first to ask for a chat."
                     "blocked" -> "They blocked you, so you can’t ask them for a chat."
+                    "unknown or expired invite code" -> "That invite isn’t valid any more. Ask for a new one."
                     "" -> "Refused."
                     else -> r.replaceFirstChar { it.uppercase() }.trimEnd('.') + "."
                 }
@@ -243,7 +293,7 @@ fun upsertGroupMessage(list: List<GroupMessage>, m: GroupMessage): List<GroupMes
  * The groups state the screens read, refreshed from the core on its [GroupEvents]. Reads are in-memory in
  * the core; actions return Result with what to tell the user, and must be called off the main thread.
  */
-class GroupsController(private val api: GroupApi, private val me: () -> String?) : GroupEvents, GroupRequestEvents {
+class GroupsController(private val api: GroupApi, private val me: () -> String?) : GroupEvents, GroupRequestEvents, GroupInvitationEvents {
     private val _incoming = MutableStateFlow<List<GroupChatRequest>>(emptyList())
     /** Chat requests to us (blocked senders are never listed), newest first. */
     val incoming: StateFlow<List<GroupChatRequest>> = _incoming
@@ -268,6 +318,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         if (myDevice.isEmpty()) myDevice = try { api.deviceId() } catch (_: Exception) { "" }
         reloadRequests()
         reloadOpen()
+        reloadInvitations()
     }
 
     @Synchronized fun open(id: String) {
@@ -275,6 +326,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         try { api.markRead(id) } catch (_: Exception) {}
         load(id, GroupText.PAGE)
         _list.value = try { api.groups() } catch (e: Exception) { _list.value }
+        reloadInvitations()
     }
 
     @Synchronized fun close(id: String) { if (_open.value?.id == id) _open.value = null }
@@ -317,7 +369,37 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun join(token: String): Result<String> = runCatching { api.join(token.trim()) }.also { refresh() }.mapError()
 
     fun invite(id: String): Result<String> = runCatching { api.invite(id) }.mapError()
-    fun deviceToken(id: String): Result<String> = runCatching { api.deviceToken(id) }.mapError()
+
+    // ---- direct invitations (G3) ----
+
+    private val _invitations = MutableStateFlow<List<GroupInvitation>>(emptyList())
+    /** Invitations to us, newest first (blocked inviters are never listed). */
+    val invitations: StateFlow<List<GroupInvitation>> = _invitations
+    private val _sent = MutableStateFlow<List<GroupInvitation>>(emptyList())
+    /** Invitations we sent for the open group. */
+    val sent: StateFlow<List<GroupInvitation>> = _sent
+
+    private fun reloadInvitations() {
+        _invitations.value = try { api.invitationsIncoming() } catch (_: Exception) { emptyList() }
+        _sent.value = _open.value?.id?.let { id -> try { api.invitationsOutgoing(id) } catch (_: Exception) { emptyList() } } ?: emptyList()
+    }
+
+    fun inviteContacts(id: String, dids: List<String>): Result<String> {
+        if (dids.isEmpty()) return Result.failure(GroupFailure("Pick someone first."))
+        return runCatching { api.inviteContacts(id, dids) }.map {
+            if (it.size == 1) "Invitation sent to ${firstName(it[0].inviteeName.ifBlank { "them" })}. They join when they accept."
+            else "${it.size} invitations sent. Each person joins when they accept."
+        }.also { synchronized(this) { reloadInvitations() } }.mapError()
+    }
+
+    /** Joins (blocks until joined, about a minute at most); the group id. */
+    fun acceptInvitation(invitationId: String): Result<String> =
+        runCatching { api.invitationAccept(invitationId).groupId }.also { refresh() }.mapError()
+
+    fun declineInvitation(invitationId: String): Result<String> = runCatching { api.invitationDecline(invitationId) }
+        .map { "Declined. ${firstName(it.inviterName.ifBlank { "They" })} sees that you declined." }.also { synchronized(this) { reloadInvitations() } }.mapError()
+
+    override fun onGroupInvitation(invitation: GroupInvitation) { synchronized(this) { reloadInvitations() } }
 
     fun flag(id: String, did: String) = act("Flag recorded. It is signed by you and the member can see it.") { api.flag(id, did) }
     fun setAdmin(id: String, did: String, admin: Boolean) = act(if (admin) "Made admin." else "No longer an admin.") { api.setAdmin(id, did, admin) }
@@ -376,12 +458,32 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     override fun onGroupChanged(groupId: String) {
         synchronized(this) {
             _list.value = try { api.groups() } catch (e: Exception) { _list.value }
-            if (_open.value?.id == groupId) reloadOpen()
+            if (_open.value?.id == groupId) { reloadOpen(); reloadInvitations() }
         }
     }
 
     fun attach(node: Node) {
-        try { node.setGroupEvents(this); node.setGroupRequestEvents(this) } catch (e: Exception) { Log.w(P2pApp.TAG, "setGroupEvents: $e") }
+        try { node.setGroupEvents(this); node.setGroupRequestEvents(this); node.setGroupInvitationEvents(this) } catch (e: Exception) { Log.w(P2pApp.TAG, "setGroupEvents: $e") }
+    }
+}
+
+/** Group invite links (G3): `tinline://g/<code>`; the bare code is accepted too. */
+object GroupLinks {
+    const val PREFIX = "tinline://g/"
+    /** Whether [text] looks like a group invite link (any case of the scheme). */
+    fun isLink(text: String?): Boolean = text?.trim()?.let { it.length > PREFIX.length && it.startsWith(PREFIX, ignoreCase = true) } == true
+}
+
+/** A tapped tinline://g/ link waits here until the app is unlocked, then opens Join. */
+object GroupLinkInbox {
+    val link = MutableStateFlow<String?>(null)
+
+    fun take(intent: android.content.Intent?) {
+        if (intent?.action != android.content.Intent.ACTION_VIEW) return
+        val d = intent.dataString ?: return
+        if (!GroupLinks.isLink(d)) return
+        intent.action = null // not again after a recreate
+        link.value = d
     }
 }
 
