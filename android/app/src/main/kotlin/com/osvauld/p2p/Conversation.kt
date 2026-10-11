@@ -40,11 +40,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.constrainWidth
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.LayoutDirection
+import kotlin.math.ceil
+import kotlin.math.max
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -84,6 +93,8 @@ private fun List<Message>.sortedChat() = sortedWith(compareBy<Message>({ it.at }
 fun ConversationScreen(
     source: ChatSource, peerDid: String, name: String, online: Boolean,
     onBack: () -> Unit, onCall: () -> Unit, preview: ConvPreview? = null, addedAtSecs: Long? = null,
+    /** The "You" conversation: notes and files for our own devices, no contact on the other side. */
+    isSelf: Boolean = false,
 ) {
     val c = Tin.c
     val ctx = LocalContext.current
@@ -145,7 +156,7 @@ fun ConversationScreen(
         onDispose { owner.lifecycle.removeObserver(o); if (OpenChat.peer == peerDid) OpenChat.peer = null }
     }
     LaunchedEffect(peerDid) {
-        withContext(Dispatchers.IO) { runCatching { source.watchPresence(peerDid) } }
+        if (!isSelf) withContext(Dispatchers.IO) { runCatching { source.watchPresence(peerDid) } }
     }
     LaunchedEffect(peerDid, msgs.size) {
         withContext(Dispatchers.IO) { runCatching { source.markRead(peerDid); source.refresh() } }
@@ -255,7 +266,7 @@ fun ConversationScreen(
     val byId = remember(msgs.toList()) { msgs.associateBy { it.id } }
     Box(Modifier.fillMaxSize()) {
         Page {
-            ConvHeader(name, peerDid, link, onBack, onCall, first)
+            ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf)
             if (link == Link.Offline) InfoCard(
                 "$first isn’t reachable right now. Your messages stay on this phone and send by themselves when you’re both online.",
                 Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp), icon = Icons.Rounded.Schedule, kind = BannerKind.Warn,
@@ -316,7 +327,7 @@ fun ConversationScreen(
     }
     val am = actionsFor?.let { byId[it] }
     if (am != null) ActionsSheet(
-        am, first, onDismiss = { actionsFor = null },
+        am, first, isSelf, onDismiss = { actionsFor = null },
         onReply = { actionsFor = null; editing = null; replying = am.id },
         onCopy = { actionsFor = null; clipboard.setText(AnnotatedString(am.text)); toast("Copied") },
         onEdit = { actionsFor = null; replying = null; editing = am.id; draft = am.text },
@@ -327,7 +338,7 @@ fun ConversationScreen(
         onSave = { actionsFor = null; saveToPhone(am) },
     )
     if (attachOpen) AttachSheet(
-        first, onDismiss = { attachOpen = false },
+        first, isSelf, onDismiss = { attachOpen = false },
         onPhotos = { attachOpen = false; photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
         onCamera = {
             attachOpen = false
@@ -338,19 +349,20 @@ fun ConversationScreen(
 }
 
 @Composable
-private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String) {
+private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
         Avatar(name, peerDid, 40.dp)
         Column(Modifier.weight(1f)) {
             Text(name, style = TinType.bodyL.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (isSelf) Text(SELF_SUB, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
+            else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Dot(if (link == Link.Connected || link == Link.Relayed) c.pr else c.ln2, 8.dp, hollow = link != Link.Connected && link != Link.Relayed)
                 Text(when (link) { Link.Connected -> "Connected · direct"; Link.Relayed -> "Connected · relayed"; else -> "Not connected" }, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
             }
         }
-        IconBtn(Icons.Rounded.Call, "Call $first", onCall, tint = c.pr)
+        if (!isSelf) IconBtn(Icons.Rounded.Call, "Call $first", onCall, tint = c.pr)
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(c.ln))
 }
@@ -436,17 +448,19 @@ private fun Bubble(
             }
         }
     }
-    Box(Modifier.fillMaxWidth().then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
+    BoxWithConstraints(Modifier.fillMaxWidth().then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
+        // Up to 82% of the screen (capped for tablets), so text is not wrapped into a narrow column.
+        val bubbleMaxWidth = minOf(maxWidth * .82f, 480.dp)
         if (drag > 0f) Icon(Icons.AutoMirrored.Rounded.Reply, "Reply", tint = c.pr,
             modifier = Modifier.align(Alignment.CenterStart).size(24.dp))
         if (m.deleted) {
             Column(
-                Modifier.widthIn(max = 290.dp).clip(shape).let { if (out) it.border(1.dp, c.ln2, shape) else it }.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
+                Modifier.widthIn(max = bubbleMaxWidth).clip(shape).let { if (out) it.border(1.dp, c.ln2, shape) else it }.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp),
             ) {
                 Text(if (out) "You deleted this message" else "$first deleted this message", style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp, fontStyle = FontStyle.Italic), color = c.ink2)
                 Meta(msClock(m.at.toLong()), null, c.ink2, null)
             }
-            return@Box
+            return@BoxWithConstraints
         }
         val a = m.attachment
         val photo = a != null && a.isImage() && !broken
@@ -455,8 +469,7 @@ private fun Bubble(
         val bg = if (out) c.prc else c.sf
         val fg = if (out) c.onPrc else c.ink
         Column(
-            Modifier.offset { IntOffset(drag.roundToInt(), 0) }.widthIn(max = 290.dp)
-                .let { if (a == null) it.width(IntrinsicSize.Max) else it }
+            Modifier.offset { IntOffset(drag.roundToInt(), 0) }.widthIn(max = bubbleMaxWidth)
                 .clip(shape).background(bg).let { if (!out) it.border(1.dp, c.ln, shape) else it }
                 .let { if (selected) it.border(3.dp, c.pr, shape) else it }
                 .combinedClickable(onClick = {}, onLongClick = onLong)
@@ -480,7 +493,6 @@ private fun Bubble(
                 photo -> PhotoBox(m, a, out, prog, link, source, onDownload, onCancel, onOpenPhoto, onBroken)
                 else -> FileRow(a, out, prog, link, first, m.id in requested, onDownload, onCancel, onSaveFile, onOpenFile, onLong)
             }
-            if (m.text.isNotBlank()) Text(m.text, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
             val at = msClock(m.at.toLong())
             val sendingPct = if (out && prog != null && prog.second > 0) (prog.first * 100 / prog.second).toInt() else null
             val label = when {
@@ -489,7 +501,50 @@ private fun Bubble(
                 m.editedAt != null -> "edited · $at"
                 else -> at
             }
-            Meta(label, tick, if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2, if (photo) 8.dp else 0.dp, if (photo) 4.dp else 0.dp)
+            val metaColor = if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
+            if (a == null && m.text.isNotBlank()) {
+                // Only a few emojis: big, like the other chat apps; emojis in text: a bit larger.
+                val big = Emoji.isBig(m.text)
+                val style = if (big) TinType.bodyL.copy(fontSize = 38.sp, lineHeight = 46.sp) else TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp)
+                CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, tick, metaColor)
+            } else {
+                if (m.text.isNotBlank()) Text(Emoji.styled(m.text), style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
+                Meta(label, tick, metaColor, if (photo) 8.dp else 0.dp, if (photo) 4.dp else 0.dp)
+            }
+        }
+    }
+}
+
+/** Reserve the last line's trailing space for time/ticks, without squeezing the message.
+ * RTL uses a separate metadata row until bidi-aware trailing placement is supported. */
+@Composable
+private fun CompactTextBubble(text: AnnotatedString, style: TextStyle, color: Color, label: String, tick: Tick?, metaColor: Color) {
+    val measurer = rememberTextMeasurer()
+    val metaStyle = TinType.caption.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
+    val tickColor = Tin.c.pr
+    SubcomposeLayout { constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val meta = subcompose("meta") {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, style = metaStyle, color = metaColor)
+                if (tick != null) TickIcon(tick, if (tick == Tick.Two) tickColor else metaColor)
+            }
+        }.single().measure(loose)
+        val result = measurer.measure(text, style = style, constraints = loose)
+        val last = result.lineCount - 1
+        val trailing = ceil(result.getLineRight(last)).toInt()
+        val gap = 8.dp.roundToPx()
+        val needed = trailing + gap + meta.width
+        val inline = layoutDirection == LayoutDirection.Ltr && needed <= constraints.maxWidth
+        val width = constraints.constrainWidth(max(result.size.width, if (inline) needed else meta.width))
+        val body = subcompose("body") {
+            Text(text, style = style, color = color)
+        }.single().measure(Constraints.fixedWidth(result.size.width))
+        val metaY = if (inline) max(0, body.height - meta.height) else body.height + 3.dp.roundToPx()
+        val height = constraints.constrainHeight(max(body.height, metaY + meta.height))
+        layout(width, height) {
+            body.placeRelative(0, 0)
+            meta.placeRelative(width - meta.width, metaY)
         }
     }
 }
@@ -583,21 +638,21 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
 
 @Composable
 private fun ActionsSheet(
-    m: Message, first: String, onDismiss: () -> Unit, onReply: () -> Unit, onCopy: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, onSave: () -> Unit,
+    m: Message, first: String, isSelf: Boolean, onDismiss: () -> Unit, onReply: () -> Unit, onCopy: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, onSave: () -> Unit,
 ) {
     val c = Tin.c
     val at = msClock(m.at.toLong())
     TinSheet(onDismiss) {
         Hint(
-            if (!m.outgoing) "Received $at" else if (m.delivery == DeliveryState.DELIVERED) "Sent $at · on $first’s phone" else "Sent $at · only on this phone so far",
+            if (isSelf) "Saved $at · on your devices" else if (!m.outgoing) "Received $at" else if (m.delivery == DeliveryState.DELIVERED) "Sent $at · on $first’s phone" else "Sent $at · only on this phone so far",
             Modifier.padding(start = 8.dp, bottom = 8.dp),
         )
         SheetAction(Icons.AutoMirrored.Rounded.Reply, "Reply", onClick = onReply)
         if (m.text.isNotBlank()) SheetAction(Icons.Rounded.ContentCopy, "Copy text", onClick = onCopy)
         if (m.attachment?.let { it.state == TransferState.READY || m.outgoing } == true) SheetAction(Icons.Rounded.SaveAlt, "Save to phone", onClick = onSave)
         if (m.outgoing && m.attachment == null) SheetAction(Icons.Rounded.Edit, "Edit", onClick = onEdit)
-        if (m.outgoing) SheetAction(Icons.Rounded.Delete, "Delete for both of you", color = c.er, onClick = onDelete)
-        if (m.outgoing) Hint("Edits and deletes reach $first’s phone the next time you’re both online.", Modifier.padding(start = 8.dp, top = 8.dp))
+        if (m.outgoing) SheetAction(Icons.Rounded.Delete, if (isSelf) "Delete on all your devices" else "Delete for both of you", color = c.er, onClick = onDelete)
+        if (m.outgoing) Hint(if (isSelf) "Edits and deletes reach your other devices when they’re online." else "Edits and deletes reach $first’s phone the next time you’re both online.", Modifier.padding(start = 8.dp, top = 8.dp))
     }
 }
 
@@ -613,10 +668,10 @@ private fun SheetAction(icon: ImageVector, label: String, color: Color = Tin.c.i
 }
 
 @Composable
-private fun AttachSheet(first: String, onDismiss: () -> Unit, onPhotos: () -> Unit, onCamera: () -> Unit, onFile: () -> Unit) {
+private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, onPhotos: () -> Unit, onCamera: () -> Unit, onFile: () -> Unit) {
     val c = Tin.c
     TinSheet(onDismiss) {
-        Text("Send to $first", Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
+        Text(if (isSelf) "Save for yourself" else "Send to $first", Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             listOf(Triple(Icons.Rounded.PhotoLibrary, "Photos & videos", onPhotos), Triple(Icons.Rounded.PhotoCamera, "Camera", onCamera), Triple(Icons.Rounded.InsertDriveFile, "File", onFile)).forEach { (icon, label, go) ->
                 Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = go).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -627,7 +682,7 @@ private fun AttachSheet(first: String, onDismiss: () -> Unit, onPhotos: () -> Un
         }
         Row(Modifier.padding(start = 4.dp, top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
             Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(18.dp))
-            Hint("Files go straight to $first’s phone, encrypted. Up to 2 GB each. Both of you need to be online while it transfers.")
+            Hint(if (isSelf) "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each." else "Files go straight to $first’s phone, encrypted. Up to 2 GB each. Both of you need to be online while it transfers.")
         }
     }
 }

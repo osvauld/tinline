@@ -109,15 +109,18 @@ impl App {
                 });
             }
         }
-        rows.retain(|r| self.contacts.iter().any(|c| c.did == r.peer_did));
+        rows.retain(|r| self.contacts.iter().any(|c| c.did == r.peer_did) || self.is_me(&r.peer_did));
+        // "You" is pinned first.
+        rows.sort_by_key(|r| !self.is_me(&r.peer_did));
         let mut list = column![].spacing(2);
         let mut n = 0;
         for r in &rows {
+            let me = self.is_me(&r.peer_did);
             let name = self.chat_name(&r.peer_did);
             if !q.is_empty() && !name.to_lowercase().contains(q) {
                 continue;
             }
-            n += 1;
+            n += usize::from(!me);
             let sel = self.sel.as_ref() == Some(&r.peer_did) && !self.chat.info;
             let unread = r.unread > 0;
             let fg = if sel { t.on_primary_c } else { t.ink };
@@ -127,7 +130,8 @@ impl App {
             if r.last_outgoing && r.last_activity > 0 {
                 sub = sub.push(self.ticks(t, r.last_delivery, 14.0, dim));
             }
-            let pv = if unread { semi(r.preview.clone(), 13.0, t.ink) } else { tx(r.preview.clone(), 13.0, dim) }
+            let preview = if me && r.preview.is_empty() { crate::app::SELF_SUB.to_string() } else { r.preview.clone() };
+            let pv = if unread { semi(preview, 13.0, t.ink) } else { tx(preview, 13.0, dim) }
                 .wrapping(iced::widget::text::Wrapping::None);
             sub = sub.push(container(pv).width(Fill).clip(true));
             if unread {
@@ -193,28 +197,28 @@ impl App {
     pub(super) fn conversation_view<'a>(&'a self, t: Tok, c: &'a Contact) -> El<'a> {
         let name = Self::display(c);
         let calling = self.call.is_some();
+        // "You": no contact behind it, so no presence, call or safety number.
+        let me = self.is_me(&c.did);
+        let (sub, sub_color) = if me {
+            (crate::app::SELF_SUB.to_string(), t.ink2)
+        } else {
+            (self.conn_text(&c.did), if self.chat.online.contains(&c.did) { t.primary } else { t.ink2 })
+        };
         let who = button(
-            row![
-                avatar(t, &name, &c.did, 40.0),
-                column![bold(name.clone(), 17.0, t.ink), tx(self.conn_text(&c.did), 13.0, if self.chat.online.contains(&c.did) { t.primary } else { t.ink2 })]
-                    .spacing(1),
-            ]
-            .spacing(12)
-            .align_y(Alignment::Center),
+            row![avatar(t, &name, &c.did, 40.0), column![bold(name.clone(), 17.0, t.ink), tx(sub, 13.0, sub_color)].spacing(1)]
+                .spacing(12)
+                .align_y(Alignment::Center),
         )
         .padding([4, 8])
         .style(ui::button_style(t, Kind::Ghost, 10.0))
-        .on_press(Msg::Chat(Cm::Info(true)));
-        let head = container(
-            row![
-                who,
-                Space::new().width(Fill),
-                pill(t, Kind::Primary, Some(Icon::Phone), "Call", (!calling).then(|| Msg::CallPressed(c.did.clone()))),
-                icon_btn(t, Icon::ShieldCheck, Msg::Chat(Cm::Info(true))),
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center),
-        )
+        .on_press_maybe((!me).then_some(Msg::Chat(Cm::Info(true))));
+        let mut head_row = row![who, Space::new().width(Fill)].spacing(8).align_y(Alignment::Center);
+        if !me {
+            head_row = head_row
+                .push(pill(t, Kind::Primary, Some(Icon::Phone), "Call", (!calling).then(|| Msg::CallPressed(c.did.clone()))))
+                .push(icon_btn(t, Icon::ShieldCheck, Msg::Chat(Cm::Info(true))));
+        }
+        let head = container(head_row)
         .padding([10, 20])
         .width(Fill);
 
@@ -276,8 +280,10 @@ impl App {
             .height(Fill)
             .into();
         }
-        // Earlier days: on this computer, or still on theirs.
-        col = col.push(self.history_note(t, name));
+        // Earlier days: on this computer, or still on theirs ("You" has no "theirs").
+        if !self.chat.peer.as_deref().is_some_and(|p| self.is_me(p)) {
+            col = col.push(self.history_note(t, name));
+        }
         let mut last_day = String::new();
         for m in &self.chat.msgs {
             let d = day_label(m.at);
@@ -321,7 +327,9 @@ impl App {
     fn message_row<'a>(&'a self, t: Tok, m: &'a ChatMsg, name: &str) -> El<'a> {
         let (bg, fg) = if m.outgoing { (t.primary_c, t.on_primary_c) } else { (t.surface2, t.ink) };
         let dim = ui::alpha(fg, 0.7);
-        let mut body = column![].spacing(6);
+        // No Fill-width descendants: they make every bubble occupy the maximum width.
+        // Align the shrink-sized metadata to the trailing edge of the content.
+        let mut body = column![].spacing(4).width(Length::Shrink).align_x(Alignment::End);
         if m.deleted {
             body = body.push(tx(
                 if m.outgoing { "You deleted this message".to_string() } else { format!("{name} deleted this message") },
@@ -339,13 +347,13 @@ impl App {
                     q = q.push(semi(who, 12.0, fg));
                 }
                 q = q.push(tx(snippet, 13.0, dim));
-                body = body.push(container(q).padding([6, 10]).width(Fill).clip(true).style(ui::plain(ui::alpha(fg, 0.1), 8.0)));
+                body = body.push(container(q).padding([6, 10]).width(Length::Shrink).clip(true).style(ui::plain(ui::alpha(fg, 0.1), 8.0)));
             }
             if let Some(a) = &m.attachment {
                 body = body.push(self.attachment_view(t, m, a, fg, dim));
             }
             if !m.text.is_empty() {
-                body = body.push(text(m.text.clone()).size(15).color(fg));
+                body = body.push(message_text(&m.text, fg));
             }
         }
         let mut meta = row![].spacing(4).align_y(Alignment::Center);
@@ -356,8 +364,8 @@ impl App {
         if m.outgoing {
             meta = meta.push(self.ticks(t, m.delivery, 14.0, dim));
         }
-        body = body.push(container(meta).align_right(Fill));
-        let bubble = container(body).padding([8, 12]).max_width(520).style(ui::plain(bg, 14.0));
+        body = body.push(meta.width(Length::Shrink));
+        let bubble = container(body).width(Length::Shrink).padding([8, 12]).max_width(520).style(ui::plain(bg, 14.0));
 
         let open = self.chat.menu.as_ref() == Some(&m.id);
         let hot = open || self.chat.hover.as_ref() == Some(&m.id);
@@ -751,4 +759,19 @@ fn count_badge<'a>(t: Tok, n: u32) -> El<'a> {
         .padding([1, 7])
         .style(ui::plain(t.primary, 999.0))
         .into()
+}
+
+/// Message text: only a few emojis show big, emojis inside text a little larger (`emoji.rs`).
+fn message_text<'a>(s: &'a str, fg: Color) -> El<'a> {
+    if crate::emoji::is_big(s) {
+        return text(s.trim()).size(38).font(ui::EMOJI).color(fg).into();
+    }
+    let spans: Vec<iced::widget::text::Span<'a, ()>> = crate::emoji::runs(s)
+        .into_iter()
+        .map(|(part, emoji)| {
+            let sp = iced::widget::span(part).color(fg);
+            if emoji { sp.size(15.0 * crate::emoji::INLINE_SCALE).font(ui::EMOJI) } else { sp.size(15.0) }
+        })
+        .collect();
+    iced::widget::rich_text(spans).into()
 }

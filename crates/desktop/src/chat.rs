@@ -491,6 +491,9 @@ impl App {
             return Task::none();
         }
         self.chat.loading = true;
+        if self.is_me(did) {
+            return Task::batch([self.load_day(did.to_string(), None, false), self.mark_read(did)]);
+        }
         let (src, p) = (self.src(), did.to_string());
         let presence = blocking(
             move || {

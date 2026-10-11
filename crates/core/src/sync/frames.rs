@@ -1,4 +1,4 @@
-//! u32-BE-length + bincode frames on one bidirectional QUIC stream, for `tinline/self/1`.
+//! u32-BE-length + bincode frames on one bidirectional QUIC stream, for `tinline/self/3`.
 
 use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -59,7 +59,7 @@ impl FrameWriter {
     }
 }
 
-/// Messages of `tinline/self/1`. Both sides send `Auth` first (dialer, then acceptor).
+/// Messages of `tinline/self/3`. Both sides send `Auth` first (dialer, then acceptor).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SelfMsg {
     /// `unlink`: the dialer is only here to say `Unlinked` (the acceptor skips session setup).
@@ -78,4 +78,8 @@ pub enum SelfMsg {
     /// What the contact confirmed holding, `(doc, VersionVector::encode)`: a device that is not
     /// talking to the contact itself still shows two ticks (a max-register per doc, merged).
     Acks { acks: Vec<(String, Vec<u8>)> },
+    /// The groups this account is in, as seen by the sender (G2): per group a bincode
+    /// `group::record::InviteToken` without invite (group, name, owner, DID-signed host
+    /// addresses). The receiver adds groups it lacks and dials their hosts (`group/own.rs`).
+    Groups { groups: Vec<Vec<u8>> },
 }

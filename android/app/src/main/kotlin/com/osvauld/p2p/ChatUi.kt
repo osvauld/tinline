@@ -97,6 +97,9 @@ fun Attachment.isVideo() = kind == AttachmentKind.FILE && mime.startsWith("video
 fun firstName(name: String) = name.trim().substringBefore(' ').ifBlank { name }
 
 /** One row of the Chats tab, already worded. */
+/** Subtitle of the "You" conversation (saved items) in the list and its header. */
+const val SELF_SUB = "Saved items · only on your devices"
+
 data class ChatRowUi(
     val did: String, val name: String, val preview: String, val time: String,
     val mine: Boolean, val tick: Tick, val unread: Int,

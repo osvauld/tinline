@@ -1014,25 +1014,44 @@ fn legacy_downgrade_by_per_did_cutoff_refuses_every_legacy_grant() {
     );
 }
 
-// KIND: limitation
-// Today's proto verifier hard-codes the one cap: a correctly DID-signed proto `Grant` with cap
-// "message" is refused with `BadCapability` (`crates/proto/src/lib.rs:570`). The same
-// `verify_grant` runs on the grant inside `ContactHello`/`ContactWelcome`
-// (`lib.rs:900`, `:953`), so an upgraded issuer cannot put a message-only grant in today's
-// contact-exchange slot for an un-upgraded peer: the peer's add-contact fails. EXPECTED-CORRECT
-// (U13): a message-only grant is a valid credential; old peers need a compatible encoding.
+// KIND: invariant (flipped by P6; was `todays_proto_verifier_refuses_a_message_cap`)
+// Before P6 the proto verifier hard-coded the one cap "call", so a DID-signed `message` grant was
+// refused with `BadCapability` and add-contact could not carry a message-only grant. P6 (U13/U15:
+// separate tokens): the REAL `proto::issue_token` mints single-capability version-2 tokens; a
+// `message` token verifies and carries messaging only, a `call` token calling only; the contact
+// exchange carries the message token plus an optional call token (`TokenPolicy`). A hand-signed
+// version-1 grant with cap "message" never existed and stays refused; a version-1 "call" grant is
+// the legacy grant and carries both (migration, U13).
 #[test]
-fn todays_proto_verifier_refuses_a_message_cap() {
+fn proto_verifier_accepts_single_capability_tokens() {
     let alice = owner(ALICE);
     let carol = did(CAROL);
-    // Sanity: the hand-signed encoding is right (a "call" grant verifies).
-    let call = hand_signed_proto_grant(&alice, &carol, "call");
-    assert!(proto::verify_grant(&call, alice.did(), &carol, T0, &HashSet::new()).is_ok());
-    let msg = hand_signed_proto_grant(&alice, &carol, "message");
+    let none = HashSet::new();
+    let msg = proto::issue_token(&alice, &carol, proto::Cap::Message, T0, TTL);
+    let g = proto::verify_grant(&msg, alice.did(), &carol, T0, &none).unwrap();
+    assert!(g.allows(proto::Cap::Message) && !g.allows(proto::Cap::Call));
     assert_eq!(
-        proto::verify_grant(&msg, alice.did(), &carol, T0, &HashSet::new()),
+        proto::verify_token(&msg, alice.did(), &carol, proto::Cap::Call, 0, T0, &none),
         Err(proto::Error::BadCapability)
     );
+    let call = proto::issue_token(&alice, &carol, proto::Cap::Call, T0, TTL);
+    let g = proto::verify_grant(&call, alice.did(), &carol, T0, &none).unwrap();
+    assert!(g.allows(proto::Cap::Call) && !g.allows(proto::Cap::Message));
+    // Legacy v1 "call" grant: both; v1 "message" (never issued): refused.
+    let legacy = hand_signed_proto_grant(&alice, &carol, "call");
+    let g = proto::verify_grant(&legacy, alice.did(), &carol, T0, &none).unwrap();
+    assert!(g.allows(proto::Cap::Call) && g.allows(proto::Cap::Message));
+    let v1_msg = hand_signed_proto_grant(&alice, &carol, "message");
+    assert_eq!(
+        proto::verify_grant(&v1_msg, alice.did(), &carol, T0, &none),
+        Err(proto::Error::BadCapability)
+    );
+    // Per-DID cut-off: a token issued at or before it is taken back, a later one is not.
+    assert_eq!(
+        proto::verify_token(&legacy, alice.did(), &carol, proto::Cap::Call, T0, T0 + 1, &none),
+        Err(proto::Error::Revoked)
+    );
+    assert!(proto::verify_token(&legacy, alice.did(), &carol, proto::Cap::Message, T0 - 1, T0 + 1, &none).is_ok());
 }
 
 // ---- 5. linked devices -------------------------------------------------------------------------

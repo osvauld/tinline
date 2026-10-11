@@ -1,4 +1,4 @@
-//! Own-device sync: the account doc wired to `State`, and the `tinline/self/1` sessions.
+//! Own-device sync: the account doc wired to `State`, and the `tinline/self/2` sessions.
 //! See docs/protocol.md "Own-device sync".
 
 use std::collections::{HashMap, HashSet};
@@ -9,13 +9,16 @@ use iroh::endpoint::{Accepting, Connection};
 use loro::VersionVector;
 
 use super::accdoc::{AccDoc, Ctx, DOC_NAME};
+use super::callsdoc::{CALLS_DOC, CallsDoc};
+use super::doc::Doc;
 use super::frames::{FrameReader, FrameWriter, SelfMsg};
-use crate::node::{Inner, Me, addr_for, now, now_ms, relay_of};
+use crate::node::{Inner, Me, addr_for, now, relay_of};
 use crate::store::{Backing, OwnDevice};
 use crate::Error;
-use crate::chat::own::{ACK_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
+use crate::chat::own::{ACK_MARK, GROUPS_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
 
 const DOC_KEY: &str = "sync/account";
+const CALLS_KEY: &str = "sync/calls";
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
 const DIAL_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -40,6 +43,8 @@ struct PeerChat {
     read: HashMap<String, i64>,
     acks: HashMap<String, VersionVector>,
     hello: bool,
+    /// The group list last sent (G2), to send only changes.
+    groups: Option<Vec<Vec<u8>>>,
 }
 
 impl SelfSlot {
@@ -66,7 +71,7 @@ fn sync_period() -> Duration {
 
 impl Inner {
     fn ctx<'a>(me: &'a Me) -> Ctx<'a> {
-        Ctx { my_did: me.id.did(), me_device: me.device, now: now(), now_ms: now_ms() as i64 }
+        Ctx { my_did: me.id.did(), me_device: me.device, now: now() }
     }
 
     /// Wakes the sessions (local data changed) and the dial loop.
@@ -90,15 +95,23 @@ impl Inner {
             }
             (me, s.acct.as_ref().and_then(|a| a.backing.clone()))
         };
-        let snapshot = match &backing {
-            Some(Backing::Sealed(db)) => db.get(DOC_KEY).ok().flatten(),
+        let snapshot = |key| match &backing {
+            Some(Backing::Sealed(db)) => db.get(key).ok().flatten(),
             _ => None,
         };
-        let doc = match AccDoc::load(&me.device, snapshot.as_deref()) {
+        let doc = match AccDoc::load(&me.device, snapshot(DOC_KEY).as_deref()) {
             Ok(d) => d,
             Err(e) => {
                 tracing::warn!("account doc: {e}; starting a new one");
                 AccDoc::new(&me.device)
+            }
+        };
+        // The first open on a build with a separate call doc seeds it from the local call log.
+        let calls_doc = match CallsDoc::load(&me.device, snapshot(CALLS_KEY).as_deref()) {
+            Ok(d) => d,
+            Err(e) => {
+                tracing::warn!("calls doc: {e}; starting a new one");
+                CallsDoc::new(&me.device)
             }
         };
         let changed = {
@@ -108,18 +121,22 @@ impl Inner {
             }
             let label = s.device_label.clone();
             ensure_self_registered(&mut s.state.registry, &me, label);
-            let calls = s.history.snapshot();
             let ctx = Self::ctx(&me);
-            if let Err(e) = doc.write_from(&s.state, &calls, &ctx) {
+            if let Err(e) = doc.write_from(&s.state, &ctx) {
                 tracing::warn!("account doc flush: {e}");
             }
-            let mut merged = calls.clone();
-            let ch = doc.read_into(&mut s.state, &mut merged, &ctx);
-            if ch.history {
-                s.history.replace(merged);
+            let ch = doc.read_into(&mut s.state, &ctx);
+            let mut calls = s.history.snapshot();
+            if let Err(e) = calls_doc.write_from(&calls) {
+                tracing::warn!("calls doc flush: {e}");
+            }
+            let history = calls_doc.read_into(&mut calls);
+            if history {
+                s.history.replace(calls);
             }
             s.acc = Some(Arc::new(doc));
-            ch.contacts || ch.history || ch.devices
+            s.calls = Some(Arc::new(calls_doc));
+            ch.contacts || history || ch.devices
         };
         self.save_doc();
         if changed {
@@ -128,14 +145,18 @@ impl Inner {
     }
 
     fn save_doc(&self) {
-        let (acc, backing) = {
+        let (acc, calls, backing) = {
             let s = self.shared.lock();
-            (s.acc.clone(), s.acct.as_ref().and_then(|a| a.backing.clone()))
+            (s.acc.clone(), s.calls.clone(), s.acct.as_ref().and_then(|a| a.backing.clone()))
         };
-        if let (Some(acc), Some(Backing::Sealed(db))) = (acc, backing)
-            && let Err(e) = db.put(DOC_KEY, &acc.snapshot())
-        {
-            tracing::warn!("saving account doc: {e}");
+        let Some(Backing::Sealed(db)) = backing else { return };
+        let docs = [(DOC_KEY, acc.as_deref().map(|d| &**d)), (CALLS_KEY, calls.as_deref().map(|d| &**d))];
+        for (key, doc) in docs {
+            if let Some(doc) = doc
+                && let Err(e) = db.put(key, &doc.snapshot())
+            {
+                tracing::warn!("saving {key}: {e}");
+            }
         }
     }
 
@@ -147,15 +168,16 @@ impl Inner {
             if epoch.is_some_and(|e| e != s.epoch) || s.epoch != me.epoch {
                 return;
             }
-            let Some(acc) = s.acc.clone() else { return };
-            let calls = s.history.snapshot();
-            match acc.write_from(&s.state, &calls, &Self::ctx(&me)) {
-                Ok(c) => c,
-                Err(e) => {
-                    tracing::warn!("account doc flush: {e}");
-                    false
-                }
-            }
+            let (Some(acc), Some(calls)) = (s.acc.clone(), s.calls.clone()) else { return };
+            let a = acc.write_from(&s.state, &Self::ctx(&me)).unwrap_or_else(|e| {
+                tracing::warn!("account doc flush: {e}");
+                false
+            });
+            let c = calls.write_from(&s.history.snapshot()).unwrap_or_else(|e| {
+                tracing::warn!("calls doc flush: {e}");
+                false
+            });
+            a || c
         };
         if changed {
             self.save_doc();
@@ -173,17 +195,13 @@ impl Inner {
             }
             let acc = s.acc.clone().ok_or(Error::Locked)?;
             let ctx = Self::ctx(&me);
-            let calls = s.history.snapshot();
             // Our own unwritten changes go in first, so they merge as concurrent edits.
-            acc.write_from(&s.state, &calls, &ctx)?;
+            acc.write_from(&s.state, &ctx)?;
             if !acc.import(update)? {
                 return Ok(());
             }
-            let mut merged = calls;
-            let ch = acc.read_into(&mut s.state, &mut merged, &ctx);
-            if ch.history {
-                s.history.replace(merged);
-            }
+            // A contact entry deleted by a block notice keeps its calls and chat history (U20).
+            let ch = acc.read_into(&mut s.state, &ctx);
             if let Some(l) = &ch.label {
                 s.device_label = Some(l.clone());
             }
@@ -193,23 +211,18 @@ impl Inner {
             let _ = crate::store::save_label(db, l);
         }
         self.persist_for(Some(epoch))?;
-        if ch.history {
-            let _ = self.history().save();
-        }
         self.save_doc();
-        for did in &ch.removed {
-            self.chat_purge(did);
-        }
         if ch.contacts {
             self.events.on_contacts_changed();
         }
-        if let Some(ev) = self.link_events() {
-            if ch.devices {
-                ev.on_devices_changed();
-            }
-            if ch.history {
-                ev.on_history_changed();
-            }
+        if ch.devices {
+            // U8: a sibling linked or unlinked a device; our list changes too.
+            self.devices_changed();
+        }
+        if let Some(ev) = self.link_events()
+            && ch.devices
+        {
+            ev.on_devices_changed();
         }
         self.sync_bump();
         if ch.self_removed && !self.selfsync.leaving.load(std::sync::atomic::Ordering::SeqCst) {
@@ -218,6 +231,36 @@ impl Inner {
                 this.remove_self_account(epoch).await;
             });
         }
+        Ok(())
+    }
+
+    /// Imports a batch of the call log from another own device and merges it into ours.
+    pub(crate) fn apply_calls_update(&self, epoch: u64, update: &[u8]) -> Result<(), Error> {
+        let changed = {
+            let s = self.shared.lock();
+            if s.epoch != epoch {
+                return Err(Error::Locked);
+            }
+            let calls = s.calls.clone().ok_or(Error::Locked)?;
+            let mut mine = s.history.snapshot();
+            calls.write_from(&mine)?;
+            if !calls.import(update)? {
+                return Ok(());
+            }
+            let changed = calls.read_into(&mut mine);
+            if changed {
+                s.history.replace(mine);
+            }
+            changed
+        };
+        self.save_doc();
+        if changed {
+            let _ = self.history().save();
+            if let Some(ev) = self.link_events() {
+                ev.on_history_changed();
+            }
+        }
+        self.sync_bump();
         Ok(())
     }
 
@@ -252,7 +295,7 @@ impl Inner {
 
     /// A valid attestation of our DID from a device the registry does not list: a device that
     /// was linked but never announced itself (or one added while we were away).
-    fn note_own_device(&self, epoch: u64, att: &proto::SignedAttestation, device: [u8; 32], relay: Option<String>) {
+    fn note_own_device(self: &Arc<Self>, epoch: u64, att: &proto::SignedAttestation, device: [u8; 32], relay: Option<String>) {
         let added = {
             let mut s = self.shared.lock();
             if s.epoch != epoch {
@@ -275,6 +318,7 @@ impl Inner {
         };
         if added {
             let _ = self.persist_for(Some(epoch));
+            self.devices_changed();
             if let Some(ev) = self.link_events() {
                 ev.on_devices_changed();
             }
@@ -295,10 +339,9 @@ impl Inner {
     async fn self_dial(self: Arc<Self>, device: [u8; 32], relay: Option<String>) -> Result<(), Error> {
         let ep = self.endpoint()?;
         let addr = addr_for(&device, relay.as_deref())?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, proto::SELF_ALPN))
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::OWN))
             .await
-            .map_err(|_| Error::Timeout)?
-            .map_err(Error::net)?;
+            .map_err(|_| Error::Timeout)??;
         let r = self.clone().self_run(conn.clone(), true).await;
         if r.is_err() {
             conn.close(0u32.into(), b"done");
@@ -436,12 +479,16 @@ impl Inner {
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
         let epoch = me.epoch;
-        let acc = self.shared.lock().acc.clone().ok_or(Error::Locked)?;
-        let mut docs = vec![(DOC_NAME.to_string(), acc.vv().encode())];
+        let (acc, calls) = {
+            let s = self.shared.lock();
+            (s.acc.clone().ok_or(Error::Locked)?, s.calls.clone().ok_or(Error::Locked)?)
+        };
+        let mut docs = vec![(DOC_NAME.to_string(), acc.vv().encode()), (CALLS_DOC.to_string(), calls.vv().encode())];
         docs.extend(self.chat_own_docs());
         writer.send(&SelfMsg::Hello { docs }).await?;
         // What the peer is known to hold; nothing is sent until its Hello says.
         let mut sent: Option<VersionVector> = None;
+        let mut sent_calls: Option<VersionVector> = None;
         let mut peer = PeerChat::default();
         let mut changes = self.sync_tx.subscribe();
         loop {
@@ -451,7 +498,7 @@ impl Inner {
                     let mut full = false;
                     match m {
                         SelfMsg::Hello { docs } => {
-                            if docs.len() > MAX_OWN_DOCS + 1 {
+                            if docs.len() > MAX_OWN_DOCS + 2 {
                                 return Err(Error::Protocol("too many docs".into()));
                             }
                             for (name, vv) in docs {
@@ -459,6 +506,8 @@ impl Inner {
                                 if name == DOC_NAME {
                                     acked.lock().get_or_insert_with(VersionVector::new).merge(&vv);
                                     sent = Some(vv);
+                                } else if name == CALLS_DOC {
+                                    sent_calls = Some(vv);
                                 } else if parse_doc(&name).is_some() {
                                     peer.docs.insert(name, vv);
                                 }
@@ -484,6 +533,15 @@ impl Inner {
                                     acked.lock().get_or_insert_with(VersionVector::new).merge(&theirs);
                                 }
                                 self.touch_device(epoch, remote);
+                            } else if doc == CALLS_DOC {
+                                if !update.is_empty() {
+                                    self.apply_calls_update(epoch, &update)?;
+                                    let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, CALLS_DOC, &[]);
+                                    writer.send(&SelfMsg::Sync { doc: CALLS_DOC.into(), vv: calls.vv().encode(), update: Vec::new(), sig }).await?;
+                                }
+                                if let (Some(s), Some(theirs)) = (sent_calls.as_mut(), Self::peer_vv_of(&vv)) {
+                                    s.merge(&theirs);
+                                }
                             } else if parse_doc(&doc).is_some() {
                                 // A rejected or unusable batch is dropped, the session goes on.
                                 if !update.is_empty()
@@ -521,13 +579,20 @@ impl Inner {
                                 tracing::debug!("own-device read cursors: {e}");
                             }
                         }
+                        SelfMsg::Groups { groups } => {
+                            if groups.len() > crate::group::own::MAX_OWN_GROUPS {
+                                return Err(Error::Protocol("too many groups".into()));
+                            }
+                            self.group_own_apply(&groups);
+                        }
                         SelfMsg::Unlinked => {
                             self.clone().remove_self_account(epoch).await;
                             return Ok(());
                         }
                         SelfMsg::Auth { .. } => return Err(Error::Protocol("unexpected auth".into())),
                     }
-                    self.push_changes(me, &acc, &mut sent, writer).await?;
+                    self.push_changes(me, DOC_NAME, &acc, &mut sent, writer).await?;
+                    self.push_changes(me, CALLS_DOC, &calls, &mut sent_calls, writer).await?;
                     if full {
                         self.push_all_chat(me, &mut peer, writer).await?;
                         self.chat_resume_all();
@@ -537,12 +602,15 @@ impl Inner {
                     if self.shared.lock().epoch != epoch {
                         return Ok(());
                     }
-                    self.push_changes(me, &acc, &mut sent, writer).await?;
+                    self.push_changes(me, DOC_NAME, &acc, &mut sent, writer).await?;
+                    self.push_changes(me, CALLS_DOC, &calls, &mut sent_calls, writer).await?;
                     let names: Vec<String> = std::mem::take(&mut *dirty.lock()).into_iter().collect();
                     if peer.hello {
                         for name in names {
                             if name == READ_MARK {
                                 self.push_read(&mut peer, writer).await?;
+                            } else if name == GROUPS_MARK {
+                                self.push_groups(&mut peer, writer).await?;
                             } else if name == ACK_MARK {
                                 self.push_acks(&mut peer, writer).await?;
                             } else {
@@ -561,7 +629,18 @@ impl Inner {
             self.push_chat_doc(me, &name, peer, writer).await?;
         }
         self.push_read(peer, writer).await?;
-        self.push_acks(peer, writer).await
+        self.push_acks(peer, writer).await?;
+        self.push_groups(peer, writer).await
+    }
+
+    /// Our group list, if it changed since the last one this session sent (G2).
+    async fn push_groups(self: &Arc<Self>, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        let groups = self.group_own_tokens();
+        if peer.groups.as_ref() == Some(&groups) || (groups.is_empty() && peer.groups.is_none()) {
+            return Ok(());
+        }
+        peer.groups = Some(groups.clone());
+        writer.send(&SelfMsg::Groups { groups }).await
     }
 
     async fn push_chat_doc(self: &Arc<Self>, me: &Arc<Me>, name: &str, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
@@ -610,11 +689,12 @@ impl Inner {
         writer.send(&SelfMsg::Read { cursors }).await
     }
 
-    async fn push_changes(&self, me: &Arc<Me>, acc: &Arc<AccDoc>, sent: &mut Option<VersionVector>, writer: &mut FrameWriter) -> Result<(), Error> {
+    /// What the peer lacks of a whole-synced doc (`name`), once its `Hello` said what it holds.
+    async fn push_changes(&self, me: &Arc<Me>, name: &str, doc: &Doc, sent: &mut Option<VersionVector>, writer: &mut FrameWriter) -> Result<(), Error> {
         let Some(theirs) = sent.as_ref() else { return Ok(()) };
-        if let Some((update, vv)) = acc.export_since(theirs) {
-            let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, DOC_NAME, &update);
-            writer.send(&SelfMsg::Sync { doc: DOC_NAME.into(), vv: vv.encode(), update, sig }).await?;
+        if let Some((update, vv)) = doc.export_since(theirs) {
+            let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
+            writer.send(&SelfMsg::Sync { doc: name.into(), vv: vv.encode(), update, sig }).await?;
             *sent = Some(vv);
         }
         Ok(())
@@ -686,10 +766,9 @@ impl Inner {
     pub(crate) async fn self_probe(self: &Arc<Self>, device: [u8; 32]) -> Result<(), Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr_for(&device, None)?, proto::SELF_ALPN))
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr_for(&device, None)?, &crate::version::OWN))
             .await
-            .map_err(|_| Error::Timeout)?
-            .map_err(Error::net)?;
+            .map_err(|_| Error::Timeout)??;
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
         let mut writer = FrameWriter(send);
         let mut reader = FrameReader::new(recv);
@@ -708,7 +787,7 @@ impl Inner {
         let Ok(me) = self.me() else { return };
         let Ok(ep) = self.endpoint() else { return };
         let Ok(addr) = addr_for(&device, relay.as_deref()) else { return };
-        let Ok(Ok(conn)) = tokio::time::timeout(Duration::from_secs(8), ep.connect(addr, proto::SELF_ALPN)).await else { return };
+        let Ok(Ok(conn)) = tokio::time::timeout(Duration::from_secs(8), crate::version::connect(&ep, addr, &crate::version::OWN)).await else { return };
         let run = async {
             let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
             let mut writer = FrameWriter(send);

@@ -1,3 +1,7 @@
+//! P4 update: U8 push (`crates/core/src/devlist.rs`) and the seq bound are implemented; the
+//! limitations they fix are flipped to invariants and say so. `push` paths of section 2 replaced
+//! the "until a call" assertions.
+//!
 //! W2-D: characterisation of how a contact learns our signed `DeviceList` TODAY, measured against
 //! the user's decision U8 (`docs/design/rotation-open-decisions.md` §0): whenever the list changes
 //! (device added, unlinked, restored, rotated) it is pushed to every unblocked contact.
@@ -308,8 +312,8 @@ fn an_answered_call_carries_both_device_lists() {
     let (a, b) = pair("both");
     let a2 = register_sibling(&a, "both-a2");
     let b2 = register_sibling(&b, "both-b2");
-    assert_eq!(a.devices_of(&b).len(), 1, "from the ticket/hello only");
-    assert_eq!(b.devices_of(&a).len(), 1);
+    // P4: the push may already have delivered both lists; the call must carry (or at least not
+    // undo) them.
     call_answered(&a, &b);
     eventually(10, "A learns B2 from the Accept", || {
         a.devices_of(&b).contains(&b2)
@@ -321,13 +325,11 @@ fn an_answered_call_carries_both_device_lists() {
 
 // ---- 2. a change reaches no contact until a call ----------------------------------------------
 
-// KIND: limitation
-// U8 gap. A holds B's list (one answered call). B adds an install: B's own list is re-signed with a
-// higher seq and names it, but nothing is sent. B chats with A (the message arrives) and A still
-// does not know the new install 10 s later. Only B's next call (its hello) tells A.
-// Expected-correct (U8): A gets the new list as soon as B can reach A, without a call.
+// KIND: invariant (was a limitation; fixed by P4, U8)
+// A holds B's list (one answered call). B adds an install: B's own list is re-signed with a higher
+// seq naming it and pushed (`Msg::Devices`); A learns the new install without a call or a chat.
 #[test]
-fn adding_a_device_reaches_no_contact_until_a_call() {
+fn adding_a_device_reaches_the_contact_without_a_call() {
     let (a, b) = pair("add");
     call_answered(&a, &b);
     let seq0 = own_list(&b).seq;
@@ -337,24 +339,14 @@ fn adding_a_device_reaches_no_contact_until_a_call() {
         mine.seq > seq0 && list_devices(&mine).contains(&b2),
         "B re-signed a list naming B2"
     );
-    chat(&b, &a, "hello after adding a device");
-    assert!(
-        !within(10, || a.devices_of(&b).contains(&b2)),
-        "A does not learn B2 from chat"
-    );
-    call_until_ringing(&b, &a);
-    assert!(
-        a.devices_of(&b).contains(&b2),
-        "B's call hello carried the new list"
-    );
+    eventually(30, "A learns B2 from the push", || a.devices_of(&b).contains(&b2));
 }
 
-// KIND: limitation
-// Same for an unlink: A dials B and B2 (learned in a call). B unlinks B2 (never started, so the
-// best-effort "you were unlinked" goes nowhere); A keeps dialling B2 after B's chat message, and
-// only drops it on B's next call. Expected-correct (U8): the shorter list is pushed to A.
+// KIND: invariant (was a limitation; fixed by P4, U8)
+// A dials B and B2 (learned in a call). B unlinks B2 (never started): the shorter list is pushed
+// and A stops dialling B2 without a call.
 #[test]
-fn unlinking_a_device_reaches_no_contact_until_a_call() {
+fn unlinking_a_device_reaches_the_contact_without_a_call() {
     let (a, b) = pair("unlink");
     let b2 = register_sibling(&b, "unlink-b2");
     call_answered(&a, &b);
@@ -364,32 +356,20 @@ fn unlinking_a_device_reaches_no_contact_until_a_call() {
         !list_devices(&own_list(&b)).contains(&b2),
         "B's own list dropped B2"
     );
-    chat(&b, &a, "hello after unlinking");
-    assert!(
-        !within(10, || !a.devices_of(&b).contains(&b2)),
-        "A keeps dialling B2 for 10 s"
-    );
-    call_until_ringing(&b, &a);
-    assert_eq!(
-        a.devices_of(&b),
-        vec![b.node.device_key_for_test().unwrap()],
-        "dropped on the call"
-    );
+    eventually(30, "A drops B2", || !a.devices_of(&b).contains(&b2));
+    assert_eq!(a.devices_of(&b), vec![b.node.device_key_for_test().unwrap()]);
 }
 
 // ---- 3. restore: the K1 stall and what a push would and would not fix ---------------------------
 
-// KIND: limitation
+// KIND: invariant (was a limitation; resolved by DID-signed chat, P8/P9/U18, plus P4's push)
 // K1 §5 bug 1 fixture: A holds B's list (one call), B's `m2` is pending (A offline) when B
-// restores. Simulating U8's push (`offer_device_list_for_test` with B's re-signed list) A takes it
-// and dials only the new key; but B's next message builds on the stranded `m2`, which was signed by
-// the old key, and A's `chat_keys` holds only the CURRENT list: the snapshot is still rejected
-// ("rejected history: signature does not verify") and neither `m2` nor `m3` arrives within 40 s.
-// So U8's push alone does not clear this stall. Expected-correct: both arrive (G-HISTORY: retain
-// superseded keys for verifying older content, or per-message acceptance; see the proto model
-// `retaining_superseded_keys_accepts_the_pre_restore_batch`).
+// restores. A takes B's re-signed list (here offered directly; B's own push sends the same list
+// when it starts) and dials only the new key. Before P8 the snapshot holding the old-key-signed
+// `m2` was rejected ("signature does not verify") and nothing arrived. Chat content is now signed
+// by the DID key, so the restore no longer strands it: both `m2` and `m3` reach A.
 #[test]
-fn restore_push_alone_does_not_clear_the_pending_message_stall() {
+fn restore_push_and_did_signed_chat_clear_the_pending_message_stall() {
     let a = peer("rst-a", true);
     let mut b = peer("rst-b", true);
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
@@ -431,36 +411,30 @@ fn restore_push_alone_does_not_clear_the_pending_message_stall() {
         .send_text(a.did.clone(), "m3: after restore".into(), None)
         .unwrap()
         .id;
-    eventually(90, "A rejects B's history snapshot", || {
-        a.logged("rejected history: signature does not verify")
-    });
-    assert!(
-        !within(40, || has(&a, &b.did, &m3) || has(&a, &b.did, &m2)),
-        "neither m2 nor m3 reaches A"
-    );
-    assert_eq!(ticks(&b, &a.did, &m3), DeliveryState::Pending);
+    eventually(90, "m2 and m3 reach A", || has(&a, &b.did, &m3) && has(&a, &b.did, &m2));
+    assert!(!a.logged("rejected history: signature does not verify"));
 }
 
 // ---- 4. blocking and rejection ---------------------------------------------------------------
 
 // KIND: invariant
-// A blocked caller learns nothing new: B blocks A, then adds an install. A's call is refused
-// (`Reject` carries no list) and A's contact entry for B is byte-for-byte unchanged.
-// (U5 revised also wants a signed "blocked" notice; that is W2-B/8b, not checked here.)
+// A blocked contact learns nothing new: B blocks A (P5: visible notice, which also asks A's app to
+// delete its entry for B, U20), then adds an install. B never pushes the list to A (P4 excludes
+// blocked contacts), and a call from A, if A still has B, ends "blocked" without a list. Bounded:
+// 15 s after the block.
 #[test]
 fn a_blocked_caller_receives_no_device_list() {
     let (a, b) = pair("blk");
     call_answered(&a, &b);
-    b.node.remove_contact(a.did.clone()).unwrap();
+    b.node.block(a.did.clone()).unwrap();
     let b2 = register_sibling(&b, "blk-b2");
     assert!(list_devices(&own_list(&b)).contains(&b2));
-    let before = a.dump();
-    let call = a.node.call(b.did.clone()).unwrap();
-    let reason = ended(&a, &call.call_id, 40);
-    assert_eq!(reason, "unreachable");
-    assert!(a.logged("rejected"), "refused explicitly");
-    assert_eq!(a.dump(), before, "A's entry for B is unchanged");
-    assert!(!a.devices_of(&b).contains(&b2));
+    if let Ok(call) = a.node.call(b.did.clone()) {
+        let reason = ended(&a, &call.call_id, 40);
+        assert_eq!(reason, p2pcore::BLOCKED);
+    }
+    assert!(!within(15, || a.devices_of(&b).contains(&b2)), "A never learns B2");
+    assert!(!b.logged(&format!("device list delivered to {}", a.did)));
 }
 
 // KIND: invariant
@@ -479,15 +453,17 @@ fn merge_refuses_stale_replayed_forged_tampered_and_wrong_did_lists() {
     let x = proto::device_to_text(&[7u8; 32]);
     let k = |t: &str| proto::device_from_text(t).unwrap();
     let mine = b.node.device_key_for_test().unwrap();
-    let good = proto::sign_device_list(&bid, &[(k(&mine), None), (k(&x), None)], 5_000_000_000_000);
+    // P4: seqs are relative to now (a seq more than a day ahead is refused by the seq bound).
+    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64;
+    let good = proto::sign_device_list(&bid, &[(k(&mine), None), (k(&x), None)], t + 1000);
     assert!(
         a.node
             .offer_device_list_for_test(b.did.clone(), serde_json::to_string(&good).unwrap())
     );
 
-    let stale = proto::sign_device_list(&bid, &[(k(&mine), None)], 4_999_999_999_999);
+    let stale = proto::sign_device_list(&bid, &[(k(&mine), None)], t);
     let forged = {
-        let m = proto::sign_device_list(&mal, &[(k(&x), None)], 6_000_000_000_000);
+        let m = proto::sign_device_list(&mal, &[(k(&x), None)], t + 5000);
         let mut v: serde_json::Value = serde_json::from_slice(&decode(&m.payload)).unwrap();
         v["did"] = b.did.clone().into();
         proto::SignedBlob {
@@ -497,13 +473,13 @@ fn merge_refuses_stale_replayed_forged_tampered_and_wrong_did_lists() {
     };
     let tampered = {
         let mut v: serde_json::Value = serde_json::from_slice(&decode(&good.payload)).unwrap();
-        v["seq"] = serde_json::json!(7_000_000_000_000u64);
+        v["seq"] = serde_json::json!(t + 9000);
         proto::SignedBlob {
             payload: encode(&serde_json::to_vec(&v).unwrap()),
             signature: good.signature.clone(),
         }
     };
-    let wrong_did = proto::sign_device_list(&mal, &[(k(&x), None)], 6_000_000_000_000);
+    let wrong_did = proto::sign_device_list(&mal, &[(k(&x), None)], t + 5000);
     for (what, blob) in [
         ("stale", stale),
         ("replayed", good.clone()),
@@ -524,13 +500,11 @@ fn merge_refuses_stale_replayed_forged_tampered_and_wrong_did_lists() {
 
 // ---- 5. shared mnemonic ----------------------------------------------------------------------
 
-// KIND: limitation
-// Any phrase holder can sign a list at `seq = u64::MAX`; A accepts it and no honest list is ever
-// newer (`proto::newer` compares seq first): B's real call hello afterwards does not replace it,
-// and A keeps dialling only the hostile device. Only a new identity escapes. Expected-correct:
-// POLICY-GATED (G-FORK / G-AUTHORITY: bound seq, or a separate authority).
+// KIND: invariant (was a limitation; fixed by P4's seq bound, PROVISIONAL (coordinator))
+// Any phrase holder can sign a list at `seq = u64::MAX`; A refuses it (seq more than a day ahead
+// of A's clock), keeps dialling B's real device, and B's honest list still reaches A.
 #[test]
-fn a_max_seq_list_from_any_phrase_holder_pins_the_contact() {
+fn a_max_seq_list_from_any_phrase_holder_is_refused() {
     let (a, b) = pair("pin");
     let holder = identity::recover(&b.phrase).unwrap();
     let hostile = proto::device_to_text(&[8u8; 32]);
@@ -540,16 +514,12 @@ fn a_max_seq_list_from_any_phrase_holder_pins_the_contact() {
         u64::MAX,
     );
     assert!(
-        a.node
+        !a.node
             .offer_device_list_for_test(b.did.clone(), serde_json::to_string(&pinned).unwrap())
     );
-    register_sibling(&b, "pin-b2");
-    call_until_ringing(&b, &a);
-    assert_eq!(
-        a.devices_of(&b),
-        vec![hostile],
-        "B's honest list did not replace it"
-    );
+    let b2 = register_sibling(&b, "pin-b2");
+    eventually(30, "B's honest list reaches A", || a.devices_of(&b).contains(&b2));
+    assert!(!a.devices_of(&b).contains(&hostile));
 }
 
 // URL-safe no-pad base64 (the encoding of `SignedBlob`), so the test can tamper with payloads.

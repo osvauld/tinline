@@ -19,13 +19,15 @@ the same updates, in any order, must reach the same verdict. Hence:
 ## 1. Identity and authorship (exists)
 
 `crates/proto` already gives: DID (the person) → DID-signed attestation → device key (the iroh
-endpoint key, proven by the QUIC handshake). Chat adds one thing: every update batch is
-**signed by the author's attested device key**, and the batch may only contain Loro ops from
-that device's Loro peer id.
+endpoint key, proven by the QUIC handshake). The device key authenticates the *session* (and
+signs each batch on the wire); it signs no chat content. Content (P9c, section 7 "Signatures and
+writer IDs"):
 
-- Loro peer id per device, per doc: the first 8 bytes of `BLAKE3("tinline-loro-peer-v1" ‖
-  device key ‖ doc name)`, set before the device writes. A receiver rejects a batch carrying ops
-  from any other peer id. This is what makes "who wrote this op" checkable.
+- Every message version is signed by its author's **DID key**, and a device writes every chat doc
+  under its **writer ID** = hash(DID ‖ device ID) as the Loro peer id, where the device ID is
+  random per install, not derived from any key. A receiver accepts an op only if it lies in a span
+  whose DID signature proves it, under that author's writer ID. This is what makes "who wrote this
+  op" checkable, on every device, without knowing any of the author's device keys.
 
 ## 2. Phase 1: 1:1 chat
 
@@ -34,15 +36,23 @@ that device's Loro peer id.
   hex of `BLAKE3(sorted(did_a, did_b))`, so both sides name it identically.
 - UTC days, not local days: both sides must agree on the shard boundary regardless of time zone.
   The UI groups by local day; that is presentation only.
-- No permits needed: the existing contact relationship (grant) is the permission. Removing a
-  contact blocks the DID (as today) and deletes the conversation on this device, like call
-  history.
+- No permits needed: the existing contact relationship (grant) is the permission. A contact's
+  action is Block (U19); chats are never deleted (U24), so a day's doc lives as long as the
+  account's chat store (P10: see "Writer counters never repeat").
 
 ### Message record (from group-chat-sync §3, trimmed)
 ```
-messages/<id> = { id, author, text, at, edited_at?, deleted?, reply_to?, file? }
+messages/<id> = { id, author, at, reply_to?, file?,
+                  v:<writer ID, 16 hex>: { text, edited_at?, deleted, dev, did_sig }, ... }
 ```
-- `id`: random 128-bit, chosen by the author. `author`, `at`, `id`: immutable.
+- `id`: random 128-bit, chosen by the author. `author`, `at`, `id`, `reply_to`, `file`: immutable,
+  written once. Each writer (one of the author's installs) files its latest version of the
+  message under its own key `v:<writer ID>` as one value: its content, the writing install's
+  device ID (`dev`) and the author's DID signature (`did_sig`; section 7).
+- What a message shows is its highest-ranked version (P10): a delete beats any edit, then the
+  later `edited_at`, then the higher writer ID. A writer's own versions never go back (older
+  edit time, undone delete). A device's edit gets an `edited_at` just above what it shows, so it
+  supersedes it even with a lagging clock; a deleted message cannot be edited.
 - Insert: `author` = the signer's DID; `|at − receiver's now| < 24 h` on arrival for live
   pushes (looser than the node's 300 s: phones' clocks drift and messages arrive late), and
   `at` must fall inside the shard's day ± 1 h.
@@ -50,7 +60,7 @@ messages/<id> = { id, author, text, at, edited_at?, deleted?, reply_to?, file? }
 - Reactions (later): `reactions/<did>/<emoji>`, each DID writes only its own slot.
 
 ### Wire
-New ALPN `tinline/chat/1` on the same iroh endpoint as calls. The connection opens with the
+ALPN `tinline/chat/3` (P10; `/1` and `/2` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
 same proof as a call (attestation + grant, `proto`); the rest is framed like the call control
 stream.
 
@@ -181,7 +191,7 @@ What differs from or settles the text above.
 
 ### Code map
 `crypt.rs` chunked blob AEAD · `blobs.rs` iroh-blobs hub (store, gated serving, GC) ·
-`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/1` ·
+`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/3` ·
 `store.rs` sealed records · `engine.rs` sessions, sync, outbox, transfers, history ·
 `api.rs` the UniFFI surface. New crate `crates/storage` (redb + sealed records, copied from
 osvauld2 `storage` @ 90d22ec with the `vault` entry idea).
@@ -199,7 +209,7 @@ Records: `Chat`, `Message`, `Attachment` (state `Remote|Downloading|Ready|Failed
 UTC `YYYY-MM-DD`. A voice message is a file message with `kind = Voice`, `duration_ms` and a
 ~64 byte waveform; the blob is whatever file the app recorded (Ogg Opus 16 kHz mono).
 
-### Wire (`tinline/chat/1`)
+### Wire (`tinline/chat/3`)
 One bidirectional stream, opened by the dialer; frames are u32 BE length + bincode (cap 16 MiB).
 `Auth{attestation, grant, relay}` both ways first: the same proof as a call (a call hello with
 id "chat" is built and checked by `proto::accept_call_hello`; `proto` is unchanged).
@@ -208,31 +218,51 @@ ack), `Sync{doc, vv, update, sig}`, `Push{doc, update, sig}`, `Ack{doc, vv}`,
 `HistoryReq{before, limit}` / `HistoryResp{days:[{day, vv, hash, key, size}]}`.
 `sig` = Ed25519 by the device key over `"tinline-chat-batch-v1" ‖ len(doc) ‖ doc ‖ update`.
 A device only ever sends **its own** ops (export from the peer's vv with other peers' counters
-masked), so a receiver can require a single Loro peer id per batch.
+masked), so a receiver can require that every op of a live batch is the signer's own.
+**Version 3 (P6 too).** `Auth` presents the peer's *message* token (a call token does not open
+chat; a token taken back by a block is refused).
+**Version check (P9c, U18; P10).** Version 3 is incompatible with apps before P10
+(`tinline/chat/2`: one `v` per record) and before P9c (`tinline/chat/1`). The endpoint still lists
+`/1` and `/2` only to refuse them: an old app's connection is accepted and closed at once with
+application code 426 and a reason naming both versions ("chat tinline/chat/2 is no longer
+supported, this app speaks tinline/chat/3: update the app (and wipe its data)"). Dialing, we offer
+the old versions as well; if the peer picks one, it is an old app: we close with the same code and
+the dial fails with that reason (logged as "chat with <did>: the other device runs an older app:
+..."). Own-device sync moved to `tinline/self/3` the same way (`crates/core/src/version.rs`; node accept
+loop and every dial site use it).
 One session per contact: if both dial at once, the one dialled by the lower device key stays.
 Blobs travel on the stock iroh-blobs ALPN of the same endpoint (iroh-blobs 0.103, iroh 1.x).
 
 ### Validation (one verdict on every device)
 `Shard::apply_remote` imports into a scratch fork and rejects the whole batch (nothing stored,
-session closed) if: the blob holds ops of a peer id other than the signer's device peer id for
-that doc; ops are not self-contained; the doc has anything but `messages`; a message has an
-unknown or ill-typed field; a new message's `author` is not the signer; `at` is outside the
-shard's day ±1 h (live pushes: also |at − now| < 24 h); an existing message changed `id`,
-`author`, `at`, `reply_to` or `file`; someone but the author changed `text/edited_at/deleted`;
-a message disappeared; a deleted message kept text. Unit tests: `chat::doc_tests`.
+session closed) if: ops are not self-contained; the doc has anything but `messages`; a message has
+an unknown, missing or ill-typed field (each version's `dev` and `did_sig` included); a new message's
+`author` is not the signer; `at` is outside the shard's day ±1 h (live pushes: also |at − now| <
+24 h); an existing message changed `id`, `author`, `at`, `reply_to` or `file`; someone but the
+author changed the version; a message disappeared; a deleted message kept text; any op is not
+proven by its author's DID signature under the author's writer ID (section 7; live: only the
+signer's own ops); a writer's version goes back (older `edited_at` or an undone delete, judged per
+span against that writer's previous version); a touched message does not end as one of the
+proven versions. The verdict
+depends on nothing but the batch, the doc and the session's DID, so every device reaches the same
+one. Unit tests: `chat::doc_tests`.
 
 ### On disk (app data dir)
 `chat.redb`: sealed records (AES-256-GCM under `BLAKE3-derive-key("tinline chat store v1",
 DEK)`, each bound to its path), layout in `store.rs` (conversations, shard snapshot + appended
-updates + meta, acks, message counters, outbox markers, blob key index, read-permission refs).
+updates + meta, acks, tick markers, outbox markers, blob key index, read-permission refs).
 `blobs/`: the iroh-blobs store (ciphertext only; tags `tl/<hash>`; GC every 30 s). Existing
 `profile.json`/`state.json`/`calls.json` are untouched.
 
 ### Decisions where the text was silent
 - Ticks track the *creation* op of a message; an edit does not take the second tick away.
 - A message id -> day index (`mi/`) lets edit/delete take only the id.
-- Conflicting concurrent edits of one message (same author, two devices) are last-writer-wins
-  per field (plain map values, not Loro text).
+- Conflicting concurrent edits of one message (same author, two devices) sit side by side under
+  the two writers' version keys; every replica shows the highest-ranked one (delete, then
+  `edited_at`, then writer ID), in any arrival order (P10). Before P10 a single `v` let Loro's
+  order (Lamport, then peer id) pick the winner, and the rollback rule then refused the batch on a
+  replica that already showed the newer edit: the replicas stayed apart (the flaky
+  `concurrent_edits_whose_loro_winner_is_older_are_refused`).
 - Outbox = the Loro doc plus an `out/{pair}/{day}` marker until the peer's vv covers our ops.
   Dial at start, on local write, on `network_changed`, every 30 s while something is unsent, with
   2..60 s backoff.
@@ -250,29 +280,73 @@ updates + meta, acks, message counters, outbox markers, blob key index, read-per
 - Closed days: days 8+ days old are compacted into an encrypted snapshot blob (`closed` in the
   shard meta) by a periodic task; opening one decrypts the blob. A peer's `HistoryReq` is
   answered with such a blob (made on demand, cached) and its key, inside the authenticated link.
-- **Per-message author signatures.** Every message record carries `sig`, an Ed25519 signature by
-  the author's attested device key over `"tinline-chat-msg-v1"` and the length-prefixed doc id
-  (`dm/{pair}/{day}`), message id, author DID, `at`, current text, `edited_at`, `deleted`,
-  `reply_to` and the file ref (hash, key, name, size, mime, kind, duration, waveform). Creating,
-  editing and deleting all re-sign. Every apply path (live batch, history snapshot) verifies each
-  new or changed message against the author's device key (the peer's from the session, ours from
-  the profile); unsigned or mis-signed messages reject the whole batch. Because the doc id is
-  signed a message cannot be replayed into another day or pair, and a changed message may not move
-  `edited_at` backwards or un-delete, so an old signed version cannot roll back an edit.
+- **Per-version author signatures.** Every version carries `did_sig`, the author's DID signature
+  (section 7). Creating, editing and deleting all write a new signed version under the writer's
+  version key. Every apply path (live
+  batch, history snapshot, own-device relay) verifies every new op against the author's DID; an
+  unsigned or mis-signed op rejects the whole batch. Because the doc id is signed a message cannot
+  be replayed into another day or pair, and because the span is signed an old version cannot be
+  written again as a new op; a writer's version may not move `edited_at` backwards or un-delete.
 - **Vouched import.** History snapshots (older days, or a day whose batch depends on ops of ours
-  that we lost, e.g. after a reinstall) are accepted op-agnostically: ops of either party may
-  appear, but each message must carry a valid signature of its author. A contact therefore cannot
-  put words in our mouth; the worst it can do is withhold messages.
-- Contact removal: the conversation records and all its blobs are dropped (bytes freed by the
-  next GC run); the block already refuses later sessions.
+  that we lost, e.g. after a reinstall) may hold ops of either party, but every op must be proven
+  by its author's DID signature. A contact therefore cannot put words in our mouth or occupy a
+  writer ID of ours; the worst it can do is withhold messages.
+- **Writer counters never repeat (P10).** Loro identifies an op by (peer id, counter) and drops
+  an op whose id it already holds, so two different ops under one (writer ID, counter) make the
+  second silently vanish on the contact's side. Hence: a conversation is never deleted or rebuilt
+  (U24; `chat_purge` and `delete_conversation` are gone), so block -> unblock -> re-add continues
+  the same docs, and pre-block messages are delivered by the normal sync after the re-add; a chat
+  store that is not there when it opens (lost, deleted) gets a new device ID, hence a new writer
+  ID, before it is created; a cached day whose ops differ from the store's (a write whose
+  persist failed) is reloaded before it is used again, so unstored ops are never sent or built
+  on. Tests: `crates/core/tests/readd.rs`, `a_day_rebuilt_under_the_same_writer_id_is_silently_lost`.
+- `chat.redb` is opened with a bounded wait (~2 s, like `account.redb`): the node before a
+  restart may still hold it.
 - No `proto` change; `crates/audio` untouched (voice encode/decode left to the apps).
 - Test knob: `P2P_CHAT_CLOCK_MS_OFFSET` shifts the chat clock (day-shard tests only).
+
+### Signatures and writer IDs (P9c, strict; byte formats in docs/protocol.md)
+U18: the app is not launched, so there is no compatibility with apps or data from before P9c
+(the P8/P9/P9b transition machinery is gone). Installing this build means wiping the app data on
+every device of the account; an older app is refused with a clear version error (Wire, above).
+
+- **DID signature as a record field (U4 revised, U17 a).** Every version's `v` carries `did_sig`:
+  the author's DID key over the canonical content (doc id, id, author, at, text, edited_at,
+  deleted, reply_to, file), the device ID `dev`, and the **span** of ops that wrote it: Loro peer
+  id, counter of its first op, op count (the span ends with the insert of the writer's own
+  version key `v:<writer ID>`). It proves "this DID
+  wrote this version as exactly these ops under this writer ID"; a copy on any other span does not
+  verify. No device key signs content; there is no other signature and no commit message.
+- **Writer ID (U16).** A device writes every chat doc under `writer_id(DID, device ID)` as the Loro
+  peer id, always. The device ID is random per install (`device_id` in `account.json`: new on
+  create, link and restore, and when the chat store is created afresh (P10); kept when only the
+  device key changes). All replicas keep the
+  sender's number.
+- **Every op proven (U18).** `apply_remote` splits the new ops of a batch into spans (per peer id,
+  consecutive ops on one message, ending with the writer's own version key); an op outside such
+  a span (trailing ops, a span over two messages, a removal, another writer's version key, ops on
+  anything else) refuses the batch (`Unsigned`). For each span, the
+  version it wrote must have `writer_id(author, dev)` = the span's peer id
+  (`ForeignPeer` otherwise) and a `did_sig` that verifies for exactly that span (`BadSignature`).
+  Live, every span must be the signer's. Every touched message must end as one of the proven
+  versions. There is no acceptance path based on device keys, device lists or remembered writer
+  IDs, so the verdict is the same on every device; nothing is kept hidden (P1's per-message hiding
+  existed for messages signed by device keys a device never learned, which no longer exist).
+- **Consequences.** A contact cannot place ops under a writer ID of another DID, seen here before
+  or not (closes P9b's "squat an unseen sibling writer ID"): its own messages under it fail the
+  writer-ID hash, ours fail our DID signature. After a restore (new device ID, new writer ID),
+  messages from before and after it verify on every device because they are DID-signed.
+- **Limits.** (1) Same-DID copying by a holder of the recovery phrase (or a hostile linked device)
+  is the accepted shared-mnemonic limit: such a holder can sign anything as us. (2) A span's ops are
+  bound by count and by the version they produce, not one by one: an altered op that still yields
+  the signed version is harmless. (3) The device key still signs batches on the wire (session
+  authentication), not content.
 
 ## 8. Own devices (task 34g)
 
 A person's linked devices hold the same conversations. Pair ids are `BLAKE3(sorted DIDs)`, so
 `dm/{pair}/{day}` is the same doc on every device of the account. The devices exchange shards over
-the own-device link (`tinline/self/1`, `docs/protocol.md` "Own-device sync"); a contact never
+the own-device link (`tinline/self/3`, `docs/protocol.md` "Own-device sync"); a contact never
 learns how many devices we have.
 
 ### What is exchanged
@@ -284,15 +358,14 @@ learns how many devices we have.
   differs; the cap bounds a session's work.
 - A batch relayed by an own device is validated like a vouched history snapshot (`Ctx::history`):
   the QUIC-authenticated own device signed the batch; the doc must be a conversation of ours (a
-  contact in good standing, or "You"); authors are only we and that contact; and **every new or
-  changed message must carry a valid signature of its author's attested device key**: our devices
-  (the registry, removed ones included so old messages stay valid) or the devices we know of the
-  contact. So a relayed batch can neither forge the contact's words nor ours, and a message from
-  the contact verifies against the contact's attestation, not against the relay. A rejected batch
+  contact in good standing, or "You"); authors are only we and that contact; and **every op must
+  be proven by its author's DID signature under the author's writer ID** (section 7), whichever
+  device wrote it. So a relayed batch can neither forge the contact's words nor ours, and a message
+  from the contact verifies against the contact's DID, not against the relay. A rejected batch
   is dropped (nothing stored) and the session goes on; the usual per-field rules (immutable
   `id/author/at/reply_to/file`, no un-delete, no removal, day window) hold.
 - A device still sends the **contact** only its own ops (`export_own_since`), and the contact
-  accepts a batch from a session device only with that device's peer id. So each of our devices
+  accepts a live batch only with ops of the session's DID. So each of our devices
   syncs its own writes with the contact itself; a contact keeps one session per *device* (a person's
   devices no longer replace each other's sessions). Messages the contact wrote reach our second
   device through the first, with the contact offline. Duplicates cannot happen: a message is a
@@ -332,14 +405,18 @@ accepts only `dm/{its own pair}/...`, so a contact can neither request nor push 
 this row with `peer_name = "You"`. Messages are `outgoing`, `Delivered`, and never create an
 outbox marker; `fetch_older_history` is a no-op returning 0.
 
-### Removing a contact
-`remove_contact` drops the conversation (shards, blobs, rows) on this device and tombstones the
-contact in the account doc; the other devices apply the tombstone and `chat_purge` the same
-conversation. Relayed shards of a pair that is no longer a contact (and was blocked) are ignored,
-so the sync cannot bring it back.
+### Blocking
+A block keeps the conversation on every device (U19). The blocker's devices refuse the blocked
+DID's `Auth` with its signed notice (`ChatMsg::Notice`), so no session, sync, push or history
+request happens. The blocked person's app, once it holds the notice, deletes its contact entry
+for the blocker but keeps the conversation read-only (`chat_day`, `chats()` still show it; writes
+and `fetch_older_history` fail with `Rejected("blocked")`), stops retrying, and reports its
+unacknowledged messages with `not_delivered_reason = "blocked"`. Messages written before the notice
+stay in the docs; if the block is lifted and they add us again, the normal sync delivers them.
+Own devices keep syncing a blocked conversation. There is no "delete chat" action today (before
+P5 only `remove_contact` deleted history; `chat_purge` was removed in P10). See `protocol.md`
+"Blocking".
 
 ### Known limits
-A batch relayed to a device that does not yet know the author's device (a contact's new device
-learned by one of our devices only) fails the signature check and is dropped until the contact
-list reaches it; it is retried at every session. Read cursors are per conversation, not per
-message.
+Read cursors are per conversation, not per message. (A batch relayed by an own device no longer
+depends on which devices of the contact this device knows: content is verified by DIDs.)

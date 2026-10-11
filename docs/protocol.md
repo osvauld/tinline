@@ -1,8 +1,9 @@
-# osvauld p2p call protocol (v0)
+# osvauld p2p call protocol (v1)
 
 Implemented by `crates/proto`. Pure functions: callers supply `now` (unix secs),
 redeemed-nonce / revoked-grant sets, and the contact list, and persist results.
-ALPN: `osvauld/p2p/0`.
+ALPN: `osvauld/p2p/1` (P6: separate message and call tokens; `osvauld/p2p/0` is refused with
+close code 426 like the other superseded versions).
 
 ## Identities and devices
 
@@ -51,15 +52,17 @@ The visible fields are display-only; `verify` requires them to equal the signed 
 ## Add contact (joiner B scans owner A's ticket)
 
 1. B: `contact_hello` verifies the ticket, then sends `ContactHello`:
-   attestation(B, B.dev), B's name, A's invite blob, `binding`, and `grant_for_you`
-   (B issues A a call grant).
+   attestation(B, B.dev), B's name, A's invite blob, `binding`, `grant_for_you` (B's
+   message token for A) and `call_grant_for_you` (B's call token for A, absent when B gives
+   A message only; see "Tokens").
    `binding = sign_B(bind || nonce || B.dev || A.dev)`.
 2. A: `accept_contact_hello` checks, in order:
    invite signed by claimed issuer and `iss == A`; unexpired; `invite.device == A.dev`;
    nonce not in `redeemed_nonces`; attestation valid; `attestation.device == remote_device`;
    binding verifies under B's DID for this nonce and these two devices; `grant_for_you`
-   is issued by B's DID to A and valid. A replies `ContactWelcome` (attestation, name,
-   grant for B) and returns `NewContact` including `redeemed_nonce`, which the caller
+   is a message token issued by B's DID to A and valid (and the call token, if any, a call
+   token). A replies `ContactWelcome` (attestation, name, message token and optional call token
+   for B) and returns `NewContact` including `redeemed_nonce`, which the caller
    must persist before/atomically with saving the contact.
 3. B: `accept_contact_welcome`: attestation DID == ticket DID; attested device ==
    `remote_device` == ticket device; grant issued by ticket DID to B. B stores A with
@@ -70,11 +73,40 @@ Any failure: send `Reject { reason }` (reason is for logs, not trusted) and clos
 ## Call (B calls A)
 
 1. B opens a connection to A's device and sends `CallHello { call_id, attestation, grant }`
-   where `grant` is the one A issued B at add-contact time.
-2. A: `accept_call_hello`: attestation valid and `device == remote_device`; grant issued
-   by A to the attested DID, unexpired, id not revoked; DID is a contact.
+   where `grant` is the call token A issued B (or, if B holds none, its message token).
+2. A: `accept_hello`: attestation valid and `device == remote_device`; token issued by A to
+   the attested DID, unexpired, id not revoked; DID is a contact. Then: blocked -> `Notice`;
+   token taken back by a block (cut-off) -> `Reject { "not accepted" }`; not a call token,
+   calls not allowed for B, or a call token at/below B's call cut-off ->
+   `Reject { "calls not allowed" }` (never rings; B's call ends `calls not allowed` and B drops
+   its call token).
 3. A answers `Ringing`, then `Accept { renewed_grant }` / `Decline` / `Busy`.
-   Either side ends with `Hangup`. `renewed_grant` lets A roll the caller's grant forward.
+   Either side ends with `Hangup`. `renewed_grant` is a fresh call token for B.
+
+## Tokens (P6; decisions U13, U15)
+
+A `Grant` is a single-capability token: `{v: 2, id, iss, holder, cap: "message" | "call", iat,
+exp}` (domain `grant/v1`). A legacy `v: 1` grant with `cap: "call"` (before P6) counts as message
++ call. Chat (`tinline/chat/3`) `Auth` presents the message token; calls present the call token.
+Only the issuer verifies its own tokens, so taking one back is local and per DID:
+`State.cut_offs[did] = {message, call}` (unix seconds); a token with `iat <= cut-off` is refused
+(`proto::verify_token`). Cut-offs only rise and sync between own devices (max per field).
+
+- Ticket/QR contacts get message + call; contacts from a group chat request message only
+  (`ContactOrigin::GroupRequest`; the group code passes it to `Inner::add_contact_from`). A
+  contact that already exists keeps its call permission when it re-adds.
+- `allow_calls(did, true)` sends a fresh call token (`Tokens { grants }`, answered
+  `TokensTaken`, retried from the device that queued it). `allow_calls(did, false)` raises the
+  call cut-off: every call token of that DID, legacy ones included, stops ringing; chat goes on.
+  `calls_allowed(did)`: we let them call; `can_call(did)`: we hold an unexpired call token.
+- A block raises both cut-offs. Unblocking does not lower them: after the unblock the other side
+  re-adds us (their entry was deleted, U20) and the re-add carries tokens issued above the
+  cut-off.
+- Renewal: the call token on every answered call; the message token when a chat session finds
+  it within 30 days of expiry (PROVISIONAL), delivered as `Tokens`. A received token replaces the
+  held one in its slot only if it is valid, of that kind, and expires later.
+- A linked sibling that has not synced a downgrade or block yet still honours the old token
+  (best effort, section 14 Q4 open).
 
 A different device of the same DID with its own valid attestation is accepted.
 
@@ -98,6 +130,18 @@ it as a relay URL) is dropped and the device kept, like a bad hint in a hello.
 `newer(a, b)`: higher `seq` wins; on equal `seq` the lexicographically larger signature wins,
 so every receiver converges on the same list. Carried in optional `devices` fields of
 `CallHello` and `Accept` (omitted from the wire when absent).
+
+Pushed (P4, decision U8): whenever the install's set of device keys changes (a device linked,
+unlinked, seen via own-device sync, or this install restored with a new key) it re-signs the list
+and sends `Devices { list }` as the first message of a connection on the calls ALPN to every
+contact it neither blocks nor is blocked by; answered `DevicesTaken` (whether or not the list was
+kept) or, by a receiver that blocks the sender, with its `Notice`. Queued per contact
+(`list_outbox`, local), retried with backoff (2..60 s) and after every start; each attempt sends
+the current list. A new contact is sent the list too when the install has more than one device.
+A relay-only change is not pushed (PROVISIONAL (coordinator)). The receiver keeps a list only if
+it verifies for the DID it names, is `newer` than the one held, and its `seq` is at most one day
+(`MAX_LIST_SEQ_AHEAD_MS`, PROVISIONAL (coordinator)) ahead of the receiver's clock; the same
+bound applies to lists in calls and in own-device sync.
 
 ### Cancel
 
@@ -200,7 +244,7 @@ reason. Failure tokens surfaced to the UI: `expired cancelled rejected bad_proof
 net locked busy bad_grant account_exists`. Locking E cancels its link. Env knob for tests:
 `P2P_LINK_TTL_SECS`.
 
-### Own-device sync (ALPN `tinline/self/1`, task 34d)
+### Own-device sync (ALPN `tinline/self/3`, task 34d; `/1` refused since P9c, `/2` since P10, see "Protocol versions")
 
 Frames: u32 BE length + bincode of `SelfMsg` (16 MiB cap).
 
@@ -227,10 +271,21 @@ sealed in `account.redb` under `sync/account`, with maps:
 | map | entry | merge |
 |---|---|---|
 | `devices/<device>` | `{att, label, removed, relay}` | field LWW; `removed` is sticky (OR) |
-| `contacts/<did>` | `{rec, alias, verified}`; `rec` = name, devices, device_list, grant, added_at | alias/verified LWW; `rec`: name LWW, newer signed device list wins (S4 reset applies), grant that outlives, max added_at |
-| `tomb/<did>` | removal time (ms) | a contact is alive iff `added_at*1000 > tomb`: removal beats stale edits; a later ticket scan re-adds (and lifts the block on every device); same-second ties go to the removal |
+| `contacts/<did>` | `{rec, alias, verified, calls}`; `rec` = name, devices, device_list, grant, call_grant, added_at | alias/verified/calls LWW; `rec`: name LWW, newer signed device list wins (S4 reset applies), each token slot: the one that outlives (a later re-add without a call token clears it), max added_at |
+| `cutoffs/<did>` | our token cut-offs for `<did>` (JSON) | max per field |
+| `sent/<did>` | our latest signed block/unblock notice to `<did>` (SignedBlob JSON) | verified on read; highest `at` wins; `<did>` is blocked iff that notice is a block (see "Blocking") |
+| `notices/<did>` | `{notice, name, blocked, at}`: the latest notice `<did>` signed to us | verified on read (`to` = our DID, `from` = `<did>`); highest `at` wins; a block deletes the contact entry for `<did>` if `added_at*1000 <= at` (deletion request) |
 | `redeemed/<nonce>`, `revoked/<id>` | `"1"` | union, never shrink |
-| `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept |
+| `calls/<call_id>` | CallRecord JSON | written by builds before the calls doc; no longer read |
+
+The call log is a second doc, `calls` (peer id as above with `"calls"`), sealed under `sync/calls`,
+in the `Hello` list and synced like `account` (signed `Sync`, an empty batch acks). It only grows
+and gets trimmed, so it stays out of the doc that carries contacts and devices. Older builds ignore
+the name. On the first open it is seeded from the local call log.
+
+| map | entry | merge |
+|---|---|---|
+| `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept; calls with blocked contacts are kept |
 
 `verified` is stored with the contact's device-list `seq`; it counts only against a device set at
 least as new as the receiver's (S4). Never synced: device secret, DEK, passphrase, availability,
@@ -247,20 +302,21 @@ add more docs to the `Hello` list (done in 34g, below).
   the peer's vector (any peer ids); `sig` is the sending device's `sign_batch(doc, update)`, checked
   against the authenticated device (a bad signature closes the session, as for the account doc).
 - The receiver validates a chat batch like a vouched history snapshot (docs/chat.md section 8): doc
-  of a current conversation, authors only us and that contact, every new/changed message signed by its
-  author's attested device (ours incl. removed devices, the contact's known devices), plus the field
-  rules. A rejected batch is dropped, the session continues.
+  of a current conversation, authors only us and that contact, every op proven by its author's DID
+  signature under the author's writer ID (below, "Chat message signatures and writer IDs"), plus the
+  field rules. A rejected batch is dropped, the session continues.
 - `Read { cursors: [(pair, unix ms)] }` (appended `SelfMsg` variant, unsigned): read cursors, merged
   by max; sent after `Hello` and whenever one moves, forwarded to other sessions.
 - `Acks { acks: [(doc, vv)] }` (appended `SelfMsg` variant, unsigned): what a contact acknowledged
   holding of each day, merged into our stored ack like the contact's own `Ack`; sent after `Hello` and
   whenever an ack grows, forwarded onward. So a device that is not talking to the contact still shows
-  two ticks on our messages only once the contact holds them (a message written on another own
-  device is ticked against that device's peer id, recorded when it arrives: `mo/` in docs/chat.md).
+  two ticks on our messages only once the contact holds them (each message of ours is ticked against
+  the writer ID it was created under, recorded when written or when it arrives: `mo/` in
+  docs/chat.md).
 - Live updates: a write to any shard marks it dirty for every session, which pushes the ops the peer
   lacks. Blobs use the stock iroh-blobs ALPN: an own (non-removed) device is served any blob that any of our
   conversations references.
-- Contacts are unaffected: `tinline/chat/1` stays one session per contact *device*, each device sends
+- Contacts are unaffected: `tinline/chat/3` stays one session per contact *device*, each device sends
   its own ops only, and a session can name only `dm/{pair with that contact}/{day}`.
 
 | Check | Defends against |
@@ -278,7 +334,67 @@ add more docs to the `Hello` list (done in 34g, below).
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
-## Presence (on `tinline/chat/1`)
+## Protocol versions (P9c, U18; P10; P6)
+
+**P6.** Separate message and call tokens changed what the contact exchange, calls and the chat
+`Auth` carry, and the account doc gained call tokens, call permissions and cut-offs. Chat and
+own-device sync share P10's bump (`tinline/chat/3`, `tinline/self/3`, same release); calls and
+contacts moved to `osvauld/p2p/1`, and `osvauld/p2p/0` is refused the same way
+(`crates/core/src/version.rs`: `CALL`). No compatibility (U18).
+
+The chat content format changed incompatibly (below; P9c: DID-signed record fields, P10: one
+version per writer), so the chat wire is `tinline/chat/3` and own-device sync, which relays chat
+docs, is `tinline/self/3`. There is no compatibility with apps or data from before: installing this
+build means wiping the app data on every device.
+
+- Accepting: the endpoint lists `tinline/chat/1`, `tinline/chat/2`, `tinline/self/1` and
+  `tinline/self/2` only to refuse them. Such a
+  connection is accepted and closed at once with application close code **426** and the reason
+  `"<chat|own-device sync> <old alpn> is no longer supported, this app speaks <new alpn>: update the
+  app (and wipe its data)"` (`crates/core/src/version.rs` `refuse`, called from the accept loop in
+  `node.rs`). The node logs "refused <protocol> from an older app (<alpn>)".
+- Dialing: `version::connect` offers the old ALPN as well; if the peer picks it, it is an old app:
+  the connection is closed with 426 and the same reason, and the dial fails with
+  `Error::Protocol("the other device runs an older app: <reason>")` (chat logs it per contact).
+- Tests: `version::tests` (old app dialing us, us dialing an old app, two current apps).
+
+## Chat message signatures and writer IDs (P9c, strict)
+
+Formats inside the chat docs (`dm/{pair}/{day}`); the wire batch `sig` (device key over
+`"tinline-chat-batch-v1" ‖ len(doc) ‖ doc ‖ update`) authenticates the sending device only.
+Design and rules: docs/chat.md section 7 "Signatures and writer IDs".
+
+- **Record**: `{ id, author, at, reply_to?, file?, v:<writer>... }`; `id/author/at/reply_to/file`
+  written once at creation; `v:<writer ID as 16 lowercase hex digits>` = that writer's latest
+  version, one map value `{ text, edited_at?, deleted, dev: hex(device ID), did_sig: hex(64 bytes) }`.
+  Only that writer writes its key. The message shows its highest-ranked version: `deleted`, then
+  `edited_at` (absent lowest), then writer ID (P10).
+- **DID signature** (`chat::doc::msg_sig_input`): the author's DID key (Ed25519, `did:key`) over
+  `"tinline-chat-msg-v3"` ‖ len-prefixed doc ‖ id ‖ author ‖ `at` (i64 BE) ‖ text ‖ `edited_at`
+  (0, or 1 + i64 BE) ‖ `deleted` (1 byte) ‖ `reply_to` (0, or 1 + string) ‖ file (0, or 1 + hash,
+  key, name, size u64, mime, kind, duration u32, waveform len u32 + bytes) ‖ device ID (32 bytes) ‖
+  `WrittenAt` = Loro peer id (u64 BE) ‖ counter of the span's first op (i32 BE) ‖ op count of the
+  span (u32 BE). Strings are u32 BE length-prefixed. The span is the ops that write the version,
+  the last being the insert of the writer's own version key: for a new message the `messages`
+  key, `id`, `author`, `at`, `reply_to?`, `file?`, `v:<writer>`; for an edit or delete only
+  `v:<writer>`. (P8/P9/P9b used
+  `"tinline-chat-msg-did-v2"` in a commit message, plus a device-key `sig`; both are gone.)
+- **Writer ID** (U16): the Loro peer id a device writes every chat doc with = first 8 bytes (LE) of
+  `BLAKE3("tinline-writer-id-v1" ‖ u32 BE len(DID) ‖ DID ‖ device ID)` (`u64::MAX` maps to
+  `u64::MAX - 1`). The device ID is 32 random bytes per install of the account (`account.json`
+  `device_id`): new on create, link and restore over the directory, and before a chat store is
+  created afresh (P10: a lost store must not reuse (writer ID, counter) pairs contacts hold); kept
+  when only the device key changes (endpoint rotation). It is never derived from a key.
+- **Accepting a batch** (`Shard::apply_remote`, every path): the new ops are split per peer id
+  into spans (consecutive ops on one message, ending with the insert of the span's own version
+  key; only immutable fields besides, no removals); any op outside one refuses the batch. Each
+  span must be proven by the version it wrote: `writer_id(author, dev)` = the span's peer id and
+  `did_sig` verifies for the span; and it must not go back from that writer's previous version
+  (older `edited_at`, or an undone delete). Live,
+  every span's author is the session's DID. Every touched message must end as one of the proven
+  versions. Nothing else is consulted (no device keys, device lists or remembered writer IDs).
+
+## Presence (on `tinline/chat/3`)
 
 Whether a contact is reachable right now. Each device keeps a Loro `EphemeralStore` with one key
 (`online`), refreshed every 8 s, and sends it on every chat session as a QUIC datagram: `b"tp1"` +
@@ -309,24 +425,76 @@ and close the session.
 | Grant `holder == attested DID` | A stolen grant presented by someone else |
 | Grant `iss == me` | Grants minted by third parties |
 | Revoked set | Cutting off a contact or a leaked grant |
-| Contact check | A valid grant surviving after the contact was removed |
+| Contact check | A valid grant of someone who is no longer a contact |
+| Block check (signed notice) | A blocked contact's valid grant; a forged, misaddressed or replayed notice (refused, nothing changes) |
 
-## Removing a contact (there is no revocation yet)
+## Blocking (P5; U5 revised, U19, U20, U23)
 
-Grants carry a random 16-byte id and `accept_call_hello` takes a revoked-id set, but the core
-never writes to that set: no grant is revoked individually today. Removing a contact is a local
-block instead: the contact is dropped, their DID goes on a blocked list, and the grant we gave
-them is no longer honoured because calls from a blocked DID are refused with the same generic
-"not accepted" as any other failure (so they learn nothing). The block is lifted only when *we*
-add them again by scanning their ticket; a ticket of ours that they scan does not lift it.
-Grants are long-lived (a year) and renewed on every answered call; `renewed_grant` in `Accept`
-replaces the stored grant only if it is validly signed by the callee for us and expires later.
+There is no Remove for a contact: the contact action is Block (`Node::block`, `unblock`;
+`remove_contact` is an alias of `block` until the apps switch). A block keeps the contact, the
+chat history and the call history, and is visible to the blocked person.
+
+**Notice.** `proto::sign_block_notice` signs, with the DID key and the domain
+`osvauld/p2p/block/v1\0`, the JSON claim
+
+```text
+BlockNotice { v: 1, from: <blocker DID>, to: <blocked DID>, blocked: bool, at: <unix ms> }
+```
+
+as a `SignedBlob` (base64url payload + signature, like grants). `blocked: false` is an unblock.
+`at` is strictly increasing per (from, to). `verify_block_notice(blob, me)` checks the signature
+under the DID named in `from` and `to == me`; the receiver then keeps it only if its `at` is above
+the notice it holds from that DID (a replayed or older notice changes nothing; an unblock from
+someone whose block we never held is ignored). Every block notice is also a **deletion request**
+(U20, always sent): the receiving app deletes its contact entry for `from` (address, grant, device
+list) if it was added before `at`, and keeps the conversation read-only
+(`block::apply_block_deletion_request`). Not enforceable against modified builds.
+
+**Wire.** On the call ALPN (`osvauld/p2p/0`): `Msg::Notice { notice }` and `Msg::NoticeTaken`.
+
+- Delivery: the blocking device dials every device of the contact, sends `Notice` as the first
+  message and waits for `NoticeTaken` (also sent for a valid notice already held, so it stops).
+  Untaken notices sit in a local outbox, retried after 2, 5, 15, 30, then every 60 s while online,
+  and again at start. Exactly one notice is signed per block; own devices never sign their own.
+- Refusal (blocker side, every own device, from the synced notice): a `CallHello` or
+  `ContactHello` that verifies under a blocked DID is answered with `Notice` instead of `Ringing`
+  / `Welcome` (never rings, no call record); during a call, blocking sends `Notice` and ends the
+  call. On `tinline/chat/3` the listener answers a blocked DID's `Auth` with
+  `ChatMsg::Notice { notice }` and closes; no session, so no sync, push or history request.
+  Blobs are not served to a blocked DID.
+- Reading a refusal: a `Notice` that verifies as a block from the peer we dialled ends the call
+  with `blocked`, fails `add_contact` / chat dials with `Rejected("blocked")`, and is taken like a
+  delivered one.
+
+**Blocked side (our app enforces, U20 layer 1).** While it holds a block from a DID: `call` ends at
+once with `blocked` without dialling; `send_text` / `send_file` / `edit_message` /
+`delete_message` / `fetch_older_history` fail with `Rejected("blocked")`; no chat retries; our
+unacknowledged messages report `not_delivered_reason = "blocked"`. `block_state(did).blocked_me`
+carries the verified notice for "<name> blocked you"; `chats()` keeps listing the conversation.
+**Blocker side (U20 layer 2):** the refusals above hold for a build that ignores the notice.
+
+**Own devices.** `sent/` and `notices/` sync in the account doc (both verified on read), so a
+block made on one device is refused by all, and a notice received by one device is honoured by
+all (including the deletion request).
+
+**Unblock.** Signs a newer notice with `blocked: false`, delivered the same way. The other app
+takes it even though it no longer has us as a contact (it holds our block) and clears "blocked
+you"; messaging resumes only after they add us again (ticket/QR), since their entry was deleted.
+Scanning a blocked contact's ticket ourselves unblocks them first.
+
+Tokens carry a random 16-byte id and `accept_hello` takes a revoked-id set, but the core never
+writes to that set: tokens are taken back per DID with cut-offs (see "Tokens"); a block takes
+back both of the blocked contact's tokens.
 Tickets are single-use via the redeemed-nonce set and also expire.
+
+Not in P5: blocking does not rotate any endpoint (U5) and changes no group membership; there is
+no attempt counter yet ("tried to message you N times"); the call ALPN was not bumped for the new
+messages (an older app fails to decode them, U18).
 
 ## Tickets in the core
 
 - Only the one ticket the node currently hands out can be redeemed (it remembers its nonce).
-  Redeeming it, `set_name`, `remove_contact` and `reset_ticket` all drop it; the next `my_ticket`
+  Redeeming it, `set_name`, `block` and `reset_ticket` all drop it; the next `my_ticket`
   mints a fresh one. A leaked or old ticket is dead even if its nonce was never spent.
 - The inviter makes the new contact, the spent nonce and the dropped ticket durable in one
   write (sealed account store) BEFORE it sends `ContactWelcome`; if that write fails it sends
@@ -348,7 +516,7 @@ Tickets are single-use via the redeemed-nonce set and also expire.
   1.5 s without media `CallStats.reconnecting` is true (the call is not over yet).
 - Calls are logged to `calls.json` (last 500, newest first; `recent_calls`, `calls_with`).
   The log is written before `Ended` is delivered, so the UI re-reads it on `on_call_state`
-  `Ended`. Removing a contact deletes their entries.
+  `Ended`. A block keeps their entries.
 - Safety number: per party, SHA-512 over `"tinline-safety-v1" || signing_pk`, then 5200 rounds
   of `H = SHA-512(H || signing_pk)`; the first 30 bytes give 6 groups of 5 bytes, each read as a
   big-endian integer mod 100000 and zero-padded to 5 digits. The two 30-digit halves are
@@ -367,13 +535,15 @@ Tickets are single-use via the redeemed-nonce set and also expire.
 
 | Reason | Meaning |
 |---|---|
-| `hangup_local` | Active call ended by us (also: we locked/removed the contact mid-call) |
+| `hangup_local` | Active call ended by us (also: we locked mid-call) |
 | `hangup_remote` | Active call ended by them |
 | `declined` | Caller's view: the callee (any of its devices) declined |
 | `declined_local` | Callee's view: we declined (not a missed call) |
 | `cancelled` | Callee's view: the caller gave up (`Hangup` or `Cancel{caller_hangup}`, or the link died) before we answered: missed. Caller's view: we hung up before they answered |
 | `no_answer` | Rang for 60 s (30 s for a call waiting over another call), nobody answered (either side; missed on the callee) |
-| `unreachable` | Caller's view: could not connect, or they refused (offline, blocked, or unavailable) |
+| `unreachable` | Caller's view: could not connect, or they refused (offline, unavailable, or not a contact there) |
+| `calls not allowed` | Caller's view: they let us message them but not call (no call token, or taken back); ends at once, never rings |
+| `blocked` | They block us (their signed notice, held or just received), or we blocked them mid-call; ends at once, never rings |
 | `connection_lost` | Active call lost the connection or media for 30 s |
 | `busy` | Caller's view: every device we reached declined while in another call, or was already handling two calls. Callee's history: missed while busy |
 | `unavailable` | History only (callee): turned away while unavailable; `missed` is false; never an `Ended` event |
@@ -408,8 +578,8 @@ quiet tone; the active call's audio is untouched. A third call is answered `Busy
 
 - Device secret storage (Keystore, Android Keystore) is the caller's job; proto only
   derives the public key. Losing it means re-adding contacts.
-- No device revocation list and no per-grant revocation: a stolen unlocked phone is stopped
-  only by the contact removing us (a block). Attestations never expire (`iat` is informational).
+- No device revocation list and no per-grant revocation (tokens are taken back per DID): a
+  stolen unlocked phone is stopped only by the contact blocking us. Attestations never expire (`iat` is informational).
 - The ticket is a bearer secret until redeemed: whoever scans first wins. Show it
   in person, keep `ttl` short.
 - A ticket's visible `relay` hint is signed but not authenticated by anything else;

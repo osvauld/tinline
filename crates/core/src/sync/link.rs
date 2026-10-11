@@ -285,6 +285,12 @@ impl Inner {
 
     async fn link_session(self: Arc<Self>, mut run: LinkRun, conn: Connection) {
         let id = run.id;
+        // N's temporary endpoint has this install's device key: the account's own endpoint (its
+        // `start` follows `on_link_done`) must wait until it is fully closed (P11).
+        let gate = match run.fresh {
+            Some(_) => Some(self.closing.clone().lock_owned().await),
+            None => None,
+        };
         let r = self.clone().link_inner(&mut run, &conn).await;
         // N's temporary endpoint is no longer needed (the account has the same device key).
         match r {
@@ -297,8 +303,8 @@ impl Inner {
                 self.fail(id, tok);
             }
         }
-        if let Some((_, ep)) = run.fresh.take() {
-            let _ = tokio::time::timeout(Duration::from_secs(2), ep.close()).await;
+        if let (Some((_, ep)), Some(gate)) = (run.fresh.take(), gate) {
+            self.close_fully(ep, gate).await;
         }
     }
 
@@ -404,6 +410,8 @@ impl Inner {
         }
         let _ = self.persist_for(Some(me.epoch));
         self.log(format!("linked device {}", proto::device_to_text(&remote)));
+        // U8: tell every unblocked contact about the new install.
+        self.devices_changed();
         if let Some(ev) = self.link_events() {
             ev.on_devices_changed();
             ev.on_link_done(me.id.did().to_string(), me.profile.name.clone());
@@ -492,7 +500,7 @@ impl Inner {
         let mut me = Me::load(profile, 0).map_err(|_| "bad_grant")?;
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
         let (vault, dek) = vault::seal(&secrets, None).map_err(|_| "rejected")?;
-        let disk = Disk::V2(ProfileV2 { version: 2, name: me.profile.name.clone(), did: did.clone(), device_public: me.device, vault });
+        let disk = Disk::V2(ProfileV2 { version: 2, name: me.profile.name.clone(), did: did.clone(), device_public: me.device, vault, device_id: Some(crate::store::new_device_id()) });
         registry.retain(|e| e.device != me.device);
         registry.insert(0, OwnDevice { device: me.device, attestation: me.attestation.clone(), label: label.to_string(), removed: false, last_seen: now(), relay: None });
         let state = State { registry, ..State::default() };

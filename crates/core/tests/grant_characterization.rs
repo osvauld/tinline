@@ -22,6 +22,12 @@
 //!   merged between own installs (`crates/core/src/sync/accdoc.rs:241`, `:400`), but no code path
 //!   adds to it. Blocking is per DID (`State.blocked`, `Node::remove_contact` `node.rs:984`).
 //!
+//! P6 (U13, U15) built separate tokens: the `KIND: limitation` tests below were flipped to the
+//! decided behaviour (each says what it asserted before). Today: ticket contacts exchange a
+//! `message` and a `call` token (version 2, one cap each); chat checks the message token, calls
+//! the call token; a contact without call permission is answered "calls not allowed"; tokens are
+//! taken back per DID with cut-offs (block: both; "disallow calls": call), never by id.
+//!
 //! Every test carries one label:
 //! - `KIND: limitation`: asserts today's outcome where it differs from U13; the comment names the
 //!   expected-correct outcome. When production is fixed the assertion flips and the test must be
@@ -49,8 +55,8 @@ use serde::{Deserialize, Serialize};
 const PASS: &str = "test-passphrase";
 /// `GRANT_TTL` (`crates/core/src/node.rs:33`), private there.
 const GRANT_TTL: u64 = 365 * 24 * 3600;
-/// `CHAT_ALPN` (`crates/core/src/chat/wire.rs:9`), private there.
-const CHAT_ALPN: &[u8] = b"tinline/chat/1";
+/// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 3 since P6.
+const CHAT_ALPN: &[u8] = b"tinline/chat/3";
 const WAIT: Duration = Duration::from_secs(30);
 
 // ---- helpers copied from block_characterization.rs / device_list_characterization.rs ----
@@ -244,9 +250,11 @@ struct RawCall {
 
 /// What a raw contact holds after adding a node.
 struct Added {
-    /// The node's grant to the raw peer (what it presents to call / chat the node).
+    /// The node's message token to the raw peer (what it presents to chat with the node).
     from_node: proto::SignedGrant,
-    /// The raw peer's grant to the node.
+    /// The node's call token to the raw peer (what it presents to call the node).
+    call_from_node: Option<proto::SignedGrant>,
+    /// The raw peer's message token to the node.
     to_node: proto::SignedGrant,
     addr: EndpointAddr,
 }
@@ -310,7 +318,7 @@ impl Raw {
         {
             addr = addr.with_relay_url(url);
         }
-        let from_node = self.rt.block_on(async {
+        let (from_node, call_from_node) = self.rt.block_on(async {
             let conn = tokio::time::timeout(WAIT, self.ep.connect(addr.clone(), proto::ALPN))
                 .await
                 .expect("dial in time")
@@ -326,10 +334,11 @@ impl Raw {
             let new = proto::accept_contact_welcome(&self.id, &pending, &reply, remote, now())
                 .expect("welcome verifies");
             conn.close(0u32.into(), b"added");
-            new.grant_from_them
+            (new.grant_from_them, new.call_grant_from_them)
         });
         Added {
             from_node,
+            call_from_node,
             to_node,
             addr,
         }
@@ -450,45 +459,51 @@ fn is_reject(m: &Option<Msg>) -> bool {
 
 // ---- tests ----
 
-// KIND: limitation
-// TODAY a ticket contact receives exactly one credential: a DID-signed grant with cap "call" and
-// a one-year TTL; there is no messaging capability at all. EXPECTED-CORRECT (U13): a ticket
-// contact holds `message` and `call` tokens (or this legacy grant, read as message+call by the
-// U13 migration rule). The proto model covers both shapes (`capability_tokens.rs`).
+// KIND: invariant (flipped by P6; was `ticket_contact_holds_one_call_grant_with_a_one_year_ttl`,
+// which asserted ONE grant with cap "call" and no messaging capability)
+// U13: a ticket contact receives two separate DID-signed tokens from the node, `message` and
+// `call`, each with a one-year TTL, issued by the node's DID to the contact's.
 #[test]
-fn ticket_contact_holds_one_call_grant_with_a_one_year_ttl() {
+fn ticket_contact_holds_message_and_call_tokens_with_a_one_year_ttl() {
     let a = peer("ttl-a");
     let raw = Raw::new();
     let added = raw.add(&a.node.my_ticket().unwrap());
-    let g = verify_from(&a, &raw.did(), &added.from_node);
-    assert_eq!(g.cap, "call");
-    assert_eq!(g.exp - g.iat, GRANT_TTL);
-    assert_eq!(
-        (g.iss.as_str(), g.holder.as_str()),
-        (a.did.as_str(), raw.did().as_str())
-    );
+    let m = verify_from(&a, &raw.did(), &added.from_node);
+    let c = verify_from(&a, &raw.did(), added.call_from_node.as_ref().expect("a call token"));
+    assert_eq!((m.cap.as_str(), c.cap.as_str()), ("message", "call"));
+    assert_ne!(m.id, c.id);
+    for g in [&m, &c] {
+        assert_eq!(g.exp - g.iat, GRANT_TTL);
+        assert_eq!((g.iss.as_str(), g.holder.as_str()), (a.did.as_str(), raw.did().as_str()));
+    }
     assert!(a.node.contacts().iter().any(|c| c.did == raw.did()));
+    assert!(a.node.calls_allowed(raw.did()));
 }
 
-// KIND: limitation
-// TODAY messaging is gated by the SAME "call" grant as calling: the grant that rings the node
-// also opens a chat session (the node answers with its own `Auth`, presenting the grant WE issued
-// it — mutual, and not a renewal), while a self-issued grant opens neither. There is no way to
-// admit a contact to chat but not to calls. EXPECTED-CORRECT (U13): chat checks a `message`
-// token and calls check a `call` token, so a message-only contact chats but cannot ring.
+// KIND: invariant (flipped by P6; was `one_call_grant_gates_both_calls_and_chat`, which
+// asserted that the one "call" grant both rang the node and opened chat)
+// U13/U15: the call token rings but does not open chat; the message token opens chat (the node
+// answers with its own `Auth`, presenting the message token WE issued it) but a call presenting
+// it is answered "calls not allowed" and never rings. A self-issued token opens neither.
 #[test]
-fn one_call_grant_gates_both_calls_and_chat() {
+fn the_message_token_opens_chat_and_the_call_token_rings() {
     let a = peer("both-a");
     let raw = Raw::new();
     let added = raw.add(&a.node.my_ticket().unwrap());
+    let call_token = added.call_from_node.clone().unwrap();
 
-    // Call path: rings.
-    let (call, first) = raw.call(&added.addr, &added.from_node, "grantcall1");
+    // Call path: the call token rings, the message token is told "calls not allowed".
+    let (call, first) = raw.call(&added.addr, &call_token, "grantcall1");
     assert!(matches!(first, Some(Msg::Ringing)), "rings: {first:?}");
     assert_eq!(incoming_within(&a, 10).peer_did, raw.did());
     raw.hang_up(call);
+    let (_, first) = raw.call(&added.addr, &added.from_node, "grantcall3");
+    assert!(
+        matches!(&first, Some(Msg::Reject { reason }) if reason == p2pcore::CALLS_NOT_ALLOWED),
+        "{first:?}"
+    );
 
-    // Chat path: the same grant is accepted.
+    // Chat path: the message token is accepted, the call token is not.
     let (att, grant_back) = raw
         .chat_auth(&added.addr, &added.from_node)
         .expect("chat accepted");
@@ -496,10 +511,11 @@ fn one_call_grant_gates_both_calls_and_chat() {
     assert_eq!(att.did, a.did);
     assert_eq!(
         grant_back, added.to_node,
-        "the node presents our grant, it issues nothing"
+        "the node presents our message token, it issues nothing"
     );
+    assert!(raw.chat_auth(&added.addr, &call_token).is_none());
 
-    // A grant raw issued itself (wrong issuer) opens neither.
+    // A token raw issued itself (wrong issuer) opens neither.
     let own = proto::issue_grant(&raw.id, &raw.did(), now(), GRANT_TTL);
     let (_, first) = raw.call(&added.addr, &own, "grantcall2");
     assert!(is_reject(&first), "{first:?}");
@@ -519,7 +535,7 @@ fn a_lifted_grant_is_refused_on_both_paths_with_state_unchanged() {
     let b_added = b.add(&a.node.my_ticket().unwrap());
     let c_added = c.add(&a.node.my_ticket().unwrap());
     let before = a.dump();
-    let (_, first) = c.call(&c_added.addr, &b_added.from_node, "liftcall1");
+    let (_, first) = c.call(&c_added.addr, b_added.call_from_node.as_ref().unwrap(), "liftcall1");
     assert!(is_reject(&first), "{first:?}");
     assert!(c.chat_auth(&c_added.addr, &b_added.from_node).is_none());
     assert!(a.logged("rejected call: holder is not who was expected"));
@@ -527,19 +543,19 @@ fn a_lifted_grant_is_refused_on_both_paths_with_state_unchanged() {
     assert_eq!(a.dump(), before);
 }
 
-// KIND: candidate-policy G-RENEWAL
-// TODAY's renewal rule: when the callee answers, its `Accept` carries a fresh "call" grant for the
-// caller (new id, `iat` = now, one-year TTL). A declined call carries none; chat sessions never
-// renew (previous test). Whether U13's call token keeps this rule, and how message tokens renew,
-// is open (proto model: `call_token_renews_when_a_call_is_answered`, `message_token_*`).
+// KIND: invariant (P6 kept the renewal rule for the call token, section 14 Q3)
+// When the callee answers, its `Accept` carries a fresh call token for the caller (new id, `iat`
+// = now, one-year TTL). A declined call carries none. (Message tokens renew on chat activity near
+// expiry, PROVISIONAL: `caps.rs` `RENEW_WINDOW`.)
 #[test]
 fn answering_renews_the_callers_grant_declining_does_not() {
     let a = peer("renew-a");
     let raw = Raw::new();
     let added = raw.add(&a.node.my_ticket().unwrap());
-    let old = verify_from(&a, &raw.did(), &added.from_node);
+    let call_token = added.call_from_node.clone().unwrap();
+    let old = verify_from(&a, &raw.did(), &call_token);
 
-    let (mut call, first) = raw.call(&added.addr, &added.from_node, "renewcall1");
+    let (mut call, first) = raw.call(&added.addr, &call_token, "renewcall1");
     assert!(matches!(first, Some(Msg::Ringing)), "{first:?}");
     let info = incoming_within(&a, 10);
     let t_answer = now();
@@ -559,7 +575,7 @@ fn answering_renews_the_callers_grant_declining_does_not() {
     assert_eq!(new.exp - new.iat, GRANT_TTL);
     raw.hang_up(call);
 
-    let (mut call, first) = raw.call(&added.addr, &added.from_node, "renewcall2");
+    let (mut call, first) = raw.call(&added.addr, &call_token, "renewcall2");
     assert!(matches!(first, Some(Msg::Ringing)), "{first:?}");
     let info = incoming_within(&a, 10);
     a.node.decline(info.call_id).unwrap();
@@ -568,41 +584,47 @@ fn answering_renews_the_callers_grant_declining_does_not() {
     raw.hang_up(call);
 }
 
-// KIND: limitation
-// TODAY a block refuses by DID, not by grant: after `remove_contact` the contact's grant still
-// verifies cryptographically and is not revoked, yet both paths refuse it with the generic
-// "not accepted" (no signed "blocked" notice). EXPECTED-CORRECT (U13 + U5 revised): blocking
-// revokes both tokens and the blocked party gets one DID-signed visible notice, then the same
-// reason on every later attempt.
+// KIND: invariant (flipped by P5+P6; was `block_refuses_by_did_with_the_generic_reason`, which
+// asserted the generic "not accepted" and a grant left untouched)
+// U13 + U5 revised: while blocked, both paths answer with the one signed notice; the block took
+// both tokens back (per-DID cut-off), so after the unblock the same tokens are refused with the
+// generic reason on both paths, nothing rings, and the node's state is unchanged by the attempts.
 #[test]
-fn block_refuses_by_did_with_the_generic_reason() {
+fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
     let a = peer("blk-a");
     let raw = Raw::new();
     let added = raw.add(&a.node.my_ticket().unwrap());
-    a.node.remove_contact(raw.did()).unwrap();
+    let call_token = added.call_from_node.clone().unwrap();
+    a.node.block(raw.did()).unwrap();
+    let (_, first) = raw.call(&added.addr, &call_token, "blkcall0");
+    assert!(matches!(first, Some(Msg::Notice { .. })), "{first:?}");
+    a.node.unblock(raw.did()).unwrap();
     let before = a.dump();
-    // The grant itself is still good: no revocation happened.
+    // The tokens still verify cryptographically: the refusal is the issuer's cut-off.
     verify_from(&a, &raw.did(), &added.from_node);
     for id in ["blkcall1", "blkcall2"] {
-        let (_, first) = raw.call(&added.addr, &added.from_node, id);
+        let (_, first) = raw.call(&added.addr, &call_token, id);
         assert!(is_reject(&first), "{first:?}");
     }
     assert!(raw.chat_auth(&added.addr, &added.from_node).is_none());
-    assert!(a.logged("rejected call: caller is not a contact"));
+    assert!(a.logged("incoming call refused: not accepted"));
     assert!(!saw_incoming(&a));
     assert_eq!(a.dump(), before);
 }
 
-// KIND: limitation
-// TODAY nothing adds to the grant revocation set: `State.revoked` is read on the call and chat
-// paths and copied between own installs, but no production code inserts into it, so the only
-// way to stop a contact's grant is the per-DID block. (Source scan of every non-test file in
-// `crates/core/src`; a new file is not covered until listed here.) EXPECTED-CORRECT (U13):
-// "disallow calls" and blocking revoke the specific tokens.
+// KIND: invariant (P6 decided section 14 Q2: per-DID cut-off, not ids; was
+// `no_code_path_writes_the_grant_revocation_set`, a limitation)
+// Tokens are taken back per DID (`State::cut_offs`), so the id set `State.revoked` is still
+// never written by production code (every renewal mints a new id; revoking by id would leak).
+// It is still read on both admission paths and merged between own installs. (Source scan of
+// every non-test file in `crates/core/src`; a new file is not covered until listed here.)
 #[test]
-fn no_code_path_writes_the_grant_revocation_set() {
+fn tokens_are_taken_back_per_did_never_by_id() {
     let files: &[(&str, &str)] = &[
         ("accounts.rs", include_str!("../src/accounts.rs")),
+        ("block.rs", include_str!("../src/block.rs")),
+        ("caps.rs", include_str!("../src/caps.rs")),
+        ("version.rs", include_str!("../src/version.rs")),
         ("chat/api.rs", include_str!("../src/chat/api.rs")),
         ("chat/blobs.rs", include_str!("../src/chat/blobs.rs")),
         ("chat/crypt.rs", include_str!("../src/chat/crypt.rs")),
@@ -653,8 +675,11 @@ fn no_code_path_writes_the_grant_revocation_set() {
         .collect();
     assert!(
         writes.is_empty(),
-        "something revokes grants now: {writes:?}"
+        "something revokes tokens by id now: {writes:?}"
     );
+    // The cut-offs are what a block and "disallow calls" raise.
+    let caps = include_str!("../src/caps.rs");
+    assert!(caps.contains("cut.call = cut.call.max(now())") && caps.contains("cut.message = cut.message.max(t)"));
     // The one mutable borrow is the account-doc merge from sibling installs.
     let muts: Vec<_> = uses
         .iter()
@@ -694,25 +719,34 @@ fn ticket_contacts_can_message_and_call_each_other() {
     }
 }
 
-// KIND: limitation
-// TODAY the only switch that refuses calls but keeps messages is the GLOBAL availability ("not
-// now"): calls from every contact are refused with the generic reason and never ring, while
-// messages are still delivered. There is no per-contact message-only state. EXPECTED-CORRECT
-// (U13): per contact, a message-only contact is refused calls with a visible reason ("calls not
-// allowed"), while other contacts can still ring.
+// KIND: invariant (flipped by P6; was `only_global_availability_separates_calls_from_messages`,
+// which asserted that only the global "not now" switch could refuse calls but keep messages)
+// U13: per contact. With calls disallowed for b, b's call is refused with the visible reason
+// "calls not allowed" and never rings while its messages are delivered; another contact c still
+// rings a. The global availability switch still works as before.
 #[test]
-fn only_global_availability_separates_calls_from_messages() {
+fn calls_are_refused_per_contact_while_messages_flow() {
     let (a, b) = pair("away");
-    a.node.set_available(false, None).unwrap();
+    let c = peer("away-c");
+    c.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    a.node.allow_calls(b.did.clone(), false).unwrap();
     let call = b.node.call(a.did.clone()).unwrap();
-    assert_eq!(ended_within(&b, &call.call_id, 40), "unreachable");
+    assert_eq!(ended_within(&b, &call.call_id, 40), p2pcore::CALLS_NOT_ALLOWED);
     assert!(!saw_incoming(&a));
-    assert!(b.logged("rejected: not accepted"));
     let m = b
         .node
         .send_text(a.did.clone(), "still here?".into(), None)
         .unwrap();
-    eventually(60, "message delivered while unavailable", || {
+    eventually(60, "message delivered while calls are not allowed", || {
         delivery(&b, &a.did, &m.id) == DeliveryState::Delivered
     });
+    let call = c.node.call(a.did.clone()).unwrap();
+    assert_eq!(incoming_within(&a, 30).peer_did, c.did);
+    c.node.hangup(call.call_id.clone()).unwrap();
+    ended_within(&c, &call.call_id, 30);
+
+    a.node.set_available(false, None).unwrap();
+    let call = c.node.call(a.did.clone()).unwrap();
+    assert_eq!(ended_within(&c, &call.call_id, 40), "unreachable");
+    assert!(c.logged("rejected: not accepted"));
 }

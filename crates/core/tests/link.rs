@@ -355,7 +355,7 @@ fn verified(p: &Peer, did: &str) -> Option<bool> {
 }
 
 #[test]
-fn concurrent_contact_edits_converge_and_removal_wins() {
+fn concurrent_contact_edits_converge_and_the_block_wins() {
     let a = make_peer("s1-a");
     let e = make_peer("s1-e");
     connect(&a, &e);
@@ -370,17 +370,17 @@ fn concurrent_contact_edits_converge_and_removal_wins() {
     assert_eq!(alias(&n, &a.did), Some(Some("Al".into())));
     assert_eq!(verified(&e, &a.did), Some(true));
 
-    // N offline: it edits the contact while E removes it. The removal stands.
+    // N offline: it edits the contact while E blocks it. The block stands; the contact is kept.
     n.node.stop();
     n.node.rename_contact(a.did.clone(), Some("Stale".into())).unwrap();
-    e.node.remove_contact(a.did.clone()).unwrap();
+    e.node.block(a.did.clone()).unwrap();
     n.node.start().unwrap();
     n.node.sync_now_for_test();
-    eventually(40, "N drops A", || !n.node.contacts().iter().any(|c| c.did == a.did));
     assert!(e.node.blocked_for_test().contains(&a.did));
-    eventually(20, "N blocks A", || n.node.blocked_for_test().contains(&a.did));
+    eventually(40, "N blocks A", || n.node.blocked_for_test().contains(&a.did));
+    assert!(n.node.contacts().iter().any(|c| c.did == a.did) && e.node.contacts().iter().any(|c| c.did == a.did));
 
-    // A later ticket scan brings the contact back on both devices.
+    // A later ticket scan lifts the block on both devices.
     std::thread::sleep(Duration::from_millis(1200));
     e.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     eventually(40, "N has A again", || n.node.contacts().iter().any(|c| c.did == a.did));
@@ -399,10 +399,17 @@ fn redeemed_nonces_union_and_strangers_cannot_open_self_sync() {
     let nonces = e.node.redeemed_for_test();
     assert!(!nonces.is_empty());
     eventually(40, "N has the nonce", || n.node.redeemed_for_test() == nonces);
-    // A contact (other DID) is not let into tinline/self/1; our own device is.
+    // A contact (other DID) is not let into tinline/self/3; our own device is.
     assert!(!a.node.self_probe_for_test(dev(&e)));
     assert!(!x.node.self_probe_for_test(dev(&n)));
-    assert!(n.node.self_probe_for_test(dev(&e)));
+    // E and N already hold a live self-sync session, and the acceptor keeps only one per device:
+    // the connection dialled by the lower device key (sync/engine.rs `register_session`). The
+    // acceptor answers `Auth` and then drops a probe that loses that tie-break, so the probe would
+    // fail whenever the live session was dialled by the lower key. Probing *from* the lower key
+    // always wins, so the result reflects admission only. The retry only covers a real dial landing
+    // between the probe's Auth and its read; the stranger/contact checks above stay one-shot.
+    let (lo, hi) = if proto::device_from_text(&dev(&n)).unwrap() < proto::device_from_text(&dev(&e)).unwrap() { (&n, &e) } else { (&e, &n) };
+    eventually(20, "own device let into self-sync", || lo.node.self_probe_for_test(dev(hi)));
 }
 
 #[test]
@@ -653,20 +660,21 @@ fn you_items_sync_between_own_devices_and_never_reach_contacts() {
 }
 
 #[test]
-fn removing_a_contact_on_one_device_removes_the_conversation_on_the_other() {
+fn blocking_a_contact_on_one_device_keeps_the_conversation_on_both() {
     let (a, b1, b2) = trio("c6");
     a.node.send_text(b1.did.clone(), "keep?".into(), None).unwrap();
     eventually(40, "b2 has it", || find_msg(&b2, &a.did, "keep?").is_some());
-    b1.node.remove_contact(a.did.clone()).unwrap();
-    eventually(40, "b2 dropped A", || !b2.node.contacts().iter().any(|c| c.did == a.did));
-    eventually(20, "b2 dropped the conversation", || {
-        b2.node.chat_day(a.did.clone(), None).is_err() && b2.node.chats().unwrap().iter().all(|c| c.peer_did != a.did)
-    });
-    eventually(20, "b2 deleted the docs", || !b2.node.has_chat_docs_for_test(&b2.did, &a.did));
-    // The sync does not bring it back.
+    b1.node.block(a.did.clone()).unwrap();
+    eventually(40, "b2 blocks A", || b2.node.block_state(a.did.clone()).blocked_by_me);
+    // U19: the contact and the history stay on both devices.
     b1.node.sync_now_for_test();
     std::thread::sleep(Duration::from_secs(3));
-    assert!(!b2.node.has_chat_docs_for_test(&b2.did, &a.did) && !b1.node.has_chat_docs_for_test(&b1.did, &a.did));
+    for p in [&b1, &b2] {
+        assert!(p.node.contacts().iter().any(|c| c.did == a.did));
+        assert!(find_msg(p, &a.did, "keep?").is_some());
+        assert!(p.node.chats().unwrap().iter().any(|c| c.peer_did == a.did));
+    }
+    assert!(b2.node.has_chat_docs_for_test(&b2.did, &a.did) && b1.node.has_chat_docs_for_test(&b1.did, &a.did));
 }
 
 #[test]
@@ -675,6 +683,9 @@ fn a_forged_batch_relayed_by_an_own_device_is_rejected() {
     // Genuine control first, so the rejections below are about the forgery and nothing else.
     b2.node.forged_own_batch_for_test(a.did.clone(), 3).unwrap();
     assert!(find_msg(&b2, &a.did, "forged 3").is_some_and(|m| m.outgoing));
+    // The contact's or ours signed by another account's DID key, or a stranger's: the batch is
+    // rejected (P9c: every op must be proven by its author's DID signature; nothing is kept
+    // hidden, since every device reaches the same verdict on the same ops).
     for kind in 0..3u8 {
         assert!(b2.node.forged_own_batch_for_test(a.did.clone(), kind).is_err(), "kind {kind} must be rejected");
         assert!(find_msg(&b2, &a.did, &format!("forged {kind}")).is_none());
@@ -717,4 +728,208 @@ fn presence_follows_the_contact_going_offline_and_back() {
     online(&b.node);
     a.node.watch_presence(b.did.clone());
     eventually(60, "A sees B online again", || a.node.contact_online(b.did.clone()));
+}
+
+#[test]
+fn a_call_after_linking_reaches_the_other_device_from_the_calls_doc() {
+    let (a, b1, b2) = trio("cl");
+    b2.node.stop();
+    let call = a.node.call(b1.did.clone()).unwrap();
+    let id = incoming(&b1, 30);
+    assert_eq!(id, call.call_id);
+    b1.node.decline(id.clone()).unwrap();
+    ended(&b1, &id, 20);
+    // b2 was away for the call; it gets the record when it is back.
+    online(&b2.node);
+    b2.node.sync_now_for_test();
+    eventually(60, "b2 has the call", || b2.node.recent_calls(10).iter().any(|r| r.call_id == id));
+    // Blocking the contact on b2 keeps the calls with them on both devices (U19).
+    b2.node.block(a.did.clone()).unwrap();
+    eventually(60, "b1 holds the block", || b1.node.block_state(a.did.clone()).blocked_by_me);
+    assert!(b1.node.recent_calls(10).iter().any(|r| r.call_id == id));
+}
+
+// ---- linked devices: contacts, history, edits, presence, device names after linking ------------
+
+fn has_contact(p: &Peer, did: &str) -> bool {
+    p.node.contacts().iter().any(|c| c.did == did)
+}
+
+fn contact_list(p: &Peer) -> Vec<(String, String)> {
+    let mut v: Vec<_> = p.node.contacts().into_iter().map(|c| (c.did, c.name)).collect();
+    v.sort();
+    v
+}
+
+/// Waits until device `p` rings for call `id` (rings of other calls are skipped).
+fn rings(p: &Peer, id: &str) {
+    expect(p, 30, "rings", |e| match e {
+        Ev::Incoming(c) if c.call_id == id => Some(()),
+        _ => None,
+    })
+}
+
+/// One call from `from` to `to_did`, ringing on every device in `ring`, answered on the first.
+fn answered_call(from: &Peer, to_did: &str, ring: &[&Peer]) -> String {
+    let call = from.node.call(to_did.to_string()).unwrap();
+    for p in ring {
+        rings(p, &call.call_id);
+    }
+    ring[0].node.answer(call.call_id.clone()).unwrap();
+    eventually(20, "active", || from.node.current_call().is_some());
+    std::thread::sleep(Duration::from_millis(500));
+    from.node.hangup(call.call_id.clone()).unwrap();
+    ended(ring[0], &call.call_id, 20);
+    call.call_id
+}
+
+#[test]
+fn contacts_added_on_either_device_after_linking_reach_the_other() {
+    let e = make_peer("l1-e");
+    let n = link_fresh(&e, "l1-n", true);
+    let (x, y, z, v, w) = (make_peer("l1-x"), make_peer("l1-y"), make_peer("l1-z"), make_peer("l1-v"), make_peer("l1-w"));
+    // Added on the new device: reaches the old one.
+    connect(&x, &n);
+    eventually(40, "E has X (added on N)", || has_contact(&e, &x.did));
+    // Added on the old device: reaches the new one.
+    connect(&y, &e);
+    eventually(40, "N has Y (added on E)", || has_contact(&n, &y.did));
+    // Added while the other device is offline: it gets it when it is back.
+    n.node.stop();
+    connect(&z, &e);
+    online(&n.node);
+    n.node.sync_now_for_test();
+    eventually(60, "N has Z after coming back", || has_contact(&n, &z.did));
+    // Both devices add someone at the same moment: both contacts end up on both.
+    connect(&v, &e);
+    connect(&w, &n);
+    for p in [&e, &n] {
+        eventually(60, "V and W everywhere", || has_contact(p, &v.did) && has_contact(p, &w.did));
+    }
+    same(30, "the same contact list, names included", || (contact_list(&e), contact_list(&n)));
+    assert_eq!(contact_list(&e).len(), 5);
+}
+
+#[test]
+fn a_contact_added_on_one_device_chats_and_calls_with_the_other() {
+    let e = make_peer("l2-e");
+    let n = link_fresh(&e, "l2-n", true);
+    let x = make_peer("l2-x");
+    connect(&x, &n);
+    eventually(40, "E has X", || has_contact(&e, &x.did));
+    eventually(40, "X has us", || has_contact(&x, &e.did));
+    // E never scanned X, yet chats with X both ways, and N sees it all.
+    e.node.send_text(x.did.clone(), "hi from E".into(), None).unwrap();
+    eventually(40, "X has E's message", || find_msg(&x, &e.did, "hi from E").is_some());
+    x.node.send_text(e.did.clone(), "hi back".into(), None).unwrap();
+    for p in [&e, &n] {
+        eventually(40, "our devices have both", || {
+            find_msg(p, &x.did, "hi from E").is_some_and(|m| m.outgoing) && find_msg(p, &x.did, "hi back").is_some_and(|m| !m.outgoing)
+        });
+    }
+    // E calls X, though only N ever scanned X.
+    let out = answered_call(&e, &x.did, &[&x]);
+    // X's call rings both of our devices, though only N scanned X.
+    let call = answered_call(&x, &e.did, &[&n, &e]);
+    // Every one of those calls is in both devices' history.
+    for p in [&e, &n] {
+        eventually(40, "all calls in history", || {
+            let ids: Vec<String> = p.node.recent_calls(50).into_iter().map(|r| r.call_id).collect();
+            [&out, &call].iter().all(|id| ids.contains(id))
+        });
+    }
+}
+
+#[test]
+fn everything_from_before_the_link_reaches_a_new_device_and_a_third_one_later() {
+    let a = make_peer("l3-a");
+    let e = make_peer("l3-e");
+    connect(&a, &e);
+    a.node.send_text(e.did.clone(), "from A before".into(), None).unwrap();
+    eventually(40, "E has it", || find_msg(&e, &a.did, "from A before").is_some());
+    e.node.send_text(a.did.clone(), "from E before".into(), None).unwrap();
+    eventually(40, "A has it", || find_msg(&a, &e.did, "from E before").is_some());
+    let call = answered_call(&a, &e.did, &[&e]);
+    e.node.rename_contact(a.did.clone(), Some("Ali".into())).unwrap();
+    e.node.set_verified(a.did.clone(), true).unwrap();
+
+    let n = link_fresh(&e, "l3-n", true);
+    let check = |p: &Peer| {
+        has_contact(p, &a.did)
+            && alias(p, &a.did) == Some(Some("Ali".into()))
+            && verified(p, &a.did) == Some(true)
+            && find_msg(p, &a.did, "from A before").is_some_and(|m| !m.outgoing)
+            && find_msg(p, &a.did, "from E before").is_some_and(|m| m.outgoing)
+            && p.node.recent_calls(50).iter().any(|r| r.call_id == call)
+    };
+    eventually(90, "N has contact, alias, verified, chat and call from before", || check(&n));
+    // A third device linked later gets all of it too, plus what N added.
+    n.node.send_text(a.did.clone(), "from N".into(), None).unwrap();
+    eventually(40, "E has N's message", || find_msg(&e, &a.did, "from N").is_some());
+    let t = link_fresh(&e, "l3-t", false);
+    eventually(90, "the third device has everything", || check(&t) && find_msg(&t, &a.did, "from N").is_some_and(|m| m.outgoing));
+    eventually(40, "three devices everywhere", || {
+        [&e, &n, &t].iter().all(|p| p.node.linked_devices().iter().filter(|d| !d.removed).count() == 3)
+    });
+}
+
+#[test]
+fn edits_and_deletes_on_one_device_show_on_the_other_and_at_the_contact() {
+    let (a, b1, b2) = trio("l4");
+    let m = b1.node.send_text(a.did.clone(), "helo".into(), None).unwrap();
+    eventually(40, "b2 and A have it", || find_msg(&b2, &a.did, "helo").is_some() && find_msg(&a, &b1.did, "helo").is_some());
+    // Edited on the device that did not send it.
+    b2.node.edit_message(a.did.clone(), m.id.clone(), "hello".into()).unwrap();
+    for (p, other) in [(&b1, &a.did), (&a, &b1.did)] {
+        eventually(40, "the edit everywhere", || find_msg(p, other, "hello").is_some_and(|x| x.id == m.id && x.edited_at.is_some()));
+    }
+    // Deleted on the sending device: gone on our other device and at the contact.
+    b1.node.delete_message(a.did.clone(), m.id.clone()).unwrap();
+    for (p, other) in [(&b2, &a.did), (&a, &b1.did)] {
+        eventually(40, "deleted everywhere", || all_msgs(p, other).iter().any(|x| x.id == m.id && x.deleted && x.text.is_empty()));
+    }
+}
+
+#[test]
+fn presence_on_both_of_our_devices_and_for_a_contact_with_two_devices() {
+    let (a, b1, b2) = trio("l5");
+    // Both of B's devices see A.
+    for p in [&b1, &b2] {
+        p.node.watch_presence(a.did.clone());
+    }
+    eventually(40, "b1 and b2 see A online", || b1.node.contact_online(a.did.clone()) && b2.node.contact_online(a.did.clone()));
+    // A sees B online while any of B's devices is.
+    a.node.watch_presence(b1.did.clone());
+    eventually(40, "A sees B online", || a.node.contact_online(b1.did.clone()));
+    b1.node.stop();
+    b2.node.watch_presence(a.did.clone());
+    std::thread::sleep(Duration::from_secs(3));
+    eventually(40, "A still sees B (b2 is up)", || {
+        a.node.watch_presence(b1.did.clone());
+        a.node.contact_online(b1.did.clone())
+    });
+    b2.node.stop();
+    eventually(60, "A sees B offline", || !a.node.contact_online(b1.did.clone()));
+    // And A going away shows on both of B's devices.
+    online(&b1.node);
+    online(&b2.node);
+    for p in [&b1, &b2] {
+        p.node.watch_presence(a.did.clone());
+    }
+    eventually(60, "both see A again", || b1.node.contact_online(a.did.clone()) && b2.node.contact_online(a.did.clone()));
+    a.node.stop();
+    eventually(60, "both see A offline", || !b1.node.contact_online(a.did.clone()) && !b2.node.contact_online(a.did.clone()));
+}
+
+#[test]
+fn renaming_a_device_reaches_the_other_device() {
+    let e = make_peer("l6-e");
+    e.node.set_device_label("Desktop".into()).unwrap();
+    let n = link_fresh(&e, "l6-n", true);
+    e.node.rename_device(dev(&n), "Work phone".into()).unwrap();
+    eventually(40, "N is renamed on N", || n.node.device_label().as_deref() == Some("Work phone"));
+    n.node.set_device_label("Laptop at home".into()).unwrap();
+    let label_of = |p: &Peer, d: &str| p.node.linked_devices().into_iter().find(|x| x.device == d).map(|x| x.label);
+    eventually(40, "E sees N's own rename", || label_of(&e, &dev(&n)).as_deref() == Some("Laptop at home"));
+    eventually(40, "N sees E's label", || label_of(&n, &dev(&e)).as_deref() == Some("Desktop"));
 }

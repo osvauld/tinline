@@ -285,6 +285,8 @@ enum Reject {
     Invalid(proto::Error),
     NotNewer,
     Frozen,
+    /// P4: seq more than `proto::MAX_LIST_SEQ_AHEAD_MS` ahead of the receiver's clock.
+    TooFarAhead,
     UnknownAuthor,
     BadContentSignature,
 }
@@ -306,6 +308,8 @@ struct View {
     superseded: Vec<Key>,
     inbox: Vec<String>,
     notice: Option<BlockNotice>,
+    /// The receiver's clock in the model's ticks (read as ms by `proto::list_seq_in_bounds`).
+    now: u64,
 }
 
 impl View {
@@ -323,6 +327,7 @@ impl View {
             superseded: Vec::new(),
             inbox: Vec::new(),
             notice: None,
+            now: 0,
         }
     }
     fn with_fork(mut self, f: Fork) -> Self {
@@ -351,6 +356,10 @@ impl View {
     /// Atomic: every `Err` leaves the view byte-for-byte unchanged.
     fn accept_list(&mut self, blob: &SignedBlob) -> Result<(), Reject> {
         let list = verify_device_list(blob, &self.owner).map_err(Reject::Invalid)?;
+        // P4 (production `merge_device_list`): refuse a seq too far ahead of our clock.
+        if !proto::list_seq_in_bounds(list.seq, self.now) {
+            return Err(Reject::TooFarAhead);
+        }
         let keys: Vec<Key> = list
             .devices
             .iter()
@@ -949,21 +958,25 @@ fn any_phrase_holder_can_push_a_list_that_drops_the_honest_installs() {
     assert_eq!(alice.held, Some(honest));
 }
 
-// KIND: limitation
-// Worse: a holder signs at `seq = u64::MAX`. No later list can be newer (`newer` compares seq
-// first), so contacts are pinned to the hostile list forever; the honest install cannot even
-// sign above it (`prev + 1` would overflow). Only a new identity escapes. Expected-correct:
-// POLICY-GATED (G-FORK / G-AUTHORITY: bound seq to time, or a separate authority).
+// KIND: invariant (was a limitation; fixed by P4)
+// A holder signs at `seq = u64::MAX`. Before P4 contacts took it and no later list could be newer
+// (`newer` compares seq first): pinned forever. Now the receiver refuses any seq more than
+// `proto::MAX_LIST_SEQ_AHEAD_MS` (one day, PROVISIONAL (coordinator)) ahead of its clock, so the
+// view is unchanged and the honest list still wins. Residual: a holder can still sign up to a day
+// ahead, which wins until honest lists catch up with the clock (a one-day seq war, not forever).
 #[test]
-fn a_max_seq_list_pins_contacts_to_it_forever() {
+fn a_max_seq_list_is_refused_by_the_seq_bound() {
     let (mut b1, mut alice, _carol, _dave) = bob_with_contacts();
     let thief = owner(BOB);
     let pinned = sign_device_list(&thief, &[(pk(&dev(7, 0)), None)], u64::MAX);
-    alice.accept_list(&pinned).unwrap();
-    let honest = b1.resign(1_000_000);
     let before = alice.snap();
-    assert_eq!(alice.accept_list(&honest), Err(Reject::NotNewer));
+    assert_eq!(alice.accept_list(&pinned), Err(Reject::TooFarAhead));
     assert_eq!(alice.snap(), before);
+    let ahead = sign_device_list(&thief, &[(pk(&dev(7, 0)), None)], proto::MAX_LIST_SEQ_AHEAD_MS + 1);
+    assert_eq!(alice.accept_list(&ahead), Err(Reject::TooFarAhead));
+    let honest = b1.resign(1_000_000);
+    deliver(&mut b1, &mut alice).unwrap().unwrap();
+    assert_eq!(alice.held, Some(honest));
 }
 
 // ---- 7. block exclusion depends on the block reaching every own install -----------------------

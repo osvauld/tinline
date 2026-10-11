@@ -13,6 +13,14 @@ pub const SANS: Font = Font::with_name("Figtree");
 pub const SANS_SEMI: Font = Font { weight: font::Weight::Semibold, ..Font::with_name("Figtree") };
 pub const SANS_BOLD: Font = Font { weight: font::Weight::Bold, ..Font::with_name("Figtree") };
 pub const MONO: Font = Font::with_name("IBM Plex Mono");
+/// The colour emoji font of the platform: without it a text font's plain glyphs (DejaVu has some)
+/// win the fallback and emojis show black and white.
+#[cfg(target_os = "windows")]
+pub const EMOJI: Font = Font::with_name("Segoe UI Emoji");
+#[cfg(target_os = "macos")]
+pub const EMOJI: Font = Font::with_name("Apple Color Emoji");
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+pub const EMOJI: Font = Font::with_name("Noto Color Emoji");
 
 const fn rgb(hex: u32) -> Color {
     Color {
