@@ -1,6 +1,6 @@
 # Video calls (spike: `crates/video`)
 
-Status: design + simulation; wired into 1:1 calls in the core (no UI yet).
+Status: design + simulation; wired into 1:1 calls in the core; Android UI (camera, render, call screen).
 
 ## Decisions
 
@@ -352,6 +352,80 @@ Expect ~4-8x these on the phone's A53 cores (to be measured; keep conversion on 
 fast cores too). Cheapest capture: ask CameraX for a size whose aspect matches the encoder
 (crop-only or exact 2:1), since the general (non-integer) scaler is the slow path.
 
+## Android app (capture, render, UI)
+
+Files: `VideoIo.kt` (the only place frames cross the FFI), `CallVideo.kt` (state, CameraX,
+`RemoteRenderer`), `CallScreens.kt` (`VideoCallContent`), Settings "Video in calls".
+
+- **State**: `CallVideo` implements `VideoEvents`; the call screen shows the video layout once
+  `negotiated` and either camera is on, otherwise the voice layout with a Camera button (only
+  when negotiated; no button for an audio-only call). Camera off by default in every call.
+- **Capture**: CameraX `ImageAnalysis`, `YUV_420_888`, `STRATEGY_KEEP_ONLY_LATEST`, 640x480 (4:3,
+  closest lower), front camera by default (flip button rebinds), plus a `Preview` into a
+  `PreviewView` (TextureView mode) for the self-view, which CameraX mirrors for the front camera;
+  the sent picture is not mirrored. Analyzer thread `tl-camera`: `VideoIo.push` packs the planes
+  to I420 once (bulk copy for Y, de-interleave for pixel stride 2) and calls
+  `push_video_frame(w, h, rotationDegrees, i420)`; the core rotates and scales. With V8's
+  `push_video_frame_yuv` the packing goes and `push` is one call.
+- **Render**: `RemoteRenderer` runs a `Choreographer` on its own `HandlerThread`
+  (`tl-video-render`): every vsync `pull_video_frame()`; on a new frame, I420 -> ARGB in Kotlin
+  (BT.601 limited, fixed point) into one of two alternating `Bitmap`s, published to a Compose
+  `Canvas` that draws it cropped to fill the screen. Nothing on the main thread but the draw.
+  With V8's `pull_video_frame_rgba` the conversion goes (`copyPixelsFromBuffer`). Later: the
+  `ANativeWindow` path above (no Bitmap, no per-frame JNI).
+- **Permission**: CAMERA is asked for when the user first taps the camera button (it is also
+  used for QR scanning); refused -> "Camera permission needed - they can still hear you" and
+  the call goes on audio only.
+- **Lifecycle**: capture only while the call screen is visible. CameraX is bound to the
+  `CallActivity` lifecycle and unbound when the self-view leaves composition (camera off, call
+  ended). `onStop` (home, minimise, screen off) turns the camera off in the core (`set_camera
+  (false)`, so the peer sees the avatar rather than a frozen picture) and `onStart` turns it
+  back on. So `CoreService` needs no `camera` foreground-service type (Android 14 requires it
+  only for capture from the background, which we don't do).
+- **Audio route**: turning the camera on moves audio to the speaker (a video call is held
+  away from the ear; that also releases the proximity wake lock).
+- **Debug hooks** (`DebugReceiver`): `video_stats`, `camera on=1|0`, `flip`, `video_enabled
+  on=1|0`, `callscreen`; during a video call `video_stats` is also logged every second.
+
+**E2E** (`scripts/e2e_android_video.py`, emulator + `p2p-peer`): phone calls desk, desk answers
+with `--video-pattern 640x480`, the phone turns on its (virtual scene) camera; checks frames
+sent/decoded/rendered on both sides, no decode errors, both see the other's camera on; saves a
+screenshot of the call screen and the desk's last decoded frame. Then desk calls phone with
+`--no-video`: the phone sees `negotiated=false` and the call carries audio.
+
+Results on the x86_64 emulator (`osvauld-api35`, virtual-scene camera, host load 2.5-6 from
+other builds; `python3 scripts/e2e_android_video.py`): passes. Screenshot
+`docs/video-screens/android-video-call.png` (desk's pattern full screen, the emulator's camera in
+the corner), and `android-video-call-desk.png` (what the desk decoded from the phone's camera).
+HOME during a video call -> `local=false` at once, CameraX released (no active camera client),
+the desk sees `remote=false`; back to the call screen -> camera on again, new keyframe.
+
+Per frame, Kotlin side, emulator (moving average; ranges over runs):
+
+| step | size | ms |
+|---|---|---|
+| `VideoIo.push` pack YUV_420_888 -> I420 | 640x480 | 0.11-0.15 (up to 4 under load) |
+| `push_video_frame` call (FFI copy of 460 KB) | 640x480 | 4.6-5.7, 15-46 under load |
+| `pull_video_frame` call (FFI copy) | 240x180 | 1.3-2 (up to 10) |
+| I420 -> ARGB + `setPixels` | 240x180 | 1.7-2.6 (up to 10) |
+
+- **The FFI copy is the expensive part**, not the Kotlin conversion: UniFFI lowers a `ByteArray`
+  by copying it into a RustBuffer and again into the `Vec`, through JNA. At 640x480 that is ~5 ms
+  a frame on the emulator and it capped the phone's capture at 10-30 pushed frames/s when the
+  host was busy. V8's strided-planes push should take direct `ByteBuffer`s (no copy, pointer
+  into the camera buffer) rather than byte arrays; the RGBA pull likewise, or go straight to
+  `ANativeWindow`.
+- **Colour**: the desk's picture of the phone's camera has washed-out, clipped whites: the camera's
+  full-range Y goes through `push_video_frame` as if limited range. V8's `full_range` flag
+  (`video::convert` `Range::Full`) fixes it.
+- **Rate control on the emulator**: the phone sent 180x240 at its 500 kbps ceiling (the ladder
+  doesn't step up: the emulator's encode times, 1-55 ms, predict too slow for 360p). The desk's
+  video to the phone ramped to 480x360 at 1.2 Mbps, then at ~4 s dropped to 240x180 at the
+  100 kbps floor and stayed there for the remaining 20 s (0 decode errors, ~20 fps decoded).
+  So the phone's receiver keeps reporting queueing delay: the emulator's NAT (slirp) path and a
+  busy VM. Not reproduced on real devices yet; worth a check on the phone before blaming
+  `media` (the simulated controller recovers from drops in a few seconds).
+
 ## Real transport vs simulation
 
 `video::net` over real iroh connections through an in-process UDP link emulator
@@ -416,5 +490,6 @@ Findings:
 4. ~~Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.~~ done
    (see Call protocol and core API).
 5. Capture/render: Android CameraX -> I420, desktop camera; render on both. Pure-Rust
-   conversion done (`video::convert`, above); still to do: use it in the core's encoder thread,
-   CameraX/desktop capture glue and the renderers, phone numbers for `convert_bench`.
+   conversion done (`video::convert`, above). Android capture/render/UI done (see Android app);
+   still to do: use the conversion in the core's encoder thread, zero-copy FFI for frames,
+   desktop capture glue and renderer, phone numbers for `convert_bench`, a run on real phones.
