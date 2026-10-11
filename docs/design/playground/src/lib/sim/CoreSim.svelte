@@ -6,7 +6,6 @@
   import { setTimeScale } from '../fx/motion';
   import { audio, PALETTES, type Palette } from '../fx/audio';
   import { nav } from '../nav/router.svelte';
-  import { call } from '../calls/call.svelte';
 
   let sound = $state(!audio.quiet);
   let slow = $state(false);
@@ -47,14 +46,6 @@
       <option value="ready">Signed in</option><option value="locked">Locked</option><option value="onboarding">New install (sign-up)</option>
     </select>
   </div>
-  <div class="row"><span>Call signal</span>
-    <span class="btns">
-      <button type="button" aria-pressed={call.phase === 'incoming'} onclick={() => call.set('incoming', 'arjun')}>Incoming</button>
-      <button type="button" aria-pressed={call.phase === 'outgoing'} onclick={() => call.set('outgoing', 'arjun')}>Outgoing</button>
-      <button type="button" aria-pressed={call.phase === 'active'} onclick={() => call.set('active')}>Connect</button>
-      <button type="button" onclick={() => call.set('idle')}>End</button>
-    </span>
-  </div>
   <button type="button" class="reset" onclick={() => { resetDb(); nav.reset(); }}>Reset all data</button>
 </div>
 
@@ -63,7 +54,6 @@
   .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; font-size: var(--fs-sub); }
   .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   .prop { font-style: normal; font-size: 11px; color: var(--gold-ink, var(--muted)); margin-inline-start: 4px; }
-  button[aria-pressed='true'] { background: var(--accent-soft); border-color: transparent; }
   button:not([role]) { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 10px; font-size: var(--fs-sub); cursor: pointer; }
   select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 8px; font-size: var(--fs-sub); }
   .reset { margin-top: 8px; }

@@ -15,6 +15,7 @@
   import { prefs } from '../../lib/model/prefs.svelte';
   import { motion } from '../../lib/fx/reduced.svelte';
   import { nav } from '../../lib/nav/router.svelte';
+  import { call } from '../../lib/calls/call.svelte';
   import {
     SAMPLE_FILES, SIM, attachFile, cancelFile, canDelete, canEdit, canPost, deleteMessage, firstUnreadId, retryMessage, waitingReason,
     type Undo,
@@ -100,8 +101,8 @@
     return peer && !peer.online ? { text: `${fname} is offline. Messages send when you’re both online.`, icon: 'off' } : null;
   });
 
-  /** Wired by the lead in PLAN step 3 (call machine). The header button and call-record pills land here. */
-  function startCall() { /* intentionally empty until step 3 */ }
+  /** Header button and call-record pills. The machine refuses blocked / message-only people; group calls are step 6. */
+  function startCall() { if (c?.kind === 'direct') call.place(c.person); }
   function openDetails() {
     if (!c) return;
     nav.push(c.kind === 'group' ? { name: 'groupInfo', chat: c.id } : { name: 'contact', person: c.person });

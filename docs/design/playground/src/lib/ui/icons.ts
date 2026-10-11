@@ -42,5 +42,7 @@ export const ICONS: Record<string, string> = {
   "battery": "<rect x=\"2\" y=\"7\" width=\"17\" height=\"10\" rx=\"2\"/><path d=\"M22 11v2M6 10v4M10 10v4\"/>",
   "qr": "<path d=\"M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2M14 18h2v2h4v-2\"/>",
   "link": "<path d=\"M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1\"/>",
+  "call-out": "<path d=\"M7 17L17 7M9 7h8v8\"/>",
+  "call-in": "<path d=\"M17 7L7 17M15 17H7V9\"/>",
 };
 export type IconName = keyof typeof ICONS;

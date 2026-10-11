@@ -138,7 +138,7 @@ export function addCallRecord(chatId: Id, rec: CallRecord) {
   if (!c) return;
   const from = rec.direction === 'out' ? 'me' : isDirect(c) ? c.person : 'me';
   pushMessage(c, { from, text: '', call: rec });
-  if (rec.direction === 'in' && nav.openChat !== c.id) c.unread++;
+  if (rec.direction === 'in' && rec.outcome === 'missed' && nav.openChat !== c.id) c.unread++;
 }
 
 export const openChatRead = (c: Chat) => markRead(c);

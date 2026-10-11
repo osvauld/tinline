@@ -18,6 +18,8 @@
     if (el) hl = { y: el.offsetTop, h: el.offsetHeight, ready: true };
   });
   import { statusLook } from '../../lib/brand/status.svelte';
+  import CallStrip from '../../lib/calls/CallStrip.svelte';
+  import CallLayer from '../../lib/calls/CallLayer.svelte';
   const look = $derived(statusLook());
 
   const L = $derived(TAB_LISTS[nav.tab]);
@@ -29,6 +31,7 @@
   <div class="gate" data-form-gate><GATE.component {...GATE.props(null)} /></div>
 {:else}
 <div class="win">
+  <div class="callstrip"><CallStrip /></div>
   <aside class="side">
     <div class="brand"><span class="st" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /><span class="vh" aria-live="polite">{look.label}</span></span><b>Tinline</b></div>
     <nav aria-label="Main" bind:this={navEl}>
@@ -59,13 +62,17 @@
       <div class="empty"><Mark size={56} /><b>Choose a chat</b><span>Messages stay on your devices.</span></div>
     {/if}
   </section>
+  <CallLayer />
 </div>
 {/if}
 
 <style>
   .st { display: inline-flex; }
   .gate { height: 100%; overflow: auto; background: var(--bg); }
-  .win { display: grid; grid-template-columns: 232px 380px 1fr; height: 100%; background: var(--bg); }
+  .win { position: relative; display: grid; grid-template-columns: 232px 380px 1fr; grid-template-rows: auto minmax(0, 1fr); height: 100%; background: var(--bg); }
+  .callstrip { grid-column: 2 / 4; grid-row: 1; min-width: 0; }
+  .side { grid-row: 1 / 3; }
+  .listpane, .detail { grid-row: 2; }
   .side { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; border-inline-end: 1px solid var(--hairline); }
   .brand { display: flex; align-items: center; gap: 8px; font-size: 19px; padding: 4px 8px 16px; }
   nav { display: grid; gap: 2px; position: relative; }

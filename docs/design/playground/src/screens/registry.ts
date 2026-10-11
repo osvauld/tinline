@@ -4,6 +4,7 @@ import type { Route, Tab } from '../lib/nav/router.svelte';
 import ChatsList from './home/ChatsList.svelte';
 import Conversation from './chat/Conversation.svelte';
 import Placeholder from './Placeholder.svelte';
+import CallsList from './calls/CallsList.svelte';
 import Gate from './gate/Gate.svelte';
 
 type Entry = { component: Component<any>; props: (r: any) => Record<string, unknown> };
@@ -16,7 +17,7 @@ export const GATE: Entry = { component: Gate, props: () => ({}) };
 export const TAB_LISTS: Record<Tab, Entry & { title: string }> = {
   chats: { title: 'Chats', component: ChatsList, props: () => ({}) },
   groups: { title: 'Groups', ...ph('Groups', '4') },
-  calls: { title: 'Calls', ...ph('Calls', '3') },
+  calls: { title: 'Calls', component: CallsList, props: () => ({}) },
   contacts: { title: 'Contacts', ...ph('Contacts', '8') },
 };
 

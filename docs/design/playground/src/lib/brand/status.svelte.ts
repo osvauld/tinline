@@ -10,7 +10,9 @@ export function statusLook(): MarkLook {
   switch (call.phase) {
     case 'incoming': return { state: 'ringing', sway: { period: 1.6, amp: 12 }, label: 'Incoming call' };
     case 'outgoing': return { state: 'ringing', sway: { period: 2.0, amp: 9 }, label: 'Calling' };
+    case 'connecting': return { state: 'ringing', sway: { period: 1.2, amp: 6 }, label: 'Connecting' };
     case 'active': return { state: 'taut', label: 'In a call' };
+    case 'reconnecting': return { state: 'ringing', sway: { period: 2.0, amp: 4 }, label: 'Reconnecting' };
   }
   switch (connection.state) {
     case 'offline': return { state: 'slack', dim: true, label: 'No connection' };

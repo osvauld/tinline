@@ -100,6 +100,7 @@ export function seedChats(): Chat[] {
       msg({ from: 'me', at: at(21, 14, 1), text: 'Yes, train was on time for once', delivery: 'delivered' }),
       msg({ from: 'me', at: at(21, 15, 1), text: 'Thanks for dinner. That place was great', delivery: 'delivered' }),
       msg({ from: 'arjun', at: at(21, 20, 1), text: 'Anytime 🙂' }),
+      msg({ from: 'me', at: at(21, 32, 1), text: '', call: { kind: 'voice', outcome: 'answered', durationS: 742, direction: 'out' } }),
       msg({ from: 'arjun', at: at(12, 36), text: 'Are we still on for the call about the flat?' }),
       after6,
       msg({ from: 'me', at: at(12, 39), text: 'I’ll call from the office, it’s quieter there', delivery: 'delivered' }),
@@ -112,11 +113,13 @@ export function seedChats(): Chat[] {
     ], { draft: 'Lunch Thursday?' }),
     direct('sana', [
       msg({ from: 'sana', at: at(8, 20), text: 'Sent the draft to your laptop too' }),
-    ]),
+      msg({ from: 'sana', at: at(9, 2), text: '', call: { kind: 'voice', outcome: 'missed', durationS: 0, direction: 'in' } }),
+    ], { unread: 1 }),
     family,
     direct('meera', [
       msg({ from: 'meera', at: at(17, 40, 1), text: 'Can you send the scan when you’re back online?' }),
       msg({ from: 'me', at: at(17, 46, 1), text: 'Running 10 minutes late, sorry', delivery: 'waiting' }),
+      msg({ from: 'me', at: at(17, 50, 1), text: '', call: { kind: 'voice', outcome: 'failed', durationS: 0, direction: 'out' } }),
     ]),
     book,
   ];

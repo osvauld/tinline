@@ -9,6 +9,8 @@
   import Mark from '../../lib/brand/Mark.svelte';
   import TabPanel, { rememberScroll } from '../../lib/ui/TabPanel.svelte';
   import { statusLook } from '../../lib/brand/status.svelte';
+  import CallStrip from '../../lib/calls/CallStrip.svelte';
+  import CallLayer from '../../lib/calls/CallLayer.svelte';
   const look = $derived(statusLook());
 
   const top = $derived(nav.top);
@@ -19,6 +21,8 @@
   <div class="gate" data-form-gate><GATE.component {...GATE.props(null)} /></div>
 {:else}
 <div class="phone">
+  <CallStrip />
+  <div class="vp">
   {#if top.name === 'home'}
     {@const L = TAB_LISTS[top.tab]}
     <header class="appbar">
@@ -49,6 +53,8 @@
       </section>
     {/key}
   {/if}
+  </div>
+  <CallLayer />
 </div>
 {/if}
 
@@ -56,6 +62,7 @@
   .st { display: inline-flex; }
   .gate { height: 100%; overflow: auto; background: var(--bg); }
   .phone { position: relative; display: flex; flex-direction: column; height: 100%; background: var(--bg); overflow: hidden; }
+  .vp { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .appbar { display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 4px 8px 0 12px; }
   .brand { display: inline-flex; align-items: center; gap: 8px; font-size: 19px; }
   .acts { display: flex; }
