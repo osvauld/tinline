@@ -257,8 +257,9 @@ fn video_refused_call_stays_audio_only() {
     assert!(s.received > 10 && !s.reconnecting, "{s:?}");
     assert_eq!(a.node.call_stats().unwrap().state, CallState::Active);
     b.node.hangup(id.clone()).unwrap();
-    expect(&a, 10, "ended", |e| match e {
-        Ev::State(i, CallState::Ended { reason }) if *i == id => Some(assert_eq!(reason, "hangup_remote")),
+    let reason = expect(&a, 10, "ended", |e| match e {
+        Ev::State(i, CallState::Ended { reason }) if *i == id => Some(reason.clone()),
         _ => None,
     });
+    assert_eq!(reason, "hangup_remote");
 }

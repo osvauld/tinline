@@ -530,8 +530,7 @@ impl Node {
     /// display's clock. Nothing while the peer's camera is off.
     pub fn pull_video_frame(&self) -> Option<VideoFrame> {
         let call = self.inner.current_video_call()?;
-        let f = call.video.pipe.output.lock().take();
-        f
+        call.video.pipe.output.lock().take()
     }
 
     pub fn video_info(&self) -> Option<VideoInfo> {
