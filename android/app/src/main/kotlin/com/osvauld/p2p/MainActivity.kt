@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
         intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
-        if (savedInstanceState == null) CardInbox.take(intent)
+        if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent) }
         setContent { TinlineTheme { Root(app) } }
     }
 
@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
         CardInbox.take(intent)
+        GroupLinkInbox.take(intent)
     }
 }
 
@@ -78,6 +79,21 @@ private sealed interface Route {
     data object Devices : Route
     data class DeviceDetail(val device: String) : Route
     data object LinkDevice : Route
+    /** PLACEHOLDER groups & privacy preview (debug builds, [PreviewFlags]). */
+    data class Preview(val start: PRoute) : Route
+    /** Settings › Blocked people (real data). */
+    data object Blocked : Route
+    /** Group chat on the core (GroupsLive.kt). */
+    data class Group(val id: String) : Route
+    data class GroupInfo(val id: String) : Route
+    /** The invite link with its QR (G3). */
+    data class GroupToken(val id: String) : Route
+    /** Pick contacts to invite (G3). */
+    data class AddMembers(val id: String) : Route
+    data class GroupRemoval(val id: String) : Route
+    data object NewGroup : Route
+    /** [token]: a tapped tinline://g/ link, prefilled. */
+    data class JoinGroup(val token: String? = null) : Route
 }
 
 @Composable
@@ -99,6 +115,8 @@ private fun Root(app: P2pApp) {
     var pendingCall by remember { mutableStateOf<String?>(null) }
     // Back stack. Not saved: the recovery phrase may sit in it, and Home is a fine place to restart.
     val stack = remember { mutableStateListOf<Route>(Route.Home) }
+    // Home's tab survives opening a chat or group and coming back.
+    val homeTab = rememberSaveable { mutableStateOf(HomeTab.Chats) }
     fun pop() { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
     fun home() { stack.clear(); stack.add(Route.Home) }
     fun say(msg: String) { scope.launch { snack.currentSnackbarData?.dismiss(); snack.showSnackbar(msg) } }
@@ -134,6 +152,13 @@ private fun Root(app: P2pApp) {
 
     fun place(did: String) {
         callError = null
+        // Either side blocking, or someone no longer a contact: no call (the core refuses it too).
+        val isContact = contacts.any { it.did == did }
+        val bs = app.blocks.value.composer(did, isContact)
+        if (app.blocks.value.callGate(did, isContact) != CallGate.Ok) {
+            val name = contacts.firstOrNull { it.did == did }?.display() ?: app.chat.chats.value.firstOrNull { it.peerDid == did }?.peerName ?: ""
+            say(BlockCopy.cantCall(name, bs)); return
+        }
         scope.launch {
             val r = withContext(Dispatchers.IO) { app.calls.place(did) }
             r.onFailure { callError = it.message ?: "Couldn\u2019t start the call" }
@@ -179,6 +204,15 @@ private fun Root(app: P2pApp) {
         }
     }
 
+    // A tapped tinline://g/ link opens Join with it (G3).
+    val groupLink by GroupLinkInbox.link.collectAsState()
+    LaunchedEffect(groupLink, has, lock) {
+        val l = groupLink ?: return@LaunchedEffect
+        if (has && lock == LockState.UNLOCKED) { GroupLinkInbox.link.value = null; stack.add(Route.JoinGroup(l)) }
+    }
+    // "Leo accepted your request" and the like, once.
+    val groupNotice by app.groups.notice.collectAsState()
+    LaunchedEffect(groupNotice) { groupNotice?.let { say(it); app.groups.clearNotice() } }
     val unlinkedName by app.unlinked.collectAsState()
     // The account went away (unlinked here or from another device): leave whatever screen was open.
     LaunchedEffect(has) { if (!has) home() }
@@ -206,7 +240,17 @@ private fun Root(app: P2pApp) {
                     app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onPaste = { stack.add(Route.Add(false, paste = true)) }, onSettings = { stack.add(Route.Settings) },
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
+                    homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
+                    say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
                 )
+                is Route.Group -> GroupChatLive(app, r.id, onBack = ::pop, onInfo = { stack.add(Route.GroupInfo(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say)
+                is Route.GroupInfo -> GroupInfoLive(app, r.id, onBack = ::pop, onLink = { stack.add(Route.GroupToken(r.id)) }, onAddMembers = { stack.add(Route.AddMembers(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say,
+                    onChat = { stack.add(Route.Chat(it)) })
+                is Route.GroupToken -> GroupTokenLive(app, r.id, onBack = ::pop)
+                is Route.AddMembers -> AddMembersLive(app, r.id, onBack = ::pop, say = ::say)
+                is Route.GroupRemoval -> GroupRemovalLive(app, r.id, onBack = ::pop)
+                Route.NewGroup -> NewGroupLive(app, onBack = ::pop, onCreated = { pop(); stack.add(Route.Group(it)) })
+                is Route.JoinGroup -> JoinGroupLive(app, r.token, onBack = ::pop, onJoined = { pop(); stack.add(Route.Group(it)); say("You joined the group.") })
                 Route.NewChat -> {
                     val chats by app.chat.chats.collectAsState()
                     val last = remember(chats) { chats.filter { it.lastActivity > 0UL }.associate { it.peerDid to "Last message ${listTime(it.lastActivity.toLong(), System.currentTimeMillis())}" } }
@@ -218,7 +262,11 @@ private fun Root(app: P2pApp) {
                     val c = contacts.firstOrNull { it.did == r.did }
                     val self = r.did == app.currentDid()
                     val name = if (self) "You" else c?.display() ?: chats.firstOrNull { it.peerDid == r.did }?.peerName?.ifBlank { null } ?: "Unknown"
-                    ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self)
+                    val blocks by app.blocks.collectAsState()
+                    ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self,
+                        block = if (self) null else ConvBlock(blocks.of(r.did), blocks.composer(r.did, c != null), blocks.callGate(r.did, c != null)),
+                        onUnblock = { app.unblock(r.did) }, onAddContact = { stack.add(Route.Add(true)) },
+                        notDelivered = { id -> app.notDeliveredReason(r.did, id) })
                 }
                 Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
                 is Route.Add -> AddContactScreen(app, r.scan, r.ticket, r.paste, onClose = ::pop,
@@ -227,10 +275,13 @@ private fun Root(app: P2pApp) {
                     val c = contacts.firstOrNull { it.did == r.did }
                     if (c == null) LaunchedEffect(Unit) { pop() }
                     else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onMessage = { stack.add(Route.Chat(c.did)) }, onVerify = { stack.add(Route.Verify(c.did)) },
+                        block = app.blocks.collectAsState().value.of(c.did), onUnblock = { app.unblock(c.did) },
+                        callGate = app.blocks.collectAsState().value.callGate(c.did, true),
+                        callsAllowed = app.blocks.collectAsState().value.callsAllowed(c.did), onAllowCalls = { on -> app.allowCalls(c.did, on) },
                         history = remember(history, contacts) { val now = System.currentTimeMillis() / 1000; val by = contacts.associateBy { it.did }; history.filter { it.peerDid == c.did }.map { it.toRecent(by, now) } },
-                        onRename = { a -> scope.launch(Dispatchers.IO) { runCatching { app.node.renameContact(c.did, a) }; app.refresh() } }, onRemove = {
-                        pop()
-                        scope.launch(Dispatchers.IO) { runCatching { app.node.removeContact(c.did) }; app.refresh() }
+                        onRename = { a -> scope.launch(Dispatchers.IO) { runCatching { app.node.renameContact(c.did, a) }; app.refresh() } }, onBlock = {
+                        // U19/U24: the contact and the chat stay; the page shows Blocked and Unblock.
+                        app.block(c.did); say("${firstName(c.display())} is told you blocked them")
                     })
                 }
                 is Route.Verify -> {
@@ -241,9 +292,9 @@ private fun Root(app: P2pApp) {
                         VerifyScreen(app.node.profile()?.name ?: "", c, groups, onBack = ::pop, onMatch = {
                             scope.launch(Dispatchers.IO) { runCatching { app.node.setVerified(c.did, true) }; app.refresh() }
                             pop()
-                        }, onRemove = {
-                            pop(); pop()
-                            scope.launch(Dispatchers.IO) { runCatching { app.node.removeContact(c.did) }; app.refresh() }
+                        }, onBlock = {
+                            pop()
+                            app.block(c.did); say("${firstName(c.display())} is told you blocked them")
                         })
                     }
                 }
@@ -252,11 +303,18 @@ private fun Root(app: P2pApp) {
                     onPhrase = { stack.add(Route.PhraseGate) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
                     onSwitchPick = { stack.add(Route.SwitchConfirm(it)) }, onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) },
                     onDevices = { stack.add(Route.Devices) }, onLinkDevice = { stack.add(Route.LinkDevice) }, onLinkAccount = { addAccount(false, link = true) },
+                    onPreview = { stack.add(Route.Preview(PRoute.parse(it))) }, onBlocked = { stack.add(Route.Blocked) },
                 )
+                Route.Blocked -> BlockedPeopleScreen(app, onBack = ::pop, say = ::say)
                 is Route.SwitchConfirm -> SwitchConfirmScreen(app, r.did, onBack = ::pop, onSwitched = { home() }, onMessage = ::say)
                 Route.Devices -> LinkedDevicesScreen(app, ::pop, onLink = { stack.add(Route.LinkDevice) }, onDetail = { stack.add(Route.DeviceDetail(it)) })
                 is Route.DeviceDetail -> DeviceDetailScreen(app, r.device, onBack = ::pop, onMessage = ::say)
                 Route.LinkDevice -> LinkSession(app, newDevice = false, label = "", onClose = ::pop)
+                is Route.Preview -> {
+                    val on by PreviewFlags.enabled(ctx).collectAsState()
+                    if (on == true) key(r) { PreviewApp(PreviewBackend.get(app.node.profile()?.name ?: ""), r.start, onExit = ::pop, onShowMyQr = { stack.add(Route.Add(false)) }, onAddContact = { stack.add(Route.Add(true)) }) }
+                    else LaunchedEffect(Unit) { pop() }
+                }
                 Route.Battery -> BatteryScreen(missing, onBack = ::pop, onFix = fix)
                 Route.Passphrase -> ChangePassphraseScreen(app, onBack = ::pop)
                 Route.PhraseGate -> PhraseGateScreen(app, onBack = ::pop, onPhrase = { p -> pop(); stack.add(Route.PhraseShown(p)) })

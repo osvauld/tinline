@@ -145,6 +145,21 @@ pub fn incoming(p: &Peer, secs: u64) -> String {
     })
 }
 
+/// Waits for the incoming call `id`. GL: a device can still have an `Incoming` of an earlier call
+/// queued (it rang there too, e.g. once the caller learned this device from a pushed device list
+/// rather than from the answer); those are skipped, but only ids in `earlier`: any other call id
+/// is a real failure (a call this test never placed).
+pub fn incoming_call(p: &Peer, id: &str, earlier: &[&str], secs: u64) {
+    expect(p, secs, "incoming", |e| match e {
+        Ev::Incoming(c) if c.call_id == id => Some(()),
+        Ev::Incoming(c) => {
+            assert!(earlier.contains(&c.call_id.as_str()), "an incoming call nobody placed: {} (waiting for {id})", c.call_id);
+            None
+        }
+        _ => None,
+    })
+}
+
 pub fn ended(p: &Peer, id: &str, secs: u64) -> String {
     expect(p, secs, "ended", |e| match e {
         Ev::State(i, CallState::Ended { reason }) if i == id => Some(reason.clone()),
@@ -231,9 +246,10 @@ fn link_n_shows_e_scans_and_contacts_learn_the_new_device() {
     connect(&a, &e);
     let n = link_fresh(&e, "h2-n", false);
     eventually(40, "N has the contact", || n.node.contacts().iter().any(|c| c.did == a.did));
-    // A learns N from the list that rides on the answer of a call to E.
+    // A learns N from the list that rides on the answer of a call to E (or, if it comes first,
+    // from the list E pushes to its contacts after the link: then this call rings N as well).
     let call = a.node.call(e.did.clone()).unwrap();
-    incoming(&e, 30);
+    incoming_call(&e, &call.call_id, &[], 30);
     e.node.answer(call.call_id.clone()).unwrap();
     eventually(20, "active", || a.node.current_call().is_some());
     std::thread::sleep(Duration::from_millis(500));
@@ -242,8 +258,8 @@ fn link_n_shows_e_scans_and_contacts_learn_the_new_device() {
     eventually(20, "A knows both devices", || a.node.contact_devices_for_test(e.did.clone()).contains(&dev(&n)));
     // Next call rings both.
     let call2 = a.node.call(e.did.clone()).unwrap();
-    assert_eq!(incoming(&e, 30), call2.call_id);
-    assert_eq!(incoming(&n, 30), call2.call_id);
+    incoming_call(&e, &call2.call_id, &[&call.call_id], 30);
+    incoming_call(&n, &call2.call_id, &[&call.call_id], 30);
     a.node.hangup(call2.call_id.clone()).unwrap();
     // The history converges to one record per call, the better one winning.
     eventually(30, "histories agree", || {
@@ -355,7 +371,7 @@ fn verified(p: &Peer, did: &str) -> Option<bool> {
 }
 
 #[test]
-fn concurrent_contact_edits_converge_and_removal_wins() {
+fn concurrent_contact_edits_converge_and_the_block_wins() {
     let a = make_peer("s1-a");
     let e = make_peer("s1-e");
     connect(&a, &e);
@@ -370,17 +386,17 @@ fn concurrent_contact_edits_converge_and_removal_wins() {
     assert_eq!(alias(&n, &a.did), Some(Some("Al".into())));
     assert_eq!(verified(&e, &a.did), Some(true));
 
-    // N offline: it edits the contact while E removes it. The removal stands.
+    // N offline: it edits the contact while E blocks it. The block stands; the contact is kept.
     n.node.stop();
     n.node.rename_contact(a.did.clone(), Some("Stale".into())).unwrap();
-    e.node.remove_contact(a.did.clone()).unwrap();
+    e.node.block(a.did.clone()).unwrap();
     n.node.start().unwrap();
     n.node.sync_now_for_test();
-    eventually(40, "N drops A", || !n.node.contacts().iter().any(|c| c.did == a.did));
     assert!(e.node.blocked_for_test().contains(&a.did));
-    eventually(20, "N blocks A", || n.node.blocked_for_test().contains(&a.did));
+    eventually(40, "N blocks A", || n.node.blocked_for_test().contains(&a.did));
+    assert!(n.node.contacts().iter().any(|c| c.did == a.did) && e.node.contacts().iter().any(|c| c.did == a.did));
 
-    // A later ticket scan brings the contact back on both devices.
+    // A later ticket scan lifts the block on both devices.
     std::thread::sleep(Duration::from_millis(1200));
     e.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     eventually(40, "N has A again", || n.node.contacts().iter().any(|c| c.did == a.did));
@@ -399,10 +415,17 @@ fn redeemed_nonces_union_and_strangers_cannot_open_self_sync() {
     let nonces = e.node.redeemed_for_test();
     assert!(!nonces.is_empty());
     eventually(40, "N has the nonce", || n.node.redeemed_for_test() == nonces);
-    // A contact (other DID) is not let into tinline/self/1; our own device is.
+    // A contact (other DID) is not let into tinline/self/3; our own device is.
     assert!(!a.node.self_probe_for_test(dev(&e)));
     assert!(!x.node.self_probe_for_test(dev(&n)));
-    assert!(n.node.self_probe_for_test(dev(&e)));
+    // E and N already hold a live self-sync session, and the acceptor keeps only one per device:
+    // the connection dialled by the lower device key (sync/engine.rs `register_session`). The
+    // acceptor answers `Auth` and then drops a probe that loses that tie-break, so the probe would
+    // fail whenever the live session was dialled by the lower key. Probing *from* the lower key
+    // always wins, so the result reflects admission only. The retry only covers a real dial landing
+    // between the probe's Auth and its read; the stranger/contact checks above stay one-shot.
+    let (lo, hi) = if proto::device_from_text(&dev(&n)).unwrap() < proto::device_from_text(&dev(&e)).unwrap() { (&n, &e) } else { (&e, &n) };
+    eventually(20, "own device let into self-sync", || lo.node.self_probe_for_test(dev(hi)));
 }
 
 #[test]
@@ -653,20 +676,21 @@ fn you_items_sync_between_own_devices_and_never_reach_contacts() {
 }
 
 #[test]
-fn removing_a_contact_on_one_device_removes_the_conversation_on_the_other() {
+fn blocking_a_contact_on_one_device_keeps_the_conversation_on_both() {
     let (a, b1, b2) = trio("c6");
     a.node.send_text(b1.did.clone(), "keep?".into(), None).unwrap();
     eventually(40, "b2 has it", || find_msg(&b2, &a.did, "keep?").is_some());
-    b1.node.remove_contact(a.did.clone()).unwrap();
-    eventually(40, "b2 dropped A", || !b2.node.contacts().iter().any(|c| c.did == a.did));
-    eventually(20, "b2 dropped the conversation", || {
-        b2.node.chat_day(a.did.clone(), None).is_err() && b2.node.chats().unwrap().iter().all(|c| c.peer_did != a.did)
-    });
-    eventually(20, "b2 deleted the docs", || !b2.node.has_chat_docs_for_test(&b2.did, &a.did));
-    // The sync does not bring it back.
+    b1.node.block(a.did.clone()).unwrap();
+    eventually(40, "b2 blocks A", || b2.node.block_state(a.did.clone()).blocked_by_me);
+    // U19: the contact and the history stay on both devices.
     b1.node.sync_now_for_test();
     std::thread::sleep(Duration::from_secs(3));
-    assert!(!b2.node.has_chat_docs_for_test(&b2.did, &a.did) && !b1.node.has_chat_docs_for_test(&b1.did, &a.did));
+    for p in [&b1, &b2] {
+        assert!(p.node.contacts().iter().any(|c| c.did == a.did));
+        assert!(find_msg(p, &a.did, "keep?").is_some());
+        assert!(p.node.chats().unwrap().iter().any(|c| c.peer_did == a.did));
+    }
+    assert!(b2.node.has_chat_docs_for_test(&b2.did, &a.did) && b1.node.has_chat_docs_for_test(&b1.did, &a.did));
 }
 
 #[test]
@@ -675,6 +699,9 @@ fn a_forged_batch_relayed_by_an_own_device_is_rejected() {
     // Genuine control first, so the rejections below are about the forgery and nothing else.
     b2.node.forged_own_batch_for_test(a.did.clone(), 3).unwrap();
     assert!(find_msg(&b2, &a.did, "forged 3").is_some_and(|m| m.outgoing));
+    // The contact's or ours signed by another account's DID key, or a stranger's: the batch is
+    // rejected (P9c: every op must be proven by its author's DID signature; nothing is kept
+    // hidden, since every device reaches the same verdict on the same ops).
     for kind in 0..3u8 {
         assert!(b2.node.forged_own_batch_for_test(a.did.clone(), kind).is_err(), "kind {kind} must be rejected");
         assert!(find_msg(&b2, &a.did, &format!("forged {kind}")).is_none());
@@ -732,9 +759,10 @@ fn a_call_after_linking_reaches_the_other_device_from_the_calls_doc() {
     online(&b2.node);
     b2.node.sync_now_for_test();
     eventually(60, "b2 has the call", || b2.node.recent_calls(10).iter().any(|r| r.call_id == id));
-    // Removing the contact on b2 drops its calls on b1 as well.
-    b2.node.remove_contact(a.did.clone()).unwrap();
-    eventually(60, "b1 dropped the contact's calls", || !b1.node.recent_calls(10).iter().any(|r| r.peer_did == a.did));
+    // Blocking the contact on b2 keeps the calls with them on both devices (U19).
+    b2.node.block(a.did.clone()).unwrap();
+    eventually(60, "b1 holds the block", || b1.node.block_state(a.did.clone()).blocked_by_me);
+    assert!(b1.node.recent_calls(10).iter().any(|r| r.call_id == id));
 }
 
 // ---- linked devices: contacts, history, edits, presence, device names after linking ------------

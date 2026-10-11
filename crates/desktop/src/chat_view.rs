@@ -8,6 +8,7 @@ use p2pcore::{AttachmentKind, Chat, Contact, DeliveryState, Message as ChatMsg, 
 use crate::voice::{self, VoiceView};
 use super::*;
 use crate::app::chat::{preview_of, Cm, SideTab, Thumb, ViewBody, COMPOSER_ID};
+use crate::blocks::Composer;
 use crate::media::{self, Class};
 
 /// Width of the hover actions beside a bubble: three 28 px buttons, 2 px apart.
@@ -59,6 +60,11 @@ fn kind_label(name: &str) -> String {
     std::path::Path::new(name).extension().and_then(|e| e.to_str()).map(|e| e.to_uppercase()).unwrap_or_default()
 }
 
+/// "Oct 10, 15:20" for a block's unix seconds.
+fn block_when(secs: u64) -> String {
+    local(secs.saturating_mul(1000)).map(|d| d.format("%b %-d, %H:%M").to_string()).unwrap_or_default()
+}
+
 fn rule<'a>(t: Tok) -> El<'a> {
     container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)).into()
 }
@@ -79,14 +85,9 @@ impl App {
                 .style(ui::button_style(t, if on { Kind::Tonal } else { Kind::Ghost }, 999.0))
                 .on_press(Msg::Chat(Cm::Tab(which)))
         };
-        container(
-            row![
-                tab("Chats", SideTab::Chats, self.chat.unread_total()),
-                tab("Calls", SideTab::Calls, 0),
-                tab("Contacts", SideTab::Contacts, 0),
-            ]
-            .spacing(2),
-        )
+        let pending = self.live.pending_in().count() as u32;
+        let tabs = row![tab("Chats", SideTab::Chats, self.chat.unread_total() + pending), tab("Groups", SideTab::Groups, self.live_badge())].spacing(2);
+        container(tabs.push(tab("Calls", SideTab::Calls, 0)).push(tab("Contacts", SideTab::Contacts, 0)))
         .padding(3)
         .width(Fill)
         .style(ui::plain(t.surface2, 999.0))
@@ -109,10 +110,16 @@ impl App {
                 });
             }
         }
-        rows.retain(|r| self.contacts.iter().any(|c| c.did == r.peer_did) || self.is_me(&r.peer_did));
+        // Contacts, "You", and kept chats of people who are no longer contacts (U20, U24).
+        rows.retain(|r| self.selectable(&r.peer_did));
         // "You" is pinned first.
         rows.sort_by_key(|r| !self.is_me(&r.peer_did));
         let mut list = column![].spacing(2);
+        if let Some(b) = self.live_requests(t) {
+            list = list.push(b);
+        }
+        // Real chats and the preview's sample people, newest first; "You" stays pinned.
+        let mut items: Vec<(bool, u64, El)> = Vec::new();
         let mut n = 0;
         for r in &rows {
             let me = self.is_me(&r.peer_did);
@@ -131,13 +138,18 @@ impl App {
                 sub = sub.push(self.ticks(t, r.last_delivery, 14.0, dim));
             }
             let preview = if me && r.preview.is_empty() { crate::app::SELF_SUB.to_string() } else { r.preview.clone() };
-            let pv = if unread { semi(preview, 13.0, t.ink) } else { tx(preview, 13.0, dim) }
-                .wrapping(iced::widget::text::Wrapping::None);
+            // Blocked people stay in the list with a red line, so the state is never hidden.
+            let pv = match self.blocks.status(&r.peer_did) {
+                Some(st) => tx(st, 13.0, if sel { dim } else { t.error }),
+                None if unread => semi(preview, 13.0, t.ink),
+                None => tx(preview, 13.0, dim),
+            }
+            .wrapping(iced::widget::text::Wrapping::None);
             sub = sub.push(container(pv).width(Fill).clip(true));
             if unread {
                 sub = sub.push(count_badge(t, r.unread));
             }
-            list = list.push(
+            items.push((me, r.last_activity, 
                 button(
                     row![
                         avatar(t, &name, &r.peer_did, 40.0),
@@ -151,10 +163,18 @@ impl App {
                 .padding([8, 12])
                 .width(Fill)
                 .style(ui::row_style(t, sel))
-                .on_press(Msg::Select(r.peer_did.clone())),
-            );
+                .on_press(Msg::Select(r.peer_did.clone()))
+                .into(),
+            ));
         }
-        if n == 0 {
+        let preview = self.preview_rows(t, q);
+        let any_preview = !preview.is_empty();
+        items.extend(preview.into_iter().map(|(at, el)| (false, at, el)));
+        items.sort_by(|a, b| b.0.cmp(&a.0).then(b.1.cmp(&a.1)));
+        for (_, _, el) in items {
+            list = list.push(el);
+        }
+        if n == 0 && !any_preview {
             list = list.push(
                 container(
                     column![
@@ -199,8 +219,13 @@ impl App {
         let calling = self.call.is_some();
         // "You": no contact behind it, so no presence, call or safety number.
         let me = self.is_me(&c.did);
+        let contact = me || self.contacts.iter().any(|x| x.did == c.did);
         let (sub, sub_color) = if me {
             (crate::app::SELF_SUB.to_string(), t.ink2)
+        } else if let Some(st) = self.blocks.status(&c.did) {
+            (st.to_string(), t.error)
+        } else if !contact {
+            ("Not in your contacts".to_string(), t.ink2)
         } else {
             (self.conn_text(&c.did), if self.chat.online.contains(&c.did) { t.primary } else { t.ink2 })
         };
@@ -211,12 +236,20 @@ impl App {
         )
         .padding([4, 8])
         .style(ui::button_style(t, Kind::Ghost, 10.0))
-        .on_press_maybe((!me).then_some(Msg::Chat(Cm::Info(true))));
+        .on_press_maybe((!me && contact).then_some(Msg::Chat(Cm::Info(true))));
         let mut head_row = row![who, Space::new().width(Fill)].spacing(8).align_y(Alignment::Center);
         if !me {
-            head_row = head_row
-                .push(pill(t, Kind::Primary, Some(Icon::Phone), "Call", (!calling).then(|| Msg::CallPressed(c.did.clone()))))
-                .push(icon_btn(t, Icon::ShieldCheck, Msg::Chat(Cm::Info(true))));
+            // Crossed out and off while either side blocks (or they are no longer a contact);
+            // crossed out but tappable (it says why) when they haven't allowed calls from us.
+            use crate::blocks::CallGate;
+            head_row = head_row.push(match self.blocks.call_gate(&c.did, contact) {
+                CallGate::Ok => pill(t, Kind::Primary, Some(Icon::Phone), "Call", (!calling).then(|| Msg::CallPressed(c.did.clone()))),
+                CallGate::NotAllowed => pill(t, Kind::Quiet, Some(Icon::PhoneOff), "Call", Some(Msg::CallPressed(c.did.clone()))),
+                CallGate::Closed(_) => pill(t, Kind::Quiet, Some(Icon::PhoneOff), "Call", None),
+            });
+            if contact {
+                head_row = head_row.push(icon_btn(t, Icon::ShieldCheck, Msg::Chat(Cm::Info(true))));
+            }
         }
         let head = container(head_row)
         .padding([10, 20])
@@ -258,7 +291,72 @@ impl App {
             self.message_list(t, &name)
         };
 
-        column![top, body, self.composer(t, &name)].width(Fill).height(Fill).into()
+        let contact = me || self.contacts.iter().any(|x| x.did == c.did);
+        let bottom = match self.blocks.composer(&c.did, contact) {
+            Composer::Open => self.composer(t, &name),
+            Composer::BlockedByMe => self.composer_footer(
+                t,
+                row![
+                    tx(crate::blocks::blocked_by_me_line(&name), 14.0, t.ink2).width(Fill),
+                    pill(t, Kind::Primary, None, "Unblock", Some(Msg::Unblock(c.did.clone()))),
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center)
+                .into(),
+            ),
+            Composer::BlockedMe => self.composer_footer(
+                t,
+                tx(format!("You can\u{2019}t send messages to {}.", crate::blocks::first_name(&name)), 14.0, t.ink2).into(),
+            ),
+            Composer::NotContact => self.composer_footer(
+                t,
+                row![
+                    tx(crate::blocks::not_contact_line(&name), 14.0, t.ink2).width(Fill),
+                    pill(t, Kind::Quiet, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd)),
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center)
+                .into(),
+            ),
+        };
+        column![top, body, bottom].width(Fill).height(Fill).into()
+    }
+
+    /// In place of the composer while a block is on: chats are never deleted (U24), they just
+    /// stop taking new messages.
+    fn composer_footer<'a>(&self, t: Tok, body: El<'a>) -> El<'a> {
+        column![rule(t), container(body).padding([14, 20]).width(Fill)].into()
+    }
+
+    /// The quiet line (we block them) or the signed notice (they block us) under the messages.
+    fn block_note<'a>(&self, t: Tok, peer: &str, name: &str) -> El<'a> {
+        let first = crate::blocks::first_name(name).to_string();
+        if self.blocks.blocked_by_me(peer) {
+            let at = self.blocks.list.iter().find(|b| b.did == peer).map(|b| b.blocked_at).unwrap_or(0);
+            let when = if at > 0 { format!(" \u{b7} {}", block_when(at)) } else { String::new() };
+            return container(container(tx(format!("You blocked {first}{when}"), 12.0, t.ink2)).padding([4, 12]).style(ui::plain(t.surface2, 999.0)))
+                .center_x(Fill)
+                .padding([8, 0])
+                .into();
+        }
+        let Some(at) = self.blocks.blocked_me(peer) else { return Space::new().into() };
+        let (title, body) = crate::blocks::blocked_you_card(name);
+        container(
+            container(
+                column![
+                    bold(title, 15.0, t.on_error_c),
+                    tx(body, 13.0, t.on_error_c),
+                    tx(format!("Signed by {first} \u{b7} {}", block_when(at)), 12.0, ui::alpha(t.on_error_c, 0.8)),
+                ]
+                .spacing(4),
+            )
+            .padding([12, 16])
+            .max_width(460)
+            .style(ui::plain(t.error_c, 14.0)),
+        )
+        .center_x(Fill)
+        .padding([8, 0])
+        .into()
     }
 
     fn message_list<'a>(&'a self, t: Tok, name: &str) -> El<'a> {
@@ -269,12 +367,14 @@ impl App {
             } else {
                 "Messages go straight from your computer to theirs, end-to-end encrypted. Nothing is stored on a server.".to_string()
             };
-            return container(
-                column![bold(if self.chat.loading { "" } else { "No messages yet" }, 20.0, t.ink), tx(note, 14.0, t.ink2)]
-                    .spacing(6)
-                    .align_x(Alignment::Center)
-                    .max_width(420),
-            )
+            let mut empty = column![bold(if self.chat.loading { "" } else { "No messages yet" }, 20.0, t.ink), tx(note, 14.0, t.ink2)]
+                .spacing(6)
+                .align_x(Alignment::Center)
+                .max_width(420);
+            if let Some(peer) = self.chat.peer.as_deref().filter(|_| !self.chat.loading) {
+                empty = empty.push(self.block_note(t, peer, name));
+            }
+            return container(empty)
             .center_x(Fill)
             .center_y(Fill)
             .height(Fill)
@@ -296,6 +396,9 @@ impl App {
                 last_day = d;
             }
             col = col.push(self.message_row(t, m, name));
+        }
+        if let Some(peer) = self.chat.peer.as_deref() {
+            col = col.push(self.block_note(t, peer, name));
         }
         scroll(t, col).anchor_bottom().width(Fill).height(Fill).into()
     }
@@ -363,6 +466,9 @@ impl App {
         meta = meta.push(tx(hhmm(m.at), 11.0, dim));
         if m.outgoing {
             meta = meta.push(self.ticks(t, m.delivery, 14.0, dim));
+        }
+        if m.outgoing && self.blocks.not_delivered(&m.peer_did, &m.id) {
+            meta = meta.push(tx(crate::blocks::not_delivered_text(name), 11.0, t.error));
         }
         body = body.push(meta.width(Length::Shrink));
         let bubble = container(body).width(Length::Shrink).padding([8, 12]).max_width(520).style(ui::plain(bg, 14.0));

@@ -23,26 +23,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.outlined.Groups as GroupsOutlined
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import uniffi.p2pcore.Chat
 import uniffi.p2pcore.Contact
 
-/** The three tabs of the bottom bar. Chats opens by default. */
-enum class HomeTab { Chats, Calls, Contacts }
+/** The tabs of the bottom bar. Chats opens by default. Groups is group chat on the core (GroupsLive.kt). */
+enum class HomeTab { Chats, Groups, Calls, Contacts }
 
 /** Bottom bar: Chats · Calls · Contacts, with a red count on Chats (unread) and Calls (missed since you looked). */
 @Composable
-fun TinNavBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int = 0, callBadge: Int = 0) {
+fun TinNavBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int = 0, callBadge: Int = 0, showGroups: Boolean = false, groupBadge: Int = 0) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().background(c.sf2).navigationBarsPadding().height(80.dp)) {
         listOf(
             Triple(HomeTab.Chats, Icons.Rounded.ChatBubbleOutline to Icons.Rounded.Chat, "Chats") to chatBadge,
+            Triple(HomeTab.Groups, Icons.Outlined.GroupsOutlined to Icons.Rounded.Groups, "Groups") to groupBadge,
             Triple(HomeTab.Calls, Icons.Rounded.Call to Icons.Rounded.Call, "Calls") to callBadge,
             Triple(HomeTab.Contacts, Icons.Rounded.PeopleOutline to Icons.Rounded.People, "Contacts") to 0,
-        ).forEach { (t, badge) ->
+        ).filter { showGroups || it.first.first != HomeTab.Groups }.forEach { (t, badge) ->
             val (id, icons, label) = t
             val on = id == tab
             Column(
-                Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) { onTab(id) },
+                Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) { onTab(id) }
+                    .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = "$badge new" },
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
             ) {
                 Box(Modifier.size(64.dp, 32.dp).clip(RoundedCornerShape(50)).background(if (on) c.prc else androidx.compose.ui.graphics.Color.Transparent), contentAlignment = Alignment.Center) {
@@ -60,7 +66,7 @@ fun TinNavBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int = 0, callBa
 
 /** Chat list rows from the core's conversations. Only conversations that have a message; a contact's name wins over what they call themselves.
  *  "You" (our DID: saved items for our own devices) is always there, pinned first. */
-fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link>, online: Boolean, nowMs: Long, myDid: String? = null): List<ChatRowUi> {
+fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link>, online: Boolean, nowMs: Long, myDid: String? = null, blocks: Blocks = Blocks()): List<ChatRowUi> {
     val by = contacts.associateBy { it.did }
     val you = chats.firstOrNull { it.peerDid == myDid }?.let { ch ->
         val at = ch.lastActivity.toLong()
@@ -71,12 +77,15 @@ fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link
         val at = ch.lastActivity.toLong()
         val pending = ch.lastOutgoing && ch.lastDelivery == uniffi.p2pcore.DeliveryState.PENDING
         val waiting = pending && (links[ch.peerDid] == Link.Offline || (links[ch.peerDid] == null && !online))
+        // Blocked people stay in the list with a red line, so the state is never hidden.
+        val status = blocks.status(ch.peerDid)
         ChatRowUi(
             ch.peerDid, name,
-            if (waiting) "Waiting to send — ${firstName(name)} isn’t reachable yet" else ch.preview,
+            status ?: if (waiting) "Waiting to send — ${firstName(name)} isn’t reachable yet" else ch.preview,
             listTime(at, nowMs), ch.lastOutgoing,
             when { waiting -> Tick.Clock; ch.lastDelivery == uniffi.p2pcore.DeliveryState.DELIVERED -> Tick.Two; else -> Tick.One },
             ch.unread.toInt(),
+            alert = status != null,
         )
     }
 }
@@ -158,7 +167,7 @@ private fun ChatRow(r: ChatRowUi, onClick: () -> Unit) {
                 if (r.mine) TickIcon(r.tick, when (r.tick) { Tick.Two -> c.pr; Tick.Clock -> c.thread; Tick.One -> c.ink2 }, 16.dp)
                 Text(
                     r.preview, Modifier.weight(1f), style = TinType.bodyM, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    color = if (unread) c.ink else c.ink2, fontWeight = if (unread) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (r.alert) c.er else if (unread) c.ink else c.ink2, fontWeight = if (unread || r.alert) FontWeight.SemiBold else FontWeight.Normal,
                 )
                 if (unread) Box(Modifier.defaultMinSize(22.dp, 22.dp).clip(RoundedCornerShape(50)).background(c.pr).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
                     Text("${r.unread}", style = TinType.caption.copy(fontWeight = FontWeight.Bold), color = c.onPr)

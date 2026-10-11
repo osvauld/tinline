@@ -36,6 +36,14 @@ const COMPRESS_MS: u64 = 40;
 const HARD_MAX_MS: u64 = 120;
 /// DRED history requested from the encoder, in 10 ms units.
 const DRED_UNITS: i32 = 30;
+/// Group calls: RFC 6464 level (-dBov) below which a frame counts as speech, for the sender
+/// silence gate and the call host's speaker selection (group-call-spec §1.3, §1.4).
+pub const SPEECH_LEVEL: u8 = 50;
+/// Group calls: the silence gate closes after this much audio at or above `SPEECH_LEVEL`.
+const GATE_HANG_MS: u64 = 300;
+/// Group calls: a playing slot with nothing buffered and no datagram for this long ends its
+/// talk spurt as if the host had signalled it inactive (fallback for a late `Active`).
+pub const SLOT_FALLBACK_MS: u64 = 200;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -68,6 +76,27 @@ pub fn rms(samples: &[i16]) -> f32 {
     }
     let s: f64 = samples.iter().map(|&x| (x as f64) * (x as f64)).sum();
     (s / samples.len() as f64).sqrt() as f32
+}
+
+/// Mix the slot frames of a group call into `out` (group-call-spec §1.4).
+///
+/// Sums in i32. Sums within ±`MIX_KNEE` pass through exactly; above the knee a stateless
+/// tanh soft knee maps the excess into the remaining headroom, so the output is monotonic in
+/// the sum, never wraps and never exceeds i16. A frame shorter than `out` counts as silence
+/// past its end; silent slots leave the result unchanged. Pure; no state between frames.
+pub fn mix(frames: &[&[i16]], out: &mut [i16]) {
+    const MIX_KNEE: f32 = 24_576.0; // -2.5 dBFS
+    const HEADROOM: f32 = i16::MAX as f32 - MIX_KNEE;
+    for (i, o) in out.iter_mut().enumerate() {
+        let s: i32 = frames.iter().map(|f| f.get(i).copied().unwrap_or(0) as i32).sum();
+        let a = s.unsigned_abs() as f32;
+        *o = if a <= MIX_KNEE {
+            s as i16
+        } else {
+            let y = MIX_KNEE + HEADROOM * ((a - MIX_KNEE) / HEADROOM).tanh();
+            (y.min(i16::MAX as f32) as i16) * s.signum() as i16
+        };
+    }
 }
 
 /// Sine generator for tests / self-test.
@@ -143,6 +172,13 @@ impl Encoder {
     fn ctl(&mut self, request: i32, value: i32) -> Result<()> {
         // SAFETY: self.0 is a live encoder; all requests used here take one opus_int32.
         check(unsafe { sys::opus_encoder_ctl(self.0, request, value) }).map(|_| ())
+    }
+
+    /// Clear the coding state (settings are kept), so the next packet decodes cleanly on a
+    /// freshly reset decoder.
+    fn reset(&mut self) {
+        // SAFETY: live encoder; OPUS_RESET_STATE takes no argument.
+        unsafe { sys::opus_encoder_ctl(self.0, sys::OPUS_RESET_STATE) };
     }
 }
 
@@ -286,6 +322,19 @@ pub struct Sender {
     enc: Encoder,
     seq: u32,
     scratch: Box<[u8; MAX_PACKET]>,
+    /// Silence gate state (`encode_group` only).
+    quiet_ms: u64,
+    gated: bool,
+}
+
+/// Result of [`Sender::encode_group`].
+#[derive(Debug, Clone, PartialEq)]
+pub enum GroupFrame {
+    /// A normal datagram, as from [`Sender::encode`].
+    Opus(Vec<u8>),
+    /// The silence gate is closed: nothing was encoded, `seq` still advanced by one. The call
+    /// layer sends its level-only datagram (`[0x03][level]`) every 500 ms from these.
+    Gated { level: u8 },
 }
 
 impl Sender {
@@ -303,7 +352,34 @@ impl Sender {
         enc.ctl(sys::OPUS_SET_PACKET_LOSS_PERC_REQUEST, 30)?;
         enc.ctl(sys::OPUS_SET_DTX_REQUEST, 0)?;
         enc.ctl(sys::OPUS_SET_DRED_DURATION_REQUEST, DRED_UNITS)?;
-        Ok(Sender { enc, seq: 0, scratch: Box::new([0; MAX_PACKET]) })
+        Ok(Sender { enc, seq: 0, scratch: Box::new([0; MAX_PACKET]), quiet_ms: 0, gated: false })
+    }
+
+    /// Group calls only (group-call-spec §1.4): [`encode`](Self::encode) behind a silence
+    /// gate. The gate closes after `GATE_HANG_MS` (300 ms) of frames at or above
+    /// [`SPEECH_LEVEL`] and opens on the first frame below it. While closed nothing is
+    /// encoded, but `seq` keeps counting one per call (one per 20 ms of wall time), so the
+    /// resumed stream shows a `seq` jump equal to the pause. On reopening the encoder state is
+    /// reset, matching the receiver's fresh decoder. 1:1 calls keep using `encode` (no gate).
+    pub fn encode_group(&mut self, pcm: &[i16; FRAME]) -> Result<GroupFrame> {
+        let lvl = level(pcm);
+        if lvl < SPEECH_LEVEL {
+            self.quiet_ms = 0;
+            if self.gated {
+                self.gated = false;
+                self.enc.reset();
+            }
+        } else {
+            self.quiet_ms += FRAME_MS;
+            if self.quiet_ms > GATE_HANG_MS {
+                self.gated = true;
+            }
+        }
+        if self.gated {
+            self.seq = self.seq.wrapping_add(1);
+            return Ok(GroupFrame::Gated { level: lvl });
+        }
+        self.encode(pcm).map(GroupFrame::Opus)
     }
 
     /// Encode one frame into a full datagram.
@@ -373,6 +449,40 @@ pub struct Receiver {
     last_decay_ms: u64,
     stats: Stats,
     tmp: Box<[i16; FRAME]>,
+    group: Group,
+}
+
+/// Idle/resume state of a group-call slot receiver (group-call-spec §1.4, G6-D1). Unused
+/// (`on == false`) for 1:1 calls, which keep the continuous-stream behaviour.
+struct Group {
+    /// The idle/resume path is enabled (`new_group` or any `set_active` call).
+    on: bool,
+    /// The call host lists this slot as forwarded.
+    active: bool,
+    /// Talk spurt ended: decoder and buffer are reset, pulls return silence without any
+    /// accounting, the next datagram newer than `last_seq` starts a fresh spurt.
+    idle: bool,
+    /// Highest `seq` of the previous spurt (stragglers at or below it are ignored while idle).
+    last_seq: Option<u32>,
+    /// Network jitter learned before the spurt ended; restored on resume.
+    jitter: f32,
+    /// Fade in the next frame decoded from a packet (decoder state was reset).
+    fade_in: bool,
+    /// Arrival time of the last accepted datagram.
+    last_push_ms: u64,
+    /// An underrun began at this time; it counts towards the target only if audio resumes
+    /// before the spurt ends (otherwise it was a forwarding gap, not network jitter).
+    underrun_at: Option<u64>,
+    /// A faded-out frame to emit on the next pull (spurt cut by `set_active(true)`).
+    tail: Option<Box<[i16; FRAME]>>,
+}
+
+fn fade(out: &mut [i16; FRAME], rising: bool) {
+    for (i, s) in out.iter_mut().enumerate() {
+        let w = (i as f32 + 0.5) / FRAME as f32;
+        let g = if rising { w } else { 1.0 - w };
+        *s = (*s as f32 * g) as i16;
+    }
 }
 
 impl Receiver {
@@ -400,7 +510,82 @@ impl Receiver {
             last_decay_ms: 0,
             stats: Stats { target_ms: INITIAL_TARGET_MS as u32, last_level: 127, ..Stats::default() },
             tmp: Box::new([0; FRAME]),
+            group: Group {
+                on: false,
+                active: true,
+                idle: false,
+                last_seq: None,
+                jitter: 0.0,
+                fade_in: false,
+                last_push_ms: 0,
+                underrun_at: None,
+                tail: None,
+            },
         })
+    }
+
+    /// A receiver for one group-call slot: the idle/resume path of group-call-spec §1.4 is on
+    /// from the start (initially active). See [`set_active`](Self::set_active).
+    pub fn new_group() -> Result<Self> {
+        let mut r = Self::new()?;
+        r.group.on = true;
+        Ok(r)
+    }
+
+    /// Group calls: the call host's `Active` signal for this slot (G6-D1). Enables the
+    /// idle/resume path; never call it for a 1:1 receiver.
+    ///
+    /// - `false`: audio already buffered is played out, then one faded-out PLC frame, then
+    ///   the slot goes idle (silence, no underrun or jitter accounting) and is reset.
+    /// - `true`: the next datagram starts a fresh spurt at the last learned network-jitter
+    ///   target; its first frame fades in. If the previous spurt is still playing out, it is
+    ///   cut with a faded-out frame and its remaining buffer dropped.
+    ///
+    /// Without a signal the same end-of-spurt path runs once a playing slot has had nothing
+    /// to play and no datagram for [`SLOT_FALLBACK_MS`]; a datagram arriving while idle
+    /// resumes the slot. Gaps shorter than that are indistinguishable from network loss.
+    pub fn set_active(&mut self, active: bool) {
+        self.group.on = true;
+        if active && !self.group.active && self.started && !self.group.idle {
+            let mut tail = Box::new([0i16; FRAME]);
+            self.end_spurt(&mut tail);
+            self.group.tail = Some(tail);
+        }
+        self.group.active = active;
+    }
+
+    /// Whether this group slot is idle (talk spurt ended, nothing to play).
+    pub fn is_idle(&self) -> bool {
+        self.group.idle
+    }
+
+    /// End the current talk spurt: `out` gets one faded-out PLC frame if audio was still
+    /// audible (silence otherwise), then the slot goes idle and is reset.
+    fn end_spurt(&mut self, out: &mut [i16; FRAME]) {
+        out.fill(0);
+        if self.playing && self.plc_run < MAX_CONCEAL {
+            if self.dec.decode(&[], out, false).is_ok() {
+                fade(out, false);
+            } else {
+                out.fill(0);
+            }
+            self.stats.concealed += 1;
+        }
+        self.group.jitter = self.jitter;
+        self.group.last_seq = self.started.then_some(self.highest);
+        for s in &mut self.slots {
+            s.used = false;
+        }
+        self.started = false;
+        self.playing = false;
+        self.late_streak = 0;
+        self.plc_run = 0;
+        self.have_transit = false;
+        self.dred.parsed = None;
+        self.dec.reset();
+        self.group.idle = true;
+        self.group.fade_in = true;
+        self.group.underrun_at = None;
     }
 
     pub fn stats(&self) -> Stats {
@@ -454,6 +639,27 @@ impl Receiver {
         }
         let seq = u32::from_be_bytes([datagram[0], datagram[1], datagram[2], datagram[3]]);
         self.stats.received += 1;
+        if self.group.on {
+            if self.group.idle {
+                // Straggler from the spurt that just ended.
+                if let Some(l) = self.group.last_seq
+                    && (0..SLOTS as i32).contains(&(l.wrapping_sub(seq) as i32))
+                {
+                    return;
+                }
+                // A forwarded datagram means the host lists the slot again.
+                self.group.idle = false;
+                self.group.active = true;
+                self.resync(seq);
+                self.jitter = self.group.jitter;
+            }
+            self.group.last_push_ms = now_ms;
+            if let Some(t) = self.group.underrun_at.take() {
+                // Audio came back before the spurt ended: a real network underrun.
+                self.base_ms = (self.base_ms + 20.0).min(MAX_TARGET_MS);
+                self.last_underrun_ms = t;
+            }
+        }
         if !self.started {
             self.resync(seq);
         }
@@ -515,6 +721,44 @@ impl Receiver {
     /// Fill `out` with the next 20 ms of audio. Always writes the full frame.
     pub fn pull(&mut self, out: &mut [i16; FRAME], now_ms: u64) {
         out.fill(0);
+        if self.group.on {
+            if let Some(t) = self.group.tail.take() {
+                out.copy_from_slice(&t[..]);
+                return;
+            }
+            if self.started
+                && self.buffered_frames() == 0
+                && (!self.group.active || now_ms.saturating_sub(self.group.last_push_ms) >= SLOT_FALLBACK_MS)
+            {
+                self.end_spurt(out);
+                return;
+            }
+            if self.group.idle {
+                return;
+            }
+            self.pull_group(out, now_ms);
+            return;
+        }
+        self.pull_inner(out, now_ms);
+    }
+
+    fn pull_group(&mut self, out: &mut [i16; FRAME], now_ms: u64) {
+        let before = self.next_seq;
+        let plc_before = self.plc_run;
+        self.pull_inner(out, now_ms);
+        if self.next_seq != before && self.group.fade_in {
+            // First frame from a packet after a decoder reset.
+            fade(out, true);
+            self.group.fade_in = false;
+        } else if plc_before < MAX_CONCEAL && self.plc_run == MAX_CONCEAL {
+            // Last PLC frame before concealment gives up: fade to the silence that follows.
+            fade(out, false);
+        } else if plc_before == MAX_CONCEAL && self.plc_run > MAX_CONCEAL {
+            self.group.fade_in = true; // decoder was reset
+        }
+    }
+
+    fn pull_inner(&mut self, out: &mut [i16; FRAME], now_ms: u64) {
         if !self.started {
             return;
         }
@@ -522,7 +766,9 @@ impl Receiver {
         let target_frames_ms = self.target_ms as u64;
 
         if !self.playing {
-            if self.buffered_frames() as u64 * FRAME_MS >= target_frames_ms
+            // A slot the host dropped plays out what it has without waiting for the target.
+            let drain = self.group.on && !self.group.active && self.buffered_frames() > 0;
+            if (drain || self.buffered_frames() as u64 * FRAME_MS >= target_frames_ms)
                 && let Some(s) = self.first_buffered() {
                     self.next_seq = s;
                     self.playing = true;
@@ -587,8 +833,12 @@ impl Receiver {
 
         // Underrun: nothing at or after next_seq. Conceal, but keep waiting for `next_seq`.
         if self.plc_run == 0 {
-            self.base_ms = (self.base_ms + 20.0).min(MAX_TARGET_MS);
-            self.last_underrun_ms = now_ms;
+            if self.group.on {
+                self.group.underrun_at = Some(now_ms); // counted in `push` if audio resumes
+            } else {
+                self.base_ms = (self.base_ms + 20.0).min(MAX_TARGET_MS);
+                self.last_underrun_ms = now_ms;
+            }
         }
         self.stats.concealed += 1;
         if self.plc_run < MAX_CONCEAL {
@@ -651,3 +901,6 @@ impl Receiver {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod group_call_tests;

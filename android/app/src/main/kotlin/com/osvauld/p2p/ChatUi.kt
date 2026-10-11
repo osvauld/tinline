@@ -103,4 +103,6 @@ const val SELF_SUB = "Saved items · only on your devices"
 data class ChatRowUi(
     val did: String, val name: String, val preview: String, val time: String,
     val mine: Boolean, val tick: Tick, val unread: Int,
+    /** The preview is a block state ("Blocked" / "Blocked you"), shown in red. */
+    val alert: Boolean = false,
 )

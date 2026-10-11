@@ -18,12 +18,19 @@ macro_rules! tlog {
 pub(crate) use tlog;
 
 mod app;
+/// Contact blocking on the core's API: state the screens read, and the dialog copy.
+mod blocks;
 mod emoji;
 mod audio;
 mod flow;
+/// Placeholder data for the groups & privacy preview screens.
+mod groups_fake;
+mod hostcond;
 mod keystore;
 mod raise;
 mod media;
+mod camera;
+mod frames;
 mod reason;
 mod single;
 mod tray;
@@ -35,7 +42,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, GroupCallEvent, GroupCallEvents, LockState, Message, Node, NodeEvents, NodeStatus, VideoInfo};
 use tokio::sync::mpsc;
 
 /// Everything the node and the tray report, funnelled into the UI's update loop.
@@ -48,9 +55,23 @@ pub enum Ev {
     /// Audio device trouble worth telling the user about.
     AudioNotice(String),
     Chat(ChatEv),
+    Group(GroupEv),
     /// A notification was clicked.
     Open(app::Target),
     Link(LinkEv),
+    Video(VideoInfo),
+    /// A group-call event (the audio already followed it; the call UI comes next).
+    GroupCall(GroupCallEvent),
+}
+
+/// Bridges `VideoEvents` into the same channel as `NodeEvents`.
+pub struct VideoBridge(pub mpsc::UnboundedSender<Ev>);
+
+impl p2pcore::VideoEvents for VideoBridge {
+    fn on_video_state(&self, info: VideoInfo) {
+        tlog!("VIDEO {} negotiated={} local={} remote={}", info.call_id, info.negotiated, info.local_camera, info.remote_camera);
+        let _ = self.0.send(Ev::Video(info));
+    }
 }
 
 /// What the core's `LinkEvents` report (device linking and own-device sync).
@@ -88,6 +109,40 @@ impl p2pcore::LinkEvents for LinkBridge {
     fn on_unlinked(&self, did: String) {
         tlog!("UNLINKED {did}");
         let _ = self.0.send(Ev::Link(LinkEv::Unlinked(did)));
+    }
+}
+
+/// What the core's `GroupEvents` report.
+pub enum GroupEv {
+    Message(p2pcore::GroupMessage),
+    Changed(String),
+    /// A chat request appeared or changed (G2, U3).
+    Request(p2pcore::GroupChatRequest),
+    /// A group invitation appeared or changed (G3).
+    Invitation(p2pcore::GroupInvitation),
+}
+
+/// Bridges `GroupEvents` into the same channel as `NodeEvents`.
+pub struct GroupBridge(pub mpsc::UnboundedSender<Ev>);
+
+impl p2pcore::GroupRequestEvents for GroupBridge {
+    fn on_chat_request(&self, request: p2pcore::GroupChatRequest) {
+        let _ = self.0.send(Ev::Group(GroupEv::Request(request)));
+    }
+}
+
+impl p2pcore::GroupInvitationEvents for GroupBridge {
+    fn on_group_invitation(&self, invitation: p2pcore::GroupInvitation) {
+        let _ = self.0.send(Ev::Group(GroupEv::Invitation(invitation)));
+    }
+}
+
+impl p2pcore::GroupEvents for GroupBridge {
+    fn on_group_message(&self, message: p2pcore::GroupMessage) {
+        let _ = self.0.send(Ev::Group(GroupEv::Message(message)));
+    }
+    fn on_group_changed(&self, group_id: String) {
+        let _ = self.0.send(Ev::Group(GroupEv::Changed(group_id)));
     }
 }
 
@@ -151,6 +206,20 @@ impl NodeEvents for Events {
         let _ = self.tx.send(Ev::State(id, state));
     }
     fn on_log(&self, _line: String) {}
+}
+
+/// Group-call events: the audio follows them on the core's thread, the UI through the channel.
+pub struct GroupCallBridge {
+    pub tx: mpsc::UnboundedSender<Ev>,
+    pub audio: Arc<audio::Ctl>,
+}
+
+impl GroupCallEvents for GroupCallBridge {
+    fn on_group_call(&self, e: GroupCallEvent) {
+        tlog!("GROUP_CALL {:?} {} {}", e.kind, e.call_id, e.detail);
+        self.audio.on_group_call();
+        let _ = self.tx.send(Ev::GroupCall(e));
+    }
 }
 
 pub struct Init {
@@ -311,7 +380,13 @@ fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     audio.attach(&node);
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
+    node.set_group_events(Arc::new(GroupBridge(tx.clone())));
+    node.set_group_request_events(Arc::new(GroupBridge(tx.clone())));
+    node.set_group_invitation_events(Arc::new(GroupBridge(tx.clone())));
     node.set_link_events(Arc::new(LinkBridge(tx.clone())));
+    node.set_video_events(Arc::new(VideoBridge(tx.clone())));
+    node.set_group_call_events(Arc::new(GroupCallBridge { tx: tx.clone(), audio: audio.clone() }));
+    hostcond::spawn(&node);
     // The single pre-accounts key entry belongs to the account core just migrated.
     keystore::migrate_legacy(keystore::system(), &data, &node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
@@ -333,6 +408,13 @@ fn main() -> Result<(), String> {
                     "STATS t={} direct={} rtt={}ms sent={} recv={} lost={} recovered={} concealed={} buf={}ms freq={:.1} rms={:.0}",
                     st.secs, st.direct, st.rtt_ms, st.sent, st.received, st.lost,
                     st.recovered, st.concealed, st.buffered_ms, st.rx_freq_hz, st.rx_rms
+                );
+            }
+            if let Some(v) = node.video_stats() {
+                tlog!(
+                    "VSTATS sent={} key={} send={}x{} kbps={} enc_ms={:.1} decoded={} errors={} recv={}x{}",
+                    v.frames_sent, v.keyframes_sent, v.send_width, v.send_height, v.bitrate_bps / 1000,
+                    v.encode_ms, v.frames_decoded, v.decode_errors, v.recv_width, v.recv_height
                 );
             }
         });

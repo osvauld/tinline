@@ -104,7 +104,7 @@ fun isMissedReason(reason: String, incoming: Boolean) =
  * THE one place that turns an end reason into words for the Call ended screen. [incoming] is whether
  * the call came in (the same token reads differently from each side). Unknown reasons give "Call ended".
  */
-fun endReasonText(reason: String, peerName: String, incoming: Boolean = false): String {
+fun endReasonText(reason: String, peerName: String, incoming: Boolean = false, blockedByMe: Boolean = false): String {
     val who = peerName.trim().ifEmpty { "They" }
     return when (reason) {
         "hangup_local" -> "You hung up"
@@ -119,6 +119,10 @@ fun endReasonText(reason: String, peerName: String, incoming: Boolean = false): 
         "unavailable" -> "Turned away while you were not available"
         "answered_elsewhere" -> "Answered on another device"
         "declined_elsewhere" -> "Declined on another device"
+        // Either side's block ends the call with the same token; [blockedByMe] says which.
+        // P6: they let us message them but not call.
+        "calls not allowed" -> "${firstName(who)} hasn’t allowed calls from you"
+        "blocked" -> if (blockedByMe) "You blocked ${firstName(who)}" else "${firstName(who)} blocked you"
         else -> "Call ended"
     }
 }

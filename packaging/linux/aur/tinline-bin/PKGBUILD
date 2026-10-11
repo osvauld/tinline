@@ -18,4 +18,5 @@ package() {
   install -Dm644 "${srcdir}/${srcdir_name}/share/applications/tinline.desktop" "${pkgdir}/usr/share/applications/tinline.desktop"
   install -Dm644 "${srcdir}/${srcdir_name}/share/icons/hicolor/512x512/apps/tinline.png" "${pkgdir}/usr/share/icons/hicolor/512x512/apps/tinline.png"
   install -Dm644 "${srcdir}/${srcdir_name}/LICENSE" "${pkgdir}/usr/share/licenses/tinline/LICENSE"
+  install -Dm644 -t "${pkgdir}/usr/share/licenses/tinline" "${srcdir}/${srcdir_name}"/licenses/*.txt
 }

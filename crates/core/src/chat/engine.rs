@@ -1,4 +1,4 @@
-//! The chat runtime: sealed store, shard cache, sessions over `tinline/chat/1`, outbox/retry,
+//! The chat runtime: sealed store, shard cache, sessions over `tinline/chat/3`, outbox/retry,
 //! blob transfers. Everything hangs off `Inner` (see `node.rs`); the UniFFI methods in `api.rs`
 //! are thin wrappers over the `chat_*` functions here.
 
@@ -13,7 +13,7 @@ use iroh_blobs::Hash;
 use loro::VersionVector;
 use parking_lot::Mutex;
 use proto::Msg;
-use storage::{Op, Store as Db};
+use storage::Op;
 use tokio::sync::{OnceCell, Semaphore, mpsc, oneshot};
 
 use super::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
@@ -63,6 +63,13 @@ pub struct ChatCore {
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
     pub(crate) presence: super::presence::Presence,
+    /// This install's device ID (U16; `ProfileV2::device_id`): what every version we write
+    /// carries as `dev`.
+    device_id: [u8; 32],
+    /// Our writer ID: `writer_id(our DID, value)`, the Loro peer id we write chat docs with.
+    pub(crate) wid: u64,
+    /// Test knob: the next this-many `chat_persist` calls fail, as if the disk were full.
+    pub(crate) fail_writes: std::sync::atomic::AtomicU32,
 }
 
 pub enum Cmd {
@@ -144,10 +151,10 @@ impl Inner {
 
     /// Opens the sealed chat store; called whenever the data key becomes available.
     pub(crate) fn chat_open(self: &Arc<Self>) {
-        let (dek, phrase) = {
+        let (dek, phrase, did) = {
             let s = self.shared.lock();
             match (s.dek.as_ref(), s.me.as_ref()) {
-                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone())),
+                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.id.did().to_string()),
                 _ => return,
             }
         };
@@ -159,8 +166,21 @@ impl Inner {
             Some(a) => a.store.dir().to_path_buf(),
             None => return,
         };
+        // A chat store that is not there yet starts from nothing: whatever this install wrote
+        // before under its writer ID (a lost or deleted store) is not in it, but contacts may hold
+        // it. Writing again from counter 0 under the same writer ID would hand them ops they take
+        // for ones they have and drop (P10), so a fresh store gets a fresh device ID, hence a
+        // fresh writer ID. Saved before the file exists: a crash in between only rotates again.
+        let path = dir.join("chat.redb");
+        if !path.exists()
+            && let Err(e) = self.new_device_id()
+        {
+            tracing::warn!("chat store: device id: {e}");
+            return;
+        }
         // Keyed by the recovery phrase; a store from before that is re-keyed here (rekey.rs).
-        let sealed = match Db::open(dir.join("chat.redb")).map_err(|e| crate::Error::Io(e.to_string())).and_then(|db| {
+        // The node before a restart may still hold the file for a moment: `open_waiting`.
+        let sealed = match crate::store::open_waiting(&path).and_then(|db| {
             crate::rekey::open(
                 db,
                 crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase),
@@ -173,8 +193,16 @@ impl Inner {
                 return;
             }
         };
+        let store = ChatStore::new(sealed);
+        let value = match self.device_id() {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::warn!("chat store: device id: {e}");
+                return;
+            }
+        };
         let core = Arc::new(ChatCore {
-            store: ChatStore::new(sealed),
+            store,
             dir,
             hub: OnceCell::new(),
             shards: Default::default(),
@@ -186,8 +214,39 @@ impl Inner {
             dial_sem: Arc::new(Semaphore::new(4)),
             next_session: AtomicU64::new(1),
             presence: super::presence::Presence::new(),
+            device_id: value,
+            wid: writer_id(&did, &value),
+            fail_writes: Default::default(),
         });
         *self.chat.lock() = Some(core);
+    }
+
+    /// Gives this install a new device ID (`ProfileV2::device_id`) and saves the profile.
+    fn new_device_id(&self) -> Result<(), Error> {
+        let mut s = self.shared.lock();
+        let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
+        let mut p = p.clone();
+        p.device_id = Some(crate::store::new_device_id());
+        let disk = crate::store::Disk::V2(p);
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
+        s.disk = Some(disk);
+        Ok(())
+    }
+
+    /// This install's device ID (`ProfileV2::device_id`, U16); made here once if the profile
+    /// has none yet.
+    fn device_id(&self) -> Result<[u8; 32], Error> {
+        let mut s = self.shared.lock();
+        let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
+        if let Some(i) = p.device_id_bytes() {
+            return Ok(i);
+        }
+        let mut p = p.clone();
+        p.device_id = Some(crate::store::new_device_id());
+        let disk = crate::store::Disk::V2(p.clone());
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
+        s.disk = Some(disk);
+        p.device_id_bytes().ok_or(Error::NoIdentity)
     }
 
     pub(crate) async fn chat_close(self: &Arc<Self>) {
@@ -199,6 +258,19 @@ impl Inner {
             if let Some(h) = core.hub.get() {
                 h.shutdown().await;
             }
+            // GL: the file goes now, whatever task still holds the core.
+            core.store.db.close();
+        }
+    }
+
+    /// `chat_close` without waiting (for `Node`'s drop on a core thread): the store closes, the
+    /// blob store is left to its drop.
+    pub(crate) fn chat_close_now(&self) {
+        if let Some(core) = self.chat.lock().take() {
+            for s in core.sessions.lock().values() {
+                let _ = s.tx.send(Cmd::Close);
+            }
+            core.store.db.close();
         }
     }
 
@@ -294,7 +366,7 @@ impl Inner {
                     break;
                 }
                 let Ok(me) = this.me() else { break };
-                if this.shared.lock().endpoint.is_none() || !this.shared.lock().state.contacts.iter().any(|c| c.did == did) {
+                if this.shared.lock().endpoint.is_none() || !this.chat_may_dial(&did) {
                     break;
                 }
                 let permit = core.dial_sem.clone().acquire_owned().await;
@@ -327,16 +399,32 @@ impl Inner {
     }
 
     /// Verifies a peer's `Auth` like a call hello: attested device = the connection's key, a
-    /// grant we issued them, and they are a contact who is not blocked. Returns their DID.
-    fn verify_auth(&self, me: &Me, auth: &ChatMsg, remote: [u8; 32]) -> Result<(String, Option<String>), Error> {
+    /// token we issued them, and they are a contact. Returns their DID (blocked or not: the
+    /// caller answers a blocked one with our notice) and the token, which `chat_admit` checks.
+    fn verify_auth(&self, me: &Me, auth: &ChatMsg, remote: [u8; 32]) -> Result<(String, Option<String>, proto::Grant), Error> {
         let ChatMsg::Auth { attestation, grant, relay } = auth else { return Err(Error::Protocol("expected Auth".into())) };
-        let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None };
+        let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None, video: None };
         let s = self.shared.lock();
         let contacts = &s.state.contacts;
-        let who = proto::accept_call_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| {
-            contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did)
-        })?;
-        Ok((who.did, relay_hint(relay)))
+        let who = proto::accept_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| contacts.iter().any(|c| c.did == did))?;
+        Ok((who.did, relay_hint(relay), who.grant))
+    }
+
+    /// P6: chat needs a message token of ours that was not taken back (a block's cut-off); a
+    /// call token does not open chat. Renews the token when it is close to expiry.
+    fn chat_admit(self: &Arc<Self>, did: &str, grant: &proto::Grant) -> Result<(), Error> {
+        if self.token_check(did, grant, proto::Cap::Message).is_err() {
+            self.log(format!("chat refused: {did}: no valid message token"));
+            return Err(Error::Rejected("not accepted".into()));
+        }
+        self.renew_message_if_due(did, grant);
+        Ok(())
+    }
+
+    /// Whether we keep a session with `did` going: a contact that neither side blocks.
+    fn chat_may_dial(&self, did: &str) -> bool {
+        let s = self.shared.lock();
+        s.state.contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did) && !crate::block::blocked_me(&s.state, did)
     }
 
     async fn chat_dial(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, did: &str) -> Result<(), Error> {
@@ -359,10 +447,13 @@ impl Inner {
                     continue;
                 }
             };
-            let conn = match tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, CHAT_ALPN)).await {
+            let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CHAT)).await {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
-                    last = Error::net(e);
+                    if matches!(e, Error::Protocol(_)) {
+                        self.log(format!("chat with {did}: {e}"));
+                    }
+                    last = e;
                     continue;
                 }
                 Err(_) => {
@@ -398,13 +489,38 @@ impl Inner {
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::Protocol("peer closed".into()))?;
-            self.verify_auth(me, &reply, remote)?
+            if let ChatMsg::Notice { notice } = &reply {
+                // They block us: their notice instead of their Auth.
+                let did = self.shared.lock().state.contacts.iter().find(|c| c.has_device(&remote)).map(|c| c.did.clone());
+                if let Some(did) = did
+                    && self.is_block_from(&did, notice)
+                {
+                    let _ = self.take_notice(notice);
+                    return Err(Error::Rejected(crate::BLOCKED.into()));
+                }
+                return Err(Error::Protocol("unexpected notice".into()));
+            }
+            let (did, hint, grant) = self.verify_auth(me, &reply, remote)?;
+            if self.shared.lock().state.blocked.contains(&did) {
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
+            self.chat_admit(&did, &grant)?;
+            (did, hint)
         } else {
             let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
                 .await
                 .map_err(|_| Error::Timeout)??
                 .ok_or_else(|| Error::Protocol("peer closed before auth".into()))?;
-            let (did, hint) = self.verify_auth(me, &first, remote)?;
+            let (did, hint, grant) = self.verify_auth(me, &first, remote)?;
+            // A DID we block gets our notice instead of our Auth, then the connection ends.
+            if let Some(notice) = self.refusal_for(&did) {
+                self.log("chat refused: blocked");
+                writer.send(&ChatMsg::Notice { notice }).await?;
+                let _ = writer.0.finish();
+                let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
+            self.chat_admit(&did, &grant)?;
             let grant = {
                 let s = self.shared.lock();
                 s.state.contacts.iter().find(|c| c.did == did).map(|c| c.grant_from_them.clone())
@@ -656,7 +772,7 @@ impl Inner {
                 if !day_valid(&before) {
                     return Err(Error::Protocol("bad day".into()));
                 }
-                let days = self.chat_history_days(core, &me, &pair, &before, limit.min(14)).await?;
+                let days = self.chat_history_days(core, &pair, &before, limit.min(14)).await?;
                 writer.send(&ChatMsg::HistoryResp { days }).await
             }
             ChatMsg::HistoryResp { days } => {
@@ -665,6 +781,7 @@ impl Inner {
                 }
                 Ok(())
             }
+            ChatMsg::Notice { .. } => Err(Error::Protocol("unexpected notice".into())),
         }
     }
 
@@ -674,10 +791,21 @@ impl Inner {
     }
 
     /// Loads the shard into the cache (creating an empty one) and returns whether it was there.
-    pub(crate) async fn chat_shard(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Me, pair: &str, day: &str) -> Result<(), Error> {
+    /// A cached shard that holds other ops than the store (a write whose `chat_persist` failed
+    /// after the doc took it) is dropped and loaded again: its ops were never stored, so they
+    /// must never be sent, and our next write must not build on them (P10).
+    pub(crate) async fn chat_shard(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<(), Error> {
         let key = (pair.to_string(), day.to_string());
-        if core.shards.lock().contains_key(&key) {
-            return Ok(());
+        {
+            let mut cache = core.shards.lock();
+            if let Some(s) = cache.get(&key) {
+                let stored = core.store.shard_meta(pair, day)?.and_then(|m| decode_vv(&m.vv).ok()).unwrap_or_default();
+                if s.vv() == stored {
+                    return Ok(());
+                }
+                tracing::warn!("chat: cached {day} differs from the store; reloading it");
+                cache.remove(&key);
+            }
         }
         let meta = core.store.shard_meta(pair, day)?;
         let (snap, ups) = core.store.shard_rows(pair, day)?;
@@ -695,7 +823,7 @@ impl Inner {
             }
             _ => snap,
         };
-        let shard = Shard::load(pair, day, &me.device, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
+        let shard = Shard::load(pair, day, core.wid, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
         let mut cache = core.shards.lock();
         if cache.len() >= MAX_SHARDS_CACHED {
             let today = day_of(now_ms());
@@ -706,10 +834,8 @@ impl Inner {
     }
 
     /// Persists a shard change: the update (or a fresh snapshot every so often), the meta, and
-    /// `extra` ops, in one transaction. Call with the shard cache locked.
-    /// Callers hold `core.shards`, as `chat_purge` does while it deletes: a write racing a
-    /// contact's removal either lands before the purge (and is deleted with the rest) or finds
-    /// the conversation gone, so a removed conversation is never written back.
+    /// `extra` ops, in one transaction. Call with the shard cache locked. On failure the cached
+    /// shard is ahead of the store; `chat_shard` reloads it before anyone uses it again.
     pub(crate) fn chat_persist(&self, core: &ChatCore, pair: &str, shard: &Shard, update: &[u8], mut extra: Vec<Op>) -> Result<(), Error> {
         let me = self.me()?;
         if self.pair_owner(&me, pair).is_none() {
@@ -718,6 +844,7 @@ impl Inner {
         let day = shard.day.as_str();
         let mut meta = core.store.shard_meta(pair, day)?.unwrap_or_default();
         meta.vv = shard.vv().encode();
+        meta.own = shard.own_writers(me.id.did()).into_iter().collect();
         meta.n_messages = shard.messages().map(|m| m.len() as u32).unwrap_or(meta.n_messages);
         if meta.n_updates + 1 > UPDATES_BEFORE_SNAPSHOT {
             extra.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
@@ -728,6 +855,9 @@ impl Inner {
             meta.n_updates += 1;
         }
         extra.push(core.store.put_meta_op(pair, day, &meta)?);
+        if core.fail_writes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
+            return Err(Error::Io("test: chat write failed".into()));
+        }
         core.store.db.apply(&extra).map_err(io)?;
         self.selfsync_dirty(&doc_name(pair, day));
         Ok(())
@@ -803,7 +933,7 @@ impl Inner {
             return Err(Error::Protocol(Reject::BadSignature.to_string()));
         }
         let pair = pair_id(me.id.did(), &sess.did);
-        self.chat_shard(core, me, &pair, &day).await?;
+        self.chat_shard(core, &pair, &day).await?;
         let mut added_files = Vec::new();
         let mut unchanged: Option<VersionVector> = None;
         let mut need_history = false;
@@ -811,14 +941,7 @@ impl Inner {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
-            let ctx = Ctx {
-                signer_did: sess.did.clone(),
-                signer_peer: peer_id(&sess.device, doc),
-                now_ms: now_ms(),
-                live,
-                history: None,
-                keys: vec![(sess.did.clone(), sess.device), (me.id.did().to_string(), me.device)],
-            };
+            let ctx = Ctx { signer_did: sess.did.clone(), now_ms: now_ms(), live, history: None };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
                 // Their ops build on ops of ours that we lost (a reinstall): the batch cannot
@@ -915,8 +1038,6 @@ impl Inner {
     /// The peer says it holds `their_vv` of a day: our messages up to there are delivered.
     pub(super) fn chat_ack(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, day: &str, their_vv: &VersionVector) -> Result<(), Error> {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
-        let name = doc_name(pair, day);
-        let my_peer = peer_id(&me.device, &name);
         let mut acked = match core.store.ack(pair, day)? {
             Some(b) => decode_vv(&b).unwrap_or_default(),
             None => VersionVector::default(),
@@ -927,11 +1048,9 @@ impl Inner {
             return Ok(());
         }
         let moved = |peer: u64, c: i32| before.get(&peer).copied().unwrap_or(0) < c && c <= acked.get(&peer).copied().unwrap_or(0);
-        let new = acked.get(&my_peer).copied().unwrap_or(0);
-        let mine = decode_vv(&meta.vv).ok().and_then(|v| v.get(&my_peer).copied()).unwrap_or(0);
-        let mut newly: Vec<String> = core.store.mcs(pair, day)?.into_iter().filter(|(_, c)| moved(my_peer, *c)).map(|(id, _)| id).collect();
-        newly.extend(core.store.mos(pair, day)?.into_iter().filter(|(_, (p, c))| moved(*p, *c)).map(|(id, _)| id));
-        core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, mine > new)?]).map_err(io)?;
+        let owed = Self::chat_owes(core, &meta, &acked);
+        let newly: Vec<String> = core.store.mos(pair, day)?.into_iter().filter(|(_, (p, c))| moved(*p, *c)).map(|(id, _)| id).collect();
+        core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, owed)?]).map_err(io)?;
         self.selfsync_dirty(ACK_MARK);
         if let Some(ev) = self.ev() {
             for id in &newly {
@@ -964,26 +1083,48 @@ impl Inner {
     ) -> Result<(), Error> {
         let Some(meta) = core.store.shard_meta(pair, day)? else { return Ok(()) };
         let name = doc_name(pair, day);
-        let my_peer = peer_id(&me.device, &name);
-        let mine = decode_vv(&meta.vv)?.get(&my_peer).copied().unwrap_or(0);
-        if their_vv.get(&my_peer).copied().unwrap_or(0) >= mine {
+        // Our ops are under any of our writer IDs: this install's, and those of our earlier or
+        // other installs whose ops we hold (P10b).
+        if !Self::chat_owes(core, &meta, their_vv) {
             return Ok(());
         }
-        self.chat_shard(core, me, pair, day).await?;
+        self.chat_shard(core, pair, day).await?;
         let out = {
             let shards = core.shards.lock();
-            shards.get(&(pair.to_string(), day.to_string())).and_then(|s| s.export_own_since(their_vv).map(|u| (u, s.vv(), s.peer, s.my_counter())))
+            shards.get(&(pair.to_string(), day.to_string())).and_then(|s| {
+                let vv = s.vv();
+                let ends: Vec<(u64, i32)> = s.own_writers(me.id.did()).into_iter().filter_map(|p| vv.get(&p).map(|c| (p, *c))).collect();
+                // A live push must not create a message the contact refuses for the 24 h live
+                // window (an old one of ours not delivered yet, e.g. from another writer ID):
+                // that batch goes as a catch-up `Sync` instead, which has no such window and
+                // keeps the session up (P10b). One hour of margin for clock skew.
+                let catch_up = !sync && s.creates_outside(their_vv, me.id.did(), now_ms(), DAY_MS - HOUR_MS);
+                s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends, catch_up))
+            })
         };
-        let Some((update, vv, peer, counter)) = out else { return Ok(()) };
+        let Some((update, vv, ends, catch_up)) = out else { return Ok(()) };
         let sig = sign_batch(&me.profile.device_secret, &name, &update);
-        let msg = if sync {
+        let msg = if sync || catch_up {
             ChatMsg::Sync { doc: name, vv: vv.encode(), update, sig }
         } else {
             ChatMsg::Push { doc: name, update, sig }
         };
         writer.send(&msg).await?;
-        sess.peer_vv.lock().entry(day.to_string()).or_default().insert(peer, counter);
+        let mut pv = sess.peer_vv.lock();
+        let theirs = pv.entry(day.to_string()).or_default();
+        for (p, c) in ends {
+            if theirs.get(&p).is_none_or(|t| *t < c) {
+                theirs.insert(p, c);
+            }
+        }
         Ok(())
+    }
+
+    /// Whether a contact holding `theirs` of a day lacks ops of ours: of any of our writer IDs
+    /// in it (`ShardMeta::own`, plus this install's), not only this install's (P10b).
+    pub(crate) fn chat_owes(core: &ChatCore, meta: &ShardMeta, theirs: &VersionVector) -> bool {
+        let held = decode_vv(&meta.vv).unwrap_or_default();
+        meta.own.iter().chain(std::iter::once(&core.wid)).any(|p| theirs.get(p).copied().unwrap_or(0) < held.get(p).copied().unwrap_or(0))
     }
 
     async fn chat_push(self: &Arc<Self>, core: &Arc<ChatCore>, sess: &Arc<Session>, day: &str, writer: &mut ChatWriter) -> Result<(), Error> {
@@ -1000,14 +1141,25 @@ impl Inner {
         self.shared.lock().me.as_ref().is_some_and(|m| m.id.did() == did)
     }
 
-    /// A contact, or ourselves (the "You" conversation).
-    fn chat_contact(&self, did: &str) -> Result<(), Error> {
+    /// Whose conversation we may read: a contact, ourselves (the "You" conversation), or someone
+    /// whose notice we hold (they blocked us and their contact entry went, U20; the history
+    /// stays, read-only). With `write`, only a contact that neither side blocks, or ourselves.
+    fn chat_contact(&self, did: &str, write: bool) -> Result<(), Error> {
         let s = self.shared.lock();
-        if s.me.as_ref().is_some_and(|m| m.id.did() == did) || s.state.contacts.iter().any(|c| c.did == did) {
-            Ok(())
-        } else {
-            Err(Error::NotFound)
+        if s.me.as_ref().is_some_and(|m| m.id.did() == did) {
+            return Ok(());
         }
+        let contact = s.state.contacts.iter().any(|c| c.did == did);
+        if !write {
+            return if contact || s.state.notices.contains_key(did) { Ok(()) } else { Err(Error::NotFound) };
+        }
+        if crate::block::blocked_me(&s.state, did) {
+            return Err(Error::Rejected(crate::BLOCKED.into()));
+        }
+        if s.state.blocked.contains(did) {
+            return Err(Error::Protocol("you blocked them; unblock first".into()));
+        }
+        if contact { Ok(()) } else { Err(Error::NotFound) }
     }
 
     /// Adds a message of ours to today's shard, persists it, tells the session (or dials).
@@ -1020,20 +1172,21 @@ impl Inner {
     ) -> Result<Message, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        self.chat_contact(did)?;
+        self.chat_contact(did, true)?;
         if text.len() > MAX_TEXT {
             return Err(Error::Protocol("message too long".into()));
         }
         let pair = pair_id(me.id.did(), did);
         let at = now_ms();
         let day = day_of(at);
-        self.chat_shard(&core, &me, &pair, &day).await?;
-        let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to, file, sig: Vec::new() };
+        self.chat_shard(&core, &pair, &day).await?;
+        let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to, file, dev: core.device_id, did_sig: Vec::new() };
         let conv = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-            let update = shard.add_message(&rec, &me.profile.device_secret).map_err(|e| Error::Io(e.to_string()))?;
-            let mut ops = vec![core.store.put_mc_op(&pair, &day, &rec.id, shard.my_counter())?, core.store.mi_op(&pair, &rec.id, &day)?];
+            let update = shard.add_message(&rec, &self.chat_writer(&me, &core)).map_err(|e| Error::Io(e.to_string()))?;
+            // The tick marker names the peer id it was written under: our writer ID.
+            let mut ops = vec![core.store.put_mo_op(&pair, &day, &rec.id, shard.peer(), shard.my_counter())?, core.store.mi_op(&pair, &rec.id, &day)?];
             if !self.is_self_did(did) {
                 ops.push(core.store.out_op(&pair, &day, true)?);
             }
@@ -1055,6 +1208,38 @@ impl Inner {
         Ok(m)
     }
 
+    /// Test hook (`write_as_sibling_for_test`): a message of ours sent at `at`, under a fresh
+    /// device ID's writer ID, stored like one relayed by an own device (pending, not pushed).
+    pub(crate) async fn chat_write_as_sibling_for_test(self: &Arc<Self>, did: &str, text: String, at: i64) -> Result<String, Error> {
+        let me = self.me()?;
+        let core = self.chat_core()?;
+        self.chat_contact(did, true)?;
+        let pair = pair_id(me.id.did(), did);
+        let day = day_of(at);
+        self.chat_shard(&core, &pair, &day).await?;
+        let dev = new_device_value();
+        let w = Writer::new(me.id.clone(), dev);
+        let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to: None, file: None, dev, did_sig: Vec::new() };
+        let key = (pair.clone(), day.clone());
+        let mut shards = core.shards.lock();
+        let shard = shards.get_mut(&key).ok_or(Error::NotFound)?;
+        let update = shard.add_message(&rec, &w).map_err(|e| Error::Io(e.to_string()))?;
+        let end = shard.vv().get(&w.writer_id()).copied().unwrap_or(0);
+        let mut ops = vec![core.store.put_mo_op(&pair, &day, &rec.id, w.writer_id(), end)?, core.store.mi_op(&pair, &rec.id, &day)?, core.store.out_op(&pair, &day, true)?];
+        let (cops, _) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, true)])?;
+        ops.extend(cops);
+        let r = self.chat_persist(&core, &pair, shard, &update, ops);
+        // The cached doc now writes under the sibling's writer ID: load it again for ours.
+        shards.remove(&key);
+        r.map(|_| rec.id)
+    }
+
+    /// How this install writes chat messages: signed by the account's DID key, under the writer
+    /// ID of this install's device ID (P9c: the same for every conversation).
+    pub(crate) fn chat_writer(&self, me: &Me, core: &ChatCore) -> Writer {
+        Writer::new(me.id.clone(), core.device_id)
+    }
+
     fn chat_after_local_write(self: &Arc<Self>, core: &Arc<ChatCore>, did: &str, day: &str) {
         if self.is_self_did(did) {
             return;
@@ -1071,10 +1256,10 @@ impl Inner {
     pub(crate) async fn chat_edit(self: &Arc<Self>, did: &str, id: &str, text: Option<String>) -> Result<Message, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        self.chat_contact(did)?;
+        self.chat_contact(did, true)?;
         let pair = pair_id(me.id.did(), did);
         let day = core.store.mi(&pair, id)?.ok_or(Error::NotFound)?;
-        self.chat_shard(&core, &me, &pair, &day).await?;
+        self.chat_shard(&core, &pair, &day).await?;
         let (rec, conv) = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
@@ -1087,9 +1272,9 @@ impl Inner {
                     if t.len() > MAX_TEXT {
                         return Err(Error::Protocol("message too long".into()));
                     }
-                    shard.edit(id, t, now_ms(), &me.profile.device_secret)
+                    shard.edit(id, t, now_ms(), &self.chat_writer(&me, &core))
                 }
-                None => shard.delete(id, now_ms(), &me.profile.device_secret),
+                None => shard.delete(id, now_ms(), &self.chat_writer(&me, &core)),
             }
             .map_err(|e| Error::Io(e.to_string()))?;
             let rec = shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?;
@@ -1137,15 +1322,10 @@ impl Inner {
         }
     }
 
-    /// Two ticks once the contact holds the change that created our message: written here
-    /// (`mc`, our peer) or on another of our devices (`mo`, that device's peer). A message of
-    /// ours with neither (synced before `mo` existed) shows as held.
-    fn chat_delivery(core: &ChatCore, me: &Me, pair: &str, day: &str, id: &str) -> DeliveryState {
-        let mark = match core.store.mc(pair, day, id).ok().flatten() {
-            Some(c) => Some((peer_id(&me.device, &doc_name(pair, day)), c)),
-            None => core.store.mo(pair, day, id).ok().flatten(),
-        };
-        let Some((peer, c)) = mark else { return DeliveryState::Delivered };
+    /// Two ticks once the contact holds the change that created our message (`mo`: the writer
+    /// ID it was created under, here or on another of our devices, and the op count after it).
+    fn chat_delivery(core: &ChatCore, pair: &str, day: &str, id: &str) -> DeliveryState {
+        let Some((peer, c)) = core.store.mo(pair, day, id).ok().flatten() else { return DeliveryState::Delivered };
         let ack = core.store.ack(pair, day).ok().flatten().and_then(|b| decode_vv(&b).ok()).and_then(|v| v.get(&peer).copied()).unwrap_or(0);
         if c > ack { DeliveryState::Pending } else { DeliveryState::Delivered }
     }
@@ -1154,7 +1334,7 @@ impl Inner {
         let outgoing = rec.author == me.id.did();
         // "You" items go nowhere; a message written on another of our devices has no counter
         // here and shows as held (it reached this device).
-        let delivery = if outgoing && !self.is_self_did(did) { Self::chat_delivery(core, me, pair, day, &rec.id) } else { DeliveryState::Delivered };
+        let delivery = if outgoing && !self.is_self_did(did) { Self::chat_delivery(core, pair, day, &rec.id) } else { DeliveryState::Delivered };
         Message {
             id: rec.id.clone(),
             peer_did: did.to_string(),
@@ -1176,14 +1356,13 @@ impl Inner {
             "You".to_string()
         } else {
             let s = self.shared.lock();
-            let c = s.state.contacts.iter().find(|c| c.did == conv.peer_did)?;
-            crate::node::display_name(c)
+            crate::block::known_name(&s.state, &conv.peer_did)?
         };
         let pair = pair_id(me.id.did(), &conv.peer_did);
         let (last_outgoing, last_delivery, last_activity, preview) = match &conv.last {
             Some(l) => {
                 let delivery = match core.store.mi(&pair, &l.id).ok().flatten() {
-                    Some(day) if l.outgoing && !is_self => Self::chat_delivery(core, me, &pair, &day, &l.id),
+                    Some(day) if l.outgoing && !is_self => Self::chat_delivery(core, &pair, &day, &l.id),
                     _ => DeliveryState::Delivered,
                 };
                 (l.outgoing, delivery, l.at.max(0) as u64, l.preview.clone())
@@ -1196,7 +1375,13 @@ impl Inner {
     pub(crate) fn chat_list(&self) -> Result<Vec<Chat>, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        let mut dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
+        let mut dids: Vec<String> = {
+            let s = self.shared.lock();
+            let mut v: Vec<String> = s.state.contacts.iter().map(|c| c.did.clone()).collect();
+            // Kept, read-only conversations of people whose block deleted their contact entry.
+            v.extend(s.state.notices.keys().filter(|d| !s.state.contacts.iter().any(|c| &c.did == *d)).cloned());
+            v
+        };
         dids.push(me.id.did().to_string());
         let mut out = Vec::new();
         for did in dids {
@@ -1213,7 +1398,7 @@ impl Inner {
     pub(crate) async fn chat_day(self: &Arc<Self>, did: &str, day: Option<String>) -> Result<DayPage, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        self.chat_contact(did)?;
+        self.chat_contact(did, false)?;
         let pair = pair_id(me.id.did(), did);
         let days = core.store.shard_days(&pair)?;
         let mut with_msgs = Vec::new();
@@ -1238,7 +1423,7 @@ impl Inner {
         if core.store.shard_meta(&pair, &day)?.is_none() {
             return Ok(DayPage { day, messages: vec![], older_day });
         }
-        self.chat_shard(&core, &me, &pair, &day).await?;
+        self.chat_shard(&core, &pair, &day).await?;
         let recs = {
             let shards = core.shards.lock();
             shards.get(&(pair.clone(), day.clone())).map(|s| s.messages()).transpose().map_err(|e| Error::Io(e.to_string()))?.unwrap_or_default()
@@ -1431,8 +1616,7 @@ impl Inner {
             let rec = match rec {
                 Some(r) => r,
                 None => {
-                    let Ok(me) = this.me() else { return };
-                    if this.chat_shard(&core, &me, &pair, &day).await.is_err() {
+                    if this.chat_shard(&core, &pair, &day).await.is_err() {
                         return;
                     }
                     let shards = core.shards.lock();
@@ -1673,7 +1857,7 @@ impl Inner {
         text: Option<String>,
         voice: Option<(u32, Vec<u8>)>,
     ) -> Result<Message, Error> {
-        self.chat_contact(did)?;
+        self.chat_contact(did, true)?;
         let meta = std::fs::metadata(&path)?;
         if !meta.is_file() {
             return Err(Error::Protocol("not a file".into()));
@@ -1708,7 +1892,7 @@ impl Inner {
 
     // ---- history & compaction ------------------------------------------------------------------------
 
-    async fn chat_snapshot_blob(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, pair: &str, day: &str) -> Result<HistDay, Error> {
+    async fn chat_snapshot_blob(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<HistDay, Error> {
         let meta = core.store.shard_meta(pair, day)?.ok_or(Error::NotFound)?;
         let hub = self.chat_hub().await?;
         if let Some(c) = &meta.closed
@@ -1723,7 +1907,7 @@ impl Inner {
         {
             return Ok(HistDay { day: day.into(), vv: s.vv, hash: s.hash, key: s.key, size: s.size });
         }
-        self.chat_shard(core, me, pair, day).await?;
+        self.chat_shard(core, pair, day).await?;
         let snap = core.shards.lock().get(&(pair.to_string(), day.to_string())).map(|s| s.snapshot()).ok_or(Error::NotFound)?;
         let key = crypt::new_key();
         let hash = hub.add_bytes(key, snap).await?;
@@ -1742,7 +1926,7 @@ impl Inner {
         Ok(HistDay { day: day.into(), vv: meta.vv, hash: sref.hash, key: sref.key, size })
     }
 
-    async fn chat_history_days(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, pair: &str, before: &str, limit: u32) -> Result<Vec<HistDay>, Error> {
+    async fn chat_history_days(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, before: &str, limit: u32) -> Result<Vec<HistDay>, Error> {
         let mut out = Vec::new();
         for d in core.store.shard_days(pair)? {
             if d.as_str() >= before {
@@ -1751,7 +1935,7 @@ impl Inner {
             if core.store.shard_meta(pair, &d)?.is_none_or(|m| m.n_messages == 0) {
                 continue;
             }
-            out.push(self.chat_snapshot_blob(core, me, pair, &d).await?);
+            out.push(self.chat_snapshot_blob(core, pair, &d).await?);
             if out.len() as u32 >= limit {
                 break;
             }
@@ -1763,12 +1947,21 @@ impl Inner {
     pub(crate) async fn chat_fetch_history(self: &Arc<Self>, did: &str, before: String) -> Result<u32, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        self.chat_contact(did)?;
+        self.chat_contact(did, false)?;
         if !day_valid(&before) {
             return Err(Error::Protocol("bad day".into()));
         }
         if self.is_self_did(did) {
             return Ok(0);
+        }
+        {
+            let s = self.shared.lock();
+            if crate::block::blocked_me(&s.state, did) {
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
+            if s.state.blocked.contains(did) || !s.state.contacts.iter().any(|c| c.did == did) {
+                return Err(Error::Protocol("not a contact you can ask".into()));
+            }
         }
         let ep_ready = self.endpoint().is_ok();
         if !ep_ready {
@@ -1803,14 +1996,18 @@ impl Inner {
         Ok(added)
     }
 
-    /// A peer-vouched snapshot of a day (see `Ctx::history`): validated like a batch, merged
-    /// into whatever we hold of that day, stored as the new snapshot. The shard must be loaded.
+    /// A peer-vouched snapshot of a day (see `Ctx::history`): validated like any batch (every op
+    /// proven by its author's DID signature), merged into whatever we hold of that day, stored as
+    /// the new snapshot. The shard must be loaded.
     fn chat_apply_history(&self, core: &ChatCore, me: &Me, sess: &Session, pair: &str, day: &str, snap: &[u8]) -> Result<bool, Error> {
         let mut shards = core.shards.lock();
         let shard = shards.get_mut(&(pair.to_string(), day.to_string())).ok_or(Error::NotFound)?;
         let before = shard.vv();
-        let ctx = Ctx { signer_did: sess.did.clone(), signer_peer: 0, now_ms: now_ms(), live: false, history: Some(me.id.did().to_string()), keys: self.chat_keys(me, &sess.did) };
-        shard.apply_remote(snap, &ctx).map_err(|r| Error::Protocol(format!("rejected history: {r}")))?;
+        let ctx = Ctx { signer_did: sess.did.clone(), now_ms: now_ms(), live: false, history: Some(me.id.did().to_string()) };
+        if let Err(r) = shard.apply_remote(snap, &ctx) {
+            self.log(format!("rejected history of {day} from {}: {r}", sess.did));
+            return Err(Error::Protocol(format!("rejected history: {r}")));
+        }
         if shard.vv() == before {
             return Ok(false);
         }
@@ -1821,7 +2018,14 @@ impl Inner {
             let (o, _) = self.chat_register_file(core, pair, day, rec, true)?;
             ops.extend(o);
         }
-        let meta = ShardMeta { vv: shard.vv().encode(), next_seq: 0, n_updates: 0, n_messages: msgs.len() as u32, closed: None };
+        let meta = ShardMeta {
+            vv: shard.vv().encode(),
+            next_seq: 0,
+            n_updates: 0,
+            n_messages: msgs.len() as u32,
+            closed: None,
+            own: shard.own_writers(me.id.did()).into_iter().collect(),
+        };
         ops.extend(core.store.put_snap_ops(pair, day, &shard.snapshot())?);
         ops.push(core.store.put_meta_op(pair, day, &meta)?);
         // The last-message row may need to move.
@@ -1876,7 +2080,7 @@ impl Inner {
             .map_err(|e| Error::Io(e.to_string()))?
             .map_err(|e| Error::Io(e.to_string()))?;
         let _ = hub.release(&hash).await;
-        self.chat_shard(core, me, pair, &d.day).await?;
+        self.chat_shard(core, pair, &d.day).await?;
         self.chat_apply_history(core, me, sess, pair, &d.day, &snap)
     }
 
@@ -1900,7 +2104,7 @@ impl Inner {
                 if core.store.pending_days(&pair)?.contains(&day) {
                     continue;
                 }
-                self.chat_shard(&core, &me, &pair, &day).await?;
+                self.chat_shard(&core, &pair, &day).await?;
                 let snap = core.shards.lock().get(&(pair.clone(), day.clone())).map(|s| s.snapshot()).ok_or(Error::NotFound)?;
                 let hub = self.chat_hub().await?;
                 let key = crypt::new_key();
@@ -1927,11 +2131,9 @@ impl Inner {
 
     // ---- contact removal ---------------------------------------------------------------------------------
 
-    /// The conversation and its blobs go away on this device.
-    pub(crate) fn chat_purge(self: &Arc<Self>, did: &str) {
+    /// Ends every chat session with `did` (a block, either way).
+    pub(crate) fn chat_close_sessions(&self, did: &str) {
         let Ok(core) = self.chat_core() else { return };
-        let Ok(me) = self.me() else { return };
-        let pair = pair_id(me.id.did(), did);
         core.sessions.lock().retain(|_, s| {
             let hit = s.did == did;
             if hit {
@@ -1939,25 +2141,16 @@ impl Inner {
             }
             !hit
         });
-        let hashes = {
-            let mut shards = core.shards.lock();
-            shards.retain(|(p, _), _| *p != pair);
-            let hashes = core.store.conv_blobs(&pair).unwrap_or_default();
-            if let Err(e) = core.store.delete_conversation(&pair, &hashes) {
-                tracing::warn!("deleting conversation: {e}");
-            }
-            hashes
-        };
-        let this = self.clone();
-        self.handle.spawn(async move {
-            if let Ok(hub) = this.chat_hub().await {
-                for h in hashes {
-                    if let Ok(h) = parse_hash(&h) {
-                        let _ = hub.release(&h).await;
-                    }
-                }
-            }
-        });
+    }
+
+    /// Whether `id` is a message of ours to `did` that has not reached them.
+    pub(crate) fn chat_pending(&self, did: &str, id: &str) -> bool {
+        let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return false };
+        let pair = pair_id(me.id.did(), did);
+        match core.store.mi(&pair, id).ok().flatten() {
+            Some(day) => core.store.mo(&pair, &day, id).ok().flatten().is_some() && Self::chat_delivery(&core, &pair, &day, id) == DeliveryState::Pending,
+            None => false,
+        }
     }
 }
 

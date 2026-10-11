@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android blocking</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B6B5B}a:hover{color:#06352D}
+.t{--bg:#F5F6F3;--sf:#FFFFFF;--sf2:#ECEFEB;--sf3:#E2E6E1;--ink:#17201D;--ink2:#4D5853;--ln:#D3D9D4;--ln2:#8E9A94;--pr:#0B6B5B;--onpr:#FFFFFF;--prc:#CDEBE3;--onprc:#06352D;--th:#C98A1E;--er:#B3261E;--erc:#F9DEDC;--oner:#410E0B;--rl:#4B5AA8;--rlc:#E1E4F7;--onrlc:#2F3A75;--wn:#FCEFD2;--onwn:#5C3B00}
+.root{font-family:'Figtree',system-ui,sans-serif;background:#E4E7E3;box-sizing:border-box;padding:48px;display:flex;gap:48px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px;width:412px;flex:none}
+.lbl{font-size:14px;font-weight:700;color:#17201D;height:28px;display:flex;align-items:center;gap:8px}
+.lbl span{font-weight:400;color:#4D5853}
+.desc{font-size:14px;line-height:21px;color:#4D5853;margin:4px 0 0}
+.ph{width:412px;height:915px;border-radius:32px;overflow:hidden;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;position:relative;box-sizing:border-box;padding-top:40px;border:1px solid rgba(0,0,0,.08)}
+.bar{height:64px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px;flex:none}
+.bt{font-size:20px;font-weight:600;flex:1;min-width:0}
+.bs{font-size:13px;font-weight:400;color:var(--ink2)}
+.ib{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn{height:52px;border-radius:999px;border:0;background:var(--pr);color:var(--onpr);font:600 16px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:0 20px;box-sizing:border-box}
+.btn.ol{background:transparent;color:var(--pr);border:1px solid var(--ln2)}
+.btn.tx{background:transparent;color:var(--pr)}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;background:var(--rlc);color:var(--onrlc)}
+.hint{font-size:13px;color:var(--ink2);line-height:18px}
+.scrim{position:absolute;inset:0;background:rgba(15,21,19,.48)}
+.msg{max-width:300px;border-radius:18px;padding:8px 12px;font-size:15px;line-height:21px}
+.in{background:var(--sf);border:1px solid var(--ln);align-self:flex-start;border-bottom-left-radius:6px}
+.out{background:var(--prc);color:var(--onprc);align-self:flex-end;border-bottom-right-radius:6px}
+.sys{align-self:center;font-size:12px;color:var(--ink2);background:var(--sf2);border-radius:999px;padding:4px 12px;text-align:center;max-width:320px}
+.tick{font-size:11px;display:flex;align-items:center;gap:3px;justify-content:flex-end;margin-top:2px}
+.li{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:22px;color:var(--ink2)}
+.row{display:flex;align-items:center;gap:14px;min-height:68px;padding:0 20px}
+</style>
+</helmet>
+<div class="root" style="width:1888px;height:1240px">
+
+<div class="col">
+<div class="lbl">Block <span>· confirm, from the contact page</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 24px"><div class="av" style="width:96px;height:96px;font-size:34px">AO</div><div style="font-size:28px;font-weight:700;margin-top:6px">Arjun Oommen</div></div>
+<div class="scrim"></div>
+<div role="dialog" aria-label="Block Arjun" style="position:absolute;left:20px;right:20px;top:150px;background:var(--sf);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<div style="width:44px;height:44px;border-radius:50%;background:var(--erc);color:var(--er);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M18.4 5.6 5.6 18.4"></path></svg></div>
+<div style="font-size:22px;font-weight:700">Block Arjun?</div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z M3 3l18 18"></path></svg><span>He can’t message or call you, on any of your devices.</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10 21h4"></path></svg><span>He is told you blocked him.</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"></path></svg><span>He won’t get your new address next time it changes, so he loses any way to reach this phone.</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"></path><circle cx="17" cy="9" r="2.5"></circle></svg><span>You both stay in <b style="color:var(--ink)">Weekend hike</b>. His group messages show collapsed for you.</span></div>
+<div class="li"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px"><path d="M4 4h16v16H4z M4 9h16"></path></svg><span>Your chat history stays on this phone.</span></div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><button class="btn tx" style="width:auto">Cancel</button><button class="btn" style="width:auto;background:var(--er);color:#FFFFFF;padding:0 24px">Block</button></div>
+</div>
+</div>
+<p class="desc">Every consequence is listed before the tap, including the ones people don’t expect: he is told, he loses your address at your next change (not immediately), and shared groups are unaffected. Blocking applies to all your linked devices.</p>
+</div>
+
+<div class="col">
+<div class="lbl">After blocking <span>· the blocker’s chat</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av" style="width:40px;height:40px;font-size:15px">AO</div><div class="bt" style="padding-left:8px"><div style="font-size:18px">Arjun Oommen</div><div class="bs" style="color:var(--er)">Blocked</div></div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;padding:8px 16px">
+<div class="msg in">Are you coming Saturday?</div>
+<div class="msg out">Not sure yet<div class="tick" style="color:var(--onprc)">Read</div></div>
+<div class="sys">You blocked Arjun · Oct 10, 15:20</div>
+<div class="sys">Arjun tried to message you 2 times since</div>
+</div>
+<div style="padding:12px 16px 28px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--ln);flex:none">
+<div class="hint" style="text-align:center">You blocked Arjun. He can’t message or call you.</div>
+<button class="btn ol" style="height:44px">Unblock</button>
+</div>
+</div>
+<p class="desc">The chat stays, with a red “Blocked” under the name and the composer replaced by an Unblock button. Attempts are counted in one quiet line, not shown as messages and never notified. Calls from him are refused without ringing.</p>
+</div>
+
+<div class="col">
+<div class="lbl">You are blocked <span>· the blocked person’s chat</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><div class="av" style="width:40px;height:40px;font-size:15px;background:var(--prc);color:var(--onprc)">MK</div><div class="bt" style="padding-left:8px"><div style="font-size:18px">Meera K</div><div class="bs" style="color:var(--er)">Blocked you</div></div><button class="ib" aria-label="Calls unavailable" style="color:var(--ln2)"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z M2 2l20 20"></path></svg></button></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;padding:8px 16px">
+<div class="msg out">Are you coming Saturday?<div class="tick" style="color:var(--onprc)">Read</div></div>
+<div class="msg in">Not sure yet</div>
+<div style="background:var(--erc);color:var(--oner);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px;margin-top:8px">
+<div style="font-size:16px;font-weight:700">Meera blocked you</div>
+<div style="font-size:14px;line-height:20px">You can’t message or call her. Your earlier messages stay here. You’re both still in Weekend hike.</div>
+<div style="font-size:12px;opacity:.8">Signed by Meera · Oct 10, 15:20</div>
+</div>
+<div class="msg out" style="background:var(--sf2);color:var(--ink2)">Hello?<div class="tick" style="color:var(--er)"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16h.01"></path></svg>Not delivered: Meera blocked you</div></div>
+</div>
+<div style="padding:12px 16px 28px;border-top:1px solid var(--ln);flex:none"><div class="hint" style="text-align:center">You can’t send messages to Meera.</div></div>
+</div>
+<p class="desc">The blocked person sees a clear signed notice in the chat, a red “Blocked you” under the name, a crossed-out call button and no composer. Anything already queued shows “Not delivered: Meera blocked you”. A call attempt ends at once with the same reason. Contact verification and history are kept.</p>
+</div>
+
+<div class="col">
+<div class="lbl">Blocked people <span>· Settings › Privacy</span></div>
+<div class="ph t">
+<div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Blocked people</span></div>
+<div class="row"><div class="av" style="width:44px;height:44px;font-size:16px">AO</div><div style="flex:1"><div style="font-size:16px;font-weight:600">Arjun Oommen</div><div class="hint">Blocked Oct 10 · contact</div></div><button class="btn tx" style="width:auto;height:40px;padding:0 12px">Unblock</button></div>
+<div class="row"><div class="av" style="width:44px;height:44px;font-size:16px;background:var(--sf2);color:var(--ink2)">DT</div><div style="flex:1"><div style="font-size:16px;font-weight:600">Dev T</div><div class="hint">Blocked Oct 3 · from a chat request</div></div><button class="btn tx" style="width:auto;height:40px;padding:0 12px">Unblock</button></div>
+<div style="margin:20px;background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:15px;font-weight:700">Unblocking</div>
+<div style="font-size:14px;line-height:20px;color:var(--ink2)">They can message you again and get your current address. Calls come back only if they were allowed before. They’re told they’re unblocked.</div>
+</div>
+</div>
+<p class="desc">One list across all your devices: a block made on the desktop shows here too. Each row says when and how you knew them. The Unblock explanation answers what they get back: messages and your current address, calls only if they were allowed before.</p>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1888,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

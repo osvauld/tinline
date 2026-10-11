@@ -1,4 +1,4 @@
-//! The call log that own devices sync (`tinline/self/1`, doc `calls`), apart from the account
+//! The call log that own devices sync (`tinline/self/3`, doc `calls`), apart from the account
 //! doc: it only grows and is trimmed, while contacts must stay small and arrive first.
 //!
 //! ```text
@@ -75,9 +75,9 @@ impl CallsDoc {
         Ok(self.vv() != before)
     }
 
-    /// Merges the doc into the working copy (newest first, trimmed), leaving out calls with
-    /// `blocked` contacts (removed on some device); whether the working copy changed.
-    pub fn read_into(&self, calls: &mut Vec<CallRecord>, blocked: &HashSet<String>) -> bool {
+    /// Merges the doc into the working copy (newest first, trimmed); whether it changed. Calls
+    /// with blocked contacts stay (a block keeps the history, U19).
+    pub fn read_into(&self, calls: &mut Vec<CallRecord>) -> bool {
         let before = serde_json::to_string(&*calls).unwrap_or_default();
         let mut by_id: BTreeMap<String, CallRecord> = calls.drain(..).map(|r| (r.call_id.clone(), r)).collect();
         let root = self.doc.get_deep_value();
@@ -93,7 +93,7 @@ impl CallsDoc {
                 }
             }
         }
-        let mut all: Vec<CallRecord> = by_id.into_values().filter(|r| !blocked.contains(&r.peer_did)).collect();
+        let mut all: Vec<CallRecord> = by_id.into_values().collect();
         all.sort_by(|a, b| b.started_at.cmp(&a.started_at).then_with(|| b.call_id.cmp(&a.call_id)));
         all.truncate(MAX_HISTORY);
         *calls = all;

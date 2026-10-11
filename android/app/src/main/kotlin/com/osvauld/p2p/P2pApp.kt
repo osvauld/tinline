@@ -31,7 +31,16 @@ class P2pApp : Application(), NodeEvents {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     lateinit var calls: CallController
         private set
+    lateinit var video: CallVideo
+        private set
+    /** Group-call audio + service (GA-A1); the core's GroupCallEvents sink. */
+    lateinit var groupCalls: GroupCallAudio
+        private set
+    private lateinit var hostConditions: HostConditions
     lateinit var realChat: CoreChatSource
+        private set
+    /** Group chat on the core (GroupsCore.kt): the Groups tab. */
+    lateinit var groups: GroupsController
         private set
     /** Device linking: the state machine behind the Link a device screens, and the core's LinkEvents. */
     lateinit var links: LinkController
@@ -55,6 +64,9 @@ class P2pApp : Application(), NodeEvents {
     private val _history = MutableStateFlow<List<CallRecord>>(emptyList())
     /** The call log, newest first. Re-read on every call end (the core writes it before `Ended` fires). */
     val history: StateFlow<List<CallRecord>> = _history
+    private val _blocks = MutableStateFlow(Blocks())
+    /** Contact blocking (Blocking.kt): who we block, who blocks us. Re-read on every contacts/chats change. */
+    val blocks: StateFlow<Blocks> = _blocks
     private val _availability = MutableStateFlow(Availability(true, null))
     val availability: StateFlow<Availability> = _availability
     @Volatile private var availJob: Job? = null
@@ -65,14 +77,23 @@ class P2pApp : Application(), NodeEvents {
         Notifications.createChannels(this)
         ChatMedia.clear(this)
         calls = CallController(this)
+        video = CallVideo(this)
         node = newNode()
+        node.setVideoEvents(video)
+        node.setVideoEnabled(videoEnabled)
         links = LinkController(this)
         node.setLinkEvents(links)
+        groupCalls = GroupCallAudio(this)
+        node.setGroupCallEvents(groupCalls)
+        hostConditions = HostConditions(this).also { it.start() }
         realChat = CoreChatSource(this).also { it.attach() }
+        groups = GroupsController(NodeGroupApi { node }) { currentDid() }.also { it.attach(node) }
         selectLastAccountIfNone()
         UnlockStore.migrateLegacy(this, currentDid())
         tryAutoUnlock()
         refresh()
+        // Kept chats of people who are no longer contacts (their block deleted our entry) come only from the chat list.
+        scope.launch { realChat.chats.collect { refreshBlocks() } }
         // The always-on notification says "Available for calls" / "Not available" / "Offline".
         scope.launch {
             combine(status, availability) { st, av -> (st?.online == true) to av.available }.distinctUntilChanged()
@@ -107,7 +128,9 @@ class P2pApp : Application(), NodeEvents {
         _accountDid.value = currentDid()
         rememberName()
         _contacts.value = node.contacts()
+        refreshBlocks()
         _status.value = node.status()
+        scope.launch { groups.refresh() }
         if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
         else { _history.value = emptyList(); _availability.value = Availability(true, null) }
         // The account to come back to if the app dies while a new one is being added.
@@ -141,6 +164,12 @@ class P2pApp : Application(), NodeEvents {
     }
 
     private val lastPrefs by lazy { getSharedPreferences("accounts", Context.MODE_PRIVATE) }
+    private val callPrefs by lazy { getSharedPreferences("calls", Context.MODE_PRIVATE) }
+
+    /** Offer and take video in calls (Settings); the core's default is on and it isn't stored there. */
+    var videoEnabled: Boolean
+        get() = callPrefs.getBoolean("video", true)
+        set(on) { callPrefs.edit().putBoolean("video", on).apply(); node.setVideoEnabled(on) }
 
     fun currentDid(): String? = try { node.profile()?.did } catch (_: Exception) { null }
 
@@ -350,8 +379,46 @@ class P2pApp : Application(), NodeEvents {
         val known = _contacts.value.map { it.did }.toSet()
         list.filter { it.did !in known }.forEach { testLog("added name=${it.name} did=${it.did}") }
         _contacts.value = list
+        refreshBlocks()
         refreshHistory()
     }
+
+    /** Re-reads block states for every contact and conversation, and the blocked list. Cheap core reads. */
+    fun refreshBlocks() {
+        try {
+            val me = currentDid()
+            val dids = (_contacts.value.map { it.did } + realChat.chats.value.map { it.peerDid }).filter { it != me }.toSet()
+            val views = dids.associateWith { did ->
+                val st = node.blockState(did)
+                BlockView(st.blockedByMe, st.blockedAt?.toLong(), st.blockedMe?.signedAt?.toLong())
+            }
+            val list = node.blockedContacts().map { BlockedRow(it.did, it.name, it.blockedAt.toLong()) }
+            val allowed = dids.filter { node.callsAllowed(it) }.toSet()
+            val tokens = dids.filter { node.canCall(it) }.toSet()
+            _blocks.value = Blocks.from(views, list, allowed, tokens)
+        } catch (e: Exception) { Log.w(TAG, "blocks: $e") }
+    }
+
+    /** U19: the contact action. Keeps the contact and the chat; they are told. */
+    fun block(did: String) = scope.launch {
+        try { node.block(did) } catch (e: Exception) { Log.w(TAG, "block: $e") }
+        refreshBlocks()
+    }
+
+    /** "Allow calls" (U13, P6): whether [did] may ring us. They keep messaging either way. */
+    fun allowCalls(did: String, allowed: Boolean) = scope.launch {
+        try { node.allowCalls(did, allowed) } catch (e: Exception) { Log.w(TAG, "allowCalls: $e") }
+        refreshBlocks()
+    }
+
+    fun unblock(did: String) = scope.launch {
+        try { node.unblock(did) } catch (e: Exception) { Log.w(TAG, "unblock: $e") }
+        refreshBlocks()
+    }
+
+    /** "blocked" while they block us and message [messageId] has not reached them. Blocking (store read). */
+    fun notDeliveredReason(peerDid: String, messageId: String): String? =
+        try { node.notDeliveredReason(peerDid, messageId) } catch (e: Exception) { null }
     override fun onIncomingCall(call: CallInfo) = calls.onIncoming(call)
     override fun onCallState(callId: String, state: CallState) {
         if (state is CallState.Ended) refreshHistory()

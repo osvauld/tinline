@@ -1,4 +1,4 @@
-//! Chats between a person's own devices (task 34g). The pieces the `tinline/self/1` session
+//! Chats between a person's own devices (task 34g). The pieces the `tinline/self/3` session
 //! (`sync/engine.rs`) calls: which shards we offer, exporting and validating a batch relayed by
 //! another own device, read cursors, and who may fetch blobs. See `docs/chat.md` "Own devices".
 
@@ -17,6 +17,8 @@ use crate::node::{Inner, Me, now_ms};
 pub(crate) const READ_MARK: &str = "!read";
 /// The dirty-set entry that means "a contact acknowledged more".
 pub(crate) const ACK_MARK: &str = "!ack";
+/// The dirty-set entry that means "our group list or a group's hosts may have changed" (G2).
+pub(crate) const GROUPS_MARK: &str = "!groups";
 /// Shards offered per session (newest days first); the rest are not synced until the next
 /// session finds room (older days are normally closed and rarely change).
 pub(crate) const MAX_OWN_DOCS: usize = 4096;
@@ -48,19 +50,6 @@ impl Inner {
         list.into_iter().map(|(d, r)| (d, r, sessions.contains_key(&d))).collect()
     }
 
-    /// Attested device keys by DID for judging messages that did not come straight from their
-    /// author: all our own devices (removed ones too, their old messages stay valid) and every
-    /// device we know of the contact.
-    pub(crate) fn chat_keys(&self, me: &Me, contact: &str) -> Vec<(String, [u8; 32])> {
-        let s = self.shared.lock();
-        let mut keys = vec![(me.id.did().to_string(), me.device)];
-        keys.extend(s.state.registry.iter().map(|e| (me.id.did().to_string(), e.device)));
-        if let Some(c) = s.state.contacts.iter().find(|c| c.did == contact) {
-            keys.extend(c.devices.iter().map(|d| (c.did.clone(), d.device)));
-        }
-        keys
-    }
-
     /// `pair` -> the DID of that conversation's other side (ourselves for "You"), if it is a
     /// conversation of ours right now.
     pub(crate) fn pair_owner(&self, me: &Me, pair: &str) -> Option<String> {
@@ -68,7 +57,14 @@ impl Inner {
             return Some(me.id.did().to_string());
         }
         let s = self.shared.lock();
-        s.state.contacts.iter().find(|c| pair_id(me.id.did(), &c.did) == pair && !s.state.blocked.contains(&c.did)).map(|c| c.did.clone())
+        // Blocked either way, the history is kept (U19/U20), so own devices keep syncing it.
+        s.state
+            .contacts
+            .iter()
+            .map(|c| &c.did)
+            .chain(s.state.notices.keys())
+            .find(|did| pair_id(me.id.did(), did) == pair)
+            .cloned()
     }
 
     /// Marks `name` (a doc, or `READ_MARK`) as changed for every own-device session and wakes them.
@@ -109,7 +105,7 @@ impl Inner {
         if theirs.partial_cmp(&mine).is_some_and(|o| o != std::cmp::Ordering::Less) {
             return Ok(None);
         }
-        self.chat_shard(&core, &me, &pair, &day).await?;
+        self.chat_shard(&core, &pair, &day).await?;
         let out = core.shards.lock().get(&(pair, day)).and_then(|s| s.export_all_since(theirs).map(|u| (u, s.vv().encode())));
         match out {
             Some((u, _)) if u.len() > MAX_OWN_BATCH => {
@@ -122,28 +118,20 @@ impl Inner {
 
     /// Judges and stores a batch of `doc` relayed by another own device (its signature was
     /// checked by the caller). The batch may hold ops of any of our devices and of the contact's
-    /// devices; each new or changed message must be signed by its author's attested device (the
-    /// rules of a vouched history snapshot), authors are only us and the contact, and the usual
-    /// per-field rules hold. `Err` = rejected, nothing stored.
+    /// devices; every op must be proven by its author's DID signature under the author's writer
+    /// ID (the rules of a vouched history snapshot), authors are only us and the contact, and the
+    /// usual per-field rules hold. `Err` = rejected, nothing stored.
     pub(crate) async fn chat_own_apply(self: &Arc<Self>, doc: &str, update: &[u8]) -> Result<(), Error> {
         let (me, core) = (self.me()?, self.chat_core()?);
         let (pair, day) = parse_doc(doc).ok_or_else(|| Error::Protocol("bad doc".into()))?;
         // Not (or no longer) a conversation of ours, e.g. a contact removed meanwhile: nothing to do.
         let Some(did) = self.pair_owner(&me, &pair) else { return Ok(()) };
-        self.chat_shard(&core, &me, &pair, &day).await?;
-        let keys = self.chat_keys(&me, &did);
+        self.chat_shard(&core, &pair, &day).await?;
         let committed = {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
-            let ctx = Ctx {
-                signer_did: me.id.did().to_string(),
-                signer_peer: 0,
-                now_ms: now_ms() as i64,
-                live: false,
-                history: Some(did.clone()),
-                keys,
-            };
+            let ctx = Ctx { signer_did: me.id.did().to_string(), now_ms: now_ms() as i64, live: false, history: Some(did.clone()) };
             match shard.apply_remote(update, &ctx) {
                 Ok(applied) => {
                     if shard.vv() == before {
@@ -158,9 +146,22 @@ impl Inner {
                                 if *added
                                     && rec.author == me.id.did()
                                     && let Some((peer, c)) = shard.creator_end(&rec.id)
-                                    && peer != shard.peer
+                                    && peer != shard.peer()
                                 {
                                     ops.push(core.store.put_mo_op(&pair, &day, &rec.id, peer, c)?);
+                                }
+                            }
+                            // Ops of ours the contact has not acknowledged (written on the other
+                            // device): this device owes them too, so that they still reach the
+                            // contact if that device goes away first (P10b). Sent at the next
+                            // session with the contact; the pending sweep dials for it.
+                            // PROVISIONAL (coordinator): no immediate push or dial here, so an
+                            // own device does not dial a contact for every message its sibling
+                            // already delivers; the relayed ack usually clears it first.
+                            if let Some(meta) = core.store.shard_meta(&pair, &day)? {
+                                let acked = core.store.ack(&pair, &day)?.and_then(|b| decode_vv(&b).ok()).unwrap_or_default();
+                                if Inner::chat_owes(&core, &meta, &acked) {
+                                    ops.push(core.store.out_op(&pair, &day, true)?);
                                 }
                             }
                             if !ops.is_empty() {
@@ -269,7 +270,7 @@ impl Inner {
             if day < from {
                 continue;
             }
-            self.chat_shard(core, me, pair, &day).await?;
+            self.chat_shard(core, pair, &day).await?;
             let msgs = core.shards.lock().get(&(pair.to_string(), day)).map(|s| s.messages());
             if let Some(Ok(msgs)) = msgs {
                 n += msgs.values().filter(|m| m.author != me.id.did() && !m.deleted && m.at > cursor).count() as u32;

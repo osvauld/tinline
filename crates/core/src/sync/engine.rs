@@ -1,4 +1,4 @@
-//! Own-device sync: the account doc wired to `State`, and the `tinline/self/1` sessions.
+//! Own-device sync: the account doc wired to `State`, and the `tinline/self/2` sessions.
 //! See docs/protocol.md "Own-device sync".
 
 use std::collections::{HashMap, HashSet};
@@ -12,10 +12,10 @@ use super::accdoc::{AccDoc, Ctx, DOC_NAME};
 use super::callsdoc::{CALLS_DOC, CallsDoc};
 use super::doc::Doc;
 use super::frames::{FrameReader, FrameWriter, SelfMsg};
-use crate::node::{Inner, Me, addr_for, now, now_ms, relay_of};
+use crate::node::{Inner, Me, addr_for, now, relay_of};
 use crate::store::{Backing, OwnDevice};
 use crate::Error;
-use crate::chat::own::{ACK_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
+use crate::chat::own::{ACK_MARK, GROUPS_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
 
 const DOC_KEY: &str = "sync/account";
 const CALLS_KEY: &str = "sync/calls";
@@ -43,6 +43,10 @@ struct PeerChat {
     read: HashMap<String, i64>,
     acks: HashMap<String, VersionVector>,
     hello: bool,
+    /// The group list last sent (G2), to send only changes.
+    groups: Option<Vec<Vec<u8>>>,
+    /// The invitation rows last sent (G3).
+    invitations: Option<Vec<Vec<u8>>>,
 }
 
 impl SelfSlot {
@@ -69,7 +73,7 @@ fn sync_period() -> Duration {
 
 impl Inner {
     fn ctx<'a>(me: &'a Me) -> Ctx<'a> {
-        Ctx { my_did: me.id.did(), me_device: me.device, now: now(), now_ms: now_ms() as i64 }
+        Ctx { my_did: me.id.did(), me_device: me.device, now: now() }
     }
 
     /// Wakes the sessions (local data changed) and the dial loop.
@@ -128,7 +132,7 @@ impl Inner {
             if let Err(e) = calls_doc.write_from(&calls) {
                 tracing::warn!("calls doc flush: {e}");
             }
-            let history = calls_doc.read_into(&mut calls, &s.state.blocked);
+            let history = calls_doc.read_into(&mut calls);
             if history {
                 s.history.replace(calls);
             }
@@ -186,7 +190,7 @@ impl Inner {
     /// Imports a batch from another own device and merges it into the working copy.
     pub(crate) fn apply_account_update(self: &Arc<Self>, epoch: u64, update: &[u8]) -> Result<(), Error> {
         let me = self.me()?;
-        let (ch, history, state_backing) = {
+        let (ch, state_backing) = {
             let mut s = self.shared.lock();
             if s.epoch != epoch || me.epoch != epoch {
                 return Err(Error::Locked);
@@ -198,41 +202,29 @@ impl Inner {
             if !acc.import(update)? {
                 return Ok(());
             }
+            // A contact entry deleted by a block notice keeps its calls and chat history (U20).
             let ch = acc.read_into(&mut s.state, &ctx);
-            // Calls with contacts removed elsewhere go too (and from the calls doc on the flush).
-            let mut calls = s.history.snapshot();
-            let n = calls.len();
-            calls.retain(|r| !ch.removed.contains(&r.peer_did));
-            let history = calls.len() != n;
-            if history {
-                s.history.replace(calls);
-            }
             if let Some(l) = &ch.label {
                 s.device_label = Some(l.clone());
             }
-            (ch, history, s.acct.as_ref().and_then(|a| a.backing.clone()))
+            (ch, s.acct.as_ref().and_then(|a| a.backing.clone()))
         };
         if let (Some(l), Some(Backing::Sealed(db))) = (&ch.label, &state_backing) {
             let _ = crate::store::save_label(db, l);
         }
         self.persist_for(Some(epoch))?;
-        if history {
-            let _ = self.history().save();
-        }
         self.save_doc();
-        for did in &ch.removed {
-            self.chat_purge(did);
-        }
         if ch.contacts {
             self.events.on_contacts_changed();
         }
-        if let Some(ev) = self.link_events() {
-            if ch.devices {
-                ev.on_devices_changed();
-            }
-            if history {
-                ev.on_history_changed();
-            }
+        if ch.devices {
+            // U8: a sibling linked or unlinked a device; our list changes too.
+            self.devices_changed();
+        }
+        if let Some(ev) = self.link_events()
+            && ch.devices
+        {
+            ev.on_devices_changed();
         }
         self.sync_bump();
         if ch.self_removed && !self.selfsync.leaving.load(std::sync::atomic::Ordering::SeqCst) {
@@ -257,7 +249,7 @@ impl Inner {
             if !calls.import(update)? {
                 return Ok(());
             }
-            let changed = calls.read_into(&mut mine, &s.state.blocked);
+            let changed = calls.read_into(&mut mine);
             if changed {
                 s.history.replace(mine);
             }
@@ -305,7 +297,7 @@ impl Inner {
 
     /// A valid attestation of our DID from a device the registry does not list: a device that
     /// was linked but never announced itself (or one added while we were away).
-    fn note_own_device(&self, epoch: u64, att: &proto::SignedAttestation, device: [u8; 32], relay: Option<String>) {
+    fn note_own_device(self: &Arc<Self>, epoch: u64, att: &proto::SignedAttestation, device: [u8; 32], relay: Option<String>) {
         let added = {
             let mut s = self.shared.lock();
             if s.epoch != epoch {
@@ -328,6 +320,7 @@ impl Inner {
         };
         if added {
             let _ = self.persist_for(Some(epoch));
+            self.devices_changed();
             if let Some(ev) = self.link_events() {
                 ev.on_devices_changed();
             }
@@ -348,10 +341,9 @@ impl Inner {
     async fn self_dial(self: Arc<Self>, device: [u8; 32], relay: Option<String>) -> Result<(), Error> {
         let ep = self.endpoint()?;
         let addr = addr_for(&device, relay.as_deref())?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, proto::SELF_ALPN))
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::OWN))
             .await
-            .map_err(|_| Error::Timeout)?
-            .map_err(Error::net)?;
+            .map_err(|_| Error::Timeout)??;
         let r = self.clone().self_run(conn.clone(), true).await;
         if r.is_err() {
             conn.close(0u32.into(), b"done");
@@ -589,6 +581,18 @@ impl Inner {
                                 tracing::debug!("own-device read cursors: {e}");
                             }
                         }
+                        SelfMsg::Groups { groups } => {
+                            if groups.len() > crate::group::own::MAX_OWN_GROUPS {
+                                return Err(Error::Protocol("too many groups".into()));
+                            }
+                            self.group_own_apply(&groups);
+                        }
+                        SelfMsg::Invitations { rows } => {
+                            if rows.len() > crate::group::invitations::MAX_OWN_INVITATIONS {
+                                return Err(Error::Protocol("too many invitations".into()));
+                            }
+                            self.group_own_invitations_apply(&rows);
+                        }
                         SelfMsg::Unlinked => {
                             self.clone().remove_self_account(epoch).await;
                             return Ok(());
@@ -613,6 +617,10 @@ impl Inner {
                         for name in names {
                             if name == READ_MARK {
                                 self.push_read(&mut peer, writer).await?;
+                            } else if name == GROUPS_MARK {
+                                self.push_groups(&mut peer, writer).await?;
+                            } else if name == crate::group::invitations::INVITES_MARK {
+                                self.push_invitations(&mut peer, writer).await?;
                             } else if name == ACK_MARK {
                                 self.push_acks(&mut peer, writer).await?;
                             } else {
@@ -631,7 +639,29 @@ impl Inner {
             self.push_chat_doc(me, &name, peer, writer).await?;
         }
         self.push_read(peer, writer).await?;
-        self.push_acks(peer, writer).await
+        self.push_acks(peer, writer).await?;
+        self.push_groups(peer, writer).await?;
+        self.push_invitations(peer, writer).await
+    }
+
+    /// Our group invitations, if they changed since the last ones this session sent (G3).
+    async fn push_invitations(self: &Arc<Self>, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        let rows = self.group_own_invitations();
+        if peer.invitations.as_ref() == Some(&rows) || (rows.is_empty() && peer.invitations.is_none()) {
+            return Ok(());
+        }
+        peer.invitations = Some(rows.clone());
+        writer.send(&SelfMsg::Invitations { rows }).await
+    }
+
+    /// Our group list, if it changed since the last one this session sent (G2).
+    async fn push_groups(self: &Arc<Self>, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        let groups = self.group_own_tokens();
+        if peer.groups.as_ref() == Some(&groups) || (groups.is_empty() && peer.groups.is_none()) {
+            return Ok(());
+        }
+        peer.groups = Some(groups.clone());
+        writer.send(&SelfMsg::Groups { groups }).await
     }
 
     async fn push_chat_doc(self: &Arc<Self>, me: &Arc<Me>, name: &str, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
@@ -757,10 +787,9 @@ impl Inner {
     pub(crate) async fn self_probe(self: &Arc<Self>, device: [u8; 32]) -> Result<(), Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr_for(&device, None)?, proto::SELF_ALPN))
+        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr_for(&device, None)?, &crate::version::OWN))
             .await
-            .map_err(|_| Error::Timeout)?
-            .map_err(Error::net)?;
+            .map_err(|_| Error::Timeout)??;
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
         let mut writer = FrameWriter(send);
         let mut reader = FrameReader::new(recv);
@@ -779,7 +808,7 @@ impl Inner {
         let Ok(me) = self.me() else { return };
         let Ok(ep) = self.endpoint() else { return };
         let Ok(addr) = addr_for(&device, relay.as_deref()) else { return };
-        let Ok(Ok(conn)) = tokio::time::timeout(Duration::from_secs(8), ep.connect(addr, proto::SELF_ALPN)).await else { return };
+        let Ok(Ok(conn)) = tokio::time::timeout(Duration::from_secs(8), crate::version::connect(&ep, addr, &crate::version::OWN)).await else { return };
         let run = async {
             let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
             let mut writer = FrameWriter(send);
