@@ -3,8 +3,10 @@
 import type { Component } from 'svelte';
 import CoreSim from './CoreSim.svelte';
 import ChatSim from './ChatSim.svelte';
+import GateSim from './GateSim.svelte';
 
 export const simSections: { title: string; component: Component }[] = [
   { title: 'Environment', component: CoreSim },
   { title: 'Chat', component: ChatSim },
+  { title: 'Sign-up and unlock', component: GateSim },
 ];
