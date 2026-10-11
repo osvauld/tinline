@@ -145,6 +145,11 @@
     "detail": ""
   },
   {
+    "name": "320-light account sheet links phone preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
     "name": "320-light settings Escape returns focus",
     "ok": true,
     "detail": ""
@@ -300,6 +305,11 @@
     "detail": ""
   },
   {
+    "name": "390-light account sheet links phone preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
     "name": "390-light settings Escape returns focus",
     "ok": true,
     "detail": ""
@@ -451,6 +461,11 @@
   },
   {
     "name": "390-dark settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark account sheet links phone preview",
     "ok": true,
     "detail": ""
   },
@@ -615,6 +630,11 @@
     "detail": ""
   },
   {
+    "name": "1440-light account sheet links phone preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
     "name": "1440-light settings Escape returns focus",
     "ok": true,
     "detail": ""
@@ -771,6 +791,11 @@
   },
   {
     "name": "1440-dark settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark account sheet links phone preview",
     "ok": true,
     "detail": ""
   },
