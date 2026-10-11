@@ -29,7 +29,7 @@
 
   /* secondary accents */
   --lav:#e1e4f7;  --lav-ink:#374582;
-  --gold:#c98a1e; --warn-bg:#fcefd2; --warn-ink:#5c3b00;
+  --gold:#c98a1e; --gold-ink:#8a5f12; --warn-bg:#fcefd2; --warn-ink:#5c3b00;
   --danger:#a12b23; --danger-bg:#f8e3e1; --on-danger:#ffffff;
 
   /* avatar hue pairs — pick via hash, see SPEC.md §Avatars */
@@ -64,7 +64,7 @@
   --bub-out:#0e4e43; --bub-out-ink:#bdefe2;
   --bub-meta-in:#95a19b; --bub-meta-out:#8fc9b9;
   --lav:#2f3a75; --lav-ink:#dfe3ff;
-  --gold:#e8b04a; --warn-bg:#4a3500; --warn-ink:#ffdfa0;
+  --gold:#e8b04a; --gold-ink:#e8b04a; --warn-bg:#4a3500; --warn-ink:#ffdfa0;
   --danger:#f2b8b5; --danger-bg:#4d201c; --on-danger:#2b0906;
   --av0-bg:#164f45; --av0-ink:#b7e6d8;
   --av1-bg:#2f3a75; --av1-ink:#dfe3ff;
@@ -84,7 +84,7 @@
   --bub-out:#0e4e43; --bub-out-ink:#bdefe2;
   --bub-meta-in:#95a19b; --bub-meta-out:#8fc9b9;
   --lav:#2f3a75; --lav-ink:#dfe3ff;
-  --gold:#e8b04a; --warn-bg:#4a3500; --warn-ink:#ffdfa0;
+  --gold:#e8b04a; --gold-ink:#e8b04a; --warn-bg:#4a3500; --warn-ink:#ffdfa0;
   --danger:#f2b8b5; --danger-bg:#4d201c; --on-danger:#2b0906;
   --av0-bg:#164f45; --av0-ink:#b7e6d8;
   --av1-bg:#2f3a75; --av1-ink:#dfe3ff;

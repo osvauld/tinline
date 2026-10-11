@@ -20,6 +20,56 @@
     "detail": ""
   },
   {
+    "name": "320-light no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light no selected-row tint on mobile",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light FAB 56px bottom-right 16px above tab bar",
+    "ok": true,
+    "detail": "[{\"x\":248,\"y\":604,\"width\":56,\"height\":56},{\"x\":0,\"y\":676,\"width\":320,\"height\":64}]"
+  },
+  {
+    "name": "320-light tab badge clears icon glyph",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light active tab accent icon + label",
+    "ok": true,
+    "detail": ""
+  },
+  {
     "name": "320-light groups navigation",
     "ok": true,
     "detail": ""
@@ -121,6 +171,56 @@
   },
   {
     "name": "390-light conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light no selected-row tint on mobile",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light FAB 56px bottom-right 16px above tab bar",
+    "ok": true,
+    "detail": "[{\"x\":318,\"y\":708,\"width\":56,\"height\":56},{\"x\":0,\"y\":780,\"width\":390,\"height\":64}]"
+  },
+  {
+    "name": "390-light tab badge clears icon glyph",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light active tab accent icon + label",
     "ok": true,
     "detail": ""
   },
@@ -230,6 +330,56 @@
     "detail": ""
   },
   {
+    "name": "390-dark no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark no selected-row tint on mobile",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark FAB 56px bottom-right 16px above tab bar",
+    "ok": true,
+    "detail": "[{\"x\":318,\"y\":708,\"width\":56,\"height\":56},{\"x\":0,\"y\":780,\"width\":390,\"height\":64}]"
+  },
+  {
+    "name": "390-dark tab badge clears icon glyph",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark active tab accent icon + label",
+    "ok": true,
+    "detail": ""
+  },
+  {
     "name": "390-dark groups navigation",
     "ok": true,
     "detail": ""
@@ -335,6 +485,76 @@
     "detail": ""
   },
   {
+    "name": "1440-light no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light empty detail when nothing selected",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light selecting chat embeds chat.html with embed=1",
+    "ok": true,
+    "detail": "chat.html?chat=arjun&embed=1"
+  },
+  {
+    "name": "1440-light iframe titled",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light row selected tint on desktop",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light stays on home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light iframe seam: border-left only, no radius",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light opening a chat marks it read",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light selecting group embeds groups.html with embed=1",
+    "ok": true,
+    "detail": "groups.html?group=hike&embed=1"
+  },
+  {
     "name": "1440-light groups navigation",
     "ok": true,
     "detail": ""
@@ -423,6 +643,76 @@
     "name": "1440-dark conversation rows populated",
     "ok": true,
     "detail": ""
+  },
+  {
+    "name": "1440-dark no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark empty detail when nothing selected",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark selecting chat embeds chat.html with embed=1",
+    "ok": true,
+    "detail": "chat.html?chat=arjun&embed=1"
+  },
+  {
+    "name": "1440-dark iframe titled",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark row selected tint on desktop",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark stays on home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark iframe seam: border-left only, no radius",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark opening a chat marks it read",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark selecting group embeds groups.html with embed=1",
+    "ok": true,
+    "detail": "groups.html?group=hike&embed=1"
   },
   {
     "name": "1440-dark groups navigation",
