@@ -354,3 +354,70 @@ fn the_next_call_follows_a_rotated_call_host_and_a_revoked_call_host_hands_over(
     });
     eprintln!("total {:?}", t0.elapsed());
 }
+
+/// `peer`, with a second (spare) account on the same node, made first: the node runs `name`.
+fn peer_with_spare(name: &str, i: usize) -> (Peer, String) {
+    let dir = std::env::temp_dir().join(format!("p2pcore-gcall-group-{name}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    let (tx, rx) = mpsc::channel();
+    node.set_group_call_events(Arc::new(Tap(Mutex::new(tx))));
+    node.create_identity(format!("{name}-spare"), PASS.into()).unwrap();
+    let spare = node.profile().unwrap().did;
+    node.begin_new_account().unwrap();
+    node.create_identity(name.into(), PASS.into()).unwrap();
+    online(&node);
+    let did = node.profile().unwrap().did;
+    (Peer { node, rx, evs: vec![], did, dir, tone: audio::Tone::new(FREQ[i], AMP), speaking: false, rec: vec![] }, spare)
+}
+
+// KIND: acceptance (GA-M4) — G6 §5 / §11 lifecycle: an account switch on a member leaves the
+// call (its slot leaves the Roster, and nothing of the call stays on the node for the apps'
+// audio to follow); a lock on the call host ends the call with End{host_leaving, next_host}
+// and the members move to the backup.
+#[test]
+fn an_account_switch_leaves_the_call_and_a_locked_call_host_hands_over() {
+    let t0 = Instant::now();
+    let mut o = peer("l-o", 0);
+    let (mut a, spare) = peer_with_spare("l-a", 1);
+    let mut b = peer("l-b", 2);
+    let mut c = peer("l-c", 3);
+    let g = group_with(&o, &[&a, &b, &c]);
+    call_hosts(&o, &c, &a, &g);
+    let call = start_call(&a, &g, &[&o, &c]);
+    for p in [&o, &b, &c] {
+        eventually(WAIT, "the CallStart reaches every member", || knows_call(p, &g, &call));
+        p.node.group_call_join(g.clone(), call.clone()).unwrap();
+    }
+    let cd = c.did.clone();
+    assert!(drive(&mut [&mut o, &mut a, &mut b, &mut c], 20_000, false, |ps| ps.iter().all(|p| joined(p, 1, &cd, 4))), "everyone joins c's call");
+    assert!(a.node.group_call_here().is_some_and(|h| h.in_call && h.call_id == call));
+    eprintln!("joined after {:?}", t0.elapsed());
+
+    // ---- (a) a switches account: it leaves the call ----------------------------------------
+    a.node.switch_account(spare.clone()).unwrap();
+    assert!(a.node.group_call_here().is_none(), "nothing of the call is left for the audio to follow");
+    assert!(a.node.gcall_status().is_none(), "the client engine is dropped");
+    eventually(10, "a's app hears Left (its audio follows group_call_here)", || a.events().iter().any(|e| e.kind == GroupCallEventKind::Left && e.call_id == call));
+    let ad = a.did.clone();
+    let left = |ps: &[&mut Peer]| {
+        ps[2].node.gcall_status().and_then(|s| s.hosting).is_some_and(|h| h.roster.len() == 3)
+            && ps.iter().take(2).all(|p| p.node.gcall_status().and_then(|s| s.client).is_some_and(|c| c.roster.len() == 3 && !c.roster.values().any(|d| *d == ad)))
+    };
+    assert!(drive(&mut [&mut o, &mut b, &mut c], 10_000, false, left), "a's slot leaves the Roster");
+    eprintln!("a left after {:?}", t0.elapsed());
+
+    // ---- (b) the call host c locks: End{host_leaving, next_host = o} -----------------------
+    c.node.lock();
+    assert!(c.node.group_call_here().is_none() && c.node.gcall_status().is_none(), "c's engines are dropped");
+    eventually(10, "c's app hears HostingEnded and Left", || {
+        let ev = c.events();
+        [GroupCallEventKind::HostingEnded, GroupCallEventKind::Left].iter().all(|k| ev.iter().any(|e| e.kind == *k && e.call_id == call))
+    });
+    let od = o.did.clone();
+    let moved = |ps: &[&mut Peer]| ps.iter().all(|p| joined(p, 2, &od, 2)) && ps[0].node.gcall_status().and_then(|s| s.hosting).is_some_and(|h| h.host_gen == 2);
+    assert!(drive(&mut [&mut o, &mut b], 15_000, false, moved), "members move to the backup");
+    assert!(b.events().iter().any(|e| e.kind == GroupCallEventKind::Reconnecting && e.call_id == call));
+    assert!(b.node.group_call_here().is_some_and(|h| h.in_call && h.call_id == call));
+    eprintln!("total {:?}", t0.elapsed());
+}

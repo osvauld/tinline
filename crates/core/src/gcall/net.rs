@@ -968,7 +968,7 @@ async fn read_frame(recv: &mut RecvStream, buf: &mut Vec<u8>) -> Option<GroupCal
 // ---- node hooks -------------------------------------------------------------------------
 
 impl Inner {
-    /// `Node::stop` / `Node::lock`: leave the call and, when hosting, end it with
+    /// `Node::stop` / `Node::lock` / an account switch, before the endpoints close: leave the call and, when hosting, end it with
     /// `End{host_leaving, next_host}`; waits (bounded) until those frames are out.
     pub(crate) async fn gcall_shutdown(&self) {
         let svc = &self.gcall;
