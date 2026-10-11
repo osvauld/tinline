@@ -398,7 +398,19 @@ pub fn sign_host_request(id: &Identity, req: HostRequest) -> SignedBlob {
 
 /// Signature (by `starter_did`), version and bounds.
 pub fn open_host_request(blob: &SignedBlob) -> Result<HostRequest> {
-    todo!("{blob:?}")
+    let Claim::HostRequest(c) = open_claim(blob)? else {
+        return Err(Error::UnexpectedMessage);
+    };
+    check_common(c.v, &c.gid, &c.call_id)?;
+    let ok = text_ok(&c.starter_did)
+        && host_ref_ok(&c.host)
+        && c.backups.len() <= MAX_BACKUPS
+        && c.backups.iter().all(host_ref_ok)
+        && (2..=MAX_PARTICIPANTS).contains(&(c.expected as usize));
+    if !ok {
+        return Err(Error::Decode);
+    }
+    Ok(c)
 }
 
 pub fn sign_host_refusal(id: &Identity, refusal: HostRefusal) -> SignedBlob {
@@ -407,7 +419,14 @@ pub fn sign_host_refusal(id: &Identity, refusal: HostRefusal) -> SignedBlob {
 
 /// Signature (by `host.holder_did`), version and bounds.
 pub fn open_host_refusal(blob: &SignedBlob) -> Result<HostRefusal> {
-    todo!("{blob:?}")
+    let Claim::HostRefusal(c) = open_claim(blob)? else {
+        return Err(Error::UnexpectedMessage);
+    };
+    check_common(c.v, &c.gid, &c.call_id)?;
+    if !text_ok(&c.starter_did) || !host_ref_ok(&c.host) || c.reason.len() > MAX_TEXT {
+        return Err(Error::Decode);
+    }
+    Ok(c)
 }
 
 pub fn sign_note(id: &Identity, dev: &[u8; 32], endpoint: &[u8; 32], issued_ms: u64) -> SignedBlob {
@@ -417,7 +436,16 @@ pub fn sign_note(id: &Identity, dev: &[u8; 32], endpoint: &[u8; 32], issued_ms: 
 
 /// Signature (by `did`), version and the two 32-byte keys.
 pub fn open_note(blob: &SignedBlob) -> Result<GroupNote> {
-    todo!("{blob:?}")
+    let Claim::Note(c) = open_claim(blob)? else {
+        return Err(Error::UnexpectedMessage);
+    };
+    if c.v != GCALL_VERSION {
+        return Err(Error::UnknownVersion);
+    }
+    if !text_ok(&c.did) || c.dev_bytes().is_none() || c.endpoint_bytes().is_none() {
+        return Err(Error::Decode);
+    }
+    Ok(c)
 }
 
 // ---- control frames ----------------------------------------------------------------
