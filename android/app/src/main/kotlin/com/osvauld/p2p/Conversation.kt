@@ -95,6 +95,12 @@ fun ConversationScreen(
     onBack: () -> Unit, onCall: () -> Unit, preview: ConvPreview? = null, addedAtSecs: Long? = null,
     /** The "You" conversation: notes and files for our own devices, no contact on the other side. */
     isSelf: Boolean = false,
+    /** Blocking on either side (Blocking.kt); null for "You" and previews. Chats are never deleted (U24): a block only closes the composer. */
+    block: ConvBlock? = null,
+    onUnblock: () -> Unit = {},
+    onAddContact: () -> Unit = {},
+    /** Why our message is not delivered ("blocked"), from the core. Called off the main thread. */
+    notDelivered: (String) -> String? = { null },
 ) {
     val c = Tin.c
     val ctx = LocalContext.current
@@ -119,6 +125,10 @@ fun ConversationScreen(
     var docViewer by remember { mutableStateOf<String?>(null) }
     val brokenImages = remember { mutableStateListOf<String>() }
     val first = firstName(name)
+    val composerState = block?.composer ?: ComposerState.Open
+    val blockedMeAt = block?.view?.blockedMeAtSecs
+    // Ids of our pending messages that won't arrive because they blocked us.
+    val undelivered = remember { mutableStateListOf<String>() }
 
     fun toast(t: String) = Toast.makeText(ctx, t, Toast.LENGTH_SHORT).show()
     fun upsert(m: Message) {
@@ -191,6 +201,11 @@ fun ConversationScreen(
         }
     }
     LaunchedEffect(msgs.size) { if (listState.firstVisibleItemIndex <= 2) listState.animateScrollToItem(0) }
+    val pendingIds = msgs.filter { it.outgoing && it.delivery == DeliveryState.PENDING }.map { it.id }
+    LaunchedEffect(blockedMeAt, pendingIds) {
+        val ids = if (blockedMeAt == null) emptyList() else withContext(Dispatchers.IO) { pendingIds.filter { notDelivered(it) != null } }
+        undelivered.clear(); undelivered.addAll(ids)
+    }
 
     fun send() {
         val text = draft.trim()
@@ -266,8 +281,8 @@ fun ConversationScreen(
     val byId = remember(msgs.toList()) { msgs.associateBy { it.id } }
     Box(Modifier.fillMaxSize()) {
         Page {
-            ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf)
-            if (link == Link.Offline) InfoCard(
+            ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf, composerState, block?.callGate ?: CallGate.Ok)
+            if (link == Link.Offline && composerState == ComposerState.Open) InfoCard(
                 "$first isn’t reachable right now. Your messages stay on this phone and send by themselves when you’re both online.",
                 Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp), icon = Icons.Rounded.Schedule, kind = BannerKind.Warn,
             )
@@ -275,6 +290,8 @@ fun ConversationScreen(
                 Modifier.weight(1f).fillMaxWidth(), state = listState, reverseLayout = true,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                // Newest at the bottom (reversed list): the block note sits under the last message.
+                if (block != null && (block.view.blockedByMe || blockedMeAt != null)) item(key = "block") { BlockNote(name, block.view) }
                 items(rows, key = { r -> when (r) { is ConvRow.Day -> "d" + r.label + rows.indexOf(r); is ConvRow.Msg -> r.m.id } }) { r ->
                     when (r) {
                         is ConvRow.Day -> Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 6.dp), contentAlignment = Alignment.Center) {
@@ -283,6 +300,7 @@ fun ConversationScreen(
                         }
                         is ConvRow.Msg -> Bubble(
                             r.m, name, link, online, nowMs, progress, requested, byId, source,
+                            notDelivered = if (r.m.id in undelivered) BlockCopy.notDelivered(name) else null,
                             selected = actionsFor == r.m.id,
                             onLong = { if (!r.m.deleted) actionsFor = r.m.id },
                             onReply = { editing = null; replying = r.m.id },
@@ -308,7 +326,8 @@ fun ConversationScreen(
                     }
                 }
             }
-            Composer(
+            if (composerState != ComposerState.Open) BlockedFooter(name, composerState, onUnblock, onAddContact)
+            else Composer(
                 draft, { draft = it }, editing != null, replying?.let { byId[it] }?.let { ComposerBanner("Replying to ${if (it.outgoing) "yourself" else first}", ChatNotifier.previewOf(it)) },
                 editing?.let { byId[it] }?.let { ComposerBanner("Editing", it.text) },
                 onCancelBanner = { if (editing != null) draft = ""; editing = null; replying = null },
@@ -349,7 +368,7 @@ fun ConversationScreen(
 }
 
 @Composable
-private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean) {
+private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean, blockState: ComposerState = ComposerState.Open, callGate: CallGate = CallGate.Ok) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
@@ -357,12 +376,20 @@ private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> 
         Column(Modifier.weight(1f)) {
             Text(name, style = TinType.bodyL.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (isSelf) Text(SELF_SUB, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
+            else if (blockState != ComposerState.Open) Text(
+                when (blockState) { ComposerState.BlockedByMe -> "Blocked"; ComposerState.BlockedMe -> "Blocked you"; else -> "Not in your contacts" },
+                style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = if (blockState == ComposerState.NotContact) c.ink2 else c.er,
+            )
             else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Dot(if (link == Link.Connected || link == Link.Relayed) c.pr else c.ln2, 8.dp, hollow = link != Link.Connected && link != Link.Relayed)
                 Text(when (link) { Link.Connected -> "Connected · direct"; Link.Relayed -> "Connected · relayed"; else -> "Not connected" }, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
             }
         }
-        if (!isSelf) IconBtn(Icons.Rounded.Call, "Call $first", onCall, tint = c.pr)
+        // Crossed out while either side blocks; tapping says why.
+        if (!isSelf) {
+            if (blockState == ComposerState.Open && callGate == CallGate.Ok) IconBtn(Icons.Rounded.Call, "Call $first", onCall, tint = c.pr)
+            else IconBtn(Icons.Rounded.PhoneDisabled, "Can’t call $first", onCall, tint = c.ink2)
+        }
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(c.ln))
 }
@@ -423,7 +450,7 @@ private fun BannerLine(text: String) =
 @Composable
 private fun Bubble(
     m: Message, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: List<String>,
-    byId: Map<String, Message>, source: ChatSource, selected: Boolean,
+    byId: Map<String, Message>, source: ChatSource, notDelivered: String? = null, selected: Boolean,
     onLong: () -> Unit, onReply: () -> Unit, onDownload: () -> Unit, onCancel: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
     onOpenFile: () -> Unit, broken: Boolean, onBroken: () -> Unit,
 ) {
@@ -496,12 +523,13 @@ private fun Bubble(
             val at = msClock(m.at.toLong())
             val sendingPct = if (out && prog != null && prog.second > 0) (prog.first * 100 / prog.second).toInt() else null
             val label = when {
+                notDelivered != null -> "$notDelivered · $at"
                 sendingPct != null -> "Sending $sendingPct% · $at"
                 tick == Tick.Clock -> "Waiting · $at"
                 m.editedAt != null -> "edited · $at"
                 else -> at
             }
-            val metaColor = if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
+            val metaColor = if (notDelivered != null) c.er else if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
             if (a == null && m.text.isNotBlank()) {
                 // Only a few emojis: big, like the other chat apps; emojis in text: a bit larger.
                 val big = Emoji.isBig(m.text)
@@ -741,5 +769,52 @@ private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean,
             contentAlignment = Alignment.Center,
         ) { Icon(if (remote) Icons.Rounded.Download else Icons.Rounded.PlayArrow, if (remote) "Download voice message" else "Voice message loading", tint = c.onPr) }
         Text(formatMs(a.durationMs.toInt()), style = TinType.caption.copy(fontFamily = PlexMono, fontSize = 12.sp), color = if (out) c.onPrc else c.ink2)
+    }
+}
+
+// ------------------------------------------------------------------ blocking
+
+/** Under the last message: a quiet line when we block them, their signed notice when they block us. */
+@Composable
+private fun BlockNote(name: String, v: BlockView) {
+    val c = Tin.c
+    val f = firstName(name)
+    val blockedMeAt = v.blockedMeAtSecs
+    if (v.blockedByMe) Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+        Text("You blocked $f" + (v.blockedAtSecs?.let { " · ${BlockCopy.date(it)}" } ?: ""),
+            Modifier.clip(RoundedCornerShape(50)).background(c.sf2).padding(horizontal = 12.dp, vertical = 4.dp),
+            style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.ink2)
+    } else if (blockedMeAt != null) Column(
+        Modifier.fillMaxWidth().padding(vertical = 8.dp).clip(RoundedCornerShape(16.dp)).background(c.erc).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(BlockCopy.blockedYouTitle(name), style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.onErc)
+        Text(BlockCopy.blockedYouBody(name), style = TinType.bodyM, color = c.onErc)
+        Text("Signed by $f · ${BlockCopy.date(blockedMeAt)}", style = TinType.caption, color = c.onErc.copy(alpha = .8f))
+    }
+}
+
+/** In place of the composer while a block is on, or for a kept chat with someone no longer a contact. */
+@Composable
+private fun BlockedFooter(name: String, state: ComposerState, onUnblock: () -> Unit, onAddContact: () -> Unit) {
+    val c = Tin.c
+    Box(Modifier.fillMaxWidth().height(1.dp).background(c.ln))
+    Row(
+        Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            when (state) {
+                ComposerState.BlockedByMe -> BlockCopy.blockedByMeLine(name)
+                ComposerState.BlockedMe -> BlockCopy.cantSend(name)
+                else -> BlockCopy.notContact(name)
+            },
+            Modifier.weight(1f), style = TinType.bodyM, color = c.ink2,
+        )
+        when (state) {
+            ComposerState.BlockedByMe -> TinButton("Unblock", onUnblock, fill = false, height = 44.dp)
+            ComposerState.NotContact -> TinButton("Add", onAddContact, style = BtnStyle.Tonal, fill = false, height = 44.dp)
+            else -> {}
+        }
     }
 }

@@ -48,6 +48,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <!-- A tapped group invite link (G3): tinline://g/<code> opens Join with it. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tinline" android:host="g" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".IncomingCallActivity"

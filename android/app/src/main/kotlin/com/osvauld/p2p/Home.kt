@@ -52,6 +52,12 @@ fun HomeScreen(
     app: P2pApp, missing: List<Need>, onFix: (Need) -> Unit,
     onAdd: (scan: Boolean) -> Unit, onSettings: () -> Unit, onContact: (Contact) -> Unit, onCall: (Contact) -> Unit,
     onChat: (String) -> Unit = {}, onNewChat: () -> Unit = {}, callError: String? = null, onPaste: () -> Unit = {},
+    /** Hoisted tab, so coming back from a chat or group lands on the same tab. Null keeps it local. */
+    homeTab: MutableState<HomeTab>? = null,
+    /** Opens a PLACEHOLDER preview screen (Settings › Developer). */
+    onPreview: (PRoute) -> Unit = {},
+    /** The Groups tab (real groups, GroupsLive.kt). */
+    onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {}, say: (String) -> Unit = {},
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val status by app.status.collectAsState()
@@ -62,7 +68,13 @@ fun HomeScreen(
     val links by app.chat.links.collectAsState()
     var grace by remember { mutableStateOf(true) }
     var sheet by remember { mutableStateOf(false) }
-    var tab by rememberSaveable { mutableStateOf(HomeTab.Chats) }
+    val localTab = rememberSaveable { mutableStateOf(HomeTab.Chats) }
+    var tab by (homeTab ?: localTab)
+    val groupList by app.groups.list.collectAsState()
+    val groupInvitations by app.groups.invitations.collectAsState()
+    val groupBadge = GroupText.badge(groupList, groupInvitations)
+    val requestsIn by app.groups.incoming.collectAsState()
+    val pendingRequests = requestsIn.count { it.state == uniffi.p2pcore.ChatRequestState.PENDING }
     // Relative times ("4 min ago") go stale: refresh them once a minute.
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { delay(6000); grace = false }
@@ -75,18 +87,21 @@ fun HomeScreen(
     }
     val byDid = remember(contacts) { contacts.associateBy { it.did } }
     val recents = remember(history, byDid, now) { history.take(200).map { it.toRecent(byDid, now) } }
-    val subs = remember(history, contacts, now) { contacts.associate { it.did to contactSubLine(it.did, history, now) } }
+    val blocks by app.blocks.collectAsState()
+    val subs = remember(history, contacts, now, blocks) { contacts.associate { it.did to (blocks.status(it.did) ?: contactSubLine(it.did, history, now)) } }
     val online = status?.online == true
     val myDid = remember(chats) { app.currentDid() }
-    val rows = remember(chats, contacts, links, online, now, myDid) { chatRows(chats, contacts, links, online, now * 1000, myDid) }
+    val rows = remember(chats, contacts, links, online, now, myDid, blocks) { chatRows(chats, contacts, links, online, now * 1000, myDid, blocks) }
     HomeContent(
         contacts = contacts, online = online, connectingGrace = grace, missing = missing,
         onFix = onFix, onAdd = onAdd, onSettings = onSettings, onContact = onContact, onCall = onCall,
         onAvailability = { sheet = true }, recents = recents, callError = callError,
         available = avail.available, onTurnOn = { app.setAvailable(true) }, subLines = subs,
         tab = tab, onTab = { tab = it }, chatRows = rows, myDid = myDid, onChat = onChat, onNewChat = onNewChat,
-        chatBadge = rows.sumOf { it.unread }, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
+        chatBadge = rows.sumOf { it.unread } + pendingRequests, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
+        groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup, say) }, groupBadge = groupBadge,
+        requestsBlock = { GroupRequestsBlock(app, onChat, say) },
     )
     if (sheet) AvailabilitySheet(avail.available, avail.until?.toLong(), app.node.profile()?.name ?: "", onDismiss = { sheet = false }) { available, until ->
         sheet = false
@@ -121,6 +136,10 @@ fun HomeContent(
     tab: HomeTab = HomeTab.Contacts, onTab: (HomeTab) -> Unit = {}, chatRows: List<ChatRowUi> = emptyList(), myDid: String? = null,
     onChat: (String) -> Unit = {}, onNewChat: () -> Unit = {}, chatBadge: Int = 0, callBadge: Int = 0,
     firstRun: (@Composable () -> Unit)? = null,
+    /** The Groups tab's content; null hides the tab (the gallery and tests). */
+    groupsBody: (@Composable () -> Unit)? = null, groupBadge: Int = 0,
+    /** Group chat requests (U3), above the chats; draws nothing when there are none. */
+    requestsBlock: (@Composable () -> Unit)? = null,
 ) {
     val c = Tin.c
     var searching by remember { mutableStateOf(startSearching) }
@@ -132,7 +151,7 @@ fun HomeContent(
     val banner: @Composable () -> Unit = { TopBanner(online, connectingGrace, missing, onFix, available, onTurnOn) }
 
     // No contacts yet: the home screen is the add screen (my code, Copy, Share, Scan, Paste), on Chats and Contacts alike.
-    val firstRunShown = firstRun != null && contacts.isEmpty() && !searching && tab != HomeTab.Calls
+    val firstRunShown = firstRun != null && contacts.isEmpty() && !searching && tab != HomeTab.Calls && tab != HomeTab.Groups
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().imePadding()) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Column(Modifier.fillMaxSize()) {
@@ -146,9 +165,11 @@ fun HomeContent(
                     }
                 }
                 if (firstRunShown) Column(Modifier.weight(1f)) { banner(); firstRun?.invoke() } else when (tab) {
-                    HomeTab.Chats -> Box(Modifier.weight(1f)) {
-                        ChatsBody(chatRows, query, banner, onSearch = { searching = true }, onChat = onChat, onNewChat = onNewChat, searching = searching, myDid = myDid)
+                    HomeTab.Chats -> Column(Modifier.weight(1f)) {
+                        if (!searching) requestsBlock?.invoke()
+                        Box(Modifier.weight(1f)) { ChatsBody(chatRows, query, banner, onSearch = { searching = true }, onChat = onChat, onNewChat = onNewChat, searching = searching, myDid = myDid) }
                     }
+                    HomeTab.Groups -> Box(Modifier.weight(1f)) { groupsBody?.invoke() }
                     HomeTab.Calls -> if (recents.isEmpty()) Column(Modifier.weight(1f)) {
                         banner()
                         if (callError != null) Text(callError, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = TinType.bodyM, color = c.er)
@@ -185,7 +206,7 @@ fun HomeContent(
                             } else item { SectionLabel("CONTACTS") }
                             val shown = sorted.filter { it.display().matchesQuery(query) || it.name.matchesQuery(query) }
                             items(shown, key = { it.did }) { ct ->
-                                RowItem(ct.display(), ct.did, sub = subLines[ct.did], subColor = if (subLines[ct.did]?.startsWith("Missed") == true) c.er else c.ink2, highlight = query, onClick = { onContact(ct) }, onCall = { onCall(ct) })
+                                RowItem(ct.display(), ct.did, sub = subLines[ct.did], subColor = if (subLines[ct.did]?.let { it.startsWith("Missed") || it.startsWith("Blocked") } == true) c.er else c.ink2, highlight = query, onClick = { onContact(ct) }, onCall = { onCall(ct) })
                             }
                             if (searching) item {
                                 Row(
@@ -212,7 +233,7 @@ fun HomeContent(
                 }
             }
         }
-        if (!searching) TinNavBar(tab, onTab, chatBadge, callBadge) else Spacer(Modifier.navigationBarsPadding())
+        if (!searching) TinNavBar(tab, onTab, chatBadge, callBadge, showGroups = groupsBody != null, groupBadge = groupBadge) else Spacer(Modifier.navigationBarsPadding())
     }
 }
 

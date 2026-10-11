@@ -320,7 +320,7 @@ private fun RouteOption(icon: ImageVector, label: String, on: Boolean, onClick: 
 @Composable
 private fun EndedRoute(e: EndedUi, meName: String, onClose: () -> Unit, onAgain: () -> Unit) {
     if (classifyEnd(e.reason) == EndKind.Unreachable && !e.wasActive) UnreachableContent(e.peerName, e.peerDid, meName, onAgain, onClose)
-    else EndedContent(e.peerName, e.peerDid, meName, endReasonText(e.reason, e.peerName, e.incoming), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
+    else EndedContent(e.peerName, e.peerDid, meName, endReasonText(e.reason, e.peerName, e.incoming, P2pApp.instance.blocks.value.blockedByMe(e.peerDid)), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
 }
 
 @Composable

@@ -18,9 +18,13 @@ macro_rules! tlog {
 pub(crate) use tlog;
 
 mod app;
+/// Contact blocking on the core's API: state the screens read, and the dialog copy.
+mod blocks;
 mod emoji;
 mod audio;
 mod flow;
+/// Placeholder data for the groups & privacy preview screens.
+mod groups_fake;
 mod keystore;
 mod raise;
 mod media;
@@ -48,6 +52,7 @@ pub enum Ev {
     /// Audio device trouble worth telling the user about.
     AudioNotice(String),
     Chat(ChatEv),
+    Group(GroupEv),
     /// A notification was clicked.
     Open(app::Target),
     Link(LinkEv),
@@ -88,6 +93,40 @@ impl p2pcore::LinkEvents for LinkBridge {
     fn on_unlinked(&self, did: String) {
         tlog!("UNLINKED {did}");
         let _ = self.0.send(Ev::Link(LinkEv::Unlinked(did)));
+    }
+}
+
+/// What the core's `GroupEvents` report.
+pub enum GroupEv {
+    Message(p2pcore::GroupMessage),
+    Changed(String),
+    /// A chat request appeared or changed (G2, U3).
+    Request(p2pcore::GroupChatRequest),
+    /// A group invitation appeared or changed (G3).
+    Invitation(p2pcore::GroupInvitation),
+}
+
+/// Bridges `GroupEvents` into the same channel as `NodeEvents`.
+pub struct GroupBridge(pub mpsc::UnboundedSender<Ev>);
+
+impl p2pcore::GroupRequestEvents for GroupBridge {
+    fn on_chat_request(&self, request: p2pcore::GroupChatRequest) {
+        let _ = self.0.send(Ev::Group(GroupEv::Request(request)));
+    }
+}
+
+impl p2pcore::GroupInvitationEvents for GroupBridge {
+    fn on_group_invitation(&self, invitation: p2pcore::GroupInvitation) {
+        let _ = self.0.send(Ev::Group(GroupEv::Invitation(invitation)));
+    }
+}
+
+impl p2pcore::GroupEvents for GroupBridge {
+    fn on_group_message(&self, message: p2pcore::GroupMessage) {
+        let _ = self.0.send(Ev::Group(GroupEv::Message(message)));
+    }
+    fn on_group_changed(&self, group_id: String) {
+        let _ = self.0.send(Ev::Group(GroupEv::Changed(group_id)));
     }
 }
 
@@ -311,6 +350,9 @@ fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     audio.attach(&node);
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
+    node.set_group_events(Arc::new(GroupBridge(tx.clone())));
+    node.set_group_request_events(Arc::new(GroupBridge(tx.clone())));
+    node.set_group_invitation_events(Arc::new(GroupBridge(tx.clone())));
     node.set_link_events(Arc::new(LinkBridge(tx.clone())));
     // The single pre-accounts key entry belongs to the account core just migrated.
     keystore::migrate_legacy(keystore::system(), &data, &node);
