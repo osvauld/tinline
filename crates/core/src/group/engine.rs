@@ -43,6 +43,24 @@ pub(crate) struct GroupRt {
     pub(crate) dial_only: Mutex<Option<String>>,
     /// Test knob: act like a modified app that ignores its own removal.
     pub(crate) ignore_removal: AtomicBool,
+    pub(crate) req_events: Mutex<Option<Arc<dyn super::requests::GroupRequestEvents>>>,
+    /// Test knob: a modified app that skips its own chat-request checks.
+    pub(crate) skip_request_checks: AtomicBool,
+    /// Delay between a removal / host revocation and the hosts' endpoint rotation, ms (U12:
+    /// 2 days; 0 = that default). Test knob.
+    pub(crate) rotation_delay_ms: AtomicU64,
+}
+
+/// U12: hosts rotate their group endpoint this long after a removal or a host revocation.
+pub const ROTATION_DELAY_MS: u64 = 2 * 24 * 3600 * 1000;
+
+impl GroupRt {
+    pub(crate) fn rotation_delay(&self) -> u64 {
+        match self.rotation_delay_ms.load(Ordering::SeqCst) {
+            0 => ROTATION_DELAY_MS,
+            v => v,
+        }
+    }
 }
 
 pub(crate) struct Live {
@@ -78,6 +96,8 @@ pub(crate) struct GroupCore {
     kick: Notify,
     closed: AtomicBool,
     loops: AtomicBool,
+    /// Groups whose members we are still telling about our new endpoint (U12).
+    moving: Mutex<HashSet<String>>,
 }
 
 pub(crate) struct Sess {
@@ -390,6 +410,7 @@ impl Inner {
             kick: Notify::new(),
             closed: AtomicBool::new(false),
             loops: AtomicBool::new(false),
+            moving: Default::default(),
         });
         if let Some(old) = slot.take() {
             old.closed.store(true, Ordering::SeqCst);
@@ -431,6 +452,17 @@ impl Inner {
 
     /// Binds the group endpoint (once) and starts the accept and dial loops.
     pub(crate) async fn group_ensure(self: &Arc<Self>, core: &Arc<GroupCore>) -> Result<Endpoint, Error> {
+        let ep = self.group_bind(core).await?;
+        if !core.loops.swap(true, Ordering::SeqCst) {
+            let (this, c) = (self.clone(), core.clone());
+            self.handle.spawn(async move { this.group_dial_loop(c).await });
+        }
+        Ok(ep)
+    }
+
+    /// Binds the group endpoint if it is not bound, with its accept loop (not the dial loop:
+    /// the rotation, which runs inside the dial loop, rebinds through here).
+    async fn group_bind(self: &Arc<Self>, core: &Arc<GroupCore>) -> Result<Endpoint, Error> {
         if self.shared.lock().endpoint.is_none() {
             return Err(Error::NotStarted);
         }
@@ -457,12 +489,8 @@ impl Inner {
         *core.ep_id.lock() = Some(ep.clone());
         drop(slot);
         self.log(format!("group endpoint {} bound", ep.id()));
-        if !core.loops.swap(true, Ordering::SeqCst) {
-            let (this, c, e) = (self.clone(), core.clone(), ep.clone());
-            self.handle.spawn(async move { this.group_accept_loop(c, e).await });
-            let (this, c) = (self.clone(), core.clone());
-            self.handle.spawn(async move { this.group_dial_loop(c).await });
-        }
+        let (this, c, e) = (self.clone(), core.clone(), ep.clone());
+        self.handle.spawn(async move { this.group_accept_loop(c, e).await });
         Ok(ep)
     }
 
@@ -527,6 +555,7 @@ impl Inner {
         core.kick.notify_waiters();
         // Our other devices learn the group list (stage 2; deduplicated per session).
         self.selfsync_dirty(crate::chat::own::GROUPS_MARK);
+        self.group_publish_key(core, &gid);
         if let Some(ev) = self.group_ev() {
             let msgs: Vec<_> = changed.new_items.iter().filter_map(|i| self.group_message(core, &gid, i)).collect();
             let handle = self.handle.clone();
@@ -536,6 +565,129 @@ impl Inner {
                 }
                 ev.on_group_changed(gid);
             });
+        }
+    }
+
+    /// As a member, publish our encryption key in the group once (U3 mail needs it).
+    fn group_publish_key(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str) {
+        let key = core.account.encryption_public_key();
+        let need = core.groups.lock().get(gid).is_some_and(|l| {
+            l.state.owner.is_some() && l.state.is_member(&core.did) && !l.state.is_removed(&core.did) && l.state.enc_keys.get(&core.did) != Some(&key)
+        });
+        if need {
+            match core.write(gid, Body::EncKey { key }) {
+                Ok((_, c)) => self.group_after(core, c, None),
+                Err(e) => tracing::warn!("group key: {e}"),
+            }
+        }
+    }
+
+    /// Sends sealed mail of ours: as a host we take it in ourselves; otherwise it waits in the
+    /// outbox and goes to every host we have a session with (again on each new session) until
+    /// one acknowledges it.
+    pub(crate) fn group_send_mail(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, sm: super::mail::SignedMail) {
+        let bytes = sm.to_bytes();
+        let hosting = core.groups.lock().get(gid).is_some_and(|l| l.state.is_host(&core.did, &core.dev));
+        if hosting {
+            self.group_mail_intake(core, gid, &bytes, None);
+            return;
+        }
+        let Some(m) = sm.open() else { return };
+        if let Err(e) = core.store.put_out(gid, &super::mail::id_hex(&m.id), &bytes) {
+            tracing::warn!("group mail: {e}");
+        }
+        for s in core.sessions_of(gid) {
+            if !s.hosting {
+                let _ = s.tx.send(Out::Msg(GroupMsg::Mail { mail: bytes.clone() }));
+            }
+        }
+    }
+
+    /// Mail from a session (`from`) or from ourselves (`None`). Members may send only their own
+    /// mail; sender and recipient must be members, the sender not removed. We open what is ours;
+    /// as a host we keep the rest for its recipient and pass it to the recipient's sessions and
+    /// to other hosts.
+    fn group_mail_intake(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, bytes: &[u8], from: Option<&Arc<Sess>>) {
+        use super::mail::*;
+        let Some(sm) = SignedMail::from_bytes(bytes) else { return };
+        let Some(m) = sm.open() else { return };
+        if m.group != gid {
+            return;
+        }
+        let (we_host, ok, from_host) = {
+            let groups = core.groups.lock();
+            let Some(l) = groups.get(gid) else { return };
+            let s = &l.state;
+            let from_host = from.is_some_and(|x| s.is_host(&x.did, &x.dev));
+            (s.is_host(&core.did, &core.dev), s.is_member(&m.from) && !s.is_removed(&m.from) && s.is_member(&m.to), from_host)
+        };
+        if let Some(x) = from
+            && !from_host
+            && x.did != m.from
+        {
+            return;
+        }
+        let id = id_hex(&m.id);
+        if we_host
+            && let Some(x) = from
+            && !from_host
+        {
+            // Taken (or refused for good): the sender stops resending either way.
+            let _ = x.tx.send(Out::Msg(GroupMsg::MailAck { id: m.id }));
+        }
+        if !ok {
+            return;
+        }
+        if m.to == core.did {
+            self.group_mail_for_me(core, gid, &sm);
+        }
+        if !we_host {
+            return;
+        }
+        let now = now_ms();
+        if core.store.mail(gid, Some(&m.to), now).map(|v| v.len()).unwrap_or(0) >= MAX_PENDING_PER_RECIPIENT {
+            return;
+        }
+        let fresh = core.store.put_mail(gid, &m.to, &id, m.at.min(now) + MAIL_TTL_MS, bytes).unwrap_or(false);
+        if !fresh {
+            return;
+        }
+        let hosts: Vec<(String, [u8; 32])> = core.groups.lock().get(gid).map(|l| l.state.hosts.iter().map(|h| (h.did.clone(), h.dev)).collect()).unwrap_or_default();
+        for s in core.sessions_of(gid) {
+            if from.is_some_and(|x| x.id == s.id) {
+                continue;
+            }
+            let to_recipient = s.hosting && s.did == m.to;
+            let to_host = hosts.contains(&(s.did.clone(), s.dev));
+            if to_recipient || to_host {
+                let _ = s.tx.send(Out::Msg(GroupMsg::Mail { mail: bytes.to_vec() }));
+            }
+        }
+    }
+
+    /// A new session: our outbox to a host; to a member we host, its waiting mail; to another
+    /// host, all mail we keep.
+    fn group_mail_on_session(&self, core: &GroupCore, sess: &Sess) {
+        let (we_host, peer_host) = core
+            .groups
+            .lock()
+            .get(&sess.gid)
+            .map(|l| (l.state.is_host(&core.did, &core.dev), l.state.is_host(&sess.did, &sess.dev)))
+            .unwrap_or_default();
+        let mut out: Vec<Vec<u8>> = Vec::new();
+        if !sess.hosting {
+            out.extend(core.store.outbox(&sess.gid).unwrap_or_default());
+        }
+        if we_host {
+            let now = now_ms();
+            if peer_host {
+                out.extend(core.store.mail(&sess.gid, None, now).unwrap_or_default().into_iter().map(|(_, b)| b));
+            } else if sess.hosting {
+                out.extend(core.store.mail(&sess.gid, Some(&sess.did), now).unwrap_or_default().into_iter().map(|(_, b)| b));
+            }
+        }
+        for mail in out {
+            let _ = sess.tx.send(Out::Msg(GroupMsg::Mail { mail }));
         }
     }
 
@@ -567,6 +719,10 @@ impl Inner {
                 })
                 .collect()
         };
+        let gone: Vec<String> = core.groups.lock().get(gid).map(|l| l.state.removed.keys().cloned().collect()).unwrap_or_default();
+        for did in gone {
+            let _ = core.store.drop_dir(gid, &did);
+        }
         for (s, records, vv, update) in removed {
             let _ = s.tx.send(Out::Msg(GroupMsg::Removed { records, vv, update }));
             let _ = s.tx.send(Out::Close);
@@ -618,7 +774,17 @@ impl Inner {
         let mut writer = Writer(send);
         let mut reader = Reader::new(recv);
         let hello = tokio::time::timeout(HELLO_TIMEOUT, reader.recv()).await.map_err(|_| Error::Timeout)??;
-        let Some(GroupMsg::Hello { auth, group, vv, invite, hosts }) = hello else { return Err(Error::Protocol("expected hello".into())) };
+        let (auth, group, vv, invite, hosts, relay) = match hello {
+            Some(GroupMsg::Hello { auth, group, vv, invite, hosts, relay }) => (auth, group, vv, invite, hosts, relay),
+            Some(GroupMsg::Moved { auth, group, hosts }) => {
+                self.group_moved_in(&core, remote, auth, &group, &hosts);
+                let _ = writer.send(&GroupMsg::Ack { vv: Vec::new() }).await;
+                let _ = writer.0.finish();
+                let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
+                return Ok(());
+            }
+            _ => return Err(Error::Protocol("expected hello".into())),
+        };
         if !auth.verify(&remote) {
             return Err(Error::Protocol("endpoint proof does not verify".into()));
         }
@@ -659,7 +825,8 @@ impl Inner {
             }
             Verdict::Welcome { joining } => {
                 // U7: the host keeps the member device's group endpoint.
-                let entry = DirEntry { endpoint: conn.remote_id().to_string(), seen_ms: now_ms() };
+                let relay = relay.filter(|r| r.len() <= 300);
+                let entry = DirEntry { endpoint: conn.remote_id().to_string(), seen_ms: now_ms(), relay };
                 let _ = core.store.put_dir(&group, &auth.did, &auth.dev, &entry);
                 core.merge_hosts(&group, &hosts);
                 let mine = EndpointAuth::new(&core.account, core.dev, *core.ep_id.lock().as_ref().map(|e| e.id()).ok_or(Error::NotStarted)?.as_bytes());
@@ -716,6 +883,10 @@ impl Inner {
             }
             if core.closed() {
                 break;
+            }
+            self.group_req_tick(&core);
+            if let Err(e) = self.group_rotation_tick(&core).await {
+                tracing::warn!("group endpoint rotation: {e}");
             }
             for (gid, addr) in self.group_targets(&core) {
                 let key = (gid.clone(), host_key(&addr.did, &addr.dev));
@@ -815,7 +986,7 @@ impl Inner {
             (live.doc.vv(), invite)
         };
         let auth = EndpointAuth::new(&core.account, core.dev, *ep.id().as_bytes());
-        writer.send(&GroupMsg::Hello { auth, group: gid.clone(), vv: vv.encode(), invite, hosts: core.host_addrs(&gid) }).await?;
+        writer.send(&GroupMsg::Hello { auth, group: gid.clone(), vv: vv.encode(), invite, hosts: core.host_addrs(&gid), relay: relay_of(&ep) }).await?;
         let reply = tokio::time::timeout(HELLO_TIMEOUT, reader.recv()).await.map_err(|_| Error::Timeout)??;
         match reply {
             Some(GroupMsg::Welcome { auth, vv, hosts }) => {
@@ -901,6 +1072,7 @@ impl Inner {
         self.log(format!("group {} session with {} ({})", &gid[..8.min(gid.len())], &peer.did, if hosting { "we host" } else { "they host" }));
         // Catch the other side up.
         self.group_push(&core, &gid, None);
+        self.group_mail_on_session(&core, &sess);
         if let Some(ev) = self.group_ev() {
             let g = gid.clone();
             self.handle.spawn_blocking(move || ev.on_group_changed(g));
@@ -994,9 +1166,161 @@ impl Inner {
                 GroupMsg::Refused { reason } => {
                     return Err(Error::Rejected(reason));
                 }
+                GroupMsg::Mail { mail } => {
+                    self.group_mail_intake(core, &sess.gid, &mail, Some(sess));
+                }
+                GroupMsg::MailAck { id } => {
+                    if !sess.hosting {
+                        let _ = core.store.drop_out(&sess.gid, &super::mail::id_hex(&id));
+                    }
+                }
                 _ => return Err(Error::Protocol("unexpected group frame".into())),
             }
         }
+    }
+
+    // ---- endpoint rotation (U12) ---------------------------------------------------------------
+
+    /// When this device's group endpoint is due to rotate: the earliest trigger (removal or
+    /// host revocation) in a group we host that happened after the key was made, plus the
+    /// delay. `None` if nothing is pending.
+    pub(crate) fn group_rotation_due(&self, core: &GroupCore) -> Option<u64> {
+        let made = core.store.endpoint_made();
+        let delay = self.group.rotation_delay();
+        core.groups
+            .lock()
+            .values()
+            .filter(|l| l.state.is_host(&core.did, &core.dev))
+            .flat_map(|l| l.state.rotation_triggers.iter().copied())
+            .filter(|t| *t > 0 && *t as u64 > made)
+            .min()
+            .map(|t| t as u64 + delay)
+    }
+
+    async fn group_rotation_tick(self: &Arc<Self>, core: &Arc<GroupCore>) -> Result<(), Error> {
+        let Some(due) = self.group_rotation_due(core) else { return Ok(()) };
+        if due > now_ms() || core.ep_id.lock().is_none() {
+            return Ok(());
+        }
+        self.group_rotate(core).await
+    }
+
+    /// New group endpoint key; the old endpoint closes (every session with it ends, and whoever
+    /// knew only it, a removed member, can no longer reach us). Then we tell the members we
+    /// host where we are now, and dial the other hosts from the new endpoint.
+    pub(crate) async fn group_rotate(self: &Arc<Self>, core: &Arc<GroupCore>) -> Result<(), Error> {
+        core.store.rotate_endpoint_secret(now_ms())?;
+        let old = core.ep.lock().await.take();
+        *core.ep_id.lock() = None;
+        {
+            let mut ss = core.sessions.lock();
+            for s in ss.values() {
+                let _ = s.tx.send(Out::Close);
+            }
+            ss.clear();
+        }
+        core.my_addr.lock().clear();
+        if let Some(ep) = old {
+            let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
+        }
+        let ep = self.group_bind(core).await?;
+        self.group_relay_ready().await;
+        self.log(format!("group endpoint rotated to {}", ep.id()));
+        let hosted: Vec<String> = core.groups.lock().iter().filter(|(_, l)| l.state.is_host(&core.did, &core.dev)).map(|(g, _)| g.clone()).collect();
+        for gid in hosted {
+            let _ = self.group_my_addr(core, &gid);
+            if core.moving.lock().insert(gid.clone()) {
+                let (this, core) = (self.clone(), core.clone());
+                self.handle.spawn(async move { this.group_tell_moved(core, gid).await });
+            }
+        }
+        core.backoff.lock().clear();
+        core.kick.notify_waiters();
+        Ok(())
+    }
+
+    /// Dials every current member device in our directory that has no session with us yet and
+    /// hands it our new address (`Moved`), with backoff, until all are back, the endpoint
+    /// changes again, or the delay period has passed (PROVISIONAL: members offline longer must
+    /// get a fresh token).
+    async fn group_tell_moved(self: Arc<Self>, core: Arc<GroupCore>, gid: String) {
+        let Some(ep) = core.ep_id.lock().clone() else {
+            core.moving.lock().remove(&gid);
+            return;
+        };
+        let end = Instant::now() + Duration::from_millis(self.group.rotation_delay());
+        let mut wait = 2u64;
+        loop {
+            let same = core.ep_id.lock().as_ref().is_some_and(|e| e.id() == ep.id());
+            if core.closed() || !same || Instant::now() > end {
+                break;
+            }
+            let targets = {
+                let groups = core.groups.lock();
+                let Some(l) = groups.get(&gid) else { break };
+                if !l.state.is_host(&core.did, &core.dev) {
+                    break;
+                }
+                let dir = core.store.dir(&gid).unwrap_or_default();
+                let t: Vec<(String, DirEntry)> = dir
+                    .into_iter()
+                    .filter(|(k, _)| {
+                        let Some((did, dev)) = k.rsplit_once('/') else { return false };
+                        let Some(dev) = hex::decode(dev).ok().and_then(|b| <[u8; 32]>::try_from(b).ok()) else { return false };
+                        l.state.is_member(did) && !l.state.is_removed(did) && !(did == core.did && dev == core.dev) && !core.has_session(&gid, did, &dev)
+                    })
+                    .collect();
+                t
+            };
+            if targets.is_empty() {
+                break;
+            }
+            let hosts = core.host_addrs(&gid);
+            let auth = EndpointAuth::new(&core.account, core.dev, *ep.id().as_bytes());
+            for (_, d) in targets {
+                let Ok(key) = d.endpoint.parse::<iroh::PublicKey>() else { continue };
+                let Ok(addr) = addr_for(key.as_bytes(), d.relay.as_deref()) else { continue };
+                let (ep, auth, gid, hosts) = (ep.clone(), auth.clone(), gid.clone(), hosts.clone());
+                tokio::spawn(async move {
+                    let res: Result<(), Error> = async {
+                        let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, GROUP_ALPN)).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
+                        let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
+                        let mut w = Writer(send);
+                        let mut r = Reader::new(recv);
+                        w.send(&GroupMsg::Moved { auth, group: gid, hosts }).await?;
+                        let _ = tokio::time::timeout(HELLO_TIMEOUT, r.recv()).await;
+                        conn.close(0u32.into(), b"moved");
+                        Ok(())
+                    }
+                    .await;
+                    if let Err(e) = res {
+                        tracing::debug!("telling a member we moved: {e}");
+                    }
+                });
+            }
+            tokio::time::sleep(Duration::from_secs(wait)).await;
+            wait = (wait * 2).min(30);
+        }
+        core.moving.lock().remove(&gid);
+    }
+
+    /// Member side: a host says it moved. Kept only from an active host proving its endpoint.
+    fn group_moved_in(&self, core: &Arc<GroupCore>, remote: [u8; 32], auth: EndpointAuth, gid: &str, hosts: &[SignedHostAddr]) {
+        if !auth.verify(&remote) {
+            return;
+        }
+        let ok = core.groups.lock().get(gid).is_some_and(|l| l.state.is_host(&auth.did, &auth.dev));
+        if !ok {
+            return;
+        }
+        let mine = hosts.iter().any(|s| s.open().is_some_and(|a| a.did == auth.did && a.dev == auth.dev && a.endpoint == remote));
+        if !mine {
+            return;
+        }
+        core.merge_hosts(gid, hosts);
+        core.backoff.lock().remove(&(gid.to_string(), host_key(&auth.did, &auth.dev)));
+        self.log(format!("group {}: host {} moved", &gid[..8.min(gid.len())], auth.did));
+        core.kick.notify_waiters();
     }
 
     /// We joined with an invite and now hold the group: write our `Join` (once).

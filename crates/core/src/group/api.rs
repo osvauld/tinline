@@ -130,6 +130,11 @@ pub struct GroupDetail {
     pub hosts: Vec<GroupHost>,
     /// Devices that offered to host but hold no permit yet.
     pub host_offers: Vec<GroupHost>,
+    /// Devices an admin appointed as host that have not accepted yet (`appointed_by` set).
+    pub host_requests: Vec<GroupHost>,
+    /// An admin appointed THIS device as host and it has not answered: show "host this
+    /// group?" and call `group_accept_host(group, true/false)`.
+    pub host_requested_here: bool,
     /// Admins see who was flagged how often in `members`; this is our own removal, if any.
     pub removal: Option<GroupRemoval>,
 }
@@ -307,6 +312,8 @@ impl Inner {
         };
         let hosts = s.hosts.iter().map(|h| host(&h.did, &h.dev, Some(h.appointed_by.clone()))).collect();
         let host_offers = s.host_offers.iter().map(|(d, v)| host(d, v, None)).collect();
+        let host_requests = s.host_requests.iter().map(|h| host(&h.did, &h.dev, Some(h.appointed_by.clone()))).collect();
+        let host_requested_here = s.host_requests.iter().any(|h| h.did == core.did && h.dev == core.dev);
         let flags_on_me = s.removed.get(&core.did).map(|f| f.iter().map(|f| (f.by.clone(), f.at)).collect::<Vec<_>>()).or_else(|| proof_removes(gid, &core.did, &proof));
         let removal = flags_on_me.map(|mut f| {
             f.sort_by_key(|(_, at)| *at);
@@ -324,6 +331,8 @@ impl Inner {
             members,
             hosts,
             host_offers,
+            host_requests,
+            host_requested_here,
             removal,
         })
     }
@@ -349,7 +358,7 @@ impl Inner {
     }
 
     /// The state check every action makes first: we are a current member (not removed, not left).
-    fn group_member_check(&self, core: &GroupCore, gid: &str) -> Result<(), Error> {
+    pub(crate) fn group_member_check(&self, core: &GroupCore, gid: &str) -> Result<(), Error> {
         let groups = core.groups.lock();
         let live = groups.get(gid).ok_or(Error::NotFound)?;
         let ignore = self.group.ignore_removal.load(std::sync::atomic::Ordering::SeqCst);
@@ -628,8 +637,8 @@ impl Node {
         self.inner.group_write(&core, &group_id, Body::HostPermit { host: did, host_dev: dev, active: true }).map(|_| ())
     }
 
-    /// Admin: device `device_id` of `did` stops hosting. (Group endpoint rotation after a host
-    /// removal, U12/§10 Q8, is a later slice.)
+    /// Admin: device `device_id` of `did` stops hosting. The remaining hosts rotate their group
+    /// endpoint after the U12 delay (§10 Q8).
     pub fn group_revoke_host(&self, group_id: String, did: String, device_id: String) -> Result<(), Error> {
         let dev = parse_dev(&device_id)?;
         let core = self.inner.group_core()?;
@@ -651,6 +660,13 @@ impl Node {
     /// This install's device ID for this account (hex): what an admin appoints as host.
     pub fn group_device_id(&self) -> Result<String, Error> {
         Ok(hex::encode(self.inner.group_core()?.dev))
+    }
+
+    /// On a host: when this device's group endpoint will rotate (unix ms), because of a removal
+    /// or a host revocation in a group it hosts (U12: 2 days after). `None` if none is pending.
+    pub fn group_endpoint_rotation_due(&self) -> Option<u64> {
+        let core = self.inner.group_core().ok()?;
+        self.inner.group_rotation_due(&core)
     }
 
     /// This device's group endpoint id, once it is up (`None` before any group).
@@ -679,6 +695,11 @@ impl Node {
         if let Ok(c) = self.inner.group_core() {
             c.close_sessions_except(self.inner.group.dial_only.lock().as_deref());
         }
+    }
+
+    /// The U12 rotation delay in seconds (default 2 days).
+    pub fn group_set_rotation_delay_for_test(&self, secs: u64) {
+        self.inner.group.rotation_delay_ms.store(secs.max(1) * 1000, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// Behave like a modified app that ignores its own removal (keeps posting and dialing).

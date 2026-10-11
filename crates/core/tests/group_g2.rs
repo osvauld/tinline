@@ -269,31 +269,25 @@ fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
         let he = h.node.group_endpoint_id().unwrap();
         a.node.group_known_endpoints_for_test(g.clone()).contains(&he)
     });
-    // The hosts stop syncing each other (members relay too, so b talks to o only); a talks to h
-    // only.
-    o.node.group_dial_only_for_test(Some(o.did.clone()));
-    h.node.group_dial_only_for_test(Some(h.did.clone()));
-    b.node.group_dial_only_for_test(Some(o.did.clone()));
-    a.node.group_dial_only_for_test(Some(h.did.clone()));
-    // The other side of each closed session notices over the network.
-    std::thread::sleep(Duration::from_secs(4));
+    // Only h is up (b is down too: members relay); a's post reaches h alone.
+    o.node.stop();
+    b.node.stop();
+    std::thread::sleep(Duration::from_secs(2));
     a.node.group_post(g.clone(), "only h has this".into(), None).unwrap();
     eventually(WAIT, "h acknowledged it", || delivered(&a, &g, "only h has this"));
-    std::thread::sleep(Duration::from_secs(1));
-    assert!(!has_post(&o, &g, &a.did, "only h has this"), "o must not have it yet");
+    assert!(has_post(&h, &g, &a.did, "only h has this"));
+    // h goes away holding it; o comes back; a loses its group store and rejoins through o.
     h.node.stop();
+    online(&o.node);
     restart(&mut a, true);
     let tok = o.node.group_invite(g.clone()).unwrap();
     assert_eq!(a.node.group_join(tok).unwrap(), g);
-    a.node.group_dial_only_for_test(Some(o.did.clone()));
+    assert!(!has_post(&o, &g, &a.did, "only h has this"), "o never got it");
     a.node.group_post(g.clone(), "written after the loss".into(), None).unwrap();
     eventually(WAIT, "o has the new post", || has_post(&o, &g, &a.did, "written after the loss"));
-    // h comes back; the hosts sync again.
+    // h and b come back; the hosts sync again.
     online(&h.node);
-    h.node.group_dial_only_for_test(None);
-    o.node.group_dial_only_for_test(None);
-    a.node.group_dial_only_for_test(None);
-    b.node.group_dial_only_for_test(None);
+    online(&b.node);
     for p in [&o, &h, &b, &a] {
         eventually(WAIT, "both posts everywhere", || {
             has_post(p, &g, &a.did, "only h has this") && has_post(p, &g, &a.did, "written after the loss")
@@ -428,3 +422,77 @@ fn chat_requests_can_be_declined_and_blocked_senders_are_refused() {
     assert!(b.node.group_chat_request(g.clone(), c.did.clone()).is_err());
 }
 
+// ---- stage 4: host endpoint rotation after a removal / host revocation (U12) ---------------------
+
+// KIND: acceptance (G2 stage 4) — U12: after a removal, the host rotates its group endpoint once
+// the delay (2 days; shortened here) has passed; remaining members, including one offline at the
+// time, are reconnected to the new endpoint by the host; the removed member never learns it.
+#[test]
+fn the_host_rotates_after_a_removal_and_only_remaining_members_follow() {
+    let o = peer("ro-o");
+    let a = peer("ro-a");
+    let m = peer("ro-m");
+    let b = peer("ro-b");
+    let c = peer("ro-c");
+    let g = group_with(&o, &[&a, &m, &b, &c]);
+    o.node.group_set_admin(g.clone(), a.did.clone(), true).unwrap();
+    eventually(WAIT, "a is admin", || a.node.group_detail(g.clone()).unwrap().my_role == GroupRole::Admin);
+    o.node.group_set_rotation_delay_for_test(25);
+    let old = o.node.group_endpoint_id().unwrap();
+    // c is offline across the rotation.
+    c.node.stop();
+    for _ in 0..3 {
+        a.node.group_flag(g.clone(), m.did.clone()).unwrap();
+    }
+    eventually(WAIT, "m removed at the host", || !members(&o, &g).contains(&m.did));
+    // Not immediate.
+    assert_eq!(o.node.group_endpoint_id().unwrap(), old, "the rotation waits for the delay");
+    eventually(WAIT, "m knows it was removed", || m.node.group_detail(g.clone()).unwrap().my_role == GroupRole::Removed);
+    eventually(WAIT + 25, "the host rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));
+    let new = o.node.group_endpoint_id().unwrap();
+    for p in [&a, &b] {
+        eventually(WAIT, "remaining members learn the new endpoint", || p.node.group_known_endpoints_for_test(g.clone()) == vec![new.clone()]);
+    }
+    b.node.group_post(g.clone(), "after the rotation".into(), None).unwrap();
+    eventually(WAIT, "a gets it through the new endpoint", || has_post(&a, &g, &b.did, "after the rotation"));
+    online(&c.node);
+    eventually(WAIT, "the offline member is reconnected", || has_post(&c, &g, &b.did, "after the rotation"));
+    assert_eq!(c.node.group_known_endpoints_for_test(g.clone()), vec![new.clone()]);
+    std::thread::sleep(Duration::from_secs(3));
+    assert!(!m.node.group_known_endpoints_for_test(g.clone()).contains(&new), "the removed member never learns it");
+    // One rotation per removal: it stays put.
+    std::thread::sleep(Duration::from_secs(10));
+    assert_eq!(o.node.group_endpoint_id().unwrap(), new);
+}
+
+// KIND: acceptance (G2 stage 4) — §10 Q8: revoking a host makes the remaining hosts rotate the
+// same way; members follow.
+#[test]
+fn a_host_revocation_rotates_the_remaining_hosts() {
+    let o = peer("rv-o");
+    let h = peer("rv-h");
+    let a = peer("rv-a");
+    let g = group_with(&o, &[&h, &a]);
+    assert!(!h.node.group_detail(g.clone()).unwrap().host_requested_here);
+    o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
+    // G-UI: the appointed device is asked (and only it).
+    eventually(WAIT, "h is asked to host", || h.node.group_detail(g.clone()).unwrap().host_requested_here);
+    assert!(!a.node.group_detail(g.clone()).unwrap().host_requested_here);
+    let req = o.node.group_detail(g.clone()).unwrap().host_requests;
+    assert!(req.len() == 1 && req[0].did == h.did && req[0].appointed_by.as_deref() == Some(o.did.as_str()));
+    h.node.group_accept_host(g.clone(), true).unwrap();
+    eventually(WAIT, "a sees two hosts", || a.node.group_detail(g.clone()).unwrap().hosts.len() == 2);
+    let d = h.node.group_detail(g.clone()).unwrap();
+    assert!(!d.host_requested_here && d.host_requests.is_empty() && d.am_host);
+    o.node.group_set_rotation_delay_for_test(5);
+    let old = o.node.group_endpoint_id().unwrap();
+    o.node.group_revoke_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
+    eventually(WAIT + 5, "o rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));
+    let new = o.node.group_endpoint_id().unwrap();
+    eventually(WAIT, "a follows", || {
+        let k = a.node.group_known_endpoints_for_test(g.clone());
+        k.contains(&new) && !k.contains(&old)
+    });
+    a.node.group_post(g.clone(), "after the revocation".into(), None).unwrap();
+    eventually(WAIT, "o gets it", || has_post(&o, &g, &a.did, "after the revocation"));
+}

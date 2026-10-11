@@ -18,7 +18,10 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+use storage::Op;
+
 use super::engine::GroupCore;
+use super::store::{GroupStore, io, json};
 use super::mail::{self, Letter, SignedMail};
 use crate::Error;
 use crate::node::{Inner, Node, now, now_ms};
@@ -226,7 +229,7 @@ impl Inner {
         }
     }
 
-    fn group_req_list(&self, outgoing: bool) -> Result<Vec<GroupChatRequest>, Error> {
+    fn group_req_list(self: &Arc<Self>, outgoing: bool) -> Result<Vec<GroupChatRequest>, Error> {
         let core = self.group_core()?;
         let mut rows: Vec<ReqRow> = core.store.reqs()?.into_iter().filter(|r| r.outgoing == outgoing).collect();
         rows.sort_by(|a, b| b.at.cmp(&a.at));
@@ -269,7 +272,8 @@ impl Node {
         if !member {
             return Err(Error::Rejected("not a member of this group".into()));
         }
-        {
+        let skip = inner.group.skip_request_checks.load(std::sync::atomic::Ordering::SeqCst);
+        if !skip {
             let s = inner.shared.lock();
             if s.state.blocked.contains(&did) {
                 return Err(Error::Rejected("you block them".into()));
@@ -326,5 +330,108 @@ impl Node {
         row.state = ReqState::Declined;
         inner.group_req_save(&core, &row);
         Ok(inner.group_req_view(&core, &row))
+    }
+}
+
+impl GroupStore {
+    // ---- requests and mail (U3) --------------------------------------------------------------
+
+    pub(crate) fn put_req(&self, r: &super::requests::ReqRow) -> Result<(), Error> {
+        self.db.put(&format!("req/{}", r.req), &json(r)).map_err(io)
+    }
+
+    pub(crate) fn req(&self, id: &str) -> Result<Option<super::requests::ReqRow>, Error> {
+        Ok(self.db.get(&format!("req/{id}")).map_err(io)?.and_then(|v| serde_json::from_slice(&v).ok()))
+    }
+
+    pub(crate) fn reqs(&self) -> Result<Vec<super::requests::ReqRow>, Error> {
+        Ok(self.db.scan("req/").map_err(io)?.into_iter().filter_map(|(_, v)| serde_json::from_slice(&v).ok()).collect())
+    }
+
+    pub fn put_out(&self, gid: &str, id: &str, mail: &[u8]) -> Result<(), Error> {
+        self.db.put(&format!("out/{gid}/{id}"), mail).map_err(io)
+    }
+
+    pub fn outbox(&self, gid: &str) -> Result<Vec<Vec<u8>>, Error> {
+        Ok(self.db.scan(&format!("out/{gid}/")).map_err(io)?.into_iter().map(|(_, v)| v).collect())
+    }
+
+    pub fn drop_out(&self, gid: &str, id: &str) -> Result<(), Error> {
+        self.db.apply(&[Op::Delete(format!("out/{gid}/{id}"))]).map_err(io)
+    }
+
+    /// Host side: keeps mail for `to` until `expires`; false if it was already here.
+    pub fn put_mail(&self, gid: &str, to: &str, id: &str, expires: u64, mail: &[u8]) -> Result<bool, Error> {
+        let k = format!("mail/{gid}/{to}/{id}");
+        if self.db.get(&k).map_err(io)?.is_some() {
+            return Ok(false);
+        }
+        self.db.put(&k, &bincode::serialize(&(expires, mail.to_vec())).expect("serialises")).map_err(io)?;
+        Ok(true)
+    }
+
+    /// Host side: unexpired mail of `gid` (for `to`, or all), `(to, bytes)`; expired rows go.
+    pub fn mail(&self, gid: &str, to: Option<&str>, now_ms: u64) -> Result<Vec<(String, Vec<u8>)>, Error> {
+        let p = match to {
+            Some(t) => format!("mail/{gid}/{t}/"),
+            None => format!("mail/{gid}/"),
+        };
+        let mut out = Vec::new();
+        let mut dead = Vec::new();
+        for (k, v) in self.db.scan(&p).map_err(io)? {
+            let Ok((exp, b)) = bincode::deserialize::<(u64, Vec<u8>)>(&v) else { continue };
+            if exp < now_ms {
+                dead.push(Op::Delete(k));
+                continue;
+            }
+            let rest = k.strip_prefix(&format!("mail/{gid}/")).unwrap_or_default();
+            let to = rest.rsplit_once('/').map(|(t, _)| t.to_string()).unwrap_or_default();
+            out.push((to, b));
+        }
+        if !dead.is_empty() {
+            let _ = self.db.apply(&dead);
+        }
+        Ok(out)
+    }
+
+    /// Recipient side: true the first time `id` is seen.
+    pub fn first_seen(&self, id: &str) -> Result<bool, Error> {
+        let k = format!("seen/{id}");
+        if self.db.get(&k).map_err(io)?.is_some() {
+            return Ok(false);
+        }
+        self.db.put(&k, &[1]).map_err(io)?;
+        Ok(true)
+    }
+
+}
+
+/// Test hooks (not for apps).
+#[uniffi::export]
+impl Node {
+    /// Behave like a modified app that skips its own chat-request checks (block, contact).
+    pub fn group_skip_request_checks_for_test(&self, skip: bool) {
+        self.inner.group.skip_request_checks.store(skip, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// Host side: how many sealed mails this device holds for `group_id`.
+    pub fn group_relayed_mail_count_for_test(&self, group_id: String) -> u32 {
+        self.inner.group_core().map(|c| c.store.mail(&group_id, None, 0).unwrap_or_default().len() as u32).unwrap_or(0)
+    }
+
+    /// Host side: whether any mail this device holds for `group_id` contains the 32 bytes of
+    /// `endpoint_id` (a private endpoint must never be readable by the host).
+    pub fn group_relayed_mail_contains_for_test(&self, group_id: String, endpoint_id: String) -> bool {
+        let Ok(k) = endpoint_id.parse::<iroh::PublicKey>() else { return true };
+        let needle = *k.as_bytes();
+        let text = endpoint_id.as_bytes().to_vec();
+        self.inner
+            .group_core()
+            .map(|c| {
+                c.store.mail(&group_id, None, 0).unwrap_or_default().iter().any(|(_, b)| {
+                    b.windows(32).any(|w| w == needle) || b.windows(text.len()).any(|w| w == text.as_slice())
+                })
+            })
+            .unwrap_or(true)
     }
 }

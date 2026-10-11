@@ -59,6 +59,9 @@ pub struct GroupMeta {
 pub struct DirEntry {
     pub endpoint: String,
     pub seen_ms: u64,
+    /// The member's home relay as it said in its `Hello` (to reach it after a rotation).
+    #[serde(default)]
+    pub relay: Option<String>,
 }
 
 #[derive(Clone)]
@@ -151,6 +154,11 @@ impl GroupStore {
 
     pub fn put_dir(&self, gid: &str, did: &str, dev: &[u8; 32], e: &DirEntry) -> Result<(), Error> {
         self.db.put(&format!("dir/{gid}/{did}/{}", hex::encode(dev)), &json(e)).map_err(io)
+    }
+
+    /// Drops every directory entry of `did` (a removed member, U9).
+    pub fn drop_dir(&self, gid: &str, did: &str) -> Result<(), Error> {
+        self.db.apply(&[Op::DeletePrefix(format!("dir/{gid}/{did}/"))]).map_err(io)
     }
 
     pub fn acks(&self, gid: &str) -> Result<Vec<(String, Vec<u8>)>, Error> {

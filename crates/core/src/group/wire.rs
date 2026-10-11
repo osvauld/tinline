@@ -3,9 +3,10 @@
 //! members towards another host); the acceptor is always a host (U7).
 //!
 //! ```text
-//! member -> host  Hello { auth, group, vv, invite?, hosts }
+//! member -> host  Hello { auth, group, vv, invite?, hosts, relay }
+//! host -> member  Moved { auth, group, hosts }       (own connection, after a rotation, U12)
 //! host -> member  Welcome { auth, vv, hosts }        | Removed { records, vv, update? } | Refused { reason }
-//! both            Update { update } / Ack { vv } / Hosts { hosts }
+//! both            Update { update } / Ack { vv } / Hosts { hosts } / Mail { mail } / MailAck { id }
 //! ```
 
 use iroh::endpoint::{RecvStream, SendStream};
@@ -19,7 +20,8 @@ pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GroupMsg {
-    Hello { auth: EndpointAuth, group: String, vv: Vec<u8>, invite: Option<SignedInvite>, hosts: Vec<SignedHostAddr> },
+    /// `relay`: the member's home relay, so a host that rotated can reach it again (U12).
+    Hello { auth: EndpointAuth, group: String, vv: Vec<u8>, invite: Option<SignedInvite>, hosts: Vec<SignedHostAddr>, relay: Option<String> },
     Welcome { auth: EndpointAuth, vv: Vec<u8>, hosts: Vec<SignedHostAddr> },
     /// The member is removed: the signed records that prove it (genesis, the owner's admin
     /// grants of the flaggers, the flags) and what the host holds, so the member can still upload
@@ -31,6 +33,16 @@ pub enum GroupMsg {
     Update { update: Vec<u8> },
     Ack { vv: Vec<u8> },
     Hosts { hosts: Vec<SignedHostAddr> },
+    /// Sealed mail between two members (U3, `mail.rs`): member -> host, host -> recipient
+    /// member, host <-> host. The host can check the envelope, not read it.
+    Mail { mail: Vec<u8> },
+    /// Host -> sending member: the host holds that mail (the sender drops it from its outbox).
+    MailAck { id: [u8; 16] },
+    /// Host -> member, on a connection the host opens to the member's group endpoint after it
+    /// rotated its own (U12): "this is me now" (`auth` proves the new endpoint) plus the group's
+    /// DID-signed host addresses. The member checks the sender is an active host, keeps the
+    /// addresses and dials. Only current members are told; a removed member never is.
+    Moved { auth: EndpointAuth, group: String, hosts: Vec<SignedHostAddr> },
 }
 
 pub struct Writer(pub SendStream);
