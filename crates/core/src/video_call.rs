@@ -56,9 +56,88 @@ pub struct VideoInfo {
 pub struct VideoFrame {
     pub width: u32,
     pub height: u32,
-    pub data: Vec<u8>,
+    pub data: Bytes,
     /// Counts decoded frames; a gap means frames were replaced before being pulled.
     pub seq: u64,
+}
+
+/// Bytes across UniFFI in one memcpy each way. Same wire form and foreign type as `Vec<u8>`
+/// (Kotlin `ByteArray`), but UniFFI lifts/lowers a `Vec<u8>` element by element, which costs
+/// milliseconds per video frame on a phone.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Bytes(pub Vec<u8>);
+
+impl Bytes {
+    pub fn into_inner(self) -> Vec<u8> {
+        self.0
+    }
+}
+
+impl From<Vec<u8>> for Bytes {
+    fn from(v: Vec<u8>) -> Self {
+        Self(v)
+    }
+}
+
+impl std::ops::Deref for Bytes {
+    type Target = Vec<u8>;
+    fn deref(&self) -> &Vec<u8> {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for Bytes {
+    fn deref_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.0
+    }
+}
+
+// SAFETY: the same serialized form (`i32` BE length, then the bytes) and metadata as UniFFI's
+// own `Vec<u8>`, so the foreign side treats it exactly like one.
+unsafe impl uniffi::FfiConverter<crate::UniFfiTag> for Bytes {
+    type FfiType = uniffi::RustBuffer;
+
+    fn lower(obj: Self) -> uniffi::RustBuffer {
+        let mut buf = Vec::with_capacity(4 + obj.0.len());
+        Self::write(obj, &mut buf);
+        uniffi::RustBuffer::from_vec(buf)
+    }
+
+    fn try_lift(v: uniffi::RustBuffer) -> uniffi::Result<Self> {
+        let mut v = v.destroy_into_vec();
+        let mut r = &v[..];
+        let n = read_len(&mut r)?;
+        if r.len() != n {
+            uniffi::deps::anyhow::bail!("bytes: {} trailing", r.len() as i64 - n as i64);
+        }
+        v.drain(..4);
+        Ok(Self(v))
+    }
+
+    fn write(obj: Self, buf: &mut Vec<u8>) {
+        let n = i32::try_from(obj.0.len()).expect("bytes over 2 GiB");
+        buf.extend_from_slice(&n.to_be_bytes());
+        buf.extend_from_slice(&obj.0);
+    }
+
+    fn try_read(buf: &mut &[u8]) -> uniffi::Result<Self> {
+        let n = read_len(buf)?;
+        uniffi::check_remaining(buf, n)?;
+        let (b, rest) = buf.split_at(n);
+        *buf = rest;
+        Ok(Self(b.to_vec()))
+    }
+
+    const TYPE_ID_META: uniffi::MetadataBuffer = <Vec<u8> as uniffi::TypeId<crate::UniFfiTag>>::TYPE_ID_META;
+}
+
+uniffi::derive_ffi_traits!(local Bytes);
+
+fn read_len(buf: &mut &[u8]) -> uniffi::Result<usize> {
+    uniffi::check_remaining(buf, 4)?;
+    let (n, rest) = buf.split_at(4);
+    *buf = rest;
+    Ok(usize::try_from(i32::from_be_bytes(n.try_into().expect("4 bytes")))?)
 }
 
 #[derive(Debug, Clone, Default, PartialEq, uniffi::Record)]
@@ -139,6 +218,7 @@ impl Input {
                 if *full_range {
                     p.range = Range::Full;
                 }
+                let (u, v) = chroma_views(u, v);
                 Yuv420 {
                     y,
                     y_stride: *y_stride,
@@ -160,6 +240,16 @@ impl Input {
             }
         };
         convert::prepare(&yuv, None, &p)
+    }
+}
+
+/// U and V; an empty one is taken from the other's interleaved plane (NV21: only `v`, NV12:
+/// only `u`, each a whole interleaved chroma plane).
+fn chroma_views<'a>(u: &'a [u8], v: &'a [u8]) -> (&'a [u8], &'a [u8]) {
+    match (u.is_empty(), v.is_empty()) {
+        (true, false) => (&v[1..], v),
+        (false, true) => (u, &u[1..]),
+        _ => (u, v),
     }
 }
 
@@ -372,7 +462,9 @@ fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
             return;
         }
         let capture_us = input.at.saturating_duration_since(epoch).as_micros() as u64;
-        let (rw, rh) = send.with_sender(|s| s.resolution());
+        // One look at the sender: a ladder step in between would otherwise give a keyframe at
+        // the old size and another at the new one.
+        let ((rw, rh), bitrate, wants_key) = send.with_sender(|s| (s.resolution(), s.bitrate(), s.wants_keyframe()));
         let pic = match input.prepare(rw as usize, rh as usize) {
             Ok(p) => p,
             Err(e) => {
@@ -381,8 +473,7 @@ fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
             }
         };
         let (w, h) = (pic.width, pic.height);
-        let bitrate = send.bitrate();
-        let mut key = send.wants_keyframe() | pipe.resume.swap(false, Ordering::SeqCst);
+        let mut key = wants_key | pipe.resume.swap(false, Ordering::SeqCst);
         if enc.as_ref().is_none_or(|e| (e.1, e.2) != (w, h)) {
             let cfg = EncoderConfig {
                 width: w,
@@ -415,7 +506,6 @@ fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
             }
         };
         let took = t.elapsed();
-        send.encode_time(took.as_micros() as u64);
         let mut st = pipe.stats.lock();
         for p in packets {
             if send.send(capture_us, p.key, &p.data).is_err() {
@@ -424,6 +514,7 @@ fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
             st.frames_sent += 1;
             st.keyframes_sent += p.key as u64;
         }
+        send.encode_time(took.as_micros() as u64);
         st.send_width = w as u32;
         st.send_height = h as u32;
         st.bitrate_bps = rate;
@@ -493,7 +584,7 @@ fn decode_loop(pipe: Arc<Pipe>, mut rx: mpsc::Receiver<Frame>) {
                         st.recv_width = p.width as u32;
                         st.recv_height = p.height as u32;
                     }
-                    let frame = VideoFrame { width: p.width as u32, height: p.height as u32, data: p.data, seq };
+                    let frame = VideoFrame { width: p.width as u32, height: p.height as u32, data: p.data.into(), seq };
                     *pipe.output.lock() = Some(frame);
                 }
             }
@@ -509,8 +600,8 @@ fn decode_loop(pipe: Arc<Pipe>, mut rx: mpsc::Receiver<Frame>) {
 
 /// An I420 `VideoFrame` as RGBA.
 fn to_rgba(f: VideoFrame) -> VideoFrame {
-    let pic = I420 { width: f.width as usize, height: f.height as usize, data: f.data };
-    VideoFrame { data: convert::to_rgba(&pic), ..f }
+    let pic = I420 { width: f.width as usize, height: f.height as usize, data: f.data.0 };
+    VideoFrame { data: convert::to_rgba(&pic).into(), ..f }
 }
 
 /// Largest even size of `sw` x `sh`'s aspect within the rung `rw` x `rh` (turned to match the
@@ -525,6 +616,20 @@ pub(crate) fn fit(sw: usize, sh: usize, rw: usize, rh: usize) -> (usize, usize) 
         (w, sh * w / sw)
     };
     ((w & !1).max(2), (h & !1).max(2))
+}
+
+impl Node {
+    /// One camera frame: tightly packed I420 of `width` x `height`, to be turned `rotation`
+    /// degrees clockwise (0/90/180/270) to be upright. Any size up to 4096 a side; it is
+    /// scaled to what the link carries. Latest wins: a frame not yet taken by the encoder is
+    /// replaced. False if not sent (no video running, camera off, or a malformed frame).
+    pub fn push_video_frame(&self, width: u32, height: u32, rotation: u32, data: Vec<u8>) -> bool {
+        if !size_ok(width, height) || data.len() != I420::len(width as usize, height as usize) {
+            return false;
+        }
+        let pic = I420 { width: width as usize, height: height as usize, data };
+        self.inner.push_input(width, height, rotation, Source::I420(pic))
+    }
 }
 
 #[uniffi::export]
@@ -567,29 +672,29 @@ impl Node {
     /// degrees clockwise (0/90/180/270) to be upright. Any size up to 4096 a side; it is
     /// scaled to what the link carries. Latest wins: a frame not yet taken by the encoder is
     /// replaced. False if not sent (no video running, camera off, or a malformed frame).
-    pub fn push_video_frame(&self, width: u32, height: u32, rotation: u32, data: Vec<u8>) -> bool {
-        if !size_ok(width, height) || data.len() != I420::len(width as usize, height as usize) {
-            return false;
-        }
-        let pic = I420 { width: width as usize, height: height as usize, data };
-        self.inner.push_input(width, height, rotation, Source::I420(pic))
+    /// (Exported as `push_video_frame`; Rust callers use the `Vec<u8>` one.)
+    #[uniffi::method(name = "push_video_frame")]
+    pub fn push_video_frame_ffi(&self, width: u32, height: u32, rotation: u32, data: Bytes) -> bool {
+        self.push_video_frame(width, height, rotation, data.0)
     }
 
-    /// One CameraX `YUV_420_888` frame as its three planes (`ImageProxy.planes[i].buffer`,
+    /// One CameraX `YUV_420_888` frame as its planes (`ImageProxy.planes[i].buffer`,
     /// `rowStride`, `pixelStride`; U and V share theirs), copied as they are: the conversion
-    /// (crop, scale, range, rotate) runs on the encoder thread. `full_range`: the samples are
-    /// full range (JFIF), as Android cameras normally deliver. Otherwise like
-    /// `push_video_frame`.
+    /// (crop, scale, range, rotate) runs on the encoder thread. With pixel stride 2 the U and
+    /// V buffers are two views of one interleaved plane; pass that plane once and the other
+    /// empty (NV21, V first: `v` = the V buffer, `u` empty; NV12: the reverse) to copy a third
+    /// less. `full_range`: the samples are full range (JFIF), as Android cameras normally
+    /// deliver. Otherwise like `push_video_frame`.
     #[allow(clippy::too_many_arguments)]
     pub fn push_video_frame_yuv(
         &self,
         width: u32,
         height: u32,
         rotation: u32,
-        y: Vec<u8>,
+        y: Bytes,
         y_row_stride: u32,
-        u: Vec<u8>,
-        v: Vec<u8>,
+        u: Bytes,
+        v: Bytes,
         uv_row_stride: u32,
         uv_pixel_stride: u32,
         full_range: bool,
@@ -600,10 +705,11 @@ impl Node {
         let (w, h) = (width as usize, height as usize);
         let (cw, ch) = I420::chroma(w, h);
         let (ys, uvs, ps) = (y_row_stride as usize, uv_row_stride as usize, uv_pixel_stride as usize);
-        if !plane_fits(y.len(), w, h, ys, 1) || !plane_fits(u.len(), cw, ch, uvs, ps) || !plane_fits(v.len(), cw, ch, uvs, ps) {
+        let (cu, cv) = chroma_views(&u, &v);
+        if !plane_fits(y.len(), w, h, ys, 1) || !plane_fits(cu.len(), cw, ch, uvs, ps) || !plane_fits(cv.len(), cw, ch, uvs, ps) {
             return false;
         }
-        let src = Source::Yuv { y, y_stride: ys, u, v, uv_stride: uvs, uv_pixel_stride: ps, full_range };
+        let src = Source::Yuv { y: y.0, y_stride: ys, u: u.0, v: v.0, uv_stride: uvs, uv_pixel_stride: ps, full_range };
         self.inner.push_input(width, height, rotation, src)
     }
 
@@ -746,6 +852,46 @@ mod tests {
     }
 
     #[test]
+    fn nv21_as_one_plane() {
+        let pic = numbered(640, 480);
+        let (y, ys, u, v, uvs) = android_planes(&pic);
+        let vu: Vec<u8> = [v[0]].into_iter().chain(u.iter().copied()).collect();
+        let (cu, cv) = chroma_views(&[], &vu);
+        assert!(plane_fits(cu.len(), 320, 240, uvs, 2) && plane_fits(cv.len(), 320, 240, uvs, 2));
+        let src = Source::Yuv { y, y_stride: ys, u: vec![], v: vu, uv_stride: uvs, uv_pixel_stride: 2, full_range: false };
+        let got = input(640, 480, 90, src).prepare(1280, 720).unwrap();
+        assert_eq!(got, convert::transform(&pic, Rotation::R90, false));
+    }
+
+    /// `Bytes` crosses as `Vec<u8>` does, much faster. `--nocapture` prints the cost of one
+    /// 640x480 I420 frame each way (the Rust half of the FFI copy).
+    #[test]
+    fn bytes_cross_like_vec() {
+        use uniffi::{Lift, Lower, RustBuffer};
+        type T = crate::UniFfiTag;
+        let data: Vec<u8> = (0..640 * 480 * 3 / 2).map(|i| i as u8).collect();
+        let time = |f: &mut dyn FnMut()| {
+            let t = Instant::now();
+            for _ in 0..20 {
+                f();
+            }
+            t.elapsed().as_secs_f64() * 1000.0 / 20.0
+        };
+        let wire = <Vec<u8> as Lower<T>>::lower_into_rust_buffer(data.clone()).destroy_into_vec();
+        assert_eq!(<Bytes as Lower<T>>::lower_into_rust_buffer(Bytes(data.clone())).destroy_into_vec(), wire);
+        assert_eq!(<Bytes as Lift<T>>::try_lift(RustBuffer::from_vec(wire.clone())).unwrap().0, data);
+        assert!(<Bytes as Lift<T>>::try_lift(RustBuffer::from_vec(wire[..wire.len() - 1].to_vec())).is_err());
+        let frame = VideoFrame { width: 640, height: 480, data: Bytes(data.clone()), seq: 1 };
+        let mut r = &<VideoFrame as Lower<T>>::lower_into_rust_buffer(frame).destroy_into_vec()[..];
+        assert_eq!(<VideoFrame as Lift<T>>::try_read(&mut r).unwrap().data.0, data);
+        let lift_vec = time(&mut || drop(<Vec<u8> as Lift<T>>::try_lift(RustBuffer::from_vec(wire.clone())).unwrap()));
+        let lift_bytes = time(&mut || drop(<Bytes as Lift<T>>::try_lift(RustBuffer::from_vec(wire.clone())).unwrap()));
+        let lower_vec = time(&mut || <Vec<u8> as Lower<T>>::lower(data.clone()).destroy());
+        let lower_bytes = time(&mut || <Bytes as Lower<T>>::lower(Bytes(data.clone())).destroy());
+        println!("640x480 I420 ms (incl. a clone): lift Vec<u8> {lift_vec:.3} Bytes {lift_bytes:.3}, lower Vec<u8> {lower_vec:.3} Bytes {lower_bytes:.3}");
+    }
+
+    #[test]
     fn short_planes_are_refused() {
         assert!(plane_fits(10, 4, 2, 6, 1));
         assert!(!plane_fits(9, 4, 2, 6, 1));
@@ -769,7 +915,7 @@ mod tests {
         let mut pic = I420::new(4, 2);
         pic.data.fill(128);
         pic.data[..8].fill(235);
-        let f = to_rgba(VideoFrame { width: 4, height: 2, data: pic.data, seq: 7 });
+        let f = to_rgba(VideoFrame { width: 4, height: 2, data: pic.data.into(), seq: 7 });
         assert_eq!((f.width, f.height, f.seq, f.data.len()), (4, 2, 7, 32));
         assert!(f.data.chunks(4).all(|p| p == [255, 255, 255, 255]));
     }

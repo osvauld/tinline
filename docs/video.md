@@ -198,17 +198,46 @@ the sender sees it); after a decode error it skips to the next keyframe and requ
 | `set_video_enabled(bool)` / `video_enabled()` | offer/take video in calls (default on) |
 | `set_camera(on) -> Result` | also before the call is answered; `NotFound` without a call, `Protocol` once active without video |
 | `push_video_frame(width, height, rotation, i420) -> bool` | packed I420 straight from the camera, any size up to 4096 a side, `rotation` = degrees clockwise to upright (CameraX `rotationDegrees`); latest wins; false = dropped (no video, camera off, bad size) |
-| `push_video_frame_yuv(width, height, rotation, y, y_row_stride, u, v, uv_row_stride, uv_pixel_stride, full_range) -> bool` | Android: CameraX `YUV_420_888` planes copied as they are (one copy across FFI); pixel stride 1 or 2, planes may end after the last pixel; `full_range` = JFIF samples (normal for Android cameras). Conversion runs on the encoder thread. Else like `push_video_frame` |
+| `push_video_frame_yuv(width, height, rotation, y, y_row_stride, u, v, uv_row_stride, uv_pixel_stride, full_range) -> bool` | Android: CameraX `YUV_420_888` planes copied as they are; pixel stride 1 or 2, planes may end after the last pixel; with pixel stride 2 pass the interleaved chroma plane once (NV21: `v` = the V buffer, `u` empty; NV12 the reverse) to copy a third less; `full_range` = JFIF samples (normal for Android cameras). Conversion runs on the encoder thread. Else like `push_video_frame` |
 | `push_video_frame_rgba(width, height, rotation, rgba)`, `push_video_frame_yuyv(width, height, rotation, stride, yuyv)` | desktop cameras: packed RGBA / YUY2 (even width), converted on the encoder thread |
 | `pull_video_frame() -> Option<VideoFrame { width, height, data, seq }>` | newest decoded upright I420 frame not pulled yet; poll on the display clock |
-| `pull_video_frame_rgba() -> Option<VideoFrame>` | the same frame as packed RGBA (`convert::i420_to_rgba`, on the caller's thread): iced `image::Handle::from_rgba`, Android `Bitmap` fallback |
+| `pull_video_frame_rgba() -> Option<VideoFrame>` | the same frame as packed RGBA (`convert::i420_to_rgba`, on the caller's thread): iced `image::Handle::from_rgba`, Android `Bitmap` fallback (4x the bytes of I420 across the FFI) |
 | `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size |
+
+Byte arrays in this API are `video_call::Bytes` (see Frames across the FFI); Rust callers keep
+`push_video_frame(.., Vec<u8>)` and read `VideoFrame.data` like a `Vec<u8>` (`Deref`).
 
 Pull, not a callback, for frames: decoded video is latest-wins like a display, so a pull on
 vsync drops what the renderer can't show for free; no platform code runs on the pinned codec
 threads (a callback would run Kotlin/JNA on them); it matches `pull_speaker`. Low-rate state
 changes are callbacks, in their own `VideoEvents` trait so existing `NodeEvents` implementors
 are untouched.
+
+**Frames across the FFI.** UniFFI 0.29 passes every byte array through a `RustBuffer`: Kotlin
+asks Rust for a buffer (a JNA call; Rust zero-fills it), `put`s the `ByteArray` into it, Rust
+lifts it into a `Vec<u8>`; returns go the other way. UniFFI's own `Vec<u8>` lift/lower is a
+generic per-element loop (bounds check + push per byte), the main Rust-side cost. `Bytes` is a
+newtype with the same wire form and metadata (Kotlin still sees `ByteArray`, no Kotlin change)
+whose lift is one `memmove` of the buffer it already owns and whose lower is one
+`extend_from_slice`; `VideoFrame.data` and the exported `push_video_frame`/`_yuv` use it.
+Cost of one 640x480 I420 frame, Rust side only (`cargo test -p p2pcore --release --lib
+bytes_cross_like_vec -- --nocapture`, i7-1165G7, includes a clone of the frame):
+lift `Vec<u8>` 0.51 ms -> `Bytes` 0.016 ms, lower (pull) 0.28 -> 0.021 ms. That is only
+~0.5 ms of the 4.6-5.7 ms the emulator (x86) measured per push, so most of the cost is on the
+Kotlin/JNA side (to be re-measured with V9's hooks); on A53 cores the saving should be ~4-8x
+larger. What is left per push: Kotlin `ByteBuffer.get` into a fresh `ByteArray` (GC
+pressure), the JNA alloc call (zero-filled), `put` into the RustBuffer, JNA call overhead. No UniFFI 0.29 type maps to a direct `ByteBuffer` or a borrowed slice.
+Options for true zero-copy, beyond this packet:
+1. **JNI entry points** (recommended): `Java_com_osvauld_..._pushYuv(env, _, y: ByteBuffer, ..)`
+   in the core (`jni` crate), `GetDirectBufferAddress` on the camera's direct buffers, copy
+   the planes once into a Rust `Vec` (tight, ~0.1 ms) and return; the ImageProxy can close
+   right after. The JVM validates the buffers, the Kotlin side is an `external fun` in the same
+   `.so`. The pull side: Kotlin owns one direct `ByteBuffer`, Rust writes RGBA/I420 into it.
+2. **Raw addresses through UniFFI**: Kotlin `Native.getDirectBufferPointer(buf)` (JNA) as a
+   `u64` + length to an `unsafe`-contract function. No new glue, but Rust cannot check the
+   pointers: a Kotlin bug is memory corruption. Not recommended.
+3. **Render without bytes**: the `ANativeWindow` path (Capture/render conversion above) removes
+   the pull copy entirely; only the push side then needs 1.
 
 **Tests** (`crates/core/tests/video_calls.rs`, two nodes over iroh like `calls.rs`):
 `cargo test -p p2pcore --release --test video_calls`: video both ways (pattern 640x480 pushed
@@ -485,7 +514,9 @@ Per frame, Kotlin side, emulator (moving average; ranges over runs):
 | I420 -> ARGB + `setPixels` | 240x180 | 1.7-2.6 (up to 10) |
 
 - **The FFI copy is the expensive part**, not the Kotlin conversion: UniFFI lowers a `ByteArray`
-  by copying it into a RustBuffer and again into the `Vec`, through JNA. At 640x480 that is ~5 ms
+  by copying it into a RustBuffer and again into the `Vec`, through JNA (V8: the Rust half is
+  now a memcpy, `Bytes`; options for the rest in Call protocol and core API, Frames across the
+  FFI). At 640x480 that is ~5 ms
   a frame on the emulator and it capped the phone's capture at 10-30 pushed frames/s when the
   host was busy. V8's strided-planes push should take direct `ByteBuffer`s (no copy, pointer
   into the camera buffer) rather than byte arrays; the RGBA pull likewise, or go straight to
