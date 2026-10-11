@@ -442,7 +442,7 @@ fn o4_ticks_of_pre_restore_messages_follow_the_peer_that_wrote_them() {
 /// A has two installs (A1, A2 linked). B's `m1` reaches only A1 (A2 offline), and A1 answers
 /// with `r1`, which B holds (so `r1`'s ops build on `m1`'s, in A1's doc and in B's). B restores;
 /// a call from the restored B rings A2, whose answer path takes B's new signed device list: A2
-/// knows only B's NEW key and holds neither `m1` nor `r1`. Left: B and A2 started, A1 stopped.
+/// knows only B's NEW key and does not hold `r1` (it may hold `m1`, which B sends itself since P10b). Left: B and A2 started, A1 stopped.
 struct Sib {
     a1: Peer,
     a2: Peer,
@@ -475,7 +475,9 @@ fn sibling_fixture(tag: &str) -> Sib {
     published(&a2);
     call_answered(&b, &a2);
     eventually(20, "A2 knows only B's new key", || a2.node.contact_devices_for_test(b.did.clone()) == vec![new_dev.clone()]);
-    assert!(!has(&a2, &b.did, &m1) && !has(&a2, &b.did, &r1), "precondition: A2 holds neither m1 nor r1");
+    // Since P10b the restored B itself sends A2 its own undelivered `m1` (old writer ID), so A2
+    // may already hold `m1` here; `r1` is A1's and B never forwards a contact's ops.
+    assert!(!has(&a2, &b.did, &r1), "precondition: A2 does not hold r1");
     Sib { a1, a2, b, m1, r1 }
 }
 
