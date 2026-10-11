@@ -494,6 +494,8 @@ pub(crate) struct Inner {
     pub(crate) video: crate::video_call::NodeVideo,
     /// The selected account's search index (`search.redb`), open while its chat store is.
     pub(crate) search: Mutex<Option<Arc<crate::search::index::SearchIndex>>>,
+    /// For tests: the next `n` search hook writes are skipped (a crash between commit and index).
+    pub(crate) search_skip: AtomicU32,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -586,6 +588,7 @@ impl Node {
             devlist: Default::default(),
             video: Default::default(),
             search: Mutex::new(None),
+            search_skip: AtomicU32::new(0),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
