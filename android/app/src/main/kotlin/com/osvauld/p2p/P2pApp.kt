@@ -31,6 +31,10 @@ class P2pApp : Application(), NodeEvents {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     lateinit var calls: CallController
         private set
+    /** Group-call audio + service (GA-A1); the core's GroupCallEvents sink. */
+    lateinit var groupCalls: GroupCallAudio
+        private set
+    private lateinit var hostConditions: HostConditions
     lateinit var realChat: CoreChatSource
         private set
     /** Device linking: the state machine behind the Link a device screens, and the core's LinkEvents. */
@@ -68,6 +72,9 @@ class P2pApp : Application(), NodeEvents {
         node = newNode()
         links = LinkController(this)
         node.setLinkEvents(links)
+        groupCalls = GroupCallAudio(this)
+        node.setGroupCallEvents(groupCalls)
+        hostConditions = HostConditions(this).also { it.start() }
         realChat = CoreChatSource(this).also { it.attach() }
         selectLastAccountIfNone()
         UnlockStore.migrateLegacy(this, currentDid())

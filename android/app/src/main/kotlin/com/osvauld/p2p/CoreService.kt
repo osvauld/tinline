@@ -40,11 +40,13 @@ class CoreService : Service() {
         val app = P2pApp.get(this)
         when (intent?.action) {
             ACTION_DECLINE -> app.calls.decline()
-            ACTION_HANGUP -> app.calls.hangup()
+            // The ongoing notification's hang-up: the 1:1 call, else the group call (GA-A1).
+            ACTION_HANGUP -> if (app.calls.ui.value == null && app.groupCalls.active) app.groupCalls.leave() else app.calls.hangup()
             ACTION_DECLINE_WAITING -> app.calls.declineWaiting()
             ACTION_END_ANSWER -> app.calls.endAndAnswer()
             ACTION_IN_CALL -> inCall = intent.getStringExtra("name") ?: "Call"
-            ACTION_IDLE -> inCall = null
+            // A 1:1 call ending never drops the call mode of a group call still going on.
+            ACTION_IDLE -> inCall = if (app.groupCalls.active) GroupCallAudio.NAME else null
         }
         enterForeground()
         updateLocks()
