@@ -1,19 +1,24 @@
-//! GA-P4: group calls (G6) on four real nodes over loopback, no relay. Membership and permits
-//! come from one shared `StaticDirectory`; every member's microphone is a synthetic tone fed
-//! through `Node::push_mic`, and its speaker is read with `Node::pull_speaker`, at 50 Hz as
-//! the platform audio threads do.
+//! GA-P4/GA-P5: group calls (G6) on real nodes over loopback, no relay. Membership and permits
+//! come from one shared `StaticDirectory` per test; every member's microphone is a synthetic
+//! tone fed through `Node::push_mic`, and its speaker is read with `Node::pull_speaker`, at
+//! 50 Hz as the platform audio threads do.
 //!
-//! One test, in phases: everyone joins (the host's own user through ConnId::LOCAL); each member
-//! hears the other speakers' tones and not its own; with four speakers and K = 3 the host
-//! forwards at most K + 1 and settles on K; a member leaves and everyone re-rosters; the host
-//! dies and the members redial the backup, which takes over at host_gen 2 and carries audio.
+//! - `group_call_on_real_nodes`: everyone joins (the host's own user through ConnId::LOCAL);
+//!   each member hears the other speakers' tones and not its own; with four speakers and K = 3
+//!   the host forwards at most K + 1 and settles on K; a member leaves and everyone re-rosters;
+//!   the host `stop`s (End{host_leaving, next_host}) and the members redial backup 1 at once;
+//!   backup 1 then crashes without any close and backup 2 notices by missed heartbeats.
+//! - `phone_host_degrades`: `gcall_set_cond` on a phone host lowers K to 1 and refuses Joins,
+//!   then ends the call with `next_host`, and the members go on at the backup.
+//! - `glare_two_hosts`: two calls started at once for one group settle on the lower
+//!   BLAKE3(call_id); the loser ends `superseded` and everyone ends up in the winner's call.
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
 use p2pcore::gcall::net::{GcallConfig, GcallEvent, GcallEvents, StaticDirectory};
-use p2pcore::gcall::{ClientEnd, ClientState, Cond, HostConfig, HostRef};
+use p2pcore::gcall::{ClientEnd, ClientState, Cond, EndReason, HEARTBEAT_MISSES, HEARTBEAT_MS, HostConfig, HostNotice, HostRef};
 use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
 
 const PASS: &str = "test-passphrase";
@@ -59,33 +64,43 @@ struct M {
     _dir: Dir,
 }
 
-fn member(i: usize, dir: &Arc<StaticDirectory>) -> M {
-    let path = std::env::temp_dir().join(format!("p2pcore-test-gcall-{i}-{}", std::process::id()));
+/// Member `i` of a test's group; it holds a `host_call` permit (and is configured as a host)
+/// when `host`.
+fn member(tag: &str, i: usize, dir: &Arc<StaticDirectory>, host: bool, cond: Cond) -> M {
+    let path = std::env::temp_dir().join(format!("p2pcore-test-gcall-{tag}-{i}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&path);
     let node = Node::new(path.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     node.create_identity(format!("m{i}"), PASS.into()).unwrap();
     node.start().unwrap();
     let did = node.profile().unwrap().did;
     let addr = node.gcall_loopback_addr().unwrap();
-    let href = HostRef { holder_did: did.clone(), device_slot: i as u64, permit_digest: format!("permit-{i}") };
+    let href = HostRef { holder_did: did.clone(), device_slot: i as u64, permit_digest: format!("permit-{tag}-{i}") };
     {
         let mut a = dir.auth.lock();
         a.members.insert(did.clone());
         a.endpoints.entry(did.clone()).or_default().insert(*addr.id.as_bytes());
-        if i < 2 {
+        if host {
             a.permits.insert(href.permit_digest.clone());
         }
     }
     dir.hosts.lock().insert(href.clone(), addr);
     let (tx, rx) = mpsc::channel();
-    node.gcall_configure(GcallConfig {
-        dir: dir.clone(),
-        events: Arc::new(Tap(Mutex::new(tx))),
-        host_ref: (i < 2).then(|| href.clone()),
-        cond: Cond::desktop(),
-        note: None,
-    });
+    node.gcall_configure(GcallConfig { dir: dir.clone(), events: Arc::new(Tap(Mutex::new(tx))), host_ref: host.then(|| href.clone()), cond, note: None });
     M { node, rx, evs: vec![], did, href, tone: audio::Tone::new(FREQ[i], AMP), speaking: false, rec: vec![], _dir: Dir(path) }
+}
+
+fn host_cfg(m: &M, gid: &str, backups: Vec<HostRef>, cond: Cond) -> HostConfig {
+    HostConfig {
+        gid: gid.into(),
+        call_id: proto::gcall::new_call_id(),
+        host_gen: 1,
+        host_ref: m.href.clone(),
+        starter_did: m.did.clone(),
+        backups,
+        meta_frontier: "frontier".into(),
+        cond,
+        own_user_in: true,
+    }
 }
 
 /// Runs the members' audio for `ms` at 20 ms per frame (recording speaker output if `rec`),
@@ -115,6 +130,10 @@ fn drive(ms: &mut [&mut M], dur: u64, rec: bool, mut until: impl FnMut(&[&mut M]
     false
 }
 
+fn all(m: &mut [M]) -> Vec<&mut M> {
+    m.iter_mut().collect()
+}
+
 /// Amplitude of the `freq` component (Goertzel).
 fn amplitude_at(x: &[i16], freq: f32) -> f32 {
     let w = std::f64::consts::TAU * freq as f64 / audio::RATE as f64;
@@ -138,6 +157,15 @@ fn client_gen(m: &M) -> Option<(ClientState, u32, HostRef, usize)> {
     Some((c.state, c.host_gen, c.host, c.roster.len()))
 }
 
+/// Joined at `host_gen` with `host`, in a Roster of `n`.
+fn joined(m: &M, host_gen: u32, host: &HostRef, n: usize) -> bool {
+    client_gen(m).is_some_and(|(s, g, h, r)| s == ClientState::Joined && g == host_gen && h == *host && r == n)
+}
+
+fn hosting(m: &M, host_gen: u32, n: usize) -> bool {
+    m.node.gcall_status().and_then(|s| s.hosting).is_some_and(|h| h.host_gen == host_gen && h.roster.len() == n)
+}
+
 /// `who` hears exactly the tones of `speakers` other than its own.
 fn assert_hears(ms: &[&mut M], idx: &[usize], speakers: &[usize]) {
     for (m, &i) in ms.iter().zip(idx) {
@@ -153,34 +181,27 @@ fn assert_hears(ms: &[&mut M], idx: &[usize], speakers: &[usize]) {
     }
 }
 
+/// Stops `m`'s process abruptly: no QUIC close, no End. `m` must hold the only `Node` handle.
+fn crash(m: M) {
+    let M { node, .. } = m;
+    Arc::try_unwrap(node).ok().expect("sole node handle").crash_for_test();
+}
+
 #[test]
 fn group_call_on_real_nodes() {
     let t0 = Instant::now();
     let dir = Arc::new(StaticDirectory::default());
-    let mut m: Vec<M> = (0..4).map(|i| member(i, &dir)).collect();
+    let mut m: Vec<M> = (0..4).map(|i| member("main", i, &dir, i < 3, Cond::desktop())).collect();
     let gid = "a1".repeat(32);
 
     // ---- host (with its own user in) and joins -------------------------------------------
-    let start = m[0]
-        .node
-        .gcall_host(HostConfig {
-            gid: gid.clone(),
-            call_id: proto::gcall::new_call_id(),
-            host_gen: 1,
-            host_ref: m[0].href.clone(),
-            starter_did: m[0].did.clone(),
-            backups: vec![m[1].href.clone()],
-            meta_frontier: "frontier".into(),
-            cond: Cond::desktop(),
-            own_user_in: true,
-        })
-        .unwrap();
+    let start = m[0].node.gcall_host(host_cfg(&m[0], &gid, vec![m[1].href.clone(), m[2].href.clone()], Cond::desktop())).unwrap();
     let host_addr = dir.hosts.lock()[&m[0].href].clone();
     for x in &m[1..] {
         x.node.gcall_join(&start, Some(host_addr.clone())).unwrap();
     }
-    let all_in = |ms: &[&mut M]| ms.iter().all(|x| client_gen(x).is_some_and(|(s, g, _, n)| s == ClientState::Joined && g == 1 && n == 4));
-    assert!(drive(&mut m.iter_mut().collect::<Vec<_>>(), 10_000, false, all_in), "everyone joins");
+    let h0 = m[0].href.clone();
+    assert!(drive(&mut all(&mut m), 10_000, false, |ms| ms.iter().all(|x| joined(x, 1, &h0, 4))), "everyone joins");
     for x in &m {
         assert!(x.evs.iter().any(|e| matches!(e, GcallEvent::Joined { host_gen: 1, host, .. } if *host == m[0].href)), "Joined event");
     }
@@ -194,8 +215,8 @@ fn group_call_on_real_nodes() {
         x.speaking = i < 3;
         x.rec.clear();
     }
-    drive(&mut m.iter_mut().collect::<Vec<_>>(), 2_500, true, |_| false);
-    assert_hears(&m.iter_mut().collect::<Vec<_>>(), &[0, 1, 2, 3], &[0, 1, 2]);
+    drive(&mut all(&mut m), 2_500, true, |_| false);
+    assert_hears(&all(&mut m), &[0, 1, 2, 3], &[0, 1, 2]);
 
     // ---- four speakers, K = 3: at most K + 1 forwarded, settling on K ---------------------
     for x in m.iter_mut() {
@@ -204,13 +225,13 @@ fn group_call_on_real_nodes() {
     }
     let mut most = 0;
     let host = m[0].node.clone();
-    drive(&mut m.iter_mut().collect::<Vec<_>>(), 1_500, false, |_| {
+    drive(&mut all(&mut m), 1_500, false, |_| {
         most = most.max(host.gcall_status().unwrap().hosting.unwrap().forwarded.len());
         false
     });
     let heard = |x: &M| x.node.gcall_status().unwrap().client.unwrap().heard;
     let before: Vec<BTreeMap<u8, u64>> = m.iter().map(heard).collect();
-    drive(&mut m.iter_mut().collect::<Vec<_>>(), 600, false, |_| false);
+    drive(&mut all(&mut m), 600, false, |_| false);
     let fwd = host.gcall_status().unwrap().hosting.unwrap().forwarded;
     assert!(most <= K + 1, "forwarded {most} > K + 1");
     assert_eq!(fwd.len(), K, "settles on K speakers");
@@ -226,33 +247,130 @@ fn group_call_on_real_nodes() {
     // ---- a member leaves: everyone re-rosters ----------------------------------------------
     m[3].node.gcall_leave();
     let left = |ms: &[&mut M]| ms[..3].iter().all(|x| client_gen(x).is_some_and(|(_, _, _, n)| n == 3));
-    assert!(drive(&mut m.iter_mut().collect::<Vec<_>>(), 5_000, false, left), "re-roster after leave");
+    assert!(drive(&mut all(&mut m), 5_000, false, left), "re-roster after leave");
     assert!(m[3].evs.iter().any(|e| matches!(e, GcallEvent::Ended { why: ClientEnd::Left, .. })));
     for x in &m[..3] {
         assert!(x.evs.iter().any(|e| matches!(e, GcallEvent::RosterChanged { roster, .. } if roster.len() == 3)));
     }
     assert_eq!(host.gcall_status().unwrap().hosting.unwrap().roster.len(), 3);
     drop(host);
-    let gone = m.remove(3);
-    drop(gone);
+    drop(m.remove(3));
 
-    // ---- the host dies: members redial the backup, which takes over at gen 2 -------------
-    let dead = m.remove(0);
-    let t_kill = Instant::now();
-    drop(dead);
-    let took_over = |ms: &[&mut M]| {
-        let backup = ms[0].node.gcall_status().and_then(|s| s.hosting).is_some_and(|h| h.host_gen == 2 && h.roster.len() == 2);
-        backup && ms.iter().all(|x| client_gen(x).is_some_and(|(s, g, h, n)| s == ClientState::Joined && g == 2 && h == ms[0].href && n == 2))
-    };
-    assert!(drive(&mut m.iter_mut().collect::<Vec<_>>(), 15_000, false, took_over), "backup takes over at host_gen 2");
-    eprintln!("takeover after {:?}", t_kill.elapsed());
-    assert!(m[0].evs.iter().any(|e| matches!(e, GcallEvent::HostingStarted { host_gen: 2, .. })));
-    assert!(m[1].evs.iter().any(|e| matches!(e, GcallEvent::Reconnecting { .. })));
-    assert!(m[1].evs.iter().any(|e| matches!(e, GcallEvent::Joined { host_gen: 2, .. })));
+    // ---- the host stops: End{host_leaving, next_host: backup 1}, redial without waiting ----
+    let t_stop = Instant::now();
+    m[0].node.stop();
+    let mut stopped = m.remove(0);
+    stopped.evs.extend(stopped.rx.try_iter());
+    assert!(
+        stopped.evs.iter().any(|e| matches!(e, GcallEvent::HostingEnded { reason: EndReason::HostLeaving, next_host: Some(n), .. } if *n == m[0].href)),
+        "stop ends hosting with next_host"
+    );
+    assert!(stopped.evs.iter().any(|e| matches!(e, GcallEvent::Ended { why: ClientEnd::Left, .. })), "stop leaves");
+    assert!(stopped.node.gcall_status().is_none());
+    let h1 = m[0].href.clone();
+    let moved = |ms: &[&mut M]| hosting(ms[0], 2, 2) && ms.iter().all(|x| joined(x, 2, &h1, 2));
+    assert!(drive(&mut all(&mut m), 5_000, false, moved), "backup 1 takes over at host_gen 2");
+    let took = t_stop.elapsed();
+    eprintln!("planned handover after {took:?}");
+    assert!(took < Duration::from_millis(HEARTBEAT_MISSES * HEARTBEAT_MS), "redial on End, not on missed heartbeats ({took:?})");
+    drop(stopped);
     for x in m.iter_mut() {
         x.rec.clear();
     }
-    drive(&mut m.iter_mut().collect::<Vec<_>>(), 2_000, true, |_| false);
-    assert_hears(&m.iter_mut().collect::<Vec<_>>(), &[1, 2], &[1, 2]);
+    drive(&mut all(&mut m), 1_500, true, |_| false);
+    assert_hears(&all(&mut m), &[1, 2], &[1, 2]);
+
+    // ---- backup 1 crashes (no close at all): backup 2 notices by 3 missed heartbeats -------
+    m[1].evs.clear(); // its Reconnecting from the planned handover
+    let t_crash = Instant::now();
+    crash(m.remove(0));
+    let mut detected = None;
+    let h2 = m[0].href.clone();
+    let took_over = drive(&mut all(&mut m), 8_000, false, |ms| {
+        if detected.is_none() && ms[0].evs.iter().any(|e| matches!(e, GcallEvent::Reconnecting { .. })) {
+            detected = Some(t_crash.elapsed());
+        }
+        hosting(ms[0], 3, 1) && joined(ms[0], 3, &h2, 1)
+    });
+    let detected = detected.expect("host loss detected");
+    eprintln!("crash detected after {detected:?}");
+    // The last heartbeat came at most one period before the crash.
+    let bound = HEARTBEAT_MISSES * HEARTBEAT_MS;
+    assert!(detected >= Duration::from_millis(bound - HEARTBEAT_MS - 100), "detected by a close, not by heartbeats ({detected:?})");
+    assert!(detected <= Duration::from_millis(bound + 500), "detection beyond the §5 bound ({detected:?})");
+    assert!(took_over, "backup 2 takes over at host_gen 3");
     eprintln!("total {:?}", t0.elapsed());
+}
+
+#[test]
+fn phone_host_degrades() {
+    let dir = Arc::new(StaticDirectory::default());
+    let phone = Cond::phone(80, false);
+    let mut m: Vec<M> = (0..4).map(|i| member("phone", i, &dir, i < 2, if i == 0 { phone } else { Cond::desktop() })).collect();
+    let gid = "c3".repeat(32);
+    let start = m[0].node.gcall_host(host_cfg(&m[0], &gid, vec![m[1].href.clone()], phone)).unwrap();
+    for x in &m[1..3] {
+        x.node.gcall_join(&start, None).unwrap();
+    }
+    let h0 = m[0].href.clone();
+    assert!(drive(&mut all(&mut m), 10_000, false, |ms| ms[..3].iter().all(|x| joined(x, 1, &h0, 3))), "joins");
+    assert_eq!(m[0].node.gcall_status().unwrap().hosting.unwrap().k, 2, "phone K");
+
+    // Battery under 15 %: limited, K = 1, new Joins refused.
+    m[0].node.gcall_set_cond(Cond::phone(12, false));
+    let fresh: Vec<GcallEvent> = m[0].rx.try_iter().collect();
+    m[0].evs.extend(fresh);
+    assert!(m[0].evs.iter().any(|e| matches!(e, GcallEvent::Notice(HostNotice::Limited))));
+    assert_eq!(m[0].node.gcall_status().unwrap().hosting.unwrap().k, 1, "limited K");
+    m[3].node.gcall_join(&start, None).unwrap();
+    let refused = |ms: &[&mut M]| ms[3].evs.iter().any(|e| matches!(e, GcallEvent::Ended { why: ClientEnd::HostLost, .. }));
+    assert!(drive(&mut all(&mut m), 6_000, false, refused), "the late Join is refused");
+    assert_eq!(m[0].node.gcall_status().unwrap().hosting.unwrap().roster.len(), 3);
+
+    // Battery under 8 %: End{host_leaving, next_host: backup}; everyone goes on there.
+    m[0].node.gcall_set_cond(Cond::phone(5, false));
+    let h1 = m[1].href.clone();
+    let moved = |ms: &[&mut M]| hosting(ms[1], 2, 3) && ms[..3].iter().all(|x| joined(x, 2, &h1, 3));
+    assert!(drive(&mut all(&mut m), 5_000, false, moved), "members move to the backup");
+    assert!(m[0].evs.iter().any(|e| matches!(e, GcallEvent::HostingEnded { reason: EndReason::HostLeaving, next_host: Some(n), .. } if *n == h1)));
+}
+
+#[test]
+fn glare_two_hosts() {
+    let dir = Arc::new(StaticDirectory::default());
+    let mut m: Vec<M> = (0..4).map(|i| member("glare", i, &dir, i < 2, Cond::desktop())).collect();
+    let gid = "d4".repeat(32);
+    // Two members start a call at once; one more member joins each.
+    let a = m[0].node.gcall_host(host_cfg(&m[0], &gid, vec![], Cond::desktop())).unwrap();
+    let b = m[1].node.gcall_host(host_cfg(&m[1], &gid, vec![], Cond::desktop())).unwrap();
+    m[2].node.gcall_join(&a, None).unwrap();
+    m[3].node.gcall_join(&b, None).unwrap();
+    let (h0, h1) = (m[0].href.clone(), m[1].href.clone());
+    let two = |ms: &[&mut M]| joined(ms[0], 1, &h0, 2) && joined(ms[2], 1, &h0, 2) && joined(ms[1], 1, &h1, 2) && joined(ms[3], 1, &h1, 2);
+    assert!(drive(&mut all(&mut m), 10_000, false, two), "two calls");
+
+    // Both CallStarts reach everyone through the chat relay, in no particular order.
+    for x in &m {
+        for s in [&a, &b] {
+            x.node.gcall_observe_start(s).unwrap();
+        }
+    }
+    let id = |s: &proto::SignedBlob| proto::gcall::open_start(s).unwrap().call_id;
+    let (ia, ib) = (id(&a), id(&b));
+    let a_wins = blake3::hash(ia.as_bytes()).as_bytes() < blake3::hash(ib.as_bytes()).as_bytes();
+    let (win, lose, wid) = if a_wins { (0, 1, ia) } else { (1, 0, ib) };
+    let wh = m[win].href.clone();
+    let settled = |ms: &[&mut M]| {
+        hosting(ms[win], 1, 4) && ms.iter().all(|x| joined(x, 1, &wh, 4) && x.node.gcall_status().is_some_and(|s| s.call_id == wid))
+    };
+    assert!(drive(&mut all(&mut m), 10_000, false, settled), "everyone in the winner's call");
+    assert!(m[lose].node.gcall_status().unwrap().hosting.is_none());
+    assert!(
+        m[lose].evs.iter().any(|e| matches!(e, GcallEvent::HostingEnded { reason: EndReason::Superseded, next_host: Some(n), .. } if *n == wh)),
+        "the loser ends superseded"
+    );
+    let follower = if lose == 0 { 2 } else { 3 };
+    for i in [lose, follower] {
+        assert!(m[i].evs.iter().any(|e| matches!(e, GcallEvent::Superseded { by, .. } if *by == wh)), "member {i} told to follow");
+    }
 }

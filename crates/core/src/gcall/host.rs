@@ -155,8 +155,8 @@ impl HostEngine {
         })
     }
 
-    /// §5 redial: this device is `prev.backups[i]` and got the first valid `Join{prev.host_gen
-    /// + 1}`. The new CallStart lists the previous backups minus this device (G9). The wiring
+    /// §5 redial: this device is `prev.backups[i]` and got the first valid
+    /// `Join{prev.host_gen + 1}`. The new CallStart lists the previous backups minus this device (G9). The wiring
     /// feeds that Join next and drops the engine if it is refused.
     pub fn takeover(id: Identity, prev: &CallStart, me: HostRef, cond: Cond, own_user_in: bool, now: u64) -> Result<Self, Refusal> {
         if !prev.backups.contains(&me) {

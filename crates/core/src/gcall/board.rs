@@ -54,24 +54,24 @@ impl CallBoard {
         if s.host_gen < cur {
             return Err(Refusal::StaleGen);
         }
-        if s.host_gen == cur {
-            if let Some(have) = self.starts.get(&s.call_id) {
-                if have.host_ref == s.host_ref {
-                    return Err(Refusal::Duplicate);
-                }
-                // Split after redial (§5): the lower index in the previous backups wins.
-                let order = self.prev.get(&s.call_id).map(|p| p.backups.clone()).unwrap_or_default();
-                let idx = |r: &HostRef| order.iter().position(|b| b == r).unwrap_or(usize::MAX);
-                if (idx(&s.host_ref), tie_hash(&s.call_id, &s.host_ref)) >= (idx(&have.host_ref), tie_hash(&s.call_id, &have.host_ref)) {
-                    return Err(Refusal::Superseded);
-                }
+        if s.host_gen == cur
+            && let Some(have) = self.starts.get(&s.call_id)
+        {
+            if have.host_ref == s.host_ref {
+                return Err(Refusal::Duplicate);
+            }
+            // Split after redial (§5): the lower index in the previous backups wins.
+            let order = self.prev.get(&s.call_id).map(|p| p.backups.clone()).unwrap_or_default();
+            let idx = |r: &HostRef| order.iter().position(|b| b == r).unwrap_or(usize::MAX);
+            if (idx(&s.host_ref), tie_hash(&s.call_id, &s.host_ref)) >= (idx(&have.host_ref), tie_hash(&s.call_id, &have.host_ref)) {
+                return Err(Refusal::Superseded);
             }
         }
         let call_id = s.call_id.clone();
-        if s.host_gen > cur {
-            if let Some(old) = self.starts.remove(&call_id) {
-                self.prev.insert(call_id.clone(), old);
-            }
+        if s.host_gen > cur
+            && let Some(old) = self.starts.remove(&call_id)
+        {
+            self.prev.insert(call_id.clone(), old);
         }
         self.hgen.insert(call_id.clone(), s.host_gen);
         self.starts.insert(call_id, s);

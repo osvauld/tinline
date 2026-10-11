@@ -26,6 +26,14 @@
 //!   its own client is in, or one fed through [`crate::Node::gcall_observe_start`]) builds a
 //!   `HostEngine::takeover` on the first `Join{host_gen + 1}`, from the network or from its
 //!   own redialing client. If that first Join is refused the engine is dropped again.
+//! - Glare and split (§3.1, §5): every CallStart this node learns of goes on a per-group
+//!   [`CallBoard`]; when the call hosted here lost, it ends with `End{superseded, next_host:
+//!   winner}` and its members follow the winner (at once if they know its CallStart, else when
+//!   it arrives, within [`FOLLOW_WINDOW`]).
+//! - One call at a time: while this device's user is in a group call a 1:1 call is refused
+//!   (incoming: Busy), and a group call cannot be started or joined during a 1:1 call.
+//!   `Node::stop` and `Node::lock` leave the call and, when hosting, send `End{host_leaving,
+//!   next_host}` before the endpoint closes.
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::Arc;
@@ -62,6 +70,8 @@ const FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
 const CLOSE_WAIT: Duration = Duration::from_secs(2);
 /// Level byte of the idle keepalive: silence (127 = -127 dBov).
 const SILENT_LEVEL: u8 = 127;
+/// How long a `Superseded` waits for the winner's CallStart to arrive through the relay.
+pub const FOLLOW_WINDOW: Duration = Duration::from_secs(30);
 
 pub fn close_code(r: CloseReason) -> u32 {
     match r {
@@ -182,16 +192,35 @@ pub struct GcallStatus {
 pub(crate) struct Service {
     cfg: Mutex<Option<Arc<GcallConfig>>>,
     cur: Mutex<Option<Arc<Session>>>,
-    /// CallStarts seen through the chat relay (or the API), highest generation per call_id;
-    /// what a backup that is not in the call takes over from.
     known: Known,
 }
 
-type Known = Arc<Mutex<BTreeMap<String, CallStart>>>;
+/// What this node knows about calls beyond its own session.
+#[derive(Default)]
+struct Calls {
+    /// CallStarts seen through the chat relay (or the API), highest generation per call_id;
+    /// what a backup that is not in the call takes over from, and what a `Superseded` follows.
+    starts: BTreeMap<String, CallStart>,
+    /// gid → board (glare and split settling for the call hosted here).
+    boards: BTreeMap<String, CallBoard>,
+    /// A `Superseded` whose winner's CallStart is not known yet: (winner, gid, when).
+    follow: Option<(HostRef, String, Instant)>,
+}
+
+type Known = Arc<Mutex<Calls>>;
 
 impl Service {
     fn live(&self) -> Option<Arc<Session>> {
         self.cur.lock().clone().filter(|s| !s.finished())
+    }
+
+    /// This device's user is in a group call (or one is being set up): 1:1 calls are refused.
+    /// Hosting listen-only does not count.
+    pub(crate) fn in_call(&self) -> bool {
+        self.live().is_some_and(|s| {
+            let st = s.st.lock();
+            st.client.as_ref().map_or(st.host.is_none(), |c| !is_ended(c))
+        })
     }
 
     pub(crate) fn push_mic(&self, pcm: &[i16]) {
@@ -208,7 +237,7 @@ impl Service {
     }
 
     fn known_start(&self, call_id: &str) -> Option<CallStart> {
-        self.known.lock().get(call_id).cloned()
+        self.known.lock().starts.get(call_id).cloned()
     }
 }
 
@@ -259,6 +288,8 @@ struct St {
     next_seq: u64,
     /// The winner named by a `Superseded`, joined when the client ends.
     follow: Option<HostRef>,
+    /// Current local conditions (§2.4); a takeover starts with these.
+    cond: Cond,
 }
 
 enum Work {
@@ -285,6 +316,7 @@ fn is_ended(c: &ClientEngine) -> bool {
 
 impl Session {
     fn new(call_id: &str, id: Identity, cfg: Arc<GcallConfig>, ep: Endpoint, handle: tokio::runtime::Handle, known: Known) -> Arc<Self> {
+        let cond = cfg.cond;
         Arc::new(Session {
             call_id: call_id.into(),
             id,
@@ -306,6 +338,7 @@ impl Session {
                 next_conn: 1,
                 next_seq: 1,
                 follow: None,
+                cond,
             }),
         })
     }
@@ -456,12 +489,31 @@ impl Session {
         }
         let me = self.cfg.host_ref.clone().ok_or(Refusal::Refused)?;
         let own = st.client.as_ref().is_some_and(|c| !is_ended(c) && c.call_start().call_id == prev.call_id);
-        let eng = HostEngine::takeover(self.id.clone(), prev, me, self.cfg.cond, own, self.now())?;
+        let eng = HostEngine::takeover(self.id.clone(), prev, me, st.cond, own, self.now())?;
         let s = eng.call_start();
         st.events.push(GcallEvent::HostingStarted { call_id: s.call_id.clone(), host_gen: s.host_gen, start: eng.start_blob().clone() });
         tracing::info!("gcall: taking over {} at gen {}", s.call_id, s.host_gen);
         st.host = Some(HostSide { eng, conns: BTreeMap::new(), taking: true });
         Ok(())
+    }
+
+    /// §3.1 glare / §5 split: if the call hosted here lost to a call on the board, end it with
+    /// `End{superseded, next_host: winner}`.
+    fn sweep(self: &Arc<Self>) {
+        self.with(|s, st, q| {
+            let Some(h) = st.host.as_mut() else { return };
+            let mine = h.eng.call_start().clone();
+            let winner = {
+                let mut k = s.known.lock();
+                let b = k.boards.entry(mine.gid.clone()).or_insert_with(|| CallBoard::new(&mine.gid, s.cfg.host_ref.clone()));
+                let _ = b.accept_start(h.eng.start_blob(), s.auth());
+                b.superseded(&mine)
+            };
+            if let Some(w) = winner {
+                tracing::info!("gcall: {} gen {} superseded", mine.call_id, mine.host_gen);
+                q.push_back(Work::H(h.eng.supersede(w)));
+            }
+        });
     }
 
     fn host_act(self: &Arc<Self>, st: &mut St, a: HostAction, q: &mut VecDeque<Work>) {
@@ -511,6 +563,11 @@ impl Session {
                     }
                     let s = h.eng.call_start();
                     tracing::info!("gcall: stopped hosting {} gen {}: {reason:?}", s.call_id, s.host_gen);
+                    if let Some(e) = end.as_ref().filter(|_| reason == EndReason::Ended)
+                        && let Some(b) = self.known.lock().boards.get_mut(&s.gid)
+                    {
+                        let _ = b.accept_end(e, self.auth());
+                    }
                     st.events.push(GcallEvent::HostingEnded { call_id: s.call_id.clone(), reason, next_host, end });
                 }
             }
@@ -616,7 +673,15 @@ impl Session {
                 st.mic.clear();
                 // §3.1 glare / §5 split: join the winner if its CallStart is known.
                 let by = st.follow.take().filter(|_| why == ClientEnd::Superseded);
-                let next = by.and_then(|by| self.known.lock().values().find(|k| k.host_ref == by && k.gid == gid).cloned());
+                let next = by.and_then(|by| {
+                    let mut k = self.known.lock();
+                    let found = k.starts.values().find(|k| k.host_ref == by && k.gid == gid).cloned();
+                    if found.is_none() {
+                        // Its CallStart is still on its way through the relay.
+                        k.follow = Some((by, gid.clone(), Instant::now()));
+                    }
+                    found
+                });
                 if let Some(start) = next
                     && let Ok((c, acts)) = ClientEngine::new(self.id.clone(), start, self.cfg.note.clone(), now, auth)
                 {
@@ -840,6 +905,41 @@ async fn read_frame(recv: &mut RecvStream, buf: &mut Vec<u8>) -> Option<GroupCal
 // ---- node hooks -------------------------------------------------------------------------
 
 impl Inner {
+    /// `Node::stop` / `Node::lock`: leave the call and, when hosting, end it with
+    /// `End{host_leaving, next_host}`; waits (bounded) until those frames are out.
+    pub(crate) async fn gcall_shutdown(&self) {
+        let svc = &self.gcall;
+        if let Some(s) = svc.live() {
+            let mut conns = vec![];
+            {
+                let st = s.st.lock();
+                if let Some(h) = &st.host {
+                    conns.extend(h.conns.values().map(|p| p.conn.clone()));
+                }
+                if let Link::Remote { peer: Some(p), .. } = &st.link {
+                    conns.push(p.conn.clone());
+                }
+            }
+            s.with(|s, st, q| {
+                if let Some(c) = st.client.as_mut() {
+                    q.push_back(Work::C(c.leave(s.now())));
+                }
+            });
+            s.with(|s, st, q| {
+                if let Some(h) = st.host.as_mut() {
+                    let next = h.eng.next_backup(s.auth());
+                    q.push_back(Work::H(h.eng.end(EndReason::HostLeaving, next)));
+                }
+            });
+            let deadline = tokio::time::Instant::now() + FLUSH_TIMEOUT + Duration::from_millis(200);
+            for c in conns {
+                let _ = tokio::time::timeout_at(deadline, c.closed()).await;
+            }
+        }
+        *svc.cur.lock() = None;
+        *svc.known.lock() = Calls::default();
+    }
+
     /// A `tinline/gcall/1` connection (called from the accept loop in `node.rs`). The first
     /// control frame must be a Join for the call this device hosts, or one it may take over.
     pub(crate) async fn handle_gcall_incoming(self: Arc<Self>, accepting: Accepting) -> Result<(), Error> {
@@ -925,33 +1025,81 @@ impl crate::Node {
         self.inner.gcall.cfg.lock().clone().ok_or_else(|| Error::Protocol("group calls not configured".into()))
     }
 
+    /// A new session, unless a group call or a 1:1 call is going on.
     fn gcall_new_session(&self, call_id: &str) -> Result<Arc<Session>, Error> {
-        self.inner.not_in_call()?;
         let cfg = self.gcall_cfg()?;
         let me = self.inner.me()?;
         let ep = self.inner.endpoint()?;
         let s = Session::new(call_id, me.id.clone(), cfg, ep, self.inner.handle.clone(), self.inner.gcall.known.clone());
-        let mut cur = self.inner.gcall.cur.lock();
-        if cur.as_ref().is_some_and(|c| !c.finished()) {
-            return Err(Error::Busy);
-        }
-        *cur = Some(s.clone());
+        // Under the 1:1 slot's lock, so that no 1:1 call begins meanwhile (it checks `in_call`).
+        self.inner.with_no_call(|| {
+            let mut cur = self.inner.gcall.cur.lock();
+            if cur.as_ref().is_some_and(|c| !c.finished()) {
+                return Err(Error::Busy);
+            }
+            *cur = Some(s.clone());
+            Ok(())
+        })?;
         Ok(s)
+    }
+
+    /// New local hosting conditions (§2.4: battery, charging, thermal, metered), from the
+    /// platform. A call hosted here degrades as the policy says (K = 1 and no new Joins, or
+    /// `End{host_leaving, next_host}`); later takeovers start with them.
+    pub fn gcall_set_cond(&self, cond: Cond) {
+        if let Some(c) = self.inner.gcall.cfg.lock().as_mut() {
+            let mut n = (**c).clone();
+            n.cond = cond;
+            *c = Arc::new(n);
+        }
+        if let Some(s) = self.inner.gcall.live() {
+            s.with(|s, st, q| {
+                st.cond = cond;
+                if let Some(h) = st.host.as_mut() {
+                    q.push_back(Work::H(h.eng.set_cond(cond, s.auth())));
+                }
+            });
+        }
     }
 
     /// A CallStart relayed through the chat hosts: remembered so that this device can take
     /// over as a backup, or follow a `Superseded`. Verified (signature, permit, starter).
+    /// When it beats the call hosted here (glare, split), that call ends `superseded`.
     pub fn gcall_observe_start(&self, start: &SignedBlob) -> Result<(), Error> {
         let cfg = self.gcall_cfg()?;
         let s = w::open_start(start).map_err(|e| Error::Protocol(e.to_string()))?;
         if !cfg.dir.host_permit_ok(&s.gid, &s.host_ref) || !cfg.dir.is_member(&s.gid, &s.starter_did) {
             return Err(Error::Rejected("call host not permitted".into()));
         }
-        let mut known = self.inner.gcall.known.lock();
-        if known.get(&s.call_id).is_none_or(|k| k.host_gen < s.host_gen) {
-            known.insert(s.call_id.clone(), s);
+        let follow = {
+            let mut k = self.inner.gcall.known.lock();
+            let b = k.boards.entry(s.gid.clone()).or_insert_with(|| CallBoard::new(&s.gid, cfg.host_ref.clone()));
+            let _ = b.accept_start(start, &*cfg.dir);
+            let follow = k.follow.as_ref().is_some_and(|(by, gid, t)| *by == s.host_ref && *gid == s.gid && t.elapsed() < FOLLOW_WINDOW);
+            if follow {
+                k.follow = None;
+            }
+            if k.starts.get(&s.call_id).is_none_or(|have| have.host_gen < s.host_gen) {
+                k.starts.insert(s.call_id.clone(), s);
+            }
+            follow
+        };
+        if let Some(cur) = self.inner.gcall.live() {
+            cur.sweep();
+        }
+        if follow && let Err(e) = self.gcall_join(start, None) {
+            tracing::debug!("gcall: following the glare winner failed: {e}");
         }
         Ok(())
+    }
+
+    /// A relayed `End{ended}`: the call leaves the group's board (it no longer wins a glare).
+    pub fn gcall_observe_end(&self, end: &SignedBlob) -> Result<(), Error> {
+        let cfg = self.gcall_cfg()?;
+        let e = w::open_end(end).map_err(|e| Error::Protocol(e.to_string()))?;
+        let mut k = self.inner.gcall.known.lock();
+        let b = k.boards.entry(e.gid.clone()).or_insert_with(|| CallBoard::new(&e.gid, cfg.host_ref.clone()));
+        b.accept_end(end, &*cfg.dir).map_err(|r| Error::Rejected(format!("{r:?}")))
     }
 
     /// Host a call. `cfg.host_ref` must be this device's configured host ref. With
@@ -993,6 +1141,7 @@ impl crate::Node {
         self.gcall_observe_start(start)?;
         // Joining the call this device already hosts listen-only: add the user to it.
         if let Some(cur) = self.inner.gcall.live() {
+            self.inner.not_in_call()?;
             return cur.with(|cur, st, q| {
                 let hosts_it = st.host.as_ref().is_some_and(|h| h.eng.call_start().call_id == s.call_id);
                 if !hosts_it || st.client.as_ref().is_some_and(|c| !is_ended(c)) {

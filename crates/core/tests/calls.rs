@@ -404,3 +404,56 @@ fn account_switch_is_refused_during_a_call() {
     assert_eq!(a.node.contacts().len(), 1);
     assert_eq!(a.node.recent_calls(10).len(), 1, "the call was logged before the switch, and is still there");
 }
+
+/// G6: one call at a time. A 1:1 call to someone in a group call is turned away busy, and a
+/// group call cannot be started during a 1:1 call.
+#[test]
+fn group_call_and_one_to_one_exclude_each_other() {
+    use p2pcore::gcall::net::{GcallConfig, GcallEvent, GcallEvents, StaticDirectory};
+    use p2pcore::gcall::{Cond, HostConfig, HostRef};
+    struct NoEvents;
+    impl GcallEvents for NoEvents {
+        fn on_gcall_event(&self, _: GcallEvent) {}
+    }
+    let (a, b) = pair("gcall-busy");
+    let dir = Arc::new(StaticDirectory::default());
+    let href = HostRef { holder_did: a.did.clone(), device_slot: 0, permit_digest: "permit-a".into() };
+    {
+        let mut auth = dir.auth.lock();
+        auth.members.insert(a.did.clone());
+        auth.permits.insert(href.permit_digest.clone());
+    }
+    a.node.gcall_configure(GcallConfig { dir, events: Arc::new(NoEvents), host_ref: Some(href.clone()), cond: Cond::desktop(), note: None });
+    let host = || {
+        a.node.gcall_host(HostConfig {
+            gid: "b2".repeat(32),
+            call_id: proto::gcall::new_call_id(),
+            host_gen: 1,
+            host_ref: href.clone(),
+            starter_did: a.did.clone(),
+            backups: vec![],
+            meta_frontier: "f".into(),
+            cond: Cond::desktop(),
+            own_user_in: true,
+        })
+    };
+
+    // a is in a group call (its own, alone): b's call gets busy; a cannot place one either.
+    host().unwrap();
+    let call = b.node.call(a.did.clone()).unwrap();
+    assert_eq!(expect(&b, 40, "busy", ended(&call.call_id)), "busy");
+    assert!(a.node.current_call().is_none());
+    assert!(matches!(a.node.call(b.did.clone()), Err(p2pcore::Error::InCall)));
+    a.node.gcall_end();
+
+    // Now a 1:1 call goes through, and a group call is refused while it runs.
+    let call = b.node.call(a.did.clone()).unwrap();
+    a.node.answer(incoming(&a)).unwrap();
+    expect(&b, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
+    assert!(matches!(host(), Err(p2pcore::Error::InCall)));
+    assert!(a.node.gcall_status().is_none_or(|s| s.hosting.is_none()));
+    b.node.hangup(call.call_id.clone()).unwrap();
+    expect(&a, 10, "ended", ended(&call.call_id));
+    host().expect("a group call once the 1:1 call is over");
+    a.node.gcall_end();
+}

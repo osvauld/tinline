@@ -373,10 +373,10 @@ pub fn encode_control(msg: &GroupCallMsg) -> Result<Vec<u8>> {
 /// `Ok(None)` = need more bytes. The length is checked before the body is buffered.
 pub fn decode_control(buf: &[u8]) -> Result<Option<(GroupCallMsg, usize)>> {
     let r = decode_json_frame_max::<GroupCallMsg>(buf, MAX_CONTROL)?;
-    if let Some((GroupCallMsg::Active { slots, .. }, _)) = &r {
-        if slots.len() > MAX_PARTICIPANTS {
-            return Err(Error::Decode);
-        }
+    if let Some((GroupCallMsg::Active { slots, .. }, _)) = &r
+        && slots.len() > MAX_PARTICIPANTS
+    {
+        return Err(Error::Decode);
     }
     Ok(r)
 }

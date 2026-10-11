@@ -318,10 +318,10 @@ impl World {
                             }
                             Err(_) => {}
                         }
-                    } else if let Some(e) = self.hosts.get_mut(&h) {
-                        if let Ok(acts) = e.on_datagram(conn, &bytes, self.now) {
-                            self.host_actions(h, acts);
-                        }
+                    } else if let Some(e) = self.hosts.get_mut(&h)
+                        && let Ok(acts) = e.on_datagram(conn, &bytes, self.now)
+                    {
+                        self.host_actions(h, acts);
                     }
                 }
                 Ev::ToClient(h, key, bytes, ctl) => {
@@ -932,7 +932,7 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
     assert!(s.host_ended.contains(&(HP, EndReason::HostLeaving, Some(s.href(H1)))));
     for m in [OLGA, A1, BOB] {
         assert_eq!(s.host_of(m), (H1, 2), "{m}");
-        assert!(s.joins.iter().any(|j| *j == (m, H1, 2, t)), "no heartbeat wait for {m}");
+        assert!(s.joins.contains(&(m, H1, 2, t)), "no heartbeat wait for {m}");
     }
     // Wi-Fi to metered mid-call: everyone stays, Joins beyond the metered cap are refused, and
     // the phone's own user leaving ends the call with host_leaving.
