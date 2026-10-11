@@ -701,6 +701,9 @@ impl Inner {
     }
 }
 
+/// While a join waits: how often failed dials to the group's hosts are tried again.
+const JOIN_REDIAL: Duration = Duration::from_secs(2);
+
 impl Inner {
     /// Joins with a full (fetched or delivered) token: the same checks whatever brought it.
     pub(crate) async fn group_join_token(self: &Arc<Self>, t: InviteToken) -> Result<String, Error> {
@@ -733,6 +736,7 @@ impl Inner {
         core.refusals.lock().remove(&gid);
         inner.group_ensure(&core).await?;
         let end = std::time::Instant::now() + Duration::from_secs(60);
+        let mut hurried = std::time::Instant::now();
         loop {
             let (member, joined) = {
                 let groups = core.groups.lock();
@@ -747,6 +751,12 @@ impl Inner {
             if let Some(why) = refused.filter(|_| !member) {
                 inner.group_forget(&core, &gid);
                 return Err(Error::Rejected(why));
+            }
+            // GL: a dial that failed (lost connection, timeout under load) is tried again every
+            // couple of seconds while the user waits, within this deadline.
+            if hurried.elapsed() >= JOIN_REDIAL {
+                core.hurry(&gid);
+                hurried = std::time::Instant::now();
             }
             if std::time::Instant::now() > end {
                 if !member {

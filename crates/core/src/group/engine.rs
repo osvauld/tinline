@@ -171,6 +171,13 @@ impl GroupCore {
         self.closed.load(Ordering::SeqCst)
     }
 
+    /// GL: someone is waiting for `gid` (a join): forget the dial backoff of its hosts and dial
+    /// now, so a failed dial is tried again within seconds instead of at the slow backoff.
+    pub(crate) fn hurry(&self, gid: &str) {
+        self.backoff.lock().retain(|(g, _), _| g != gid);
+        self.kick.notify_waiters();
+    }
+
     /// Marks the core closed, ends its sessions and loops, and closes its store (for every
     /// holder, after the operations in flight). The endpoint is the caller's.
     pub(crate) fn shut(&self) {
