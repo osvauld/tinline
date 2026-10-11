@@ -13,8 +13,9 @@
 //! Rate control is delay-based (the idea behind WebRTC's GCC), done at this layer so it needs
 //! nothing from the transport: the receiver compares each frame's arrival time with its capture
 //! time. The clock offset between the devices cancels out, so a *rise* over the recent minimum
-//! is queueing delay. It sends a [`RateReport`] every 100 ms; the sender backs off to the
-//! delivered rate as soon as a queue builds and only ramps up while the path is empty. A
+//! is queueing delay. It sends a [`RateReport`] every 50 ms; the sender backs off to the
+//! delivered rate as soon as a queue builds (or far less gets through than it sends), drains
+//! that queue below the delivered rate, and only ramps up while the path is empty. A
 //! loss-based congestion controller alone fills the bottleneck buffer first (bufferbloat), which
 //! the simulation showed as seconds of delay.
 //!
@@ -474,7 +475,9 @@ impl Sender {
         }
     }
 
-    /// Transport feedback, called every few ms: bytes not yet sent, per group.
+    /// Transport feedback, called every few ms: per group, bytes not delivered yet that should
+    /// have been (`video::net`: written more than an RTT + slack ago and not acked by the
+    /// receiver; this includes the queue in the path).
     pub fn feedback(&mut self, unsent: &BTreeMap<u64, usize>) -> Vec<Out> {
         let mut out = Vec::new();
         // Older groups that still have unsent data are stale: the newer keyframe replaces them.

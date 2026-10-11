@@ -16,10 +16,12 @@ Status: design + simulation; wired into 1:1 calls in the core (no UI yet).
   Audio stays on datagrams so it never waits behind video. Group calls later: a host relays
   groups to members (MoQ is relay-shaped), same wire format.
 - **Rate control: delay-based at the app layer** (GCC idea). The receiver reports delivered
-  rate + queueing delay (frame arrival minus capture time, above its 10 s minimum; the clock
-  offset cancels) every 100 ms; the sender backs off to 85% of delivered when queueing
-  > 40 ms and ramps +8%/report when < 15 ms. Backlog > 300 ms: reset the group, force a
-  keyframe, halve the rate.
+  rate (sliding 100 ms) + queueing delay (frame arrival minus capture time, above its 10 s
+  minimum; the clock offset cancels) every 50 ms. The sender backs off to 85% of delivered
+  when queueing > 40 ms or the link is *starved* (delivered < 50% of what we sent, two reports
+  in a row), then **drains** the standing queue: below delivered until queueing < 15 ms, then
+  ramps +8% per 100 ms. Backlog > 300 ms (and not draining): reset the group, force a
+  keyframe, halve the rate. Details: [Rate control](#rate-control-drain-on-a-bandwidth-drop).
 - **Shipping**: every shipped build links libaom statically; users never install it. See
   [Shipping libaom](#shipping-libaom).
 - **rav1d from its git tag** v1.1.0: the crates.io package lacks `src/arm/asm-offsets.h`, so
@@ -113,7 +115,7 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   stopped reading. `Sender::feedback` runs every 10 ms on that.
 - **Control stream** (one bi stream, opened by the receiver; the sender's half is unused):
   version byte `1`, then messages, big-endian: `1 [delivered_bps u32][queuing_us u64]` rate
-  report (every 100 ms), `2` keyframe request (explicit or receiver stall), `3 [group u64]
+  report (every 50 ms; delivered over the last 100 ms), `2` keyframe request (explicit or receiver stall), `3 [group u64]
   [offset u64]` ack. Unknown type ends the session.
 - **Peer-controlled bytes, bounded**: frame > `max_frame` -> that stream is stopped and a
   keyframe requested; group id >= 2^48 or not newer than the newest seen (duplicate, late
@@ -265,11 +267,55 @@ cores, 720p in ~15-22 ms; rav1d decodes 720p in 5 ms. Proposed ladder, chosen by
 controller: 320x180 below ~250 kbps, 640x360 default, 960x540 / 720p when the link and the
 device's measured encode time allow.
 
+## Rate control: drain on a bandwidth drop
+
+`media::Sender::on_report`, in order:
+
+- **Overuse** = queueing > 40 ms, or **starved**: delivered < `starve_pct` (50%) of what the
+  sender handed to the transport over the last two reports, short by >= `starve_min_bps`
+  (300 kbps), in `starve_reports` (2) reports in a row. Not in the first second of the call
+  nor 300 ms after a drain (our own rate jumps ahead of what the receiver has seen yet).
+  Starvation shows a report or two before the queueing delay: right after a drop the big
+  frames crawl through the slower link and the *latest complete* frame's delay still looks
+  fine while the queue grows by ~19 KB per 100 ms (1.5 Mbps into 200 kbps).
+- On overuse the **estimate** (`bitrate`, drives the ladder) goes to 85% of delivered (at most
+  every 200 ms), and the encoder gets the **drain** rate: delivered minus the queue
+  (queueing x delivered) spread over `drain_us` (500 ms), at least `drain_pct` (25%) of
+  delivered; when starved straight to 25%, since the queue is bigger than the delay shows.
+  `Sender::bitrate()` = min(estimate, drain); `Sender::draining()`.
+- The drain ends when queueing < 15 ms; the ramp (+8% per 100 ms, at most 1.5 x delivered)
+  starts 500 ms after the last decrease.
+- **No backlog reset while draining** (and the last report showed bytes arriving): with
+  `video::net`'s ack-based backlog the queue in the path counts as backlog, and resetting
+  the group can't pull bytes back out of the network; it only threw away frames and sent
+  another keyframe into the queue. A stalled receiver (nothing delivered) still resets.
+- The ladder follows the estimate and steps down at once. Measured and rejected: holding the
+  old size until the drain ends (so the smaller keyframe goes into an empty queue). With real
+  AV1, libaom at 540p can't get near a 50 kbps target; the queue grew and the AV1 switch
+  scenario froze 5.4 s with 9.7% loss. A small picture is what drains.
+- Receiver reports every 50 ms (was 100 ms) over a sliding 100 ms window: same wire message,
+  ~260 B/s of control traffic. 100 ms reports with the same rules: real-AV1 switch p95
+  1757 ms / 1.7 s frozen vs 1220 ms / 1.4 s. A single starved report (no confirmation)
+  gave the best drop numbers but false positives under 3% loss (a lost packet stalls the
+  stream about an RTT) and at call start.
+
+What it cannot fix: what was sent between the drop and the first report that shows it
+(~150 ms, ~1 s of queue at 200 kbps) still has to drain at the new link rate. So the bigger
+bottleneck buffer doesn't matter any more (256 KB scenario: the queue peaks below 64 KB).
+
 ## Simulation
 
 `cargo test -p video --release sim -- --nocapture`. Deterministic: virtual clock, seeded RNG,
 a bottleneck link (rate, delay, jitter, loss, buffer, outages, rate changes) and a QUIC model
 (per-stream retransmission, newest-first scheduling, resets, loss-based cwnd, pacing).
+
+**Backlog model** (`Scenario::backlog`): `Unacked` (default) reports what `video::net`
+reports, bytes written more than srtt + 40 ms ago and not acked by the receiver app (so it
+includes the bottleneck queue); `Unsent` is QUIC's unsent bytes, what the sim used before.
+Stream resets now travel behind the bottleneck queue, as RESET_STREAM does; before, a reset
+overtook the queued bytes of its group and the receiver dropped them. `Report::queue` /
+`Report::reports` trace the bottleneck queue and the rate reports; `SIM_TRACE=1` prints them
+around the drop, `SIM_BACKLOG=unsent`, `SIM_DRAIN=<pct>`, `SIM_STARVE=<pct>` for experiments.
 
 The device model is the phone's measured encode time (`sim::Device::phone`: 2.1 ms +
 18 ns/pixel, +-20%, one frame at a time; `phone_unpinned` for the A53 cores). The fake codec
@@ -292,13 +338,33 @@ Latency p50 / p95 over the whole run.
 | phone throttles 2x at 15 s | - | 58 / 78 ms, 0 | 540 -> 360 at 15.1 s, stays |
 | real AV1, 2 M -> 200 k (6 s) -> 2 M (12 s), 20 s | 56 / 2232 ms, 0.6 s (12 s run, no recovery) | 52 / 2493 ms, 3.0 s, 0 decode errors | decoded 360, 540, 180, 360 |
 
-The p95 in the bandwidth-drop rows is the bottleneck buffer draining (64 KB is 1.7 s at
-300 kbps, 2.6 s at 200 kbps): the rate controller backs off to 85% of delivered, so it only
-drains slowly. That is pre-existing; the ladder makes it shorter, not longer. Open issues:
-- A step down's keyframe waits behind that queue, and the old group's unsent frames are reset,
-  so with real AV1 the switch costs a freeze of up to ~the queue time (3.0 s total above).
-  Options: drain faster (cut below delivered while queueing is high), or AV1 reference
-  scaling (libaom `resize_mode`), which changes size without a keyframe.
+Drain (V6). "ladder" = the table above (old sim); "+sim fixes" = the same controller on the
+`Unacked` backlog model with resets behind the queue; "drain" = this rate control. Latency
+p50 / p95 ms over the whole run, frozen (> 250 ms gaps), wire kbps where it moved.
+
+| Scenario | ladder | ladder + sim fixes | drain | sizes (drain) |
+|---|---|---|---|---|
+| clean 2 Mbps | 65 / 99, 0, 1679 kbps | 65 / 99, 0 | 64 / 95, 0, 1645 kbps | 360 -> 540 at 3.6 s |
+| 3% loss | 53 / 110, 0, 1010 kbps | 53 / 110, 0 | 54 / 110, 0, 1085 kbps | 360 -> 540 -> 360 (24.5) -> 540 -> 360 |
+| 2 M -> 300 k at 10 s | 60 / 844 (max 1133), 0 | 60 / 842, 0 | **57 / 86 (max 587), 0** | 540 -> 180 at 10.2 s |
+| 2 M -> 300 k, 256 KB buffer | - | 60 / 842, 0 (queue < 64 KB) | **57 / 86, 0**, queue peak < 64 KB | as above |
+| 500 ms outage | 64 / 96, 0.7 s | 64 / 100, 0.5 s | 64 / 96, 0.6 s | 360 -> 540 |
+| relay 75 +-20 ms, 1.5 Mbps | 131 / 177, 0, 1272 kbps | 131 / 177, 0 | 128 / 160, 0, 1199 kbps | 360 -> 540 |
+| real AV1, 2% loss + outage | 40 / 84, 0.6 s | 48 / 110, 0.6 s | 46 / 99, 0.7 s | 360 -> 540 -> 360 |
+| 2 M -> 200 k -> 2 M, 40 s | 58 / 1829 (max 2223), 0.9 s | 56 / 1362, 1.2 s | **55 / 89 (max 929), 0.3 s** | 540 -> 180 (10.2) -> 360 (23.4) -> 540; 4 switches |
+| slow device | 56 / 62, 0 | 56 / 62, 0 | 56 / 63, 0 | 360p, 0 switches |
+| throttles 2x at 15 s | 58 / 78, 0 | 58 / 78, 0 | 57 / 74, 0 | 540 -> 360 at 15.1 s |
+| real AV1, 2 M -> 200 k -> 2 M, 20 s | 52 / 2493, 3.0 s | 46 / 2083, 2.5 s | **48 / 1220, 1.4 s** | decoded 360, 540, 180, 360, 540 |
+
+Same numbers with `SIM_BACKLOG=unsent` except the outage (56 / 80 ms, 0.6 s) and the AV1 loss
+run (43 / 95 ms, 0.6 s). Open issues:
+- Real AV1 drop: 1.4 s frozen is the 540p frames queued before the drop is noticed (libaom
+  frames at 540p / 1.4 Mbps are bursty; the 64 KB buffer fills in ~0.2 s). Shorter needs an
+  earlier signal (per-packet arrival timing at the receiver, i.e. GCC's transport-wide
+  feedback; QUIC ack timing in `net`) or AV1 reference scaling (libaom `resize_mode`).
+- Real transport steps down in two steps on the 300 kbps drop (540 -> 360 -> 180, an extra
+  keyframe; the sim goes straight to 180): the first cut uses a delivered rate that still
+  includes pre-drop bytes.
 - The ladder only steps down for CPU after 10 frames at the new speed; a sudden 2x slowdown
   at 720p costs ~1/3 s of late frames.
 
@@ -377,6 +443,25 @@ default). `VIDEO_CC=bbr|reno` swaps the QUIC congestion controller. Laptop, load
 | 500 ms outage at 10 s (both ways) | 63 / 98 | 63 / 89 | 0.9 / 0.7-0.8 s | 1680 / 1626 kbps | 2-3 |
 | relay 75 (+0-20) ms, 1.5 Mbps | 127 / 154 | 129 / 171 | 0 / 0 | 1263 / 1233 kbps | 0 |
 
+With the ladder merged, before V6, the lead saw a ~235 ms freeze, 1 group reset and 3
+keyframes at the 360p -> 540p step-up on the clean and relay links (`net_real_clean` failed
+its keyframe count). Cause: the harness read `resolution()`, then reported the encode time
+(which can step the ladder up and ask for a keyframe), then read `wants_keyframe()`: a
+keyframe at the old size, then another at the new size a frame later (35 KB + 24 KB at
+1.5 Mbps = ~0.3 s). Fixed in the harness (take size, rate and keyframe in one
+`with_sender`, report encode time after the encode, as the sim and `core::video_call` do).
+Not a transport or backlog problem.
+
+After V6 (drain + harness fix), one run each, load 3-8:
+
+| Scenario | real p50 / p95 | real frozen (> 200 ms) | real mean bitrate | resets / keyframes |
+|---|---|---|---|---|
+| clean 2 Mbps, 20 ms | 63 / 98 | 0 | 1646 kbps | 0 / 2 |
+| 3% loss | 45 / 119 | 0.2 s | 721 kbps | 4 / 7 |
+| 2 Mbps -> 300 kbps at 10 s | last 15 s 65 / 97 | 0.43-0.47 s | last 10 s 252 kbps | 2-3 / 4-5 |
+| 500 ms outage (both ways) | 62 / 93 | 0.66 s | 1593 kbps | 2 / 4 |
+| relay 75 (+0-20) ms, 1.5 Mbps | 127 / 174 | 0 | 1202 kbps | 0 / 2 |
+
 p50/p95 from 2 s on unless noted; ranges are over repeated runs. No decode-order violations
 in any run; no queue drops at the emulated bottleneck (the delay-based controller keeps the
 queue short; 300 kbps after the drop with no latency creep).
@@ -411,8 +496,9 @@ Findings:
 3. iroh transport against `media::Sender`/`Receiver`: **built** (`video::net`) and checked
    against the simulation's scenarios over an emulated link (see Real transport vs
    simulation). ~~`max_concurrent_uni_streams` in the call endpoint's transport config~~ done
-   (16). Still to do: rate control under random loss; freeze at ladder step-up on the real
-   transport; sim model fixes listed there.
+   (16). ~~Freeze at ladder step-up on the real transport~~ (harness ordering, fixed). Still
+   to do: rate control under random loss; sim model fixes listed there. ~~Fast drain after a
+   bandwidth drop~~ done (Rate control).
 4. ~~Call protocol: video offer/accept in `CallHello`/`Accept`, camera on/off mid-call.~~ done
    (see Call protocol and core API).
 5. Capture/render: Android CameraX -> I420, desktop camera; render on both. Pure-Rust
