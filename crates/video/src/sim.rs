@@ -214,6 +214,16 @@ impl Device {
     }
 }
 
+/// What the transport reports to [`Sender::feedback`] as a group's backlog.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Backlog {
+    /// Bytes QUIC has not put on the wire yet.
+    Unsent,
+    /// What `video::net` reports: bytes written more than srtt + 40 ms ago that the receiver
+    /// has not acked yet, so it includes the bottleneck queue.
+    Unacked,
+}
+
 #[derive(Clone, Debug)]
 pub struct Scenario {
     pub duration_us: u64,
@@ -225,6 +235,7 @@ pub struct Scenario {
     pub decode_us: u64,
     pub sender: SenderConfig,
     pub receiver: ReceiverConfig,
+    pub backlog: Backlog,
     pub seed: u64,
 }
 
@@ -238,6 +249,7 @@ impl Default for Scenario {
             decode_us: 2_000,
             sender: SenderConfig::default(),
             receiver: ReceiverConfig::default(),
+            backlog: Backlog::Unacked,
             seed: 7,
         }
     }
@@ -271,6 +283,10 @@ pub struct Report {
     pub sent_packets: u64,
     /// (time, encoder bitrate) every feedback.
     pub bitrate: Vec<(u64, u32)>,
+    /// (time, bytes in the bottleneck buffer) every feedback.
+    pub queue: Vec<(u64, usize)>,
+    /// (arrival at the sender, report).
+    pub reports: Vec<(u64, RateReport)>,
 }
 
 impl Report {
@@ -349,14 +365,47 @@ struct TxStream {
     reset: bool,
     /// Packets in flight; the stream is kept until they are acked or lost.
     unacked: usize,
+    /// (time, `data.len()` after that write).
+    history: VecDeque<(u64, usize)>,
+    /// Bytes the receiver app has acked (`video::net`'s app-level ack).
+    app_acked: usize,
 }
 
 impl TxStream {
+    fn new() -> Self {
+        Self {
+            data: vec![],
+            next: 0,
+            retx: VecDeque::new(),
+            fin: false,
+            fin_sent: false,
+            reset: false,
+            unacked: 0,
+            history: VecDeque::new(),
+            app_acked: 0,
+        }
+    }
+
     fn unsent(&self) -> usize {
         if self.reset {
             return 0;
         }
         self.data.len() - self.next + self.retx.iter().map(|r| r.1).sum::<usize>()
+    }
+
+    /// Written at or before `horizon` and not acked by the receiver app.
+    fn unacked_by(&mut self, horizon: u64) -> usize {
+        if self.reset {
+            return 0;
+        }
+        while self.history.len() > 1 && self.history[1].0 <= horizon {
+            self.history.pop_front();
+        }
+        let written = match self.history.front() {
+            Some(&(at, n)) if at <= horizon => n,
+            _ => 0,
+        };
+        written.saturating_sub(self.app_acked)
     }
 }
 
@@ -392,6 +441,8 @@ enum Ev {
     KeyReq,
     /// Rate report reaches the sender.
     Report(RateReport),
+    /// The receiver app's ack of `offset` bytes of a group reaches the sender.
+    AppAck(u64, usize),
 }
 
 /// Runs `sc` with `codec` and returns what the receiver saw.
@@ -466,15 +517,20 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             sizes.insert(capture, (w, h));
             sender.encode_time(now, t);
             let outs = sender.frame(capture, is_key, &payload);
-            apply(&outs, &mut tx, &mut |g| push(&mut evs, now + sc.link.delay_us, Ev::ResetRx(g)));
+            apply(now, &outs, &mut tx, &mut |g| push(&mut evs, reset_at(now, link_free, &sc.link), Ev::ResetRx(g)));
         }
 
         // Sender feedback: per-group backlog and the congestion controller's rate.
         if now >= next_feedback {
-            let unsent: BTreeMap<u64, usize> = tx.iter().map(|(g, s)| (*g, s.unsent())).collect();
+            let horizon = now.saturating_sub(srtt as u64 + 40_000);
+            let unsent: BTreeMap<u64, usize> = match sc.backlog {
+                Backlog::Unsent => tx.iter().map(|(g, s)| (*g, s.unsent())).collect(),
+                Backlog::Unacked => tx.iter_mut().map(|(g, s)| (*g, s.unacked_by(horizon))).collect(),
+            };
             let outs = sender.feedback(&unsent);
-            apply(&outs, &mut tx, &mut |g| push(&mut evs, now + sc.link.delay_us, Ev::ResetRx(g)));
+            apply(now, &outs, &mut tx, &mut |g| push(&mut evs, reset_at(now, link_free, &sc.link), Ev::ResetRx(g)));
             rep.bitrate.push((now, sender.bitrate()));
+            rep.queue.push((now, (link_free.saturating_sub(now) * rate / 8 / 1_000_000) as usize));
             // Forget streams that are reset, or fully sent, FIN'd and acked.
             tx.retain(|_, s| !(s.unacked == 0 && (s.reset || (s.fin_sent && s.unsent() == 0))));
             next_feedback += 10_000;
@@ -541,6 +597,7 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                             }
                         }
                     }
+                    push(&mut evs, at + sc.link.delay_us, Ev::AppAck(p.group, s.delivered));
                     if s.fin_at == Some(s.delivered) {
                         s.done = true;
                         receiver.on_finish(p.group);
@@ -582,7 +639,15 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                     receiver.on_reset(g);
                 }
                 Ev::KeyReq => sender.request_keyframe(),
-                Ev::Report(r) => sender.on_report(at, &r),
+                Ev::AppAck(g, off) => {
+                    if let Some(s) = tx.get_mut(&g) {
+                        s.app_acked = s.app_acked.max(off);
+                    }
+                }
+                Ev::Report(r) => {
+                    sender.on_report(at, &r);
+                    rep.reports.push((at, r));
+                }
             }
         }
 
@@ -619,26 +684,21 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
     rep
 }
 
-fn apply(outs: &[Out], tx: &mut BTreeMap<u64, TxStream>, reset: &mut dyn FnMut(u64)) {
+/// RESET_STREAM goes out in a packet behind whatever already sits in the bottleneck buffer.
+fn reset_at(now: u64, link_free: u64, link: &Link) -> u64 {
+    link_free.max(now) + link.delay_us
+}
+
+fn apply(now: u64, outs: &[Out], tx: &mut BTreeMap<u64, TxStream>, reset: &mut dyn FnMut(u64)) {
     for o in outs {
         match o {
             Out::Open { group } => {
-                tx.insert(
-                    *group,
-                    TxStream {
-                        data: vec![],
-                        next: 0,
-                        retx: VecDeque::new(),
-                        fin: false,
-                        fin_sent: false,
-                        reset: false,
-                        unacked: 0,
-                    },
-                );
+                tx.insert(*group, TxStream::new());
             }
             Out::Write { group, data } => {
                 if let Some(s) = tx.get_mut(group) {
                     s.data.extend_from_slice(data);
+                    s.history.push_back((now, s.data.len()));
                 }
             }
             Out::Finish { group } => {
