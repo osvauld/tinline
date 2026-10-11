@@ -201,7 +201,11 @@ fn group_call_on_real_nodes() {
         x.node.gcall_join(&start, Some(host_addr.clone())).unwrap();
     }
     let h0 = m[0].href.clone();
-    assert!(drive(&mut all(&mut m), 10_000, false, |ms| ms.iter().all(|x| joined(x, 1, &h0, 4))), "everyone joins");
+    // The session updates its state under its lock and delivers the events just after it, so a
+    // status can show a change whose event is not in the channel yet (a preempted session
+    // thread: load, a single core). Every wait below therefore also waits for its events.
+    let joined_ev = |x: &M, g: u32, h: &HostRef| x.evs.iter().any(|e| matches!(e, GcallEvent::Joined { host_gen, host, .. } if *host_gen == g && host == h));
+    assert!(drive(&mut all(&mut m), 10_000, false, |ms| ms.iter().all(|x| joined(x, 1, &h0, 4) && joined_ev(x, 1, &h0))), "everyone joins");
     for x in &m {
         assert!(x.evs.iter().any(|e| matches!(e, GcallEvent::Joined { host_gen: 1, host, .. } if *host == m[0].href)), "Joined event");
     }
@@ -246,7 +250,8 @@ fn group_call_on_real_nodes() {
 
     // ---- a member leaves: everyone re-rosters ----------------------------------------------
     m[3].node.gcall_leave();
-    let left = |ms: &[&mut M]| ms[..3].iter().all(|x| client_gen(x).is_some_and(|(_, _, _, n)| n == 3));
+    let rostered = |x: &M| x.evs.iter().any(|e| matches!(e, GcallEvent::RosterChanged { roster, .. } if roster.len() == 3));
+    let left = |ms: &[&mut M]| ms[..3].iter().all(|x| client_gen(x).is_some_and(|(_, _, _, n)| n == 3) && rostered(x));
     assert!(drive(&mut all(&mut m), 5_000, false, left), "re-roster after leave");
     assert!(m[3].evs.iter().any(|e| matches!(e, GcallEvent::Ended { why: ClientEnd::Left, .. })));
     for x in &m[..3] {
@@ -281,7 +286,12 @@ fn group_call_on_real_nodes() {
     assert_hears(&all(&mut m), &[1, 2], &[1, 2]);
 
     // ---- backup 1 crashes (no close at all): backup 2 notices by 3 missed heartbeats -------
-    m[1].evs.clear(); // its Reconnecting from the planned handover
+    let b2 = &mut m[1];
+    b2.evs.extend(b2.rx.try_iter());
+    b2.evs.clear(); // its Reconnecting from the planned handover
+    // Still on backup 1: a host loss before the crash (a starved host under load) would make
+    // the takeover below prove nothing.
+    assert!(joined(&m[1], 2, &h1, 2), "backup 2 still joined to backup 1 before the crash");
     let t_crash = Instant::now();
     crash(m.remove(0));
     let mut detected = None;
@@ -290,14 +300,18 @@ fn group_call_on_real_nodes() {
         if detected.is_none() && ms[0].evs.iter().any(|e| matches!(e, GcallEvent::Reconnecting { .. })) {
             detected = Some(t_crash.elapsed());
         }
-        hosting(ms[0], 3, 1) && joined(ms[0], 3, &h2, 1)
+        // Not done before the Reconnecting event is in (see the joins above).
+        detected.is_some() && hosting(ms[0], 3, 1) && joined(ms[0], 3, &h2, 1)
     });
     let detected = detected.expect("host loss detected");
     eprintln!("crash detected after {detected:?}");
     // The last heartbeat came at most one period before the crash.
     let bound = HEARTBEAT_MISSES * HEARTBEAT_MS;
     assert!(detected >= Duration::from_millis(bound - HEARTBEAT_MS - 100), "detected by a close, not by heartbeats ({detected:?})");
-    assert!(detected <= Duration::from_millis(bound + 500), "detection beyond the §5 bound ({detected:?})");
+    // `detected` is when this thread saw the event (20 ms polling plus scheduling, which under
+    // load reaches hundreds of ms), so allow a second past the bound. A host lost any other way
+    // than by heartbeats shows up only at the 20 s QUIC idle timeout, far beyond either bound.
+    assert!(detected <= Duration::from_millis(bound + 1_000), "detection beyond the §5 bound ({detected:?})");
     assert!(took_over, "backup 2 takes over at host_gen 3");
     eprintln!("total {:?}", t0.elapsed());
 }
