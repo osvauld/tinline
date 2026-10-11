@@ -60,8 +60,9 @@ class Gate {
   // form fields (transient)
   name = $state('');
   pass = $state('');
-  pass2 = $state('');
   skippedPass = $state(false);
+  /** The phrase screen's reveal survives the optional check and coming back. */
+  phraseShown = $state(false);
   words = $state<string[]>(Array(24).fill(''));
   agreed = $state(false);
   deviceLabel = $state('');
@@ -115,7 +116,7 @@ class Gate {
   enter(gate: 'onboarding' | 'locked') {
     this.history = [];
     this.busy = false; this.error = null; this.dir = 1;
-    this.name = ''; this.pass = ''; this.pass2 = ''; this.skippedPass = false;
+    this.name = ''; this.pass = ''; this.skippedPass = false; this.phraseShown = false;
     this.words = Array(24).fill(''); this.agreed = false; this.deviceLabel = ''; this.peer = '';
     this.perms = { mic: 'idle', notif: 'idle', lock: 'idle', battery: 'idle', camera: 'idle' };
     this.tries = 0; this.lockedUntil = 0; this.remember = gateSim.remembered;
@@ -158,7 +159,7 @@ class Gate {
     this.busy = false;
     this.skippedPass = skip;
     if (!skip) { gateSim.passphrase = this.pass; gateSim.hasPassphrase = true; } else gateSim.hasPassphrase = false;
-    this.pass = ''; this.pass2 = '';
+    this.pass = '';
     if (this.flow === 'restore' && gateSim.failRestore) {
       this.error = 'That phrase isn’t valid. Check each word and their order.';
       this.history = this.history.filter((h) => h !== 'restore' && h !== 'restoreName' && h !== 'restorePass');
@@ -189,7 +190,7 @@ class Gate {
     await this.sleep(gateSim.kdfMs);
     this.busy = false;
     gateSim.passphrase = this.pass; gateSim.hasPassphrase = true; this.skippedPass = false;
-    this.pass = ''; this.pass2 = '';
+    this.pass = '';
     this.afterPersist();
   }
   private afterPersist() {
@@ -279,7 +280,7 @@ export const gate = new Gate();
 /** Progress dots: [n, total] or null for steps without a counter. Totals follow the real order. */
 export function progressOf(step: Step, flow: Flow): [number, number] | null {
   const orders: Record<Flow, Step[]> = {
-    create: ['name', 'pass', 'phrase', 'confirm', 'device', 'terms', 'perms'],
+    create: ['name', 'pass', 'phrase', 'device', 'terms', 'perms'],
     restore: ['restore', 'restoreName', 'restorePass', 'device', 'terms', 'perms'],
     link: ['linkName', 'link', 'linkPass', 'terms', 'perms'],
     forgot: [],

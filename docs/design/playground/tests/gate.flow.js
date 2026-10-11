@@ -37,9 +37,7 @@ async function createPath(p, form) {
   ok(await next(p).isDisabled(), `[${form}] Continue disabled while name empty`);
   await p.getByLabel('Your name').fill('Test User'); await next(p).click(); await waitStep(p, 'pass');
   await p.getByLabel('Passphrase', { exact: true }).fill('purple elephant dance now');
-  await p.getByLabel('Confirm passphrase', { exact: true }).fill('purple elephant'); await next(p).click();
-  ok(await p.getByText('The two passphrases don’t match.').isVisible(), `[${form}] passphrase mismatch error`);
-  await p.getByLabel('Confirm passphrase', { exact: true }).fill('purple elephant dance now');
+  ok(await p.getByLabel(/^Confirm/).count() === 0, `[${form}] no confirm-passphrase field`);
   ok(await p.getByText('Strong').isVisible(), `[${form}] strength hint`);
   await p.getByRole('button', { name: 'Show passphrase' }).click();
   ok(await p.getByLabel('Passphrase', { exact: true }).getAttribute('type') === 'text', `[${form}] show/hide passphrase`);
@@ -48,13 +46,15 @@ async function createPath(p, form) {
   ok(await btn(p, 'I’ve written them down').isDisabled(), `[${form}] cannot continue before reveal`);
   await btn(p, 'Show the words').click();
   ok(await btn(p, 'I’ve written them down').isEnabled(), `[${form}] reveal enables continue`);
-  await btn(p, 'I’ve written them down').click(); await waitStep(p, 'confirm');
-  await p.getByLabel('Word 4', { exact: true }).fill('wrong'); await p.getByLabel('Word 11', { exact: true }).fill('accuse'); await p.getByLabel('Word 19', { exact: true }).fill('across');
-  await next(p).click();
-  ok(await p.getByText('That isn’t word 4. Check your written copy.').isVisible(), `[${form}] confirm: wrong word flagged`);
-  await p.getByLabel('Word 4', { exact: true }).fill('about');
-  await p.getByLabel('Word 11', { exact: true }).fill('access'); await p.getByLabel('Word 19', { exact: true }).fill('across');
-  await next(p).click(); await waitStep(p, 'device');
+  // optional check: open, flag a wrong word, fix, return to the phrase
+  await btn(p, 'Check my copy').click(); await waitStep(p, 'confirm');
+  await p.getByLabel('Word 4', { exact: true }).fill('wrong'); await p.getByLabel('Word 11', { exact: true }).fill('access'); await p.getByLabel('Word 19', { exact: true }).fill('across');
+  await btn(p, 'Done').click();
+  ok(await p.getByText('That isn’t word 4. Check your written copy.').isVisible(), `[${form}] check: wrong word flagged`);
+  await p.getByLabel('Word 4', { exact: true }).fill('about'); await btn(p, 'Done').click(); await waitStep(p, 'phrase');
+  ok(true, `[${form}] optional check returns to the phrase`);
+  await btn(p, 'I’ve written them down').click(); await waitStep(p, 'device');
+  ok(await p.locator('.prog small').innerText() === '4 of 6', `[${form}] progress shows shorter flow (4 of 6)`);
   ok((await p.getByLabel('Device name').inputValue()) === (form === 'android' ? 'Personal phone' : 'Home computer'), `[${form}] device name default`);
   await next(p).click(); await waitStep(p, 'terms');
   ok(await btn(p, 'Agree and continue').isDisabled(), `[${form}] terms need consent`);

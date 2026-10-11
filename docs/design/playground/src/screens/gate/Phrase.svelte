@@ -3,7 +3,8 @@
   import Notice from './Notice.svelte';
   import StepShell from './StepShell.svelte';
   import { gate, DEMO_PHRASE } from '../../lib/model/actions/gate.svelte';
-  let shown = $state(false), copied = $state(false);
+  let copied = $state(false);
+  const shown = $derived(gate.phraseShown);
   const half = DEMO_PHRASE.length / 2;
   async function copy() { try { await navigator.clipboard.writeText(DEMO_PHRASE.join(' ')); } catch { /* clipboard may be unavailable */ } copied = true; }
 </script>
@@ -16,7 +17,7 @@
     {/each}
   </div>
   {#if !shown}
-    <button type="button" class="reveal press" onclick={() => (shown = true)}>Show the words</button>
+    <button type="button" class="reveal press" onclick={() => (gate.phraseShown = true)}>Show the words</button>
   {/if}
   </div>
   <Notice icon="warning" kind="warn">Write them on paper, in order, and keep it somewhere safe. Nobody, not even Osvauld, can bring your account back without them.</Notice>
@@ -27,7 +28,8 @@
     </div>
   {/if}
   {#snippet foot()}
-    <Btn disabled={!shown} onclick={() => gate.go('confirm')}>I’ve written them down</Btn>
+    <Btn disabled={!shown} onclick={() => gate.go('device')}>I’ve written them down</Btn>
+    <Btn kind="text" disabled={!shown} onclick={() => gate.go('confirm')}>Check my copy</Btn>
   {/snippet}
 </StepShell>
 

@@ -29,7 +29,7 @@
     {#if gate.error}<Notice kind="error">{gate.error}</Notice>{/if}
     {#snippet foot()}
       <Btn busy={gate.busy} onclick={() => gate.retrySave()}>{gate.busy ? 'Trying…' : 'Try again'}</Btn>
-      <Btn kind="text" disabled={gate.busy} onclick={() => { gate.pass = ''; gate.pass2 = ''; gate.go('savepass'); }}>Add a passphrase instead</Btn>
+      <Btn kind="text" disabled={gate.busy} onclick={() => { gate.pass = ''; gate.go('savepass'); }}>Add a passphrase instead</Btn>
     {/snippet}
   </StepShell>
 {/if}

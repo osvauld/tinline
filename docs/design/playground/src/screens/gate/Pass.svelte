@@ -19,11 +19,8 @@
     return p.length >= 16 || words >= 4 ? 3 : p.length >= 8 ? 2 : 1;
   });
   const sLabel = $derived(['', 'Short: easy to guess', 'Fair', 'Strong'][strength]);
-  let tried = $state(false);
-  const mismatch = $derived(gate.pass2.length > 0 && gate.pass !== gate.pass2);
   const submit = () => {
-    tried = true;
-    if (!gate.pass || gate.pass !== gate.pass2) return;
+    if (!gate.pass) return;
     if (kind === 'save') gate.savePassAlt(); else gate.submitPass(false);
   };
 </script>
@@ -35,13 +32,11 @@
       <span class="bars" aria-hidden="true">{#each [1, 2, 3] as i (i)}<i class:on={strength >= i} data-s={strength}></i>{/each}</span>
       <small>{gate.pass ? sLabel : 'Any length works. A few random words is easy to remember.'}</small>
     </div>
-    <Field label="Confirm passphrase" secret bind:value={gate.pass2} autocomplete="new-password" disabled={gate.busy}
-      error={mismatch && (tried || gate.pass2.length >= gate.pass.length) ? 'The two passphrases don’t match.' : null} />
   </div>
   <Notice icon="lock">{protectLine} <b>It can’t be recovered</b>, only replaced by restoring with your recovery phrase.</Notice>
   {#if gate.error}<Notice kind="error">{gate.error}</Notice>{/if}
   {#snippet foot()}
-    <Btn type="submit" busy={gate.busy} disabled={!gate.pass || !gate.pass2}>{gate.busy ? 'Encrypting…' : cta}</Btn>
+    <Btn type="submit" busy={gate.busy} disabled={!gate.pass}>{gate.busy ? 'Encrypting…' : cta}</Btn>
     {#if canSkip}<Btn kind="text" disabled={gate.busy} onclick={() => gate.submitPass(true)}>Skip for now</Btn>{/if}
   {/snippet}
 </StepShell>
