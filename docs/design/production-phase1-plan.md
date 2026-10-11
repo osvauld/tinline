@@ -132,3 +132,11 @@ phase 1). Started: G-UI (`ui/groups-wire`, apps on the real group API), G2 (`grp
 loss, own-device group sync, U3 chat requests via host, U12 host rotation).
 PROVISIONAL choices from G1 are listed in `docs/group-core.md` (creator's device first host; only
 owner/admins invite, 7-day bearer invites; owner can't be flagged or leave; removal final; etc.).
+
+2026-10-11 morning: user chose to skip ahead of the phase 1 device test. G-UI done (`ui/groups-wire`
+@ `3771b78`: real groups in both apps; desktop 72 tests) — that build is installed on the phone
+(data wiped) and desktop (fresh). G2 merged into `phase2` @ `aa29996` (group store loss, own-device
+group sync, U3 chat requests, U12 host rotation, host requests); coordinator run 351 passed,
+0 failed, 16 ignored. G-UI continues: chat requests + host prompt in the apps.
+Open for the user: one group endpoint per install is shared by all its groups, so a removed member
+in another group hosted by the same device learns the rotated endpoint (lean: accept for launch).
