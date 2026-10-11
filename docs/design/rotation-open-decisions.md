@@ -214,6 +214,13 @@ now-unused `chat_purge` (P5) should be removed or limited to media. Messages wri
 block are delivered after an unblock + re-add (accepted). The "tried to message you N times"
 counter comes later with the UI wiring.
 
+**U25 (user, 2026-10-11) — group calls trust the call host.** "Trusting the host is the model
+here. It's live and it's a group, they have to trust the host." The call host forwards the K
+loudest Opus streams unchanged and labels them with roster slots; members mix locally. No
+per-packet sender signatures: members cannot verify which DID a slot's audio came from, and the
+host can hear the call (as U14/U21). The app discloses "Hosted by <name>'s <device> — the host
+can hear this call".
+
 Still open after U1–U6: Q3 (history), Q4 (forks/revocation), Q5, timing (section 2), D01–D05,
 the K1 restore-bug fix (section 5), and the new questions Wave 2 raises (chat-request decline
 vs silent, whether a personal block hides that member's group messages locally, unblock
