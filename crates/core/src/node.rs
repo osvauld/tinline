@@ -632,7 +632,8 @@ impl Node {
     }
 
     /// Makes `did` the current account: stops the endpoint, locks and forgets the one in memory.
-    /// Unlock it as usual afterwards (`unlock` or `unlock_with_key`). `InCall` during a call.
+    /// Unlock it as usual afterwards (`unlock` or `unlock_with_key`). `InCall` during a 1:1
+    /// call; a group call is left (or, hosted here, handed to its backup) as on `lock`.
     pub fn switch_account(&self, did: String) -> Result<(), Error> {
         let id = accounts::id_of(&did)?;
         self.inner.not_in_call()?;
@@ -642,7 +643,8 @@ impl Node {
     }
 
     /// Leaves no account selected, so `has_identity` is false and `create_identity` /
-    /// `restore_identity` add a new one. The accounts on disk are untouched. `InCall` during a call.
+    /// `restore_identity` add a new one. The accounts on disk are untouched. `InCall` during a
+    /// 1:1 call; a group call is left as on `switch_account`.
     pub fn begin_new_account(&self) -> Result<(), Error> {
         self.inner.not_in_call()?;
         let inner = self.inner.clone();
@@ -1757,6 +1759,9 @@ impl Inner {
             None => self.accounts.deselect()?,
         }
         self.chat_sessions_close();
+        // GA-M4: the group call ends like on stop / lock (Leave as a member, End{host_leaving,
+        // next_host} as its host), before the endpoints close so those frames still go out.
+        self.gcall_shutdown().await;
         self.close_endpoint().await;
         self.chat_close().await;
         {

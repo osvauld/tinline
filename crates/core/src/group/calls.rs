@@ -115,6 +115,72 @@ pub struct GroupCall {
     pub joined: bool,
 }
 
+/// What kind of device this is, for call hosting (§2.4).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum GroupCallDeviceClass {
+    Desktop,
+    Headless,
+    Phone,
+}
+
+/// Android `PowerManager.THERMAL_STATUS_*` order; `None` where the platform has no reading.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum GroupCallThermal {
+    None,
+    Light,
+    Moderate,
+    Severe,
+    Critical,
+}
+
+/// The platform's local conditions for call hosting (§2.4), `Node::group_call_set_conditions`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Record)]
+pub struct GroupCallConditions {
+    pub device_class: GroupCallDeviceClass,
+    /// On mains or charging.
+    pub plugged: bool,
+    /// 0..=100; 100 for a machine without a battery.
+    pub battery_pct: u8,
+    pub metered: bool,
+    /// The user allowed hosting on metered data.
+    pub metered_allowed: bool,
+    pub thermal: GroupCallThermal,
+}
+
+impl From<GroupCallConditions> for Cond {
+    fn from(c: GroupCallConditions) -> Cond {
+        Cond {
+            class: match c.device_class {
+                GroupCallDeviceClass::Desktop => Class::Desktop,
+                GroupCallDeviceClass::Headless => Class::Headless,
+                GroupCallDeviceClass::Phone => Class::Phone,
+            },
+            plugged: c.plugged,
+            battery: c.battery_pct.min(100),
+            metered: c.metered,
+            metered_override: c.metered_allowed,
+            thermal: match c.thermal {
+                GroupCallThermal::None => Thermal::None,
+                GroupCallThermal::Light => Thermal::Light,
+                GroupCallThermal::Moderate => Thermal::Moderate,
+                GroupCallThermal::Severe => Thermal::Severe,
+                GroupCallThermal::Critical => Thermal::Critical,
+            },
+        }
+    }
+}
+
+/// The group call this device takes part in, for the apps' audio and service (GA-A1).
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct GroupCallHere {
+    pub group_id: String,
+    pub call_id: String,
+    /// This device's user is in it (joining, joined or reconnecting): run the mic and speaker.
+    pub in_call: bool,
+    /// This device hosts it (keep the process and network up).
+    pub hosting: bool,
+}
+
 #[derive(Default)]
 pub(crate) struct GroupCalls {
     /// Groups whose call hosting this device paused (`group_call_hosting_enable(false)`).
@@ -188,6 +254,45 @@ fn power_of(c: &Cond) -> PowerState {
         (_, true) if c.battery >= 100 => PowerState::Mains,
         (_, true) => PowerState::Charging(c.battery.min(100)),
         (_, false) => PowerState::Battery(c.battery.min(100)),
+    }
+}
+
+/// This device's `CallHostStatus` for `gid` (`issued_ms` 0), or None while the platform has not
+/// reported its conditions (`fed`): an unknown device does not advertise (GA-A1).
+fn own_status(gid: &str, host_ref: HostRef, fed: Option<Cond>, busy: bool) -> Option<CallHostStatus> {
+    let cond = fed?;
+    Some(CallHostStatus {
+        v: GCALL_VERSION,
+        gid: gid.to_string(),
+        host_ref,
+        class: status_class(cond.class),
+        power: power_of(&cond),
+        network: if cond.metered { NetworkKind::Metered } else { NetworkKind::Unmetered },
+        thermal: status_thermal(cond.thermal),
+        busy: busy || phone_policy(&cond) != PhoneAction::Advertise,
+        load: 0,
+        max_participants: cond.cap().clamp(2, MAX_PARTICIPANTS) as u8,
+        issued_ms: 0,
+        ttl_ms: STATUS_TTL_MS,
+    })
+}
+
+/// Why this device declines a `CallHostRequest`, if it does.
+fn decline_reason(paused: bool, busy: bool, fed: Option<Cond>) -> Option<&'static str> {
+    if paused {
+        return Some("call hosting paused");
+    }
+    if busy {
+        return Some("busy");
+    }
+    let Some(cond) = fed else { return Some("conditions not known yet") };
+    if cond.class == Class::Phone {
+        // §2.4 / Q11: a phone hosts only while its own user is in the call.
+        Some("a phone hosts only calls its user starts")
+    } else if phone_policy(&cond) != PhoneAction::Advertise {
+        Some("conditions")
+    } else {
+        None
     }
 }
 
@@ -461,15 +566,8 @@ impl Inner {
         self.group_calls_configure();
         let cond = self.gcall.cond();
         let paused = self.group.calls.paused.lock().contains(gid);
-        let why: Option<String> = if paused {
-            Some("call hosting paused".into())
-        } else if self.gcall.busy() {
-            Some("busy".into())
-        } else if cond.class == Class::Phone {
-            // §2.4 / Q11: a phone hosts only while its own user is in the call.
-            Some("a phone hosts only calls its user starts".into())
-        } else if phone_policy(&cond) != PhoneAction::Advertise {
-            Some("conditions".into())
+        let why: Option<String> = if let Some(why) = decline_reason(paused, self.gcall.busy(), self.gcall.cond_known()) {
+            Some(why.into())
         } else {
             let dir = GroupCallDir::new(self);
             let backups: Vec<HostRef> = r.backups.iter().filter(|b| **b != r.host && dir.host_permit_ok(gid, b)).take(MAX_BACKUPS).cloned().collect();
@@ -641,23 +739,11 @@ impl Inner {
         if !mine.is_empty() {
             self.group_calls_configure();
         }
-        let cond = self.gcall.cond();
-        let busy = self.gcall.busy() || phone_policy(&cond) != PhoneAction::Advertise;
+        let fed = self.gcall.cond_known();
+        let busy = self.gcall.busy();
         for (gid, host_ref) in mine {
-            let status = CallHostStatus {
-                v: GCALL_VERSION,
-                gid: gid.clone(),
-                host_ref,
-                class: status_class(cond.class),
-                power: power_of(&cond),
-                network: if cond.metered { NetworkKind::Metered } else { NetworkKind::Unmetered },
-                thermal: status_thermal(cond.thermal),
-                busy,
-                load: 0,
-                max_participants: cond.cap().clamp(2, MAX_PARTICIPANTS) as u8,
-                issued_ms: 0,
-                ttl_ms: STATUS_TTL_MS,
-            };
+            // Nothing until the platform reported its conditions (GA-A1).
+            let Some(status) = own_status(&gid, host_ref, fed, busy) else { continue };
             let due = self.group.calls.st.lock().published.get(&gid).is_none_or(|(s, _, at)| *s != status || now >= at + STATUS_REFRESH_MS);
             if !due {
                 continue;
@@ -864,6 +950,27 @@ impl Node {
         }
     }
 
+    /// The platform's local conditions (battery, charging, heat, metered data, device class;
+    /// §2.4). Until the first call this device advertises no call hosting and declines to host.
+    /// Push on start and whenever they change.
+    pub fn group_call_set_conditions(&self, conditions: GroupCallConditions) {
+        self.inner.gcall_set_cond(conditions.into())
+    }
+
+    /// The group call this device is in or hosts, if any: what the apps' audio threads and
+    /// foreground service follow (re-read on every `GroupCallEvents` callback; the callbacks
+    /// can arrive out of order).
+    pub fn group_call_here(&self) -> Option<GroupCallHere> {
+        let st = self.inner.gcall_status()?;
+        let in_call = self.inner.gcall.own_in_call();
+        let hosting = self.inner.gcall.busy() && st.hosting.is_some();
+        if !in_call && !hosting {
+            return None;
+        }
+        let group_id = self.inner.call_gid(&st.call_id).unwrap_or_default();
+        Some(GroupCallHere { group_id, call_id: st.call_id, in_call, hosting })
+    }
+
     /// Mutes this device's microphone in the group call.
     pub fn group_call_set_muted(&self, muted: bool) {
         self.inner.gcall_set_mic_muted(muted)
@@ -892,5 +999,56 @@ impl Node {
         } else {
             p.insert(group_id);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn href() -> HostRef {
+        HostRef { holder_did: "did:key:z6Mk".into(), device_slot: 1, permit_digest: "p".into() }
+    }
+
+    fn conditions(class: GroupCallDeviceClass, plugged: bool, battery_pct: u8) -> GroupCallConditions {
+        GroupCallConditions { device_class: class, plugged, battery_pct, metered: false, metered_allowed: false, thermal: GroupCallThermal::None }
+    }
+
+    #[test]
+    fn gcall_calls_no_advertising_or_hosting_before_the_first_conditions() {
+        // GA-A1: an app that never reported its conditions must not pass for a desktop on mains.
+        assert!(own_status("g", href(), None, false).is_none());
+        assert_eq!(decline_reason(false, false, None), Some("conditions not known yet"));
+        // Reported: a desktop on mains advertises, not busy, and hosts when asked.
+        let d = Cond::from(conditions(GroupCallDeviceClass::Desktop, true, 100));
+        let s = own_status("g", href(), Some(d), false).unwrap();
+        assert_eq!((s.class, s.power, s.busy), (DeviceClass::Desktop, PowerState::Mains, false));
+        assert_eq!(decline_reason(false, false, Some(d)), None);
+        assert_eq!(decline_reason(true, false, Some(d)), Some("call hosting paused"));
+        assert_eq!(decline_reason(false, true, Some(d)), Some("busy"));
+        assert!(own_status("g", href(), Some(d), true).unwrap().busy);
+    }
+
+    #[test]
+    fn gcall_calls_reported_conditions_shape_the_status() {
+        // A phone advertises as a phone and never hosts on request (its user starts its calls).
+        let p = Cond::from(conditions(GroupCallDeviceClass::Phone, false, 80));
+        let s = own_status("g", href(), Some(p), false).unwrap();
+        assert_eq!((s.class, s.power, s.busy), (DeviceClass::Phone, PowerState::Battery(80), false));
+        assert!(decline_reason(false, false, Some(p)).is_some());
+        // Below the advertise cutoff, hot or on metered data: advertised busy.
+        let low = Cond::from(conditions(GroupCallDeviceClass::Phone, false, 20));
+        assert!(own_status("g", href(), Some(low), false).unwrap().busy);
+        let hot = Cond::from(GroupCallConditions { thermal: GroupCallThermal::Moderate, ..conditions(GroupCallDeviceClass::Phone, true, 90) });
+        assert_eq!(hot.thermal, Thermal::Moderate);
+        assert!(own_status("g", href(), Some(hot), false).unwrap().busy);
+        let metered = GroupCallConditions { metered: true, ..conditions(GroupCallDeviceClass::Phone, true, 90) };
+        let s = own_status("g", href(), Some(metered.into()), false).unwrap();
+        assert!(s.busy && s.network == NetworkKind::Metered);
+        let allowed = GroupCallConditions { metered_allowed: true, ..metered };
+        assert!(!own_status("g", href(), Some(allowed.into()), false).unwrap().busy);
+        // A laptop on battery reports it; out-of-range percentages clamp.
+        let l = Cond::from(conditions(GroupCallDeviceClass::Desktop, false, 250));
+        assert_eq!(own_status("g", href(), Some(l), false).unwrap().power, PowerState::Battery(100));
     }
 }

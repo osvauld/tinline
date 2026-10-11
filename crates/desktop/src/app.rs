@@ -2187,6 +2187,8 @@ impl App {
             }
             Ev::AudioNotice(m) => self.notice = Some(m),
             Ev::Video(info) => return self.video_state(info),
+            // The group call screens come with the call UI packet; audio already follows these.
+            Ev::GroupCall(_) => {}
             Ev::Tray(TrayCmd::Show) => return self.show_window(),
             Ev::Open(target) => {
                 let mut tasks = vec![self.show_window()];

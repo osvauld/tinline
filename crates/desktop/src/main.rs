@@ -25,6 +25,7 @@ mod audio;
 mod flow;
 /// Placeholder data for the groups & privacy preview screens.
 mod groups_fake;
+mod hostcond;
 mod keystore;
 mod raise;
 mod media;
@@ -41,7 +42,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, LockState, Message, Node, NodeEvents, NodeStatus, VideoInfo};
+use p2pcore::{CallInfo, CallState, Chat, ChatEvents, DeliveryState, GroupCallEvent, GroupCallEvents, LockState, Message, Node, NodeEvents, NodeStatus, VideoInfo};
 use tokio::sync::mpsc;
 
 /// Everything the node and the tray report, funnelled into the UI's update loop.
@@ -59,6 +60,8 @@ pub enum Ev {
     Open(app::Target),
     Link(LinkEv),
     Video(VideoInfo),
+    /// A group-call event (the audio already followed it; the call UI comes next).
+    GroupCall(GroupCallEvent),
 }
 
 /// Bridges `VideoEvents` into the same channel as `NodeEvents`.
@@ -203,6 +206,20 @@ impl NodeEvents for Events {
         let _ = self.tx.send(Ev::State(id, state));
     }
     fn on_log(&self, _line: String) {}
+}
+
+/// Group-call events: the audio follows them on the core's thread, the UI through the channel.
+pub struct GroupCallBridge {
+    pub tx: mpsc::UnboundedSender<Ev>,
+    pub audio: Arc<audio::Ctl>,
+}
+
+impl GroupCallEvents for GroupCallBridge {
+    fn on_group_call(&self, e: GroupCallEvent) {
+        tlog!("GROUP_CALL {:?} {} {}", e.kind, e.call_id, e.detail);
+        self.audio.on_group_call();
+        let _ = self.tx.send(Ev::GroupCall(e));
+    }
 }
 
 pub struct Init {
@@ -368,6 +385,8 @@ fn main() -> Result<(), String> {
     node.set_group_invitation_events(Arc::new(GroupBridge(tx.clone())));
     node.set_link_events(Arc::new(LinkBridge(tx.clone())));
     node.set_video_events(Arc::new(VideoBridge(tx.clone())));
+    node.set_group_call_events(Arc::new(GroupCallBridge { tx: tx.clone(), audio: audio.clone() }));
+    hostcond::spawn(&node);
     // The single pre-accounts key entry belongs to the account core just migrated.
     keystore::migrate_legacy(keystore::system(), &data, &node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.

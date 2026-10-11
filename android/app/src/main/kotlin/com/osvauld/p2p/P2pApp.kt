@@ -33,6 +33,10 @@ class P2pApp : Application(), NodeEvents {
         private set
     lateinit var video: CallVideo
         private set
+    /** Group-call audio + service (GA-A1); the core's GroupCallEvents sink. */
+    lateinit var groupCalls: GroupCallAudio
+        private set
+    private lateinit var hostConditions: HostConditions
     lateinit var realChat: CoreChatSource
         private set
     /** Group chat on the core (GroupsCore.kt): the Groups tab. */
@@ -79,6 +83,9 @@ class P2pApp : Application(), NodeEvents {
         node.setVideoEnabled(videoEnabled)
         links = LinkController(this)
         node.setLinkEvents(links)
+        groupCalls = GroupCallAudio(this)
+        node.setGroupCallEvents(groupCalls)
+        hostConditions = HostConditions(this).also { it.start() }
         realChat = CoreChatSource(this).also { it.attach() }
         groups = GroupsController(NodeGroupApi { node }) { currentDid() }.also { it.attach(node) }
         selectLastAccountIfNone()

@@ -269,6 +269,19 @@ impl Service {
         self.live().is_some()
     }
 
+    /// This device's user is in a group call (joining, joined or reconnecting): what the apps'
+    /// audio threads follow. Hosting listen-only does not count.
+    pub(crate) fn own_in_call(&self) -> bool {
+        self.live().is_some_and(|s| s.st.lock().client.as_ref().is_some_and(|c| !is_ended(c)))
+    }
+
+    /// The conditions the platform reported (`gcall_set_cond`, or an explicit `gcall_configure`),
+    /// None until then. Call-host status publishing waits for them: a device that never said
+    /// what it is must not advertise as a desktop on mains (GA-A1).
+    pub(crate) fn cond_known(&self) -> Option<Cond> {
+        *self.cond.lock()
+    }
+
     /// The current local hosting conditions.
     pub(crate) fn cond(&self) -> Cond {
         let set = *self.cond.lock();
@@ -955,7 +968,7 @@ async fn read_frame(recv: &mut RecvStream, buf: &mut Vec<u8>) -> Option<GroupCal
 // ---- node hooks -------------------------------------------------------------------------
 
 impl Inner {
-    /// `Node::stop` / `Node::lock`: leave the call and, when hosting, end it with
+    /// `Node::stop` / `Node::lock` / an account switch, before the endpoints close: leave the call and, when hosting, end it with
     /// `End{host_leaving, next_host}`; waits (bounded) until those frames are out.
     pub(crate) async fn gcall_shutdown(&self) {
         let svc = &self.gcall;
@@ -1068,6 +1081,8 @@ impl Inner {
     /// Sets the directory, event sink, own host ref and conditions. Applies to sessions
     /// started afterwards.
     pub(crate) fn gcall_configure(&self, cfg: GcallConfig) {
+        // Explicit conditions count as reported (`Service::cond_known`).
+        *self.gcall.cond.lock() = Some(cfg.cond);
         *self.gcall.cfg.lock() = Some(Arc::new(cfg));
     }
 

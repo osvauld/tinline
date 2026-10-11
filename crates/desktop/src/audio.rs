@@ -514,6 +514,10 @@ pub struct Ctl {
     call_id: std::sync::Mutex<Option<String>>,
     /// The second incoming call whose beep is playing.
     waiting_id: std::sync::Mutex<Option<String>>,
+    /// Group-call audio (GA-A1): its own session, so nothing on the 1:1 path (a 1:1 call ending,
+    /// the ringer) stops it. `Node::push_mic`/`pull_speaker` reach the group call whenever no
+    /// 1:1 call is active.
+    group: std::sync::Mutex<Option<Session>>,
 }
 
 impl Ctl {
@@ -567,6 +571,24 @@ impl Ctl {
                 node.set_test_tone(None);
             }
             _ => {}
+        }
+    }
+
+    /// Any group-call event: runs the mic and speaker while this device's user is in a group
+    /// call, stops them once not. Reads the core's state instead of trusting the event (the
+    /// callbacks run on separate threads and can arrive out of order, e.g. `Left` of a
+    /// superseded call after `Joined` of the one that won).
+    pub fn on_group_call(&self) {
+        let Some(node) = self.node.lock().unwrap().upgrade() else { return };
+        let want = node.group_call_here().is_some_and(|h| h.in_call);
+        let mut slot = self.group.lock().unwrap();
+        if want && slot.is_none() {
+            let (i, o) = self.devices.lock().unwrap().clone();
+            let notice = self.notice.lock().unwrap().clone().unwrap_or_else(|| Arc::new(|_| {}));
+            // Muting in a group call is the core's (`group_call_set_muted`); this flag stays clear.
+            *slot = Some(start_call(node, i, o, Arc::new(AtomicBool::new(false)), notice));
+        } else if !want {
+            retire(slot.take());
         }
     }
 
