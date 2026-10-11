@@ -29,6 +29,7 @@ Simulation drawer (sliders icon, top right), never inside the app frame.
 | [Groups](groups.html) | Hosting, invitations, member boundaries, removal, offline states, group calls | [groups.md](groups.md) |
 | [Privacy](privacy.html) | Visible blocking, permissions, rotation audiences, device state and recovery | [privacy.md](privacy.md) |
 | [Setup & devices](devices.html) | Pairing, expiry, cancellation, recovery and unlinking | [devices.md](devices.md) |
+| [Brand mark](brand.html) | The tin-can mark refined for launcher masks and small sizes, and the symmetry rules the interface takes from it | (on the page) |
 
 ## The shared conversation system
 
