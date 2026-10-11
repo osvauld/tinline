@@ -204,6 +204,13 @@ the sender sees it); after a decode error it skips to the next keyframe and requ
 | `pull_video_frame() -> Option<VideoFrame { width, height, data, seq }>` | newest decoded upright I420 frame not pulled yet; poll on the display clock |
 | `pull_video_frame_rgba() -> Option<VideoFrame>` | the same frame as packed RGBA (`convert::i420_to_rgba`, on the caller's thread): iced `image::Handle::from_rgba`, Android `Bitmap` fallback (4x the bytes of I420 across the FFI) |
 | `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size |
+| `video_frame_handle() -> u64` | this node's handle for the direct (non-UniFFI) frame calls, see Frames across the FFI |
+
+Rust-only (not exported): `push_video_planes(.., y: &[u8], .., u: &[u8], v: &[u8], ..)` =
+`push_video_frame_yuv` from borrowed planes, and `pull_video_frame_rgba_into(&mut [u8]) ->
+Pulled { None | TooSmall { width, height } | Frame { width, height, seq } }` (no allocation for
+the pixels; `TooSmall` leaves the frame for the next call). Android's JNI entry points call
+these.
 
 Byte arrays in this API are `video_call::Bytes` (see Frames across the FFI); Rust callers keep
 `push_video_frame(.., Vec<u8>)` and read `VideoFrame.data` like a `Vec<u8>` (`Deref`).
@@ -223,26 +230,60 @@ whose lift is one `memmove` of the buffer it already owns and whose lower is one
 `extend_from_slice`; `VideoFrame.data` and the exported `push_video_frame`/`_yuv` use it.
 Cost of one 640x480 I420 frame, Rust side only (`cargo test -p p2pcore --release --lib
 bytes_cross_like_vec -- --nocapture`, i7-1165G7, includes a clone of the frame):
-lift `Vec<u8>` 0.51 ms -> `Bytes` 0.016 ms, lower (pull) 0.28 -> 0.021 ms. That is only
-~0.5 ms of the 4.6-5.7 ms the emulator (x86) measured per push, so most of the cost is on the
-Kotlin/JNA side (to be re-measured with V9's hooks); on A53 cores the saving should be ~4-8x
-larger. What is left per push: Kotlin `ByteBuffer.get` into a fresh `ByteArray` (GC
-pressure), the JNA alloc call (zero-filled), `put` into the RustBuffer, JNA call overhead. No UniFFI 0.29 type maps to a direct `ByteBuffer` or a borrowed slice.
-Options for true zero-copy, beyond this packet:
-1. **JNI entry points** (recommended): `Java_com_osvauld_..._pushYuv(env, _, y: ByteBuffer, ..)`
-   in the core (`jni` crate), `GetDirectBufferAddress` on the camera's direct buffers, copy
-   the planes once into a Rust `Vec` (tight, ~0.1 ms) and return; the ImageProxy can close
-   right after. The JVM validates the buffers, the Kotlin side is an `external fun` in the same
-   `.so`. The pull side: Kotlin owns one direct `ByteBuffer`, Rust writes RGBA/I420 into it.
-2. **Raw addresses through UniFFI**: Kotlin `Native.getDirectBufferPointer(buf)` (JNA) as a
-   `u64` + length to an `unsafe`-contract function. No new glue, but Rust cannot check the
-   pointers: a Kotlin bug is memory corruption. Not recommended.
-3. **Render without bytes**: the `ANativeWindow` path (Capture/render conversion above) removes
-   the pull copy entirely; only the push side then needs 1.
+lift `Vec<u8>` 0.51 ms -> `Bytes` 0.016 ms, lower (pull) 0.28 -> 0.021 ms. That was only
+~0.5 ms of the 4.6-5.7 ms the emulator (x86) measured per push: the rest was Kotlin/JNA
+(`ByteBuffer.get` into a `ByteArray`, the JNA call that allocates and zero-fills the
+RustBuffer, `put` into it, the call). No UniFFI 0.29 type maps to a direct `ByteBuffer` or a
+borrowed slice, so Android's frames now skip UniFFI:
+
+**JNI entry points** (`crates/core/src/video_jni.rs`, Android only, `jni` 0.21; Kotlin
+`object VideoJni` in `VideoIo.kt`, `external fun`s in the same `libp2pcore.so`):
+- `VideoJni.pushYuv(handle, w, h, rotation, y, yRowStride, u, v, uvRowStride, uvPixelStride,
+  fullRange)` takes the `ImageProxy` planes' direct buffers as they are. Rust reads each with
+  `GetDirectBufferAddress`/`GetDirectBufferCapacity` (null or non-direct = refused); with pixel
+  stride 2 and U, V one byte apart (`video_call::chroma_spans`) the interleaved plane is the
+  union of the two buffers, read once. `push_video_planes` checks the planes against the
+  size/strides like `push_video_frame_yuv` and copies only the bytes the frame spans into the
+  encoder's slot (one memcpy per plane), then returns: the `ImageProxy` closes right after.
+- `VideoJni.pullRgba(handle, dst, info)`: Rust converts the newest frame to RGBA straight into
+  the Kotlin-owned direct `dst` (`pull_video_frame_rgba_into`); `info` = width, height, seq.
+  -1 = `dst` too small (Kotlin allocates `w * h * 4` and calls again; the frame waits), 0 = no
+  frame, -2 = bad arguments. Kotlin then `Bitmap.copyPixelsFromBuffer` (`ARGB_8888` is RGBA in
+  memory).
+- **No pointers from Kotlin**: the node is found by `Node::video_frame_handle()`, a number in a
+  global registry of `Weak<Inner>` (dead nodes pruned, a new node after an account switch gets
+  a new handle; `VideoIo` re-asks when its `Node` object changes). A stale or bogus handle finds
+  nothing. Buffers are only touched within the address/capacity the JVM reports, during the
+  call; panics are caught at the boundary. A Kotlin bug gives `false`/-2, not memory corruption.
+- `VideoIo.jni = false` (DebugReceiver `video_path jni=0`) keeps the UniFFI path for comparison:
+  planes copied into reused `ByteArray`s (the NV21 plane once, plus the U view's last byte)
+  -> `push_video_frame_yuv`; I420 `pull_video_frame` + Kotlin conversion + `setPixels`.
+
+Per frame on the x86_64 emulator (camera 640x480 NV21, desk's video 240x180; host load 4-15
+from other builds, so wall times are mostly the thread waiting for a vCPU: the thread-CPU rows,
+`Debug.threadCpuTimeNanos`, are the cost; median of the per-second averages over a call,
+`scripts/e2e_android_video.py --path jni|uniffi`, ranges over runs):
+
+| | V9 (I420 pack + `push_video_frame`) | UniFFI `push_video_frame_yuv` | JNI `pushYuv` |
+|---|---|---|---|
+| push, wall ms (Kotlin copy + call) | 0.11-0.15 + 4.6-5.7 | 0.63 + 11.7 (load 12-15) | 0 + 0.83-2.2 (load 4-12) |
+| push, thread CPU ms | - | 1.2-2.2 | 0.10-0.12 |
+| push without a call, hot buffers (`video_io_bench`), median ms | - | 0.72-0.90 | 0.012 |
+
+| render 240x180 | (a) UniFFI I420 pull + Kotlin I420->ARGB + `setPixels` | (b) JNI RGBA pull + `copyPixelsFromBuffer` |
+|---|---|---|
+| pull, wall ms | 14.8 (V9: 1.3-2) | 0.31-0.34 |
+| to bitmap, wall ms | 8.9 (V9: 1.7-2.6) | 0.14 |
+| thread CPU ms, both | 2.0-2.8 | 0.10-0.15 |
+
+At 480x360 (b) measured 1.06 + 0.24 ms wall, 0.35 ms CPU. So the render path is (b); the
+`ANativeWindow` path (Capture/render conversion) would drop the Bitmap copy too, a later step.
 
 **Tests** (`crates/core/tests/video_calls.rs`, two nodes over iroh like `calls.rs`):
 `cargo test -p p2pcore --release --test video_calls`: video both ways (pattern 640x480 pushed
-at 30 fps, >= 45 decoded frames in 3 s each way, 4:3 kept, 0 decode errors); camera off/on
+at 30 fps, one side as padded NV21 planes through `push_video_planes` and the other side's
+renderer on `pull_video_frame_rgba_into`, >= 45 decoded frames in 3 s each way, 4:3 kept, 0
+decode errors; frame handles one per node, stable); camera off/on
 mid-call (remote state events, no frames while off, frames resume on a new group); video
 refused by the callee -> audio-only call continues.
 
@@ -468,16 +509,15 @@ Files: `VideoIo.kt` (the only place frames cross the FFI), `CallVideo.kt` (state
 - **Capture**: CameraX `ImageAnalysis`, `YUV_420_888`, `STRATEGY_KEEP_ONLY_LATEST`, 640x480 (4:3,
   closest lower), front camera by default (flip button rebinds), plus a `Preview` into a
   `PreviewView` (TextureView mode) for the self-view, which CameraX mirrors for the front camera;
-  the sent picture is not mirrored. Analyzer thread `tl-camera`: `VideoIo.push` packs the planes
-  to I420 once (bulk copy for Y, de-interleave for pixel stride 2) and calls
-  `push_video_frame(w, h, rotationDegrees, i420)`; the core rotates and scales. With V8's
-  `push_video_frame_yuv` the packing goes and `push` is one call.
+  the sent picture is not mirrored. Analyzer thread `tl-camera`: `VideoIo.push` hands the
+  planes' direct buffers to `VideoJni.pushYuv` (full range, see Frames across the FFI): one
+  call, Rust copies each plane once; the core converts, rotates and scales on the encoder
+  thread.
 - **Render**: `RemoteRenderer` runs a `Choreographer` on its own `HandlerThread`
-  (`tl-video-render`): every vsync `pull_video_frame()`; on a new frame, I420 -> ARGB in Kotlin
-  (BT.601 limited, fixed point) into one of two alternating `Bitmap`s, published to a Compose
-  `Canvas` that draws it cropped to fill the screen. Nothing on the main thread but the draw.
-  With V8's `pull_video_frame_rgba` the conversion goes (`copyPixelsFromBuffer`). Later: the
-  `ANativeWindow` path above (no Bitmap, no per-frame JNI).
+  (`tl-video-render`): every vsync `VideoJni.pullRgba` into a direct buffer (Rust converts to
+  RGBA); on a new frame `copyPixelsFromBuffer` into one of two alternating `Bitmap`s, published
+  to a Compose `Canvas` that draws it cropped to fill the screen. Nothing on the main thread
+  but the draw. Later: the `ANativeWindow` path above (no Bitmap, no per-frame JNI).
 - **Permission**: CAMERA is asked for when the user first taps the camera button (it is also
   used for QR scanning); refused -> "Camera permission needed - they can still hear you" and
   the call goes on audio only.
@@ -490,41 +530,35 @@ Files: `VideoIo.kt` (the only place frames cross the FFI), `CallVideo.kt` (state
 - **Audio route**: turning the camera on moves audio to the speaker (a video call is held
   away from the ear; that also releases the proximity wake lock).
 - **Debug hooks** (`DebugReceiver`): `video_stats`, `camera on=1|0`, `flip`, `video_enabled
-  on=1|0`, `callscreen`; during a video call `video_stats` is also logged every second.
+  on=1|0`, `callscreen`, `video_path jni=1|0` (frames through `VideoJni` or UniFFI),
+  `video_io_bench n=200` (push cost per path without a call); during a video call
+  `video_stats` is also logged every second (per-frame wall and thread-CPU times).
 
 **E2E** (`scripts/e2e_android_video.py`, emulator + `p2p-peer`): phone calls desk, desk answers
 with `--video-pattern 640x480`, the phone turns on its (virtual scene) camera; checks frames
 sent/decoded/rendered on both sides, no decode errors, both see the other's camera on; saves a
-screenshot of the call screen and the desk's last decoded frame. Then desk calls phone with
-`--no-video`: the phone sees `negotiated=false` and the call carries audio.
+screenshot of the call screen and the desk's last decoded frame; prints the phone's per-frame
+costs (`--path uniffi` to measure the UniFFI path). Then desk calls phone with `--no-video`: the
+phone sees `negotiated=false` and the call carries audio.
 
-Results on the x86_64 emulator (`osvauld-api35`, virtual-scene camera, host load 2.5-6 from
-other builds; `python3 scripts/e2e_android_video.py`): passes. Screenshot
+Results on the x86_64 emulator (`osvauld-api35`, virtual-scene camera, host load 2.5-15 from
+other builds; `python3 scripts/e2e_android_video.py`, both `--path`s): passes. Screenshot
 `docs/video-screens/android-video-call.png` (desk's pattern full screen, the emulator's camera in
 the corner), and `android-video-call-desk.png` (what the desk decoded from the phone's camera).
 HOME during a video call -> `local=false` at once, CameraX released (no active camera client),
 the desk sees `remote=false`; back to the call screen -> camera on again, new keyframe.
 
-Per frame, Kotlin side, emulator (moving average; ranges over runs):
+Per frame (V9, before the JNI path; now see Frames across the FFI): `push_video_frame` of
+packed I420 cost 4.6-5.7 ms (15-46 under load) on the emulator and capped the phone's capture
+at 10-30 pushed frames/s when the host was busy; the I420 pull 1.3-2 ms and the Kotlin
+conversion 1.7-2.6 ms at 240x180. With `VideoJni`: push 0.11 ms, pull + bitmap 0.15 ms thread
+CPU.
 
-| step | size | ms |
-|---|---|---|
-| `VideoIo.push` pack YUV_420_888 -> I420 | 640x480 | 0.11-0.15 (up to 4 under load) |
-| `push_video_frame` call (FFI copy of 460 KB) | 640x480 | 4.6-5.7, 15-46 under load |
-| `pull_video_frame` call (FFI copy) | 240x180 | 1.3-2 (up to 10) |
-| I420 -> ARGB + `setPixels` | 240x180 | 1.7-2.6 (up to 10) |
-
-- **The FFI copy is the expensive part**, not the Kotlin conversion: UniFFI lowers a `ByteArray`
-  by copying it into a RustBuffer and again into the `Vec`, through JNA (V8: the Rust half is
-  now a memcpy, `Bytes`; options for the rest in Call protocol and core API, Frames across the
-  FFI). At 640x480 that is ~5 ms
-  a frame on the emulator and it capped the phone's capture at 10-30 pushed frames/s when the
-  host was busy. V8's strided-planes push should take direct `ByteBuffer`s (no copy, pointer
-  into the camera buffer) rather than byte arrays; the RGBA pull likewise, or go straight to
-  `ANativeWindow`.
-- **Colour**: the desk's picture of the phone's camera has washed-out, clipped whites: the camera's
-  full-range Y goes through `push_video_frame` as if limited range. V8's `full_range` flag
-  (`video::convert` `Range::Full`) fixes it.
+- **Colour**: V9 passed the camera's full-range Y as limited range: washed out, whites
+  clipped (in its `android-video-call-desk.png`, the desk's decoded frame, 41% of the pixels,
+  the sky, were exactly 255). Now `full_range = true` (`Range::Full`, compressed to limited
+  range on the encoder thread): the sky is 249 with its lavender tint, nothing clipped (luma
+  7-254).
 - **Rate control on the emulator**: the phone sent 180x240 at its 500 kbps ceiling (the ladder
   doesn't step up: the emulator's encode times, 1-55 ms, predict too slow for 360p). The desk's
   video to the phone ramped to 480x360 at 1.2 Mbps, then at ~4 s dropped to 240x180 at the
@@ -694,6 +728,7 @@ Findings:
    (see Call protocol and core API).
 5. Capture/render: Pure-Rust conversion done (`video::convert`, above) and used by the core's
    encoder thread (`push_video_frame_yuv`, `pull_video_frame_rgba`). Android capture/render/UI
-   done (see Android app); desktop camera + render done (see Desktop). Still to do: Android
-   on `pushVideoFrameYuv` (full range, single chroma plane), zero-copy FFI for frames (see
-   Frames across the FFI), phone numbers for `convert_bench`, a run on real phones.
+   done (see Android app); desktop camera + render done (see Desktop). ~~Android on
+   `pushVideoFrameYuv` (full range), zero-copy FFI for frames~~ done (JNI, see Frames across
+   the FFI). Still to do: `ANativeWindow` render, phone numbers for `convert_bench`, a run on
+   real phones.

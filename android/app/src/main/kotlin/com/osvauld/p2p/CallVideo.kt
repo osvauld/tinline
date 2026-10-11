@@ -76,9 +76,9 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
         return "video_stats negotiated=${i?.negotiated} local=${i?.localCamera} remote=${i?.remoteCamera} " +
             "sent=${s?.framesSent} keys=${s?.keyframesSent} send=${s?.sendWidth}x${s?.sendHeight} kbps=${s?.bitrateBps?.div(1000u)} " +
             "enc_ms=${s?.encodeMs?.let { "%.1f".format(it) }} decoded=${s?.framesDecoded} errors=${s?.decodeErrors} " +
-            "recv=${s?.recvWidth}x${s?.recvHeight} camera=${io.inSize} pushed=${io.pushed} pack_ms=${"%.2f".format(io.packNs / 1e6)} " +
-            "push_ms=${"%.2f".format(io.pushNs / 1e6)} " +
-            "rendered=${r?.frames ?: 0} pull_ms=${"%.2f".format(io.pullNs / 1e6)} convert_ms=${"%.2f".format(io.convertNs / 1e6)}"
+            "recv=${s?.recvWidth}x${s?.recvHeight} path=${if (io.jni) "jni" else "uniffi"} camera=${io.inSize} pushed=${io.pushed} pack_ms=${"%.2f".format(io.packNs / 1e6)} " +
+            "push_ms=${"%.2f".format(io.pushNs / 1e6)} push_cpu_ms=${"%.2f".format(io.pushCpuNs / 1e6)} " +
+            "rendered=${r?.frames ?: 0} pull_ms=${"%.2f".format(io.pullNs / 1e6)} convert_ms=${"%.2f".format(io.convertNs / 1e6)} render_cpu_ms=${"%.2f".format(io.renderCpuNs / 1e6)}"
     }
 
     // ---- capture

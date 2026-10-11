@@ -2,7 +2,7 @@
 """Android <-> desktop video call: the emulator's (virtual scene) camera one way, p2p-peer's
 synthetic `video::Pattern` the other.
 
-    scripts/e2e_android_video.py [--serial emulator-5554] [--desk DIR] [--secs 25] [--shot PATH]
+    scripts/e2e_android_video.py [--serial emulator-5554] [--desk DIR] [--secs 25] [--shot PATH] [--path jni|uniffi]
 
 Needs the debug APK installed on the emulator with an identity already set up (it is never wiped
 here); grants CAMERA. The desk side is p2p-peer: a new identity in a temp dir that adds the phone
@@ -11,13 +11,15 @@ by ticket, or `--desk DIR` to reuse one that has the phone as a contact (named `
 1. phone calls desk, desk answers with its pattern camera on; the phone turns its camera on.
    Checks: both sides negotiated video, both sent frames, both decoded them with no decode errors,
    the phone rendered frames. Saves a screenshot of the call screen (`--shot`) and the desk's last
-   decoded frame of the phone's camera (next to it, `-desk.png`).
+   decoded frame of the phone's camera (next to it, `-desk.png`). Prints the phone's per-frame
+   costs; `--path uniffi` moves its frames through UniFFI instead of `VideoJni`, to compare.
 2. desk calls phone with video refused (`--no-video`): the phone sees negotiated=false and the
    call carries audio.
 """
 import argparse
 import os
 import re
+import statistics
 import struct
 import subprocess
 import sys
@@ -83,6 +85,7 @@ def main():
     ap.add_argument("--secs", type=int, default=25)
     ap.add_argument("--pattern", default="640x480")
     ap.add_argument("--shot", default=str(ROOT / "docs/video-screens/android-video-call.png"))
+    ap.add_argument("--path", choices=("jni", "uniffi"), default="jni", help="how the phone's frames cross the FFI")
     a = ap.parse_args()
     ADB.extend(["-s", a.serial])
     if not a.serial.startswith("emulator-"):
@@ -95,6 +98,7 @@ def main():
     time.sleep(3)
     dbg("tone", hz=440)
     dbg("video_enabled", on=1)
+    dbg("video_path", jni=int(a.path == "jni"))
 
     desk = a.desk or tempfile.mkdtemp(prefix="p2p-e2e-video-desk-")
     peer = [a.peer, "--data", desk]
@@ -126,9 +130,18 @@ def main():
     print("screenshot:", a.shot)
     dbg("video_stats")
     time.sleep(1)
-    series = re.findall(r"video_stats .*", logs())
+    series = re.findall(r"video_stats .*negotiated=true.*", logs())
     ph = kv(series[-1])
     print("phone:", ph)
+    print(f"phone per frame ({ph.get('path')}): copy {ph.get('pack_ms')} ms + push {ph.get('push_ms')} ms "
+          f"(camera {ph.get('camera')}; cpu {ph.get('push_cpu_ms')} ms), pull {ph.get('pull_ms')} ms + bitmap "
+          f"{ph.get('convert_ms')} ms (recv {ph.get('recv')}; cpu {ph.get('render_cpu_ms')} ms)")
+    pushing = [kv(l) for l in series if kv(l).get("camera") != "-"]
+    if pushing:
+        med = {k: statistics.median(float(s[k]) for s in pushing)
+               for k in ("pack_ms", "push_ms", "push_cpu_ms", "pull_ms", "convert_ms", "render_cpu_ms") if k in pushing[0]}
+        print(f"phone per frame, median of {len(pushing)} per-second averages:",
+              " ".join(f"{k}={v:.2f}" for k, v in med.items()))
     print("phone send size@kbps per second:", " ".join(f"{kv(l).get('send')}@{kv(l).get('kbps')}" for l in series))
     out = p.communicate(timeout=a.secs + 30)[0]
     vres = re.findall(r"VRESULT.*", out)
