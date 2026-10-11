@@ -13,8 +13,9 @@
 //! Rate control is delay-based (the idea behind WebRTC's GCC), done at this layer so it needs
 //! nothing from the transport: the receiver compares each frame's arrival time with its capture
 //! time. The clock offset between the devices cancels out, so a *rise* over the recent minimum
-//! is queueing delay. It sends a [`RateReport`] every 100 ms; the sender backs off to the
-//! delivered rate as soon as a queue builds and only ramps up while the path is empty. A
+//! is queueing delay. It sends a [`RateReport`] every 50 ms; the sender backs off to the
+//! delivered rate as soon as a queue builds (or far less gets through than it sends), drains
+//! that queue below the delivered rate, and only ramps up while the path is empty. A
 //! loss-based congestion controller alone fills the bottleneck buffer first (bufferbloat), which
 //! the simulation showed as seconds of delay.
 //!
@@ -50,6 +51,19 @@ pub struct SenderConfig {
     pub overuse_us: u64,
     /// Queueing delay below this: allowed to ramp up.
     pub underuse_us: u64,
+    /// Delivered below this % of what we sent over the last two reports, and short of it by at
+    /// least `starve_min_bps`: the link got slower. Seen a report or two before the queueing
+    /// delay, which lags while big frames crawl through the slower link.
+    pub starve_pct: u32,
+    pub starve_min_bps: u32,
+    /// ...in this many reports in a row (a lost packet stalls a stream for about an RTT, which
+    /// can look like starvation in one report).
+    pub starve_reports: u32,
+    /// A standing queue is drained within this time: the encoder gets the delivered rate minus
+    /// the queue (queueing delay x delivered) spread over it...
+    pub drain_us: u64,
+    /// ...but no less than this % of the delivered rate.
+    pub drain_pct: u32,
     pub ladder: LadderConfig,
 }
 
@@ -63,6 +77,11 @@ impl Default for SenderConfig {
             max_backlog_us: 300_000,
             overuse_us: 40_000,
             underuse_us: 15_000,
+            starve_pct: 50,
+            starve_min_bps: 300_000,
+            starve_reports: 2,
+            drain_us: 500_000,
+            drain_pct: 25,
             ladder: LadderConfig::default(),
         }
     }
@@ -122,6 +141,10 @@ impl Default for LadderConfig {
         }
     }
 }
+
+/// See `Sender::starve_after_us`: after a drain, and at the start (first keyframe, ramp).
+const STARVE_QUIET_US: u64 = 300_000;
+const STARVE_START_US: u64 = 1_000_000;
 
 /// Encode times kept for the p90 (about a second of video).
 const ENCODE_WINDOW: usize = 30;
@@ -266,8 +289,21 @@ pub struct Sender {
     /// Older groups whose streams the transport may still be sending.
     previous: Vec<u64>,
     want_key: bool,
+    /// Estimate of what the path carries; drives the ladder.
     bitrate: u32,
     last_decrease_us: u64,
+    /// A queue is standing in the path: send well below the delivered rate until it is gone.
+    drain: Option<u32>,
+    /// Last report showed bytes getting through.
+    delivering: bool,
+    /// Bytes handed to the transport since the last report, and in the report interval before.
+    sent: u64,
+    sent_prev: (u64, u64),
+    last_report_us: Option<u64>,
+    /// No starvation verdicts before this: the first reports, and right after a drain when our
+    /// own rate jumps back up ahead of what the receiver has seen yet.
+    starve_after_us: u64,
+    starved_n: u32,
     ladder: Ladder,
     now_us: u64,
     pub keyframes: u64,
@@ -286,6 +322,13 @@ impl Sender {
             want_key: true,
             bitrate,
             last_decrease_us: 0,
+            drain: None,
+            delivering: false,
+            sent: 0,
+            sent_prev: (0, 0),
+            last_report_us: None,
+            starve_after_us: 0,
+            starved_n: 0,
             ladder,
             now_us: 0,
             keyframes: 0,
@@ -295,7 +338,12 @@ impl Sender {
 
     /// Encoder target to use for the next frame.
     pub fn bitrate(&self) -> u32 {
-        self.bitrate
+        self.drain.map_or(self.bitrate, |d| d.min(self.bitrate))
+    }
+
+    /// Whether a standing queue is being drained.
+    pub fn draining(&self) -> bool {
+        self.drain.is_some()
     }
 
     /// Size (width, height) to encode the next frame at. When it changes the sender also wants a
@@ -358,6 +406,7 @@ impl Sender {
             out.push(Out::Write { group: g, data: g.to_be_bytes().to_vec() });
         }
         let Some(g) = self.current else { return out };
+        self.sent += (FRAME_HEADER + payload.len()) as u64;
         let mut data = Vec::with_capacity(FRAME_HEADER + payload.len());
         data.extend_from_slice(&(payload.len() as u32).to_be_bytes());
         data.extend_from_slice(&capture_us.to_be_bytes());
@@ -373,24 +422,62 @@ impl Sender {
         self.relayer();
     }
 
+    /// What we sent over the last two report intervals, as a rate.
+    fn sent_bps(&mut self, now_us: u64) -> Option<u64> {
+        let Some(last) = self.last_report_us.replace(now_us) else {
+            self.starve_after_us = now_us + STARVE_START_US;
+            self.sent = 0;
+            return None;
+        };
+        let (prev_bytes, prev_us) = self.sent_prev;
+        self.sent_prev = (self.sent, now_us - last);
+        let bytes = std::mem::take(&mut self.sent) + prev_bytes;
+        let span = now_us - last + prev_us;
+        (span > 0).then(|| bytes * 8 * 1_000_000 / span)
+    }
+
     fn rate(&mut self, now_us: u64, r: &RateReport) {
         let delivered = r.delivered_bps as u64;
-        if r.queuing_us > self.cfg.overuse_us {
-            // A queue is building: send no faster than what actually gets through.
+        let sent = self.sent_bps(now_us).unwrap_or(0);
+        self.delivering = delivered > 0;
+        let short = now_us >= self.starve_after_us
+            && delivered > 0
+            && delivered * 100 < sent * self.cfg.starve_pct as u64
+            && sent - delivered >= self.cfg.starve_min_bps as u64;
+        self.starved_n = if short { self.starved_n + 1 } else { 0 };
+        let starved = self.starved_n >= self.cfg.starve_reports;
+        if r.queuing_us > self.cfg.overuse_us || starved {
+            // A queue is building: send no faster than what actually gets through, and below it
+            // until the queue is gone (each 100 ms of it delays every frame).
             if now_us - self.last_decrease_us > 200_000 || self.last_decrease_us == 0 {
                 let target = (delivered * 85 / 100) as u32;
                 self.bitrate = self.bitrate.min(target).max(self.cfg.min_bps);
                 self.last_decrease_us = now_us;
             }
-        } else if r.queuing_us < self.cfg.underuse_us && now_us - self.last_decrease_us > 500_000 {
-            // Path is empty: +8% per report, never far above what was delivered.
+            // Starved: the queue is bigger than the delay shows yet, drain as fast as allowed.
+            let queue_pct = if starved { 100 } else { r.queuing_us * 100 / self.cfg.drain_us.max(1) };
+            let pct = 100u64.saturating_sub(queue_pct).max(self.cfg.drain_pct as u64);
+            if pct < 100 {
+                let d = (delivered * pct / 100) as u32;
+                self.drain = Some(self.drain.map_or(d, |old| old.min(d)));
+            }
+            return;
+        }
+        if r.queuing_us < self.cfg.underuse_us && self.drain.take().is_some() {
+            self.starve_after_us = now_us + STARVE_QUIET_US;
+        }
+        if self.drain.is_none() && r.queuing_us < self.cfg.underuse_us && now_us - self.last_decrease_us > 500_000 {
+            // Path is empty: +8% per 100 ms, never far above what was delivered.
             let cap = (delivered * 3 / 2).max(self.cfg.min_bps as u64) as u32;
-            let up = self.bitrate + self.bitrate * 8 / 100;
+            let dt = self.sent_prev.1.min(200_000);
+            let up = self.bitrate + (self.bitrate as u64 * 8 * dt / 100 / 100_000) as u32;
             self.bitrate = up.min(self.bitrate.max(cap)).min(self.cfg.max_bps);
         }
     }
 
-    /// Transport feedback, called every few ms: bytes not yet sent, per group.
+    /// Transport feedback, called every few ms: per group, bytes not delivered yet that should
+    /// have been (`video::net`: written more than an RTT + slack ago and not acked by the
+    /// receiver; this includes the queue in the path).
     pub fn feedback(&mut self, unsent: &BTreeMap<u64, usize>) -> Vec<Out> {
         let mut out = Vec::new();
         // Older groups that still have unsent data are stale: the newer keyframe replaces them.
@@ -404,7 +491,9 @@ impl Sender {
         });
         let backlog: usize = unsent.values().sum();
         let backlog_us = backlog as u64 * 8 * 1_000_000 / (self.bitrate.max(1) as u64);
-        if backlog_us > self.cfg.max_backlog_us {
+        // While draining, the backlog is the queue in the path, already on its way out.
+        let draining = self.drain.is_some() && self.delivering;
+        if backlog_us > self.cfg.max_backlog_us && !draining {
             // Behind: abandon the current group, restart from a keyframe at a lower rate.
             if let Some(g) = self.current.take() {
                 out.push(Out::Reset { group: g });
@@ -428,7 +517,7 @@ pub struct Frame {
     pub payload: Vec<u8>,
 }
 
-/// Receiver -> sender, every [`REPORT_US`].
+/// Receiver -> sender, every [`REPORT_US`] by default.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RateReport {
     /// Video bytes received over the window, as a rate.
@@ -437,7 +526,9 @@ pub struct RateReport {
     pub queuing_us: u64,
 }
 
-pub const REPORT_US: u64 = 100_000;
+pub const REPORT_US: u64 = 50_000;
+/// Delivered rate is measured over this long (sliding), so 50 ms reports aren't too noisy.
+pub const RATE_WINDOW_US: u64 = 100_000;
 const BASELINE_US: u64 = 10_000_000;
 
 #[derive(Default)]
@@ -458,11 +549,15 @@ pub struct ReceiverConfig {
     pub stall_us: u64,
     /// Largest frame accepted (a peer must not make us buffer without bound).
     pub max_frame: usize,
+    /// A [`RateReport`] at most this often...
+    pub report_us: u64,
+    /// ...with the delivered rate over this long.
+    pub rate_window_us: u64,
 }
 
 impl Default for ReceiverConfig {
     fn default() -> Self {
-        Self { stall_us: 600_000, max_frame: 1 << 20 }
+        Self { stall_us: 600_000, max_frame: 1 << 20, report_us: REPORT_US, rate_window_us: RATE_WINDOW_US }
     }
 }
 
@@ -474,8 +569,9 @@ pub struct Receiver {
     last_progress_us: u64,
     last_request_us: Option<u64>,
     pub skipped_frames: u64,
-    window_bytes: u64,
-    window_start_us: u64,
+    /// (arrival, bytes) over the last `rate_window_us`.
+    arrivals: std::collections::VecDeque<(u64, usize)>,
+    last_report_us: u64,
     /// (arrival - capture) of recent frames, for the queueing baseline.
     transit: std::collections::VecDeque<(u64, i64)>,
 }
@@ -494,14 +590,14 @@ impl Receiver {
             last_progress_us: 0,
             last_request_us: None,
             skipped_frames: 0,
-            window_bytes: 0,
-            window_start_us: 0,
+            arrivals: Default::default(),
+            last_report_us: 0,
             transit: Default::default(),
         }
     }
 
     pub fn on_data(&mut self, now_us: u64, group: u64, data: &[u8]) -> Result<(), RecvError> {
-        self.window_bytes += data.len() as u64;
+        self.arrivals.push_back((now_us, data.len()));
         if self.current.is_some_and(|c| group < c) {
             return Ok(());
         }
@@ -597,13 +693,17 @@ impl Receiver {
 
     /// Rate report to send, at most every [`REPORT_US`].
     pub fn report(&mut self, now_us: u64) -> Option<RateReport> {
-        let span = now_us - self.window_start_us;
-        if span < REPORT_US {
+        if now_us - self.last_report_us < self.cfg.report_us {
             return None;
         }
-        let delivered_bps = (self.window_bytes * 8 * 1_000_000 / span) as u32;
-        self.window_bytes = 0;
-        self.window_start_us = now_us;
+        self.last_report_us = now_us;
+        let from = now_us.saturating_sub(self.cfg.rate_window_us);
+        while self.arrivals.front().is_some_and(|a| a.0 <= from) {
+            self.arrivals.pop_front();
+        }
+        let span = (now_us - from).max(1);
+        let bytes: usize = self.arrivals.iter().map(|a| a.1).sum();
+        let delivered_bps = (bytes as u64 * 8 * 1_000_000 / span) as u32;
         let min = self.transit.iter().map(|t| t.1).min()?;
         let last = self.transit.back()?.1;
         Some(RateReport { delivered_bps, queuing_us: (last - min) as u64 })
@@ -710,12 +810,75 @@ mod tests {
         let mut tx = Sender::new(SenderConfig::default());
         let start = tx.bitrate();
         tx.on_report(1_000_000, &RateReport { delivered_bps: 300_000, queuing_us: 100_000 });
-        assert_eq!(tx.bitrate(), 255_000, "backs off to 85% of delivered");
-        // No ramp right after a decrease, then +8% per empty-path report.
+        // Estimate: 85% of delivered. 100 ms of queue drains within 500 ms: 80% of delivered.
+        assert_eq!(tx.bitrate(), 240_000);
+        assert!(tx.draining());
+        // Queue gone: back to the estimate, no ramp right after a decrease, then +8% / 100 ms.
         tx.on_report(1_100_000, &RateReport { delivered_bps: 300_000, queuing_us: 0 });
-        assert_eq!(tx.bitrate(), 255_000);
+        assert_eq!((tx.bitrate(), tx.draining()), (255_000, false));
         tx.on_report(1_600_000, &RateReport { delivered_bps: 300_000, queuing_us: 0 });
         assert!(tx.bitrate() > 255_000 && tx.bitrate() < start);
+    }
+
+    /// One report every 50 ms over `[from, to)`, after sending `sent_bps` worth of frames.
+    fn reports(tx: &mut Sender, from: u64, to: u64, sent_bps: u64, r: RateReport) {
+        let mut t = from;
+        while t < to {
+            tx.frame(t, false, &vec![0; (sent_bps / 8 / 20) as usize - FRAME_HEADER]);
+            tx.on_report(t, &r);
+            t += 50 * MS;
+        }
+    }
+
+    #[test]
+    fn starved_link_drains_before_the_delay_shows() {
+        let mut tx = Sender::new(SenderConfig { start_bps: 1_500_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        // Queueing between the thresholds: neither ramps nor backs off.
+        let steady = RateReport { delivered_bps: 1_500_000, queuing_us: 20_000 };
+        reports(&mut tx, 0, 2_000 * MS, 1_500_000, steady);
+        assert_eq!((tx.bitrate(), tx.draining()), (1_500_000, false));
+        // The link drops to 200 kbps: delivered collapses while queueing still looks fine.
+        let slow = RateReport { delivered_bps: 200_000, queuing_us: 20_000 };
+        reports(&mut tx, 2_000 * MS, 2_050 * MS, 1_500_000, slow.clone());
+        assert!(!tx.draining(), "one report could be a lost packet");
+        reports(&mut tx, 2_050 * MS, 2_100 * MS, 1_500_000, slow);
+        assert!(tx.draining());
+        assert_eq!(tx.bitrate(), 50_000, "25% of delivered while the queue drains");
+        assert_eq!(tx.resolution(), (320, 180), "the ladder follows the estimate, 170 kbps");
+    }
+
+    #[test]
+    fn short_delivery_gaps_are_not_starvation() {
+        let mut tx = Sender::new(SenderConfig { start_bps: 1_000_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        let ok = RateReport { delivered_bps: 1_000_000, queuing_us: 5_000 };
+        let gap = RateReport { delivered_bps: 100_000, queuing_us: 5_000 };
+        // A stream stalled behind a lost packet every 200 ms; and at the start of the call.
+        for i in 0..40u64 {
+            let r = if i % 4 == 0 { gap.clone() } else { ok.clone() };
+            reports(&mut tx, i * 50 * MS, (i + 1) * 50 * MS, 1_000_000, r);
+            assert!(!tx.draining(), "report {i}");
+        }
+        // Small rates: the excess is below `starve_min_bps`, the delay signal handles those.
+        let mut tx = Sender::new(SenderConfig { start_bps: 300_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        let low = RateReport { delivered_bps: 100_000, queuing_us: 5_000 };
+        reports(&mut tx, 0, 3_000 * MS, 300_000, low);
+        assert!(!tx.draining());
+    }
+
+    #[test]
+    fn no_backlog_reset_while_draining() {
+        let mut tx = Sender::new(SenderConfig { start_bps: 1_000_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        tx.on_report(1_000_000, &RateReport { delivered_bps: 400_000, queuing_us: 600_000 });
+        assert!(tx.draining());
+        // 50 KB unacked (the queue in the path), but the receiver is getting data: let it drain.
+        assert!(tx.feedback(&BTreeMap::from([(0, 50_000)])).is_empty());
+        // Nothing gets through any more: that is a stall, reset.
+        tx.on_report(1_050_000, &RateReport { delivered_bps: 0, queuing_us: 600_000 });
+        assert_eq!(tx.feedback(&BTreeMap::from([(0, 50_000)])), vec![Out::Reset { group: 0 }]);
     }
 
     const MS: u64 = 1_000;
