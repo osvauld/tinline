@@ -628,11 +628,14 @@ fn frame_roundtrip_all_variants() {
         Msg::Accept {
             renewed_grant: None,
             devices: None,
+            video: None,
         },
         Msg::Accept {
             renewed_grant: Some(g),
             devices: None,
+            video: Some(VideoOffer { max_pixels: 1280 * 720 }),
         },
+        Msg::Video { camera: true },
         Msg::Cancel {
             reason: CancelReason::AnsweredElsewhere,
         },
@@ -781,11 +784,12 @@ fn old_format_messages_still_parse() {
     let acc = serde_json::json!({"t":"accept","renewed_grant":null});
     assert_eq!(
         serde_json::from_value::<Msg>(acc).unwrap(),
-        Msg::Accept { renewed_grant: None, devices: None }
+        Msg::Accept { renewed_grant: None, devices: None, video: None }
     );
     // And without the new fields set, we emit exactly the old wire shape.
     let m = call_hello(&a.id, att, g, "c".into());
     assert!(!serde_json::to_string(&m).unwrap().contains("devices"));
+    assert!(!serde_json::to_string(&m).unwrap().contains("video"));
 }
 
 #[test]

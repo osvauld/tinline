@@ -14,6 +14,7 @@ mod sync;
 #[cfg(test)]
 mod account_tests;
 mod vault;
+mod video_call;
 mod voice;
 mod wire;
 
@@ -22,6 +23,7 @@ pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, Deliv
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use store::CallRecord;
+pub use video_call::{VideoEvents, VideoFrame, VideoInfo, VideoStats};
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
 
 #[uniffi::export]

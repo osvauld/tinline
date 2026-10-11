@@ -199,7 +199,7 @@ pub(crate) enum Cmd {
 }
 
 pub(crate) struct Call {
-    info: CallInfo,
+    pub(crate) info: CallInfo,
     conn: Mutex<Option<Connection>>,
     state: Mutex<CallState>,
     cmd: mpsc::UnboundedSender<Cmd>,
@@ -236,6 +236,7 @@ pub(crate) struct Call {
     /// Woken when the call ends from outside its own task (glare, lock), so an outgoing call
     /// that is still dialling several devices stops at once.
     ended_wake: tokio::sync::Notify,
+    pub(crate) video: crate::video_call::CallVideo,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
@@ -256,7 +257,7 @@ impl Call {
         self.started.elapsed().as_millis() as u64
     }
 
-    fn state(&self) -> CallState {
+    pub(crate) fn state(&self) -> CallState {
         self.state.lock().clone()
     }
 }
@@ -270,6 +271,7 @@ enum LegEvent {
     Accepted {
         renewed_grant: Option<proto::SignedGrant>,
         devices: Option<proto::SignedBlob>,
+        video: Option<proto::VideoOffer>,
         conn: Connection,
         ctrl: Box<Ctrl>,
     },
@@ -333,9 +335,9 @@ impl Leg {
                             let _ = self.events.send((idx, LegEvent::Ringing));
                             continue;
                         }
-                        Ok(Some(Msg::Accept { renewed_grant, devices })) => {
+                        Ok(Some(Msg::Accept { renewed_grant, devices, video })) => {
                             let keep = conn.clone();
-                            let ev = LegEvent::Accepted { renewed_grant, devices, conn, ctrl: Box::new(ctrl) };
+                            let ev = LegEvent::Accepted { renewed_grant, devices, video, conn, ctrl: Box::new(ctrl) };
                             if self.events.send((idx, ev)).is_err() {
                                 keep.close(0u32.into(), b"bye");
                             }
@@ -424,7 +426,7 @@ pub(crate) struct Acct {
 /// write or a handshake holding `Shared`.
 #[derive(Default)]
 pub(crate) struct Live {
-    call: Option<Arc<Call>>,
+    pub(crate) call: Option<Arc<Call>>,
     /// A second incoming call, ringing over the active one. At most one; a third is turned
     /// away busy. Takes the slot if the active call ends first.
     waiting: Option<Arc<Call>>,
@@ -457,6 +459,7 @@ pub(crate) struct Inner {
     pub(crate) selfsync: crate::sync::engine::SelfSync,
     pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
     pub(crate) link: crate::sync::link::LinkState,
+    pub(crate) video: crate::video_call::NodeVideo,
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -521,6 +524,7 @@ impl Node {
             selfsync: Default::default(),
             sync_tx: tokio::sync::watch::channel(0).0,
             link: Default::default(),
+            video: Default::default(),
         });
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -1794,6 +1798,10 @@ impl Inner {
             // Keeps a ringing call and NAT bindings alive; the relay link has its own pings.
             .keep_alive_interval(Duration::from_secs(5))
             .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
+            // Only call video uses uni streams (one per group, `video::net`): bounds what a peer
+            // can open at once. `VideoRecv` lowers it per connection, but can't take back credit
+            // granted at the handshake.
+            .max_concurrent_uni_streams(16u32.into())
             .build();
         let mut builder = Endpoint::builder(presets::N0)
             .secret_key(SecretKey::from_bytes(&me.profile.device_secret))
@@ -2165,8 +2173,8 @@ impl Inner {
         me: &Me,
         permit: OwnedSemaphorePermit,
     ) -> Result<(), Error> {
-        let Msg::CallHello { call_id, relay: hint, devices: list, .. } = &hello else { unreachable!() };
-        let (call_id, hint, list) = (call_id.clone(), relay_hint(hint), list.clone());
+        let Msg::CallHello { call_id, relay: hint, devices: list, video, .. } = &hello else { unreachable!() };
+        let (call_id, hint, list, video) = (call_id.clone(), relay_hint(hint), list.clone(), *video);
         // It reaches the UI and logs: keep it to what we ourselves generate.
         if call_id.is_empty() || call_id.len() > 64 || !call_id.bytes().all(|b| b.is_ascii_alphanumeric()) {
             ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
@@ -2231,6 +2239,7 @@ impl Inner {
         // From here every exit must free the slot; the guard does it if nothing else did.
         let _slot = SlotGuard { inner: &self, call: call.clone() };
         *call.conn.lock() = Some(conn.clone());
+        *call.video.peer_offer.lock() = video;
         // Their device list first (it decides whether this device is dialled), then this device.
         if let Some(list) = &list {
             self.accept_device_list(me.epoch, &caller.did, list);
@@ -2428,6 +2437,7 @@ impl Inner {
             answer_on_promote: AtomicBool::new(false),
             epoch,
             ended_wake: tokio::sync::Notify::new(),
+            video: Default::default(),
         });
         Ok((call, rx))
     }
@@ -2526,6 +2536,7 @@ impl Inner {
         mut cmds: mpsc::UnboundedReceiver<Cmd>,
     ) {
         let list = self.my_device_list(&me);
+        let offer = self.video_offer();
         let (ev_tx, mut ev_rx) = mpsc::unbounded_channel::<(usize, LegEvent)>();
         let mut legs: Vec<Option<mpsc::UnboundedSender<Msg>>> = Vec::new();
         for (idx, device) in contact.devices.iter().enumerate() {
@@ -2541,9 +2552,10 @@ impl Inner {
                         contact.grant_from_them.clone(),
                         call.info.call_id.clone(),
                     );
-                    if let Msg::CallHello { relay, devices, .. } = &mut hello {
+                    if let Msg::CallHello { relay, devices, video, .. } = &mut hello {
                         *relay = relay_of(&ep);
                         *devices = list.clone();
+                        *video = offer;
                     }
                     hello
                 },
@@ -2611,7 +2623,7 @@ impl Inner {
                                 self.set_state(&call, CallState::Ringing);
                             }
                         }
-                        LegEvent::Accepted { renewed_grant, devices, conn, ctrl } => {
+                        LegEvent::Accepted { renewed_grant, devices, video, conn, ctrl } => {
                             legs[idx] = None;
                             if *call.ended.lock() {
                                 conn.close(0u32.into(), b"bye");
@@ -2630,6 +2642,8 @@ impl Inner {
                             *call.conn.lock() = Some(conn.clone());
                             let datagrams = self.start_media(&call, &conn);
                             self.set_state(&call, CallState::Active);
+                            // An answer may only take video we offered.
+                            self.video_decided(&call, &conn, offer, video.filter(|_| offer.is_some()));
                             self.clone().run_call(call, conn, *ctrl, cmds, None, Some(datagrams)).await;
                             return;
                         }
@@ -2718,6 +2732,9 @@ impl Inner {
         let ring = if call.waiting.load(Ordering::SeqCst) { waiting_ring_timeout() } else { RING_TIMEOUT };
         let ring_deadline = tokio::time::Instant::now() + ring;
         let mut datagrams: Option<oneshot::Sender<()>> = preactive;
+        // Our camera state goes to the peer once video runs (first the current one).
+        let mut camera = call.video.camera_changes();
+        camera.mark_changed();
         let mut watchdog = tokio::time::interval(Duration::from_secs(5));
         watchdog.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         // How a call that dies under us ends, by who we are and how far it got.
@@ -2758,6 +2775,7 @@ impl Inner {
                         // A callee only hangs up unanswered when its ring timed out; a refusal is a Decline.
                         break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "no_answer" }.into();
                     }
+                    Ok(Some(Msg::Video { camera })) if active => self.remote_camera(&call, camera),
                     Ok(None) => break if active { "hangup_remote".into() } else { lost(false) },
                     Ok(Some(other)) => self.log(format!("ignoring {} mid-call", msg_name(&other))),
                     Err(e) => {
@@ -2770,12 +2788,16 @@ impl Inner {
                         let me = match self.me() { Ok(m) => m, Err(_) => break "hangup_local".into() };
                         let renewed = incoming_from.as_deref().map(|did| proto::issue_grant(&me.id, did, now(), GRANT_TTL));
                         let devices = self.my_device_list(&me);
-                        if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices }).await {
+                        // Video only if they offered it and we take it.
+                        let theirs = *call.video.peer_offer.lock();
+                        let video = theirs.and(self.video_offer());
+                        if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices, video }).await {
                             self.log(format!("connection lost: {e}"));
                             break lost(false);
                         }
                         datagrams = Some(self.start_media(&call, &conn));
                         self.set_state(&call, CallState::Active);
+                        self.video_decided(&call, &conn, video, theirs);
                     }
                     Some(Cmd::Answer) => {}
                     // Not yet answered: the callee refusing is a decline, the caller giving up
@@ -2802,6 +2824,13 @@ impl Inner {
                 why = conn.closed() => {
                     self.log(format!("connection lost: {why}"));
                     break lost(active);
+                }
+                r = camera.changed(), if active && call.video.negotiated() => {
+                    let on = *camera.borrow_and_update();
+                    if r.is_ok() && let Err(e) = ctrl.send(&Msg::Video { camera: on }).await {
+                        self.log(format!("connection lost: {e}"));
+                        break lost(active);
+                    }
                 }
                 _ = watchdog.tick(), if active => {
                     if call.last_rx.lock().elapsed() > NO_AUDIO_TIMEOUT {
@@ -2902,6 +2931,7 @@ impl Inner {
         let _order = call.notify.lock();
         self.note_direct(call);
         call.ended_wake.notify_one();
+        call.video.stop();
         let state = CallState::Ended { reason: reason.clone() };
         *call.state.lock() = state.clone();
         // A waiting call takes over the slot when the active one ends.
@@ -3219,6 +3249,7 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::Decline { .. } => "Decline",
         Msg::Busy => "Busy",
         Msg::Hangup => "Hangup",
+        Msg::Video { .. } => "Video",
     }
 }
 
