@@ -50,8 +50,8 @@ def drop_sink():
 
 def headless_sway(work):
     """A private compositor; returns (process, WAYLAND_DISPLAY)."""
-    rt = os.path.join(work, "xdg")
-    os.makedirs(rt, mode=0o700, exist_ok=True)
+    # Socket paths must fit sun_path (108 bytes): a short private dir in the user's runtime dir.
+    rt = tempfile.mkdtemp(prefix="tlv-", dir=os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
     cfg = os.path.join(work, "sway.cfg")
     with open(cfg, "w") as f:
         f.write("output HEADLESS-1 resolution 2400x800\ndefault_border none\n")
@@ -92,7 +92,8 @@ def main():
     listener.wait()
 
     sway, rt, disp = headless_sway(work)
-    env = dict(base, **null_sink(), XDG_RUNTIME_DIR=rt, WAYLAND_DISPLAY=disp, TINLINE_FAKE_CAMERA="pattern",
+    # Absolute WAYLAND_DISPLAY: the apps keep the real runtime dir, so audio (PipeWire) works.
+    env = dict(base, **null_sink(), WAYLAND_DISPLAY=os.path.join(rt, disp), TINLINE_FAKE_CAMERA="pattern",
                P2P_AUTO_CAMERA="1")
     for k in ("SWAYSOCK", "DISPLAY"):
         env.pop(k, None)
@@ -115,6 +116,7 @@ def main():
                 p.wait(timeout=10)
         sway.terminate()
         sway.wait()
+        shutil.rmtree(rt, ignore_errors=True)
         drop_sink()
 
     failed = 0
