@@ -293,7 +293,7 @@ function seed(){
        hosts:[{name:'Your desktop',online:true,self:true}],
        members:[{id:'me',roles:['owner','host'],since:'Jan 3'},{id:'meera',roles:['admin'],since:'Jan 3'},{id:'arjun',roles:[],since:'Jan 3'},{id:'dev',roles:[],since:'Jan 4'},{id:'priya',roles:[],since:'Jan 9'}],
        pending:[],flags:{},
-       msgs:[{id:'f1',from:'me',text:'Photos from Sunday',t:'Yesterday',state:'delivered'}]},
+       msgs:[{id:'f1',from:'me',text:'Photos from Sunday',t:'18:05',day:'Yesterday',state:'delivered'}]},
       {id:'book',name:'Book club',status:'removed',role:'member',unread:0,hosts:[],members:[],pending:[],flags:{},when:'Sep 28',
        flaggers:[['sam','Sam Rao · admin','Sep 27, 21:15'],['meera','Meera K · owner','Sep 28, 09:40'],['priya','Priya N · admin','Sep 28, 14:02 · 3rd flag']],
        msgs:[{id:'b1',from:'sam',text:'Chapter 6 for next week.',t:'Sep 26'},{id:'b2',from:'me',text:'I’ll bring the stove',t:'Sep 27',state:'delivered'},{sys:1,day:'Sep 28',text:'You were removed from the group · 14:02'},{id:'b3',from:'me',text:'Running late, start without me',t:'Sep 28',state:'delivered',late:'Written offline before removal'}]}],
@@ -382,7 +382,7 @@ function resultCount(){const q=S.query.trim().toLowerCase();return S.groups.filt
 const lastMsg=c=>[...c.msgs].reverse().find(x=>!x.sys);
 function lastText(g){const m=lastMsg(g);if(g.status==='removed')return 'You were removed from this group';if(g.status==='left')return 'You left this group';
   return m?(m.from==='me'?'You: ':P[m.from]?first(m.from)+': ':'')+m.text:'No messages yet'}
-function rowTime(c,unread){const m=lastMsg(c);return h('span',{class:'rt'},h('span',{class:'tm'},m?.t&&m.t!=='before removal'?m.t:''),unread?h('span',{class:'t-badge'},String(unread),h('span',{class:'sr'},' unread')):null)}
+function rowTime(c,unread){const m=lastMsg(c);return h('span',{class:'rt'},h('span',{class:'tm'},m?.day&&m.day!=='Today'?m.day:(m?.t&&m.t!=='before removal'?m.t:'')),unread?h('span',{class:'t-badge'},String(unread),h('span',{class:'sr'},' unread')):null)}
 function groupRow(g){
   return h('button',{class:'row'+(S.cur===g.id?' on':'')+(closed(g)?' gone':'')+(g.unread?' unread':''),type:'button','data-row':g.id,onclick:()=>openConv(g.id)},gAvatar(g),
     h('span',{class:'tx1'},h('span',{class:'nm'},g.name),h('span',{class:'sub'},lastText(g))),rowTime(g,g.unread))}
@@ -478,10 +478,10 @@ function renderMsgs(jump){
   const g=conv(S.cur);const M=$('#msgs');if(!M)return;const atEnd=jump||M.scrollHeight-M.scrollTop-M.clientHeight<80,top=M.scrollTop;M.replaceChildren();
   if(!g.msgs.length)M.append(h('div',{class:'empty'},h('h3',null,'No messages yet'),h('p',null,'Say hello.')));
   /* 1: flatten into day pills, event lines and messages; a message continues a group when same author, same day, ≤5 min */
-  const items=[];let prev=null,day=g.msgs.map(m=>!m.sys&&dayOf(m.t)).find(Boolean)||null;
+  const items=[];let prev=null,day=g.msgs.map(m=>!m.sys&&(m.day||dayOf(m.t))).find(Boolean)||null;
   if(day&&g.msgs.length)items.push({day});
   g.msgs.forEach(m=>{
-    const d=m.sys?m.day:dayOf(m.t);if(d&&d!==day){day=d;items.push({day:d});prev=null}
+    const d=m.sys?m.day:(m.day||dayOf(m.t));if(d&&d!==day){day=d;items.push({day:d});prev=null}
     if(m.sys){items.push({sys:m});prev=null;return}
     items.push({m,cont:!!prev&&prev.from===m.from&&near(prev.t,m.t)});prev=m});
   /* 2: render with corner positions */
