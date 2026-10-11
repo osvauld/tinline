@@ -31,12 +31,9 @@ impl Inner {
         let mut out: Vec<Vec<u8>> = gids
             .into_iter()
             .map(|(gid, name, owner)| {
-                let mut hosts = core.host_addrs_pub(&gid);
-                if let Some(mine) = self.group_my_addr(&core, &gid)
-                    && !hosts.contains(&mine)
-                {
-                    hosts.push(mine);
-                }
+                // Chat hosts only (a call-only host refuses joiners); refresh our own address.
+                let _ = self.group_my_addr(&core, &gid);
+                let hosts = core.chat_host_addrs(&gid);
                 bincode::serialize(&InviteToken { group: gid, name, owner, invite: None, hosts }).expect("token serialises")
             })
             .collect();

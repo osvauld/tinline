@@ -366,7 +366,7 @@ impl Inner {
             Some(b) => Some(bincode::deserialize::<SignedInvite>(b).map_err(|_| UNKNOWN_CODE.to_string())?),
             None => None,
         };
-        Ok(InviteToken { group: row.gid.clone(), name, owner, invite, hosts: core.host_addrs_pub(&row.gid) })
+        Ok(InviteToken { group: row.gid.clone(), name, owner, invite, hosts: core.chat_host_addrs(&row.gid) })
     }
 
     /// Host side: a connection that opened with `Fetch`. Answers up to `MAX_BAD_PER_CONN` unknown

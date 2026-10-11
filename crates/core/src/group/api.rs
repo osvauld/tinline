@@ -405,14 +405,9 @@ impl Inner {
             let l = groups.get(gid).ok_or(Error::NotFound)?;
             (l.state.name.clone(), l.state.owner.clone().unwrap_or_default())
         };
-        let hosts = core.store.hosts(gid).unwrap_or_default();
-        let mut all: Vec<SignedHostAddr> = hosts
-            .into_iter()
-            .filter(|s| s.open().is_some_and(|a| core.groups.lock().get(gid).is_some_and(|l| l.state.is_host(&a.did, &a.dev))))
-            .collect();
-        if let Some(mine) = self.group_my_addr(core, gid) {
-            all.push(mine);
-        }
+        // Chat hosts only (ours when we host the chat; never our call-only address): a call-only
+        // host refuses joiners.
+        let all = core.chat_host_addrs(gid);
         if all.is_empty() {
             return Err(Error::Rejected("the group has no reachable host yet".into()));
         }

@@ -311,8 +311,25 @@ impl GroupCore {
         live.doc.raw_value(id)
     }
 
-    pub(crate) fn host_addrs_pub(&self, gid: &str) -> Vec<SignedHostAddr> {
-        self.host_addrs(gid)
+    /// Addresses for a token (invite link answer, direct invitation, own-device sync): active
+    /// CHAT hosts only, ours included when we host the chat. A call-only host refuses joiners
+    /// and fetches; the joiner learns call hosts from a chat host's Welcome.
+    pub(crate) fn chat_host_addrs(&self, gid: &str) -> Vec<SignedHostAddr> {
+        let groups = self.groups.lock();
+        let Some(live) = groups.get(gid) else { return Vec::new() };
+        let mut out: Vec<SignedHostAddr> = self
+            .store
+            .hosts(gid)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|s| s.open().is_some_and(|a| live.state.is_host(&a.did, &a.dev) && !(a.did == self.did && a.dev == self.dev)))
+            .collect();
+        if live.state.is_host(&self.did, &self.dev)
+            && let Some(mine) = self.my_addr.lock().get(gid).cloned()
+        {
+            out.push(mine);
+        }
+        out
     }
 
     pub(crate) fn merge_hosts_pub(&self, gid: &str, addrs: &[SignedHostAddr]) -> bool {
