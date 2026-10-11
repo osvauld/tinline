@@ -71,6 +71,9 @@ choices: `docs/design/production-phase1-plan.md`.
 - Test-first with real nodes (`crates/core/tests`); full `cargo test -p proto -p p2pcore
   --no-fail-fast`, plus `-p video --features net`, `-p desktop`, Android
   `scripts/build_android.py --abis x86_64,arm64-v8a`.
+- Video tests are timing/throughput sensitive: run `-p video --features net` and p2pcore
+  `--test video_calls` in **release** (`--release`); in debug `video_both_ways` sends too few
+  frames and the video lib tests abort.
 - Video needs libaom: dev hosts use the system libaom; release/Android use
   `scripts/build_libaom.py` (needs nasm, cmake).
 - Never push; merging into `dev` / `main` and installing on the user's devices need the user's OK.
