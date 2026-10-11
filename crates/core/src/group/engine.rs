@@ -26,6 +26,8 @@ use crate::Error;
 use crate::chat::doc::writer_id;
 use crate::node::{Inner, addr_for, now, now_ms, relay_of};
 
+mod synth;
+
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
 const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
 /// How long a host waits for a removed member's pre-removal upload (U11).

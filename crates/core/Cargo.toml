@@ -11,6 +11,10 @@ crate-type = ["cdylib", "lib"]
 name = "uniffi-bindgen"
 path = "src/bin/uniffi-bindgen.rs"
 
+[[bin]]
+name = "year-bench"
+path = "src/bin/year-bench.rs"
+
 [dependencies]
 proto.workspace = true
 audio.workspace = true

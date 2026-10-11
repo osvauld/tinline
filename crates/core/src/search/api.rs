@@ -129,6 +129,9 @@ impl Node {
     }
 }
 
+/// Test switch (`synth.rs`): no reconcile in the background on open.
+pub(crate) static NO_BG_RECONCILE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 pub(crate) fn dm_src(pair: &str) -> String {
     format!("dm.{pair}")
 }
@@ -241,6 +244,9 @@ impl Inner {
     /// In the background after open: every shard and group whose version differs from its
     /// watermark is indexed again (all of them after a rebuild). Never blocks the unlock.
     pub(crate) fn search_reconcile(self: &Arc<Self>) {
+        if NO_BG_RECONCILE.load(std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
         let Some(ix) = self.search_ix() else { return };
         let this = self.clone();
         self.handle.spawn(async move {
@@ -298,7 +304,26 @@ impl Inner {
     /// Groups are held in memory whole: each whose watermark differs is diffed against the index
     /// (new and changed posts written, posts no longer shown dropped). In the background.
     pub(crate) fn search_reconcile_groups(self: &Arc<Self>, core: &Arc<GroupCore>) {
-        let Some(ix) = self.search_ix() else { return };
+        if NO_BG_RECONCILE.load(std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+        drop(self.search_reconcile_groups_run(core));
+    }
+
+    /// For the year-scale measurements: both reconcile parts now, timed.
+    pub(crate) async fn search_reconcile_now(self: &Arc<Self>) -> Result<(std::time::Duration, std::time::Duration), Error> {
+        let ix = self.search_ix().ok_or(Error::Locked)?;
+        let t = std::time::Instant::now();
+        self.search_reconcile_dms(&ix).await?;
+        let dms = t.elapsed();
+        let t = std::time::Instant::now();
+        let gc = self.group_core()?;
+        let _ = self.search_reconcile_groups_run(&gc).await;
+        Ok((dms, t.elapsed()))
+    }
+
+    fn search_reconcile_groups_run(self: &Arc<Self>, core: &Arc<GroupCore>) -> n0_future::task::JoinHandle<()> {
+        let Some(ix) = self.search_ix() else { return self.handle.spawn_blocking(|| {}) };
         let core = core.clone();
         self.handle.spawn_blocking(move || {
             let gids: Vec<String> = core.groups.lock().keys().cloned().collect();
@@ -321,7 +346,7 @@ impl Inner {
                     return Self::search_log(e);
                 }
             }
-        });
+        })
     }
 
     // ---- query -----------------------------------------------------------------------------
