@@ -28,6 +28,7 @@ pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
 pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary};
 pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents};
 pub use group::calls::{GroupCall, GroupCallEvent, GroupCallEventKind, GroupCallEvents};
+pub use group::invitations::{GroupInvitation, GroupInvitationEvents, GroupInvitationState};
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};

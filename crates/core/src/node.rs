@@ -68,7 +68,7 @@ const MAX_PENDING_HELLOS: usize = 24;
 const RESERVED_HELLOS: usize = 8;
 /// What a peer is told when we turn it away. The real reason is logged locally: telling an
 /// unauthenticated stranger "revoked" vs "not a contact" would leak our contact list.
-const REFUSED: &str = "not accepted";
+pub(crate) const REFUSED: &str = "not accepted";
 
 /// `on_call_state` with `Ended` is also the moment the call history has changed: the UI should
 /// re-read `recent_calls` / `calls_with` then (there is no separate history callback).
@@ -1933,6 +1933,7 @@ impl Inner {
         // After a restore (new device key) or a change made while we were offline: tell contacts.
         self.devices_changed();
         self.lists_started();
+        self.group_invites_started();
         self.sync_kick();
 
         let this = self.clone();
@@ -2333,6 +2334,12 @@ impl Inner {
             Msg::Devices { list } => {
                 drop(permit);
                 self.devices_incoming(ctrl, list).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
+            letter @ Msg::GroupLetter { .. } => {
+                drop(permit);
+                self.group_letter_incoming(ctrl, letter, remote, &me).await?;
                 let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                 Ok(())
             }
@@ -3528,6 +3535,8 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::TokensTaken => "TokensTaken",
         Msg::Devices { .. } => "Devices",
         Msg::DevicesTaken => "DevicesTaken",
+        Msg::GroupLetter { .. } => "GroupLetter",
+        Msg::GroupLetterTaken => "GroupLetterTaken",
     }
 }
 

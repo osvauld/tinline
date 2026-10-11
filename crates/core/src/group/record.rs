@@ -297,12 +297,12 @@ impl EndpointAuth {
     }
 }
 
-// ---- invite token (shareable text) ------------------------------------------------------------------
+// ---- invite token -------------------------------------------------------------------------------------
 
-pub const TOKEN_PREFIX: &str = "tlgroup1:";
-
-/// What an invite card / link carries: the signed grant (absent in a token for one's own other
-/// devices, which join as the same DID) plus what to show and where the hosts are.
+/// The full invite: the signed grant (absent in a token for one's own other devices, which join as
+/// the same DID) plus what to show and where the hosts are. G3: never shared as text any more (the
+/// old `tlgroup1:` form is gone, U18): a host keeps it behind a short code (`code.rs`), a direct
+/// invitation carries it over the private channel, own devices get it over self/3 (bincode).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InviteToken {
     pub group: String,
@@ -310,24 +310,6 @@ pub struct InviteToken {
     pub owner: String,
     pub invite: Option<SignedInvite>,
     pub hosts: Vec<SignedHostAddr>,
-}
-
-impl InviteToken {
-    pub fn to_text(&self) -> String {
-        use base64::Engine;
-        let b = bincode::serialize(self).expect("token serialises");
-        format!("{TOKEN_PREFIX}{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(b))
-    }
-
-    pub fn from_text(text: &str) -> Option<Self> {
-        use base64::Engine;
-        let body = text.trim().strip_prefix(TOKEN_PREFIX)?;
-        let b = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(body).ok()?;
-        if b.len() > 64 * 1024 {
-            return None;
-        }
-        bincode::deserialize(&b).ok()
-    }
 }
 
 #[cfg(test)]
@@ -414,8 +396,7 @@ mod tests {
         assert!(!t.verify(&[9; 32]));
 
         let tok = InviteToken { group: "g".into(), name: "n".into(), owner: a.did().into(), invite: Some(inv), hosts: vec![ha] };
-        assert_eq!(InviteToken::from_text(&tok.to_text()).unwrap(), tok);
-        assert!(InviteToken::from_text("tlgroup1:@@").is_none());
+        assert_eq!(bincode::deserialize::<InviteToken>(&bincode::serialize(&tok).unwrap()).unwrap(), tok);
     }
 
     #[test]

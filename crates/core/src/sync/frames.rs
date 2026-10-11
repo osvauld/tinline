@@ -82,4 +82,8 @@ pub enum SelfMsg {
     /// `group::record::InviteToken` without invite (group, name, owner, DID-signed host
     /// addresses). The receiver adds groups it lacks and dials their hosts (`group/own.rs`).
     Groups { groups: Vec<Vec<u8>> },
+    /// Group invitations this account sent or got (G3), as JSON rows
+    /// (`group::invitations::InvRow`). The receiver adds rows it lacks and takes an answer
+    /// (Joined / Declined / ...) over Pending.
+    Invitations { rows: Vec<Vec<u8>> },
 }

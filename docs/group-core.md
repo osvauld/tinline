@@ -1,8 +1,9 @@
-# Group chat in core (G1 first slice, G2 second slice)
+# Group chat in core (G1 first slice, G2 second slice, G3 invitations)
 
 Code: `crates/core/src/group/` (`record.rs`, `doc.rs`, `state.rs`, `store.rs`, `wire.rs`,
-`engine.rs`, `api.rs`; G2: `own.rs`, `mail.rs`, `requests.rs`). Acceptance tests on real nodes:
-`crates/core/tests/group_core.rs` (G1) and `crates/core/tests/group_g2.rs` (G2).
+`engine.rs`, `api.rs`; G2: `own.rs`, `mail.rs`, `requests.rs`; G3: `invitations.rs`, `code.rs`).
+Acceptance tests on real nodes: `crates/core/tests/group_core.rs` (G1), `crates/core/tests/group_g2.rs`
+(G2) and `crates/core/tests/group_g3.rs` (G3).
 Decisions: `endpoint-rotation-blocking:docs/design/rotation-open-decisions.md` §0 (U2, U4 revised,
 U7, U9/U15, U10, U11, U12, U14, U16, multiple hosts §9 Q5). Choices marked **PROVISIONAL** were
 made by the coordinator's rule ("most conservative option that keeps the feature working") while
@@ -171,6 +172,65 @@ removal. Other hosts learn the new address from the host's next `Hello`. Every m
 deadline from the same signed records ("announced" by the removal itself);
 `group_endpoint_rotation_due()` shows it on a host.
 
+## Inviting contacts directly (G3, `invitations.rs`)
+
+An admin picks contacts (`group_invite_contacts(group, dids)`); each gets a fresh DID-signed 7-day
+invite (the same bearer grant a link carries) plus the group's name, owner and hosts' signed
+addresses, over the existing 1:1 private channel: a new `proto::Msg::GroupLetter{attestation,
+grant, letter}` on the calls ALPN (no chat/3 or self/3 bump; both unreleased), authenticated like a
+`CallHello` (attested device = the connection's, a token the receiver issued to the sender) and
+admitted only with a MESSAGE token (P6). Answer `GroupLetterTaken`; a DID the receiver blocks gets
+its block notice (P5). Letters: `Invite{id, token, inviter_name}`, `Answer{id, joined}`.
+
+- The recipient checks the invite's signature, that its issuer IS the sending contact, the group and
+  expiry, and lists "X invited you to G" (`group_invitations_incoming`, `GroupInvitationEvents`).
+  `group_invitation_accept(id)` runs the normal join with the delivered token (the same checks as a
+  link: hosts verify the issuer's role at `Hello`, every device from the records);
+  `group_invitation_decline(id)` sends `Answer{joined: false}`.
+- The inviter sees per invitee (`group_invitations_outgoing(group)`) Pending (with `delivered`),
+  Joined (the invitee is a member in the group's records), Declined, Expired (7 days) or Blocked
+  (the invitee answered with its block notice).
+- Outbox: rows `inv/{id}` in the group store with `owe`; one delivery task per DID tries each of
+  the contact's devices, retries with backoff (2..60 s) while the endpoint is up and again after
+  every start, like the device-list push (P4).
+- P5: refused locally (whole call, `Rejected`) for a DID we block, a DID that blocks us, a
+  non-contact, an existing member. Incoming invitations from a DID we block are never listed.
+- Own devices: rows go over self/3 (`SelfMsg::Invitations`, JSON rows, deduplicated per session);
+  a device adds rows it lacks (an incoming one only if its invite verifies for its inviter) and
+  takes an answer over Pending. Only the device that made a row delivers its letter.
+
+## Short invite links (G3, `code.rs`)
+
+`group_invite` and `group_device_token` return `tinline://g/<base58>` (the bare base58 code works
+too): `0x01 ‖ host group endpoint (32) ‖ code (12 random bytes, 96 bits) ‖ relay hint` where the
+hint is an index into the four n0 relays (2 bytes), a short n0 relay name, or a full URL. With an
+n0 relay a link is 47 bytes = **76–77 characters** (was several hundred with `tlgroup1:`). The old
+`tlgroup1:` text form is gone (U18); `InviteToken` stays as the internal/bincode form (own-device
+sync, direct invitations).
+
+- A host keeps `code/{code}` → `{group, signed invite or none, expires, by}`. If the issuer hosts
+  the group, it keeps the code itself; otherwise it registers it over its member session with a
+  host (`Code{code, invite, expires}` → `CodeAck{code, ok, reason}`; members only; an invite only
+  from its signer, who must be an admin; device codes admit only the member's own DID), and the link
+  names that host. At most 256 live codes per group per host (PROVISIONAL).
+- Joining/peeking dials that host on the group endpoint with `Fetch{code}` as the first frame
+  (instead of `Hello`) and gets `Fetched{token}` (full signed invite, group, name, owner, hosts'
+  signed addresses) or `Refused{reason}`. The fetcher requires the dialled endpoint among the
+  group's signed host addresses, the invite's DID signature, group and expiry; then joins exactly
+  as before. `group_peek_invite` now does this fetch (network, blocks up to ~20 s; apps call it off
+  the UI thread).
+- Hosts forget codes when they expire (checked on lookup, pruned every 5 min), refuse unknown or
+  expired ones with "unknown or expired invite code", wait 300 ms before each wrong answer, close a
+  connection after 3 wrong codes, and refuse all fetches for a minute after 30 wrong codes from
+  anyone (`group_guess_codes_for_test`).
+- `group_revoke_invite(link)`: the issuer (or an admin) makes the host forget the code
+  (`RevokeCode{code}`), locally if we are that host. An invite someone already fetched stays valid
+  until it expires: it is a bearer grant (PROVISIONAL).
+- As before, a link reveals ONE host's group endpoint to whoever holds it (and anyone who fetches
+  with it learns all active hosts' endpoints, as the old token carried them). A link names one
+  host: if that host is offline (or rotated its endpoint, U12), the link does not work; ask for a
+  new one (PROVISIONAL).
+
 ## Group calls (GA-I1, U21)
 
 Code: `calldir.rs`, `calls.rs`; spec `docs/design/group-call-spec.md` §11 (GA-I1). Test:
@@ -197,8 +257,9 @@ Code: `calldir.rs`, `calls.rs`; spec `docs/design/group-call-spec.md` §11 (GA-I
 [GroupSummary]`, `group_detail(id) -> GroupDetail` (members with roles/flags/devices/invited-by,
 hosts with online state, host offers, my role, `am_host`, my removal), `group_messages(id, before,
 limit) -> GroupPage` (oldest first, cursor `older`), `group_mark_read`, `group_create(name)`,
-`group_invite(id)` (admins; 7-day signed invite + hosts), `group_device_token(id)`,
-`group_peek_invite(token)`, `group_join(token)` (blocks until joined, `Rejected(reason)` on
+`group_invite(id)` (admins; short 7-day link, G3), `group_device_token(id)` (short link admitting only
+our DID; apps no longer show it: own-device sync covers linked devices),
+`group_peek_invite(link)` (fetches from the host), `group_join(link or code)` (blocks until joined, `Rejected(reason)` on
 refusal), `group_post(id, text, reply_to)`, `group_flag(id, did)`, `group_set_admin(id, did,
 admin)` (owner), `group_leave(id)`, `group_appoint_host(id, did, device_id)` /
 `group_revoke_host(...)` (admins), `group_accept_host(id, accept)` (this device),
@@ -219,6 +280,14 @@ Test hooks: `group_known_endpoints_for_test`, `group_directory_for_test`,
 
 Delivery of our own posts: `Waiting` until some host acknowledged holding it ("Waiting for a
 host"), then `Delivered`; on a host device our posts are `Delivered` at once.
+
+G3: `set_group_invitation_events(GroupInvitationEvents{on_group_invitation})`,
+`group_invite_contacts(group_id, dids) -> [GroupInvitation]`, `group_invitations_incoming()`,
+`group_invitations_outgoing(group_id)`, `group_invitation_accept(id)` (joins, blocks),
+`group_invitation_decline(id)`, `group_revoke_invite(link)`; `GroupInvitation{id, group_id,
+group_name, inviter_did, inviter_name, invitee_did, invitee_name, outgoing, state:
+GroupInvitationState{Pending, Joined, Declined, Expired, Blocked}, at (ms), expires (s),
+delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
 
 ## PROVISIONAL (coordinator) choices
 
@@ -249,6 +318,13 @@ host"), then `Delivered`; on a host device our posts are `Delivered` at once.
     a host revocation rotates the remaining hosts only (members' own group endpoints, which the
     revoked host knew, do not rotate: U1 member notes are a later slice). Members offline longer
     than the delay after a rotation need a fresh token (device sync or invite).
+
+14. (G3) A direct invitation is the same bearer invite as a link (not bound to the invitee); the
+    invitee could pass it on. Rows are forgotten 7 days after expiry. A refused delivery (`Reject`:
+    no longer a contact, token taken back) stops retrying and stays Pending until it expires.
+15. (G3) Invitation rows ARE synced to own devices (self/3 was cheap to extend).
+16. (G3) A link names one host; revoking a code does not revoke an invite already fetched with it;
+    256 live codes per group per host; guess limits 3 per connection / 30 per minute per host.
 
 ## Left (later slices)
 

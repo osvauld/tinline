@@ -6060,6 +6060,7 @@ dependencies = [
  "base64 0.22.1",
  "bincode",
  "blake3",
+ "bs58",
  "bytes",
  "cryptography",
  "hex",
