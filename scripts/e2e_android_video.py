@@ -19,6 +19,7 @@ by ticket, or `--desk DIR` to reuse one that has the phone as a contact (named `
 import argparse
 import os
 import re
+import statistics
 import struct
 import subprocess
 import sys
@@ -133,7 +134,14 @@ def main():
     ph = kv(series[-1])
     print("phone:", ph)
     print(f"phone per frame ({ph.get('path')}): copy {ph.get('pack_ms')} ms + push {ph.get('push_ms')} ms "
-          f"(camera {ph.get('camera')}), pull {ph.get('pull_ms')} ms + bitmap {ph.get('convert_ms')} ms (recv {ph.get('recv')})")
+          f"(camera {ph.get('camera')}; cpu {ph.get('push_cpu_ms')} ms), pull {ph.get('pull_ms')} ms + bitmap "
+          f"{ph.get('convert_ms')} ms (recv {ph.get('recv')}; cpu {ph.get('render_cpu_ms')} ms)")
+    pushing = [kv(l) for l in series if kv(l).get("camera") != "-"]
+    if pushing:
+        med = {k: statistics.median(float(s[k]) for s in pushing)
+               for k in ("pack_ms", "push_ms", "push_cpu_ms", "pull_ms", "convert_ms", "render_cpu_ms") if k in pushing[0]}
+        print(f"phone per frame, median of {len(pushing)} per-second averages:",
+              " ".join(f"{k}={v:.2f}" for k, v in med.items()))
     print("phone send size@kbps per second:", " ".join(f"{kv(l).get('send')}@{kv(l).get('kbps')}" for l in series))
     out = p.communicate(timeout=a.secs + 30)[0]
     vres = re.findall(r"VRESULT.*", out)

@@ -253,6 +253,23 @@ fn chroma_views<'a>(u: &'a [u8], v: &'a [u8]) -> (&'a [u8], &'a [u8]) {
     }
 }
 
+/// U and V of `YUV_420_888` given as memory spans (address, length): with pixel stride 2 and
+/// one starting a byte after the other they are views of one interleaved plane, returned once
+/// as their union (the other span empty, as `chroma_views` expects); otherwise as they are.
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub(crate) fn chroma_spans(u: (usize, usize), v: (usize, usize), pixel_stride: usize) -> ((usize, usize), (usize, usize)) {
+    let (none, union) = ((0, 0), |a: (usize, usize), b: (usize, usize)| (a.0, a.1.max(b.1 + 1)));
+    if pixel_stride == 2 && u.1 > 0 && v.1 > 0 {
+        if Some(u.0) == v.0.checked_add(1) {
+            return (none, union(v, u));
+        }
+        if Some(v.0) == u.0.checked_add(1) {
+            return (union(u, v), none);
+        }
+    }
+    (u, v)
+}
+
 /// Whether `len` bytes hold a plane of `w` x `h` samples, rows `stride` apart, samples `step`
 /// apart (the last row may end right after its last sample).
 fn plane_fits(len: usize, w: usize, h: usize, stride: usize, step: usize) -> bool {
@@ -1023,6 +1040,20 @@ mod tests {
         let lower_vec = time(&mut || <Vec<u8> as Lower<T>>::lower(data.clone()).destroy());
         let lower_bytes = time(&mut || <Bytes as Lower<T>>::lower(Bytes(data.clone())).destroy());
         println!("640x480 I420 ms (incl. a clone): lift Vec<u8> {lift_vec:.3} Bytes {lift_bytes:.3}, lower Vec<u8> {lower_vec:.3} Bytes {lower_bytes:.3}");
+    }
+
+    #[test]
+    fn chroma_spans_join_only_adjacent_views() {
+        // NV21: V at 1000, U at 1001, each 99 bytes: one plane of 100 from V.
+        assert_eq!(chroma_spans((1001, 99), (1000, 99), 2), ((0, 0), (1000, 100)));
+        assert_eq!(chroma_spans((1000, 99), (1001, 99), 2), ((1000, 100), (0, 0)));
+        // A longer first view keeps its own length.
+        assert_eq!(chroma_spans((1001, 50), (1000, 99), 2), ((0, 0), (1000, 99)));
+        // Planar, apart, empty or at the address limit: as given.
+        assert_eq!(chroma_spans((1001, 99), (1000, 99), 1), ((1001, 99), (1000, 99)));
+        assert_eq!(chroma_spans((2000, 99), (1000, 99), 2), ((2000, 99), (1000, 99)));
+        assert_eq!(chroma_spans((1001, 0), (1000, 99), 2), ((1001, 0), (1000, 99)));
+        assert_eq!(chroma_spans((0, 9), (usize::MAX, 1), 2), ((0, 9), (usize::MAX, 1)));
     }
 
     #[test]

@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus, VideoEvents, VideoInfo};
+use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus, Pulled, VideoEvents, VideoInfo};
 
 const PASS: &str = "test-passphrase";
 
@@ -113,14 +113,16 @@ fn connect(a: &Peer, b: &Peer) -> String {
     call.call_id
 }
 
-/// Pushes 640x480 pattern frames at 30 fps until dropped.
+/// Pushes 640x480 pattern frames at 30 fps until dropped: packed I420, or (`nv21`) as an Android
+/// camera's padded Y plane and one interleaved VU plane through `push_video_planes` (what the
+/// Android JNI entry point calls).
 struct Camera {
     run: Arc<AtomicBool>,
     thread: Option<std::thread::JoinHandle<u32>>,
 }
 
 impl Camera {
-    fn start(node: Arc<Node>) -> Self {
+    fn start(node: Arc<Node>, nv21: bool) -> Self {
         let run = Arc::new(AtomicBool::new(true));
         let r = run.clone();
         let thread = std::thread::spawn(move || {
@@ -128,7 +130,12 @@ impl Camera {
             let mut accepted = 0;
             while r.load(Ordering::SeqCst) {
                 let f = pat.next_frame();
-                accepted += node.push_video_frame(640, 480, 0, f.data) as u32;
+                accepted += if nv21 {
+                    let (y, vu, stride) = to_nv21(&f.data, 640, 480);
+                    node.push_video_planes(640, 480, 0, &y, stride, &[], &vu, stride, 2, false)
+                } else {
+                    node.push_video_frame(640, 480, 0, f.data)
+                } as u32;
                 std::thread::sleep(Duration::from_millis(33));
             }
             accepted
@@ -140,6 +147,49 @@ impl Camera {
         self.run.store(false, Ordering::SeqCst);
         self.thread.take().unwrap().join().unwrap()
     }
+}
+
+/// I420 `w` x `h` as Android lays out NV21: rows padded to `stride`, the last row of each plane
+/// unpadded, V and U interleaved in one plane.
+fn to_nv21(i420: &[u8], w: usize, h: usize) -> (Vec<u8>, Vec<u8>, usize) {
+    let stride = w + 32;
+    let (cw, ch) = (w / 2, h / 2);
+    let (sy, chroma) = i420.split_at(w * h);
+    let (su, sv) = chroma.split_at(cw * ch);
+    let mut y = vec![0; (h - 1) * stride + w];
+    for r in 0..h {
+        y[r * stride..r * stride + w].copy_from_slice(&sy[r * w..(r + 1) * w]);
+    }
+    let mut vu = vec![0; (ch - 1) * stride + 2 * cw];
+    for r in 0..ch {
+        for c in 0..cw {
+            vu[r * stride + 2 * c] = sv[r * cw + c];
+            vu[r * stride + 2 * c + 1] = su[r * cw + c];
+        }
+    }
+    (y, vu, stride)
+}
+
+/// `watch` through `pull_video_frame_rgba_into`, growing the buffer on `TooSmall` as Android's
+/// renderer does.
+fn watch_rgba(p: &Peer, d: Duration) -> (u32, Option<(u32, u32)>) {
+    let end = Instant::now() + d;
+    let (mut n, mut size, mut last_seq, mut buf) = (0, None, 0, Vec::new());
+    while Instant::now() < end {
+        match p.node.pull_video_frame_rgba_into(&mut buf) {
+            Pulled::None => {}
+            Pulled::TooSmall { width, height } => buf = vec![0; width as usize * height as usize * 4],
+            Pulled::Frame { width, height, seq } => {
+                assert!(seq > last_seq && buf.len() >= (width * height * 4) as usize);
+                assert!(buf[..(width * height * 4) as usize].chunks(4).all(|px| px[3] == 255));
+                last_seq = seq;
+                n += 1;
+                size = Some((width, height));
+            }
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    (n, size)
 }
 
 /// Pulls frames for `d`, like a renderer polling at ~100 Hz: (count, last size).
@@ -171,11 +221,12 @@ fn video_both_ways() {
     for p in [&a, &b] {
         video_ev(p, "remote camera on", |v| v.remote_camera && v.local_camera);
     }
-    let cams = [Camera::start(a.node.clone()), Camera::start(b.node.clone())];
+    // a's camera as Android's NV21 planes; a's renderer pulls RGBA into its own buffer.
+    let cams = [Camera::start(a.node.clone(), true), Camera::start(b.node.clone(), false)];
     // Let the first keyframes through, then count.
     std::thread::sleep(Duration::from_millis(500));
     for p in [&a, &b] {
-        let (n, size) = watch(p, Duration::from_secs(3));
+        let (n, size) = if std::ptr::eq(p, &a) { watch_rgba(p, Duration::from_secs(3)) } else { watch(p, Duration::from_secs(3)) };
         let (w, h) = size.expect("decoded frames");
         assert!(n >= 45, "{n} frames in 3 s");
         // 4:3 kept: 480x360 at the 360p rung, 640x480 (never upscaled) above it.
@@ -194,6 +245,10 @@ fn video_both_ways() {
     }
     // Gone with the call.
     assert!(a.node.pull_video_frame().is_none() && a.node.video_info().is_none());
+    assert_eq!(a.node.pull_video_frame_rgba_into(&mut [0; 16]), Pulled::None);
+    // Direct frame calls find a node by a handle: one per node, stable.
+    let h = a.node.video_frame_handle();
+    assert!(h != 0 && h == a.node.video_frame_handle() && h != b.node.video_frame_handle());
     assert!(!a.node.push_video_frame(640, 480, 0, vec![0; 640 * 480 * 3 / 2]));
 }
 
@@ -209,7 +264,7 @@ fn camera_off_and_on_mid_call() {
     });
     a.node.answer(inc).unwrap();
     video_ev(&a, "b's camera on", |v| v.negotiated && v.remote_camera && !v.local_camera);
-    let cam = Camera::start(b.node.clone());
+    let cam = Camera::start(b.node.clone(), false);
     std::thread::sleep(Duration::from_millis(500));
     let (n, _) = watch(&a, Duration::from_secs(2));
     assert!(n >= 30, "{n} frames before off");

@@ -1,6 +1,7 @@
 package com.osvauld.p2p
 
 import android.graphics.Bitmap
+import android.os.Debug
 import androidx.camera.core.ImageProxy
 import com.sun.jna.Native
 import com.sun.jna.Pointer
@@ -35,6 +36,8 @@ class VideoIo(private val node: () -> Node) {
     @Volatile var packNs = 0L; private set
     /** ... and of the push call (FFI). */
     @Volatile var pushNs = 0L; private set
+    /** CPU time of the whole push on this thread (wall times above include being preempted). */
+    @Volatile var pushCpuNs = 0L; private set
     @Volatile var pushed = 0L; private set
     @Volatile var inSize = "-"; private set
 
@@ -56,11 +59,13 @@ class VideoIo(private val node: () -> Node) {
 
     /** [push] of loose planes (also the DebugReceiver `video_io_bench`). */
     fun pushPlanes(w: Int, h: Int, rotation: Int, y: ByteBuffer, yRowStride: Int, u: ByteBuffer, v: ByteBuffer, uvRowStride: Int, ps: Int): Boolean {
+        val c0 = Debug.threadCpuTimeNanos()
         val t0 = System.nanoTime()
         if (jni) {
             val ok = VideoJni.pushYuv(handle(), w, h, rotation, y, yRowStride, u, v, uvRowStride, ps, true)
             packNs = 0
             pushNs = avg(pushNs, System.nanoTime() - t0)
+            pushCpuNs = avg(pushCpuNs, Debug.threadCpuTimeNanos() - c0)
             return ok
         }
         yBuf = copyAll(y, yBuf)
@@ -80,6 +85,7 @@ class VideoIo(private val node: () -> Node) {
             uArr, vArr, uvRowStride.toUInt(), ps.toUInt(), true,
         )
         pushNs = avg(pushNs, System.nanoTime() - t1)
+        pushCpuNs = avg(pushCpuNs, Debug.threadCpuTimeNanos() - c0)
         return ok
     }
 
@@ -110,6 +116,8 @@ class VideoIo(private val node: () -> Node) {
     @Volatile var convertNs = 0L; private set
     /** Average time of a pull that returned a frame (JNI: incl. the RGBA conversion in Rust). */
     @Volatile var pullNs = 0L; private set
+    /** CPU time of pull + bitmap on this thread. */
+    @Volatile var renderCpuNs = 0L; private set
 
     /**
      * The newest decoded frame as a bitmap, or null if none arrived since the last call. Two
@@ -121,6 +129,7 @@ class VideoIo(private val node: () -> Node) {
     private val info = IntArray(3)
 
     private fun pullJni(): Bitmap? {
+        val c0 = Debug.threadCpuTimeNanos()
         val tp = System.nanoTime()
         val h = handle()
         var r = VideoJni.pullRgba(h, rgba, info)
@@ -136,6 +145,7 @@ class VideoIo(private val node: () -> Node) {
         bmp.copyPixelsFromBuffer(rgba)
         next = 1 - next
         convertNs = avg(convertNs, System.nanoTime() - t0)
+        renderCpuNs = avg(renderCpuNs, Debug.threadCpuTimeNanos() - c0)
         return bmp
     }
 
@@ -150,6 +160,7 @@ class VideoIo(private val node: () -> Node) {
     }
 
     private fun pullUniffi(): Bitmap? {
+        val c0 = Debug.threadCpuTimeNanos()
         val tp = System.nanoTime()
         val f = node().pullVideoFrame() ?: return null
         val w = f.width.toInt()
@@ -162,6 +173,7 @@ class VideoIo(private val node: () -> Node) {
         bmp.setPixels(argb, 0, w, 0, 0, w, h)
         next = 1 - next
         convertNs = avg(convertNs, System.nanoTime() - t0)
+        renderCpuNs = avg(renderCpuNs, Debug.threadCpuTimeNanos() - c0)
         return bmp
     }
 

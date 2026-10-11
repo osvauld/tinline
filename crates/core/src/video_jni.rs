@@ -14,7 +14,7 @@ use jni::JNIEnv;
 use jni::objects::{JByteBuffer, JClass, JIntArray};
 use jni::sys::{JNI_FALSE, JNI_TRUE, jboolean, jint, jlong};
 
-use crate::video_call::{Pulled, frame_port};
+use crate::video_call::{Pulled, chroma_spans, frame_port};
 
 /// A direct buffer's memory: (address, capacity). None for a null or non-direct buffer.
 fn region(env: &JNIEnv, b: &JByteBuffer) -> Option<(*mut u8, usize)> {
@@ -64,20 +64,11 @@ pub extern "system" fn Java_com_osvauld_p2p_VideoJni_pushYuv<'l>(
         let (yp, yn) = region(&env, &y)?;
         let (up, un) = region(&env, &u)?;
         let (vp, vn) = region(&env, &v)?;
-        let (ua, va) = (up as usize, vp as usize);
+        let ((ua, ul), (va, vl)) = chroma_spans((up as usize, un), (vp as usize, vn), ps);
         // SAFETY: each region is a live direct buffer as the JVM reports it; an interleaved
-        // plane is the union of two such buffers that overlap (one starts a byte after the
-        // other), so it is contiguous valid memory too.
-        let (y, u, v) = unsafe {
-            let y = bytes(yp, yn);
-            if ps == 2 && un > 0 && vn > 0 && ua == va + 1 {
-                (y, &[][..], bytes(vp, vn.max(un + 1)))
-            } else if ps == 2 && un > 0 && vn > 0 && va == ua + 1 {
-                (y, bytes(up, un.max(vn + 1)), &[][..])
-            } else {
-                (y, bytes(up, un), bytes(vp, vn))
-            }
-        };
+        // plane (`chroma_spans`) is the union of two such buffers that overlap, so it is
+        // contiguous valid memory too.
+        let (y, u, v) = unsafe { (bytes(yp, yn), bytes(ua as *const u8, ul), bytes(va as *const u8, vl)) };
         Some(node.push_yuv_planes(w, h, rot, y, ys, u, v, uvs, ps, full_range != JNI_FALSE))
     };
     match catch_unwind(AssertUnwindSafe(run)) {
