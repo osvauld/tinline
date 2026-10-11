@@ -25,6 +25,26 @@
     "detail": ""
   },
   {
+    "name": "1440 embed: call button present (44px)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: call overlay fills the iframe, outer page unchanged",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: minimized strip above header inside the frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: call ended",
+    "ok": true,
+    "detail": ""
+  },
+  {
     "name": "1440 embed: app fills frame, no border/radius",
     "ok": true,
     "detail": ""
@@ -297,7 +317,7 @@
   {
     "name": "390 details sheet within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":293.8125,\"width\":390,\"height\":550.1875}"
+    "detail": "{\"x\":0,\"y\":229.8125,\"width\":390,\"height\":614.1875}"
   },
   {
     "name": "390 keyboard-height: composer visible",
@@ -487,7 +507,7 @@
   {
     "name": "320 details sheet within viewport",
     "ok": true,
-    "detail": "{\"x\":0,\"y\":52.625,\"width\":320,\"height\":587.375}"
+    "detail": "{\"x\":0,\"y\":32,\"width\":320,\"height\":608}"
   },
   {
     "name": "320 keyboard-height: composer visible",

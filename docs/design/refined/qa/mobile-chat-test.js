@@ -13,6 +13,15 @@ await step('desktop-mobile',async()=>{const p=await page(b);await p.goto(BASE+'m
  chk('1440 iframe composer visible',await f.locator('#ta').isVisible());
  chk('1440 iframe uses embed=1',(await p.locator('#phone').getAttribute('src')).includes('embed=1'));
  chk('1440 embed: no in-frame back, no harness chrome',!(await f.locator('.back-list').isVisible())&&!(await f.locator('.harness').isVisible()));
+ chk('1440 embed: call button present (44px)',await f.locator('#callBtn').evaluate(e=>e.tagName==='BUTTON'&&e.getBoundingClientRect().width>=44));
+ await f.locator('#callBtn').click();await p.waitForTimeout(300);
+ chk('1440 embed: call overlay fills the iframe, outer page unchanged',await f.locator('#callOv').evaluate(e=>{const r=e.getBoundingClientRect();return Math.abs(r.width-innerWidth)<2&&Math.abs(r.height-innerHeight)<2})&&p.url().includes('mobile.html'));
+ await shot(p,'1440-iframe-call');
+ await f.locator('#callMin').click();await p.waitForTimeout(200);
+ chk('1440 embed: minimized strip above header inside the frame',await f.locator('#callStrip').evaluate(e=>{const r=e.getBoundingClientRect(),b=document.querySelector('#conv .bar').getBoundingClientRect();return r.top<2&&Math.round(r.height)===40&&b.top>=r.bottom-1}));
+ await shot(p,'1440-iframe-strip');
+ await f.locator('#callStrip').click();await f.locator('#callEnd').click();await p.waitForTimeout(200);
+ chk('1440 embed: call ended',!(await f.locator('#callStrip').isVisible())&&!(await f.locator('#callOv').isVisible()));
  chk('1440 embed: app fills frame, no border/radius',await f.locator('#app').evaluate(e=>{const c=getComputedStyle(e),r=e.getBoundingClientRect();return c.borderTopWidth==='0px'&&c.borderTopLeftRadius==='0px'&&Math.abs(r.height-innerHeight)<2}));
  chk('1440 iframe shows Arjun',(await f.locator('#convTitle').innerText()).includes('Arjun'));
  chk('1440 iframe width 390',await p.locator('#phone').evaluate(e=>e.clientWidth)===390);

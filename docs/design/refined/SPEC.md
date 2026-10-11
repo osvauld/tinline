@@ -125,6 +125,32 @@ the first bubble of a group.
   messages wait"), not in the title block.
 - Info (ⓘ) 44px icon button right-aligned; same icon set both pages.
 
+## In-conversation calls (chat.html, groups.html)
+
+The phone button in a conversation header starts an **in-page call overlay** —
+no navigation away, because the core loop is call ↔ chat:
+- Overlay fills the app frame (and the iframe in embed mode): `--bg`, 96px
+  `.t-avatar` (group glyph avatar for groups), name 24px semibold, status 13px
+  `--muted` ("Ringing…", then simulated connect after ~2.5s), timer MM:SS
+  tabular-nums in a fixed-width slot. Controls centered: Mute 56px quiet circle
+  (toggles), End 64px `--danger`. Top-left: 44px down-chevron, aria-label
+  "Back to chat — call continues".
+- Minimize → **ongoing-call strip**: one full-width 40px button above the app's
+  header(s), `--accent` bg, `--on-accent` text: "● <name> · MM:SS" (dot pulses;
+  static under reduced motion; timer ticks, tabular-nums). Visible across list
+  AND conversation views; tapping returns to the overlay. End exists only inside
+  the overlay. Chatting, browsing, switching chats all work while minimized.
+- While a call is live, the header phone button means "return to call" (never a
+  second call). Escape minimizes, never ends. Focus: overlay open → container;
+  minimize → the strip; end → back to the phone button. Toast "Call ended" on End.
+- These overlays are silent visual simulations — calls.html stays the only page
+  that makes sound (ringing/failure/audio study), and supports
+  `?call=<id>` / `?call=group:<id>` deep links to an already-ringing screen.
+- Policy states: a message-only contact has a disabled call button (calling
+  needs their permission — explained in the contact sheet, not in a banner);
+  a group with no live host has a disabled call button; a removed/read-only
+  group has none.
+
 ## Dialogs & sheets
 
 ≥700px: centered dialog, radius `--r-sheet`, shadow-sheet. <700px: bottom sheet,

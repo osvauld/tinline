@@ -43,6 +43,102 @@
  },
  {
   "page": "chat",
+  "name": "header call button is an in-page button (no navigation)",
+  "ok": true,
+  "detail": "[\"BUTTON\",null,null,\"Voice call Arjun\"]"
+ },
+ {
+  "page": "chat",
+  "name": "call button sits between name block and info button",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "call: overlay fills the app frame, focus on overlay, status Ringing, no navigation, no audio",
+  "ok": true,
+  "detail": "{\"o\":{\"x\":97,\"y\":247.1875,\"width\":1246,\"height\":735.8125},\"st\":\"Ringing…\",\"f\":\"callOv\",\"au\":{\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}}"
+ },
+ {
+  "page": "chat",
+  "name": "call: connects after ~2.5s and timer ticks MM:SS",
+  "ok": true,
+  "detail": "00:00 -> 00:01"
+ },
+ {
+  "page": "chat",
+  "name": "call: mute toggles aria-pressed",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "Escape minimizes (call continues) into strip; focus on strip",
+  "ok": true,
+  "detail": "Arjun Oommen·00:02 h=40"
+ },
+ {
+  "page": "chat",
+  "name": "while live, header phone button means return to call",
+  "ok": true,
+  "detail": "Return to call with Arjun Oommen"
+ },
+ {
+  "page": "chat",
+  "name": "chatting works while minimized",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "strip persists when switching chats; Meera header button returns to the call (no second call)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "return to call reopens the same call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "strip tap returns to overlay",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "End: overlay + strip gone, toast Call ended, focus on phone button, still no audio",
+  "ok": true,
+  "detail": "Call ended focus=callBtn"
+ },
+ {
+  "page": "chat",
+  "name": "contact sheet has a Voice call row that starts the overlay",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "Dev (message-only): call button disabled but focusable, no in-conversation banner",
+  "ok": true,
+  "detail": "[\"BUTTON\",\"true\",0,\"0.45\"] strips=0"
+ },
+ {
+  "page": "chat",
+  "name": "Dev: disabled call opens contact sheet with message-only line + Request calling that flips to Requested",
+  "ok": true,
+  "detail": "DPDev PatelOnlineMessages only — calling needs their permissionRequest callingEnd-to-end encryptedMessages go directly b -> Requested"
+ },
+ {
+  "page": "chat",
+  "name": "Dev: focus returns to call button after sheet",
+  "ok": true,
+  "detail": "callBtn"
+ },
+ {
+  "page": "chat",
   "name": "open chat: composer visible, Send not enabled when empty",
   "ok": true,
   "detail": "disabled=true"
@@ -57,7 +153,7 @@
   "page": "chat",
   "name": "chat list shows Draft marker for chat with unsent text",
   "ok": true,
-  "detail": "MNMeera Nair17:41No rush2AOArjun Oommen12:44Draft: half written thoughtDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
+  "detail": "MNMeera Nair17:41No rushAOArjun Oommen14:24Draft: half written thoughtDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
  },
  {
   "page": "chat",
@@ -75,13 +171,13 @@
   "page": "chat",
   "name": "Enter sends; message appears; composer cleared and keeps focus",
   "ok": true,
-  "detail": "line1 line213:51Sending focus=ta"
+  "detail": "line1 line214:24Sending focus=ta"
  },
  {
   "page": "chat",
   "name": "sent message progresses to sent/delivered state",
   "ok": true,
-  "detail": "line1 line213:51Delivered"
+  "detail": "line1 line214:24Delivered"
  },
  {
   "page": "chat",
@@ -93,7 +189,7 @@
   "page": "chat",
   "name": "failed send shows failure and Retry control",
   "ok": true,
-  "detail": "goes nowhere first13:51Not delivered·Retry retryBtns=1"
+  "detail": "goes nowhere first14:25Not delivered·Retry retryBtns=1"
  },
  {
   "page": "chat",
@@ -105,37 +201,37 @@
   "page": "chat",
   "name": "retry: focus not lost to BODY",
   "ok": true,
-  "detail": "Actions for your message at 13:51: goes nowhere first"
+  "detail": "Actions for your message at 14:25: goes nowhere first"
  },
  {
   "page": "chat",
   "name": "retry succeeds (no failed message remains)",
   "ok": true,
-  "detail": "goes nowhere first13:51Delivered visibleRetry=0"
+  "detail": "goes nowhere first14:25Delivered visibleRetry=0"
  },
  {
   "page": "chat",
   "name": "contact offline: header/status changes",
   "ok": true,
-  "detail": "AOArjun OommenLast seen 13:51Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
+  "detail": "AOArjun OommenLast seen 14:25Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
  },
  {
   "page": "chat",
   "name": "send while offline shows waiting/queued state",
   "ok": true,
-  "detail": "sent while offline13:51Waiting for Arjun to be online"
+  "detail": "sent while offline14:25Waiting for Arjun to be online"
  },
  {
   "page": "chat",
   "name": "back online: queued message delivered",
   "ok": true,
-  "detail": "sent while offline13:51Delivered"
+  "detail": "sent while offline14:25Delivered"
  },
  {
   "page": "chat",
   "name": "simulate incoming adds a message or badge",
   "ok": true,
-  "detail": "MNMeera Nair17:41No rush2SRSana Rao13:51Ha, that’s the best news today1AOArjun Oommen13:51You: sent "
+  "detail": "MNMeera Nair17:41No rushSRSana Rao14:25Just landed. Will message when I’m home.1AOArjun Oommen14:25Y"
  },
  {
   "page": "chat",

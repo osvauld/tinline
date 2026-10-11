@@ -59,10 +59,37 @@ svg.i.xs{width:14px;height:14px}
 .ib{width:var(--btn);height:var(--btn);display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--ink);flex:none;padding:0}
 .ib:hover{background:var(--surface-2)}
 .ib:disabled{opacity:.38;cursor:default;background:transparent}
+a.ib{color:var(--ink);text-decoration:none}
+.ib[aria-disabled=true]{color:var(--muted);opacity:.45;cursor:default}
+.ib[aria-disabled=true]:hover{background:transparent}
 
 /* app frame */
-.app{flex:1;min-height:0;display:grid;grid-template-columns:1fr;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
-.list-pane,.conv-pane{display:flex;flex-direction:column;min-height:0;min-width:0}
+.app{flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
+.list-pane,.conv-pane{display:flex;flex-direction:column;min-height:0;min-width:0;grid-row:2}
+/* in-conversation call: overlay + minimized strip (silent simulation) */
+.callstrip{grid-row:1;grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;height:40px;width:100%;border:0;padding:0 16px;background:var(--accent);color:var(--on-accent);font-size:var(--fs-sub);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.callstrip:hover{filter:brightness(1.08)}
+.callstrip .nm{overflow:hidden;text-overflow:ellipsis}
+.callstrip .dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none;animation:pulse 1.6s ease-in-out infinite}
+.callstrip:focus-visible{outline-offset:-4px;outline-color:var(--on-accent)}
+.callov{position:absolute;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:8px 16px calc(32px + env(safe-area-inset-bottom));animation:rise 180ms ease-out}
+.callov:focus{outline:0}
+.callov .min{align-self:flex-start;color:var(--ink)}
+.callov .who2{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;min-height:0}
+.t-avatar.s96{width:96px;height:96px;font-size:32px;margin-bottom:14px}
+.callov h2{margin:0;font-size:24px;font-weight:600;line-height:30px}
+.callov .cst{font-size:var(--fs-sub);color:var(--muted);line-height:18px}
+.callov .ctm{display:inline-block;min-width:6ch;font-size:var(--fs-body);font-variant-numeric:tabular-nums;color:var(--ink);line-height:22px}
+.callctl{display:flex;align-items:flex-start;justify-content:center;gap:48px}
+.callctl label{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.cbtn{display:grid;place-items:center;border:0;border-radius:50%;padding:0}
+.cbtn.mute{width:56px;height:56px;margin:4px 0;background:var(--surface-2);color:var(--ink)}
+.cbtn.mute[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.cbtn.end{width:64px;height:64px;background:var(--danger-btn);color:var(--on-danger-btn)}
+.cbtn.end svg.i{transform:rotate(135deg)}
+.cbtn.end:hover{filter:brightness(1.08)}
+#callBtn.live{color:var(--accent-ink);background:var(--accent-soft)}
+@keyframes pulse{50%{opacity:.35}}
 .list-pane{background:var(--surface)}
 .conv-pane{background:var(--canvas);position:relative}
 .app[data-view=list] .conv-pane{display:none}
@@ -242,6 +269,14 @@ dialog.pop::backdrop{background:transparent}
 .kv div b{display:block;color:var(--ink);font-size:var(--fs-body);font-weight:600;line-height:21px}
 .kv a{font-weight:600;text-decoration:none}
 .kv a:hover{text-decoration:underline}
+.callrow{display:flex;align-items:center;gap:14px;width:calc(100% + 16px);min-height:52px;margin:12px -8px 0;padding:0 8px;border:0;background:none;text-align:left;border-radius:var(--r-ctl);color:var(--ink);font-size:var(--fs-body);font-weight:600}
+@media (hover:hover){button.callrow:hover{background:var(--surface-2)}}
+.callrow svg.i{color:var(--accent-ink)}
+.callrow.off{flex-wrap:wrap;gap:4px 14px;min-height:0;padding:10px 8px;font-weight:400;font-size:var(--fs-sub);color:var(--muted)}
+.callrow.off svg.i{color:var(--muted)}
+.callrow.off span{flex:1;min-width:0}
+.callrow.off .btn{min-height:36px;padding:0 14px;font-size:var(--fs-sub);color:var(--accent-ink)}
+.callrow.off .btn[aria-disabled=true]{color:var(--muted);cursor:default}
 fieldset{border:0;margin:16px 0 0;padding:0}
 legend{font-weight:700;padding:0;margin-bottom:4px;font-size:var(--fs-sub);color:var(--muted)}
 .opt{display:flex;align-items:center;gap:12px;min-height:var(--btn);padding:4px 8px;margin:0 -8px;border-radius:12px;cursor:pointer}
@@ -331,6 +366,9 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
 <symbol id="i-off" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
 <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16.5 9a4 4 0 0 1 0 6"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h3.5l1.5 4.5-2.2 1.4a11 11 0 0 0 6.3 6.3l1.4-2.2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+<symbol id="i-micoff" viewBox="0 0 24 24"><path d="M15 9.3V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 4.6 2.5M5 11a7 7 0 0 0 11.5 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18"/></symbol>
 <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
 </defs>
 </svg>
@@ -357,6 +395,15 @@ body:has(.app[data-view=conv]) .toasts{bottom:84px}
   </section>
 
   <main class="app" id="app" data-view="list">
+    <button class="callstrip" id="callStrip" type="button" hidden><span class="dot" aria-hidden="true"></span><span class="nm" id="callStripName"></span><span aria-hidden="true">·</span><span id="callStripTime"></span></button>
+    <div class="callov" id="callOv" role="dialog" aria-labelledby="callName" tabindex="-1" hidden>
+      <button class="ib min" type="button" id="callMin" aria-label="Back to chat — call continues"><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg></button>
+      <div class="who2"><span id="callAv"></span><h2 id="callName"></h2><span class="cst" id="callStatus" aria-live="polite"></span><span class="ctm" id="callTime"></span></div>
+      <div class="callctl">
+        <label><button class="cbtn mute" type="button" id="callMute" aria-pressed="false" aria-label="Mute"><svg class="i" aria-hidden="true"><use id="callMuteUse" href="#i-mic"/></svg></button><span aria-hidden="true" id="callMuteLbl">Mute</span></label>
+        <label><button class="cbtn end" type="button" id="callEnd" aria-label="End call"><svg class="i" aria-hidden="true"><use href="#i-phone"/></svg></button><span aria-hidden="true">End</span></label>
+      </div>
+    </div>
     <section class="list-pane" aria-label="Chats">
       <div class="lhead"><h2>Chats</h2>
         <button class="ib" type="button" id="settingsBtn" aria-label="Chat settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg></button>
@@ -505,6 +552,7 @@ function seed() {
   ];
   chats.forEach(c => c.msgs.forEach(m => { if (m.st === "delivered") m.deliveredAt = m.time; }));
   chats[2].muted = true; chats[2].unread = 1;
+  chats[2].messageOnly = true; chats[2].callRequested = false; // met through a group request: calling needs separate permission
 }
 seed();
 const chatBy = id => chats.find(c => c.id === id);
@@ -639,6 +687,57 @@ function closeChat() {
   const id = openId; openId = null; $("#app").dataset.view = "list"; renderList(); renderConv();
   const r = $(`[data-chat="${id}"]`); (r || $("#q")).focus();
 }
+function callBtn(c) {
+  if (c.messageOnly) return h("button", { class: "ib", type: "button", id: "callBtn", "aria-disabled": true, "aria-label": `Voice call unavailable. Calling ${fname(c)} needs their permission`, title: "Calling needs their permission", onclick: () => openInfo($("#callBtn")) }, icon("phone"));
+  if (call) return h("button", { class: "ib live", type: "button", id: "callBtn", "aria-label": "Return to call with " + chatBy(call.cid).name, title: "Return to call", onclick: openCall }, icon("phone"));
+  return h("button", { class: "ib", type: "button", id: "callBtn", "aria-label": "Voice call " + fname(c), title: "Voice call", onclick: () => startCall(c) }, icon("phone"));
+}
+/* ---------- in-conversation call (silent visual simulation; calls.html owns audio) ---------- */
+let call = null;
+const mmss = s => pad(Math.floor(s / 60)) + ":" + pad(s % 60);
+function callTick() {
+  if (!call) return;
+  const secs = call.start ? Math.floor((Date.now() - call.start) / 1000) : 0;
+  $("#callStatus").textContent = call.start ? (call.muted ? "Muted" : "Connected") : "Ringing…";
+  $("#callTime").textContent = call.start ? mmss(secs) : "";
+  $("#callStripTime").textContent = call.start ? mmss(secs) : "Ringing…";
+}
+function setCallInert(on) { $$("#app > .list-pane, #app > .conv-pane, #callStrip").forEach(e => e.inert = on); }
+function syncCallBtn() { const c = openId && chatBy(openId), b = $("#callBtn"); if (c && b) b.replaceWith(callBtn(c)); }
+function startCall(c) {
+  if (call) { openCall(); return; }
+  if (c.messageOnly) return;
+  call = { cid: c.id, start: 0, muted: false };
+  call.connect = setTimeout(() => { if (call) { call.start = Date.now(); callTick(); } }, 2500);
+  call.tick = setInterval(callTick, 1000);
+  $("#callAv").replaceChildren(avatar(c.name, 96)); $("#callName").textContent = c.name; $("#callStripName").textContent = c.name;
+  $("#callStrip").setAttribute("aria-label", "Return to call with " + c.name);
+  syncMute(); callTick(); openCall(); syncCallBtn();
+}
+function openCall() {
+  if (!call) return;
+  $("#callOv").hidden = false; $("#callStrip").hidden = true; setCallInert(true);
+  $("#callOv").focus({ preventScroll: true });
+}
+function minimizeCall() {
+  if (!call) return;
+  $("#callOv").hidden = true; $("#callStrip").hidden = false; setCallInert(false);
+  $("#callStrip").focus({ preventScroll: true });
+}
+function endCall(quiet) {
+  if (!call) return;
+  clearTimeout(call.connect); clearInterval(call.tick); call = null;
+  $("#callOv").hidden = true; $("#callStrip").hidden = true; setCallInert(false);
+  syncCallBtn(); if (!quiet) say("Call ended");
+  if (!quiet) ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true });
+}
+function syncMute() { const m = !!(call && call.muted); $("#callMute").setAttribute("aria-pressed", m); $("#callMuteUse").setAttribute("href", m ? "#i-micoff" : "#i-mic"); $("#callMuteLbl").textContent = m ? "Unmute" : "Mute"; }
+$("#callMute").onclick = () => { if (!call) return; call.muted = !call.muted; syncMute(); callTick(); };
+$("#callEnd").onclick = () => endCall();
+$("#callMin").onclick = minimizeCall;
+$("#callStrip").onclick = openCall;
+$("#callOv").addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); minimizeCall(); } });
+
 const presence = c => c.online ? "Online" : c.lastSeen ? "Last seen " + c.lastSeen : "Offline";
 function renderConv(toEnd) {
   const root = $("#conv"), old = $("#msgs");
@@ -658,6 +757,7 @@ function renderConv(toEnd) {
     h("button", { class: "who", type: "button", id: "convTitle", "aria-label": `${c.name}. ${pres}${c.muted ? ". Muted" : ""}. Chat details`, onclick: e => openInfo(e.currentTarget) },
       avatar(c.name, 36),
       h("span", { class: "tx" }, h("span", { class: "nm" }, h("b", { text: c.name }), c.muted ? icon("mute", "xs") : null), h("span", { class: "pr", text: pres }))),
+    callBtn(c),
     h("button", { class: "ib", type: "button", "aria-label": "Chat details", onclick: e => openInfo(e.currentTarget) }, icon("info"))));
   if (!c.online) root.append(h("div", { class: "strip", id: "bnOff" }, icon("off"), `${fn} is offline. Messages send when you’re both online.`));
   else if (c.laptopOffline) root.append(h("div", { class: "strip" }, icon("devices"), `${fn}’s laptop is offline. It catches up when it reconnects.`));
@@ -947,6 +1047,10 @@ function doDelete(c, m, both) {
 function openInfo(opener) {
   const c = chatBy(openId), fn = fname(c);
   const b = $("#infoBody"); b.replaceChildren(h("div", { class: "ihead" }, avatar(c.name, 56), h("h2", { id: "tInfo", text: c.name }), h("p", { text: presence(c) })));
+  if (c.messageOnly) {
+    const req = h("button", { class: "btn quiet", type: "button", id: "reqCall", "aria-disabled": c.callRequested, onclick: () => { if (c.callRequested) return; c.callRequested = true; req.textContent = "Requested"; req.setAttribute("aria-disabled", "true"); say(`Asked ${fn} for permission to call.`); } }, c.callRequested ? "Requested" : "Request calling");
+    b.append(h("div", { class: "callrow off" }, icon("phone"), h("span", { text: "Messages only — calling needs their permission" }), req));
+  } else b.append(h("button", { class: "callrow", type: "button", id: "infoCall", onclick: () => { $("#dInfo").close(); call ? openCall() : startCall(c); } }, icon("phone"), call ? "Return to call" : "Voice call"));
   const kv = h("div", { class: "kv" });
   kv.append(h("div", {}, icon("shield"), h("span", {}, h("b", { text: "End-to-end encrypted" }), "Messages go directly between your devices and theirs. No server keeps them.")));
   kv.append(h("div", {}, icon("devices"), h("span", {}, h("b", { text: "Devices" }), c.devices.map((d, i) => d + (d === "Laptop" && c.laptopOffline ? " (offline)" : (i === 0 ? (c.online ? " (online)" : " (offline)") : " (online)"))).join(", ") + ". An offline device catches up later. ", h("a", { href: "./privacy.html" }, "What linked devices can see"))));
@@ -994,8 +1098,8 @@ $("#simIncoming").onclick = () => {
   }
   renderList();
 };
-$("#simClear").onclick = () => { chats = []; openId = null; $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Chat list emptied. Previewing the first-run state."); };
-$("#simReset").onclick = () => { seed(); openId = null; failNext = false; syncSwitch("#swFail", false); syncSwitch("#swOnline", true); $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Demo reset."); };
+$("#simClear").onclick = () => { endCall(true); chats = []; openId = null; $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Chat list emptied. Previewing the first-run state."); };
+$("#simReset").onclick = () => { endCall(true); seed(); openId = null; failNext = false; syncSwitch("#swFail", false); syncSwitch("#swOnline", true); $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Demo reset."); };
 
 function syncSwitch(sel, on) { $(sel).setAttribute("aria-checked", on); }
 $("#swFail").onclick = e => { failNext = e.currentTarget.getAttribute("aria-checked") !== "true"; syncSwitch("#swFail", failNext); say(failNext ? "The next message or file will fail to send." : "Sending will work normally."); };
