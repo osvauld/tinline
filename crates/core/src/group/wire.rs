@@ -7,12 +7,14 @@
 //! host -> member  Moved { auth, group, hosts }       (own connection, after a rotation, U12)
 //! host -> member  Welcome { auth, vv, hosts }        | Removed { records, vv, update? } | Refused { reason }
 //! both            Update { update } / Ack { vv } / Hosts { hosts } / Mail { mail } / MailAck { id }
+//! member -> host  Code { code, invite?, expires } / RevokeCode { code }  -> CodeAck { code, ok, reason }
+//! anyone -> host  Fetch { code }  (first frame, G3)   -> Fetched { token } | Refused { reason }
 //! ```
 
 use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize};
 
-use super::record::{EndpointAuth, SignedHostAddr, SignedInvite};
+use super::record::{EndpointAuth, InviteToken, SignedHostAddr, SignedInvite};
 use crate::Error;
 
 pub const GROUP_ALPN: &[u8] = b"tinline/group/1";
@@ -43,6 +45,20 @@ pub enum GroupMsg {
     /// DID-signed host addresses. The member checks the sender is an active host, keeps the
     /// addresses and dials. Only current members are told; a removed member never is.
     Moved { auth: EndpointAuth, group: String, hosts: Vec<SignedHostAddr> },
+    /// G3, anyone -> host, as the first frame of a connection (instead of `Hello`): "give me the
+    /// invite behind this short code" (`code.rs`). Answered `Fetched` or `Refused`; the dialer
+    /// may try again on the same connection, and the host closes it after a few unknown codes.
+    Fetch { code: [u8; 12] },
+    /// Host -> fetcher: the full invite token (the signed invite, absent for a device code; the
+    /// group, its name and owner; the hosts' DID-signed addresses, this host's among them).
+    Fetched { token: InviteToken },
+    /// G3, member -> host inside a session: keep `invite` (ours, signed by us as an admin; `None`
+    /// for a device code, which admits only our own DID) under `code` until `expires` (unix s).
+    Code { code: [u8; 12], invite: Option<SignedInvite>, expires: u64 },
+    /// G3, member -> host inside a session: forget `code` (its issuer or an admin).
+    RevokeCode { code: [u8; 12] },
+    /// Host -> member: the answer to `Code` / `RevokeCode`.
+    CodeAck { code: [u8; 12], ok: bool, reason: String },
 }
 
 pub struct Writer(pub SendStream);
