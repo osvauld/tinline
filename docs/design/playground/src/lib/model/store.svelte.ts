@@ -6,6 +6,7 @@ import { seedAccount, seedChats, seedDevices, seedPeople } from './seed';
 import { clock } from './clock.svelte';
 import { resetGroupsState } from './actions/groups.svelte';
 import { resetProfileState } from './actions/profile.svelte';
+import { resetPeopleState } from './actions/people.svelte';
 
 function fresh() {
   return {
@@ -29,6 +30,7 @@ export function resetDb() {
   db.account = f.account; db.people = f.people; db.chats = f.chats; db.devices = f.devices; db.env = f.env;
   resetGroupsState();
   resetProfileState();
+  resetPeopleState();
 }
 
 let uid = 1000;

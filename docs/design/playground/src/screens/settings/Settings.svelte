@@ -5,7 +5,10 @@
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   import IconButton from '../../lib/ui/IconButton.svelte';
-  import Placeholder from '../Placeholder.svelte';
+  import Notifications from './Notifications.svelte';
+  import Sounds from './Sounds.svelte';
+  import PermBanner from './PermBanner.svelte';
+  import { problems } from './perms';
   import { db } from '../../lib/model/store.svelte';
   import { clock } from '../../lib/model/clock.svelte';
   import { nav } from '../../lib/nav/router.svelte';
@@ -30,10 +33,12 @@
 <div class="pf" data-settings>
   <header class="pf-bar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /><b>{title}</b></header>
   {#if section}
-    <div class="ph"><Placeholder {title} step="8" /></div>
+    {#if section === 'notifications'}<Notifications />{:else if section === 'sounds'}<Sounds />{/if}
   {:else}
   <div class="pf-scroll">
   <div class="pf-col">
+    <!-- Permission problems: said once here, with the details on the Notifications page. -->
+    <div class="pf-sec" data-settings-banners>{#each problems().slice(0, 1) as p (p.key)}<PermBanner {p} onopen={() => nav.push({ name: 'settings', section: 'notifications' })} />{/each}</div>
     <section class="pf-sec first" aria-label="Your profile">
       <div class="pf-card">
         <button type="button" class="pf-act me press" data-my-profile onclick={() => nav.push({ name: 'profile' })}>
@@ -64,5 +69,5 @@
   .me .t b { font-size: var(--fs-title); line-height: 24px; }
   .avl { font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
   .avl.busy { color: var(--warn-ink); }
-  .ph { flex: 1; min-block-size: 0; }
+  [data-settings-banners]:empty { display: none; }
 </style>

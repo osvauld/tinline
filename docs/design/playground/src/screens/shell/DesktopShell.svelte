@@ -21,6 +21,7 @@
   import CallStrip from '../../lib/calls/CallStrip.svelte';
   import CallLayer from '../../lib/calls/CallLayer.svelte';
   import SystemLayer from '../../lib/calls/SystemLayer.svelte';
+  import PeopleLayers from '../people/PeopleLayers.svelte';
   import DesktopField from '../search/DesktopField.svelte';
   import SearchResults from '../search/SearchResults.svelte';
   import { ui } from '../search/state.svelte';
@@ -78,6 +79,7 @@
   </section>
   <CallLayer />
   <SystemLayer />
+  <PeopleLayers />
 </div>
 {/if}
 

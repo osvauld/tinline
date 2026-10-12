@@ -48,6 +48,8 @@ export const ICONS: Record<string, string> = {
   "leave": "<path d=\"M10 4H5v16h5M15 8l4 4-4 4M19 12H9\"/>",
   "server": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"7\" rx=\"2\"/><rect x=\"3\" y=\"13\" width=\"18\" height=\"7\" rx=\"2\"/><path d=\"M7 7.5v.01M7 16.5v.01\"/>",
   "chevr": "<path d=\"M10 7l5 5-5 5\"/>",
+  "smartphone": "<rect x=\"7\" y=\"2.5\" width=\"10\" height=\"19\" rx=\"2.5\"/><path d=\"M11 18.5h2\"/>",
+  "laptop": "<rect x=\"4.5\" y=\"5\" width=\"15\" height=\"10\" rx=\"1.5\"/><path d=\"M2.5 19h19\"/>",
   "call-in": "<path d=\"M17 7L7 17M15 17H7V9\"/>",
 };
 export type IconName = keyof typeof ICONS;
