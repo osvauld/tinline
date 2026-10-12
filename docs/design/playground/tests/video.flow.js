@@ -1,7 +1,7 @@
 /* 1:1 video call flows against a running dev server.
    Run: BASE=http://127.0.0.1:5182/ node tests/video.flow.js   (SHOTS=/dir/ also writes screenshots, android + desktop, light + dark). */
 import { createRequire } from 'node:module';
-const L = createRequire(import.meta.url)('/home/abe/p2p_chat/.claude/worktrees/pg-video/docs/design/refined/qa/lib.js');
+const L = createRequire(import.meta.url)('../../refined/qa/lib.js');
 const BASE = process.env.BASE || 'http://127.0.0.1:5182/';
 const SHOTS = process.env.SHOTS || '';
 let pass = 0, fail = 0;
@@ -209,6 +209,23 @@ async function scenario(b, form, dark, assert) {
     await V(p, () => window.__pg.call.hangup()); await idle(p);
     const rv = await chat(p, 'arjun');
     ok('voice: recorded as voice', rv.length === 1 && rv[0].kind === 'voice');
+    await p.close();
+
+    /* ===== calling back from a record: video record -> video call, voice record -> voice call ===== */
+    p = await open(b, 'android', 'chat/arjun'); pages.push(p);
+    await p.getByRole('button', { name: 'Video call', exact: true }).click(); await p.waitForSelector('.callscreen'); await connect(p); await wait(p, 300);
+    await V(p, () => window.__pg.call.hangup()); await idle(p); await wait(p, 400);
+    const pill = p.getByRole('button', { name: /Video call Arjun back/ });
+    ok('call-back: a video record offers "Video call Arjun back"', (await pill.count()) === 1);
+    await pill.click(); await p.waitForSelector('.callscreen');
+    ok('call-back: pressing a video record starts a video call', (await V(p, () => window.__pgVid.intent)) === true && /Video call with/.test(await p.locator('.callscreen').getAttribute('aria-label')));
+    await V(p, () => window.__pg.call.hangup()); await idle(p);
+    await p.getByRole('button', { name: 'Call', exact: true }).click(); await p.waitForSelector('.callscreen'); await connect(p);
+    await V(p, () => window.__pg.call.hangup()); await idle(p); await wait(p, 400);
+    const vp = p.getByRole('button', { name: /Voice call.*Call Arjun back/ });
+    await vp.last().click(); await p.waitForSelector('.callscreen');
+    ok('call-back: pressing a voice record starts a voice call', (await V(p, () => window.__pgVid.intent)) === false && /Voice call with/.test(await p.locator('.callscreen').getAttribute('aria-label')));
+    await V(p, () => window.__pg.call.hangup()); await idle(p);
     await p.close();
 
     const errs = pages.flatMap((q) => q.errs || []);

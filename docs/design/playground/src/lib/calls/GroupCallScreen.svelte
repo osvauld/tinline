@@ -122,10 +122,9 @@
 
   <div class="content" inert={infoOpen}>
     <header class="top">
-      {#if live}
-        <button type="button" class="min press" aria-label="Minimize call" onclick={() => gcall.minimize()}><Icon name="chev" size={24} /></button>
-      {/if}
+      <button type="button" class="min press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-label="Minimize call" onclick={() => gcall.minimize()}><Icon name="chev" size={24} /></button>
       <span class="mark" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /></span>
+      <button type="button" class="min end-side press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-haspopup="dialog" aria-expanded={infoOpen} aria-label="About the call host" onclick={(e) => { infoBtn = e.currentTarget; openInfo(); }}><Icon name="info" size={22} /></button>
     </header>
 
     <div class="head" bind:this={headEl}>
@@ -214,6 +213,9 @@
   .top .mark { position: absolute; inset-inline-start: 50%; inset-block-start: 50%; translate: -50% -50%; display: inline-flex; pointer-events: none; }
   :global([dir='rtl']) .top .mark { translate: 50% -50%; }
   .min { inline-size: var(--btn); block-size: var(--btn); border-radius: 50%; border: 0; background: transparent; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+  .min { transition: opacity var(--dur-crossfade) var(--ease-out); }
+  .min.gone { opacity: 0; pointer-events: none; }
+  .top .end-side { position: absolute; inset-inline-end: 0; inset-block-start: 50%; translate: 0 -50%; }
   .min:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
 
   .head { flex: none; display: flex; flex-direction: column; align-items: center; text-align: center; padding-block-start: 6px; }
