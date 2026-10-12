@@ -3,8 +3,9 @@
      front) and missed-call cards. Shown in the shade and on the lock screen. Actions drive the call machine. */
   import Notice from './Notice.svelte';
   import { call, fmtDuration } from './call.svelte';
+  import { gcall } from './gcall.svelte';
   import { system } from './system.svelte';
-  import { displayName } from '../model/store.svelte';
+  import { displayName, chat } from '../model/store.svelte';
   import { hhmm } from '../model/clock.svelte';
   import { headsUpIn as noticeIn, headsUpOut as noticeOut } from './motion';
 
@@ -13,6 +14,30 @@
 </script>
 
 <div class="list">
+  {#if system.gStarted}
+    {@const a = system.gStarted}
+    {@const gn = gcall.group?.name ?? (chat(a.gid)?.kind === 'group' ? (chat(a.gid) as { name: string }).name : '')}
+    {@const n = gcall.liveFor(a.gid)?.parts.length ?? 0}
+    <div in:noticeIn out:noticeOut data-notice="gstarted">
+      <Notice title={gn} text="{displayName(a.by)} started a call · {n} joined" group={gn} onopen={() => system.openGroup(a.gid)}>
+        {#snippet actions()}
+          <button type="button" class="act" onclick={() => system.joinFromNotice(a.gid)}>Join</button>
+          <button type="button" class="act" onclick={() => { gcall.dismissAnnounce(); }}>Dismiss</button>
+        {/snippet}
+      </Notice>
+    </div>
+  {/if}
+  {#if system.gOngoing}
+    <div in:noticeIn out:noticeOut data-notice="gongoing">
+      <Notice title="Group call · {gcall.group?.name ?? ''}" text={system.gOngoingActive ? fmtDuration(gcall.elapsedS) : gcall.statusText} group={gcall.group?.name ?? ''} tabular={system.gOngoingActive} onopen={() => system.openCall()}>
+        {#snippet actions()}
+          <button type="button" class="act" onclick={() => gcall.toggleMute()}><span class="lbl"><span aria-hidden="true">Unmute</span><span>{gcall.muted ? 'Unmute' : 'Mute'}</span></span></button>
+          <button type="button" class="act" aria-pressed={gcall.speaker === 'speaker'} onclick={() => gcall.toggleSpeaker()}>Speaker</button>
+          <button type="button" class="act bad" onclick={() => gcall.leave()}>Leave</button>
+        {/snippet}
+      </Notice>
+    </div>
+  {/if}
   {#if system.waitingOutside && call.waitingNow}
     {@const w = call.waitingNow}
     <div in:noticeIn out:noticeOut data-notice="waiting">

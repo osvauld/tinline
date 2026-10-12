@@ -12,7 +12,7 @@
   import { prefs } from '../../lib/model/prefs.svelte';
   import { gx } from '../../lib/model/actions/groups.svelte';
   import {
-    FLAGS_TO_REMOVE, appointHost, askAgainAt, canAskPrivately, requestExpired, canFlag, canHostAppoint, canSetAdmin, dayOnly, flagCount, flagMember, iAmAdmin, member, requestFor,
+    FLAGS_TO_REMOVE, appointCallHost, appointHost, revokeCallHost, askAgainAt, canAskPrivately, requestExpired, canFlag, canHostAppoint, canSetAdmin, dayOnly, flagCount, flagMember, iAmAdmin, member, requestFor,
     revokeHost, roleLabel, sendRequest, setAdmin, cancelRequest,
   } from '../../lib/model/actions/groups';
   import type { Group } from '../../lib/model/types';
@@ -96,6 +96,18 @@
           {:else}
             <button type="button" class="mi press" onclick={() => { appointHost(g, id); onclose(); }}><Icon name="server" size={20} />
               <span class="t"><b>{isMe ? 'Host on this device' : 'Make host'}</b><small>{isMe ? 'This device has to accept' : `Asks ${fn} to host. They have to accept.`}</small></span></button>
+          {/if}
+        {/if}
+        {#if canHostAppoint(g, id)}
+          {#if m.callHostPending}
+            <button type="button" class="mi press" onclick={() => revokeCallHost(g, id)}><Icon name="phone" size={20} />
+              <span class="t"><b>Cancel call host request</b><small>Waiting for {isMe ? 'this device' : fn + '’s device'} to accept</small></span></button>
+          {:else if m.callHost}
+            <button type="button" class="mi press" onclick={() => revokeCallHost(g, id)}><Icon name="phone" size={20} />
+              <span class="t"><b>{isMe ? 'Stop hosting calls on this device' : 'Remove as call host'}</b></span></button>
+          {:else}
+            <button type="button" class="mi press" onclick={() => { appointCallHost(g, id); onclose(); }}><Icon name="phone" size={20} />
+              <span class="t"><b>{isMe ? 'Host calls on this device' : 'Make call host'}</b><small>{isMe ? 'This device has to accept' : `Asks ${fn} to carry group calls. They have to accept.`}</small></span></button>
           {/if}
         {/if}
         {#if canFlag(g, id)}

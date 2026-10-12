@@ -2,6 +2,7 @@
   /* Calls simulation: who rings me, what the other side does, and the network. Drawer only. */
   import { db } from '../model/store.svelte';
   import { call, CALL_MS } from '../calls/call.svelte';
+  import { gcall } from '../calls/gcall.svelte';
   import { system } from '../calls/system.svelte';
   import { prefs } from '../model/prefs.svelte';
   import Switch from '../ui/Switch.svelte';
@@ -16,7 +17,7 @@
     if (db.account.gate !== 'ready') { note = 'The account key is not on this device: nothing rings.'; return; }
     const r = call.refusal(from);
     note = r === 'blocked' ? 'Blocked: the call never reaches the screen.' : r === 'messages-only' ? 'Message-only contact: calls are not delivered.'
-      : r === 'busy' ? (call.waiting ? 'Someone is already waiting: the core turns this one away busy, left as a missed call.' : from === call.peer ? 'That is the person on the call.' : 'Not an answered call yet: the core turns this one away busy, left as a missed call.') : 'Unknown caller.';
+      : r === 'busy' ? (gcall.holdsLine ? 'You are in a group call: group and 1:1 calls exclude each other, so the core turns this one away busy, left as a missed call.' : call.waiting ? 'Someone is already waiting: the core turns this one away busy, left as a missed call.' : from === call.peer ? 'That is the person on the call.' : 'Not an answered call yet: the core turns this one away busy, left as a missed call.') : 'Unknown caller.';
   };
   const inCall = $derived(call.phase === 'active' || call.phase === 'reconnecting');
   let during = $state('sana');

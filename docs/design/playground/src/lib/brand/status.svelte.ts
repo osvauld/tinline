@@ -1,6 +1,7 @@
 /* What the app-bar / sidebar mark shows. One derivation, used by both shells. */
 import { connection } from '../model/connection.svelte';
 import { call } from '../calls/call.svelte';
+import { gcall } from '../calls/gcall.svelte';
 
 export type MarkLook = { state: 'slack' | 'ringing' | 'taut'; sway?: { period: number; amp: number }; dim?: boolean; label: string };
 
@@ -12,6 +13,12 @@ export function statusLook(): MarkLook {
     case 'outgoing': return { state: 'ringing', sway: { period: 2.0, amp: 9 }, label: 'Calling' };
     case 'connecting': return { state: 'ringing', sway: { period: 1.2, amp: 6 }, label: 'Connecting' };
     case 'active': return { state: 'taut', label: 'In a call' };
+    case 'reconnecting': return { state: 'ringing', sway: { period: 2.0, amp: 4 }, label: 'Reconnecting' };
+  }
+  switch (gcall.phase) {   // a group call reads like a 1:1 one: slack while setting up, taut once connected
+    case 'starting': return { state: 'ringing', sway: { period: 2.0, amp: 9 }, label: 'Starting a group call' };
+    case 'connecting': return { state: 'ringing', sway: { period: 1.2, amp: 6 }, label: 'Connecting' };
+    case 'active': return { state: 'taut', label: 'In a group call' };
     case 'reconnecting': return { state: 'ringing', sway: { period: 2.0, amp: 4 }, label: 'Reconnecting' };
   }
   switch (connection.state) {

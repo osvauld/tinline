@@ -19,8 +19,9 @@
   import { nav } from '../../lib/nav/router.svelte';
   import { prefs } from '../../lib/model/prefs.svelte';
   import { gx } from '../../lib/model/actions/groups.svelte';
+  import { gcall } from '../../lib/calls/gcall.svelte';
   import {
-    FLAGS_TO_REMOVE, acceptHosting, canLeave, cancelInvite, cancelLink, canHostAppoint, createLink, declineHosting, dayOnly, flagCount, hosts, iAmAdmin, leaveGroup,
+    FLAGS_TO_REMOVE, acceptCallHost, acceptHosting, callHostsReady, declineCallHost, revokeCallHost, setCallHosting, canLeave, cancelInvite, cancelLink, canHostAppoint, createLink, declineHosting, dayOnly, flagCount, hosts, iAmAdmin, leaveGroup,
     linkHost, linkLive, linkText, myRole, removedMembers, requestFor, revokeHost, roleLabel, whenLabel,
   } from '../../lib/model/actions/groups';
   import type { Group, GroupMember } from '../../lib/model/types';
@@ -48,6 +49,13 @@
   const hostsUp = $derived(db.env.hostsOnline && !noHost);
   const hostLine = $derived(noHost ? 0 : hostsUp ? 1 : 2);
   const hostLines = $derived(['This group has no host. Posts wait until a host is appointed.', `${plural(hostList.length, 'host')} online. Posts go through right away.`, 'No host is online. Your posts are saved and send when one is.']);
+  /* Call hosts (U25): a separate permit; the device accepts it itself. */
+  const chRows = $derived(g ? g.members.filter((m) => m.callHost || m.callHostPending) : []);
+  const chReady = $derived(g ? callHostsReady(g).filter((m) => (m.id === 'me' ? db.env.networkOnline : person(m.id)?.online !== false)) : []);
+  const chLine = $derived(chRows.filter((m) => m.callHost).length === 0 ? 0 : chReady.length > 0 ? 1 : 2);
+  const chLines = $derived(['This group has no call host. Nobody can start a call until an admin appoints one.', `${plural(chReady.length, 'call host')} ready. Calls start through ${chReady.length === 1 ? 'it' : 'them'}.`, 'No call host is available right now. A call can’t start until one is back.']);
+  const myCh = $derived(g ? g.members.find((m) => m.id === 'me') : undefined);
+  const chKind = (id: string) => (gcall.hostClass(id) === 'phone' ? 'Phone' : 'Computer');
   const order = { owner: 0, admin: 1, member: 2 } as const;
   const sorted = $derived(g ? [...g.members].sort((a, b) => order[a.role] - order[b.role] || (a.id === 'me' ? -1 : b.id === 'me' ? 1 : 0)) : []);
   const roleLine = $derived(role === 'owner' ? 'You are the owner' : role === 'admin' ? 'You are an admin' : role ? 'You are a member' : '');
@@ -171,6 +179,39 @@
         {/if}
         <p class="note">Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group.
           {#if admin}Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it.{/if}</p>
+      </section>
+
+      <!-- ---------- call hosts ---------- -->
+      <section class="sec" aria-labelledby="ch-h" data-callhosts>
+        <h2 id="ch-h">Call hosts</h2>
+        <p class="status" class:warn={chLine !== 1} role="status">
+          <span class="dot" class:on={chLine === 1}></span>
+          <span class="stk">{#each chLines as line, i (i)}<span class:cur={i === chLine}>{line}</span>{/each}</span>
+        </p>
+        {#if chRows.length}
+          <ul class="rows" role="list" aria-label="Call hosts">
+            {#each chRows as m (m.id)}
+              <li class="mrow" animate:flip={{ duration: flipMs() }} in:fold out:foldOut data-callhost={m.id}>
+                <Avatar name={fullName(m.id)} hue={hueOf(m.id)} person={m.id} size={40} />
+                <span class="t"><b>{m.id === 'me' ? 'This device' : fullName(m.id)}</b>
+                  <small>{#if m.callHostPending}Waiting to accept{:else if m.callHostPaused}Paused on this device{:else}<span class="dot sm" class:on={m.id === 'me' ? db.env.networkOnline : person(m.id)?.online !== false}></span>{(m.id === 'me' ? db.env.networkOnline : person(m.id)?.online !== false) ? 'Online' : 'Offline'} · {chKind(m.id)}{/if}</small></span>
+                {#if m.callHostPending && m.id === 'me'}
+                  <Btn variant="quiet" onclick={() => declineCallHost(g, m.id)}>Decline</Btn><Btn variant="primary" onclick={() => acceptCallHost(g, m.id)}>Accept</Btn>
+                {:else if canHostAppoint(g, m.id)}
+                  <Btn variant="quiet" label="Remove {m.id === 'me' ? 'this device' : fullName(m.id)} as call host" onclick={() => revokeCallHost(g, m.id)}>{m.callHostPending ? 'Cancel' : 'Remove'}</Btn>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        {#if myCh?.callHost}
+          <div class="card ch-sw" in:fold out:foldOut>
+            <label class="act row-sw"><Icon name="phone" size={20} /><span class="t"><b>Host calls on this device</b><small>{myCh.callHostPaused ? 'Off. This device won’t be asked to carry calls.' : 'On. This device can be asked to carry calls.'}</small></span>
+              <Switch label="Host calls on this device" checked={!myCh.callHostPaused} onchange={(v) => setCallHosting(g, v)} /></label>
+          </div>
+        {/if}
+        <p class="note">A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.
+          {#if admin}Appoint one from a member’s menu. A phone only hosts calls that its owner starts.{/if}</p>
       </section>
 
       <!-- ---------- members ---------- -->
@@ -309,6 +350,7 @@
   .dot.on { background: var(--accent); }
   .dot.sm { display: inline-block; vertical-align: 0; margin-inline-end: 6px; }
 
+  .ch-sw { margin-block-start: 8px; }
   .dlg { padding: 20px 20px 16px; }
   .dlg h2 { margin: 0 0 4px; font-size: var(--fs-title); font-weight: 650; line-height: 24px; text-transform: none; letter-spacing: 0; color: var(--ink); }
   .dlg p { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-sub); line-height: 19px; }

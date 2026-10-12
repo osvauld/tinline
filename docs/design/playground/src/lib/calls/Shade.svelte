@@ -9,7 +9,7 @@
   import { shadeIn, shadeOut, scrimFade } from './motion';
 
   const date = $derived(new Date(clock.now).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }));
-  const empty = $derived(!system.ongoing && !system.notifications.length);
+  const empty = $derived(!system.ongoing && !system.gOngoing && !system.gStarted && !system.notifications.length);
   let panel: HTMLElement;
   let y0 = 0;
   onMount(() => panel.focus({ preventScroll: true }));

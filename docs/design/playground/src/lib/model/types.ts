@@ -39,6 +39,7 @@ export interface CallRecord {
   outcome: 'answered' | 'missed' | 'declined' | 'failed' | 'cancelled';
   durationS: number;
   direction: 'out' | 'in';
+  group?: boolean;         // a group call (step 6): shown "Group call · 12 min"; the pill joins / starts a call in this group
 }
 
 export interface Message {
@@ -77,6 +78,8 @@ export interface GroupMember {
   since: number;
   invitedBy?: Id;
   hostPending?: boolean;   // groups step: hosting is opt-in; appointed, waiting for that device to accept
+  callHostPending?: boolean; // step 6: a call-host permit is out, waiting for that device to accept (own accept, U25)
+  callHostPaused?: boolean;  // step 6: this device accepted but switched call hosting off (group_call_hosting_enable)
 }
 
 export interface Group {

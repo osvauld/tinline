@@ -5,8 +5,9 @@
   import Avatar from '../ui/Avatar.svelte';
   import Mark from '../brand/Mark.svelte';
   import { call } from './call.svelte';
+  import { gcall } from './gcall.svelte';
   import { system } from './system.svelte';
-  import { displayName, person } from '../model/store.svelte';
+  import { displayName, person, chat } from '../model/store.svelte';
   import { headsUpIn, headsUpOut } from './motion';
 
   /* Call waiting: someone else calls during my call. Same card, with the two actions the core allows. */
@@ -15,8 +16,27 @@
   const id = $derived(waiting ? waiting.peer : call.peer);
   const name = $derived(id ? displayName(id) : '');
   const hue = $derived((id && person(id)?.hue) || 0);
+  /* A group call started (no ring): the same card, quiet, with Join. It settles into the shade after a few seconds. */
+  const gs = $derived(system.gStarted && system.gStarted.bannerOn && system.background && !system.locked && !show ? system.gStarted : null);
+  const gname = $derived.by(() => { const c = gs ? chat(gs.gid) : undefined; return c?.kind === 'group' ? c.name : ''; });
 </script>
 
+{#if gs}
+  <div class="hu" role="status" aria-label="{displayName(gs.by)} started a call in {gname}" data-os="headsup-group" in:headsUpIn out:headsUpOut>
+    <button type="button" class="open" aria-label="Open {gname}" onclick={() => system.openGroup(gs.gid)}>
+      <Avatar name={gname} group size={44} />
+      <span class="tx">
+        <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline · now</span>
+        <b dir="auto">{gname}</b>
+        <small>{displayName(gs.by)} started a call</small>
+      </span>
+    </button>
+    <div class="acts one">
+      <button type="button" class="b dec quiet press" onclick={() => gcall.dismissAnnounce()}>Dismiss</button>
+      <button type="button" class="b ans press" onclick={() => system.joinFromNotice(gs.gid)}>Join</button>
+    </div>
+  </div>
+{/if}
 {#if show}
   <div class="hu" role="alert" aria-label={waiting ? `${name} is calling during your call` : `Incoming call from ${name}`} data-os="headsup" in:headsUpIn out:headsUpOut>
     <button type="button" class="open" aria-label="Open call from {name}" onclick={() => system.openCall()}>
@@ -51,6 +71,7 @@
   .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-block-start: 8px; }
   .b { min-block-size: 44px; border: 0; border-radius: 22px; font-weight: 700; font-size: var(--fs-sub); cursor: pointer; }
   .dec { background: var(--danger-btn); color: var(--on-danger-btn); }
+  .dec.quiet { background: color-mix(in srgb, var(--os-ink) 10%, transparent); color: var(--os-ink); }
   .ans { background: var(--accent); color: var(--on-accent); }
   .b:hover { filter: brightness(1.08); }
   .open:focus-visible, .b:focus-visible { outline: 2px solid var(--os-ink); outline-offset: 2px; }

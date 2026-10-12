@@ -7,11 +7,11 @@
   import { displayName, person as getPerson } from '../model/store.svelte';
 
   /* `person`: the caller. Their picture (or initials) sits at the card's end, like an OS large icon. */
-  let { title, text, when = '', tabular = false, label, onopen, actions, person }:
-    { title: string; text: string; when?: string; tabular?: boolean; label?: string; onopen?: () => void; actions?: Snippet; person?: string } = $props();
+  let { title, text, when = '', tabular = false, label, onopen, actions, person, group }:
+    { title: string; text: string; when?: string; tabular?: boolean; label?: string; onopen?: () => void; actions?: Snippet; person?: string; group?: string } = $props();
 </script>
 
-<article class="notice" class:withlg={!!person} aria-label={label ?? title}>
+<article class="notice" class:withlg={!!person || !!group} aria-label={label ?? title}>
   <button type="button" class="main" onclick={() => onopen?.()} disabled={!onopen}>
     <span class="hd">
       <span class="ico" aria-hidden="true"><Mark size={13} mono /></span>
@@ -20,7 +20,7 @@
     <b class="t" dir="auto">{title}</b>
     <span class="x" class:tab={tabular}>{text}</span>
   </button>
-  {#if person}<span class="lg"><Avatar name={displayName(person)} hue={getPerson(person)?.hue ?? 0} {person} size={40} /></span>{/if}
+  {#if group}<span class="lg"><Avatar name={group} group size={40} /></span>{:else if person}<span class="lg"><Avatar name={displayName(person)} hue={getPerson(person)?.hue ?? 0} {person} size={40} /></span>{/if}
   {#if actions}<div class="acts">{@render actions()}</div>{/if}
 </article>
 

@@ -4,6 +4,7 @@
    `locked` is the DEVICE lock screen. It is not the app passphrase gate (db.account.gate): while the
    account key is not on this device nothing rings and none of these surfaces appear. */
 import { call, onRecord } from './call.svelte';
+import { gcall } from './gcall.svelte';
 import { clock } from '../model/clock.svelte';
 import { chat, db } from '../model/store.svelte';
 import { prefs } from '../model/prefs.svelte';
@@ -28,12 +29,22 @@ class System {
   get ongoing() { return this.live && !this.onCallScreen; }
   /** Someone is calling during my call and the call screen (which carries the waiting card) is not what is in front. */
   get waitingOutside() { return !!call.waitingNow && !this.onCallScreen && this.away; }
-  /** Text under "Ongoing call": the chronometer once connected, else the machine's own status. */
+  /* Group calls (step 6): the same foreground-service notification while a group call runs and its screen is not in front.
+     Its tap opens the group call screen. A "started a call" notice for a call I am not in (never rings). */
+  get gOngoing() { return gcall.holdsLine && !(!this.background && gcall.view === 'full'); }
+  get gOngoingActive() { return gcall.phase === 'active'; }
+  get gStarted() {
+    const a = gcall.announce;
+    return a && !a.dismissed && !gcall.holdsLine && !!gcall.liveFor(a.gid) && !this.groupMuted(a.gid) ? a : null;
+  }
+  groupMuted(gid: string) { const c = chat(gid); return !!c && c.kind === 'group' && c.muted; }
+  /** Text under "Ongoing call"
+: the chronometer once connected, else the machine's own status. */
   get ongoingActive() { return call.phase === 'active'; }
 
   /* The drawer switches: putting the app away also minimises an open call screen to its strip. */
-  setLocked(v: boolean) { this.locked = v; if (v) { if (call.phase !== 'idle') call.minimize(); } else this.shadeOpen = false; }
-  setBackground(v: boolean) { this.background = v; if (v && call.phase !== 'idle') call.minimize(); }
+  setLocked(v: boolean) { this.locked = v; if (v) { if (call.phase !== 'idle') call.minimize(); gcall.minimize(); } else this.shadeOpen = false; }
+  setBackground(v: boolean) { this.background = v; if (v) { if (call.phase !== 'idle') call.minimize(); gcall.minimize(); } }
 
   openShade() { this.shadeOpen = true; }
   closeShade() { this.shadeOpen = false; }
@@ -41,7 +52,10 @@ class System {
   /** Bring the app (or the window) back in front. */
   foreground() { this.locked = false; this.background = false; this.shadeOpen = false; }
   /** Tapping an incoming / ongoing call surface: unlock, come forward, show the in-app call screen. */
-  openCall() { this.foreground(); call.restore(); }
+  openCall() { this.foreground(); call.restore(); gcall.restore(); }
+  /** Tapping the "started a call" notice: open that group's conversation. */
+  openGroup(gid: string) { this.foreground(); if (chat(gid)) nav.open({ name: 'conversation', chat: gid }); }
+  joinFromNotice(gid: string) { this.foreground(); gcall.join(gid); }
 
   dismiss(id: number) { this.notifications = this.notifications.filter((n) => n.id !== id); }
   clearAll() { this.notifications = []; }

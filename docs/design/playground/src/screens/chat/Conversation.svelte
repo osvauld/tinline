@@ -21,6 +21,8 @@
   import { dur } from '../../lib/fx/motion';
   import { nav } from '../../lib/nav/router.svelte';
   import { call } from '../../lib/calls/call.svelte';
+  import { gcall } from '../../lib/calls/gcall.svelte';
+  import OngoingCall from '../groups/OngoingCall.svelte';
   import {
     SAMPLE_FILES, SIM, attachFile, cancelFile, canDelete, canEdit, canPost, deleteMessage, firstUnreadId, retryMessage, waitingReason,
     type Undo,
@@ -47,7 +49,7 @@
   let stripPad = $state(0);
   // Strip space at the list top: when it changes, move scrollTop by the same amount so nothing visible moves.
   $effect(() => {
-    const h = strip ? stripH : 0;
+    const h = strip || gbanner ? stripH : 0;
     untrack(() => {
       const d = h - stripPad;
       if (!d) return;
@@ -127,7 +129,13 @@
     return (peer.online ? 'Online' : 'Offline') + (peer.callsAllowed ? '' : ' · messages only');
   });
   const callable = $derived(c?.kind === 'group' ? c.status === 'active' : !!peer?.callsAllowed);
-  const callTitle = $derived(callable ? 'Call' : c?.kind === 'group' ? 'Calls are unavailable' : 'Messages only: calling needs their permission');
+  /* Group calls (step 6): the header button starts a call, joins the one running, or returns to mine. */
+  const gLive = $derived(c?.kind === 'group' ? gcall.liveFor(c.id) : undefined);
+  /* The banner is for a call I could join; once I am in it the strip above carries the call. */
+  const gbanner = $derived(c?.kind === 'group' && c.status === 'active' && !!gLive && !gcall.inCall(c.id));
+  const gLabel = $derived(c?.kind === 'group' ? (gcall.inCall(c.id) ? 'Return to group call' : gLive ? 'Join group call' : 'Start group call') : 'Call');
+  const noCallHost = $derived(c?.kind === 'group' && !c.members.some((m) => m.callHost && !m.callHostPaused));
+  const callTitle = $derived(c?.kind === 'group' ? (noCallHost && !gLive ? 'No call host yet: an admin can appoint one in Group info' : gLabel) : callable ? 'Call' : 'Messages only: calling needs their permission');
   const strip = $derived.by<{ text: string; icon: string; warn?: boolean } | null>(() => {
     if (!c) return null;
     if (c.kind === 'group' && c.status !== 'active') return null;
@@ -137,7 +145,12 @@
   });
 
   /** Header button and call-record pills. The machine refuses blocked / message-only people; group calls are step 6. */
-  function startCall() { if (c?.kind === 'direct') call.place(c.person); }
+  function startCall() {
+    if (c?.kind === 'group') { gcall.start(c.id); return; }
+    if (c?.kind !== 'direct') return;
+    if (gcall.holdsLine) { gcall.inCallToast(); return; }   // InCall: one line, group and 1:1 calls exclude each other
+    call.place(c.person);
+  }
   function openDetails() {
     if (!c) return;
     nav.push(c.kind === 'group' ? { name: 'groupInfo', chat: c.id } : { name: 'contact', person: c.person });
@@ -357,7 +370,9 @@
           <span class="tx"><span class="nm"><b>{chatTitle(c)}</b>{#if c.muted}<Icon name="mute" size={14} />{/if}</span><span class="pr">{status}</span></span>
         </button>
         {#if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
-          onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>{/if}
+          onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>
+        {:else if c.status === 'active'}<button type="button" class="ib press" class:dim={noCallHost && !gLive} class:live={!!gLive} aria-label={gLabel} aria-disabled={noCallHost && !gLive} title={callTitle} data-gcall-btn
+          onclick={startCall}><Icon name="phone" /></button>{/if}
         <button type="button" class="ib press" aria-label="Find in this chat" title="Find in this chat (Ctrl+F)" onclick={() => find.show()}><Icon name="search" /></button>
         <button type="button" class="ib press" aria-label="Chat details" onclick={openDetails}><Icon name="info" /></button>
         {#if find.open}<FindBar count={fm.length} onclose={closeFind} />{/if}
@@ -367,7 +382,10 @@
         <!-- Overlaid on the top of the list (not a row above it): the strip coming and going never moves a message.
              While it shows, the list gains the same space at its top (scroll position compensated), so the oldest
              message can still be scrolled fully into view instead of hiding under the strip. -->
-        {#if strip}<div class="strip" class:warn={strip.warn} role="status" bind:offsetHeight={stripH} transition:fade={{ duration: motion.reduced ? 0 : dur('crossfade') }}><Icon name={strip.icon} size={16} />{strip.text}</div>{/if}
+        <div class="tops" bind:offsetHeight={stripH}>
+          {#if strip}<div class="strip" class:warn={strip.warn} role="status" transition:fade={{ duration: motion.reduced ? 0 : dur('crossfade') }}><Icon name={strip.icon} size={16} />{strip.text}</div>{/if}
+          {#if gbanner && c.kind === 'group'}<div class="gb" transition:fade={{ duration: motion.reduced ? 0 : dur('crossfade') }}><OngoingCall gid={c.id} /></div>{/if}
+        </div>
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <ul class="msgs" bind:this={listEl} role="log" aria-label="Messages with {chatTitle(c)}" onscroll={() => { pressCancel(); syncFar(); }}
           {onpointerdown} {onpointermove} onpointerup={pressCancel} onpointercancel={pressCancel} {oncontextmenu}>
@@ -483,6 +501,7 @@
   .col { display: flex; flex-direction: column; flex: 1; min-block-size: 0; }
   .ib { inline-size: var(--btn); block-size: var(--btn); display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--ink); flex: none; padding: 0; cursor: pointer; }
   .ib:hover { background: var(--surface-2); }
+  .ib.live { color: var(--accent-ink); background: var(--accent-soft); }
   .ib.dim { color: var(--muted); opacity: .45; cursor: default; }
   .ib.dim:hover { background: transparent; }
 
@@ -495,7 +514,8 @@
   .nm :global(svg) { color: var(--muted); }
   .pr { display: block; font-size: var(--fs-sub); line-height: 18px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   :global([data-form='android']) .bar { min-block-size: 56px; padding: 4px 6px; }
-  .strip { position: absolute; inset-block-start: 0; inset-inline: 0; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 7px 16px; font-size: var(--fs-sub); line-height: 18px; color: var(--muted); background: var(--surface-2); border-block-end: 1px solid var(--hairline); }
+  .tops { position: absolute; inset-block-start: 0; inset-inline: 0; z-index: 5; display: grid; }
+  .strip { display: flex; align-items: center; gap: 8px; padding: 7px 16px; font-size: var(--fs-sub); line-height: 18px; color: var(--muted); background: var(--surface-2); border-block-end: 1px solid var(--hairline); }
   .strip.warn { background: var(--warn-bg); color: var(--warn-ink); }
 
   .msgwrap { flex: 1; min-block-size: 0; position: relative; display: flex; flex-direction: column; }

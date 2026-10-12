@@ -14,6 +14,7 @@
   import { nav } from '../../lib/nav/router.svelte';
   import { prefs } from '../../lib/model/prefs.svelte';
   import { gx } from '../../lib/model/actions/groups.svelte';
+  import { gcall } from '../../lib/calls/gcall.svelte';
   import {
     acceptInvitation, declineInvitation, acceptRequestIn, declineRequestIn, blockRequester, cancelRequest, createGroup, group, dayOnly, requestExpired,
   } from '../../lib/model/actions/groups';
@@ -148,9 +149,11 @@
             <span class="bot">
               <span class="pv">
                 {#if g.draft}<b class="draft">Draft:</b> {g.draft}
+                {:else if gcall.liveFor(g.id)}<span class="callpv"><i class="eq" aria-hidden="true"><b></b><b></b><b></b></i>{gcall.inCall(g.id) ? 'You’re in the call' : `Call in progress · ${gcall.liveFor(g.id)?.parts.length} joined`}</span>
                 {:else if m?.delivery === 'waiting'}<span class="wait"><Icon name="clock" size={13} /> Waiting for a host</span>
                 {:else}{preview(g)}{/if}
               </span>
+              {#if gcall.liveFor(g.id) && !gcall.inCall(g.id)}<span class="join" aria-hidden="true">Join</span>{/if}
               <Badge count={g.unread} muted={g.muted} />
             </span>
           </span>
@@ -212,6 +215,15 @@
   .when { font-size: var(--fs-meta); color: var(--muted); display: inline-flex; gap: 4px; align-items: center; flex: none; font-variant-numeric: tabular-nums; }
   .when.hot { color: var(--accent-ink); font-weight: 700; }
   .pv { flex: 1; min-inline-size: 0; font-size: var(--fs-sub); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .callpv { display: inline-flex; align-items: center; gap: 7px; color: var(--accent-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* three calm bars: the row's only motion, and only while a call is running */
+  .eq { display: inline-flex; align-items: flex-end; gap: 2px; block-size: 12px; flex: none; }
+  .eq b { inline-size: 2.5px; border-radius: 1px; background: currentColor; block-size: 4px; animation: eq 1.6s ease-in-out infinite; }
+  .eq b:nth-child(2) { animation-delay: -.5s; }
+  .eq b:nth-child(3) { animation-delay: -1s; }
+  @keyframes eq { 50% { block-size: 12px; } }
+  :global(:root[data-motion='reduce']) .eq b { animation: none; block-size: 8px; }
+  .join { flex: none; padding: 2px 11px; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: var(--fs-meta); font-weight: 700; line-height: 16px; }
   .pv.bad { color: var(--danger); }
   .draft { color: var(--accent-ink); font-weight: 600; }
   .wait { color: var(--gold-ink); font-weight: 600; display: inline-flex; gap: 3px; align-items: center; vertical-align: -2px; }

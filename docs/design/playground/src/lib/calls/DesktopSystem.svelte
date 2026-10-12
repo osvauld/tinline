@@ -8,8 +8,9 @@
   import Mark from '../brand/Mark.svelte';
   import AppTile from './AppTile.svelte';
   import { call, fmtDuration } from './call.svelte';
+  import { gcall } from './gcall.svelte';
   import { system } from './system.svelte';
-  import { displayName, person } from '../model/store.svelte';
+  import { displayName, person, chat } from '../model/store.svelte';
   import { clock, hhmm } from '../model/clock.svelte';
   import { toastIn, toastOut } from './motion';
   import { dur } from '../fx/motion';
@@ -26,6 +27,11 @@
   const mini = $derived(system.background && system.ongoing);
   const ms = $derived(motion.reduced ? 0 : dur('crossfade'));
   const text = $derived(system.ongoingActive ? fmtDuration(call.elapsedS) : call.statusText);
+  /* Group calls: a quiet toast when one starts (no ring), and the same small always-on-top window while I am in one. */
+  const gs = $derived(system.background && system.gStarted && system.gStarted.bannerOn ? system.gStarted : null);
+  const gname = $derived.by(() => { const c = gs ? chat(gs.gid) : undefined; return c?.kind === 'group' ? c.name : ''; });
+  const gmini = $derived(system.background && system.gOngoing);
+  const gtext = $derived(system.gOngoingActive ? fmtDuration(gcall.elapsedS) : gcall.statusText);
 </script>
 
 {#if system.background}
@@ -57,6 +63,34 @@
         <button type="button" class="b ans press" onclick={() => call.answer()}>Answer</button>
       {/if}
     </div>
+  </div>
+{/if}
+
+{#if gs}
+  <div class="toast" role="status" aria-label="{displayName(gs.by)} started a call in {gname}" data-os="toast-group" in:toastIn out:toastOut>
+    <button type="button" class="open" aria-label="Open {gname}" onclick={() => system.openGroup(gs.gid)}>
+      <Avatar name={gname} group size={44} />
+      <span class="tx">
+        <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline</span>
+        <b dir="auto">{gname}</b>
+        <small>{displayName(gs.by)} started a call</small>
+      </span>
+    </button>
+    <div class="acts">
+      <button type="button" class="b quiet press" onclick={() => gcall.dismissAnnounce()}>Dismiss</button>
+      <button type="button" class="b ans press" onclick={() => system.joinFromNotice(gs.gid)}>Join</button>
+    </div>
+  </div>
+{/if}
+
+{#if gmini}
+  <div class="mini" role="group" aria-label="Group call in {gcall.group?.name ?? ''}" data-os="mini-group" in:toastIn out:toastOut>
+    <button type="button" class="open" aria-label="Return to group call in {gcall.group?.name ?? ''}" onclick={() => system.openCall()}>
+      <Avatar name={gcall.group?.name ?? ''} group size={36} />
+      <span class="tx"><b dir="auto">{gcall.group?.name ?? ''}</b><small class:tab={system.gOngoingActive}>{gtext}</small></span>
+    </button>
+    <button type="button" class="r press" class:on={gcall.muted} aria-pressed={gcall.muted} aria-label={gcall.muted ? 'Unmute' : 'Mute'} onclick={() => gcall.toggleMute()}><Icon name={gcall.muted ? 'micoff' : 'mic'} size={18} /></button>
+    <button type="button" class="r end press" aria-label="Leave call" onclick={() => gcall.leave()}><Icon name="phone" size={18} class="hang" /></button>
   </div>
 {/if}
 
@@ -95,6 +129,7 @@
   .b { min-block-size: 40px; border: 0; border-radius: 20px; font-weight: 700; font-size: var(--fs-sub); cursor: pointer; }
   .dec { background: var(--danger-btn); color: var(--on-danger-btn); }
   .ans { background: var(--accent); color: var(--on-accent); }
+  .b.quiet { background: color-mix(in srgb, var(--os-ink) 10%, transparent); color: var(--os-ink); }
   .b:hover { filter: brightness(1.08); }
 
   .mini { inline-size: 300px; padding: 8px 8px 8px 10px; display: flex; align-items: center; gap: 6px; }

@@ -39,6 +39,7 @@
   const callText = $derived.by(() => {
     if (!call) return '';
     const dur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    if (call.group) return `Group call · ${call.durationS < 60 ? call.durationS + ' s' : Math.round(call.durationS / 60) + ' min'}`;
     if (call.outcome === 'answered') return `${call.kind === 'video' ? 'Video' : 'Voice'} call · ${dur(call.durationS)}`;
     if (call.direction === 'in') return call.outcome === 'declined' ? `Declined ${kindWord} call` : `Missed ${kindWord} call`;
     return ({ missed: 'No answer', declined: 'Declined', cancelled: 'Cancelled call', failed: 'Call failed' } as Record<string, string>)[call.outcome] ?? 'Call';
@@ -60,7 +61,7 @@
   <li class="m callrec {mine ? 'me' : 'them'} g-solo" class:rise={fresh} data-mid={m.id}>
     <div class="line">
       <button type="button" class="pill" class:bad={callBad} onclick={oncall}
-        aria-label="{callText}, {hhmm(m.at)}. Call {c.kind === 'direct' ? firstName(c.person) : 'the group'} back">
+        aria-label="{callText}, {hhmm(m.at)}. {call.group ? 'Start or join a call in this group' : `Call ${c.kind === 'direct' ? firstName(c.person) : 'the group'} back`}">
         <Icon name="phone" size={16} /><span class="t">{callText}</span><time>{hhmm(m.at)}</time>
       </button>
     </div>

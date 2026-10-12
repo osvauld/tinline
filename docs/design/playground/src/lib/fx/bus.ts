@@ -10,6 +10,7 @@ export type FxEvent =
   | { type: 'end' }                         // call ended by me: string releases, `ended` cue
   | { type: 'failed' }
   | { type: 'reconnecting' }
+  | { type: 'gcall'; cue: 'started' | 'joined' | 'left' } // group call, others: a call started in a group / someone joined / left (soft, never a ring)
   | { type: 'join'; soft?: boolean }        // group roster change
   | { type: 'sent' };                       // message sent (visual only unless a cue is decided)
 

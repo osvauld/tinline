@@ -39,6 +39,10 @@ export type Refusal = 'busy' | 'blocked' | 'messages-only' | 'unknown';
 /** Told after every call record is written (system.svelte.ts turns a missed one into a notification when the app is not in front). */
 export const onRecord = new Set<(id: string, direction: 'out' | 'in', outcome: Outcome) => void>();
 
+/** A group call holds this device's one line (core: 1:1 and group calls exclude each other). gcall.svelte.ts installs the check. */
+let groupBusy: () => boolean = () => false;
+export const setGroupBusy = (fn: () => boolean) => { groupBusy = fn; };
+
 export interface Waiting { peer: string; since: number }
 
 class Call {
@@ -70,7 +74,7 @@ class Call {
     if (!p) return 'unknown';
     if (p.blocked) return 'blocked';
     if (!p.callsAllowed) return 'messages-only';
-    if (this.phase !== 'idle') return 'busy';
+    if (this.phase !== 'idle' || groupBusy()) return 'busy';
     return null;
   }
   canCall(id: string) { const r = this.refusal(id); return r === null || r === 'busy'; }

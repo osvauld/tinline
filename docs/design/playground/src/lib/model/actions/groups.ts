@@ -4,7 +4,8 @@
    - the owner cannot be flagged; any 3 counted flags remove a member (the same admin may flag 3 times);
    - hosting is opt-in: an appointment is pending until that device accepts;
    - removal is final; the removed person keeps a read-only history;
-   - chat hosts and call hosts are separate permits (U25): nothing here touches callHost. */
+   - chat hosts and call hosts are separate permits (U25): appointing one never implies the other.
+   - call hosts (step 6): owner/admins appoint, the device accepts (its own accept), and may pause hosting on that device. */
 import { db, chat, person, pushMessage, newId, displayName, firstName, isGroup } from '../store.svelte';
 import type { Group, GroupMember, GroupRole, Id } from '../types';
 import { clock, T } from '../clock.svelte';
@@ -26,12 +27,16 @@ export const iAmAdmin = (g: Group) => g.status === 'active' && isAdminRole(myRol
 export const iAmOwner = (g: Group) => g.status === 'active' && myRole(g) === 'owner';
 export const flagCount = (g: Group, id: Id) => g.flags[id]?.length ?? 0;
 export const hosts = (g: Group) => g.members.filter((m) => m.host);
+export const callHosts = (g: Group) => g.members.filter((m) => m.callHost);
+/** Call hosts that can be asked to carry a call right now (accepted, not paused on that device). */
+export const callHostsReady = (g: Group) => g.members.filter((m) => m.callHost && !m.callHostPaused);
 export const canFlag = (g: Group, target: Id) => {
   const t = member(g, target);
   return iAmAdmin(g) && !!t && t.role !== 'owner' && target !== 'me';
 };
 export const canSetAdmin = (g: Group, target: Id) => iAmOwner(g) && !!member(g, target) && target !== 'me' && member(g, target)!.role !== 'owner';
 export const canHostAppoint = (g: Group, target: Id) => iAmAdmin(g) && !!member(g, target);
+export const canCallHostAppoint = canHostAppoint;
 export const linkLive = (l: { expiresAt: number }) => l.expiresAt > clock.now;
 
 export const roleLabel = (r: GroupRole) => (r === 'owner' ? 'Owner' : r === 'admin' ? 'Admin' : 'Member');
@@ -95,6 +100,36 @@ export function revokeHost(g: Group, id: Id): boolean {
   m.host = false;
   sys(g, `${displayName(id)} is no longer a host`);
   return true;
+}
+
+/* ---------- call hosts (U25): a separate permit; the device accepts it itself ---------- */
+export function appointCallHost(g: Group, id: Id): boolean {
+  if (!canCallHostAppoint(g, id)) return false;
+  const m = member(g, id)!;
+  if (m.callHost || m.callHostPending) return true;
+  m.callHostPending = true;
+  return true;
+}
+export function acceptCallHost(g: Group, id: Id) {
+  const m = member(g, id);
+  if (!m || !m.callHostPending) return;
+  m.callHostPending = false; m.callHost = true; m.callHostPaused = false;
+  sys(g, `${displayName(id)}’s device is now a call host`);
+}
+export function declineCallHost(g: Group, id: Id) { const m = member(g, id); if (m) m.callHostPending = false; }
+export function revokeCallHost(g: Group, id: Id): boolean {
+  if (!canCallHostAppoint(g, id)) return false;
+  const m = member(g, id)!;
+  if (m.callHostPending) { m.callHostPending = false; return true; }
+  if (!m.callHost) return true;
+  m.callHost = false; m.callHostPaused = false;
+  sys(g, `${displayName(id)} is no longer a call host`);
+  return true;
+}
+/** This device switches call hosting off or on (it stays permitted; it just isn't asked). */
+export function setCallHosting(g: Group, on: boolean) {
+  const m = member(g, 'me');
+  if (m?.callHost) m.callHostPaused = !on;
 }
 
 /* ---------- flags and removal (U9/U15) ---------- */

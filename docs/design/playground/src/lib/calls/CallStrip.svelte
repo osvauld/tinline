@@ -2,6 +2,7 @@
   /* Minimized call: a strip at the top of the app showing the name, the timer and End. In flow, so the
      app below moves down with it. Tapping the strip restores the full screen. */
   import Icon from '../ui/Icon.svelte';
+  import GroupCallStrip from './GroupCallStrip.svelte';
   import { call, fmtDuration } from './call.svelte';
   import { displayName } from '../model/store.svelte';
   import { stripIn, stripOut, STRIP_H } from './motion';
@@ -11,6 +12,7 @@
   const timed = $derived(call.phase === 'active' || call.phase === 'reconnecting');
 </script>
 
+<GroupCallStrip />
 {#if show}
   <div class="strip" style:--h="{STRIP_H}px" in:stripIn out:stripOut data-callstrip>
     <button type="button" class="open press" aria-label="Return to call with {name}" onclick={() => call.restore()}>

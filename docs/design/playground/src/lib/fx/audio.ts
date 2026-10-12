@@ -22,6 +22,10 @@ export const PAT: Record<string, Pattern> = {
   failed: { label: 'Couldn’t connect', period: 0, notes: [[247, 0, .5, .45, .02], [196, .24, .8, .45, .02]] },
   pulse: { label: 'Reconnecting / joined', period: 0, notes: [[330, 0, .6, .35, .02]] },
   waiting: { label: 'Call waiting', period: 3000, notes: [[784, 0, .16, .22, .012], [784, .22, .2, .22, .012]] },
+  // Group calls (step 6): soft single/dual tones, much quieter than any ring; they only ever play as cues, never loop.
+  gstart: { label: 'Group call started', period: 0, notes: [[587, 0, .3, .3, .02], [784, .14, .5, .3, .02]] },
+  gjoin: { label: 'Joined (group)', period: 0, notes: [[659, 0, .32, .3, .02]] },
+  gleft: { label: 'Left (group)', period: 0, notes: [[494, 0, .36, .26, .02]] },
   pluck: { label: 'Sent (not wired)', period: 0, notes: [[659, 0, .09, .5, .004]] },
 };
 
@@ -34,12 +38,18 @@ export const PALETTES: Record<Palette, { label: string; hit: number; cues: Parti
     back: { label: 'Ringback', period: 2200, notes: [[392, 0, 1.1, .32, .12], [396, 0, 1.1, .28, .12]] },
     connected: { label: 'Connected', period: 0, notes: [[587, 0, .5, .5, .015]] },
     waiting: { label: 'Call waiting', period: 3000, notes: [[587, 0, .16, .2, .012], [587, .22, .2, .22, .012]] },
+    gstart: { label: 'Group call started', period: 0, notes: [[392, 0, .4, .28, .03], [587, .16, .55, .3, .03]] },
+    gjoin: { label: 'Joined (group)', period: 0, notes: [[587, 0, .34, .26, .02]] },
+    gleft: { label: 'Left (group)', period: 0, notes: [[392, 0, .4, .24, .03]] },
   } },
   triad: { label: 'Triad knock', hit: 0.14, cues: {
     ring: { label: 'Ringtone', period: 2400, notes: [[392, 0, .32, .45, .015], [494, .16, .32, .45, .015], [587, .32, .5, .5, .015]] },
     back: { label: 'Ringback', period: 3400, notes: [[392, 0, .4, .3, .1], [494, .22, .4, .3, .1], [587, .44, .55, .32, .1]] },
     connected: { label: 'Connected', period: 0, notes: [[392, 0, .3, .4, .02], [587, .14, .5, .5, .02]] },
     waiting: { label: 'Call waiting', period: 3000, notes: [[494, 0, .16, .2, .012], [587, .2, .2, .22, .012]] },
+    gstart: { label: 'Group call started', period: 0, notes: [[494, 0, .28, .26, .02], [587, .12, .5, .3, .02]] },
+    gjoin: { label: 'Joined (group)', period: 0, notes: [[587, 0, .3, .26, .02]] },
+    gleft: { label: 'Left (group)', period: 0, notes: [[494, 0, .34, .24, .02]] },
   } },
 };
 
@@ -172,6 +182,7 @@ export function startAudio() {
       case 'end': audio.play('ended'); break;
       case 'failed': audio.play('failed'); break;
       case 'reconnecting': audio.play('pulse'); break;
+      case 'gcall': audio.play(e.cue === 'started' ? 'gstart' : e.cue === 'joined' ? 'gjoin' : 'gleft'); break;
       case 'join': audio.play('pulse', false, e.soft ? 0.4 : 1); break;
     }
   });
