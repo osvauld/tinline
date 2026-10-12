@@ -95,7 +95,7 @@ pub fn z_key(seg: u32, part: usize) -> String {
 }
 
 pub fn decode_z(b: &[u8]) -> Option<Vec<u16>> {
-    if b.len() % 2 != 0 {
+    if !b.len().is_multiple_of(2) {
         return None;
     }
     Some(b.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect())
@@ -237,7 +237,7 @@ pub fn build(id: u32, month: u32, days: &[&DayData], tok: &dyn Fn(&str) -> u64) 
     let mut docs: Vec<(u64, u64, &DocRow, u16)> = days
         .iter()
         .enumerate()
-        .flat_map(|(di, d)| d.rows.iter().map(move |(h, r)| (rev_at(r.at), *h, r, u16::try_from(di).unwrap_or(Z_NONE).min(Z_NONE))))
+        .flat_map(|(di, d)| d.rows.iter().map(move |(h, r)| (rev_at(r.at), *h, r, u16::try_from(di).unwrap_or(Z_NONE))))
         .collect();
     docs.sort_by_key(|(rev, h, _, _)| (*rev, *h));
     let mut lists: HashMap<u64, Vec<u32>> = HashMap::new();

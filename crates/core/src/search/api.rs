@@ -125,6 +125,7 @@ impl Node {
     /// `search_in` with other budgets (this conversation's postings, other conversations'
     /// dropped ones); also returns (segments opened, postings dropped by the doc table).
     #[doc(hidden)]
+    #[allow(clippy::too_many_arguments)]
     pub fn search_in_with_budget_for_test(&self, kind: SearchConvKind, conv: String, query: String, limit: u32, cursor: Option<String>, budget: u32, drop_budget: u32) -> Result<(SearchResults, u32, u32), Error> {
         let mut st = FindStats::default();
         let r = self.inner.search_in(kind, &conv, &query, limit, cursor.as_deref(), budget as usize, drop_budget as usize, &mut st)?;
