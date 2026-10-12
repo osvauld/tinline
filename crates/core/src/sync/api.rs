@@ -353,12 +353,24 @@ impl Node {
         self.block_on(async move { inner.chat_write_in_day_for_test(&peer_did, text, at_ms, &day).await })?
     }
 
-    /// For tests: this node's chat clock runs `ms` ahead of the real one (messages get that
-    /// `at`; live-window, hello and compaction checks use it).
+    /// For tests: messages written now are stamped `ms` ahead of the real clock (negative: a
+    /// message written at that past time by a right clock; edits, hello days and compaction use
+    /// it too). The live window and catch-up decision keep the real clock.
     #[doc(hidden)]
     pub fn chat_clock_offset_for_test(&self, ms: i64) {
         if let Ok(core) = self.inner.chat_core() {
+            core.clock_wrong.store(false, std::sync::atomic::Ordering::Relaxed);
             core.clock_ms.store(ms, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
+
+    /// For tests: this device's clock is wrong by `ms`: as `chat_clock_offset_for_test`, and the
+    /// live window and catch-up decision use it as well (0 sets it right again).
+    #[doc(hidden)]
+    pub fn chat_clock_skew_for_test(&self, ms: i64) {
+        if let Ok(core) = self.inner.chat_core() {
+            core.clock_ms.store(ms, std::sync::atomic::Ordering::Relaxed);
+            core.clock_wrong.store(ms != 0, std::sync::atomic::Ordering::Relaxed);
         }
     }
 

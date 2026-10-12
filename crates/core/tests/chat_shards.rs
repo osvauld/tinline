@@ -90,6 +90,11 @@ impl Peer {
         self.logs.lock().unwrap().iter().any(|l| l.contains(needle))
     }
 
+    /// The log lines about refused batches.
+    fn refusals(&self) -> Vec<String> {
+        self.logs.lock().unwrap().iter().filter(|l| l.contains("rejected ")).cloned().collect()
+    }
+
     /// Whether this node refused any chat batch, history snapshot or own-device batch.
     fn refused_chat(&self) -> bool {
         ["rejected chat batch", "rejected history", "rejected own-device batch"].iter().any(|n| self.logged(n))
@@ -292,7 +297,7 @@ fn messages_around_utc_midnight_land_in_two_day_shards_and_both_arrive() {
         assert!(next.contains(&m2.id) && !next.contains(&m1.id), "00:00:30 is in the new day");
     }
     eventually(60, "both delivered", || ticks(&a, &b.did, &m1.id) == DeliveryState::Delivered && ticks(&a, &b.did, &m2.id) == DeliveryState::Delivered);
-    assert!(!a.refused_chat() && !b.refused_chat());
+    assert!(!a.refused_chat() && !b.refused_chat(), "refused: {:?}", [&a, &b].map(|p| p.refusals()));
 }
 
 /// A writes a message of `at` ms into the shard of the day 3 days ago (so `at` can be outside
@@ -345,9 +350,9 @@ fn a_message_90_minutes_before_its_days_start_is_refused() {
 #[test]
 fn a_live_push_from_a_clock_23_hours_ahead_is_accepted() {
     let (a, b) = pair("sk1");
-    a.node.chat_clock_offset_for_test(23 * HOUR);
+    a.node.chat_clock_skew_for_test(23 * HOUR);
     let m = a.node.send_text(b.did.clone(), "from the future".into(), None).unwrap();
-    a.node.chat_clock_offset_for_test(0);
+    a.node.chat_clock_skew_for_test(0);
     eventually(60, "B holds it", || has(&b, &a.did, &m.id));
     eventually(60, "delivered", || ticks(&a, &b.did, &m.id) == DeliveryState::Delivered);
     assert!(!b.refused_chat());
@@ -356,11 +361,11 @@ fn a_live_push_from_a_clock_23_hours_ahead_is_accepted() {
 #[test]
 fn a_live_push_from_a_clock_30_hours_ahead_is_refused() {
     let (a, b) = pair("sk2");
-    a.node.chat_clock_offset_for_test(30 * HOUR);
+    a.node.chat_clock_skew_for_test(30 * HOUR);
     let m = a.node.send_text(b.did.clone(), "from the far future".into(), None).unwrap();
     eventually(60, "B refuses the live push", || b.refused_chat());
     // Refused as a live push: not held from it. Back on a right clock, the reconnect catches up.
-    a.node.chat_clock_offset_for_test(0);
+    a.node.chat_clock_skew_for_test(0);
     eventually(120, "B holds it after the catch-up sync", || has(&b, &a.did, &m.id));
     eventually(60, "delivered", || ticks(&a, &b.did, &m.id) == DeliveryState::Delivered);
 }
@@ -385,7 +390,7 @@ fn a_contact_offline_for_ten_days_gets_every_day_on_reconnect() {
         eventually(60, "delivered", || ticks(&a, &b.did, id) == DeliveryState::Delivered);
     }
     assert_eq!(b.node.fetch_older_history(a.did.clone(), day_str(now_ms())).unwrap(), 0, "nothing left for history to add");
-    assert!(!a.refused_chat() && !b.refused_chat());
+    assert!(!a.refused_chat() && !b.refused_chat(), "refused: {:?}", [&a, &b].map(|p| p.refusals()));
 }
 
 // The reverse: A is away while B writes on 10 days (some written under another writer ID).
@@ -405,7 +410,7 @@ fn a_contact_that_was_away_for_ten_days_gets_what_the_other_wrote() {
         eventually(60, "delivered", || ticks(&b, &a.did, id) == DeliveryState::Delivered);
     }
     assert_eq!(all_msgs(&a, &b.did).iter().filter(|m| ids.contains(&m.id)).count(), 10);
-    assert!(!a.refused_chat() && !b.refused_chat());
+    assert!(!a.refused_chat() && !b.refused_chat(), "refused: {:?}", [&a, &b].map(|p| p.refusals()));
 }
 
 // ---- 3. closed days ---------------------------------------------------------------------------
@@ -467,7 +472,7 @@ fn edits_deletes_and_late_messages_in_closed_days_converge_and_survive_restarts(
     restart(&mut b, PASS);
     assert_eq!(state(&a, &b.did), sa, "A after recompaction and restart");
     assert_eq!(state(&b, &a.did), sb, "B after recompaction and restart");
-    assert!(!a.refused_chat() && !b.refused_chat());
+    assert!(!a.refused_chat() && !b.refused_chat(), "refused: {:?}", [&a, &b].map(|p| p.refusals()));
 }
 
 // ---- 4. the shard cache ---------------------------------------------------------------------
@@ -509,7 +514,7 @@ fn reads_and_writes_beyond_the_shard_cache_stay_correct() {
         let p = if ids[..15].contains(id) { (&a, &b) } else { (&b, &a) };
         eventually(60, "delivered", || ticks(p.0, &p.1.did, id) == DeliveryState::Delivered);
     }
-    assert!(!a.refused_chat() && !b.refused_chat());
+    assert!(!a.refused_chat() && !b.refused_chat(), "refused: {:?}", [&a, &b].map(|p| p.refusals()));
 }
 
 // ---- 5. liveness ------------------------------------------------------------------------------
@@ -576,7 +581,7 @@ fn a_burst_of_200_arrives_complete_in_order_and_delivered() {
     all_delivered(&a, &b.did, &ids);
     println!("burst of 200: sent in {sent:?}, all held by B after {arrived:?}, all ticked after {:?}", t0.elapsed());
     assert_complete(&a, &b.did, &ids, "A");
-    assert!(!a.refused_chat() && !b.refused_chat());
+    assert!(!a.refused_chat() && !b.refused_chat(), "refused: {:?}", [&a, &b].map(|p| p.refusals()));
 }
 
 // Both sides send 100 at the same time: both end with the same 200 (plus the warm-up).
@@ -596,7 +601,7 @@ fn both_sides_sending_100_at_once_converge() {
     let (mine, theirs): (Vec<String>, Vec<String>) = (ids[..100].to_vec(), ids[100..].to_vec());
     all_delivered(&a, &b.did, &mine);
     all_delivered(&b, &a.did, &theirs);
-    assert!(!a.refused_chat() && !b.refused_chat());
+    assert!(!a.refused_chat() && !b.refused_chat(), "refused: {:?}", [&a, &b].map(|p| p.refusals()));
 }
 
 // B's process restarts in the middle of a burst: everything still arrives, once each.

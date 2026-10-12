@@ -75,6 +75,9 @@ pub struct ChatCore {
     /// Test knob: this node's chat clock runs this many ms ahead of the real one (per node,
     /// unlike `P2P_CHAT_CLOCK_MS_OFFSET`).
     pub(crate) clock_ms: std::sync::atomic::AtomicI64,
+    /// With `clock_ms`: the device clock itself is wrong (the live-window and catch-up checks
+    /// use it too), not just the time a message is stamped with.
+    pub(crate) clock_wrong: std::sync::atomic::AtomicBool,
 }
 
 pub enum Cmd {
@@ -224,6 +227,7 @@ impl Inner {
             wid: writer_id(&did, &value),
             fail_writes: Default::default(),
             clock_ms: Default::default(),
+            clock_wrong: Default::default(),
         });
         *self.chat.lock() = Some(core);
         self.search_reconcile();
@@ -708,6 +712,16 @@ impl Inner {
         now_ms() + self.chat_core().map(|c| c.clock_ms.load(Ordering::Relaxed)).unwrap_or(0)
     }
 
+    /// The clock the live window and the catch-up decision use: the real one, unless the test
+    /// made this device's clock wrong (`Node::chat_clock_skew_for_test`). A message stamped in the
+    /// past by `chat_clock_offset_for_test` is judged as one written then by a right clock.
+    fn chat_wall_now(&self) -> i64 {
+        match self.chat_core() {
+            Ok(c) if c.clock_wrong.load(Ordering::Relaxed) => now_ms() + c.clock_ms.load(Ordering::Relaxed),
+            _ => now_ms(),
+        }
+    }
+
     fn recent_days(&self) -> Vec<String> {
         let t = self.chat_now();
         (0..HELLO_DAYS).map(|i| day_of(t - i * DAY_MS)).collect()
@@ -965,7 +979,7 @@ impl Inner {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
-            let ctx = Ctx { signer_did: sess.did.clone(), now_ms: self.chat_now(), live, history: None };
+            let ctx = Ctx { signer_did: sess.did.clone(), now_ms: self.chat_wall_now(), live, history: None };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
                 // Their ops build on ops of ours that we lost (a reinstall): the batch cannot
@@ -1122,7 +1136,7 @@ impl Inner {
                 // window (an old one of ours not delivered yet, e.g. from another writer ID):
                 // that batch goes as a catch-up `Sync` instead, which has no such window and
                 // keeps the session up (P10b). One hour of margin for clock skew.
-                let catch_up = !sync && s.creates_outside(their_vv, me.id.did(), self.chat_now(), DAY_MS - HOUR_MS);
+                let catch_up = !sync && s.creates_outside(their_vv, me.id.did(), self.chat_wall_now(), DAY_MS - HOUR_MS);
                 s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends, catch_up))
             })
         };
