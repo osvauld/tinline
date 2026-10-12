@@ -176,7 +176,7 @@ async function androidJump(b) {
   ok(t('exactly that message is highlighted'), (await f.count()) === 1 && /deposit by Friday/.test(await f.innerText()));
   const inView = await p.evaluate(() => { const b = document.querySelector('.bub.found').getBoundingClientRect(), l = document.querySelector('.msgs').getBoundingClientRect(); return b.top >= l.top && b.bottom <= l.bottom; });
   ok(t('it is scrolled into view (not at the end of the chat)'), inView && await p.evaluate(() => { const l = document.querySelector('.msgs'); return l.scrollHeight - l.scrollTop - l.clientHeight > 40; }));
-  const o = await p.evaluate(() => getComputedStyle(document.querySelector('.bub.found'), '::after').opacity);
+  const o = await p.evaluate(() => getComputedStyle(document.querySelector(".bub.found .ring .wash")).opacity);
   ok(t('highlight is visible'), Number(o) > 0.9, o);
   await shot(p, 'android-jump-highlight');
   await wait(p, 2800);
@@ -377,7 +377,7 @@ async function motion(b) {
   await startSearch(p, 'android');
   await typeQ(p, 'android', 'landlord');
   await p.locator('[data-search-results] .row', { hasText: 'deposit by Friday' }).click(); await wait(p, 500);
-  ok(t('jump still highlights (static wash, no animation needed)'), (await p.locator('.bub.found').count()) === 1 && Number(await p.evaluate(() => getComputedStyle(document.querySelector('.bub.found'), '::after').opacity)) > 0.9);
+  ok(t('jump still highlights (static wash, no animation needed)'), (await p.locator('.bub.found').count()) === 1 && Number(await p.evaluate(() => getComputedStyle(document.querySelector(".bub.found .ring .wash")).opacity)) > 0.9);
   const anim = await p.evaluate(() => document.querySelector('.bub.found').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
   ok(t('and nothing is animating'), anim === 0, String(anim));
   await wait(p, 2700);
