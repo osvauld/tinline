@@ -224,7 +224,7 @@ partly loaded.
 | | v1 index | v2 index |
 |---|---|---|
 | full rebuild, DMs + groups | DMs 86 s + groups 83 s = 169 s | DMs 5.5 s + groups 40.9 s (incl. the final segment write) = **46 s** |
-| `search.redb` | 1,029 MB (fresh build) | **515 MB** file (content ~190 MB; redb doubling step) |
+| `search.redb` | 1,029 MB (fresh build) | **515 MB** file (a redb doubling step; content not measured) |
 | search reconcile, intact index (includes building the hot tier of 8 days) | DMs 155 ms, groups 50 ms | DMs 256 ms, groups 106 ms |
 | unlock with key | | 190 ms (intact), 72 ms (rebuild run) |
 | RSS peak during rebuild | | 1.14 GB (dataset load dominates; hot tier is capped at 20 000 docs) |
