@@ -5,7 +5,7 @@
   import { TinMark } from './tinmark.js';
   import { tierParams } from './tiers.js';
   import { motion } from '../fx/reduced.svelte';
-  import { emitFx } from '../fx/bus';
+  import { emitFx, onFx } from '../fx/bus';
   import { timeScale } from '../fx/motion';
 
   type MarkState = 'slack' | 'ringing' | 'taut';
@@ -31,7 +31,9 @@
     api.on('hit', () => emitFx({ type: 'taut-hit' }));
     api.set(state === 'taut' ? 'taut' : 'slack');
     if (state === 'ringing') api.ring(true);
-    return () => api?.destroy();
+    // silent send pluck: only a visible, live mark answers; reduced motion does nothing (tinmark ignores it)
+    const off = onFx((e) => { if (e.type === 'sent' && svg.isConnected && svg.getClientRects().length && getComputedStyle(svg).visibility !== 'hidden') api?.pluck(); });
+    return () => { off(); api?.destroy(); };
   });
 
   let prev: MarkState | null = null;

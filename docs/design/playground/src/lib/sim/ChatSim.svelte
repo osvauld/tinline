@@ -34,6 +34,7 @@
     <button type="button" onclick={() => call(open && isDirect(open) ? open.id : 'arjun', 'in', 'missed')}>Add missed incoming call</button>
   </div>
   <p class="note">Proposed, not decided: per-message delete (for me / for everyone, with Undo here). Group posts stay text + reply only, per the core.</p>
+  <p class="note">Proposed, not decided: sending a message plucks the logo's string (silent; a small twang when online, a tiny swing when not; nothing under reduced motion).</p>
 </div>
 
 <style>
