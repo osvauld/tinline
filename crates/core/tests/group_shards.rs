@@ -167,7 +167,7 @@ fn group_with(o: &Peer, ms: &[&Peer]) -> String {
     let g = o.node.group_create("Weekend hike".into()).unwrap();
     for m in ms {
         let tok = o.node.group_invite(g.clone()).unwrap();
-        assert_eq!(join(&m, tok), g);
+        assert_eq!(join(m, tok), g);
     }
     let want = sorted(std::iter::once(o.did.clone()).chain(ms.iter().map(|m| m.did.clone())).collect());
     for p in std::iter::once(o).chain(ms.iter().copied()) {
@@ -261,7 +261,7 @@ fn paging_crosses_days_and_the_cache_is_bounded() {
         let page = o.node.group_messages(g.clone(), before, 7).unwrap();
         assert!(page.messages.len() <= 7);
         let mut posts: Vec<String> = page.messages.iter().filter(|m| m.kind == GroupItemKind::Post).map(|m| m.text.clone()).collect();
-        posts.extend(seen.drain(..));
+        posts.append(&mut seen);
         seen = posts;
         pages += 1;
         match page.older {

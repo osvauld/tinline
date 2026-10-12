@@ -213,6 +213,7 @@ impl GroupStore {
     /// Appends an accepted update of a day doc whose version vector is now `vv` (or, every so
     /// often, replaces the rows by `snapshot()`), with the day index and, if given, the group
     /// meta, in one transaction.
+    #[allow(clippy::too_many_arguments)]
     pub fn append_shard(&self, gid: &str, day: &str, sm: &mut ShardMeta, vv: Vec<u8>, update: &[u8], snapshot: impl FnOnce() -> Vec<u8>, group: Option<&GroupMeta>) -> Result<(), Error> {
         let mut ops: Vec<Op> = Vec::new();
         if sm.n_updates + 1 >= UPDATES_BEFORE_SNAPSHOT {
