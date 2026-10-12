@@ -5,7 +5,7 @@
    Colours come from CSS vars: --tm-can, --tm-rim, --tm-mouth, --tm-str, --tm-ink (mono).
    Do not hand-edit geometry here; change parameters. */
 const DEF = { c: 7.5, b: 5.5, theta: 30.6, mu: 0.62, L: 3, s0: 3.5, ell: null, strokeW: 1.5,
-  phi0: 12, T: 1.6, A: 0.5, f: 7, tau: 0.11, noCap: false, lengthModel: 'exact', hitOver: 1.1,
+  phi0: 12, T: 1.6, A: 0.5, pluckA: 0.32, pluckSwing: 150, f: 7, tau: 0.11, noCap: false, lengthModel: 'exact', hitOver: 1.1,
   connectHz: 3, endZeta: 1.6, endMs: 260 };
 const f3 = v => { const r = Math.round(v * 1000) / 1000; return String(r === 0 ? 0 : r); };
 const rad = d => d * Math.PI / 180;
@@ -132,7 +132,7 @@ function attach(svg, opts) {
   const mv = () => (P.sagOnly ? 0 : 1);
   function sag() { if (P.sagOnly) { const k = P.DT > 0 ? Math.min(1, S.D / P.DT) : 0; return P.s0 + (P.sT - P.s0) * k; }
     const w = 24 - 2 * (P.c - S.D); return sOfW(w, P.ell, P.lengthModel); }
-  function twang() { if (S.tw < 0) return 0; return P.A * Math.exp(-S.tw / P.tau) * Math.sin(2 * Math.PI * P.f * S.tw); }
+  function twang() { if (S.tw < 0) return 0; return (S.twA || P.A) * Math.exp(-S.tw / P.tau) * Math.sin(2 * Math.PI * P.f * S.tw); }
   function state() { const s = sag() + twang(); return { delta: S.D * mv(), w: 24 - 2 * (P.c - S.D), s, sBase: sag(), twang: twang(), phi: S.phi * 180 / Math.PI, t: S.t, DT: P.DT, ell: P.ell }; }
 
   function paint() {
@@ -155,7 +155,7 @@ function attach(svg, opts) {
     else { z = P.endZeta; w = endOmega(); tgt = 0; }
     const a = -2 * z * w * S.V - w * w * (S.D - tgt);
     S.V += a * h; S.D += S.V * h;
-    if (S.target === 'taut' && S.D >= P.DT) { S.D = P.DT; S.V = 0; if (!S.hit) { S.hit = true; S.tw = 0; S.hitT = S.t; emit('hit', { t: clock.now(), tSim: S.t }); } }
+    if (S.target === 'taut' && S.D >= P.DT) { S.D = P.DT; S.V = 0; if (!S.hit) { S.hit = true; S.tw = 0; S.twA = 0; S.hitT = S.t; emit('hit', { t: clock.now(), tSim: S.t }); } }
     if (S.D < 0) { S.D = 0; if (S.V < 0) S.V = 0; }
     // phi
     if (S.ring) {
@@ -166,7 +166,7 @@ function attach(svg, opts) {
       const zz = S.target === 'taut' ? 1 : 0.5, ww = S.target === 'taut' ? wc : 2 * Math.PI * 3.5;
       S.phv += (-2 * zz * ww * S.phv - ww * ww * S.phi) * h; S.phi += S.phv * h;
     }
-    if (S.tw >= 0) { S.tw += h; if (P.A * Math.exp(-S.tw / P.tau) < 0.03) S.tw = -1; }
+    if (S.tw >= 0) { S.tw += h; if ((S.twA || P.A) * Math.exp(-S.tw / P.tau) < 0.03) S.tw = -1; }
     S.t += h;
   }
   function active() {
@@ -219,7 +219,9 @@ function attach(svg, opts) {
     },
     pluck() {
       if (reduced()) return api;
-      if (S.target === 'taut' && S.D >= P.DT - 1e-9) { S.tw = 0; } else { S.phv += rad(90); }
+      // a quiet acknowledgement: smaller than the hit twang, and never stacked (a running one is left alone)
+      if (S.target === 'taut' && S.D >= P.DT - 1e-9) { if (S.tw < 0) { S.twA = P.pluckA; S.tw = 0; } }
+      else if (Math.abs(S.phi) < rad(1) && Math.abs(S.phv) < rad(20)) S.phv += rad(P.pluckSwing);
       wake(); return api;
     },
     set(st) {

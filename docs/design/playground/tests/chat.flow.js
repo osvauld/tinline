@@ -187,6 +187,29 @@ async function send(p, text) { await p.fill(TA, text); await p.keyboard.press('E
     ok('removed group: read-only footer, no composer', /You were removed from this group/.test(await p.locator('.readonly').innerText()) && (await p.locator(TA).count()) === 0);
     await p.context().close();
 
+
+    /* ---------- silent send pluck (Proposed): the live brand mark answers a send ---------- */
+    {
+      const dOf = (q) => q.evaluate(() => [...document.querySelectorAll('.brand svg path')].map((e) => e.getAttribute('d')).join('|'));
+      const frames = async (q, n) => { const o = []; for (let i = 0; i < n; i++) { o.push(await dOf(q)); await q.waitForTimeout(16); } return o; };
+      const q = await open(b, 'desktop', 'chat/arjun'); track(q);
+      await q.waitForTimeout(600);
+      const rest = await dOf(q);
+      await q.fill(TA, 'pluck me'); await q.keyboard.press('Enter');
+      const fr = await frames(q, 30);
+      ok('pluck: send moves the brand string', new Set(fr).size > 3);
+      await q.waitForTimeout(1200);
+      ok('pluck: and it settles back', (await dOf(q)) === rest);
+      await q.context().close();
+      const r = await L.page(b, { w: 1440, h: 900, dark: false });
+      await r.emulateMedia({ reducedMotion: 'reduce' });
+      await r.goto(`${BASE}?form=desktop&theme=light#/chat/arjun`); await r.waitForSelector('.conv'); await r.waitForTimeout(600);
+      const rr = await dOf(r);
+      await r.fill(TA, 'quiet'); await r.keyboard.press('Enter');
+      ok('pluck: reduced motion leaves the string alone', new Set(await frames(r, 20)).size === 1 && (await dOf(r)) === rr);
+      await r.context().close();
+    }
+
     /* ---------- android (touch) ---------- */
     p = await open(b, 'android', 'chat/arjun', { mobile: true }); track(p);
     ok('android: own header with back', (await p.getByRole('button', { name: 'Back to chats' }).count()) === 1);
