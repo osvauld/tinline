@@ -133,9 +133,10 @@ fn size(p: &Path) -> f64 {
 fn query(ix: &SearchIndex, q: &str, limit: usize, cursor: Option<&str>) -> (usize, Option<String>) {
     let terms = text::query_terms(q);
     let scan = terms.iter().max_by_key(|t| t.weight()).unwrap();
-    let lookup = scan.lookup();
+    let mut lookups: Vec<String> = vec![scan.lookup()];
+    lookups.extend(terms.iter().map(|t| t.lookup()));
     let (mut looked, mut hits, mut next) = (0, 0, None);
-    let mut sc = ix.scan(&lookup, cursor).unwrap();
+    let mut sc = ix.scan_all(&lookups, cursor).unwrap();
     'scan: loop {
         let (page, more) = sc.next(256).unwrap();
         for (cur, row) in page {
@@ -271,12 +272,12 @@ pub fn run(n: usize, dir: &Path) {
     // 2c. The cost of one send-path apply, split: building the postings vs. the rest.
     let k = data.len().min(2000);
     let t = Instant::now();
-    let posts: usize = data[..k].iter().map(|r| text::index_terms(&r.text).iter().map(|w| ix.tok(w)).count()).sum();
+    let posts: usize = data[..k].iter().map(|r| text::index_terms(&r.text).len()).sum();
     println!("postings per message: {:.0}; building them (terms + keyed hashes): {:.3} ms/msg", posts as f64 / k as f64, ms(t.elapsed()) / k as f64);
 
     // 3. Queries on the live index (page cache warm after the first run).
     println!("queries (limit 20, 30 runs, warm; first run cold-ish in brackets):");
-    let cases = [("common prefix \"th\"", "th"), ("rare word \"zyxqrare\"", "zyxqrare"), ("2-word AND \"meeting tomorrow\"", "meeting tomorrow"), ("2-word AND \"the call\"", "the call"), ("no hit \"qqzzxx\"", "qqzzxx"), ("CJK 2 chars", &"")];
+    let cases = [("common prefix \"th\"", "th"), ("rare word \"zyxqrare\"", "zyxqrare"), ("2-word AND \"meeting tomorrow\"", "meeting tomorrow"), ("2-word AND \"the call\"", "the call"), ("no hit \"qqzzxx\"", "qqzzxx"), ("CJK 2 chars", "")];
     let cjk_q: String = data.iter().find(|r| r.text.chars().next().is_some_and(text::is_bigram_script)).map(|r| r.text.chars().take(2).collect()).unwrap_or_default();
     for (label, q) in cases {
         let q = if label.starts_with("CJK") { cjk_q.as_str() } else { q };

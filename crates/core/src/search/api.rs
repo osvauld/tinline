@@ -448,10 +448,11 @@ impl Inner {
             return Err(Error::Protocol("bad cursor".into()));
         }
         let limit = limit.clamp(1, MAX_LIMIT) as usize;
-        let lookup = scan.lookup();
+        let mut lookups: Vec<String> = vec![scan.lookup()];
+        lookups.extend(terms.iter().map(|t| t.lookup()));
         let readable = self.search_readable(&me);
         let mut messages = Vec::new();
-        let mut scan = ix.scan(&lookup, cursor)?;
+        let mut scan = ix.scan_all(&lookups, cursor)?;
         let mut looked = 0;
         let mut next = None;
         'scan: loop {

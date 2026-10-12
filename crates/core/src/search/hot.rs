@@ -84,11 +84,17 @@ impl Hot {
         true
     }
 
-    /// Up to `n` postings of `tok` after `after` (newest first), with their rows.
-    pub fn range(&self, tok: u64, after: Option<(u64, u64)>, n: usize) -> Vec<(u64, u64, DocRow)> {
+    /// Up to `n` postings of `tok` after `after` (newest first) that are also posted under every
+    /// token of `also`, with their rows.
+    pub fn range(&self, tok: u64, also: &[u64], after: Option<(u64, u64)>, n: usize) -> Vec<(u64, u64, DocRow)> {
         let Some(set) = self.post.get(&tok) else { return Vec::new() };
         let from = after.map_or(Bound::Unbounded, Bound::Excluded);
-        set.range((from, Bound::Unbounded)).take(n).filter_map(|(rev, h)| self.docs.get(h).map(|(_, r, _)| (*rev, *h, r.clone()))).collect()
+        let sets: Vec<Option<&BTreeSet<(u64, u64)>>> = also.iter().map(|t| self.post.get(t)).collect();
+        set.range((from, Bound::Unbounded))
+            .filter(|k| sets.iter().all(|s| s.is_some_and(|s| s.contains(*k))))
+            .take(n)
+            .filter_map(|(rev, h)| self.docs.get(h).map(|(_, r, _)| (*rev, *h, r.clone())))
+            .collect()
     }
 
     /// Drops a whole day (flushed into a segment).

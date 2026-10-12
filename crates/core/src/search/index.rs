@@ -260,10 +260,6 @@ impl SearchIndex {
         format!("{:016x}", self.keyer.doc(src, id))
     }
 
-    pub fn tok(&self, term: &str) -> u64 {
-        self.keyer.tok(term)
-    }
-
     // ---- clock and tunables -----------------------------------------------------------------
 
     pub fn limits(&self) -> Limits {
@@ -702,7 +698,25 @@ impl SearchIndex {
 
     /// A newest-first walk over the docs that contain the indexed `term`, after the cursor
     /// `after` (`{rev_at}/{h}`, as `Scan::next` returns it).
+    #[cfg(test)]
     pub fn scan(&self, term: &str, after: Option<&str>) -> Result<Scan<'_>, Error> {
+        self.scan_all(&[term.to_string()], after)
+    }
+
+    /// Like [`scan`](Self::scan), but only the docs posted under every one of `terms` (the
+    /// first is the one to walk; the others only narrow it, per segment by intersecting the
+    /// posting lists before any row is read).
+    pub fn scan_all(&self, terms: &[String], after: Option<&str>) -> Result<Scan<'_>, Error> {
+        let mut toks: Vec<u64> = Vec::new();
+        for t in terms {
+            let k = self.keyer.tok(t);
+            if !toks.contains(&k) {
+                toks.push(k);
+            }
+        }
+        if toks.is_empty() {
+            return Err(Error::Protocol("no term".into()));
+        }
         let after = match after {
             None => None,
             Some(a) => {
@@ -716,7 +730,7 @@ impl SearchIndex {
         };
         let mut pending: Vec<Seg> = view.man.segs.iter().filter(|s| s.docs > 0 && after.is_none_or(|a| rev_at(s.min_at) >= a.0)).cloned().collect();
         pending.sort_by_key(|s| (std::cmp::Reverse(s.max_at), std::cmp::Reverse(s.id)));
-        Ok(Scan { ix: self, tok: self.keyer.tok(term), view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), last: None })
+        Ok(Scan { ix: self, toks, view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), last: None })
     }
 
     /// `(records, key bytes + value bytes)` of the `x/`, `y/` and `m` records in the file.
@@ -755,6 +769,8 @@ fn pack(days: &[&DayData], max: usize) -> Vec<Vec<usize>> {
     out
 }
 
+type Chunk = Arc<Vec<(u64, DocRow)>>;
+
 struct Open {
     seg: u32,
     docs: u32,
@@ -769,7 +785,7 @@ struct Open {
 /// each opened only once the merge reaches its newest time.
 pub struct Scan<'a> {
     ix: &'a SearchIndex,
-    tok: u64,
+    toks: Vec<u64>,
     view: Arc<View>,
     hot_days: HashSet<DayKey>,
     after: Option<(u64, u64)>,
@@ -778,7 +794,7 @@ pub struct Scan<'a> {
     hot_done: bool,
     pending: VecDeque<Seg>,
     open: Vec<Open>,
-    chunks: HashMap<(u32, usize), Option<Arc<Vec<(u64, DocRow)>>>>,
+    chunks: HashMap<(u32, usize), Option<Chunk>>,
     last: Option<(u64, u64)>,
 }
 
@@ -795,7 +811,7 @@ impl Scan<'_> {
         Ok((out, true))
     }
 
-    fn chunk(&mut self, seg: u32, c: usize) -> Option<Arc<Vec<(u64, DocRow)>>> {
+    fn chunk(&mut self, seg: u32, c: usize) -> Option<Chunk> {
         if let Some(v) = self.chunks.get(&(seg, c)) {
             return v.clone();
         }
@@ -813,7 +829,7 @@ impl Scan<'_> {
         if self.hot_done || !self.hot_buf.is_empty() {
             return;
         }
-        let v = self.ix.hot.lock().range(self.tok, self.hot_last, HOT_BATCH);
+        let v = self.ix.hot.lock().range(self.toks[0], &self.toks[1..], self.hot_last, HOT_BATCH);
         if v.len() < HOT_BATCH {
             self.hot_done = true;
         }
@@ -863,7 +879,20 @@ impl Scan<'_> {
                 o.pos = 0;
                 return false;
             }
-            let list = self.ix.db.get(&x_key(seg, self.tok, part)).ok().flatten().and_then(|b| decode_list(&b, (part * PART_DOCS) as u32));
+            let mut list: Option<Vec<u32>> = None;
+            for tok in &self.toks {
+                let l = self.ix.db.get(&x_key(seg, *tok, part)).ok().flatten().and_then(|b| decode_list(&b, (part * PART_DOCS) as u32)).unwrap_or_default();
+                list = Some(match list {
+                    None => l,
+                    Some(prev) => {
+                        let set: HashSet<u32> = l.into_iter().collect();
+                        prev.into_iter().filter(|d| set.contains(d)).collect()
+                    }
+                });
+                if list.as_ref().is_some_and(Vec::is_empty) {
+                    break;
+                }
+            }
             let o = &mut self.open[i];
             o.part += 1;
             if let Some(l) = list.filter(|l| !l.is_empty()) {
@@ -1007,7 +1036,7 @@ mod tests {
         ix.maintain(Mode::Force).unwrap();
         assert_eq!(ix.stats().hot_docs, 0);
         assert_eq!(ids(&ix, "pic"), ["2"]);
-        ix.apply(&[a.clone()], &[], &[mark(&a, 1)]).unwrap();
+        ix.apply(std::slice::from_ref(&a), &[], &[mark(&a, 1)]).unwrap();
         ix.maintain(Mode::Force).unwrap();
         assert_eq!(ids(&ix, "pic"), ["2", "1"]);
         ix.forget("g.b").unwrap();
@@ -1119,7 +1148,7 @@ mod tests {
     fn cold_day_in_a_segment_is_found_after_reopen() {
         let ix = SearchIndex::in_memory("alpha beta");
         let r = row("dm.p", "1", T0, "ancient manuscript");
-        ix.apply(&[r.clone()], &[], &[mark(&r, 1)]).unwrap();
+        ix.apply(std::slice::from_ref(&r), &[], &[mark(&r, 1)]).unwrap();
         at_day(&ix, "2026-01-05");
         ix.maintain(Mode::Force).unwrap();
         assert_eq!(ix.stats().segs, 0, "still within the hot window");
@@ -1147,7 +1176,7 @@ mod tests {
         assert_eq!(ix.stats().hot_docs, 0);
         // late post
         let late = row("g.x", "c", T0 + 300, "also lemonade");
-        ix.apply(&[late.clone()], &[], &[mark(&late, 2)]).unwrap();
+        ix.apply(std::slice::from_ref(&late), &[], &[mark(&late, 2)]).unwrap();
         assert_eq!(ids(&ix, "lemon"), ["c"]);
         assert_eq!(ids(&ix, "bl"), ["b"], "the day's other docs are served from memory");
         assert_eq!(ix.stats().hot_docs, 3);
@@ -1165,7 +1194,7 @@ mod tests {
         assert_eq!(ids(&ix, "lemon"), ["c"]);
         assert!(ids(&ix, "picnic").is_empty() && ids(&ix, "blank").is_empty());
         // A change that alters nothing does not bring the day back.
-        ix.apply(&[late.clone()], &[], &[mark(&late, 2)]).unwrap();
+        ix.apply(std::slice::from_ref(&late), &[], &[mark(&late, 2)]).unwrap();
         assert_eq!(ix.stats().hot_docs, 0);
     }
 
@@ -1175,7 +1204,7 @@ mod tests {
     fn crash_before_rewrite_leaves_the_old_watermark() {
         let ix = SearchIndex::in_memory("alpha beta");
         let a = row("dm.p", "a", T0 + 100, "one two");
-        ix.apply(&[a.clone()], &[], &[mark(&a, 1)]).unwrap();
+        ix.apply(std::slice::from_ref(&a), &[], &[mark(&a, 1)]).unwrap();
         at_day(&ix, "2026-06-01");
         ix.maintain(Mode::Force).unwrap();
         ix.apply(&[row("dm.p", "a", T0 + 100, "one three")], &[], &[mark(&a, 2)]).unwrap();
@@ -1288,6 +1317,23 @@ mod tests {
             }
         }
         assert_eq!(seen, want);
+    }
+
+    // KIND: unit (v2) — a scan over several terms returns only docs posted under all of them, in
+    // memory and from a segment (the lists are intersected before any row is read).
+    #[test]
+    fn multi_term_scan_intersects() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        let rows = [row("dm.p", "a", T0 + 1, "red apple"), row("dm.p", "b", T0 + 2, "red pear"), row("dm.p", "c", T0 + 3, "green apple"), row("dm.p", "d", T0 + 4, "red apple pie")];
+        ix.apply(&rows[..2], &[], &[]).unwrap();
+        ix.apply(&rows[2..], &[], &[]).unwrap();
+        let both = |ix: &SearchIndex| -> Vec<String> { ix.scan_all(&["ap".to_string(), "re".to_string()], None).unwrap().next(10).unwrap().0.into_iter().map(|(_, r)| r.id).collect() };
+        assert_eq!(both(&ix), ["d", "a"]);
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.stats().hot_docs, 0);
+        assert_eq!(both(&ix), ["d", "a"]);
+        assert!(ix.scan_all(&["ap".to_string(), "zz".to_string()], None).unwrap().next(10).unwrap().0.is_empty());
     }
 
     // KIND: unit (v2) — closing drops and zeroizes the hot tier; a reopen has none of it.
