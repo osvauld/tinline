@@ -434,7 +434,9 @@ fn group_reconcile_fixes_stale_posts_and_rebuilds() {
     o.node.search_plant_group_post_for_test(g.clone(), "ghost".into(), "phantom walrus".into()).unwrap();
     assert_eq!(ids(&o.node, "zebra"), [p1.id.as_str()]);
     assert_eq!(hits(&o.node, "walrus").len(), 1);
-    relock(&o.node);
+    // The planted rows live in the hot tier (memory), so a reconcile now (not a reopen, which
+    // would drop them) has to fix them.
+    o.node.search_reconcile_now_for_test().unwrap();
     eventually(30, "reconcile restores the text", || ids(&o.node, "rook") == [p1.id.as_str()]);
     assert!(hits(&o.node, "zebra").is_empty(), "the old text is gone");
     assert!(hits(&o.node, "walrus").is_empty(), "a post that is not shown is removed");
@@ -528,4 +530,161 @@ fn scan_budget_pages_continue_without_gaps() {
         }
         assert_eq!(seen, want, "limit {limit}, budget {budget}");
     }
+}
+
+// ---- index v2: hot tier + segments ----------------------------------------------------------
+
+/// Sends `text` to ourselves stamped `days` days in the past.
+fn send_old(n: &Node, me: &str, text: &str, days: i64) -> String {
+    n.chat_clock_offset_for_test(-days * DAY_MS);
+    let id = n.send_text(me.to_string(), text.to_string(), None).unwrap().id;
+    n.chat_clock_offset_for_test(0);
+    id
+}
+
+// KIND: acceptance (v2) — a day that is no longer hot is written into a segment (memory empties)
+// and still found, newest first with the hot ones; an edit and a delete of the old (segmented)
+// message are seen at once, and a lost memory tier heals on reopen.
+#[test]
+fn cold_day_goes_to_a_segment_and_edits_still_show() {
+    let p = peer("v2cold");
+    let me = p.did.clone();
+    let old = send_old(&p.node, &me, "ancient manuscript", 20);
+    let older = send_old(&p.node, &me, "older manuscript", 40);
+    let fresh = p.node.send_text(me.clone(), "fresh manuscript".into(), None).unwrap().id;
+    assert_eq!(ids(&p.node, "manuscript"), [fresh.as_str(), old.as_str(), older.as_str()]);
+    let (hot, segs, seg_docs) = p.node.search_maintain_for_test().unwrap();
+    assert!(segs >= 1 && seg_docs == 2, "two cold docs in segments: {segs} {seg_docs}");
+    assert_eq!(hot, 1, "the fresh one stays in memory");
+    assert_eq!(ids(&p.node, "manuscript"), [fresh.as_str(), old.as_str(), older.as_str()]);
+    assert_eq!(hits(&p.node, "ancient")[0].snippet, "ancient manuscript");
+
+    // Edit the segmented message: its day comes back into memory, the answer changes at once.
+    p.node.edit_message(me.clone(), old.clone(), "ancient parchment".into()).unwrap();
+    assert!(hits(&p.node, "ancient manuscript").is_empty());
+    assert_eq!(ids(&p.node, "parchment"), [old.as_str()]);
+    assert_eq!(ids(&p.node, "manuscript"), [fresh.as_str(), older.as_str()]);
+    // A crash before the month was rewritten: memory is lost, the file still has the old text;
+    // the reopen sees the stale watermark of that day and reconciles it.
+    relock(&p.node);
+    eventually(30, "the edit is back", || ids(&p.node, "parchment") == [old.as_str()] && hits(&p.node, "ancient manuscript").is_empty());
+    assert_eq!(ids(&p.node, "manuscript"), [fresh.as_str(), older.as_str()]);
+    // Delete the other old one; rewrite; the answers stay.
+    p.node.delete_message(me.clone(), older.clone()).unwrap();
+    assert_eq!(ids(&p.node, "manuscript"), [fresh.as_str()]);
+    let (hot, _, seg_docs) = p.node.search_maintain_for_test().unwrap();
+    assert_eq!((hot, seg_docs), (1, 1), "the deleted one is gone from the rewritten month");
+    assert_eq!(ids(&p.node, "manuscript"), [fresh.as_str()]);
+    assert_eq!(ids(&p.node, "parchment"), [old.as_str()]);
+}
+
+// KIND: acceptance (v2) — a late group post into a day that is already in a segment is found at
+// once (and with the day's other posts), and the segment is rewritten on request.
+#[test]
+fn late_group_post_into_a_cold_day() {
+    let o = peer("v2late");
+    let g = o.node.group_create("Gardeners".into()).unwrap();
+    let at = now_ms() - 30 * DAY_MS;
+    let early = o.node.group_post_at_for_test(g.clone(), at, "early daffodil bulbs".into()).unwrap();
+    o.node.search_maintain_for_test().unwrap();
+    let (_, segs, seg_docs) = o.node.search_maintain_for_test().unwrap();
+    assert!(segs >= 1 && seg_docs >= 1);
+    assert_eq!(ids(&o.node, "daffodil"), [early.id.as_str()]);
+    let late = o.node.group_post_at_for_test(g.clone(), at + 60_000, "late tulip bulbs".into()).unwrap();
+    assert_eq!(ids(&o.node, "bulbs"), [late.id.as_str(), early.id.as_str()]);
+    assert_eq!(ids(&o.node, "tulip"), [late.id.as_str()]);
+    let (hot, _, seg_docs) = o.node.search_maintain_for_test().unwrap();
+    assert_eq!((hot, seg_docs), (0, 2));
+    assert_eq!(ids(&o.node, "bulbs"), [late.id.as_str(), early.id.as_str()]);
+    // After a reopen the same, from the file alone.
+    relock(&o.node);
+    eventually(30, "reopened", || ids(&o.node, "bulbs") == [late.id.as_str(), early.id.as_str()]);
+}
+
+// KIND: acceptance (v2) — paging newest first across the hot tier and several segments, with the
+// tiers changing between pages: every doc once, none skipped; a small SEG_MAX_DOCS splits the
+// old days over several segments.
+#[test]
+fn paging_across_tiers_with_a_tier_change_between_pages() {
+    let p = peer("v2page");
+    let me = p.did.clone();
+    p.node.search_set_caps_for_test(1000, 4).unwrap();
+    let mut want = Vec::new();
+    for d in (9..=24).rev() {
+        for k in 0..2 {
+            want.push(send_old(&p.node, &me, &format!("standup report {d}-{k}"), d));
+        }
+    }
+    for i in 0..3 {
+        want.push(p.node.send_text(me.clone(), format!("standup report now {i}"), None).unwrap().id);
+        std::thread::sleep(Duration::from_millis(3));
+    }
+    // Oldest sent first; the result is newest first by time.
+    let mut by_time: Vec<(u64, String)> = hits(&p.node, "standup").into_iter().map(|h| (h.at, h.id)).collect();
+    by_time.sort();
+    by_time.reverse();
+    let want_ids: Vec<String> = by_time.into_iter().map(|x| x.1).collect();
+    assert_eq!(want_ids.len(), want.len());
+    assert_eq!(ids(&p.node, "standup"), want_ids, "all in memory: newest first");
+    let mut seen = Vec::new();
+    let mut cursor = None;
+    let mut step = 0;
+    loop {
+        let r = p.node.search("standup".into(), 5, cursor).unwrap();
+        seen.extend(r.messages.iter().map(|m| m.id.clone()));
+        // The tiers change between pages: first the cold days go into segments, then an old
+        // message is edited (its day comes back into memory), then the segments are rewritten.
+        match step {
+            0 => {
+                let (_, segs, _) = p.node.search_maintain_for_test().unwrap();
+                assert!(segs >= 3, "SEG_MAX_DOCS 4 splits the month over several segments: {segs}");
+            }
+            1 => {
+                p.node.edit_message(me.clone(), want[0].clone(), "standup report edited".into()).unwrap();
+            }
+            _ => {
+                p.node.search_maintain_for_test().unwrap();
+            }
+        }
+        step += 1;
+        match r.next {
+            Some(c) => cursor = Some(c),
+            None => break,
+        }
+        assert!(step < 40);
+    }
+    assert_eq!(seen, want_ids, "each once, newest first, whatever the tier");
+}
+
+// KIND: acceptance (v2) — a file in the v1 layout is emptied and rebuilt in the background; a
+// locked node answers Locked and keeps no memory tier.
+#[test]
+fn v1_file_is_rebuilt_and_lock_drops_memory() {
+    let root = Root::new("v2v1");
+    let n = root.node();
+    n.create_identity("vera".into(), PASS.into()).unwrap();
+    let me = n.profile().unwrap().did;
+    n.send_text(me.clone(), "the lighthouse keeper".into(), None).unwrap();
+    send_old(&n, &me, "old harbour light", 30);
+    assert_eq!(hits(&n, "keeper").len(), 1);
+    n.lock();
+    eventually(10, "locked", || n.search("keeper".into(), 5, None).is_err());
+    assert!(matches!(n.search_maintain_for_test(), Err(Error::Locked)), "no index, no memory tier while locked");
+    // Replace the file with one in the v1 layout (a version row of 1 and per-message keys).
+    let path = root.acct(&me).join("search.redb");
+    std::fs::remove_file(&path).unwrap();
+    let v1 = storage::Store::open(&path).unwrap();
+    v1.put("v", b"not-a-sealed-v2-value").unwrap();
+    v1.put("d/0123456789abcdef", b"old row").unwrap();
+    v1.put("t/00112233445566778899aabbccddeeff/ffffffffffffffff/0123456789abcdef", b"").unwrap();
+    v1.close();
+    drop(v1);
+    n.unlock(PASS.into()).unwrap();
+    eventually(30, "rebuilt", || hits(&n, "keeper").len() == 1 && hits(&n, "harbour").len() == 1);
+    n.lock();
+    eventually(10, "locked", || n.search("keeper".into(), 5, None).is_err());
+    let after = storage::Store::open(&path).unwrap();
+    assert!(after.get("d/0123456789abcdef").unwrap().is_none(), "the v1 rows are gone");
+    assert!(after.get("m").unwrap().is_some(), "and the rebuild wrote a manifest");
+    after.close();
 }
