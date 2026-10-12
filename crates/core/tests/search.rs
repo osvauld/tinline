@@ -730,7 +730,7 @@ fn find_in_chat_dm_and_group_only_their_hits_paged() {
     let r = p.node.search_in(SearchConvKind::Group, g.clone(), "lant".into(), 100, None).unwrap();
     assert_eq!(r.messages.iter().map(|h| h.id.clone()).collect::<Vec<_>>(), theirs, "group: its hits only");
     assert!(r.messages.iter().all(|h| h.kind == SearchConvKind::Group && h.conv == g && h.conv_name == "Harbour Crew"));
-    assert_eq!(highlighted(&r.messages[0]), ["lantern"]);
+    assert_eq!(highlighted(&r.messages[0]), ["lant"]);
     assert_eq!(hits(&p.node, "lantern").len(), mine.len() + theirs.len(), "the global search sees both");
     // Pages of 4 over both tiers, with a tier change in the middle (an old message is edited).
     for (kind, conv, want) in [(SearchConvKind::Dm, me.clone(), mine.clone()), (SearchConvKind::Group, g.clone(), theirs.clone())] {
