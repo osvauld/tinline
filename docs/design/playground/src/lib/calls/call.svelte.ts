@@ -18,6 +18,7 @@ import { db, person, chat, pushMessage } from '../model/store.svelte';
 import type { CallRecord } from '../model/types';
 import { nav } from '../nav/router.svelte';
 import './cues';
+import { vid } from './video/video.svelte';   // video: the camera half of the call (new files under ./video)
 
 export type CallPhase = 'idle' | 'incoming' | 'outgoing' | 'connecting' | 'active' | 'reconnecting' | 'ended' | 'failed';
 export type Outcome = CallRecord['outcome'];
@@ -80,7 +81,7 @@ class Call {
   get waitingNow() { return this.waiting && (this.phase === 'active' || this.phase === 'reconnecting') ? this.waiting : null; }
   get statusText() {
     switch (this.phase) {
-      case 'incoming': return 'Incoming call';
+      case 'incoming': return vid.intent ? 'Incoming video call' : 'Incoming call';
       case 'outgoing': return this.ringing ? 'Ringing…' : 'Calling…';
       case 'connecting': return 'Connecting…';
       case 'reconnecting': return 'Reconnecting…';
@@ -93,11 +94,11 @@ class Call {
   get fieldState() { return this.phase === 'idle' ? 'calm' : this.phase === 'active' && this.waiting ? 'waiting' : this.phase; }
 
   /* ---------- starting ---------- */
-  place(id: string): boolean {
+  place(id: string, video = false): boolean {
     const r = this.refusal(id);
     if (r === 'busy') { if (this.peer === id) this.view = 'full'; return false; }
     if (r) return false;
-    this.#begin(id, 'out');
+    this.#begin(id, 'out', video);
     this.phase = 'outgoing'; this.view = 'full'; this.ringing = false;
     emitFx({ type: 'ring', on: true });
     const p = person(id)!;
@@ -111,7 +112,7 @@ class Call {
   }
 
   /** Someone calls me. Blocked callers and message-only contacts never reach the screen (silently dropped). */
-  receive(id: string): boolean {
+  receive(id: string, video = false): boolean {
     // The account key is not on this device until it is unlocked: nothing can ring (and nothing is recorded).
     if (db.account.gate !== 'ready') return false;
     const r = this.refusal(id);
@@ -121,7 +122,7 @@ class Call {
       this.#recordFor(id, 'in', 'missed', 0); return false;
     }
     if (r) return false;
-    this.#begin(id, 'in');
+    this.#begin(id, 'in', video);
     this.phase = 'incoming'; this.view = 'strip';
     emitFx({ type: 'incoming', on: true });
     this.#later(CALL_MS.ringTimeout, () => { if (this.phase === 'incoming') this.#finish('missed', 'remote', 'no-answer'); });
@@ -129,9 +130,9 @@ class Call {
   }
 
   /* ---------- my actions ---------- */
-  answer() {
+  answer(withCamera = false) {
     if (this.phase !== 'incoming') return;
-    this.#leave();
+    this.#leave(); vid.answerWith(withCamera);   // video: camera off unless asked
     this.phase = 'connecting'; this.view = 'full';
     this.#later(CALL_MS.connect, () => this.#connected());
   }
@@ -241,9 +242,10 @@ class Call {
     }
   }
   #clearTimers() { this.#timers.forEach(clearTimeout); this.#timers.clear(); clearInterval(this.#tick); }
-  #begin(id: string, dir: 'out' | 'in') {
+  #begin(id: string, dir: 'out' | 'in', video = false) {
     this.#clearTimers();
-    this.peer = id; this.direction = dir; this.endReason = null; this.muted = false; this.speaker = 'earpiece';
+    vid.begin(video, video && dir === 'out');   // video: a call placed from the video button turns my camera on at connect
+    this.peer = id; this.direction = dir; this.endReason = null; this.muted = false; this.speaker = video && dir === 'out' ? 'speaker' : 'earpiece';
     this.fading = false; this.elapsedS = 0; this.#connectedMono = 0; this.#recorded = false;
     this.startedAt = Date.now();
   }
@@ -254,7 +256,7 @@ class Call {
   }
   #connected() {
     if (this.phase !== 'connecting') return;
-    this.phase = 'active';
+    this.phase = 'active'; vid.connected();
     this.#connectedMono = performance.now();
     this.elapsedS = 0;
     clearInterval(this.#tick);
@@ -269,8 +271,8 @@ class Call {
     const id = this.peer!, dir = this.direction!;
     const seconds = this.#connectedMono ? Math.floor((performance.now() - this.#connectedMono) / 1000) : 0;
     this.#clearTimers();
-    this.#leave();
-    if (!this.#recorded) { this.#recorded = true; this.#recordFor(id, dir, outcome, seconds); }
+    this.#leave(); vid.ended();
+    if (!this.#recorded) { this.#recorded = true; this.#recordFor(id, dir, outcome, seconds, vid.recordKind()); }
     this.endReason = reason;
     this.ringing = false;
     if (who === 'failed') { this.phase = 'failed'; emitFx({ type: 'failed' }); }
@@ -283,16 +285,16 @@ class Call {
     this.#later(hold + dur('callEnd'), () => (this.waiting ? this.#promote(false) : this.#reset()));
   }
   #reset() {
-    this.#clearTimers();
+    this.#clearTimers(); vid.reset();
     this.#answerNext = false;
     this.phase = 'idle'; this.peer = null; this.direction = null; this.view = 'full'; this.fading = false;
     this.endReason = null; this.ringing = false; this.muted = false; this.speaker = 'earpiece'; this.elapsedS = 0;
   }
   /** The ONE record per call. Unread only for a missed incoming call (Proposed). */
-  #recordFor(id: string, direction: 'out' | 'in', outcome: Outcome, durationS: number) {
+  #recordFor(id: string, direction: 'out' | 'in', outcome: Outcome, durationS: number, kind: 'voice' | 'video' = 'voice') {
     const c = chat(id);
     if (!c || c.kind !== 'direct') return;
-    pushMessage(c, { from: direction === 'out' ? 'me' : c.person, text: '', call: { kind: 'voice', outcome, durationS, direction } });
+    pushMessage(c, { from: direction === 'out' ? 'me' : c.person, text: '', call: { kind, outcome, durationS, direction } });
     if (direction === 'in' && (outcome === 'missed' || outcome === 'cancelled') && nav.openChat !== c.id) c.unread++;
     onRecord.forEach((fn) => fn(id, direction, outcome));
   }

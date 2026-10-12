@@ -21,6 +21,7 @@
   import { dur } from '../../lib/fx/motion';
   import { nav } from '../../lib/nav/router.svelte';
   import { call } from '../../lib/calls/call.svelte';
+  import VIcon from '../../lib/calls/video/VIcon.svelte';
   import {
     SAMPLE_FILES, SIM, attachFile, cancelFile, canDelete, canEdit, canPost, deleteMessage, firstUnreadId, retryMessage, waitingReason,
     type Undo,
@@ -138,6 +139,7 @@
 
   /** Header button and call-record pills. The machine refuses blocked / message-only people; group calls are step 6. */
   function startCall() { if (c?.kind === 'direct') call.place(c.person); }
+  function startVideo() { if (c?.kind === 'direct') call.place(c.person, true); }
   function openDetails() {
     if (!c) return;
     nav.push(c.kind === 'group' ? { name: 'groupInfo', chat: c.id } : { name: 'contact', person: c.person });
@@ -357,7 +359,9 @@
           <span class="tx"><span class="nm"><b>{chatTitle(c)}</b>{#if c.muted}<Icon name="mute" size={14} />{/if}</span><span class="pr">{status}</span></span>
         </button>
         {#if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
-          onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>{/if}
+          onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>
+          <button type="button" class="ib press" class:dim={!callable} aria-label="Video call" aria-disabled={!callable} title={callable ? 'Video call' : callTitle}
+            onclick={() => { if (callable) startVideo(); }}><VIcon name="video" size={22} /></button>{/if}
         <button type="button" class="ib press" aria-label="Find in this chat" title="Find in this chat (Ctrl+F)" onclick={() => find.show()}><Icon name="search" /></button>
         <button type="button" class="ib press" aria-label="Chat details" onclick={openDetails}><Icon name="info" /></button>
         {#if find.open}<FindBar count={fm.length} onclose={closeFind} />{/if}

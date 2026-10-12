@@ -2,6 +2,7 @@
   /* One message row. The bubble CSS is ported verbatim from refined/chat.html (look unchanged since 3002236);
      keep text and meta contiguous in the markup: the bubble is white-space:pre-wrap. */
   import Icon from '../../lib/ui/Icon.svelte';
+  import VIcon from '../../lib/calls/video/VIcon.svelte';
   import { fade, slide } from 'svelte/transition';
   import { motion } from '../../lib/fx/reduced.svelte';
   import { dur } from '../../lib/fx/motion';
@@ -61,7 +62,7 @@
     <div class="line">
       <button type="button" class="pill" class:bad={callBad} onclick={oncall}
         aria-label="{callText}, {hhmm(m.at)}. Call {c.kind === 'direct' ? firstName(c.person) : 'the group'} back">
-        <Icon name="phone" size={16} /><span class="t">{callText}</span><time>{hhmm(m.at)}</time>
+        {#if call.kind === 'video'}<VIcon name="video" size={16} />{:else}<Icon name="phone" size={16} />{/if}<span class="t">{callText}</span><time>{hhmm(m.at)}</time>
       </button>
     </div>
   </li>
