@@ -9,6 +9,7 @@
   import { createRenderer, type Renderer } from './gl';
   import { cueFor } from '../cues';
   import { motion } from '../../fx/reduced.svelte';
+  import { field } from './texture.svelte';
 
   let { state, anchorEl, scrimEls = [], muted = false }: { state: string; anchorEl?: HTMLElement; scrimEls?: HTMLElement[]; muted?: boolean } = $props();
 
@@ -62,12 +63,12 @@
     const th = themeName();
     if (th !== theme) { theme = th; fx.setTheme(th); }
     const f = fx.update(t);
-    renderer?.draw({ ...f, scrim: { k: th === 'dark' ? SCRIM_DARK : 0, at: scrimAt }, gain: th === 'dark' ? GAIN_DARK : 1 }, fx.P);
+    renderer?.draw({ ...f, texture: field.texture, scrim: { k: th === 'dark' ? SCRIM_DARK : 0, at: scrimAt }, gain: th === 'dark' ? GAIN_DARK : 1 }, fx.P);
     if (!alive) return;
     if (f.animating) raf = requestAnimationFrame(render);
     else if (f.wakeAt != null) timer = window.setTimeout(render, Math.max(0, f.wakeAt - t));
   }
-  function render0() { const th = themeName(), f = fx.update(performance.now()); renderer?.draw({ ...f, scrim: { k: th === 'dark' ? SCRIM_DARK : 0, at: scrimAt }, gain: th === 'dark' ? GAIN_DARK : 1 }, fx.P); }
+  function render0() { const th = themeName(), f = fx.update(performance.now()); renderer?.draw({ ...f, texture: field.texture, scrim: { k: th === 'dark' ? SCRIM_DARK : 0, at: scrimAt }, gain: th === 'dark' ? GAIN_DARK : 1 }, fx.P); }
   function kick() {
     if (!alive || !started) return;
     cancelAnimationFrame(raf); clearTimeout(timer);
@@ -86,6 +87,7 @@
   });
   $effect(() => { fx.setReduced(motion.reduced); kick(); });
   $effect(() => { fx.setMute(muted); });
+  $effect(() => { field.texture; kick(); });   // live switch: redraw now, no remount
 
   onMount(() => {
     renderer = createRenderer(canvas, host);
