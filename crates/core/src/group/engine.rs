@@ -19,7 +19,7 @@ use tokio::sync::{Notify, mpsc};
 use super::api::GroupEvents;
 use super::doc::{Entry, GroupDoc, Reject};
 use super::record::*;
-use super::state::{GroupState, derive};
+use super::state::{GroupState, derive_meta};
 use super::store::{DirEntry, GroupMeta, GroupStore};
 use super::wire::*;
 use crate::Error;
@@ -104,7 +104,7 @@ pub(crate) struct Live {
 
 impl Live {
     fn rederive(&mut self, gid: &str) {
-        self.state = derive(gid, &self.entries);
+        self.state = derive_meta(gid, &self.entries, &self.doc.vv());
     }
 }
 
@@ -271,7 +271,7 @@ impl GroupCore {
         live.entries.push(entry.clone());
         live.rederive(gid);
         let doc = &live.doc;
-        self.store.append(gid, &mut live.meta, &update, || doc.snapshot())?;
+        self.store.append_meta(gid, &mut live.meta, &update, || doc.snapshot())?;
         let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
         let posts = post_diff(&posts_before, &prev, live);
         Ok((entry, Changed { gid: gid.to_string(), new_items, posts }))
@@ -295,7 +295,7 @@ impl GroupCore {
         live.entries.extend(fresh);
         live.rederive(gid);
         let doc = &live.doc;
-        if let Err(e) = self.store.append(gid, &mut live.meta, update, || doc.snapshot()) {
+        if let Err(e) = self.store.append_meta(gid, &mut live.meta, update, || doc.snapshot()) {
             tracing::warn!("group store: {e}");
         }
         let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
@@ -555,7 +555,7 @@ impl Inner {
         let wid = writer_id(&did, &dev);
         let mut groups = HashMap::new();
         for (gid, meta) in store.groups()? {
-            let (snap, ups) = store.doc_rows(&gid)?;
+            let (snap, ups) = store.meta_rows(&gid)?;
             let doc = match GroupDoc::load(&gid, wid, snap.as_deref(), &ups) {
                 Ok(d) => d,
                 Err(e) => {
@@ -564,7 +564,7 @@ impl Inner {
                 }
             };
             let entries = doc.entries().unwrap_or_default();
-            let state = derive(&gid, &entries);
+            let state = derive_meta(&gid, &entries, &doc.vv());
             groups.insert(gid, Live { doc, entries, state, meta });
         }
         let core = Arc::new(GroupCore {

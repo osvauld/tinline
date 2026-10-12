@@ -1,6 +1,8 @@
-//! What a group's record set means: owner, members, admins, hosts, flags, removals and which
-//! posts show. A pure function of the set of verified records and their oplog positions, so
-//! every device that holds the same records reaches the same state in every delivery order.
+//! What a group's meta records mean: owner, members, admins, hosts, flags, removals; and, per
+//! post, whether it shows. `derive_meta` is a pure function of the meta record set and its oplog
+//! positions and `post_visible` of that state and the post's own `seen`, so every device that
+//! holds the same records reaches the same verdicts in every delivery order. Posts live in day
+//! docs (`docs/group-shards.md`); their `seen` is the author's meta version vector.
 //!
 //! Rules (decisions in `rotation-open-decisions.md` §0; PROVISIONAL ones marked):
 //! - Genesis: written by the owner; `group_id(owner, nonce)` must be the group.
@@ -17,7 +19,9 @@
 //! - Posts (U11 option A, signed frontier): a post shows if its author was a member as of its
 //!   frontier and fewer than 3 counted flags on the author are inside its frontier. A removed
 //!   member's honest offline post (frontier from before the removal) therefore shows, in every
-//!   delivery order; anything written after it saw its own removal does not.
+//!   delivery order; anything written after it saw its own removal does not. A post whose
+//!   frontier names meta records we do not hold yet is pending (hidden, judged again when the
+//!   meta doc advances).
 //! - Hosts: device `dev` of `did` hosts when the latest `HostPermit` for it (by an owner/admin
 //!   as of the permit's frontier) is active, the device's own latest `HostAccept` is active,
 //!   and `did` is a member (not removed).
@@ -26,7 +30,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::doc::Entry;
+use loro::VersionVector;
+
+use super::doc::{Entry, seen_has};
 use super::record::{Body, group_id};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,11 +125,67 @@ pub struct GroupState {
     pub call_hosts: Vec<CallHostInfo>,
     /// Devices an admin allowed to host calls that have not accepted (yet).
     pub call_host_requests: Vec<CallHostInfo>,
-    /// Posts and system lines, ordered by `(at, id)`.
+    /// System lines (not posts: those are judged per post, `post_visible`), ordered by `(at, id)`.
     pub items: Vec<Item>,
+    /// What `post_visible` needs: per-DID join/leave and flag positions.
+    pub pos: Positions,
     /// When something happened that makes hosts rotate their group endpoint (U12): each
     /// removal (its 3rd counted flag's `at`) and each counted host revocation (`at`). Unix ms.
     pub rotation_triggers: Vec<i64>,
+}
+
+/// Per-DID positions in the meta doc, so a post is judged against its `seen` in
+/// `O(records about its author)` without re-deriving anything.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Positions {
+    /// The meta doc's version vector at derivation: the ops we hold.
+    have: BTreeMap<u64, i32>,
+    owner: Option<String>,
+    /// Valid joins (`true`) and leaves of each non-owner DID by `(peer, counter)`, in `(at, id)` order.
+    events: BTreeMap<String, Vec<(u64, i32, bool)>>,
+    /// Counted flags on each DID by `(peer, counter)`.
+    flags: BTreeMap<String, Vec<(u64, i32)>>,
+}
+
+/// Whether a post shows (`post_visible`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Vis {
+    Visible,
+    /// Its author was not a member, or was removed, as of its frontier.
+    Hidden,
+    /// Its frontier names meta records we do not hold yet.
+    Pending,
+}
+
+/// Judges one post by its author and signed frontier against the derived meta state (U11
+/// option A, the rule of the module doc).
+pub fn post_visible(st: &GroupState, author: &str, seen: &[(u64, i32)]) -> Vis {
+    let p = &st.pos;
+    let Some(owner) = &p.owner else { return Vis::Pending };
+    if seen.iter().any(|(peer, c)| p.have.get(peer).copied().unwrap_or(0) < *c) {
+        return Vis::Pending;
+    }
+    let member = author == owner
+        || p.events.get(author).and_then(|evs| evs.iter().rev().find(|(peer, c, _)| seen_has(seen, *peer, *c))).is_some_and(|(_, _, join)| *join);
+    let flagged = p.flags.get(author).is_some_and(|f| f.iter().filter(|(peer, c)| seen_has(seen, *peer, *c)).count() >= REMOVAL_FLAGS);
+    if member && !flagged { Vis::Visible } else { Vis::Hidden }
+}
+
+/// The conversation line of a post; `before_removal` is its author's removal now.
+pub fn post_item(e: &Entry, st: &GroupState) -> Option<Item> {
+    let Body::Post { text, reply_to } = &e.rec.body else { return None };
+    Some(Item {
+        id: e.id.clone(),
+        kind: ItemKind::Post,
+        author: e.rec.author.clone(),
+        subject: e.rec.author.clone(),
+        at: e.rec.at,
+        text: text.clone(),
+        reply_to: reply_to.clone(),
+        before_removal: st.removed.contains_key(&e.rec.author),
+        peer: e.peer,
+        counter: e.counter,
+    })
 }
 
 pub const REMOVAL_FLAGS: usize = 3;
@@ -158,7 +220,9 @@ fn order(e: &Entry) -> (i64, &str) {
     (e.rec.at, e.id.as_str())
 }
 
-pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
+/// The state of the meta doc `entries` (which hold every record but posts); `have` is its
+/// version vector.
+pub fn derive_meta(group: &str, entries: &[Entry], have: &VersionVector) -> GroupState {
     let mut st = GroupState::default();
     // Genesis: the earliest valid one (all valid ones share owner and nonce).
     let Some(genesis) = entries
@@ -175,6 +239,8 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
         owner_name = on.clone();
     }
     st.owner = Some(owner.clone());
+    st.pos.owner = Some(owner.clone());
+    st.pos.have = have.iter().map(|(p, c)| (*p, *c)).collect();
 
     // The owner's admin records, ordered.
     let mut admin_recs: Vec<&Entry> = entries.iter().filter(|e| e.rec.author == owner && matches!(e.rec.body, Body::Admin { .. })).collect();
@@ -208,7 +274,7 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
     for v in flags.values_mut() {
         v.sort_by(|a, b| order(a).cmp(&order(b)));
     }
-    let removed_as_of = |did: &str, seen: &[(u64, i32)]| flags.get(did).is_some_and(|f| f.iter().filter(|e| e.seen_by(seen)).count() >= REMOVAL_FLAGS);
+    st.pos.flags = flags.iter().map(|(d, f)| (d.clone(), f.iter().map(|e| (e.peer, e.counter)).collect())).collect();
     let info = |e: &&Entry| FlagInfo { by: e.rec.author.clone(), at: e.rec.at, id: e.id.clone() };
     for (did, f) in &flags {
         if f.len() >= REMOVAL_FLAGS {
@@ -264,15 +330,8 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
             }
         }
     }
-    // Member as of a frontier: the owner, or the latest join/leave inside it is a valid join.
-    let member_as_of = |did: &str, seen: &[(u64, i32)]| -> bool {
-        if did == owner {
-            return true;
-        }
-        // `events` holds only valid joins and leaves, sorted.
-        let last = events.get(did).and_then(|evs| evs.iter().rev().find(|e| e.seen_by(seen)));
-        last.is_some_and(|e| matches!(e.rec.body, Body::Join { .. }))
-    };
+    // Positions of the valid joins and leaves (`events` holds only those, sorted).
+    st.pos.events = events.iter().map(|(d, evs)| (d.clone(), evs.iter().map(|e| (e.peer, e.counter, matches!(e.rec.body, Body::Join { .. }))).collect())).collect();
 
     for did in st.members.keys() {
         if admin_as_of(did, None) {
@@ -366,34 +425,29 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
     // The conversation.
     for e in entries {
         let r = &e.rec;
-        let item = |kind: ItemKind, subject: &str, text: String, reply_to: Option<String>, before_removal: bool| Item {
+        let item = |kind: ItemKind, subject: &str| Item {
             id: e.id.clone(),
             kind,
             author: r.author.clone(),
             subject: subject.to_string(),
             at: r.at,
-            text,
-            reply_to,
-            before_removal,
+            text: String::new(),
+            reply_to: None,
+            before_removal: false,
             peer: e.peer,
             counter: e.counter,
         };
         match &r.body {
-            Body::Post { text, reply_to } => {
-                if member_as_of(&r.author, &r.seen) && !removed_as_of(&r.author, &r.seen) {
-                    st.items.push(item(ItemKind::Post, &r.author, text.clone(), reply_to.clone(), st.removed.contains_key(&r.author)));
-                }
-            }
-            Body::Join { .. } if valid_join(e).is_some() && r.author != owner => st.items.push(item(ItemKind::Joined, &r.author, String::new(), None, false)),
-            Body::Leave if r.author != owner => st.items.push(item(ItemKind::Left, &r.author, String::new(), None, false)),
+            Body::Join { .. } if valid_join(e).is_some() && r.author != owner => st.items.push(item(ItemKind::Joined, &r.author)),
+            Body::Leave if r.author != owner => st.items.push(item(ItemKind::Left, &r.author)),
             Body::Admin { member, admin } if r.author == owner => {
-                st.items.push(item(if *admin { ItemKind::AdminGranted } else { ItemKind::AdminRevoked }, member, String::new(), None, false))
+                st.items.push(item(if *admin { ItemKind::AdminGranted } else { ItemKind::AdminRevoked }, member))
             }
             Body::HostPermit { host, active, .. } if admin_as_of(&r.author, Some(&r.seen)) => {
                 if !*active {
                     st.rotation_triggers.push(r.at);
                 }
-                st.items.push(item(if *active { ItemKind::HostAdded } else { ItemKind::HostRemoved }, host, String::new(), None, false))
+                st.items.push(item(if *active { ItemKind::HostAdded } else { ItemKind::HostRemoved }, host))
             }
             _ => {}
         }
@@ -423,16 +477,18 @@ pub fn derive(group: &str, entries: &[Entry]) -> GroupState {
 
 #[cfg(test)]
 mod tests {
-    use super::super::doc::GroupDoc;
+    use super::super::doc::{DocId, GroupDoc};
     use super::super::record::*;
     use super::*;
     use crate::chat::doc::writer_id;
 
-    /// One device of one account, writing into its own replica.
+    /// One device of one account, writing into its own replica: the meta doc and the day doc
+    /// of 1970-01-01 (where its posts go; the clock stays in that day).
     struct Dev {
         id: identity::Identity,
         dev: [u8; 32],
         doc: GroupDoc,
+        posts: GroupDoc,
         clock: i64,
     }
 
@@ -440,21 +496,39 @@ mod tests {
         fn new(group: &str, seed: u8) -> Self {
             let id = identity::generate().0;
             let dev = [seed; 32];
-            Self { doc: GroupDoc::new(group, writer_id(id.did(), &dev)), id, dev, clock: 1000 }
+            let peer = writer_id(id.did(), &dev);
+            Self { doc: GroupDoc::new(group, peer), posts: GroupDoc::new_in(group, DocId::Day("1970-01-01".into()), peer), id, dev, clock: 1000 }
         }
         fn did(&self) -> String {
             self.id.did().to_string()
         }
+        /// A post goes into the day doc, every other record into meta; `seen` is the meta vv.
         fn write(&mut self, body: Body) -> (Entry, Vec<u8>) {
             self.clock += 10;
             let rec = Record { v: 1, group: self.doc.group.clone(), author: self.did(), dev: self.dev, at: self.clock, seen: self.doc.seen(), body };
-            self.doc.write(&self.id, &rec).unwrap()
+            let doc = if matches!(rec.body, Body::Post { .. }) { &self.posts } else { &self.doc };
+            doc.write(&self.id, &rec).unwrap()
         }
+        /// A meta update.
         fn take(&mut self, update: &[u8]) {
             self.doc.apply_remote(update, |_| Ok(())).unwrap();
         }
+        /// An update of the day doc.
+        fn take_posts(&mut self, update: &[u8]) {
+            self.posts.apply_remote(update, |_| Ok(())).unwrap();
+        }
         fn state(&self) -> GroupState {
-            derive(&self.doc.group, &self.doc.entries().unwrap())
+            derive_meta(&self.doc.group, &self.doc.entries().unwrap(), &self.doc.vv())
+        }
+        /// Every post held with its verdict.
+        fn judged(&self) -> Vec<(Entry, Vis)> {
+            let st = self.state();
+            self.posts.entries().unwrap().into_iter().map(|e| (e.clone(), post_visible(&st, &e.rec.author, &e.rec.seen))).collect()
+        }
+        /// The posts that show.
+        fn shown(&self) -> Vec<Item> {
+            let st = self.state();
+            self.judged().iter().filter(|(_, v)| *v == Vis::Visible).filter_map(|(e, _)| post_item(e, &st)).collect()
         }
         fn invite(&self, group: &str) -> SignedInvite {
             Invite { group: group.into(), issuer: self.did(), expires: u64::MAX, nonce: [3; 16] }.sign(&self.id)
@@ -462,11 +536,18 @@ mod tests {
     }
 
     fn sync(a: &mut Dev, b: &mut Dev) {
+        // Meta first, like the wire does.
         if let Some(u) = a.doc.export_since(&b.doc.vv()) {
             b.take(&u);
         }
         if let Some(u) = b.doc.export_since(&a.doc.vv()) {
             a.take(&u);
+        }
+        if let Some(u) = a.posts.export_since(&b.posts.vv()) {
+            b.take_posts(&u);
+        }
+        if let Some(u) = b.posts.export_since(&a.posts.vv()) {
+            a.take_posts(&u);
         }
     }
 
@@ -476,6 +557,7 @@ mod tests {
         let nonce = [9u8; 16];
         let gid = group_id(&o.did(), &nonce);
         o.doc = GroupDoc::new(&gid, writer_id(&o.did(), &o.dev));
+        o.posts = GroupDoc::new_in(&gid, DocId::Day("1970-01-01".into()), writer_id(&o.did(), &o.dev));
         o.write(Body::Genesis { name: "hike".into(), nonce, owner_name: "o".into() });
         let mut ms = Vec::new();
         for i in 0..n {
@@ -504,7 +586,7 @@ mod tests {
         assert_eq!(s.members[&ms[0].did()].invited_by.as_deref(), Some(o.did().as_str()));
         ms[0].write(Body::Post { text: "hi".into(), reply_to: None });
         sync(&mut ms[0], &mut o);
-        let posts: Vec<_> = o.state().items.into_iter().filter(|i| i.kind == ItemKind::Post).collect();
+        let posts = o.shown();
         assert_eq!(posts.len(), 1);
         assert_eq!(posts[0].text, "hi");
         // A stranger's post (no join) is inert.
@@ -512,7 +594,8 @@ mod tests {
         sync(&mut o, &mut x);
         x.write(Body::Post { text: "spam".into(), reply_to: None });
         sync(&mut x, &mut o);
-        assert!(!o.state().items.iter().any(|i| i.text == "spam"));
+        assert!(!o.shown().iter().any(|i| i.text == "spam"));
+        assert!(o.judged().iter().any(|(e, v)| matches!(&e.rec.body, Body::Post { text, .. } if text == "spam") && *v == Vis::Hidden));
         // A join with an invite from a non-admin is inert.
         let bad = ms[1].invite(&o.doc.group.clone());
         x.write(Body::Join { invite: bad, name: "x".into() });
@@ -572,7 +655,7 @@ mod tests {
         // Receiver 1: flags first, then the offline post.
         let mut r1 = Dev::new(&o.doc.group.clone(), 50);
         sync(&mut o, &mut r1);
-        r1.take(&offline);
+        r1.take_posts(&offline);
         // Receiver 2: the post first.
         let mut r2 = Dev::new(&o.doc.group.clone(), 51);
         sync(&mut ms[0], &mut r2);
@@ -580,14 +663,14 @@ mod tests {
         for r in [&r1, &r2] {
             let s = r.state();
             assert!(s.is_removed(&m));
-            let p = s.items.iter().find(|i| i.text == "written offline").expect("kept");
+            let p = r.shown().into_iter().find(|i| i.text == "written offline").expect("kept");
             assert!(p.before_removal);
         }
         // After m saw its removal, a new post does not show (anywhere).
         sync(&mut o, &mut ms[0]);
         ms[0].write(Body::Post { text: "after".into(), reply_to: None });
         sync(&mut ms[0], &mut r1);
-        assert!(!r1.state().items.iter().any(|i| i.text == "after"));
+        assert!(!r1.shown().iter().any(|i| i.text == "after"));
         assert_eq!(r1.state(), {
             sync(&mut r1, &mut r2);
             r2.state()
@@ -711,7 +794,42 @@ mod tests {
         sync(&mut ms[0], &mut o);
         let s = o.state();
         assert!(!s.is_member(&m) && s.left.contains(&m));
-        assert!(!s.items.iter().any(|i| i.text == "after leaving"));
+        assert!(!o.shown().iter().any(|i| i.text == "after leaving"));
         assert!(s.items.iter().any(|i| i.kind == ItemKind::Left));
+    }
+
+    // KIND: unit (group shards) — a post that names meta records we do not hold yet is pending,
+    // not refused; it shows once the meta doc has advanced (any arrival order), and a pending
+    // post by someone who turns out removed stays hidden.
+    #[test]
+    fn a_post_before_its_meta_is_pending_then_shown() {
+        let (g, mut o, mut ms) = group(1);
+        // A late joiner n: its join and a first post.
+        let mut n = Dev::new(&g, 40);
+        sync(&mut o, &mut n);
+        let inv = o.invite(&g);
+        n.write(Body::Join { invite: inv, name: "n".into() });
+        n.write(Body::Post { text: "hello".into(), reply_to: None });
+        // r gets the post (day doc) first, without the join (meta): pending, hidden.
+        let mut r = Dev::new(&g, 60);
+        sync(&mut o, &mut r);
+        r.take_posts(&n.posts.export_since(&r.posts.vv()).unwrap());
+        assert_eq!(r.judged().iter().map(|(_, v)| *v).collect::<Vec<_>>(), vec![Vis::Pending]);
+        assert!(r.shown().is_empty());
+        // Meta arrives: the same post now shows.
+        r.take(&n.doc.export_since(&r.doc.vv()).unwrap());
+        assert_eq!(r.judged().iter().map(|(_, v)| *v).collect::<Vec<_>>(), vec![Vis::Visible]);
+        assert_eq!(r.shown()[0].text, "hello");
+        // Hidden is a verdict, not a wait: a stranger's post is hidden even with all meta held.
+        let mut x = Dev::new(&g, 99);
+        sync(&mut o, &mut x);
+        x.write(Body::Post { text: "spam".into(), reply_to: None });
+        sync(&mut x, &mut r);
+        assert!(r.judged().iter().any(|(e, v)| e.rec.author == x.did() && *v == Vis::Hidden));
+        // No genesis yet at all (a joiner's first sync order): everything pending.
+        let mut j = Dev::new(&g, 70);
+        j.take_posts(&n.posts.export_since(&j.posts.vv()).unwrap());
+        assert_eq!(j.judged()[0].1, Vis::Pending);
+        let _ = &mut ms[0];
     }
 }
