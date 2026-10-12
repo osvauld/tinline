@@ -1,7 +1,7 @@
 /* The single store. Deeply reactive ($state), so screens read it directly and mutations
    anywhere update every view in place. Area-specific actions live in ./actions/<area>.ts and
    mutate `db` through the helpers here; screens never keep their own copies of this data. */
-import type { Account, Chat, Device, DirectChat, Group, Id, Message, Person } from './types';
+import type { Account, ParkedAccount, Chat, Device, DirectChat, Group, Id, Message, Person } from './types';
 import { seedAccount, seedChats, seedDevices, seedPeople } from './seed';
 import { clock } from './clock.svelte';
 import { resetGroupsState } from './actions/groups.svelte';
@@ -10,6 +10,8 @@ import { resetProfileState } from './actions/profile.svelte';
 function fresh() {
   return {
     account: seedAccount() as Account,
+    /** Other accounts added to this install (restore on a device that already has one ADDS). */
+    parked: [] as ParkedAccount[],
     people: seedPeople() as Person[],
     chats: seedChats() as Chat[],
     devices: seedDevices() as Device[],
@@ -26,7 +28,7 @@ export const db = $state(fresh());
 
 export function resetDb() {
   const f = fresh();
-  db.account = f.account; db.people = f.people; db.chats = f.chats; db.devices = f.devices; db.env = f.env;
+  db.account = f.account; db.parked = f.parked; db.people = f.people; db.chats = f.chats; db.devices = f.devices; db.env = f.env;
   resetGroupsState();
   resetProfileState();
 }

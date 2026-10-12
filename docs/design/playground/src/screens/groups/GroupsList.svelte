@@ -16,7 +16,7 @@
   import { gx } from '../../lib/model/actions/groups.svelte';
   import { gcall } from '../../lib/calls/gcall.svelte';
   import {
-    acceptInvitation, declineInvitation, acceptRequestIn, declineRequestIn, blockRequester, cancelRequest, createGroup, group, dayOnly, requestExpired,
+    acceptInvitation, declineInvitation, acceptRequestIn, declineRequestIn, blockRequester, cancelRequest, dismissRequest, createGroup, group, dayOnly, requestExpired,
   } from '../../lib/model/actions/groups';
   import type { Chat, Group } from '../../lib/model/types';
 
@@ -40,6 +40,7 @@
   function acceptReq(id: string) { acceptRequestIn(id); }
   function viaName(groupId: string) { return group(groupId)?.name ?? 'a group'; }
 
+  const sentList = $derived(gx.requestsOut.filter((r) => !r.dismissed));
   function reqLine(r: (typeof gx.requestsOut)[number]) {
     const n = firstName(r.to);
     if (requestExpired(r)) return 'No answer after 7 days';
@@ -90,7 +91,7 @@
     </section>
   {/if}
 
-  {#if gx.requestsIn.length || gx.requestsOut.length}
+  {#if gx.requestsIn.length || sentList.length}
     <section in:fold out:foldOut aria-label="Chat requests">
       <h2 class="sec"><span>Chat requests{#if gx.requestsIn.length} <span class="n">{gx.requestsIn.length}</span>{/if}</span></h2>
       {#if gx.requestsIn.length}
@@ -113,10 +114,10 @@
           {/each}
         </ul>
       {/if}
-      {#if gx.requestsOut.length}
+      {#if sentList.length}
         <h3 class="sub2" in:fold out:foldOut>Sent</h3>
         <ul class="list" role="list" aria-label="Sent chat requests">
-          {#each gx.requestsOut as r (r.id)}
+          {#each sentList as r (r.id)}
             {@const p = person(r.to)}
             <li class="sent" in:fold out:foldOut>
               <div class="row static">
@@ -124,7 +125,7 @@
                 <span class="mid"><span class="top"><span class="name">{displayName(r.to)}</span><span class="when">{listStamp(r.at, clock.now)}</span></span>
                   <span class="pv" class:bad={r.state === 'blocked'}>{reqLine(r)}</span></span>
                 <button type="button" class="x press" aria-label={r.state === 'pending' && !requestExpired(r) ? `Cancel request to ${displayName(r.to)}` : `Remove request to ${displayName(r.to)}`}
-                  onclick={() => cancelRequest(r.id)}><Icon name="x" size={18} /></button>
+                  onclick={() => (r.state === 'pending' && !requestExpired(r) ? cancelRequest(r.id) : dismissRequest(r.id))}><Icon name="x" size={18} /></button>
               </div>
             </li>
           {/each}

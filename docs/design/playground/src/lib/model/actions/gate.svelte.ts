@@ -43,8 +43,8 @@ export const gateSim = $state({
   permResult: 'grant' as 'grant' | 'deny',
   passphrase: 'correct horse',   // what unlocks; replaced by whatever the user sets in the flow
   hasPassphrase: true,      // false => locked account has only the phone's own key => key lost
-  maxTries: 5,              // PROPOSED: real app never locks out, it is only deliberately slow
-  lockSeconds: 30,          // PROPOSED
+  maxTries: 5,              // DECIDED 2026-10-12: 5 wrong passphrases lock Unlock for 30 s (the core never locks out today; a core follow-up)
+  lockSeconds: 30,
   kdfMs: 700,               // how long "Encrypting…/Unlocking…" takes (simulated Argon2)
   remembered: true,         // the phone remembers the passphrase (Android Keystore)
 });
@@ -67,6 +67,8 @@ class Gate {
   agreed = $state(false);
   deviceLabel = $state('');
   perms = $state<Record<string, PermState>>({ mic: 'idle', notif: 'idle', lock: 'idle', battery: 'idle', camera: 'idle' });
+  /** True while an account is being added to a device that already has one (opened from Settings). */
+  adding = $state(false);
   peer = $state('');                 // name of the device we linked to
 
   // link session
@@ -120,9 +122,17 @@ class Gate {
     this.words = Array(24).fill(''); this.agreed = false; this.deviceLabel = ''; this.peer = '';
     this.perms = { mic: 'idle', notif: 'idle', lock: 'idle', battery: 'idle', camera: 'idle' };
     this.tries = 0; this.lockedUntil = 0; this.remember = gateSim.remembered;
-    this.flow = 'create';
+    this.flow = 'create'; this.adding = false;
     this.step = gate === 'locked' ? (gateSim.hasPassphrase ? 'unlock' : 'keylost') : 'welcome';
   }
+  /** Settings > Add another account: the sign-up gate opens over an install that already has an account. */
+  beginAdd() {
+    this.enter('onboarding');
+    this.adding = true;
+    db.account.gate = 'onboarding';
+  }
+  /** Leave the add flow without adding anything. */
+  cancelAdd() { this.enter('onboarding'); db.account.gate = 'ready'; }
   /** Sim: jump straight to any step. Fills enough state for the step to make sense. */
   jump(s: Step, flow?: Flow) {
     const locked = s === 'unlock' || s === 'keylost';
@@ -213,6 +223,17 @@ class Gate {
 
   /** End of every flow. */
   finish() {
+    if (this.adding && this.name.trim()) {
+      /* Restore on a device that already has an account ADDS a second one (decided 2026-10-12): the current account is
+         parked, the new one is selected. Only the selected account is online. */
+      db.parked.push({ name: db.account.name, hue: db.account.hue, profile: db.account.profile });
+      db.account.name = this.name.trim();
+      db.account.hue = (db.account.hue + 2) % 6;
+      db.account.profile = undefined;
+      db.account.gate = 'ready';
+      this.enter('onboarding');
+      return;
+    }
     if (this.name.trim()) db.account.name = this.name.trim();
     db.account.gate = 'ready';
     this.enter('onboarding');
@@ -266,6 +287,15 @@ class Gate {
     this.busy = true; await this.sleep(gateSim.kdfMs); this.busy = false;
     if (gateSim.hasPassphrase) this.step = 'unlock'; else this.error = 'Still can’t find the key on this ' + this.noun + '.';
   }
+}
+
+/** Select another account on this install; the one that was selected goes offline. */
+export function switchAccount(i: number) {
+  const o = db.parked[i];
+  if (!o) return;
+  const cur = { name: db.account.name, hue: db.account.hue, profile: db.account.profile };
+  db.account.name = o.name; db.account.hue = o.hue; db.account.profile = o.profile;
+  db.parked[i] = cur;
 }
 
 export function flowOf(s: Step): Flow {

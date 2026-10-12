@@ -12,6 +12,7 @@
   import { effectiveAvailability } from '../../lib/model/actions/profile';
   import { profileOf } from '../../lib/model/actions/profile.svelte';
   import { untilLabel } from '../profile/info';
+  import { gate, switchAccount } from '../../lib/model/actions/gate.svelte';
 
   let { section }: { section?: string } = $props();
 
@@ -46,6 +47,24 @@
       </div>
     </section>
 
+    <section class="pf-sec" aria-label="Accounts on this device" data-accounts>
+      <div class="pf-card">
+        <div class="pf-act acc" aria-current="true">
+          <Avatar name={db.account.name} hue={db.account.hue} person="me" size={36} />
+          <span class="t"><b>{db.account.name}</b><small class="on">Selected · online</small></span>
+          <Icon name="check" size={18} />
+        </div>
+        {#each db.parked as a, i (a.name + i)}
+          <button type="button" class="pf-act press acc" onclick={() => switchAccount(i)} aria-label={`Switch to ${a.name}`}>
+            <Avatar name={a.name} hue={a.hue} size={36} />
+            <span class="t"><b>{a.name}</b><small>Paused · tap to switch</small></span>
+          </button>
+        {/each}
+        <button type="button" class="pf-act press" onclick={() => gate.beginAdd()}><Icon name="plus" size={20} /><span class="t"><b>Add another account</b></span><Icon name="chevr" size={18} class="chev" /></button>
+      </div>
+      <p class="accnote">Only the selected account is online on this {gate.noun}. Switching pauses the other one: it receives no calls until you select it again.</p>
+    </section>
+
     <section class="pf-sec" aria-label="Settings areas">
       <div class="pf-card">
         {#each AREAS as a (a.label)}
@@ -64,5 +83,8 @@
   .me .t b { font-size: var(--fs-title); line-height: 24px; }
   .avl { font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
   .avl.busy { color: var(--warn-ink); }
+  .acc { min-block-size: 60px; }
+  .acc .on { color: var(--accent-ink); font-weight: 600; }
+  .accnote { margin: 8px 16px 0; color: var(--muted); font-size: var(--fs-sub); line-height: 18px; }
   .ph { flex: 1; min-block-size: 0; }
 </style>

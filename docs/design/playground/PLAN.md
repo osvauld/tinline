@@ -99,7 +99,7 @@ Recorded here so area work and the core teams see them. Drawer notes say "Decide
 - **Call screen**: no ring around the avatar; a cloud colour field that moves with the tune.
 - **Groups**: owner can't leave (for now). A flagged member sees each flag (who, when, n of 3)
   as it happens, not only after removal. Chat requests are one per person at a time, like
-  Instagram: no follow-ups until they answer (ask again 7 days after a decline: Proposed).
+  Instagram: no follow-ups until they answer (ask again 7 days after a decline or a cancel: Decided).
 - **Calls, system surfaces**: the lock screen shows the caller's name; missed-call
   notifications fold into one per person ("2 missed calls · Sana Rao").
 - **Profiles**: Busy does not stop calls; incoming calls still show while Busy.
@@ -124,7 +124,7 @@ Core follow-ups these imply (not playground work):
   the shared profile document.
 - Profile pictures: old-copy deletion request is automatic — done in profile-sync (no public boolean;
   first upload, same picture again, removing nothing and failed saves create no request).
-- Chat requests: one pending request per person; per-person cooldown after decline (Proposed).
+- Chat requests: one pending request per person; per-person 7-day cooldown after a decline or a cancel.
 - Flags: the flagged member must receive flags before removal.
 - Unlock: the core never locks out today (only slow Argon2); a 5-try / 30 s lockout is new.
 - Restore: adding a second account on an install that already has one (multi-account restore).

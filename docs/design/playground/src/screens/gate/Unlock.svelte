@@ -18,7 +18,7 @@
   <div class="fld">
     <Field label="Passphrase" secret bind:value={pass} autofocus autocomplete="current-password" disabled={gate.busy || lock > 0}
       error={lock > 0 ? null : gate.error} hint={gate.error ? 'Checking takes a second. It’s deliberately slow to stop guessing.' : undefined} reserve={4.25}>
-      {#snippet extra()}{#if lock > 0}<p class="lock" role="status">Too many tries. Wait {mmss} before trying again.</p>{/if}{/snippet}
+      {#snippet extra()}{#if lock > 0}<p class="lock" role="status">Too many tries. You can try again in {mmss}.</p>{/if}{/snippet}
     </Field>
   </div>
   {#if gate.isAndroid}

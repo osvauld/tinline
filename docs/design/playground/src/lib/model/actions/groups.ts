@@ -16,7 +16,7 @@ import { receiveText } from './chat';
 export const INVITE_MS = 7 * T.DAY;        // PROVISIONAL (core: invites valid 7 days)
 export const FLAGS_TO_REMOVE = 3;          // U9/U15
 export const REQUEST_MS = 7 * T.DAY;       // chat requests expire after 7 days (design board)
-export const ASK_AGAIN_MS = 7 * T.DAY;     // one request per person at a time; after a decline, wait this long (Proposed)
+export const ASK_AGAIN_MS = 7 * T.DAY;     // one request per person at a time; after a decline OR a cancel, wait this long (decided 2026-10-12)
 
 /* ---------- lookups and rules ---------- */
 export const group = (id: Id | null | undefined): Group | undefined => { const c = chat(id); return isGroup(c) ? c : undefined; };
@@ -267,9 +267,20 @@ export function sendRequest(g: Group, to: Id, note: string): RequestOut | null {
   gx.requestsOut.push(r);
   return gx.requestsOut[gx.requestsOut.length - 1];
 }
+/** Cancelling a pending request keeps a record so the 7-day wait before asking again still applies. */
 export function cancelRequest(id: Id) {
+  const r = gx.requestsOut.find((x) => x.id === id);
+  if (!r) return;
+  if (r.state === 'pending' && !requestExpired(r)) { r.state = 'cancelled'; r.answeredAt = clock.now; r.dismissed = true; }
+  else dismissRequest(id);
+}
+/** Remove a finished request from the Sent list. Declined/cancelled ones stay on record for the wait. */
+export function dismissRequest(id: Id) {
   const i = gx.requestsOut.findIndex((r) => r.id === id);
-  if (i >= 0) gx.requestsOut.splice(i, 1);
+  if (i < 0) return;
+  const r = gx.requestsOut[i];
+  if ((r.state === 'declined' || r.state === 'cancelled') && askAgainAt(r) > clock.now) r.dismissed = true;
+  else gx.requestsOut.splice(i, 1);
 }
 function ensureDirect(pid: Id) {
   let c = db.chats.find((x) => x.kind === 'direct' && x.person === pid);
@@ -329,8 +340,8 @@ export function blockRequester(id: Id) {
 }
 /** Expired/pending-state label helper for rows. */
 export const requestExpired = (r: RequestOut) => r.state === 'pending' && clock.now - r.at > REQUEST_MS;
-/** When I may ask this person again after they declined (one request per person at a time). */
-export const askAgainAt = (r: RequestOut) => (r.state === 'declined' ? (r.answeredAt ?? r.at) + ASK_AGAIN_MS : 0);
+/** When I may ask this person again after they declined or I cancelled (one request per person at a time). */
+export const askAgainAt = (r: RequestOut) => (r.state === 'declined' || r.state === 'cancelled' ? (r.answeredAt ?? r.at) + ASK_AGAIN_MS : 0);
 
 /* ---------- simulation helpers ---------- */
 export function setMyRole(g: Group, role: GroupRole) {

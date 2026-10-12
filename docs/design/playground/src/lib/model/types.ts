@@ -119,5 +119,9 @@ export interface Account {
   gate: 'onboarding' | 'locked' | 'ready';
 }
 
+/** An account on this install that is not the selected one. Only the selected account is online (battery); a parked
+ *  account keeps its keys but makes and receives no calls until it is selected. */
+export interface ParkedAccount { name: string; hue: number; profile?: Profile }
+
 export type FormFactor = 'android' | 'desktop';
 export type Theme = 'system' | 'light' | 'dark';

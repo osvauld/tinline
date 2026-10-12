@@ -9,7 +9,7 @@
   const mmss = $derived(Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'));
   const title = $derived(st.phase === 'scanned' ? 'Same code on both?' : st.phase === 'approved' ? 'Linking…' : st.phase === 'failed' ? 'Couldn’t link' : 'Link to your account');
   const again = () => gate.beginLinkSession();
-  const toRestore = () => { gate.flow = 'restore'; gate.history = ['welcome', 'choose']; gate.go('restore'); };
+  const toRestore = () => { gate.flow = 'restore'; gate.history = ['welcome']; gate.go('restore'); };
 </script>
 
 <StepShell {title}
