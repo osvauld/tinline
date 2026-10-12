@@ -6,6 +6,8 @@
   import IconButton from './lib/ui/IconButton.svelte';
   import { prefs } from './lib/model/prefs.svelte';
   import { syncMotionAttr } from './lib/fx/reduced.svelte';
+  import { db } from './lib/model/store.svelte';
+  import { untrack } from 'svelte';
 
   let drawer = $state(false);
 
@@ -17,6 +19,15 @@
   });
   $effect(() => { prefs.form; prefs.save(); });
   $effect(() => syncMotionAttr());
+  /* "This device" follows the form being shown: the phone on Android, the computer on desktop. */
+  $effect(() => {
+    const kind = prefs.form === 'desktop' ? 'desktop' : 'phone';
+    untrack(() => {
+      const t = db.devices.find((d) => d.kind === kind);
+      if (!t || t.self) return;
+      for (const d of db.devices) d.self = d === t;
+    });
+  });
 
   const cycleTheme = () => (prefs.theme = prefs.theme === 'system' ? 'dark' : prefs.theme === 'dark' ? 'light' : 'system');
 </script>

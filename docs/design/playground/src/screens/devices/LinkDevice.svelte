@@ -102,7 +102,7 @@
 </div>
 
 <style>
-  .step { padding: 20px 20px 0; display: grid; gap: 12px; justify-items: stretch; }
+  .step { padding: 20px 20px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; justify-items: stretch; }
   h1 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 650; text-wrap: balance; }
   .lead { margin: 0; line-height: 21px; }
   .small { margin: 0; color: var(--muted); font-size: var(--fs-sub); line-height: 19px; }
@@ -120,7 +120,7 @@
   .live { margin: -4px 0 0; min-block-size: 19px; text-align: center; color: var(--muted); font-size: var(--fs-sub); }
   .denied { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: start; padding: 12px; border-radius: var(--r-ctl); background: var(--surface-2); font-size: var(--fs-sub); line-height: 19px; color: var(--muted); }
   .denied b { color: var(--ink); } .denied :global(.b) { grid-column: 1 / -1; justify-self: start; }
-  .typed { display: grid; gap: 6px; }
+  .typed { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
   .typed label { font-weight: 600; font-size: var(--fs-sub); }
   .line { display: flex; gap: 8px; }
   .line input { flex: 1; min-inline-size: 0; min-block-size: var(--btn); padding: 0 14px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: var(--surface); font: 500 var(--fs-body) ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; color: var(--ink); }
