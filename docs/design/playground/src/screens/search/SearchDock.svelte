@@ -4,11 +4,12 @@
   import Icon from '../../lib/ui/Icon.svelte';
   import { ui } from './state.svelte';
   import { nav, type Tab } from '../../lib/nav/router.svelte';
+  import { open } from '../../lib/model/actions/people.svelte';
 
   let { tab, edge }: { tab: Tab; edge: 'bottom' | 'top' } = $props();
   const label = $derived(tab === 'groups' ? 'New group' : 'New chat');
-  // Chats: pick a person (the Contacts list; no new-chat flow is designed yet, Proposed). Groups: the same "New group" dialog as the row in the list.
-  function add() { if (tab === 'groups') window.dispatchEvent(new CustomEvent('tinline-new-group')); else nav.setTab('contacts'); }
+  // Chats: the New chat picker (contacts, New group, Add contact). Groups: the same "New group" dialog as the row in the list.
+  function add() { if (tab === 'groups') window.dispatchEvent(new CustomEvent('tinline-new-group')); else open('newChat'); }
 </script>
 
 <div class="dock {edge}" data-search-dock={edge}>

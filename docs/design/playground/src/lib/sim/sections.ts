@@ -9,6 +9,7 @@ import GroupsSim from './GroupsSim.svelte';
 import GroupCallSim from './GroupCallSim.svelte';
 import ProfileSim from './ProfileSim.svelte';
 import SearchSim from './SearchSim.svelte';
+import PeopleSim from './PeopleSim.svelte';
 
 export const simSections: { title: string; component: Component }[] = [
   { title: 'Environment', component: CoreSim },
@@ -19,4 +20,5 @@ export const simSections: { title: string; component: Component }[] = [
   { title: 'Group calls', component: GroupCallSim },
   { title: 'Profiles', component: ProfileSim },
   { title: 'Search', component: SearchSim },
+  { title: 'People and devices', component: PeopleSim },
 ];

@@ -12,6 +12,9 @@ import Settings from './settings/Settings.svelte';
 import MyProfile from './profile/MyProfile.svelte';
 import PersonProfile from './profile/PersonProfile.svelte';
 import SearchScreen from './search/SearchScreen.svelte';
+import ContactsList from './people/ContactsList.svelte';
+import Devices from './devices/Devices.svelte';
+import Privacy from './privacy/Privacy.svelte';
 
 type Entry = { component: Component<any>; props: (r: any) => Record<string, unknown> };
 const ph = (title: string, step: string): Entry => ({ component: Placeholder, props: () => ({ title, step }) });
@@ -24,7 +27,7 @@ export const TAB_LISTS: Record<Tab, Entry & { title: string }> = {
   chats: { title: 'Chats', component: ChatsList, props: () => ({}) },
   groups: { title: 'Groups', component: GroupsList, props: () => ({}) },
   calls: { title: 'Calls', component: CallsList, props: () => ({}) },
-  contacts: { title: 'Contacts', ...ph('Contacts', '8') },
+  contacts: { title: 'Contacts', component: ContactsList, props: () => ({}) },
 };
 
 export const SCREENS: Record<Exclude<Route['name'], 'home'>, Entry> = {
@@ -34,6 +37,6 @@ export const SCREENS: Record<Exclude<Route['name'], 'home'>, Entry> = {
   profile: { component: MyProfile, props: () => ({}) },
   search: { component: SearchScreen, props: (r) => ({ q: r.q }) },
   settings: { component: Settings, props: (r) => ({ section: r.section }) },
-  devices: ph('Devices', '8'),
-  privacy: ph('Privacy', '8'),
+  devices: { component: Devices, props: (r) => ({ section: r.section }) },
+  privacy: { component: Privacy, props: (r) => ({ section: r.section }) },
 };

@@ -8,6 +8,7 @@
   import { nav } from '../../lib/nav/router.svelte';
   import { prefs } from '../../lib/model/prefs.svelte';
   import type { Chat } from '../../lib/model/types';
+  import { open as openDialog } from '../../lib/model/actions/people.svelte';
 
   let filter = $state<'all' | 'unread'>('all');
 
@@ -30,6 +31,8 @@
   {#each [['all', 'All'], ['unread', 'Unread']] as [k, l] (k)}
     <button type="button" class="t-chip press" aria-pressed={filter === k} onclick={() => (filter = k as typeof filter)}>{l}</button>
   {/each}
+  <!-- Android has the + beside the search pill; desktop has no dock, so the button lives here. -->
+  {#if prefs.form === 'desktop'}<button type="button" class="newc press" data-new-chat-btn aria-label="New chat" title="New chat" onclick={() => openDialog('newChat')}><Icon name="plus" size={20} /></button>{/if}
 </div>
 
 <ul class="list" role="list">
@@ -57,7 +60,9 @@
 </ul>
 
 <style>
-  .chips { display: flex; gap: 8px; padding: 4px 16px 8px; }
+  .chips { display: flex; align-items: center; gap: 8px; padding: 4px 16px 8px; }
+  .newc { margin-inline-start: auto; inline-size: 36px; block-size: 36px; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-ink); cursor: pointer; }
+  .newc:hover { filter: brightness(.97); }
   .list { list-style: none; margin: 0; padding: 0 8px; }
   .row { display: flex; gap: 12px; align-items: center; inline-size: 100%; min-height: 72px; padding: 8px; border: 0; border-radius: var(--r-ctl);
     background: transparent; text-align: start; cursor: pointer; }

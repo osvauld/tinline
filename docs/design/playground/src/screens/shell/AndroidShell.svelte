@@ -12,12 +12,13 @@
   import CallStrip from '../../lib/calls/CallStrip.svelte';
   import CallLayer from '../../lib/calls/CallLayer.svelte';
   import SystemLayer from '../../lib/calls/SystemLayer.svelte';
+  import PeopleLayers from '../people/PeopleLayers.svelte';
   import SearchDock from '../search/SearchDock.svelte';
   import { ui } from '../search/state.svelte';
   const look = $derived(statusLook());
 
   /** Screens that draw their own header (with Back) instead of the shell's bare one. */
-  const OWN_BAR = new Set(['conversation', 'groupInfo', 'contact', 'profile', 'settings', 'search']);
+  const OWN_BAR = new Set(['conversation', 'groupInfo', 'contact', 'profile', 'settings', 'search', 'devices', 'privacy']);
   const top = $derived(nav.top);
   const unread = $derived(db.chats.reduce((n, c) => n + (c.muted ? 0 : c.unread), 0));
   /* Search entry: the pill + new button on Chats and Groups (bottom or top, drawer toggle); the app bar icon on the other tabs. */
@@ -67,6 +68,7 @@
   </div>
   <CallLayer />
   <SystemLayer />
+  <PeopleLayers />
 </div>
 {/if}
 
