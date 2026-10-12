@@ -227,17 +227,17 @@ impl SearchIndex {
     pub fn open(path: &Path, phrase: &str) -> Result<Self, Error> {
         let store = crate::store::open_waiting(path)?;
         crate::store::set_private(path);
-        Self::with_store(store, phrase)
+        Self::with_store(store, phrase, Some(path))
     }
 
     #[cfg(test)]
     pub fn in_memory(phrase: &str) -> Self {
-        Self::with_store(Store::open_in_memory().unwrap(), phrase).unwrap()
+        Self::with_store(Store::open_in_memory().unwrap(), phrase, None).unwrap()
     }
 
-    fn with_store(store: Store, phrase: &str) -> Result<Self, Error> {
+    fn with_store(store: Store, phrase: &str, path: Option<&Path>) -> Result<Self, Error> {
         let p = norm_phrase(phrase);
-        let me = Self {
+        let mut me = Self {
             db: Sealed::new(store, blake3::derive_key(STORE_DOMAIN, p.as_bytes())),
             keyer: Keyer(Zeroizing::new(blake3::derive_key(INDEX_DOMAIN, p.as_bytes()))),
             hot: Mutex::new(Hot::default()),
@@ -254,7 +254,16 @@ impl SearchIndex {
         match man {
             Some(m) => *me.view.write() = Arc::new(View::new(m)),
             None => {
-                // Another version, no manifest or an unreadable one: start over.
+                // Another version, no manifest or an unreadable one: start over. A file is
+                // replaced by a new one (deleting a gigabyte of records one by one takes
+                // half a minute, and the file would stay that big).
+                if let Some(path) = path {
+                    me.db.close();
+                    let _ = std::fs::remove_file(path);
+                    let store = crate::store::open_waiting(path)?;
+                    crate::store::set_private(path);
+                    me.db = Sealed::new(store, blake3::derive_key(STORE_DOMAIN, p.as_bytes()));
+                }
                 me.db.apply(&[Op::DeletePrefix(String::new()), me.db.put_op("v", &VERSION.to_be_bytes()).map_err(io)?]).map_err(io)?;
             }
         }
@@ -1201,7 +1210,7 @@ mod tests {
                 assert!(!v.windows(word.len()).any(|w| w == word.as_bytes()), "value of {k} leaks {word}");
             }
         }
-        let other = SearchIndex::with_store(ix.db.raw().clone(), "other phrase").unwrap();
+        let other = SearchIndex::with_store(ix.db.raw().clone(), "other phrase", None).unwrap();
         assert!(ids(&other, "conf").is_empty());
         assert!(ix.db.raw().get("v").unwrap().is_some());
     }
@@ -1214,7 +1223,7 @@ mod tests {
         ix.db.put("v", &1u32.to_be_bytes()).unwrap();
         ix.db.put("d/00ff", b"old row").unwrap();
         raw.put("t/abcd/ffff/00ff", b"").unwrap();
-        let again = SearchIndex::with_store(raw, "alpha beta").unwrap();
+        let again = SearchIndex::with_store(raw, "alpha beta", None).unwrap();
         assert_eq!(again.raw_rows().len(), 1, "only the version row");
         assert!(again.ix_version_ok());
     }
@@ -1241,7 +1250,7 @@ mod tests {
         assert_eq!((ix.stats().hot_docs, ix.stats().segs), (0, 1));
         assert_eq!(ids(&ix, "manus"), ["1"]);
         assert!(ix.watermark_is("dm.p", &r.day, &[1]) || ix.has_watermark("dm.p", &r.day));
-        let again = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta").unwrap();
+        let again = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta", None).unwrap();
         assert_eq!(ids(&again, "manus"), ["1"]);
         assert!(again.has_watermark("dm.p", &r.day));
         assert_eq!(again.stats().hot_docs, 0);
@@ -1292,7 +1301,7 @@ mod tests {
         ix.maintain(Mode::Force).unwrap();
         ix.apply(&[row("dm.p", "a", T0 + 100, "one three")], &[], &[mark(&a, 2)]).unwrap();
         assert!(ix.watermark_is("dm.p", &a.day, &[2]));
-        let crashed = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta").unwrap();
+        let crashed = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta", None).unwrap();
         assert!(crashed.watermark_is("dm.p", &a.day, &[1]) && !crashed.watermark_is("dm.p", &a.day, &[2]));
         assert_eq!(ids(&crashed, "two"), ["a"], "the file still has the old text, reconcile fixes it");
     }
@@ -1621,6 +1630,27 @@ mod tests {
             });
         });
         assert_eq!(ids(&ix, "hel"), ["1"]);
+    }
+
+    // KIND: unit (v2) — an old-format file is replaced by a fresh one on open (not emptied
+    // record by record), so it is small again at once.
+    #[test]
+    fn old_format_file_is_replaced() {
+        let path = temp_path("oldfmt");
+        {
+            let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+            fill(&ix, 2, 10, 20);
+            at_day(&ix, "2026-06-01");
+            ix.maintain(Mode::Force).unwrap();
+            ix.db.put("v", &2u32.to_be_bytes()).unwrap();
+            ix.close();
+        }
+        let big = std::fs::metadata(&path).unwrap().len();
+        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        assert!(ix.ix_version_ok());
+        assert_eq!(ix.raw_rows().len(), 1);
+        assert!(std::fs::metadata(&path).unwrap().len() * 4 < big, "{big}");
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 
 }
