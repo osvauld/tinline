@@ -71,12 +71,23 @@ the user was away; each is listed at the end.
   joiner with no state yet takes the ones in its invite token). Records never contain endpoints.
 - **Endpoint proof.** Each side of a connection first sends `EndpointAuth{did, dev, endpoint,
   sig}`; the receiver checks `endpoint` equals the QUIC remote key (QUIC proves possession).
-- **Session** (`wire.rs`): member `Hello{auth, group, vv, invite?, hosts, relay}` → host
-  `Welcome{auth, vv, hosts}` | `Removed{records, vv}` | `Refused{reason}`; then both sides
-  exchange `Update` (Loro export of what the other lacks), `Ack{vv}`, `Hosts{hosts}`, and (G2)
+- **Session** (`wire.rs`): member `Hello{auth, group, vv, days, invite?, hosts, relay}` → host
+  `Welcome{auth, vv, days, hosts}` | `Removed{records, vv}` | `Refused{reason}` (`vv`: the meta
+  doc's version vector, `days`: those of the day docs of the last 7 days we hold); then both sides
+  exchange `Update{doc, update}` (Loro export of what the other lacks of one doc: meta first,
+  then day docs), `Ack{doc, vv}`, `HistoryList` / `HistoryGet` (older days, below), `Hosts{hosts}`, and (G2)
   `Mail{mail}` / `MailAck{id}` (sealed chat requests). A host that rotated opens its own
   connection to a member and sends `Moved{auth, group, hosts}` (G2, see Rotation). Hosts relay every accepted
   update to every other session at once (live), and catch up a reconnecting member from its vv.
+- **History (decision 3 of `group-shards.md`).** Every member device holds the full history of its
+  groups. On every session, both sides (a host asks a member just as a member asks a host) page
+  the peer's day list (`HistoryList{before, limit}` → `HistoryDays`, newest first) and fetch each
+  day they lack (`HistoryGet{day}` → `HistoryDay{day, snapshot}`) in the background, one every
+  200 ms, again 3 s later and then every 5 minutes; `group_set_backfill_paused` holds it while
+  the platform reports a metered network or a low battery. A snapshot is imported like an
+  `Update` (every record validated, whole batch refused if one is wrong). A host serves history
+  to members in good standing only, a member to the hosts it dialled. A new or wiped host is
+  refilled from members; members still dial only hosts (U7).
 - **Host admission** at `Hello`: refused if this device is not an active host of the group;
   `Removed` if the DID is removed; `Welcome` if it is a member, or if it shows an unexpired invite
   issued by a current admin (a joiner may then send only its own records until its `Join` makes
@@ -263,9 +274,12 @@ Code: `calldir.rs`, `calls.rs`; spec `docs/design/group-call-spec.md` §11 (GA-I
 ## API (UniFFI, `api.rs`)
 
 `set_group_events(GroupEvents{on_group_message, on_group_changed})`, `groups() ->
-[GroupSummary]`, `group_detail(id) -> GroupDetail` (members with roles/flags/devices/invited-by,
+[GroupSummary]` (the row and unread count come from the group's local state: no day doc is
+loaded), `group_detail(id) -> GroupDetail` (members with roles/flags/devices/invited-by,
 hosts with online state, host offers, my role, `am_host`, my removal), `group_messages(id, before,
-limit) -> GroupPage` (oldest first, cursor `older`), `group_mark_read`, `group_create(name)`,
+limit) -> GroupPage` (oldest first, cursor `older`; pages back across day docs, loading only the
+days a page needs, and shows what the device holds: older days still arriving in the background
+appear on a later call), `group_mark_read`, `group_set_backfill_paused(paused)`, `group_create(name)`,
 `group_invite(id)` (admins; short 7-day link, G3), `group_device_token(id)` (short link admitting only
 our DID; apps no longer show it: own-device sync covers linked devices),
 `group_peek_invite(link)` (fetches from the host), `group_join(link or code)` (blocks until joined, `Rejected(reason)` on

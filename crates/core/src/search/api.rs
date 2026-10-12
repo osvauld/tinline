@@ -10,8 +10,9 @@ use super::index::{DocRow, Mark, SearchIndex, vv_eq};
 use super::text;
 use crate::Error;
 use crate::chat::doc::{MsgRec, pair_id};
-use crate::group::engine::{GroupCore, PostDiff};
-use crate::group::state::{Item, ItemKind};
+use crate::group::engine::{GroupCore, Live, PostDiff};
+use crate::group::shard::Shard;
+use crate::group::state::Item;
 use crate::node::{Inner, Node};
 
 /// What a name hit opens.
@@ -112,13 +113,15 @@ impl Node {
     }
 
     /// Puts a stale post row (as an older version of the post, or a post no longer shown) into
-    /// the index of a group and forgets the group's watermark, so the next reconcile has to fix it.
+    /// the index of a group under today's day and forgets that day's watermark, so the next
+    /// reconcile has to fix it.
     #[doc(hidden)]
     pub fn search_plant_group_post_for_test(&self, group_id: String, post_id: String, text: String) -> Result<(), Error> {
         let me = self.inner.me()?;
         let ix = self.inner.search_ix().ok_or(Error::Locked)?;
-        let row = DocRow { src: group_src(&group_id), conv: group_id.clone(), day: "-".into(), id: post_id, at: 1, author: me.id.did().to_string(), text };
-        ix.apply(&[row], &[], &[Mark { src: group_src(&group_id), day: "-".into(), prev: None, vv: Vec::new() }])
+        let day = crate::chat::doc::day_of(crate::node::now_ms() as i64);
+        let row = DocRow { src: group_src(&group_id), conv: group_id.clone(), day: day.clone(), id: post_id, at: 1, author: me.id.did().to_string(), text };
+        ix.apply(&[row], &[], &[Mark { src: group_src(&group_id), day, prev: None, vv: Vec::new() }])
     }
 
     /// Compacts the old days now (otherwise every hour); returns how many days are closed.
@@ -154,12 +157,8 @@ fn dm_row(did: &str, pair: &str, day: &str, rec: &MsgRec) -> DocRow {
     DocRow { src: dm_src(pair), conv: did.to_string(), day: day.to_string(), id: rec.id.clone(), at: rec.at, author: rec.author.clone(), text: t }
 }
 
-fn group_row(gid: &str, i: &Item) -> DocRow {
-    DocRow { src: group_src(gid), conv: gid.to_string(), day: "-".into(), id: i.id.clone(), at: i.at, author: i.author.clone(), text: i.text.clone() }
-}
-
-fn posts(items: &[Item]) -> impl Iterator<Item = &Item> {
-    items.iter().filter(|i| i.kind == ItemKind::Post)
+fn group_row(gid: &str, day: &str, i: &Item) -> DocRow {
+    DocRow { src: group_src(gid), conv: gid.to_string(), day: day.to_string(), id: i.id.clone(), at: i.at, author: i.author.clone(), text: i.text.clone() }
 }
 
 impl Inner {
@@ -215,17 +214,17 @@ impl Inner {
         }
     }
 
-    /// After a group change (`group_after`): index new and changed posts, drop hidden ones.
-    pub(crate) fn search_group(&self, gid: &str, d: &PostDiff) {
-        if self.search_skipped() {
+    /// After a group change (`group_after`): index the posts that show now, per day doc; each
+    /// day's watermark moves from `prev` to `vv` only if it was at `prev`.
+    pub(crate) fn search_group(&self, gid: &str, diffs: &[PostDiff]) {
+        if diffs.is_empty() || self.search_skipped() {
             return;
         }
         let Some(ix) = self.search_ix() else { return };
         let src = group_src(gid);
-        let rows: Vec<DocRow> = d.put.iter().map(|i| group_row(gid, i)).collect();
-        let gone: Vec<String> = d.gone.iter().map(|id| ix.doc_key(&src, id)).collect();
-        let mark = Mark { src, day: "-".into(), prev: Some(d.prev.clone()), vv: d.vv.clone() };
-        if let Err(e) = ix.apply(&rows, &gone, &[mark]) {
+        let rows: Vec<DocRow> = diffs.iter().flat_map(|d| d.put.iter().map(|i| group_row(gid, &d.day, i))).collect();
+        let marks: Vec<Mark> = diffs.iter().map(|d| Mark { src: src.clone(), day: d.day.clone(), prev: Some(d.prev.clone()), vv: d.vv.clone() }).collect();
+        if let Err(e) = ix.apply(&rows, &[], &marks) {
             Self::search_log(e);
         }
     }
@@ -301,8 +300,9 @@ impl Inner {
         Ok(())
     }
 
-    /// Groups are held in memory whole: each whose watermark differs is diffed against the index
-    /// (new and changed posts written, posts no longer shown dropped). In the background.
+    /// Per day doc of each group, as for DMs: each whose watermark differs from its version (and
+    /// each with pending posts) is diffed against the index: the posts that show are written, the
+    /// docs of that day that no longer show are dropped. In the background.
     pub(crate) fn search_reconcile_groups(self: &Arc<Self>, core: &Arc<GroupCore>) {
         if NO_BG_RECONCILE.load(std::sync::atomic::Ordering::SeqCst) {
             return;
@@ -328,22 +328,41 @@ impl Inner {
         self.handle.spawn_blocking(move || {
             let gids: Vec<String> = core.groups.lock().keys().cloned().collect();
             for gid in gids {
-                if ix.is_closed() || core.closed() {
-                    return;
-                }
                 let src = group_src(&gid);
-                let Some((items, vv)) = core.groups.lock().get(&gid).map(|l| (l.state.items.clone(), l.doc.vv().encode())) else { continue };
-                if ix.watermark(&src, "-").is_some_and(|w| vv_eq(&w, &vv)) {
-                    continue;
-                }
-                let rows: Vec<DocRow> = posts(&items).map(|i| group_row(&gid, i)).collect();
-                let live: HashSet<String> = rows.iter().map(|r| ix.doc_key(&src, &r.id)).collect();
-                let stale: Vec<String> = match ix.doc_keys(&src) {
-                    Ok(k) => k.into_iter().filter(|h| !live.contains(h)).collect(),
-                    Err(e) => return Self::search_log(e),
-                };
-                if let Err(e) = ix.apply(&rows, &stale, &[Mark { src, day: "-".into(), prev: None, vv }]) {
-                    return Self::search_log(e);
+                let days = core.store.days(&gid).unwrap_or_default();
+                let pending = core.groups.lock().get(&gid).map(|l| l.meta.pending_days.clone()).unwrap_or_default();
+                for day in days {
+                    if ix.is_closed() || core.closed() {
+                        return;
+                    }
+                    let Some(sm) = core.store.shard_meta(&gid, &day).ok().flatten() else { continue };
+                    if !pending.contains(&day) && ix.watermark(&src, &day).is_some_and(|w| vv_eq(&w, &sm.vv)) {
+                        continue;
+                    }
+                    // The day as cached, or read once without disturbing the cache.
+                    let rows: Vec<DocRow> = {
+                        let mut groups = core.groups.lock();
+                        let Some(Live { state, shards, .. }) = groups.get_mut(&gid) else { break };
+                        let items: Vec<Item> = match shards.peek(&day) {
+                            Some(s) => s.visible(state).collect(),
+                            None => match Shard::load(&core.store, &gid, core.wid, &day, state) {
+                                Ok(s) => s.visible(state).collect(),
+                                Err(e) => {
+                                    tracing::debug!("search reconcile {gid} {day}: {e}");
+                                    continue;
+                                }
+                            },
+                        };
+                        items.iter().map(|i| group_row(&gid, &day, i)).collect()
+                    };
+                    let live: HashSet<String> = rows.iter().map(|r| ix.doc_key(&src, &r.id)).collect();
+                    let stale: Vec<String> = match ix.day_keys(&src, &day) {
+                        Ok(k) => k.into_iter().filter(|h| !live.contains(h)).collect(),
+                        Err(e) => return Self::search_log(e),
+                    };
+                    if let Err(e) = ix.apply(&rows, &stale, &[Mark { src: src.clone(), day: day.clone(), prev: None, vv: sm.vv }]) {
+                        return Self::search_log(e);
+                    }
                 }
             }
         })

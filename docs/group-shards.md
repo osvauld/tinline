@@ -1,6 +1,6 @@
 # Group day shards — design
 
-Status: draft for review (2026-10-12). Replaces "one Loro doc per group" (`group-core.md`
+Status: implemented (2026-10-12, branch `group-shards`); decisions below were taken by the user. Replaces "one Loro doc per group" (`group-core.md`
 "Doc"; listed as a known gap there). Follows the original plan in `group-chat.md` §2
 (`group/{gid}/meta` + UTC-day message shards). Base design, no interim fix. U18: no backward
 compatibility, data may be wiped; ALPN and store domain get new versions.
@@ -70,10 +70,11 @@ days/{gid}/{day}                   empty       day index for paging / history li
 - `Hello`/`Welcome` carry `meta_vv` and `days: [(day, vv)]` for the last `HELLO_DAYS` (7).
 - `Update { doc: Meta | Day(day), update }`, `Ack { doc, vv }`. Meta updates are sent before
   shard updates in every session and every relay.
-- History: `HistoryList { before, limit } -> [(day, vv, size)]`, `HistoryGet { day } ->
-  snapshot`, in both directions on any session. The receiver validates each record as on import.
-  Every device backfills all missing days in the background (newest first, rate-limited, paused
-  on metered/low battery like call hosting conditions); scrolling only reorders the queue.
+- No separate history protocol: every day is an ordinary Loro doc and every member holds a copy
+  of all of them. A session exchanges an inventory, the meta vv plus `(day, vv)` for every day held
+  (paged: `Days { after, days }`). Each side then sends `Update{doc}` for every doc the other lacks
+  or is behind on: meta first, then the days newest first, rate-limited. "Backfill" is just this
+  sync running until both inventories match. Scrolling only reorders the queue.
 - Relay: hosts relay per doc exactly as today.
 - Removed: `Removed { records, … }` carries meta records only.
 
@@ -102,12 +103,55 @@ days/{gid}/{day}                   empty       day index for paging / history li
 
 1. Shards by **UTC day**, like DMs.
 2. **Verify once, on arrival**: loading our own sealed store does not re-verify signatures.
-3. **Every member device holds the full history** of its groups: a decentralized copy, not a
-   host-held archive. On join (and whenever days are missing) a member backfills every day in the
-   background, newest first, from whoever it is connected to. Any device that holds a day serves
-   it to peers it is already in session with: hosts serve members, and members serve hosts, so a
-   new or wiped host is refilled from members. Transport is unchanged: members still dial only
-   hosts (U7); "members hold history" does not add member-to-member connections.
-   (Interpretation of the user's answer "members itself will hold the sharded data, all history,
-   copy of the data decentralized"; confirm if member-to-member serving was meant.)
+3. **One history, every member holds a full copy.** No special history: the days are ordinary
+   Loro docs synced by version vectors like meta. Members connect only to hosts (U7); members never
+   serve each other directly. Hosts and members exchange whatever days the other side lacks, in both
+   directions on their session, so a new or wiped host is refilled from the members connected to it.
 4. **Keep everything**: no retention window; closed days are compacted, never dropped.
+
+## Implementation notes (2026-10-12)
+
+Where the code chose a detail the design left open, or differs from it:
+
+- **Doc ids.** `doc::DocId { Meta, Day(YYYY-MM-DD) }`; a day must be canonical and exist on the
+  calendar (`Update`/`Ack` naming anything else are refused). Acceptance (`doc::fits`) is part of
+  `ops_between`, so the verdict covers batches, snapshots and history alike. Both docs of a
+  writer use the same Loro peer id (`writer_id`); counters are per doc, so a batch must always
+  be applied to the doc it names (never guess the doc from the bytes).
+- **Frontier.** `seen` of every record is the author's meta vv. `Positions` in `GroupState`
+  keeps per-DID join/leave and flag positions plus the meta vv we hold; `post_visible` answers
+  Pending if `seen` names an op we lack, otherwise Visible/Hidden by the old U11 rule. A hidden
+  verdict is final (it depends only on ops inside `seen`), so only pending posts are re-judged;
+  `GroupMeta.pending_days` lists the days that have some, so a meta change loads exactly those.
+- **Device list.** Posts no longer carry a device into `GroupState.members[..].devices` (meta
+  only), so each device writes one `EncKey` into meta when it first appears (previously only when
+  its DID had none). "Appoint a host" lists devices from meta.
+- **Chat-list state.** `GroupMeta` holds `last` (newest shown post), `unread`, `newest_day`,
+  `pending_days` and `owed_days` (days with posts of ours no host acknowledged). `group_mark_read`
+  sets `read_upto` to the newest line and `unread` to 0. `groups()` never loads a day doc.
+- **Store.** Closed days are one sealed snapshot row (`shard/{gid}/{day}/snap`, `closed` in
+  `ShardMeta`) rather than a blob; a late update reopens the day until the next compaction. The
+  compaction runs once after open and then hourly, under the group lock one day at a time.
+  `ShardMeta.vv` is kept current, so `Hello` day lists, history lists and search watermarks never
+  open a doc. Delivery state of a post uses acks per day (`ackd/...`); other records use the
+  meta acks as before.
+- **Cache.** At most 12 day docs per group in memory (LRU), loaded under the group lock.
+  Reconcile and compaction read days without populating the cache.
+- **Paging.** `group_messages` starts one hour after the cursor's day (a post may sit in the
+  neighbouring day doc within the +- 1 h tolerance) and walks day docs backwards until it has
+  `limit` posts, merging them with the system lines of the meta state by `(at, id)`. The return
+  shape did not change: there is no explicit "loading" row; a page ends where the local days end
+  (`older == None`) and days that arrive later show up on the next call.
+- **Sync.** `push` sends the meta doc and then the named day docs per session; a day the peer did
+  not list in its `Hello` is sent whole. A session start pushes the last 7 calendar days we
+  hold. A history import is not pushed on to other sessions and raises no new-message events.
+  Removed members upload their pre-removal posts one `Update{Day}` per owed day.
+- **History.** A device answers `HistoryList`/`HistoryGet` only to a member it hosts (not removed,
+  and an accepted member, not a joiner) or to a host it dialled. Backfill waits until the group's
+  genesis is held (and on a host until the peer is a member); passes run at session start, 3 s
+  later and every 5 minutes.
+- **Search.** Group rows carry the real day; per-day watermarks are the day doc's vv; each
+  `s/{src}/{doc}` index key stores a keyed tag of its day, so reconcile can drop the stale docs of
+  one day without opening rows. Days with pending posts are always re-indexed.
+- **group-sim** (`crates/group-sim`) is a standalone model with its own record types; it does not
+  use the core docs and was not touched.

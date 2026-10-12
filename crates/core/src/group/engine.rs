@@ -1,9 +1,14 @@
-//! The group runtime: the group endpoint (U2, `tinline/group/1`), host and member sessions,
-//! live relay, catch-up and removal enforcement. Everything hangs off `Inner::group` (`GroupRt`).
+//! The group runtime: the group endpoint (U2, `tinline/group/2`), host and member sessions,
+//! live relay, catch-up, history backfill and removal enforcement. Everything hangs off
+//! `Inner::group` (`GroupRt`).
 //!
 //! Members only dial hosts; hosts accept members and dial other hosts like members do; nobody
 //! else is ever dialled, so a member learns only hosts' group endpoints (U7). Every update is
 //! verified on arrival (`GroupDoc::apply_remote`) by every device, hosts included (U10).
+//!
+//! A group is its `meta` doc (always in memory, with the derived `GroupState`) and one doc per
+//! UTC day of posts (`shard.rs`: loaded on demand, a bounded cache). A local write or a remote
+//! update touches only the doc it belongs to; sessions send the meta doc before any day doc.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -17,15 +22,17 @@ use parking_lot::Mutex;
 use tokio::sync::{Notify, mpsc};
 
 use super::api::GroupEvents;
-use super::doc::{Entry, GroupDoc, Reject};
+use super::doc::{DocId, Entry, GroupDoc, Reject};
 use super::record::*;
-use super::state::{GroupState, derive_meta};
+use super::shard::{Shards, note_posts, recent_days};
+use super::state::{GroupState, Item, Vis, derive_meta, post_item, post_visible};
 use super::store::{DirEntry, GroupMeta, GroupStore};
 use super::wire::*;
 use crate::Error;
-use crate::chat::doc::writer_id;
+use crate::chat::doc::{DAY_MS, day_of, writer_id};
 use crate::node::{Inner, addr_for, now, now_ms, relay_of};
 
+mod history;
 mod synth;
 
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
@@ -33,6 +40,8 @@ const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
 /// How long a host waits for a removed member's pre-removal upload (U11).
 const REMOVED_UPLOAD_WAIT: Duration = Duration::from_secs(10);
 const TICK: Duration = Duration::from_secs(2);
+const MAX_HELLO_DAYS: usize = 64;
+const COMPACT_EVERY: Duration = Duration::from_secs(3600);
 const BACKOFF: [u64; 6] = [1, 2, 5, 15, 30, 60];
 pub const INVITE_TTL: u64 = 7 * 24 * 3600;
 
@@ -67,6 +76,11 @@ pub(crate) struct GroupRt {
     /// Test knobs (GL): this many invite fetches / host dials fail as if the connection was lost.
     pub(crate) fail_fetches: std::sync::atomic::AtomicU32,
     pub(crate) fail_dials: std::sync::atomic::AtomicU32,
+    /// History backfill waits while set (the platform's conditions: metered network, low
+    /// battery; the same inputs call hosting uses).
+    pub(crate) backfill_paused: AtomicBool,
+    /// Pause between two history fetches, ms (0 = the default). Test knob.
+    pub(crate) backfill_pause_ms: AtomicU64,
 }
 
 /// Takes one injected failure from a test knob, if any is left.
@@ -95,14 +109,22 @@ impl GroupRt {
     }
 }
 
+/// One group in memory: the meta doc, what it means, our local state and the day docs held.
 pub(crate) struct Live {
     pub doc: GroupDoc,
+    /// Records of the meta doc.
     pub entries: Vec<Entry>,
     pub state: GroupState,
     pub meta: GroupMeta,
+    pub shards: Shards,
 }
 
 impl Live {
+    /// A group we hold nothing of yet, writing under `wid`.
+    pub fn empty(gid: &str, wid: u64, meta: GroupMeta) -> Self {
+        Self { doc: GroupDoc::new(gid, wid), entries: Vec::new(), state: Default::default(), meta, shards: Shards::default() }
+    }
+
     fn rederive(&mut self, gid: &str) {
         self.state = derive_meta(gid, &self.entries, &self.doc.vv());
     }
@@ -133,6 +155,8 @@ pub(crate) struct GroupCore {
     loops: AtomicBool,
     /// Groups whose members we are still telling about our new endpoint (U12).
     moving: Mutex<HashSet<String>>,
+    /// When day docs were last compacted (hourly, and once after open).
+    compacted: Mutex<Option<Instant>>,
     /// G3: invite codes (waiters for host answers, the wrong-code limiter).
     pub(crate) codes: super::code::CodeRt,
 }
@@ -147,12 +171,39 @@ pub(crate) struct Sess {
     /// Host side: the member was joining (not yet a member) at Hello.
     joining: bool,
     pub(crate) tx: mpsc::UnboundedSender<Out>,
+    /// What the peer holds of the meta doc.
     peer_vv: Mutex<VersionVector>,
+    /// What the peer holds of the day docs we know it holds some of.
+    peer_days: Mutex<HashMap<String, VersionVector>>,
+    /// The history request in flight: its answer is passed on here (`backfill`).
+    hist: Mutex<Option<mpsc::UnboundedSender<GroupMsg>>>,
 }
 
 pub(crate) enum Out {
     Msg(GroupMsg),
     Close,
+}
+
+impl Sess {
+    /// The peer holds at least `vv` of `doc`.
+    fn peer_has(&self, doc: &DocId, vv: &VersionVector) {
+        match doc {
+            DocId::Meta => self.peer_vv.lock().merge(vv),
+            DocId::Day(d) => self.peer_days.lock().entry(d.clone()).or_default().merge(vv),
+        }
+    }
+
+    /// The session's policy for what the peer sends (`GroupCore::apply`'s `admit`): on the host
+    /// side, a joiner may send only its own records until it is a member.
+    fn admit(&self) -> impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String> + use<> {
+        let (did, joining, hosting) = (self.did.clone(), self.joining, self.hosting);
+        move |state, _, fresh| {
+            if hosting && joining && !state.is_member(&did) && fresh.iter().any(|e| e.rec.author != did) {
+                return Err("a joiner may send only its own records".into());
+            }
+            Ok(())
+        }
+    }
 }
 
 pub(crate) fn host_key(did: &str, dev: &[u8; 32]) -> String {
@@ -166,38 +217,63 @@ fn decode_vv(b: &[u8]) -> Result<VersionVector, Error> {
     VersionVector::decode(b).map_err(|_| Error::Protocol("bad version vector".into()))
 }
 
+/// What the other side of a new session says it holds: the meta doc and the recent day docs.
+pub(crate) struct Peer {
+    vv: VersionVector,
+    days: HashMap<String, VersionVector>,
+}
+
+impl Peer {
+    fn new(vv: &[u8], days: &[(String, Vec<u8>)]) -> Result<Self, Error> {
+        if days.len() > MAX_HELLO_DAYS {
+            return Err(Error::Protocol("too many days in hello".into()));
+        }
+        let mut map = HashMap::new();
+        for (d, v) in days {
+            if !DocId::Day(d.clone()).is_valid() {
+                return Err(Error::Protocol("bad day in hello".into()));
+            }
+            map.insert(d.clone(), decode_vv(v)?);
+        }
+        Ok(Self { vv: decode_vv(vv)?, days: map })
+    }
+}
+
 /// What changed in a group, for events.
 pub(crate) struct Changed {
     pub gid: String,
-    pub new_items: Vec<super::state::Item>,
-    /// For the search index (`search/api.rs`).
-    pub posts: PostDiff,
+    /// The doc whose update this was (what sessions relay), if it came from a doc at all.
+    pub doc: DocId,
+    /// The doc's version vector after the change.
+    pub doc_vv: Vec<u8>,
+    /// New conversation lines that show: system lines and posts.
+    pub new_items: Vec<Item>,
+    /// Per day doc, for the search index (`search/api.rs`).
+    pub posts: Vec<PostDiff>,
+    /// Imported as history (old days): no new-message events, not relayed to other sessions.
+    pub history: bool,
 }
 
-/// The posts a change added or changed, the post ids it hid, and the doc's version vector
-/// before and after it.
+/// The posts of one day doc a change made show, and the doc's version vector before and after.
 pub(crate) struct PostDiff {
-    pub put: Vec<super::state::Item>,
-    pub gone: Vec<String>,
+    pub day: String,
+    pub put: Vec<Item>,
     pub prev: Vec<u8>,
     pub vv: Vec<u8>,
 }
 
-fn posts_of(st: &GroupState) -> HashMap<String, String> {
-    st.items.iter().filter(|i| i.kind == super::state::ItemKind::Post).map(|i| (i.id.clone(), i.text.clone())).collect()
-}
-
-fn post_diff(before: &HashMap<String, String>, prev: &VersionVector, live: &Live) -> PostDiff {
-    let after = posts_of(&live.state);
-    PostDiff {
-        put: live.state.items.iter().filter(|i| after.contains_key(&i.id) && before.get(&i.id) != Some(&i.text)).cloned().collect(),
-        gone: before.keys().filter(|id| !after.contains_key(*id)).cloned().collect(),
-        prev: prev.encode(),
-        vv: live.doc.vv().encode(),
-    }
-}
-
 impl GroupCore {
+    /// The version vector of a doc of `live` (the group's entry in `groups`, already locked).
+    pub(crate) fn doc_vv_of(&self, live: &Live, gid: &str, doc: &DocId) -> VersionVector {
+        match doc {
+            DocId::Meta => live.doc.vv(),
+            DocId::Day(d) => match live.shards.peek(d) {
+                Some(s) => s.doc.vv(),
+                None => self.store.shard_meta(gid, d).ok().flatten().and_then(|m| decode_vv(&m.vv).ok()).unwrap_or_default(),
+            },
+        }
+    }
+
     pub fn closed(&self) -> bool {
         self.closed.load(Ordering::SeqCst)
     }
@@ -260,12 +336,21 @@ impl GroupCore {
         v
     }
 
-    /// Writes one record of ours into `gid`; returns the entry and what changed.
+    /// Writes one record of ours into `gid`; returns the entry and what changed. A post goes
+    /// into the day doc of its time, every other record into the meta doc.
     pub fn write(&self, gid: &str, body: Body) -> Result<(Entry, Changed), Error> {
+        self.write_at(gid, body, now_ms() as i64)
+    }
+
+    /// `write` with the record's time given (tests write into past days).
+    pub fn write_at(&self, gid: &str, body: Body, at: i64) -> Result<(Entry, Changed), Error> {
         let mut groups = self.groups.lock();
         let live = groups.get_mut(gid).ok_or(Error::NotFound)?;
-        let rec = Record { v: 1, group: gid.to_string(), author: self.did.clone(), dev: self.dev, at: now_ms() as i64, seen: live.doc.seen(), body };
-        let (prev, posts_before) = (live.doc.vv(), posts_of(&live.state));
+        let rec = Record { v: 1, group: gid.to_string(), author: self.did.clone(), dev: self.dev, at, seen: live.doc.seen(), body };
+        if matches!(rec.body, Body::Post { .. }) { self.write_post(live, gid, rec) } else { self.write_meta(live, gid, rec) }
+    }
+
+    fn write_meta(&self, live: &mut Live, gid: &str, rec: Record) -> Result<(Entry, Changed), Error> {
         let (entry, update) = live.doc.write(&self.account, &rec).map_err(|e| Error::Protocol(e.to_string()))?;
         let before: HashSet<String> = live.state.items.iter().map(|i| i.id.clone()).collect();
         live.entries.push(entry.clone());
@@ -273,16 +358,49 @@ impl GroupCore {
         let doc = &live.doc;
         self.store.append_meta(gid, &mut live.meta, &update, || doc.snapshot())?;
         let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
-        let posts = post_diff(&posts_before, &prev, live);
-        Ok((entry, Changed { gid: gid.to_string(), new_items, posts }))
+        Ok((entry, Changed { gid: gid.to_string(), doc: DocId::Meta, doc_vv: live.doc.vv().encode(), new_items, posts: Vec::new(), history: false }))
     }
 
-    /// Validates and applies a remote update; `admit` is the session's policy, asked with the
-    /// group's current state and entries and the batch's new entries before anything is imported.
-    fn apply(&self, gid: &str, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+    fn write_post(&self, live: &mut Live, gid: &str, rec: Record) -> Result<(Entry, Changed), Error> {
+        let day = day_of(rec.at);
+        let Live { state, shards, meta, .. } = live;
+        let shard = shards.get(&self.store, gid, self.wid, &day, state)?;
+        let prev = shard.doc.vv().encode();
+        let (entry, update) = shard.doc.write(&self.account, &rec).map_err(|e| Error::Protocol(e.to_string()))?;
+        let vis = post_visible(state, &entry.rec.author, &entry.rec.seen);
+        shard.insert(entry.clone(), vis);
+        let shown: Vec<Item> = post_item(&entry, state).filter(|_| vis == Vis::Visible).into_iter().collect();
+        note_posts(meta, &self.did, &shown);
+        meta.owed_days.insert(day.clone());
+        if vis == Vis::Pending {
+            meta.pending_days.insert(day.clone());
+        }
+        if meta.newest_day.as_ref().is_none_or(|d| *d < day) {
+            meta.newest_day = Some(day.clone());
+        }
+        let vv = shard.doc.vv().encode();
+        let doc = &shard.doc;
+        self.store.append_shard(gid, &day, &mut shard.meta, vv.clone(), &update, || doc.snapshot(), Some(meta))?;
+        let posts = vec![PostDiff { day: day.clone(), put: shown.clone(), prev, vv: vv.clone() }];
+        Ok((entry, Changed { gid: gid.to_string(), doc: DocId::Day(day), doc_vv: vv, new_items: shown, posts, history: false }))
+    }
+
+    /// Validates and applies a remote update of one doc; `admit` is the session's policy, asked
+    /// with the group's current state and meta entries and the batch's new entries before
+    /// anything is imported.
+    pub(crate) fn apply(&self, gid: &str, doc: &DocId, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+        if !doc.is_valid() {
+            return Err(Reject::WrongDoc);
+        }
         let mut groups = self.groups.lock();
         let Some(live) = groups.get_mut(gid) else { return Err(Reject::Policy("unknown group".into())) };
-        let prev = live.doc.vv();
+        match doc {
+            DocId::Meta => self.apply_meta(live, gid, update, admit),
+            DocId::Day(day) => self.apply_day(live, gid, day, update, admit),
+        }
+    }
+
+    fn apply_meta(&self, live: &mut Live, gid: &str, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
         let fresh = {
             let Live { doc, entries, state, .. } = &mut *live;
             doc.apply_remote(update, |fresh| admit(state, entries, fresh))?
@@ -291,16 +409,92 @@ impl GroupCore {
             return Ok(None);
         }
         let before: HashSet<String> = live.state.items.iter().map(|i| i.id.clone()).collect();
-        let posts_before = posts_of(&live.state);
         live.entries.extend(fresh);
         live.rederive(gid);
+        // Posts that were waiting for meta records may show now.
+        let (posts, mut new_items) = self.rejudge_pending(live, gid);
         let doc = &live.doc;
         if let Err(e) = self.store.append_meta(gid, &mut live.meta, update, || doc.snapshot()) {
             tracing::warn!("group store: {e}");
         }
-        let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
-        let posts = post_diff(&posts_before, &prev, live);
-        Ok(Some(Changed { gid: gid.to_string(), new_items, posts }))
+        new_items.extend(live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned());
+        Ok(Some(Changed { gid: gid.to_string(), doc: DocId::Meta, doc_vv: live.doc.vv().encode(), new_items, posts, history: false }))
+    }
+
+    /// Judges again the posts that named meta records we lacked, in every day that has some.
+    fn rejudge_pending(&self, live: &mut Live, gid: &str) -> (Vec<PostDiff>, Vec<Item>) {
+        let (mut diffs, mut shown) = (Vec::new(), Vec::new());
+        let Live { state, shards, meta, .. } = live;
+        for day in meta.pending_days.clone() {
+            let shard = match shards.get(&self.store, gid, self.wid, &day, state) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!("group {gid} day {day}: {e}");
+                    continue;
+                }
+            };
+            let now_shown = shard.rejudge(state);
+            if !shard.has_pending() {
+                meta.pending_days.remove(&day);
+            }
+            if !now_shown.is_empty() {
+                let vv = shard.doc.vv().encode();
+                diffs.push(PostDiff { day, put: now_shown.clone(), prev: vv.clone(), vv });
+                shown.extend(now_shown);
+            }
+        }
+        note_posts(meta, &self.did, &shown);
+        (diffs, shown)
+    }
+
+    fn apply_day(&self, live: &mut Live, gid: &str, day: &str, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+        let Live { entries, state, shards, meta, .. } = live;
+        let shard = shards.get(&self.store, gid, self.wid, day, state).map_err(|e| Reject::Policy(e.to_string()))?;
+        let prev = shard.doc.vv().encode();
+        let fresh = shard.doc.apply_remote(update, |fresh| admit(state, entries, fresh))?;
+        if fresh.is_empty() {
+            return Ok(None);
+        }
+        let mut shown = Vec::new();
+        for e in fresh {
+            let vis = post_visible(state, &e.rec.author, &e.rec.seen);
+            if vis == Vis::Pending {
+                meta.pending_days.insert(day.to_string());
+            }
+            if vis == Vis::Visible {
+                shown.extend(post_item(&e, state));
+            }
+            shard.insert(e, vis);
+        }
+        note_posts(meta, &self.did, &shown);
+        if meta.newest_day.as_deref().is_none_or(|d| d < day) {
+            meta.newest_day = Some(day.to_string());
+        }
+        let vv = shard.doc.vv().encode();
+        let doc = &shard.doc;
+        if let Err(e) = self.store.append_shard(gid, day, &mut shard.meta, vv.clone(), update, || doc.snapshot(), Some(meta)) {
+            tracing::warn!("group store: {e}");
+        }
+        let posts = vec![PostDiff { day: day.to_string(), put: shown.clone(), prev, vv: vv.clone() }];
+        Ok(Some(Changed { gid: gid.to_string(), doc: DocId::Day(day.to_string()), doc_vv: vv, new_items: shown, posts, history: false }))
+    }
+
+    /// The version vector of one of `gid`'s docs as we hold it (empty if we hold none of it).
+    pub(crate) fn doc_vv(&self, gid: &str, doc: &DocId) -> VersionVector {
+        let groups = self.groups.lock();
+        let Some(live) = groups.get(gid) else { return VersionVector::default() };
+        self.doc_vv_of(live, gid, doc)
+    }
+
+    /// The recent days (see `HELLO_DAYS`) of `gid` we hold, with their version vectors.
+    pub(crate) fn hello_days(&self, gid: &str) -> Vec<(String, Vec<u8>)> {
+        recent_days(now_ms() as i64, HELLO_DAYS)
+            .into_iter()
+            .filter_map(|d| {
+                let m = self.store.shard_meta(gid, &d).ok().flatten()?;
+                Some((d, m.vv))
+            })
+            .collect()
     }
 
     /// Host addresses we pass on for `gid`: active chat and call hosts only (never a plain
@@ -323,23 +517,44 @@ impl GroupCore {
         out
     }
 
-    /// Sends every session of `gid` (except `from`) what it lacks.
-    pub(crate) fn push(&self, gid: &str, from: Option<u64>) {
-        let groups = self.groups.lock();
-        let Some(live) = groups.get(gid) else { return };
+    /// Sends every session of `gid` (except `from`) what it lacks of the meta doc and then of
+    /// the day docs `days` (the meta doc always goes first, so a post never arrives before the
+    /// records it names). Older days reach a peer through history sync, not through here.
+    pub(crate) fn push(&self, gid: &str, from: Option<u64>, days: &[String]) {
+        let mut groups = self.groups.lock();
+        let Some(live) = groups.get_mut(gid) else { return };
         let ours = live.doc.vv();
-        for s in self.sessions_of(gid) {
-            // A session of a member removed just now still gets this last push (it carries the
-            // flags that removed it); `group_enforce` closes it right after.
-            if Some(s.id) == from {
-                continue;
-            }
+        // A session of a member removed just now still gets this last push (it carries the
+        // flags that removed it); `group_enforce` closes it right after. It gets no posts.
+        let sessions: Vec<Arc<Sess>> = self.sessions_of(gid).into_iter().filter(|s| Some(s.id) != from).collect();
+        for s in &sessions {
             let mut pv = s.peer_vv.lock();
             if let Some(update) = live.doc.export_since(&pv) {
-                let _ = s.tx.send(Out::Msg(GroupMsg::Update { update }));
+                let _ = s.tx.send(Out::Msg(GroupMsg::Update { doc: DocId::Meta, update }));
                 pv.merge(&ours);
             }
         }
+        for day in days {
+            let Live { state, shards, .. } = &mut *live;
+            let Ok(shard) = shards.get(&self.store, gid, self.wid, day, state) else { continue };
+            let theirs = shard.doc.vv();
+            for s in &sessions {
+                if s.hosting && state.is_removed(&s.did) {
+                    continue;
+                }
+                let mut pd = s.peer_days.lock();
+                let pv = pd.entry(day.clone()).or_default();
+                if let Some(update) = shard.doc.export_since(pv) {
+                    let _ = s.tx.send(Out::Msg(GroupMsg::Update { doc: DocId::Day(day.clone()), update }));
+                    pv.merge(&theirs);
+                }
+            }
+        }
+    }
+
+    /// The days of the last `HELLO_DAYS` we hold (what a new session catches the peer up on).
+    pub(crate) fn held_recent_days(&self, gid: &str) -> Vec<String> {
+        recent_days(now_ms() as i64, HELLO_DAYS).into_iter().filter(|d| self.store.shard_meta(gid, d).ok().flatten().is_some()).collect()
     }
 
     /// `merge_hosts`, and on a change pass the addresses on to every other session of `gid`
@@ -352,7 +567,7 @@ impl GroupCore {
             return false;
         }
         // The records that make these hosts valid go first, on each session's ordered stream.
-        self.push(gid, None);
+        self.push(gid, None, &[]);
         let all = self.host_addrs(gid);
         for s in self.sessions_of(gid) {
             if Some(s.id) != from {
@@ -563,9 +778,11 @@ impl Inner {
                     continue;
                 }
             };
-            let entries = doc.entries().unwrap_or_default();
+            // Our own sealed rows: verified when they entered the store, not again. Day docs are
+            // not read here at all.
+            let entries = doc.entries_trusted().unwrap_or_default();
             let state = derive_meta(&gid, &entries, &doc.vv());
-            groups.insert(gid, Live { doc, entries, state, meta });
+            groups.insert(gid, Live { doc, entries, state, meta, shards: Shards::default() });
         }
         let core = Arc::new(GroupCore {
             epoch,
@@ -588,6 +805,7 @@ impl Inner {
             closed: AtomicBool::new(false),
             loops: AtomicBool::new(false),
             moving: Default::default(),
+            compacted: Default::default(),
             codes: Default::default(),
         });
         *slot = Some(core.clone());
@@ -733,8 +951,10 @@ impl Inner {
         self.search_group(&gid, &changed.posts);
         // Order matters: the records first (a removed member gets the flags that removed it,
         // a new host's acceptance reaches others before its address), then enforcement, then
-        // address announcements.
-        self.group_push(core, &gid, from);
+        // address announcements. History imported from one session is not pushed on to the
+        // others: each backfills from its own session.
+        let days: Vec<String> = changed.doc.day().filter(|_| !changed.history).map(str::to_string).into_iter().collect();
+        self.group_push(core, &gid, from, &days);
         self.group_enforce(core, &gid);
         // Became (or stopped being) a host: announce our address.
         let mine = self.group_my_addr(core, &gid);
@@ -746,7 +966,7 @@ impl Inner {
             // GF: `group_push` above skipped `from`, and that session may not have the record
             // that makes us a host yet (it is in flight from a concurrent `group_after`); send it
             // first, or the receiver drops our address as not a host's and never sees it again.
-            self.group_push(core, &gid, None);
+            self.group_push(core, &gid, None, &[]);
             let hosts = core.host_addrs(&gid);
             for s in core.sessions_of(&gid) {
                 let _ = s.tx.send(Out::Msg(GroupMsg::Hosts { hosts: hosts.clone() }));
@@ -759,7 +979,7 @@ impl Inner {
         // G3: invitees that became members read Joined.
         self.group_invitations_changed(core, &gid);
         if let Some(ev) = self.group_ev() {
-            let msgs: Vec<_> = changed.new_items.iter().filter_map(|i| self.group_message(core, &gid, i)).collect();
+            let msgs: Vec<_> = if changed.history { Vec::new() } else { changed.new_items.iter().filter_map(|i| self.group_message(core, &gid, i)).collect() };
             let handle = self.handle.clone();
             handle.spawn_blocking(move || {
                 for m in msgs {
@@ -770,11 +990,16 @@ impl Inner {
         }
     }
 
-    /// As a member, publish our encryption key in the group once (U3 mail needs it).
+    /// As a member, publish our encryption key in the group once per device (U3 mail needs it).
+    /// Every device writes at least this one meta record: posts live in day docs, and the
+    /// member's device list ("appoint a host") comes from the meta doc.
     fn group_publish_key(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str) {
         let key = core.account.encryption_public_key();
         let need = core.groups.lock().get(gid).is_some_and(|l| {
-            l.state.owner.is_some() && l.state.is_member(&core.did) && !l.state.is_removed(&core.did) && l.state.enc_keys.get(&core.did) != Some(&key)
+            l.state.owner.is_some()
+                && l.state.is_member(&core.did)
+                && !l.state.is_removed(&core.did)
+                && (l.state.enc_keys.get(&core.did) != Some(&key) || !l.state.members.get(&core.did).is_some_and(|m| m.devices.contains(&core.dev)))
         });
         if need {
             match core.write(gid, Body::EncKey { key }) {
@@ -932,9 +1157,9 @@ impl Inner {
         }
     }
 
-    /// Sends every session of `gid` (except `from`) what it lacks.
-    fn group_push(&self, core: &GroupCore, gid: &str, from: Option<u64>) {
-        core.push(gid, from);
+    /// Sends every session of `gid` (except `from`) what it lacks of the meta doc and `days`.
+    fn group_push(&self, core: &GroupCore, gid: &str, from: Option<u64>, days: &[String]) {
+        core.push(gid, from, days);
     }
 
     // ---- accepting (host side) ---------------------------------------------------------------
@@ -970,8 +1195,8 @@ impl Inner {
         let mut writer = Writer(send);
         let mut reader = Reader::new(recv);
         let hello = tokio::time::timeout(HELLO_TIMEOUT, reader.recv()).await.map_err(|_| Error::Timeout)??;
-        let (auth, group, vv, invite, hosts, relay) = match hello {
-            Some(GroupMsg::Hello { auth, group, vv, invite, hosts, relay }) => (auth, group, vv, invite, hosts, relay),
+        let (auth, group, vv, days, invite, hosts, relay) = match hello {
+            Some(GroupMsg::Hello { auth, group, vv, days, invite, hosts, relay }) => (auth, group, vv, days, invite, hosts, relay),
             Some(GroupMsg::Fetch { code }) => {
                 // G3: someone with a short invite link asks for the invite behind it.
                 self.group_fetch_session(&core, writer, reader, code).await;
@@ -980,7 +1205,7 @@ impl Inner {
             }
             Some(GroupMsg::Moved { auth, group, hosts }) => {
                 self.group_moved_in(&core, remote, auth, &group, &hosts);
-                let _ = writer.send(&GroupMsg::Ack { vv: Vec::new() }).await;
+                let _ = writer.send(&GroupMsg::Ack { doc: DocId::Meta, vv: Vec::new() }).await;
                 let _ = writer.0.finish();
                 let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
                 return Ok(());
@@ -1036,43 +1261,47 @@ impl Inner {
                 let mine = EndpointAuth::new(&core.account, core.dev, *core.ep_id.lock().as_ref().map(|e| e.id()).ok_or(Error::NotStarted)?.as_bytes());
                 let our_vv = core.groups.lock().get(&group).map(|l| l.doc.vv().encode()).unwrap_or_default();
                 let hosts = core.host_addrs(&group);
-                writer.send(&GroupMsg::Welcome { auth: mine, vv: our_vv, hosts }).await?;
-                let peer_vv = decode_vv(&vv)?;
-                self.group_run(core, conn, writer, reader, group, auth, true, joining, peer_vv).await
+                let our_days = core.hello_days(&group);
+                writer.send(&GroupMsg::Welcome { auth: mine, vv: our_vv, days: our_days, hosts }).await?;
+                let peer = Peer::new(&vv, &days)?;
+                self.group_run(core, conn, writer, reader, group, auth, true, joining, peer).await
             }
         }
     }
 
     /// A removed member may upload only its own posts whose signed frontier predates its removal
-    /// (U11 option A); anything else is refused and nothing new is sent to it.
+    /// (U11 option A); anything else is refused and nothing new is sent to it. It sends one
+    /// `Update` per day doc it owes and finishes; each is answered by an `Ack` of that doc.
     async fn group_removed_upload(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, did: &str, writer: &mut Writer, reader: &mut Reader) {
-        let Ok(Ok(Some(GroupMsg::Update { update }))) = tokio::time::timeout(REMOVED_UPLOAD_WAIT, reader.recv()).await else { return };
-        let did_owned = did.to_string();
-        let res = core.apply(gid, &update, move |state, entries, fresh| {
-            let flag_entries: Vec<&Entry> = state
-                .removed
-                .get(&did_owned)
-                .map(|f| f.iter().filter_map(|fi| entries.iter().find(|e| e.id == fi.id)).collect())
-                .unwrap_or_default();
-            for e in fresh {
-                let before = flag_entries.iter().filter(|f| f.seen_by(&e.rec.seen)).count() < super::state::REMOVAL_FLAGS;
-                if e.rec.author != did_owned || !matches!(e.rec.body, Body::Post { .. }) || !before {
-                    return Err("removed: only posts written before the removal are accepted".into());
+        while let Ok(Ok(Some(GroupMsg::Update { doc, update }))) = tokio::time::timeout(REMOVED_UPLOAD_WAIT, reader.recv()).await {
+            let did_owned = did.to_string();
+            let res = core.apply(gid, &doc, &update, move |state, entries, fresh| {
+                let flag_entries: Vec<&Entry> = state
+                    .removed
+                    .get(&did_owned)
+                    .map(|f| f.iter().filter_map(|fi| entries.iter().find(|e| e.id == fi.id)).collect())
+                    .unwrap_or_default();
+                for e in fresh {
+                    let before = flag_entries.iter().filter(|f| f.seen_by(&e.rec.seen)).count() < super::state::REMOVAL_FLAGS;
+                    if e.rec.author != did_owned || !matches!(e.rec.body, Body::Post { .. }) || !before {
+                        return Err("removed: only posts written before the removal are accepted".into());
+                    }
                 }
-            }
-            Ok(())
-        });
-        match res {
-            Ok(changed) => {
-                let vv = core.groups.lock().get(gid).map(|l| l.doc.vv().encode()).unwrap_or_default();
-                let _ = writer.send(&GroupMsg::Ack { vv }).await;
-                if let Some(c) = changed {
-                    self.group_after(core, c, None);
+                Ok(())
+            });
+            match res {
+                Ok(changed) => {
+                    let vv = core.doc_vv(gid, &doc).encode();
+                    let _ = writer.send(&GroupMsg::Ack { doc, vv }).await;
+                    if let Some(c) = changed {
+                        self.group_after(core, c, None);
+                    }
                 }
-            }
-            Err(e) => {
-                self.log(format!("group {gid}: refused a removed member's upload: {e}"));
-                let _ = writer.send(&GroupMsg::Refused { reason: e.to_string() }).await;
+                Err(e) => {
+                    self.log(format!("group {gid}: refused a removed member's upload: {e}"));
+                    let _ = writer.send(&GroupMsg::Refused { reason: e.to_string() }).await;
+                    return;
+                }
             }
         }
     }
@@ -1087,6 +1316,13 @@ impl Inner {
             }
             if core.closed() {
                 break;
+            }
+            if core.compacted.lock().is_none_or(|t| t.elapsed() >= COMPACT_EVERY) {
+                *core.compacted.lock() = Some(Instant::now());
+                let (this, core) = (self.clone(), core.clone());
+                self.handle.spawn_blocking(move || {
+                    this.group_compact(&core);
+                });
             }
             self.group_req_tick(&core);
             self.group_calls_tick(&core);
@@ -1170,11 +1406,11 @@ impl Inner {
 
     /// Whether some op of ours is not yet acknowledged by any host.
     fn group_owes(&self, core: &GroupCore, gid: &str) -> bool {
-        let mine = core.groups.lock().get(gid).map(|l| l.doc.vv().get(&core.wid).copied().unwrap_or(0)).unwrap_or(0);
-        if mine == 0 {
+        let (mine, owed_days) = core.groups.lock().get(gid).map(|l| (l.doc.vv().get(&core.wid).copied().unwrap_or(0), !l.meta.owed_days.is_empty())).unwrap_or((0, false));
+        if mine == 0 && !owed_days {
             return false;
         }
-        !core.store.acks(gid).unwrap_or_default().iter().any(|(_, vv)| decode_vv(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) >= mine)
+        owed_days || !core.store.acks(gid).unwrap_or_default().iter().any(|(_, vv)| decode_vv(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) >= mine)
     }
 
     async fn group_dial(self: Arc<Self>, core: Arc<GroupCore>, gid: String, host: HostAddr) -> Result<(), Error> {
@@ -1195,21 +1431,22 @@ impl Inner {
             (live.doc.vv(), invite)
         };
         let auth = EndpointAuth::new(&core.account, core.dev, *ep.id().as_bytes());
-        writer.send(&GroupMsg::Hello { auth, group: gid.clone(), vv: vv.encode(), invite, hosts: core.host_addrs(&gid), relay: relay_of(&ep) }).await?;
+        let days = core.hello_days(&gid);
+        writer.send(&GroupMsg::Hello { auth, group: gid.clone(), vv: vv.encode(), days, invite, hosts: core.host_addrs(&gid), relay: relay_of(&ep) }).await?;
         let reply = tokio::time::timeout(HELLO_TIMEOUT, reader.recv()).await.map_err(|_| Error::Timeout)??;
         match reply {
-            Some(GroupMsg::Welcome { auth, vv, hosts }) => {
+            Some(GroupMsg::Welcome { auth, vv, days, hosts }) => {
                 if !auth.verify(conn.remote_id().as_bytes()) || auth.did != host.did || auth.dev != host.dev {
                     return Err(Error::Protocol("host proof does not verify".into()));
                 }
                 core.refusals.lock().remove(&gid);
                 core.merge_hosts_from(&gid, &hosts, None);
-                let peer_vv = decode_vv(&vv)?;
-                self.group_run(core, conn, writer, reader, gid, auth, false, false, peer_vv).await
+                let peer = Peer::new(&vv, &days)?;
+                self.group_run(core, conn, writer, reader, gid, auth, false, false, peer).await
             }
-            Some(GroupMsg::Removed { records, vv, update }) => {
+            Some(GroupMsg::Removed { records, update, .. }) => {
                 if let Some(u) = update {
-                    match core.apply(&gid, &u, |_, _, _| Ok(())) {
+                    match core.apply(&gid, &DocId::Meta, &u, |_, _, _| Ok(())) {
                         Ok(Some(c)) => self.group_after(&core, c, None),
                         Ok(None) => {}
                         Err(e) => tracing::debug!("group {gid}: removal records: {e}"),
@@ -1228,13 +1465,22 @@ impl Inner {
                         self.handle.spawn_blocking(move || ev.on_group_changed(g));
                     }
                 }
-                // Upload what we wrote that the host lacks; it keeps only pre-removal posts.
-                let theirs = decode_vv(&vv)?;
-                let up = core.groups.lock().get(&gid).and_then(|l| l.doc.export_peer_since(core.wid, &theirs));
-                if let Some(update) = up {
-                    writer.send(&GroupMsg::Update { update }).await?;
-                    if let Ok(Ok(Some(GroupMsg::Ack { vv }))) = tokio::time::timeout(Duration::from_secs(10), reader.recv()).await {
-                        let _ = core.store.put_ack(&gid, &host.did, &host.dev, &vv);
+                // Upload the posts of ours the host lacks (one update per day doc); it keeps
+                // only the pre-removal ones.
+                let owed: Vec<String> = core.groups.lock().get(&gid).map(|l| l.meta.owed_days.iter().cloned().collect()).unwrap_or_default();
+                for day in owed {
+                    let up = {
+                        let mut groups = core.groups.lock();
+                        let Some(live) = groups.get_mut(&gid) else { break };
+                        let Live { state, shards, .. } = live;
+                        shards.get(&core.store, &gid, core.wid, &day, state).ok().and_then(|s| s.doc.export_peer_since(core.wid, &VersionVector::default()))
+                    };
+                    let Some(update) = up else { continue };
+                    let doc = DocId::Day(day.clone());
+                    writer.send(&GroupMsg::Update { doc, update }).await?;
+                    match tokio::time::timeout(Duration::from_secs(10), reader.recv()).await {
+                        Ok(Ok(Some(GroupMsg::Ack { vv, .. }))) => self.group_acked(&core, &gid, &host.did, &host.dev, &DocId::Day(day), &vv),
+                        _ => break,
                     }
                 }
                 let _ = writer.0.finish();
@@ -1271,15 +1517,26 @@ impl Inner {
         peer: EndpointAuth,
         hosting: bool,
         joining: bool,
-        peer_vv: VersionVector,
+        theirs: Peer,
     ) -> Result<(), Error> {
         let (tx, mut rx) = mpsc::unbounded_channel();
         let id = core.next.fetch_add(1, Ordering::SeqCst);
-        let sess = Arc::new(Sess { id, gid: gid.clone(), did: peer.did.clone(), dev: peer.dev, hosting, joining, tx, peer_vv: Mutex::new(peer_vv) });
+        let sess = Arc::new(Sess {
+            id,
+            gid: gid.clone(),
+            did: peer.did.clone(),
+            dev: peer.dev,
+            hosting,
+            joining,
+            tx,
+            peer_vv: Mutex::new(theirs.vv),
+            peer_days: Mutex::new(theirs.days),
+            hist: Mutex::new(None),
+        });
         core.sessions.lock().insert(id, sess.clone());
         self.log(format!("group {} session with {} ({})", &gid[..8.min(gid.len())], &peer.did, if hosting { "we host" } else { "they host" }));
-        // Catch the other side up.
-        self.group_push(&core, &gid, None);
+        // Catch the other side up: the meta doc, then the recent days (older ones are history).
+        self.group_push(&core, &gid, None, &core.held_recent_days(&gid));
         // GF: the host addresses again, after the records. Those in Hello/Welcome are merged
         // before this session's records arrive, so an address of a host the other side does not
         // yet know as one (e.g. accepted while we were apart) was dropped there and never re-sent;
@@ -1307,8 +1564,11 @@ impl Inner {
             }
             let _ = writer.0.finish();
         });
+        // Both sides fetch the days they lack, newest first, in the background.
+        let backfill = tokio::spawn(self.clone().group_backfill(core.clone(), sess.clone()));
         let res = self.group_read(&core, &sess, &mut reader).await;
         core.sessions.lock().remove(&id);
+        backfill.abort();
         writer_task.abort();
         conn.close(0u32.into(), b"bye");
         if let Some(ev) = self.group_ev() {
@@ -1328,25 +1588,20 @@ impl Inner {
                 return Ok(());
             }
             match msg {
-                GroupMsg::Update { update } => {
-                    let (did, joining, hosting) = (sess.did.clone(), sess.joining, sess.hosting);
-                    let res = core.apply(&sess.gid, &update, move |state, _, fresh| {
-                        // Host side, a joiner: only its own records until it is a member.
-                        if hosting && joining && !state.is_member(&did) && fresh.iter().any(|e| e.rec.author != did) {
-                            return Err("a joiner may send only its own records".into());
-                        }
-                        Ok(())
-                    });
+                GroupMsg::Update { doc, update } => {
+                    let res = core.apply(&sess.gid, &doc, &update, sess.admit());
                     match res {
                         Ok(changed) => {
                             // The peer holds at least what it just sent.
                             if let Ok(meta) = loro::LoroDoc::decode_import_blob_meta(&update, false) {
-                                sess.peer_vv.lock().merge(&meta.partial_end_vv);
+                                sess.peer_has(&doc, &meta.partial_end_vv);
                             }
-                            let vv = core.groups.lock().get(&sess.gid).map(|l| l.doc.vv()).unwrap_or_default();
-                            let _ = sess.tx.send(Out::Msg(GroupMsg::Ack { vv: vv.encode() }));
+                            let vv = changed.as_ref().map(|c| c.doc_vv.clone()).unwrap_or_else(|| core.doc_vv(&sess.gid, &doc).encode());
+                            let _ = sess.tx.send(Out::Msg(GroupMsg::Ack { doc: doc.clone(), vv }));
                             if let Some(c) = changed {
-                                self.group_maybe_join(core, &sess.gid);
+                                if doc == DocId::Meta {
+                                    self.group_maybe_join(core, &sess.gid);
+                                }
                                 self.group_after(core, c, Some(sess.id));
                             }
                         }
@@ -1358,15 +1613,36 @@ impl Inner {
                         }
                     }
                 }
-                GroupMsg::Ack { vv } => {
-                    let vv = decode_vv(&vv)?;
-                    sess.peer_vv.lock().merge(&vv);
+                GroupMsg::Ack { doc, vv } => {
+                    if !doc.is_valid() {
+                        return Err(Error::Protocol("ack for a bad doc".into()));
+                    }
+                    sess.peer_has(&doc, &decode_vv(&vv)?);
                     if !sess.hosting {
-                        let _ = core.store.put_ack(&sess.gid, &sess.did, &sess.dev, &vv.encode());
+                        self.group_acked(core, &sess.gid, &sess.did, &sess.dev, &doc, &vv);
                         if let Some(ev) = self.group_ev() {
                             let g = sess.gid.clone();
                             self.handle.spawn_blocking(move || ev.on_group_changed(g));
                         }
+                    }
+                }
+                GroupMsg::HistoryList { before, limit } => {
+                    let (core, sess) = (core.clone(), sess.clone());
+                    self.handle.spawn_blocking(move || {
+                        let days = core.history_list(&sess, before.as_deref(), limit);
+                        let _ = sess.tx.send(Out::Msg(GroupMsg::HistoryDays { days }));
+                    });
+                }
+                GroupMsg::HistoryGet { day } => {
+                    let (core, sess) = (core.clone(), sess.clone());
+                    self.handle.spawn_blocking(move || {
+                        let snapshot = core.history_snapshot(&sess, &day);
+                        let _ = sess.tx.send(Out::Msg(GroupMsg::HistoryDay { day, snapshot }));
+                    });
+                }
+                m @ (GroupMsg::HistoryDays { .. } | GroupMsg::HistoryDay { .. }) => {
+                    if let Some(tx) = sess.hist.lock().as_ref() {
+                        let _ = tx.send(m);
                     }
                 }
                 GroupMsg::Hosts { hosts } => {

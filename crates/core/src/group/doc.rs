@@ -57,10 +57,6 @@ pub fn day_valid(day: &str) -> bool {
     day_start(day).is_some_and(|ms| day_of(ms) == day)
 }
 
-/// The day doc a post written at `at` (unix ms) belongs in.
-pub fn day_doc_of(at: i64) -> DocId {
-    DocId::Day(day_of(at))
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Reject {
@@ -135,10 +131,6 @@ impl GroupDoc {
         let doc = LoroDoc::new();
         doc.set_peer_id(peer).expect("peer id");
         Self { group: group.to_string(), id, doc }
-    }
-
-    pub fn id(&self) -> &DocId {
-        &self.id
     }
 
     /// Rebuilds the meta doc from stored, already-validated bytes.
@@ -277,6 +269,7 @@ impl GroupDoc {
     }
 
     /// Every record in the doc with its first position (all were validated on the way in).
+    #[cfg(test)]
     pub fn entries(&self) -> Result<Vec<Entry>, Reject> {
         self.read_entries(true)
     }

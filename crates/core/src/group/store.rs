@@ -53,6 +53,9 @@ pub struct ShardMeta {
     pub vv: Vec<u8>,
     pub next_seq: u64,
     pub n_updates: u64,
+    /// Size of the rows, bytes (what a history list reports).
+    #[serde(default)]
+    pub bytes: u64,
     /// Compacted into one snapshot row (a day older than `CLOSE_AFTER_DAYS`); an update that
     /// arrives later opens it again until the next compaction.
     pub closed: bool,
@@ -214,12 +217,15 @@ impl GroupStore {
         let mut ops: Vec<Op> = Vec::new();
         if sm.n_updates + 1 >= UPDATES_BEFORE_SNAPSHOT {
             ops.push(Op::DeletePrefix(format!("shard/{gid}/{day}/u/")));
-            ops.push(self.db.put_op(&format!("shard/{gid}/{day}/snap"), &snapshot()).map_err(io)?);
+            let snap = snapshot();
+            sm.bytes = snap.len() as u64;
+            ops.push(self.db.put_op(&format!("shard/{gid}/{day}/snap"), &snap).map_err(io)?);
             sm.n_updates = 0;
         } else {
             ops.push(self.db.put_op(&format!("shard/{gid}/{day}/u/{:010}", sm.next_seq), update).map_err(io)?);
             sm.next_seq += 1;
             sm.n_updates += 1;
+            sm.bytes += update.len() as u64;
         }
         sm.vv = vv;
         sm.closed = false;
@@ -231,9 +237,15 @@ impl GroupStore {
         self.db.apply(&ops).map_err(io)
     }
 
+    /// Forgets every day doc of a group (test hook: a wiped host).
+    pub fn drop_days(&self, gid: &str) -> Result<(), Error> {
+        self.db.apply(&[Op::DeletePrefix(format!("shard/{gid}/")), Op::DeletePrefix(format!("days/{gid}/")), Op::DeletePrefix(format!("ackd/{gid}/"))]).map_err(io)
+    }
+
     /// Closes a day: its rows become the one snapshot `snap`.
     pub fn compact_shard(&self, gid: &str, day: &str, sm: &mut ShardMeta, snap: &[u8]) -> Result<(), Error> {
         sm.n_updates = 0;
+        sm.bytes = snap.len() as u64;
         sm.closed = true;
         let ops = [
             Op::DeletePrefix(format!("shard/{gid}/{day}/u/")),
