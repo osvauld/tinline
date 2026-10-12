@@ -14,6 +14,7 @@
   import { clock, hhmm } from '../model/clock.svelte';
   import { toastIn, toastOut } from './motion';
   import { dur } from '../fx/motion';
+  import { vid } from './video/video.svelte';
   import { motion } from '../fx/reduced.svelte';
 
   const name = $derived(call.peer ? displayName(call.peer) : '');
@@ -51,7 +52,7 @@
       <span class="tx">
         <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline</span>
         <b dir="auto">{tname}</b>
-        <small>{waiting ? 'Voice call · during your call' : 'Incoming voice call'}</small>
+        <small>{waiting ? 'Voice call · during your call' : vid.intent ? 'Incoming video call' : 'Incoming voice call'}</small>
       </span>
     </button>
     <div class="acts">

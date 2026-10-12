@@ -3,6 +3,8 @@
      app below moves down with it. Tapping the strip restores the full screen. */
   import Icon from '../ui/Icon.svelte';
   import GroupCallStrip from './GroupCallStrip.svelte';
+  import VIcon from './video/VIcon.svelte';
+  import { vid } from './video/video.svelte';
   import { call, fmtDuration } from './call.svelte';
   import { displayName } from '../model/store.svelte';
   import { stripIn, stripOut, STRIP_H } from './motion';
@@ -16,7 +18,7 @@
 {#if show}
   <div class="strip" style:--h="{STRIP_H}px" in:stripIn out:stripOut data-callstrip>
     <button type="button" class="open press" aria-label="Return to call with {name}" onclick={() => call.restore()}>
-      <Icon name="phone" size={18} /><b class="nm" dir="auto">{name}</b>
+      {#if vid.videoCall}<VIcon name="video" size={18} />{:else}<Icon name="phone" size={18} />{/if}<b class="nm" dir="auto">{name}</b>
       <span class="st">{#if call.phase === 'active'}<time class="t">{fmtDuration(call.elapsedS)}</time>{:else}{call.statusText}{/if}</span>
     </button>
     <button type="button" class="end press" aria-label="End call" disabled={call.phase === 'ended'} onclick={() => call.hangup()}>End</button>

@@ -6,6 +6,7 @@
   import Mark from '../brand/Mark.svelte';
   import { call } from './call.svelte';
   import { gcall } from './gcall.svelte';
+  import { vid } from './video/video.svelte';
   import { system } from './system.svelte';
   import { displayName, person, chat } from '../model/store.svelte';
   import { headsUpIn, headsUpOut } from './motion';
@@ -44,7 +45,7 @@
       <span class="tx">
         <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline · now</span>
         <b dir="auto">{name}</b>
-        <small>{waiting ? 'Voice call · during your call' : 'Incoming voice call'}</small>
+        <small>{waiting ? 'Voice call · during your call' : vid.intent ? 'Incoming video call' : 'Incoming voice call'}</small>
       </span>
     </button>
     <div class="acts">

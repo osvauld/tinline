@@ -23,6 +23,7 @@
   import { call } from '../../lib/calls/call.svelte';
   import { gcall } from '../../lib/calls/gcall.svelte';
   import OngoingCall from '../groups/OngoingCall.svelte';
+  import VIcon from '../../lib/calls/video/VIcon.svelte';
   import {
     SAMPLE_FILES, SIM, attachFile, cancelFile, canDelete, canEdit, canPost, deleteMessage, firstUnreadId, retryMessage, waitingReason,
     type Undo,
@@ -150,6 +151,11 @@
     if (c?.kind !== 'direct') return;
     if (gcall.holdsLine) { gcall.inCallToast(); return; }   // InCall: one line, group and 1:1 calls exclude each other
     call.place(c.person);
+  }
+  function startVideo() {
+    if (c?.kind !== 'direct') return;
+    if (gcall.holdsLine) { gcall.inCallToast(); return; }
+    call.place(c.person, true);
   }
   function openDetails() {
     if (!c) return;
@@ -371,6 +377,8 @@
         </button>
         {#if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
           onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>
+          <button type="button" class="ib press" class:dim={!callable} aria-label="Video call" aria-disabled={!callable} title={callable ? 'Video call' : callTitle}
+            onclick={() => { if (callable) startVideo(); }}><VIcon name="video" size={22} /></button>
         {:else if c.status === 'active'}<button type="button" class="ib press" class:dim={noCallHost && !gLive} class:live={!!gLive} aria-label={gLabel} aria-disabled={noCallHost && !gLive} title={callTitle} data-gcall-btn
           onclick={startCall}><Icon name="phone" /></button>{/if}
         <button type="button" class="ib press" aria-label="Find in this chat" title="Find in this chat (Ctrl+F)" onclick={() => find.show()}><Icon name="search" /></button>
