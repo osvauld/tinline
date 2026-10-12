@@ -307,6 +307,24 @@ Where the code settles what the design above leaves open.
 - **Names** unchanged (in memory, not indexed). Query terms longer than 8 chars: the lookup is
   their 8-char prefix, the row check does the rest (tested).
 
+### Implementation notes (find in chat, `crates/core/src/search/find.rs`)
+
+- **Format version 4** (not 3: the compaction branch takes 3). Old files are emptied and rebuilt.
+- **`z/{seg:08x}/{part:04x}`**: the doc table is cut into records of 1 024 docs (2 KB), not one
+  record per segment, for the same reason as the posting parts (records stay under a redb page).
+  Removed together with `x/` and `y/` when a segment goes. A segment with 65 535 or more days
+  marks the extra docs 0xFFFF: the table cannot tell and the row decides.
+- **Filter** (`find::Filter`) hangs on the existing `Scan` (`SearchIndex::scan_in`): segment
+  skip uses the manifest days the segment still owns; `Hot::range` takes the src hash. The row's
+  src is checked again, so a wrong table cannot leak another conversation.
+- **Drop budget stop**: when the 200 000 dropped postings are spent, the walk puts a pseudo
+  posting at the next doc (its row is read only for its `(rev_at, hash)` cursor) into the merge,
+  so the page ends in the right order and `next` continues exactly there (partial page, `next`
+  set). Hot-tier filtering is in memory and bounded by `HOT_MAX_DOCS`; it is not counted.
+- **No `z/` row in `content_sizes`** (the bench file belongs to another branch).
+- Test hooks: `Node::search_in_with_budget_for_test` (budgets; returns segments opened and
+  postings dropped).
+
 ## Benchmarks v2 (2026-10-12, release, same machine; load from other jobs varied)
 
 `search-bench` now replays the corpus in time order through `apply` (memory only) with a
