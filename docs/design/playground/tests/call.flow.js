@@ -19,6 +19,7 @@ async function open(b, form, hash, { dark = false, reduced = false } = {}) {
   await p.evaluate(() => { window.__pg.CALL_MS.ringingAfter = 8000; window.__pg.CALL_MS.connect = 700; window.__pg.fxLog.length = 0; });
   return p;
 }
+import { stable as L_stable } from './layout.js';
 const pg = (p, fn, arg) => p.evaluate(fn, arg);
 const phase = (p) => pg(p, () => window.__pg.call.phase);
 const status = (p) => p.locator('.callscreen .status .msg').innerText().catch(() => '');
@@ -187,7 +188,7 @@ async function contrast(p) {
     await pg(p, () => window.__pg.call.receive('arjun'));
     await p.waitForSelector('[data-incoming-alert]');
     ok('incoming (android): heads-up banner, no full screen yet', (await p.locator('.callscreen').count()) === 0 && /Arjun/.test(await p.locator('[data-incoming-alert]').innerText()));
-    ok('incoming: banner has Answer and Decline', (await p.locator('[data-incoming-alert] >> text=Answer').count()) === 1 && (await p.locator('[data-incoming-alert] >> text=Decline').count()) === 1);
+    ok('incoming: header swap has Answer and Decline', (await p.locator('[data-incoming-alert]').getByRole('button', { name: 'Answer' }).count()) === 1 && (await p.locator('[data-incoming-alert]').getByRole('button', { name: 'Decline' }).count()) === 1);
     ok('incoming: logo mark reacts (call.phase incoming)', (await p.locator('.appbar .st .vh').innerText()) === 'Incoming call');
     await shot(p, 'incoming-banner-android-dark');
     await p.locator('[data-incoming-alert] .open').click();
@@ -205,7 +206,7 @@ async function contrast(p) {
     ok('incoming answered: cues incoming on/off, connect, end', JSON.stringify(await cues(p)) === '["incoming:on","incoming:off","connect","end"]', JSON.stringify(await cues(p)));
     await pg(p, () => { window.__pg.fxLog.length = 0; window.__pg.call.receive('arjun'); });
     await p.waitForSelector('[data-incoming-alert]');
-    await p.locator('[data-incoming-alert] >> text=Decline').click();
+    await p.locator('[data-incoming-alert]').getByRole('button', { name: 'Decline' }).click();
     await idle(p);
     r = await recs(p, 'arjun');
     ok('incoming declined: second incoming record is declined, from them', r.length === 2 && r[1].outcome === 'declined' && r[1].direction === 'in' && r[1].from === 'arjun', JSON.stringify(r));
@@ -316,11 +317,33 @@ async function contrast(p) {
     await p.locator('[data-callstrip] .end').click(); await idle(p);
     await p.close();
 
+    /* ===== ringing swaps the header in place: nothing moves ===== */
+    for (const [form, hash, anchors] of [['android', 'chats', ['.appbar', '.title', '.body', '.bar .tab']], ['desktop', 'chats', ['.side .brand', '.side nav', '.listpane', '.detail']]]) {
+      p = await mk(form, hash);
+      const A = [...anchors, '.t-avatar'];
+      const r1 = await L_stable(p, anchors, () => pg(p, () => window.__pg.call.receive('arjun')));
+      ok(`ringing (${form}): header swaps to the caller, ${anchors.length} anchors do not move`, r1.moved.length === 0 && (await p.locator('[data-incoming-alert]').count()) === 1, JSON.stringify(r1.moved));
+      const cov = await pg(p, () => { const a = document.querySelector('[data-incoming-alert]').getBoundingClientRect(), h = document.querySelector(window.__pg.db && document.querySelector('.side .brand') ? '.side .brand' : '.appbar').getBoundingClientRect(); return a.top >= h.top - 1 && a.bottom <= h.bottom + 1; });
+      ok(`ringing (${form}): swap stays inside the header box`, cov);
+      const r2 = await L_stable(p, anchors, () => p.locator('[data-incoming-alert]').getByRole('button', { name: 'Decline' }).click());
+      ok(`declined (${form}): header fades back, nothing moves`, r2.moved.length === 0 && await until(p, () => !document.querySelector('[data-incoming-alert]'), 2000), JSON.stringify(r2.moved));
+      await idle(p); await p.close();
+    }
+    p = await mk('android', 'chats');
+    await p.locator('main.body .row, main.body li, main.body button').first().click().catch(() => {}); await wait(p, 600);
+    const own = await pg(p, () => !!document.querySelector('.screen .bar'));
+    if (own) {
+      const r3 = await L_stable(p, ['.screen .bar', '.msgwrap'], () => pg(p, () => window.__pg.call.receive('arjun')));
+      ok('ringing (android conversation): back button stays, header swaps in place, messages do not move', r3.moved.length === 0 && (await p.locator('.screen .bar [aria-label^="Back"]').count()) === 1, JSON.stringify(r3.moved));
+      await pg(p, () => window.__pg.call.decline()); await idle(p);
+    }
+    await p.close();
+
     /* ===== desktop incoming card ===== */
     p = await mk('desktop', 'chats', { dark: true });
     await pg(p, () => window.__pg.call.receive('priya'));
     await p.waitForSelector('[data-incoming-alert]');
-    ok('incoming (desktop): card at the top right over the app', await pg(p, () => { const a = document.querySelector('[data-incoming-alert]').getBoundingClientRect(), w = document.querySelector('.win').getBoundingClientRect(); return a.right > w.right - 40 && a.top < w.top + 40; }));
+    ok('incoming (desktop): the sidebar brand row turns into the caller', await pg(p, () => { const a = document.querySelector('[data-incoming-alert]').getBoundingClientRect(), b = document.querySelector('.side .brand').getBoundingClientRect(); return a.left >= b.left - 1 && a.right <= b.right + 1 && Math.abs(a.top - b.top) < 1; }));
     await wait(p, 400); await shot(p, 'incoming-card-desktop-dark');
     await pg(p, () => window.__pg.call.decline()); await idle(p);
     await p.close();

@@ -181,13 +181,13 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
       await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 600);
       await pg(p, () => window.__pg.call.receive('sana')); await p.waitForSelector('[data-incoming-alert]'); await wait(p, 600);
       const t1 = await p.locator('[data-incoming-alert]').innerText();
-      ok(`${t} minimised: banner says who, during your call, Decline / End & answer; the strip stays`, /Sana Rao/.test(t1) && /during your call/.test(t1) && /Decline/.test(t1) && /End & answer/.test(t1) && (await n(p, '[data-callstrip]')) === 1 && await settled(p, '[data-waiting]', 0), t1);
-      ok(`${t} minimised: banner inside the frame`, await p.evaluate(() => { const f = document.querySelector('[data-form]').getBoundingClientRect(), a = document.querySelector('[data-incoming-alert]').getBoundingClientRect(); return a.left >= f.left && a.right <= f.right && a.top >= f.top; }));
+      ok(`${t} minimised: banner says who, during your call, Decline / End & answer; the strip stays`, /Sana Rao/.test(t1) && /during your call/.test(t1) && (await p.locator('[data-incoming-alert]').getByRole('button', { name: 'End and answer' }).count()) === 1 && (await n(p, '[data-callstrip]')) === 1 && await settled(p, '[data-waiting]', 0), t1);
+      ok(`${t} minimised: header swap inside the frame`, await p.evaluate(() => { const f = document.querySelector('[data-form]').getBoundingClientRect(), a = document.querySelector('[data-incoming-alert]').getBoundingClientRect(); return a.left >= f.left && a.right <= f.right && a.top >= f.top; }));
       await shot(p, `strip-banner-${s}`);
       await p.locator('[data-incoming-alert] .open').click(); await p.waitForSelector('.callscreen'); await wait(p, 500);
       ok(`${t} minimised: tapping the banner opens the call screen with the card`, await settled(p, '[data-waiting]', 1) && await settled(p, '[data-incoming-alert]', 0));
       await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 500);
-      await p.locator('[data-incoming-alert]').getByRole('button', { name: 'End & answer' }).click();
+      await p.locator('[data-incoming-alert]').getByRole('button', { name: 'End and answer' }).click();
       ok(`${t} minimised: End & answer from the banner connects Sana`, await until(p, () => window.__pg.call.phase === 'active' && window.__pg.call.peer === 'sana') && await settled(p, '[data-incoming-alert]', 0));
       await pg(p, () => window.__pg.call.hangup()); await idle(p);
       await p.close();
