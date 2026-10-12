@@ -6,6 +6,8 @@ import Conversation from './chat/Conversation.svelte';
 import Placeholder from './Placeholder.svelte';
 import CallsList from './calls/CallsList.svelte';
 import Gate from './gate/Gate.svelte';
+import GroupsList from './groups/GroupsList.svelte';
+import GroupInfo from './groups/GroupInfo.svelte';
 
 type Entry = { component: Component<any>; props: (r: any) => Record<string, unknown> };
 const ph = (title: string, step: string): Entry => ({ component: Placeholder, props: () => ({ title, step }) });
@@ -16,14 +18,14 @@ export const GATE: Entry = { component: Gate, props: () => ({}) };
 /** Home tab lists (left pane on desktop, the home screen body on Android). */
 export const TAB_LISTS: Record<Tab, Entry & { title: string }> = {
   chats: { title: 'Chats', component: ChatsList, props: () => ({}) },
-  groups: { title: 'Groups', ...ph('Groups', '4') },
+  groups: { title: 'Groups', component: GroupsList, props: () => ({}) },
   calls: { title: 'Calls', component: CallsList, props: () => ({}) },
   contacts: { title: 'Contacts', ...ph('Contacts', '8') },
 };
 
 export const SCREENS: Record<Exclude<Route['name'], 'home'>, Entry> = {
   conversation: { component: Conversation, props: (r) => ({ chatId: r.chat }) },
-  groupInfo: ph('Group info', '4'),
+  groupInfo: { component: GroupInfo, props: (r) => ({ chatId: r.chat }) },
   contact: ph('Contact', '8'),
   search: ph('Search', '7'),
   settings: ph('Settings', '8'),

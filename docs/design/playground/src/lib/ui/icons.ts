@@ -43,6 +43,11 @@ export const ICONS: Record<string, string> = {
   "qr": "<path d=\"M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2M14 18h2v2h4v-2\"/>",
   "link": "<path d=\"M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1\"/>",
   "call-out": "<path d=\"M7 17L17 7M9 7h8v8\"/>",
+  "flag": "<path d=\"M5 21V4M5 4h11l-2 4 2 4H5\"/>",
+  "userplus": "<circle cx=\"9\" cy=\"8\" r=\"3.5\"/><path d=\"M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5M19 8v6M16 11h6\"/>",
+  "leave": "<path d=\"M10 4H5v16h5M15 8l4 4-4 4M19 12H9\"/>",
+  "server": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"7\" rx=\"2\"/><rect x=\"3\" y=\"13\" width=\"18\" height=\"7\" rx=\"2\"/><path d=\"M7 7.5v.01M7 16.5v.01\"/>",
+  "chevr": "<path d=\"M10 7l5 5-5 5\"/>",
   "call-in": "<path d=\"M17 7L7 17M15 17H7V9\"/>",
 };
 export type IconName = keyof typeof ICONS;

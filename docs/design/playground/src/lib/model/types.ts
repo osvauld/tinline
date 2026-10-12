@@ -66,6 +66,7 @@ export interface GroupMember {
   callHost: boolean;       // holds a call-host permit (separate from chat host, U25)
   since: number;
   invitedBy?: Id;
+  hostPending?: boolean;   // groups step: hosting is opt-in; appointed, waiting for that device to accept
 }
 
 export interface Group {
@@ -80,6 +81,9 @@ export interface Group {
   unread: number;
   muted: boolean;
   draft: string;
+  flagAt?: Record<Id, number[]>;   // groups step: when each flag was made, parallel to `flags`
+  links?: { code: string; host: Id; expiresAt: number }[];   // groups step: short invite links (bearer, 7 days, PROVISIONAL)
+  removedAt?: number;      // groups step: when I was removed
 }
 
 export type Chat = DirectChat | Group;

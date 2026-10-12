@@ -2,6 +2,8 @@
   /* One message row. The bubble CSS is ported verbatim from refined/chat.html (look unchanged since 3002236);
      keep text and meta contiguous in the markup: the bubble is white-space:pre-wrap. */
   import Icon from '../../lib/ui/Icon.svelte';
+  import { slide } from 'svelte/transition';
+  import { dur } from '../../lib/fx/motion';
   import { db, firstName, person } from '../../lib/model/store.svelte';
   import { hhmm } from '../../lib/model/clock.svelte';
   import { waitingReason } from '../../lib/model/actions/chat';
@@ -64,6 +66,9 @@
       {#if !gone}<button type="button" class="more" aria-haspopup="menu" aria-label="Actions for {mine ? 'your' : fn + '’s'} message at {hhmm(m.at)}: {summary.slice(0, 40)}"
         onclick={(e) => onmenu(m, e.currentTarget, popMode ? 'pop' : 'sheet')}><Icon name="chev" size={20} /></button>{/if}
     </div>
+    {#if mine && c.kind === 'group' && m.delivery === 'waiting' && !gone}
+      <div class="wait" role="status" transition:slide={{ duration: dur('enter') }}><Icon name="clock" size={12} />Waiting for a host</div>
+    {/if}
     {#if mine && m.delivery === 'failed' && !gone}
       <div class="fail"><span>{f?.state === 'cancelled' ? 'Cancelled' : 'Not delivered'}</span><span aria-hidden="true">·</span>
         <button type="button" data-act="retry" aria-label={f ? 'Retry sending ' + f.name : 'Retry sending'} onclick={() => onretry(m)}>Retry</button></div>
@@ -104,6 +109,7 @@
   .quote b { display: block; font-size: 12px; font-weight: 700; color: var(--accent-ink); }
   .quote span { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); }
   .fail { display: flex; justify-content: flex-end; align-items: center; gap: 5px; margin: 3px 2px 0 0; font-size: 12px; line-height: 16px; color: var(--danger); }
+  .wait { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin: 3px 2px 0 0; font-size: 12px; line-height: 16px; color: var(--gold-ink); font-weight: 600; }
   .fail button { position: relative; border: 0; background: none; padding: 0; color: var(--danger); font-weight: 700; font-size: 12px; line-height: 16px; cursor: pointer; }
   .fail button::before { content: ''; position: absolute; inset: -14px -10px; }
   .fail button:hover { text-decoration: underline; text-underline-offset: 2px; }

@@ -97,7 +97,7 @@
     if (!c) return null;
     if (c.kind === 'group' && c.status !== 'active') return null;
     if (!db.env.networkOnline) return { text: 'You’re offline. Messages send when you’re back online.', icon: 'off' };
-    if (c.kind === 'group') return db.env.hostsOnline ? null : { text: 'No group host is online. Your posts wait until one is.', icon: 'clock', warn: true };
+    if (c.kind === 'group') return db.env.hostsOnline ? null : { text: 'Waiting for a host. No group host is online; your posts are saved and send when one is.', icon: 'clock', warn: true };
     return peer && !peer.online ? { text: `${fname} is offline. Messages send when you’re both online.`, icon: 'off' } : null;
   });
 
@@ -308,8 +308,8 @@
           <Avatar name={chatTitle(c)} hue={peer?.hue ?? 0} group={c.kind === 'group'} size={36} />
           <span class="tx"><span class="nm"><b>{chatTitle(c)}</b>{#if c.muted}<Icon name="mute" size={14} />{/if}</span><span class="pr">{status}</span></span>
         </button>
-        <button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
-          onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>
+        {#if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
+          onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>{/if}
         <button type="button" class="ib press" aria-label="Chat details" onclick={openDetails}><Icon name="info" /></button>
       </header>
       {#if strip}<div class="strip" class:warn={strip.warn} role="status"><Icon name={strip.icon} size={16} />{strip.text}</div>{/if}
@@ -346,7 +346,8 @@
       </div>
 
       {#if c.kind === 'group' && c.status !== 'active'}
-        <p class="readonly">{c.status === 'removed' ? 'You were removed from this group' : 'You left this group'}</p>
+        <div class="readonly"><span>{c.status === 'removed' ? 'You were removed from this group' : 'You left this group'}</span>
+          <button type="button" class="details press" onclick={openDetails}>{c.status === 'removed' ? 'See details' : 'Group info'}</button></div>
       {:else if canPost(c)}
         <Composer bind:this={composer} {c} {ctx} {target} oncancel={cancelCtx} {onsent} {onedited} onattach={() => { returnTo = document.activeElement as HTMLElement; attachOpen = true; }} />
       {/if}
@@ -462,7 +463,9 @@
   .tobottom { position: absolute; inset-inline-end: 16px; inset-block-end: 12px; inline-size: 44px; block-size: 44px; border-radius: 50%; border: 0; padding: 0; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-pop); display: grid; place-items: center; cursor: pointer; animation: rise var(--dur-bubbleIn) var(--ease-out); }
   .tobottom .t-badge { position: absolute; inset-block-start: -4px; inset-inline-end: -4px; box-shadow: 0 0 0 2px var(--canvas); }
   @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-  .readonly { margin: 0; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); text-align: center; background: var(--surface); border-block-start: 1px solid var(--hairline); color: var(--muted); font-size: var(--fs-sub); }
+  .readonly { margin: 0; padding: 6px 16px calc(6px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; column-gap: 4px; background: var(--surface); border-block-start: 1px solid var(--hairline); color: var(--muted); font-size: var(--fs-sub); line-height: 19px; }
+  .details { min-block-size: var(--btn); padding: 0 10px; border: 0; border-radius: 12px; background: none; color: var(--accent-ink); font-weight: 650; font-size: var(--fs-sub); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .details:hover { background: var(--surface-2); }
 
   .toast { position: absolute; inset-inline: 12px; inset-block-end: 76px; margin-inline: auto; inline-size: fit-content; max-inline-size: calc(100% - 24px); display: flex; align-items: center; gap: 12px;
     background: var(--ink); color: var(--bg); padding: 4px 6px 4px 16px; border-radius: 12px; box-shadow: var(--shadow-pop); font-size: var(--fs-sub); line-height: 19px; z-index: 20; animation: rise var(--dur-enter) var(--ease-out); }

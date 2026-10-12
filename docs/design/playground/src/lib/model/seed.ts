@@ -85,7 +85,7 @@ export function seedChats(): Chat[] {
 
   const book: Group = {
     kind: 'group', id: 'book', name: 'Book club', status: 'removed', unread: 0, muted: false, draft: '',
-    members: [], invited: [], flags: { me: ['sam', 'meera', 'priya'] },
+    members: [], invited: [], flags: { me: ['sam', 'meera', 'priya'] }, flagAt: { me: [at(9, 0, 17), at(9, 40, 16), at(14, 2, 14)] },
     messages: [
       msg({ from: 'sam', at: at(20, 0, 16), text: 'Chapter 6 for next week.' }),
       msg({ from: 'me', at: at(20, 30, 15), text: 'I’ll bring snacks', delivery: 'delivered' }),

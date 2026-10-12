@@ -48,7 +48,7 @@
     {@const S = SCREENS[top.name]}
     {#key top}
       <section class="screen" class:push={nav.dir === 'push'}>
-        {#if top.name !== 'conversation'}<header class="appbar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /></header>{/if}
+        {#if top.name !== 'conversation' && top.name !== 'groupInfo'}<header class="appbar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /></header>{/if}
         <main class="body"><S.component {...S.props(top)} /></main>
       </section>
     {/key}

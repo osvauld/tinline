@@ -4,6 +4,7 @@
 import type { Account, Chat, Device, DirectChat, Group, Id, Message, Person } from './types';
 import { seedAccount, seedChats, seedDevices, seedPeople } from './seed';
 import { clock } from './clock.svelte';
+import { resetGroupsState } from './actions/groups.svelte';
 
 function fresh() {
   return {
@@ -25,6 +26,7 @@ export const db = $state(fresh());
 export function resetDb() {
   const f = fresh();
   db.account = f.account; db.people = f.people; db.chats = f.chats; db.devices = f.devices; db.env = f.env;
+  resetGroupsState();
 }
 
 let uid = 1000;
