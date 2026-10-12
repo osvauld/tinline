@@ -322,6 +322,10 @@ fn run(args: &[String]) {
     if scenario == "rebuild" {
         let _ = std::fs::remove_file(account_dir(&root).join("search.redb"));
     }
+    // A search.redb of the current format built by an earlier run replaces the dataset's own.
+    if let Some(f) = arg(args, "--search-file") {
+        std::fs::copy(&f, account_dir(&root).join("search.redb")).unwrap();
+    }
     if scenario == "dirty" {
         // A process that is killed after a few writes: no store is closed cleanly.
         let first = m["contacts"][0]["did"].as_str().unwrap();
@@ -373,10 +377,27 @@ fn run(args: &[String]) {
         out.insert("rss_after_bg_settle_mb".into(), json!(round(rss_mb())));
     }
     node.search_background_reconcile_for_test(false);
+    // The dataset's "today" is its last day: that is what the hot window is counted from.
+    let end_day = {
+        let ms = m["end_ms"].as_i64().unwrap();
+        let z = ms.div_euclid(86_400_000) + 719_468;
+        let era = z.div_euclid(146_097);
+        let doe = z - era * 146_097;
+        let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let d = doy - (153 * mp + 2) / 5 + 1;
+        let mo = if mp < 10 { mp + 3 } else { mp - 9 };
+        format!("{:04}-{mo:02}-{d:02}", yoe + era * 400 + i64::from(mo <= 2))
+    };
+    node.search_set_today_for_test(Some(end_day)).unwrap();
     let rss5 = rss_mb();
     let ((dms, grps), _) = timed(|| node.search_reconcile_now_for_test().unwrap());
     out.insert("search_reconcile".into(), json!({"dm_ms": round(ms(dms)), "groups_ms": round(ms(grps)), "rss_before_mb": round(rss5), "rss_after_mb": round(rss_mb())}));
     out.insert("disk_after_reconcile".into(), sizes(&root));
+    if let Some(f) = arg(args, "--save-search") {
+        std::fs::copy(account_dir(&root).join("search.redb"), &f).unwrap();
+    }
 
     let cs = Corpus2::pick(&node, &m);
     if scenario == "apply" {

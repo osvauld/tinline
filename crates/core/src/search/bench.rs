@@ -220,10 +220,14 @@ pub fn run(n: usize, dir: &Path) {
     lat("segment write (per day change)", maint);
     let st = ix.stats();
     let live_size = size(&path);
+    println!("file content (records, bytes): {:?}", ix.content_sizes());
     println!("after the run: {st:?}; search.redb {live_size:.1} MiB = {:.0} B per message in segments", live_size * 1048576.0 / st.seg_docs.max(1) as f64);
 
     // 2. Rebuild: per (conversation, day) batches (the reconcile shape), cold days spilling
     // into segments over the memory cap, then a final write.
+    for p in &super::index::PHASES {
+        p.store(0, std::sync::atomic::Ordering::Relaxed);
+    }
     let rpath = dir.join("rebuild.redb");
     let _ = std::fs::remove_file(&rpath);
     let rix = SearchIndex::open(&rpath, "bench phrase").unwrap();
@@ -240,6 +244,8 @@ pub fn run(n: usize, dir: &Path) {
     rix.maintain(Mode::Force).unwrap();
     let el = t0.elapsed().as_secs_f64();
     let rs = rix.stats();
+    let ph: Vec<String> = ["pick", "read-old", "build(incl read)", "write", "swap"].iter().zip(&super::index::PHASES).map(|(n, p)| format!("{n} {:.1}s", p.load(std::sync::atomic::Ordering::Relaxed) as f64 / 1e9)).collect();
+    println!("maintain phases (whole run so far): {}", ph.join(", "));
     println!("full build ({nb} day batches, avg {:.1} msgs): {el:.2} s = {:.0} msgs/s; {rs:?}; search.redb {:.1} MiB = {:.0} B/msg", n as f64 / nb as f64, n as f64 / el, size(&rpath), size(&rpath) * 1048576.0 / rs.seg_docs.max(1) as f64);
 
     // 2b. Open: the manifest is read, then the last days are indexed into memory (what the

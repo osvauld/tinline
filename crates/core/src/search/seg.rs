@@ -3,9 +3,13 @@
 //!
 //! ```text
 //! m                       sealed manifest (`Manifest`)
-//! x/{seg:08x}/{tok:016x}  sealed postings of one term: local doc numbers, ascending (newest
-//!                         first), varint deltas
+//! x/{seg:08x}/{tok:016x}/{part:03x}
+//!                         sealed postings of one term for the docs `part * PART_DOCS ..`: local
+//!                         doc numbers, ascending (newest first), varint deltas from the part base
 //! y/{seg:08x}/{chunk:06x} sealed doc rows, `CHUNK` a chunk, strings shared inside the chunk
+//!
+//! Every value is kept well under a redb page (4 KiB): measured, large values grow the file by
+//! tens of times their size over repeated transactions (1 GiB for 20 MB of records).
 //! ```
 
 use std::collections::HashMap;
@@ -22,7 +26,9 @@ pub type Digest = [u8; 8];
 /// "No watermark".
 pub const NO_DIGEST: Digest = [0; 8];
 /// Docs per `y/` chunk.
-pub const CHUNK: usize = 64;
+pub const CHUNK: usize = 8;
+/// Docs covered by one posting-list record.
+pub const PART_DOCS: usize = 2048;
 
 /// One cold segment: the days it holds (a day lives in exactly one segment: the newest that
 /// lists it) and bounds of its docs' times.
@@ -70,8 +76,8 @@ pub fn rev_at(at: i64) -> u64 {
     u64::MAX - at.max(0) as u64
 }
 
-pub fn x_key(seg: u32, tok: u64) -> String {
-    format!("x/{seg:08x}/{tok:016x}")
+pub fn x_key(seg: u32, tok: u64, part: usize) -> String {
+    format!("x/{seg:08x}/{tok:016x}/{part:03x}")
 }
 
 pub fn y_key(seg: u32, chunk: usize) -> String {
@@ -103,10 +109,10 @@ pub fn get_var(b: &[u8], pos: &mut usize) -> Option<u64> {
     }
 }
 
-/// Ascending doc numbers as varint deltas.
-pub fn encode_list(docs: &[u32]) -> Vec<u8> {
+/// Ascending doc numbers (at least `base`) as varint deltas from `base`.
+pub fn encode_list(docs: &[u32], base: u32) -> Vec<u8> {
     let mut out = Vec::with_capacity(docs.len() + 4);
-    let mut prev = 0u32;
+    let mut prev = base;
     for &d in docs {
         put_var(&mut out, u64::from(d - prev));
         prev = d;
@@ -114,9 +120,9 @@ pub fn encode_list(docs: &[u32]) -> Vec<u8> {
     out
 }
 
-pub fn decode_list(b: &[u8]) -> Option<Vec<u32>> {
+pub fn decode_list(b: &[u8], base: u32) -> Option<Vec<u32>> {
     let mut out = Vec::with_capacity(b.len());
-    let (mut pos, mut prev) = (0, 0u64);
+    let (mut pos, mut prev) = (0, u64::from(base));
     while pos < b.len() {
         prev += get_var(b, &mut pos)?;
         out.push(u32::try_from(prev).ok()?);
@@ -223,7 +229,10 @@ pub fn build(id: u32, month: u32, days: &[&DayData], tok: &dyn Fn(&str) -> u64) 
     let mut toks: Vec<(u64, Vec<u32>)> = lists.into_iter().collect();
     toks.sort_by_key(|(t, _)| *t);
     for (t, l) in &toks {
-        puts.push((x_key(id, *t), encode_list(l)));
+        for part in l.chunk_by(|a, b| *a as usize / PART_DOCS == *b as usize / PART_DOCS) {
+            let p = part[0] as usize / PART_DOCS;
+            puts.push((x_key(id, *t, p), encode_list(part, (p * PART_DOCS) as u32)));
+        }
     }
     for (c, part) in docs.chunks(CHUNK).enumerate() {
         let rows: Vec<(u64, &DocRow)> = part.iter().map(|(_, h, r)| (*h, *r)).collect();
@@ -247,8 +256,8 @@ mod tests {
     // KIND: unit (v2) — the varint and chunk codecs round-trip.
     #[test]
     fn codecs_round_trip() {
-        let l = vec![0, 1, 5, 130, 70_000, 4_000_000];
-        assert_eq!(decode_list(&encode_list(&l)).unwrap(), l);
+        let l = vec![3000, 3001, 3005, 3130, 70_000, 4_000_000];
+        assert_eq!(decode_list(&encode_list(&l, 2048), 2048).unwrap(), l);
         let r = |id: &str, at: i64| DocRow { src: "g.a".into(), conv: "a".into(), day: "2026-01-02".into(), id: id.into(), at, author: "did:x".into(), text: format!("héllo {id} 日本") };
         let rows = vec![r("1", 5), r("2", -3), r("3", 1 << 40)];
         let refs: Vec<(u64, &DocRow)> = rows.iter().enumerate().map(|(i, r)| (i as u64 + 9, r)).collect();

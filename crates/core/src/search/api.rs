@@ -363,6 +363,10 @@ impl Inner {
         let t = std::time::Instant::now();
         let gc = self.group_core()?;
         let _ = self.search_reconcile_groups_run(&gc).await;
+        // The cold days the bulk left in memory go into segments (the open's last step; its
+        // time counts in the groups part).
+        let ix2 = ix.clone();
+        tokio::task::spawn_blocking(move || ix2.maintain(Mode::Force)).await.map_err(|e| Error::Io(e.to_string()))??;
         Ok((dms, t.elapsed()))
     }
 
