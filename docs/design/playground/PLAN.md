@@ -90,3 +90,27 @@ Q→L). Groups offered behaviour the core forbids. Video, group call UI, search 
 were never designed. Same-author QA only checked markup. Kept: bubble system (unchanged since
 3002236), composer/menu/file/dialog components, tokens, call-state sync idea, call-audio
 generator, block flow and unlink copy.
+
+## 7. Decisions log (user, 2026-10-12)
+
+Recorded here so area work and the core teams see them. Drawer notes say "Decided" for these.
+
+- **Sign-up**: no word-confirmation step; confirm-passphrase optional ("Check my copy").
+- **Call screen**: no ring around the avatar; a cloud colour field that moves with the tune.
+- **Groups**: owner can't leave (for now). A flagged member sees each flag (who, when, n of 3)
+  as it happens, not only after removal. Chat requests are one per person at a time, like
+  Instagram: no follow-ups until they answer (ask again 7 days after a decline: Proposed).
+- **Calls, system surfaces**: the lock screen shows the caller's name; missed-call
+  notifications fold into one per person ("2 missed calls · Sana Rao").
+- **Profiles**: Busy does not stop calls; incoming calls still show while Busy.
+  A nickname for a contact syncs to my other linked devices (never to the contact).
+  Busy lengths 30 min / 1 h / 4 h / tomorrow morning / no end, default 1 h.
+
+Core follow-ups these imply (not playground work):
+- Availability: the core refuses calls while unavailable (`set_available` controls call admission);
+  it must keep admitting calls while Busy.
+- Nickname: needs a place in own-device sync (e.g. the private own-device profile cache), never in
+  the shared profile document.
+- Profile pictures: old-copy deletion request is automatic (profile-sync backend follow-up pending).
+- Chat requests: one pending request per person; per-person cooldown after decline (Proposed).
+- Flags: the flagged member must receive flags before removal.

@@ -164,11 +164,14 @@
   </ol>
 
   <div class="notes">
+    <p><b>Decided 2026-10-12.</b></p>
+    <ul>
+      <li>Busy does not stop calls: incoming calls still show while I'm Busy. Busy is what my contacts see. The core currently refuses calls while unavailable, so it needs changing to match.</li>
+      <li>A nickname syncs to my other linked devices (still mine only, never sent to the person). The sim keeps it on this install.</li>
+      <li>Busy lengths: 30 minutes, 1 hour, 4 hours, tomorrow morning, no end; choosing Busy defaults to 1 hour.</li>
+    </ul>
     <p><b>Proposed, not decided.</b></p>
     <ul>
-      <li>Busy lengths (30 minutes, 1 hour, 4 hours, tomorrow morning, no end) and Busy defaulting to 1 hour.</li>
-      <li>Busy should stop calls ringing here. Not wired into the call machine yet; the profile only stores and shows it.</li>
-      <li>A local nickname is called "Nickname". Whether it syncs to my other devices is undecided (the core keeps aliases separate; the sim keeps it on this install).</li>
       <li>Additional information: custom entries are text only. Structured values from other app versions are shown readably, can be removed, and are never edited by this form.</li>
       <li>Picture: round window, drag/zoom/keys, output a 512 px PNG. Cropping is app-side preparation, not a core feature.</li>
       <li>Unblocking resumes updates going forward; changes dropped while blocked are not replayed (the core decides).</li>
