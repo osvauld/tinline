@@ -76,6 +76,7 @@ pub enum Cmd {
     Push(String),
     Ack(String),
     History(String, u32),
+    Profile,
     Close,
 }
 
@@ -83,6 +84,8 @@ pub struct Session {
     id: u64,
     pub did: String,
     pub device: [u8; 32],
+    epoch: u64,
+    profile_vv: Mutex<VersionVector>,
     dialer: [u8; 32],
     tx: mpsc::UnboundedSender<Cmd>,
     peer_vv: Mutex<HashMap<String, VersionVector>>,
@@ -300,6 +303,12 @@ impl Inner {
     pub(crate) fn chat_started(self: &Arc<Self>) {
         let this = self.clone();
         self.handle.spawn(async move {
+            if let Ok(me) = this.me() {
+                this.profile_download(me.id.did().into());
+                this.profile_apply_deletions(me.epoch, me.id.did());
+                let dids = this.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect::<Vec<_>>();
+                for did in dids { this.profile_apply_deletions(me.epoch, &did); }
+            }
             // Everyone once at start: catches up what they wrote while we were away.
             let dids: Vec<String> = this.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
             for d in dids {
@@ -330,7 +339,8 @@ impl Inner {
         let dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
         for did in dids {
             let pair = pair_id(me.id.did(), &did);
-            if core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || self.chat_wants(&core, &pair) {
+            self.profile_download(did.clone());
+            if self.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || self.chat_wants(&core, &pair) {
                 self.chat_kick(did);
             }
         }
@@ -377,7 +387,7 @@ impl Inner {
                     Err(e) => tracing::debug!("chat dial {did}: {e}"),
                 }
                 let pair = pair_id(me.id.did(), &did);
-                let pending = core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || this.chat_wants(&core, &pair);
+                let pending = this.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || this.chat_wants(&core, &pair);
                 if !pending {
                     break;
                 }
@@ -536,6 +546,8 @@ impl Inner {
             id: core.next_session.fetch_add(1, Ordering::Relaxed),
             did: did.clone(),
             device: remote,
+            epoch: me.epoch,
+            profile_vv: Default::default(),
             dialer: if dialer { my_dev } else { remote },
             tx,
             peer_vv: Default::default(),
@@ -656,6 +668,9 @@ impl Inner {
                                 break 'run e.to_string();
                             }
                         }
+                        Some(Cmd::Profile) => {
+                            if let Err(e) = self.chat_profile_send(&sess, &mut writer).await { break 'run e.to_string(); }
+                        }
                         Some(Cmd::Close) | None => break 'run "closed locally".into(),
                     },
                     _ = conn.closed() => break 'run "connection lost".into(),
@@ -680,7 +695,7 @@ impl Inner {
         // Something left unsent: try again.
         if let Ok(me) = self.me() {
             let pair = pair_id(me.id.did(), &sess.did);
-            if core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) && self.shared.lock().endpoint.is_some() {
+            if (self.profile_pending(&sess.did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false)) && self.shared.lock().endpoint.is_some() {
                 let this = self.clone();
                 let did = sess.did.clone();
                 self.handle.spawn(async move {
@@ -716,20 +731,49 @@ impl Inner {
                 break;
             }
         }
+        let profile_vv = self.profile_doc(&sess.did)?.map(|p| p.vv()).unwrap_or_default();
+        shards.push((crate::sync::profiledoc::PROFILE_DOC.into(), profile_vv.encode()));
         Ok(ChatMsg::Hello { shards })
+    }
+
+    pub(crate) fn chat_profile_changed(self: &Arc<Self>, did: &str) {
+        if let Ok(core) = self.chat_core() {
+            for s in self.chat_sessions_of(&core, did) { let _ = s.tx.send(Cmd::Profile); }
+        }
+        self.chat_kick(did.into());
+    }
+
+    async fn chat_profile_send(self: &Arc<Self>, sess: &Session, writer: &mut ChatWriter) -> Result<(), Error> {
+        let me = self.me()?;
+        if me.epoch != sess.epoch || !self.chat_may_dial(&sess.did) { return Err(Error::Rejected("profile not allowed".into())); }
+        let p = self.shared.lock().profile.clone().ok_or(Error::Locked)?;
+        let since = sess.profile_vv.lock().clone();
+        if let Some((update, vv)) = p.export_since(&since) {
+            if update.len() > crate::profile::model::MAX_SNAPSHOT { return Err(Error::Protocol("profile update bounds".into())); }
+            let doc = crate::sync::profiledoc::PROFILE_DOC;
+            let sig = sign_batch(&me.profile.device_secret, doc, &update);
+            writer.send(&ChatMsg::Sync { doc: doc.into(), vv: vv.encode(), update, sig }).await?;
+        }
+        Ok(())
     }
 
     async fn chat_handle(self: &Arc<Self>, core: &Arc<ChatCore>, sess: &Arc<Session>, msg: ChatMsg, writer: &mut ChatWriter) -> Result<(), Error> {
         let me = self.me()?;
+        if me.epoch != sess.epoch { return Err(Error::Locked); }
         let pair = pair_id(me.id.did(), &sess.did);
         match msg {
             ChatMsg::Auth { .. } => Err(Error::Protocol("unexpected Auth".into())),
             ChatMsg::Hello { shards } => {
-                if shards.len() > MAX_HELLO_SHARDS {
+                if shards.len() > MAX_HELLO_SHARDS + 1 {
                     return Err(Error::Protocol("too many shards".into()));
                 }
                 let mut theirs: HashMap<String, VersionVector> = HashMap::new();
                 for (d, vv) in shards {
+                    if d == crate::sync::profiledoc::PROFILE_DOC {
+                        *sess.profile_vv.lock() = decode_vv(&vv)?;
+                        self.chat_profile_send(sess, writer).await?;
+                        continue;
+                    }
                     if !day_valid(&d) {
                         return Err(Error::Protocol("bad day".into()));
                     }
@@ -755,6 +799,11 @@ impl Inner {
                 Ok(())
             }
             ChatMsg::Sync { doc, vv, update, sig } => {
+                if doc == crate::sync::profiledoc::PROFILE_DOC {
+                    if !verify_batch(&sess.device, &doc, &update, &sig) { return Err(Error::Protocol("bad profile batch signature".into())); }
+                    let vv = self.profile_receive(sess.epoch, &sess.did, &update)?;
+                    return writer.send(&ChatMsg::Ack { doc, vv: vv.encode() }).await;
+                }
                 let their = decode_vv(&vv)?;
                 let day = self.chat_doc_day(&me, sess, &doc)?;
                 self.chat_receive(core, &me, sess, &doc, &update, &sig, false, writer).await?;
@@ -763,6 +812,11 @@ impl Inner {
             }
             ChatMsg::Push { doc, update, sig } => self.chat_receive(core, &me, sess, &doc, &update, &sig, true, writer).await,
             ChatMsg::Ack { doc, vv } => {
+                if doc == crate::sync::profiledoc::PROFILE_DOC {
+                    let vv = decode_vv(&vv)?;
+                    sess.profile_vv.lock().merge(&vv);
+                    return self.profile_ack(sess.epoch, &sess.did, &vv);
+                }
                 let day = self.chat_doc_day(&me, sess, &doc)?;
                 let vv = decode_vv(&vv)?;
                 sess.peer_vv.lock().entry(day.clone()).and_modify(|v| merge_vv(v, &vv)).or_insert_with(|| vv.clone());
@@ -1457,12 +1511,13 @@ impl Inner {
     // ---- blobs -----------------------------------------------------------------------------------
 
     pub(crate) async fn chat_hub(self: &Arc<Self>) -> Result<Arc<BlobHub>, Error> {
+        let epoch = self.me()?.epoch;
         let core = self.chat_core()?;
         let this = Arc::downgrade(self);
         core.hub
             .get_or_try_init(|| async {
                 let w1 = this.clone();
-                let gate: Gate = Arc::new(move |dev, hash| w1.upgrade().is_some_and(|i| i.chat_may_serve(dev, hash)));
+                let gate: Gate = Arc::new(move |dev, hash| w1.upgrade().is_some_and(|i| i.profile_may_serve(dev, hash) || i.chat_may_serve(dev, hash)));
                 let w2 = this.clone();
                 let progress: UploadProgress = Arc::new(move |dev, hash, done, total| {
                     if let Some(i) = w2.upgrade() {
@@ -1475,7 +1530,11 @@ impl Inner {
                         i.chat_upload_end(dev, hash, completed);
                     }
                 });
-                BlobHub::open(&core.dir.join("blobs"), gate, progress, ended).await.map(Arc::new)
+                let hub = BlobHub::open(&core.dir.join("blobs"), gate, progress, ended).await?;
+                if let Some(inner) = this.upgrade() {
+                    hub.recover_profile_tags(&inner.profile_blob_tags(epoch)?).await?;
+                }
+                Ok::<_, Error>(Arc::new(hub))
             })
             .await
             .cloned()

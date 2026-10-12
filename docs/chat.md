@@ -60,7 +60,7 @@ messages/<id> = { id, author, at, reply_to?, file?,
 - Reactions (later): `reactions/<did>/<emoji>`, each DID writes only its own slot.
 
 ### Wire
-ALPN `tinline/chat/3` (P10; `/1` and `/2` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
+ALPN `tinline/chat/4` (account profiles; `/1`, `/2`, and `/3` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
 same proof as a call (attestation + grant, `proto`); the rest is framed like the call control
 stream.
 
@@ -191,7 +191,7 @@ What differs from or settles the text above.
 
 ### Code map
 `crypt.rs` chunked blob AEAD · `blobs.rs` iroh-blobs hub (store, gated serving, GC) ·
-`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/3` ·
+`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/4` ·
 `store.rs` sealed records · `engine.rs` sessions, sync, outbox, transfers, history ·
 `api.rs` the UniFFI surface. New crate `crates/storage` (redb + sealed records, copied from
 osvauld2 `storage` @ 90d22ec with the `vault` entry idea).
@@ -209,7 +209,7 @@ Records: `Chat`, `Message`, `Attachment` (state `Remote|Downloading|Ready|Failed
 UTC `YYYY-MM-DD`. A voice message is a file message with `kind = Voice`, `duration_ms` and a
 ~64 byte waveform; the blob is whatever file the app recorded (Ogg Opus 16 kHz mono).
 
-### Wire (`tinline/chat/3`)
+### Wire (`tinline/chat/4`)
 One bidirectional stream, opened by the dialer; frames are u32 BE length + bincode (cap 16 MiB).
 `Auth{attestation, grant, relay}` both ways first: the same proof as a call (a call hello with
 id "chat" is built and checked by `proto::accept_call_hello`; `proto` is unchanged).
@@ -217,15 +217,25 @@ Then `Hello{shards:[(day, vv)]}` (last 7 days + days with unacknowledged ops; al
 ack), `Sync{doc, vv, update, sig}`, `Push{doc, update, sig}`, `Ack{doc, vv}`,
 `HistoryReq{before, limit}` / `HistoryResp{days:[{day, vv, hash, key, size}]}`.
 `sig` = Ed25519 by the device key over `"tinline-chat-batch-v1" ‖ len(doc) ‖ doc ‖ update`.
-A device only ever sends **its own** ops (export from the peer's vv with other peers' counters
-masked), so a receiver can require that every op of a live batch is the signer's own.
+For chat day shards, a device only ever sends **its own** ops (export from the peer's vv with other peers' counters
+masked), so a receiver can require that every op of a live chat batch is the signer's own.
 **Version 3 (P6 too).** `Auth` presents the peer's *message* token (a call token does not open
 chat; a token taken back by a block is refused).
-**Version check (P9c, U18; P10).** Version 3 is incompatible with apps before P10
+**Version 4 (account profiles).** `Hello.shards`, `Sync.doc`, and `Ack.doc` also accept the
+reserved document name `profile`. It exchanges the authenticated sender DID's account profile
+(all its linked-device edits), not a chat shard. Profile updates have field/bounds/permit
+validation, not chat-message span signatures. Existing message-token and block checks apply;
+no visible message is needed. Pictures use the existing encrypted BlobHub serving gate.
+Replacement/removal automatically issues the owner-signed old-picture deletion request;
+there is no opt-in boolean. See [profile-sync.md](design/profile-sync.md) for APIs and limits.
+`/3` peers are refused with code 426 and an update-app reason; **this upgrade does not require a
+wipe**. Own-device sync remains `/3`, adding `profile` and private `profile-cache` to `Hello.docs`.
+
+**Earlier version check (P9c, U18; P10).** Version 3 was incompatible with apps before P10
 (`tinline/chat/2`: one `v` per record) and before P9c (`tinline/chat/1`). The endpoint still lists
 `/1` and `/2` only to refuse them: an old app's connection is accepted and closed at once with
 application code 426 and a reason naming both versions ("chat tinline/chat/2 is no longer
-supported, this app speaks tinline/chat/3: update the app (and wipe its data)"). Dialing, we offer
+supported, this app speaks tinline/chat/4: update the app (and wipe its data)"). Dialing, we offer
 the old versions as well; if the peer picks one, it is an old app: we close with the same code and
 the dial fails with that reason (logged as "chat with <did>: the other device runs an older app:
 ..."). Own-device sync moved to `tinline/self/3` the same way (`crates/core/src/version.rs`; node accept
@@ -251,8 +261,10 @@ one. Unit tests: `chat::doc_tests`.
 `chat.redb`: sealed records (AES-256-GCM under `BLAKE3-derive-key("tinline chat store v1",
 DEK)`, each bound to its path), layout in `store.rs` (conversations, shard snapshot + appended
 updates + meta, acks, tick markers, outbox markers, blob key index, read-permission refs).
-`blobs/`: the iroh-blobs store (ciphertext only; tags `tl/<hash>`; GC every 30 s). Existing
-`profile.json`/`state.json`/`calls.json` are untouched.
+`blobs/`: the iroh-blobs store (ciphertext only; chat tags `tl/<hash>`; GC every 30 s).
+Profile pictures use separate owner-scoped `profile/<DID digest>/<hash>` tags: an old-picture
+permit drops only that claim, never chat's. Profile documents, keys and cache-retention markers
+are sealed in the account store; see [profile-sync.md](design/profile-sync.md).
 
 ### Decisions where the text was silent
 - Ticks track the *creation* op of a message; an edit does not take the second tick away.
@@ -302,13 +314,15 @@ updates + meta, acks, tick markers, outbox markers, blob key index, read-permiss
   on. Tests: `crates/core/tests/readd.rs`, `a_day_rebuilt_under_the_same_writer_id_is_silently_lost`.
 - `chat.redb` is opened with a bounded wait (~2 s, like `account.redb`): the node before a
   restart may still hold it.
-- No `proto` change; `crates/audio` untouched (voice encode/decode left to the apps).
+- The original 1:1 chat added no `proto` change; account profiles separately add the scoped
+  picture-deletion permit. `crates/audio` remains untouched (voice encode/decode left to the apps).
 - Test knob: `P2P_CHAT_CLOCK_MS_OFFSET` shifts the chat clock (day-shard tests only).
 
 ### Signatures and writer IDs (P9c, strict; byte formats in docs/protocol.md)
 U18: the app is not launched, so there is no compatibility with apps or data from before P9c
-(the P8/P9/P9b transition machinery is gone). Installing this build means wiping the app data on
+(the P8/P9/P9b transition machinery is gone). Installing P9c over a pre-P9c build meant wiping the app data on
 every device of the account; an older app is refused with a clear version error (Wire, above).
+The `/3` to `/4` profile upgrade keeps that data.
 
 - **DID signature as a record field (U4 revised, U17 a).** Every version's `v` carries `did_sig`:
   the author's DID key over the canonical content (doc id, id, author, at, text, edited_at,

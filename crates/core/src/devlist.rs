@@ -93,6 +93,7 @@ impl Inner {
 
     /// A contact was just added: with more than one install, send it the whole list now.
     pub(crate) fn list_for_new_contact(self: &Arc<Self>, did: &str) {
+        self.profile_for_new_contact(did);
         let Ok(me) = self.me() else { return };
         let Some(blob) = self.my_device_list(&me) else { return };
         if keys_of(&blob, me.id.did()).len() < 2 {

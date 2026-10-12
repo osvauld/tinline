@@ -9,6 +9,8 @@
 //! Like courier, `now`, nonce/grant-id sets and the contact list are inputs: the caller
 //! loads them before calling and persists the results (`NewContact::redeemed_nonce`) after.
 
+pub mod profile;
+
 use std::collections::HashSet;
 
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
@@ -128,14 +130,17 @@ pub fn device_from_text(text: &str) -> Result<[u8; 32]> {
 /// Longest display name we keep, in chars.
 pub const MAX_NAME_CHARS: usize = 64;
 
+/// Shared display-name character policy, including profile fields.
+pub fn safe_name_char(c: char) -> bool {
+    !c.is_control() && !matches!(c, '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200E}' | '\u{200F}' | '\u{061C}')
+}
+
 /// A name from a peer, made safe to show: control characters and bidi overrides/isolates (which
 /// can reorder the text around them) are dropped, and the rest is cut to `MAX_NAME_CHARS`.
 pub fn sanitize_name(name: &str) -> String {
     let clean: String = name
         .chars()
-        .filter(|c| {
-            !c.is_control() && !matches!(c, '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200E}' | '\u{200F}' | '\u{061C}')
-        })
+        .filter(|c| safe_name_char(*c))
         .take(MAX_NAME_CHARS)
         .collect();
     clean.trim().to_string()

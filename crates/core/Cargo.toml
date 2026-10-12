@@ -33,6 +33,7 @@ hex = "0.4"
 bs58 = "0.5"
 loro = "1.13.9"
 blake3 = "1"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 bincode = "1"
 storage.workspace = true
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }

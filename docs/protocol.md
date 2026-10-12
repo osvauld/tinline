@@ -87,7 +87,7 @@ Any failure: send `Reject { reason }` (reason is for logs, not trusted) and clos
 
 A `Grant` is a single-capability token: `{v: 2, id, iss, holder, cap: "message" | "call", iat,
 exp}` (domain `grant/v1`). A legacy `v: 1` grant with `cap: "call"` (before P6) counts as message
-+ call. Chat (`tinline/chat/3`) `Auth` presents the message token; calls present the call token.
++ call. Chat (`tinline/chat/4`) `Auth` presents the message token; calls present the call token.
 Only the issuer verifies its own tokens, so taking one back is local and per DID:
 `State.cut_offs[did] = {message, call}` (unix seconds); a token with `iat <= cut-off` is refused
 (`proto::verify_token`). Cut-offs only rise and sync between own devices (max per field).
@@ -288,11 +288,33 @@ the name. On the first open it is seeded from the local call log.
 | `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept; calls with blocked contacts are kept |
 
 `verified` is stored with the contact's device-list `seq`; it counts only against a device set at
-least as new as the receiver's (S4). Never synced: device secret, DEK, passphrase, availability,
-current ticket, `last_seen`, in-flight calls. `State` stays the working copy: every persist flushes
+least as new as the receiver's (S4). Never synced: device secret, DEK, passphrase,
+current ticket, `last_seen`, in-flight calls. Availability now syncs in the separate account
+profile document, not the `account` map (below). `State` stays the working copy: every persist flushes
 into the doc (`write_from`) and every received batch is imported and merged back (`read_into`) under
 the `shared` lock, so a missing entry always means a local deletion. Chats and "You" items (34g)
 add more docs to the `Hello` list (done in 34g, below).
+
+#### Account profiles over existing links
+
+Own-device `Hello.docs` also advertises `profile` and private `profile-cache`, sealed at
+`sync/profile` and `sync/profile-cache`. The former carries extensible JSON fields including
+name, availability and the current picture descriptor; the latter forwards cached contact
+profiles only to our own devices, merging inner Loro histories to avoid rollback. Existing signed
+`Sync`/empty-ack dispatch is reused. A fresh linked/restored install learns existing profile
+fields rather than authoring competing defaults. Presence remains ephemeral.
+
+Contacts exchange only our own `profile` via the reserved name in `tinline/chat/4`
+`Hello.shards`, `Sync.doc`, and `Ack.doc`, under existing verified-DID/message-token/block
+admission. This is not a new channel or a chat-message signature-history scheme. Profile pictures
+reuse encrypted BlobHub transfer with contact/current-picture and own-device/cache serving checks.
+
+Replacement/removal automatically signs a `SignedBlob` previous-picture deletion request by the owner DID over domain
+`"tinline-profile-picture-deletion-v1\\0"` and JSON `{v:1, owner, picture_hash,
+scope:"cached-profile-picture", consent:true}`. Verification binds owner, hash, purpose and consent;
+only that owner's old cached-picture claim is dropped, never the current picture or chat media.
+This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/test status:
+[profile-sync.md](design/profile-sync.md).
 
 #### Chats and "You" over the own-device link (task 34g)
 
@@ -316,8 +338,9 @@ add more docs to the `Hello` list (done in 34g, below).
 - Live updates: a write to any shard marks it dirty for every session, which pushes the ops the peer
   lacks. Blobs use the stock iroh-blobs ALPN: an own (non-removed) device is served any blob that any of our
   conversations references.
-- Contacts are unaffected: `tinline/chat/3` stays one session per contact *device*, each device sends
-  its own ops only, and a session can name only `dm/{pair with that contact}/{day}`.
+- Chat shards still use one session per contact *device*, each device sends its own chat ops
+  only, and chat document names are restricted to `dm/{pair with that contact}/{day}`.
+  `tinline/chat/4` additionally permits the sender's account `profile`, as described above.
 
 | Check | Defends against |
 |---|---|
@@ -334,7 +357,13 @@ add more docs to the `Hello` list (done in 34g, below).
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
-## Protocol versions (P9c, U18; P10; P6)
+## Protocol versions (P9c, U18; P10; P6; account profiles)
+
+**Account profiles.** Current chat ALPN is `tinline/chat/4`; `/3` is also refused with code 426
+because its day-only parser cannot understand `profile`. This changes no chat content/disk format:
+upgrading `/3` clients requires an app update, **not a data wipe**. Own-device sync stays
+`tinline/self/3`; older implementations do not advertise the new profile documents. Historical
+pre-P10/P9c wipe requirements below still apply to those older data formats.
 
 **P6.** Separate message and call tokens changed what the contact exchange, calls and the chat
 `Auth` carry, and the account doc gained call tokens, call permissions and cut-offs. Chat and
@@ -343,9 +372,9 @@ contacts moved to `osvauld/p2p/1`, and `osvauld/p2p/0` is refused the same way
 (`crates/core/src/version.rs`: `CALL`). No compatibility (U18).
 
 The chat content format changed incompatibly (below; P9c: DID-signed record fields, P10: one
-version per writer), so the chat wire is `tinline/chat/3` and own-device sync, which relays chat
-docs, is `tinline/self/3`. There is no compatibility with apps or data from before: installing this
-build means wiping the app data on every device.
+version per writer), so P10's chat wire was `tinline/chat/3` and own-device sync, which relays chat
+docs, is `tinline/self/3`. There is no compatibility with apps or data from before P10/P9c:
+upgrading those older formats means wiping the app data on every device.
 
 - Accepting: the endpoint lists `tinline/chat/1`, `tinline/chat/2`, `tinline/self/1` and
   `tinline/self/2` only to refuse them. Such a
@@ -394,7 +423,7 @@ Design and rules: docs/chat.md section 7 "Signatures and writer IDs".
   every span's author is the session's DID. Every touched message must end as one of the proven
   versions. Nothing else is consulted (no device keys, device lists or remembered writer IDs).
 
-## Presence (on `tinline/chat/3`)
+## Presence (on `tinline/chat/4`; unchanged from `/3`)
 
 Whether a contact is reachable right now. Each device keeps a Loro `EphemeralStore` with one key
 (`online`), refreshed every 8 s, and sends it on every chat session as a QUIC datagram: `b"tp1"` +
@@ -459,7 +488,7 @@ list) if it was added before `at`, and keeps the conversation read-only
 - Refusal (blocker side, every own device, from the synced notice): a `CallHello` or
   `ContactHello` that verifies under a blocked DID is answered with `Notice` instead of `Ringing`
   / `Welcome` (never rings, no call record); during a call, blocking sends `Notice` and ends the
-  call. On `tinline/chat/3` the listener answers a blocked DID's `Auth` with
+  call. On `tinline/chat/4` the listener answers a blocked DID's `Auth` with
   `ChatMsg::Notice { notice }` and closes; no session, so no sync, push or history request.
   Blobs are not served to a blocked DID.
 - Reading a refusal: a `Notice` that verifies as a block from the peer we dialled ends the call

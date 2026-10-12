@@ -6115,6 +6115,7 @@ dependencies = [
  "cryptography",
  "hex",
  "identity",
+ "image",
  "iroh",
  "iroh-blobs",
  "jni 0.21.1",

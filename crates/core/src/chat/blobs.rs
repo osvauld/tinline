@@ -7,6 +7,10 @@
 //! Serving is gated: the store's event hook asks `Gate` before every get, for the connection's
 //! authenticated device key and the hash asked for. `push` and `observe` are always refused.
 
+#[cfg(test)]
+#[path = "profile_blob_tests.rs"]
+mod profile_tests;
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -64,6 +68,7 @@ pub struct BlobHub {
     store: FsStore,
     dir: PathBuf,
     proto: BlobsProtocol,
+    profile_claims: Mutex<std::collections::HashMap<String, std::sync::Weak<tokio::sync::Mutex<()>>>>,
 }
 
 fn io_err(e: impl std::fmt::Display) -> Error {
@@ -100,7 +105,7 @@ impl BlobHub {
         let (events, rx) = EventSender::channel(64, mask);
         tokio::spawn(gate_loop(rx, gate, progress, ended, knobs));
         let proto = BlobsProtocol::new(&store, Some(events));
-        Ok(Self { store, dir: dir.to_path_buf(), proto })
+        Ok(Self { store, dir: dir.to_path_buf(), proto, profile_claims: Default::default() })
     }
 
     pub fn protocol(&self) -> BlobsProtocol {
@@ -145,10 +150,37 @@ impl BlobHub {
 
     /// Encrypts `data` under `key` and stores the ciphertext.
     pub async fn add_bytes(&self, key: [u8; 32], data: Vec<u8>) -> Result<Hash, Error> {
+        self.add_bytes_for(None, key, data).await
+    }
+
+    /// Serializes this owner's tag/verified-readiness publication with old-cache cleanup.
+    /// Other hashes and other owners stay independent. Weak entries do not retain past claims.
+    pub(crate) async fn profile_claim(&self, owner: &str, hash: &Hash) -> tokio::sync::OwnedMutexGuard<()> {
+        let lock = {
+            let mut claims = self.profile_claims.lock();
+            claims.retain(|_, weak| weak.strong_count() > 0);
+            let key = Self::protected_tag(Some(owner), hash);
+            match claims.get(&key).and_then(std::sync::Weak::upgrade) {
+                Some(lock) => lock,
+                None => {
+                    let lock = Arc::new(tokio::sync::Mutex::new(()));
+                    claims.insert(key, Arc::downgrade(&lock));
+                    lock
+                }
+            }
+        };
+        lock.lock_owned().await
+    }
+
+    pub(crate) async fn add_profile_bytes(&self, owner: &str, key: [u8; 32], data: Vec<u8>) -> Result<Hash, Error> {
+        self.add_bytes_for(Some(owner), key, data).await
+    }
+
+    async fn add_bytes_for(&self, owner: Option<&str>, key: [u8; 32], data: Vec<u8>) -> Result<Hash, Error> {
         let ct = tokio::task::spawn_blocking(move || crypt::encrypt_bytes(&key, &data)).await.map_err(io_err)?;
         let tag = self.store.add_bytes(ct.clone()).temp_tag().await.map_err(io_err)?;
         let hash = tag.hash();
-        self.keep(&hash).await?;
+        self.keep_for(owner, &hash).await?;
         drop(tag);
         Ok(hash)
     }
@@ -164,6 +196,37 @@ impl BlobHub {
     /// Tags `hash` so the GC leaves it (and any partial download of it) alone.
     pub async fn keep(&self, hash: &Hash) -> Result<(), Error> {
         self.store.tags().set(tag_of(hash), HashAndFormat::raw(*hash)).await.map_err(io_err)
+    }
+
+    fn protected_tag(owner: Option<&str>, hash: &Hash) -> String {
+        match owner {
+            Some(owner) => format!("profile/{}/{hash}", blake3::hash(owner.as_bytes()).to_hex()),
+            None => tag_of(hash),
+        }
+    }
+    async fn keep_for(&self, owner: Option<&str>, hash: &Hash) -> Result<(), Error> {
+        self.store.tags().set(Self::protected_tag(owner, hash), HashAndFormat::raw(*hash)).await.map_err(io_err)
+    }
+    pub(crate) async fn keep_profile(&self, owner: &str, hash: &Hash) -> Result<(), Error> {
+        self.keep_for(Some(owner), hash).await
+    }
+    /// Crash recovery, before this hub is published: remove tags for uncommitted profile uploads
+    /// and durable deletion requests. Retained pictures have owner-scoped account-store markers.
+    pub(crate) async fn recover_profile_tags(&self, references: &std::collections::HashSet<String>) -> Result<(), Error> {
+        let mut tags = Box::pin(self.store.tags().list_prefix(b"profile/").await.map_err(io_err)?);
+        let mut remove = Vec::new();
+        while let Some(info) = tags.next().await {
+            let info = info.map_err(io_err)?;
+            let name = String::from_utf8(info.name.0.to_vec()).map_err(io_err)?;
+            if !references.contains(&name) { remove.push(info.name); }
+        }
+        drop(tags);
+        for name in remove { self.store.tags().delete(name).await.map_err(io_err)?; }
+        Ok(())
+    }
+    /// Drops only this profile owner's claim. Chat tags and other owners' tags are untouched.
+    pub(crate) async fn release_profile(&self, owner: &str, hash: &Hash) -> Result<(), Error> {
+        self.store.tags().delete(Self::protected_tag(Some(owner), hash)).await.map(|_| ()).map_err(io_err)
     }
 
     /// Drops our claim on `hash`; the GC frees the bytes soon.
@@ -208,19 +271,31 @@ impl BlobHub {
         hash: Hash,
         cipher_total: u64,
         stall: Duration,
-        mut progress: impl FnMut(u64, u64) + Send,
+        progress: impl FnMut(u64, u64) + Send,
+    ) -> Result<(), Error> {
+        self.fetch_for(None, conn, hash, cipher_total, stall, progress).await
+    }
+
+    pub(crate) async fn fetch_profile(&self, owner: &str, conn: Connection, hash: Hash, cipher_total: u64) -> Result<(), Error> {
+        self.fetch_for(Some(owner), conn, hash, cipher_total, STALL, |_, _| {}).await
+    }
+
+    async fn fetch_for(
+        &self, owner: Option<&str>, conn: Connection, hash: Hash, cipher_total: u64,
+        stall: Duration, mut progress: impl FnMut(u64, u64) + Send,
     ) -> Result<(), Error> {
         use iroh_blobs::api::remote::GetProgressItem;
-        self.keep(&hash).await?;
-        if self.complete_size(&hash).await.is_some() {
-            return Ok(());
+        self.keep_for(owner, &hash).await?;
+        if let Some(size) = self.complete_size(&hash).await {
+            return if size == cipher_total { Ok(()) } else { Err(Error::Protocol("blob size does not match its descriptor".into())) };
         }
         let mut stream = Box::pin(self.store.remote().fetch(conn.clone(), HashAndFormat::raw(hash)).stream());
         let res = loop {
             match tokio::time::timeout(stall, stream.next()).await {
                 Err(_) => break Err(Error::Timeout),
                 Ok(None) => break Ok(()),
-                Ok(Some(GetProgressItem::Progress(n))) => progress(n.min(cipher_total), cipher_total),
+                Ok(Some(GetProgressItem::Progress(n))) if n > cipher_total => break Err(Error::Protocol("blob exceeds its declared size".into())),
+                Ok(Some(GetProgressItem::Progress(n))) => progress(n, cipher_total),
                 Ok(Some(GetProgressItem::Done(_))) => break Ok(()),
                 Ok(Some(GetProgressItem::Error(e))) => break Err(Error::Net(e.to_string())),
             }
