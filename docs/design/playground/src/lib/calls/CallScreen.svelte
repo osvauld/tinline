@@ -127,23 +127,34 @@
             {#key call.muted}<span class="ic" in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}><Icon name={call.muted ? 'micoff' : 'mic'} size={26} /></span>{/key}
           </button><span>{call.muted ? 'Muted' : 'Mute'}</span>
         </div>
-        <!-- video: camera on/off is the voice <-> video switch. Flip exists for phones and only while my camera is on (it glides in, the row never jumps). -->
+        <!-- End sits on the centre line (odd count, pairs mirror around it). Phone: Mute · Camera · End · Flip · Speaker
+             (camera pair inside, audio pair outside); Flip keeps its slot and is only dimmed while the camera is off,
+             so nothing moves. Desktop: Mute · End · Camera. Camera on/off is the voice <-> video switch. -->
+        {#if android}
         <div class="ctl">
           <button type="button" class="round tog press" class:on={vid.camOn} aria-pressed={vid.camOn} aria-label="Camera" disabled={phase === 'ended' || phase === 'failed' || phase === 'outgoing' || phase === 'connecting'} onclick={() => vid.toggleCamera()}>
             {#key vid.camOn}<span class="ic" in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}><VIcon name={vid.camOn ? 'video' : 'videooff'} size={26} /></span>{/key}
           </button><span>Camera</span>
         </div>
-        {#if android}
-          <div class="ctl flip" class:open={vid.camOn} inert={!vid.camOn}>
-            <button type="button" class="round tog press" aria-label="Flip camera" onclick={() => vid.flip()}><VIcon name="flip" size={26} /></button><span>Flip</span>
+        <div class="ctl">
+          <button type="button" class="round end press" aria-label="End call" disabled={phase === 'ended' || phase === 'failed'} onclick={() => call.hangup()}><Icon name="phone" size={28} class="hang" /></button><span>End</span>
+        </div>
+          <div class="ctl" class:idle={!vid.camOn}>
+            <button type="button" class="round tog press" aria-label="Flip camera" disabled={!vid.camOn} onclick={() => vid.flip()}><VIcon name="flip" size={26} /></button><span>Flip</span>
           </div>
           <div class="ctl">
             <button type="button" class="round tog press" class:on={call.speaker === 'speaker'} aria-pressed={call.speaker === 'speaker'} aria-label="Speaker" onclick={() => call.toggleSpeaker()}><Icon name="vol" size={26} /></button><span>Speaker</span>
           </div>
-        {/if}
+        {:else}
         <div class="ctl">
           <button type="button" class="round end press" aria-label="End call" disabled={phase === 'ended' || phase === 'failed'} onclick={() => call.hangup()}><Icon name="phone" size={28} class="hang" /></button><span>End</span>
         </div>
+        <div class="ctl">
+          <button type="button" class="round tog press" class:on={vid.camOn} aria-pressed={vid.camOn} aria-label="Camera" disabled={phase === 'ended' || phase === 'failed' || phase === 'outgoing' || phase === 'connecting'} onclick={() => vid.toggleCamera()}>
+            {#key vid.camOn}<span class="ic" in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}><VIcon name={vid.camOn ? 'video' : 'videooff'} size={26} /></span>{/key}
+          </button><span>Camera</span>
+        </div>
+        {/if}
       {/if}
     </div>
   </div>
@@ -183,12 +194,11 @@
   .controls.two { gap: 56px; }
   .controls.three { gap: 24px; }
   .controls.three .ctl { inline-size: 84px; }
-  /* Phone: up to five buttons (Mute, Camera, Flip, Speaker, End) fit the narrowest width; Flip's slot is zero-width until the camera is on. */
+  /* Phone: up to five buttons (Mute, Camera, Flip, Speaker, End) fit the narrowest width; Flip keeps its slot (dimmed while the camera is off). */
   .controls.compact { gap: 10px; }
   .compact .ctl { inline-size: 62px; }
   .compact .round { inline-size: 56px; block-size: 56px; }
-  .ctl.flip { overflow: hidden; inline-size: 0; margin-inline: -10px; opacity: 0; transition: inline-size var(--dur-overlayOpen) var(--ease-out), margin var(--dur-overlayOpen) var(--ease-out), opacity var(--dur-enter) var(--ease-out); }
-  .ctl.flip.open { inline-size: 62px; margin-inline: 0; opacity: 1; }
+  .ctl.idle { opacity: .38; transition: opacity var(--dur-enter) var(--ease-out); }
   /* Over their picture: light on dark glass whatever the theme; controls and header fade out when idle. */
   :global(:root:not([data-x])) .callscreen.onvideo { --ink: #fff; --bg: #15171c; --btn-bg: rgb(255 255 255 / .2); color: #fff; }
   .callscreen.onvideo .round { backdrop-filter: blur(12px); box-shadow: none; }
