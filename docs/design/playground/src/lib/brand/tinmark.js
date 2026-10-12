@@ -33,8 +33,8 @@ function resolve(p) {
   q.DT = Math.max(0, (q.ell - q.w0) / 2);
   return q;
 }
-function stringPath(c, delta, s, phi) {
-  const x1 = c - delta, x2 = 24 - x1;
+function stringPath(c, delta, s, phi, ko) {
+  const x1 = c - delta + (ko || 0), x2 = 24 - x1;
   return 'M ' + f3(x1) + ' 12 Q ' + f3(12 + 2 * s * Math.sin(phi)) + ' ' + f3(12 + 2 * s * Math.cos(phi)) + ' ' + f3(x2) + ' 12';
 }
 // pure: returns SVG path strings. p.delta = outward displacement (cans drawn at c - delta).
@@ -50,7 +50,7 @@ function markPaths(p) {
   const rim = ell(a, b), mouth = ell(q.mu * a, q.mu * b);
   const sil = q.noCap ? 'M ' + f3(cx - L) + ' ' + f3(ym) + ' H ' + f3(cx) + ' A ' + f3(a) + ' ' + f3(b) + ' 0 0 1 ' + f3(cx) + ' ' + f3(yp) + ' H ' + f3(cx - L) + ' Z' : 'M ' + f3(cx - L) + ' ' + f3(ym) + ' H ' + f3(cx) + ' A ' + f3(a) + ' ' + f3(b) + ' 0 0 1 ' + f3(cx) + ' ' + f3(yp) +
     ' H ' + f3(cx - L) + ' A ' + f3(a) + ' ' + f3(b) + ' 0 0 1 ' + f3(cx - L) + ' ' + f3(ym) + ' Z';
-  const str = stringPath(q.c, delta, s, phi);
+  const str = stringPath(q.c, delta, s, phi, q.ko);
   const left = cx - L - a;
   return { canLeft: body, rim, mouth, string: str, silhouette: sil, mono: sil + ' ' + mouth,
     bbox: { x0: left, x1: 24 - left, y0: ym, y1: yp, w: 24 - 2 * left, h: 2 * b },
@@ -137,7 +137,7 @@ function attach(svg, opts) {
 
   function paint() {
     const x = state();
-    const sd = stringPath(P.c, S.D * mv(), x.s, S.phi);
+    const sd = stringPath(P.c, S.D * mv(), x.s, S.phi, P.ko);
     if (sd !== lastStr) { refs.str.setAttribute('d', sd); lastStr = sd; }
     const tl = 'translate(' + f3(-S.D * mv()) + ' 0)', tr = MIRROR + ' translate(' + f3(-S.D * mv()) + ' 0)';
     if (tl !== lastL) { refs.L.g.setAttribute('transform', tl); lastL = tl; }

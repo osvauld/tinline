@@ -79,28 +79,32 @@ Optical sizes, not a uniform scale. Tiers below 32 are designed IN PIXELS (1 mod
 box, so every flat edge lies on a whole pixel and rims/mouth on half pixels). Tiers 32..64 scale the base design and
 snap b to whole px and the rest to 0.5 px; 96+ are exact. All come from markPaths; only parameters differ.
 
-| box px | c | a | b | L | mu | back cap | string | rest sag | taut |
+| box px | c | a | b | L | mu | mouth | string | rest sag | taut |
 |---|---|---|---|---|---|---|---|---|---|
-| 12 | 3 | 1.5 | 4 | 2 | 0.60 | no | 1.5 | 2.5 | sag 0.5, cans fixed |
-| 14 | 4 | 2 | 5 | 3 | 0.62 | no | 1.5 | 3 | sag 0.5, cans fixed |
-| 16 | 4 | 2 | 5 | 3 | 0.68 | no | 1.75 | 3 | sag 0.5, cans fixed |
-| 20 | 5 | 2.5 | 6 | 4 | 0.62 | no | 1.75 | 4 | sag 0.75, cans fixed |
-| 24 | 7.5 | 2 | 6 | 3.5 | 0.62 | yes | 1.75 | 3.5 | full model (cans pull in) |
-| 28 | 8.5 | 2.5 | 7 | 4 | 0.62 | yes | 1.75 | 4 | full model |
-| 32 | 10 | 3.5 | 7 | 4 | 0.62 | yes | 2 | 4.7 | full model |
-| 40, 48, 64 | base x B/24 (snapped) | | | | 0.62 | yes | 2.5 / 3 / 4 | 5.8 / 7 / 9.3 | full model |
-| 96..1024 | base x B/24 (exact) | | | | 0.62 | yes | 6 .. 64 | s0 x B/24 | full model |
+| 12 | 3.5 | 1.5 | 4 | 1.5 | .50 | flat 2-colour, string starts ko .75 | 1.5 | 2.5 | sag 0.5, cans fixed |
+| 14 | 4.5 | 1.5 | 5 | 2 | .50 | flat, ko .75 | 1.5 | 3 | sag 0.5 |
+| 16 | 5 | 2 | 5 | 2 | .50 | flat, ko 1.25 | 1.75 | 3 | sag 0.5 |
+| 20 | 6 | 2.5 | 6 | 2.5 | .50 | flat, ko 1.25 | 1.75 | 3.5 | sag 0.75 |
+| 24 | 7.5 | 3 | 6 | 3 | .60 | mint | 1.75 | 3.5 | full model |
+| 28 | 8.5 | 3.5 | 7 | 3.5 | .60 | mint | 1.75 | 4 | full model |
+| 32 | 10 | 3.5 | 7 | 4 | .62 | mint | 2 | 4.7 | full model |
+| 40, 48, 64 | base x B/24 (snapped) | | | | .62 | mint | 2.5 / 3 / 4 | 5.8 / 7 / 9.3 | full model |
+| 96..1024 | exact | | | | .62 | mint | 6 .. 64 | s0 x B/24 | full model |
+
+All tiers share one silhouette: a rounded rim plus a rounded back (back cap kept at every size), mouth ~1/3 of the can
+width from the axis side. Revised after lead review: the earlier straight-sided "slot" cans at <= 20 px were dropped.
+Flat mouth (<= 20): cream hole (teal ground in tiles, deep teal on dark); string anchor offset ko starts it on the rim beside
+the hole so no gold fills the mouth.
 
 Decisions:
-- Small tiers have BIGGER cans relative to the box (b 4/12 .. 7/28 vs 5.5/24 at base) and no back cap, which
-  at <= 20 px only muds the silhouette into an oval; the body is a straight-edged slug with a rounded rim.
-- The mouth is kept at every size (it is what says "can"); at 12-16 px it is a 1-2 px lighter slot.
+- Small tiers have bigger cans relative to the box (b 4/12 .. 7/28 vs 5.5/24 at base) but the same oval silhouette.
+- The mouth is kept at every size (it says "can"); at 12-20 px it is a plain 1.5-3 px two-colour hole.
 - Taut at <= 20 px is SAG ONLY (cans never move): the string flattens to 0.5-0.75 px of sag. The 16-px candidate
   from section 6 (b 6, theta 36) was tried and rejected: two ovals; b 5 with a straight slug reads better.
   Mark.svelte plays that state by easing the sag (tinmark attach: params.sagOnly).
 - Mark.svelte calls tierParams(size) (nearest designed tier), so the top-bar 28 px mark uses the 28 tier,
   16-20 px uses sag-only taut. Animation at >= 24 px uses the full spring model on the tier geometry.
-- Launcher (108, safe zone 66): the exact 1024 geometry scaled so the glyph is 60 units wide, centred.
+- Launcher (108, safe zone 66): the exact 1024 geometry scaled so the glyph is 54 units wide, centred.
 - Monochrome: body + rim = ink, mouth = evenodd hole (omitted for solid white silhouettes).
 - Notification icon: tier 20 centred in a 24 dp canvas (mouth cutout, alpha only).
 - App tile (teal ground, cream cans): the mouth colour is the ground teal so it reads as a hole.

@@ -12,7 +12,7 @@ Open `index.html` for the contact sheet (every tier zoomed, launcher masks, stat
 |---|---|---|
 | `svg/tinline-<px>-<color|dark|mono|white>.svg` | bare mark, per tier (12..1024); `-taut` for 16/20/24/28; `-tile` = app tile | docs, site, in-app art |
 | `svg/tiers.json` | the tier parameter table | reference |
-| `android/ic_launcher_{foreground,background,monochrome}.xml` | adaptive layers, 108 dp, glyph 60 dp inside the 66 dp safe zone | android/app/src/main/res/drawable/ |
+| `android/ic_launcher_{foreground,background,monochrome}.xml` | adaptive layers, 108 dp, glyph 54 dp inside the 66 dp safe zone | android/app/src/main/res/drawable/ |
 | `android/mipmap-anydpi/ic_launcher{,_round}.xml` | adaptive icon, incl. themed monochrome | res/mipmap-anydpi/ (or -v26) |
 | `android/mipmap-{m,h,xh,xxh,xxxh}dpi/ic_launcher{,_round}.png` | legacy 48/72/96/144/192 | res/mipmap-*dpi/ |
 | `android/ic_stat_tinline.xml` | status-bar icon, 24 dp, white, hinted 20 px tier | res/drawable/, setSmallIcon |

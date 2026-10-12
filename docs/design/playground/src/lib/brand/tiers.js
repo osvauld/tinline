@@ -29,12 +29,15 @@ export const VARIANTS = {
    s  = rest sag    sT = sag when 'taut' (small tiers: sag only, the cans never move; null = full model taut)
    Left extreme of the glyph = c - L - a. */
 export const SMALL = {
-  12: { c: 3, a: 1.5, b: 4, L: 2, mu: 0.6, noCap: true, sw: 1.5, s: 2.5, sT: 0.5 },
-  14: { c: 4, a: 2, b: 5, L: 3, mu: 0.62, noCap: true, sw: 1.5, s: 3, sT: 0.5 },
-  16: { c: 4, a: 2, b: 5, L: 3, mu: 0.68, noCap: true, sw: 1.75, s: 3, sT: 0.5 },
-  20: { c: 5, a: 2.5, b: 6, L: 4, mu: 0.62, noCap: true, sw: 1.75, s: 4, sT: 0.75 },
-  24: { c: 7.5, a: 2, b: 6, L: 3.5, mu: 0.62, noCap: false, sw: 1.75, s: 3.5, sT: null },
-  28: { c: 8.5, a: 2.5, b: 7, L: 4, mu: 0.62, noCap: false, sw: 1.75, s: 4, sT: null },
+  // <= 20 px: the SAME oval silhouette as 24+, pixel-hinted: rounded rim + rounded back, plain 2-colour mouth (flat),
+  // string starts on the rim beside the mouth (ko) so no gold blob fills the hole. Mouth sits ~1/3 of the can width from the axis side, as at 24+.
+  12: { c: 3.5, a: 1.5, b: 4, L: 1.5, mu: 0.5, noCap: false, flat: true, ko: 0.75, sw: 1.5, s: 2.5, sT: 0.5 },
+  14: { c: 4.5, a: 1.5, b: 5, L: 2, mu: 0.5, noCap: false, flat: true, ko: 0.75, sw: 1.5, s: 3, sT: 0.5 },
+  16: { c: 5, a: 2, b: 5, L: 2, mu: 0.5, noCap: false, flat: true, ko: 1.25, sw: 1.75, s: 3, sT: 0.5 },
+  20: { c: 6, a: 2.5, b: 6, L: 2.5, mu: 0.5, noCap: false, flat: true, ko: 1.25, sw: 1.75, s: 3.5, sT: 0.75 },
+  // 24/28: same proportions as the base (a ~ .5 b, L ~ .5 b, mouth at the rim centre), mint mouth returns
+  24: { c: 7.5, a: 3, b: 6, L: 3, mu: 0.6, noCap: false, sw: 1.75, s: 3.5, sT: null },
+  28: { c: 8.5, a: 3.5, b: 7, L: 3.5, mu: 0.6, noCap: false, sw: 1.75, s: 4, sT: null },
 };
 export const TIER_SIZES = [12, 14, 16, 20, 24, 28, 32, 40, 48, 64, 96, 128, 256, 512, 1024];
 
@@ -57,9 +60,9 @@ export function tierModel(B) {
   const t = tierPx(B), u = t.u, half0 = B / (2 * u);
   const m = (v) => v / u;
   const c = 12 - (B / 2 - t.c) / u;
-  const p = { c, a: m(t.a), b: m(t.b), L: m(t.L), mu: t.mu || 0.0001, noCap: t.noCap, strokeW: m(t.sw), s0: m(t.s) };
+  const p = { c, ko: m(t.ko || 0), a: m(t.a), b: m(t.b), L: m(t.L), mu: t.mu || 0.0001, noCap: t.noCap, strokeW: m(t.sw), s0: m(t.s) };
   const vb = [12 - half0, 12 - half0, B / u, B / u];
-  return { t, p, vb, u, sagOnly: t.sT != null, sT: t.sT != null ? m(t.sT) : null, hasMouth: !!t.mu };
+  return { t, p, vb, u, sagOnly: t.sT != null, sT: t.sT != null ? m(t.sT) : null, hasMouth: !!t.mu, flat: !!t.flat };
 }
 
 /** Params for the in-app Mark (TinMark.tier is wired to this). */
@@ -92,7 +95,9 @@ export function geometry(B, state = 'slack') {
 
 /** Inner markup (no <svg>) of the mark in model coordinates. variant keys of VARIANTS. */
 export function markInner(B, variant = 'color', state = 'slack', ids = {}) {
-  const { M, d } = geometry(B, state), V = VARIANTS[variant];
+  const { M, d } = geometry(B, state);
+  let V = VARIANTS[variant];
+  if (M.flat && !V.mono) V = { ...V, mouth: variant === 'dark' ? PAL.deep : (variant === 'tile' ? PAL.teal : PAL.cream) };   // <= 20 px: mouth is a plain 2-colour hole
   const MIR = 'translate(24 0) scale(-1 1)';
   const str = `<path d="${d.string}" fill="none" stroke="${V.mono ? V.ink : V.str}" stroke-width="${f(M.p.strokeW)}" stroke-linecap="round"/>`;
   let can;
@@ -119,7 +124,7 @@ export function markSvg(B, variant = 'color', state = 'slack', extra = '') {
 export function tileBox(S, frac = null) {
   const fixed = { 16: 12, 20: 16, 22: 16, 24: 20, 28: 24 };
   if (frac == null && fixed[S]) return fixed[S];
-  let B = Math.round(S * (frac ?? 0.75) / 2) * 2;        // even, so the pad is whole px
+  let B = Math.round(S * (frac ?? 0.72) / 2) * 2;        // even, so the pad is whole px
   return B;
 }
 export function tileRadius(S, shape = 'rounded') {
