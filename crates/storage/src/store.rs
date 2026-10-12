@@ -24,6 +24,24 @@ pub enum Op {
 #[derive(Clone)]
 pub struct Store {
     db: Arc<RwLock<Option<Database>>>,
+    /// The file (none for the in-memory backend), for [`usage`](Store::usage).
+    path: Option<Arc<std::path::PathBuf>>,
+}
+
+/// How much of the file is in use, see [`Store::usage`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Usage {
+    /// Length of the file on disk.
+    pub file_bytes: u64,
+    /// Bytes of the file that hold live pages (data, tree metadata, bookkeeping).
+    pub used_bytes: u64,
+}
+
+impl Usage {
+    /// Bytes of the file that hold nothing live (free pages, growth steps).
+    pub fn wasted(&self) -> u64 {
+        self.file_bytes.saturating_sub(self.used_bytes)
+    }
 }
 
 /// The open database, for the length of one operation.
@@ -38,7 +56,10 @@ impl std::ops::Deref for Open<'_> {
 
 impl Store {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, StorageError> {
-        Self::init(Database::create(path)?)
+        let path = path.as_ref();
+        let mut s = Self::init(Database::create(path)?)?;
+        s.path = Some(Arc::new(path.to_path_buf()));
+        Ok(s)
     }
 
     pub fn open_in_memory() -> Result<Self, StorageError> {
@@ -51,7 +72,7 @@ impl Store {
         let txn = db.begin_write()?;
         txn.open_table(TABLE)?;
         txn.commit()?;
-        Ok(Self { db: Arc::new(RwLock::new(Some(db))) })
+        Ok(Self { db: Arc::new(RwLock::new(Some(db))), path: None })
     }
 
     fn db(&self) -> Result<Open<'_>, StorageError> {
@@ -67,6 +88,29 @@ impl Store {
     pub fn close(&self) {
         let db = self.db.write().unwrap_or_else(|e| e.into_inner()).take();
         drop(db);
+    }
+
+    /// File length and the bytes of it in use; `None` for the in-memory backend. Reads the
+    /// whole tree's statistics, so it is not for a hot path.
+    pub fn usage(&self) -> Result<Option<Usage>, StorageError> {
+        let Some(path) = &self.path else { return Ok(None) };
+        let db = self.db()?;
+        let txn = db.begin_write()?;
+        let st = txn.stats()?;
+        txn.abort()?;
+        let file_bytes = std::fs::metadata(path.as_path()).map(|m| m.len()).unwrap_or(0);
+        Ok(Some(Usage { file_bytes, used_bytes: st.allocated_pages() * st.page_size() as u64 }))
+    }
+
+    /// Rewrites the file without its free pages and gives the space back. Waits for the
+    /// operations in flight and holds every other one off until it is done (it is slow:
+    /// seconds for hundreds of MB), so run it in the background, off any latency path.
+    /// Every step is an ordinary two-phase commit: a crash in the middle leaves a database
+    /// that opens (after redb's own repair) with all its data. Returns whether pages moved.
+    pub fn compact(&self) -> Result<bool, StorageError> {
+        let mut g = self.db.write().unwrap_or_else(|e| e.into_inner());
+        let Some(db) = g.as_mut() else { return Err(StorageError::Closed) };
+        Ok(db.compact()?)
     }
 
     pub fn is_closed(&self) -> bool {

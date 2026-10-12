@@ -19,4 +19,4 @@ mod store;
 
 pub use error::StorageError;
 pub use sealed::Sealed;
-pub use store::{Op, Store};
+pub use store::{Op, Store, Usage};

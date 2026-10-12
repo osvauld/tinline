@@ -38,6 +38,9 @@ pub const MERGE_SEGS: usize = 4;
 /// How long a changed cold day waits in memory before its month is written again.
 pub const DEBOUNCE: Duration = Duration::from_secs(600);
 
+/// Free bytes in the file below which it is not worth compacting.
+pub const COMPACT_MIN_WASTE: u64 = 8 << 20;
+
 /// The tunables, as a value so that tests can shrink them.
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
@@ -46,11 +49,13 @@ pub struct Limits {
     pub seg_max_docs: usize,
     pub merge_segs: usize,
     pub debounce: Duration,
+    /// Free bytes in the file above which compacting is considered ([`COMPACT_MIN_WASTE`]).
+    pub compact_min_waste: u64,
 }
 
 impl Default for Limits {
     fn default() -> Self {
-        Self { hot_days: HOT_DAYS, hot_max_docs: HOT_MAX_DOCS, seg_max_docs: SEG_MAX_DOCS, merge_segs: MERGE_SEGS, debounce: DEBOUNCE }
+        Self { hot_days: HOT_DAYS, hot_max_docs: HOT_MAX_DOCS, seg_max_docs: SEG_MAX_DOCS, merge_segs: MERGE_SEGS, debounce: DEBOUNCE, compact_min_waste: COMPACT_MIN_WASTE }
     }
 }
 
@@ -200,6 +205,8 @@ pub struct SearchIndex {
     lim: RwLock<Limits>,
     today: Mutex<Option<u32>>,
     ticker: std::sync::atomic::AtomicBool,
+    /// Segments were written or dropped since the last look at the file's free space.
+    file_changed: std::sync::atomic::AtomicBool,
 }
 
 impl SearchIndex {
@@ -226,6 +233,7 @@ impl SearchIndex {
             lim: RwLock::new(Limits::default()),
             today: Mutex::new(None),
             ticker: std::sync::atomic::AtomicBool::new(false),
+            file_changed: std::sync::atomic::AtomicBool::new(true),
         };
         let current = matches!(me.db.get("v"), Ok(Some(v)) if v == VERSION.to_be_bytes());
         let man = if current { me.db.get("m").ok().flatten().and_then(|b| bincode::deserialize::<Manifest>(&b).ok()) } else { None };
@@ -460,6 +468,7 @@ impl SearchIndex {
         man.segs.retain(|g| !g.days.is_empty());
         ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
         self.db.apply(&ops).map_err(io)?;
+        self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         *self.view.write() = Arc::new(View::new(man));
         Ok(())
     }
@@ -502,6 +511,50 @@ impl SearchIndex {
     /// too many or is over, all in one transaction with the manifest, then lets the hot tier go
     /// of the days written. A day changed meanwhile stays in memory.
     pub fn maintain(&self, mode: Mode) -> Result<(), Error> {
+        self.maintain_segments(mode)?;
+        if mode != Mode::Cap {
+            self.compact_if_worthwhile()?;
+        }
+        Ok(())
+    }
+
+    /// Gives the file's free space back when it is mostly free: more than
+    /// [`COMPACT_MIN_WASTE`] bytes and more than half of the file (segment merges and rewrites
+    /// leave free pages, and redb grows the file in big steps). Only looks after the file
+    /// changed since the last look. Holds the maintenance lock, and redb the database, for the
+    /// duration (queries wait; `apply` does not touch the file except to load a cold day), so
+    /// it belongs in the background. Returns the file length before and after when it ran.
+    pub fn compact_if_worthwhile(&self) -> Result<Option<(u64, u64)>, Error> {
+        let _m = self.maint.lock();
+        if self.is_closed() || !self.file_changed.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            return Ok(None);
+        }
+        let Some(u) = self.db.raw().usage().map_err(io)? else { return Ok(None) };
+        if u.wasted() <= self.limits().compact_min_waste || u.wasted() * 2 <= u.file_bytes {
+            return Ok(None);
+        }
+        self.compact_locked()
+    }
+
+    /// File length and live bytes (benchmarks).
+    pub fn usage(&self) -> Option<storage::Usage> {
+        self.db.raw().usage().ok().flatten()
+    }
+
+    /// Compacts regardless of the thresholds (tests, tools).
+    pub fn compact_now(&self) -> Result<Option<(u64, u64)>, Error> {
+        let _m = self.maint.lock();
+        self.compact_locked()
+    }
+
+    fn compact_locked(&self) -> Result<Option<(u64, u64)>, Error> {
+        let Some(before) = self.db.raw().usage().map_err(io)? else { return Ok(None) };
+        self.db.raw().compact().map_err(io)?;
+        let after = self.db.raw().usage().map_err(io)?.map_or(before.file_bytes, |u| u.file_bytes);
+        Ok(Some((before.file_bytes, after)))
+    }
+
+    pub(crate) fn maintain_segments(&self, mode: Mode) -> Result<(), Error> {
         let mut memo = self.maint.lock();
         if self.is_closed() {
             return Ok(());
@@ -646,6 +699,7 @@ impl SearchIndex {
         ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
         let tw = Instant::now();
         self.db.apply(&ops).map_err(io)?;
+        self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         let t = phase(3, tw).max(t);
         let nv = Arc::new(View::new(man));
         {
@@ -1370,4 +1424,143 @@ mod tests {
         ix.apply_bulk(&rows, &[], &[]).unwrap();
         assert!(ix.stats().hot_docs >= 30);
     }
+    fn temp_path(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("search-compact-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir.join("search.redb")
+    }
+
+    /// Every id under a few terms, newest first, over all pages.
+    fn answers(ix: &SearchIndex) -> Vec<Vec<String>> {
+        ["pi", "plan", "zebra", "tok", "meeting"].iter().map(|t| ids(ix, t)).collect()
+    }
+
+    fn fill(ix: &SearchIndex, convs: usize, days: i64, per_day: usize) {
+        let mut n = 0u32;
+        for d in 0..days {
+            for c in 0..convs {
+                let rows: Vec<DocRow> = (0..per_day)
+                    .map(|k| {
+                        n += 1;
+                        row(&format!("dm.{c}"), &format!("m{n}"), T0 + d * D + k as i64 * 1000, &format!("picnic plans {n} token{} meeting zebra{}", n % 17, n % 5))
+                    })
+                    .collect();
+                ix.apply(&rows, &[], &[mark(&rows[0], 1)]).unwrap();
+            }
+        }
+    }
+
+    // KIND: invariant (v2) — the file gives its free space back when it is mostly free and big
+    // enough, only after it changed, and the answers are identical afterwards and after a reopen.
+    #[test]
+    fn compaction_trigger_and_same_answers() {
+        let path = temp_path("trigger");
+        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        at_day(&ix, "2026-06-01");
+        fill(&ix, 6, 40, 20);
+        ix.maintain(Mode::Force).unwrap();
+        // Small file: below the byte threshold nothing happens, and the look is spent.
+        assert_eq!(ix.compact_if_worthwhile().unwrap(), None);
+        ix.set_limits(|l| l.compact_min_waste = 0);
+        assert_eq!(ix.compact_if_worthwhile().unwrap(), None, "no change since the last look");
+        // Mostly-free file: drop most of the conversations, leaving their pages free.
+        for c in 1..6 {
+            ix.forget(&format!("dm.{c}")).unwrap();
+        }
+        ix.maintain(Mode::Force).unwrap();
+        let before = answers(&ix);
+        assert!(before.iter().any(|a| !a.is_empty()));
+        let len_before = std::fs::metadata(&path).unwrap().len();
+        let u = ix.db.raw().usage().unwrap().unwrap();
+        assert!(u.wasted() * 2 > u.file_bytes, "mostly free: {u:?}");
+        let (a, b) = ix.compact_if_worthwhile().unwrap().expect("compacted");
+        assert_eq!(a, len_before);
+        assert!(b * 2 < a, "{a} -> {b}");
+        assert_eq!(std::fs::metadata(&path).unwrap().len(), b);
+        assert_eq!(answers(&ix), before);
+        // Nothing left to give back: the second look does nothing.
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.compact_if_worthwhile().unwrap(), None);
+        // Still writable, and a reopen sees the same index.
+        ix.close();
+        drop(ix);
+        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        at_day(&ix, "2026-06-01");
+        assert_eq!(answers(&ix), before);
+        fill(&ix, 1, 2, 5);
+        ix.maintain(Mode::Force).unwrap();
+        assert!(ids(&ix, "zebra1").len() > before[2].len() / 2);
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    // KIND: invariant (v2) — maintenance runs compaction after a write, but never in a bulk
+    // (`Cap`), and an in-memory index has nothing to compact.
+    #[test]
+    fn compaction_follows_maintenance_not_bulk() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        at_day(&ix, "2026-06-01");
+        fill(&ix, 2, 20, 5);
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.compact_if_worthwhile().unwrap(), None);
+        assert_eq!(ix.compact_now().unwrap(), None);
+    }
+
+    // KIND: crash (v2) — killing the process in the middle of a compaction leaves a file that
+    // opens with every record (redb compacts by ordinary commits and repairs a file that was
+    // not closed). The child compacts in a loop; the parent kills it at several moments.
+    #[test]
+    fn compaction_killed_midway_opens() {
+        use std::process::{Command, Stdio};
+        if let Ok(p) = std::env::var("COMPACT_CHILD") {
+            let ix = SearchIndex::open(std::path::Path::new(&p), "alpha beta").unwrap();
+            at_day(&ix, "2026-06-01");
+            println!("ready");
+            loop {
+                ix.compact_now().unwrap();
+                // free pages again, so that there is something to move
+                fill(&ix, 3, 6, 40);
+                ix.maintain(Mode::Force).unwrap();
+                for c in 0..3 {
+                    ix.forget(&format!("dm.{c}")).unwrap();
+                }
+            }
+        }
+        let path = temp_path("kill");
+        {
+            let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+            at_day(&ix, "2026-06-01");
+            fill(&ix, 8, 40, 30);
+            ix.maintain(Mode::Force).unwrap();
+            ix.set_limits(|l| l.compact_min_waste = 0);
+            for c in 3..8 {
+                ix.forget(&format!("dm.{c}")).unwrap();
+            }
+            ix.close();
+        }
+        for delay in [5u64, 40, 120, 300, 700] {
+            let exe = std::env::current_exe().unwrap();
+            let mut child = Command::new(exe)
+                .args(["--exact", "search::index::tests::compaction_killed_midway_opens", "--nocapture"])
+                .env("COMPACT_CHILD", &path)
+                .stdout(Stdio::null())
+                .spawn()
+                .unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(delay));
+            child.kill().unwrap();
+            child.wait().unwrap();
+            // Opens, whatever moment it died at; the manifest and its segments are consistent.
+            let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+            at_day(&ix, "2026-06-01");
+            let st = ix.stats();
+            // Every doc the manifest lists reads back (a lost page would make the scan skip it).
+            let found = ids(&ix, "picnic").len();
+            assert!(found <= st.seg_docs && (st.seg_docs == 0 || found > 0), "{delay} ms: {found} of {} docs", st.seg_docs);
+            let y = ix.content_sizes().iter().find(|r| r.0 == "y/").unwrap().1;
+            assert!(y * 8 >= st.seg_docs, "{delay} ms: {y} chunks for {} docs", st.seg_docs);
+            ix.close();
+        }
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
 }

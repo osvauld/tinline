@@ -215,7 +215,12 @@ pub fn run(n: usize, dir: &Path) {
         maint = bg.join().unwrap();
     });
     ix.set_today(Some(&end_day));
-    ix.maintain(Mode::Force).unwrap();
+    ix.maintain_segments(Mode::Force).unwrap();
+    let before_compact = size(&path);
+    println!("usage before: {:?}", ix.usage());
+    let t = Instant::now();
+    let comp = ix.compact_if_worthwhile().unwrap();
+    println!("live file before compaction {before_compact:.1} MiB; compaction {:?} took {:.2} s", comp.map(|(a, b)| (a >> 20, b >> 20)), t.elapsed().as_secs_f64());
     println!("live (one apply per message, memory only): {:.1} s total", t0.elapsed().as_secs_f64());
     lat("send-path apply per message", each);
     lat("segment write (per day change)", maint);
@@ -242,8 +247,12 @@ pub fn run(n: usize, dir: &Path) {
     for ((src, day), b) in &batches {
         rix.apply_bulk(b, &[], &[Mark { src: src.clone(), day: day.clone(), prev: None, vv: vec![1] }]).unwrap();
     }
-    rix.maintain(Mode::Force).unwrap();
+    rix.maintain_segments(Mode::Force).unwrap();
     let el = t0.elapsed().as_secs_f64();
+    let rbefore = size(&rpath);
+    let t = Instant::now();
+    let rcomp = rix.compact_if_worthwhile().unwrap();
+    println!("rebuild file before compaction {rbefore:.1} MiB; compaction {:?} took {:.2} s", rcomp.map(|(a, b)| (a >> 20, b >> 20)), t.elapsed().as_secs_f64());
     let rs = rix.stats();
     let ph: Vec<String> = ["pick", "read-old", "build(incl read)", "write", "swap"].iter().zip(&super::index::PHASES).map(|(n, p)| format!("{n} {:.1}s", p.load(std::sync::atomic::Ordering::Relaxed) as f64 / 1e9)).collect();
     println!("maintain phases (whole run so far): {}", ph.join(", "));
@@ -306,4 +315,107 @@ pub fn run(n: usize, dir: &Path) {
     lat("\"th\" pages 1-5 total", v);
     lat("\"th\" page 5 alone", last);
     println!("sizes: live {live_size:.1} MiB ({:.0} B/msg of the {} in segments), full build {:.1} MiB ({:.0} B/msg)", live_size * 1048576.0 / st.seg_docs.max(1) as f64, st.seg_docs, size(&rpath), size(&rpath) * 1048576.0 / rs.seg_docs.max(1) as f64);
+}
+
+/// `search-bench <n> <dir> live`: the send path as in production. The index holds `n` messages
+/// (built the reconcile way, the last 8 days in memory); then `LIVE` new messages arrive in real
+/// time, `PACE` apart, each through `apply` (timed). Three runs of it:
+/// 1. idle: maintenance as in production (every 5 s here instead of once a minute, plus one day
+///    rollover half way), which has next to nothing to write;
+/// 2. busy: a thread runs the maintenance back to back, a day further each time, with a merge on
+///    every write (`merge_segs = 1`): segment builds on all cores and a file write the whole run;
+/// 3. busy with compaction: as 2, plus a compaction of the file (queries wait for it; `apply`
+///    does not touch the file) every few seconds.
+pub fn run_live(n: usize, dir: &Path) {
+    const LIVE: usize = 3000;
+    const PACE: Duration = Duration::from_millis(10);
+    std::fs::create_dir_all(dir).unwrap();
+    let data = rows(n);
+    let end_day = today_of(END);
+    println!("search-bench live: {n} messages in the index, then {LIVE} sends {} ms apart per run, {} cpus", PACE.as_millis(), std::thread::available_parallelism().map_or(1, |n| n.get()));
+    let path = dir.join("liveprod.redb");
+    let _ = std::fs::remove_file(&path);
+    let ix = SearchIndex::open(&path, "bench phrase").unwrap();
+    ix.set_today(Some(&end_day));
+    let mut batches: std::collections::BTreeMap<(String, String), Vec<DocRow>> = Default::default();
+    for r in &data {
+        batches.entry((r.src.clone(), r.day.clone())).or_default().push(r.clone());
+    }
+    let t0 = Instant::now();
+    for ((src, day), b) in &batches {
+        ix.apply_bulk(b, &[], &[Mark { src: src.clone(), day: day.clone(), prev: None, vv: vec![1] }]).unwrap();
+    }
+    ix.maintain(Mode::Force).unwrap();
+    println!("built in {:.1} s; {:?}; search.redb {:.1} MiB", t0.elapsed().as_secs_f64(), ix.stats(), size(&path));
+
+    let mut serial = 0usize;
+    let mut clock = crate::chat::doc::day_start(&end_day).unwrap();
+    for (label, mode) in [("idle (production schedule)", 0), ("maintenance back to back, merging", 1), ("... and compaction every 3 s", 2)] {
+        let stop = std::sync::atomic::AtomicBool::new(false);
+        let mut each = Vec::with_capacity(LIVE);
+        let mut work: Vec<Duration> = Vec::new();
+        let mut compactions: Vec<(u64, u64, Duration)> = Vec::new();
+        let day_ms = 86_400_000i64;
+        let today = std::sync::atomic::AtomicI64::new(clock);
+        ix.set_limits(|l| l.merge_segs = if mode == 0 { 4 } else { 1 });
+        std::thread::scope(|sc| {
+            let ixr = &ix;
+            let (stop, today) = (&stop, &today);
+            let bg = sc.spawn(move || {
+                let mut v = Vec::new();
+                let mut c = Vec::new();
+                let mut last_compact = Instant::now();
+                while !stop.load(std::sync::atomic::Ordering::SeqCst) {
+                    if mode == 0 {
+                        std::thread::sleep(Duration::from_secs(5));
+                    } else {
+                        // a day further, so that the previous day goes cold and is written
+                        let d = today.fetch_add(day_ms, std::sync::atomic::Ordering::SeqCst) + day_ms;
+                        ixr.set_today(Some(&crate::chat::doc::day_of(d)));
+                    }
+                    let t = Instant::now();
+                    ixr.maintain(if mode == 0 { Mode::Tick } else { Mode::Force }).unwrap();
+                    v.push(t.elapsed());
+                    if mode == 2 && last_compact.elapsed() >= Duration::from_secs(3) {
+                        let t = Instant::now();
+                        if let Some((a, b)) = ixr.compact_now().unwrap() {
+                            c.push((a, b, t.elapsed()));
+                        }
+                        last_compact = Instant::now();
+                    }
+                }
+                (v, c)
+            });
+            let t0 = Instant::now();
+            for i in 0..LIVE {
+                let due = t0 + PACE * i as u32;
+                if let Some(w) = due.checked_duration_since(Instant::now()) {
+                    std::thread::sleep(w);
+                }
+                if mode == 0 && i == LIVE / 2 {
+                    // the day rollover: the oldest hot day goes cold
+                    let d = today.fetch_add(day_ms, std::sync::atomic::Ordering::SeqCst) + day_ms;
+                    ix.set_today(Some(&crate::chat::doc::day_of(d)));
+                }
+                let base = &data[i % data.len()];
+                let cur = today.load(std::sync::atomic::Ordering::SeqCst);
+                let at = cur + i as i64;
+                serial += 1;
+                let r = DocRow { id: format!("live{serial:08}"), at, day: crate::chat::doc::day_of(at), ..base.clone() };
+                let mark = Mark { src: r.src.clone(), day: r.day.clone(), prev: None, vv: serial.to_be_bytes().to_vec() };
+                let t = Instant::now();
+                ix.apply(std::slice::from_ref(&r), &[], &[mark]).unwrap();
+                each.push(t.elapsed());
+            }
+            stop.store(true, std::sync::atomic::Ordering::SeqCst);
+            (work, compactions) = bg.join().unwrap();
+        });
+        clock = today.load(std::sync::atomic::Ordering::SeqCst);
+        println!("{label}: {} maintenance runs{}", work.len(), if work.is_empty() { String::new() } else { format!(", {:.0} ms avg, {:.0} ms max", work.iter().map(|d| ms(*d)).sum::<f64>() / work.len() as f64, ms(*work.iter().max().unwrap())) });
+        for (a, b, d) in &compactions {
+            println!("  compaction {} -> {} MiB in {:.2} s", a >> 20, b >> 20, d.as_secs_f64());
+        }
+        lat("send-path apply", each);
+    }
+    println!("search.redb {:.1} MiB at the end; {:?}", size(&path), ix.stats());
 }

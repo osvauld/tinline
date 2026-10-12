@@ -12,6 +12,8 @@ pub enum StorageError {
     Storage(#[from] redb::StorageError),
     #[error(transparent)]
     Commit(#[from] redb::CommitError),
+    #[error(transparent)]
+    Compaction(#[from] redb::CompactionError),
     /// A sealed record did not open: wrong key, tampered bytes, or a record moved to another path.
     #[error("sealed record at {0} does not open")]
     Unseal(String),
