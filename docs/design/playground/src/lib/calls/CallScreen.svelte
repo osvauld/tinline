@@ -172,9 +172,9 @@
     <div class="info" role="dialog" aria-modal="true" aria-label="About this call" tabindex="-1" bind:this={infoCard} in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>
       <h3>About this call</h3>
       {#if phase === 'active' || phase === 'reconnecting'}
-        <p><b>End-to-end encrypted.</b> {vid.videoCall ? 'Your voice and picture go' : 'Your voice goes'} straight to {name}’s device, scrambled so that only the two of you can {vid.videoCall ? 'hear and see them' : 'hear it'}. Nobody in between can.</p>
+        <p><b>End-to-end encrypted.</b> {vid.videoCall ? 'Your voice and picture are' : 'Your voice is'} encrypted on this device and only decrypted on {name}’s. When a relay helps connect you, it passes the call along but can’t {vid.videoCall ? 'listen or watch' : 'listen'}.</p>
       {:else}
-        <p>Connecting to {name}. Once the call is connected it is end-to-end encrypted: only the two of you can listen.</p>
+        <p>Connecting to {name}. Once the call is connected, it is end-to-end encrypted.</p>
       {/if}
       <button type="button" class="b press" data-autofocus onclick={closeInfo}>Got it</button>
     </div>
