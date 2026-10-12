@@ -1,9 +1,11 @@
 //! Benchmark of the search index alone (no node, no network): `search-bench <messages>`.
-//! Writes `n` synthetic messages one transaction each (the chat write path), rebuilds the same
-//! corpus in per-day batches (the reconcile path), then times the query loop of
-//! `Inner::search` (page, row, match, snippet) without the node-side name lookups.
+//! Index v2: replays `n` synthetic messages in time order through `apply` (the send path: memory
+//! only) with the days rolling over and the cold days written into segments in the background,
+//! rebuilds the same corpus in per-day batches (the reconcile path), measures the hot-tier build
+//! of the last days on open, then times the query loop of `Inner::search` (scan, row, match,
+//! snippet) without the node-side name lookups.
 
-use super::index::{DocRow, Mark, SearchIndex};
+use super::index::{DocRow, Mark, Mode, SearchIndex};
 use super::text;
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -101,11 +103,10 @@ fn rows(n: usize) -> Vec<DocRow> {
             if i % (n / 5).max(1) == 7 {
                 text.push_str(" zyxqrare"); // the rare word: 5 messages
             }
-            let day = format!("{}", at / 86_400_000);
             DocRow {
                 src: if group { format!("g.{conv}") } else { format!("dm.{conv}") },
                 conv: conv.to_string(),
-                day: if group { "-".into() } else { day },
+                day: crate::chat::doc::day_of(at),
                 id: format!("m{i:08}"),
                 at,
                 author: format!("did:{}", rng.below(8)),
@@ -133,13 +134,12 @@ fn query(ix: &SearchIndex, q: &str, limit: usize, cursor: Option<&str>) -> (usiz
     let terms = text::query_terms(q);
     let scan = terms.iter().max_by_key(|t| t.weight()).unwrap();
     let lookup = scan.lookup();
-    let (mut after, mut looked, mut hits, mut next) = (cursor.map(str::to_string), 0, 0, None);
+    let (mut looked, mut hits, mut next) = (0, 0, None);
+    let mut sc = ix.scan(&lookup, cursor).unwrap();
     'scan: loop {
-        let (page, more) = ix.page(&lookup, after.as_deref(), 256).unwrap();
+        let (page, more) = sc.next(256).unwrap();
         for (cur, row) in page {
             looked += 1;
-            after = Some(cur.clone());
-            let Some(row) = row else { continue };
             let n = text::normalize(&row.text);
             if let Some(h) = text::match_all(&terms, &n) {
                 let _ = text::snippet(&row.text, &n, &h);
@@ -165,34 +165,69 @@ fn lat(label: &str, mut v: Vec<Duration>) {
     println!("  {label:<34} p50 {:>8.3} ms  p95 {:>8.3} ms  p99 {:>8.3} ms  max {:>8.3} ms", ms(pct(&mut v, 0.5)), ms(pct(&mut v, 0.95)), ms(pct(&mut v, 0.99)), ms(*v.last().unwrap()));
 }
 
+fn today_of(at: i64) -> String {
+    crate::chat::doc::day_of(at)
+}
+
 pub fn run(n: usize, dir: &Path) {
     std::fs::create_dir_all(dir).unwrap();
     let data = rows(n);
-    println!("search-bench: {n} messages, {CONVS} conversations ({GROUPS} groups), {DAYS} days, {} cpus", std::thread::available_parallelism().map_or(1, |n| n.get()));
+    println!("search-bench (index v2): {n} messages, {CONVS} conversations ({GROUPS} groups), {DAYS} days, {} cpus", std::thread::available_parallelism().map_or(1, |n| n.get()));
+    let end_day = today_of(END);
 
-    // 1. Live write path: one transaction per message, as the chat hooks do.
+    // 1. Live: messages arrive in time order; every simulated day change the cold days are
+    // written into segments on a background thread, as the node's periodic check does.
     let path = dir.join("live.redb");
     let _ = std::fs::remove_file(&path);
     let ix = SearchIndex::open(&path, "bench phrase").unwrap();
     let mut each = Vec::with_capacity(n);
+    let mut maint: Vec<Duration> = Vec::new();
     let t0 = Instant::now();
-    for (i, r) in data.iter().enumerate() {
-        let mark = Mark { src: r.src.clone(), day: r.day.clone(), prev: None, vv: i.to_be_bytes().to_vec() };
-        let t = Instant::now();
-        ix.apply(std::slice::from_ref(r), &[], &[mark]).unwrap();
-        each.push(t.elapsed());
-        if (i + 1) % (n / 4).max(1) == 0 {
-            println!("  live write {:>7} msgs: search.redb {:.1} MiB", i + 1, size(&path));
+    std::thread::scope(|sc| {
+        let (tx, rx) = std::sync::mpsc::channel::<()>();
+        let ixr = &ix;
+        let bg = sc.spawn(move || {
+            let mut v = Vec::new();
+            while rx.recv().is_ok() {
+                let t = Instant::now();
+                ixr.maintain(Mode::Force).unwrap();
+                v.push(t.elapsed());
+            }
+            v
+        });
+        let mut cur = String::new();
+        for (i, r) in data.iter().enumerate() {
+            if r.day != cur {
+                cur = r.day.clone();
+                ix.set_today(Some(&cur));
+                let _ = tx.send(());
+            }
+            let mark = Mark { src: r.src.clone(), day: r.day.clone(), prev: None, vv: i.to_be_bytes().to_vec() };
+            let t = Instant::now();
+            ix.apply(std::slice::from_ref(r), &[], &[mark]).unwrap();
+            each.push(t.elapsed());
+            if (i + 1) % (n / 4).max(1) == 0 {
+                println!("  live {:>7} msgs: search.redb {:.1} MiB, {:?}", i + 1, size(&path), ix.stats());
+            }
         }
-    }
-    println!("live write (one apply per message, incl. commit): {:.1} s total", t0.elapsed().as_secs_f64());
-    lat("write latency per message", each);
+        drop(tx);
+        maint = bg.join().unwrap();
+    });
+    ix.set_today(Some(&end_day));
+    ix.maintain(Mode::Force).unwrap();
+    println!("live (one apply per message, memory only): {:.1} s total", t0.elapsed().as_secs_f64());
+    lat("send-path apply per message", each);
+    lat("segment write (per day change)", maint);
+    let st = ix.stats();
     let live_size = size(&path);
+    println!("after the run: {st:?}; search.redb {live_size:.1} MiB = {:.0} B per message in segments", live_size * 1048576.0 / st.seg_docs.max(1) as f64);
 
-    // 2. Rebuild: per (conversation, day) batches, groups a conversation at once.
+    // 2. Rebuild: per (conversation, day) batches (the reconcile shape), cold days spilling
+    // into segments over the memory cap, then a final write.
     let rpath = dir.join("rebuild.redb");
     let _ = std::fs::remove_file(&rpath);
     let rix = SearchIndex::open(&rpath, "bench phrase").unwrap();
+    rix.set_today(Some(&end_day));
     let mut batches: std::collections::BTreeMap<(String, String), Vec<DocRow>> = Default::default();
     for r in &data {
         batches.entry((r.src.clone(), r.day.clone())).or_default().push(r.clone());
@@ -200,33 +235,38 @@ pub fn run(n: usize, dir: &Path) {
     let nb = batches.len();
     let t0 = Instant::now();
     for ((src, day), b) in &batches {
-        rix.apply(b, &[], &[Mark { src: src.clone(), day: day.clone(), prev: None, vv: vec![1] }]).unwrap();
+        rix.apply_bulk(b, &[], &[Mark { src: src.clone(), day: day.clone(), prev: None, vv: vec![1] }]).unwrap();
     }
+    rix.maintain(Mode::Force).unwrap();
     let el = t0.elapsed().as_secs_f64();
-    println!("rebuild ({nb} batches, avg {:.1} msgs): {el:.2} s = {:.0} msgs/s; search.redb {:.1} MiB", n as f64 / nb as f64, n as f64 / el, size(&rpath));
+    let rs = rix.stats();
+    println!("full build ({nb} day batches, avg {:.1} msgs): {el:.2} s = {:.0} msgs/s; {rs:?}; search.redb {:.1} MiB = {:.0} B/msg", n as f64 / nb as f64, n as f64 / el, size(&rpath), size(&rpath) * 1048576.0 / rs.seg_docs.max(1) as f64);
 
-    // 2b. Rebuild in one batch per conversation (the group reconcile shape, and the best case).
-    let wpath = dir.join("whole.redb");
-    let _ = std::fs::remove_file(&wpath);
-    let wix = SearchIndex::open(&wpath, "bench phrase").unwrap();
-    let mut convs: std::collections::BTreeMap<String, Vec<DocRow>> = Default::default();
-    for r in &data {
-        convs.entry(r.conv.clone()).or_default().push(r.clone());
+    // 2b. Open: the manifest is read, then the last days are indexed into memory (what the
+    // reconcile does for the hot window, minus reading the chat stores).
+    drop(ix);
+    let t = Instant::now();
+    let reopened = SearchIndex::open(&path, "bench phrase").unwrap();
+    reopened.set_today(Some(&end_day));
+    let open_t = t.elapsed();
+    let cutoff = crate::chat::doc::day_start(&end_day).unwrap() - 7 * 86_400_000;
+    let recent: Vec<&DocRow> = data.iter().filter(|r| r.at >= cutoff).collect();
+    let mut b2: std::collections::BTreeMap<(String, String), Vec<DocRow>> = Default::default();
+    for r in &recent {
+        b2.entry((r.src.clone(), r.day.clone())).or_default().push((*r).clone());
     }
-    let t0 = Instant::now();
-    for (c, b) in &convs {
-        wix.apply(b, &[], &[Mark { src: b[0].src.clone(), day: format!("all{c}"), prev: None, vv: vec![1] }]).unwrap();
+    let t = Instant::now();
+    for ((src, day), b) in &b2 {
+        reopened.apply(b, &[], &[Mark { src: src.clone(), day: day.clone(), prev: None, vv: vec![1] }]).unwrap();
     }
-    let el = t0.elapsed().as_secs_f64();
-    println!("rebuild, one batch per conversation ({} batches): {el:.2} s = {:.0} msgs/s; search.redb {:.1} MiB", convs.len(), n as f64 / el, size(&wpath));
+    println!("open: manifest {:.1} ms; hot tier of the last 8 days ({} msgs, {} day batches): {:.1} ms", ms(open_t), recent.len(), b2.len(), ms(t.elapsed()));
+    let ix = reopened;
 
-    // 2c. Where a live write goes: building the postings vs. the redb transaction.
+    // 2c. The cost of one send-path apply, split: building the postings vs. the rest.
     let k = data.len().min(2000);
     let t = Instant::now();
     let posts: usize = data[..k].iter().map(|r| text::index_terms(&r.text).iter().map(|w| ix.tok(w)).count()).sum();
     println!("postings per message: {:.0}; building them (terms + keyed hashes): {:.3} ms/msg", posts as f64 / k as f64, ms(t.elapsed()) / k as f64);
-    let floor: Vec<Duration> = (0..200).map(|i| { let m = Mark { src: "floor".into(), day: "d".into(), prev: None, vv: vec![i as u8] }; let t = Instant::now(); ix.apply(&[], &[], &[m]).unwrap(); t.elapsed() }).collect();
-    lat("commit floor (1 put, same file)", floor);
 
     // 3. Queries on the live index (page cache warm after the first run).
     println!("queries (limit 20, 30 runs, warm; first run cold-ish in brackets):");
@@ -258,5 +298,5 @@ pub fn run(n: usize, dir: &Path) {
     }
     lat("\"th\" pages 1-5 total", v);
     lat("\"th\" page 5 alone", last);
-    println!("sizes: live {live_size:.1} MiB ({:.0} B/msg), rebuild {:.1} MiB ({:.0} B/msg)", live_size * 1048576.0 / n as f64, size(&rpath), size(&rpath) * 1048576.0 / n as f64);
+    println!("sizes: live {live_size:.1} MiB ({:.0} B/msg of the {} in segments), full build {:.1} MiB ({:.0} B/msg)", live_size * 1048576.0 / st.seg_docs.max(1) as f64, st.seg_docs, size(&rpath), size(&rpath) * 1048576.0 / rs.seg_docs.max(1) as f64);
 }

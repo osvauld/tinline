@@ -16,7 +16,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 /// Longest word prefix indexed (chars). A longer query word is looked up by this prefix and
 /// checked against the text.
-pub const MAX_PREFIX: usize = 16;
+pub const MAX_PREFIX: usize = 8;
 
 /// Normalized text: the chars and, for each, the index of the original char it came from.
 #[derive(Debug, Default)]
@@ -129,7 +129,7 @@ fn other_words(cs: &[char], base: usize, out: &mut Vec<Word>) {
     }
 }
 
-/// What gets indexed for a text: every word's prefixes from 2 to `MAX_PREFIX` chars (a 1-char
+/// What gets indexed for a text: every word's prefixes from 2 to `MAX_PREFIX` (8) chars (a 1-char
 /// word as itself), every bigram of a bigram-script run (a 1-char run as itself).
 pub fn index_terms(text: &str) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
@@ -342,15 +342,15 @@ mod tests {
         assert!(index_terms("🎉👍").is_empty());
     }
 
-    // KIND: unit (S1) — prefixes 2..=16 chars, a 1-char word as itself.
+    // KIND: unit (v2) — prefixes 2..=8 chars, a 1-char word as itself.
     #[test]
     fn prefixes() {
         let t = index_terms("a hello");
         assert_eq!(t.iter().cloned().collect::<Vec<_>>(), ["a", "he", "hel", "hell", "hello"]);
         let long = index_terms("internationalization");
-        assert_eq!(long.len(), 15);
-        assert!(long.contains("internationaliza"));
-        assert!(!long.contains("internationalizat"));
+        assert_eq!(long.len(), 7);
+        assert!(long.contains("internat"));
+        assert!(!long.contains("internati"));
         let q = &query_terms("internationalization")[0];
         assert_eq!(q.lookup().chars().count(), MAX_PREFIX);
         assert!(long.contains(&q.lookup()));
