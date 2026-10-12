@@ -1,47 +1,57 @@
-# Svelte + TS + Vite
+# Tinline design playground
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+One app to try how Tinline looks, moves and sounds, on Android and desktop, light and dark.
+It is a design tool, not the product: the core (Rust) is simulated in one in-memory store, and
+the Simulation drawer plays the other side (people, network, hosts, calls). Behaviour follows the
+real core and the decisions in `PLAN.md` §7; anything not decided is tagged **Proposed** in the
+drawer, never in app copy.
 
-## Recommended IDE Setup
+## Run
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
-
-## Need an official Svelte framework?
-
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
-
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```sh
+npm install
+npm run dev          # http://127.0.0.1:5178/
+npm run check        # svelte-check + tsc
 ```
+
+Use Chromium (the Android WebView engine). Click the page once so the browser allows sound.
+
+- Header: **Android / Desktop**, theme (system / light / dark), and the sliders icon for the
+  **Simulation** drawer. The drawer takes its own column, so it never hides the app.
+- Deep links: `?form=android|desktop&theme=light|dark` plus a hash route, e.g. `#/chat/hike`,
+  `#/chat/hike/info`, `#/search/lunch`, `#/me`, `#/settings`, `#/contact/arjun`.
+
+## What's in it
+
+| Area | Where | Drawer section |
+|---|---|---|
+| Sign-up and unlock | `src/screens/gate` | Sign-up and unlock |
+| Chats, conversation, find in chat | `src/screens/home`, `src/screens/chat` | Chat |
+| Groups: roles, invites, hosts, flags, chat requests | `src/screens/groups` | Groups |
+| 1:1 voice calls, call waiting, lock screen / notifications / desktop toast | `src/lib/calls` | Calls |
+| Call background (Fog / Clouds), moved by the call sounds | `src/lib/calls/field` | Calls → Call background |
+| Generated call sounds (palettes) | `src/lib/fx/audio.ts` | Environment → Call sounds |
+| Profiles and pictures | `src/screens/profile`, `src/screens/settings` | Profiles |
+| Search | `src/screens/search` | Search |
+| Logo (parametric mark D) and live status | `src/lib/brand` (icon exports: `../brand/`) | — |
+
+## How it's built
+
+- **One store** (`src/lib/model/store.svelte.ts`): screens read it directly; area actions live in
+  `src/lib/model/actions/*`. Times come from the sim clock (`clock.svelte.ts`).
+- **One motion and sound layer**: durations and easing tokens in `src/lib/fx/motion.ts`,
+  reduced motion in `reduced.svelte.ts`, sound via the fx bus (`emitFx` / `onFx`) into the
+  WebAudio synth. The call background and the logo read the same note schedule as the sounds.
+- **Rules the UI keeps**: nothing on screen moves when text appears or changes (reserved rows,
+  in-place cross-fades, tabular numbers); respect reduced motion; 44 px targets; logical CSS.
+
+## Tests
+
+Playwright flows against the running dev server (`BASE=http://127.0.0.1:5178/` by default):
+
+```sh
+node tests/chat.flow.js      # also: gate, groups, call, waiting, system, field, profile, search, layout
+```
+
+`tests/layout.flow.js` measures layout shift (Chromium Layout Instability API + anchor geometry)
+across every area. Run the area's own flow while working; the full set once before merging.
