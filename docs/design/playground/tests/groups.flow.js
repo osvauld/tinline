@@ -285,6 +285,21 @@ const smooth = (h, full) => {
     ok('android: member sheet opens as a bottom sheet', await p.getByRole('dialog').evaluate((e) => { const r = e.getBoundingClientRect(); return r.bottom > 800; }));
     await done(p);
 
+    /* ---------- flagged member sees flags before removal ---------- */
+    p = await open(b, 'android', 'chat/hike/info');
+    ok('flags on me: hidden with no flags', (await p.locator('#flag-h').count()) === 0);
+    await drawer(p);
+    await p.selectOption('select[aria-label="Flag who"]', 'me');
+    await p.selectOption('select[aria-label="Flagged by"]', 'sam');
+    await p.getByRole('button', { name: 'Flag', exact: true }).click();
+    await closeDrawer(p); await p.waitForTimeout(400);
+    ok('flags on me: section shows 1 of 3', /1 of 3/i.test(await p.locator('#flag-h').innerText()));
+    ok('flags on me: names who flagged', /Sam Rao/.test(await p.locator('section[aria-labelledby=flag-h]').innerText()));
+    ok('flags on me: my row shows the count', /1 of 3 flags/.test(await member(p, 'me').innerText()));
+    await p.getByRole('button', { name: 'Back to conversation' }).click(); await p.waitForTimeout(400);
+    ok('flags on me: system line in the conversation', (await p.getByText('Sam Rao flagged you for removal · 1 of 3').count()) === 1);
+    await done(p);
+
     /* ---------- console ---------- */
     ok('no page errors', allErrs.length === 0, allErrs.join(' | '));
   } catch (e) {

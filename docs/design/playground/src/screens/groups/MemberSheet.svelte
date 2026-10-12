@@ -107,7 +107,7 @@
         <p class="lead">Yours will be flag {next} of {FLAGS_TO_REMOVE}.
           {#if next >= FLAGS_TO_REMOVE}It’s the last one, so {fn} is removed from the group right away.{:else}At {FLAGS_TO_REMOVE} flags {fn} is removed from the group.{/if}</p>
         <p>Flags can’t be taken back, and removal is final. The same admin can flag more than once; each flag counts.</p>
-        <p>Flagging is a decision for the group. It is separate from blocking, which only affects you. If {fn} is removed, they are told who flagged them and when.</p>
+        <p>Flagging is a decision for the group. It is separate from blocking, which only affects you. {fn} sees each flag: who made it and when.</p>
         <div class="acts"><Btn variant="quiet" data-autofocus onclick={() => (view = 'actions')}>Back</Btn>
           <Btn variant={next >= FLAGS_TO_REMOVE ? 'danger' : 'outline'} onclick={flag}>Flag {fn}</Btn></div>
       </div>

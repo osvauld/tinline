@@ -11,6 +11,7 @@
   import MemberSheet from './MemberSheet.svelte';
   import InviteSheet from './InviteSheet.svelte';
   import Removal from './Removal.svelte';
+  import FlagsOnMe from './FlagsOnMe.svelte';
   import { fold, foldOut, flipMs } from './fold';
   import { flip } from 'svelte/animate';
   import { db, chat as getChat, firstName, isGroup, person } from '../../lib/model/store.svelte';
@@ -95,6 +96,7 @@
     {:else if g.status === 'left'}
       <p class="note pad">You can still read the posts on this device. To come back, someone in the group has to invite you again.</p>
     {:else}
+      {#if flagCount(g, 'me') > 0}<FlagsOnMe {g} />{/if}
       <!-- ---------- invites (admins) ---------- -->
       {#if admin}
         <section class="sec" aria-labelledby="inv-h">
@@ -181,7 +183,7 @@
               <button type="button" class="mrow press" data-member={m.id} aria-label="{fullName(m.id)}{m.id === 'me' ? ' (you)' : ''}, {roleLabel(m.role)}{m.host ? ', host' : ''}{m.callHost ? ', call host' : ''}. Open actions" onclick={() => open({ kind: 'member', id: m.id })}>
                 <Avatar name={fullName(m.id)} hue={hueOf(m.id)} size={40} />
                 <span class="t"><b>{m.id === 'me' ? `${fullName(m.id)} (you)` : fullName(m.id)}</b>
-                  <small>{sub(m)}{#if admin && fc > 0 && m.role !== 'owner'}<span class="fc">{' · '}{fc} of {FLAGS_TO_REMOVE} flags</span>{/if}{#if rn}<span class="rq">{' · '}{rn}</span>{/if}</small></span>
+                  <small>{sub(m)}{#if (admin || m.id === 'me') && fc > 0 && m.role !== 'owner'}<span class="fc">{' · '}{fc} of {FLAGS_TO_REMOVE} flags</span>{/if}{#if rn}<span class="rq">{' · '}{rn}</span>{/if}</small></span>
                 <span class="marks">
                   {#if m.role !== 'member'}<Pill tone={m.role}>{roleLabel(m.role)}</Pill>{/if}
                   {#if m.host}<span class="mk" title="Host" role="img" aria-label="Host"><Icon name="server" size={14} /></span>{/if}

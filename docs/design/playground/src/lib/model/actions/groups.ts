@@ -103,7 +103,9 @@ export function flagMember(g: Group, target: Id, by: Id = 'me'): { ok: boolean; 
   if (!t || !f || !isAdminRole(f.role) || t.role === 'owner' || target === by || g.status !== 'active') return { ok: false, removed: false };
   g.flags[target] = [...(g.flags[target] ?? []), by];
   g.flagAt = { ...(g.flagAt ?? {}), [target]: [...(g.flagAt?.[target] ?? []), clock.now] };
-  if (g.flags[target].length < FLAGS_TO_REMOVE) return { ok: true, removed: false };
+  const n = g.flags[target].length;
+  if (target === 'me' && n < FLAGS_TO_REMOVE) sys(g, `${displayName(by)} flagged you for removal · ${n} of ${FLAGS_TO_REMOVE}`, by);
+  if (n < FLAGS_TO_REMOVE) return { ok: true, removed: false };
   removeMember(g, target);
   return { ok: true, removed: true };
 }

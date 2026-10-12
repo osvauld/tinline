@@ -84,7 +84,7 @@
   <div class="notes">
     <p><b>Proposed, not decided.</b></p>
     <ul>
-      <li>Whether a flagged member sees the flags before removal. Default here: no; they are shown who flagged and when only once removed.</li>
+      <li>A flagged member sees each flag (who and when) as it happens, not only after removal. Decided 2026-10-12.</li>
       <li>The owner leaving. Here the owner can't leave (no way to hand over ownership yet); admins and members can.</li>
       <li>PROVISIONAL (core): the creating device is the group's first host.</li>
       <li>PROVISIONAL (core): invites and short links are bearer grants valid 7 days; a link names one host; cancelling does not recall a link someone already opened.</li>
