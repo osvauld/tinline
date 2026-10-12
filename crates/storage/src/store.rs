@@ -122,6 +122,14 @@ impl Store {
         Ok(db.compact()?)
     }
 
+    /// Runs `f` while the store is held exclusively, as a compaction holds it (tests of what
+    /// must not wait for the file).
+    #[doc(hidden)]
+    pub fn while_exclusive<R>(&self, f: impl FnOnce() -> R) -> R {
+        let _g = self.db.write().unwrap_or_else(|e| e.into_inner());
+        f()
+    }
+
     pub fn is_closed(&self) -> bool {
         self.db.read().unwrap_or_else(|e| e.into_inner()).is_none()
     }

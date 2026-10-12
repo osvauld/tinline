@@ -183,6 +183,17 @@ pub struct Stats {
 
 /// Where `maintain` spends its time, in ns: pick, read old segments, build, write, swap (for
 /// the benchmarks).
+/// Lowers the priority of the calling thread (segment builders must not take the core a send
+/// is running on from it).
+fn background_thread() {
+    #[cfg(unix)]
+    // SAFETY: plain syscalls on the calling thread's own id; failure is ignored.
+    unsafe {
+        let tid = libc::syscall(libc::SYS_gettid) as libc::id_t;
+        libc::setpriority(libc::PRIO_PROCESS, tid, 15);
+    }
+}
+
 pub static PHASES: [std::sync::atomic::AtomicU64; 5] = [const { std::sync::atomic::AtomicU64::new(0) }; 5];
 
 fn phase(i: usize, since: Instant) -> Instant {
@@ -207,6 +218,8 @@ pub struct SearchIndex {
     ticker: std::sync::atomic::AtomicBool,
     /// Segments were written or dropped since the last look at the file's free space.
     file_changed: std::sync::atomic::AtomicBool,
+    /// `close` was called (the hot tier is wiped; `apply` ignores changes).
+    closed: std::sync::atomic::AtomicBool,
 }
 
 impl SearchIndex {
@@ -234,6 +247,7 @@ impl SearchIndex {
             today: Mutex::new(None),
             ticker: std::sync::atomic::AtomicBool::new(false),
             file_changed: std::sync::atomic::AtomicBool::new(true),
+            closed: std::sync::atomic::AtomicBool::new(false),
         };
         let current = matches!(me.db.get("v"), Ok(Some(v)) if v == VERSION.to_be_bytes());
         let man = if current { me.db.get("m").ok().flatten().and_then(|b| bincode::deserialize::<Manifest>(&b).ok()) } else { None };
@@ -250,13 +264,16 @@ impl SearchIndex {
     /// Lets the file go for every holder (stop of the account's stores) and forgets the hot
     /// tier.
     pub fn close(&self) {
+        self.closed.store(true, std::sync::atomic::Ordering::SeqCst);
         self.db.close();
         self.hot.lock().wipe();
         *self.view.write() = Arc::new(View::default());
     }
 
+    /// Whether `close` was called. A flag, not the store's lock: that one is held by a
+    /// compaction, and the send path asks this.
     pub fn is_closed(&self) -> bool {
-        self.db.raw().is_closed()
+        self.closed.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Whether the caller is the one to run the periodic maintenance of this index.
@@ -519,7 +536,7 @@ impl SearchIndex {
     }
 
     /// Gives the file's free space back when it is mostly free: more than
-    /// [`COMPACT_MIN_WASTE`] bytes and more than half of the file (segment merges and rewrites
+    /// [`COMPACT_MIN_WASTE`] bytes and more than a third of the file (segment merges and rewrites
     /// leave free pages, and redb grows the file in big steps). Only looks after the file
     /// changed since the last look. Holds the maintenance lock, and redb the database, for the
     /// duration (queries wait; `apply` does not touch the file except to load a cold day), so
@@ -530,7 +547,7 @@ impl SearchIndex {
             return Ok(None);
         }
         let Some(u) = self.db.raw().usage().map_err(io)? else { return Ok(None) };
-        if u.wasted() <= self.limits().compact_min_waste || u.wasted() * 2 <= u.file_bytes {
+        if u.wasted() <= self.limits().compact_min_waste || u.wasted() * 3 <= u.file_bytes {
             return Ok(None);
         }
         self.compact_locked()
@@ -650,10 +667,12 @@ impl SearchIndex {
         let built: Vec<Built> = {
             let slots: Vec<Mutex<Option<Built>>> = jobs.iter().map(|_| Mutex::new(None)).collect();
             let at = std::sync::atomic::AtomicUsize::new(0);
-            let workers = std::thread::available_parallelism().map_or(1, |n| n.get()).min(jobs.len()).max(1);
+            // Half the cores, at low priority: a send must never wait for a core.
+            let workers = (std::thread::available_parallelism().map_or(1, |n| n.get()) / 2).max(1).min(jobs.len()).max(1);
             std::thread::scope(|sc| {
                 for _ in 0..workers {
                     sc.spawn(|| {
+                        background_thread();
                         let tok = |t: &str| self.keyer.tok(t);
                         loop {
                             let i = at.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -1578,6 +1597,30 @@ mod tests {
             ix.close();
         }
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    // KIND: invariant (v2) — a send (`apply`, and the closed check in front of it) never waits for
+    // the file: while a compaction holds the store exclusively, they complete.
+    #[test]
+    fn apply_does_not_wait_for_a_compaction() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        at_day(&ix, "2026-06-01");
+        let r = row("dm.p", "1", T0 + 10, "hello there");
+        ix.db.raw().while_exclusive(|| {
+            std::thread::scope(|sc| {
+                let h = sc.spawn(|| {
+                    assert!(!ix.is_closed());
+                    ix.apply(std::slice::from_ref(&r), &[], &[mark(&r, 1)]).unwrap();
+                });
+                let t = Instant::now();
+                while !h.is_finished() {
+                    assert!(t.elapsed() < Duration::from_secs(5), "apply is waiting for the store");
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                h.join().unwrap();
+            });
+        });
+        assert_eq!(ids(&ix, "hel"), ["1"]);
     }
 
 }
