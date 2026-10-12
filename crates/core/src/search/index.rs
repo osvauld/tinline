@@ -466,6 +466,7 @@ impl SearchIndex {
         for g in man.segs.iter().filter(|g| g.days.is_empty()) {
             ops.push(Op::DeletePrefix(format!("x/{:08x}/", g.id)));
             ops.push(Op::DeletePrefix(format!("y/{:08x}/", g.id)));
+            ops.push(Op::DeletePrefix(format!("z/{:08x}/", g.id)));
         }
         man.segs.retain(|g| !g.days.is_empty());
         ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
