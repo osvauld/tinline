@@ -32,7 +32,7 @@
 
 <style>
   .mini { position: absolute; z-index: 38; inset-inline-end: 12px; inset-block-end: 92px; inline-size: 92px; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 16px; overflow: hidden; cursor: pointer; background: #15171c;
-    box-shadow: 0 0 0 1.5px rgb(255 255 255 / .38), 0 8px 24px rgb(0 0 0 / .3); }
+    box-shadow: 0 0 0 1.5px rgb(255 255 255 / .38), var(--shadow-pop); }
   .mini.frozen { filter: saturate(.8) brightness(.8); }
   .mir { position: absolute; inset: 0; display: grid; }
   .mir.flipx { transform: scaleX(-1); }

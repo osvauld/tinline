@@ -41,7 +41,7 @@
   .w code { font: 15px/20px ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
   .hidden .w { filter: blur(7px); user-select: none; pointer-events: none; }
   .reveal { position: absolute; inset: 0; margin: auto; inline-size: max-content; block-size: 48px; padding-inline: 22px; border-radius: var(--r-ctl); border: 1px solid var(--line);
-    background: var(--surface); color: var(--ink); font-weight: 650; cursor: pointer; box-shadow: var(--shadow-pop); }
+    background: var(--surface-raised); color: var(--ink); font-weight: 650; cursor: pointer; box-shadow: var(--shadow-lift); }
   .copy { display: grid; justify-items: start; gap: 2px; }
   .copy small { color: var(--muted); font-size: var(--fs-sub); padding-inline: 4px; }
   :global([data-form='desktop']) .grid { grid-template-columns: repeat(3, 1fr); }

@@ -32,7 +32,7 @@
   /* Zero-height anchor sitting directly above the controls; the card grows upward from it, so the name/avatar never move. */
   .slot { position: relative; block-size: 0; flex: none; z-index: 2; }
   .card { position: absolute; inset: auto 0 22px 0; margin-inline: auto; max-inline-size: 360px; display: grid; gap: 12px; padding: 14px 14px 12px; text-align: start;
-    background: var(--surface); color: var(--ink); border: 1px solid var(--hairline); border-radius: 22px; box-shadow: var(--shadow-pop); }
+    background: var(--surface-raised); color: var(--ink); border: 1px solid var(--hairline); border-radius: 22px; box-shadow: var(--shadow-pop); }
   .who { display: flex; align-items: center; gap: 12px; min-inline-size: 0; }
   .tx { display: grid; min-inline-size: 0; }
   .tx b { font-size: var(--fs-body); font-weight: 650; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

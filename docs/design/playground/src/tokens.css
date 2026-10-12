@@ -53,8 +53,18 @@
   --r-sheet:24px;                    /* dialogs, bottom sheets */
   --btn:44px;                        /* minimum touch target */
 
+  /* DEPTH LADDER (PHILOSOPHY §9). Flat = hairline, no shadow. Each step is two layers: contact + ambient.
+     lift  - touchable raised controls: round call buttons, "to bottom" arrow, selected segment, switch knob, member badge
+     pop   - menus, popovers, banners, toasts, cards floating over content
+     sheet - dialogs, bottom sheets, drawers, the notification shade
+     Light tints with the palette's green-black (9 23 17), never grey. Dark leans on --surface-raised (lighter
+     surface) and the shadow only helps. Raised things use --surface-raised, never a one-off colour or shadow.
+     --ring-focus is the soft halo for a focused text field. */
+  --surface-raised:var(--surface);
+  --shadow-lift:0 1px 2px rgb(9 23 17 / .10),0 3px 10px rgb(9 23 17 / .10);
   --shadow-pop:0 2px 6px rgb(9 23 17 / .08),0 10px 32px rgb(9 23 17 / .14);
   --shadow-sheet:0 2px 6px rgb(9 23 17 / .08),0 18px 56px rgb(9 23 17 / .18);
+  --ring-focus:0 0 0 3px color-mix(in srgb,var(--accent-ink) 14%,transparent);
 }
 
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){
@@ -74,6 +84,8 @@
   --av3-bg:#58431a; --av3-ink:#ffe2ae;
   --av4-bg:#3a4f26; --av4-ink:#d8f0c0;
   --av5-bg:#4a3458; --av5-ink:#ecd9fa;
+  --surface-raised:var(--surface-2);
+  --shadow-lift:0 1px 2px rgb(0 0 0 / .34),0 3px 10px rgb(0 0 0 / .28);
   --shadow-pop:0 2px 6px rgb(0 0 0 / .3),0 10px 32px rgb(0 0 0 / .4);
   --shadow-sheet:0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);
 }}
@@ -94,6 +106,8 @@
   --av3-bg:#58431a; --av3-ink:#ffe2ae;
   --av4-bg:#3a4f26; --av4-ink:#d8f0c0;
   --av5-bg:#4a3458; --av5-ink:#ecd9fa;
+  --surface-raised:var(--surface-2);
+  --shadow-lift:0 1px 2px rgb(0 0 0 / .34),0 3px 10px rgb(0 0 0 / .28);
   --shadow-pop:0 2px 6px rgb(0 0 0 / .3),0 10px 32px rgb(0 0 0 / .4);
   --shadow-sheet:0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);
 }

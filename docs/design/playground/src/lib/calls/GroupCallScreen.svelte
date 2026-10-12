@@ -249,7 +249,7 @@
   .nm { max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sub); line-height: 18px; font-weight: 500; transition: font-weight var(--dur-enter); }
   .speaking .nm { font-weight: 650; }
   .mb { position: absolute; inset-inline-end: -2px; inset-block-end: -2px; display: grid; place-items: center; inline-size: calc(var(--av) * .3); block-size: calc(var(--av) * .3); min-inline-size: 22px; min-block-size: 22px;
-    border-radius: 50%; background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .18), 0 0 0 2px var(--bg); }
+    border-radius: 50%; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lift), 0 0 0 2px var(--bg); }
   .plus { display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--ink) 11%, var(--surface)); color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
 
   .hnote { position: absolute; inset-inline: 0; inset-block-end: 4px; margin: 0; display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 18px;
@@ -270,7 +270,7 @@
   .controls.two { gap: 56px; }
   .ctl { display: grid; justify-items: center; gap: 8px; inline-size: 76px; font-size: var(--fs-sub); line-height: 18px; font-weight: 500; }
   .round { inline-size: 64px; block-size: 64px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; padding: 0;
-    background: var(--btn-bg, var(--surface)); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 4px 14px rgb(0 0 0 / .10);
+    background: var(--btn-bg, var(--surface)); color: var(--ink); box-shadow: var(--shadow-lift);
     transition: transform var(--dur-release) var(--ease-out), background-color var(--dur-switch) var(--ease-out), color var(--dur-switch) var(--ease-out); }
   .round:hover { background: color-mix(in srgb, var(--btn-bg, var(--surface)) 90%, var(--ink)); }
   .round.tog.on { background: var(--ink); color: var(--bg); }
@@ -290,7 +290,7 @@
 
   .scrim { position: absolute; inset: 0; background: rgb(0 0 0 / .24); }
   .info { position: absolute; inset-inline: 16px; inset-block-end: calc(24px + env(safe-area-inset-bottom)); margin-inline: auto; max-inline-size: 420px; padding: 20px 20px 16px; border-radius: var(--r-sheet);
-    background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sheet); outline: none; }
+    background: var(--surface-raised); color: var(--ink); box-shadow: var(--shadow-sheet); outline: none; }
   .info h3 { margin: 0 0 10px; font-size: var(--fs-title); line-height: 24px; font-weight: 650; }
   .info p { margin: 8px 0 0; font-size: var(--fs-sub); line-height: 19px; color: var(--muted); }
   .info p b { color: var(--ink); }
