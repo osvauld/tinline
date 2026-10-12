@@ -21,7 +21,7 @@
     c: Chat; m: Message; pos: 'solo' | 'first' | 'mid' | 'last'; last: boolean; sender: boolean; fresh: boolean; held: boolean; menuOpen: boolean;
     flash: boolean; onflashend: () => void; popMode: boolean; quoted: Message | undefined;
     onmenu: (m: Message, opener: HTMLElement, mode: 'pop' | 'sheet') => void;
-    onretry: (m: Message) => void; oncancel: (m: Message) => void; onjump: (id: string) => void; oncall: () => void;
+    onretry: (m: Message) => void; oncancel: (m: Message) => void; onjump: (id: string) => void; oncall: (video: boolean) => void;
     /* search: opened on this message from a result (brief highlight); find-in-chat ranges (UTF-16) and whether this is the current match */
     found?: boolean; find?: HitRange[]; findCur?: boolean;
   } = $props();
@@ -69,8 +69,8 @@
 {#if call}
   <li class="m callrec {mine ? 'me' : 'them'} g-solo" class:rise={fresh} data-mid={m.id}>
     <div class="line">
-      <button type="button" class="pill" class:bad={callBad} onclick={oncall}
-        aria-label="{callText}, {hhmm(m.at)}. {call.group ? 'Start or join a call in this group' : `Call ${c.kind === 'direct' ? firstName(c.person) : 'the group'} back`}">
+      <button type="button" class="pill" class:bad={callBad} onclick={() => oncall(call.kind === 'video')}
+        aria-label="{callText}, {hhmm(m.at)}. {call.group ? 'Start or join a call in this group' : `${call.kind === 'video' && c.kind === 'direct' ? 'Video call' : 'Call'} ${c.kind === 'direct' ? firstName(c.person) : 'the group'} back`}">
         {#if call.kind === 'video'}<VIcon name="video" size={16} />{:else}<Icon name="phone" size={16} />{/if}<span class="t">{callText}</span><time>{hhmm(m.at)}</time>
       </button>
     </div>

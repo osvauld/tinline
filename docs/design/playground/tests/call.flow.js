@@ -1,7 +1,7 @@
 /* 1:1 voice call flows against the running dev server (http://127.0.0.1:5178).
    Run: node tests/call.flow.js   (BASE=… to override; SHOTS=/dir/ to also write screenshots). Prints PASS/FAIL per check. */
 import { createRequire } from 'node:module';
-const L = createRequire(import.meta.url)('/home/abe/p2p_chat/.claude/worktrees/design-refinement/docs/design/refined/qa/lib.js');
+const L = createRequire(import.meta.url)('../../refined/qa/lib.js');
 const BASE = process.env.BASE || 'http://127.0.0.1:5178/';
 const SHOTS = process.env.SHOTS || '';
 let pass = 0, fail = 0;
@@ -404,6 +404,20 @@ async function contrast(p) {
     ok('no WebGL: CSS gradient fallback renders', (await p.locator('.callscreen [data-render]').getAttribute('data-render')) === 'css' && /radial-gradient/.test(await p.locator('.callscreen [data-render]').evaluate((e) => e.style.backgroundImage)));
     await pg(p, () => window.__pg.call.hangup());
     await p.close();
+
+    /* ===== top row balance: the right button mirrors the minimize chevron; the logo stays centred ===== */
+    for (const form of ['android', 'desktop']) {
+      p = await mk(form, 'chat/arjun'); 
+      await startFromChat(p); await pg(p, () => window.__pg.call.remote('answer')); await until(p, () => window.__pg.call.phase === 'active'); await wait(p, 500);
+      const bx = await pg(p, () => { const r = (s) => document.querySelector(s).getBoundingClientRect(); const a = r('.callscreen .top .min:not(.end-side)'), c = r('.callscreen .top .end-side'), m = r('.callscreen .top .mark'), s = r('.callscreen'); return { a: [a.left - s.left, a.right - s.left, a.top, a.bottom], c: [c.left - s.left, c.right - s.left, c.top, c.bottom], mid: (m.left + m.right) / 2 - s.left, w: s.width }; });
+      ok(`${form}: top row is mirrored (right button box mirrors the chevron around the centre line, within 0.5 px)`, Math.abs(bx.a[0] - (bx.w - bx.c[1])) < .5 && Math.abs(bx.a[1] - (bx.w - bx.c[0])) < .5 && Math.abs(bx.a[2] - bx.c[2]) < .5 && Math.abs(bx.a[3] - bx.c[3]) < .5, JSON.stringify(bx));
+      ok(`${form}: logo still centred`, Math.abs(bx.mid - bx.w / 2) < .5, JSON.stringify(bx));
+      await p.getByRole('button', { name: 'About this call' }).click(); await wait(p, 400);
+      ok(`${form}: the right button opens the call details, which say end-to-end encrypted`, /End-to-end encrypted/.test(await p.locator('.callscreen .info').innerText()));
+      await p.keyboard.press('Escape'); await wait(p, 800);
+      ok(`${form}: Escape closes the details and keeps the call on screen`, (await p.locator('.callscreen .info').count()) === 0 && (await p.locator('.callscreen').count()) === 1);
+      await pg(p, () => window.__pg.call.hangup()); await idle(p);
+    }
 
     const errs = pages.flatMap((q) => q.errs || []);
     ok('0 console errors across all flows', errs.length === 0, errs.slice(0, 3).join(' | '));

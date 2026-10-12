@@ -146,11 +146,11 @@
   });
 
   /** Header button and call-record pills. The machine refuses blocked / message-only people; group calls are step 6. */
-  function startCall() {
+  function startCall(video = false) {
     if (c?.kind === 'group') { gcall.start(c.id); return; }
     if (c?.kind !== 'direct') return;
     if (gcall.holdsLine) { gcall.inCallToast(); return; }   // InCall: one line, group and 1:1 calls exclude each other
-    call.place(c.person);
+    call.place(c.person, video === true);
   }
   function startVideo() {
     if (c?.kind !== 'direct') return;
@@ -380,7 +380,7 @@
           <button type="button" class="ib press" class:dim={!callable} aria-label="Video call" aria-disabled={!callable} title={callable ? 'Video call' : callTitle}
             onclick={() => { if (callable) startVideo(); }}><VIcon name="video" size={22} /></button>
         {:else if c.status === 'active'}<button type="button" class="ib press" class:dim={noCallHost && !gLive} class:live={!!gLive} aria-label={gLabel} aria-disabled={noCallHost && !gLive} title={callTitle} data-gcall-btn
-          onclick={startCall}><Icon name="phone" /></button>{/if}
+          onclick={() => startCall()}><Icon name="phone" /></button>{/if}
         <button type="button" class="ib press" aria-label="Find in this chat" title="Find in this chat (Ctrl+F)" onclick={() => find.show()}><Icon name="search" /></button>
         <button type="button" class="ib press" aria-label="Chat details" onclick={openDetails}><Icon name="info" /></button>
         {#if find.open}<FindBar count={fm.length} onclose={closeFind} />{/if}
@@ -412,7 +412,7 @@
                 {c} m={it.m} pos={it.pos} last={it.m.id === c.messages[c.messages.length - 1]?.id} sender={it.sender} fresh={!initialIds.has(it.m.id)} held={heldId === it.m.id}
                 menuOpen={menu?.m.id === it.m.id} flash={flashId === it.m.id} found={foundId === it.m.id} find={fmap.get(it.m.id)} findCur={curId === it.m.id} onflashend={() => (flashId = null)} {popMode}
                 quoted={it.m.replyTo ? c.messages.find((x) => x.id === it.m.replyTo) : undefined}
-                onmenu={openMenu} onretry={retry} oncancel={cancel} onjump={jumpTo} oncall={startCall}
+                onmenu={openMenu} onretry={retry} oncancel={cancel} onjump={jumpTo} oncall={(video) => startCall(video)}
               />
             {/if}
           {/each}

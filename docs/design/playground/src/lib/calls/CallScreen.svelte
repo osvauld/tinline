@@ -2,7 +2,7 @@
   /* The full call screen: cloud field behind, avatar (plain, no ring), name, status, timer, controls.
      Text is ink-level (not muted) so the field can carry real colour in dark mode.
      Copy: no encryption claim before connection; no anonymity or IP-privacy claims. */
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { fade } from 'svelte/transition';
   import Avatar from '../ui/Avatar.svelte';
   import Icon from '../ui/Icon.svelte';
@@ -39,6 +39,13 @@
   /* The same mark as the app bar, so the call's state reads here too: sways while ringing, pulls taut on connect. */
   const look = $derived(statusLook());
 
+  /* About this call: the same calm card the group call uses for its host. */
+  let infoOpen = $state(false);
+  let infoBtn = $state<HTMLElement>();
+  let infoCard = $state<HTMLElement>();
+  async function openInfo() { infoOpen = true; await tick(); infoCard?.focus({ preventScroll: true }); }
+  async function closeInfo() { infoOpen = false; await tick(); infoBtn?.focus({ preventScroll: true }); }
+
   let root: HTMLElement;
   let avatarEl = $state<HTMLElement>();
   let whoEl = $state<HTMLElement>();
@@ -55,9 +62,10 @@
   });
 
   function key(e: KeyboardEvent) {
+    if (e.key === 'Escape' && infoOpen) { e.preventDefault(); closeInfo(); return; }
     if (e.key === 'Escape' && live) { e.preventDefault(); call.minimize(); return; }
     if (e.key !== 'Tab') return;
-    const items = [...root.querySelectorAll<HTMLElement>('button:not([disabled])')];
+    const items = [...(infoOpen && infoCard ? infoCard : root).querySelectorAll<HTMLElement>('button:not([disabled])')];
     if (!items.length) return;
     const first = items[0], last = items[items.length - 1], a = document.activeElement;
     if (e.shiftKey && (a === first || a === root)) { e.preventDefault(); last.focus(); }
@@ -78,13 +86,12 @@
   <!-- video: their picture sits over the cloud field, under everything else -->
   <VideoStage />
 
-  <div class="content">
+  <div class="content" inert={infoOpen}>
     <header class="top" inert={idleHide}>
-      {#if live}
-        <button type="button" class="min press" aria-label="Minimize call" onclick={() => call.minimize()}><Icon name="chev" size={24} /></button>
-      {/if}
+      <button type="button" class="min press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-label="Minimize call" onclick={() => call.minimize()}><Icon name="chev" size={24} /></button>
       <VideoTitle />
       <span class="mark" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /></span>
+      <button type="button" class="min end-side press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} bind:this={infoBtn} aria-expanded={infoOpen} aria-haspopup="dialog" aria-label="About this call" onclick={openInfo}><Icon name="info" size={22} /></button>
     </header>
 
     <VideoChip />
@@ -159,6 +166,19 @@
     </div>
   </div>
   {#if vid.camOn}<SelfView />{/if}
+
+  {#if infoOpen}
+    <div class="scrim" role="presentation" onclick={closeInfo} transition:fade={{ duration: fadeMs }}></div>
+    <div class="info" role="dialog" aria-modal="true" aria-label="About this call" tabindex="-1" bind:this={infoCard} in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>
+      <h3>About this call</h3>
+      {#if phase === 'active' || phase === 'reconnecting'}
+        <p><b>End-to-end encrypted.</b> {vid.videoCall ? 'Your voice and picture go' : 'Your voice goes'} straight to {name}’s device, scrambled so that only the two of you can {vid.videoCall ? 'hear and see them' : 'hear it'}. Nobody in between can.</p>
+      {:else}
+        <p>Connecting to {name}. Once the call is connected it is end-to-end encrypted: only the two of you can listen.</p>
+      {/if}
+      <button type="button" class="b press" data-autofocus onclick={closeInfo}>Got it</button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -173,6 +193,9 @@
   .top .mark { position: absolute; inset-inline-start: 50%; inset-block-start: 50%; translate: -50% -50%; display: inline-flex; pointer-events: none; }
   :global([dir='rtl']) .top .mark { translate: 50% -50%; }
   .min { inline-size: var(--btn); block-size: var(--btn); border-radius: 50%; border: 0; background: transparent; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+  .min { transition: opacity var(--dur-crossfade) var(--ease-out); }
+  .min.gone { opacity: 0; pointer-events: none; }
+  .top .end-side { position: absolute; inset-inline-end: 0; inset-block-start: 50%; translate: 0 -50%; }
   .min:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
   .who { flex: 1; min-block-size: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-block-end: 8cqb; }
   .txt { display: flex; flex-direction: column; align-items: center; max-inline-size: 100%; }
@@ -227,5 +250,13 @@
   .ic { grid-area: x; display: grid; place-items: center; }
   .round :global(.hang) { transform: rotate(135deg); }
   :global(:root[data-motion='reduce']) .round.end:active { transform: none; }
+  .scrim { position: absolute; inset: 0; background: rgb(0 0 0 / .24); z-index: 5; }
+  .info { position: absolute; z-index: 6; inset-inline: 16px; inset-block-end: calc(24px + env(safe-area-inset-bottom)); margin-inline: auto; max-inline-size: 420px; padding: 20px 20px 16px; border-radius: var(--r-sheet);
+    background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sheet); outline: none; }
+  .info h3 { margin: 0 0 10px; font-size: var(--fs-title); line-height: 24px; font-weight: 650; }
+  .info p { margin: 8px 0 0; font-size: var(--fs-sub); line-height: 19px; color: var(--muted); }
+  .info p b { color: var(--ink); }
+  .b { margin-block-start: 16px; inline-size: 100%; min-block-size: var(--btn); border: 0; border-radius: 22px; background: var(--accent); color: var(--on-accent); font-weight: 650; font-size: var(--fs-body); cursor: pointer; }
+  .b:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   .round:focus-visible, .min:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 </style>
