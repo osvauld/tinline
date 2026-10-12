@@ -139,7 +139,7 @@
   .ac h2 { margin: 0; }
   .tabs { display: flex; gap: 4px; padding: 3px; border-radius: 20px; background: var(--surface-2); }
   .tab { flex: 1; min-block-size: 36px; border: 0; border-radius: 17px; background: transparent; color: var(--muted); font: inherit; font-weight: 600; font-size: var(--fs-sub); cursor: pointer; }
-  .tab[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12), inset 0 0 0 1px var(--hairline); }
+  .tab[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lift), inset 0 0 0 1px var(--hairline); }
   .body { block-size: 316px; display: grid; place-content: center; justify-items: center; text-align: center; gap: 10px; overflow: hidden; }
   .why { margin: 0; max-inline-size: 34ch; color: var(--muted); font-size: var(--fs-sub); line-height: 19px; text-wrap: balance; }
   .finder { position: relative; inline-size: 220px; block-size: 220px; border-radius: 20px; background: #0e1513; overflow: hidden; }

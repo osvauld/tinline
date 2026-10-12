@@ -86,7 +86,7 @@
   .android .prog { margin-inline-start: auto; }
 
   .desktop { align-items: center; justify-content: center; padding: 24px; background: var(--canvas); }
-  .desktop .card { inline-size: min(600px, 100%); block-size: auto; max-block-size: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sheet); box-shadow: var(--shadow-sheet); overflow: hidden; }
+  .desktop .card { inline-size: min(600px, 100%); block-size: auto; max-block-size: 100%; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--r-sheet); box-shadow: var(--shadow-sheet); overflow: hidden; }
   .desktop .head { padding-block: 12px 0; padding-inline: 12px 32px; }
   .desktop .stage { min-block-size: min(560px, 70dvh); }
   .desktop .brand { margin-inline-start: 0; }

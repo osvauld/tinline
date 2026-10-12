@@ -169,7 +169,7 @@
   .blank.on { opacity: 1; }
 
   /* proposed: the reconcile state, an overlay that fades (nothing moves) */
-  .getting { position: absolute; inset-inline: 16px; inset-block-end: 12px; margin: 0; padding: 8px 14px; display: flex; align-items: center; gap: 8px; border-radius: 14px; background: var(--surface); color: var(--muted);
+  .getting { position: absolute; inset-inline: 16px; inset-block-end: 12px; margin: 0; padding: 8px 14px; display: flex; align-items: center; gap: 8px; border-radius: 14px; background: var(--surface-raised); color: var(--muted);
     box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--hairline); font-size: var(--fs-sub); line-height: 18px; opacity: 0; pointer-events: none; transition: opacity var(--dur-enter) var(--ease-out); }
   .getting.on { opacity: 1; }
 </style>

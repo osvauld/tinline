@@ -74,7 +74,7 @@
   .root.sheetlike { align-items: flex-end; }
   .scrim { position: absolute; inset: 0; background: rgb(10 16 14 / .5); }
   .scrim.clear { background: transparent; }
-  .layer { position: relative; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sheet); overflow: auto; max-height: calc(100% - 32px); }
+  .layer { position: relative; background: var(--surface-raised); color: var(--ink); box-shadow: var(--shadow-sheet); overflow: auto; max-height: calc(100% - 32px); }
   .layer:focus { outline: 0; }
   .layer.dialog { width: min(440px, calc(100% - 32px)); border-radius: var(--r-sheet); }
   .layer.sheetlike { width: 100%; max-width: 520px; border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding-block-end: env(safe-area-inset-bottom); }

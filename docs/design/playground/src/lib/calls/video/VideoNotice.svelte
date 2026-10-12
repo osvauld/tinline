@@ -31,7 +31,7 @@
 <style>
   .slot { position: relative; block-size: 0; flex: none; z-index: 8; }
   .card { position: absolute; inset: auto 0 22px 0; margin-inline: auto; max-inline-size: 360px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 12px 12px 14px;
-    background: var(--surface); color: var(--ink); border: 1px solid var(--hairline); border-radius: 20px; box-shadow: var(--shadow-pop); text-align: start; }
+    background: var(--surface-raised); color: var(--ink); border: 1px solid var(--hairline); border-radius: 20px; box-shadow: var(--shadow-pop); text-align: start; }
   .ic { display: grid; place-items: center; inline-size: 36px; block-size: 36px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 8%, var(--surface)); }
   .tx { display: grid; gap: 2px; min-inline-size: 0; }
   .tx b { font-size: var(--fs-body); font-weight: 650; line-height: 20px; }

@@ -51,7 +51,7 @@
   .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); }
   .s { min-block-size: var(--btn); border: 0; border-radius: 12px; background: transparent; color: var(--muted); font-weight: 600; cursor: pointer;
     transition: background-color var(--dur-switch) var(--ease-out), color var(--dur-switch) var(--ease-out), box-shadow var(--dur-switch) var(--ease-out); }
-  .s[aria-checked='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(9 23 17 / .12), inset 0 0 0 1px var(--hairline); }
+  .s[aria-checked='true'] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lift), inset 0 0 0 1px var(--hairline); }
   .now { margin: 0; font-size: var(--fs-sub); line-height: 19px; color: var(--ink); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
   .now { min-block-size: 19px; }   /* always there: the line (Available / Busy until…) holds the Saved tag */
   .ln { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; }

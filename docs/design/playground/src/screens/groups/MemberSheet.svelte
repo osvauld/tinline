@@ -182,5 +182,5 @@
   .meter i.yours { background: color-mix(in srgb, var(--danger-btn) 45%, var(--line)); }
   .fld { display: grid; gap: 6px; font-size: var(--fs-sub); font-weight: 600; color: var(--muted); }
   .fld textarea { resize: none; padding: 10px 14px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: var(--surface); font-size: var(--fs-body); line-height: 21px; color: var(--ink); font-weight: 400; }
-  .fld textarea:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-ink) 14%, transparent); }
+  .fld textarea:focus { outline: 0; border-color: var(--accent); box-shadow: var(--ring-focus); }
 </style>

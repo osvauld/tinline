@@ -54,6 +54,19 @@ Things at rest are flat, separated by hairlines. Elevation is a short ladder: fl
 (contact + ambient) and tinted with the palette, never plain black grey. In dark mode depth comes
 mostly from lighter surfaces; the shadow only helps.
 
+### Depth
+Tokens live in `tokens.css`; no component writes its own `box-shadow` for elevation.
+- **flat**: lists, cards in a page, bubbles, inputs. Hairline only (`inset 0 0 0 1px`), no shadow.
+- **lift** (`--shadow-lift`): small touchable controls that sit on the surface: round call buttons, the
+  to-bottom arrow, a selected segment or tab, the switch knob, member badges, the reveal button.
+- **pop** (`--shadow-pop`): things that float over content and go away: menus, popovers, banners, toasts,
+  incoming-call cards, the picture-in-picture self view.
+- **sheet** (`--shadow-sheet`): modal surfaces: dialogs, bottom sheets, drawers, the notification shade; a
+  pip being dragged steps up one level.
+- Light shadows are tinted with the palette green-black, never grey. Dark raises with `--surface-raised`
+  (the lighter surface) so the shadow is a helper, not the cue.
+- Focus is an outline or `--ring-focus`, never a shadow level. Rings and inset hairlines stay as they are.
+
 ## 10. Visible and fair
 When something happens to you (a block, a flag, a removal, a declined request), you are told,
 with who and when.

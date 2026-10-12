@@ -31,7 +31,7 @@
 {/if}
 
 <style>
-  .alert { position: absolute; z-index: 44; display: flex; align-items: center; gap: 4px; padding: 8px 10px 8px 8px; background: var(--surface); color: var(--ink);
+  .alert { position: absolute; z-index: 44; display: flex; align-items: center; gap: 4px; padding: 8px 10px 8px 8px; background: var(--surface-raised); color: var(--ink);
     border: 1px solid var(--hairline); border-radius: 20px; box-shadow: var(--shadow-pop); }
   .alert.android { inset: calc(8px + var(--strip, 0px)) 8px auto 8px; }
   .alert.desktop { inset: calc(16px + var(--strip, 0px)) 16px auto auto; inline-size: 380px; }

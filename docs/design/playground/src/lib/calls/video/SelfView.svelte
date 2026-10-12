@@ -86,9 +86,9 @@
 
 <style>
   .pip { position: absolute; z-index: 6; --m: 14px; --t: 98px; --b: 168px; inline-size: 176px; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; touch-action: none; cursor: grab; user-select: none;
-    background: #15171c; box-shadow: 0 0 0 1.5px rgb(255 255 255 / .38), 0 6px 22px rgb(0 0 0 / .32); }
+    background: #15171c; box-shadow: 0 0 0 1.5px rgb(255 255 255 / .38), var(--shadow-pop); }
   .pip.android { inline-size: 96px; aspect-ratio: 3 / 4; --b: 150px; }
-  .pip.dragging { cursor: grabbing; box-shadow: 0 0 0 1.5px rgb(255 255 255 / .6), 0 10px 30px rgb(0 0 0 / .4); }
+  .pip.dragging { cursor: grabbing; box-shadow: 0 0 0 1.5px rgb(255 255 255 / .6), var(--shadow-sheet); }
   .tl { inset-block-start: var(--t); left: var(--m); }
   .tr { inset-block-start: var(--t); right: var(--m); }
   .bl { inset-block-end: var(--b); left: var(--m); }

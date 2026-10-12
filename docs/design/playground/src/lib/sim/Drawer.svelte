@@ -16,7 +16,7 @@
 
 <style>
   .drawer { position: fixed; inset-block: 0; inset-inline-end: 0; width: min(340px, 92vw); z-index: 50; overflow: auto;
-    background: var(--surface); border-inline-start: 1px solid var(--line); box-shadow: var(--shadow-sheet); padding: 8px 16px 24px;
+    background: var(--surface-raised); border-inline-start: 1px solid var(--line); box-shadow: var(--shadow-sheet); padding: 8px 16px 24px;
     animation: slide var(--dur-enter) var(--ease-out); }
   @keyframes slide { from { translate: 24px 0; opacity: 0; } }
   header { display: flex; align-items: center; justify-content: space-between; }

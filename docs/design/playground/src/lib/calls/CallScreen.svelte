@@ -213,7 +213,7 @@
   .idle .top, .idle .controls { opacity: 0; pointer-events: none; }
   .ctl { display: grid; justify-items: center; gap: 8px; inline-size: 76px; font-size: var(--fs-sub); line-height: 18px; font-weight: 500; }
   .round { inline-size: 64px; block-size: 64px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; padding: 0;
-    background: var(--btn-bg, var(--surface)); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 4px 14px rgb(0 0 0 / .10);
+    background: var(--btn-bg, var(--surface)); color: var(--ink); box-shadow: var(--shadow-lift);
     transition: transform var(--dur-release) var(--ease-out), background-color var(--dur-switch) var(--ease-out), color var(--dur-switch) var(--ease-out); }
   .round:hover { background: color-mix(in srgb, var(--btn-bg, var(--surface)) 90%, var(--ink)); }
   .round.tog.on { background: var(--ink); color: var(--bg); }

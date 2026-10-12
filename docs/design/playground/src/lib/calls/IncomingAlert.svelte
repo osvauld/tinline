@@ -38,7 +38,7 @@
 {/if}
 
 <style>
-  .alert { position: absolute; z-index: 45; display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 8px; background: var(--surface); color: var(--ink);
+  .alert { position: absolute; z-index: 45; display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 8px; background: var(--surface-raised); color: var(--ink);
     border: 1px solid var(--hairline); border-radius: 20px; box-shadow: var(--shadow-pop); }
   .alert.android { inset: calc(8px + var(--strip, 0px)) 8px auto 8px; }   /* a waiting call sits under the strip, not over its End button */
   .alert.waiting { flex-wrap: wrap; padding: 8px; }

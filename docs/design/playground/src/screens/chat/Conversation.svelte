@@ -541,7 +541,7 @@
   .empty h3 { color: var(--ink); margin: 14px 0 4px; font-size: var(--fs-body); font-weight: 600; }
   .empty p { margin: 0; }
   .art { inline-size: 52px; block-size: 52px; border-radius: 50%; background: var(--surface-2); color: var(--muted); display: grid; place-items: center; margin: 0 auto; }
-  .tobottom { position: absolute; inset-inline-end: 16px; inset-block-end: 12px; inline-size: 44px; block-size: 44px; border-radius: 50%; border: 0; padding: 0; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-pop); display: grid; place-items: center; cursor: pointer; animation: rise var(--dur-bubbleIn) var(--ease-out); }
+  .tobottom { position: absolute; inset-inline-end: 16px; inset-block-end: 12px; inline-size: 44px; block-size: 44px; border-radius: 50%; border: 0; padding: 0; background: var(--surface-raised); color: var(--ink); box-shadow: var(--shadow-lift); display: grid; place-items: center; cursor: pointer; animation: rise var(--dur-bubbleIn) var(--ease-out); }
   .tobottom .t-badge { position: absolute; inset-block-start: -4px; inset-inline-end: -4px; box-shadow: 0 0 0 2px var(--canvas); }
   @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   .readonly { margin: 0; padding: 6px 16px calc(6px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; column-gap: 4px; background: var(--surface); border-block-start: 1px solid var(--hairline); color: var(--muted); font-size: var(--fs-sub); line-height: 19px; }

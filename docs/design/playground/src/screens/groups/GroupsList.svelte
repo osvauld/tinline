@@ -259,6 +259,6 @@
   .dlg p { margin: 10px 0 0; color: var(--muted); font-size: var(--fs-sub); line-height: 19px; }
   .fld { display: grid; gap: 6px; font-size: var(--fs-sub); font-weight: 600; color: var(--muted); }
   .fld input { min-block-size: var(--btn); padding: 0 14px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: var(--surface); font-size: var(--fs-body); color: var(--ink); font-weight: 400; }
-  .fld input:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-ink) 14%, transparent); }
+  .fld input:focus { outline: 0; border-color: var(--accent); box-shadow: var(--ring-focus); }
   .dacts { display: flex; gap: 8px; justify-content: flex-end; margin-block-start: 18px; }
 </style>
