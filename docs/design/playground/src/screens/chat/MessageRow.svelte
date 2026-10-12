@@ -2,19 +2,24 @@
   /* One message row. The bubble CSS is ported verbatim from refined/chat.html (look unchanged since 3002236);
      keep text and meta contiguous in the markup: the bubble is white-space:pre-wrap. */
   import Icon from '../../lib/ui/Icon.svelte';
-  import { slide } from 'svelte/transition';
+  import { fade, slide } from 'svelte/transition';
+  import { motion } from '../../lib/fx/reduced.svelte';
   import { dur } from '../../lib/fx/motion';
   import { db, firstName, person } from '../../lib/model/store.svelte';
   import { hhmm } from '../../lib/model/clock.svelte';
   import { waitingReason } from '../../lib/model/actions/chat';
   import { SIM } from '../../lib/model/actions/chat';
   import type { Chat, Message } from '../../lib/model/types';
+  import Marked from '../search/Marked.svelte';
+  import type { HitRange } from '../../lib/model/actions/search';
 
-  let { c, m, pos, sender, fresh, held, menuOpen, flash, onflashend, popMode, quoted, onmenu, onretry, oncancel, onjump, oncall }: {
-    c: Chat; m: Message; pos: 'solo' | 'first' | 'mid' | 'last'; sender: boolean; fresh: boolean; held: boolean; menuOpen: boolean;
+  let { c, m, pos, last, sender, fresh, held, menuOpen, flash, onflashend, popMode, quoted, onmenu, onretry, oncancel, onjump, oncall, found = false, find, findCur = false }: {
+    c: Chat; m: Message; pos: 'solo' | 'first' | 'mid' | 'last'; last: boolean; sender: boolean; fresh: boolean; held: boolean; menuOpen: boolean;
     flash: boolean; onflashend: () => void; popMode: boolean; quoted: Message | undefined;
     onmenu: (m: Message, opener: HTMLElement, mode: 'pop' | 'sheet') => void;
     onretry: (m: Message) => void; oncancel: (m: Message) => void; onjump: (id: string) => void; oncall: () => void;
+    /* search: opened on this message from a result (brief highlight); find-in-chat ranges (UTF-16) and whether this is the current match */
+    found?: boolean; find?: HitRange[]; findCur?: boolean;
   } = $props();
 
   const mine = $derived(m.from === 'me');
@@ -48,6 +53,7 @@
   const quoteWho = $derived(quoted ? (quoted.from === 'me' ? 'You' : firstName(quoted.from)) : '');
   const quoteText = $derived(quoted ? (quoted.deleted ? 'Message deleted' : quoted.text || quoted.file?.name || 'Call') : 'Original message unavailable');
   const gone = $derived(!!m.deleted);
+  const note = (n: Element, o: { duration: number }) => (last ? fade(n, o) : slide(n, o));
 </script>
 
 {#if call}
@@ -62,15 +68,17 @@
 {:else}
   <li class="m {mine ? 'me' : 'them'} g-{pos}" class:rise={fresh} class:menu-open={menuOpen} class:popm={popMode} data-mid={m.id}>
     <div class="line">
-      <div class="bub" class:held class:gone class:emoji class:flash onanimationend={() => flash && onflashend()}>{#if sender}<span class="who" style:color={hueOf(m.from)}>{firstName(m.from)}</span>{/if}{#if gone}{mine ? 'You deleted this message' : fn + ' deleted this message'}<span class="meta"><time>{hhmm(m.at)}</time></span>{:else}{#if m.replyTo}{#if quoted}<button type="button" class="quote" onclick={() => onjump(quoted.id)} aria-label="Replying to {quoteWho}: {quoteText}. Jump to message"><b style:color={c.kind === 'group' && quoted.from !== 'me' ? hueOf(quoted.from) : undefined}>{quoteWho}</b><span>{quoteText}</span></button>{:else}<span class="quote"><span>{quoteText}</span></span>{/if}{/if}{#if f}<div><div class="file"><span class="ficon"><Icon name={f.kind === 'image' ? 'image' : 'file'} size={22} /></span><span class="fi"><span class="fn" dir="auto" title={f.name}>{f.name}</span><span class="fm">{kindLabel} · {fmtSize(f.size)}{fstate}</span></span></div>{#if f.state === 'sending' || f.state === 'waiting'}<div class="prog" role="progressbar" aria-label="Sending {f.name}" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(f.progress * 100)}><i style:width="{f.progress * 100}%" style:--tick="{SIM.tickMs}ms"></i></div><div class="facts"><button type="button" class="qbtn" data-act="cancel" aria-label="Cancel sending {f.name}" onclick={() => oncancel(m)}><Icon name="x" size={14} />Cancel</button></div>{/if}</div>{:else}{m.text}{/if}<span class="meta">{#if m.edited}<span>edited</span>{/if}<time>{hhmm(m.at)}</time>{#if mine && m.delivery !== 'failed'}<span class="tk">{#if pending}<Icon name="clock" size={11} class="clk" />{:else}<Icon name="check" size={12} />{/if}</span><span class="vh">{stLabel}</span>{/if}</span>{/if}</div>
+      <div class="bub" class:held class:gone class:emoji class:flash class:found onanimationend={() => flash && onflashend()}>{#if sender}<span class="who" style:color={hueOf(m.from)}>{firstName(m.from)}</span>{/if}{#if gone}{mine ? 'You deleted this message' : fn + ' deleted this message'}<span class="meta"><time>{hhmm(m.at)}</time></span>{:else}{#if m.replyTo}{#if quoted}<button type="button" class="quote" onclick={() => onjump(quoted.id)} aria-label="Replying to {quoteWho}: {quoteText}. Jump to message"><b style:color={c.kind === 'group' && quoted.from !== 'me' ? hueOf(quoted.from) : undefined}>{quoteWho}</b><span>{quoteText}</span></button>{:else}<span class="quote"><span>{quoteText}</span></span>{/if}{/if}{#if f}<div><div class="file"><span class="ficon"><Icon name={f.kind === 'image' ? 'image' : 'file'} size={22} /></span><span class="fi"><span class="fn" dir="auto" title={f.name}>{#if find && !m.text}<Marked text={f.name} ranges={find} utf16 variant="mark" cur={findCur} />{:else}{f.name}{/if}</span><span class="fm">{kindLabel} · {fmtSize(f.size)}{fstate}</span></span></div>{#if f.state === 'sending' || f.state === 'waiting'}<div class="prog" role="progressbar" aria-label="Sending {f.name}" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(f.progress * 100)}><i style:width="{f.progress * 100}%" style:--tick="{SIM.tickMs}ms"></i></div><div class="facts"><button type="button" class="qbtn" data-act="cancel" aria-label="Cancel sending {f.name}" onclick={() => oncancel(m)}><Icon name="x" size={14} />Cancel</button></div>{/if}</div>{:else}{#if find && m.text}<Marked text={m.text} ranges={find} utf16 variant="mark" cur={findCur} />{:else}{m.text}{/if}{/if}<span class="meta">{#if m.edited}<span>edited</span>{/if}<time>{hhmm(m.at)}</time>{#if mine}<span class="tk" class:bad={m.delivery === 'failed'}>{#if m.delivery === 'failed'}<Icon name="warning" size={12} />{:else if pending}<Icon name="clock" size={11} class="clk" />{:else}<Icon name="check" size={12} />{/if}</span>{#if m.delivery !== 'failed'}<span class="vh">{stLabel}</span>{/if}{/if}</span>{/if}</div>
       {#if !gone}<button type="button" class="more" aria-haspopup="menu" aria-label="Actions for {mine ? 'your' : fn + '’s'} message at {hhmm(m.at)}: {summary.slice(0, 40)}"
         onclick={(e) => onmenu(m, e.currentTarget, popMode ? 'pop' : 'sheet')}><Icon name="chev" size={20} /></button>{/if}
     </div>
+    <!-- Notes under my newest message are overlaid on the list's reserved bottom padding (they fade, nothing moves);
+         under an older message there is a message below, so they take a row of their own. -->
     {#if mine && c.kind === 'group' && m.delivery === 'waiting' && !gone}
-      <div class="wait" role="status" transition:slide={{ duration: dur('enter') }}><Icon name="clock" size={12} />Waiting for a host</div>
+      <div class="wait" class:tail={last} role="status" transition:note={{ duration: motion.reduced ? 0 : dur('enter') }}><Icon name="clock" size={12} />Waiting for a host</div>
     {/if}
     {#if mine && m.delivery === 'failed' && !gone}
-      <div class="fail"><span>{f?.state === 'cancelled' ? 'Cancelled' : 'Not delivered'}</span><span aria-hidden="true">·</span>
+      <div class="fail" class:tail={last} transition:note={{ duration: motion.reduced ? 0 : dur('enter') }}><span>{f?.state === 'cancelled' ? 'Cancelled' : 'Not delivered'}</span><span aria-hidden="true">·</span>
         <button type="button" data-act="retry" aria-label={f ? 'Retry sending ' + f.name : 'Retry sending'} onclick={() => onretry(m)}>Retry</button></div>
     {/if}
   </li>
@@ -91,6 +99,11 @@
   .them.g-mid .bub { border-top-left-radius: var(--r-bub-tight); border-bottom-left-radius: var(--r-bub-tight); }
   .them.g-last .bub { border-top-left-radius: var(--r-bub-tight); }
   .bub.held { transform: scale(.97); }
+  /* Opened from a search result: a soft wash and ring, faded out by Conversation after a moment (a transition, so reduced motion simply removes it). */
+  .bub { position: relative; }
+  .bub::after { content: ''; position: absolute; inset: -3px; border-radius: calc(var(--r-bub) + 3px); pointer-events: none; opacity: 0;
+    background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent); transition: opacity var(--dur-overlayOpen) var(--ease-out); }
+  .bub.found::after { opacity: 1; transition-duration: var(--dur-enter); }
   .bub.flash { animation: flash calc(var(--dur-overlayOpen) * 5) var(--ease-out); }
   @keyframes flash { 0%, 55% { box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 2px transparent; } }
   .bub.gone { background: transparent; border-color: var(--hairline); color: var(--muted); font-style: italic; }
@@ -101,6 +114,7 @@
     user-select: none; -webkit-user-select: none; white-space: nowrap; font-style: normal; color: var(--bub-meta-in); }
   .me .meta { color: var(--bub-meta-out); }
   .tk { display: inline-grid; place-items: center; width: 13px; height: 11px; }
+  .tk.bad { color: var(--danger); }   /* a failed post keeps its tick slot (a warning mark), so the bubble does not narrow */
   .tk :global(svg) { width: 12px; height: 12px; stroke-width: 2.2; }
   .tk :global(svg.clk) { width: 11px; height: 11px; stroke-width: 2; }
   .quote { display: block; inline-size: 100%; margin: 2px 0 6px; padding: 5px 10px 6px; border-radius: 12px; background: var(--surface-2); border: 0; border-inline-start: 3px solid var(--accent);
@@ -110,6 +124,7 @@
   .quote span { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); }
   .fail { display: flex; justify-content: flex-end; align-items: center; gap: 5px; margin: 3px 2px 0 0; font-size: 12px; line-height: 16px; color: var(--danger); }
   .wait { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin: 3px 2px 0 0; font-size: 12px; line-height: 16px; color: var(--gold-ink); font-weight: 600; }
+  .wait.tail, .fail.tail { position: absolute; inset-block-start: 100%; inset-inline: 0; }
   .fail button { position: relative; border: 0; background: none; padding: 0; color: var(--danger); font-weight: 700; font-size: 12px; line-height: 16px; cursor: pointer; }
   .fail button::before { content: ''; position: absolute; inset: -14px -10px; }
   .fail button:hover { text-decoration: underline; text-underline-offset: 2px; }

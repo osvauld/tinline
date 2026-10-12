@@ -26,6 +26,9 @@ button.pf-act:disabled { opacity: .55; cursor: default; }
 
 .pf-strip { display: flex; align-items: center; gap: 8px; margin: 12px 16px 0; padding: 10px 14px; border-radius: var(--r-ctl); background: var(--surface-2); color: var(--ink); font-size: var(--fs-sub); line-height: 19px; }
 .pf-strip > svg { flex: none; color: var(--muted); }
+/* A status that arrives by itself (will sync, picture refused) floats over the bottom of the page instead of pushing the page down. */
+.pf-float { position: absolute; z-index: 6; inset-inline: 16px; inset-block-end: 16px; margin: 0 auto; max-inline-size: 520px; box-shadow: var(--shadow-pop); }
+.pf-float.pf-strip { background: var(--surface); box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--hairline); }
 
 /* dialogs (Layer) */
 .pf-dlg { padding: 20px 20px 16px; }

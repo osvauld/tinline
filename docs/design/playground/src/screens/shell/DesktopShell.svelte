@@ -21,12 +21,18 @@
   import CallStrip from '../../lib/calls/CallStrip.svelte';
   import CallLayer from '../../lib/calls/CallLayer.svelte';
   import SystemLayer from '../../lib/calls/SystemLayer.svelte';
+  import DesktopField from '../search/DesktopField.svelte';
+  import SearchResults from '../search/SearchResults.svelte';
+  import { ui } from '../search/state.svelte';
+  let activeOpt = $state('');
   const look = $derived(statusLook());
 
   const L = $derived(TAB_LISTS[nav.tab]);
   const d = $derived(nav.detail);
   const unread = $derived(db.chats.reduce((n, c) => n + (c.muted ? 0 : c.unread), 0));
 </script>
+
+<svelte:window onkeydown={(e) => ui.hotkey(e)} />
 
 {#if db.account.gate !== 'ready'}
   <div class="gate" data-form-gate><GATE.component {...GATE.props(null)} /></div>
@@ -38,7 +44,7 @@
     <nav aria-label="Main" bind:this={navEl}>
       <span class="hl" class:ready={hl.ready} style:transform="translateY({hl.y}px)" style:height="{hl.h}px" aria-hidden="true"></span>
       {#each TABS as t (t)}
-        <button type="button" class="nav press" aria-current={nav.tab === t ? 'page' : undefined} onclick={() => nav.setTab(t)}>
+        <button type="button" class="nav press" aria-current={nav.tab === t ? 'page' : undefined} onclick={() => { ui.clear(); nav.setTab(t); }}>
           <Icon name={TAB_ICON[t]} size={20} /><span>{TAB_LISTS[t].title}</span>
           {#if t === 'chats' && unread}<span class="t-badge">{unread}</span>{/if}
         </button>
@@ -50,10 +56,17 @@
     </button>
   </aside>
   <section class="listpane">
-    <TabPanel key={nav.tab}>
-      <header><h1>{L.title}</h1></header>
-      <div class="scroll" use:rememberScroll={nav.tab}><L.component {...L.props(nav.stack[0])} /></div>
-    </TabPanel>
+    {#if ui.position === 'top'}<DesktopField active={activeOpt} />{/if}
+    <!-- The field stays put; while it has focus or text the pane shows results instead of the list. -->
+    {#if ui.active}
+      <div class="results"><SearchResults onactive={(id) => (activeOpt = id)} /></div>
+    {:else}
+      <TabPanel key={nav.tab}>
+        <header><h1>{L.title}</h1></header>
+        <div class="scroll" use:rememberScroll={nav.tab}><L.component {...L.props(nav.stack[0])} /></div>
+      </TabPanel>
+    {/if}
+    {#if ui.position === 'bottom'}<div class="fbottom"><DesktopField active={activeOpt} /></div>{/if}
   </section>
   <section class="detail">
     {#if d}
@@ -92,6 +105,8 @@
   .listpane { display: flex; flex-direction: column; min-width: 0; background: var(--surface); border-inline-end: 1px solid var(--hairline); }
   .listpane header { padding: 16px 20px 4px; } h1 { font-size: 24px; margin: 0; }
   .scroll { flex: 1; overflow: auto; }
+  .results { flex: 1; min-height: 0; padding-block-start: 6px; }
+  .fbottom { border-block-start: 1px solid var(--hairline); }
   .detail { min-width: 0; position: relative; }
   .empty { height: 100%; display: grid; place-content: center; justify-items: center; gap: 6px; color: var(--muted); font-size: var(--fs-sub); }
   .empty b { color: var(--ink); font-size: var(--fs-body); }

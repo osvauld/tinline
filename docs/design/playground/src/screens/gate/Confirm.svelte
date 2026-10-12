@@ -13,7 +13,7 @@
 <StepShell title="Check my copy" lead="Optional. Type the words you wrote down, to be sure the paper is right." form onsubmit={submit}>
   <div class="col">
     {#each CONFIRM_AT as p, i (p)}
-      <Field label="Word {p}" mono bind:value={answers[i]} autofocus={i === 0} error={wrong(i) ? 'That isn’t word ' + p + '. Check your written copy.' : null} />
+      <Field label="Word {p}" reserve={1} mono bind:value={answers[i]} autofocus={i === 0} error={wrong(i) ? 'That isn’t word ' + p + '. Check your written copy.' : null} />
     {/each}
   </div>
   {#snippet foot()}

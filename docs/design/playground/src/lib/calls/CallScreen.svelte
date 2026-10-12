@@ -6,6 +6,8 @@
   import { fade } from 'svelte/transition';
   import Avatar from '../ui/Avatar.svelte';
   import Icon from '../ui/Icon.svelte';
+  import Mark from '../brand/Mark.svelte';
+  import { statusLook } from '../brand/status.svelte';
   import CloudField from './field/CloudField.svelte';
   import WaitingCard from './WaitingCard.svelte';
   import { call, fmtDuration } from './call.svelte';
@@ -26,6 +28,8 @@
   /* Over the device lock screen (full-screen incoming): no minimize, the OS status bar sits above. */
   let { lock = false }: { lock?: boolean } = $props();
   const fadeMs = $derived(motion.reduced ? 0 : dur('crossfade'));
+  /* The same mark as the app bar, so the call's state reads here too: sways while ringing, pulls taut on connect. */
+  const look = $derived(statusLook());
 
   let root: HTMLElement;
   let avatarEl = $state<HTMLElement>();
@@ -64,6 +68,7 @@
       {#if live}
         <button type="button" class="min press" aria-label="Minimize call" onclick={() => call.minimize()}><Icon name="chev" size={24} /></button>
       {/if}
+      <span class="mark" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /></span>
     </header>
 
     <div class="who">
@@ -118,7 +123,10 @@
   .callscreen { position: absolute; inset: 0; z-index: 40; overflow: hidden; background: var(--bg); color: var(--ink); outline: none; container-type: size; }
   .content { position: relative; display: flex; flex-direction: column; block-size: 100%; padding: 8px 20px calc(36px + env(safe-area-inset-bottom)); }
   .lock .content { padding-block-start: 38px; }
-  .top { min-block-size: 48px; display: flex; align-items: center; }
+  .top { position: relative; min-block-size: 48px; display: flex; align-items: center; }
+  /* Centred on its own, so the minimize button coming and going never moves it. */
+  .top .mark { position: absolute; inset-inline-start: 50%; inset-block-start: 50%; translate: -50% -50%; display: inline-flex; pointer-events: none; }
+  :global([dir='rtl']) .top .mark { translate: 50% -50%; }
   .min { inline-size: var(--btn); block-size: var(--btn); border-radius: 50%; border: 0; background: transparent; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
   .min:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
   .who { flex: 1; min-block-size: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-block-end: 8cqb; }
@@ -134,7 +142,7 @@
   .msg > :global(span) { grid-area: 1 / 1; }
   .timer { font-size: 20px; line-height: 30px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: .02em; min-inline-size: 5ch; opacity: 0; transition: opacity var(--dur-crossfade) var(--ease-out); }
   .timer.on { opacity: 1; }
-  .e2e { margin: 10px 0 0; font-size: var(--fs-sub); line-height: 18px; opacity: 0; transition: opacity var(--dur-crossfade) var(--ease-out); }
+  .e2e { margin: 10px 0 0; min-block-size: 18px; font-size: var(--fs-sub); line-height: 18px; opacity: 0; transition: opacity var(--dur-crossfade) var(--ease-out); }
   .e2e.on { opacity: 1; }
 
   .controls { display: flex; justify-content: center; align-items: flex-start; gap: 36px; }

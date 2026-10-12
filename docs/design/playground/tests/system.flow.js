@@ -120,7 +120,7 @@ const drawer = async (p, f) => { await p.getByRole('button', { name: 'Simulation
     ok('shade: timer uses tabular figures', await p.locator('[data-notice=ongoing] .x').evaluate((e) => getComputedStyle(e).fontVariantNumeric.includes('tabular-nums')));
     await shot(p, 'android-shade-ongoing-light');
     await p.locator('[data-notice=ongoing]').getByRole('button', { name: 'Mute', exact: true }).click();
-    ok('shade: Mute acts on the call; label flips to Unmute', await pg(p, () => window.__pg.call.muted) && (await n(p, '[data-notice=ongoing] >> text=Unmute')) === 1);
+    ok('shade: Mute acts on the call; label flips to Unmute', await pg(p, () => window.__pg.call.muted) && (await p.locator('[data-notice=ongoing]').getByRole('button', { name: 'Unmute', exact: true }).count()) === 1);
     await p.locator('[data-notice=ongoing]').getByRole('button', { name: 'Speaker' }).click();
     ok('shade: Speaker acts on the call', (await pg(p, () => window.__pg.call.speaker)) === 'speaker');
     await p.keyboard.press('Escape'); await wait(p, 400);
@@ -135,7 +135,7 @@ const drawer = async (p, f) => { await p.getByRole('button', { name: 'Simulation
     await p.locator('[data-os=shade] .grab').click(); await wait(p, 400);
     await p.locator('[data-statusbar] .chip').click();
     await p.waitForSelector('.callscreen'); await wait(p, 300);
-    ok('chip: returns to the in-app call screen', (await n(p, '[data-os=home]')) === 0 && (await phase(p)) === 'active');
+    ok('chip: returns to the in-app call screen', await until(p, () => !document.querySelector('[data-os=home]'), 3000) && (await phase(p)) === 'active');
     await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 300);
     await drawer(p, async () => { await p.getByRole('switch', { name: 'Tinline in background' }).click(); });
     await drawer(p, async () => { await p.getByRole('button', { name: 'Pull down notifications' }).click(); });

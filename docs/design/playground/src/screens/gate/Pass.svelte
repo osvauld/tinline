@@ -18,7 +18,8 @@
     const words = p.trim().split(/\s+/).length;
     return p.length >= 16 || words >= 4 ? 3 : p.length >= 8 ? 2 : 1;
   });
-  const sLabel = $derived(['', 'Short: easy to guess', 'Fair', 'Strong'][strength]);
+  const says = $derived(['Any length works. A few random words is easy to remember.', 'Short: easy to guess', 'Fair', 'Strong']);
+  const cur = $derived(gate.pass ? strength : 0);
   const submit = () => {
     if (!gate.pass) return;
     if (kind === 'save') gate.savePassAlt(); else gate.submitPass(false);
@@ -30,7 +31,8 @@
     <Field label="Passphrase" secret bind:value={gate.pass} autofocus autocomplete="new-password" disabled={gate.busy} describedBy="strength" />
     <div class="meter" id="strength" aria-live="polite">
       <span class="bars" aria-hidden="true">{#each [1, 2, 3] as i (i)}<i class:on={strength >= i} data-s={strength}></i>{/each}</span>
-      <small>{gate.pass ? sLabel : 'Any length works. A few random words is easy to remember.'}</small>
+      <!-- Every line shares one cell (the tallest sets the height), so the hint turning into a rating never moves the note below. -->
+      <span class="says">{#each says as t, i (i)}<small class:cur={i === cur}>{t}</small>{/each}</span>
     </div>
   </div>
   <Notice icon="lock">{protectLine} <b>It can’t be recovered</b>, only replaced by restoring with your recovery phrase.</Notice>
@@ -49,5 +51,10 @@
   .bars i.on[data-s='1'] { background: var(--danger); }
   .bars i.on[data-s='2'] { background: var(--gold); }
   .bars i.on[data-s='3'] { background: var(--accent); }
+  .meter { align-items: flex-start; }
+  .bars { margin-block-start: 6px; }
+  .says { display: grid; flex: 1; min-inline-size: 0; }
+  .says > small { grid-area: 1 / 1; visibility: hidden; }
+  .says > small.cur { visibility: visible; }
   small { color: var(--muted); font-size: var(--fs-sub); line-height: 18px; }
 </style>

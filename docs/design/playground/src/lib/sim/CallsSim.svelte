@@ -34,7 +34,7 @@
 </script>
 
 <div class="rows">
-  <p class="state">Now: <b>{call.phase}</b>{#if call.peer} with {call.peer}{/if}{#if call.phase === 'outgoing'} · {call.ringing ? 'their device is ringing' : 'reaching their device'}{/if}</p>
+  <p class="state">Now: <b>{call.phase}</b>{#if call.peer}{' '}with {call.peer}{/if}{#if call.phase === 'outgoing'} · {call.ringing ? 'their device is ringing' : 'reaching their device'}{/if}</p>
 
   <div class="row">
     <label for="callsim-from">Incoming from</label>

@@ -3,6 +3,9 @@
      settings that are only mine (nickname, calls, mute, block). Viewing a profile never adds anyone as a contact,
      and a person with no accessible profile gets the plain fallback. */
   import './profile.css';
+  import { fade } from 'svelte/transition';
+  import { dur } from '../../lib/fx/motion';
+  import { motion } from '../../lib/fx/reduced.svelte';
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   import IconButton from '../../lib/ui/IconButton.svelte';
@@ -29,6 +32,7 @@
   const fn = $derived(firstName(personId));
   const status = $derived(typeof fields.status === 'string' ? fields.status : '');
   const about = $derived(typeof fields.about === 'string' ? fields.about : '');
+  const fadeMs = $derived(motion.reduced ? 0 : dur('crossfade'));
   const av = $derived(effectiveAvailability(personId, clock.now));
   const avText = $derived(av.until === undefined ? 'Busy' : `Busy until ${untilLabel(av.until)}`);
   const chat = $derived(db.chats.find((c) => c.kind === 'direct' && c.person === personId));
@@ -68,13 +72,14 @@
       <Avatar name={p.name} hue={p.hue} person={p.id} size={112} />
       <h1 dir="auto" data-their-name>{p.name}</h1>
       {#if status}<p class="status" dir="auto">{status}</p>{/if}
-      {#if prof && !av.available}<p class="avl" class:busy={!av.available} data-availability>{avText}<span class="vh">. A setting they chose, not whether they’re online.</span></p>{/if}
+      <!-- The Busy chip has a row of its own, empty when they are available, so it coming and going moves nothing. -->
+      {#if prof}<div class="avslot">{#if !av.available}<p class="avl busy" data-availability transition:fade={{ duration: fadeMs }}>{avText}<span class="vh">. A setting they chose, not whether they’re online.</span></p>{/if}</div>{/if}
       {#if p.contact}
         <div class="btns">
           <Btn variant="primary" disabled={p.blocked} onclick={message}><Icon name="chat" size={18} />Message</Btn>
           <Btn variant="outline" disabled={!callOk} title={callWhy} onclick={() => call.place(personId)}><Icon name="phone" size={18} />Call</Btn>
         </div>
-        {#if callWhy}<p class="why">{callWhy}</p>{/if}
+        <p class="why" aria-live="polite">{#if callWhy}<span transition:fade={{ duration: fadeMs }}>{callWhy}</span>{/if}</p>
       {/if}
     </section>
 
@@ -148,10 +153,11 @@
   .hero { display: grid; justify-items: center; text-align: center; padding: 24px 20px 4px; }
   h1 { margin: 16px 0 0; font-size: 22px; line-height: 28px; font-weight: 650; overflow-wrap: anywhere; }
   .status { margin: 4px 0 0; color: var(--muted); line-height: 21px; overflow-wrap: anywhere; max-inline-size: 36ch; text-wrap: balance; }
-  .avl { margin: 10px 0 0; padding: 3px 12px; border-radius: 13px; background: var(--surface-2); color: var(--muted); font-size: var(--fs-sub); line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .avslot { justify-self: stretch; display: grid; place-items: center; min-block-size: 26px; margin-block-start: 6px; }
+  .avl { margin: 0; padding: 3px 12px; border-radius: 13px; background: var(--surface-2); color: var(--muted); font-size: var(--fs-sub); line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .avl.busy { background: var(--warn-bg); color: var(--warn-ink); }
-  .btns { display: flex; gap: 8px; margin-block-start: 18px; }
-  .why { margin: 8px 0 0; font-size: var(--fs-sub); line-height: 19px; color: var(--muted); }
+  .btns { display: flex; gap: 8px; margin-block-start: 14px; }
+  .why { margin: 8px 0 0; min-block-size: 19px; display: grid; font-size: var(--fs-sub); line-height: 19px; color: var(--muted); }   /* the line is reserved: flipping Allow calls moves nothing */
   .fallback { text-align: center; margin: 20px 24px 0; }
   /* The block that belongs to me stands apart from their profile: more room above, and a rule. */
   .mine { position: relative; margin-block-start: 36px; padding-block-start: 22px; }

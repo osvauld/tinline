@@ -13,12 +13,13 @@
   const submit = () => { if (pass && !lock) { const p = pass; gate.unlock(p).then(() => (pass = '')); } };
 </script>
 
-<StepShell title={first ? 'Welcome back, ' + first : 'Welcome back'} lead="Enter your passphrase to open Tinline. Calls can’t reach you until you do." center form onsubmit={submit}>
+<StepShell title={first ? 'Welcome back, ' + first : 'Welcome back'} lead="Enter your passphrase to open Tinline. Calls can’t reach you until you do." center anchor form onsubmit={submit}>
   <div class="av"><Avatar name={db.account.name} hue={db.account.hue} size={72} /></div>
   <div class="fld">
     <Field label="Passphrase" secret bind:value={pass} autofocus autocomplete="current-password" disabled={gate.busy || lock > 0}
-      error={lock > 0 ? null : gate.error} hint={gate.error ? 'Checking takes a second. It’s deliberately slow to stop guessing.' : undefined} />
-    {#if lock > 0}<p class="lock" role="status">Too many tries. Wait {mmss} before trying again.</p>{/if}
+      error={lock > 0 ? null : gate.error} hint={gate.error ? 'Checking takes a second. It’s deliberately slow to stop guessing.' : undefined} reserve={4.25}>
+      {#snippet extra()}{#if lock > 0}<p class="lock" role="status">Too many tries. Wait {mmss} before trying again.</p>{/if}{/snippet}
+    </Field>
   </div>
   {#if gate.isAndroid}
     <label class="rem"><span>Remember on this phone<small>Skips the passphrase when Tinline restarts, using the phone’s secure key store.</small></span><Switch label="Remember on this phone" bind:checked={gate.remember} /></label>
@@ -32,7 +33,7 @@
 <style>
   .av { order: -1; padding-block-start: 12px; }
   .fld { inline-size: 100%; text-align: start; display: grid; gap: 8px; }
-  .lock { margin: 0; color: var(--warn-ink); background: var(--warn-bg); border-radius: var(--r-ctl); padding: 10px 14px; font-size: var(--fs-sub); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .lock { margin: 0; color: var(--warn-ink); background: var(--warn-bg); border-radius: var(--r-ctl); padding: 8px 14px; font-size: var(--fs-sub); font-weight: 600; font-variant-numeric: tabular-nums; }
   .rem { inline-size: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; text-align: start; min-block-size: 56px; }
   .rem span { display: grid; gap: 2px; } .rem small { color: var(--muted); font-size: var(--fs-sub); line-height: 18px; }
 </style>

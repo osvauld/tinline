@@ -196,7 +196,7 @@ async function send(p, text) { await p.fill(TA, text); await p.keyboard.press('E
     await p.keyboard.press('Control+Enter');
     ok('android: Ctrl+Enter sends', (await p.locator('li.m.me:has-text("line one")').count()) === 1);
     const cdp = await p.context().newCDPSession(p);
-    const bub = p.locator('li.m.them .bub').first();
+    const bub = p.locator('li.m.them:has-text("Did you get home") .bub').first();
     const bx = await bub.boundingBox();
     const pt = [{ x: bx.x + bx.width / 2, y: bx.y + bx.height / 2, id: 1 }];
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt });

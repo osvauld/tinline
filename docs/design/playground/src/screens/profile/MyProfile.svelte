@@ -3,6 +3,9 @@
      additional information; each piece saves on its own and patches one key. Accepted state is in the store; drafts
      live in the rows. Other people's profiles are read-only (PersonProfile). */
   import { untrack } from 'svelte';
+  import { fade } from 'svelte/transition';
+  import { dur } from '../../lib/fx/motion';
+  import { motion } from '../../lib/fx/reduced.svelte';
   import './profile.css';
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
@@ -39,6 +42,7 @@
   let fileEl = $state<HTMLInputElement>();
   let opener: HTMLElement | null = null;
   const pickedUrl = $derived(picked?.url);
+  const fadeMs = $derived(motion.reduced ? 0 : dur('crossfade'));
   const layerOpen = $derived(!!picked || removeAsk || addOpen || !!linkUrl);
 
   function open<T>(set: (v: T) => void, v: T) { opener = document.activeElement as HTMLElement; set(v); }
@@ -82,10 +86,6 @@
 
   <div class="pf-scroll" inert={layerOpen}>
   <div class="pf-col">
-    {#if px.pending > 0}
-      <div class="pf-strip" role="status" data-pending><Icon name="clock" size={16} />Saved on this device. Will sync when you’re connected.</div>
-    {/if}
-
     <section class="hero" aria-label="Picture">
       <Avatar name={db.account.name} hue={db.account.hue} person="me" size={112} />
       <div class="btns">
@@ -96,7 +96,6 @@
           <Btn variant="outline" onclick={() => fileEl?.click()}><Icon name="camera" size={18} />Add photo</Btn>
         {/if}
       </div>
-      {#if picError}<p class="pf-err perr" role="alert" data-pic-error>{picError}</p>{/if}
       <input bind:this={fileEl} type="file" class="vh" tabindex="-1" accept="image/png,image/jpeg,image/webp" aria-label="Choose a picture file" onchange={picker} data-file />
     </section>
 
@@ -133,6 +132,13 @@
 
   <p class="vh" role="status">{announce}</p>
 
+  <!-- Floating, not in the page flow: these appear on their own and must not move the page. -->
+  {#if picError}
+    <div class="pf-err pf-float perr" role="alert" data-pic-error transition:fade={{ duration: fadeMs }}><span>{picError}</span><button type="button" class="x press" aria-label="Dismiss" onclick={() => (picError = '')}><Icon name="x" size={18} /></button></div>
+  {:else if px.pending > 0}
+    <div class="pf-strip pf-float" role="status" data-pending transition:fade={{ duration: fadeMs }}><Icon name="clock" size={16} />Saved on this device. Will sync when you’re connected.</div>
+  {/if}
+
   {#if picked}
     {#key pickedUrl}<PictureFlow {picked} replacing={hasPic} onclose={closeLayers} ondone={pictureDone} />{/key}
   {:else if removeAsk}
@@ -156,5 +162,9 @@
   .hero { display: grid; justify-items: center; padding: 24px 20px 4px; }
   /* Equal-width pair so the two buttons sit centred under the picture (a quiet text button would pull the pair off-centre). */
   .btns { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(140px, auto); justify-content: center; gap: 8px; margin-block-start: 18px; }
-  .perr { margin-block-start: 12px; max-inline-size: 38ch; text-wrap: balance; }
+  .pf-scroll { padding-block-end: 96px; }   /* room for the floating notes at the end of the page */
+  .perr { display: flex; align-items: center; gap: 8px; margin-block-start: 0; padding-block: 4px; padding-inline: 12px 4px; }
+  .perr span { flex: 1; min-inline-size: 0; }
+  .perr .x { flex: none; inline-size: var(--btn); block-size: var(--btn); border: 0; border-radius: 50%; background: none; color: inherit; display: grid; place-items: center; cursor: pointer; }
+  .perr .x:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 </style>

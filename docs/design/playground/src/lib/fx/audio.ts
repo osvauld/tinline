@@ -44,6 +44,8 @@ export const PALETTES: Record<Palette, { label: string; hit: number; cues: Parti
 };
 
 const PALETTE_KEY = 'tinline.pg.palette';
+const QUIET_KEY = 'tinline.pg.quiet';
+const savedQuiet = (() => { try { return localStorage.getItem(QUIET_KEY) === '1'; } catch { return false; } })();
 const savedPalette = (() => { try { return localStorage.getItem(PALETTE_KEY) as Palette | null; } catch { return null; } })();
 
 interface Playing { kind: string; g: GainNode; lp: BiquadFilterNode; oscs: OscillatorNode[]; timers: number[]; stopped: boolean }
@@ -51,8 +53,9 @@ interface Playing { kind: string; g: GainNode; lp: BiquadFilterNode; oscs: Oscil
 class Audio {
   ctx: AudioContext | null = null;
   vol = 0.5;
-  quiet = true;           // on unless the person turns sound on in the drawer
+  quiet = savedQuiet;     // sound is on unless the person picks Quiet in the drawer (remembered)
   armed = false;
+  pending: { kind: string; gain: number } | null = null; // a looping cue asked for before the first gesture
   cur: Playing | null = null;
   played: string[] = [];  // for tests
   palette: Palette = savedPalette && savedPalette in PALETTES ? savedPalette : 'classic';
@@ -67,8 +70,12 @@ class Audio {
   }
 
   arm() {
+    const first = !this.armed;
     this.armed = true;
-    if (!this.quiet) this.ensure();
+    if (this.quiet) return;
+    this.ensure();
+    // A ring that started before the browser allowed sound picks up at the first tap.
+    if (first && this.pending && !this.cur) { const p = this.pending; this.pending = null; this.play(p.kind, true, p.gain); }
   }
   ensure() {
     if (!this.ctx) {
@@ -80,7 +87,8 @@ class Audio {
     return true;
   }
   play(kind: string, loop = false, gain = 1) {
-    if (!this.armed || this.quiet) return false;
+    if (!this.armed || this.quiet) { this.pending = loop && !this.quiet ? { kind, gain } : null; return false; }
+    this.pending = null;
     this.stop();
     if (!this.ensure()) return false;
     const c = this.ctx!, g = c.createGain(), lp = c.createBiquadFilter();
@@ -119,6 +127,7 @@ class Audio {
     }
   }
   stop(s: Playing | null = this.cur) {
+    if (s === this.cur) this.pending = null;
     if (!s || s.stopped || !this.ctx) return;
     s.stopped = true; s.timers.forEach(clearTimeout);
     const now = this.ctx.currentTime;
@@ -128,8 +137,14 @@ class Audio {
     setTimeout(() => { try { s.g.disconnect(); s.lp.disconnect(); } catch { /* gone */ } }, 200);
     if (this.cur === s) this.cur = null;
   }
+  /** A looping cue's state ended: stop it if it's playing, or forget it if it was waiting for the first tap. */
+  end(kind: string) {
+    if (this.pending?.kind === kind) this.pending = null;
+    if (this.cur?.kind === kind) this.stop();
+  }
   setQuiet(q: boolean) {
     this.quiet = q;
+    try { localStorage.setItem(QUIET_KEY, q ? '1' : '0'); } catch { /* private mode */ }
     if (q) this.stop(); else this.arm();
   }
 }
@@ -144,8 +159,8 @@ export function startAudio() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) audio.stop(); });
   onFx((e) => {
     switch (e.type) {
-      case 'ring': if (e.on) audio.play('back', true); else if (audio.cur?.kind === 'back') audio.stop(); break;
-      case 'incoming': if (e.on) audio.play('ring', true); else if (audio.cur?.kind === 'ring') audio.stop(); break;
+      case 'ring': if (e.on) audio.play('back', true); else audio.end('back'); break;
+      case 'incoming': if (e.on) audio.play('ring', true); else audio.end('ring'); break;
       // The cue's second note lands when the string goes taut: delay by (hit − second-note offset).
       case 'connect': {
         const lead = motion.reduced ? 0 : Math.max(0, dur('markHit') - audio.hitS * 1000);
@@ -153,7 +168,7 @@ export function startAudio() {
         break;
       }
       // Soft and quieter than the ring; it loops over the call until the waiting call is resolved.
-      case 'waiting': if (e.on) audio.play('waiting', true, 0.6); else if (audio.cur?.kind === 'waiting') audio.stop(); break;
+      case 'waiting': if (e.on) audio.play('waiting', true, 0.6); else audio.end('waiting'); break;
       case 'end': audio.play('ended'); break;
       case 'failed': audio.play('failed'); break;
       case 'reconnecting': audio.play('pulse'); break;

@@ -5,15 +5,20 @@
 
 <script lang="ts">
   import { onDestroy, onMount, tick, untrack } from 'svelte';
+  import { fade } from 'svelte/transition';
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   import Layer from './Layer.svelte';
   import MessageRow from './MessageRow.svelte';
+  import FindBar from '../search/FindBar.svelte';
+  import { find } from '../search/find.svelte';
+  import { SEARCH, findInChat, jump } from '../../lib/model/actions/search';
   import Composer, { type Ctx } from './Composer.svelte';
   import { db, chat as getChat, person, firstName, markRead, chatTitle } from '../../lib/model/store.svelte';
   import { clock, dayKey, dayLabel, hhmm } from '../../lib/model/clock.svelte';
   import { prefs } from '../../lib/model/prefs.svelte';
   import { motion } from '../../lib/fx/reduced.svelte';
+  import { dur } from '../../lib/fx/motion';
   import { nav } from '../../lib/nav/router.svelte';
   import { call } from '../../lib/calls/call.svelte';
   import {
@@ -38,6 +43,22 @@
   /* ---- transient UI state ---- */
   let root = $state<HTMLElement>();
   let listEl = $state<HTMLElement>();
+  let stripH = $state(0);
+  let stripPad = $state(0);
+  // Strip space at the list top: when it changes, move scrollTop by the same amount so nothing visible moves.
+  $effect(() => {
+    const h = strip ? stripH : 0;
+    untrack(() => {
+      const d = h - stripPad;
+      if (!d) return;
+      const el = listEl;
+      stripPad = h;
+      if (!el) return;
+      const top = el.scrollTop;
+      el.style.paddingBlockStart = `${6 + h}px`;     // same task as the scroll fix below: no frame shows a moved list
+      if (el.scrollHeight > el.clientHeight) el.scrollTop = top + d;
+    });
+  });
   let composer = $state<ReturnType<typeof Composer>>();
   let ctx = $state<Ctx>(untrack(() => { const id = replyByChat.get(chatId); return id ? { type: 'reply', id } : null; }));
   let stash = '';
@@ -47,6 +68,20 @@
   let attachOpen = $state(false);
   let heldId = $state<string | null>(null);
   let flashId = $state<string | null>(null);
+  /* ---- search: opened on a hit (jump + brief highlight) and find in this chat (Ctrl+F, desktop) ---- */
+  const jumpId = untrack(() => jump.take(chatId));
+  let pin = !!jumpId;                      // while opening on a hit, nothing may scroll the list to its end
+  let foundId = $state<string | null>(null);
+  let foundTimer = 0;
+  const fm = $derived(find.open ? findInChat(c, find.q) : []);
+  const fmap = $derived(new Map(fm.map((x) => [x.id, x.ranges])));
+  const curId = $derived(fm.length ? fm[Math.max(0, Math.min(find.cur, fm.length - 1))].id : null);
+  function closeFind() { find.close(); composer?.focus(); }
+  function onkey(e: KeyboardEvent) {
+    if (prefs.form === 'desktop' && (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'f' && c) { e.preventDefault(); find.show(); }
+  }
+  $effect(() => { const id = curId; untrack(() => { if (id && find.open) tick().then(() => scrollToEl(listEl?.querySelector(`[data-mid="${id}"]`) ?? null, 'center', smooth())); }); });
+  onDestroy(() => { clearTimeout(foundTimer); find.close(); });
   let undo = $state<{ h: Undo; what: string } | null>(null);
   let undoTimer = 0;
   let announce = $state('');
@@ -112,6 +147,7 @@
   const smooth = () => (motion.reduced ? 'auto' : 'smooth');
   const nearBottom = () => !listEl || listEl.scrollHeight - listEl.scrollTop - listEl.clientHeight < 80;
   function scrollEnd(behavior: ScrollBehavior = 'auto') {
+    if (pin) return;
     listEl?.scrollTo({ top: listEl.scrollHeight, behavior });
     below = 0;
   }
@@ -128,6 +164,16 @@
   }
   onMount(async () => {
     await tick();
+    const hit = jumpId ? listEl?.querySelector(`[data-mid="${jumpId}"]`) ?? null : null;
+    if (hit) {
+      scrollToEl(hit, 'center');
+      foundId = jumpId;
+      foundTimer = window.setTimeout(() => (foundId = null), SEARCH.foundMs);
+      requestAnimationFrame(() => requestAnimationFrame(() => { pin = false; syncFar(); }));
+      syncFar();
+      return;
+    }
+    pin = false;
     if (dividerId) scrollToEl(listEl?.querySelector('.unread') ?? null, 'start');
     else scrollEnd();
     syncFar();
@@ -295,6 +341,8 @@
   const summary = (m: Message) => m.text || m.file?.name || '';
 </script>
 
+<svelte:window onkeydown={onkey} />
+
 <div class="conv" bind:this={root} data-conv={chatId}>
   {#if !c}
     <div class="empty"><b>Conversation not found</b></div>
@@ -311,10 +359,14 @@
         {#if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
           onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>{/if}
         <button type="button" class="ib press" aria-label="Chat details" onclick={openDetails}><Icon name="info" /></button>
+        {#if find.open}<FindBar count={fm.length} onclose={closeFind} />{/if}
       </header>
-      {#if strip}<div class="strip" class:warn={strip.warn} role="status"><Icon name={strip.icon} size={16} />{strip.text}</div>{/if}
 
       <div class="msgwrap">
+        <!-- Overlaid on the top of the list (not a row above it): the strip coming and going never moves a message.
+             While it shows, the list gains the same space at its top (scroll position compensated), so the oldest
+             message can still be scrolled fully into view instead of hiding under the strip. -->
+        {#if strip}<div class="strip" class:warn={strip.warn} role="status" bind:offsetHeight={stripH} transition:fade={{ duration: motion.reduced ? 0 : dur('crossfade') }}><Icon name={strip.icon} size={16} />{strip.text}</div>{/if}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <ul class="msgs" bind:this={listEl} role="log" aria-label="Messages with {chatTitle(c)}" onscroll={() => { pressCancel(); syncFar(); }}
           {onpointerdown} {onpointermove} onpointerup={pressCancel} onpointercancel={pressCancel} {oncontextmenu}>
@@ -330,8 +382,8 @@
               <li class="sys">{it.text}</li>
             {:else}
               <MessageRow
-                {c} m={it.m} pos={it.pos} sender={it.sender} fresh={!initialIds.has(it.m.id)} held={heldId === it.m.id}
-                menuOpen={menu?.m.id === it.m.id} flash={flashId === it.m.id} onflashend={() => (flashId = null)} {popMode}
+                {c} m={it.m} pos={it.pos} last={it.m.id === c.messages[c.messages.length - 1]?.id} sender={it.sender} fresh={!initialIds.has(it.m.id)} held={heldId === it.m.id}
+                menuOpen={menu?.m.id === it.m.id} flash={flashId === it.m.id} found={foundId === it.m.id} find={fmap.get(it.m.id)} findCur={curId === it.m.id} onflashend={() => (flashId = null)} {popMode}
                 quoted={it.m.replyTo ? c.messages.find((x) => x.id === it.m.replyTo) : undefined}
                 onmenu={openMenu} onretry={retry} oncancel={cancel} onjump={jumpTo} oncall={startCall}
               />
@@ -433,7 +485,7 @@
   .ib.dim { color: var(--muted); opacity: .45; cursor: default; }
   .ib.dim:hover { background: transparent; }
 
-  .bar { display: flex; align-items: center; gap: 2px; min-block-size: 60px; padding: 8px; background: var(--surface); border-block-end: 1px solid var(--hairline); flex: none; }
+  .bar { position: relative; display: flex; align-items: center; gap: 2px; min-block-size: 60px; padding: 8px; background: var(--surface); border-block-end: 1px solid var(--hairline); flex: none; }
   .head { flex: 1; min-inline-size: 0; display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 4px 10px 4px 6px; border-radius: 12px; min-block-size: var(--btn); text-align: start; cursor: pointer; }
   .head:hover { background: var(--surface-2); }
   .tx { flex: 1; min-inline-size: 0; }
@@ -442,12 +494,12 @@
   .nm :global(svg) { color: var(--muted); }
   .pr { display: block; font-size: var(--fs-sub); line-height: 18px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   :global([data-form='android']) .bar { min-block-size: 56px; padding: 4px 6px; }
-  .strip { display: flex; align-items: center; gap: 8px; padding: 7px 16px; font-size: var(--fs-sub); line-height: 18px; color: var(--muted); background: var(--surface-2); flex: none; }
+  .strip { position: absolute; inset-block-start: 0; inset-inline: 0; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 7px 16px; font-size: var(--fs-sub); line-height: 18px; color: var(--muted); background: var(--surface-2); border-block-end: 1px solid var(--hairline); }
   .strip.warn { background: var(--warn-bg); color: var(--warn-ink); }
 
   .msgwrap { flex: 1; min-block-size: 0; position: relative; display: flex; flex-direction: column; }
-  .msgs { list-style: none; margin: 0; padding: 6px 16px 12px; overflow: auto; flex: 1; min-block-size: 0; display: flex; flex-direction: column; overscroll-behavior: contain; }
-  :global([data-form='android']) .msgs { padding: 6px 10px 10px; }
+  .msgs { list-style: none; margin: 0; padding: 6px 16px 19px; overflow: auto; overflow-anchor: none; flex: 1; min-block-size: 0; display: flex; flex-direction: column; overscroll-behavior: contain; }
+  :global([data-form='android']) .msgs { padding: 6px 10px 19px; }
   .msgs > :global(:first-child) { margin-block-start: auto; }
   .msgs > :global(*) { flex-shrink: 0; }
   .day { align-self: center; margin: 10px 0; padding: 3px 10px; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline); color: var(--muted); font-size: var(--fs-meta); font-weight: 600; line-height: 16px; }

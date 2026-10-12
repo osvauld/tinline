@@ -34,7 +34,9 @@
     </span>
   </header>
 
-  <div class="stage">
+  <!-- The drawer takes its own column: the app frame sits beside it, never under it (an incoming-call banner or
+       Answer button must not be hidden behind the controls that triggered it). -->
+  <div class="stage" class:withdrawer={drawer}>
     {#if prefs.form === 'android'}
       <div class="device android" data-form="android"><AndroidShell /></div>
     {:else}
@@ -52,6 +54,7 @@
   .seg { display: flex; gap: 6px; }
   .end { margin-inline-start: auto; display: flex; }
   .stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 0 16px 16px; }
+  .stage.withdrawer { padding-inline-end: calc(min(340px, 92vw) + 16px); }
   .device { overflow: hidden; border: 1px solid var(--line); background: var(--bg); box-shadow: var(--shadow-pop); }
   .android { width: 390px; height: min(844px, calc(100dvh - 72px)); border-radius: 32px; flex: none; }
   .desktop { width: min(1280px, 100%); height: min(800px, calc(100dvh - 72px)); border-radius: 12px; }

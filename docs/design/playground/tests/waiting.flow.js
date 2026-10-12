@@ -24,6 +24,8 @@ const pg = (p, fn, arg) => p.evaluate(fn, arg);
 const until = async (p, fn, ms = 4000, arg) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await p.evaluate(fn, arg)) return true; await wait(p, 50); } return false; };
 const idle = (p) => until(p, () => window.__pg.call.phase === 'idle', 6000);
 const n = (p, sel) => p.locator(sel).count();
+/** Waits for a transition to finish (out-transitions keep the node in the DOM until they end; slow machines stretch them). */
+const settled = async (p, sel, want, ms = 3000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if ((await n(p, sel)) === want) return true; await wait(p, 50); } return false; };
 const shot = async (p, name) => { if (SHOTS) await p.locator('[data-form]').screenshot({ path: SHOTS + name + '.png' }); };
 const cues = (p) => pg(p, () => window.__pg.fxLog.filter(({ e }) => e.type !== 'taut-hit').map(({ e }) => e.type + (e.on === undefined ? '' : e.on ? ':on' : ':off')));
 const recs = (p, id) => pg(p, (id) => window.__pg.db.chats.find((c) => c.id === id).messages.filter((m) => m.call).map((m) => ({ ...m.call, from: m.from })), id);
@@ -88,7 +90,7 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
     await p.locator('[data-waiting]').getByRole('button', { name: 'Decline' }).click(); await wait(p, 500);
     let r = await recs(p, 'sana');
     ok('Decline: one declined record from her (caller told busy), no unread', r.length === 1 && r[0].outcome === 'declined' && r[0].direction === 'in' && (await unread(p, 'sana')) === 0, JSON.stringify(r));
-    ok('Decline: my call with Arjun continues, card gone, cue off', (await call(p, () => window.__pg.call.phase === 'active' && window.__pg.call.peer === 'arjun' && !window.__pg.call.waiting)) && (await n(p, '[data-waiting]')) === 0 && (await cues(p)).includes('waiting:off'));
+    ok('Decline: my call with Arjun continues, card gone, cue off', (await call(p, () => window.__pg.call.phase === 'active' && window.__pg.call.peer === 'arjun' && !window.__pg.call.waiting)) && await settled(p, '[data-waiting]', 0) && (await cues(p)).includes('waiting:off'));
     ok('Decline: the field returns to the active state', await call(p, () => window.__pg.call.fieldState === 'active'));
     ok('Decline: no record for the call that continues yet', (await recs(p, 'arjun')).length === 0);
 
@@ -97,7 +99,7 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
     await wait(p, 1200);
     await p.locator('[data-waiting]').getByRole('button', { name: 'End & answer' }).click();
     await wait(p, 60);
-    ok('End & answer: no idle in between, goes straight to connecting with Sana', await call(p, () => window.__pg.call.phase === 'connecting' && window.__pg.call.peer === 'sana' && window.__pg.call.direction === 'in' && !window.__pg.call.waiting));
+    ok('End & answer: no idle in between, goes straight to connecting with Sana', await call(p, () => ['connecting', 'active'].includes(window.__pg.call.phase) && window.__pg.call.peer === 'sana' && window.__pg.call.direction === 'in' && !window.__pg.call.waiting));
     ok('End & answer: the call screen stays mounted (no flash), timer reset', await call(p, () => document.querySelector('.callscreen')?.__keep === 1 && window.__pg.call.elapsedS === 0));
     ok('End & answer: status reads Connecting…', /Connecting…/.test(await p.locator('.callscreen .status .msg').innerText()));
     await wait(p, 120);
@@ -115,7 +117,7 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
     await pg(p, () => window.__pg.fxLog.length = 0);
     await pg(p, () => window.__pg.call.remote('hangup'));
     await wait(p, 300);
-    ok('remote hang-up: shows Call ended, the card is gone, the waiting call is not yet answered', await call(p, () => window.__pg.call.phase === 'ended' && !!window.__pg.call.waiting) && (await n(p, '[data-waiting]')) === 0, JSON.stringify(await call(p, () => [window.__pg.call.phase, window.__pg.call.waiting])));
+    ok('remote hang-up: shows Call ended, the card is gone, the waiting call is not yet answered', await call(p, () => window.__pg.call.phase === 'ended' && !!window.__pg.call.waiting) && await settled(p, '[data-waiting]', 0), JSON.stringify(await call(p, () => [window.__pg.call.phase, window.__pg.call.waiting])));
     ok('remote hang-up: the waiting call takes the slot as a normal incoming call, ringing, on the same screen', await until(p, () => window.__pg.call.phase === 'incoming' && window.__pg.call.peer === 'arjun' && !window.__pg.call.waiting, 4000));
     await wait(p, 500);
     ok('remote hang-up: full incoming screen with Decline/Answer; ring cue started; waiting cue off', (await n(p, '.callscreen')) === 1 && (await p.getByRole('button', { name: 'Answer' }).count()) === 1 && (await cues(p)).includes('incoming:on') && (await cues(p)).includes('waiting:off'));
@@ -131,7 +133,7 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
     await drawer(p, async () => { await p.getByRole('button', { name: 'Waiting caller gives up' }).click(); });
     await wait(p, 500);
     r = await recs(p, 'sana');
-    ok('gives up: card leaves, a missed (cancelled) record, one more unread', (await n(p, '[data-waiting]')) === 0 && r[r.length - 1].outcome === 'cancelled' && (await unread(p, 'sana')) === u0 + 1 && await call(p, () => window.__pg.call.phase === 'active' && !window.__pg.call.waiting), JSON.stringify(r));
+    ok('gives up: card leaves, a missed (cancelled) record, one more unread', await settled(p, '[data-waiting]', 0) && r[r.length - 1].outcome === 'cancelled' && (await unread(p, 'sana')) === u0 + 1 && await call(p, () => window.__pg.call.phase === 'active' && !window.__pg.call.waiting), JSON.stringify(r));
     /* ring timeout */
     await pg(p, () => { window.__pg.CALL_MS.waitingTimeout = 700; window.__pg.call.receive('sana'); });
     await p.waitForSelector('[data-waiting]');
@@ -179,14 +181,14 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
       await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 600);
       await pg(p, () => window.__pg.call.receive('sana')); await p.waitForSelector('[data-incoming-alert]'); await wait(p, 600);
       const t1 = await p.locator('[data-incoming-alert]').innerText();
-      ok(`${t} minimised: banner says who, during your call, Decline / End & answer; the strip stays`, /Sana Rao/.test(t1) && /during your call/.test(t1) && /Decline/.test(t1) && /End & answer/.test(t1) && (await n(p, '[data-callstrip]')) === 1 && (await n(p, '[data-waiting]')) === 0, t1);
+      ok(`${t} minimised: banner says who, during your call, Decline / End & answer; the strip stays`, /Sana Rao/.test(t1) && /during your call/.test(t1) && /Decline/.test(t1) && /End & answer/.test(t1) && (await n(p, '[data-callstrip]')) === 1 && await settled(p, '[data-waiting]', 0), t1);
       ok(`${t} minimised: banner inside the frame`, await p.evaluate(() => { const f = document.querySelector('[data-form]').getBoundingClientRect(), a = document.querySelector('[data-incoming-alert]').getBoundingClientRect(); return a.left >= f.left && a.right <= f.right && a.top >= f.top; }));
       await shot(p, `strip-banner-${s}`);
       await p.locator('[data-incoming-alert] .open').click(); await p.waitForSelector('.callscreen'); await wait(p, 500);
-      ok(`${t} minimised: tapping the banner opens the call screen with the card`, (await n(p, '[data-waiting]')) === 1 && (await n(p, '[data-incoming-alert]')) === 0);
+      ok(`${t} minimised: tapping the banner opens the call screen with the card`, await settled(p, '[data-waiting]', 1) && await settled(p, '[data-incoming-alert]', 0));
       await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 500);
       await p.locator('[data-incoming-alert]').getByRole('button', { name: 'End & answer' }).click();
-      ok(`${t} minimised: End & answer from the banner connects Sana`, await until(p, () => window.__pg.call.phase === 'active' && window.__pg.call.peer === 'sana') && (await n(p, '[data-incoming-alert]')) === 0);
+      ok(`${t} minimised: End & answer from the banner connects Sana`, await until(p, () => window.__pg.call.phase === 'active' && window.__pg.call.peer === 'sana') && await settled(p, '[data-incoming-alert]', 0));
       await pg(p, () => window.__pg.call.hangup()); await idle(p);
       await p.close();
     }

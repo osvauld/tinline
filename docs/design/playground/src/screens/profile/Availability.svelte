@@ -36,7 +36,7 @@
     <button type="button" role="radio" class="s press" aria-checked={av.available} tabindex={av.available ? 0 : -1} onkeydown={radioKey} onclick={() => apply(setAvailability({ available: true }))}>Available</button>
     <button type="button" role="radio" class="s press" aria-checked={!av.available} tabindex={av.available ? -1 : 0} onkeydown={radioKey} onclick={() => { if (av.available) setBusy(choice); }}>Busy</button>
   </div>
-  <p class="now" role="status">{#if !av.available}{line}{/if}{#if saved}<span class="saved" class:lead={!av.available}><Icon name="check" size={13} />{offline ? 'Saved · syncs when connected' : 'Saved'}</span>{/if}</p>
+  <p class="now" role="status"><span class="ln" class:err={!!error}>{#if error}<span class="bad" role="alert">{error}</span>{:else}{line}{/if}</span>{#if saved}<span class="saved" class:lead={!av.available}><Icon name="check" size={13} />{offline ? 'Saved · syncs when connected' : 'Saved'}</span>{/if}</p>
   {#if !av.available}
     <div class="for" role="group" aria-label="For how long">
       {#each BUSY_CHOICES as c (c.id)}
@@ -44,7 +44,6 @@
       {/each}
     </div>
   {/if}
-  {#if error}<p class="pf-err" role="alert">{error}</p>{/if}
 </div>
 
 <style>
@@ -53,8 +52,12 @@
   .s { min-block-size: var(--btn); border: 0; border-radius: 12px; background: transparent; color: var(--muted); font-weight: 600; cursor: pointer;
     transition: background-color var(--dur-switch) var(--ease-out), color var(--dur-switch) var(--ease-out), box-shadow var(--dur-switch) var(--ease-out); }
   .s[aria-checked='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(9 23 17 / .12), inset 0 0 0 1px var(--hairline); }
-  .now { margin: 0; font-size: var(--fs-sub); line-height: 19px; color: var(--ink); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
-  .now:empty { display: none; }
+  .now { margin: 0; font-size: var(--fs-sub); line-height: 19px; color: var(--ink); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .now { min-block-size: 19px; }   /* always there: the line (Available / Busy until…) holds the Saved tag */
+  .ln { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; }
+  .ln.err { white-space: normal; overflow: visible; }   /* a refusal is read in full; it replaces the line, so it only grows if it must wrap */
+  .bad { color: var(--danger); }
+  .saved { flex: none; margin-inline-start: auto; }
   .saved { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; color: var(--accent-ink); animation: fadein var(--dur-enter) var(--ease-out); }
   @keyframes fadein { from { opacity: 0; } }
   .for { display: flex; flex-wrap: wrap; gap: 8px; }

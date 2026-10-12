@@ -12,7 +12,7 @@
 
 {#if lost}
   <StepShell title={name ? 'Can’t open ' + name + '’s account' : 'Can’t open your account'}
-    lead="This {gate.noun} no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Calls can’t reach you until you restore." center>
+    lead="This {gate.noun} no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Calls can’t reach you until you restore." center anchor>
     <div class="ic"><Icon name="key" size={32} /></div>
     <Notice kind="warn" icon="info">You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.</Notice>
     {#if gate.error}<Notice kind="error">{gate.error}</Notice>{/if}
@@ -23,7 +23,7 @@
   </StepShell>
 {:else}
   <StepShell title="Couldn’t save your account"
-    lead={gate.isAndroid ? 'Tinline couldn’t store the key that opens your account on this phone, so your account has not been saved yet.' : 'Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. The system keyring did not accept the key.'} center>
+    lead={gate.isAndroid ? 'Tinline couldn’t store the key that opens your account on this phone, so your account has not been saved yet.' : 'Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. The system keyring did not accept the key.'} center anchor>
     <div class="ic bad"><Icon name="warning" size={32} /></div>
     <Notice kind="info">Nothing was kept on this {gate.noun} yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the {gate.noun}’s own key.</Notice>
     {#if gate.error}<Notice kind="error">{gate.error}</Notice>{/if}

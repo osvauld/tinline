@@ -384,7 +384,7 @@ async function contrast(p) {
     p = await mk('desktop', 'chat/arjun', { reduced: true });
     await installSampler(p);
     ok('reduced: data-motion=reduce', await pg(p, () => document.documentElement.dataset.motion === 'reduce'));
-    const rRun = p.evaluate(() => window.__samp.run(1000));
+    const rRun = p.evaluate(() => window.__samp.run(2500));
     await p.getByRole('button', { name: 'Call', exact: true }).click();
     s = await rRun;
     const ro = s.filter((x) => x.op !== null);

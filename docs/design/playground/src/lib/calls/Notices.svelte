@@ -28,7 +28,7 @@
     <div in:noticeIn out:noticeOut data-notice="ongoing">
       <Notice title="Ongoing call · {name}" {text} person={call.peer ?? undefined} tabular={system.ongoingActive} onopen={() => system.openCall()}>
         {#snippet actions()}
-          <button type="button" class="act" onclick={() => call.toggleMute()}>{call.muted ? 'Unmute' : 'Mute'}</button>
+          <button type="button" class="act" onclick={() => call.toggleMute()}><span class="lbl"><span aria-hidden="true">Unmute</span><span>{call.muted ? 'Unmute' : 'Mute'}</span></span></button>
           <button type="button" class="act" aria-pressed={call.speaker === 'speaker'} onclick={() => call.toggleSpeaker()}>Speaker</button>
           <button type="button" class="act bad" onclick={() => call.hangup()}>Hang up</button>
         {/snippet}
@@ -50,4 +50,8 @@
 
 <style>
   .list { display: grid; gap: 8px; }
+  /* Mute / Unmute share one box (the longer word reserves the width), so the buttons beside it never slide. */
+  .lbl { display: grid; justify-items: center; }
+  .lbl > :global(*) { grid-area: 1 / 1; }
+  .lbl > :global(:first-child) { visibility: hidden; }
 </style>

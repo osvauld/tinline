@@ -46,6 +46,8 @@
   const hostRows = $derived([...hostList, ...pendingHosts.filter((m) => !m.host)]);
   const noHost = $derived(hostList.length === 0);
   const hostsUp = $derived(db.env.hostsOnline && !noHost);
+  const hostLine = $derived(noHost ? 0 : hostsUp ? 1 : 2);
+  const hostLines = $derived(['This group has no host. Posts wait until a host is appointed.', `${plural(hostList.length, 'host')} online. Posts go through right away.`, 'No host is online. Your posts are saved and send when one is.']);
   const order = { owner: 0, admin: 1, member: 2 } as const;
   const sorted = $derived(g ? [...g.members].sort((a, b) => order[a.role] - order[b.role] || (a.id === 'me' ? -1 : b.id === 'me' ? 1 : 0)) : []);
   const roleLine = $derived(role === 'owner' ? 'You are the owner' : role === 'admin' ? 'You are an admin' : role ? 'You are a member' : '');
@@ -115,7 +117,7 @@
                   <code class="url" data-link>{linkText(l)}</code>
                   <span class="lmeta">{#if live}Valid until {whenLabel(l.expiresAt)} · names {linkHostName(l.host)}{:else}Expired {whenLabel(l.expiresAt)}{/if}</span>
                   <span class="lacts">
-                    {#if live}<Btn variant="outline" onclick={() => copy(l.code, linkText(l))}>{#if copied === l.code}<Icon name="check" size={18} />Copied{:else}<Icon name="copy" size={18} />Copy{/if}</Btn>{/if}
+                    {#if live}<Btn variant="outline" onclick={() => copy(l.code, linkText(l))}><span class="cp" class:on={copied === l.code}><span class="a"><Icon name="copy" size={18} />Copy</span><span class="b2"><Icon name="check" size={18} />Copied</span></span></Btn>{/if}
                     <Btn variant="quiet" onclick={() => cancelLink(g, l.code)}>{live ? 'Cancel link' : 'Remove'}</Btn>
                   </span>
                 </li>
@@ -146,11 +148,10 @@
       <!-- ---------- hosts ---------- -->
       <section class="sec" aria-labelledby="host-h">
         <h2 id="host-h">Hosts</h2>
+        <!-- All three lines share one grid cell (the tallest sets the height), so the status changing never moves what is below. -->
         <p class="status" class:warn={!hostsUp} role="status">
           <span class="dot" class:on={hostsUp}></span>
-          {#if noHost}This group has no host. Posts wait until a host is appointed.
-          {:else if hostsUp}{plural(hostList.length, 'host')} online. Posts go through right away.
-          {:else}No host is online. Your posts are saved and send when one is.{/if}
+          <span class="stk">{#each hostLines as line, i (i)}<span class:cur={i === hostLine}>{line}</span>{/each}</span>
         </p>
         {#if hostRows.length}
           <ul class="rows" role="list" aria-label="Hosts">
@@ -278,6 +279,11 @@
   .url { font: 13px/18px ui-monospace, 'SF Mono', Menlo, Consolas, monospace; overflow-wrap: anywhere; user-select: all; color: var(--ink); }
   .link.dead .url { text-decoration: line-through; color: var(--muted); }
   .lmeta { font-size: var(--fs-sub); color: var(--muted); line-height: 18px; }
+  /* Copy / Copied share one box (the wider sets the size), so Cancel link beside it never slides. */
+  .cp { display: grid; }
+  .cp > span { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .cp > .b2, .cp.on > .a { visibility: hidden; }
+  .cp.on > .b2 { visibility: visible; }
   .lacts { display: flex; gap: 4px; flex-wrap: wrap; margin-block-start: 6px; }
   .pend { margin-block-start: 6px; }
   .prow, .mrow { display: flex; align-items: center; gap: 12px; min-block-size: 60px; padding: 6px 4px; }
@@ -296,6 +302,9 @@
   .status { display: flex; align-items: flex-start; gap: 8px; margin: 0 4px 6px; font-size: var(--fs-sub); line-height: 19px; color: var(--ink); }
   .status.warn { color: var(--warn-ink); }
   .status .dot { margin-block-start: 6px; }
+  .stk { display: grid; }
+  .stk > span { grid-area: 1 / 1; visibility: hidden; }
+  .stk > .cur { visibility: visible; }
   .dot { inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--muted); flex: none; transition: background-color var(--dur-enter) var(--ease-out); }
   .dot.on { background: var(--accent); }
   .dot.sm { display: inline-block; vertical-align: 0; margin-inline-end: 6px; }

@@ -43,7 +43,10 @@ function dec(path: string): Route[] {
     return p[2] === 'info' ? [home(), conv, { name: 'groupInfo', chat: p[1] }] : [home(), conv];
   }
   if (p[0] === 'contact' && p[1]) return [home('contacts'), { name: 'contact', person: p[1] }];
-  if (p[0] === 'search') return [home(), { name: 'search', q: p[1] ? decodeURIComponent(p[1]) : '' }];
+  if (p[0] === 'search' || p[0].startsWith('search?')) {   // #/search/lunch and #/search?q=lunch
+    const q = p[1] ? decodeURIComponent(p[1]) : (new URLSearchParams(p[0].split('?')[1] ?? '').get('q') ?? '');
+    return [home(), { name: 'search', q }];
+  }
   if (p[0] === 'settings') return p[1] ? [home(), { name: 'settings' }, { name: 'settings', section: p[1] }] : [home(), { name: 'settings' }];
   if (p[0] === 'me') return [home(), { name: 'settings' }, { name: 'profile' }];
   if (p[0] === 'devices') return [home(), { name: 'settings' }, { name: 'devices' }];

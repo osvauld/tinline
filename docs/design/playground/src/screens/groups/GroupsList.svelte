@@ -46,6 +46,8 @@
   }
 
   function openNew() { creating = ''; dialog = 'new'; }
+  // The search dock's + button (Android) opens the same dialog as the "New group" row.
+  $effect(() => { addEventListener('tinline-new-group', openNew); return () => removeEventListener('tinline-new-group', openNew); });
   function closeDialog() { dialog = null; }
   function create() {
     const id = createGroup(creating);

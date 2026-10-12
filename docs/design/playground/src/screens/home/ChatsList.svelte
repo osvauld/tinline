@@ -66,7 +66,7 @@
   .mid { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .top, .bot { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
   .name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .when { font-size: var(--fs-meta); color: var(--muted); display: inline-flex; gap: 4px; align-items: center; flex: none; }
+  .when { font-size: var(--fs-meta); color: var(--muted); display: inline-flex; gap: 4px; align-items: center; flex: none; font-variant-numeric: tabular-nums; }
   .when.hot { color: var(--accent-ink); font-weight: 700; }
   .pv { flex: 1; min-width: 0; font-size: var(--fs-sub); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .draft { color: var(--accent-ink); font-weight: 600; }

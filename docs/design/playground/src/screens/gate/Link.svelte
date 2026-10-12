@@ -16,7 +16,7 @@
   lead={st.phase === 'showing' ? 'On a device that already has your account, open Settings › Link a device and scan this.'
     : st.phase === 'scanned' ? 'Check that ' + (gate.peer || 'your other device') + ' shows this code, then approve there.'
     : st.phase === 'approved' ? 'Receiving your account. Keep both devices open.' : undefined}
-  center>
+  center anchor>
   {#if st.phase === 'showing'}
     <div class="qr"><Qr seed={gate.link.nonce} size={208} /></div>
     <p class="exp" role="timer">Expires in {mmss} · works once</p>

@@ -12,13 +12,19 @@
   import CallStrip from '../../lib/calls/CallStrip.svelte';
   import CallLayer from '../../lib/calls/CallLayer.svelte';
   import SystemLayer from '../../lib/calls/SystemLayer.svelte';
+  import SearchDock from '../search/SearchDock.svelte';
+  import { ui } from '../search/state.svelte';
   const look = $derived(statusLook());
 
   /** Screens that draw their own header (with Back) instead of the shell's bare one. */
-  const OWN_BAR = new Set(['conversation', 'groupInfo', 'contact', 'profile', 'settings']);
+  const OWN_BAR = new Set(['conversation', 'groupInfo', 'contact', 'profile', 'settings', 'search']);
   const top = $derived(nav.top);
   const unread = $derived(db.chats.reduce((n, c) => n + (c.muted ? 0 : c.unread), 0));
+  /* Search entry: the pill + new button on Chats and Groups (bottom or top, drawer toggle); the app bar icon on the other tabs. */
+  const dock = $derived(top.name === 'home' && (top.tab === 'chats' || top.tab === 'groups'));
 </script>
+
+<svelte:window onkeydown={(e) => ui.hotkey(e)} />
 
 {#if db.account.gate !== 'ready'}
   <div class="gate" data-form-gate><GATE.component {...GATE.props(null)} /></div>
@@ -31,14 +37,16 @@
     <header class="appbar">
       <span class="brand"><span class="st" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /><span class="vh" aria-live="polite">{look.label}</span></span><b>Tinline</b></span>
       <span class="acts">
-        <IconButton icon="search" label="Search" onclick={() => nav.push({ name: 'search' })} />
+        {#if !dock}<IconButton icon="search" label="Search" onclick={() => ui.openScreen()} />{/if}
         <IconButton icon="gear" label="Settings" onclick={() => nav.push({ name: 'settings' })} />
       </span>
     </header>
     <TabPanel key={top.tab}>
       <h1 class="title">{L.title}</h1>
+      {#if dock && ui.position === 'top'}<SearchDock tab={top.tab} edge="top" />{/if}
       <main class="body" use:rememberScroll={top.tab}><L.component {...L.props(top)} /></main>
     </TabPanel>
+    {#if dock && ui.position === 'bottom'}<SearchDock tab={top.tab} edge="bottom" />{/if}
     <nav class="bar" aria-label="Main">
       {#each TABS as t (t)}
         <button type="button" class="tab press" aria-current={nav.tab === t ? 'page' : undefined} onclick={() => nav.setTab(t)}>

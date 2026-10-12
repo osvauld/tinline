@@ -121,7 +121,7 @@
   .main.static.bare { min-block-size: 0; padding-block: 14px; }
   .txt { flex: 1; min-inline-size: 0; display: grid; gap: 1px; }
   .lbl { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sub); line-height: 18px; color: var(--muted); }
-  .saved { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; color: var(--accent-ink); animation: fadein var(--dur-enter) var(--ease-out); }
+  .saved { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font-weight: 600; color: var(--accent-ink); animation: fadein var(--dur-enter) var(--ease-out); }
   .val { line-height: 21px; overflow-wrap: anywhere; }
   .val.ml { white-space: pre-wrap; }
   .ph { color: var(--muted); }
@@ -131,20 +131,20 @@
   .tool.pen { opacity: .8; margin-inline-end: 6px; }
   .tool:not(.pen) + .pen { margin-inline-start: -8px; }
 
-  .edit { padding: 14px 16px 12px; display: grid; gap: 6px; animation: fadein var(--dur-crossfade) var(--ease-out); }
+  .edit { position: relative; padding: 14px 16px 12px; display: grid; gap: 6px; animation: fadein var(--dur-crossfade) var(--ease-out); }
   label { font-size: var(--fs-sub); font-weight: 600; color: var(--muted); line-height: 18px; }
   input, textarea { inline-size: 100%; resize: none; padding: 10px 14px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: var(--surface); font-size: var(--fs-body); line-height: 21px; color: var(--ink); min-block-size: var(--btn); }
   input:focus, textarea:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-ink) 14%, transparent); }
-  .below { display: grid; gap: 2px; }
-  .below:empty { display: none; }
+  /* The hint / error line is always there (the counter sits on the label line), so typing or a refused save never moves the buttons. */
+  .below { display: grid; gap: 2px; align-content: start; min-block-size: 36px; }   /* room for a refusal that wraps to two lines */
   .below p { margin: 0; font-size: var(--fs-sub); line-height: 18px; }
   .hint { color: var(--muted); }
   .err { color: var(--danger); }
-  .count { color: var(--muted); font-variant-numeric: tabular-nums; justify-self: end; }
+  .count { position: absolute; inset-block-start: 14px; inset-inline-end: 16px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .count.over { color: var(--danger); }
   .lead { margin: 0; font-weight: 600; }
   .edit > p.hint { margin: 0; font-size: var(--fs-sub); line-height: 19px; }
-  .acts { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-block-start: 6px; }
+  .acts { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-block-start: 0; }
   .rm { margin-inline-end: auto; }
   @keyframes fadein { from { opacity: 0; } }
 </style>

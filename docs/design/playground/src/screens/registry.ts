@@ -11,6 +11,7 @@ import GroupInfo from './groups/GroupInfo.svelte';
 import Settings from './settings/Settings.svelte';
 import MyProfile from './profile/MyProfile.svelte';
 import PersonProfile from './profile/PersonProfile.svelte';
+import SearchScreen from './search/SearchScreen.svelte';
 
 type Entry = { component: Component<any>; props: (r: any) => Record<string, unknown> };
 const ph = (title: string, step: string): Entry => ({ component: Placeholder, props: () => ({ title, step }) });
@@ -31,7 +32,7 @@ export const SCREENS: Record<Exclude<Route['name'], 'home'>, Entry> = {
   groupInfo: { component: GroupInfo, props: (r) => ({ chatId: r.chat }) },
   contact: { component: PersonProfile, props: (r) => ({ personId: r.person }) },
   profile: { component: MyProfile, props: () => ({}) },
-  search: ph('Search', '7'),
+  search: { component: SearchScreen, props: (r) => ({ q: r.q }) },
   settings: { component: Settings, props: (r) => ({ section: r.section }) },
   devices: ph('Devices', '8'),
   privacy: ph('Privacy', '8'),

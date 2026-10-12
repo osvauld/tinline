@@ -65,6 +65,9 @@ export function seedChats(): Chat[] {
     ],
     invited: [], flags: { leo: ['sam'] },
     messages: [
+      // Older posts (additive, for search): earlier days, before the join line below.
+      msg({ from: 'sam', at: at(18, 0, 8), text: 'Trail map and the parking details are in the shared folder.' }),
+      msg({ from: 'priya', at: at(9, 30, 5), text: 'Anyone have a spare headlamp for Saturday? Mine died last time.' }),
       msg({ from: 'kavya', at: at(9, 2), text: 'Kavya joined, invited by Priya', system: true }),
       msg({ from: 'sam', at: at(12, 30), text: 'Saturday 7am at the trailhead.' }),
       msg({ from: 'sam', at: at(12, 31), text: 'Bring rain jackets, the forecast says showers after 10.' }),
@@ -87,6 +90,9 @@ export function seedChats(): Chat[] {
     ],
     invited: [], flags: {},
     messages: [
+      msg({ from: 'amma', at: at(20, 5, 10), text: 'Lunch at the café on Sunday? Everyone is coming.' }),
+      msg({ from: 'amma', at: at(8, 30, 2), text: 'ഊണ് കഴിച്ചോ? വൈകിയാൽ വിളിക്കണം.' }),
+      msg({ from: 'meera', at: at(8, 30, 3), text: 'Saturday plans: grandma’s birthday lunch, all of us.' }),
       msg({ from: 'me', at: at(18, 5, 1), text: 'Photos from Sunday', delivery: 'delivered' }),
       msg({ from: 'amma', at: at(19, 40, 1), text: 'So nice! Everyone looks happy' }),
       msg({ from: 'meera', at: at(20, 2, 1), text: 'Send the one by the lake please' }),
@@ -107,6 +113,12 @@ export function seedChats(): Chat[] {
   const after6 = msg({ from: 'me', at: at(12, 38), text: 'Yes, after 6 works for me', delivery: 'delivered', edited: true });
   return [
     direct('arjun', [
+      // Older messages (additive, for search).
+      msg({ from: 'arjun', at: at(19, 2, 9), text: 'The flat on Marine Drive is still available.' }),
+      msg({ from: 'me', at: at(19, 10, 9), text: 'Can we see it on Saturday?', delivery: 'delivered' }),
+      msg({ from: 'arjun', at: at(11, 20, 6), text: 'Booked the café near the station for lunch. Their coffee is excellent.' }),
+      msg({ from: 'me', at: at(11, 25, 6), text: 'Perfect, I’ll bring the lease papers', delivery: 'delivered' }),
+      msg({ from: 'arjun', at: at(17, 45, 4), text: 'The landlord wants the deposit by Friday.' }),
       msg({ from: 'arjun', at: at(21, 12, 1), text: 'Did you get home ok?' }),
       msg({ from: 'me', at: at(21, 14, 1), text: 'Yes, train was on time for once', delivery: 'delivered' }),
       msg({ from: 'me', at: at(21, 15, 1), text: 'Thanks for dinner. That place was great', delivery: 'delivered' }),
@@ -119,15 +131,20 @@ export function seedChats(): Chat[] {
     ], { unread: 2 }),
     hike,
     direct('dev', [
+      msg({ from: 'dev', at: at(14, 0, 7), text: 'Lunch last Thursday was fun, same place again sometime?' }),
       msg({ from: 'me', at: at(11, 2), text: 'Free this week?', delivery: 'delivered' }),
       msg({ from: 'dev', at: at(11, 5), text: 'Thursday works. The place near the station?' }),
     ], { draft: 'Lunch Thursday?' }),
     direct('sana', [
+      msg({ from: 'sana', at: at(10, 12, 11), text: '明日の会議は十時です。資料を送ります。' }),
+      msg({ from: 'sana', at: at(10, 14, 11), text: 'Meeting notes attached, the draft review is on Friday.' }),
       msg({ from: 'sana', at: at(8, 20), text: 'Sent the draft to your laptop too' }),
       msg({ from: 'sana', at: at(9, 2), text: '', call: { kind: 'voice', outcome: 'missed', durationS: 0, direction: 'in' } }),
     ], { unread: 1 }),
     family,
     direct('meera', [
+      msg({ from: 'meera', at: at(10, 15, 12), text: 'Which station do you use for the Bengaluru trip?' }),
+      msg({ from: 'me', at: at(10, 20, 12), text: 'Whichever has the earlier train', delivery: 'delivered' }),
       msg({ from: 'meera', at: at(17, 40, 1), text: 'Can you send the scan when you’re back online?' }),
       msg({ from: 'me', at: at(17, 46, 1), text: 'Running 10 minutes late, sorry', delivery: 'waiting' }),
       msg({ from: 'me', at: at(17, 50, 1), text: '', call: { kind: 'voice', outcome: 'failed', durationS: 0, direction: 'out' } }),
