@@ -106,6 +106,17 @@ Recorded here so area work and the core teams see them. Drawer notes say "Decide
   A nickname for a contact syncs to my other linked devices (never to the contact).
   Busy lengths 30 min / 1 h / 4 h / tomorrow morning / no end, default 1 h.
 
+- **Calls (accepted defaults)**: ring timeout 20 s; a missed incoming call adds one unread;
+  "Busy" has no copy of its own (ends as "Call ended", recorded Declined); "End-to-end encrypted"
+  shows only after connection.
+- **Brand**: Mark D keeps its current taut look; no separate 16 px tier for now.
+- **Call background**: build both cloud textures (soft fog, puffier clouds) behind a drawer toggle
+  and choose after seeing them.
+- **Sign-up/unlock**: lock out after 5 wrong passphrases for 30 s; the desktop welcome offers
+  Link and Restore; restoring on a device that already has an account ADDS a second account
+  (does not replace).
+- **Chat requests**: cancelling a request also starts the 7-day wait before asking again.
+
 Core follow-ups these imply (not playground work):
 - Availability: the core refuses calls while unavailable (`set_available` controls call admission);
   it must keep admitting calls while Busy.
@@ -115,3 +126,5 @@ Core follow-ups these imply (not playground work):
   first upload, same picture again, removing nothing and failed saves create no request).
 - Chat requests: one pending request per person; per-person cooldown after decline (Proposed).
 - Flags: the flagged member must receive flags before removal.
+- Unlock: the core never locks out today (only slow Argon2); a 5-try / 30 s lockout is new.
+- Restore: adding a second account on an install that already has one (multi-account restore).
