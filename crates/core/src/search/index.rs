@@ -16,14 +16,15 @@ use serde::{Deserialize, Serialize};
 use storage::{Op, Sealed, StorageError, Store};
 use zeroize::Zeroizing;
 
+use super::find::{Filter, Verdict};
 use super::hot::Hot;
-use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key};
+use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key, z_key};
 use crate::Error;
 use crate::chat::doc::{DAY_MS, day_of, day_start};
 
 /// Bump when the tokenizer or the layout changes: the index is rebuilt from the chat and group
-/// stores. (1: per-message postings in the file. 2: hot tier + segments.)
-pub const VERSION: u32 = 2;
+/// stores. (1: per-message postings in the file. 2: hot tier + segments. 4: `z/` doc tables (3 is the compaction branch).)
+pub const VERSION: u32 = 4;
 const STORE_DOMAIN: &str = "tinline/search-store/v1";
 const INDEX_DOMAIN: &str = "tinline/search-index/v1";
 
@@ -192,7 +193,7 @@ struct Memo {
 }
 
 pub struct SearchIndex {
-    db: Sealed,
+    pub(super) db: Sealed,
     keyer: Keyer,
     hot: Mutex<Hot>,
     view: RwLock<Arc<View>>,
@@ -208,6 +209,11 @@ impl SearchIndex {
         let store = crate::store::open_waiting(path)?;
         crate::store::set_private(path);
         Self::with_store(store, phrase)
+    }
+
+    #[cfg(test)]
+    pub fn with_store_for_test(store: Store) -> Self {
+        Self::with_store(store, "alpha beta").unwrap()
     }
 
     #[cfg(test)]
@@ -293,6 +299,10 @@ impl SearchIndex {
     }
 
     // ---- reading segments -------------------------------------------------------------------
+
+    fn read_z(&self, seg: u32, part: usize) -> Option<Vec<u8>> {
+        self.db.get(&z_key(seg, part)).ok().flatten()
+    }
 
     fn read_chunk(&self, seg: u32, c: usize) -> Option<Vec<(u64, DocRow)>> {
         decode_chunk(&self.db.get(&y_key(seg, c)).ok().flatten()?)
@@ -635,6 +645,7 @@ impl SearchIndex {
         for id in &remove {
             ops.push(Op::DeletePrefix(format!("x/{id:08x}/")));
             ops.push(Op::DeletePrefix(format!("y/{id:08x}/")));
+            ops.push(Op::DeletePrefix(format!("z/{id:08x}/")));
         }
         // In key order: redb grows the file many times over when large values are inserted
         // between runs of small ones (512 MiB for 6.7 MB of records, measured).
@@ -707,6 +718,15 @@ impl SearchIndex {
     /// first is the one to walk; the others only narrow it, per segment by intersecting the
     /// posting lists before any row is read).
     pub fn scan_all(&self, terms: &[String], after: Option<&str>) -> Result<Scan<'_>, Error> {
+        self.scan_filtered(terms, after, None)
+    }
+
+    /// [`scan_all`](Self::scan_all) over one conversation's docs only (find in chat).
+    pub fn scan_in(&self, terms: &[String], after: Option<&str>, src: &str, drop_budget: usize) -> Result<Scan<'_>, Error> {
+        self.scan_filtered(terms, after, Some(Filter::new(self.keyer.src(src), drop_budget)))
+    }
+
+    fn scan_filtered(&self, terms: &[String], after: Option<&str>, filt: Option<Filter>) -> Result<Scan<'_>, Error> {
         let mut toks: Vec<u64> = Vec::new();
         for t in terms {
             let k = self.keyer.tok(t);
@@ -728,9 +748,9 @@ impl SearchIndex {
             let hot = self.hot.lock();
             (self.view.read().clone(), hot.days.keys().copied().collect::<HashSet<_>>())
         };
-        let mut pending: Vec<Seg> = view.man.segs.iter().filter(|s| s.docs > 0 && after.is_none_or(|a| rev_at(s.min_at) >= a.0)).cloned().collect();
+        let mut pending: Vec<Seg> = view.man.segs.iter().filter(|s| s.docs > 0 && after.is_none_or(|a| rev_at(s.min_at) >= a.0) && filt.as_ref().is_none_or(|f| f.wants(&view, s))).cloned().collect();
         pending.sort_by_key(|s| (std::cmp::Reverse(s.max_at), std::cmp::Reverse(s.id)));
-        Ok(Scan { ix: self, toks, view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), last: None })
+        Ok(Scan { ix: self, toks, view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), last: None, filt })
     }
 
     /// `(records, key bytes + value bytes)` of the `x/`, `y/` and `m` records in the file.
@@ -796,6 +816,7 @@ pub struct Scan<'a> {
     open: Vec<Open>,
     chunks: HashMap<(u32, usize), Option<Chunk>>,
     last: Option<(u64, u64)>,
+    filt: Option<Filter>,
 }
 
 const HOT_BATCH: usize = 256;
@@ -809,6 +830,16 @@ impl Scan<'_> {
             out.push((format!("{rev:016x}/{h:016x}"), row));
         }
         Ok((out, true))
+    }
+
+    /// Find in chat: the cursor to continue from when the drop budget ended the walk.
+    pub fn stopped(&self) -> Option<String> {
+        self.filt.as_ref().and_then(|f| f.stopped.clone())
+    }
+
+    /// Find in chat: (segments opened, postings dropped by the doc table, doc table reads).
+    pub fn find_stats(&self) -> (usize, usize, usize) {
+        self.filt.as_ref().map_or((0, 0, 0), |f| (f.opened, f.dropped, f.z_reads))
     }
 
     fn chunk(&mut self, seg: u32, c: usize) -> Option<Chunk> {
@@ -829,7 +860,7 @@ impl Scan<'_> {
         if self.hot_done || !self.hot_buf.is_empty() {
             return;
         }
-        let v = self.ix.hot.lock().range(self.toks[0], &self.toks[1..], self.hot_last, HOT_BATCH);
+        let v = self.ix.hot.lock().range(self.toks[0], &self.toks[1..], self.hot_last, self.filt.as_ref().map(|f| f.src), HOT_BATCH);
         if v.len() < HOT_BATCH {
             self.hot_done = true;
         }
@@ -857,6 +888,9 @@ impl Scan<'_> {
             first = lo;
         }
         let part = first / PART_DOCS;
+        if let Some(f) = &mut self.filt {
+            f.open(s);
+        }
         self.open.push(Open { seg: s.id, docs: s.docs, part, list: Vec::new(), pos: 0, head: None });
         let i = self.open.len() - 1;
         if self.load_part(i) {
@@ -916,6 +950,30 @@ impl Scan<'_> {
                 let o = &self.open[i];
                 (o.seg, o.list[o.pos])
             };
+            if let Some(f) = &mut self.filt {
+                let ix = self.ix;
+                match f.check(seg, doc, &mut |p| ix.read_z(seg, p)) {
+                    Verdict::Keep => {}
+                    Verdict::Drop => {
+                        self.open[i].pos += 1;
+                        continue;
+                    }
+                    Verdict::Stop => {
+                        // Budget spent: a pseudo-posting at this doc ends the page when the
+                        // merge reaches it (the row is read for its cursor only).
+                        if let Some((h, row)) = self.row(seg, doc) {
+                            let key = (rev_at(row.at), h);
+                            if let Some(f) = &mut self.filt {
+                                f.stops.insert(key);
+                            }
+                            self.open[i].head = Some((key.0, key.1, row));
+                            return;
+                        }
+                        self.open[i].pos += 1;
+                        continue;
+                    }
+                }
+            }
             if let Some((h, row)) = self.row(seg, doc) {
                 self.open[i].head = Some((rev_at(row.at), h, row));
                 return;
@@ -963,6 +1021,15 @@ impl Scan<'_> {
             };
             if self.last == Some((rev, h)) {
                 continue;
+            }
+            if let Some(f) = &mut self.filt {
+                if seg.is_some() && f.stops.contains(&(rev, h)) {
+                    f.stopped = Some(format!("{rev:016x}/{h:016x}"));
+                    return None;
+                }
+                if seg.is_some() && self.ix.keyer.src(&row.src) != f.src {
+                    continue;
+                }
             }
             if let Some(seg) = seg {
                 // A segment's doc counts only while the segment owns its day and the hot tier

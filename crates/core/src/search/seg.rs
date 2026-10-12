@@ -7,6 +7,8 @@
 //!                         sealed postings of one term for the docs `part * PART_DOCS ..`: local
 //!                         doc numbers, ascending (newest first), varint deltas from the part base
 //! y/{seg:08x}/{chunk:06x} sealed doc rows, `CHUNK` a chunk, strings shared inside the chunk
+//! z/{seg:08x}/{part:04x}  sealed doc table (format 3): per doc a u16 LE, the index into the
+//!                         segment's `days` (`Z_PART` docs a record), for find in chat
 //!
 //! Every value is kept well under a redb page (4 KiB): measured, large values grow the file by
 //! tens of times their size over repeated transactions (1 GiB for 20 MB of records).
@@ -29,6 +31,10 @@ pub const NO_DIGEST: Digest = [0; 8];
 pub const CHUNK: usize = 8;
 /// Docs covered by one posting-list record.
 pub const PART_DOCS: usize = 2048;
+/// Docs per `z/` record (2 bytes each, so a record stays under a redb page).
+pub const Z_PART: usize = 1024;
+/// A doc whose day index does not fit a u16: the table cannot tell, the row decides.
+pub const Z_NONE: u16 = u16::MAX;
 
 /// One cold segment: the days it holds (a day lives in exactly one segment: the newest that
 /// lists it) and bounds of its docs' times.
@@ -82,6 +88,17 @@ pub fn x_key(seg: u32, tok: u64, part: usize) -> String {
 
 pub fn y_key(seg: u32, chunk: usize) -> String {
     format!("y/{seg:08x}/{chunk:06x}")
+}
+
+pub fn z_key(seg: u32, part: usize) -> String {
+    format!("z/{seg:08x}/{part:04x}")
+}
+
+pub fn decode_z(b: &[u8]) -> Option<Vec<u16>> {
+    if b.len() % 2 != 0 {
+        return None;
+    }
+    Some(b.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect())
 }
 
 pub fn put_var(out: &mut Vec<u8>, mut v: u64) {
@@ -217,10 +234,14 @@ pub struct Built {
 /// Builds segment `id` of `month` from whole days. Docs are numbered newest first by
 /// `(rev_at, h)`, which is also the order of the cursor.
 pub fn build(id: u32, month: u32, days: &[&DayData], tok: &dyn Fn(&str) -> u64) -> Built {
-    let mut docs: Vec<(u64, u64, &DocRow)> = days.iter().flat_map(|d| d.rows.iter().map(|(h, r)| (rev_at(r.at), *h, r))).collect();
-    docs.sort_by_key(|(rev, h, _)| (*rev, *h));
+    let mut docs: Vec<(u64, u64, &DocRow, u16)> = days
+        .iter()
+        .enumerate()
+        .flat_map(|(di, d)| d.rows.iter().map(move |(h, r)| (rev_at(r.at), *h, r, u16::try_from(di).unwrap_or(Z_NONE).min(Z_NONE))))
+        .collect();
+    docs.sort_by_key(|(rev, h, _, _)| (*rev, *h));
     let mut lists: HashMap<u64, Vec<u32>> = HashMap::new();
-    for (i, (_, _, r)) in docs.iter().enumerate() {
+    for (i, (_, _, r, _)) in docs.iter().enumerate() {
         for t in index_terms(&r.text) {
             lists.entry(tok(&t)).or_default().push(i as u32);
         }
@@ -235,14 +256,17 @@ pub fn build(id: u32, month: u32, days: &[&DayData], tok: &dyn Fn(&str) -> u64) 
         }
     }
     for (c, part) in docs.chunks(CHUNK).enumerate() {
-        let rows: Vec<(u64, &DocRow)> = part.iter().map(|(_, h, r)| (*h, *r)).collect();
+        let rows: Vec<(u64, &DocRow)> = part.iter().map(|(_, h, r, _)| (*h, *r)).collect();
         puts.push((y_key(id, c), encode_chunk(&rows)));
+    }
+    for (p, part) in docs.chunks(Z_PART).enumerate() {
+        puts.push((z_key(id, p), part.iter().flat_map(|(_, _, _, z)| z.to_le_bytes()).collect()));
     }
     let seg = Seg {
         id,
         month,
-        max_at: docs.iter().map(|(_, _, r)| r.at).max().unwrap_or(0),
-        min_at: docs.iter().map(|(_, _, r)| r.at).min().unwrap_or(0),
+        max_at: docs.iter().map(|(_, _, r, _)| r.at).max().unwrap_or(0),
+        min_at: docs.iter().map(|(_, _, r, _)| r.at).min().unwrap_or(0),
         docs: docs.len() as u32,
         days: days.iter().map(|d| (d.key.0, d.key.1, d.digest)).collect(),
     };

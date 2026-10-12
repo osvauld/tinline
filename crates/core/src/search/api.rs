@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
+use super::find;
 use super::index::{DocRow, Mark, Mode, SearchIndex};
 use super::text;
 use crate::Error;
@@ -95,6 +96,22 @@ impl Node {
     pub fn search(&self, query: String, limit: u32, cursor: Option<String>) -> Result<SearchResults, Error> {
         self.inner.search(&query, limit, cursor.as_deref(), SCAN_BUDGET)
     }
+
+    /// Find in chat: the same search inside one conversation (`conv` is the contact's DID, our
+    /// own for "You", or the group id). Newest first, same cursor, snippets and errors as
+    /// `search`; `names` is empty. A conversation the chat list does not show, or a group this
+    /// device does not hold, has no hits.
+    pub fn search_in(&self, kind: SearchConvKind, conv: String, query: String, limit: u32, cursor: Option<String>) -> Result<SearchResults, Error> {
+        self.inner.search_in(kind, &conv, &query, limit, cursor.as_deref(), SCAN_BUDGET, find::DROP_BUDGET, &mut FindStats::default())
+    }
+}
+
+/// What one find-in-chat call did (tests).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct FindStats {
+    pub segs_opened: usize,
+    pub dropped: usize,
+    pub z_reads: usize,
 }
 
 /// For tests only.
@@ -103,6 +120,15 @@ impl Node {
     #[doc(hidden)]
     pub fn search_with_budget_for_test(&self, query: String, limit: u32, cursor: Option<String>, budget: u32) -> Result<SearchResults, Error> {
         self.inner.search(&query, limit, cursor.as_deref(), budget as usize)
+    }
+
+    /// `search_in` with other budgets (this conversation's postings, other conversations'
+    /// dropped ones); also returns (segments opened, postings dropped by the doc table).
+    #[doc(hidden)]
+    pub fn search_in_with_budget_for_test(&self, kind: SearchConvKind, conv: String, query: String, limit: u32, cursor: Option<String>, budget: u32, drop_budget: u32) -> Result<(SearchResults, u32, u32), Error> {
+        let mut st = FindStats::default();
+        let r = self.inner.search_in(kind, &conv, &query, limit, cursor.as_deref(), budget as usize, drop_budget as usize, &mut st)?;
+        Ok((r, st.segs_opened as u32, st.dropped as u32))
     }
 
     /// The next `n` index writes of the chat and group hooks are skipped, as if the process died
@@ -476,6 +502,60 @@ impl Inner {
             }
         }
         Ok(SearchResults { names, messages, next })
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn search_in(self: &Arc<Self>, kind: SearchConvKind, conv: &str, query: &str, limit: u32, cursor: Option<&str>, budget: usize, drop_budget: usize, stats: &mut FindStats) -> Result<SearchResults, Error> {
+        let me = self.me()?;
+        self.chat_core()?;
+        let ix = self.search_ix().ok_or(Error::Locked)?;
+        let gcore = self.group_core().ok();
+        let none = SearchResults { names: Vec::new(), messages: Vec::new(), next: None };
+        let terms = text::query_terms(query);
+        let Some(scan_term) = terms.iter().max_by_key(|t| t.weight()) else { return Ok(none) };
+        if let Some(c) = cursor
+            && !c.split_once('/').is_some_and(|(r, h)| r.len() == 16 && h.len() == 16 && c.bytes().all(|b| b.is_ascii_hexdigit() || b == b'/'))
+        {
+            return Err(Error::Protocol("bad cursor".into()));
+        }
+        let readable = self.search_readable(&me);
+        let src = match kind {
+            SearchConvKind::Dm if readable.contains(conv) => dm_src(&pair_id(me.id.did(), conv)),
+            SearchConvKind::Group if gcore.as_ref().is_some_and(|g| g.groups.lock().contains_key(conv)) => group_src(conv),
+            _ => return Ok(none),
+        };
+        let limit = limit.clamp(1, MAX_LIMIT) as usize;
+        let mut lookups: Vec<String> = vec![scan_term.lookup()];
+        lookups.extend(terms.iter().map(|t| t.lookup()));
+        let mut messages = Vec::new();
+        let mut scan = ix.scan_in(&lookups, cursor, &src, drop_budget)?;
+        let mut looked = 0;
+        let next;
+        'scan: loop {
+            let (page, more) = scan.next(SCAN)?;
+            for (cur, row) in page {
+                looked += 1;
+                if row.src == src
+                    && let Some(hit) = self.search_hit(&me, gcore.as_deref(), &readable, &terms, row)
+                {
+                    messages.push(hit);
+                    if messages.len() >= limit {
+                        next = Some(cur);
+                        break 'scan;
+                    }
+                }
+                if looked >= budget {
+                    next = Some(cur);
+                    break 'scan;
+                }
+            }
+            if !more {
+                next = scan.stopped();
+                break;
+            }
+        }
+        (stats.segs_opened, stats.dropped, stats.z_reads) = scan.find_stats();
+        Ok(SearchResults { names: Vec::new(), messages, next })
     }
 
     /// The 1:1 conversations the chat list shows (contacts, kept histories, "You").

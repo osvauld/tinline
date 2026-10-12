@@ -688,3 +688,150 @@ fn v1_file_is_rebuilt_and_lock_drops_memory() {
     assert!(after.get("m").unwrap().is_some(), "and the rebuild wrote a manifest");
     after.close();
 }
+
+// ---- find in chat ---------------------------------------------------------------------------
+
+fn find(n: &Node, kind: SearchConvKind, conv: &str, q: &str) -> Vec<MessageHit> {
+    n.search_in(kind, conv.into(), q.into(), 100, None).unwrap().messages
+}
+
+fn find_ids(n: &Node, kind: SearchConvKind, conv: &str, q: &str) -> Vec<String> {
+    find(n, kind, conv, q).into_iter().map(|h| h.id).collect()
+}
+
+// KIND: acceptance (find in chat) — a DM and a group: each answers with its own hits only,
+// newest first, `names` empty; paging by cursor runs across the hot tier and segments (a tier
+// change between pages) without repeats or gaps.
+#[test]
+fn find_in_chat_dm_and_group_only_their_hits_paged() {
+    let p = peer("findpage");
+    let me = p.did.clone();
+    let g = p.node.group_create("Harbour Crew".into()).unwrap();
+    p.node.search_set_caps_for_test(1000, 3).unwrap();
+    let now = now_ms();
+    let (mut mine, mut theirs) = (Vec::new(), Vec::new());
+    for d in [60i64, 45, 30, 20, 12, 9] {
+        mine.push(send_old(&p.node, &me, &format!("lantern note {d}"), d));
+        theirs.push(p.node.group_post_at_for_test(g.clone(), now - d * DAY_MS + 5_000, format!("lantern post {d}")).unwrap().id);
+    }
+    for i in 0..3 {
+        mine.push(p.node.send_text(me.clone(), format!("lantern note fresh {i}"), None).unwrap().id);
+        std::thread::sleep(Duration::from_millis(3));
+        theirs.push(p.node.group_post_at_for_test(g.clone(), now_ms() + i, format!("lantern post fresh {i}")).unwrap().id);
+    }
+    // Two tiers: the old days into segments (three docs at most each), the fresh ones in memory.
+    p.node.search_maintain_for_test().unwrap();
+    mine.reverse();
+    theirs.reverse();
+    let r = p.node.search_in(SearchConvKind::Dm, me.clone(), "lant".into(), 100, None).unwrap();
+    assert!(r.names.is_empty() && r.next.is_none());
+    assert_eq!(r.messages.iter().map(|h| h.id.clone()).collect::<Vec<_>>(), mine, "DM: its hits only, newest first");
+    assert!(r.messages.iter().all(|h| h.kind == SearchConvKind::Dm && h.conv == me));
+    let r = p.node.search_in(SearchConvKind::Group, g.clone(), "lant".into(), 100, None).unwrap();
+    assert_eq!(r.messages.iter().map(|h| h.id.clone()).collect::<Vec<_>>(), theirs, "group: its hits only");
+    assert!(r.messages.iter().all(|h| h.kind == SearchConvKind::Group && h.conv == g && h.conv_name == "Harbour Crew"));
+    assert_eq!(highlighted(&r.messages[0]), ["lantern"]);
+    assert_eq!(hits(&p.node, "lantern").len(), mine.len() + theirs.len(), "the global search sees both");
+    // Pages of 4 over both tiers, with a tier change in the middle (an old message is edited).
+    for (kind, conv, want) in [(SearchConvKind::Dm, me.clone(), mine.clone()), (SearchConvKind::Group, g.clone(), theirs.clone())] {
+        let (mut seen, mut cursor, mut pages) = (Vec::new(), None, 0);
+        loop {
+            let r = p.node.search_in(kind, conv.clone(), "lantern".into(), 4, cursor).unwrap();
+            seen.extend(r.messages.iter().map(|h| h.id.clone()));
+            pages += 1;
+            if pages == 2 && kind == SearchConvKind::Dm {
+                p.node.edit_message(me.clone(), want[want.len() - 1].clone(), "lantern note edited".into()).unwrap();
+            }
+            cursor = r.next;
+            if cursor.is_none() {
+                break;
+            }
+            assert!(pages < 20);
+        }
+        assert_eq!(seen, want, "{kind:?}: each once, newest first");
+        assert!(pages >= 3);
+    }
+}
+
+// KIND: acceptance (find in chat) — a segment without the conversation is not opened; the doc
+// table drops a busy chat's postings (counted) so that a quiet chat amid a common prefix finds
+// all its hits in one call; the drop budget ends a page with a cursor that continues without
+// gaps.
+#[test]
+fn find_in_chat_skips_segments_and_budgets_are_split() {
+    let p = peer("findbudget");
+    let me = p.did.clone();
+    let busy = p.node.group_create("Busy".into()).unwrap();
+    let quiet = p.node.group_create("Quiet".into()).unwrap();
+    let base = now_ms();
+    // Two months: the busy group alone in the older one; the quiet chat amid it in the newer.
+    for i in 0..40 {
+        p.node.group_post_at_for_test(busy.clone(), base - 90 * DAY_MS + i * 1000, format!("common prefix chatter old {i}")).unwrap();
+    }
+    let mut want = Vec::new();
+    for i in 0..400 {
+        p.node.group_post_at_for_test(busy.clone(), base - 20 * DAY_MS + i * 1000, format!("common prefix chatter {i}")).unwrap();
+        if i % 100 == 50 {
+            want.push(p.node.group_post_at_for_test(quiet.clone(), base - 20 * DAY_MS + i * 1000 + 500, format!("common quiet words {i}")).unwrap().id);
+        }
+    }
+    let mine = send_old(&p.node, &me, "common private words", 20);
+    want.reverse();
+    let (_, segs, _) = p.node.search_maintain_for_test().unwrap();
+    assert!(segs >= 2, "{segs}");
+    // One call, all of the quiet chat's hits, though 400+ postings of the busy chat share the prefix.
+    let (r, opened, dropped) = p.node.search_in_with_budget_for_test(SearchConvKind::Group, quiet.clone(), "common".into(), 100, None, 20_000, 200_000).unwrap();
+    assert_eq!(r.messages.iter().map(|h| h.id.clone()).collect::<Vec<_>>(), want);
+    assert!(r.next.is_none());
+    assert_eq!(opened, 1, "the older month's segment has no day of this group");
+    assert!(dropped >= 400, "the busy chat's postings were dropped by the doc table: {dropped}");
+    // Cheap enough that a small own budget is not touched by the others' postings.
+    let (r, _, _) = p.node.search_in_with_budget_for_test(SearchConvKind::Group, quiet.clone(), "common".into(), 100, None, 5, 200_000).unwrap();
+    assert_eq!(r.messages.len(), 4);
+    // A drop budget of 100 cuts the walk; pages continue to the same result.
+    let (mut seen, mut cursor, mut pages) = (Vec::new(), None, 0);
+    loop {
+        let (r, _, _) = p.node.search_in_with_budget_for_test(SearchConvKind::Group, quiet.clone(), "common".into(), 100, cursor, 20_000, 100).unwrap();
+        pages += 1;
+        seen.extend(r.messages.iter().map(|h| h.id.clone()));
+        cursor = r.next;
+        if cursor.is_none() {
+            break;
+        }
+        assert!(pages < 30);
+    }
+    assert_eq!(seen, want);
+    assert!(pages >= 2, "the drop budget cut the first page: {pages}");
+    assert_eq!(find_ids(&p.node, SearchConvKind::Dm, &me, "common"), [mine]);
+}
+
+// KIND: acceptance (find in chat) — two nodes: a contact's DM is found by the other side only
+// in that conversation (our own "You" hit with the same word is not mixed in); a conversation
+// the chat list does not show, a group not held and an empty query return nothing; Locked while
+// locked.
+#[test]
+fn find_in_chat_contact_hidden_and_locked() {
+    let a = peer("findhida");
+    let b = peer("findhidb");
+    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    eventually(30, "contacts", || a.node.contacts().iter().any(|c| c.did == b.did) && b.node.contacts().iter().any(|c| c.did == a.did));
+    let m = a.node.send_text(b.did.clone(), "the beacon is lit".into(), None).unwrap();
+    let mine = b.node.send_text(b.did.clone(), "beacon notes for later".into(), None).unwrap();
+    eventually(WAIT, "B finds it", || hits(&b.node, "beacon").len() == 2);
+    assert_eq!(find_ids(&b.node, SearchConvKind::Dm, &a.did, "beacon"), [m.id.as_str()]);
+    assert_eq!(find_ids(&b.node, SearchConvKind::Dm, &b.did, "beacon"), [mine.id.as_str()]);
+    // Not shown in B's chat list (a stranger), a group B does not hold, and the wrong kind.
+    let stranger = peer("findstranger");
+    stranger.node.send_text(stranger.did.clone(), "beacon of the stranger".into(), None).unwrap();
+    assert!(find(&b.node, SearchConvKind::Dm, &stranger.did, "beacon").is_empty());
+    let g = a.node.group_create("Private".into()).unwrap();
+    a.node.group_post(g.clone(), "beacon in a private group".into(), None).unwrap();
+    assert!(find(&b.node, SearchConvKind::Group, &g, "beacon").is_empty());
+    assert_eq!(find(&a.node, SearchConvKind::Group, &g, "beacon").len(), 1);
+    assert!(find(&b.node, SearchConvKind::Group, &a.did, "beacon").is_empty(), "a DID is no group");
+    assert!(find(&b.node, SearchConvKind::Dm, &a.did, "").is_empty());
+    assert!(matches!(b.node.search_in(SearchConvKind::Dm, a.did.clone(), "beacon".into(), 5, Some("zz".into())), Err(Error::Protocol(_))));
+    b.node.lock();
+    eventually(10, "locked", || b.node.search("beacon".into(), 5, None).is_err());
+    assert!(matches!(b.node.search_in(SearchConvKind::Dm, a.did.clone(), "beacon".into(), 5, None), Err(Error::Locked)));
+}
