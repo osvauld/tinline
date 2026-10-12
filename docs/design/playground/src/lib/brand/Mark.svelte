@@ -3,6 +3,7 @@
      the spring model and reduced motion is honoured. Emits fx `taut-hit` when the string goes tight. */
   import { onMount } from 'svelte';
   import { TinMark } from './tinmark.js';
+  import { tierParams } from './tiers.js';
   import { motion } from '../fx/reduced.svelte';
   import { emitFx } from '../fx/bus';
   import { timeScale } from '../fx/motion';
@@ -17,8 +18,15 @@
   let api: any = null;
 
   onMount(() => {
-    const params = { ...TinMark.tier(size), mono };
-    if (!live) { TinMark.render(svg, { ...params, s: state === 'taut' ? 0 : undefined }); return; }
+    // optical-size tier for the rendered size (hinted small tiers: see MARK-MATH.md section 4)
+    const params = { ...tierParams(size), mono };
+    if (!live) {
+      const taut = state === 'taut';
+      if (!taut) TinMark.render(svg, params);
+      else if (params.sagOnly) TinMark.render(svg, { ...params, s: params.sT });
+      else TinMark.render(svg, { ...params, s: 0, delta: TinMark.resolve(params).DT });
+      return;
+    }
     api = TinMark.attach(svg, { params: { ...params, ...(sway ? { T: sway.period, phi0: sway.amp } : {}) }, reduced: motion.reduced, timeScale: timeScale() });
     api.on('hit', () => emitFx({ type: 'taut-hit' }));
     api.set(state === 'taut' ? 'taut' : 'slack');

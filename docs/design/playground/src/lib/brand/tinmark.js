@@ -48,7 +48,7 @@ function markPaths(p) {
     ? 'M ' + f3(cx) + ' ' + f3(ym) + ' H ' + f3(cx - L) + ' V ' + f3(yp) + ' H ' + f3(cx) + ' Z'
     : 'M ' + f3(cx) + ' ' + f3(ym) + ' H ' + f3(cx - L) + ' A ' + f3(a) + ' ' + f3(b) + ' 0 0 0 ' + f3(cx - L) + ' ' + f3(yp) + ' H ' + f3(cx) + ' Z';
   const rim = ell(a, b), mouth = ell(q.mu * a, q.mu * b);
-  const sil = 'M ' + f3(cx - L) + ' ' + f3(ym) + ' H ' + f3(cx) + ' A ' + f3(a) + ' ' + f3(b) + ' 0 0 1 ' + f3(cx) + ' ' + f3(yp) +
+  const sil = q.noCap ? 'M ' + f3(cx - L) + ' ' + f3(ym) + ' H ' + f3(cx) + ' A ' + f3(a) + ' ' + f3(b) + ' 0 0 1 ' + f3(cx) + ' ' + f3(yp) + ' H ' + f3(cx - L) + ' Z' : 'M ' + f3(cx - L) + ' ' + f3(ym) + ' H ' + f3(cx) + ' A ' + f3(a) + ' ' + f3(b) + ' 0 0 1 ' + f3(cx) + ' ' + f3(yp) +
     ' H ' + f3(cx - L) + ' A ' + f3(a) + ' ' + f3(b) + ' 0 0 1 ' + f3(cx - L) + ' ' + f3(ym) + ' Z';
   const str = stringPath(q.c, delta, s, phi);
   const left = cx - L - a;
@@ -90,7 +90,7 @@ function paintCans(r, d) {
 }
 // static render by the same markPaths
 function render(svg, params) {
-  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('viewBox', (params && params.viewBox) || '0 0 24 24');
   const p = Object.assign({}, params), r = build(svg, p.mono);
   const d = markPaths(p); paintCans(r, d);
   r.str.setAttribute('d', d.string); r.str.setAttribute('stroke-width', f3(d.strokeW));
@@ -106,7 +106,7 @@ function attach(svg, opts) {
   let timeScale = opts.timeScale || 1;
   let forceReduced = opts.reduced == null ? null : !!opts.reduced;
   const refs = build(svg, P.mono);
-  svg.setAttribute('viewBox', svg.getAttribute('viewBox') || '0 0 24 24');
+  svg.setAttribute('viewBox', P.viewBox || svg.getAttribute('viewBox') || '0 0 24 24');
   const ev = { hit: [], settled: [], frame: [] };
   const emit = (n, a) => ev[n].forEach(fn => fn(a));
   // state
@@ -128,15 +128,18 @@ function attach(svg, opts) {
     let lo = 0, hi = 200; for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; (x(mid) > thr ? (lo = mid) : (hi = mid)); }
     return hi / (P.endMs / 1000);
   }
-  function sag() { const w = 24 - 2 * (P.c - S.D); return sOfW(w, P.ell, P.lengthModel); }
+  // sagOnly tiers (<= 20 px): the cans never move; taut is shown by the sag easing from s0 to sT
+  const mv = () => (P.sagOnly ? 0 : 1);
+  function sag() { if (P.sagOnly) { const k = P.DT > 0 ? Math.min(1, S.D / P.DT) : 0; return P.s0 + (P.sT - P.s0) * k; }
+    const w = 24 - 2 * (P.c - S.D); return sOfW(w, P.ell, P.lengthModel); }
   function twang() { if (S.tw < 0) return 0; return P.A * Math.exp(-S.tw / P.tau) * Math.sin(2 * Math.PI * P.f * S.tw); }
-  function state() { const s = sag() + twang(); return { delta: S.D, w: 24 - 2 * (P.c - S.D), s, sBase: sag(), twang: twang(), phi: S.phi * 180 / Math.PI, t: S.t, DT: P.DT, ell: P.ell }; }
+  function state() { const s = sag() + twang(); return { delta: S.D * mv(), w: 24 - 2 * (P.c - S.D), s, sBase: sag(), twang: twang(), phi: S.phi * 180 / Math.PI, t: S.t, DT: P.DT, ell: P.ell }; }
 
   function paint() {
     const x = state();
-    const sd = stringPath(P.c, S.D, x.s, S.phi);
+    const sd = stringPath(P.c, S.D * mv(), x.s, S.phi);
     if (sd !== lastStr) { refs.str.setAttribute('d', sd); lastStr = sd; }
-    const tl = 'translate(' + f3(-S.D) + ' 0)', tr = MIRROR + ' translate(' + f3(-S.D) + ' 0)';
+    const tl = 'translate(' + f3(-S.D * mv()) + ' 0)', tr = MIRROR + ' translate(' + f3(-S.D * mv()) + ' 0)';
     if (tl !== lastL) { refs.L.g.setAttribute('transform', tl); lastL = tl; }
     if (tr !== lastR) { refs.R.g.setAttribute('transform', tr); lastR = tr; }
     emit('frame', x);
