@@ -88,7 +88,7 @@ impl Stat {
     }
     fn json(&self) -> Value {
         let max = self.0.iter().cloned().fold(0.0, f64::max);
-        json!({"n": self.0.len(), "p50_ms": round(self.p(0.5)), "p95_ms": round(self.p(0.95)), "max_ms": round(max)})
+        json!({"n": self.0.len(), "p50_ms": round(self.p(0.5)), "p95_ms": round(self.p(0.95)), "p99_ms": round(self.p(0.99)), "max_ms": round(max)})
     }
 }
 fn round(x: f64) -> f64 {
@@ -533,7 +533,7 @@ fn measure(node: &Node, m: &Value, did: &str, contacts: &[String], _c: &Corpus2,
         }
         // Local writes.
         let mut wr = Stat(vec![]);
-        for i in 0..40 {
+        for i in 0..200 {
             let text = format!("{} {i}", message(&mut rng, &corp));
             wr.0.push(timed(|| node.group_post(gid.clone(), text, None).unwrap()).1);
         }
@@ -567,7 +567,7 @@ fn measure(node: &Node, m: &Value, did: &str, contacts: &[String], _c: &Corpus2,
     let mut first = Stat(vec![]);
     let mut rest = Stat(vec![]);
     let mut seen = std::collections::HashSet::new();
-    for i in 0..240 {
+    for i in 0..600 {
         let c = &contacts[i % 40];
         let text = format!("{} s{i}", message(&mut rng, &corp));
         let (_, t) = timed(|| node.send_text(c.clone(), text, None).unwrap());

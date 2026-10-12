@@ -16,14 +16,16 @@ use serde::{Deserialize, Serialize};
 use storage::{Op, Sealed, StorageError, Store};
 use zeroize::Zeroizing;
 
+use super::find::{Filter, Verdict};
 use super::hot::Hot;
-use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key};
+use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key, z_key, b_key, bucket_find, bucket_of};
 use crate::Error;
 use crate::chat::doc::{DAY_MS, day_of, day_start};
 
 /// Bump when the tokenizer or the layout changes: the index is rebuilt from the chat and group
-/// stores. (1: per-message postings in the file. 2: hot tier + segments.)
-pub const VERSION: u32 = 2;
+/// stores. (1: per-message postings in the file. 2: hot tier + segments. 3: bucketed short
+/// posting lists. 4: `z/` doc tables for find in chat.)
+pub const VERSION: u32 = 4;
 const STORE_DOMAIN: &str = "tinline/search-store/v1";
 const INDEX_DOMAIN: &str = "tinline/search-index/v1";
 
@@ -38,6 +40,9 @@ pub const MERGE_SEGS: usize = 4;
 /// How long a changed cold day waits in memory before its month is written again.
 pub const DEBOUNCE: Duration = Duration::from_secs(600);
 
+/// Free bytes in the file below which it is not worth compacting.
+pub const COMPACT_MIN_WASTE: u64 = 8 << 20;
+
 /// The tunables, as a value so that tests can shrink them.
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
@@ -46,11 +51,13 @@ pub struct Limits {
     pub seg_max_docs: usize,
     pub merge_segs: usize,
     pub debounce: Duration,
+    /// Free bytes in the file above which compacting is considered ([`COMPACT_MIN_WASTE`]).
+    pub compact_min_waste: u64,
 }
 
 impl Default for Limits {
     fn default() -> Self {
-        Self { hot_days: HOT_DAYS, hot_max_docs: HOT_MAX_DOCS, seg_max_docs: SEG_MAX_DOCS, merge_segs: MERGE_SEGS, debounce: DEBOUNCE }
+        Self { hot_days: HOT_DAYS, hot_max_docs: HOT_MAX_DOCS, seg_max_docs: SEG_MAX_DOCS, merge_segs: MERGE_SEGS, debounce: DEBOUNCE, compact_min_waste: COMPACT_MIN_WASTE }
     }
 }
 
@@ -178,6 +185,17 @@ pub struct Stats {
 
 /// Where `maintain` spends its time, in ns: pick, read old segments, build, write, swap (for
 /// the benchmarks).
+/// Lowers the priority of the calling thread (segment builders must not take the core a send
+/// is running on from it).
+fn background_thread() {
+    #[cfg(unix)]
+    // SAFETY: plain syscalls on the calling thread's own id; failure is ignored.
+    unsafe {
+        let tid = libc::syscall(libc::SYS_gettid) as libc::id_t;
+        libc::setpriority(libc::PRIO_PROCESS, tid, 15);
+    }
+}
+
 pub static PHASES: [std::sync::atomic::AtomicU64; 5] = [const { std::sync::atomic::AtomicU64::new(0) }; 5];
 
 fn phase(i: usize, since: Instant) -> Instant {
@@ -192,7 +210,7 @@ struct Memo {
 }
 
 pub struct SearchIndex {
-    db: Sealed,
+    pub(super) db: Sealed,
     keyer: Keyer,
     hot: Mutex<Hot>,
     view: RwLock<Arc<View>>,
@@ -200,6 +218,10 @@ pub struct SearchIndex {
     lim: RwLock<Limits>,
     today: Mutex<Option<u32>>,
     ticker: std::sync::atomic::AtomicBool,
+    /// Segments were written or dropped since the last look at the file's free space.
+    file_changed: std::sync::atomic::AtomicBool,
+    /// `close` was called (the hot tier is wiped; `apply` ignores changes).
+    closed: std::sync::atomic::AtomicBool,
 }
 
 impl SearchIndex {
@@ -207,17 +229,22 @@ impl SearchIndex {
     pub fn open(path: &Path, phrase: &str) -> Result<Self, Error> {
         let store = crate::store::open_waiting(path)?;
         crate::store::set_private(path);
-        Self::with_store(store, phrase)
+        Self::with_store(store, phrase, Some(path))
+    }
+
+    #[cfg(test)]
+    pub fn with_store_for_test(store: Store) -> Self {
+        Self::with_store(store, "alpha beta", None).unwrap()
     }
 
     #[cfg(test)]
     pub fn in_memory(phrase: &str) -> Self {
-        Self::with_store(Store::open_in_memory().unwrap(), phrase).unwrap()
+        Self::with_store(Store::open_in_memory().unwrap(), phrase, None).unwrap()
     }
 
-    fn with_store(store: Store, phrase: &str) -> Result<Self, Error> {
+    fn with_store(store: Store, phrase: &str, path: Option<&Path>) -> Result<Self, Error> {
         let p = norm_phrase(phrase);
-        let me = Self {
+        let mut me = Self {
             db: Sealed::new(store, blake3::derive_key(STORE_DOMAIN, p.as_bytes())),
             keyer: Keyer(Zeroizing::new(blake3::derive_key(INDEX_DOMAIN, p.as_bytes()))),
             hot: Mutex::new(Hot::default()),
@@ -226,13 +253,24 @@ impl SearchIndex {
             lim: RwLock::new(Limits::default()),
             today: Mutex::new(None),
             ticker: std::sync::atomic::AtomicBool::new(false),
+            file_changed: std::sync::atomic::AtomicBool::new(true),
+            closed: std::sync::atomic::AtomicBool::new(false),
         };
         let current = matches!(me.db.get("v"), Ok(Some(v)) if v == VERSION.to_be_bytes());
         let man = if current { me.db.get("m").ok().flatten().and_then(|b| bincode::deserialize::<Manifest>(&b).ok()) } else { None };
         match man {
             Some(m) => *me.view.write() = Arc::new(View::new(m)),
             None => {
-                // Another version, no manifest or an unreadable one: start over.
+                // Another version, no manifest or an unreadable one: start over. A file is
+                // replaced by a new one (deleting a gigabyte of records one by one takes
+                // half a minute, and the file would stay that big).
+                if let Some(path) = path {
+                    me.db.close();
+                    let _ = std::fs::remove_file(path);
+                    let store = crate::store::open_waiting(path)?;
+                    crate::store::set_private(path);
+                    me.db = Sealed::new(store, blake3::derive_key(STORE_DOMAIN, p.as_bytes()));
+                }
                 me.db.apply(&[Op::DeletePrefix(String::new()), me.db.put_op("v", &VERSION.to_be_bytes()).map_err(io)?]).map_err(io)?;
             }
         }
@@ -242,13 +280,16 @@ impl SearchIndex {
     /// Lets the file go for every holder (stop of the account's stores) and forgets the hot
     /// tier.
     pub fn close(&self) {
+        self.closed.store(true, std::sync::atomic::Ordering::SeqCst);
         self.db.close();
         self.hot.lock().wipe();
         *self.view.write() = Arc::new(View::default());
     }
 
+    /// Whether `close` was called. A flag, not the store's lock: that one is held by a
+    /// compaction, and the send path asks this.
     pub fn is_closed(&self) -> bool {
-        self.db.raw().is_closed()
+        self.closed.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Whether the caller is the one to run the periodic maintenance of this index.
@@ -293,6 +334,10 @@ impl SearchIndex {
     }
 
     // ---- reading segments -------------------------------------------------------------------
+
+    fn read_z(&self, seg: u32, part: usize) -> Option<Vec<u8>> {
+        self.db.get(&z_key(seg, part)).ok().flatten()
+    }
 
     fn read_chunk(&self, seg: u32, c: usize) -> Option<Vec<(u64, DocRow)>> {
         decode_chunk(&self.db.get(&y_key(seg, c)).ok().flatten()?)
@@ -456,10 +501,12 @@ impl SearchIndex {
         for g in man.segs.iter().filter(|g| g.days.is_empty()) {
             ops.push(Op::DeletePrefix(format!("x/{:08x}/", g.id)));
             ops.push(Op::DeletePrefix(format!("y/{:08x}/", g.id)));
+            ops.push(Op::DeletePrefix(format!("z/{:08x}/", g.id)));
         }
         man.segs.retain(|g| !g.days.is_empty());
         ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
         self.db.apply(&ops).map_err(io)?;
+        self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         *self.view.write() = Arc::new(View::new(man));
         Ok(())
     }
@@ -502,6 +549,50 @@ impl SearchIndex {
     /// too many or is over, all in one transaction with the manifest, then lets the hot tier go
     /// of the days written. A day changed meanwhile stays in memory.
     pub fn maintain(&self, mode: Mode) -> Result<(), Error> {
+        self.maintain_segments(mode)?;
+        if mode != Mode::Cap {
+            self.compact_if_worthwhile()?;
+        }
+        Ok(())
+    }
+
+    /// Gives the file's free space back when it is mostly free: more than
+    /// [`COMPACT_MIN_WASTE`] bytes and more than a third of the file (segment merges and rewrites
+    /// leave free pages, and redb grows the file in big steps). Only looks after the file
+    /// changed since the last look. Holds the maintenance lock, and redb the database, for the
+    /// duration (queries wait; `apply` does not touch the file except to load a cold day), so
+    /// it belongs in the background. Returns the file length before and after when it ran.
+    pub fn compact_if_worthwhile(&self) -> Result<Option<(u64, u64)>, Error> {
+        let _m = self.maint.lock();
+        if self.is_closed() || !self.file_changed.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            return Ok(None);
+        }
+        let Some(u) = self.db.raw().usage().map_err(io)? else { return Ok(None) };
+        if u.wasted() <= self.limits().compact_min_waste || u.wasted() * 3 <= u.file_bytes {
+            return Ok(None);
+        }
+        self.compact_locked()
+    }
+
+    /// File length and live bytes (benchmarks).
+    pub fn usage(&self) -> Option<storage::Usage> {
+        self.db.raw().usage().ok().flatten()
+    }
+
+    /// Compacts regardless of the thresholds (tests, tools).
+    pub fn compact_now(&self) -> Result<Option<(u64, u64)>, Error> {
+        let _m = self.maint.lock();
+        self.compact_locked()
+    }
+
+    fn compact_locked(&self) -> Result<Option<(u64, u64)>, Error> {
+        let Some(before) = self.db.raw().usage().map_err(io)? else { return Ok(None) };
+        self.db.raw().compact().map_err(io)?;
+        let after = self.db.raw().usage().map_err(io)?.map_or(before.file_bytes, |u| u.file_bytes);
+        Ok(Some((before.file_bytes, after)))
+    }
+
+    pub(crate) fn maintain_segments(&self, mode: Mode) -> Result<(), Error> {
         let mut memo = self.maint.lock();
         if self.is_closed() {
             return Ok(());
@@ -597,10 +688,12 @@ impl SearchIndex {
         let built: Vec<Built> = {
             let slots: Vec<Mutex<Option<Built>>> = jobs.iter().map(|_| Mutex::new(None)).collect();
             let at = std::sync::atomic::AtomicUsize::new(0);
-            let workers = std::thread::available_parallelism().map_or(1, |n| n.get()).min(jobs.len()).max(1);
+            // Half the cores, at low priority: a send must never wait for a core.
+            let workers = (std::thread::available_parallelism().map_or(1, |n| n.get()) / 2).max(1).min(jobs.len()).max(1);
             std::thread::scope(|sc| {
                 for _ in 0..workers {
                     sc.spawn(|| {
+                        background_thread();
                         let tok = |t: &str| self.keyer.tok(t);
                         loop {
                             let i = at.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -635,6 +728,7 @@ impl SearchIndex {
         for id in &remove {
             ops.push(Op::DeletePrefix(format!("x/{id:08x}/")));
             ops.push(Op::DeletePrefix(format!("y/{id:08x}/")));
+            ops.push(Op::DeletePrefix(format!("z/{id:08x}/")));
         }
         // In key order: redb grows the file many times over when large values are inserted
         // between runs of small ones (512 MiB for 6.7 MB of records, measured).
@@ -646,6 +740,7 @@ impl SearchIndex {
         ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
         let tw = Instant::now();
         self.db.apply(&ops).map_err(io)?;
+        self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         let t = phase(3, tw).max(t);
         let nv = Arc::new(View::new(man));
         {
@@ -707,6 +802,15 @@ impl SearchIndex {
     /// first is the one to walk; the others only narrow it, per segment by intersecting the
     /// posting lists before any row is read).
     pub fn scan_all(&self, terms: &[String], after: Option<&str>) -> Result<Scan<'_>, Error> {
+        self.scan_filtered(terms, after, None)
+    }
+
+    /// [`scan_all`](Self::scan_all) over one conversation's docs only (find in chat).
+    pub fn scan_in(&self, terms: &[String], after: Option<&str>, src: &str, drop_budget: usize) -> Result<Scan<'_>, Error> {
+        self.scan_filtered(terms, after, Some(Filter::new(self.keyer.src(src), drop_budget)))
+    }
+
+    fn scan_filtered(&self, terms: &[String], after: Option<&str>, filt: Option<Filter>) -> Result<Scan<'_>, Error> {
         let mut toks: Vec<u64> = Vec::new();
         for t in terms {
             let k = self.keyer.tok(t);
@@ -728,9 +832,9 @@ impl SearchIndex {
             let hot = self.hot.lock();
             (self.view.read().clone(), hot.days.keys().copied().collect::<HashSet<_>>())
         };
-        let mut pending: Vec<Seg> = view.man.segs.iter().filter(|s| s.docs > 0 && after.is_none_or(|a| rev_at(s.min_at) >= a.0)).cloned().collect();
+        let mut pending: Vec<Seg> = view.man.segs.iter().filter(|s| s.docs > 0 && after.is_none_or(|a| rev_at(s.min_at) >= a.0) && filt.as_ref().is_none_or(|f| f.wants(&view, s))).cloned().collect();
         pending.sort_by_key(|s| (std::cmp::Reverse(s.max_at), std::cmp::Reverse(s.id)));
-        Ok(Scan { ix: self, toks, view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), last: None })
+        Ok(Scan { ix: self, toks, view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), buckets: HashMap::new(), last: None, filt })
     }
 
     /// `(records, key bytes + value bytes)` of the `x/`, `y/` and `m` records in the file.
@@ -773,6 +877,7 @@ type Chunk = Arc<Vec<(u64, DocRow)>>;
 
 struct Open {
     seg: u32,
+    bbits: u8,
     docs: u32,
     /// The next posting-list part to load.
     part: usize,
@@ -795,7 +900,9 @@ pub struct Scan<'a> {
     pending: VecDeque<Seg>,
     open: Vec<Open>,
     chunks: HashMap<(u32, usize), Option<Chunk>>,
+    buckets: HashMap<(u32, u32), Option<Vec<u8>>>,
     last: Option<(u64, u64)>,
+    filt: Option<Filter>,
 }
 
 const HOT_BATCH: usize = 256;
@@ -809,6 +916,16 @@ impl Scan<'_> {
             out.push((format!("{rev:016x}/{h:016x}"), row));
         }
         Ok((out, true))
+    }
+
+    /// Find in chat: the cursor to continue from when the drop budget ended the walk.
+    pub fn stopped(&self) -> Option<String> {
+        self.filt.as_ref().and_then(|f| f.stopped.clone())
+    }
+
+    /// Find in chat: (segments opened, postings dropped by the doc table, doc table reads).
+    pub fn find_stats(&self) -> (usize, usize, usize) {
+        self.filt.as_ref().map_or((0, 0, 0), |f| (f.opened, f.dropped, f.z_reads))
     }
 
     fn chunk(&mut self, seg: u32, c: usize) -> Option<Chunk> {
@@ -829,7 +946,7 @@ impl Scan<'_> {
         if self.hot_done || !self.hot_buf.is_empty() {
             return;
         }
-        let v = self.ix.hot.lock().range(self.toks[0], &self.toks[1..], self.hot_last, HOT_BATCH);
+        let v = self.ix.hot.lock().range(self.toks[0], &self.toks[1..], self.hot_last, self.filt.as_ref().map(|f| f.src), HOT_BATCH);
         if v.len() < HOT_BATCH {
             self.hot_done = true;
         }
@@ -857,7 +974,10 @@ impl Scan<'_> {
             first = lo;
         }
         let part = first / PART_DOCS;
-        self.open.push(Open { seg: s.id, docs: s.docs, part, list: Vec::new(), pos: 0, head: None });
+        if let Some(f) = &mut self.filt {
+            f.open(s);
+        }
+        self.open.push(Open { seg: s.id, bbits: s.bbits, docs: s.docs, part, list: Vec::new(), pos: 0, head: None });
         let i = self.open.len() - 1;
         if self.load_part(i) {
             let o = &mut self.open[i];
@@ -880,8 +1000,16 @@ impl Scan<'_> {
                 return false;
             }
             let mut list: Option<Vec<u32>> = None;
-            for tok in &self.toks {
-                let l = self.ix.db.get(&x_key(seg, *tok, part)).ok().flatten().and_then(|b| decode_list(&b, (part * PART_DOCS) as u32)).unwrap_or_default();
+            let bbits = self.open[i].bbits;
+            for tok in self.toks.clone() {
+                let bk = (seg, bucket_of(tok, bbits));
+                let ix = self.ix;
+                let bucket = self.buckets.entry(bk).or_insert_with(|| ix.db.get(&b_key(bk.0, bk.1)).ok().flatten());
+                let short = bucket.as_deref().and_then(|b| bucket_find(b, tok, part));
+                let l = match short {
+                    Some(l) => l,
+                    None => self.ix.db.get(&x_key(seg, tok, part)).ok().flatten().and_then(|b| decode_list(&b, (part * PART_DOCS) as u32)).unwrap_or_default(),
+                };
                 list = Some(match list {
                     None => l,
                     Some(prev) => {
@@ -916,6 +1044,30 @@ impl Scan<'_> {
                 let o = &self.open[i];
                 (o.seg, o.list[o.pos])
             };
+            if let Some(f) = &mut self.filt {
+                let ix = self.ix;
+                match f.check(seg, doc, &mut |p| ix.read_z(seg, p)) {
+                    Verdict::Keep => {}
+                    Verdict::Drop => {
+                        self.open[i].pos += 1;
+                        continue;
+                    }
+                    Verdict::Stop => {
+                        // Budget spent: a pseudo-posting at this doc ends the page when the
+                        // merge reaches it (the row is read for its cursor only).
+                        if let Some((h, row)) = self.row(seg, doc) {
+                            let key = (rev_at(row.at), h);
+                            if let Some(f) = &mut self.filt {
+                                f.stops.insert(key);
+                            }
+                            self.open[i].head = Some((key.0, key.1, row));
+                            return;
+                        }
+                        self.open[i].pos += 1;
+                        continue;
+                    }
+                }
+            }
             if let Some((h, row)) = self.row(seg, doc) {
                 self.open[i].head = Some((rev_at(row.at), h, row));
                 return;
@@ -963,6 +1115,15 @@ impl Scan<'_> {
             };
             if self.last == Some((rev, h)) {
                 continue;
+            }
+            if let Some(f) = &mut self.filt {
+                if seg.is_some() && f.stops.contains(&(rev, h)) {
+                    f.stopped = Some(format!("{rev:016x}/{h:016x}"));
+                    return None;
+                }
+                if seg.is_some() && self.ix.keyer.src(&row.src) != f.src {
+                    continue;
+                }
             }
             if let Some(seg) = seg {
                 // A segment's doc counts only while the segment owns its day and the hot tier
@@ -1118,7 +1279,7 @@ mod tests {
                 assert!(!v.windows(word.len()).any(|w| w == word.as_bytes()), "value of {k} leaks {word}");
             }
         }
-        let other = SearchIndex::with_store(ix.db.raw().clone(), "other phrase").unwrap();
+        let other = SearchIndex::with_store(ix.db.raw().clone(), "other phrase", None).unwrap();
         assert!(ids(&other, "conf").is_empty());
         assert!(ix.db.raw().get("v").unwrap().is_some());
     }
@@ -1131,7 +1292,7 @@ mod tests {
         ix.db.put("v", &1u32.to_be_bytes()).unwrap();
         ix.db.put("d/00ff", b"old row").unwrap();
         raw.put("t/abcd/ffff/00ff", b"").unwrap();
-        let again = SearchIndex::with_store(raw, "alpha beta").unwrap();
+        let again = SearchIndex::with_store(raw, "alpha beta", None).unwrap();
         assert_eq!(again.raw_rows().len(), 1, "only the version row");
         assert!(again.ix_version_ok());
     }
@@ -1158,7 +1319,7 @@ mod tests {
         assert_eq!((ix.stats().hot_docs, ix.stats().segs), (0, 1));
         assert_eq!(ids(&ix, "manus"), ["1"]);
         assert!(ix.watermark_is("dm.p", &r.day, &[1]) || ix.has_watermark("dm.p", &r.day));
-        let again = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta").unwrap();
+        let again = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta", None).unwrap();
         assert_eq!(ids(&again, "manus"), ["1"]);
         assert!(again.has_watermark("dm.p", &r.day));
         assert_eq!(again.stats().hot_docs, 0);
@@ -1209,7 +1370,7 @@ mod tests {
         ix.maintain(Mode::Force).unwrap();
         ix.apply(&[row("dm.p", "a", T0 + 100, "one three")], &[], &[mark(&a, 2)]).unwrap();
         assert!(ix.watermark_is("dm.p", &a.day, &[2]));
-        let crashed = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta").unwrap();
+        let crashed = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta", None).unwrap();
         assert!(crashed.watermark_is("dm.p", &a.day, &[1]) && !crashed.watermark_is("dm.p", &a.day, &[2]));
         assert_eq!(ids(&crashed, "two"), ["a"], "the file still has the old text, reconcile fixes it");
     }
@@ -1370,4 +1531,195 @@ mod tests {
         ix.apply_bulk(&rows, &[], &[]).unwrap();
         assert!(ix.stats().hot_docs >= 30);
     }
+    fn temp_path(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("search-compact-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir.join("search.redb")
+    }
+
+    /// Every id under a few terms, newest first, over all pages.
+    fn answers(ix: &SearchIndex) -> Vec<Vec<String>> {
+        ["pi", "plan", "zebra", "tok", "meeting"].iter().map(|t| ids(ix, t)).collect()
+    }
+
+    fn fill(ix: &SearchIndex, convs: usize, days: i64, per_day: usize) {
+        fill_from(ix, 0, convs, days, per_day);
+    }
+
+    fn fill_from(ix: &SearchIndex, first: usize, convs: usize, days: i64, per_day: usize) {
+        let mut n = 0u32;
+        for d in 0..days {
+            for c in first..convs {
+                let rows: Vec<DocRow> = (0..per_day)
+                    .map(|k| {
+                        n += 1;
+                        row(&format!("dm.{c}"), &format!("m{n}"), T0 + d * D + k as i64 * 1000, &format!("picnic plans {n} token{} meeting zebra{}", n % 17, n % 5))
+                    })
+                    .collect();
+                ix.apply(&rows, &[], &[mark(&rows[0], 1)]).unwrap();
+            }
+        }
+    }
+
+    // KIND: invariant (v2) — the file gives its free space back when it is mostly free and big
+    // enough, only after it changed, and the answers are identical afterwards and after a reopen.
+    #[test]
+    fn compaction_trigger_and_same_answers() {
+        let path = temp_path("trigger");
+        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        at_day(&ix, "2026-06-01");
+        for c in 0..6 {
+            // one segment a conversation, so that forgetting it frees its pages
+            fill_from(&ix, c, c + 1, 40, 20);
+            ix.maintain_segments(Mode::Force).unwrap();
+        }
+        // Small file: below the byte threshold nothing happens, and the look is spent.
+        assert_eq!(ix.compact_if_worthwhile().unwrap(), None);
+        ix.set_limits(|l| l.compact_min_waste = 0);
+        assert_eq!(ix.compact_if_worthwhile().unwrap(), None, "no change since the last look");
+        // Mostly-free file: drop most of the conversations, leaving their pages free.
+        for c in 1..6 {
+            ix.forget(&format!("dm.{c}")).unwrap();
+        }
+        let before = answers(&ix);
+        assert!(before.iter().any(|a| !a.is_empty()));
+        let len_before = std::fs::metadata(&path).unwrap().len();
+        let u = ix.db.raw().usage().unwrap().unwrap();
+        assert!(u.wasted() * 2 > u.file_bytes, "mostly free: {u:?}");
+        let (a, b) = ix.compact_if_worthwhile().unwrap().expect("compacted");
+        assert_eq!(a, len_before);
+        assert!(b * 2 < a, "{a} -> {b}");
+        assert_eq!(std::fs::metadata(&path).unwrap().len(), b);
+        assert_eq!(answers(&ix), before);
+        // Nothing left to give back: the second look does nothing.
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.compact_if_worthwhile().unwrap(), None);
+        // Still writable, and a reopen sees the same index.
+        ix.close();
+        drop(ix);
+        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        at_day(&ix, "2026-06-01");
+        assert_eq!(answers(&ix), before);
+        let n = ids(&ix, "picnic").len();
+        fill_from(&ix, 7, 8, 2, 5);
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ids(&ix, "picnic").len(), n + 10);
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    // KIND: invariant (v2) — maintenance runs compaction after a write, but never in a bulk
+    // (`Cap`), and an in-memory index has nothing to compact.
+    #[test]
+    fn compaction_follows_maintenance_not_bulk() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        at_day(&ix, "2026-06-01");
+        fill(&ix, 2, 20, 5);
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.compact_if_worthwhile().unwrap(), None);
+        assert_eq!(ix.compact_now().unwrap(), None);
+    }
+
+    // KIND: crash (v2) — killing the process in the middle of a compaction leaves a file that
+    // opens with every record (redb compacts by ordinary commits and repairs a file that was
+    // not closed). The child compacts in a loop; the parent kills it at several moments.
+    #[test]
+    fn compaction_killed_midway_opens() {
+        use std::process::{Command, Stdio};
+        if let Ok(p) = std::env::var("COMPACT_CHILD") {
+            let ix = SearchIndex::open(std::path::Path::new(&p), "alpha beta").unwrap();
+            at_day(&ix, "2026-06-01");
+            println!("ready");
+            loop {
+                ix.compact_now().unwrap();
+                // free pages again, so that there is something to move
+                fill(&ix, 3, 6, 40);
+                ix.maintain(Mode::Force).unwrap();
+                for c in 0..3 {
+                    ix.forget(&format!("dm.{c}")).unwrap();
+                }
+            }
+        }
+        let path = temp_path("kill");
+        {
+            let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+            at_day(&ix, "2026-06-01");
+            fill(&ix, 8, 40, 30);
+            ix.maintain(Mode::Force).unwrap();
+            ix.set_limits(|l| l.compact_min_waste = 0);
+            for c in 3..8 {
+                ix.forget(&format!("dm.{c}")).unwrap();
+            }
+            ix.close();
+        }
+        for delay in [5u64, 40, 120, 300, 700] {
+            let exe = std::env::current_exe().unwrap();
+            let mut child = Command::new(exe)
+                .args(["--exact", "search::index::tests::compaction_killed_midway_opens", "--nocapture"])
+                .env("COMPACT_CHILD", &path)
+                .stdout(Stdio::null())
+                .spawn()
+                .unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(delay));
+            child.kill().unwrap();
+            child.wait().unwrap();
+            // Opens, whatever moment it died at; the manifest and its segments are consistent.
+            let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+            at_day(&ix, "2026-06-01");
+            let st = ix.stats();
+            // Every doc the manifest lists reads back (a lost page would make the scan skip it).
+            let found = ids(&ix, "picnic").len();
+            assert!(found <= st.seg_docs && (st.seg_docs == 0 || found > 0), "{delay} ms: {found} of {} docs", st.seg_docs);
+            let y = ix.content_sizes().iter().find(|r| r.0 == "y/").unwrap().1;
+            assert!(y * 8 >= st.seg_docs, "{delay} ms: {y} chunks for {} docs", st.seg_docs);
+            ix.close();
+        }
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
+    // KIND: invariant (v2) — a send (`apply`, and the closed check in front of it) never waits for
+    // the file: while a compaction holds the store exclusively, they complete.
+    #[test]
+    fn apply_does_not_wait_for_a_compaction() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        at_day(&ix, "2026-06-01");
+        let r = row("dm.p", "1", T0 + 10, "hello there");
+        ix.db.raw().while_exclusive(|| {
+            std::thread::scope(|sc| {
+                let h = sc.spawn(|| {
+                    assert!(!ix.is_closed());
+                    ix.apply(std::slice::from_ref(&r), &[], &[mark(&r, 1)]).unwrap();
+                });
+                let t = Instant::now();
+                while !h.is_finished() {
+                    assert!(t.elapsed() < Duration::from_secs(5), "apply is waiting for the store");
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                h.join().unwrap();
+            });
+        });
+        assert_eq!(ids(&ix, "hel"), ["1"]);
+    }
+
+    // KIND: unit (v2) — an old-format file is replaced by a fresh one on open (not emptied
+    // record by record), so it is small again at once.
+    #[test]
+    fn old_format_file_is_replaced() {
+        let path = temp_path("oldfmt");
+        {
+            let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+            fill(&ix, 6, 30, 60);
+            at_day(&ix, "2026-06-01");
+            ix.maintain(Mode::Force).unwrap();
+            ix.db.put("v", &2u32.to_be_bytes()).unwrap();
+            ix.close();
+        }
+        let big = std::fs::metadata(&path).unwrap().len();
+        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        assert!(ix.ix_version_ok());
+        assert_eq!(ix.raw_rows().len(), 1);
+        assert!(std::fs::metadata(&path).unwrap().len() < big && std::fs::metadata(&path).unwrap().len() < (2 << 20), "{big}");
+        let _ = std::fs::remove_dir_all(path.parent().unwrap());
+    }
+
 }

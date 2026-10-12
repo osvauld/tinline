@@ -85,13 +85,14 @@ impl Hot {
     }
 
     /// Up to `n` postings of `tok` after `after` (newest first) that are also posted under every
-    /// token of `also`, with their rows.
-    pub fn range(&self, tok: u64, also: &[u64], after: Option<(u64, u64)>, n: usize) -> Vec<(u64, u64, DocRow)> {
+    /// token of `also` (and, with `only`, belong to that conversation's src hash), with their rows.
+    pub fn range(&self, tok: u64, also: &[u64], after: Option<(u64, u64)>, only: Option<u64>, n: usize) -> Vec<(u64, u64, DocRow)> {
         let Some(set) = self.post.get(&tok) else { return Vec::new() };
         let from = after.map_or(Bound::Unbounded, Bound::Excluded);
         let sets: Vec<Option<&BTreeSet<(u64, u64)>>> = also.iter().map(|t| self.post.get(t)).collect();
         set.range((from, Bound::Unbounded))
             .filter(|k| sets.iter().all(|s| s.is_some_and(|s| s.contains(*k))))
+            .filter(|(_, h)| only.is_none_or(|s| self.docs.get(h).is_some_and(|d| (d.0).0 == s)))
             .take(n)
             .filter_map(|(rev, h)| self.docs.get(h).map(|(_, r, _)| (*rev, *h, r.clone())))
             .collect()

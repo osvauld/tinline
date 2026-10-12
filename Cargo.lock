@@ -6118,6 +6118,7 @@ dependencies = [
  "iroh",
  "iroh-blobs",
  "jni 0.21.1",
+ "libc",
  "loro",
  "n0-future",
  "opusic-sys",

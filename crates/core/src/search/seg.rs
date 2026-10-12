@@ -4,9 +4,17 @@
 //! ```text
 //! m                       sealed manifest (`Manifest`)
 //! x/{seg:08x}/{tok:016x}/{part:03x}
-//!                         sealed postings of one term for the docs `part * PART_DOCS ..`: local
+//!                         sealed postings of a long list of one term for the docs `part * PART_DOCS ..`: local
 //!                         doc numbers, ascending (newest first), varint deltas from the part base
+//! x/{seg:08x}/b{bucket:04x}
+//!                         sealed bucket: the short posting lists whose term hash starts with
+//!                         `bucket` (`Seg::bbits` bits), as `(tok u64 BE, part, len, list)`
+//!                         entries sorted by term. Most lists are short, and a record of their
+//!                         own costs ~100 bytes of key, seal and page overhead (measured: 100 MB
+//!                         of 127 MB at 100k messages), so they share a record of ~1.2 KB.
 //! y/{seg:08x}/{chunk:06x} sealed doc rows, `CHUNK` a chunk, strings shared inside the chunk
+//! z/{seg:08x}/{part:04x}  sealed doc table (format 4): per doc a u16 LE, the index into the
+//!                         segment's `days` (`Z_PART` docs a record), for find in chat
 //!
 //! Every value is kept well under a redb page (4 KiB): measured, large values grow the file by
 //! tens of times their size over repeated transactions (1 GiB for 20 MB of records).
@@ -29,6 +37,14 @@ pub const NO_DIGEST: Digest = [0; 8];
 pub const CHUNK: usize = 8;
 /// Docs covered by one posting-list record.
 pub const PART_DOCS: usize = 2048;
+/// Docs per `z/` record (2 bytes each, so a record stays under a redb page).
+pub const Z_PART: usize = 1024;
+/// A doc whose day index does not fit a u16: the table cannot tell, the row decides.
+pub const Z_NONE: u16 = u16::MAX;
+/// A list whose encoding is at most this long goes into a bucket record.
+pub const SMALL_LIST: usize = 400;
+/// Aimed-at size of a bucket record.
+pub const BUCKET_BYTES: usize = 1200;
 
 /// One cold segment: the days it holds (a day lives in exactly one segment: the newest that
 /// lists it) and bounds of its docs' times.
@@ -40,6 +56,9 @@ pub struct Seg {
     pub max_at: i64,
     pub min_at: i64,
     pub docs: u32,
+    /// Bits of the term hash that select a bucket record.
+    #[serde(default)]
+    pub bbits: u8,
     /// `(src hash, day number, watermark)`.
     pub days: Vec<(u64, u32, Digest)>,
 }
@@ -80,8 +99,47 @@ pub fn x_key(seg: u32, tok: u64, part: usize) -> String {
     format!("x/{seg:08x}/{tok:016x}/{part:03x}")
 }
 
+pub fn b_key(seg: u32, bucket: u32) -> String {
+    format!("x/{seg:08x}/b{bucket:04x}")
+}
+
+pub fn bucket_of(tok: u64, bbits: u8) -> u32 {
+    if bbits == 0 { 0 } else { (tok >> (64 - u32::from(bbits))) as u32 }
+}
+
+/// The list of `(tok, part)` in a bucket record, if it is there.
+pub fn bucket_find(b: &[u8], tok: u64, part: usize) -> Option<Vec<u32>> {
+    let mut pos = 0;
+    while pos < b.len() {
+        let t = u64::from_be_bytes(b.get(pos..pos + 8)?.try_into().ok()?);
+        pos += 8;
+        let p = get_var(b, &mut pos)? as usize;
+        let n = get_var(b, &mut pos)? as usize;
+        let payload = b.get(pos..pos.checked_add(n)?)?;
+        pos += n;
+        if t > tok {
+            return None;
+        }
+        if t == tok && p == part {
+            return decode_list(payload, (part * PART_DOCS) as u32);
+        }
+    }
+    None
+}
+
 pub fn y_key(seg: u32, chunk: usize) -> String {
     format!("y/{seg:08x}/{chunk:06x}")
+}
+
+pub fn z_key(seg: u32, part: usize) -> String {
+    format!("z/{seg:08x}/{part:04x}")
+}
+
+pub fn decode_z(b: &[u8]) -> Option<Vec<u16>> {
+    if !b.len().is_multiple_of(2) {
+        return None;
+    }
+    Some(b.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect())
 }
 
 pub fn put_var(out: &mut Vec<u8>, mut v: u64) {
@@ -217,33 +275,63 @@ pub struct Built {
 /// Builds segment `id` of `month` from whole days. Docs are numbered newest first by
 /// `(rev_at, h)`, which is also the order of the cursor.
 pub fn build(id: u32, month: u32, days: &[&DayData], tok: &dyn Fn(&str) -> u64) -> Built {
-    let mut docs: Vec<(u64, u64, &DocRow)> = days.iter().flat_map(|d| d.rows.iter().map(|(h, r)| (rev_at(r.at), *h, r))).collect();
-    docs.sort_by_key(|(rev, h, _)| (*rev, *h));
+    let mut docs: Vec<(u64, u64, &DocRow, u16)> = days
+        .iter()
+        .enumerate()
+        .flat_map(|(di, d)| d.rows.iter().map(move |(h, r)| (rev_at(r.at), *h, r, u16::try_from(di).unwrap_or(Z_NONE))))
+        .collect();
+    docs.sort_by_key(|(rev, h, _, _)| (*rev, *h));
     let mut lists: HashMap<u64, Vec<u32>> = HashMap::new();
-    for (i, (_, _, r)) in docs.iter().enumerate() {
+    for (i, (_, _, r, _)) in docs.iter().enumerate() {
         for t in index_terms(&r.text) {
             lists.entry(tok(&t)).or_default().push(i as u32);
         }
     }
-    let mut puts = Vec::with_capacity(lists.len() + docs.len() / CHUNK + 1);
+    let mut puts = Vec::with_capacity(docs.len() / CHUNK + 1);
     let mut toks: Vec<(u64, Vec<u32>)> = lists.into_iter().collect();
     toks.sort_by_key(|(t, _)| *t);
+    let mut small: Vec<(u64, usize, Vec<u8>)> = Vec::new();
     for (t, l) in &toks {
         for part in l.chunk_by(|a, b| *a as usize / PART_DOCS == *b as usize / PART_DOCS) {
             let p = part[0] as usize / PART_DOCS;
-            puts.push((x_key(id, *t, p), encode_list(part, (p * PART_DOCS) as u32)));
+            let enc = encode_list(part, (p * PART_DOCS) as u32);
+            if enc.len() <= SMALL_LIST {
+                small.push((*t, p, enc));
+            } else {
+                puts.push((x_key(id, *t, p), enc));
+            }
         }
     }
+    let total: usize = small.iter().map(|(_, _, e)| e.len() + 11).sum();
+    let mut bbits = 0u8;
+    while bbits < 16 && (total >> bbits) > BUCKET_BYTES {
+        bbits += 1;
+    }
+    let mut buckets: std::collections::BTreeMap<u32, Vec<u8>> = Default::default();
+    for (t, p, enc) in &small {
+        let b = buckets.entry(bucket_of(*t, bbits)).or_default();
+        b.extend_from_slice(&t.to_be_bytes());
+        put_var(b, *p as u64);
+        put_var(b, enc.len() as u64);
+        b.extend_from_slice(enc);
+    }
+    for (b, v) in buckets {
+        puts.push((b_key(id, b), v));
+    }
     for (c, part) in docs.chunks(CHUNK).enumerate() {
-        let rows: Vec<(u64, &DocRow)> = part.iter().map(|(_, h, r)| (*h, *r)).collect();
+        let rows: Vec<(u64, &DocRow)> = part.iter().map(|(_, h, r, _)| (*h, *r)).collect();
         puts.push((y_key(id, c), encode_chunk(&rows)));
+    }
+    for (p, part) in docs.chunks(Z_PART).enumerate() {
+        puts.push((z_key(id, p), part.iter().flat_map(|(_, _, _, z)| z.to_le_bytes()).collect()));
     }
     let seg = Seg {
         id,
         month,
-        max_at: docs.iter().map(|(_, _, r)| r.at).max().unwrap_or(0),
-        min_at: docs.iter().map(|(_, _, r)| r.at).min().unwrap_or(0),
+        max_at: docs.iter().map(|(_, _, r, _)| r.at).max().unwrap_or(0),
+        min_at: docs.iter().map(|(_, _, r, _)| r.at).min().unwrap_or(0),
         docs: docs.len() as u32,
+        bbits,
         days: days.iter().map(|d| (d.key.0, d.key.1, d.digest)).collect(),
     };
     Built { seg, puts }
