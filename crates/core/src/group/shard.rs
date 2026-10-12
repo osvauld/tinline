@@ -56,6 +56,10 @@ impl Shard {
         Ok(s)
     }
 
+    pub fn has(&self, e: &Entry) -> bool {
+        self.rows.binary_search_by(|r| key(&r.entry).cmp(&key(e))).is_ok()
+    }
+
     /// Adds a post that just entered the doc.
     pub fn insert(&mut self, entry: Entry, vis: Vis) {
         let at = self.rows.partition_point(|r| key(&r.entry) < key(&entry));
@@ -110,6 +114,10 @@ impl Shards {
         let s = self.map.get_mut(day).expect("just inserted");
         s.used = self.tick;
         Ok(s)
+    }
+
+    pub fn remove(&mut self, day: &str) {
+        self.map.remove(day);
     }
 
     /// A day doc if it is cached (no loading).

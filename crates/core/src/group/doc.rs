@@ -119,6 +119,9 @@ pub struct GroupDoc {
     pub group: String,
     id: DocId,
     doc: LoroDoc,
+    /// An `apply_remote_inplace` failed after importing: the doc holds ops nobody accepted and
+    /// must be dropped and reloaded from the store.
+    tainted: bool,
 }
 
 impl GroupDoc {
@@ -130,7 +133,7 @@ impl GroupDoc {
     pub fn new_in(group: &str, id: DocId, peer: u64) -> Self {
         let doc = LoroDoc::new();
         doc.set_peer_id(peer).expect("peer id");
-        Self { group: group.to_string(), id, doc }
+        Self { group: group.to_string(), id, doc, tainted: false }
     }
 
     /// Rebuilds the meta doc from stored, already-validated bytes.
@@ -251,6 +254,39 @@ impl GroupDoc {
         admit(&fresh).map_err(Reject::Policy)?;
         self.doc.import(update).map_err(|_| Reject::Undecodable)?;
         Ok(fresh)
+    }
+
+    /// `apply_remote` for the big docs (a day of posts): imports into the doc itself instead of a
+    /// scratch fork (a fork copies the whole doc, milliseconds a post in a busy day) and checks the
+    /// new ops afterwards. A refused batch leaves the doc `tainted`: the caller must drop it and
+    /// reload it from the store, which holds only what was accepted. Returns the new records
+    /// (a record already held under another op may be among them: the caller skips those).
+    pub fn apply_remote_inplace(&mut self, update: &[u8], admit: impl FnOnce(&[Entry]) -> Result<(), String>) -> Result<Vec<Entry>, Reject> {
+        LoroDoc::decode_import_blob_meta(update, true).map_err(|_| Reject::Undecodable)?;
+        let old_vv = self.vv();
+        self.tainted = true;
+        let status = self.doc.import(update).map_err(|_| Reject::Undecodable)?;
+        if status.pending.is_some() {
+            return Err(Reject::Pending);
+        }
+        let new_vv = self.vv();
+        if !new_vv.iter().any(|(p, c)| *c > old_vv.get(p).copied().unwrap_or(0)) {
+            self.tainted = false;
+            return Ok(Vec::new());
+        }
+        let mut fresh: Vec<Entry> = Vec::new();
+        for e in ops_between(&self.doc, &old_vv, &new_vv, &self.group, &self.id, true)? {
+            if !fresh.iter().any(|f| f.id == e.id) {
+                fresh.push(e);
+            }
+        }
+        admit(&fresh).map_err(Reject::Policy)?;
+        self.tainted = false;
+        Ok(fresh)
+    }
+
+    pub fn tainted(&self) -> bool {
+        self.tainted
     }
 
     /// Test hook (`synth`): imports `update` unchecked, to merge batches written by several
@@ -538,5 +574,30 @@ mod tests {
         forger.raw_insert(&record_id(&fake), fake);
         assert_eq!(forger.entries_trusted().unwrap().len(), 1);
         assert!(forger.entries().is_err());
+    }
+
+    // KIND: unit (group shards) — the in-place apply of big docs: same verdicts as `apply_remote`;
+    // a refused batch leaves the doc tainted (the caller reloads it), a good one does not.
+    #[test]
+    fn in_place_apply_agrees_and_taints_on_refusal() {
+        let a = acct();
+        let dev = [1; 32];
+        let src = dd("g", writer_id(a.did(), &dev));
+        let (e, up) = src.write(&a, &post(&a, dev, &src, "hello")).unwrap();
+        let mut t = dd("g", 5);
+        assert_eq!(t.apply_remote_inplace(&up, ok).unwrap(), vec![e]);
+        assert!(!t.tainted());
+        assert!(t.apply_remote_inplace(&up, ok).unwrap().is_empty() && !t.tainted(), "nothing new");
+        // Refused by policy, by structure and by record: tainted each time.
+        let (_, up2) = src.write(&a, &post(&a, dev, &src, "two")).unwrap();
+        assert!(matches!(t.apply_remote_inplace(&up2, |_| Err("no".into())), Err(Reject::Policy(_))));
+        assert!(t.tainted());
+        let mut u = dd("g", 6);
+        let forged = dd("g", writer_id(a.did(), &[9; 32]));
+        let up3 = forged.raw_insert("not-the-id", vec![1, 2, 3]);
+        assert!(u.apply_remote_inplace(&up3, ok).is_err() && u.tainted());
+        let mut m = GroupDoc::new("g", 7);
+        assert_eq!(m.apply_remote_inplace(&up, ok), Err(Reject::WrongDoc));
+        assert!(m.tainted());
     }
 }

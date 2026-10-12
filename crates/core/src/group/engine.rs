@@ -450,9 +450,20 @@ impl GroupCore {
     fn apply_day(&self, live: &mut Live, gid: &str, day: &str, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
         let Live { entries, state, shards, meta, .. } = live;
         let shard = shards.get(&self.store, gid, self.wid, day, state).map_err(|e| Reject::Policy(e.to_string()))?;
-        let prev = shard.doc.vv().encode();
-        let fresh = shard.doc.apply_remote(update, |fresh| admit(state, entries, fresh))?;
-        if fresh.is_empty() {
+        let prev_vv = shard.doc.vv();
+        let prev = prev_vv.encode();
+        let fresh = match shard.doc.apply_remote_inplace(update, |fresh| admit(state, entries, fresh)) {
+            Ok(f) => f,
+            Err(e) => {
+                // A refused batch may have left ops in the doc: forget it, the store has the rest.
+                if shard.doc.tainted() {
+                    shards.remove(day);
+                }
+                return Err(e);
+            }
+        };
+        let fresh: Vec<Entry> = fresh.into_iter().filter(|e| !shard.has(e)).collect();
+        if shard.doc.vv() == prev_vv {
             return Ok(None);
         }
         let mut shown = Vec::new();

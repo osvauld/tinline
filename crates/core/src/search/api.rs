@@ -132,6 +132,9 @@ impl Node {
     }
 }
 
+/// Posts a group reconcile collects from several days before it writes them to the index.
+const RECONCILE_BATCH: usize = 4000;
+
 /// Test switch (`synth.rs`): no reconcile in the background on open.
 pub(crate) static NO_BG_RECONCILE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
@@ -330,6 +333,7 @@ impl Inner {
             for gid in gids {
                 let src = group_src(&gid);
                 let days = core.store.days(&gid).unwrap_or_default();
+                let (mut batch, mut stale, mut marks): (Vec<DocRow>, Vec<String>, Vec<Mark>) = Default::default();
                 let pending = core.groups.lock().get(&gid).map(|l| l.meta.pending_days.clone()).unwrap_or_default();
                 for day in days {
                     if ix.is_closed() || core.closed() {
@@ -356,13 +360,26 @@ impl Inner {
                         items.iter().map(|i| group_row(&gid, &day, i)).collect()
                     };
                     let live: HashSet<String> = rows.iter().map(|r| ix.doc_key(&src, &r.id)).collect();
-                    let stale: Vec<String> = match ix.day_keys(&src, &day) {
-                        Ok(k) => k.into_iter().filter(|h| !live.contains(h)).collect(),
-                        Err(e) => return Self::search_log(e),
-                    };
-                    if let Err(e) = ix.apply(&rows, &stale, &[Mark { src: src.clone(), day: day.clone(), prev: None, vv: sm.vv }]) {
+                    // A day the index has never seen (a rebuild) has nothing stale to find, which
+                    // keeps a full rebuild from scanning the group's keys once per day.
+                    if ix.watermark(&src, &day).is_some() {
+                        match ix.day_keys(&src, &day) {
+                            Ok(k) => stale.extend(k.into_iter().filter(|h| !live.contains(h))),
+                            Err(e) => return Self::search_log(e),
+                        }
+                    }
+                    batch.extend(rows);
+                    marks.push(Mark { src: src.clone(), day: day.clone(), prev: None, vv: sm.vv });
+                    // Days go to the index together (a transaction per few thousand posts): one
+                    // transaction per day would cost more than the posts themselves.
+                    if batch.len() >= RECONCILE_BATCH
+                        && let Err(e) = ix.apply(&std::mem::take(&mut batch), &std::mem::take(&mut stale), &std::mem::take(&mut marks))
+                    {
                         return Self::search_log(e);
                     }
+                }
+                if let Err(e) = ix.apply(&batch, &stale, &marks) {
+                    return Self::search_log(e);
                 }
             }
         })
