@@ -230,7 +230,7 @@ const smooth = (h, full) => {
     let li = p.locator('li.m.me').last();
     ok('hosts offline: post is queued with a visible "Waiting for a host"', /Waiting for a host/.test(await li.innerText()));
     await p.getByRole('button', { name: 'Chat details' }).last().click(); await p.waitForTimeout(400);
-    ok('hosts offline: group info shows host status calmly', /No host is online/.test(await p.locator('.status').innerText()) && /Offline/.test(await p.locator('[aria-label="Hosts"]').innerText()));
+    ok('hosts offline: group info shows host status calmly', /No host is online/.test(await p.locator('.status').first().innerText()) && /Offline/.test(await p.locator('[aria-label="Hosts"]').innerText()));
     ok('hosts: states plainly that hosts can read posts', /host can read everything posted/.test(await p.locator('.col').innerText()));
     await p.getByRole('button', { name: 'Back to conversation' }).click(); await p.waitForTimeout(300);
     await hosts(p, true); await p.waitForTimeout(1500);

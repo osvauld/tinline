@@ -67,7 +67,7 @@ const overflow = (p) => p.evaluate(() => { const e = document.querySelector('.pf
       ok(`${form} settings: rows for Devices, Privacy, Notifications, Sounds`, await (async () => { const t = await p.locator('[data-settings]').innerText(); return ['Devices', 'Privacy', 'Notifications', 'Sounds'].every((x) => t.includes(x)); })());
       await shot(p, tag('settings-light'));
       await p.locator('[data-settings] button', { hasText: 'Sounds' }).click(); await wait(p, 300);
-      ok(`${form} settings: Sounds goes to its placeholder, Back returns`, /Not ported yet/.test(await p.locator('[data-settings]').innerText()) && (await p.getByRole('button', { name: 'Back' }).count()) >= 1);
+      ok(`${form} settings: Sounds opens its page (call sounds, Quiet), Back returns`, /Quiet/i.test(await p.locator('body').innerText()) && (await p.getByRole('button', { name: 'Back' }).count()) >= 1);
       await p.getByRole('button', { name: 'Back' }).click(); await wait(p, 300);
       ok(`${form} settings: back on the landing`, (await p.locator('[data-my-profile]').count()) === 1);
       await p.locator('[data-my-profile]').click(); await wait(p, 400);
@@ -301,6 +301,7 @@ const overflow = (p) => p.evaluate(() => { const e = document.querySelector('.pf
     for (const form of ['android', 'desktop']) {
       const tag = (s) => `${s}-${form}`;
       let p = await open(b, form, 'contact/arjun');
+      const base = await pg(p, () => { const c = window.__pg.db.chats.find((x) => x.id === 'arjun'); return { u: c.unread, n: c.messages.length }; });
       const t = await p.locator('[data-profile=arjun]').innerText();
       ok(`${form} person: name, status, about, pronouns, location, website, availability`, ['Arjun Oommen', 'Working from the café', 'Architect by day', 'he/him', 'Kochi', 'arjun.example'].every((s) => t.includes(s)), t);
       ok(`${form} person: read-only (no edit controls on their fields)`, (await p.locator('[data-profile=arjun] [data-extra] button.main').count()) === 0 && (await p.locator('[data-profile=arjun] .hero input, [data-profile=arjun] .pf-card textarea').count()) === 0);
@@ -325,7 +326,7 @@ const overflow = (p) => p.evaluate(() => { const e = document.querySelector('.pf
       await af.locator('button.main').click(); await af.getByRole('button', { name: 'Remove' }).click(); await wait(p, 150);
       ok(`${form} alias: Remove clears it (Allow calls etc. unaffected)`, !(await person(p, 'arjun')).alias);
       // unread / notifications untouched by all of that
-      ok(`${form} scenario 2: profile updates created no messages, unread or notifications`, await pg(p, () => { const c = window.__pg.db.chats.find((x) => x.id === 'arjun'); return c.unread === 2 && c.messages.length === 9; }));
+      ok(`${form} scenario 2: profile updates created no messages, unread or notifications`, await pg(p, (base) => { const c = window.__pg.db.chats.find((x) => x.id === 'arjun'); return c.unread === base.u && c.messages.length === base.n; }, base));
       await done(p);
 
       // availability of someone else: "Set to Busy until 18:00", separate from online
