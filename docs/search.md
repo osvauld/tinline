@@ -218,12 +218,13 @@ tokenizing (except the prefix cap) and the sealing stay as they are.
   open). Backfill of many old days goes straight to segment builds by month instead of the hot
   tier.
 
-### Layout (format version 2; a v1 file is emptied and rebuilt)
+### Layout (format version 3; a file of another version is replaced by a new one and rebuilt)
 
 ```text
 m                       sealed manifest: segments [{seg, month, max_at, min_at, docs,
                         days: [(src, day, vv)]}]; replaced atomically with each segment write
-x/{seg}/{tok}           sealed postings of one term: local doc numbers, newest first, varint-delta
+x/{seg}/b{bucket}       (v3) sealed bucket of the short posting lists whose term hash starts with `bucket`
+x/{seg}/{tok}/{part}    sealed postings of one long term: local doc numbers, newest first, varint-delta
 y/{seg}/{chunk}         sealed doc rows, 64 a chunk: (h, src, kind, conv, day, id, at, author, text)
 v                       sealed u32 format version
 ```
@@ -307,9 +308,47 @@ Where the code settles what the design above leaves open.
 - **Names** unchanged (in memory, not indexed). Query terms longer than 8 chars: the lookup is
   their 8-char prefix, the row check does the rest (tested).
 
+- **Format v3: bucketed short lists, file compaction, send path never waits for the file
+  (2026-10-12, branch `search-compact`).** Findings and changes:
+  - *The file was not "doubling steps and free pages".* redb statistics showed the pages were
+    in use: v2 wrote ~1 million posting records at 100k messages, and each costs ~100 bytes of
+    key (33), seal (28 + path 35) and tree overhead for a payload of ~5 bytes (100 MB of the
+    127 MB of "content"), then sorted appends leave redb leaves about half full. Fix: lists
+    that encode to <= 400 bytes share **bucket records** `x/{seg:08x}/b{bucket:04x}` (entries
+    `tok u64 BE, part, len, list`, sorted by term; `Seg::bbits` bits of the term hash choose
+    the bucket, picked per segment so that a bucket is ~1.2 KB); longer lists keep the
+    `x/{seg}/{tok}/{part}` records. A query reads the bucket (cached per scan) before the long
+    key. Records at 100k: 998 506 `x/` -> 26 404. `VERSION` is 3.
+  - *Old files.* A file of another version (or an unreadable manifest) is deleted and created
+    anew in `open` instead of being emptied record by record (that took ~25 s at the v2 year
+    dataset, on the unlock path).
+  - *Compaction.* `Store::usage()` (file length, live bytes by redb statistics after two empty
+    commits so that pages freed by earlier commits count as free) and `Store::compact()` (redb
+    `Database::compact`, which needs `&mut`: the `Store` already keeps the database behind an
+    `RwLock`, so compaction takes the write lock and every other store operation waits for it).
+    `SearchIndex::compact_if_worthwhile()` runs after `maintain` (`Force` and `Tick`, not
+    `Cap`, so never inside a bulk) when segments were written or dropped since the last look
+    and the file has more than 8 MiB (`Limits::compact_min_waste`) and more than a third of it
+    free. It runs where `maintain` runs (the reconcile task, background, once the reconcile
+    is done), never on the send path or the unlock. redb compacts by ordinary two-phase
+    commits; a test kills a child process compacting at five moments and opens the file.
+  - *The send path and the store lock.* `apply` (and `search_ix()`) asked `is_closed()`, which
+    took the `Store` lock: a compaction (or `close`) held it for hundreds of ms and the send
+    waited (measured: max 88 / 510 ms, p95 25 ms while maintenance and compaction ran). Now
+    `SearchIndex` has a `closed` flag; `apply` does not touch the store unless a cold day must
+    be loaded (rare). Test: `apply_does_not_wait_for_a_compaction`.
+  - *Cores.* Segment builders now use half the cores at nice 15 (`libc::setpriority`), so a
+    send keeps its core.
+  - *Benchmark mode.* `search-bench <n> <dir> live`: the index holds `n` messages, then 3 000
+    sends arrive 10 ms apart in real time, three times: with the production maintenance
+    schedule (every 5 s here instead of 60 s, plus one day rollover), with maintenance back to
+    back (a day further each time, merging every write), and with that plus a compaction every
+    3 s.
+
+
 ### Implementation notes (find in chat, `crates/core/src/search/find.rs`)
 
-- **Format version 4** (not 3: the compaction branch takes 3). Old files are emptied and rebuilt.
+- **Format version 4** (3 is the bucketed lists above). Old files are emptied and rebuilt.
 - **`z/{seg:08x}/{part:04x}`**: the doc table is cut into records of 1 024 docs (2 KB), not one
   record per segment, for the same reason as the posting parts (records stay under a redb page).
   Removed together with `x/` and `y/` when a segment goes. A segment with 65 535 or more days
@@ -351,10 +390,65 @@ messages a month; its queries open all of them, so it is slower than the 100k ca
 history is dense in time.) Targets: send-path p99 < 0.5 ms **missed at 100k (1.3 ms; p50 0.1
 ms)**: the tail is the bench's simulated clock, which makes the segment writer compete for the
 same cores and the same memory lock every few hundred messages; the cost of one `apply` itself
-is about 0.05-0.1 ms. File size <= 1.5 KB/msg: the **content** is 1.3 KB/msg at 100k, but redb's
-doubling file steps (and free pages left by merges) put the file at 5.4 KB/msg; compacting or
-a smaller step is open. Full build < 60 s met (42 s; 62-69 s when the machine was loaded).
+is about 0.05-0.1 ms. File size <= 1.5 KB/msg: **missed in v2** (5.4 KB/msg); met in v3, see Benchmarks v3. Full build < 60 s met (42 s; 62-69 s when the machine was loaded).
 Queries <= 10 ms p95 met. The emulator was not run.
+
+## Benchmarks v3 (2026-10-12, release, branch `search-compact`)
+
+File size (per message, on disk; `search-bench`, same corpus). Content = records in the file.
+
+| | v2 10k | v3 10k | v2 100k | v3 100k | year dataset (157 835 msgs) v2 / v3 |
+|---|---|---|---|---|---|
+| `search.redb`, full build (reconcile shape) | 64.8 MiB (6.9 KB) | **8.5 MiB (0.91 KB)** | 514 MiB (5.4 KB) | **114.6 MiB (1.21 KB)** after compaction (257 MiB before; 1.1 s) | 515 MiB (3.3 KB) / **121-147 MiB (0.8-0.95 KB)** |
+| `search.redb`, live run (day by day) | 64.8 MiB | 12.6 MiB (1.33 KB) | | 129 MiB (1.37 KB); 143 MiB (1.51 KB) before the 1/3 trigger | |
+| content (`x/` + `y/` + `m`) | 21 MB | 5.7 MB | 127 MB | 47 MB | |
+
+Target <= 1.5 KB/msg on disk: **met** at 10k, 100k and the year dataset. Where the v3 file is
+large before compaction (257 MiB), that is free space from the merges, which the compaction
+returns (it ran once, 1.1 s). Queries got faster with fewer, larger records (100k "th" pages
+1-5 total 2.6 ms vs 4.8; page 5 alone 0.5 vs 0.76 ms; year dataset "th" 0.66 / 0.99 ms vs
+1.6 / 2.5; "meeting" 2.5 / 2.7 vs 5.4 / 8.2 ms).
+
+Send path, `search-bench live` (real-time arrivals 10 ms apart, 3 000 per run; `apply` timed):
+
+| 100k, idle machine | p50 / p95 / p99 / max |
+|---|---|
+| v2 bench (simulated fast clock, a segment write every few hundred messages) | 0.104 / 0.50 / 1.29 / 29 ms |
+| production schedule | 0.112 / 0.265 / **0.41** / 0.71 ms |
+| maintenance back to back (merging), before the fixes | 0.09 / 25 / 61 / 113 ms (max 3.2 s in an earlier run) |
+| maintenance back to back, after the fixes | 0.099 / 0.25 / **0.38** / 1.27 ms |
+| plus a compaction every 3 s, after the fixes | 0.107 / 0.28 / **0.42** / 0.86 ms |
+| 10k, production schedule / back to back / + compaction | 0.109 / 0.26 / 0.41 / 0.80 ms; 0.100 / 0.33 / 14.6 / 50 ms (earlier build, before the fixes) |
+
+The tail in the fast-clock bench and in the "busy" runs was not the hot-tier lock (the longest
+wait for the hot lock inside `apply` was 1-4 ms) but the `is_closed()` call on the store's
+`RwLock`, held by compaction, plus builders competing for cores. With both fixed the target
+p99 < 0.5 ms is met at 100k on an idle machine, even with maintenance and compaction running
+concurrently. Under heavy load from other jobs (CPU pressure 45-60% while those runs were
+made, final reruns) all figures are 3x higher: production schedule p50 0.33 / p95 0.76 / p99
+1.27 / max 4.6 ms; back to back 0.36 / 1.1 / 6.4 / 103 ms; + compaction 0.34 / 1.0 / 3.5 / 27
+ms (100k); 10k: 0.33 / 1.2 / 3.3 / 14 ms. The target is not claimed under that load. The
+unchanged v2 bench (`search-bench <n>`) on the loaded machine: p99 4.2 ms (10k) and 6.0 ms
+(100k): that run's simulated clock (a segment write per simulated day, ~every 0.1 ms) is not
+a production pattern.
+
+Through the node (`year-bench run --scenario intact`, 157 835 messages, one run, machine
+loaded; the 200 local group posts and 560 DM sends per run include the chat/group commit):
+
+| | v2 index (docs/scale-year) | v3 |
+|---|---|---|
+| DM send p50 / p95 / p99 / max | not rerun | 1.77 / 2.92 / 3.12 / 18.7 ms (first in a day's shard 1.65 / 1.87 / 2.06 ms); an earlier run on a more loaded machine 2.6 / 6.1 / 9.6 / 36 ms |
+| `group_post`, 100k group | 16 / 316 ms (v1 index) | 1.35 / 1.85 / 7.4 / 17 ms |
+| `group_post`, 30k group | | 1.28 / 1.9 / 13 / 49 ms |
+| `group_post`, 2k groups | | 1.15 / 2.6 / 3.6 / 4 ms (Trip); Family and Neighbours 29 / 58 / 85 / 94 ms and 28 / 44 / 75 / 81 ms in this run |
+| search reconcile (rebuild by the intact run) | DMs 256 ms, groups 106 ms | rebuilt the replaced v2 file: DMs 9.3 s, groups 38 s (loaded machine) |
+| `search.redb` | 515 MB | 134 MB |
+| unlock with key | 190 ms | 245 ms (the old file is replaced, not emptied: 25 s before that change) |
+
+(The slow Family / Neighbours posts in that run are the first two groups measured, while the
+search reconcile and the machine's other jobs were still running; they were 1.6 / 3.2 / 4.3 /
+5 ms in the previous, quieter run. The index's own part of a group post is the "remote after
+hook", 0.1-0.6 ms.)
 
 ## Benchmarks (v1, kept for comparison)
 

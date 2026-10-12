@@ -52,6 +52,9 @@ n0-future = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [target.'cfg(target_os = "android")'.dependencies]
 paranoid-android = "0.2"
 jni = { version = "0.21", default-features = false }
