@@ -71,16 +71,16 @@ days/{gid}/{day}                   empty       day index for paging / history li
 - `Update { doc: Meta | Day(day), update }`, `Ack { doc, vv }`. Meta updates are sent before
   shard updates in every session and every relay.
 - History: `HistoryList { before, limit } -> [(day, vv, size)]`, `HistoryGet { day } ->
-  snapshot`. Any host (all hosts hold every day) or member serves it; the receiver validates
-  each record as on import. Members fetch older days only when the user scrolls (or search
-  reconcile asks — no: search indexes only what is local).
+  snapshot`, in both directions on any session. The receiver validates each record as on import.
+  Every device backfills all missing days in the background (newest first, rate-limited, paused
+  on metered/low battery like call hosting conditions); scrolling only reorders the queue.
 - Relay: hosts relay per doc exactly as today.
 - Removed: `Removed { records, … }` carries meta records only.
 
 ## 5. API and app impact
 
 - `group_messages(gid, before, limit)` pages across day shards backwards (loading shards
-  lazily, fetching history from a host when the local days run out), like `chat_day`.
+  lazily, showing a loading row while backfill is still filling older days), like `chat_day`.
   Return shape unchanged; cursor `"{at}:{id}~"` still works; `day` becomes real.
 - Unread counts and the chat list row come from `GroupMeta` (last post, unread), updated on post
   apply, so the list never loads shards.
@@ -98,8 +98,16 @@ days/{gid}/{day}                   empty       day index for paging / history li
   group store open < 250 ms desktop for the year dataset; remote apply and local write < 10 ms
   in the 100k group; `group_messages` page < 10 ms; RSS after open < 100 MB.
 
-## Open for the user
+## Decisions (user, 2026-10-12)
 
-1. Day shards by UTC day like DMs (recommended) vs fixed-size chunks (N posts).
-2. Members keep all days they ever received (recommended, like DMs) vs a retention window.
-3. History for members only from hosts (simplest) or also from other members.
+1. Shards by **UTC day**, like DMs.
+2. **Verify once, on arrival**: loading our own sealed store does not re-verify signatures.
+3. **Every member device holds the full history** of its groups: a decentralized copy, not a
+   host-held archive. On join (and whenever days are missing) a member backfills every day in the
+   background, newest first, from whoever it is connected to. Any device that holds a day serves
+   it to peers it is already in session with: hosts serve members, and members serve hosts, so a
+   new or wiped host is refilled from members. Transport is unchanged: members still dial only
+   hosts (U7); "members hold history" does not add member-to-member connections.
+   (Interpretation of the user's answer "members itself will hold the sharded data, all history,
+   copy of the data decentralized"; confirm if member-to-member serving was meant.)
+4. **Keep everything**: no retention window; closed days are compacted, never dropped.
