@@ -21,7 +21,7 @@
   const close = () => { ui.el?.blur(); nav.back(); };
 </script>
 
-<div class="scr" data-search-screen data-pos={ui.position}>
+<div class="scr" class:bottom data-search-screen data-pos={ui.position}>
   {#if !bottom}
     <header class="bar top"><IconButton icon="back" label="Back" onclick={close} /><div class="fld"><SearchField placeholder="Search" size={48} onescape={close} activeId={active} /></div></header>
   {/if}
@@ -35,6 +35,8 @@
 <style>
   .scr { display: flex; flex-direction: column; block-size: 100%; min-block-size: 0; background: var(--bg); }
   .body { flex: 1; min-block-size: 0; }
+  /* With the field at the bottom, the results start at the top edge: give them the status-bar breathing room. */
+  .scr.bottom .body { padding-block-start: 12px; }
   .bar { display: flex; align-items: center; gap: 4px; flex: none; padding: 8px 12px 8px 4px; }
   .top { padding-block-start: 8px; }
   .dock { padding-block-end: calc(8px + env(safe-area-inset-bottom)); border-block-start: 1px solid var(--hairline); background: var(--surface); }

@@ -2,8 +2,19 @@
   /* Text with highlighted ranges. `ranges` are character (code point) offsets, as the core returns them; `utf16` for offsets already in JS units.
      No whitespace between the parts: the bubble is white-space:pre-wrap and the meta floats right after the text. */
   import { parts, type HitRange } from '../../lib/model/actions/search';
-  let { text, ranges, utf16 = false, variant = 'bold', cur = false }: { text: string; ranges: HitRange[]; utf16?: boolean; variant?: 'bold' | 'mark'; cur?: boolean } = $props();
-  const ps = $derived(utf16 ? plain(text, ranges) : parts(text, ranges));
+  let { text, ranges, utf16 = false, variant = 'bold', cur = false, lead = 0 }: { text: string; ranges: HitRange[]; utf16?: boolean; variant?: 'bold' | 'mark'; cur?: boolean; lead?: number } = $props();
+  const ps = $derived(trimLead(utf16 ? plain(text, ranges) : parts(text, ranges), lead));
+  /* One-line snippets: keep at most `lead` characters before the first match (from a word start, after "…"),
+     so the match is always visible instead of falling past the ellipsis at the end. */
+  function trimLead(ps: { t: string; hit: boolean }[], n: number) {
+    if (!n || !ps.length || ps[0].hit) return ps;
+    const head = Array.from(ps[0].t);
+    if (head.length <= n) return ps;
+    let tail = head.slice(-n).join('');
+    const sp = tail.search(/\s/);
+    if (sp >= 0 && sp < n - 4) tail = tail.slice(sp + 1);
+    return [{ t: '…' + tail, hit: false }, ...ps.slice(1)];
+  }
   function plain(t: string, rs: HitRange[]) {
     const out: { t: string; hit: boolean }[] = [];
     let p = 0;

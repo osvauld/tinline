@@ -358,6 +358,7 @@
         </button>
         {#if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
           onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>{/if}
+        <button type="button" class="ib press" aria-label="Find in this chat" title="Find in this chat (Ctrl+F)" onclick={() => find.show()}><Icon name="search" /></button>
         <button type="button" class="ib press" aria-label="Chat details" onclick={openDetails}><Icon name="info" /></button>
         {#if find.open}<FindBar count={fm.length} onclose={closeFind} />{/if}
       </header>

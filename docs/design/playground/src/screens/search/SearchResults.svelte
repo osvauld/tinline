@@ -107,7 +107,7 @@
               <Avatar name={h.conv_name} hue={hue(h.conv)} group={h.kind === 'group'} person={h.kind === 'dm' ? h.conv : undefined} size={44} />
               <span class="mid">
                 <span class="top"><span class="name">{h.conv_name}{#if h.status}<span class="st"> · {statusWord(h.status)}</span>{/if}</span><span class="when">{listStamp(h.at)}</span></span>
-                <span class="snip"><span class="by">{by(h)}</span><Marked text={h.snippet} ranges={h.highlights} /></span>
+                <span class="snip"><span class="by">{by(h)}</span><Marked text={h.snippet} ranges={h.highlights} lead={18} /></span>
               </span>
             </button>
           </li>
@@ -144,7 +144,7 @@
   .msgs { position: relative; flex: 1; min-block-size: 0; display: flex; flex-direction: column; }
   .list { list-style: none; margin: 0; padding: 0 8px 12px; flex: 1; min-block-size: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
   .tail { block-size: 1px; }
-  .row { display: flex; gap: 12px; align-items: flex-start; inline-size: 100%; block-size: 80px; padding: 10px 8px; border: 0; border-radius: var(--r-ctl); background: transparent; text-align: start; cursor: pointer; color: inherit; font: inherit; }
+  .row { display: flex; gap: 12px; align-items: flex-start; inline-size: 100%; block-size: 64px; padding: 11px 8px; border: 0; border-radius: var(--r-ctl); background: transparent; text-align: start; cursor: pointer; color: inherit; font: inherit; }
   .row:hover { background: var(--surface-2); }
   .row.sel { background: var(--accent-soft); }
   .mid { flex: 1; min-inline-size: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
@@ -152,7 +152,7 @@
   .name { flex: 1; min-inline-size: 0; font-weight: 600; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .st { font-weight: 500; color: var(--muted); }
   .when { font-size: var(--fs-meta); color: var(--muted); flex: none; min-inline-size: 56px; text-align: end; font-variant-numeric: tabular-nums; }
-  .snip { font-size: var(--fs-sub); line-height: 18px; color: var(--muted); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-block-size: 18px; }
+  .snip { font-size: var(--fs-sub); line-height: 18px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-block-size: 18px; }
   .by { color: var(--muted); }
   .hint { position: absolute; inset: 0; margin: 0; padding: 0 32px; display: grid; place-items: center; text-align: center; font-size: var(--fs-sub); line-height: 19px; color: var(--muted);
     opacity: 0; pointer-events: none; transition: opacity var(--dur-crossfade) var(--ease-out); overflow-wrap: anywhere; }
