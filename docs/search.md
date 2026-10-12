@@ -103,8 +103,36 @@ differ. Indexing a message is idempotent: delete its old row/postings, write the
   "{at}:{id}~", limit)` returns the page that ends with the post (the `~` sorts after any id, so
   the post itself is included); older pages follow from its `older` cursor as usual, newer items
   from `group_messages(conv, None, …)`.
-- Desktop (iced): the same, a search box above the conversation list; Ctrl+K / Ctrl+F focuses it.
+- Desktop (iced): the same, a search box above the conversation list; Ctrl+K focuses it (Ctrl+F
+  inside a chat is find in chat, below).
 - Debounce 150 ms; minimum 2 characters for message search (names from 1).
+
+## Find in chat (decided 2026-10-12)
+
+Search inside one open conversation (a find bar in the chat screen), on the same index.
+
+`search_in(kind: SearchConvKind, conv: String, query: String, limit: u32, cursor: Option<String>)
+-> SearchResults` (`names` always empty; `messages`, `next` as in `search`; same cursor shape, same
+`Locked` error, same snippet/highlights). Newest first. A conversation the chat list does not show
+(or a group this device does not hold) returns nothing.
+
+- **Segments**: the manifest already lists each segment's `(src, day)`; segments without the
+  conversation are never opened. Inside a segment, a per-segment doc table `z/{seg}` (sealed, one
+  u16 per doc: the index into `days`, hence its src; written with the segment, cached per open
+  segment) lets the scan drop other conversations' postings without reading their rows.
+- **Hot tier**: the in-memory postings are filtered by src the same way.
+- **Budget**: other conversations' postings dropped by the doc table are cheap, so they count
+  against a separate, larger budget (200 000); postings of this conversation count against the
+  normal 20 000. A partial page sets `next` as today.
+- **No exact match count** (it would mean scanning every posting of a common prefix): the bar
+  shows the hits loaded so far and steps through them (up = older, down = newer), loading the
+  next page when it reaches the end ("17+" while `next` is set).
+- **Apps**: Android: the chat screen's overflow menu / search icon opens a find bar over the
+  message list; desktop: Ctrl+F in a chat opens it (Ctrl+K stays the global search). Each step
+  jumps exactly as a global hit does (DM: `chat_day(conv, day)`; group: `group_messages(conv,
+  before = "{at}:{id}~", limit)`), scrolls to the message and highlights the matched words.
+  150 ms debounce, from 2 characters.
+- Format: the `z/` table is new, so the index format version goes to 3 (rebuilt on open).
 
 ## Implementation notes (S1, v1 layout; replaced by v2 below, `crates/core/src/search/`)
 
