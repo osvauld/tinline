@@ -105,8 +105,7 @@ impl Inner {
         if theirs.partial_cmp(&mine).is_some_and(|o| o != std::cmp::Ordering::Less) {
             return Ok(None);
         }
-        self.chat_shard(&core, &pair, &day).await?;
-        let out = core.shards.lock().get(&(pair, day)).and_then(|s| s.export_all_since(theirs).map(|u| (u, s.vv().encode())));
+        let out = self.chat_shard(&core, &pair, &day).await?.get(&(pair, day)).and_then(|s| s.export_all_since(theirs).map(|u| (u, s.vv().encode())));
         match out {
             Some((u, _)) if u.len() > MAX_OWN_BATCH => {
                 tracing::warn!("own-device sync: {doc} is too big to send ({} bytes)", u.len());
@@ -126,9 +125,9 @@ impl Inner {
         let (pair, day) = parse_doc(doc).ok_or_else(|| Error::Protocol("bad doc".into()))?;
         // Not (or no longer) a conversation of ours, e.g. a contact removed meanwhile: nothing to do.
         let Some(did) = self.pair_owner(&me, &pair) else { return Ok(()) };
-        self.chat_shard(&core, &pair, &day).await?;
+        let held = self.chat_shard(&core, &pair, &day).await?;
         let committed = {
-            let mut shards = core.shards.lock();
+            let mut shards = held;
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
             let ctx = Ctx { signer_did: me.id.did().to_string(), now_ms: now_ms() as i64, live: false, history: Some(did.clone()) };
@@ -270,8 +269,7 @@ impl Inner {
             if day < from {
                 continue;
             }
-            self.chat_shard(core, pair, &day).await?;
-            let msgs = core.shards.lock().get(&(pair.to_string(), day)).map(|s| s.messages());
+            let msgs = self.chat_shard(core, pair, &day).await?.get(&(pair.to_string(), day)).map(|s| s.messages());
             if let Some(Ok(msgs)) = msgs {
                 n += msgs.values().filter(|m| m.author != me.id.did() && !m.deleted && m.at > cursor).count() as u32;
             }

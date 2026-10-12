@@ -311,10 +311,7 @@ impl Node {
             let pair = crate::chat::doc::pair_id(me.id.did(), &peer_did);
             let (mut peers, mut created) = (Vec::new(), Vec::new());
             for day in core.store.shard_days(&pair).unwrap_or_default() {
-                if inner.chat_shard(&core, &pair, &day).await.is_err() {
-                    continue;
-                }
-                let shards = core.shards.lock();
+                let Ok(shards) = inner.chat_shard(&core, &pair, &day).await else { continue };
                 let Some(s) = shards.get(&(pair.clone(), day.clone())) else { continue };
                 peers.extend(s.vv().iter().map(|(p, c)| (day.clone(), *p, *c)));
                 for id in s.messages().map(|m| m.into_keys().collect::<Vec<_>>()).unwrap_or_default() {

@@ -16,7 +16,7 @@ impl Inner {
         self.chat_contact(with, true)?;
         let pair = pair_id(me.id.did(), with);
         let day = day_of(at);
-        self.chat_shard(&core, &pair, &day).await?;
+        let mut shards = self.chat_shard(&core, &pair, &day).await?;
         let mine = author == me.id.did();
         let writer = if mine {
             self.chat_writer(&me, &core)
@@ -25,7 +25,6 @@ impl Inner {
             Writer::new(id, dev)
         };
         let rec = MsgRec { id: random_msg_id(), author: author.to_string(), at, text, edited_at: None, deleted: false, reply_to: None, file, dev: [0; 32], did_sig: Vec::new() };
-        let mut shards = core.shards.lock();
         let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
         let update = shard.add_message(&rec, &writer).map_err(|e| Error::Io(e.to_string()))?;
         let mut ops = vec![core.store.mi_op(&pair, &rec.id, &day)?];
