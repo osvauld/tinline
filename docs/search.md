@@ -161,6 +161,73 @@ Where the code differs from the plan above, and why.
   failure is logged and left to reconcile. A reconcile racing a live edit can leave the older
   text indexed until the next open (its watermark then still differs, so it heals).
 
+## Index v2: hot tier + time segments (decided 2026-10-12)
+
+Replaces the per-message posting B-tree for messages (the v1 layout above), after the benchmarks
+below: ~87 random postings per message cost 15 KB of copy-on-write pages per commit, a 6 s worst
+write on the send path, 1.5-4 GB at 100k messages. Chats are already time-sharded and old days
+almost never change, so the index is sharded by time too. Names, the API, the cursor shape,
+tokenizing (except the prefix cap) and the sealing stay as they are.
+
+### Tiers
+
+- **Hot tier, memory only.** Every *hot* day: a DM shard day or group day within `HOT_DAYS` (8,
+  the DM compaction age) of today (UTC), plus any *dirty* cold day (below). Built in the
+  background on open from the stores (a few days of messages), updated in memory on every change
+  (send, push, sync, edit, delete, group apply). **No redb write on the send path.** Dropped and
+  zeroized on lock / close / account switch. Size cap `HOT_MAX_DOCS` (e.g. 20 000): over it, the
+  oldest dirty cold months are flushed into segments early.
+- **Cold segments, written once.** When days fall out of the hot window (checked on open and
+  once a day while running), all newly cold days across all conversations are written as one new
+  segment in one transaction. Segments of the same UTC month are merged (one rebuild of that
+  month's days) when a month has more than 4 or the month is over. A segment is capped at
+  `SEG_MAX_DOCS` (e.g. 20 000) docs; a busy month becomes several. Busy and quiet conversations
+  share segments, so a quiet chat costs almost nothing.
+- **Dirty cold days.** A change to a day already in a segment (a late or backfilled group post, a
+  pending post turning visible, an edit/delete of an old message) does not touch the segment: that
+  (src, day) is loaded into the hot tier and the segment's docs of that day are skipped at query
+  time. The owning month is rebuilt in the background (debounced, e.g. 10 min, or at the next
+  open). Backfill of many old days goes straight to segment builds by month instead of the hot
+  tier.
+
+### Layout (format version 2; a v1 file is emptied and rebuilt)
+
+```text
+m                       sealed manifest: segments [{seg, month, max_at, min_at, docs,
+                        days: [(src, day, vv)]}]; replaced atomically with each segment write
+x/{seg}/{tok}           sealed postings of one term: local doc numbers, newest first, varint-delta
+y/{seg}/{chunk}         sealed doc rows, 64 a chunk: (h, src, kind, conv, day, id, at, author, text)
+v                       sealed u32 format version
+```
+
+- `tok` as in v1 (keyed BLAKE3), prefixes now **2..=8 chars** (a longer query term is looked up
+  by its 8-char prefix and checked against the row text, which the query already does).
+- Docs in a segment are numbered newest first, so a posting list is already in result order.
+- Without the key the file shows segment sizes and months and which tokens recur within a
+  segment; no per-message times (v1 had one in every posting key).
+- Watermarks are the manifest's `(src, day, vv)`; a day whose store vv differs is dirty.
+
+### Query
+
+Unchanged API and result order (newest first, cursor `{rev_at}/{h}`). Sources: the hot tier and
+the segments whose `max_at` is older than the cursor. A lazy k-way merge by (at, h) over the
+longest term's posting list from each source; segments are opened only once the merge reaches
+their `max_at`, so a page usually reads the hot tier and one or two segments. Docs of dirty days
+are skipped in segments. Same AND check against the row text, same snippet/highlights, same scan
+budget (20 000 postings) and `next`.
+
+### Crash safety
+
+The hot tier is derived from the stores; segments and the manifest are written in one
+transaction. A crash loses at most the in-memory tier, rebuilt on open. Reconcile on open: hot
+days -> memory; cold days covered by the manifest with the same vv -> nothing; otherwise dirty.
+
+### Targets (desktop, 100k messages; emulator figures recorded too)
+
+Send-path index cost < 0.5 ms p99; `search.redb` <= 1.5 KB/message; first full build of 100k
+< 60 s; hot-tier build on open of 8 days measured (and in `scale-year.md` for the year
+dataset); queries <= 10 ms p95.
+
 ## Benchmarks
 
 `search-bench` (crates/core/src/search/bench.rs, binary `crates/core/src/bin/search-bench.rs`)
