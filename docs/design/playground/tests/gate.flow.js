@@ -3,7 +3,7 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const L = require('/home/abe/p2p_chat/.claude/worktrees/design-refinement/docs/design/refined/qa/lib.js');
-const BASE = process.env.PG_URL || 'http://127.0.0.1:5178/';
+const BASE = process.env.BASE || process.env.PG_URL || 'http://127.0.0.1:5178/';
 let fails = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const step = (p) => p.locator('[data-gate-step]').getAttribute('data-gate-step');
@@ -92,8 +92,7 @@ async function createPath(p, form) {
 
   // ---- link path: approve
   { const p = await open(b, 'android', false);
-    await btn(p, 'I already have an account').click(); await waitStep(p, 'choose');
-    await p.getByRole('button', { name: /Link from another device/ }).click(); await waitStep(p, 'linkName');
+    await btn(p, 'Link to a device').click(); await waitStep(p, 'linkName');
     await next(p).click(); await waitStep(p, 'link');
     ok(await p.getByRole('img', { name: /QR code/ }).isVisible(), '[link] QR shown on the new device');
     ok(/Expires in 4:5\d|Expires in 5:00/.test(await p.getByRole('timer').innerText()), '[link] expiry countdown');
@@ -112,8 +111,7 @@ async function createPath(p, form) {
 
   // ---- link path: expire, cancel, fail
   { const p = await open(b, 'android', false);
-    await btn(p, 'I already have an account').click(); await waitStep(p, 'choose');
-    await p.getByRole('button', { name: /Link from another device/ }).click(); await waitStep(p, 'linkName');
+    await btn(p, 'Link to a device').click(); await waitStep(p, 'linkName');
     await next(p).click(); await waitStep(p, 'link');
     await drawer(p, (d) => d.getByRole('button', { name: 'Code expires' }).click());
     await p.waitForSelector('text=The code expired. Try again.', { timeout: 3000 });
@@ -131,8 +129,7 @@ async function createPath(p, form) {
 
   // ---- restore with a wrong word, then fixed; and "phrase restore fails"
   { const p = await open(b, 'android', false);
-    await btn(p, 'I already have an account').click(); await waitStep(p, 'choose');
-    await p.getByRole('button', { name: /Restore from recovery phrase/ }).click(); await waitStep(p, 'restore');
+    await btn(p, 'Restore from recovery phrase').click(); await waitStep(p, 'restore');
     const words = 'abandon ability able about abondon absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual'.split(' ');
     await p.getByLabel('Word 1', { exact: true }).fill(words.join(' '));
     await next(p).click();
@@ -160,13 +157,45 @@ async function createPath(p, form) {
     ok(await p.getByRole('heading', { name: 'Welcome back, Maya' }).isVisible(), '[unlock] screen');
     ok(await p.getByRole('switch', { name: 'Remember on this phone' }).isVisible(), '[unlock] Android shows Remember on this phone');
     for (let i = 0; i < 3; i++) { await p.getByLabel('Passphrase', { exact: true }).fill('nope' + i); await btn(p, 'Unlock').click(); await p.waitForSelector(i < 2 ? 'text=didn’t open the account' : 'text=Too many tries', { timeout: 3000 }); await p.waitForTimeout(150); }
-    ok(await p.getByText(/Wait \d:\d\d before trying again/).isVisible(), '[unlock] lockout wait shown after N wrong');
+    ok(await p.getByText(/You can try again in \d:\d\d/).isVisible(), '[unlock] lockout wait shown after N wrong');
     ok(await p.getByLabel('Passphrase', { exact: true }).isDisabled(), '[unlock] field disabled during lockout');
-    await p.waitForSelector('text=/Wait/', { state: 'detached', timeout: 6000 });
+    await p.waitForSelector('text=/try again in/', { state: 'detached', timeout: 6000 });
     await p.getByLabel('Passphrase', { exact: true }).fill('correct horse'); await btn(p, 'Unlock').click();
     await p.waitForSelector('nav[aria-label=Main]', { timeout: 4000 }); ok(true, '[unlock] right passphrase opens the app');
     await appState(p, 'locked'); await waitStep(p, 'unlock'); await btn(p, 'Forgot passphrase?').click(); await waitStep(p, 'restore');
     ok(await p.getByText(/You’ll set a new passphrase/).isVisible(), '[unlock] Forgot passphrase -> restore from phrase');
+    await p.context().close(); }
+
+  // ---- welcome offers Link and Restore on both forms; restore on a device with an account ADDS one
+  for (const form of ['desktop', 'android']) {
+    const p = await open(b, form, false);
+    ok(await btn(p, 'Link to a device').isVisible() && await btn(p, 'Restore from recovery phrase').isVisible() && await btn(p, 'Create account').isVisible(), `[${form}] welcome offers Create, Link and Restore`);
+    const bx = await Promise.all(['Create account', 'Link to a device', 'Restore from recovery phrase'].map((n) => btn(p, n).boundingBox()));
+    const frame = await p.locator('.card').boundingBox();
+    ok(bx.every((r) => r && r.x >= frame.x - 1 && r.x + r.width <= frame.x + frame.width + 1), `[${form}] welcome buttons stay inside the card`);
+    await p.context().close();
+  }
+  { const p = await L.page(b, { w: 1440, h: 900 }); await p.goto(BASE + '?form=desktop&theme=light#/settings'); await p.waitForSelector('.device');
+    await p.waitForSelector('[data-accounts]');
+    ok(/Only the selected account is online/.test(await p.locator('[data-accounts]').innerText()), '[add] settings says only the selected account is online');
+    await btn(p, 'Add another account').click(); await waitStep(p, 'welcome');
+    ok(await p.getByRole('heading', { name: 'Add an account' }).isVisible(), '[add] welcome says Add an account');
+    await btn(p, 'Restore from recovery phrase').click(); await waitStep(p, 'restore');
+    await drawer(p, (d) => d.getByRole('button', { name: 'Fill demo phrase (restore)' }).click());
+    await next(p).click(); await waitStep(p, 'restoreName');
+    await p.getByLabel('Your name').fill('Anu Joseph'); await next(p).click(); await waitStep(p, 'restorePass');
+    await btn(p, 'Skip for now').click(); await waitStep(p, 'device');
+    await next(p).click(); await waitStep(p, 'terms');
+    await p.getByRole('checkbox').check(); await btn(p, 'Agree and continue').click(); await waitStep(p, 'perms');
+    await btn(p, 'Not now').click(); await waitStep(p, 'done');
+    ok(await p.getByRole('heading', { name: 'Added Anu Joseph to this computer' }).isVisible(), '[add] success reads "Added <name> to this computer"');
+    if (process.env.SHOTS) await p.screenshot({ path: process.env.SHOTS + '/add-done-desktop.png' });
+    await btn(p, 'Open Tinline').click(); await p.waitForSelector('[data-accounts]');
+    const txt = await p.locator('[data-accounts]').innerText();
+    ok(/Anu Joseph/.test(txt) && /Maya Kurian/.test(txt), '[add] both accounts listed in Settings');
+    await p.getByRole('button', { name: 'Switch to Maya Kurian' }).click(); await p.waitForTimeout(200);
+    ok(/Maya Kurian\s+Selected/.test(await p.locator('[data-accounts]').innerText()), '[add] switcher selects the other account');
+    if (process.env.SHOTS) await p.screenshot({ path: process.env.SHOTS + '/accounts-desktop.png' });
     await p.context().close(); }
 
   // ---- reduced motion: step changes must not animate

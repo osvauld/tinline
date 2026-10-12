@@ -57,16 +57,17 @@
   <div class="row"><span>Simulated Argon2 time (ms)</span><input type="number" min="0" max="5000" step="100" aria-label="Key derivation time" bind:value={gateSim.kdfMs} /></div>
   <p class="note">Remembered on this phone: <code>{String(gateSim.remembered)}</code></p>
 
-  <h4>Proposed / undecided (not app copy)</h4>
+  <h4>Decided / proposed / undecided (not app copy)</h4>
   <ul class="notes">
-    <li><b>Proposed:</b> lockout after N wrong passphrases (default N={gateSim.maxTries}, wait {gateSim.lockSeconds}s). The real app never locks out; it is only deliberately slow (Argon2).</li>
+    <li><b>Decided 2026-10-12:</b> after 5 wrong passphrases, Unlock waits 30 s (N={gateSim.maxTries}, wait {gateSim.lockSeconds}s here are drawer-adjustable for testing). Core gap: the core never locks out today (only slow Argon2), so the lockout is new core work.</li>
+    <li><b>Decided 2026-10-12:</b> the welcome screen (desktop and Android) offers Create, "Link to a device" and "Restore from recovery phrase". The old "I already have an account" chooser step is no longer on the path.</li>
     <li><b>Proposed:</b> an explicit "Remember on this phone" switch on Unlock (Android). Real app remembers via the Keystore without asking.</li>
     <li><b>Decided 2026-10-12:</b> confirmations optional (phrase check is an optional action; passphrase has show/hide, no confirm field).</li>
     <li><b>Proposed:</b> passphrase strength bars. Real has one field and a "why" line.</li>
     <li><b>Proposed:</b> blurred phrase until revealed; real shows the words at once (screenshots blocked on Android). Copy kept but discouraged.</li>
     <li><b>Proposed:</b> permissions step also lists Camera (optional) and has "Not now"; real skip is "Skip for now".</li>
     <li><b>Proposed:</b> restore/link end on one shared "Done" step instead of the real Restored / Syncing screens.</li>
-    <li><b>Undecided:</b> restoring a phrase when that account is already on this device (real: "Already on this phone" dialog; not drawn). Restore-replaces vs adds is still open (audit item 9).</li>
+    <li><b>Decided 2026-10-12:</b> restoring on a device that already has an account ADDS a second account (does not replace). Settings &gt; Add another account runs the sign-up flow; success reads "Added &lt;name&gt; to this device"; Settings lists both with a switcher. Only the selected account is online per install. Core gap: core restore adding an account to an install that has one (multi-account) is a core follow-up (PLAN section 7). Simulated minimally here: the second account has no chats or contacts of its own, and restoring the SAME account that is already here (real: "Already on this phone") is not drawn.</li>
     <li><b>Undecided:</b> a QR the NEW device shows is the decided model; the existing-device scan/approve screens belong to Devices (step 8).</li>
     <li>Terms/Privacy links are placeholders. The 6-digit code and QR are fake.</li>
   </ul>

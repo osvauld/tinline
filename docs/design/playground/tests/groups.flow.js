@@ -191,6 +191,16 @@ const smooth = (h, full) => {
     await drawer(p); for (let i = 0; i < 7; i++) await p.getByRole('button', { name: '+1 day', exact: true }).click(); await closeDrawer(p);
     await member(p, 'leo').click(); await p.waitForTimeout(300);
     ok('request: ask again offered once the wait has passed', (await p.getByRole('button', { name: /Ask Leo again/ }).count()) === 1);
+    /* cancel starts the same 7-day wait as a decline (decided 2026-10-12) */
+    await p.getByRole('button', { name: /Ask Leo again/ }).click();
+    await p.getByRole('button', { name: 'Send request' }).click(); await p.waitForTimeout(400);
+    await member(p, 'leo').click(); await p.waitForTimeout(300);
+    await p.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click(); await p.waitForTimeout(400);
+    ok('request: after a cancel, no ask until the wait passes', (await p.getByRole('button', { name: /Ask Leo/ }).count()) === 0 && /You cancelled your request/.test(await p.getByRole('dialog').innerText()) && /You can ask again on/.test(await p.getByRole('dialog').innerText()));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+    await drawer(p); for (let i = 0; i < 7; i++) await p.getByRole('button', { name: '+1 day', exact: true }).click(); await closeDrawer(p);
+    await member(p, 'leo').click(); await p.waitForTimeout(300);
+    ok('request: ask again offered after a cancel once 7 days have passed', (await p.getByRole('button', { name: /Ask Leo again/ }).count()) === 1);
     await p.keyboard.press('Escape'); await p.waitForTimeout(250);
     ok('request: blocked shown as Blocked', /Blocked/.test(await member(p, 'nisha').innerText()));
     await member(p, 'kavya').click();
@@ -198,7 +208,7 @@ const smooth = (h, full) => {
     await p.keyboard.press('Escape'); await p.waitForTimeout(250);
     await p.goto(`${BASE}?form=desktop&theme=light#/groups`); await p.waitForTimeout(500);
     const sent = await p.locator('[aria-label="Sent chat requests"]').innerText();
-    ok('requests tab: sent list shows declined and Blocked', /Leo declined/.test(sent) && /Blocked/.test(sent) && !/Kavya/.test(sent) ? true : /Leo declined/.test(sent) && /Blocked/.test(sent), sent);
+    ok('requests tab: sent list shows Blocked; a cancelled request is gone from the list (but still holds the wait)', /Blocked/.test(sent) && !/Leo/.test(sent), sent);
     // incoming
     await sim(p, 'Ravi (blocked) sends a request'); await p.waitForTimeout(300);
     ok('incoming from a blocked person is never listed', (await p.locator('[aria-label="Incoming chat requests"]').count()) === 0);

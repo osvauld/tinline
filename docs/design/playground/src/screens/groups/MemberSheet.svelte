@@ -74,12 +74,12 @@
               <button type="button" class="link" onclick={() => cancelRequest(req.id)}>Cancel</button></div>
           {:else if req?.state === 'blocked'}
             <div class="mi off"><Icon name="off" size={20} /><span class="t"><b>Blocked</b><small>{fn} can’t receive requests from you.</small></span></div>
-          {:else if req?.state === 'declined' && askAgainAt(req) > clock.now}
-            <div class="mi off"><Icon name="clock" size={20} /><span class="t"><b>{fn} declined your request</b><small>You can ask again on {dayOnly(askAgainAt(req))}</small></span></div>
+          {:else if (req?.state === 'declined' || req?.state === 'cancelled') && askAgainAt(req) > clock.now}
+            <div class="mi off"><Icon name="clock" size={20} /><span class="t"><b>{req.state === 'cancelled' ? 'You cancelled your request' : `${fn} declined your request`}</b><small>You can ask again on {dayOnly(askAgainAt(req))}</small></span></div>
           {:else if canAskPrivately(g, id)}
             <button type="button" class="mi press" onclick={() => (view = 'ask')}><Icon name="chat" size={20} />
-              <span class="t"><b>{req?.state === 'declined' ? `Ask ${fn} again` : `Ask ${fn} for a private chat`}</b>
-                <small>{req?.state === 'declined' ? `${fn} declined your last request` : 'Sends a chat request through the group’s host'}</small></span></button>
+              <span class="t"><b>{req?.state === 'declined' || req?.state === 'cancelled' ? `Ask ${fn} again` : `Ask ${fn} for a private chat`}</b>
+                <small>{req?.state === 'cancelled' ? 'You cancelled your last request' : req?.state === 'declined' ? `${fn} declined your last request` : 'Sends a chat request through the group’s host'}</small></span></button>
           {/if}
         {/if}
         {#if canSetAdmin(g, id)}

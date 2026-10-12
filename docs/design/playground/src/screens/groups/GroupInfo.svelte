@@ -59,7 +59,7 @@
   }
   function reqNote(id: string) {
     const r = requestFor(id, g?.id);
-    return r ? (r.state === 'pending' ? 'Chat request sent' : r.state === 'declined' ? 'Declined your chat request' : r.state === 'blocked' ? 'Blocked' : '') : '';
+    return r ? (r.state === 'pending' ? 'Chat request sent' : r.state === 'declined' ? 'Declined your chat request' : r.state === 'cancelled' ? 'You cancelled your request' : r.state === 'blocked' ? 'Blocked' : '') : '';
   }
 
   async function copy(code: string, text: string) {
