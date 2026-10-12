@@ -72,6 +72,12 @@ pub struct ChatCore {
     pub(crate) wid: u64,
     /// Test knob: the next this-many `chat_persist` calls fail, as if the disk were full.
     pub(crate) fail_writes: std::sync::atomic::AtomicU32,
+    /// Test knob: this node's chat clock runs this many ms ahead of the real one (per node,
+    /// unlike `P2P_CHAT_CLOCK_MS_OFFSET`).
+    pub(crate) clock_ms: std::sync::atomic::AtomicI64,
+    /// With `clock_ms`: the device clock itself is wrong (the live-window and catch-up checks
+    /// use it too), not just the time a message is stamped with.
+    pub(crate) clock_wrong: std::sync::atomic::AtomicBool,
 }
 
 pub enum Cmd {
@@ -220,6 +226,8 @@ impl Inner {
             device_id: value,
             wid: writer_id(&did, &value),
             fail_writes: Default::default(),
+            clock_ms: Default::default(),
+            clock_wrong: Default::default(),
         });
         *self.chat.lock() = Some(core);
         self.search_reconcile();
@@ -699,8 +707,23 @@ impl Inner {
 
     // ---- hello / sync -----------------------------------------------------------------------
 
+    /// This node's chat clock: the real one plus the test offset (`Node::chat_clock_offset_for_test`).
+    pub(crate) fn chat_now(&self) -> i64 {
+        now_ms() + self.chat_core().map(|c| c.clock_ms.load(Ordering::Relaxed)).unwrap_or(0)
+    }
+
+    /// The clock the live window and the catch-up decision use: the real one, unless the test
+    /// made this device's clock wrong (`Node::chat_clock_skew_for_test`). A message stamped in the
+    /// past by `chat_clock_offset_for_test` is judged as one written then by a right clock.
+    fn chat_wall_now(&self) -> i64 {
+        match self.chat_core() {
+            Ok(c) if c.clock_wrong.load(Ordering::Relaxed) => now_ms() + c.clock_ms.load(Ordering::Relaxed),
+            _ => now_ms(),
+        }
+    }
+
     fn recent_days(&self) -> Vec<String> {
-        let t = now_ms();
+        let t = self.chat_now();
         (0..HELLO_DAYS).map(|i| day_of(t - i * DAY_MS)).collect()
     }
 
@@ -816,7 +839,7 @@ impl Inner {
         let shard = self.chat_load_shard(core, pair, day).await?;
         let mut cache = core.shards.lock();
         if cache.len() >= MAX_SHARDS_CACHED {
-            let today = day_of(now_ms());
+            let today = day_of(self.chat_now());
             cache.retain(|(_, d), _| *d == today);
         }
         cache.entry(key).or_insert(shard);
@@ -956,7 +979,7 @@ impl Inner {
             let mut shards = core.shards.lock();
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             let before = shard.vv();
-            let ctx = Ctx { signer_did: sess.did.clone(), now_ms: now_ms(), live, history: None };
+            let ctx = Ctx { signer_did: sess.did.clone(), now_ms: self.chat_wall_now(), live, history: None };
             let applied = match shard.apply_remote(update, &ctx) {
                 Ok(a) => a,
                 // Their ops build on ops of ours that we lost (a reinstall): the batch cannot
@@ -1113,7 +1136,7 @@ impl Inner {
                 // window (an old one of ours not delivered yet, e.g. from another writer ID):
                 // that batch goes as a catch-up `Sync` instead, which has no such window and
                 // keeps the session up (P10b). One hour of margin for clock skew.
-                let catch_up = !sync && s.creates_outside(their_vv, me.id.did(), now_ms(), DAY_MS - HOUR_MS);
+                let catch_up = !sync && s.creates_outside(their_vv, me.id.did(), self.chat_wall_now(), DAY_MS - HOUR_MS);
                 s.export_own_since(their_vv, me.id.did()).map(|u| (u, vv, ends, catch_up))
             })
         };
@@ -1192,7 +1215,7 @@ impl Inner {
             return Err(Error::Protocol("message too long".into()));
         }
         let pair = pair_id(me.id.did(), did);
-        let at = now_ms();
+        let at = self.chat_now();
         let day = day_of(at);
         self.chat_shard(&core, &pair, &day).await?;
         let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to, file, dev: core.device_id, did_sig: Vec::new() };
@@ -1226,11 +1249,17 @@ impl Inner {
     /// Test hook (`write_as_sibling_for_test`): a message of ours sent at `at`, under a fresh
     /// device ID's writer ID, stored like one relayed by an own device (pending, not pushed).
     pub(crate) async fn chat_write_as_sibling_for_test(self: &Arc<Self>, did: &str, text: String, at: i64) -> Result<String, Error> {
+        self.chat_write_in_day_for_test(did, text, at, &day_of(at)).await
+    }
+
+    /// As `chat_write_as_sibling_for_test`, but filed in the shard of `day` whatever `at` is
+    /// (a message a receiver must judge against that day's window).
+    pub(crate) async fn chat_write_in_day_for_test(self: &Arc<Self>, did: &str, text: String, at: i64, day: &str) -> Result<String, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         self.chat_contact(did, true)?;
         let pair = pair_id(me.id.did(), did);
-        let day = day_of(at);
+        let day = day.to_string();
         self.chat_shard(&core, &pair, &day).await?;
         let dev = new_device_value();
         let w = Writer::new(me.id.clone(), dev);
@@ -1287,9 +1316,9 @@ impl Inner {
                     if t.len() > MAX_TEXT {
                         return Err(Error::Protocol("message too long".into()));
                     }
-                    shard.edit(id, t, now_ms(), &self.chat_writer(&me, &core))
+                    shard.edit(id, t, self.chat_now(), &self.chat_writer(&me, &core))
                 }
-                None => shard.delete(id, now_ms(), &self.chat_writer(&me, &core)),
+                None => shard.delete(id, self.chat_now(), &self.chat_writer(&me, &core)),
             }
             .map_err(|e| Error::Io(e.to_string()))?;
             let rec = shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?;
@@ -2106,7 +2135,7 @@ impl Inner {
     async fn chat_compact(self: &Arc<Self>) -> Result<(), Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
-        let limit = day_of(now_ms() - CLOSE_AFTER_DAYS * DAY_MS);
+        let limit = day_of(self.chat_now() - CLOSE_AFTER_DAYS * DAY_MS);
         let mut dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
         dids.push(me.id.did().to_string());
         for did in dids {

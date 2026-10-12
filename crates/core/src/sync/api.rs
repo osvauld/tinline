@@ -345,6 +345,35 @@ impl Node {
         self.block_on(async move { inner.chat_write_as_sibling_for_test(&peer_did, text, at_ms).await })?
     }
 
+    /// For tests: like `write_as_sibling_for_test`, but filed in the shard of `day`
+    /// (`YYYY-MM-DD`) whatever `at_ms` is.
+    #[doc(hidden)]
+    pub fn write_in_day_for_test(&self, peer_did: String, text: String, at_ms: i64, day: String) -> Result<String, Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_write_in_day_for_test(&peer_did, text, at_ms, &day).await })?
+    }
+
+    /// For tests: messages written now are stamped `ms` ahead of the real clock (negative: a
+    /// message written at that past time by a right clock; edits, hello days and compaction use
+    /// it too). The live window and catch-up decision keep the real clock.
+    #[doc(hidden)]
+    pub fn chat_clock_offset_for_test(&self, ms: i64) {
+        if let Ok(core) = self.inner.chat_core() {
+            core.clock_wrong.store(false, std::sync::atomic::Ordering::Relaxed);
+            core.clock_ms.store(ms, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
+
+    /// For tests: this device's clock is wrong by `ms`: as `chat_clock_offset_for_test`, and the
+    /// live window and catch-up decision use it as well (0 sets it right again).
+    #[doc(hidden)]
+    pub fn chat_clock_skew_for_test(&self, ms: i64) {
+        if let Ok(core) = self.inner.chat_core() {
+            core.clock_ms.store(ms, std::sync::atomic::Ordering::Relaxed);
+            core.clock_wrong.store(ms != 0, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
+
     /// For tests: does the chat store hold any "You" shard?
     #[doc(hidden)]
     pub fn has_you_docs_for_test(&self) -> bool {
