@@ -305,7 +305,7 @@
           <button type="button" class="ib press" aria-label="Back to chats" onclick={() => nav.back()}><Icon name="back" /></button>
         {/if}
         <button type="button" class="head" aria-label="{chatTitle(c)}. {status}{c.muted ? '. Muted' : ''}. Chat details" onclick={openDetails}>
-          <Avatar name={chatTitle(c)} hue={peer?.hue ?? 0} group={c.kind === 'group'} size={36} />
+          <Avatar name={chatTitle(c)} hue={peer?.hue ?? 0} group={c.kind === 'group'} person={peer?.id} size={36} />
           <span class="tx"><span class="nm"><b>{chatTitle(c)}</b>{#if c.muted}<Icon name="mute" size={14} />{/if}</span><span class="pr">{status}</span></span>
         </button>
         {#if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}

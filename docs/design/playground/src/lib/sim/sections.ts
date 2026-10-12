@@ -6,6 +6,7 @@ import ChatSim from './ChatSim.svelte';
 import GateSim from './GateSim.svelte';
 import CallsSim from './CallsSim.svelte';
 import GroupsSim from './GroupsSim.svelte';
+import ProfileSim from './ProfileSim.svelte';
 
 export const simSections: { title: string; component: Component }[] = [
   { title: 'Environment', component: CoreSim },
@@ -13,4 +14,5 @@ export const simSections: { title: string; component: Component }[] = [
   { title: 'Sign-up and unlock', component: GateSim },
   { title: 'Calls', component: CallsSim },
   { title: 'Groups', component: GroupsSim },
+  { title: 'Profiles', component: ProfileSim },
 ];

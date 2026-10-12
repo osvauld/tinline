@@ -1,6 +1,6 @@
 /* The one data set. Merged from refined/home.html, chat.html and groups.html, which had drifted
    (different spellings, times, unread counts, member counts). Every screen reads this through the store. */
-import type { Account, Chat, Device, Group, Message, Person } from './types';
+import type { Account, Chat, Device, Group, Message, Person, Profile } from './types';
 import { clock, T } from './clock.svelte';
 
 const at = (h: number, m: number, daysAgo = 0) => {
@@ -13,25 +13,36 @@ const at = (h: number, m: number, daysAgo = 0) => {
 let seq = 0;
 const msg = (m: Omit<Message, 'id'>): Message => ({ id: 'm' + ++seq, ...m });
 
+/** Profiles as last synced. `sample:<seed>` pictures are drawn on first use (no files, no network). */
+const prof = (fields: Record<string, unknown>, picture?: { hash: string; ready: boolean }): Profile => ({ fields: { availability: { available: true }, ...fields }, ...(picture ? { picture } : {}) });
+const pic = (seed: string, ready = true) => ({ hash: 'sample:' + seed, ready });
+
 export function seedAccount(): Account {
-  return { id: 'me', name: 'Maya Kurian', hue: 0, availability: 'available', gate: 'ready' };
+  return {
+    id: 'me', name: 'Maya Kurian', hue: 0, availability: 'available', gate: 'ready',
+    profile: prof({ status: 'Slow mornings, fast evenings', about: 'Designing calm software. Ask me about trains.', pronouns: 'she/her', availability: { available: true } }),
+  };
 }
 
 export function seedPeople(): Person[] {
   const p = (id: string, name: string, hue: number, extra: Partial<Person> = {}): Person =>
     ({ id, name, hue, online: true, callsAllowed: true, blocked: false, contact: true, ...extra });
   return [
-    p('arjun', 'Arjun Oommen', 5),
-    p('meera', 'Meera Nair', 4, { online: false }),
-    p('dev', 'Dev Patel', 1, { callsAllowed: false }), // met through a group request: message-only until he allows calls
-    p('sana', 'Sana Rao', 1),
-    p('sam', 'Sam Rao', 3),
-    p('priya', 'Priya Menon', 2),
+    p('arjun', 'Arjun Oommen', 5, { profile: prof({ status: 'Working from the café', about: 'Architect by day, cyclist at weekends. Happiest with a sketchbook and a long ride.', pronouns: 'he/him', location: 'Kochi', website: 'https://arjun.example/notes' }, pic('arjun-1')) }),
+    p('meera', 'Meera Nair', 4, { online: false, profile: prof({ status: 'Back online on Thursday', about: 'Teaches maths. Collects maps.', location: 'Bengaluru', availability: { available: false, until: at(18, 0) } }, pic('meera-1')) }),
+    p('dev', 'Dev Patel', 1, { callsAllowed: false, profile: prof({ status: 'Thursday lunch?' }) }), // met through a group request: message-only until he allows calls
+    p('sana', 'Sana Rao', 1, { profile: prof({ status: 'Draft review this week', about: 'Editor. Reads on trains.' }, pic('sana-light', true)) }),
+    p('sam', 'Sam Rao', 3, { profile: prof({ status: 'Trailhead at 7', location: 'Munnar' }, pic('sam-1', false)) }),
+    p('priya', 'Priya Menon', 2, { profile: prof({
+      status: 'Studio day', about: 'Interiors and a lot of tea.', pronouns: 'she/her',
+      // A key this version has never heard of, with nested data: it must be shown readably and survive edits.
+      work: { title: 'Interior architect', studio: { name: 'Tin & Lime', city: 'Kochi' }, tools: ['Rhino', 'Figma', 'Pencil'] },
+    }, pic('priya-1')) }),
     p('leo', 'Leo Barreto', 0, { contact: false }),
-    p('kavya', 'Kavya Shetty', 2, { contact: false }),
+    p('kavya', 'Kavya Shetty', 2, { contact: false, profile: prof({ status: 'First hike!', about: 'New to the group. Bringing biscuits.' }) }),
     p('nisha', 'Nisha Pillai', 4, { contact: false }),
-    p('amma', 'Amma', 3),
-    p('ravi', 'Ravi Menon', 0, { blocked: true }),
+    p('amma', 'Amma', 3, { profile: prof({ status: 'Call me after 6' }) }),
+    p('ravi', 'Ravi Menon', 0, { blocked: true, profile: prof({ status: 'Hello there' }, pic('ravi-1')) }),
   ];
 }
 

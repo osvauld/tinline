@@ -8,6 +8,9 @@ import CallsList from './calls/CallsList.svelte';
 import Gate from './gate/Gate.svelte';
 import GroupsList from './groups/GroupsList.svelte';
 import GroupInfo from './groups/GroupInfo.svelte';
+import Settings from './settings/Settings.svelte';
+import MyProfile from './profile/MyProfile.svelte';
+import PersonProfile from './profile/PersonProfile.svelte';
 
 type Entry = { component: Component<any>; props: (r: any) => Record<string, unknown> };
 const ph = (title: string, step: string): Entry => ({ component: Placeholder, props: () => ({ title, step }) });
@@ -26,9 +29,10 @@ export const TAB_LISTS: Record<Tab, Entry & { title: string }> = {
 export const SCREENS: Record<Exclude<Route['name'], 'home'>, Entry> = {
   conversation: { component: Conversation, props: (r) => ({ chatId: r.chat }) },
   groupInfo: { component: GroupInfo, props: (r) => ({ chatId: r.chat }) },
-  contact: ph('Contact', '8'),
+  contact: { component: PersonProfile, props: (r) => ({ personId: r.person }) },
+  profile: { component: MyProfile, props: () => ({}) },
   search: ph('Search', '7'),
-  settings: ph('Settings', '8'),
+  settings: { component: Settings, props: (r) => ({ section: r.section }) },
   devices: ph('Devices', '8'),
   privacy: ph('Privacy', '8'),
 };

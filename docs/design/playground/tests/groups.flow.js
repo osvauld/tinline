@@ -179,9 +179,19 @@ const smooth = (h, full) => {
       await p.getByRole('button', { name: 'Send request' }).click(); await p.waitForTimeout(400);
     }
     ok('request: pending shown on the member row', /Chat request sent/.test(await member(p, 'kavya').innerText()));
+    await member(p, 'kavya').click(); await p.waitForTimeout(300);
+    ok('request: one at a time (no second ask while pending)', (await p.getByRole('button', { name: /for a private chat/ }).count()) === 0 && /Request sent/.test(await p.getByRole('dialog').innerText()));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(250);
     await sim(p, 'Kavya accepts'); await sim(p, 'Leo declines'); await sim(p, 'Nisha has blocked me');
     await p.waitForTimeout(400);
     ok('request: declined shown to the requester', /Declined your chat request/.test(await member(p, 'leo').innerText()));
+    await member(p, 'leo').click(); await p.waitForTimeout(300);
+    ok('request: after a decline, ask again only after the wait', (await p.getByRole('button', { name: /Ask Leo/ }).count()) === 0 && /You can ask again on/.test(await p.getByRole('dialog').innerText()));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+    await drawer(p); for (let i = 0; i < 7; i++) await p.getByRole('button', { name: '+1 day', exact: true }).click(); await closeDrawer(p);
+    await member(p, 'leo').click(); await p.waitForTimeout(300);
+    ok('request: ask again offered once the wait has passed', (await p.getByRole('button', { name: /Ask Leo again/ }).count()) === 1);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(250);
     ok('request: blocked shown as Blocked', /Blocked/.test(await member(p, 'nisha').innerText()));
     await member(p, 'kavya').click();
     ok('request accepted: Kavya is a contact (Message action)', (await p.getByRole('button', { name: 'Message Kavya' }).count()) === 1);

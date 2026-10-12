@@ -45,7 +45,7 @@
       {/each}
     </nav>
     <button type="button" class="me press" onclick={() => nav.open({ name: 'settings' })}>
-      <Avatar name={db.account.name} hue={db.account.hue} size={36} />
+      <Avatar name={db.account.name} hue={db.account.hue} person="me" size={36} />
       <span><b>{db.account.name.split(' ')[0]}</b><small>Your account</small></span>
     </button>
   </aside>

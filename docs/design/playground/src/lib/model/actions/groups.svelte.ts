@@ -6,7 +6,7 @@ import type { Id } from '../types';
 export interface Invitation { id: Id; by: Id; groupName: string; at: number; expiresAt: number; hostName: string }
 export interface RequestIn { id: Id; from: Id; groupId: Id; note: string; at: number }
 export type RequestState = 'pending' | 'declined' | 'blocked' | 'accepted';
-export interface RequestOut { id: Id; to: Id; groupId: Id; note: string; at: number; state: RequestState }
+export interface RequestOut { id: Id; to: Id; groupId: Id; note: string; at: number; state: RequestState; answeredAt?: number }
 
 export const gx = $state({
   invitations: [] as Invitation[],

@@ -17,7 +17,7 @@
 {#if show}
   <div class="hu" role="alert" aria-label="Incoming call from {name}" data-os="headsup" in:headsUpIn out:headsUpOut>
     <button type="button" class="open" aria-label="Open call from {name}" onclick={() => system.openCall()}>
-      <Avatar {name} {hue} size={44} />
+      <Avatar {name} {hue} person={call.peer ?? undefined} size={44} />
       <span class="tx">
         <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline · now</span>
         <b dir="auto">{name}</b>

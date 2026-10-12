@@ -73,7 +73,7 @@
         {#each gx.invitations as inv (inv.id)}
           <li class="card" in:fold out:foldOut>
             <div class="who">
-              <Avatar name={displayName(inv.by)} hue={person(inv.by)?.hue ?? 0} size={40} />
+              <Avatar name={displayName(inv.by)} hue={person(inv.by)?.hue ?? 0} person={inv.by} size={40} />
               <span class="tx"><span class="line"><b>{firstName(inv.by)}</b> invited you to <b>{inv.groupName}</b></span>
                 <span class="sub">Hosted by {inv.hostName}’s device · valid until {dayOnly(inv.expiresAt)}</span></span>
             </div>
@@ -95,7 +95,7 @@
           {#each gx.requestsIn as r (r.id)}
             <li class="card" in:fold out:foldOut>
               <div class="who">
-                <Avatar name={displayName(r.from)} hue={person(r.from)?.hue ?? 0} size={40} />
+                <Avatar name={displayName(r.from)} hue={person(r.from)?.hue ?? 0} person={r.from} size={40} />
                 <span class="tx"><span class="line"><b>{displayName(r.from)}</b> wants to chat</span>
                   <span class="sub">Member of {viaName(r.groupId)}</span></span>
               </div>
@@ -117,7 +117,7 @@
             {@const p = person(r.to)}
             <li class="sent" in:fold out:foldOut>
               <div class="row static">
-                <Avatar name={displayName(r.to)} hue={p?.hue ?? 0} />
+                <Avatar name={displayName(r.to)} hue={p?.hue ?? 0} person={r.to} />
                 <span class="mid"><span class="top"><span class="name">{displayName(r.to)}</span><span class="when">{listStamp(r.at, clock.now)}</span></span>
                   <span class="pv" class:bad={r.state === 'blocked'}>{reqLine(r)}</span></span>
                 <button type="button" class="x press" aria-label={r.state === 'pending' && !requestExpired(r) ? `Cancel request to ${displayName(r.to)}` : `Remove request to ${displayName(r.to)}`}

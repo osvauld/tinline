@@ -38,9 +38,11 @@
     {#each entries as e (e.key)}
       {@const bad = missed(e.r)}
       <li class="item" class:sel={nav.openChat === e.c.id}>
+        <button type="button" class="pf press" aria-label="{chatTitle(e.c)}’s profile" onclick={() => nav.push({ name: 'contact', person: e.c.person })}>
+          <Avatar name={chatTitle(e.c)} hue={person(e.c.person)?.hue ?? 0} person={e.c.person} />
+        </button>
         <button type="button" class="row press" onclick={() => open(e.c)}
           aria-label="{chatTitle(e.c)}, {what(e.r)} call{e.r.outcome === 'answered' ? ', ' + fmtShort(e.r.durationS) : ''}, {listStamp(e.m.at)}. Open chat">
-          <Avatar name={chatTitle(e.c)} hue={person(e.c.person)?.hue ?? 0} />
           <span class="mid">
             <span class="name">{chatTitle(e.c)}</span>
             <span class="sub" class:bad><Icon name={e.r.direction === 'out' ? 'call-out' : 'call-in'} size={15} /><span>{what(e.r)}{#if e.r.outcome === 'answered'}{' · '}<span class="dur">{fmtShort(e.r.durationS)}</span>{/if}</span></span>
@@ -58,8 +60,11 @@
   .list { list-style: none; margin: 0; padding: 0 8px; }
   .item { display: flex; align-items: center; gap: 2px; border-radius: var(--r-ctl); }
   .item.sel { background: var(--accent-soft); }
-  .row { flex: 1; min-inline-size: 0; display: flex; gap: 12px; align-items: center; min-block-size: 68px; padding: 8px; border: 0; border-radius: var(--r-ctl); background: transparent; text-align: start; cursor: pointer; color: inherit; font: inherit; }
-  .row:hover { background: var(--surface-2); }
+  .item:hover { background: var(--surface-2); }
+  .item.sel:hover { background: var(--accent-soft); }
+  /* the avatar opens their profile; the rest of the row opens the chat */
+  .pf { flex: none; display: grid; place-items: center; padding-block: 8px; padding-inline: 8px 0; border: 0; border-radius: var(--r-ctl); background: transparent; cursor: pointer; }
+  .row { flex: 1; min-inline-size: 0; display: flex; gap: 12px; align-items: center; min-block-size: 68px; padding: 8px; padding-inline-start: 12px; border: 0; border-radius: var(--r-ctl); background: transparent; text-align: start; cursor: pointer; color: inherit; font: inherit; }
   .mid { flex: 1; min-inline-size: 0; display: grid; gap: 2px; }
   .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sub { display: flex; align-items: center; gap: 5px; font-size: var(--fs-sub); color: var(--muted); }

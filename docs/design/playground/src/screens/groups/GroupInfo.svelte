@@ -133,7 +133,7 @@
               {#each g.invited as inv (inv.id)}
                 {@const exp = inv.expiresAt <= clock.now}
                 <li class="prow" in:fold out:foldOut>
-                  <Avatar name={fullName(inv.id)} hue={hueOf(inv.id)} size={40} />
+                  <Avatar name={fullName(inv.id)} hue={hueOf(inv.id)} person={inv.id} size={40} />
                   <span class="t"><b>{fullName(inv.id)}</b><small>{exp ? 'Invite expired' : `Invite sent · expires ${dayOnly(inv.expiresAt)}`}</small></span>
                   <Btn variant="quiet" label="{exp ? 'Remove' : 'Cancel'} invite for {fullName(inv.id)}" onclick={() => cancelInvite(g, inv.id)}>{exp ? 'Remove' : 'Cancel'}</Btn>
                 </li>
@@ -156,7 +156,7 @@
           <ul class="rows" role="list" aria-label="Hosts">
             {#each hostRows as m (m.id)}
               <li class="mrow" animate:flip={{ duration: flipMs() }} in:fold out:foldOut>
-                <Avatar name={fullName(m.id)} hue={hueOf(m.id)} size={40} />
+                <Avatar name={fullName(m.id)} hue={hueOf(m.id)} person={m.id} size={40} />
                 <span class="t"><b>{m.id === 'me' ? 'This device' : fullName(m.id)}</b>
                   <small>{#if m.hostPending}Waiting to accept{:else}<span class="dot sm" class:on={db.env.hostsOnline}></span>{db.env.hostsOnline ? 'Online' : 'Offline'}{/if}{m.callHost ? ' · also hosts calls' : ''}</small></span>
                 {#if m.hostPending && m.id === 'me'}
@@ -181,7 +181,7 @@
             {@const rn = reqNote(m.id)}
             <li animate:flip={{ duration: flipMs() }} in:fold out:foldOut>
               <button type="button" class="mrow press" data-member={m.id} aria-label="{fullName(m.id)}{m.id === 'me' ? ' (you)' : ''}, {roleLabel(m.role)}{m.host ? ', host' : ''}{m.callHost ? ', call host' : ''}. Open actions" onclick={() => open({ kind: 'member', id: m.id })}>
-                <Avatar name={fullName(m.id)} hue={hueOf(m.id)} size={40} />
+                <Avatar name={fullName(m.id)} hue={hueOf(m.id)} person={m.id} size={40} />
                 <span class="t"><b>{m.id === 'me' ? `${fullName(m.id)} (you)` : fullName(m.id)}</b>
                   <small>{sub(m)}{#if (admin || m.id === 'me') && fc > 0 && m.role !== 'owner'}<span class="fc">{' · '}{fc} of {FLAGS_TO_REMOVE} flags</span>{/if}{#if rn}<span class="rq">{' · '}{rn}</span>{/if}</small></span>
                 <span class="marks">
@@ -198,7 +198,7 @@
           <ul class="rows" role="list" aria-label="Removed members">
             {#each removed as id (id)}
               <li class="mrow plain" in:fold out:foldOut>
-                <Avatar name={fullName(id)} hue={hueOf(id)} size={40} />
+                <Avatar name={fullName(id)} hue={hueOf(id)} person={id} size={40} />
                 <span class="t"><b>{fullName(id)}</b><small>Flagged by {(g.flags[id] ?? []).map((x) => firstName(x)).join(', ')}</small></span>
               </li>
             {/each}

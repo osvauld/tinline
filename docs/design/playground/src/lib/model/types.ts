@@ -4,6 +4,14 @@
 
 export type Id = string;
 
+/** One profile per account DID (profile-sync). `fields` holds status, about, availability and every additional
+    field; keys this version doesn't know are kept as they are. `picture` is the descriptor the avatar reads:
+    ready = the bytes are cached on this device. The name stays on Person/Account (one spelling everywhere). */
+export interface Profile {
+  fields: Record<string, unknown>;
+  picture?: { hash: string; ready: boolean };
+}
+
 export interface Person {
   id: Id;
   name: string;            // full display name, one spelling everywhere
@@ -12,6 +20,8 @@ export interface Person {
   callsAllowed: boolean;   // "Allow calls" (message-only when false)
   blocked: boolean;        // I blocked them (visible block, U5)
   contact: boolean;        // in my contacts (vs. a group member I only know through a group)
+  profile?: Profile;       // their account profile as last synced; absent = none accessible to me
+  alias?: string;          // MY local name for them; never sent, never replaces their own name
 }
 
 export type Delivery = 'sending' | 'waiting' | 'delivered' | 'failed';
@@ -101,6 +111,7 @@ export interface Account {
   name: string;
   hue: number;
   availability: 'available' | 'busy' | 'offline';
+  profile?: Profile;       // my account's profile (editable); availability lives in profile.fields
   /** Before the app proper: 'onboarding' (no account on this device), 'locked' (needs passphrase), 'ready'. */
   gate: 'onboarding' | 'locked' | 'ready';
 }

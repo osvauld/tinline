@@ -15,7 +15,7 @@
 <div class="list">
   {#if system.ongoing}
     <div in:noticeIn out:noticeOut data-notice="ongoing">
-      <Notice title="Ongoing call · {name}" {text} tabular={system.ongoingActive} onopen={() => system.openCall()}>
+      <Notice title="Ongoing call · {name}" {text} person={call.peer ?? undefined} tabular={system.ongoingActive} onopen={() => system.openCall()}>
         {#snippet actions()}
           <button type="button" class="act" onclick={() => call.toggleMute()}>{call.muted ? 'Unmute' : 'Mute'}</button>
           <button type="button" class="act" aria-pressed={call.speaker === 'speaker'} onclick={() => call.toggleSpeaker()}>Speaker</button>
@@ -27,7 +27,7 @@
   {#each system.notifications as n (n.id)}
     {@const who = displayName(n.peer)}
     <div in:noticeIn out:noticeOut data-notice="missed">
-      <Notice title="{n.count > 1 ? `${n.count} missed calls` : 'Missed call'} · {who}" text="Voice call" when={hhmm(n.at)} onopen={() => system.openMissed(n)}>
+      <Notice title="{n.count > 1 ? `${n.count} missed calls` : 'Missed call'} · {who}" text="Voice call" when={hhmm(n.at)} person={n.peer} onopen={() => system.openMissed(n)}>
         {#snippet actions()}
           <button type="button" class="act" onclick={() => system.callBack(n)}>Call back</button>
           <button type="button" class="act" onclick={() => system.openMissed(n)}>Message</button>

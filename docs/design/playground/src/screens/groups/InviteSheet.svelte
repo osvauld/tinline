@@ -24,7 +24,7 @@
         {#each choices as p (p.id)}
           {@const on = picked.includes(p.id)}
           <button type="button" class="li press" role="checkbox" aria-checked={on} onclick={() => toggle(p.id)}>
-            <Avatar name={p.name} hue={p.hue} size={40} />
+            <Avatar name={p.name} hue={p.hue} person={p.id} size={40} />
             <span class="nm">{p.name}</span>
             <span class="box" class:on>{#if on}<Icon name="check" size={16} />{/if}</span>
           </button>

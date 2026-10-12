@@ -66,7 +66,7 @@
     </header>
 
     <div class="who">
-      <div class="av" bind:this={avatarEl}><Avatar name={name} {hue} size={android ? 112 : 128} /></div>
+      <div class="av" bind:this={avatarEl}><Avatar name={name} {hue} person={call.peer ?? undefined} size={android ? 112 : 128} /></div>
       <div class="txt" bind:this={whoEl}>
       <h2 class="name" dir="auto">{name}</h2>
       <!-- One line: the status text, or the running timer once connected (stacked, crossfaded, no gap). -->

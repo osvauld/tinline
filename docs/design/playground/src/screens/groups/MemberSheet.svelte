@@ -1,6 +1,7 @@
 <script lang="ts">
   /* A member's sheet: per-member actions according to MY role, then the two confirm steps (flag, chat request).
      Bottom sheet on Android, centred card on desktop (Layer 'dialog'). */
+  import { clock } from '../../lib/model/clock.svelte';
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   import Layer from '../chat/Layer.svelte';
@@ -11,7 +12,7 @@
   import { prefs } from '../../lib/model/prefs.svelte';
   import { gx } from '../../lib/model/actions/groups.svelte';
   import {
-    FLAGS_TO_REMOVE, appointHost, canAskPrivately, canFlag, canHostAppoint, canSetAdmin, dayOnly, flagCount, flagMember, iAmAdmin, member, requestFor,
+    FLAGS_TO_REMOVE, appointHost, askAgainAt, canAskPrivately, requestExpired, canFlag, canHostAppoint, canSetAdmin, dayOnly, flagCount, flagMember, iAmAdmin, member, requestFor,
     revokeHost, roleLabel, sendRequest, setAdmin, cancelRequest,
   } from '../../lib/model/actions/groups';
   import type { Group } from '../../lib/model/types';
@@ -35,6 +36,10 @@
 
   function message() { onclose(); const c = db.chats.find((x) => x.kind === 'direct' && x.person === id);
     if (c) (prefs.form === 'desktop' ? nav.open({ name: 'conversation', chat: c.id }) : nav.push({ name: 'conversation', chat: c.id })); else nav.push({ name: 'contact', person: id }); }
+  /** Viewing a profile never adds anyone as a contact; with no accessible profile there is nothing to open. */
+  const canView = $derived(isMe || !!p?.profile);
+  /* No onclose(): navigating replaces Group info, and its sheet state goes with it (closing first throws while the sheet unmounts). */
+  function viewProfile() { nav.push(isMe ? { name: 'profile' } : { name: 'contact', person: id }); }
   function send() { sendRequest(g, id, note); onclose(); }
   function flag() { const r = flagMember(g, id, 'me'); if (r.ok) onclose(); }
   const since = $derived(m ? (m.invitedBy ? `Invited by ${firstName(m.invitedBy)} · ${dayOnly(m.since)}` : `Member since ${dayOnly(m.since)}`) : '');
@@ -47,7 +52,7 @@
     <div class="view">
     {#if view === 'actions'}
       <header class="hd">
-        <Avatar name={fullName(id)} hue={hueOf(id)} size={48} />
+        <Avatar name={fullName(id)} hue={hueOf(id)} person={id} size={48} />
         <span class="tx"><b>{isMe ? `${fullName(id)} (you)` : fullName(id)}</b>
           <span class="meta">{since}</span></span>
         <span class="pills"><Pill tone={m.role === 'member' ? 'muted' : m.role}>{roleLabel(m.role)}</Pill>{#if m.host}<Pill tone="host">Host</Pill>{/if}{#if m.callHost}<Pill tone="call">Call host</Pill>{/if}</span>
@@ -56,16 +61,21 @@
         <p class="flags">{n} of {FLAGS_TO_REMOVE} flags</p>
       {/if}
       <div class="list" role="group" aria-label="Actions">
+        {#if canView}
+          <button type="button" class="mi press" onclick={viewProfile}><Icon name="info" size={20} /><span class="t"><b>View profile</b></span></button>
+        {/if}
         {#if !isMe}
           {#if p?.contact && !p.blocked}
             <button type="button" class="mi press" onclick={message}><Icon name="chat" size={20} /><span class="t"><b>Message {fn}</b></span></button>
           {:else if p?.blocked}
             <div class="mi off"><Icon name="off" size={20} /><span class="t"><b>You blocked {fn}</b><small>They stay in the group. Unblock them in Contacts to chat.</small></span></div>
-          {:else if req?.state === 'pending'}
+          {:else if req?.state === 'pending' && !requestExpired(req)}
             <div class="mi off"><Icon name="clock" size={20} /><span class="t"><b>Request sent</b><small>Waiting for {fn} to answer</small></span>
               <button type="button" class="link" onclick={() => cancelRequest(req.id)}>Cancel</button></div>
           {:else if req?.state === 'blocked'}
             <div class="mi off"><Icon name="off" size={20} /><span class="t"><b>Blocked</b><small>{fn} can’t receive requests from you.</small></span></div>
+          {:else if req?.state === 'declined' && askAgainAt(req) > clock.now}
+            <div class="mi off"><Icon name="clock" size={20} /><span class="t"><b>{fn} declined your request</b><small>You can ask again on {dayOnly(askAgainAt(req))}</small></span></div>
           {:else if canAskPrivately(g, id)}
             <button type="button" class="mi press" onclick={() => (view = 'ask')}><Icon name="chat" size={20} />
               <span class="t"><b>{req?.state === 'declined' ? `Ask ${fn} again` : `Ask ${fn} for a private chat`}</b>

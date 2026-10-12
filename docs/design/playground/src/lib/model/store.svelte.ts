@@ -5,6 +5,7 @@ import type { Account, Chat, Device, DirectChat, Group, Id, Message, Person } fr
 import { seedAccount, seedChats, seedDevices, seedPeople } from './seed';
 import { clock } from './clock.svelte';
 import { resetGroupsState } from './actions/groups.svelte';
+import { resetProfileState } from './actions/profile.svelte';
 
 function fresh() {
   return {
@@ -27,6 +28,7 @@ export function resetDb() {
   const f = fresh();
   db.account = f.account; db.people = f.people; db.chats = f.chats; db.devices = f.devices; db.env = f.env;
   resetGroupsState();
+  resetProfileState();
 }
 
 let uid = 1000;
@@ -40,7 +42,8 @@ export const isDirect = (c: Chat | undefined): c is DirectChat => c?.kind === 'd
 
 export function displayName(id: Id) {
   if (id === 'me') return 'You';
-  return person(id)?.name ?? id;
+  const p = person(id);
+  return p?.alias || p?.name || id; // my own nickname for them wins everywhere I see them (their profile name stays on their profile)
 }
 export const firstName = (id: Id) => (id === 'me' ? 'You' : displayName(id).split(' ')[0]);
 

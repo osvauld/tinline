@@ -68,8 +68,8 @@
   <p class="note"><i class="prop">Proposed</i> "Calling…" until their device answers the signal, then "Ringing…". An offline person stays on "Calling…" until the timeout.</p>
   <p class="note"><i class="prop">Proposed</i> "Busy" has no copy of its own: the call ends with "Call ended" and is recorded as Declined.</p>
   <p class="note"><i class="prop">Proposed</i> "End-to-end encrypted" is shown only after connection. Confirm against the core before launch.</p>
-  <p class="note"><i class="prop">Proposed</i> The lock screen shows the caller's name (Android's default). Not decided; the alternative is "Someone" until unlocked.</p>
-  <p class="note"><i class="prop">Proposed</i> Missed-call notifications fold into one per person ("2 missed calls · Sana Rao"). Not decided.</p>
+  <p class="note">Decided 2026-10-12: the lock screen shows the caller's name.</p>
+  <p class="note">Decided 2026-10-12: missed-call notifications fold into one per person ("2 missed calls · Sana Rao").</p>
   <p class="note"><i class="prop">Proposed</i> Tapping a call notification on the lock screen unlocks the phone first (there is no PIN in this simulation).</p>
   <p class="note">Incoming calls from blocked people or message-only contacts are dropped silently. Desktop has no missed-call toast yet.</p>
 </div>

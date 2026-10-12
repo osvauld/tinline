@@ -15,6 +15,7 @@ import { receiveText } from './chat';
 export const INVITE_MS = 7 * T.DAY;        // PROVISIONAL (core: invites valid 7 days)
 export const FLAGS_TO_REMOVE = 3;          // U9/U15
 export const REQUEST_MS = 7 * T.DAY;       // chat requests expire after 7 days (design board)
+export const ASK_AGAIN_MS = 7 * T.DAY;     // one request per person at a time; after a decline, wait this long (Proposed)
 
 /* ---------- lookups and rules ---------- */
 export const group = (id: Id | null | undefined): Group | undefined => { const c = chat(id); return isGroup(c) ? c : undefined; };
@@ -224,7 +225,8 @@ export function sendRequest(g: Group, to: Id, note: string): RequestOut | null {
   const p = person(to);
   if (!p || !canAskPrivately(g, to)) return null;
   const prev = requestFor(to);
-  if (prev && prev.state === 'pending') return prev;
+  if (prev && prev.state === 'pending' && !requestExpired(prev)) return prev;
+  if (prev && askAgainAt(prev) > clock.now) return null;
   if (prev) gx.requestsOut.splice(gx.requestsOut.indexOf(prev), 1);
   const r: RequestOut = { id: newId('rq'), to, groupId: g.id, note: note.trim(), at: clock.now, state: 'pending' };
   gx.requestsOut.push(r);
@@ -250,7 +252,7 @@ function becomeContact(pid: Id) {
 export function answerRequest(id: Id, state: 'accepted' | 'declined' | 'blocked') {
   const r = gx.requestsOut.find((x) => x.id === id);
   if (!r || r.state !== 'pending') return;
-  r.state = state;
+  r.state = state; r.answeredAt = clock.now;
   if (state === 'accepted') {
     becomeContact(r.to);
     const c = ensureDirect(r.to);
@@ -292,6 +294,8 @@ export function blockRequester(id: Id) {
 }
 /** Expired/pending-state label helper for rows. */
 export const requestExpired = (r: RequestOut) => r.state === 'pending' && clock.now - r.at > REQUEST_MS;
+/** When I may ask this person again after they declined (one request per person at a time). */
+export const askAgainAt = (r: RequestOut) => (r.state === 'declined' ? (r.answeredAt ?? r.at) + ASK_AGAIN_MS : 0);
 
 /* ---------- simulation helpers ---------- */
 export function setMyRole(g: Group, role: GroupRole) {

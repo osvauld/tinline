@@ -36,7 +36,7 @@
 {#if toast}
   <div class="toast" role="alert" aria-label="Incoming call from {name}" data-os="toast" in:toastIn out:toastOut>
     <button type="button" class="open" aria-label="Open call from {name}" onclick={() => system.openCall()}>
-      <Avatar {name} {hue} size={44} />
+      <Avatar {name} {hue} person={call.peer ?? undefined} size={44} />
       <span class="tx">
         <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline</span>
         <b dir="auto">{name}</b>
@@ -53,7 +53,7 @@
 {#if mini}
   <div class="mini" role="group" aria-label="Call with {name}" data-os="mini" in:toastIn out:toastOut>
     <button type="button" class="open" aria-label="Return to call with {name}" onclick={() => system.openCall()}>
-      <Avatar {name} {hue} size={36} />
+      <Avatar {name} {hue} person={call.peer ?? undefined} size={36} />
       <span class="tx"><b dir="auto">{name}</b><small class:tab={system.ongoingActive}>{text}</small></span>
     </button>
     <button type="button" class="r press" class:on={call.muted} aria-pressed={call.muted} aria-label={call.muted ? 'Unmute' : 'Mute'} onclick={() => call.toggleMute()}><Icon name={call.muted ? 'micoff' : 'mic'} size={18} /></button>

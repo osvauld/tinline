@@ -88,7 +88,7 @@
       <li>The owner leaving. Here the owner can't leave (no way to hand over ownership yet); admins and members can.</li>
       <li>PROVISIONAL (core): the creating device is the group's first host.</li>
       <li>PROVISIONAL (core): invites and short links are bearer grants valid 7 days; a link names one host; cancelling does not recall a link someone already opened.</li>
-      <li>Proposed: chat requests limited to one per person per day, expiring after 7 days (design board; the core keeps mail 7 days).</li>
+      <li>Chat requests (decided 2026-10-12, like Instagram): one request per person at a time; no follow-ups until they answer. Proposed: unanswered requests expire after 7 days; after a decline you can ask again after 7 days.</li>
       <li>PROVISIONAL (core): a declined request shows "declined" to the requester.</li>
       <li>Chat hosts and call hosts are separate permits (U25); appointing call hosts comes with group calls.</li>
       <li>Playground only: host online state is one switch for all hosts.</li>

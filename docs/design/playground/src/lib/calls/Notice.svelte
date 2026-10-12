@@ -3,12 +3,15 @@
      Tinline icon and the app name are ours, so our notifications read as ours at a glance. */
   import type { Snippet } from 'svelte';
   import Mark from '../brand/Mark.svelte';
+  import Avatar from '../ui/Avatar.svelte';
+  import { displayName, person as getPerson } from '../model/store.svelte';
 
-  let { title, text, when = '', tabular = false, label, onopen, actions }:
-    { title: string; text: string; when?: string; tabular?: boolean; label?: string; onopen?: () => void; actions?: Snippet } = $props();
+  /* `person`: the caller. Their picture (or initials) sits at the card's end, like an OS large icon. */
+  let { title, text, when = '', tabular = false, label, onopen, actions, person }:
+    { title: string; text: string; when?: string; tabular?: boolean; label?: string; onopen?: () => void; actions?: Snippet; person?: string } = $props();
 </script>
 
-<article class="notice" aria-label={label ?? title}>
+<article class="notice" class:withlg={!!person} aria-label={label ?? title}>
   <button type="button" class="main" onclick={() => onopen?.()} disabled={!onopen}>
     <span class="hd">
       <span class="ico" aria-hidden="true"><Mark size={13} mono /></span>
@@ -17,11 +20,14 @@
     <b class="t" dir="auto">{title}</b>
     <span class="x" class:tab={tabular}>{text}</span>
   </button>
+  {#if person}<span class="lg"><Avatar name={displayName(person)} hue={getPerson(person)?.hue ?? 0} {person} size={40} /></span>{/if}
   {#if actions}<div class="acts">{@render actions()}</div>{/if}
 </article>
 
 <style>
-  .notice { background: var(--os-card); color: var(--os-ink); border-radius: 22px; border: 1px solid var(--os-line); padding: 12px 14px 6px; display: grid; gap: 2px; }
+  .notice { background: var(--os-card); color: var(--os-ink); border-radius: 22px; border: 1px solid var(--os-line); padding: 12px 14px 6px; display: grid; gap: 2px; position: relative; }
+  .withlg .main { padding-inline-end: 52px; }
+  .lg { position: absolute; inset-block-start: 14px; inset-inline-end: 14px; pointer-events: none; }
   .main { display: grid; gap: 2px; text-align: start; border: 0; background: transparent; color: inherit; font: inherit; padding: 0; cursor: pointer; min-inline-size: 0; border-radius: 10px; }
   .main:disabled { cursor: default; }
   .hd { display: flex; align-items: center; gap: 6px; font-size: var(--fs-meta); line-height: 16px; color: var(--os-sub); margin-block-end: 4px; }

@@ -20,7 +20,7 @@
   <ul class="flags" role="list">
     {#each d.flags as f, i (i)}
       <li class="row" in:fold out:foldOut>
-        <Avatar name={fullName(f.id)} hue={hueOf(f.id)} size={40} />
+        <Avatar name={fullName(f.id)} hue={hueOf(f.id)} person={f.id} size={40} />
         <span class="tx"><b>{fullName(f.id)}</b><span class="meta">Flagged you{f.at ? ' · ' + whenLabel(f.at) : ''}</span></span>
       </li>
     {/each}

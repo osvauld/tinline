@@ -13,6 +13,7 @@ export type Route =
   | { name: 'contact'; person: string }
   | { name: 'search'; q?: string }
   | { name: 'settings'; section?: string }
+  | { name: 'profile' }
   | { name: 'devices' }
   | { name: 'privacy'; section?: string };
 
@@ -24,6 +25,7 @@ const enc = (r: Route): string => {
     case 'contact': return `/contact/${r.person}`;
     case 'search': return `/search${r.q ? '/' + encodeURIComponent(r.q) : ''}`;
     case 'settings': return `/settings${r.section ? '/' + r.section : ''}`;
+    case 'profile': return '/me';
     case 'devices': return '/devices';
     case 'privacy': return `/privacy${r.section ? '/' + r.section : ''}`;
   }
@@ -42,7 +44,8 @@ function dec(path: string): Route[] {
   }
   if (p[0] === 'contact' && p[1]) return [home('contacts'), { name: 'contact', person: p[1] }];
   if (p[0] === 'search') return [home(), { name: 'search', q: p[1] ? decodeURIComponent(p[1]) : '' }];
-  if (p[0] === 'settings') return [home(), { name: 'settings', section: p[1] }];
+  if (p[0] === 'settings') return p[1] ? [home(), { name: 'settings' }, { name: 'settings', section: p[1] }] : [home(), { name: 'settings' }];
+  if (p[0] === 'me') return [home(), { name: 'settings' }, { name: 'profile' }];
   if (p[0] === 'devices') return [home(), { name: 'settings' }, { name: 'devices' }];
   if (p[0] === 'privacy') return [home(), { name: 'settings' }, { name: 'privacy', section: p[1] }];
   return [home()];

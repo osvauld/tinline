@@ -14,6 +14,8 @@
   import SystemLayer from '../../lib/calls/SystemLayer.svelte';
   const look = $derived(statusLook());
 
+  /** Screens that draw their own header (with Back) instead of the shell's bare one. */
+  const OWN_BAR = new Set(['conversation', 'groupInfo', 'contact', 'profile', 'settings']);
   const top = $derived(nav.top);
   const unread = $derived(db.chats.reduce((n, c) => n + (c.muted ? 0 : c.unread), 0));
 </script>
@@ -49,7 +51,7 @@
     {@const S = SCREENS[top.name]}
     {#key top}
       <section class="screen" class:push={nav.dir === 'push'}>
-        {#if top.name !== 'conversation' && top.name !== 'groupInfo'}<header class="appbar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /></header>{/if}
+        {#if !OWN_BAR.has(top.name)}<header class="appbar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /></header>{/if}
         <main class="body"><S.component {...S.props(top)} /></main>
       </section>
     {/key}

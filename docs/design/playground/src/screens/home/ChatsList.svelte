@@ -38,7 +38,7 @@
     {@const p = c.kind === 'direct' ? person(c.person) : undefined}
     <li>
       <button type="button" class="row press" class:sel={nav.openChat === c.id} onclick={() => open(c)}>
-        <Avatar name={chatTitle(c)} hue={p?.hue ?? 0} group={c.kind === 'group'} />
+        <Avatar name={chatTitle(c)} hue={p?.hue ?? 0} group={c.kind === 'group'} person={p?.id} />
         <span class="mid">
           <span class="top"><span class="name">{chatTitle(c)}</span>
             <span class="when" class:hot={c.unread > 0 && !c.muted}>{#if c.muted}<Icon name="mute" size={14} label="Muted" />{/if}{m ? listStamp(m.at) : ''}</span></span>

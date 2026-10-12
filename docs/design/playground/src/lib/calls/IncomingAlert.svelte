@@ -17,7 +17,7 @@
 {#if show}
   <div class="alert {prefs.form}" role="alert" aria-label="Incoming call from {name}" in:alertIn out:alertOut data-incoming-alert>
     <button type="button" class="open" aria-label="Open call from {name}" onclick={() => call.restore()}>
-      <Avatar {name} {hue} size={44} />
+      <Avatar {name} {hue} person={call.peer ?? undefined} size={44} />
       <span class="tx"><b dir="auto">{name}</b><small>Incoming call</small></span>
     </button>
     <button type="button" class="b dec press" onclick={() => call.decline()}>Decline</button>
