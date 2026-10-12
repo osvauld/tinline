@@ -196,6 +196,10 @@ const overflow = (p) => p.evaluate(() => { const e = document.querySelector('.pf
       ok(`${form} replace: a new hash is selected`, m2.picture.hash !== prevHash && m2.picture.ready);
       ok(`${form} replace: exactly one request, bound to the previous hash, automatically`, dels.length === 1 && dels[0].hash === prevHash && dels[0].owner === 'me', JSON.stringify(dels));
       ok(`${form} replace: the old object URL is revoked (one live image URL for me)`, await px(p, () => Object.keys(window.__px.urls).filter((k) => k.includes('|me|')).length) === 1);
+      // the same picture again (same normalized bytes) is a no-op: no new hash, no request
+      await p.locator('[data-file]').setInputFiles(await png(p, 600, 800, '#2e6fc0', '#fff2d6')); await wait(p, 500);
+      await p.locator('[data-picture-flow]').getByRole('button', { name: 'Use photo' }).click(); await wait(p, 600);
+      ok(`${form} same picture again: unchanged, no deletion request`, (await me(p)).picture.hash === m2.picture.hash && (await px(p, () => window.__px.deletions.length)) === 1);
 
       // failed replacement: nothing lost, no request
       await simSwitch(p, 'Next profile save fails', true);

@@ -124,21 +124,28 @@ export function effectiveAvailability(owner: Id, now = clock.now): { available: 
   return { available: false, until: a.until };
 }
 
-/** replace_profile_picture(bytes, true): the previous hash is requested for deletion automatically. Never optional. */
+/** set_profile_picture(bytes) / replace_profile_picture(bytes): the previous hash is requested for deletion
+ *  automatically (no opt-out). First upload and choosing the same normalized picture again create no request. */
 export async function replacePicture(bytes: Blob): Promise<Result> {
   if (bytes.size > IMG.outMaxBytes) return fail('That picture is too detailed to save. Try a different one.');
   if ((await sniff(bytes)) !== 'png') return fail('Tinline can only save PNG, JPEG or WebP pictures.');
-  if (failingSave()) return fail('Couldn’t save your picture. Your current picture is unchanged.');
+  const content = await contentHash(bytes);
   const p = mine();
+  if (p.picture && p.picture.content === content) { accepted('Picture unchanged'); return OK; }
+  if (failingSave()) return fail('Couldn’t save your picture. Your current picture is unchanged.');
   const prev = p.picture?.hash;
-  const hash = newHash();
+  const hash = newHash();                          // fresh key and ciphertext hash per upload, like the core
   putBlob(hash, bytes);
-  p.picture = { hash, ready: true };               // one atomic swap: the old image stops being "selected" immediately
+  p.picture = { hash, ready: true, content };      // one atomic swap: the old image stops being "selected" immediately
   if (prev) requestDeletion('me', prev);
-  accepted('Picture replaced');
+  accepted(prev ? 'Picture replaced' : 'Picture added');
   return OK;
 }
-/** remove_profile_picture(true) */
+async function contentHash(b: Blob) {
+  const d = new Uint8Array(await crypto.subtle.digest('SHA-256', await b.arrayBuffer()));
+  return Array.from(d, (x) => x.toString(16).padStart(2, '0')).join('');
+}
+/** clear_profile_picture() / remove_profile_picture(): requests deletion of the removed hash; removing nothing is a no-op. */
 export function removePicture(): Result {
   const p = mine();
   const prev = p.picture?.hash;

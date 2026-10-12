@@ -9,7 +9,7 @@ export type Id = string;
     ready = the bytes are cached on this device. The name stays on Person/Account (one spelling everywhere). */
 export interface Profile {
   fields: Record<string, unknown>;
-  picture?: { hash: string; ready: boolean };
+  picture?: { hash: string; ready: boolean; content?: string }; // content = normalized-content hash (same picture again is a no-op)
 }
 
 export interface Person {

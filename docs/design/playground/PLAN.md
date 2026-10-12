@@ -111,6 +111,7 @@ Core follow-ups these imply (not playground work):
   it must keep admitting calls while Busy.
 - Nickname: needs a place in own-device sync (e.g. the private own-device profile cache), never in
   the shared profile document.
-- Profile pictures: old-copy deletion request is automatic (profile-sync backend follow-up pending).
+- Profile pictures: old-copy deletion request is automatic — done in profile-sync (no public boolean;
+  first upload, same picture again, removing nothing and failed saves create no request).
 - Chat requests: one pending request per person; per-person cooldown after decline (Proposed).
 - Flags: the flagged member must receive flags before removal.
