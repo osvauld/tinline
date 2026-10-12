@@ -213,3 +213,28 @@ doc itself (`GroupDoc::apply_remote_inplace`) because a scratch `fork()` of a bu
 groups **83 s** (before: 54 s): the first version of the per-day reconcile took 336 s because each
 day was its own index transaction; days are now written together (4,000 posts per transaction).
 Still open: the search index write dominates a local post (5 to 50 ms), as it does for DMs.
+
+## Search index v2 (2026-10-12, branch `search-v2`)
+
+Same dataset (`v2-s1.0`), `year-bench run --scenario rebuild` / `intact` with the v2 index (hot
+tier in memory, write-once monthly segments; `--save-search` / `--search-file` keep the built file
+between runs; the benchmark sets the index clock to the dataset's last day). One run each, machine
+partly loaded.
+
+| | v1 index | v2 index |
+|---|---|---|
+| full rebuild, DMs + groups | DMs 86 s + groups 83 s = 169 s | DMs 5.5 s + groups 40.9 s (incl. the final segment write) = **46 s** |
+| `search.redb` | 1,029 MB (fresh build) | **515 MB** file (content ~190 MB; redb doubling step) |
+| search reconcile, intact index (includes building the hot tier of 8 days) | DMs 155 ms, groups 50 ms | DMs 256 ms, groups 106 ms |
+| unlock with key | | 190 ms (intact), 72 ms (rebuild run) |
+| RSS peak during rebuild | | 1.14 GB (dataset load dominates; hot tier is capped at 20 000 docs) |
+| query "th" first page p50 / p95 | | 1.6 / 2.5 ms (pages 2-6: 1.4 / 1.5) |
+| "meeting" p50 / p95 | | 5.4 / 8.2 ms |
+| "the" | | 1.5 / 1.6 ms |
+| "photo flight" | | 5.5 / 5.7 ms |
+| "meeting tomorrow" | | 6.4 / 7.1 ms |
+| rare word | | 2.2 / 2.7 ms |
+| local group post, search part | 5 to 50 ms (a redb commit) | memory only (no redb write); not re-measured through `group_post` |
+
+The `group_post` / DM send timings of the year-bench were not rerun; the send-path index cost
+is in the `search-bench` table in `search.md`.

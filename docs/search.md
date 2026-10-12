@@ -106,7 +106,7 @@ differ. Indexing a message is idempotent: delete its old row/postings, write the
 - Desktop (iced): the same, a search box above the conversation list; Ctrl+K / Ctrl+F focuses it.
 - Debounce 150 ms; minimum 2 characters for message search (names from 1).
 
-## Implementation notes (S1, `crates/core/src/search/`)
+## Implementation notes (S1, v1 layout; replaced by v2 below, `crates/core/src/search/`)
 
 Where the code differs from the plan above, and why.
 
@@ -228,7 +228,89 @@ Send-path index cost < 0.5 ms p99; `search.redb` <= 1.5 KB/message; first full b
 < 60 s; hot-tier build on open of 8 days measured (and in `scale-year.md` for the year
 dataset); queries <= 10 ms p95.
 
-## Benchmarks
+### Implementation notes (v2, `crates/core/src/search/{index,hot,seg}.rs`)
+
+Where the code settles what the design above leaves open.
+
+- **Records.** `x/{seg:08x}/{tok:016x}/{part:03x}`: a posting list is cut into parts of 2 048
+  docs (doc numbers as varint deltas from the part base), and `y/{seg}/{chunk}` holds 8 rows, not
+  64. Reason, measured: redb grows its file by doubling regions when records of several KB sit
+  between many tiny ones; one 100 KB posting list or 10 KB chunk per record made `search.redb`
+  3-20x the size of its content. With records well under a 4 KiB page, and put in key order, the
+  file is within 2-4x of the content (redb's doubling steps). Terms are 16 hex of the 8-byte
+  keyed hash (not 32), doc hashes 8 bytes.
+- **Watermarks** are an 8-byte digest of the version vector (`digest_of`, order independent),
+  kept per `(src hash, day number)` in the manifest and in memory. A day belongs to the newest
+  segment that lists it; older copies are ignored at query time and dropped at the next merge.
+- **Hot window.** A day is hot while `today - day < HOT_DAYS` (UTC; `set_today` replaces the clock
+  in tests and benchmarks). Writes never touch the file. A change to a segmented day loads that
+  (src, day) from the segment into memory first, only if the change alters something (an
+  identical re-index of a cold day does nothing).
+- **When segments are written (`maintain`).** `Mode::Force` on open (after the background
+  reconcile) and in tests: every cold day. `Mode::Tick`, once a minute from the reconcile task:
+  days that fell out of the window or waited the 10 minute debounce. `Mode::Cap`, from
+  `apply_bulk` (reconcile and history import): only the oldest cold days, until the memory tier
+  is under half of `HOT_MAX_DOCS`; no merges in a bulk, they happen at the final `Force`. If a
+  day changed while its segment was being written it stays in memory.
+- **Merge.** A month is rewritten whole (its still valid days plus the new ones) when it would
+  have more than 4 segments, or it is over and has more than the minimum for `SEG_MAX_DOCS`.
+  Segment builds run on all cores. A month that was merged and has not changed is not merged
+  again.
+- **Query.** `Scan` is the lazy merge. For several terms the segments' posting lists of all
+  terms are intersected part by part before any row is read (the first term walks, the others
+  only narrow; the AND check on the row is unchanged), the hot tier checks the other terms'
+  posting sets. The 20 000-posting budget counts candidates after that narrowing. The cursor
+  is `{rev_at:016x}/{doc hash:016x}` (the doc hash is 16 hex again, so the cursor shape is as
+  before); inside a segment the first posting after a cursor is found by bisection over the
+  rows. The cursor orders by `(rev_at, hash)`, so a tier change between pages cannot repeat or
+  skip an unchanged doc.
+- **Forget** (`forget(src)`) drops the hot days and rewrites the manifest without the
+  conversation's days at once (its rows stay in the segments until their month is merged, and
+  are never returned: only days a segment owns count).
+- **Lifecycle.** `close()` wipes (zeroizes) the hot tier and the manifest view. Lock, account
+  switch and drop already call `search_close`. The reconcile task also runs the once-a-minute
+  maintenance (one task per index).
+- **Reconcile.** Compares the store's version vector with `watermark_is` (hot, then manifest);
+  a day the manifest knows with the same vector is skipped. A crash between a hot change and its
+  segment rewrite leaves the old digest in the manifest, so the day differs on the next open and
+  is re-read from the store; the stale rows of the segment are overridden by the hot copy until
+  the rewrite. Tests that plant stale rows (`search_plant_group_post_for_test`) now fix them
+  with a reconcile instead of a reopen (a reopen drops memory).
+- **Names** unchanged (in memory, not indexed). Query terms longer than 8 chars: the lookup is
+  their 8-char prefix, the row check does the rest (tested).
+
+## Benchmarks v2 (2026-10-12, release, same machine; load from other jobs varied)
+
+`search-bench` now replays the corpus in time order through `apply` (memory only) with a
+background thread writing the cold days into segments on every simulated day change (a day passes
+every ~0.1-1 ms of the run, much harder than reality), then a full build in the reconcile shape
+(per conversation-day batches into `apply_bulk`, then the final write), then the open of a hot
+tier, then the same queries as v1.
+
+| | v1 10k | v2 10k | v1 100k | v2 100k |
+|---|---|---|---|---|
+| send-path index cost p50 / p95 / p99 | 5.6 / 29.8 / 150 ms | **0.105 / 0.37 / 0.72 ms** | 9.8 / 50.1 / 198 ms | **0.104 / 0.50 / 1.29 ms** |
+| send-path max | 670 ms | 18 ms | 6.1 s | 29 ms |
+| `search.redb` size (per message) | 129 MiB (13.5 KB) | 64.8 MiB (6.9 KB on disk; content 2.1 KB) | 1542 MiB (16.2 KB) | 514 MiB (5.4 KB on disk; content 1.3 KB) |
+| full build (reconcile shape) | 91 msgs/s (110 s) | 3 149 msgs/s (3.2 s) | 69 msgs/s (24 min) | **42 s** (2 385 msgs/s; 62-69 s on a loaded run) |
+| hot tier of the last 8 days on open | n/a | 9.5 ms (100 msgs) | n/a | 53 ms (976 msgs) |
+| query "th" p50 / p95 | 0.72 / 0.76 ms | 2.0 / 2.1 ms | 1.05 / 1.16 ms | 0.57 / 0.76 ms |
+| query rare word | 0.07 / 0.09 ms | 0.40 / 0.45 ms | 0.36 / 0.38 ms | 0.56 / 0.75 ms |
+| query "meeting tomorrow" | 5.0 / 5.2 ms | 2.0 / 2.0 ms | 7.5 / 8.9 ms | 6.5 / 7.7 ms |
+| query "the call" | 0.95 / 0.98 ms | 7.1 / 7.4 ms | 1.25 / 1.32 ms | 5.2 / 6.1 ms |
+| "th" page 5 alone | 0.94 / 1.4 ms | 2.8 / 3.9 ms | 1.2 / 2.0 ms | 0.76 / 1.0 ms |
+
+(The 10k column has 24 segments of ~400 docs each because 10k spread over 730 days leaves a few
+messages a month; its queries open all of them, so it is slower than the 100k case. A real chat
+history is dense in time.) Targets: send-path p99 < 0.5 ms **missed at 100k (1.3 ms; p50 0.1
+ms)**: the tail is the bench's simulated clock, which makes the segment writer compete for the
+same cores and the same memory lock every few hundred messages; the cost of one `apply` itself
+is about 0.05-0.1 ms. File size <= 1.5 KB/msg: the **content** is 1.3 KB/msg at 100k, but redb's
+doubling file steps (and free pages left by merges) put the file at 5.4 KB/msg; compacting or
+a smaller step is open. Full build < 60 s met (42 s; 62-69 s when the machine was loaded).
+Queries <= 10 ms p95 met. The emulator was not run.
+
+## Benchmarks (v1, kept for comparison)
 
 `search-bench` (crates/core/src/search/bench.rs, binary `crates/core/src/bin/search-bench.rs`)
 drives `SearchIndex` directly: no node, no network, no names or conversation lookups. Corpus:
