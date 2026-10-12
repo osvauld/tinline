@@ -4,6 +4,11 @@
 
    idle -> outgoing | incoming -> connecting -> active (<-> reconnecting) -> ended | failed -> idle
 
+   Call waiting (core: Live::waiting). While an ANSWERED call runs (active / reconnecting) one more incoming
+   call rings over it. Any further call, or one while still dialling / connecting, is turned away Busy and
+   left as a missed-call record. There is no hold: the waiting call is declined, or answered by ending the
+   current call. When the current call ends by itself the waiting one takes the slot as a normal incoming call.
+
    Sound comes only from the bus. The simulated "other side" is driven by remote()/drop()/recover()
    from the Calls section of the Simulation drawer. */
 import { emitFx, fxLog } from '../fx/bus';
@@ -26,12 +31,15 @@ export const CALL_MS = {
   reconnectTimeout: 15_000, // reconnecting -> gives up
   remoteEndHold: 900,       // "Call ended" stays readable when THEY end it
   failedHold: 2_600,        // "Couldn't connect" stays readable
+  waitingTimeout: 30_000,   // core WAITING_RING_TIMEOUT: a call waiting over another gives up unanswered after 30 s
 };
 
 export type Refusal = 'busy' | 'blocked' | 'messages-only' | 'unknown';
 
 /** Told after every call record is written (system.svelte.ts turns a missed one into a notification when the app is not in front). */
 export const onRecord = new Set<(id: string, direction: 'out' | 'in', outcome: Outcome) => void>();
+
+export interface Waiting { peer: string; since: number }
 
 class Call {
   phase = $state<CallPhase>('idle');
@@ -46,7 +54,11 @@ class Call {
   ringing = $state(false);          // outgoing: their device is ringing (vs. still reaching it)
   fading = $state(false);           // the ended/failed screen is leaving
   elapsedS = $state(0);
+  /** The one incoming call ringing over my active call (null = none). */
+  waiting = $state<Waiting | null>(null);
 
+  #waitTimer = 0;
+  #answerNext = false;      // End & answer: the waiting call is answered the moment it takes the slot
   #timers = new Set<number>();
   #connectedMono = 0;
   #recorded = true;
@@ -64,6 +76,8 @@ class Call {
   canCall(id: string) { const r = this.refusal(id); return r === null || r === 'busy'; }
 
   get active() { return this.phase !== 'idle'; }
+  /** The waiting call, only while it can be acted on (my call is answered and still running). */
+  get waitingNow() { return this.waiting && (this.phase === 'active' || this.phase === 'reconnecting') ? this.waiting : null; }
   get statusText() {
     switch (this.phase) {
       case 'incoming': return 'Incoming call';
@@ -76,7 +90,7 @@ class Call {
     }
   }
   /** Which cloud-field state to show. */
-  get fieldState() { return this.phase === 'idle' ? 'calm' : this.phase; }
+  get fieldState() { return this.phase === 'idle' ? 'calm' : this.phase === 'active' && this.waiting ? 'waiting' : this.phase; }
 
   /* ---------- starting ---------- */
   place(id: string): boolean {
@@ -101,7 +115,11 @@ class Call {
     // The account key is not on this device until it is unlocked: nothing can ring (and nothing is recorded).
     if (db.account.gate !== 'ready') return false;
     const r = this.refusal(id);
-    if (r === 'busy') { this.#recordFor(id, 'in', 'missed', 0); return false; }
+    if (r === 'busy') {
+      // Over an answered call, with nothing waiting yet: ring quietly over it. Otherwise Busy, left as a missed call.
+      if ((this.phase === 'active' || this.phase === 'reconnecting') && !this.waiting && id !== this.peer) { this.#startWaiting(id); return true; }
+      this.#recordFor(id, 'in', 'missed', 0); return false;
+    }
     if (r) return false;
     this.#begin(id, 'in');
     this.phase = 'incoming'; this.view = 'strip';
@@ -118,6 +136,14 @@ class Call {
     this.#later(CALL_MS.connect, () => this.#connected());
   }
   decline() { if (this.phase === 'incoming') this.#finish('declined', 'local', 'declined'); }
+  /** Decline the waiting call: its caller is told Busy; recorded as declined. My call goes on. */
+  declineWaiting() { if (this.waitingNow) this.#endWaiting('declined'); }
+  /** End & answer: my call ends (its record is written), the waiting call takes over and is answered automatically. */
+  answerWaiting() {
+    if (!this.waitingNow) return;
+    this.#answerNext = true;
+    this.hangup();
+  }
   /** The End button: cancels ringing, declines an incoming call, or hangs up. */
   hangup() {
     switch (this.phase) {
@@ -146,7 +172,10 @@ class Call {
       case 'hangup':
         if (this.phase === 'active' || this.phase === 'reconnecting' || this.phase === 'connecting') this.#finish(this.#connectedMono ? 'answered' : 'cancelled', 'remote', 'hangup');
         break;
-      case 'cancel': if (this.phase === 'incoming') this.#finish('cancelled', 'remote', 'cancelled'); break;
+      case 'cancel':
+        if (this.phase === 'incoming') this.#finish('cancelled', 'remote', 'cancelled');
+        else if (this.waiting) this.#endWaiting('cancelled');   // the waiting caller gave up
+        break;
     }
   }
   drop() {
@@ -176,6 +205,40 @@ class Call {
   #later(ms: number, fn: () => void) {
     const id = window.setTimeout(() => { this.#timers.delete(id); fn(); }, ms);
     this.#timers.add(id);
+  }
+  #startWaiting(id: string) {
+    this.waiting = { peer: id, since: Date.now() };
+    emitFx({ type: 'waiting', on: true });
+    window.clearTimeout(this.#waitTimer);
+    this.#waitTimer = window.setTimeout(() => { if (this.waiting?.peer === id) this.#endWaiting('missed'); }, CALL_MS.waitingTimeout);
+  }
+  /** The waiting call is over without being answered: one record (unread when it gave up), and the cue stops. */
+  #endWaiting(outcome: Outcome) {
+    const w = this.waiting;
+    if (!w) return;
+    window.clearTimeout(this.#waitTimer);
+    this.waiting = null; this.#answerNext = false;
+    emitFx({ type: 'waiting', on: false });
+    this.#recordFor(w.peer, 'in', outcome, 0);
+    // My call had already ended and was only waiting for this one: let its screen leave now.
+    if (this.phase === 'ended' || this.phase === 'failed') this.fading = true;
+  }
+  /** The waiting call takes the slot: answered at once (End & answer) or as an ordinary ringing call. No idle in between. */
+  #promote(answer: boolean) {
+    const w = this.waiting!, view = this.view;
+    window.clearTimeout(this.#waitTimer);
+    this.waiting = null; this.#answerNext = false;
+    emitFx({ type: 'waiting', on: false });
+    this.#begin(w.peer, 'in');
+    this.fading = false; this.ringing = false;
+    if (answer) {
+      this.phase = 'connecting'; this.view = 'full';
+      this.#later(CALL_MS.connect, () => this.#connected());
+    } else {
+      this.phase = 'incoming'; this.view = view;
+      emitFx({ type: 'incoming', on: true });
+      this.#later(CALL_MS.ringTimeout, () => { if (this.phase === 'incoming') this.#finish('missed', 'remote', 'no-answer'); });
+    }
   }
   #clearTimers() { this.#timers.forEach(clearTimeout); this.#timers.clear(); clearInterval(this.#tick); }
   #begin(id: string, dir: 'out' | 'in') {
@@ -212,12 +275,16 @@ class Call {
     this.ringing = false;
     if (who === 'failed') { this.phase = 'failed'; emitFx({ type: 'failed' }); }
     else { this.phase = 'ended'; emitFx({ type: 'end' }); }
+    if (this.waiting && this.#answerNext) { this.#promote(true); return; }
+    // A waiting call keeps the screen up (no fade, no idle) and takes the slot when this one has left.
     const hold = who === 'local' ? 0 : who === 'failed' ? CALL_MS.failedHold : CALL_MS.remoteEndHold;
-    if (hold) this.#later(hold, () => (this.fading = true)); else this.fading = true;
-    this.#later(hold + dur('callEnd'), () => this.#reset());
+    const leave = () => { if (!this.waiting) this.fading = true; };
+    if (hold) this.#later(hold, leave); else leave();
+    this.#later(hold + dur('callEnd'), () => (this.waiting ? this.#promote(false) : this.#reset()));
   }
   #reset() {
     this.#clearTimers();
+    this.#answerNext = false;
     this.phase = 'idle'; this.peer = null; this.direction = null; this.view = 'full'; this.fading = false;
     this.endReason = null; this.ringing = false; this.muted = false; this.speaker = 'earpiece'; this.elapsedS = 0;
   }

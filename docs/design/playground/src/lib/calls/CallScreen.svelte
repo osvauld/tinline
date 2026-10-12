@@ -7,6 +7,7 @@
   import Avatar from '../ui/Avatar.svelte';
   import Icon from '../ui/Icon.svelte';
   import CloudField from './field/CloudField.svelte';
+  import WaitingCard from './WaitingCard.svelte';
   import { call, fmtDuration } from './call.svelte';
   import { overlayIn, overlayOut } from './motion';
   import { displayName, person } from '../model/store.svelte';
@@ -66,9 +67,12 @@
     </header>
 
     <div class="who">
-      <div class="av" bind:this={avatarEl}><Avatar name={name} {hue} person={call.peer ?? undefined} size={android ? 112 : 128} /></div>
+      <!-- A new person (End & answer, or a waiting call taking the slot) cross-fades; same size, stacked, no jump. -->
+      <div class="av" bind:this={avatarEl}>
+        {#key call.peer}<span class="swap" in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}><Avatar name={name} {hue} person={call.peer ?? undefined} size={android ? 112 : 128} /></span>{/key}
+      </div>
       <div class="txt" bind:this={whoEl}>
-      <h2 class="name" dir="auto">{name}</h2>
+      <div class="nm">{#key call.peer}<h2 class="name" dir="auto" in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>{name}</h2>{/key}</div>
       <!-- One line: the status text, or the running timer once connected (stacked, crossfaded, no gap). -->
       <div class="status">
         <span class="msg" role="status" aria-live="polite">
@@ -81,6 +85,8 @@
       <p class="e2e" class:on={!!sub}>{sub || ' '}</p>
       </div>
     </div>
+
+    <WaitingCard />
 
     <div class="controls" bind:this={ctlEl} class:two={!android && phase !== 'incoming'}>
       {#if phase === 'incoming'}
@@ -118,6 +124,9 @@
   .who { flex: 1; min-block-size: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-block-end: 8cqb; }
   .txt { display: flex; flex-direction: column; align-items: center; max-inline-size: 100%; }
   .av { display: grid; margin-block-end: 22px; animation: avin var(--dur-overlayOpen) var(--ease-out) 40ms backwards; }
+  .swap { grid-area: 1 / 1; display: grid; }
+  .nm { display: grid; justify-items: center; max-inline-size: 100%; }
+  .nm > .name { grid-area: 1 / 1; }
   @keyframes avin { from { scale: .96; } }
   .name { margin: 0; font-size: 28px; line-height: 34px; font-weight: 650; letter-spacing: -.01em; max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .status { display: grid; place-items: center; min-block-size: 30px; margin-block-start: 6px; font-size: 17px; line-height: 24px; font-weight: 500; }

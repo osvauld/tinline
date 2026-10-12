@@ -4,6 +4,7 @@
 export type FxEvent =
   | { type: 'ring'; on: boolean }           // my outgoing call is ringing (ringback)
   | { type: 'incoming'; on: boolean }       // someone is calling me (ringtone)
+  | { type: 'waiting'; on: boolean }        // a second call rings over my active call (call-waiting cue)
   | { type: 'connect' }                     // call connected: string pulls taut, `connected` cue
   | { type: 'taut-hit' }                    // emitted by the mark when the string reaches taut
   | { type: 'end' }                         // call ended by me: string releases, `ended` cue

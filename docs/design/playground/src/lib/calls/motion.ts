@@ -91,3 +91,13 @@ export function shadeOut(_n: Element) {
 export function scrimFade(_n: Element) {
   return { duration: motion.reduced ? dur('crossfade') : dur('overlayOpen'), easing: easeOut, css: (t: number) => `opacity:${t}` };
 }
+
+/** Call-waiting card on the call screen: eases down 12px from the name area and fades; leaves up 8px a little faster. */
+export function waitIn(_n: Element) {
+  if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
+  return { duration: dur('enter'), easing: easeOut, css: (t: number, u: number) => `opacity:${t};transform:translateY(${-12 * u}px)` };
+}
+export function waitOut(_n: Element) {
+  if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
+  return { duration: dur('exit'), easing: easeIn, css: (t: number, u: number) => `opacity:${t};transform:translateY(${-8 * u}px)` };
+}

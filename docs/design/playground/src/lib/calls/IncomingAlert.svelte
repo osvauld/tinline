@@ -7,29 +7,43 @@
   import { system } from './system.svelte';
   import { displayName, person } from '../model/store.svelte';
   import { prefs } from '../model/prefs.svelte';
-  import { alertIn, alertOut } from './motion';
+  import { alertIn, alertOut, STRIP_H } from './motion';
 
-  const show = $derived(call.phase === 'incoming' && call.view === 'strip' && !system.away);
-  const name = $derived(call.peer ? displayName(call.peer) : '');
-  const hue = $derived((call.peer && person(call.peer)?.hue) || 0);
+  /* A second call over my call (call waiting) uses the same banner: the call is minimised, so the strip stays and this
+     sits over it, with the two actions the core allows. Tapping the banner opens the call screen, which carries the card. */
+  const waiting = $derived(call.waitingNow && call.view === 'strip' && !system.away ? call.waitingNow : null);
+  const show = $derived((call.phase === 'incoming' && call.view === 'strip' && !system.away) || !!waiting);
+  let pad = $state(0);   // frozen while the banner leaves, so it does not jump
+  $effect(() => { if (show) pad = waiting ? STRIP_H : 0; });
+  const id = $derived(waiting ? waiting.peer : call.peer);
+  const name = $derived(id ? displayName(id) : '');
+  const hue = $derived((id && person(id)?.hue) || 0);
 </script>
 
 {#if show}
-  <div class="alert {prefs.form}" role="alert" aria-label="Incoming call from {name}" in:alertIn out:alertOut data-incoming-alert>
+  <div class="alert {prefs.form}" class:waiting role="alert" aria-label={waiting ? `${name} is calling during your call` : `Incoming call from ${name}`} style:--strip="{pad}px" in:alertIn out:alertOut data-incoming-alert>
     <button type="button" class="open" aria-label="Open call from {name}" onclick={() => call.restore()}>
-      <Avatar {name} {hue} person={call.peer ?? undefined} size={44} />
-      <span class="tx"><b dir="auto">{name}</b><small>Incoming call</small></span>
+      <Avatar {name} {hue} person={id ?? undefined} size={44} />
+      <span class="tx"><b dir="auto">{name}</b><small>{waiting ? 'Calling during your call' : 'Incoming call'}</small></span>
     </button>
-    <button type="button" class="b dec press" onclick={() => call.decline()}>Decline</button>
-    <button type="button" class="b ans press" onclick={() => call.answer()}>Answer</button>
+    {#if waiting}
+      <button type="button" class="b dec press" onclick={() => call.declineWaiting()}>Decline</button>
+      <button type="button" class="b ans press" onclick={() => call.answerWaiting()}>End &amp; answer</button>
+    {:else}
+      <button type="button" class="b dec press" onclick={() => call.decline()}>Decline</button>
+      <button type="button" class="b ans press" onclick={() => call.answer()}>Answer</button>
+    {/if}
   </div>
 {/if}
 
 <style>
   .alert { position: absolute; z-index: 45; display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 8px; background: var(--surface); color: var(--ink);
     border: 1px solid var(--hairline); border-radius: 20px; box-shadow: var(--shadow-pop); }
-  .alert.android { inset: 8px 8px auto 8px; }
-  .alert.desktop { inset: 16px 16px auto auto; inline-size: 380px; }
+  .alert.android { inset: calc(8px + var(--strip, 0px)) 8px auto 8px; }   /* a waiting call sits under the strip, not over its End button */
+  .alert.waiting { flex-wrap: wrap; padding: 8px; }
+  .alert.waiting .open { flex: 1 1 100%; }
+  .alert.waiting .b { flex: 1 1 0; min-block-size: 44px; }
+  .alert.desktop { inset: calc(16px + var(--strip, 0px)) 16px auto auto; inline-size: 380px; }
   .open { flex: 1; min-inline-size: 0; display: flex; align-items: center; gap: 12px; padding: 0 4px; min-block-size: 48px; border: 0; background: transparent; color: inherit; cursor: pointer; text-align: start; font: inherit; border-radius: 14px; }
   .tx { display: grid; min-inline-size: 0; }
   .tx b { font-size: var(--fs-body); font-weight: 650; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

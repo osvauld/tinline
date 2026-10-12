@@ -10,7 +10,7 @@
   let sound = $state(!audio.quiet);
   let slow = $state(false);
   let palette = $state<Palette>(audio.palette);
-  const cues = ['ring', 'back', 'connected', 'ended', 'failed', 'pulse'];
+  const cues = ['ring', 'back', 'connected', 'ended', 'failed', 'pulse', 'waiting'];
   const preview = (k: string) => { audio.arm(); if (audio.quiet) { audio.setQuiet(false); sound = true; } audio.play(k); };
 </script>
 

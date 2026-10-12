@@ -9,24 +9,32 @@
   import { displayName, person } from '../model/store.svelte';
   import { headsUpIn, headsUpOut } from './motion';
 
-  const show = $derived(call.phase === 'incoming' && system.background && !system.locked);
-  const name = $derived(call.peer ? displayName(call.peer) : '');
-  const hue = $derived((call.peer && person(call.peer)?.hue) || 0);
+  /* Call waiting: someone else calls during my call. Same card, with the two actions the core allows. */
+  const waiting = $derived(system.waitingOutside && system.background && !system.locked ? call.waitingNow : null);
+  const show = $derived((call.phase === 'incoming' && system.background && !system.locked) || !!waiting);
+  const id = $derived(waiting ? waiting.peer : call.peer);
+  const name = $derived(id ? displayName(id) : '');
+  const hue = $derived((id && person(id)?.hue) || 0);
 </script>
 
 {#if show}
-  <div class="hu" role="alert" aria-label="Incoming call from {name}" data-os="headsup" in:headsUpIn out:headsUpOut>
+  <div class="hu" role="alert" aria-label={waiting ? `${name} is calling during your call` : `Incoming call from ${name}`} data-os="headsup" in:headsUpIn out:headsUpOut>
     <button type="button" class="open" aria-label="Open call from {name}" onclick={() => system.openCall()}>
-      <Avatar {name} {hue} person={call.peer ?? undefined} size={44} />
+      <Avatar {name} {hue} person={id ?? undefined} size={44} />
       <span class="tx">
         <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline · now</span>
         <b dir="auto">{name}</b>
-        <small>Incoming voice call</small>
+        <small>{waiting ? 'Voice call · during your call' : 'Incoming voice call'}</small>
       </span>
     </button>
     <div class="acts">
-      <button type="button" class="b dec press" onclick={() => call.decline()}>Decline</button>
-      <button type="button" class="b ans press" onclick={() => { system.background = false; call.answer(); }}>Answer</button>
+      {#if waiting}
+        <button type="button" class="b dec press" onclick={() => call.declineWaiting()}>Decline</button>
+        <button type="button" class="b ans press" onclick={() => { system.background = false; call.answerWaiting(); }}>End &amp; answer</button>
+      {:else}
+        <button type="button" class="b dec press" onclick={() => call.decline()}>Decline</button>
+        <button type="button" class="b ans press" onclick={() => { system.background = false; call.answer(); }}>Answer</button>
+      {/if}
     </div>
   </div>
 {/if}

@@ -127,6 +127,8 @@
     outgoing:     { text: 'Calling…',         cue: 'back',      loop: true,  v: .42, a0: 0.85, warp: .12,  pull: 0, spread: 0,  chroma: 1, bias: .08, kappa: 2.2, swell: .38, ak: 1.1, blend: 450 },
     connecting:   { text: 'Connecting…',      cue: null,        loop: false, v: .80, a0: .85, warp: .012, pull: 1, spread: 0,  chroma: 1, bias: .12, kappa: 1.6, swell: .30, ak: 0.7, blend: 350, tc: { warp: 330, pull: 520 } },
     active:       { text: 'Connected',        cue: 'connected', loop: false, v: .30, a0: 0.6, warp: .07,  pull: 0, spread: 0,  chroma: 1, bias: .30, kappa: 1,   swell: .30, ak: 0.6, blend: 1200, voice: true, tc: { pull: 1400 } },
+    // Call waiting: the active field leaning toward the incoming tone, tinted by the soft waiting cue. Same parameters as the others.
+    waiting:      { text: 'Connected',        cue: 'waiting',   loop: true,  v: .34, a0: 0.65, warp: .07, pull: 0, spread: 0,  chroma: 1, bias: .52, kappa: 1.2, swell: .32, ak: 0.8, blend: 900, voice: true },
     reconnecting: { text: 'Reconnecting…',    cue: 'pulse',     loop: false, v: .22, a0: 0.55, warp: .05, pull: .5, spread: 0, chroma: .45, bias: .20, kappa: 1.2, swell: .30, ak: 0.8, blend: 700, tc: { pull: 900, chroma: 500 } },
     ended:        { text: 'Call ended',       cue: 'ended',     loop: false, v: .60, a0: 0.8, warp: .10,  pull: 0, spread: .55, chroma: 1, bias: .40, kappa: 1.6, swell: .30, ak: 0.6, blend: 300, fade: { delay: 0, dur: 300 }, tc: { spread: 320 } },
     failed:       { text: 'Couldn’t connect', cue: 'failed',    loop: false, v: .30, a0: 0.7, warp: .05,  pull: 0, spread: 0,  chroma: 0, bias: .20, kappa: 1.2, swell: .30, ak: 0.6, blend: 500, fade: { delay: 350, dur: 650 }, tc: { chroma: 160 } },

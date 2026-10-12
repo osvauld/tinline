@@ -26,6 +26,8 @@ class System {
   /** The user is looking at the in-call screen (over the lock screen too), so no notification is needed for it. */
   get onCallScreen() { return !this.background && call.view === 'full'; }
   get ongoing() { return this.live && !this.onCallScreen; }
+  /** Someone is calling during my call and the call screen (which carries the waiting card) is not what is in front. */
+  get waitingOutside() { return !!call.waitingNow && !this.onCallScreen && this.away; }
   /** Text under "Ongoing call": the chronometer once connected, else the machine's own status. */
   get ongoingActive() { return call.phase === 'active'; }
 

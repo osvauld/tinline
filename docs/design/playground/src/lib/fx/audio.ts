@@ -21,6 +21,7 @@ export const PAT: Record<string, Pattern> = {
   ended: { label: 'Ended', period: 0, notes: [[784, 0, .45, .4, .02], [523, .12, .7, .4, .02]] },
   failed: { label: 'Couldn’t connect', period: 0, notes: [[247, 0, .5, .45, .02], [196, .24, .8, .45, .02]] },
   pulse: { label: 'Reconnecting / joined', period: 0, notes: [[330, 0, .6, .35, .02]] },
+  waiting: { label: 'Call waiting', period: 3000, notes: [[784, 0, .16, .22, .012], [784, .22, .2, .22, .012]] },
   pluck: { label: 'Sent (not wired)', period: 0, notes: [[659, 0, .09, .5, .004]] },
 };
 
@@ -32,11 +33,13 @@ export const PALETTES: Record<Palette, { label: string; hit: number; cues: Parti
     ring: { label: 'Ringtone', period: 2600, notes: [[392, 0, .9, .35, .08], [396, 0, .9, .3, .08], [587, 1.05, .45, .5, .015]] },
     back: { label: 'Ringback', period: 2200, notes: [[392, 0, 1.1, .32, .12], [396, 0, 1.1, .28, .12]] },
     connected: { label: 'Connected', period: 0, notes: [[587, 0, .5, .5, .015]] },
+    waiting: { label: 'Call waiting', period: 3000, notes: [[587, 0, .16, .2, .012], [587, .22, .2, .22, .012]] },
   } },
   triad: { label: 'Triad knock', hit: 0.14, cues: {
     ring: { label: 'Ringtone', period: 2400, notes: [[392, 0, .32, .45, .015], [494, .16, .32, .45, .015], [587, .32, .5, .5, .015]] },
     back: { label: 'Ringback', period: 3400, notes: [[392, 0, .4, .3, .1], [494, .22, .4, .3, .1], [587, .44, .55, .32, .1]] },
     connected: { label: 'Connected', period: 0, notes: [[392, 0, .3, .4, .02], [587, .14, .5, .5, .02]] },
+    waiting: { label: 'Call waiting', period: 3000, notes: [[494, 0, .16, .2, .012], [587, .2, .2, .22, .012]] },
   } },
 };
 
@@ -149,6 +152,8 @@ export function startAudio() {
         if (lead) setTimeout(() => audio.play('connected'), lead); else audio.play('connected');
         break;
       }
+      // Soft and quieter than the ring; it loops over the call until the waiting call is resolved.
+      case 'waiting': if (e.on) audio.play('waiting', true, 0.6); else if (audio.cur?.kind === 'waiting') audio.stop(); break;
       case 'end': audio.play('ended'); break;
       case 'failed': audio.play('failed'); break;
       case 'reconnecting': audio.play('pulse'); break;

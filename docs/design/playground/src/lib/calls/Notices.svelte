@@ -13,6 +13,17 @@
 </script>
 
 <div class="list">
+  {#if system.waitingOutside && call.waitingNow}
+    {@const w = call.waitingNow}
+    <div in:noticeIn out:noticeOut data-notice="waiting">
+      <Notice title="{displayName(w.peer)} is calling" text="Voice call · during your call" person={w.peer} onopen={() => system.openCall()}>
+        {#snippet actions()}
+          <button type="button" class="act bad" onclick={() => call.declineWaiting()}>Decline</button>
+          <button type="button" class="act" onclick={() => { system.foreground(); call.answerWaiting(); }}>End &amp; answer</button>
+        {/snippet}
+      </Notice>
+    </div>
+  {/if}
   {#if system.ongoing}
     <div in:noticeIn out:noticeOut data-notice="ongoing">
       <Notice title="Ongoing call · {name}" {text} person={call.peer ?? undefined} tabular={system.ongoingActive} onopen={() => system.openCall()}>

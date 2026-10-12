@@ -17,7 +17,12 @@
 
   const name = $derived(call.peer ? displayName(call.peer) : '');
   const hue = $derived((call.peer && person(call.peer)?.hue) || 0);
-  const toast = $derived(system.background && call.phase === 'incoming');
+  /* Call waiting: the same toast for a second caller, above the mini window, with the two actions the core allows. */
+  const waiting = $derived(system.waitingOutside ? call.waitingNow : null);
+  const toast = $derived((system.background && call.phase === 'incoming') || !!waiting);
+  const tid = $derived(waiting ? waiting.peer : call.peer);
+  const tname = $derived(tid ? displayName(tid) : '');
+  const thue = $derived((tid && person(tid)?.hue) || 0);
   const mini = $derived(system.background && system.ongoing);
   const ms = $derived(motion.reduced ? 0 : dur('crossfade'));
   const text = $derived(system.ongoingActive ? fmtDuration(call.elapsedS) : call.statusText);
@@ -34,18 +39,23 @@
 {/if}
 
 {#if toast}
-  <div class="toast" role="alert" aria-label="Incoming call from {name}" data-os="toast" in:toastIn out:toastOut>
-    <button type="button" class="open" aria-label="Open call from {name}" onclick={() => system.openCall()}>
-      <Avatar {name} {hue} person={call.peer ?? undefined} size={44} />
+  <div class="toast" class:above={!!waiting} role="alert" aria-label={waiting ? `${tname} is calling during your call` : `Incoming call from ${tname}`} data-os="toast" in:toastIn out:toastOut>
+    <button type="button" class="open" aria-label="Open call from {tname}" onclick={() => system.openCall()}>
+      <Avatar name={tname} hue={thue} person={tid ?? undefined} size={44} />
       <span class="tx">
         <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline</span>
-        <b dir="auto">{name}</b>
-        <small>Incoming voice call</small>
+        <b dir="auto">{tname}</b>
+        <small>{waiting ? 'Voice call · during your call' : 'Incoming voice call'}</small>
       </span>
     </button>
     <div class="acts">
-      <button type="button" class="b dec press" onclick={() => call.decline()}>Decline</button>
-      <button type="button" class="b ans press" onclick={() => call.answer()}>Answer</button>
+      {#if waiting}
+        <button type="button" class="b dec press" onclick={() => call.declineWaiting()}>Decline</button>
+        <button type="button" class="b ans press" onclick={() => call.answerWaiting()}>End &amp; answer</button>
+      {:else}
+        <button type="button" class="b dec press" onclick={() => call.decline()}>Decline</button>
+        <button type="button" class="b ans press" onclick={() => call.answer()}>Answer</button>
+      {/if}
     </div>
   </div>
 {/if}
@@ -73,6 +83,7 @@
 
   .toast, .mini { position: absolute; z-index: 70; inset-block-end: 60px; inset-inline-end: 16px; background: var(--os-card); color: var(--os-ink); border: 1px solid var(--os-line); border-radius: 18px; box-shadow: var(--shadow-pop); pointer-events: auto; }
   .toast { inline-size: 360px; padding: 12px; display: grid; gap: 8px; }
+  .toast.above { inset-block-end: 124px; }   /* clears the mini call window (60 + its height + 8) */
   .open { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; min-inline-size: 0; border-radius: 12px; }
   .tx { display: grid; min-inline-size: 0; }
   .hd { display: flex; align-items: center; gap: 6px; font-size: var(--fs-meta); line-height: 16px; font-weight: 600; color: var(--os-sub); margin-block-end: 2px; }

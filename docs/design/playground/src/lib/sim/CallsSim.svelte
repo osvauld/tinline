@@ -15,7 +15,18 @@
     if (db.account.gate !== 'ready') { note = 'The account key is not on this device: nothing rings.'; return; }
     const r = call.refusal(from);
     note = r === 'blocked' ? 'Blocked: the call never reaches the screen.' : r === 'messages-only' ? 'Message-only contact: calls are not delivered.'
-      : r === 'busy' ? 'Already in a call: this one is left as a missed call.' : 'Unknown caller.';
+      : r === 'busy' ? (call.waiting ? 'Someone is already waiting: the core turns this one away busy, left as a missed call.' : from === call.peer ? 'That is the person on the call.' : 'Not an answered call yet: the core turns this one away busy, left as a missed call.') : 'Unknown caller.';
+  };
+  const inCall = $derived(call.phase === 'active' || call.phase === 'reconnecting');
+  let during = $state('sana');
+  const duringOpts = $derived(callers.filter((p) => p.id !== call.peer));
+  const third = () => {
+    const p = callers.find((c) => c.id !== call.peer && c.id !== call.waiting?.peer && !c.blocked && c.callsAllowed);
+    if (p) call.receive(p.id);
+  };
+  const ringDuring = () => {
+    if (call.receive(during)) { note = ''; return; }
+    note = call.refusal(during) === 'busy' ? 'Not possible now: the person is on the call, or someone is already waiting.' : 'Blocked or message-only: the call never reaches the screen.';
   };
   const out = $derived(call.phase === 'outgoing');
   const live = $derived(call.phase === 'active' || call.phase === 'reconnecting' || call.phase === 'connecting');
@@ -32,6 +43,20 @@
   {#if note}<p class="note" role="status">{note}</p>{/if}
   <div class="btns">
     <button type="button" disabled={call.phase !== 'incoming'} onclick={() => call.remote('cancel')}>Caller hangs up</button>
+  </div>
+
+  <h4>Call waiting</h4>
+  <p class="state">Waiting: <b>{call.waiting ? call.waiting.peer : 'nobody'}</b></p>
+  <div class="row">
+    <label for="callsim-during">Someone calls during the call</label>
+  </div>
+  <div class="row">
+    <select id="callsim-during" bind:value={during}>{#each duringOpts as p (p.id)}<option value={p.id}>{p.name}</option>{/each}</select>
+    <button type="button" disabled={!inCall || !!call.waiting} onclick={ringDuring}>Ring over the call</button>
+  </div>
+  <div class="btns">
+    <button type="button" disabled={!call.waiting} onclick={() => call.remote('cancel')}>Waiting caller gives up</button>
+    <button type="button" disabled={!call.waiting} onclick={third}>A third person calls</button>
   </div>
 
   <h4>Where {android ? 'the phone' : 'the window'} is</h4>
@@ -61,6 +86,7 @@
   </div>
 
   <h4>Timings</h4>
+  <label class="row"><span>Waiting-call timeout (s)</span><input type="number" min="1" max="120" value={CALL_MS.waitingTimeout / 1000} onchange={(e) => (CALL_MS.waitingTimeout = Math.max(1, +e.currentTarget.value) * 1000)} /></label>
   <label class="row"><span>Ring timeout (s)</span><input type="number" min="1" max="120" value={CALL_MS.ringTimeout / 1000} onchange={(e) => (CALL_MS.ringTimeout = Math.max(1, +e.currentTarget.value) * 1000)} /></label>
 
   <p class="note"><i class="prop">Proposed</i> Ring timeout: 20 s, then "No answer" (they are online) or "Couldn't connect" (offline or unreachable). Not decided.</p>
@@ -71,6 +97,12 @@
   <p class="note">Decided 2026-10-12: the lock screen shows the caller's name.</p>
   <p class="note">Decided 2026-10-12: missed-call notifications fold into one per person ("2 missed calls · Sana Rao").</p>
   <p class="note"><i class="prop">Proposed</i> Tapping a call notification on the lock screen unlocks the phone first (there is no PIN in this simulation).</p>
+  <p class="note">Core facts: while an answered call runs, ONE more incoming call rings over it (waiting, 30 s). A further call is turned away busy and left as a missed call. A call still dialling or connecting also turns a new caller away busy.</p>
+  <p class="note">Core facts: the waiting call is declined (its caller is told busy, recorded as declined) or answered by ending the current call. Hold is not supported by the core: there is no switching between two calls.</p>
+  <p class="note">Core facts: if the current call ends by itself, the waiting call takes the slot as an ordinary incoming call. If the waiting caller gives up (or 30 s pass) it leaves a missed-call record.</p>
+  <p class="note"><i class="prop">Proposed</i> The waiting cue is two short soft tones every 3 s, quieter than the ring, in each sound palette; the in-call field leans a little toward the incoming tone. Not decided.</p>
+  <p class="note"><i class="prop">Proposed</i> A minimised call shows the in-app banner (Decline / End &amp; answer) over the strip rather than squeezing actions into the strip. The call screen carries a card above its controls.</p>
+  <p class="note"><i class="prop">Proposed</i> When the waiting call takes the slot after a hang-up, it rings full-screen if the call screen was open, else as the banner. The card disappears while "Call ended" is shown.</p>
   <p class="note">Incoming calls from blocked people or message-only contacts are dropped silently. Desktop has no missed-call toast yet.</p>
 </div>
 
