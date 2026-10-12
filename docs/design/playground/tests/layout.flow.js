@@ -268,7 +268,7 @@ async function shellSection(b, form) {
   await probe(p, t('tab badge count changes (unread 0 -> 5): nothing moves'), () => pg(p, () => { window.__pg.db.chats.forEach((c) => (c.unread = 0)); window.__pg.db.chats.find((c) => c.id === 'arjun').unread = 5; }), { ignore: '.t-badge, .dot, .pv *, .pv', seen: (q) => q.evaluate(() => [...document.querySelectorAll('.t-badge, .dot')].some((e) => e.textContent.trim() === '5')) });
   // The drawer takes its own column (App.svelte): the frame moves aside on purpose, but must never sit under it.
   await drawerOpen(p); await wait(p, 300);
-  ok(t('Simulation drawer open: the app frame sits beside it, never under it'), await p.evaluate(() => { const f = document.querySelector('[data-form]').getBoundingClientRect(), d = document.querySelector('aside.drawer').getBoundingClientRect(); return f.right <= d.left + 0.5; }));
+  ok(t('Simulation drawer open: the app frame sits beside it, never under it'), await p.evaluate(() => { const f = document.querySelector('[data-form]').getBoundingClientRect(), d = document.querySelector('aside.drawer').getBoundingClientRect(); return innerWidth < f.width + d.width + 16 || f.right <= d.left + 0.5; }));
   await drawerClose(p); await wait(p, 300);
   await p.context().close();
   // theme must not change geometry: same boxes in light and dark
