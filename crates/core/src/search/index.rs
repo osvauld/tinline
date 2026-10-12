@@ -17,13 +17,13 @@ use storage::{Op, Sealed, StorageError, Store};
 use zeroize::Zeroizing;
 
 use super::hot::Hot;
-use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key};
+use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key, b_key, bucket_find, bucket_of};
 use crate::Error;
 use crate::chat::doc::{DAY_MS, day_of, day_start};
 
 /// Bump when the tokenizer or the layout changes: the index is rebuilt from the chat and group
 /// stores. (1: per-message postings in the file. 2: hot tier + segments.)
-pub const VERSION: u32 = 2;
+pub const VERSION: u32 = 3;
 const STORE_DOMAIN: &str = "tinline/search-store/v1";
 const INDEX_DOMAIN: &str = "tinline/search-index/v1";
 
@@ -784,7 +784,7 @@ impl SearchIndex {
         };
         let mut pending: Vec<Seg> = view.man.segs.iter().filter(|s| s.docs > 0 && after.is_none_or(|a| rev_at(s.min_at) >= a.0)).cloned().collect();
         pending.sort_by_key(|s| (std::cmp::Reverse(s.max_at), std::cmp::Reverse(s.id)));
-        Ok(Scan { ix: self, toks, view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), last: None })
+        Ok(Scan { ix: self, toks, view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), buckets: HashMap::new(), last: None })
     }
 
     /// `(records, key bytes + value bytes)` of the `x/`, `y/` and `m` records in the file.
@@ -827,6 +827,7 @@ type Chunk = Arc<Vec<(u64, DocRow)>>;
 
 struct Open {
     seg: u32,
+    bbits: u8,
     docs: u32,
     /// The next posting-list part to load.
     part: usize,
@@ -849,6 +850,7 @@ pub struct Scan<'a> {
     pending: VecDeque<Seg>,
     open: Vec<Open>,
     chunks: HashMap<(u32, usize), Option<Chunk>>,
+    buckets: HashMap<(u32, u32), Option<Vec<u8>>>,
     last: Option<(u64, u64)>,
 }
 
@@ -911,7 +913,7 @@ impl Scan<'_> {
             first = lo;
         }
         let part = first / PART_DOCS;
-        self.open.push(Open { seg: s.id, docs: s.docs, part, list: Vec::new(), pos: 0, head: None });
+        self.open.push(Open { seg: s.id, bbits: s.bbits, docs: s.docs, part, list: Vec::new(), pos: 0, head: None });
         let i = self.open.len() - 1;
         if self.load_part(i) {
             let o = &mut self.open[i];
@@ -934,8 +936,16 @@ impl Scan<'_> {
                 return false;
             }
             let mut list: Option<Vec<u32>> = None;
-            for tok in &self.toks {
-                let l = self.ix.db.get(&x_key(seg, *tok, part)).ok().flatten().and_then(|b| decode_list(&b, (part * PART_DOCS) as u32)).unwrap_or_default();
+            let bbits = self.open[i].bbits;
+            for tok in self.toks.clone() {
+                let bk = (seg, bucket_of(tok, bbits));
+                let ix = self.ix;
+                let bucket = self.buckets.entry(bk).or_insert_with(|| ix.db.get(&b_key(bk.0, bk.1)).ok().flatten());
+                let short = bucket.as_deref().and_then(|b| bucket_find(b, tok, part));
+                let l = match short {
+                    Some(l) => l,
+                    None => self.ix.db.get(&x_key(seg, tok, part)).ok().flatten().and_then(|b| decode_list(&b, (part * PART_DOCS) as u32)).unwrap_or_default(),
+                };
                 list = Some(match list {
                     None => l,
                     Some(prev) => {
@@ -1437,9 +1447,13 @@ mod tests {
     }
 
     fn fill(ix: &SearchIndex, convs: usize, days: i64, per_day: usize) {
+        fill_from(ix, 0, convs, days, per_day);
+    }
+
+    fn fill_from(ix: &SearchIndex, first: usize, convs: usize, days: i64, per_day: usize) {
         let mut n = 0u32;
         for d in 0..days {
-            for c in 0..convs {
+            for c in first..convs {
                 let rows: Vec<DocRow> = (0..per_day)
                     .map(|k| {
                         n += 1;
@@ -1458,8 +1472,11 @@ mod tests {
         let path = temp_path("trigger");
         let ix = SearchIndex::open(&path, "alpha beta").unwrap();
         at_day(&ix, "2026-06-01");
-        fill(&ix, 6, 40, 20);
-        ix.maintain(Mode::Force).unwrap();
+        for c in 0..6 {
+            // one segment a conversation, so that forgetting it frees its pages
+            fill_from(&ix, c, c + 1, 40, 20);
+            ix.maintain_segments(Mode::Force).unwrap();
+        }
         // Small file: below the byte threshold nothing happens, and the look is spent.
         assert_eq!(ix.compact_if_worthwhile().unwrap(), None);
         ix.set_limits(|l| l.compact_min_waste = 0);
@@ -1468,7 +1485,6 @@ mod tests {
         for c in 1..6 {
             ix.forget(&format!("dm.{c}")).unwrap();
         }
-        ix.maintain(Mode::Force).unwrap();
         let before = answers(&ix);
         assert!(before.iter().any(|a| !a.is_empty()));
         let len_before = std::fs::metadata(&path).unwrap().len();
@@ -1488,9 +1504,10 @@ mod tests {
         let ix = SearchIndex::open(&path, "alpha beta").unwrap();
         at_day(&ix, "2026-06-01");
         assert_eq!(answers(&ix), before);
-        fill(&ix, 1, 2, 5);
+        let n = ids(&ix, "picnic").len();
+        fill_from(&ix, 7, 8, 2, 5);
         ix.maintain(Mode::Force).unwrap();
-        assert!(ids(&ix, "zebra1").len() > before[2].len() / 2);
+        assert_eq!(ids(&ix, "picnic").len(), n + 10);
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 

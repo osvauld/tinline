@@ -35,6 +35,9 @@ pub struct Usage {
     pub file_bytes: u64,
     /// Bytes of the file that hold live pages (data, tree metadata, bookkeeping).
     pub used_bytes: u64,
+    /// redb's own breakdown: (leaf pages, branch pages, stored leaf bytes, tree metadata
+    /// bytes, fragmented bytes inside pages and free pages).
+    pub detail: (u64, u64, u64, u64, u64),
 }
 
 impl Usage {
@@ -95,11 +98,17 @@ impl Store {
     pub fn usage(&self) -> Result<Option<Usage>, StorageError> {
         let Some(path) = &self.path else { return Ok(None) };
         let db = self.db()?;
+        // Pages freed by earlier commits are only handed back to the allocator by later ones:
+        // two empty commits first, or the count includes them.
+        for _ in 0..2 {
+            let txn = db.begin_write()?;
+            txn.commit()?;
+        }
         let txn = db.begin_write()?;
         let st = txn.stats()?;
         txn.abort()?;
         let file_bytes = std::fs::metadata(path.as_path()).map(|m| m.len()).unwrap_or(0);
-        Ok(Some(Usage { file_bytes, used_bytes: st.allocated_pages() * st.page_size() as u64 }))
+        Ok(Some(Usage { file_bytes, used_bytes: st.allocated_pages() * st.page_size() as u64, detail: (st.leaf_pages(), st.branch_pages(), st.stored_bytes(), st.metadata_bytes(), st.fragmented_bytes()) }))
     }
 
     /// Rewrites the file without its free pages and gives the space back. Waits for the
@@ -264,5 +273,41 @@ mod tests {
         a.close();
         drop(c);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod size_probe {
+    use super::*;
+
+    // Probe (run by hand): bytes on disk for sorted small records, one transaction or many.
+    #[test]
+    #[ignore]
+    fn probe() {
+        for (name, per_txn) in [("one txn", 1_000_000usize), ("1000/txn", 1000)] {
+            let dir = std::env::temp_dir().join(format!("probe-{}-{per_txn}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            let s = Store::open(dir.join("p.redb")).unwrap();
+            let n = 100_000usize;
+            let mut raw = 0usize;
+            let mut ops = Vec::new();
+            for i in 0..n {
+                let k = format!("x/{:08x}/{:016x}/000", i / 5000, (i as u64).wrapping_mul(0x9e3779b97f4a7c15));
+                let v = vec![7u8; 60];
+                raw += k.len() + v.len();
+                ops.push(Op::Put(k, v));
+                if ops.len() == per_txn {
+                    s.apply(&ops).unwrap();
+                    ops.clear();
+                }
+            }
+            s.apply(&ops).unwrap();
+            let u = s.usage().unwrap().unwrap();
+            println!("{name}: raw {raw} file {} used {}", u.file_bytes, u.used_bytes);
+            s.compact().unwrap();
+            let u = s.usage().unwrap().unwrap();
+            println!("{name} compacted: file {} used {}", u.file_bytes, u.used_bytes);
+        }
     }
 }
