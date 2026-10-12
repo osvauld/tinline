@@ -25,16 +25,25 @@ the user was away; each is listed at the end.
 - **Signed frontier (U11).** Every record carries `seen`: the author's version vector when it
   wrote the record. "Was X before Y" is decided by whether Y's `seen` includes X's oplog position,
   never by clocks or arrival order.
-- **Doc.** One Loro doc per group, root map `r`: `record id → SignedRecord bytes` (binary value;
-  id = first 128 bits of BLAKE3 of the bytes, so the key binds content and signature). It is a
-  grow-only set; Loro supplies version vectors, incremental export and snapshots.
+- **Docs (day shards, `group-shards.md`).** Per group one `meta` Loro doc (every record except
+  posts) and one doc per UTC day holding that day's `Post` records. Each has root map `r`:
+  `record id → SignedRecord bytes` (binary value; id = first 128 bits of BLAKE3 of the bytes, so
+  the key binds content and signature) and is a grow-only set; Loro supplies version vectors,
+  incremental export and snapshots. A record's `seen` is always the author's **meta** vv, so
+  posts need no frontier over other posts.
 - **Acceptance (U10, U22 style).** Every device (hosts too) imports a batch only if every new op
   is an insert into `r` whose key is the id of its value, whose value is a canonical record of
-  this group verifying under its author's DID, written under that author's writer ID. Deletes,
-  other containers, nested containers, wrong key or peer: the whole batch is refused. The verdict
-  depends only on the batch and the doc (`doc::GroupDoc::apply_remote`).
-- **Meaning is derived (`state::derive`)**, a pure function of the record set and positions, so
-  every device holding the same records shows the same group in every delivery order:
+  this group verifying under its author's DID, written under that author's writer ID, and
+  belonging in this doc: a `Post` only in the day doc of its UTC day (`at` within the day +- 1 h,
+  as in 1:1 chat), any other body only in `meta`. Deletes, other containers, nested containers,
+  wrong key, peer or doc: the whole batch is refused. The verdict depends only on the batch and
+  the doc (`doc::GroupDoc::apply_remote`). Signatures are verified when records enter a device;
+  our own sealed store rows are not verified again when loaded.
+- **Meaning is derived (`state::derive_meta`, `state::post_visible`)**, pure functions of the
+  meta record set and positions, so every device holding the same records shows the same group in
+  every delivery order. `derive_meta` runs on meta changes only; each post is judged on its own
+  (Visible, Hidden, or Pending when its `seen` names meta records we do not hold yet; pending
+  posts are judged again when the meta doc advances):
   - admins = owner + members the owner made admin (latest `Admin` per member by `(at, id)`);
     "admin as of a frontier" counts only the owner's `Admin` records inside it;
   - members = owner + DIDs whose latest join/leave is a `Join` with an invite that verifies,
@@ -53,7 +62,7 @@ the user was away; each is listed at the end.
 
 - **Two endpoints (U2).** Each device runs a second iroh endpoint for groups (key in the group
   store, one per account per install, independent of the private endpoint), ALPN
-  `tinline/group/1` (`wire::GROUP_ALPN`). It is bound when the node starts and the account has a
+  `tinline/group/2` (`wire::GROUP_ALPN`). It is bound when the node starts and the account has a
   group, or on create/join, and closed with the private endpoint (stop, lock, account switch).
 - **Only hosts know member endpoints (U7).** Members dial only hosts. Hosts accept, keep a
   directory `did/dev → member group endpoint`, and dial other hosts like members do. Host
@@ -77,7 +86,7 @@ the user was away; each is listed at the end.
   two members on different hosts converge (`members_on_different_hosts_converge`).
 - **No per-recipient encryption (U14).** QUIC hop by hop; at rest the group store
   (`group.redb`) seals every row (AES-GCM, `storage::Sealed`) under
-  `BLAKE3-derive-key("tinline/group-store/v1", recovery phrase)`, like the chat store.
+  `BLAKE3-derive-key("tinline/group-store/v2", recovery phrase)`, like the chat store.
 
 ## Removal (U9, U11, U12 "refusal is immediate")
 
@@ -334,8 +343,6 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
   group hosted by the same device learns the rotated endpoint through that group.
 - Group-call UI and platform condition feeders (GA-I1 wired the core), files/voice in groups, edits/deletes of posts, mute, group rename/photo,
   "who can invite" setting, readmission after removal, host-side limits (max hosts, upload caps).
-- The doc is one Loro doc per group (not day-sharded like 1:1 chat); a large group's full sync is
-  one batch. Sharding/compaction like chat is needed before big groups.
 - `blocking_acceptance.rs::personal_block_does_not_change_group_membership` (P5's file) still
   uses stub group helpers whose shape (`add_group_member(host, group, did)`) does not fit the
   invite model; it stays ignored. Its intent is covered by design: blocks never touch group state.
