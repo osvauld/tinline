@@ -1,5 +1,5 @@
 //! The group runtime: the group endpoint (U2, `tinline/group/2`), host and member sessions,
-//! live relay, catch-up, history backfill and removal enforcement. Everything hangs off
+//! live relay, catch-up, day-doc sync and removal enforcement. Everything hangs off
 //! `Inner::group` (`GroupRt`).
 //!
 //! Members only dial hosts; hosts accept members and dial other hosts like members do; nobody
@@ -79,7 +79,7 @@ pub(crate) struct GroupRt {
     /// History backfill waits while set (the platform's conditions: metered network, low
     /// battery; the same inputs call hosting uses).
     pub(crate) backfill_paused: AtomicBool,
-    /// Pause between two history fetches, ms (0 = the default). Test knob.
+    /// Pause between two day updates of the background sync, ms (0 = the default). Test knob.
     pub(crate) backfill_pause_ms: AtomicU64,
 }
 
@@ -175,8 +175,8 @@ pub(crate) struct Sess {
     peer_vv: Mutex<VersionVector>,
     /// What the peer holds of the day docs we know it holds some of.
     peer_days: Mutex<HashMap<String, VersionVector>>,
-    /// The history request in flight: its answer is passed on here (`backfill`).
-    hist: Mutex<Option<mpsc::UnboundedSender<GroupMsg>>>,
+    /// The peer's inventory of day docs is complete (`GroupMsg::Days`, the empty page).
+    inv_done: AtomicBool,
 }
 
 pub(crate) enum Out {
@@ -250,7 +250,7 @@ pub(crate) struct Changed {
     pub new_items: Vec<Item>,
     /// Per day doc, for the search index (`search/api.rs`).
     pub posts: Vec<PostDiff>,
-    /// Imported as history (old days): no new-message events, not relayed to other sessions.
+    /// Arrived for a day older than a session pushes live (history catching up): no new-message events.
     pub history: bool,
 }
 
@@ -519,7 +519,7 @@ impl GroupCore {
 
     /// Sends every session of `gid` (except `from`) what it lacks of the meta doc and then of
     /// the day docs `days` (the meta doc always goes first, so a post never arrives before the
-    /// records it names). Older days reach a peer through history sync, not through here.
+    /// records it names). Older days reach a peer through the inventory sync (`history.rs`), not through here.
     pub(crate) fn push(&self, gid: &str, from: Option<u64>, days: &[String]) {
         let mut groups = self.groups.lock();
         let Some(live) = groups.get_mut(gid) else { return };
@@ -951,9 +951,8 @@ impl Inner {
         self.search_group(&gid, &changed.posts);
         // Order matters: the records first (a removed member gets the flags that removed it,
         // a new host's acceptance reaches others before its address), then enforcement, then
-        // address announcements. History imported from one session is not pushed on to the
-        // others: each backfills from its own session.
-        let days: Vec<String> = changed.doc.day().filter(|_| !changed.history).map(str::to_string).into_iter().collect();
+        // address announcements.
+        let days: Vec<String> = changed.doc.day().map(str::to_string).into_iter().collect();
         self.group_push(core, &gid, from, &days);
         self.group_enforce(core, &gid);
         // Became (or stopped being) a host: announce our address.
@@ -1531,7 +1530,7 @@ impl Inner {
             tx,
             peer_vv: Mutex::new(theirs.vv),
             peer_days: Mutex::new(theirs.days),
-            hist: Mutex::new(None),
+            inv_done: AtomicBool::new(false),
         });
         core.sessions.lock().insert(id, sess.clone());
         self.log(format!("group {} session with {} ({})", &gid[..8.min(gid.len())], &peer.did, if hosting { "we host" } else { "they host" }));
@@ -1564,8 +1563,8 @@ impl Inner {
             }
             let _ = writer.0.finish();
         });
-        // Both sides fetch the days they lack, newest first, in the background.
-        let backfill = tokio::spawn(self.clone().group_backfill(core.clone(), sess.clone()));
+        // Both sides exchange the day docs the other lacks, newest first, in the background.
+        let backfill = tokio::spawn(self.clone().group_days_sync(core.clone(), sess.clone()));
         let res = self.group_read(&core, &sess, &mut reader).await;
         core.sessions.lock().remove(&id);
         backfill.abort();
@@ -1598,10 +1597,12 @@ impl Inner {
                             }
                             let vv = changed.as_ref().map(|c| c.doc_vv.clone()).unwrap_or_else(|| core.doc_vv(&sess.gid, &doc).encode());
                             let _ = sess.tx.send(Out::Msg(GroupMsg::Ack { doc: doc.clone(), vv }));
-                            if let Some(c) = changed {
+                            if let Some(mut c) = changed {
                                 if doc == DocId::Meta {
                                     self.group_maybe_join(core, &sess.gid);
                                 }
+                                // Older than the days a session pushes live: history catching up.
+                                c.history = doc.day().is_some_and(|d| !recent_days(now_ms() as i64, HELLO_DAYS).iter().any(|r| r == d));
                                 self.group_after(core, c, Some(sess.id));
                             }
                         }
@@ -1626,23 +1627,18 @@ impl Inner {
                         }
                     }
                 }
-                GroupMsg::HistoryList { before, limit } => {
-                    let (core, sess) = (core.clone(), sess.clone());
-                    self.handle.spawn_blocking(move || {
-                        let days = core.history_list(&sess, before.as_deref(), limit);
-                        let _ = sess.tx.send(Out::Msg(GroupMsg::HistoryDays { days }));
-                    });
-                }
-                GroupMsg::HistoryGet { day } => {
-                    let (core, sess) = (core.clone(), sess.clone());
-                    self.handle.spawn_blocking(move || {
-                        let snapshot = core.history_snapshot(&sess, &day);
-                        let _ = sess.tx.send(Out::Msg(GroupMsg::HistoryDay { day, snapshot }));
-                    });
-                }
-                m @ (GroupMsg::HistoryDays { .. } | GroupMsg::HistoryDay { .. }) => {
-                    if let Some(tx) = sess.hist.lock().as_ref() {
-                        let _ = tx.send(m);
+                GroupMsg::Days { days, .. } => {
+                    if days.len() > DAYS_PAGE {
+                        return Err(Error::Protocol("too many days in a page".into()));
+                    }
+                    if days.is_empty() {
+                        sess.inv_done.store(true, Ordering::SeqCst);
+                    }
+                    for (d, v) in days {
+                        if !DocId::Day(d.clone()).is_valid() {
+                            return Err(Error::Protocol("bad day in inventory".into()));
+                        }
+                        sess.peer_has(&DocId::Day(d), &decode_vv(&v)?);
                     }
                 }
                 GroupMsg::Hosts { hosts } => {

@@ -132,7 +132,7 @@ Where the code chose a detail the design left open, or differs from it:
 - **Store.** Closed days are one sealed snapshot row (`shard/{gid}/{day}/snap`, `closed` in
   `ShardMeta`) rather than a blob; a late update reopens the day until the next compaction. The
   compaction runs once after open and then hourly, under the group lock one day at a time.
-  `ShardMeta.vv` is kept current, so `Hello` day lists, history lists and search watermarks never
+  `ShardMeta.vv` is kept current, so `Hello` day lists, the inventory and search watermarks never
   open a doc. Delivery state of a post uses acks per day (`ackd/...`); other records use the
   meta acks as before.
 - **Cache.** At most 12 day docs per group in memory (LRU), loaded under the group lock.
@@ -142,14 +142,18 @@ Where the code chose a detail the design left open, or differs from it:
   `limit` posts, merging them with the system lines of the meta state by `(at, id)`. The return
   shape did not change: there is no explicit "loading" row; a page ends where the local days end
   (`older == None`) and days that arrive later show up on the next call.
-- **Sync.** `push` sends the meta doc and then the named day docs per session; a day the peer did
-  not list in its `Hello` is sent whole. A session start pushes the last 7 calendar days we
-  hold. A history import is not pushed on to other sessions and raises no new-message events.
-  Removed members upload their pre-removal posts one `Update{Day}` per owed day.
-- **History.** A device answers `HistoryList`/`HistoryGet` only to a member it hosts (not removed,
-  and an accepted member, not a joiner) or to a host it dialled. Backfill waits until the group's
-  genesis is held (and on a host until the peer is a member); passes run at session start, 3 s
-  later and every 5 minutes.
+- **Sync.** `push` sends the meta doc and then the named day docs per session, relaying every
+  accepted update (old days too: only what the peer lacks by its known vv); a day the peer did not
+  list is sent whole. A session start pushes the last 7 calendar days we hold. Removed members
+  upload their pre-removal posts one `Update{Day}` per owed day.
+- **Inventory sync.** After `Hello`/`Welcome` each side sends `Days{after, days}` pages (64 days,
+  `(day, vv)` ascending, an empty page ends it) and records the peer's. Then, once the peer's
+  inventory is in (30 s at most), it sends `Update{Day}` for every day the peer lacks or is behind
+  on, newest first, one every 200 ms (`group_set_backfill_paused` holds it for a metered network
+  or low battery). The pass repeats 3 s later and then every 5 minutes. It runs only towards a
+  member we host (accepted, not removed, not a joiner) or a host we dialled, and waits until the
+  group's genesis is held. An update for a day older than the 7 live days raises no new-message
+  events. The receiver validates it like any update.
 - **Search.** Group rows carry the real day; per-day watermarks are the day doc's vv; each
   `s/{src}/{doc}` index key stores a keyed tag of its day, so reconcile can drop the stale docs of
   one day without opening rows. Days with pending posts are always re-indexed.

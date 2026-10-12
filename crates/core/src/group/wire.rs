@@ -11,7 +11,7 @@
 //! host -> member  Moved { auth, group, hosts }       (own connection, after a rotation, U12)
 //! host -> member  Welcome { auth, vv, days, hosts }  | Removed { records, vv, update? } | Refused { reason }
 //! both            Update { doc, update } / Ack { doc, vv } / Hosts { hosts } / Mail { mail } / MailAck { id }
-//! both            HistoryList { before, limit } -> HistoryDays { days } ; HistoryGet { day } -> HistoryDay { day, snapshot? }
+//! both            Days { after, days }   (inventory of every day doc held, in pages; an empty page ends it)
 //! member -> host  Code { code, invite?, expires } / RevokeCode { code }  -> CodeAck { code, ok, reason }
 //! anyone -> host  Fetch { code }  (first frame, G3)   -> Fetched { token } | Refused { reason }
 //! both            CallHostStatus / CallStart / CallEnd / CallHostRequest / CallHostRefusal (GA-I1)
@@ -29,15 +29,8 @@ pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 /// `Hello` and `Welcome` list the day docs of this many recent days (as 1:1 chat does).
 pub const HELLO_DAYS: i64 = 7;
 
-/// One day doc a peer holds, in a history list.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct HistDay {
-    pub day: String,
-    /// Encoded version vector of the doc.
-    pub vv: Vec<u8>,
-    /// Size of the snapshot `HistoryGet` would answer, bytes.
-    pub size: u64,
-}
+/// Most days in one `Days` page.
+pub const DAYS_PAGE: usize = 64;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GroupMsg {
@@ -57,14 +50,12 @@ pub enum GroupMsg {
     /// doc's update, in every session and every relay.
     Update { doc: DocId, update: Vec<u8> },
     Ack { doc: DocId, vv: Vec<u8> },
-    /// Either side, any session: "list the day docs you hold older than `before` (a day, `None`
-    /// = from the newest), newest first, at most `limit`". Answered `HistoryDays`.
-    HistoryList { before: Option<String>, limit: u32 },
-    HistoryDays { days: Vec<HistDay> },
-    /// "Send me the snapshot of day doc `day`." Answered `HistoryDay`; `snapshot` is `None` if
-    /// the sender does not hold it (or may not give it). The receiver imports it like an `Update`.
-    HistoryGet { day: String },
-    HistoryDay { day: String, snapshot: Option<Vec<u8>> },
+    /// Either side, any session: the day docs we hold, `(day, encoded vv)` ascending, the page
+    /// after day `after` (`None`: the first). An empty page ends the inventory. Each side then
+    /// sends `Update` for every doc the other lacks or is behind on (meta first, then the days
+    /// newest first, a few a second): the older history is that sync running until both
+    /// inventories match.
+    Days { after: Option<String>, days: Vec<(String, Vec<u8>)> },
     Hosts { hosts: Vec<SignedHostAddr> },
     /// Sealed mail between two members (U3, `mail.rs`): member -> host, host -> recipient
     /// member, host <-> host. The host can check the envelope, not read it.
