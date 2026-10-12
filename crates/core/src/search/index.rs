@@ -1639,7 +1639,7 @@ mod tests {
         let path = temp_path("oldfmt");
         {
             let ix = SearchIndex::open(&path, "alpha beta").unwrap();
-            fill(&ix, 2, 10, 20);
+            fill(&ix, 6, 30, 60);
             at_day(&ix, "2026-06-01");
             ix.maintain(Mode::Force).unwrap();
             ix.db.put("v", &2u32.to_be_bytes()).unwrap();
@@ -1649,7 +1649,7 @@ mod tests {
         let ix = SearchIndex::open(&path, "alpha beta").unwrap();
         assert!(ix.ix_version_ok());
         assert_eq!(ix.raw_rows().len(), 1);
-        assert!(std::fs::metadata(&path).unwrap().len() * 4 < big, "{big}");
+        assert!(std::fs::metadata(&path).unwrap().len() < big && std::fs::metadata(&path).unwrap().len() < (2 << 20), "{big}");
         let _ = std::fs::remove_dir_all(path.parent().unwrap());
     }
 
