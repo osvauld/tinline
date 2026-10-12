@@ -128,6 +128,15 @@ impl SearchIndex {
         hex::encode(&h.finalize().as_bytes()[..8])
     }
 
+    /// A keyed tag of a day, kept with each doc key so the docs of one day can be listed
+    /// (`day_keys`) without opening any row.
+    fn day_tag(&self, day: &str) -> Vec<u8> {
+        let mut h = blake3::Hasher::new_keyed(&self.index_key);
+        h.update(b"day\0");
+        h.update(day.as_bytes());
+        h.finalize().as_bytes()[..8].to_vec()
+    }
+
     pub fn tok(&self, term: &str) -> String {
         let mut h = blake3::Hasher::new_keyed(&self.index_key);
         h.update(b"term\0");
@@ -180,7 +189,7 @@ impl SearchIndex {
                 continue;
             }
             ops.push(self.db.put_op(&format!("d/{h}"), &bincode::serialize(*r).expect("serialises")).map_err(io)?);
-            ops.push(Op::Put(format!("s/{}/{h}", r.src), Vec::new()));
+            ops.push(Op::Put(format!("s/{}/{h}", r.src), self.day_tag(&r.day)));
             ops.extend(posts.into_iter().map(|k| Op::Put(k, Vec::new())));
         }
         for h in drop.iter().filter(|h| !rows.contains_key(*h)) {
@@ -223,6 +232,13 @@ impl SearchIndex {
     pub fn doc_keys(&self, src: &str) -> Result<HashSet<String>, Error> {
         let p = format!("s/{src}/");
         Ok(self.db.list_prefixed(&p).map_err(io)?.into_iter().filter_map(|k| k.strip_prefix(&p).map(str::to_string)).collect())
+    }
+
+    /// The doc keys of a conversation indexed under `day`.
+    pub fn day_keys(&self, src: &str, day: &str) -> Result<HashSet<String>, Error> {
+        let p = format!("s/{src}/");
+        let tag = self.day_tag(day);
+        Ok(self.db.raw().scan(&p).map_err(io)?.into_iter().filter(|(_, v)| *v == tag).filter_map(|(k, _)| k.strip_prefix(&p).map(str::to_string)).collect())
     }
 
     pub fn watermark(&self, src: &str, day: &str) -> Option<Vec<u8>> {

@@ -94,6 +94,19 @@ fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
     panic!("timed out waiting for {what}");
 }
 
+/// The UTC day (`YYYY-MM-DD`) of a unix-millisecond time.
+fn utc_day(ms: u64) -> String {
+    let z = (ms / 86_400_000) as i64 + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    format!("{:04}-{m:02}-{d:02}", yoe + era * 400 + i64::from(m <= 2))
+}
+
 fn hits(n: &Node, q: &str) -> Vec<MessageHit> {
     n.search(q.into(), 100, None).map(|r| r.messages).unwrap_or_default()
 }
@@ -243,7 +256,8 @@ fn group_posts_found_by_members() {
     o.node.group_post(g.clone(), "summit at dawn, bring headlamps".into(), None).unwrap();
     eventually(WAIT, "the member finds the post", || hits(&m.node, "summ head").iter().any(|h| h.kind == SearchConvKind::Group && h.conv == g));
     let h = hits(&m.node, "dawn").remove(0);
-    assert_eq!((h.day.as_str(), h.author.as_str(), h.conv_name.as_str()), ("-", o.did.as_str(), "Hiking Club"));
+    // A group hit carries the UTC day of its day doc (the post's time).
+    assert_eq!((h.day.as_str(), h.author.as_str(), h.conv_name.as_str()), (utc_day(h.at).as_str(), o.did.as_str(), "Hiking Club"));
     assert_eq!(hits(&o.node, "headlamps").len(), 1, "the author finds its own post");
     // Locating the post: the page ending at it (docs/search.md "Apps").
     let page = m.node.group_messages(g.clone(), Some(format!("{}:{}~", h.at, h.id)), 20).unwrap();
@@ -428,7 +442,7 @@ fn group_reconcile_fixes_stale_posts_and_rebuilds() {
     rebuild(&o);
     eventually(30, "rebuilt from the group", || ids(&o.node, "clocks") == [p2.id.as_str()] && ids(&o.node, "rook") == [p1.id.as_str()]);
     let h = hits(&o.node, "clocks").remove(0);
-    assert_eq!((h.kind, h.conv.as_str(), h.conv_name.as_str(), h.day.as_str()), (SearchConvKind::Group, g.as_str(), "Chess Club", "-"));
+    assert_eq!((h.kind, h.conv.as_str(), h.conv_name.as_str(), h.day.as_str()), (SearchConvKind::Group, g.as_str(), "Chess Club", utc_day(h.at).as_str()));
 }
 
 // KIND: acceptance (S1) — names: a contact, a group and "You" (by our profile name) are found by

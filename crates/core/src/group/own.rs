@@ -64,8 +64,7 @@ impl Inner {
                 continue;
             }
             let meta = GroupMeta { from_own: true, ..Default::default() };
-            let live = Live { doc: super::doc::GroupDoc::new(&gid, core.wid), entries: Vec::new(), state: Default::default(), meta: meta.clone() };
-            core.groups.lock().insert(gid.clone(), live);
+            core.groups.lock().insert(gid.clone(), Live::empty(&gid, core.wid, meta.clone()));
             if core.store.put_meta(&gid, &meta).is_err() {
                 core.groups.lock().remove(&gid);
                 continue;

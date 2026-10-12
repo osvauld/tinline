@@ -188,6 +188,19 @@ impl SignedRecord {
     }
 }
 
+impl SignedRecord {
+    /// Decodes bytes our own store holds (verified on the way in): no signature, shape or
+    /// canonical-encoding check, only that it decodes and is for this group.
+    pub fn decode_trusted(bytes: &[u8], group: &str) -> Result<Record, RecordError> {
+        let s: SignedRecord = bincode::deserialize(bytes).map_err(|_| RecordError::Undecodable)?;
+        let rec: Record = bincode::deserialize(&s.body).map_err(|_| RecordError::Undecodable)?;
+        if rec.group != group {
+            return Err(RecordError::WrongGroup);
+        }
+        Ok(rec)
+    }
+}
+
 /// The id of stored record bytes.
 pub fn record_id(bytes: &[u8]) -> String {
     blake3::hash(bytes).to_hex()[..32].to_string()

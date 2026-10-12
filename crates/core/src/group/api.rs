@@ -11,9 +11,11 @@ use std::time::Duration;
 
 use super::engine::{Changed, GroupCore, INVITE_TTL, proof_removes};
 use super::record::*;
+use super::shard::brief_item;
 use super::state::{Item, ItemKind};
 use super::store::GroupMeta;
 use crate::Error;
+use crate::chat::doc::day_of;
 use crate::node::{Inner, Node, now};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -232,7 +234,10 @@ impl Inner {
         let delivery = if i.peer != core.wid || hosting {
             GroupDelivery::Delivered
         } else {
-            let acked = core.store.acks(gid).unwrap_or_default().iter().any(|(_, vv)| {
+            // Our post sits in the day doc of its time, any other record in the meta doc; some
+            // host acknowledged holding it.
+            let acks = if i.kind == ItemKind::Post { core.store.acks_day(gid, &day_of(i.at)) } else { core.store.acks(gid) };
+            let acked = acks.unwrap_or_default().iter().any(|(_, vv)| {
                 loro::VersionVector::decode(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) > i.counter
             });
             if acked { GroupDelivery::Delivered } else { GroupDelivery::Waiting }
@@ -262,15 +267,21 @@ impl Inner {
                 return None;
             }
             let reachable = live.state.hosts.iter().any(|h| (h.did == core.did && h.dev == core.dev) || core.has_session(gid, &h.did, &h.dev));
-            let unread = live.state.items.iter().filter(|i| i.at > live.meta.read_upto && i.author != core.did && i.kind == ItemKind::Post).count() as u32;
+            // The row comes from the group's local state: no day doc is loaded for the list.
+            let last_post = live.meta.last.as_ref().map(|b| brief_item(b, &live.state));
+            let last = match (last_post, live.state.items.last()) {
+                (Some(p), Some(s)) if (s.at, &s.id) > (p.at, &p.id) => Some(s.clone()),
+                (Some(p), _) => Some(p),
+                (None, s) => s.cloned(),
+            };
             (
                 live.state.name.clone(),
                 Self::group_role(core, live),
                 live.state.members.len() as u32,
                 live.state.hosts.len() as u32,
                 live.state.is_host(&core.did, &core.dev),
-                live.state.items.last().cloned(),
-                unread,
+                last,
+                live.meta.unread,
                 reachable,
             )
         };
@@ -436,24 +447,49 @@ impl Node {
     }
 
     /// Up to `limit` messages and system lines older than `before` (a cursor from an earlier
-    /// page; `None` = the newest), oldest first.
+    /// page; `None` = the newest), oldest first. Pages across day docs backwards, loading only
+    /// the days it needs; `older` is `None` once every day we hold has been shown (history
+    /// still arriving in the background shows up on the next call).
     pub fn group_messages(&self, group_id: String, before: Option<String>, limit: u32) -> Result<GroupPage, Error> {
         let core = self.inner.group_core()?;
-        let items: Vec<Item> = {
-            let groups = core.groups.lock();
-            groups.get(&group_id).ok_or(Error::NotFound)?.state.items.clone()
-        };
-        let end = match &before {
-            None => items.len(),
+        let cursor = match &before {
+            None => None,
             Some(c) => {
                 let (at, id) = c.split_once(':').ok_or_else(|| Error::Protocol("bad cursor".into()))?;
-                let at: i64 = at.parse().map_err(|_| Error::Protocol("bad cursor".into()))?;
-                items.partition_point(|i| (i.at, i.id.as_str()) < (at, id))
+                Some((at.parse::<i64>().map_err(|_| Error::Protocol("bad cursor".into()))?, id.to_string()))
             }
         };
-        let start = end.saturating_sub(limit.max(1) as usize);
-        let older = (start > 0).then(|| format!("{}:{}", items[start].at, items[start].id));
-        let messages = items[start..end].iter().filter_map(|i| self.inner.group_message(&core, &group_id, i)).collect();
+        let limit = limit.max(1) as usize;
+        let before_key = |i: &Item| cursor.as_ref().is_none_or(|(at, id)| (i.at, i.id.as_str()) < (*at, id.as_str()));
+        let (items, more) = {
+            let mut groups = core.groups.lock();
+            let live = groups.get_mut(&group_id).ok_or(Error::NotFound)?;
+            let days = core.store.days(&group_id)?;
+            // A post sits in the day doc of its time, or of a neighbouring day within the hour
+            // of tolerance: start one hour later than the cursor.
+            let mut idx = match &cursor {
+                None => days.len(),
+                Some((at, _)) => {
+                    let start = day_of(at.saturating_add(crate::chat::doc::HOUR_MS));
+                    days.partition_point(|d| *d <= start)
+                }
+            };
+            let mut items: Vec<Item> = live.state.items.iter().filter(|i| before_key(i)).cloned().collect();
+            let mut posts = 0;
+            while idx > 0 && posts < limit {
+                idx -= 1;
+                let super::engine::Live { state, shards, .. } = live;
+                let shard = shards.get(&core.store, &group_id, core.wid, &days[idx], state)?;
+                let before = items.len();
+                items.extend(shard.visible(state).filter(|i| before_key(i)));
+                posts += items.len() - before;
+            }
+            items.sort_by(|a, b| (a.at, &a.id).cmp(&(b.at, &b.id)));
+            (items, idx > 0)
+        };
+        let start = items.len().saturating_sub(limit);
+        let older = (start > 0 || more).then(|| items.get(start).map(|i| format!("{}:{}", i.at, i.id))).flatten();
+        let messages = items[start..].iter().filter_map(|i| self.inner.group_message(&core, &group_id, i)).collect();
         Ok(GroupPage { messages, older })
     }
 
@@ -462,7 +498,9 @@ impl Node {
         let core = self.inner.group_core()?;
         let mut groups = core.groups.lock();
         let live = groups.get_mut(&group_id).ok_or(Error::NotFound)?;
-        live.meta.read_upto = live.state.items.last().map_or(0, |i| i.at);
+        let last_post = live.meta.last.as_ref().map_or(0, |b| b.at);
+        live.meta.read_upto = live.state.items.last().map_or(0, |i| i.at).max(last_post);
+        live.meta.unread = 0;
         core.store.put_meta(&group_id, &live.meta)
     }
 
@@ -480,13 +518,7 @@ impl Node {
             let nonce: [u8; 16] = rand::random();
             let gid = group_id(&core.did, &nonce);
             {
-                let live = super::engine::Live {
-                    doc: super::doc::GroupDoc::new(&gid, core.wid),
-                    entries: Vec::new(),
-                    state: Default::default(),
-                    meta: GroupMeta::default(),
-                };
-                core.groups.lock().insert(gid.clone(), live);
+                core.groups.lock().insert(gid.clone(), super::engine::Live::empty(&gid, core.wid, GroupMeta::default()));
                 core.store.put_meta(&gid, &GroupMeta::default())?;
             }
             let owner_name = inner.me()?.profile.name.clone();
@@ -719,6 +751,64 @@ impl Node {
         self.inner.group.fail_fetches.store(n, std::sync::atomic::Ordering::SeqCst);
     }
 
+    /// Pauses (or resumes) the background fetch of older days: the platform sets it while the
+    /// network is metered or the battery low, the inputs group call hosting uses.
+    pub fn group_set_backfill_paused(&self, paused: bool) {
+        self.inner.group.backfill_paused.store(paused, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// Pause between two history fetches, ms (0 = the default 200).
+    pub fn group_backfill_pause_ms_for_test(&self, ms: u64) {
+        self.inner.group.backfill_pause_ms.store(ms, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// Writes our post into the day of `at_ms` (a time in the past, say).
+    pub fn group_post_at_for_test(&self, group_id: String, at_ms: i64, text: String) -> Result<GroupMessage, Error> {
+        let core = self.inner.group_core()?;
+        self.inner.group_member_check(&core, &group_id)?;
+        let (entry, changed) = core.write_at(&group_id, Body::Post { text, reply_to: None }, at_ms)?;
+        let item = changed.new_items.iter().find(|i| i.id == entry.id).cloned();
+        self.inner.group_after(&core, changed, None);
+        self.inner.group_message(&core, &group_id, &item.ok_or(Error::NotFound)?).ok_or(Error::NotFound)
+    }
+
+    /// Compacts the old day docs now (otherwise every hour); returns how many it closed.
+    pub fn group_compact_now_for_test(&self) -> Result<u32, Error> {
+        let core = self.inner.group_core()?;
+        Ok(self.inner.group_compact(&core))
+    }
+
+    /// The days of posts this device holds of the group, oldest first.
+    pub fn group_days_for_test(&self, group_id: String) -> Result<Vec<String>, Error> {
+        self.inner.group_core()?.store.days(&group_id)
+    }
+
+    /// Forgets every day doc of the group on this device (its history), keeping the meta
+    /// records: what a wiped host looks like. Returns how many days went.
+    pub fn group_drop_days_for_test(&self, group_id: String) -> Result<u32, Error> {
+        let core = self.inner.group_core()?;
+        let n = core.store.days(&group_id)?.len() as u32;
+        let mut groups = core.groups.lock();
+        let live = groups.get_mut(&group_id).ok_or(Error::NotFound)?;
+        core.store.drop_days(&group_id)?;
+        live.shards = Default::default();
+        live.meta = GroupMeta { last: None, unread: 0, newest_day: None, pending_days: Default::default(), owed_days: Default::default(), ..live.meta.clone() };
+        core.store.put_meta(&group_id, &live.meta)?;
+        Ok(n)
+    }
+
+    /// How many day docs of the group are in memory.
+    pub fn group_cached_days_for_test(&self, group_id: String) -> Result<u32, Error> {
+        let core = self.inner.group_core()?;
+        Ok(core.groups.lock().get(&group_id).map_or(0, |l| l.shards.cached() as u32))
+    }
+
+    /// How many of the stored days of the group are closed (compacted).
+    pub fn group_closed_days_for_test(&self, group_id: String) -> Result<u32, Error> {
+        let core = self.inner.group_core()?;
+        Ok(core.store.days(&group_id)?.iter().filter(|d| core.store.shard_meta(&group_id, d).ok().flatten().is_some_and(|m| m.closed)).count() as u32)
+    }
+
     /// The next `n` dials to a host fail as if the connection was lost.
     pub fn group_fail_next_dials_for_test(&self, n: u32) {
         self.inner.group.fail_dials.store(n, std::sync::atomic::Ordering::SeqCst);
@@ -766,8 +856,7 @@ impl Inner {
             Some(false) => {}
             None => {
                 let meta = GroupMeta { joining: t.invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), ..Default::default() };
-                let live = super::engine::Live { doc: super::doc::GroupDoc::new(&gid, core.wid), entries: Vec::new(), state: Default::default(), meta: meta.clone() };
-                core.groups.lock().insert(gid.clone(), live);
+                core.groups.lock().insert(gid.clone(), super::engine::Live::empty(&gid, core.wid, meta.clone()));
                 core.store.put_meta(&gid, &meta)?;
             }
         }

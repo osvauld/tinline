@@ -177,3 +177,39 @@ Everything 1:1 and the search *queries* scale to a year. Everything in groups sc
 size of the biggest group, because a group is one doc that is fully verified at open, fully
 cloned per page, fully re-derived per write and fully forked per remote apply. The search
 *index* is the other outlier on disk and rebuild cost. Nothing was fixed here.
+
+## After day shards (2026-10-12, branch `group-shards`)
+
+Same machine and method as above, dataset regenerated for v2 (`/home/abe/build-cache/search-year-data/v2-s1.0`;
+the old `s1.0`/`s0.02` were deleted): meta doc + one doc per UTC day, `seen` = meta vv. Generation
+took 699 s (peak RSS 1.73 GB); `group.redb` 257.5 MB, `search.redb` 1,029 MB (a fresh build is
+smaller than the incremental one above). Timings: p50 / p95 ms of one `intact` run on a shared,
+loaded machine (the `apply` scenario was run alone and is the cleaner number for remote apply);
+no 3-run medians were taken.
+
+| Target (`group-shards.md` §6) | Before | After | |
+|---|---|---|---|
+| group store open < 250 ms | 9.4 s | **67 to 118 ms** (`groups()` incl. open; 236 ms in a `rebuild` run while the page cache was cold) | met |
+| RSS after group open < 100 MB | 726 MB (+709) | **20.8 MB (+2.2 to 3.2)** | met |
+| remote apply < 10 ms in the 100k group | 2,752 ms | **2 to 3 ms** (`apply` scenario, 12 posts); 8 / 30 in the loaded `intact` run | met |
+| local write < 10 ms in the 100k group | 385 ms | core (`GroupCore::write`) **3 to 5 ms**; `group_post` as a whole 16 / 316 ms, of which the search index write after it is 5 to 50 ms (a redb commit with ~90 postings) | core met; the search hook is not |
+| `group_messages` page < 10 ms | 35.6 ms | **0.64 / 10.8** first page, 0.5 / 13 deep, 0.34 / 2.4 oldest (cold day loads are the p95) | met at p50 |
+
+Per group (`intact` run, p50 / p95):
+
+| Posts | first page | deep page | oldest | `group_post` | remote apply core | after-hook |
+|---|---|---|---|---|---|---|
+| 2,000 (Family) | 0.25 / 5.6 | 0.24 / 4.1 | 0.21 / 0.4 | 13 / 33 | 1.8 / 4.2 | 3.7 / 7.3 |
+| 2,000 (Neighbours) | 0.14 / 1.3 | 0.17 / 1.4 | 0.14 / 0.2 | 4.6 / 11 | 2.8 / 11 | 5.2 / 16 |
+| 2,000 (Trip) | 0.24 / 2.1 | 0.19 / 2.2 | 0.20 / 0.4 | 8.7 / 29 | 3.4 / 8.2 | 8.4 / 25 |
+| 30,000 | 0.29 / 19 | 1.9 / 9.6 | 0.24 / 1.1 | 14.5 / 40 | 4.5 / 12.6 | 10.7 / 25 |
+| 100,000 | 0.64 / 10.8 | 0.5 / 13 | 0.34 / 2.4 | 16 / 316 | 8.3 / 30 | 14 / 44 |
+
+What changed the numbers: a post touches only its day doc (a few hundred posts) instead of a
+100k-record doc; the open reads only the meta doc of each group (own sealed rows are not verified
+again); the chat-list row and unread come from `GroupMeta`; a remote post is imported into the day
+doc itself (`GroupDoc::apply_remote_inplace`) because a scratch `fork()` of a busy day still cost
+4 to 7 ms. Search reconcile (intact index): DMs 155 ms, groups 50 ms. Full rebuild: DMs 86 s,
+groups **83 s** (before: 54 s): the first version of the per-day reconcile took 336 s because each
+day was its own index transaction; days are now written together (4,000 posts per transaction).
+Still open: the search index write dominates a local post (5 to 50 ms), as it does for DMs.

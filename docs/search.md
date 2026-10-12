@@ -31,8 +31,9 @@ w/{src}/{day}                        bytes     watermark: the shard/group versio
 v                                    u32 BE    index format version (mismatch -> rebuild)
 ```
 
-- `src` = `dm.{pair}` for a 1:1 conversation, `g.{gid}` for a group. `day` is the DM shard day;
-  groups use `-` (one doc per group).
+- `src` = `dm.{pair}` for a 1:1 conversation, `g.{gid}` for a group. `day` is the shard day (a
+  group's day doc is the UTC day of its posts, `group-shards.md`). Each `s/{src}/{doc}` key holds
+  a keyed tag of its day, so one day's docs can be listed without opening rows.
 - `tok` = first 16 bytes, hex, of `blake3::keyed_hash(index_key, normalized prefix)`.
   `index_key` is derived separately from the sealing key. Without it a token cannot be
   reversed or guessed offline.
@@ -77,8 +78,8 @@ Deleted messages are removed from the index; edits re-index. Only posts are inde
 - 1:1: `chat_conv_ops` (`chat/engine.rs`) sees every accepted change (live push, own-device sync,
   local send/edit/delete, history import). After the transaction commits, index the touched
   records and store the shard's vv as the watermark.
-- Groups: `GroupEngine::write` and `apply` (`group/engine.rs`) after `store.append`: diff
-  `state.items` before/after by id and text (new, edited, deleted posts).
+- Groups: `GroupCore::write` and `apply` (`group/engine.rs`) after the store append: the posts
+  that show now, per day doc (new posts, and posts that were pending on meta records).
 - Names: contact add/rename/block (account doc), group create/rename/leave, own name.
 - Removal: contact purge (`chat_purge`) and group forget delete `d/{src}/`, its postings (from
   the rows' `toks`) and `w/{src}/`.
@@ -87,8 +88,8 @@ Deleted messages are removed from the index; edits re-index. Only posts are inde
 
 ## Reconcile
 
-On open (in the background, never blocking unlock), for every DM shard and group compare the
-store's current version vector with `w/{src}/{day}`; re-index those that differ (open shards
+On open (in the background, never blocking unlock), for every DM shard and group day doc compare
+the store's current version vector with `w/{src}/{day}`; re-index those that differ (open shards
 from the vault, closed shards from their snapshot blob). Missing file or `v` mismatch = all
 differ. Indexing a message is idempotent: delete its old row/postings, write the new ones.
 
@@ -98,7 +99,7 @@ differ. Indexing a message is idempotent: delete its old row/postings, write the
   groups, then Messages (avatar, name, snippet with bold matches, date). Tapping a message opens
   the conversation at that day and scrolls to the message, briefly highlighted.
 - Jumping to a hit: a DM hit opens with `chat_day(conv, Some(day))` (the message is in that
-  page; `id` finds it). A group hit has `day = "-"`: `group_messages(conv, before =
+  page; `id` finds it). A group hit has the post's UTC `day`; the app jumps with `group_messages(conv, before =
   "{at}:{id}~", limit)` returns the page that ends with the post (the `~` sorts after any id, so
   the post itself is included); older pages follow from its `older` cursor as usual, newer items
   from `group_messages(conv, None, …)`.
@@ -136,10 +137,12 @@ Where the code differs from the plan above, and why.
   import (`chat_apply_history`), which indexes the whole day itself. The watermark moves only from
   the shard's previous version (`Mark::prev`), so a hook never marks a shard whose older changes
   are missing from the index.
-- **Group hook**: `GroupCore::write` / `apply` diff the posts by id and text (`Changed::posts`:
-  added or changed posts, ids no longer shown, vv before and after); `group_after` indexes them.
-  The groups' state is in memory whole, so group reconcile diffs every group whose watermark
-  differs against the index (`s/g.{gid}/`), run when the index or the group store opens.
+- **Group hook**: `GroupCore::write` / `apply` return the posts that show now per day doc
+  (`Changed::posts`: the posts, the doc's vv before and after); `group_after` indexes them with
+  the real day. Group reconcile works per day doc like DMs: each whose watermark differs (and
+  each with pending posts) is read once, its shown posts written and the docs of that day
+  (`SearchIndex::day_keys`) that no longer show dropped; run when the index or the group store
+  opens. A pending post (it names meta records not held yet) is indexed when it starts to show.
 - **Removal**: there is no `chat_purge` in the code: blocking keeps the history (U19), and a
   block's deletion request removes the contact entry but keeps the history read-only (U20). So no
   1:1 removal hook exists; instead DM hits are filtered at query time to the conversations the

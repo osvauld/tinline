@@ -26,16 +26,23 @@ pub(crate) struct SMember {
     pub did: String,
     pub acct: identity::Identity,
     pub dev: [u8; 32],
+    /// The member's writing replica of the meta doc.
     pub doc: GroupDoc,
+    /// ... and of the day docs it posted in.
+    pub days: HashMap<String, GroupDoc>,
 }
 
 /// A group being built (see `Node::synth_group_new_for_test`).
 #[doc(hidden)]
 pub struct SynthGroup {
     pub(crate) gid: String,
+    /// Where the members' batches meet: the meta doc and one doc per day.
     pub(crate) hub: GroupDoc,
+    pub(crate) day_hubs: HashMap<String, GroupDoc>,
     pub(crate) members: Vec<SMember>,
+    /// What went through `apply` already, per doc.
     pub(crate) sent: VersionVector,
+    pub(crate) day_sent: HashMap<String, VersionVector>,
     pub(crate) owner_did: String,
 }
 
@@ -131,6 +138,12 @@ impl Node {
     #[doc(hidden)]
     pub fn synth_group_flush_for_test(&self, g: &mut SynthGroup) -> Result<(), Error> {
         self.inner.synth_group_flush(g)
+    }
+
+    /// Only the meta doc's and/or only the day docs' buffered records go through `apply`.
+    #[doc(hidden)]
+    pub fn synth_group_flush_part_for_test(&self, g: &mut SynthGroup, meta: bool, days: bool) -> Result<(), Error> {
+        self.inner.synth_group_flush_part(g, meta, days)
     }
 
     #[doc(hidden)]
