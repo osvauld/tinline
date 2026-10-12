@@ -500,7 +500,7 @@ impl Inner {
         let mut me = Me::load(profile, 0).map_err(|_| "bad_grant")?;
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
         let (vault, dek) = vault::seal(&secrets, None).map_err(|_| "rejected")?;
-        let disk = Disk::V2(ProfileV2 { version: 2, name: me.profile.name.clone(), did: did.clone(), device_public: me.device, vault, device_id: Some(crate::store::new_device_id()) });
+        let disk = Disk::V2(ProfileV2 { version: 2, name: me.profile.name.clone(), did: did.clone(), device_public: me.device, vault, device_id: Some(crate::store::new_device_id()), profile_name_pending: false, profile_inherited: true });
         registry.retain(|e| e.device != me.device);
         registry.insert(0, OwnDevice { device: me.device, attestation: me.attestation.clone(), label: label.to_string(), removed: false, last_seen: now(), relay: None });
         let state = State { registry, ..State::default() };

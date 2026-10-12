@@ -3,6 +3,10 @@
 
 pub(crate) mod accdoc;
 pub(crate) mod callsdoc;
+pub(crate) mod profiledoc;
+pub(crate) mod profilecache;
+#[cfg(test)]
+mod profiledoc_tests;
 pub(crate) mod doc;
 pub(crate) mod api;
 pub(crate) mod engine;

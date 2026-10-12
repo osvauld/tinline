@@ -8,6 +8,8 @@ mod block;
 mod caps;
 mod chat;
 mod devlist;
+mod profile;
+pub use profile::{AccountProfile, ProfileEvents};
 mod group;
 mod error;
 pub mod gcall;

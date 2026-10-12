@@ -165,7 +165,11 @@ fn glare_leaves_exactly_one_call() {
         for (i, p) in [&a, &b].into_iter().enumerate() {
             while let Ok(ev) = p.rx.recv_timeout(Duration::from_millis(50)) {
                 match ev {
-                    Ev::Incoming(c) => p.node.answer(c.call_id).unwrap(),
+                    // The losing call of the glare may already be gone (NotFound): fine.
+                    Ev::Incoming(c) => match p.node.answer(c.call_id) {
+                        Ok(()) | Err(p2pcore::Error::NotFound) => {}
+                        Err(e) => panic!("answer: {e:?}"),
+                    },
                     Ev::State(id, CallState::Active) => active[i] = Some(id),
                     _ => {}
                 }

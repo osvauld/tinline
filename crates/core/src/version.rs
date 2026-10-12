@@ -30,7 +30,7 @@ pub struct Versioned {
 
 /// 1:1 chat (`tinline/chat/3`; 1 = before P9c, 2 = before P10's per-writer versions and P6's
 /// message tokens; one bump for both, same release).
-pub const CHAT: Versioned = Versioned { name: "chat", current: crate::chat::wire::CHAT_ALPN, old: &[b"tinline/chat/1", b"tinline/chat/2"] };
+pub const CHAT: Versioned = Versioned { name: "chat", current: crate::chat::wire::CHAT_ALPN, old: &[b"tinline/chat/1", b"tinline/chat/2", b"tinline/chat/3"] };
 /// Own-device sync, which relays chat docs and the account doc (`tinline/self/3`; 1 = before
 /// P9c, 2 = before P10 and P6's call tokens, call permissions and cut-offs).
 pub const OWN: Versioned = Versioned { name: "own-device sync", current: proto::SELF_ALPN, old: &[b"tinline/self/1", b"tinline/self/2"] };
@@ -52,11 +52,17 @@ pub fn superseded(alpn: &[u8]) -> Option<&'static Versioned> {
 
 /// The close reason an old peer gets (and the error a dial to one reports).
 pub fn reason(v: &Versioned, alpn: &[u8]) -> String {
+    let wipe = if v.name == CHAT.name && alpn == b"tinline/chat/3" {
+        ""
+    } else {
+        " (and wipe its data)"
+    };
     format!(
-        "{} {} is no longer supported, this app speaks {}: update the app (and wipe its data)",
+        "{} {} is no longer supported, this app speaks {}: update the app{}",
         v.name,
         String::from_utf8_lossy(alpn),
-        String::from_utf8_lossy(v.current)
+        String::from_utf8_lossy(v.current),
+        wipe,
     )
 }
 
@@ -124,7 +130,8 @@ mod tests {
     // KIND: invariant (P9c; P10 bumped again: a record holds one version per writer)
     #[test]
     fn the_wire_versions_were_bumped_and_the_old_ones_are_refused() {
-        assert_eq!(CHAT.current, b"tinline/chat/3");
+        assert_eq!(CHAT.current, b"tinline/chat/4");
+        assert!(!reason(&CHAT, b"tinline/chat/3").contains("wipe"), "profile support upgrades do not require a data wipe");
         assert_eq!(OWN.current, b"tinline/self/3");
         assert_eq!(CALL.current, b"osvauld/p2p/1");
         for v in ALL {
@@ -139,13 +146,14 @@ mod tests {
             vec![
                 b"tinline/chat/1".to_vec(),
                 b"tinline/chat/2".to_vec(),
+                b"tinline/chat/3".to_vec(),
                 b"tinline/self/1".to_vec(),
                 b"tinline/self/2".to_vec(),
                 b"osvauld/p2p/0".to_vec()
             ]
         );
         let r = reason(&CHAT, b"tinline/chat/2");
-        assert!(r.contains("tinline/chat/2") && r.contains("tinline/chat/3") && r.contains("update"), "{r}");
+        assert!(r.contains("tinline/chat/2") && r.contains("tinline/chat/4") && r.contains("update"), "{r}");
     }
 
     // KIND: invariant (P9c, test-first)

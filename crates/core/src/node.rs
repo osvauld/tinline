@@ -4,7 +4,7 @@
 //! Blocking methods are meant for the app's IO threads; long work (dialing, ringing, the call
 //! itself) runs on this node's own tokio runtime and reports through `NodeEvents`.
 
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -435,6 +435,8 @@ pub(crate) struct Shared {
     pub(crate) acc: Option<Arc<crate::sync::accdoc::AccDoc>>,
     /// The call log of own-device sync, beside the account doc; open while unlocked.
     pub(crate) calls: Option<Arc<crate::sync::callsdoc::CallsDoc>>,
+    pub(crate) profile: Option<Arc<crate::sync::profiledoc::ProfileDoc>>,
+    pub(crate) profile_cache: Option<Arc<crate::sync::profilecache::ProfileCache>>,
 }
 
 pub(crate) struct Acct {
@@ -491,6 +493,9 @@ pub(crate) struct Inner {
     /// Token delivery (P6, `caps.rs`).
     pub(crate) caps: crate::caps::CapsRt,
     pub(crate) devlist: crate::devlist::DevlistRt,
+    pub(crate) profile_events: Mutex<Option<Arc<dyn crate::profile::ProfileEvents>>>,
+    pub(crate) profile_downloads: Mutex<HashSet<(u64, String, String)>>,
+    pub(crate) profile_fetches: Arc<Semaphore>,
     pub(crate) video: crate::video_call::NodeVideo,
     /// The selected account's search index (`search.redb`), open while its chat store is.
     pub(crate) search: Mutex<Option<Arc<crate::search::index::SearchIndex>>>,
@@ -586,6 +591,9 @@ impl Node {
             group: Default::default(),
             caps: Default::default(),
             devlist: Default::default(),
+            profile_events: Default::default(),
+            profile_downloads: Default::default(),
+            profile_fetches: Arc::new(Semaphore::new(4)),
             video: Default::default(),
             search: Mutex::new(None),
             search_skip: AtomicU32::new(0),
@@ -733,13 +741,13 @@ impl Node {
     pub fn create_identity(&self, name: String, passphrase: String) -> Result<String, Error> {
         let (_, mnemonic) = identity::generate();
         let phrase = mnemonic.to_string();
-        self.set_identity(phrase.clone(), name, passphrase)?;
+        self.set_identity(phrase.clone(), name, passphrase, false)?;
         Ok(phrase)
     }
 
     /// Like `create_identity`, from a recovery phrase.
     pub fn restore_identity(&self, phrase: String, name: String, passphrase: String) -> Result<(), Error> {
-        self.set_identity(phrase.trim().to_string(), name, passphrase)
+        self.set_identity(phrase.trim().to_string(), name, passphrase, true)
     }
 
     /// Name, DID and device key; available while locked too (they are stored in the clear).
@@ -826,6 +834,8 @@ impl Node {
                     device_public,
                     vault,
                     device_id: Some(crate::store::new_device_id()),
+                    profile_name_pending: false,
+                    profile_inherited: false,
                 });
                 let store = s.acct.as_ref().ok_or(Error::NoIdentity)?.store.clone();
                 // The vault first: if we die before the state is sealed, the JSON is still
@@ -924,11 +934,15 @@ impl Node {
     }
 
     pub fn set_name(&self, name: String) -> Result<(), Error> {
+        if name.len() > 256 || name.chars().any(|c| !proto::safe_name_char(c)) { return Err(Error::Protocol("invalid profile name".into())); }
+        if self.inner.shared.lock().profile.is_some() {
+            return self.inner.profile_set_field("name".into(), Some(serde_json::json!(name)));
+        }
         let unlocked = {
             let mut s = self.inner.shared.lock();
             let mut disk = s.disk.clone().ok_or(Error::NoIdentity)?;
             match &mut disk {
-                Disk::V2(p) => p.name = name.clone(),
+                Disk::V2(p) => { p.name = name.clone(); p.profile_name_pending = true; }
                 Disk::Legacy(p) => p.name = name.clone(),
             }
             if s.committed {
@@ -1057,6 +1071,9 @@ impl Node {
     /// it back on by itself. Adding contacts still works.
     pub fn set_available(&self, available: bool, until: Option<u64>) -> Result<(), Error> {
         self.inner.me()?;
+        if self.inner.shared.lock().profile.is_some() {
+            return self.inner.profile_set_field("availability".into(), Some(serde_json::json!({"available": available, "until": if available { None } else { until }})));
+        }
         self.inner.shared.lock().state.availability = crate::store::AvailabilityState {
             unavailable: !available,
             until: if available { None } else { until },
@@ -1310,7 +1327,7 @@ impl Node {
         Ok(())
     }
 
-    fn set_identity(&self, phrase: String, name: String, passphrase: String) -> Result<(), Error> {
+    fn set_identity(&self, phrase: String, name: String, passphrase: String, inherited_profile: bool) -> Result<(), Error> {
         let _gate = self.inner.gate.lock();
         let profile = Profile { mnemonic: phrase, name, device_secret: proto::new_device_secret() };
         let mut me = Me::load(profile, 0)?;
@@ -1369,6 +1386,8 @@ impl Node {
             vault,
             // A restore over an existing directory is a new install too: new device ID, new writer ID.
             device_id: Some(crate::store::new_device_id()),
+            profile_name_pending: false,
+            profile_inherited: inherited_profile,
         });
         // Without a passphrase nothing is written until the platform has saved the key.
         let acct = if durable {
@@ -1538,6 +1557,8 @@ impl Shared {
             committed: true,
             acc: None,
             calls: None,
+            profile: None,
+            profile_cache: None,
         }
     }
 
@@ -1571,6 +1592,8 @@ impl Shared {
         self.device_label = None;
         self.acc = None;
         self.calls = None;
+        self.profile = None;
+        self.profile_cache = None;
         if let Some(a) = self.acct.as_mut()
             && let Some(b) = a.backing.take()
         {

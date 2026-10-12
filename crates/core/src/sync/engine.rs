@@ -11,6 +11,8 @@ use loro::VersionVector;
 use super::accdoc::{AccDoc, Ctx, DOC_NAME};
 use super::callsdoc::{CALLS_DOC, CallsDoc};
 use super::doc::Doc;
+use super::profiledoc::PROFILE_DOC;
+use super::profilecache::PROFILE_CACHE_DOC;
 use super::frames::{FrameReader, FrameWriter, SelfMsg};
 use crate::node::{Inner, Me, addr_for, now, relay_of};
 use crate::store::{Backing, OwnDevice};
@@ -89,6 +91,7 @@ impl Inner {
     /// Opens the account doc of the unlocked account (called wherever the chat store opens):
     /// loads the sealed snapshot, flushes the working copy into it, merges it back.
     pub(crate) fn acc_open(self: &Arc<Self>) {
+        if let Err(e) = self.profile_open() { tracing::debug!("profile open: {e}"); }
         let (me, backing) = {
             let s = self.shared.lock();
             let (Some(me), Some(_)) = (s.me.clone(), s.dek.as_ref()) else { return };
@@ -204,6 +207,7 @@ impl Inner {
             }
             // A contact entry deleted by a block notice keeps its calls and chat history (U20).
             let ch = acc.read_into(&mut s.state, &ctx);
+            if let Err(e) = Self::profile_project(&mut s) { tracing::warn!("profile projection: {e}"); }
             if let Some(l) = &ch.label {
                 s.device_label = Some(l.clone());
             }
@@ -216,6 +220,8 @@ impl Inner {
         self.save_doc();
         if ch.contacts {
             self.events.on_contacts_changed();
+            let dids = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect::<Vec<_>>();
+            for did in dids { self.profile_download(did.clone()); self.profile_for_new_contact(&did); }
         }
         if ch.devices {
             // U8: a sibling linked or unlinked a device; our list changes too.
@@ -481,16 +487,20 @@ impl Inner {
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
         let epoch = me.epoch;
-        let (acc, calls) = {
+        let (acc, calls, profile, cache) = {
             let s = self.shared.lock();
-            (s.acc.clone().ok_or(Error::Locked)?, s.calls.clone().ok_or(Error::Locked)?)
+            (s.acc.clone().ok_or(Error::Locked)?, s.calls.clone().ok_or(Error::Locked)?, s.profile.clone(), s.profile_cache.clone())
         };
         let mut docs = vec![(DOC_NAME.to_string(), acc.vv().encode()), (CALLS_DOC.to_string(), calls.vv().encode())];
+        if let Some(p) = &profile { docs.push((PROFILE_DOC.into(), p.vv().encode())); }
+        if let Some(c) = &cache { docs.push((PROFILE_CACHE_DOC.into(), c.vv().encode())); }
         docs.extend(self.chat_own_docs());
         writer.send(&SelfMsg::Hello { docs }).await?;
         // What the peer is known to hold; nothing is sent until its Hello says.
         let mut sent: Option<VersionVector> = None;
         let mut sent_calls: Option<VersionVector> = None;
+        let mut sent_profile: Option<VersionVector> = None;
+        let mut sent_cache: Option<VersionVector> = None;
         let mut peer = PeerChat::default();
         let mut changes = self.sync_tx.subscribe();
         loop {
@@ -500,7 +510,7 @@ impl Inner {
                     let mut full = false;
                     match m {
                         SelfMsg::Hello { docs } => {
-                            if docs.len() > MAX_OWN_DOCS + 2 {
+                            if docs.len() > MAX_OWN_DOCS + 4 {
                                 return Err(Error::Protocol("too many docs".into()));
                             }
                             for (name, vv) in docs {
@@ -510,6 +520,10 @@ impl Inner {
                                     sent = Some(vv);
                                 } else if name == CALLS_DOC {
                                     sent_calls = Some(vv);
+                                } else if name == PROFILE_DOC {
+                                    sent_profile = Some(vv);
+                                } else if name == PROFILE_CACHE_DOC {
+                                    sent_cache = Some(vv);
                                 } else if parse_doc(&name).is_some() {
                                     peer.docs.insert(name, vv);
                                 }
@@ -544,6 +558,16 @@ impl Inner {
                                 if let (Some(s), Some(theirs)) = (sent_calls.as_mut(), Self::peer_vv_of(&vv)) {
                                     s.merge(&theirs);
                                 }
+                            } else if doc == PROFILE_DOC || doc == PROFILE_CACHE_DOC {
+                                if !update.is_empty() {
+                                    if doc == PROFILE_DOC { self.apply_profile_update(epoch, &update)?; }
+                                    else { self.apply_profile_cache_update(epoch, &update)?; }
+                                    let current = if doc == PROFILE_DOC { profile.as_deref().map(|p| &**p) } else { cache.as_deref().map(|p| &**p) }.ok_or(Error::Locked)?;
+                                    let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
+                                    writer.send(&SelfMsg::Sync { doc: doc.clone(), vv: current.vv().encode(), update: Vec::new(), sig }).await?;
+                                }
+                                let sent_doc = if doc == PROFILE_DOC { &mut sent_profile } else { &mut sent_cache };
+                                if let (Some(s), Some(v)) = (sent_doc.as_mut(), Self::peer_vv_of(&vv)) { s.merge(&v); }
                             } else if parse_doc(&doc).is_some() {
                                 // A rejected or unusable batch is dropped, the session goes on.
                                 if !update.is_empty()
@@ -601,6 +625,8 @@ impl Inner {
                     }
                     self.push_changes(me, DOC_NAME, &acc, &mut sent, writer).await?;
                     self.push_changes(me, CALLS_DOC, &calls, &mut sent_calls, writer).await?;
+                    if let Some(p) = &profile { self.push_changes(me, PROFILE_DOC, p, &mut sent_profile, writer).await?; }
+                    if let Some(c) = &cache { self.push_changes(me, PROFILE_CACHE_DOC, c, &mut sent_cache, writer).await?; }
                     if full {
                         self.push_all_chat(me, &mut peer, writer).await?;
                         self.chat_resume_all();
@@ -612,6 +638,8 @@ impl Inner {
                     }
                     self.push_changes(me, DOC_NAME, &acc, &mut sent, writer).await?;
                     self.push_changes(me, CALLS_DOC, &calls, &mut sent_calls, writer).await?;
+                    if let Some(p) = &profile { self.push_changes(me, PROFILE_DOC, p, &mut sent_profile, writer).await?; }
+                    if let Some(c) = &cache { self.push_changes(me, PROFILE_CACHE_DOC, c, &mut sent_cache, writer).await?; }
                     let names: Vec<String> = std::mem::take(&mut *dirty.lock()).into_iter().collect();
                     if peer.hello {
                         for name in names {

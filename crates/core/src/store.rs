@@ -35,6 +35,13 @@ pub struct ProfileV2 {
     /// first opens.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub device_id: Option<String>,
+    /// A name edited while locked must be applied as a local profile edit on next unlock.
+    #[serde(default)]
+    pub profile_name_pending: bool,
+    /// A newly linked/restored install must learn the account profile, not publish defaults
+    /// that could overwrite the existing account's name or availability.
+    #[serde(default)]
+    pub profile_inherited: bool,
 }
 
 /// A fresh device ID (`ProfileV2::device_id`).
@@ -239,6 +246,8 @@ pub struct State {
     /// Contacts this device still has to send its current `own_list` to (local: the device that
     /// saw the change pushes; the list is read fresh on each attempt).
     pub list_outbox: HashSet<String>,
+    /// Contacts owed our current profile version, delivered on existing chat control sessions.
+    pub profile_outbox: HashSet<String>,
     /// The device keys (text form, sorted) of the last list queued for every contact, so a change
     /// is pushed once even if a call re-signed the list first.
     pub pushed_list_keys: Vec<String>,
