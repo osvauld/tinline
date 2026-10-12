@@ -22,6 +22,8 @@
   const sub = $derived(phase === 'active' ? 'End-to-end encrypted' : (phase === 'reconnecting' || phase === 'ended') && call.elapsedS > 0 ? fmtDuration(call.elapsedS) : '');
   const connected = $derived(phase === 'active' || phase === 'reconnecting' || (phase === 'ended' && call.elapsedS > 0));
   const android = $derived(prefs.form === 'android');
+  /* Over the device lock screen (full-screen incoming): no minimize, the OS status bar sits above. */
+  let { lock = false }: { lock?: boolean } = $props();
   const fadeMs = $derived(motion.reduced ? 0 : dur('crossfade'));
 
   let root: HTMLElement;
@@ -52,7 +54,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div class="callscreen" class:android role="dialog" aria-modal="true" aria-label={label} tabindex="-1" bind:this={root} onkeydown={key}
+<div class="callscreen" class:android class:lock role="dialog" aria-modal="true" aria-label={label} tabindex="-1" bind:this={root} onkeydown={key}
   data-phase={phase} in:overlayIn out:overlayOut>
   <CloudField state={call.fieldState} anchorEl={avatarEl} scrimEls={[whoEl, ctlEl].filter((e): e is HTMLElement => !!e)} muted={call.muted} />
 
@@ -70,8 +72,8 @@
       <!-- One line: the status text, or the running timer once connected (stacked, crossfaded, no gap). -->
       <div class="status">
         <span class="msg" role="status" aria-live="polite">
-          {#key call.statusText}
-            <span in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>{call.statusText}</span>
+          {#key lock && phase === 'incoming' ? 'lock' : call.statusText}
+            <span in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>{lock && phase === 'incoming' ? 'Tinline voice call' : call.statusText}</span>
           {/key}
         </span>
         <span class="timer" class:on={connected && !call.statusText} aria-hidden={!connected}>{fmtDuration(call.elapsedS)}</span>
@@ -109,6 +111,7 @@
   :global(:root[data-theme='dark']) .callscreen { --btn-bg: color-mix(in srgb, var(--ink) 14%, var(--surface)); }
   .callscreen { position: absolute; inset: 0; z-index: 40; overflow: hidden; background: var(--bg); color: var(--ink); outline: none; container-type: size; }
   .content { position: relative; display: flex; flex-direction: column; block-size: 100%; padding: 8px 20px calc(36px + env(safe-area-inset-bottom)); }
+  .lock .content { padding-block-start: 38px; }
   .top { min-block-size: 48px; display: flex; align-items: center; }
   .min { inline-size: var(--btn); block-size: var(--btn); border-radius: 50%; border: 0; background: transparent; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
   .min:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }

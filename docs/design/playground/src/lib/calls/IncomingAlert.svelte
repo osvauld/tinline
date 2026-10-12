@@ -1,14 +1,15 @@
 <script lang="ts">
   /* Platform frame for an incoming call while the app is open. Android: a heads-up banner across the
      top (tap it to open the full screen). Desktop: an always-on-top card over the app, top right.
-     Lock-screen full-screen intent and the ongoing-call notification are later. */
+     When the app is out of sight (locked / background) the OS surfaces in SystemLayer take over. */
   import Avatar from '../ui/Avatar.svelte';
   import { call } from './call.svelte';
+  import { system } from './system.svelte';
   import { displayName, person } from '../model/store.svelte';
   import { prefs } from '../model/prefs.svelte';
   import { alertIn, alertOut } from './motion';
 
-  const show = $derived(call.phase === 'incoming' && call.view === 'strip');
+  const show = $derived(call.phase === 'incoming' && call.view === 'strip' && !system.away);
   const name = $derived(call.peer ? displayName(call.peer) : '');
   const hue = $derived((call.peer && person(call.peer)?.hue) || 0);
 </script>

@@ -2,12 +2,17 @@
   /* Calls simulation: who rings me, what the other side does, and the network. Drawer only. */
   import { db } from '../model/store.svelte';
   import { call, CALL_MS } from '../calls/call.svelte';
+  import { system } from '../calls/system.svelte';
+  import { prefs } from '../model/prefs.svelte';
+  import Switch from '../ui/Switch.svelte';
 
   let from = $state('arjun');
   let note = $state('');
   const callers = $derived(db.people.filter((p) => p.id !== 'me'));
+  const android = $derived(prefs.form === 'android');
   const ring = () => {
     if (call.receive(from)) { note = ''; return; }
+    if (db.account.gate !== 'ready') { note = 'The account key is not on this device: nothing rings.'; return; }
     const r = call.refusal(from);
     note = r === 'blocked' ? 'Blocked: the call never reaches the screen.' : r === 'messages-only' ? 'Message-only contact: calls are not delivered.'
       : r === 'busy' ? 'Already in a call: this one is left as a missed call.' : 'Unknown caller.';
@@ -28,6 +33,16 @@
   <div class="btns">
     <button type="button" disabled={call.phase !== 'incoming'} onclick={() => call.remote('cancel')}>Caller hangs up</button>
   </div>
+
+  <h4>Where {android ? 'the phone' : 'the window'} is</h4>
+  {#if android}
+    <label class="row"><span>Phone locked</span><Switch label="Phone locked" bind:checked={system.locked} onchange={(v) => system.setLocked(v)} /></label>
+  {/if}
+  <label class="row"><span>{android ? 'Tinline in background' : 'Window minimised'}</span><Switch label={android ? 'Tinline in background' : 'Window minimised'} bind:checked={system.background} onchange={(v) => system.setBackground(v)} /></label>
+  {#if android}
+    <div class="btns"><button type="button" onclick={() => (system.shadeOpen ? system.closeShade() : system.openShade())}>Pull down notifications</button></div>
+  {/if}
+  <p class="note">Calls ring only when the account key is remembered on this device. While the app is passphrase-locked there is no ring and no notification. The phone lock screen is a separate thing.</p>
 
   <h4>The other side (my outgoing call)</h4>
   <div class="btns">
@@ -53,7 +68,10 @@
   <p class="note"><i class="prop">Proposed</i> "Calling…" until their device answers the signal, then "Ringing…". An offline person stays on "Calling…" until the timeout.</p>
   <p class="note"><i class="prop">Proposed</i> "Busy" has no copy of its own: the call ends with "Call ended" and is recorded as Declined.</p>
   <p class="note"><i class="prop">Proposed</i> "End-to-end encrypted" is shown only after connection. Confirm against the core before launch.</p>
-  <p class="note">Incoming calls from blocked people or message-only contacts are dropped silently. Lock-screen full-screen incoming and the ongoing-call notification are the next platform pieces.</p>
+  <p class="note"><i class="prop">Proposed</i> The lock screen shows the caller's name (Android's default). Not decided; the alternative is "Someone" until unlocked.</p>
+  <p class="note"><i class="prop">Proposed</i> Missed-call notifications fold into one per person ("2 missed calls · Sana Rao"). Not decided.</p>
+  <p class="note"><i class="prop">Proposed</i> Tapping a call notification on the lock screen unlocks the phone first (there is no PIN in this simulation).</p>
+  <p class="note">Incoming calls from blocked people or message-only contacts are dropped silently. Desktop has no missed-call toast yet.</p>
 </div>
 
 <style>

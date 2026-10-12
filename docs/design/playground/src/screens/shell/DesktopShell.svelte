@@ -20,6 +20,7 @@
   import { statusLook } from '../../lib/brand/status.svelte';
   import CallStrip from '../../lib/calls/CallStrip.svelte';
   import CallLayer from '../../lib/calls/CallLayer.svelte';
+  import SystemLayer from '../../lib/calls/SystemLayer.svelte';
   const look = $derived(statusLook());
 
   const L = $derived(TAB_LISTS[nav.tab]);
@@ -63,6 +64,7 @@
     {/if}
   </section>
   <CallLayer />
+  <SystemLayer />
 </div>
 {/if}
 

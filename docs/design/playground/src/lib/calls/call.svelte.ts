@@ -30,6 +30,9 @@ export const CALL_MS = {
 
 export type Refusal = 'busy' | 'blocked' | 'messages-only' | 'unknown';
 
+/** Told after every call record is written (system.svelte.ts turns a missed one into a notification when the app is not in front). */
+export const onRecord = new Set<(id: string, direction: 'out' | 'in', outcome: Outcome) => void>();
+
 class Call {
   phase = $state<CallPhase>('idle');
   peer = $state<string | null>(null);
@@ -95,6 +98,8 @@ class Call {
 
   /** Someone calls me. Blocked callers and message-only contacts never reach the screen (silently dropped). */
   receive(id: string): boolean {
+    // The account key is not on this device until it is unlocked: nothing can ring (and nothing is recorded).
+    if (db.account.gate !== 'ready') return false;
     const r = this.refusal(id);
     if (r === 'busy') { this.#recordFor(id, 'in', 'missed', 0); return false; }
     if (r) return false;
@@ -222,6 +227,7 @@ class Call {
     if (!c || c.kind !== 'direct') return;
     pushMessage(c, { from: direction === 'out' ? 'me' : c.person, text: '', call: { kind: 'voice', outcome, durationS, direction } });
     if (direction === 'in' && (outcome === 'missed' || outcome === 'cancelled') && nav.openChat !== c.id) c.unread++;
+    onRecord.forEach((fn) => fn(id, direction, outcome));
   }
 }
 

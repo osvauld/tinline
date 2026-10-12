@@ -55,3 +55,39 @@ export function alertOut(_n: Element) {
   if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
   return { duration: dur('exit'), easing: easeIn, css: (t: number, u: number) => `opacity:${t};transform:translateY(${-12 * u}px)` };
 }
+
+/* System surfaces (outside the app). Reduced motion: opacity only. */
+
+/** Android heads-up card: slides 14px down from the top edge and fades; leaves 10px up. */
+export function headsUpIn(_n: Element) {
+  if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
+  return { duration: dur('enter'), easing: easeOut, css: (t: number, u: number) => `opacity:${t};transform:translateY(${-14 * u}px)` };
+}
+export function headsUpOut(_n: Element) {
+  if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
+  return { duration: dur('exit'), easing: easeIn, css: (t: number, u: number) => `opacity:${t};transform:translateY(${-10 * u}px)` };
+}
+
+/** Desktop toast / mini window: rises 14px from the bottom edge and fades. */
+export function toastIn(_n: Element) {
+  if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
+  return { duration: dur('enter'), easing: easeOut, css: (t: number, u: number) => `opacity:${t};transform:translateY(${14 * u}px)` };
+}
+export function toastOut(_n: Element) {
+  if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
+  return { duration: dur('exit'), easing: easeIn, css: (t: number, u: number) => `opacity:${t};transform:translateY(${10 * u}px)` };
+}
+
+/** Notification shade: pulled down from the top edge with the overlay duration; leaves a little faster. */
+export function shadeIn(_n: Element) {
+  if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
+  return { duration: dur('overlayOpen'), easing: easeOut, css: (t: number, u: number) => `opacity:${Math.min(1, t * 2)};transform:translateY(${-100 * u}%)` };
+}
+export function shadeOut(_n: Element) {
+  if (motion.reduced) return { duration: dur('crossfade'), css: (t: number) => `opacity:${t}` };
+  return { duration: dur('overlayClose'), easing: easeInOut, css: (t: number, u: number) => `opacity:${Math.min(1, t * 2)};transform:translateY(${-100 * u}%)` };
+}
+/** The dimmed scrim behind the shade. */
+export function scrimFade(_n: Element) {
+  return { duration: motion.reduced ? dur('crossfade') : dur('overlayOpen'), easing: easeOut, css: (t: number) => `opacity:${t}` };
+}
