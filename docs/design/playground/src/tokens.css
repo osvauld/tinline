@@ -46,6 +46,8 @@
 
   /* shape + size */
   --r-bub:18px; --r-bub-tight:6px;   /* bubble outer / stack-facing corners */
+  --r-quote:12px;                    /* quote block inside a bubble, reply chip */
+  --smooth:.6;                       /* corner smoothing 0..1 (0 circular, .6 iOS-like): lib/geom/GEOMETRY.md. Read by JS, not by CSS */
   --r-ctl:14px;                      /* buttons, inputs, list cards */
   --r-field:22px;                    /* composer field pill */
   --r-sheet:24px;                    /* dialogs, bottom sheets */

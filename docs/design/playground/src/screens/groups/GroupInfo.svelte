@@ -25,6 +25,9 @@
   } from '../../lib/model/actions/groups';
   import type { Group, GroupMember } from '../../lib/model/types';
   import { fullName, hueOf, plural } from './util';
+  import { shape } from '../../lib/geom/action';
+  import { geo, R, uniform } from '../../lib/geom/geo.svelte';
+  const cardShape = () => ({ radii: uniform(R().ctl), smoothing: geo.smooth, stroke: { width: 1, color: 'var(--hairline)' } });
 
   let { chatId }: { chatId: string } = $props();
   const g = $derived.by(() => { const c = getChat(chatId); return isGroup(c) ? c : undefined; });
@@ -103,7 +106,7 @@
       {#if admin}
         <section class="sec" aria-labelledby="inv-h">
           <h2 id="inv-h">Invites</h2>
-          <div class="card">
+          <div class="card" use:shape={cardShape()}>
             <button type="button" class="act press" onclick={() => open({ kind: 'invite' })}><Icon name="userplus" size={20} /><span class="t"><b>Invite contacts</b><small>A private invite to each person</small></span><Icon name="chevr" size={18} /></button>
             <button type="button" class="act press" disabled={noHost} onclick={() => createLink(g)}><Icon name="link" size={20} />
               <span class="t"><b>Create invite link</b><small>{noHost ? 'Appoint a host first. A link names one host.' : 'Valid for 7 days'}</small></span><Icon name="plus" size={18} /></button>
@@ -113,7 +116,7 @@
             <ul class="links" role="list" aria-label="Invite links">
               {#each g.links ?? [] as l (l.code)}
                 {@const live = linkLive(l)}
-                <li class="link" class:dead={!live} in:fold out:foldOut>
+                <li class="link" class:dead={!live} use:shape={cardShape()} in:fold out:foldOut>
                   <code class="url" data-link>{linkText(l)}</code>
                   <span class="lmeta">{#if live}Valid until {whenLabel(l.expiresAt)} · names {linkHostName(l.host)}{:else}Expired {whenLabel(l.expiresAt)}{/if}</span>
                   <span class="lacts">
@@ -209,7 +212,7 @@
 
       <!-- ---------- mute / leave ---------- -->
       <section class="sec" aria-label="Notifications and leaving">
-        <div class="card">
+        <div class="card" use:shape={cardShape()}>
           <label class="act row-sw"><Icon name="mute" size={20} /><span class="t"><b>Mute notifications</b><small>Posts still arrive; you just aren’t alerted</small></span>
             <Switch label="Mute notifications" bind:checked={g.muted} /></label>
           {#if canLeave(g)}
@@ -259,6 +262,7 @@
   .sub2 { margin: 14px 4px 4px; font-size: 12px; font-weight: 650; color: var(--muted); line-height: 16px; }
   .card { border-radius: var(--r-ctl); background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline); overflow: hidden; }
   .act { display: flex; align-items: center; gap: 14px; inline-size: 100%; min-block-size: 60px; padding: 8px 16px; border: 0; background: none; color: var(--ink); text-align: start; font: inherit; cursor: pointer; }
+  .card:global([data-shaped]), .link:global([data-shaped]) { box-shadow: none; }
   .act + .act { border-block-start: 1px solid var(--hairline); }
   .act > :global(svg) { color: var(--muted); }
   button.act:hover:not(:disabled) { background: var(--surface-2); }

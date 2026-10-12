@@ -5,6 +5,7 @@
   import { motion } from '../fx/reduced.svelte';
   import { setTimeScale } from '../fx/motion';
   import { audio, PALETTES, type Palette } from '../fx/audio';
+  import { geo, setSmooth } from '../geom/geo.svelte';
   import { nav } from '../nav/router.svelte';
 
   let sound = $state(!audio.quiet);
@@ -35,6 +36,15 @@
       <option value="system">System</option><option value="full">Full</option><option value="reduce">Reduce</option>
     </select>
   </div>
+  <div class="row"><span>Corner shape</span>
+    <span class="btns">
+      <button type="button" class:on={geo.smooth === 0} aria-pressed={geo.smooth === 0} onclick={() => setSmooth(0)}>Circular</button>
+      <button type="button" class:on={geo.smooth === 0.6} aria-pressed={geo.smooth === 0.6} onclick={() => setSmooth(0.6)}>Smooth</button>
+    </span>
+  </div>
+  <label class="row"><span>Smoothing <i class="prop">{geo.smooth.toFixed(2)}</i></span>
+    <input type="range" min="0" max="1" step="0.05" value={geo.smooth} aria-label="Corner smoothing" oninput={(e) => setSmooth(+e.currentTarget.value)} />
+  </label>
   <div class="row"><span>Clock</span>
     <span class="btns">
       <button type="button" onclick={() => clock.jump(T.HOUR)}>+1 h</button>
@@ -56,5 +66,6 @@
   .prop { font-style: normal; font-size: 11px; color: var(--gold-ink, var(--muted)); margin-inline-start: 4px; }
   button:not([role]) { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 10px; font-size: var(--fs-sub); cursor: pointer; }
   select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 8px; font-size: var(--fs-sub); }
+  button.on { background: var(--accent-soft, var(--surface-2)); border-color: var(--accent); }
   .reset { margin-top: 8px; }
 </style>
