@@ -1,33 +1,70 @@
-//! The index file (`search.redb`), as typed accessors over `Sealed` (layout in `docs/search.md`).
+//! The search index, format version 2 (`docs/search.md` "Index v2"): a memory-only hot tier
+//! (`hot.rs`) over write-once time segments in `search.redb` (`seg.rs`).
 //!
-//! ```text
-//! d/{h}                         DocRow  sealed: src, conv, day, id, at, author, text
-//! s/{src}/{h}                   empty   the docs of a conversation (for removal, group diffs)
-//! t/{tok}/{rev_at}/{h}          empty   a posting: doc {h} contains the indexed term {tok}
-//! w/{src}/{day}                 bytes   sealed: the version vector indexed (watermark)
-//! v                             u32 BE  sealed: index format version (mismatch -> rebuild)
-//! ```
-//!
-//! `h` = 16 hex of a keyed hash of `src/id`; `tok` = 32 hex of a keyed hash of the term. Both use
-//! `index_key`, not the sealing key, and neither can be reversed without it. Writes go through
-//! one lock, so a doc's old postings are always the ones its stored row implies.
+//! The file holds only `v` (format version), `m` (the manifest) and the segments' `x/` and `y/`
+//! records, all sealed. A change goes to memory; the cold days that changed or fell out of the
+//! hot window are written into segments by [`SearchIndex::maintain`], in one transaction with the
+//! manifest. Doc hashes and term hashes use `index_key`, not the sealing key.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::path::Path;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use storage::{Op, Sealed, StorageError, Store};
 use zeroize::Zeroizing;
 
-use super::text::index_terms;
+use super::hot::Hot;
+use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key};
 use crate::Error;
+use crate::chat::doc::{DAY_MS, day_of, day_start};
 
 /// Bump when the tokenizer or the layout changes: the index is rebuilt from the chat and group
-/// stores.
-pub const VERSION: u32 = 1;
+/// stores. (1: per-message postings in the file. 2: hot tier + segments.)
+pub const VERSION: u32 = 2;
 const STORE_DOMAIN: &str = "tinline/search-store/v1";
 const INDEX_DOMAIN: &str = "tinline/search-index/v1";
+
+/// Days (today and the ones before) whose docs live in the hot tier only.
+pub const HOT_DAYS: i64 = 8;
+/// Docs in memory above which the oldest cold days are written into segments early.
+pub const HOT_MAX_DOCS: usize = 20_000;
+/// Docs in one segment at most (a longer month becomes several).
+pub const SEG_MAX_DOCS: usize = 20_000;
+/// Segments of one month above which they are merged.
+pub const MERGE_SEGS: usize = 4;
+/// How long a changed cold day waits in memory before its month is written again.
+pub const DEBOUNCE: Duration = Duration::from_secs(600);
+
+/// The tunables, as a value so that tests can shrink them.
+#[derive(Debug, Clone, Copy)]
+pub struct Limits {
+    pub hot_days: i64,
+    pub hot_max_docs: usize,
+    pub seg_max_docs: usize,
+    pub merge_segs: usize,
+    pub debounce: Duration,
+}
+
+impl Default for Limits {
+    fn default() -> Self {
+        Self { hot_days: HOT_DAYS, hot_max_docs: HOT_MAX_DOCS, seg_max_docs: SEG_MAX_DOCS, merge_segs: MERGE_SEGS, debounce: DEBOUNCE }
+    }
+}
+
+/// When [`SearchIndex::maintain`] writes cold days into segments.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Mode {
+    /// The periodic check: days that waited out the debounce, and the oldest ones while over
+    /// the memory cap.
+    Tick,
+    /// Only the oldest days, while over the memory cap (a bulk rebuild).
+    Cap,
+    /// Every cold day now (open, tests).
+    Force,
+}
 
 pub(crate) fn io(e: StorageError) -> Error {
     Error::Io(e.to_string())
@@ -44,7 +81,7 @@ pub struct DocRow {
     pub src: String,
     /// The contact's DID (DMs) or the group id.
     pub conv: String,
-    /// The DM shard day; `-` for groups.
+    /// The shard's UTC day (`YYYY-MM-DD`).
     pub day: String,
     pub id: String,
     pub at: i64,
@@ -68,19 +105,101 @@ fn vv(b: &[u8]) -> Option<loro::VersionVector> {
     loro::VersionVector::decode(b).ok()
 }
 
-/// Whether two encoded version vectors are the same (encoding order is not stable).
-pub fn vv_eq(a: &[u8], b: &[u8]) -> bool {
-    matches!((vv(a), vv(b)), (Some(x), Some(y)) if x == y)
+/// 8 bytes standing for an encoded version vector: equal vectors, equal digests.
+pub fn digest_of(b: &[u8]) -> Digest {
+    let mut h = blake3::Hasher::new();
+    match vv(b) {
+        Some(v) => {
+            let mut e: Vec<(u64, i64)> = v.iter().map(|(p, c)| (*p, i64::from(*c))).collect();
+            e.sort_unstable();
+            for (p, c) in e {
+                h.update(&p.to_le_bytes());
+                h.update(&c.to_le_bytes());
+            }
+        }
+        None => {
+            h.update(b"raw");
+            h.update(b);
+        }
+    }
+    let mut d: Digest = h.finalize().as_bytes()[..8].try_into().expect("8 bytes");
+    if d == NO_DIGEST {
+        d[0] = 1;
+    }
+    d
 }
 
-/// One page of postings: each with its cursor and its row (`None`: stale), and whether there
-/// may be more.
-pub type Page = (Vec<(String, Option<DocRow>)>, bool);
+/// `(day number, month)` of a `YYYY-MM-DD` day.
+fn parse_day(day: &str) -> Option<(u32, u32)> {
+    let ms = day_start(day)?;
+    let n = u32::try_from(ms.div_euclid(DAY_MS)).ok()?;
+    let (y, m): (u32, u32) = (day.get(..4)?.parse().ok()?, day.get(5..7)?.parse().ok()?);
+    Some((n, y * 12 + m - 1))
+}
+
+/// The keyed hashes of the index (doc, term, conversation, day), all under `index_key`.
+pub struct Keyer(Zeroizing<[u8; 32]>);
+
+impl Keyer {
+    fn hash(&self, domain: &[u8], parts: &[&[u8]]) -> u64 {
+        let mut h = blake3::Hasher::new_keyed(&self.0);
+        h.update(domain);
+        for p in parts {
+            h.update(p);
+        }
+        u64::from_be_bytes(h.finalize().as_bytes()[..8].try_into().expect("8 bytes"))
+    }
+
+    pub fn doc(&self, src: &str, id: &str) -> u64 {
+        self.hash(b"doc\0", &[src.as_bytes(), b"/", id.as_bytes()])
+    }
+
+    pub fn tok(&self, term: &str) -> u64 {
+        self.hash(b"term\0", &[term.as_bytes()])
+    }
+
+    pub fn src(&self, src: &str) -> u64 {
+        self.hash(b"src\0", &[src.as_bytes()])
+    }
+
+    pub fn day_key(&self, src: &str, day: &str) -> DayKey {
+        (self.src(src), parse_day(day).map_or(u32::MAX, |d| d.0))
+    }
+}
+
+/// A snapshot of the sizes, for tests and benchmarks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Stats {
+    pub hot_docs: usize,
+    pub hot_days: usize,
+    pub segs: usize,
+    pub seg_docs: usize,
+}
+
+/// Where `maintain` spends its time, in ns: pick, read old segments, build, write, swap (for
+/// the benchmarks).
+pub static PHASES: [std::sync::atomic::AtomicU64; 5] = [const { std::sync::atomic::AtomicU64::new(0) }; 5];
+
+fn phase(i: usize, since: Instant) -> Instant {
+    PHASES[i].fetch_add(since.elapsed().as_nanos() as u64, std::sync::atomic::Ordering::Relaxed);
+    Instant::now()
+}
+
+#[derive(Default)]
+struct Memo {
+    /// The segments each month was last merged into (an idle check must not merge them again).
+    merged: HashMap<u32, Vec<u32>>,
+}
 
 pub struct SearchIndex {
     db: Sealed,
-    index_key: Zeroizing<[u8; 32]>,
-    write: Mutex<()>,
+    keyer: Keyer,
+    hot: Mutex<Hot>,
+    view: RwLock<Arc<View>>,
+    maint: Mutex<Memo>,
+    lim: RwLock<Limits>,
+    today: Mutex<Option<u32>>,
+    ticker: std::sync::atomic::AtomicBool,
 }
 
 impl SearchIndex {
@@ -100,168 +219,526 @@ impl SearchIndex {
         let p = norm_phrase(phrase);
         let me = Self {
             db: Sealed::new(store, blake3::derive_key(STORE_DOMAIN, p.as_bytes())),
-            index_key: Zeroizing::new(blake3::derive_key(INDEX_DOMAIN, p.as_bytes())),
-            write: Mutex::new(()),
+            keyer: Keyer(Zeroizing::new(blake3::derive_key(INDEX_DOMAIN, p.as_bytes()))),
+            hot: Mutex::new(Hot::default()),
+            view: RwLock::new(Arc::new(View::default())),
+            maint: Mutex::new(Memo::default()),
+            lim: RwLock::new(Limits::default()),
+            today: Mutex::new(None),
+            ticker: std::sync::atomic::AtomicBool::new(false),
         };
         let current = matches!(me.db.get("v"), Ok(Some(v)) if v == VERSION.to_be_bytes());
-        if !current {
-            me.db.apply(&[Op::DeletePrefix(String::new()), me.db.put_op("v", &VERSION.to_be_bytes()).map_err(io)?]).map_err(io)?;
+        let man = if current { me.db.get("m").ok().flatten().and_then(|b| bincode::deserialize::<Manifest>(&b).ok()) } else { None };
+        match man {
+            Some(m) => *me.view.write() = Arc::new(View::new(m)),
+            None => {
+                // Another version, no manifest or an unreadable one: start over.
+                me.db.apply(&[Op::DeletePrefix(String::new()), me.db.put_op("v", &VERSION.to_be_bytes()).map_err(io)?]).map_err(io)?;
+            }
         }
         Ok(me)
     }
 
-    /// Lets the file go for every holder (stop of the account's stores).
+    /// Lets the file go for every holder (stop of the account's stores) and forgets the hot
+    /// tier.
     pub fn close(&self) {
         self.db.close();
+        self.hot.lock().wipe();
+        *self.view.write() = Arc::new(View::default());
     }
 
     pub fn is_closed(&self) -> bool {
         self.db.raw().is_closed()
     }
 
+    /// Whether the caller is the one to run the periodic maintenance of this index.
+    pub fn claim_ticker(&self) -> bool {
+        !self.ticker.swap(true, std::sync::atomic::Ordering::SeqCst)
+    }
+
     pub fn doc_key(&self, src: &str, id: &str) -> String {
-        let mut h = blake3::Hasher::new_keyed(&self.index_key);
-        h.update(b"doc\0");
-        h.update(src.as_bytes());
-        h.update(b"/");
-        h.update(id.as_bytes());
-        hex::encode(&h.finalize().as_bytes()[..8])
+        format!("{:016x}", self.keyer.doc(src, id))
     }
 
-    /// A keyed tag of a day, kept with each doc key so the docs of one day can be listed
-    /// (`day_keys`) without opening any row.
-    fn day_tag(&self, day: &str) -> Vec<u8> {
-        let mut h = blake3::Hasher::new_keyed(&self.index_key);
-        h.update(b"day\0");
-        h.update(day.as_bytes());
-        h.finalize().as_bytes()[..8].to_vec()
+    // ---- clock and tunables -----------------------------------------------------------------
+
+    pub fn limits(&self) -> Limits {
+        *self.lim.read()
     }
 
-    pub fn tok(&self, term: &str) -> String {
-        let mut h = blake3::Hasher::new_keyed(&self.index_key);
-        h.update(b"term\0");
-        h.update(term.as_bytes());
-        hex::encode(&h.finalize().as_bytes()[..16])
+    pub fn set_limits(&self, f: impl FnOnce(&mut Limits)) {
+        f(&mut self.lim.write());
     }
 
-    fn rev_at(at: i64) -> String {
-        format!("{:016x}", u64::MAX - at.max(0) as u64)
+    /// Pretends today is `day` (`YYYY-MM-DD`); `None`: the real clock.
+    pub fn set_today(&self, day: Option<&str>) {
+        *self.today.lock() = day.and_then(|d| parse_day(d).map(|x| x.0));
     }
 
-    pub fn row(&self, h: &str) -> Result<Option<DocRow>, Error> {
-        match self.db.get(&format!("d/{h}")).map_err(io)? {
-            Some(b) => Ok(bincode::deserialize(&b).ok()),
-            None => Ok(None),
+    fn today(&self) -> u32 {
+        (*self.today.lock()).unwrap_or_else(|| {
+            let ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis() as i64);
+            ms.div_euclid(DAY_MS) as u32
+        })
+    }
+
+    fn is_hot(&self, daynum: u32, today: u32, lim: &Limits) -> bool {
+        daynum != u32::MAX && i64::from(today) - i64::from(daynum) < lim.hot_days
+    }
+
+    pub fn stats(&self) -> Stats {
+        let h = self.hot.lock();
+        let v = self.view.read();
+        Stats { hot_docs: h.docs.len(), hot_days: h.days.len(), segs: v.man.segs.len(), seg_docs: v.man.segs.iter().map(|s| s.docs as usize).sum() }
+    }
+
+    // ---- reading segments -------------------------------------------------------------------
+
+    fn read_chunk(&self, seg: u32, c: usize) -> Option<Vec<(u64, DocRow)>> {
+        decode_chunk(&self.db.get(&y_key(seg, c)).ok().flatten()?)
+    }
+
+    /// The rows of the given days, as the segments that own them hold them.
+    fn load_days(&self, view: &View, keys: &[DayKey]) -> HashMap<DayKey, Vec<(u64, DocRow)>> {
+        let mut out: HashMap<DayKey, Vec<(u64, DocRow)>> = HashMap::new();
+        let mut by_seg: HashMap<u32, HashSet<DayKey>> = HashMap::new();
+        for k in keys {
+            out.entry(*k).or_default();
+            if let Some((s, _)) = view.owner.get(k) {
+                by_seg.entry(*s).or_default().insert(*k);
+            }
         }
+        for (id, wanted) in by_seg {
+            let Some(s) = view.man.segs.iter().find(|s| s.id == id) else { continue };
+            for c in 0..(s.docs as usize).div_ceil(CHUNK) {
+                for (h, row) in self.read_chunk(id, c).unwrap_or_default() {
+                    let k = self.keyer.day_key(&row.src, &row.day);
+                    if wanted.contains(&k) {
+                        out.get_mut(&k).expect("asked for").push((h, row));
+                    }
+                }
+            }
+        }
+        out
     }
 
-    fn postings(&self, row: &DocRow, h: &str) -> Vec<String> {
-        let rev = Self::rev_at(row.at);
-        index_terms(&row.text).iter().map(|t| format!("t/{}/{rev}/{h}", self.tok(t))).collect()
-    }
-
-    fn unindex(&self, old: &DocRow, h: &str, ops: &mut Vec<Op>) {
-        ops.extend(self.postings(old, h).into_iter().map(Op::Delete));
-        ops.push(Op::Delete(format!("d/{h}")));
-        ops.push(Op::Delete(format!("s/{}/{h}", old.src)));
-    }
+    // ---- writing ----------------------------------------------------------------------------
 
     /// Indexes `put` (a row without words is removed instead), removes the docs `drop` (keys
-    /// from `doc_key`) and applies the watermarks, in one transaction. Idempotent.
+    /// from `doc_key`) and applies the watermarks. Memory only: nothing is written to the file
+    /// (a change to a day that is already in a segment loads that day into memory first).
+    /// Idempotent.
     pub fn apply(&self, put: &[DocRow], drop: &[String], marks: &[Mark]) -> Result<(), Error> {
-        let _w = self.write.lock();
-        let mut ops = Vec::new();
-        let mut rows: BTreeMap<String, &DocRow> = BTreeMap::new();
-        for r in put {
-            rows.insert(self.doc_key(&r.src, &r.id), r);
-        }
-        for (h, r) in &rows {
-            // An unreadable old row cannot tell its postings: they stay, and queries skip them.
-            let old = self.row(h).unwrap_or(None);
-            if old.as_ref() == Some(*r) {
-                continue;
-            }
-            if let Some(o) = &old {
-                self.unindex(o, h, &mut ops);
-            }
-            let posts = self.postings(r, h);
-            if posts.is_empty() {
-                continue;
-            }
-            ops.push(self.db.put_op(&format!("d/{h}"), &bincode::serialize(*r).expect("serialises")).map_err(io)?);
-            ops.push(Op::Put(format!("s/{}/{h}", r.src), self.day_tag(&r.day)));
-            ops.extend(posts.into_iter().map(|k| Op::Put(k, Vec::new())));
-        }
-        for h in drop.iter().filter(|h| !rows.contains_key(*h)) {
-            if let Some(o) = self.row(h).unwrap_or(None) {
-                self.unindex(&o, h, &mut ops);
-            }
-        }
-        for m in marks {
-            let key = format!("w/{}/{}", m.src, m.day);
-            let ok = match &m.prev {
-                None => true,
-                Some(p) => vv_eq(&self.db.get(&key).ok().flatten().unwrap_or_default(), p),
-            };
-            if ok {
-                ops.push(self.db.put_op(&key, &m.vv).map_err(io)?);
-            }
-        }
-        if ops.is_empty() {
+        if self.is_closed() {
             return Ok(());
         }
-        self.db.apply(&ops).map_err(io)
+        let puts: Vec<(u64, DayKey, &DocRow)> = put.iter().map(|r| (self.keyer.doc(&r.src, &r.id), self.keyer.day_key(&r.src, &r.day), r)).collect();
+        let drops: Vec<u64> = drop.iter().filter_map(|h| u64::from_str_radix(h, 16).ok()).collect();
+        struct M<'a> {
+            key: DayKey,
+            day: &'a str,
+            prev: Option<Digest>,
+            vv: Digest,
+        }
+        let ms: Vec<M> = marks.iter().map(|m| M { key: self.keyer.day_key(&m.src, &m.day), day: &m.day, prev: m.prev.as_deref().map(digest_of), vv: digest_of(&m.vv) }).collect();
+        let mut names: HashMap<DayKey, &str> = HashMap::new();
+        for (_, k, r) in &puts {
+            names.insert(*k, &r.day);
+        }
+        for m in &ms {
+            names.insert(m.key, m.day);
+        }
+        let empty = digest_of(&[]);
+        let lim = self.limits();
+        let today = self.today();
+        for attempt in 0..4 {
+            let view = self.view.read().clone();
+            let missing: Vec<DayKey> = {
+                let hot = self.hot.lock();
+                names.keys().filter(|k| !hot.days.contains_key(*k) && view.owner.contains_key(*k)).copied().collect()
+            };
+            let loaded = if missing.is_empty() { HashMap::new() } else { self.load_days(&view, &missing) };
+            let mut hot = self.hot.lock();
+            if attempt < 3 && !Arc::ptr_eq(&view, &self.view.read()) {
+                continue; // a segment write replaced the manifest under us: load again
+            }
+            let now = Instant::now();
+            let mut touched: HashSet<DayKey> = HashSet::new();
+            // Cold days that this change alters come into memory whole.
+            for (key, rows) in loaded {
+                if hot.days.contains_key(&key) {
+                    continue;
+                }
+                let owner = view.owner.get(&key).map(|(_, d)| *d).filter(|d| *d != NO_DIGEST);
+                let have: HashMap<u64, &DocRow> = rows.iter().map(|(h, r)| (*h, r)).collect();
+                let changes = puts.iter().any(|(h, k, r)| *k == key && (crate::search::text::index_terms(&r.text).is_empty() == have.contains_key(h) || (have.get(h).is_some_and(|o| *o != *r))))
+                    || drops.iter().any(|h| have.contains_key(h))
+                    || ms.iter().any(|m| m.key == key && m.prev.is_none_or(|p| p == owner.unwrap_or(empty)) && owner != Some(m.vv));
+                if !changes {
+                    continue;
+                }
+                let d = hot.day_mut(key, names.get(&key).copied().unwrap_or(""));
+                d.digest = owner;
+                if !self.is_hot(key.1, today, &lim) {
+                    d.cold_since = Some(now);
+                }
+                for (h, row) in rows {
+                    hot.put(&self.keyer, key, h, row);
+                }
+                touched.insert(key);
+            }
+            for (h, key, row) in &puts {
+                // A day left in its segment (nothing in this change alters it) stays there.
+                if !hot.days.contains_key(key) && view.owner.contains_key(key) {
+                    continue;
+                }
+                if hot.put(&self.keyer, *key, *h, (*row).clone()) {
+                    touched.insert(*key);
+                }
+            }
+            for h in &drops {
+                if let Some((key, _)) = hot.docs.get(h).map(|(k, r, _)| (*k, r.id.clone())) {
+                    hot.remove(*h);
+                    touched.insert(key);
+                }
+            }
+            for m in &ms {
+                let cur = hot.days.get(&m.key).map(|d| d.digest).unwrap_or_else(|| view.owner.get(&m.key).map(|(_, d)| *d).filter(|d| *d != NO_DIGEST));
+                if m.prev.is_none_or(|p| p == cur.unwrap_or(empty)) && cur != Some(m.vv) {
+                    let d = hot.day_mut(m.key, m.day);
+                    d.digest = Some(m.vv);
+                    d.ver += 1;
+                    touched.insert(m.key);
+                }
+            }
+            for k in touched {
+                if !self.is_hot(k.1, today, &lim)
+                    && let Some(d) = hot.days.get_mut(&k)
+                {
+                    d.cold_since.get_or_insert(now);
+                }
+            }
+            return Ok(());
+        }
+        unreachable!("the last attempt returns")
     }
 
-    /// Removes everything of a conversation: its docs, their postings, its watermarks.
+    /// `apply` for a bulk (a rebuild): above the memory cap the oldest cold days go into
+    /// segments before it returns.
+    pub fn apply_bulk(&self, put: &[DocRow], drop: &[String], marks: &[Mark]) -> Result<(), Error> {
+        self.apply(put, drop, marks)?;
+        if self.hot.lock().docs.len() > self.limits().hot_max_docs {
+            self.maintain(Mode::Cap)?;
+        }
+        Ok(())
+    }
+
+    /// Removes everything of a conversation: its docs and its watermarks, in memory and in the
+    /// manifest (its docs in segments stop counting at once and are dropped at the next rewrite
+    /// of their month).
     pub fn forget(&self, src: &str) -> Result<(), Error> {
-        let hs = self.doc_keys(src)?;
-        let _w = self.write.lock();
+        let _m = self.maint.lock();
+        let s = self.keyer.src(src);
+        let mut hot = self.hot.lock();
+        let keys: Vec<DayKey> = hot.days.keys().filter(|k| k.0 == s).copied().collect();
+        for k in keys {
+            hot.drop_day(&k);
+        }
+        let view = self.view.read().clone();
+        if !view.man.segs.iter().any(|g| g.days.iter().any(|d| d.0 == s)) {
+            return Ok(());
+        }
+        let mut man = view.man.clone();
         let mut ops = Vec::new();
-        for h in &hs {
-            if let Some(o) = self.row(h).unwrap_or(None) {
-                self.unindex(&o, h, &mut ops);
+        for g in &mut man.segs {
+            g.days.retain(|d| d.0 != s);
+        }
+        for g in man.segs.iter().filter(|g| g.days.is_empty()) {
+            ops.push(Op::DeletePrefix(format!("x/{:08x}/", g.id)));
+            ops.push(Op::DeletePrefix(format!("y/{:08x}/", g.id)));
+        }
+        man.segs.retain(|g| !g.days.is_empty());
+        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
+        self.db.apply(&ops).map_err(io)?;
+        *self.view.write() = Arc::new(View::new(man));
+        Ok(())
+    }
+
+    /// The doc keys of a conversation's day.
+    pub fn day_keys(&self, src: &str, day: &str) -> Result<HashSet<String>, Error> {
+        let key = self.keyer.day_key(src, day);
+        {
+            let hot = self.hot.lock();
+            if let Some(d) = hot.days.get(&key) {
+                return Ok(d.docs.iter().map(|h| format!("{h:016x}")).collect());
             }
         }
-        ops.push(Op::DeletePrefix(format!("s/{src}/")));
-        ops.push(Op::DeletePrefix(format!("w/{src}/")));
-        self.db.apply(&ops).map_err(io)
+        let view = self.view.read().clone();
+        Ok(self.load_days(&view, &[key]).remove(&key).unwrap_or_default().into_iter().map(|(h, _)| format!("{h:016x}")).collect())
     }
 
-    /// The doc keys of a conversation.
-    pub fn doc_keys(&self, src: &str) -> Result<HashSet<String>, Error> {
-        let p = format!("s/{src}/");
-        Ok(self.db.list_prefixed(&p).map_err(io)?.into_iter().filter_map(|k| k.strip_prefix(&p).map(str::to_string)).collect())
+    fn watermark(&self, src: &str, day: &str) -> Option<Digest> {
+        let key = self.keyer.day_key(src, day);
+        let hot = self.hot.lock();
+        if let Some(d) = hot.days.get(&key) {
+            return d.digest;
+        }
+        self.view.read().owner.get(&key).map(|(_, d)| *d).filter(|d| *d != NO_DIGEST)
     }
 
-    /// The doc keys of a conversation indexed under `day`.
-    pub fn day_keys(&self, src: &str, day: &str) -> Result<HashSet<String>, Error> {
-        let p = format!("s/{src}/");
-        let tag = self.day_tag(day);
-        Ok(self.db.raw().scan(&p).map_err(io)?.into_iter().filter(|(_, v)| *v == tag).filter_map(|(k, _)| k.strip_prefix(&p).map(str::to_string)).collect())
+    /// Whether a day has a watermark.
+    pub fn has_watermark(&self, src: &str, day: &str) -> bool {
+        self.watermark(src, day).is_some()
     }
 
-    pub fn watermark(&self, src: &str, day: &str) -> Option<Vec<u8>> {
-        self.db.get(&format!("w/{src}/{day}")).ok().flatten()
+    /// Whether the day was indexed at the version vector `vv` (an encoded one).
+    pub fn watermark_is(&self, src: &str, day: &str, vv: &[u8]) -> bool {
+        self.watermark(src, day) == Some(digest_of(vv))
     }
 
-    /// Up to `n` postings of `term`, newest first, after the cursor `after` (`rev_at/h`), each
-    /// with its cursor and its row (`None` for a stale posting: the row is gone or moved), and
-    /// whether there may be more.
-    pub fn page(&self, term: &str, after: Option<&str>, n: usize) -> Result<Page, Error> {
-        let prefix = format!("t/{}/", self.tok(term));
-        let from = after.map(|a| format!("{prefix}{a}"));
-        let keys = self.db.keys_after(&prefix, from.as_deref(), n).map_err(io)?;
-        let more = keys.len() == n;
-        let out = keys
-            .into_iter()
-            .map(|k| {
-                let cur = k[prefix.len()..].to_string();
-                let row = cur.split_once('/').and_then(|(rev, h)| self.row(h).ok().flatten().filter(|r| Self::rev_at(r.at) == rev));
-                (cur, row)
-            })
-            .collect();
-        Ok((out, more))
+    // ---- segments ---------------------------------------------------------------------------
+
+    /// Writes cold days into segments (see [`Mode`]), merges the segments of a month that has
+    /// too many or is over, all in one transaction with the manifest, then lets the hot tier go
+    /// of the days written. A day changed meanwhile stays in memory.
+    pub fn maintain(&self, mode: Mode) -> Result<(), Error> {
+        let mut memo = self.maint.lock();
+        if self.is_closed() {
+            return Ok(());
+        }
+        let lim = self.limits();
+        let today = self.today();
+        let now = Instant::now();
+        struct Picked {
+            key: DayKey,
+            day: String,
+            ver: u64,
+            data: DayData,
+        }
+        let picked: Vec<Picked> = {
+            let mut hot = self.hot.lock();
+            let over = hot.docs.len() > lim.hot_max_docs;
+            let mut cold: Vec<DayKey> = Vec::new();
+            for (k, d) in hot.days.iter_mut() {
+                if !self.is_hot(k.1, today, &lim) {
+                    d.cold_since.get_or_insert(now);
+                    cold.push(*k);
+                }
+            }
+            cold.sort_by_key(|k| (k.1, k.0));
+            let mut total = hot.docs.len();
+            let mut out = Vec::new();
+            for k in cold {
+                let d = &hot.days[&k];
+                let due = match mode {
+                    Mode::Force => true,
+                    Mode::Tick => d.cold_since.is_some_and(|t| now.duration_since(t) >= lim.debounce),
+                    Mode::Cap => false,
+                };
+                let by_cap = over && mode != Mode::Force && total > lim.hot_max_docs / 2;
+                if due || by_cap {
+                    total -= d.docs.len();
+                    let rows = d.docs.iter().filter_map(|h| hot.docs.get(h).map(|(_, r, _)| (*h, r.clone()))).collect();
+                    out.push(Picked { key: k, day: d.day.clone(), ver: d.ver, data: DayData { key: k, digest: d.digest.unwrap_or(NO_DIGEST), rows } });
+                }
+            }
+            out
+        };
+        let t = phase(0, now);
+        let view = self.view.read().clone();
+        let cur_month = parse_day(&day_of(i64::from(today) * DAY_MS)).map_or(0, |d| d.1);
+        let flush_keys: HashSet<DayKey> = picked.iter().map(|p| p.key).collect();
+        let mut by_month: BTreeMap<u32, Vec<&DayData>> = BTreeMap::new();
+        for p in &picked {
+            by_month.entry(parse_day(&p.day).map_or(0, |d| d.1)).or_default().push(&p.data);
+        }
+        let months: BTreeSet<u32> = by_month.keys().copied().chain(view.man.segs.iter().map(|s| s.month)).collect();
+        let mut next = view.man.next;
+        let mut keep: Vec<Seg> = view.man.segs.clone();
+        let mut remove: Vec<u32> = Vec::new();
+        let mut merged: Vec<(u32, Vec<u32>)> = Vec::new();
+        // Pass 1: which months are rewritten whole (their old segments plus the new days).
+        let mut arena: BTreeMap<u32, Vec<DayData>> = BTreeMap::new();
+        for &m in &months {
+            let old: Vec<&Seg> = view.man.segs.iter().filter(|s| s.month == m).collect();
+            let fresh: Vec<&DayData> = by_month.get(&m).cloned().unwrap_or_default();
+            let total: usize = old.iter().map(|s| s.docs as usize).sum::<usize>() + fresh.iter().map(|d| d.rows.len()).sum::<usize>();
+            let count_after = old.len() + pack(&fresh, lim.seg_max_docs).len();
+            let min_possible = total.div_ceil(lim.seg_max_docs).max(1);
+            let ids: Vec<u32> = old.iter().map(|s| s.id).collect();
+            let merge = mode != Mode::Cap && !old.is_empty() && count_after > min_possible && (count_after > lim.merge_segs || m < cur_month) && !(fresh.is_empty() && memo.merged.get(&m) == Some(&ids));
+            if merge {
+                let tr = Instant::now();
+                let mut days = self.valid_days(&view, &old, &flush_keys);
+                phase(1, tr);
+                days.extend(fresh.iter().map(|d| DayData { key: d.key, digest: d.digest, rows: d.rows.clone() }));
+                arena.insert(m, days);
+                remove.extend(ids);
+                keep.retain(|s| s.month != m);
+            }
+        }
+        // Pass 2: the segments to build, then built on all cores.
+        let mut jobs: Vec<(u32, u32, Vec<&DayData>)> = Vec::new();
+        for &m in &months {
+            let days: Vec<&DayData> = match arena.get(&m) {
+                Some(a) => a.iter().collect(),
+                None => by_month.get(&m).cloned().unwrap_or_default(),
+            };
+            let mut new_ids = Vec::new();
+            for group in pack(&days, lim.seg_max_docs) {
+                jobs.push((next, m, group.iter().map(|i| days[*i]).collect()));
+                new_ids.push(next);
+                next += 1;
+            }
+            if arena.contains_key(&m) {
+                merged.push((m, new_ids));
+            }
+        }
+        let built: Vec<Built> = {
+            let slots: Vec<Mutex<Option<Built>>> = jobs.iter().map(|_| Mutex::new(None)).collect();
+            let at = std::sync::atomic::AtomicUsize::new(0);
+            let workers = std::thread::available_parallelism().map_or(1, |n| n.get()).min(jobs.len()).max(1);
+            std::thread::scope(|sc| {
+                for _ in 0..workers {
+                    sc.spawn(|| {
+                        let tok = |t: &str| self.keyer.tok(t);
+                        loop {
+                            let i = at.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                            let Some((id, m, days)) = jobs.get(i) else { break };
+                            *slots[i].lock() = Some(seg::build(*id, *m, days, &tok));
+                        }
+                    });
+                }
+            });
+            slots.into_iter().filter_map(|s| s.into_inner()).collect()
+        };
+        let t = phase(2, t);
+        // A rewritten day leaves the older segment that held it.
+        let mut changed = !built.is_empty() || !remove.is_empty();
+        for s in &mut keep {
+            let n = s.days.len();
+            s.days.retain(|(a, b, _)| !flush_keys.contains(&(*a, *b)));
+            changed |= s.days.len() != n;
+        }
+        for s in keep.iter().filter(|s| s.days.is_empty()) {
+            remove.push(s.id);
+        }
+        keep.retain(|s| !s.days.is_empty());
+        if !changed {
+            return Ok(());
+        }
+        let mut segs = keep;
+        segs.extend(built.iter().map(|b| b.seg.clone()));
+        segs.sort_by_key(|s| s.id);
+        let man = Manifest { next, segs };
+        let mut ops: Vec<Op> = Vec::new();
+        for id in &remove {
+            ops.push(Op::DeletePrefix(format!("x/{id:08x}/")));
+            ops.push(Op::DeletePrefix(format!("y/{id:08x}/")));
+        }
+        // In key order: redb grows the file many times over when large values are inserted
+        // between runs of small ones (512 MiB for 6.7 MB of records, measured).
+        let mut puts: Vec<(&str, &[u8])> = built.iter().flat_map(|b| b.puts.iter().map(|(k, v)| (k.as_str(), v.as_slice()))).collect();
+        puts.sort_unstable_by_key(|(k, _)| *k);
+        for (k, v) in puts {
+            ops.push(self.db.put_op(k, v).map_err(io)?);
+        }
+        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
+        let tw = Instant::now();
+        self.db.apply(&ops).map_err(io)?;
+        let t = phase(3, tw).max(t);
+        let nv = Arc::new(View::new(man));
+        {
+            let _hot = self.hot.lock();
+            *self.view.write() = nv;
+        }
+        // The hot copies go one day at a time, so that a send is never held up for long.
+        for p in &picked {
+            let mut hot = self.hot.lock();
+            match hot.days.get_mut(&p.key) {
+                Some(d) if d.ver == p.ver => hot.drop_day(&p.key),
+                Some(d) => d.cold_since = Some(now),
+                None => {}
+            }
+        }
+        memo.merged.extend(merged);
+        phase(4, t);
+        Ok(())
+    }
+
+    /// The days of `old` segments with the rows they still own (not rewritten by `skip`).
+    fn valid_days(&self, view: &View, old: &[&Seg], skip: &HashSet<DayKey>) -> Vec<DayData> {
+        let mut map: HashMap<DayKey, DayData> = HashMap::new();
+        for s in old {
+            for (a, b, d) in &s.days {
+                let key = (*a, *b);
+                if !skip.contains(&key) && view.owner.get(&key).is_some_and(|o| o.0 == s.id) {
+                    map.insert(key, DayData { key, digest: *d, rows: Vec::new() });
+                }
+            }
+        }
+        for s in old {
+            for c in 0..(s.docs as usize).div_ceil(CHUNK) {
+                for (h, row) in self.read_chunk(s.id, c).unwrap_or_default() {
+                    let key = self.keyer.day_key(&row.src, &row.day);
+                    if view.owner.get(&key).is_some_and(|o| o.0 == s.id)
+                        && let Some(d) = map.get_mut(&key)
+                    {
+                        d.rows.push((h, row));
+                    }
+                }
+            }
+        }
+        let mut out: Vec<DayData> = map.into_values().collect();
+        out.sort_by_key(|d| d.key);
+        out
+    }
+
+    // ---- reading ----------------------------------------------------------------------------
+
+    /// A newest-first walk over the docs that contain the indexed `term`, after the cursor
+    /// `after` (`{rev_at}/{h}`, as `Scan::next` returns it).
+    #[cfg(test)]
+    pub fn scan(&self, term: &str, after: Option<&str>) -> Result<Scan<'_>, Error> {
+        self.scan_all(&[term.to_string()], after)
+    }
+
+    /// Like [`scan`](Self::scan), but only the docs posted under every one of `terms` (the
+    /// first is the one to walk; the others only narrow it, per segment by intersecting the
+    /// posting lists before any row is read).
+    pub fn scan_all(&self, terms: &[String], after: Option<&str>) -> Result<Scan<'_>, Error> {
+        let mut toks: Vec<u64> = Vec::new();
+        for t in terms {
+            let k = self.keyer.tok(t);
+            if !toks.contains(&k) {
+                toks.push(k);
+            }
+        }
+        if toks.is_empty() {
+            return Err(Error::Protocol("no term".into()));
+        }
+        let after = match after {
+            None => None,
+            Some(a) => {
+                let (r, h) = a.split_once('/').ok_or_else(|| Error::Protocol("bad cursor".into()))?;
+                Some((u64::from_str_radix(r, 16).map_err(|_| Error::Protocol("bad cursor".into()))?, u64::from_str_radix(h, 16).map_err(|_| Error::Protocol("bad cursor".into()))?))
+            }
+        };
+        let (view, hot_days) = {
+            let hot = self.hot.lock();
+            (self.view.read().clone(), hot.days.keys().copied().collect::<HashSet<_>>())
+        };
+        let mut pending: Vec<Seg> = view.man.segs.iter().filter(|s| s.docs > 0 && after.is_none_or(|a| rev_at(s.min_at) >= a.0)).cloned().collect();
+        pending.sort_by_key(|s| (std::cmp::Reverse(s.max_at), std::cmp::Reverse(s.id)));
+        Ok(Scan { ix: self, toks, view, hot_days, after, hot_buf: VecDeque::new(), hot_last: after, hot_done: false, pending: pending.into(), open: Vec::new(), chunks: HashMap::new(), last: None })
+    }
+
+    /// `(records, key bytes + value bytes)` of the `x/`, `y/` and `m` records in the file.
+    pub fn content_sizes(&self) -> Vec<(&'static str, usize, usize)> {
+        ["x/", "y/", "m", "v"].into_iter().map(|p| {
+            let rows = self.db.raw().scan(p).unwrap_or_default();
+            (p, rows.len(), rows.iter().map(|(k, v)| k.len() + v.len()).sum())
+        }).collect()
     }
 
     #[cfg(test)]
@@ -270,48 +747,308 @@ impl SearchIndex {
     }
 }
 
+/// Groups days (by index into `days`) into segments of at most `max` docs, newest day first.
+fn pack(days: &[&DayData], max: usize) -> Vec<Vec<usize>> {
+    let mut idx: Vec<usize> = (0..days.len()).collect();
+    idx.sort_by_key(|i| (std::cmp::Reverse(days[*i].key.1), days[*i].key.0));
+    let mut out: Vec<Vec<usize>> = Vec::new();
+    let mut size = 0;
+    for i in idx {
+        let n = days[i].rows.len();
+        match out.last_mut() {
+            Some(g) if size + n <= max => {
+                g.push(i);
+                size += n;
+            }
+            _ => {
+                out.push(vec![i]);
+                size = n;
+            }
+        }
+    }
+    out
+}
+
+type Chunk = Arc<Vec<(u64, DocRow)>>;
+
+struct Open {
+    seg: u32,
+    docs: u32,
+    /// The next posting-list part to load.
+    part: usize,
+    list: Vec<u32>,
+    pos: usize,
+    head: Option<(u64, u64, DocRow)>,
+}
+
+/// A lazy k-way merge, newest first, of one term's postings: the hot tier and the segments,
+/// each opened only once the merge reaches its newest time.
+pub struct Scan<'a> {
+    ix: &'a SearchIndex,
+    toks: Vec<u64>,
+    view: Arc<View>,
+    hot_days: HashSet<DayKey>,
+    after: Option<(u64, u64)>,
+    hot_buf: VecDeque<(u64, u64, DocRow)>,
+    hot_last: Option<(u64, u64)>,
+    hot_done: bool,
+    pending: VecDeque<Seg>,
+    open: Vec<Open>,
+    chunks: HashMap<(u32, usize), Option<Chunk>>,
+    last: Option<(u64, u64)>,
+}
+
+const HOT_BATCH: usize = 256;
+
+impl Scan<'_> {
+    /// Up to `n` more docs with their cursors, and whether there may be more.
+    pub fn next(&mut self, n: usize) -> Result<(Vec<(String, DocRow)>, bool), Error> {
+        let mut out = Vec::new();
+        while out.len() < n {
+            let Some((rev, h, row)) = self.pop() else { return Ok((out, false)) };
+            out.push((format!("{rev:016x}/{h:016x}"), row));
+        }
+        Ok((out, true))
+    }
+
+    fn chunk(&mut self, seg: u32, c: usize) -> Option<Chunk> {
+        if let Some(v) = self.chunks.get(&(seg, c)) {
+            return v.clone();
+        }
+        let v = self.ix.read_chunk(seg, c).map(Arc::new);
+        self.chunks.insert((seg, c), v.clone());
+        v
+    }
+
+    fn row(&mut self, seg: u32, doc: u32) -> Option<(u64, DocRow)> {
+        let c = self.chunk(seg, doc as usize / CHUNK)?;
+        c.get(doc as usize % CHUNK).cloned()
+    }
+
+    fn refill_hot(&mut self) {
+        if self.hot_done || !self.hot_buf.is_empty() {
+            return;
+        }
+        let v = self.ix.hot.lock().range(self.toks[0], &self.toks[1..], self.hot_last, HOT_BATCH);
+        if v.len() < HOT_BATCH {
+            self.hot_done = true;
+        }
+        if let Some((r, h, _)) = v.last() {
+            self.hot_last = Some((*r, *h));
+        }
+        self.hot_buf.extend(v);
+    }
+
+    fn open_seg(&mut self, s: &Seg) {
+        // The first doc after the cursor, by bisection over the rows (all of them, with the
+        // posting lists read part by part from there).
+        let mut first = 0usize;
+        if let Some(a) = self.after
+            && rev_at(s.max_at) <= a.0
+        {
+            let (mut lo, mut hi) = (0, s.docs as usize);
+            while lo < hi {
+                let mid = (lo + hi) / 2;
+                match self.row(s.id, mid as u32) {
+                    Some((h, r)) if (rev_at(r.at), h) <= a => lo = mid + 1,
+                    _ => hi = mid,
+                }
+            }
+            first = lo;
+        }
+        let part = first / PART_DOCS;
+        self.open.push(Open { seg: s.id, docs: s.docs, part, list: Vec::new(), pos: 0, head: None });
+        let i = self.open.len() - 1;
+        if self.load_part(i) {
+            let o = &mut self.open[i];
+            o.pos = o.list.partition_point(|d| (*d as usize) < first);
+        }
+        self.advance(i);
+    }
+
+    /// Reads the next part of an open segment's posting list into `list`; false at the end.
+    fn load_part(&mut self, i: usize) -> bool {
+        loop {
+            let (seg, docs, part) = {
+                let o = &self.open[i];
+                (o.seg, o.docs, o.part)
+            };
+            if part * PART_DOCS >= docs as usize {
+                let o = &mut self.open[i];
+                o.list.clear();
+                o.pos = 0;
+                return false;
+            }
+            let mut list: Option<Vec<u32>> = None;
+            for tok in &self.toks {
+                let l = self.ix.db.get(&x_key(seg, *tok, part)).ok().flatten().and_then(|b| decode_list(&b, (part * PART_DOCS) as u32)).unwrap_or_default();
+                list = Some(match list {
+                    None => l,
+                    Some(prev) => {
+                        let set: HashSet<u32> = l.into_iter().collect();
+                        prev.into_iter().filter(|d| set.contains(d)).collect()
+                    }
+                });
+                if list.as_ref().is_some_and(Vec::is_empty) {
+                    break;
+                }
+            }
+            let o = &mut self.open[i];
+            o.part += 1;
+            if let Some(l) = list.filter(|l| !l.is_empty()) {
+                o.list = l;
+                o.pos = 0;
+                return true;
+            }
+        }
+    }
+
+    /// Loads the head of an open segment from its position.
+    fn advance(&mut self, i: usize) {
+        loop {
+            while self.open[i].pos >= self.open[i].list.len() {
+                if !self.load_part(i) {
+                    self.open[i].head = None;
+                    return;
+                }
+            }
+            let (seg, doc) = {
+                let o = &self.open[i];
+                (o.seg, o.list[o.pos])
+            };
+            if let Some((h, row)) = self.row(seg, doc) {
+                self.open[i].head = Some((rev_at(row.at), h, row));
+                return;
+            }
+            self.open[i].pos += 1;
+        }
+    }
+
+    /// The smallest head: `(key, None)` for the hot tier or `(key, Some(open index))`.
+    fn best(&self) -> Option<((u64, u64), Option<usize>)> {
+        let mut best = self.hot_buf.front().map(|(r, h, _)| ((*r, *h), None));
+        for (i, o) in self.open.iter().enumerate() {
+            if let Some((r, h, _)) = &o.head
+                && best.is_none_or(|(k, _)| (*r, *h) < k)
+            {
+                best = Some(((*r, *h), Some(i)));
+            }
+        }
+        best
+    }
+
+    fn pop(&mut self) -> Option<(u64, u64, DocRow)> {
+        loop {
+            self.refill_hot();
+            while let Some(s) = self.pending.front() {
+                if self.best().is_some_and(|(k, _)| rev_at(s.max_at) > k.0) {
+                    break;
+                }
+                let s = self.pending.pop_front().expect("peeked");
+                self.open_seg(&s);
+            }
+            let (_, src) = self.best()?;
+            let (rev, h, row, seg) = match src {
+                None => {
+                    let (r, h, row) = self.hot_buf.pop_front().expect("best");
+                    (r, h, row, None)
+                }
+                Some(i) => {
+                    let (r, h, row) = self.open[i].head.take().expect("best");
+                    let seg = self.open[i].seg;
+                    self.open[i].pos += 1;
+                    self.advance(i);
+                    (r, h, row, Some(seg))
+                }
+            };
+            if self.last == Some((rev, h)) {
+                continue;
+            }
+            if let Some(seg) = seg {
+                // A segment's doc counts only while the segment owns its day and the hot tier
+                // does not hold that day.
+                let key = self.ix.keyer.day_key(&row.src, &row.day);
+                if self.view.owner.get(&key).map(|o| o.0) != Some(seg) || self.hot_days.contains(&key) {
+                    continue;
+                }
+            }
+            self.last = Some((rev, h));
+            return Some((rev, h, row));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn row(src: &str, id: &str, at: i64, text: &str) -> DocRow {
-        DocRow { src: src.into(), conv: "did:key:z".into(), day: "2026-10-11".into(), id: id.into(), at, author: "did:key:a".into(), text: text.into() }
+        DocRow { src: src.into(), conv: "did:key:z".into(), day: crate::chat::doc::day_of(at), id: id.into(), at, author: "did:key:a".into(), text: text.into() }
     }
+
+    const D: i64 = DAY_MS;
+    /// 2026-01-01 00:00 UTC.
+    const T0: i64 = 1_767_225_600_000;
 
     fn ids(ix: &SearchIndex, term: &str) -> Vec<String> {
-        ix.page(term, None, 100).unwrap().0.into_iter().filter_map(|(_, r)| r).map(|r| r.id).collect()
+        let mut s = ix.scan(term, None).unwrap();
+        s.next(1000).unwrap().0.into_iter().map(|(_, r)| r.id).collect()
     }
 
-    // KIND: unit (S1) — postings are newest first; an edit moves them, a delete removes them.
+    fn mark(r: &DocRow, n: u8) -> Mark {
+        Mark { src: r.src.clone(), day: r.day.clone(), prev: None, vv: vec![n] }
+    }
+
+    fn at_day(ix: &SearchIndex, day: &str) {
+        ix.set_today(Some(day));
+    }
+
+    // KIND: unit (v2) — postings are newest first; an edit moves them, a delete removes them.
     #[test]
     fn edit_and_delete_reindex() {
         let ix = SearchIndex::in_memory("alpha beta");
-        ix.apply(&[row("dm.p", "1", 10, "hello there"), row("dm.p", "2", 20, "help me")], &[], &[]).unwrap();
+        ix.apply(&[row("dm.p", "1", T0 + 10, "hello there"), row("dm.p", "2", T0 + 20, "help me")], &[], &[]).unwrap();
         assert_eq!(ids(&ix, "hel"), ["2", "1"]);
-        ix.apply(&[row("dm.p", "1", 10, "goodbye")], &[], &[]).unwrap();
+        ix.apply(&[row("dm.p", "1", T0 + 10, "goodbye")], &[], &[]).unwrap();
         assert_eq!(ids(&ix, "hel"), ["2"]);
         assert_eq!(ids(&ix, "go"), ["1"]);
-        ix.apply(&[row("dm.p", "2", 20, "")], &[], &[]).unwrap();
+        ix.apply(&[row("dm.p", "2", T0 + 20, "")], &[], &[]).unwrap();
         assert!(ids(&ix, "hel").is_empty());
         ix.apply(&[], &[ix.doc_key("dm.p", "1")], &[]).unwrap();
         assert!(ids(&ix, "go").is_empty());
-        let left: Vec<String> = ix.raw_rows().into_iter().map(|(k, _)| k).filter(|k| k != "v").collect();
-        assert!(left.is_empty(), "nothing left behind: {left:?}");
+        assert_eq!(ix.stats().hot_docs, 0);
+        assert_eq!(ix.raw_rows().len(), 1, "nothing was written but the version");
     }
 
-    // KIND: unit (S1) — forgetting a conversation removes its docs, postings and watermarks only.
+    // KIND: unit (v2) — forgetting a conversation removes its docs and watermarks only, in
+    // memory and in segments.
     #[test]
     fn forget_removes_one_conversation() {
         let ix = SearchIndex::in_memory("alpha beta");
-        let mark = |src: &str| Mark { src: src.into(), day: "-".into(), prev: None, vv: Vec::new() };
-        ix.apply(&[row("g.a", "1", 1, "picnic plans"), row("g.b", "2", 2, "picnic too")], &[], &[mark("g.a"), mark("g.b")]).unwrap();
+        let (a, b) = (row("g.a", "1", T0 + 1, "picnic plans"), row("g.b", "2", T0 + 2, "picnic too"));
+        ix.apply(&[a.clone(), b.clone()], &[], &[mark(&a, 1), mark(&b, 1)]).unwrap();
         ix.forget("g.a").unwrap();
         assert_eq!(ids(&ix, "pic"), ["2"]);
-        assert!(ix.watermark("g.a", "-").is_none() && ix.watermark("g.b", "-").is_some());
-        assert!(ix.doc_keys("g.a").unwrap().is_empty());
+        assert!(!ix.has_watermark("g.a", &a.day) && ix.has_watermark("g.b", &b.day));
+        assert!(ix.day_keys("g.a", &a.day).unwrap().is_empty());
+        // Now the same from a segment.
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.stats().hot_docs, 0);
+        assert_eq!(ids(&ix, "pic"), ["2"]);
+        ix.apply(std::slice::from_ref(&a), &[], &[mark(&a, 1)]).unwrap();
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ids(&ix, "pic"), ["2", "1"]);
+        ix.forget("g.b").unwrap();
+        assert_eq!(ids(&ix, "pic"), ["1"]);
+        assert!(!ix.has_watermark("g.b", &b.day));
+        ix.forget("g.a").unwrap();
+        assert!(ids(&ix, "pic").is_empty());
+        assert_eq!(ix.stats().segs, 0, "an empty segment is dropped");
+        assert_eq!(ix.raw_rows().len(), 2, "version and manifest");
     }
 
-    // KIND: unit (S1) — a conditional watermark only moves from the version it expects.
+    // KIND: unit (v2) — a conditional watermark only moves from the version it expects.
     #[test]
     fn conditional_marks() {
         let ix = SearchIndex::in_memory("alpha beta");
@@ -319,64 +1056,318 @@ mod tests {
         v1.insert(7, 3);
         let mut v2 = v1.clone();
         v2.insert(7, 5);
-        let m = |prev: Option<&loro::VersionVector>, vv: &loro::VersionVector| Mark { src: "dm.p".into(), day: "d".into(), prev: prev.map(|p| p.encode()), vv: vv.encode() };
+        let m = |prev: Option<&loro::VersionVector>, vv: &loro::VersionVector| Mark { src: "dm.p".into(), day: "2026-01-01".into(), prev: prev.map(|p| p.encode()), vv: vv.encode() };
         ix.apply(&[], &[], &[m(Some(&loro::VersionVector::default()), &v1)]).unwrap();
-        assert!(vv_eq(&ix.watermark("dm.p", "d").unwrap(), &v1.encode()));
+        assert!(ix.watermark_is("dm.p", "2026-01-01", &v1.encode()));
         // A change that assumed some other version leaves it alone.
         ix.apply(&[], &[], &[m(Some(&v2), &v2)]).unwrap();
-        assert!(vv_eq(&ix.watermark("dm.p", "d").unwrap(), &v1.encode()));
+        assert!(ix.watermark_is("dm.p", "2026-01-01", &v1.encode()));
         ix.apply(&[], &[], &[m(Some(&v1), &v2)]).unwrap();
-        assert!(vv_eq(&ix.watermark("dm.p", "d").unwrap(), &v2.encode()));
+        assert!(ix.watermark_is("dm.p", "2026-01-01", &v2.encode()));
+        assert!(!ix.watermark_is("dm.p", "2026-01-01", &v1.encode()));
     }
 
-    // KIND: unit (S1) — paging by cursor walks every posting once, newest first.
+    // KIND: unit (v2) — paging by cursor walks every doc once, newest first, in memory and across
+    // a segment, also when the docs move between pages.
     #[test]
-    fn paging_newest_first() {
+    fn paging_newest_first_across_tiers() {
         let ix = SearchIndex::in_memory("alpha beta");
-        let rows: Vec<DocRow> = (0..25).map(|i| row("dm.p", &format!("m{i:02}"), 1000 + i, "lunch today")).collect();
-        ix.apply(&rows, &[], &[]).unwrap();
+        at_day(&ix, "2026-03-01");
+        let rows: Vec<DocRow> = (0..40).map(|i| row("dm.p", &format!("m{i:02}"), T0 + i * D / 4, "lunch today")).collect();
+        ix.apply(&rows[..30], &[], &[]).unwrap();
+        ix.maintain(Mode::Force).unwrap();
+        assert!(ix.stats().segs > 0 && ix.stats().hot_docs == 0);
+        // The newer docs arrive late, as hot docs of cold days (dirty).
+        ix.apply(&rows[30..], &[], &[]).unwrap();
+        let want: Vec<String> = (0..40).rev().map(|i| format!("m{i:02}")).collect();
         let mut seen = Vec::new();
         let mut cur: Option<String> = None;
+        let mut flipped = false;
         loop {
-            let (page, more) = ix.page("lunch", cur.as_deref(), 10).unwrap();
-            seen.extend(page.iter().map(|(_, r)| r.as_ref().unwrap().at));
+            let mut s = ix.scan("lunch", cur.as_deref()).unwrap();
+            let (page, more) = s.next(7).unwrap();
+            seen.extend(page.iter().map(|(_, r)| r.id.clone()));
             cur = page.last().map(|(c, _)| c.clone());
+            if !flipped {
+                // The tier changes between pages: the dirty days go into segments.
+                ix.maintain(Mode::Force).unwrap();
+                flipped = true;
+            }
             if !more {
                 break;
             }
         }
-        let want: Vec<i64> = (0..25).rev().map(|i| 1000 + i).collect();
         assert_eq!(seen, want);
     }
 
-    // KIND: unit (S1) — at rest the file holds no words, names or authors: values are sealed and
+    // KIND: unit (v2) — at rest the file holds no words, names or authors: values are sealed and
     // keys carry only keyed hashes. Another phrase reads nothing.
     #[test]
     fn sealed_at_rest() {
         let ix = SearchIndex::in_memory("alpha beta");
-        let mut r = row("dm.p", "1", 10, "confidential rendezvous");
+        let mut r = row("dm.p", "1", T0 + 10, "confidential rendezvous");
         r.author = "did:key:zAuthorSecret".into();
         ix.apply(&[r], &[], &[]).unwrap();
-        for (k, v) in ix.raw_rows() {
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        let rows = ix.raw_rows();
+        assert!(rows.len() > 3);
+        for (k, v) in &rows {
             for word in ["confidential", "rendezvous", "conf", "AuthorSecret"] {
                 assert!(!k.contains(word), "key {k} leaks {word}");
                 assert!(!v.windows(word.len()).any(|w| w == word.as_bytes()), "value of {k} leaks {word}");
             }
         }
-        let other = SearchIndex { db: Sealed::new(ix.db.raw().clone(), [9; 32]), index_key: Zeroizing::new([9; 32]), write: Mutex::new(()) };
-        assert!(other.page("conf", None, 10).unwrap().0.iter().all(|(_, r)| r.is_none()));
+        let other = SearchIndex::with_store(ix.db.raw().clone(), "other phrase").unwrap();
+        assert!(ids(&other, "conf").is_empty());
         assert!(ix.db.raw().get("v").unwrap().is_some());
     }
 
-    // KIND: unit (S1) — a file of another format version is emptied on open (rebuild).
+    // KIND: unit (v2) — a file of another format version (the v1 layout) is emptied on open.
     #[test]
     fn version_mismatch_empties() {
         let ix = SearchIndex::in_memory("alpha beta");
-        ix.apply(&[row("dm.p", "1", 10, "hello")], &[], &[]).unwrap();
         let raw = ix.db.raw().clone();
-        ix.db.put("v", &(VERSION + 1).to_be_bytes()).unwrap();
+        ix.db.put("v", &1u32.to_be_bytes()).unwrap();
+        ix.db.put("d/00ff", b"old row").unwrap();
+        raw.put("t/abcd/ffff/00ff", b"").unwrap();
         let again = SearchIndex::with_store(raw, "alpha beta").unwrap();
-        assert!(ids(&again, "hel").is_empty());
         assert_eq!(again.raw_rows().len(), 1, "only the version row");
+        assert!(again.ix_version_ok());
+    }
+
+    impl SearchIndex {
+        fn ix_version_ok(&self) -> bool {
+            self.db.get("v").unwrap().unwrap() == VERSION.to_be_bytes()
+        }
+    }
+
+    // KIND: unit (v2) — a day that fell out of the hot window is written into a segment (memory
+    // empty, found from the file), and a reopen finds it from the manifest alone.
+    #[test]
+    fn cold_day_in_a_segment_is_found_after_reopen() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        let r = row("dm.p", "1", T0, "ancient manuscript");
+        ix.apply(std::slice::from_ref(&r), &[], &[mark(&r, 1)]).unwrap();
+        at_day(&ix, "2026-01-05");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.stats().segs, 0, "still within the hot window");
+        assert_eq!(ids(&ix, "manus"), ["1"]);
+        at_day(&ix, "2026-01-20");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!((ix.stats().hot_docs, ix.stats().segs), (0, 1));
+        assert_eq!(ids(&ix, "manus"), ["1"]);
+        assert!(ix.watermark_is("dm.p", &r.day, &[1]) || ix.has_watermark("dm.p", &r.day));
+        let again = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta").unwrap();
+        assert_eq!(ids(&again, "manus"), ["1"]);
+        assert!(again.has_watermark("dm.p", &r.day));
+        assert_eq!(again.stats().hot_docs, 0);
+    }
+
+    // KIND: unit (v2) — a late post into a segmented day, an edit and a delete of a segmented
+    // message are seen at once (the day comes back into memory); the segment is rewritten later.
+    #[test]
+    fn dirty_cold_day_overrides_its_segment() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        let (a, b) = (row("g.x", "a", T0 + 100, "plan the picnic"), row("g.x", "b", T0 + 200, "bring blankets"));
+        ix.apply(&[a.clone(), b.clone()], &[], &[mark(&a, 1)]).unwrap();
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.stats().hot_docs, 0);
+        // late post
+        let late = row("g.x", "c", T0 + 300, "also lemonade");
+        ix.apply(std::slice::from_ref(&late), &[], &[mark(&late, 2)]).unwrap();
+        assert_eq!(ids(&ix, "lemon"), ["c"]);
+        assert_eq!(ids(&ix, "bl"), ["b"], "the day's other docs are served from memory");
+        assert_eq!(ix.stats().hot_docs, 3);
+        // edit and delete
+        ix.apply(&[row("g.x", "a", T0 + 100, "plan the barbecue")], &[], &[]).unwrap();
+        assert!(ids(&ix, "picnic").is_empty());
+        assert_eq!(ids(&ix, "barbe"), ["a"]);
+        ix.apply(&[], &[ix.doc_key("g.x", "b")], &[]).unwrap();
+        assert!(ids(&ix, "blank").is_empty());
+        // The month is rewritten: the same answers from the file, nothing in memory.
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.stats().hot_docs, 0);
+        assert_eq!(ix.stats().segs, 1, "the old segment emptied of its day and went");
+        assert_eq!(ids(&ix, "barbe"), ["a"]);
+        assert_eq!(ids(&ix, "lemon"), ["c"]);
+        assert!(ids(&ix, "picnic").is_empty() && ids(&ix, "blank").is_empty());
+        // A change that alters nothing does not bring the day back.
+        ix.apply(std::slice::from_ref(&late), &[], &[mark(&late, 2)]).unwrap();
+        assert_eq!(ix.stats().hot_docs, 0);
+    }
+
+    // KIND: unit (v2) — a crash after a hot change on a cold day, before its month was rewritten:
+    // the reopened file has the old watermark, so the day is known to differ.
+    #[test]
+    fn crash_before_rewrite_leaves_the_old_watermark() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        let a = row("dm.p", "a", T0 + 100, "one two");
+        ix.apply(std::slice::from_ref(&a), &[], &[mark(&a, 1)]).unwrap();
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        ix.apply(&[row("dm.p", "a", T0 + 100, "one three")], &[], &[mark(&a, 2)]).unwrap();
+        assert!(ix.watermark_is("dm.p", &a.day, &[2]));
+        let crashed = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta").unwrap();
+        assert!(crashed.watermark_is("dm.p", &a.day, &[1]) && !crashed.watermark_is("dm.p", &a.day, &[2]));
+        assert_eq!(ids(&crashed, "two"), ["a"], "the file still has the old text, reconcile fixes it");
+    }
+
+    // KIND: unit (v2) — SEG_MAX_DOCS splits a month into several segments, newest days first, and
+    // a query merges them in order.
+    #[test]
+    fn segment_cap_splits_a_month() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        ix.set_limits(|l| l.seg_max_docs = 10);
+        let mut rows = Vec::new();
+        for d in 0..6 {
+            for k in 0..5 {
+                rows.push(row("dm.p", &format!("d{d}k{k}"), T0 + d * D + k * 1000, "daily standup"));
+            }
+        }
+        ix.apply(&rows, &[], &[]).unwrap();
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        let st = ix.stats();
+        assert_eq!((st.segs, st.seg_docs), (3, 30));
+        let want: Vec<String> = rows.iter().rev().map(|r| r.id.clone()).collect();
+        assert_eq!(ids(&ix, "stand"), want);
+    }
+
+    // KIND: unit (v2) — segments of one month merge when there are more than 4, and a month that
+    // is over is merged into one; day order and answers are kept.
+    #[test]
+    fn same_month_segments_merge() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        at_day(&ix, "2026-01-20");
+        let mut all = Vec::new();
+        for d in 0..4 {
+            let r = row("dm.p", &format!("m{d}"), T0 + d * D, "weekly review");
+            all.push(r.id.clone());
+            ix.apply(&[r], &[], &[]).unwrap();
+            // Each day goes cold on its own, as segments of the same month.
+            at_day(&ix, &format!("2026-01-{:02}", 10 + d + 8));
+            ix.maintain(Mode::Force).unwrap();
+        }
+        assert_eq!(ix.stats().segs, 4, "four are allowed");
+        let r = row("dm.p", "m4", T0 + 4 * D, "weekly review");
+        all.push(r.id.clone());
+        ix.apply(&[r], &[], &[]).unwrap();
+        at_day(&ix, "2026-01-28");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.stats().segs, 1, "the fifth merged them");
+        all.reverse();
+        assert_eq!(ids(&ix, "weekly"), all);
+        // Month over: two segments become one.
+        let r = row("dm.p", "m5", T0 + 5 * D, "weekly review");
+        ix.apply(&[r], &[], &[]).unwrap();
+        at_day(&ix, "2026-01-30");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.stats().segs, 2);
+        at_day(&ix, "2026-02-02");
+        ix.maintain(Mode::Tick).unwrap();
+        assert_eq!(ix.stats().segs, 1, "the month is over");
+        assert_eq!(ids(&ix, "weekly").len(), 6);
+        ix.maintain(Mode::Tick).unwrap();
+        assert_eq!(ix.stats().segs, 1);
+    }
+
+    // KIND: unit (v2) — a query word longer than 8 chars is looked up by its 8-char prefix and
+    // checked against the text, in memory and in a segment.
+    #[test]
+    fn long_term_found_by_prefix_and_checked() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        let (a, b) = (row("dm.p", "a", T0 + 1, "internationalization day"), row("dm.p", "b", T0 + 2, "international relations"));
+        ix.apply(&[a, b], &[], &[]).unwrap();
+        let want = |ix: &SearchIndex| {
+            let terms = super::super::text::query_terms("internationaliz");
+            let look = terms[0].lookup();
+            assert_eq!(look.chars().count(), 8);
+            let mut s = ix.scan(&look, None).unwrap();
+            let got: Vec<String> = s.next(10).unwrap().0.into_iter().map(|(_, r)| r).filter(|r| super::super::text::match_all(&terms, &super::super::text::normalize(&r.text)).is_some()).map(|r| r.id).collect();
+            assert_eq!(got, ["a"]);
+        };
+        want(&ix);
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        want(&ix);
+    }
+
+    // KIND: unit (v2) — a posting list longer than one part (2048 docs) is read part by part, and
+    // a cursor in the middle of a part resumes exactly there.
+    #[test]
+    fn long_lists_span_parts() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        let rows: Vec<DocRow> = (0..5000).map(|i| row("dm.p", &format!("m{i:04}"), T0 + i * 1000, "common word")).collect();
+        ix.apply(&rows, &[], &[]).unwrap();
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!((ix.stats().segs, ix.stats().seg_docs), (1, 5000));
+        let want: Vec<String> = (0..5000).rev().map(|i| format!("m{i:04}")).collect();
+        let mut seen = Vec::new();
+        let mut cur: Option<String> = None;
+        loop {
+            let mut s = ix.scan("common", cur.as_deref()).unwrap();
+            let (page, more) = s.next(777).unwrap();
+            seen.extend(page.iter().map(|(_, r)| r.id.clone()));
+            cur = page.last().map(|(c, _)| c.clone());
+            if !more {
+                break;
+            }
+        }
+        assert_eq!(seen, want);
+    }
+
+    // KIND: unit (v2) — a scan over several terms returns only docs posted under all of them, in
+    // memory and from a segment (the lists are intersected before any row is read).
+    #[test]
+    fn multi_term_scan_intersects() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        let rows = [row("dm.p", "a", T0 + 1, "red apple"), row("dm.p", "b", T0 + 2, "red pear"), row("dm.p", "c", T0 + 3, "green apple"), row("dm.p", "d", T0 + 4, "red apple pie")];
+        ix.apply(&rows[..2], &[], &[]).unwrap();
+        ix.apply(&rows[2..], &[], &[]).unwrap();
+        let both = |ix: &SearchIndex| -> Vec<String> { ix.scan_all(&["ap".to_string(), "re".to_string()], None).unwrap().next(10).unwrap().0.into_iter().map(|(_, r)| r.id).collect() };
+        assert_eq!(both(&ix), ["d", "a"]);
+        at_day(&ix, "2026-06-01");
+        ix.maintain(Mode::Force).unwrap();
+        assert_eq!(ix.stats().hot_docs, 0);
+        assert_eq!(both(&ix), ["d", "a"]);
+        assert!(ix.scan_all(&["ap".to_string(), "zz".to_string()], None).unwrap().next(10).unwrap().0.is_empty());
+    }
+
+    // KIND: unit (v2) — closing drops and zeroizes the hot tier; a reopen has none of it.
+    #[test]
+    fn close_clears_the_hot_tier() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        ix.apply(&[row("dm.p", "a", T0, "secret plans")], &[], &[]).unwrap();
+        assert_eq!(ix.stats().hot_docs, 1);
+        let raw = ix.db.raw().clone();
+        ix.close();
+        assert_eq!((ix.stats().hot_docs, ix.stats().hot_days), (0, 0));
+        assert!(ix.is_closed());
+        assert!(ix.scan("secret", None).unwrap().next(5).unwrap().0.is_empty());
+        let _ = raw;
+    }
+
+    // KIND: unit (v2) — over HOT_MAX_DOCS the oldest cold days go into segments by themselves
+    // (bulk apply), the recent days stay in memory.
+    #[test]
+    fn hot_overflow_flushes_the_oldest_days() {
+        let ix = SearchIndex::in_memory("alpha beta");
+        ix.set_limits(|l| l.hot_max_docs = 20);
+        at_day(&ix, "2026-06-01");
+        for d in 0..10 {
+            let rows: Vec<DocRow> = (0..5).map(|k| row("dm.p", &format!("d{d}k{k}"), T0 + d * D + k, "backlog item")).collect();
+            ix.apply_bulk(&rows, &[], &[]).unwrap();
+        }
+        let st = ix.stats();
+        assert!(st.hot_docs <= 20 && st.seg_docs > 0 && st.hot_docs + st.seg_docs >= 50, "{st:?}");
+        assert_eq!(ids(&ix, "backl").len(), 50);
+        // The recent days are never flushed by the cap.
+        at_day(&ix, "2026-01-10");
+        let rows: Vec<DocRow> = (0..30).map(|k| row("dm.p", &format!("r{k}"), T0 + 9 * D + k, "recent chatter")).collect();
+        ix.apply_bulk(&rows, &[], &[]).unwrap();
+        assert!(ix.stats().hot_docs >= 30);
     }
 }

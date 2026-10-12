@@ -6,7 +6,7 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
-use super::index::{DocRow, Mark, SearchIndex, vv_eq};
+use super::index::{DocRow, Mark, Mode, SearchIndex};
 use super::text;
 use crate::Error;
 use crate::chat::doc::{MsgRec, pair_id};
@@ -122,6 +122,33 @@ impl Node {
         let day = crate::chat::doc::day_of(crate::node::now_ms() as i64);
         let row = DocRow { src: group_src(&group_id), conv: group_id.clone(), day: day.clone(), id: post_id, at: 1, author: me.id.did().to_string(), text };
         ix.apply(&[row], &[], &[Mark { src: group_src(&group_id), day, prev: None, vv: Vec::new() }])
+    }
+
+    /// Pretends today is `day` (`YYYY-MM-DD`) for the search index (`None`: the real clock).
+    #[doc(hidden)]
+    pub fn search_set_today_for_test(&self, day: Option<String>) -> Result<(), Error> {
+        self.inner.search_ix().ok_or(Error::Locked)?.set_today(day.as_deref());
+        Ok(())
+    }
+
+    /// Shrinks the hot-tier and segment caps of the search index.
+    #[doc(hidden)]
+    pub fn search_set_caps_for_test(&self, hot_max_docs: u32, seg_max_docs: u32) -> Result<(), Error> {
+        self.inner.search_ix().ok_or(Error::Locked)?.set_limits(|l| {
+            l.hot_max_docs = hot_max_docs as usize;
+            l.seg_max_docs = seg_max_docs as usize;
+        });
+        Ok(())
+    }
+
+    /// Writes every cold day into segments now; returns (docs in memory, segments, docs in
+    /// segments).
+    #[doc(hidden)]
+    pub fn search_maintain_for_test(&self) -> Result<(u32, u32, u32), Error> {
+        let ix = self.inner.search_ix().ok_or(Error::Locked)?;
+        ix.maintain(Mode::Force)?;
+        let s = ix.stats();
+        Ok((s.hot_docs as u32, s.segs as u32, s.seg_docs as u32))
     }
 
     /// Compacts the old days now (otherwise every hour); returns how many days are closed.
@@ -257,7 +284,21 @@ impl Inner {
             }
             let gc = this.group.core.lock().clone();
             if let Some(gc) = gc.filter(|c| !c.closed()) {
-                this.search_reconcile_groups(&gc);
+                let _ = this.search_reconcile_groups_run(&gc).await;
+            }
+            // Days that are cold now (and what the bulk left in memory) go into segments.
+            let ix2 = ix.clone();
+            let _ = tokio::task::spawn_blocking(move || ix2.maintain(Mode::Force)).await;
+            if !ix.claim_ticker() {
+                return;
+            }
+            // Then once a minute: days that fell out of the hot window or waited out the debounce.
+            while !ix.is_closed() {
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                let ix2 = ix.clone();
+                if let Ok(Err(e)) = tokio::task::spawn_blocking(move || ix2.maintain(Mode::Tick)).await {
+                    tracing::debug!("search maintain: {e}");
+                }
             }
         });
     }
@@ -282,7 +323,7 @@ impl Inner {
                     return Ok(());
                 }
                 let Some(meta) = core.store.shard_meta(&pair, &day)? else { continue };
-                if ix.watermark(&src, &day).is_some_and(|w| vv_eq(&w, &meta.vv)) {
+                if ix.watermark_is(&src, &day, &meta.vv) {
                     continue;
                 }
                 // A closed day whose snapshot blob is not here (yet) is skipped: next time.
@@ -297,7 +338,7 @@ impl Inner {
                 let rows: Vec<DocRow> = msgs.values().map(|r| dm_row(&did, &pair, &day, r)).collect();
                 let mark = Mark { src: src.clone(), day: day.clone(), prev: None, vv: shard.vv().encode() };
                 let ix2 = ix.clone();
-                tokio::task::spawn_blocking(move || ix2.apply(&rows, &[], &[mark])).await.map_err(|e| Error::Io(e.to_string()))??;
+                tokio::task::spawn_blocking(move || ix2.apply_bulk(&rows, &[], &[mark])).await.map_err(|e| Error::Io(e.to_string()))??;
             }
         }
         Ok(())
@@ -322,6 +363,10 @@ impl Inner {
         let t = std::time::Instant::now();
         let gc = self.group_core()?;
         let _ = self.search_reconcile_groups_run(&gc).await;
+        // The cold days the bulk left in memory go into segments (the open's last step; its
+        // time counts in the groups part).
+        let ix2 = ix.clone();
+        tokio::task::spawn_blocking(move || ix2.maintain(Mode::Force)).await.map_err(|e| Error::Io(e.to_string()))??;
         Ok((dms, t.elapsed()))
     }
 
@@ -340,7 +385,7 @@ impl Inner {
                         return;
                     }
                     let Some(sm) = core.store.shard_meta(&gid, &day).ok().flatten() else { continue };
-                    if !pending.contains(&day) && ix.watermark(&src, &day).is_some_and(|w| vv_eq(&w, &sm.vv)) {
+                    if !pending.contains(&day) && ix.watermark_is(&src, &day, &sm.vv) {
                         continue;
                     }
                     // The day as cached, or read once without disturbing the cache.
@@ -362,7 +407,7 @@ impl Inner {
                     let live: HashSet<String> = rows.iter().map(|r| ix.doc_key(&src, &r.id)).collect();
                     // A day the index has never seen (a rebuild) has nothing stale to find, which
                     // keeps a full rebuild from scanning the group's keys once per day.
-                    if ix.watermark(&src, &day).is_some() {
+                    if ix.has_watermark(&src, &day) {
                         match ix.day_keys(&src, &day) {
                             Ok(k) => stale.extend(k.into_iter().filter(|h| !live.contains(h))),
                             Err(e) => return Self::search_log(e),
@@ -373,12 +418,12 @@ impl Inner {
                     // Days go to the index together (a transaction per few thousand posts): one
                     // transaction per day would cost more than the posts themselves.
                     if batch.len() >= RECONCILE_BATCH
-                        && let Err(e) = ix.apply(&std::mem::take(&mut batch), &std::mem::take(&mut stale), &std::mem::take(&mut marks))
+                        && let Err(e) = ix.apply_bulk(&std::mem::take(&mut batch), &std::mem::take(&mut stale), &std::mem::take(&mut marks))
                     {
                         return Self::search_log(e);
                     }
                 }
-                if let Err(e) = ix.apply(&batch, &stale, &marks) {
+                if let Err(e) = ix.apply_bulk(&batch, &stale, &marks) {
                     return Self::search_log(e);
                 }
             }
@@ -403,18 +448,17 @@ impl Inner {
             return Err(Error::Protocol("bad cursor".into()));
         }
         let limit = limit.clamp(1, MAX_LIMIT) as usize;
-        let lookup = scan.lookup();
+        let mut lookups: Vec<String> = vec![scan.lookup()];
+        lookups.extend(terms.iter().map(|t| t.lookup()));
         let readable = self.search_readable(&me);
         let mut messages = Vec::new();
-        let mut after = cursor.map(str::to_string);
+        let mut scan = ix.scan_all(&lookups, cursor)?;
         let mut looked = 0;
         let mut next = None;
         'scan: loop {
-            let (page, more) = ix.page(&lookup, after.as_deref(), SCAN)?;
+            let (page, more) = scan.next(SCAN)?;
             for (cur, row) in page {
                 looked += 1;
-                after = Some(cur.clone());
-                let Some(row) = row else { continue };
                 if let Some(hit) = self.search_hit(&me, gcore.as_deref(), &readable, &terms, row) {
                     messages.push(hit);
                     if messages.len() >= limit {

@@ -3,6 +3,8 @@
 //! open. Nothing leaves the device. See `docs/search.md`.
 
 pub mod api;
+pub mod hot;
 pub mod index;
+pub mod seg;
 pub mod text;
 pub mod bench;
