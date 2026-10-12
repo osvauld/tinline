@@ -238,3 +238,26 @@ partly loaded.
 
 The `group_post` / DM send timings of the year-bench were not rerun; the send-path index cost
 is in the `search-bench` table in `search.md`.
+
+## Search index v3 (2026-10-12, branch `search-compact`)
+
+Same dataset (`v2-s1.0`, 157 835 messages), `year-bench run --scenario intact`; the v2 file in
+the copy was replaced by a new one and rebuilt. Details and the `search-bench` tables are in
+`docs/search.md` "Benchmarks v3".
+
+| | v2 index | v3 index |
+|---|---|---|
+| `search.redb` | 515 MB (3.3 KB per message) | **121-147 MB (0.8-0.95 KB per message)**, 134 MB in the last run |
+| search rebuild | DMs 5.5 s + groups 40.9 s | DMs 5.4-9.3 s + groups 26-38 s (runs on a loaded machine) |
+| DM send p50 / p95 / p99 / max (560 sends) | not rerun | 1.77 / 2.92 / 3.12 / 18.7 ms |
+| `group_post` 100k group, 200 posts | not rerun | 1.35 / 1.85 / 7.4 / 17 ms |
+| `group_post` 30k group | not rerun | 1.28 / 1.9 / 13 / 49 ms |
+| query "th" p50 / p95 | 1.6 / 2.5 ms | 0.66 / 0.99 ms |
+| "meeting" | 5.4 / 8.2 ms | 2.5 / 2.7 ms |
+| "meeting tomorrow" | 6.4 / 7.1 ms | 2.9 / 4.0 ms |
+| rare word | 2.2 / 2.7 ms | 1.0 / 1.2 ms |
+| unlock with key | 190 ms | 245 ms |
+
+The year-bench now prints p99 and takes 200 local group posts and 560 DM sends per run. Timings
+in these runs vary with the machine's load (other jobs ran during them); the index's own part
+of a send (memory only) is 0.1-0.6 ms.
