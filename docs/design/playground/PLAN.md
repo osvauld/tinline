@@ -117,6 +117,10 @@ Recorded here so area work and the core teams see them. Drawer notes say "Decide
   (does not replace).
 - **Chat requests**: cancelling a request also starts the 7-day wait before asking again.
 
+- **Shapes**: Bézier continuous corners from `src/lib/geom` (smoothing 0.6, bubble 18/6). One-line
+  bubbles stay pill-shaped (smoothing has no room there); the smoothing shows on taller shapes. Apps
+  port the same construction (`src/lib/geom/GEOMETRY.md`).
+
 Core follow-ups these imply (not playground work):
 - Availability: the core refuses calls while unavailable (`set_available` controls call admission);
   it must keep admitting calls while Busy.
