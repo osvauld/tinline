@@ -59,7 +59,8 @@ class CallSession(
 
     @Volatile private var mode = Mode.Pending
     @Volatile private var audioOn = false
-    @Volatile private var answered = !incoming
+    /** Telecom has been told the call is answered/active (answer for incoming, setActive for outgoing). */
+    @Volatile private var activated = false
     @Volatile private var endedHere = false
     @Volatile private var placedSpeaker = false
     /** Telecom disconnected the call itself (car, watch, headset): no fallback, the core call is ending. */
@@ -87,7 +88,7 @@ class CallSession(
         try {
             cm.addCall(
                 attrs,
-                onAnswer = { _ -> answered = true; guard("answer") { onAnswer() } },
+                onAnswer = { _ -> activated = true; guard("answer") { onAnswer() } },
                 onDisconnect = { _ ->
                     remoteEnded = true
                     ops.close()
@@ -135,15 +136,17 @@ class CallSession(
             engine.start()
             if (mode == Mode.Fallback) engine.takeRouting(preferSpeaker)
         }
-        if (!answered) { answered = true; op { answer(CallAttributesCompat.CALL_TYPE_AUDIO_CALL) } }
-        else op { log("active", setActive()) }
+        activate()
     }
 
     /** The user answered in the app: tell Telecom right away so the audio mode is set before media flows. */
-    fun answering() {
-        if (answered) return
-        answered = true
-        op { answer(CallAttributesCompat.CALL_TYPE_AUDIO_CALL) }
+    fun answering() { if (incoming) activate() }
+
+    private fun activate() {
+        if (activated) return
+        activated = true
+        if (incoming) op { log("answer", answer(CallAttributesCompat.CALL_TYPE_AUDIO_CALL)) }
+        else op { log("active", setActive()) }
     }
 
     /** The call is over (any reason). Stops the audio and releases Telecom; idempotent. */
@@ -232,7 +235,7 @@ class CallSession(
     )
 
     companion object {
-        const val TAG = "CallSession"
+        const val TAG = "TinCall"
         private val ADDRESS: Uri = Uri.fromParts("tinline", "call", null)
         @Volatile private var cm: CallsManager? = null
         @Volatile private var registered: Boolean? = null
