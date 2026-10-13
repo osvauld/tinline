@@ -42,6 +42,9 @@ import kotlin.math.sqrt
 enum class MarkState { Slack, Ringing, Taut }
 
 /** App-wide fx bus: a sent message makes every visible live mark pluck, quietly (playground: fx 'sent'). */
+/** In-app palette of Mark.svelte: can = --accent (dark theme #117e6b, not the mint text colour pr), mouth always #9fd6c8, string = --gold (Tin.c.thread). */
+object MarkColors { val CanDark = Color(0xFF117E6B); val Mouth = Color(0xFF9FD6C8) }
+
 object TinFx {
     val sent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     fun messageSent() { sent.tryEmit(Unit) }
@@ -222,7 +225,7 @@ private fun DrawScope.drawCan(p: MarkTier, cx: Double, can: Color, mouth: Color)
  */
 @Composable
 fun TinMark(
-    size: Dp, can: Color = Tin.c.pr, string: Color = Tin.c.thread, modifier: Modifier = Modifier,
+    size: Dp, can: Color = if (Tin.c.dark) MarkColors.CanDark else Tin.c.pr, string: Color = Tin.c.thread, modifier: Modifier = Modifier,
     mouth: Color? = null, state: MarkState = MarkState.Slack, live: Boolean = false,
 ) {
     val ctx = LocalContext.current
@@ -232,12 +235,7 @@ fun TinMark(
     var frame by remember { mutableIntStateOf(0) }
     var kick by remember { mutableIntStateOf(0) }
     val reduced = reducedMotion(ctx)
-    val dark = can.red + can.green + can.blue > 1.5f   // light cans sit on a dark ground
-    val hole = mouth ?: when {
-        tier.flat -> if (dark) Color(0xFF14433A) else Color(0xFFF5F6F3)
-        dark -> Color(0xFF14433A)
-        else -> Color(0xFF9FD6C8)
-    }
+    val hole = mouth ?: MarkColors.Mouth
 
     // state -> springs. The first composition sets the pose; later changes retarget mid-flight.
     val appliedBox = remember(model) { arrayOfNulls<MarkState>(1) }

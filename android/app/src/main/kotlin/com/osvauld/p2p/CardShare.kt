@@ -97,7 +97,7 @@ fun MyCodeBlock(app: P2pApp, meName: String, qr: Dp = 248.dp, showNewCode: Boole
                         val bmp = remember(t) { qrBitmap(t, 720, fg = 0xFF17201D.toInt()) }
                         Image(bmp.asImageBitmap(), "QR code of your contact card", Modifier.fillMaxSize().padding(10.dp))
                         Box(Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color.White).padding(3.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF0B6B5B)), contentAlignment = Alignment.Center) {
-                            TinMark(26.dp, can = Color.White, string = Color(0xFFE8B04A))
+                            TinMark(26.dp, can = Color.White, string = Color(0xFFE8B04A), mouth = Color(0xFF0B6B5B))
                         }
                     } else Text(err ?: "Preparing your code…", Modifier.padding(16.dp), style = TinType.bodyM, color = Color(0xFF4D5853), textAlign = TextAlign.Center)
                 }
