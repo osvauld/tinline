@@ -405,7 +405,7 @@ fun TinDialog(
 ) {
     val c = Tin.c
     // The dialog window wraps its content and clips whatever is drawn outside it, so the sheet shadow needs room inside the window:
-    // full-width transparent window, the surface at the platform's 78 % width in the middle, 40 dp of margin above and below.
+    // full-width transparent window, the surface at the platform's 78 % width in the middle, 72 dp of margin above and below, more than the sheet shadow reaches.
     // Taps in that margin dismiss like taps on the scrim.
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
       Box(
@@ -413,7 +413,7 @@ fun TinDialog(
           contentAlignment = Alignment.Center,
       ) {
         Column(
-            Modifier.padding(vertical = 40.dp).fillMaxWidth(0.78f).depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp)).background(c.sfRaised)
+            Modifier.padding(vertical = 72.dp).fillMaxWidth(0.78f).depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp)).background(c.sfRaised)
                 .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {}).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
