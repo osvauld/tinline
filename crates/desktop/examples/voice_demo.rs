@@ -4,6 +4,9 @@
 
 #![allow(dead_code)]
 
+#[path = "../src/mark.rs"]
+#[allow(dead_code)]
+mod mark;
 #[path = "../src/ui.rs"]
 mod ui;
 #[path = "../src/voice.rs"]

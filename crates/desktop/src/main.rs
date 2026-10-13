@@ -27,6 +27,7 @@ mod flow;
 mod groups_fake;
 mod hostcond;
 mod keystore;
+mod mark;
 mod raise;
 mod media;
 mod camera;

@@ -216,7 +216,7 @@ impl App {
     /// A centred card on the background, for the screens before the home screen.
     fn shell<'a>(&'a self, t: Tok, title: &str, sub: &str, content: El<'a>) -> El<'a> {
         let head = column![
-            ui::logo(48.0, t.primary, t.thread),
+            ui::logo(48.0, t),
             bold(title.to_string(), 26.0, t.ink),
             tx(sub.to_string(), 15.0, t.ink2),
         ]
@@ -692,9 +692,31 @@ impl App {
         self.contacts.iter().find(|c| c.did == did).map(Self::display).unwrap_or_else(|| fallback.to_string())
     }
 
+    /// What the sidebar mark shows: the call phase (dialing / ringing / active / reconnecting) from the
+    /// open call, else the node: started and on a home relay = online, started without one = connecting,
+    /// not started (locked, starting) = offline.
+    fn mark_look(&self) -> crate::mark::Look {
+        use crate::mark::{status_look, CallPhase, Net};
+        let call = self.call.as_ref().and_then(|c| match &c.state {
+            CallState::Dialing => Some(CallPhase::Outgoing),
+            CallState::Ringing if c.info.incoming && !c.answered => Some(CallPhase::Incoming),
+            CallState::Ringing => Some(CallPhase::Outgoing),
+            CallState::Active if c.stats.as_ref().is_some_and(|s| s.reconnecting) => Some(CallPhase::Reconnecting),
+            CallState::Active => Some(CallPhase::Active),
+            CallState::Ended { .. } => None,
+        });
+        let net = match (self.status.started, self.status.online) {
+            (true, true) => Net::Online,
+            (true, false) => Net::Connecting,
+            _ => Net::Offline,
+        };
+        let l = status_look(call, net);
+        crate::mark::Look { state: l.state, sway: l.sway, dim: l.dim, pluck: self.mark_pluck }
+    }
+
     fn sidebar(&self, t: Tok) -> El<'_> {
         // The name doubles as the way home, like a site's logo.
-        let home = button(row![ui::logo(28.0, t.primary, t.thread), bold("Tinline", 20.0, t.ink)].spacing(4).align_y(Alignment::Center))
+        let home = button(row![ui::logo_live(28.0, t, self.mark_look()), bold("Tinline", 20.0, t.ink)].spacing(4).align_y(Alignment::Center))
             .padding([2, 4])
             .style(ui::button_style(t, Kind::Ghost, 8.0))
             .on_press(Msg::Home);
@@ -1561,7 +1583,7 @@ impl App {
         let about = section(t,
             "About",
             column![
-                row![ui::logo(40.0, t.primary, t.thread), column![bold("Tinline", 18.0, t.ink), tx(format!("Version {} \u{b7} by Osvauld", env!("CARGO_PKG_VERSION")), 13.0, t.ink2)].spacing(2)].spacing(12).align_y(Alignment::Center),
+                row![ui::logo(40.0, t), column![bold("Tinline", 18.0, t.ink), tx(format!("Version {} \u{b7} by Osvauld", env!("CARGO_PKG_VERSION")), 13.0, t.ink2)].spacing(2)].spacing(12).align_y(Alignment::Center),
                 tx("Free and open source under the GPL. No ads, no tracking, no analytics.", 14.0, t.ink2),
                 tx("Fonts: Figtree and IBM Plex Mono, SIL Open Font License 1.1. Icons: Lucide (ISC).", 13.0, t.ink2),
                 tx("Video: libaom (BSD-2-Clause, AOMedia Patent License 1.0) and rav1d (BSD-2-Clause); licence texts ship with the package.", 13.0, t.ink2),

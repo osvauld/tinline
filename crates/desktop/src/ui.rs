@@ -326,21 +326,15 @@ pub fn icon<'a, M: 'a>(i: Icon, size: f32, color: Color) -> Element<'a, M> {
     glyph(STROKE, i.body(), size, color)
 }
 
-/// The brand mark: two cans joined by the amber string. Own colours, never tinted.
-pub fn logo<'a, M: 'a>(size: f32, can: Color, string: Color) -> Element<'a, M> {
-    let hex = |c: Color| format!("#{:02X}{:02X}{:02X}", (c.r * 255.0) as u8, (c.g * 255.0) as u8, (c.b * 255.0) as u8);
-    let (c, s) = (hex(can), hex(string));
-    let h = raster(
-        hash_of(("logo", &c, &s)),
-        || {
-            format!(
-                r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="{c}"/><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="{c}"/><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="{s}" stroke-width="1.75" stroke-linecap="round"/></svg>"#
-            )
-        },
-        device_px(size),
-        None,
-    );
-    art(h, size)
+/// The brand mark (Mark D, see mark.rs) in the theme's colours. Static.
+pub fn logo<'a, M: 'a>(size: f32, t: Tok) -> Element<'a, M> {
+    logo_live(size, t, crate::mark::Look::default())
+}
+
+/// The mark that shows state (ringing sway, taut when connected, pluck on send).
+pub fn logo_live<'a, M: 'a>(size: f32, t: Tok, look: crate::mark::Look) -> Element<'a, M> {
+    let (can, string) = crate::mark::colors(t.dark);
+    crate::mark::mark(size, can, if look.dim { t.ink2 } else { string }, look)
 }
 
 /// Four quality bars, `n` of them filled.
