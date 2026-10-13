@@ -223,7 +223,7 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
         }
         Box(Modifier.align(Alignment.BottomEnd)) {
             ShrinkFab(Icons.Rounded.GroupAdd, "Group", wide) { menu = true }
-            DropdownMenu(menu, { menu = false }, containerColor = c.sfRaised, shape = SmoothCornerShape(14.dp)) {
+            DropdownMenu(menu, { menu = false }, containerColor = c.sfRaised) {
                 DropdownMenuItem({ Text("New group", style = TinType.bodyL, color = c.ink) }, { menu = false; onNew() },
                     leadingIcon = { Icon(Icons.Rounded.GroupAdd, null, tint = c.ink2) })
                 DropdownMenuItem({ Text("Join with an invite", style = TinType.bodyL, color = c.ink) }, { menu = false; onJoin() },

@@ -125,7 +125,7 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
             }
             Box(Modifier.align(Alignment.BottomEnd)) {
                 ShrinkFab(Icons.Rounded.Add, "New", fabWide) { newMenu = true }
-                DropdownMenu(newMenu, { newMenu = false }, containerColor = c.sfRaised, shape = SmoothCornerShape(14.dp)) {
+                DropdownMenu(newMenu, { newMenu = false }, containerColor = c.sfRaised) {
                     DropdownMenuItem({ Text("New group", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.go(PRoute.NewGroup) },
                         leadingIcon = { Icon(Icons.Rounded.GroupAdd, null, tint = c.ink2) })
                     DropdownMenuItem({ Text("Add contact", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.addContact() },
@@ -172,7 +172,7 @@ private fun SimulateMenu(src: FakeGroupsPrivacy, nav: PNav, open: Boolean, onDis
     val hikeUp = groups.firstOrNull { it.id == FakeGroupsPrivacy.HIKE }?.hostReachable == true
     val familyUp = groups.firstOrNull { it.id == FakeGroupsPrivacy.FAMILY }?.hostReachable == true
     @Composable fun item(t: String, f: () -> Unit) = DropdownMenuItem({ Text(t, style = TinType.bodyM, color = c.ink) }, { onDismiss(); f() })
-    DropdownMenu(open, onDismiss, containerColor = c.sfRaised, shape = SmoothCornerShape(14.dp)) {
+    DropdownMenu(open, onDismiss, containerColor = c.sfRaised) {
         Text("SIMULATE (PLACEHOLDER)", Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = TinType.caption, color = c.ink2)
         if (leoWaiting != null) {
             item("Leo accepts your request") { src.simulateRequestAnswered(leoWaiting.id, true); nav.say("Leo accepted: new messages-only chat") }

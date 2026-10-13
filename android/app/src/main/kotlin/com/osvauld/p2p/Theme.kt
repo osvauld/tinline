@@ -47,7 +47,7 @@ val LightTin = TinColors(
     bg = Color(0xFFF5F6F3), sf = Color(0xFFFFFFFF), sf2 = Color(0xFFECEFEB), sf3 = Color(0xFFE2E6E1),
     ink = Color(0xFF17201D), ink2 = Color(0xFF4D5853), ln = Color(0xFFD3D9D4), ln2 = Color(0xFF8E9A94),
     pr = Color(0xFF0B6B5B), onPr = Color(0xFFFFFFFF), prc = Color(0xFFCDEBE3), onPrc = Color(0xFF06352D),
-    thread = Color(0xFFC98A1E), threadText = Color(0xFF8A5F12),
+    thread = Color(0xFFC98A1E), threadText = Color(0xFF845A10),
     er = Color(0xFFA12B23), onEr = Color(0xFFFFFFFF), erc = Color(0xFFF8E3E1), onErc = Color(0xFF410E0B),
     relay = Color(0xFF4B5AA8), relayC = Color(0xFFE1E4F7), onRelayC = Color(0xFF374582),
     warn = Color(0xFFFCEFD2), onWarn = Color(0xFF5C3B00),
@@ -105,6 +105,10 @@ private val M3Type = Typography(
     labelLarge = TinType.label, labelMedium = TinType.caption, labelSmall = TinType.caption,
 )
 
+/** Material3 takes menu (and snackbar) corners from the theme's extraSmall, and 1.3.1's DropdownMenu does not honour its `shape`
+ * parameter, so the 14 dp control radius goes here. Theme shapes must be CornerBasedShape, so these are circular, not smoothed. */
+private val TinShapes = androidx.compose.material3.Shapes(extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+
 private fun scheme(c: TinColors) = if (c.dark) darkColorScheme(
     primary = c.pr, onPrimary = c.onPr, primaryContainer = c.prc, onPrimaryContainer = c.onPrc,
     secondary = c.relay, onSecondary = c.onRelayC, secondaryContainer = c.relayC, onSecondaryContainer = c.onRelayC,
@@ -128,7 +132,7 @@ private fun scheme(c: TinColors) = if (c.dark) darkColorScheme(
 fun TinlineTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val c = if (dark) DarkTin else LightTin
     CompositionLocalProvider(LocalTin provides c) {
-        MaterialTheme(colorScheme = scheme(c), typography = M3Type, content = content)
+        MaterialTheme(colorScheme = scheme(c), typography = M3Type, shapes = TinShapes, content = content)
     }
 }
 

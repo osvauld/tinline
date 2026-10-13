@@ -404,9 +404,17 @@ fun TinDialog(
     body: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Tin.c
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+    // The dialog window wraps its content and clips whatever is drawn outside it, so the sheet shadow needs room inside the window:
+    // full-width transparent window, the surface at the platform's 78 % width in the middle, 40 dp of margin above and below.
+    // Taps in that margin dismiss like taps on the scrim.
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+      Box(
+          Modifier.fillMaxWidth().clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDismiss),
+          contentAlignment = Alignment.Center,
+      ) {
         Column(
-            Modifier.fillMaxWidth().depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp)).background(c.sfRaised).padding(24.dp),
+            Modifier.padding(vertical = 40.dp).fillMaxWidth(0.78f).depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp)).background(c.sfRaised)
+                .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {}).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (icon != null) Box(Modifier.size(44.dp).clip(CircleShape).background(if (destructive) c.erc else c.prc), contentAlignment = Alignment.Center) {
@@ -419,6 +427,7 @@ fun TinDialog(
                 TinButton(confirm, onConfirm, style = if (destructive) BtnStyle.DangerFilled else BtnStyle.Filled, fill = false, enabled = confirmEnabled)
             }
         }
+      }
     }
 }
 
