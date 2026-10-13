@@ -942,7 +942,7 @@ impl App {
             LDialog::Host { accept } => c.push(actions("Cancel", Some(if *accept { ("Host here", Kind::Primary) } else { ("Stop hosting", Kind::Danger) }))),
             LDialog::Token { .. } | LDialog::Removal => c,
         };
-        let card = container(c).padding(28).width(540).style(ui::plain(t.surface, 20.0));
+        let card = ui::raised(container(c).padding(28).width(540), t, ui::Depth::Sheet, ui::sheet_surface(t, 24.0));
         let layer = container(opaque(card))
             .center_x(Fill)
             .center_y(Fill)

@@ -1093,7 +1093,7 @@ impl App {
                 c.push(acts).into()
             }
         };
-        let card = container(body).padding(28).width(520).style(ui::plain(t.surface, 20.0));
+        let card = ui::raised(container(body).padding(28).width(520), t, ui::Depth::Sheet, ui::sheet_surface(t, 24.0));
         let layer = container(opaque(card))
             .center_x(Fill)
             .center_y(Fill)
