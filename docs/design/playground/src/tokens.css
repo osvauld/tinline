@@ -29,7 +29,7 @@
 
   /* secondary accents */
   --lav:#e1e4f7;  --lav-ink:#374582;
-  --gold:#c98a1e; --gold-ink:#8a5f12; --warn-bg:#fcefd2; --warn-ink:#5c3b00;
+  --gold:#c98a1e; --gold-ink:#845a10; --warn-bg:#fcefd2; --warn-ink:#5c3b00;
   --danger:#a12b23; --danger-bg:#f8e3e1; --on-danger:#ffffff; --danger-btn:#a12b23; --on-danger-btn:#ffffff;
 
   /* avatar hue pairs — pick via hash, see SPEC.md §Avatars */
