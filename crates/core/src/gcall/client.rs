@@ -447,15 +447,20 @@ impl ClientEngine {
 
     /// Pull 20 ms from every slot's jitter buffer and mix the ones not muted (§1.4).
     pub fn mix(&mut self, out: &mut [i16; audio::FRAME], now: u64) {
-        let mut frames: Vec<Box<[i16; audio::FRAME]>> = vec![];
+        // One fixed scratch frame and integer sum instead of per-slot boxed PCM/vectors.
+        // At most MAX_PARTICIPANTS sources: the sum is safely inside i32's range.
+        let mut sums = [0i32; audio::FRAME];
+        let mut frame = [0i16; audio::FRAME];
         for (slot, r) in self.receivers.iter_mut() {
-            let mut f = Box::new([0i16; audio::FRAME]);
-            r.pull(&mut f, now);
+            // Pull even muted slots so their decoder clocks advance; pull overwrites the
+            // entire scratch frame, including silence/idle/error paths.
+            r.pull(&mut frame, now);
             if self.roster.get(slot).is_some_and(|d| !self.muted.contains(d)) {
-                frames.push(f);
+                for (sum, sample) in sums.iter_mut().zip(frame.iter()) {
+                    *sum += *sample as i32;
+                }
             }
         }
-        let refs: Vec<&[i16]> = frames.iter().map(|f| &f[..]).collect();
-        audio::mix(&refs, out);
+        audio::mix_sums(&sums, out);
     }
 }

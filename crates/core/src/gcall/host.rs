@@ -409,16 +409,18 @@ impl HostEngine {
         p.bucket -= 1_000;
         p.last_ms = now;
         let slot = p.slot;
+        // Age selection BEFORE recording this arrival. Otherwise a delayed tick puts fresh
+        // levels/provisional speech in the first historical frame and then ages them out.
+        let mut out = self.selection_actions(now, false);
         match up {
             UpDatagram::Level(l) => {
                 self.st.levels.insert(slot, l);
                 self.level_only_rx += 1;
-                Ok(vec![])
+                Ok(out)
             }
             UpDatagram::Audio(a) => {
                 let level = w::audio_level(a);
                 self.st.levels.insert(slot, level);
-                let mut out = vec![];
                 if self.st.fwd.offer(slot, level) {
                     out.extend(self.active_actions()); // G6-D2: announce before forwarding
                 }
@@ -431,6 +433,27 @@ impl HostEngine {
                 Ok(out)
             }
         }
+    }
+
+    /// Advance the selection clock using only observations received before this advance.
+    /// Both ticks and accepted arrivals use this so scheduling order after a stall cannot
+    /// make current audio belong to historical frames. Keep the existing bounded catch-up.
+    // An arrival advances strictly older frames; the tick can include the current boundary.
+    fn selection_actions(&mut self, now: u64, include_now: bool) -> Vec<HostAction> {
+        let mut out = vec![];
+        let mut frames = 0;
+        while self.st.next_frame_ms < now || (include_now && self.st.next_frame_ms == now) {
+            let levels = std::mem::take(&mut self.st.levels);
+            self.st.fwd.frame(&levels);
+            out.extend(self.active_actions());
+            self.st.next_frame_ms += FRAME_MS;
+            frames += 1;
+            if frames >= 50 {
+                self.st.next_frame_ms = now + FRAME_MS;
+                break;
+            }
+        }
+        out
     }
 
     /// Call at least every 20 ms. Runs speaker selection per frame, heartbeats, the member
@@ -448,19 +471,7 @@ impl HostEngine {
             out.push(HostAction::Ended { reason: EndReason::HostLeaving, next_host: None, end: None });
             return out;
         }
-        let mut out = vec![];
-        let mut frames = 0;
-        while now >= self.st.next_frame_ms {
-            let levels = std::mem::take(&mut self.st.levels);
-            self.st.fwd.frame(&levels);
-            out.extend(self.active_actions());
-            self.st.next_frame_ms += FRAME_MS;
-            frames += 1;
-            if frames >= 50 {
-                self.st.next_frame_ms = now + FRAME_MS; // after a stall, do not replay it
-                break;
-            }
-        }
+        let mut out = self.selection_actions(now, true);
         let mut changed = false;
         // §3.2 item 2: a removed member is dropped at once with End{removed} to them only.
         let removed: Vec<String> = self.st.parts.keys().filter(|d| !auth.is_member(&gid, d)).cloned().collect();

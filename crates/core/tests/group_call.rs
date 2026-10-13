@@ -23,6 +23,9 @@ use std::time::{Duration, Instant};
 use p2pcore::gcall::{Class, ClientState, Cond, Thermal};
 use p2pcore::{CallInfo, CallState, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupRole, Node, NodeEvents, NodeStatus};
 
+#[path = "support/group_call_capacity.rs"]
+mod capacity_tests;
+
 const PASS: &str = "test-passphrase";
 const WAIT: u64 = 90;
 const FREQ: [f32; 4] = [440.0, 620.0, 830.0, 1070.0];

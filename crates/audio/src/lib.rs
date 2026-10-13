@@ -84,20 +84,8 @@ pub fn rms(samples: &[i16]) -> f32 {
 /// tanh soft knee maps the excess into the remaining headroom, so the output is monotonic in
 /// the sum, never wraps and never exceeds i16. A frame shorter than `out` counts as silence
 /// past its end; silent slots leave the result unchanged. Pure; no state between frames.
-pub fn mix(frames: &[&[i16]], out: &mut [i16]) {
-    const MIX_KNEE: f32 = 24_576.0; // -2.5 dBFS
-    const HEADROOM: f32 = i16::MAX as f32 - MIX_KNEE;
-    for (i, o) in out.iter_mut().enumerate() {
-        let s: i32 = frames.iter().map(|f| f.get(i).copied().unwrap_or(0) as i32).sum();
-        let a = s.unsigned_abs() as f32;
-        *o = if a <= MIX_KNEE {
-            s as i16
-        } else {
-            let y = MIX_KNEE + HEADROOM * ((a - MIX_KNEE) / HEADROOM).tanh();
-            (y.min(i16::MAX as f32) as i16) * s.signum() as i16
-        };
-    }
-}
+pub use mixing::{mix, mix_sums};
+mod mixing;
 
 /// Sine generator for tests / self-test.
 pub struct Tone {
@@ -904,3 +892,5 @@ mod tests;
 
 #[cfg(test)]
 mod group_call_tests;
+#[cfg(test)]
+mod mix_sum_tests;
