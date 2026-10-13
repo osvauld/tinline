@@ -65,6 +65,14 @@ On branch `design/apps` (dev plus these docs), merged in from parallel branches 
 | Logo Mark D, live (idle, ringing sway, connected taut, send pluck) | `Mark.kt` | `mark.rs` | `playground/src/lib/brand/` |
 | Icons (launcher, themed, notification, tray, window, packaging) | `res/` | `assets/` | `docs/design/brand/` |
 
+Wiring left for the screens (the logo foundation exposes it; the screens hook it up):
+- Android call screen: the live mark (`TinMark(28.dp, live = true, state = Ringing | Taut)`) is centred in
+  the top row, between the minimise chevron and the info button, like the playground. Incoming
+  screen: a ringing mark replaces the `Glyphs.Cans` icon.
+- Send pluck: call `TinFx.messageSent()` when a send succeeds (`send()` in `Conversation.kt`). The
+  home header mark uses `live = true` so it plucks.
+- Desktop: the same states from `mark.rs`, in the sidebar brand row and the call screen.
+
 Colours, type sizes, radii and spacing come from `playground/src/tokens.css`. Durations and easing
 come from `playground/src/lib/fx/motion.ts`. Don't hard-code values that a token already names.
 
