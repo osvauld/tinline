@@ -1,34 +1,49 @@
-# Endpoint rotation worktree — session/subagent entry point
+# Repository instructions
 
-This worktree is dedicated to endpoint rotation and DID blocking.
+This repository contains Tinline: Rust core/protocol/media crates, an Iced desktop
+app, and a Kotlin/Compose Android app. The Svelte playground under
+`docs/design/playground/` is a design reference, not the shipped application.
 
-**Read first:** `docs/design/rotation-agent-handoff.md`, then the documents it
-lists. Task packets and ownership are in `docs/design/rotation-agent-tasks.md`.
-Update `docs/design/rotation-agent-status.md` when claiming or finishing work.
+## Shared checkout safety
 
-## Non-negotiable coordination rules
+- Verify the working directory, branch, HEAD and `git status --short` before work.
+  The integration checkout normally uses `dev`; do not switch branches or reset it.
+- Other agents may be editing or building concurrently. Coordinate exact file
+  ownership before parallel edits; do not overwrite another agent's changes.
+- Do not modify or remove other worktrees. Do not delete build outputs while a
+  build/test or device session may be using them.
+- Do not stage, commit, merge, push, install on the user's phone, or wipe app data
+  without explicit authorization. Never use `git add .` to collect unrelated work.
+- Keep generated screenshots, test logs and local build artifacts out of Git.
+  Preserve intentional visual baselines and required runtime/package assets.
 
-- Work in this checkout, branch `endpoint-rotation-blocking`. Do not reset,
-  clean, switch branches, overwrite another agent's work or modify other worktrees.
-- Existing rotation tests/docs are uncommitted/untracked at handoff. They are
-  intentional work, not disposable scratch files. Preserve them.
-- User wants test-first, deterministic peer/device simulation before production
-  integration. Existing passing models do not establish production correctness.
-- Device IDs are owner-replaceable. Earlier permanent-slot assumptions are
-  superseded; do not freeze them into the protocol.
-- The DID is stable; endpoint rotation is periodic/configurable, not triggered by
-  blocking. Exclude blocked contacts from updates; enforce verified-DID policy.
-- Group delegation and device succession are separate. Group membership policy
-  and device revocation must not be implicitly changed by a personal block.
-- No anonymity promise. Shared account mnemonic means unlinking is not strong
+## Builds and tests
+
+- Heavy local builds/tests must use the shared build queue:
+  `python3 scripts/buildlock.py --who <unique-agent-name> -- <command>`.
+- Inspect `python3 scripts/buildlock.py --status` before starting work. Do not
+  bypass admission, launch duplicate jobs after a timeout, or terminate another
+  agent's processes. Use the existing device lock for emulator/phone operations.
+- Run targeted checks for owned changes; report exact commands, results, ignored
+  tests and limitations. Do not claim models prove production integration.
+- Timing-sensitive video tests need an appropriate release profile. Separate
+  network/device-dependent validation from deterministic offline tests.
+- Format only owned files, not the entire shared workspace.
+
+## Protocol and product constraints
+
+- Read the relevant current protocol/subsystem docs before changing behavior.
+  Important references: `docs/protocol.md`, `docs/chat.md`, `docs/group-core.md`,
+  `docs/vault.md`, `docs/video.md`, and `docs/design/rotation-open-decisions.md`.
+- The account DID is stable; device IDs are owner-replaceable. Endpoint rotation
+  is periodic/configurable, not triggered by blocking. Enforce verified-DID policy.
+- Personal blocking, group delegation/membership and device succession/revocation
+  are separate policies; do not implicitly change one through another.
+- No anonymity promise. Shared account mnemonics do not provide strong
   cryptographic revocation of a hostile linked device.
-- No independent future-endpoint derivation scheme is selected. Do not invent one
-  or claim signatures/permits alone solve offline discovery.
-- Use `scripts/buildlock.py` for heavy builds. Report exact commands and results.
-- Coordinate file ownership BEFORE parallel edits. On this shared worktree only
-  the coordinating agent integrates shared files or stages/commits changes, and
-  only when requested. Do not use `git add .` to scoop up unrelated work.
-- Stop at unresolved policy gates; propose alternatives and tests instead of
-  silently deciding security/product semantics.
+- Do not invent offline-discovery guarantees or resolve open security/product
+  decisions silently. Propose alternatives and acceptance tests.
+- Preserve author proofs and user data. Use synthetic identities in tests.
 
-Scope: this file governs the rotation worktree, not sibling group-chat work.
+Follow more specific `AGENTS.md` instructions within subdirectories. Current UI
+integration is active: coordinate before removing its design references or previews.

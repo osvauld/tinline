@@ -14,3 +14,14 @@ android/local.properties
 # Local test output
 artifacts/
 __pycache__/
+
+# Generated design review captures (not visual assertion baselines)
+/docs/design/refined/qa/screenshots/
+/docs/design/refined/screenshots/
+
+# Regenerable brand exports; keep generate.mjs and canonical app/package assets
+/docs/design/brand/android/
+/docs/design/brand/desktop/
+/docs/design/brand/svg/
+/docs/design/brand/web/
+/docs/design/brand/index.html
