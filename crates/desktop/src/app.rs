@@ -216,6 +216,8 @@ struct App {
     me: Option<Contact>,
     busy: bool,
     notice: Option<String>,
+    /// Bumped when a message is sent; the sidebar mark plucks its string on each change.
+    mark_pluck: u64,
     status: NodeStatus,
     contacts: Vec<Contact>,
     ticket: Option<String>,
@@ -690,6 +692,7 @@ impl App {
             me: node.profile().map(|p| self_contact(&p.did)),
             busy: false,
             notice: None,
+            mark_pluck: 0,
             status: node.status(),
             contacts: node.contacts(),
             ticket: None,

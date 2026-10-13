@@ -589,6 +589,7 @@ impl App {
                 let (reply, editing) = (self.chat.reply.take(), self.chat.editing.take());
                 self.chat.input = text_editor::Content::new();
                 self.chat.menu = None;
+                self.mark_pluck += 1;
                 return self.send_task(peer, move |src, peer| match editing {
                     Some(id) => src.edit_message(peer, id, text),
                     None => src.send_text(peer, text, reply),
