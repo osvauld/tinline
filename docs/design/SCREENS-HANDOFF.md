@@ -69,7 +69,8 @@ Notes from the port:
   plain round corners. The dialog's shadow needs room inside its window (`TinDialog` keeps a 72 dp margin).
 - Desktop iced MSAA on this surface format is coarse, so curves (bubbles, logo) are rasterised with tiny-skia
   and cached; draw new curved surfaces the same way.
-- The desktop tray icon states (available / in call / unavailable) are pending a user decision.
+- Desktop tray (user, 2026-10-13): available = taut, unavailable = taut at 45 %, in a call = taut plus a
+  centred accent dot (`crates/desktop/assets/gen_tray.mjs`).
 
 Wiring left for the screens (the logo foundation exposes it; the screens hook it up):
 - Android call screen: the live mark (`TinMark(28.dp, live = true, state = Ringing | Taut)`) is centred in
