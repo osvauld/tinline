@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Tinline · Groups (refined prototype)</title>
+<script>{const q=new URLSearchParams(location.search),r=document.documentElement;if(q.get('embed')==='1'||q.get('preview')==='mobile')r.classList.add('embed');
+  if(/^(light|dark)$/.test(q.get('theme')||''))r.dataset.theme=q.get('theme');if(q.get('motion')==='reduce')r.dataset.motion='reduce'}</script>
+<link rel="stylesheet" href="tokens.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 var(--fs-body)/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent-ink);text-decoration:none}a:hover{text-decoration:underline;text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic{display:inline-flex;flex:none}.ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* harness chrome (study page only) */
+.page{max-width:1280px;margin:0 auto;padding:0 12px 12px}
+.hbar{display:flex;align-items:center;gap:2px;height:48px;font-size:var(--fs-sub);color:var(--muted)}
+.crumb{flex:1;min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.crumb a{display:inline-flex;align-items:center;min-height:36px;font-weight:600}
+.plink{color:var(--accent-ink);font-weight:600;border-radius:8px;padding:6px 4px;margin-right:6px}
+@media (max-width:859px){.plink{display:none}}
+.hb{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--muted);display:inline-grid;place-items:center;padding:0;flex:none}
+.hb .ic svg{width:18px;height:18px}
+.hb:hover,.hb[aria-expanded=true]{background:var(--surface-2);color:var(--ink)}
+.sim{position:fixed;z-index:30;top:52px;right:max(12px,calc((100vw - 1280px)/2 + 12px));width:min(340px,calc(100vw - 24px));max-height:calc(100dvh - 64px);overflow:auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-ctl);box-shadow:var(--shadow-pop);padding:8px 8px 14px 16px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.simhead{display:flex;align-items:center}.simhead h2{flex:1;margin:0;font-size:15px}.simhead h2:focus{outline:none}
+.simnote{margin:0 8px 4px 0;font-size:13px;color:var(--muted);line-height:1.45}
+#simBody{display:flex;flex-direction:column;gap:6px;padding-right:8px}
+#simBody .btn{justify-content:flex-start;text-align:left;width:100%}
+.sw{display:flex;align-items:center;gap:12px;min-height:44px}.sw input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+/* Quiet mode: the same role=switch control as calls.html (label left, track right) */
+.qsw{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;border:0;background:transparent;padding:0;color:var(--ink);font:inherit;font-size:14px;font-weight:600;text-align:left}
+.qsw i{flex:none;width:40px;height:24px;border-radius:12px;background:var(--line);position:relative;transition:background-color 120ms ease}
+.qsw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .2);transition:transform 120ms ease}
+.qsw[aria-checked=true] i{background:var(--accent)}.qsw[aria-checked=true] i::after{transform:translateX(16px)}
+.embed .hbar,.embed .sim{display:none!important}
+.embed .page{padding:0;max-width:none}
+.embed .app{height:100dvh;min-height:0;border:0;border-radius:0}
+/* buttons */
+.btn{min-height:44px;border-radius:999px;border:0;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:15px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.ol{background:transparent;color:var(--accent-ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.tx{background:transparent;color:var(--accent-ink);padding:0 14px}
+.btn.dg{background:var(--danger);color:var(--on-danger)}
+.btn.tx.dg,.btn.ol.dg{background:transparent;color:var(--danger)}
+.btn.sm{font-size:14px;padding:0 14px}
+.btn[disabled]{opacity:.38;cursor:default}
+.ib{width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:var(--ink);display:inline-grid;place-items:center;padding:0;flex:none}
+.lnk{min-height:44px;border:0;background:transparent;color:var(--accent-ink);font-weight:600;font-size:14px;padding:0 12px;border-radius:10px;flex:none}
+@media (hover:hover){.ib:hover,.btn.tx:hover,.btn.ol:hover,.lnk:hover{background:var(--surface-2)}}
+/* app frame */
+.app{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;height:calc(100dvh - 60px);min-height:520px}
+.pane{display:flex;flex-direction:column;min-height:0;min-width:0;grid-row:2}
+/* in-page call: ongoing-call strip + overlay (visual simulation; cues from call-audio.js, group roster from call-state.js) */
+#callStrip{grid-row:1;grid-column:1/-1} /* the strip is the shared .t-callbar from call-state.js */
+.callov{position:absolute;inset:0;z-index:20;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;align-items:center;padding:8px 8px calc(40px + env(safe-area-inset-bottom,0px));animation:pop .16s ease-out}
+.callov:focus{outline:none}
+.callov .cmin{align-self:flex-start;color:var(--ink)}
+.callov .cbody{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:0 16px}
+.callov .gav,.callov .t-avatar.big{width:96px;height:96px;margin-bottom:12px}.callov .t-avatar.big{font-size:32px}.callov .gav .ic svg{width:44px;height:44px;stroke-width:1.5}
+.callov h2{font-size:24px;font-weight:600;margin:0}
+.callov.ending{animation:callend 200ms ease-in forwards}
+.callmark{width:52px;height:29px;margin:2px 0}
+.callmark .mk-can{fill:var(--accent)}
+.callmark .mk-str{fill:none;stroke:var(--gold);stroke-width:2.6;stroke-linecap:round;d:path("M14 20Q20 28 26 20");transition:d 260ms ease-out}
+.callmark.taut .mk-str{d:path("M14 20 L26 20")}
+.callov .cst{font-size:var(--fs-sub);color:var(--muted)}
+.callov .ctime{font-size:15px;font-variant-numeric:tabular-nums;min-width:5ch;color:var(--ink)}
+.cctl{display:flex;align-items:flex-end;gap:40px}
+.cctl label{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.cbtn{border:0;border-radius:50%;display:grid;place-items:center;padding:0}
+.cbtn.mute{width:56px;height:56px;background:var(--surface-2);color:var(--ink)}
+.cbtn.mute[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.cbtn.end{width:64px;height:64px;background:var(--danger-btn);color:var(--on-danger-btn)}
+.cbtn.end .ic svg{transform:rotate(135deg)}
+.chead #callBtn.live{color:var(--accent-ink)}
+.app[data-view=list] .conv,.app[data-view=conv] .list{display:none}
+.list{background:var(--surface);position:relative}
+.conv{background:var(--canvas);position:relative}
+@media (max-width:899px){.app[data-view=conv]{position:fixed;inset:0;z-index:10;width:100%;height:100dvh;min-height:0;border:0;border-radius:0}}
+@media (min-width:900px){.app{grid-template-columns:360px 1fr}.app .list,.app .conv{display:flex!important}.list{border-right:1px solid var(--line)}.backbtn{display:none!important}}
+.app.solo{grid-template-columns:1fr}.app.solo .list,.app.solo .backbtn{display:none!important}.app.solo .chead{padding-left:12px}
+/* list pane */
+.lhead{display:flex;align-items:center;gap:8px;padding:12px 14px 4px 20px;min-height:58px}
+.lhead h2{font-size:22px;font-weight:700;letter-spacing:-.01em;margin:0;flex:1}
+#newBtn{position:absolute;z-index:2;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border:0;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;padding:0;box-shadow:var(--shadow-pop)}
+@media (min-width:900px){#newBtn{position:static;width:36px;height:36px;background:var(--accent-soft);color:var(--accent-ink);box-shadow:none}#newBtn .ic svg{width:20px;height:20px}}
+.search{margin:4px 16px 6px;position:relative}
+.search>.ic{position:absolute;left:12px;top:10px;color:var(--muted);pointer-events:none}.search>.ic svg{width:20px;height:20px}
+.search input{width:100%;height:40px;border-radius:20px;border:1px solid transparent;background:var(--surface-2);padding:0 40px 0 40px;font-size:15px}
+.search input::placeholder{color:var(--muted)}
+.search input:focus-visible{outline:none;border-color:var(--accent);background:var(--surface)}
+.search .ib{position:absolute;right:0;top:-2px;color:var(--muted)}
+.scroll{overflow:auto;flex:1;min-height:0;padding-bottom:96px}
+@media (min-width:900px){.scroll{padding-bottom:16px}}
+.sec{font-size:var(--fs-meta);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 20px 4px;margin:0}
+.row{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:8px 16px;border:0;background:transparent;text-align:left;color:var(--ink)}
+@media (hover:hover){button.row:hover{background:var(--surface-2)}}
+@media (min-width:900px){.row.on{background:var(--surface-2)}}
+.tx1{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.nm{display:block;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub{display:block;font-size:var(--fs-sub);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;align-self:flex-start;padding-top:4px;min-height:40px}
+.tm{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.row.unread .tm{color:var(--accent-ink);font-weight:600}
+.row.gone .nm{color:var(--muted);font-weight:500}
+.av{width:44px;height:44px;font-size:15px}.av.lg{width:56px;height:56px;font-size:19px}.av.sm{width:36px;height:36px;font-size:13px}
+.gav{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--surface-2);color:var(--accent-ink)}
+.gav .ic svg{width:21px;height:21px}
+.gav.off{color:var(--muted)}
+.qrow{min-height:56px}
+.qrow .chev{color:var(--muted);transition:transform .12s ease-out}.qrow .chev svg{width:18px;height:18px}
+.qrow[aria-expanded=true] .chev{transform:rotate(180deg)}
+.qitems .row{min-height:60px;padding-left:24px}
+.qitems .av,.qitems .gav{width:36px;height:36px;font-size:13px}.qitems .gav .ic svg{width:18px;height:18px}
+.qitems{border-bottom:1px solid var(--hairline)}
+.empty{margin:auto;padding:24px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted)}
+.empty h3{margin:0;color:var(--ink);font-size:16px;font-weight:600}.empty p{margin:0 0 10px;font-size:14px;max-width:30ch}
+.placeholder{flex:1;display:flex}
+@media (max-width:899px){.placeholder{display:none}}
+/* conversation */
+.chead{display:flex;align-items:center;gap:4px;padding:6px 6px 6px 12px;min-height:60px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+@media (max-width:899px){.chead{padding-left:2px}}
+.chead .gav,.chead .av{width:36px;height:36px;font-size:13px}.chead .gav .ic svg{width:18px;height:18px}
+.chead .ttl{flex:1;min-width:0;margin-left:8px}
+.chead h2{font-size:var(--fs-title);font-weight:600;margin:0;line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chead h2:focus{outline:none}
+.chead .st{font-size:var(--fs-sub);color:var(--muted);line-height:18px}
+.chead #memBtn,.chead #callBtn{color:var(--muted)}
+.chead #callBtn .ic svg{width:20px;height:20px}
+.chead #callBtn[aria-disabled=true]{opacity:.38;cursor:default;background:transparent}
+.strip{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 4px 0 16px;background:var(--warn-bg);color:var(--warn-ink);font-size:var(--fs-sub);flex:none}
+.strip span{flex:1;min-width:0}
+.strip button{min-height:40px;border:0;background:transparent;color:inherit;font-weight:700;font-size:var(--fs-sub);padding:0 12px;border-radius:8px}
+.strip button:hover{background:rgb(0 0 0 / .06)}
+.msgs{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;padding:6px 16px 12px;background:var(--canvas);overscroll-behavior:contain}
+@media (min-width:900px){.msgs{padding:8px 28px 16px}}
+.msgs>*{flex-shrink:0}
+.day{align-self:center;background:var(--surface);box-shadow:inset 0 0 0 1px var(--hairline);color:var(--muted);font-size:var(--fs-meta);font-weight:600;line-height:16px;padding:3px 10px;border-radius:999px;margin:10px 0}
+.sys{align-self:center;text-align:center;font-size:12px;line-height:17px;color:var(--muted);margin:6px 0;max-width:86%}
+.brow{display:flex;align-items:center;gap:6px;margin-top:2px}
+.brow.f{margin-top:10px}
+:is(.day,.sys)+.brow.f{margin-top:4px}
+.brow.out{justify-content:flex-end}
+.bub{max-width:min(78%,560px);padding:7px 12px;font-size:var(--fs-body);line-height:var(--lh-body);border-radius:var(--r-bub);overflow-wrap:anywhere;white-space:pre-wrap;display:flow-root;-webkit-touch-callout:none;transition:transform .12s ease-out}
+.bub:focus{outline:none}.bub:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bub.in{background:var(--bub-in);color:var(--bub-in-ink);border:1px solid var(--bub-in-line);padding:6px 11px}
+.bub.out{background:var(--bub-out);color:var(--bub-out-ink)}
+.bub.out.g-first{border-bottom-right-radius:var(--r-bub-tight)}
+.bub.out.g-mid{border-top-right-radius:var(--r-bub-tight);border-bottom-right-radius:var(--r-bub-tight)}
+.bub.out.g-last{border-top-right-radius:var(--r-bub-tight)}
+.bub.in.g-first{border-bottom-left-radius:var(--r-bub-tight)}
+.bub.in.g-mid{border-top-left-radius:var(--r-bub-tight);border-bottom-left-radius:var(--r-bub-tight)}
+.bub.in.g-last{border-top-left-radius:var(--r-bub-tight)}
+.meta{float:right;margin:10px -2px -2px 10px;font-size:var(--fs-meta);line-height:1;font-variant-numeric:tabular-nums;display:inline-flex;gap:3px;align-items:center;user-select:none;white-space:nowrap}
+.bub.in .meta{color:var(--bub-meta-in)}.bub.out .meta{color:var(--bub-meta-out)}
+.tick{display:inline-grid;place-items:center;width:12px;height:12px}.tick svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.tick.pend svg{width:11px;height:11px;stroke-width:2}
+.who{display:block;font-size:13px;font-weight:700;line-height:18px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rq{display:block;width:100%;text-align:left;border:0;border-left:3px solid var(--accent);background:var(--surface-2);color:var(--ink);border-radius:12px;padding:5px 10px 6px;margin:2px 0 6px;font-size:13px;line-height:18px;white-space:normal}
+.rq b{display:block;font-size:12px}.rq span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.late{display:block;font-size:12px;line-height:17px;font-style:italic;color:var(--bub-meta-in);margin-top:2px}
+.bub.flash{box-shadow:0 0 0 2px var(--accent)}
+.bub.pressed{transform:scale(.97)}
+.bub.rise{animation:rise .12s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(4px)}}
+/* message menu trigger: visually hidden, focusable; a hover chevron only on fine pointers ≥860px */
+.mo{flex:none;width:24px;height:24px;border:0;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--surface);color:var(--muted);box-shadow:0 1px 2px rgb(9 23 17 / .16)}
+.mo .ic svg{width:16px;height:16px;stroke-width:2.2}
+.mo:not(:focus-visible){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);box-shadow:none}
+@media (hover:hover) and (pointer:fine) and (min-width:860px){
+  .mo:not(:focus-visible){position:static;width:24px;height:24px;overflow:visible;clip:auto;box-shadow:0 1px 2px rgb(9 23 17 / .16);opacity:0;transition:opacity .12s ease-out}
+  .brow:hover .mo,.brow:focus-within .mo{opacity:1}
+  .mo:hover{color:var(--ink)}}
+.tobot{position:sticky;bottom:4px;align-self:flex-end;margin-top:-36px;width:36px;height:36px;border:0;border-radius:50%;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-pop);display:grid;place-items:center;padding:0}
+.tobot .ic svg{width:18px;height:18px}
+.tobot .t-badge{position:absolute;top:-7px;right:-5px}
+/* composer */
+.comp{padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--canvas);flex:none}
+@media (min-width:900px){.comp{padding:8px 24px 14px}}
+.cin{display:flex;gap:6px;align-items:flex-end}
+.cin textarea{flex:1;min-width:0;min-height:44px;max-height:140px;resize:none;border-radius:var(--r-field);border:1px solid var(--hairline);background:var(--surface);padding:10px 16px;line-height:22px;font-size:var(--fs-body)}
+.cin textarea::placeholder{color:var(--muted)}
+.cin textarea:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--press-wash)}
+.cin .att{color:var(--muted)}
+.send{width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;padding:0;flex:none}
+.send .ic svg{width:20px;height:20px;margin:1px 2px 0 0}
+.send:disabled{opacity:.38;cursor:default;box-shadow:none}
+.reply{display:flex;align-items:center;gap:4px;background:var(--surface-2);border-left:3px solid var(--accent);border-radius:10px;padding:4px 2px 4px 12px;margin:0 50px 8px;font-size:var(--fs-sub);line-height:18px}
+.reply .tt{flex:1;min-width:0}.reply b,.reply .tt span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reply b{color:var(--accent-ink)}.reply .tt span{color:var(--muted)}
+.reply .ib{width:40px;height:40px;color:var(--muted)}.reply .ib svg{width:18px;height:18px}
+.callnote{display:flex;align-items:center;justify-content:center;gap:2px;font-size:var(--fs-sub);color:var(--muted);background:var(--canvas);padding:4px 12px 0;flex-wrap:wrap}
+.closed{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;background:var(--surface);border-top:1px solid var(--line);flex:none;font-size:var(--fs-sub);color:var(--muted);text-align:center}
+/* dialogs, sheets, menus */
+dialog{border:0;padding:0;border-radius:var(--r-sheet);background:var(--surface);color:var(--ink);width:min(480px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-shadow:var(--shadow-sheet);overflow:hidden}
+dialog::backdrop{background:rgb(10 16 14 / .5)}
+dialog[open]{display:flex;flex-direction:column;animation:pop .16s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(4px)}}
+@keyframes callend{to{opacity:0;transform:scale(.96)}}
+.dlg{min-height:0;padding:20px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.dlg h2{font-size:19px;font-weight:650;margin:0}.dlg h2:focus{outline:none}
+.dlg p{margin:0;font-size:14.5px;color:var(--muted);line-height:1.5}
+.dlg .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:4px}
+.dhead{display:flex;align-items:center;gap:4px;margin:-6px -8px 0 0}.dhead h2{flex:1}
+.dhead .ib{color:var(--muted)}
+@media (max-width:699px){dialog.dsheet{margin:auto 0 0;width:100vw;max-width:100vw;border-radius:var(--r-sheet) var(--r-sheet) 0 0;max-height:90dvh}dialog.dsheet .dlg{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}}
+@media (min-width:900px){dialog.ddrawer{margin:0 0 0 auto;height:100dvh;max-height:none;width:400px;border-radius:var(--r-sheet) 0 0 var(--r-sheet)}}
+dialog.dmenu{margin:auto auto 0;width:min(560px,100vw);max-width:100vw;border-radius:var(--r-sheet) var(--r-sheet) 0 0}
+dialog.dmenu .dlg{padding:8px 0 calc(10px + env(safe-area-inset-bottom,0px));gap:0}
+.notch{width:28px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 8px;flex:none}
+.mprev{margin:0 20px 6px;padding:0 0 10px;border-bottom:1px solid var(--hairline);font-size:14px;line-height:20px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+dialog.dpop{margin:0;inset:auto;width:212px;border-radius:14px;box-shadow:var(--shadow-pop);border:1px solid var(--hairline)}
+dialog.dpop::backdrop{background:transparent}
+dialog.dpop .dlg{padding:6px 0;gap:0}
+.mi{display:flex;align-items:center;gap:14px;width:100%;min-height:52px;border:0;background:transparent;text-align:left;padding:0 20px;font-size:15px;color:var(--ink)}
+.mi .ic{color:var(--muted)}.mi .ic svg{width:20px;height:20px}
+.mi:hover{background:var(--surface-2)}
+.mi.dg,.mi.dg .ic{color:var(--danger)}
+.mi:focus-visible{outline-offset:-2px}
+dialog.dmenu .mi{min-height:52px;padding:0 20px;border-radius:0}
+dialog.dpop .mi{min-height:40px;border-radius:0;padding:0 14px;gap:12px;font-size:14px}dialog.dpop .mi .ic svg{width:18px;height:18px}
+.dlg .mi{min-height:56px;padding:6px 8px;border-radius:12px}
+.dlg .mi .sub{white-space:normal}
+.mrow{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:6px 8px;border:0;background:transparent;border-radius:12px;text-align:left;color:var(--ink)}
+button.mrow:hover{background:var(--surface-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line);flex:none;margin:0 14px}.dot.on{background:var(--accent)}
+.pill{display:inline-flex;align-items:center;min-height:20px;padding:0 8px;border-radius:999px;font-size:11.5px;font-weight:600;background:var(--surface-2);color:var(--muted);flex:none}
+.pill.hst{background:var(--accent-soft);color:var(--accent-ink)}.pill.er{background:var(--danger-bg);color:var(--danger)}
+.dlg .sec{padding:8px 0 0}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.lbl{font-size:var(--fs-sub);font-weight:600;color:var(--muted)}
+.field input{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:0 14px}
+.field input:focus-visible{outline:none;border-color:var(--accent)}
+.field input[aria-invalid=true]{border:2px solid var(--danger)}
+.err{color:var(--danger);font-size:13.5px;font-weight:600}
+.err:empty{display:none}
+.pick{display:flex;align-items:center;gap:12px;min-height:52px;padding:0 4px;cursor:pointer;border-radius:12px}
+.pick:hover{background:var(--surface-2)}.pick input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.hint{font-size:var(--fs-sub);color:var(--muted);line-height:1.45;margin:0}
+.quote{background:var(--surface-2);border-radius:12px;padding:8px 12px;font-size:14.5px;overflow-wrap:anywhere;white-space:pre-wrap}
+.meter{display:flex;gap:6px}.meter i{flex:1;height:6px;border-radius:3px;background:var(--line)}.meter i.on{background:var(--danger)}
+.facts{margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:6px;font-size:14.5px;color:var(--muted);line-height:1.45}.facts b{color:var(--ink);font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font-size:14.5px}.kv dt{color:var(--muted)}.kv dd{margin:0}
+/* toast */
+.toast{position:fixed;inset:auto 12px calc(84px + env(safe-area-inset-bottom,0px));margin:0 auto;width:fit-content;border:0;background:var(--ink);color:var(--bg);border-radius:12px;padding:4px 6px 4px 16px;min-height:44px;display:flex;align-items:center;gap:8px;max-width:min(480px,calc(100vw - 24px));font-size:14px;box-shadow:var(--shadow-pop);animation:pop .16s ease-out}
+.toast button{min-height:40px;border:0;background:transparent;color:var(--bg);font-weight:700;padding:0 10px;border-radius:8px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.bub.pressed{transform:none}}
+:root[data-motion=reduce] *{animation:none!important;transition:none!important}:root[data-motion=reduce] .bub.pressed{transform:none}
+@media (forced-colors:active){.bub{border:1px solid CanvasText}.mo{opacity:1}}
+</style>
+<link rel="stylesheet" href="interactions.css">
+</head>
+<body>
+<div class="page">
+<header class="hbar" id="hbar">
+  <nav class="crumb" aria-label="Study"><a href="./index.html">← Home</a><span aria-hidden="true">·</span><span>Groups</span></nav>
+  <a class="plink" id="mobilePreview" href="mobile.html?screen=groups&amp;group=hike">Phone preview ↗</a>
+  <button class="hb" id="theme" type="button" aria-pressed="false" aria-label="Dark theme"></button>
+  <button class="hb" id="simBtn" type="button" aria-expanded="false" aria-controls="sim" aria-label="Simulation"></button>
+</header>
+<aside class="sim" id="sim" hidden aria-labelledby="simTitle">
+  <div class="simhead"><h2 id="simTitle" tabindex="-1">Simulation</h2><button class="hb" id="simClose" type="button" aria-label="Close simulation"></button></div>
+  <p class="simnote">Interactive design study with simulated data. Nothing is sent anywhere; replies from other people only happen when you trigger them here.</p>
+  <div id="simBody"></div>
+</aside>
+<main>
+  <div class="app" id="app" data-view="list">
+    <section class="pane list" id="listPane" aria-label="Groups and requests"></section>
+    <section class="pane conv" id="convPane" aria-label="Conversation"></section>
+  </div>
+</main>
+</div>
+<div id="live" class="sr" role="status" aria-live="polite"></div>
+<div id="toastHost"></div>
+<script src="call-state.js"></script>
+<script src="call-audio.js"></script>
+<script>
+'use strict';
+/* ---------- tiny helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+function h(tag,a,...kids){const e=document.createElement(tag);for(const k in a||{}){const v=a[k];if(v==null||v===false)continue;if(k==='class')e.className=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?'':v)}for(const c of kids.flat())if(c!=null&&c!==false)e.append(c.nodeType?c:document.createTextNode(c));return e}
+const ICONS={mic:'<path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',micoff:'<path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/>',phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',back:'<path d="M19 12H5M12 19l-7-7 7-7"/>',close:'<path d="M6 6l12 12M18 6L6 18"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.6.2 4.5 2 5 4.9"/>',plus:'<path d="M12 5v14M5 12h14"/>',send:'<path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>',reply:'<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',flag:'<path d="M4 22V4M4 4h12l-2 4 2 4H4"/>',block:'<circle cx="12" cy="12" r="9"/><path d="M18.4 5.6L5.6 18.4"/>',shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>',out:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>',chev:'<path d="M6 9l6 6 6-6"/>',copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16v4zM13 7l4 4"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>',clip:'<path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/>',mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',down:'<path d="M12 5v14M5 12l7 7 7-7"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',moon:'<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/>',sliders:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'};
+const ic=(n)=>{const s=h('span',{class:'ic','aria-hidden':'true'});s.innerHTML='<svg viewBox="0 0 24 24">'+ICONS[n]+'</svg>';return s};
+const pad=n=>String(n).padStart(2,'0');
+const clock=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+const hue=n=>'av'+([...n].reduce((a,c)=>a+c.codePointAt(0),0)%6);   // shared hash, SPEC §Avatars
+let liveToggle=0;
+function say(msg,undo){const l=$('#live');l.textContent=msg+(liveToggle++%2?'​':'');const host=$('#toastHost');host.replaceChildren();
+  const t=h('div',{class:'toast',popover:'manual'},h('span',null,msg));
+  if(undo){t.append(h('button',{type:'button',onclick:()=>{host.replaceChildren();undo();}},'Undo'))}
+  host.append(t);try{t.showPopover()}catch(e){}clearTimeout(say.t);say.t=setTimeout(()=>host.replaceChildren(),undo?7000:4500)}
+
+/* ---------- people & data ---------- */
+const P={
+  me:{n:'You',i:'YO'},
+  meera:{n:'Meera K',i:'MK'},arjun:{n:'Arjun Oommen',i:'AO'},
+  sam:{n:'Sam Rao',i:'SR'},priya:{n:'Priya N',i:'PN'},
+  leo:{n:'Leo B',i:'LB'},dev:{n:'Dev T',i:'DT'},kavya:{n:'Kavya S',i:'KS'},
+  nisha:{n:'Nisha R',i:'NR'},omar:{n:'Omar F',i:'OF'},tara:{n:'Tara M',i:'TM'},ravi:{n:'Ravi K',i:'RK'}};
+const first=id=>P[id].n.split(' ')[0];
+const CONTACTS=['arjun','meera','sam','priya','dev'];   // people you can invite directly
+const QS=new URLSearchParams(location.search),EMBED=QS.get('embed')==='1',FROM_HOME=QS.get('from')==='home';
+function seed(){
+  const S={theme:null,view:'list',cur:null,query:'',hostsOffline:false,empty:false,drafts:{},replies:{},edits:{},events:[],uid:100,unseen:0,chat:0,
+    createDraft:{name:'',sel:[],host:'desktop'},
+    groups:[
+      {id:'hike',name:'Weekend hike',status:'active',role:'admin',unread:2,
+       hosts:[{name:'Arjun’s desktop',online:true},{name:'Meera’s desktop',online:false,note:'offline for 2 h'}],
+       members:[{id:'meera',roles:['owner'],since:'Aug 14'},{id:'arjun',roles:['host'],since:'Aug 14'},{id:'sam',roles:['admin'],since:'Aug 14'},{id:'me',roles:['admin'],since:'Aug 20'},{id:'priya',roles:['admin'],since:'Aug 21'},{id:'leo',roles:[],since:'Sep 2',by:'Sam'},{id:'dev',roles:[],since:'Sep 5',by:'Sam'},{id:'kavya',roles:[],since:'Sep 9',by:'Priya'},{id:'nisha',roles:[],since:'Sep 12',by:'Priya'},{id:'omar',roles:[],since:'Sep 14',by:'Sam'},{id:'tara',roles:[],since:'Sep 20',by:'Priya'},{id:'ravi',roles:[],since:'Sep 22',by:'Sam'}],
+       pending:[],flags:{leo:['sam']},
+       msgs:[{sys:1,text:'Kavya joined, invited by Priya'},
+        {id:'m1',from:'sam',text:'Saturday 7am at the trailhead.',t:'12:40'},
+        {id:'m1b',from:'sam',text:'Bring rain jackets, the forecast says showers after 10.',t:'12:41'},
+        {id:'m1c',from:'sam',text:'And snacks for the top.',t:'12:41'},
+        {id:'m2',from:'priya',text:'Can someone give me a lift from the station?',t:'12:44'},
+        {id:'m3',from:'me',text:'I can, I’ll message you.',t:'12:46',state:'delivered'},
+        {id:'m3b',from:'me',text:'Leaving around 6:15, so be at the east exit.',t:'12:46',state:'delivered'},
+        {id:'m2b',from:'priya',text:'Perfect, thank you',t:'12:48'},
+        {id:'m4',from:'sam',text:'Map attached: trail-loop.gpx',t:'13:02'},
+        {id:'m5',from:'kavya',text:'First hike with you all. Is the loop fine for beginners?',t:'13:05'}]},
+      {id:'family',name:'Family',status:'active',role:'owner',unread:0,
+       hosts:[{name:'Your desktop',online:true,self:true}],
+       members:[{id:'me',roles:['owner','host'],since:'Jan 3'},{id:'meera',roles:['admin'],since:'Jan 3'},{id:'arjun',roles:[],since:'Jan 3'},{id:'dev',roles:[],since:'Jan 4'},{id:'priya',roles:[],since:'Jan 9'}],
+       pending:[],flags:{},
+       msgs:[{id:'f1',from:'me',text:'Photos from Sunday',t:'18:05',day:'Yesterday',state:'delivered'}]},
+      {id:'book',name:'Book club',status:'removed',role:'member',unread:0,hosts:[],members:[],pending:[],flags:{},when:'Sep 28',
+       flaggers:[['sam','Sam Rao · admin','Sep 27, 21:15'],['meera','Meera K · owner','Sep 28, 09:40'],['priya','Priya N · admin','Sep 28, 14:02 · 3rd flag']],
+       msgs:[{id:'b1',from:'sam',text:'Chapter 6 for next week.',t:'Sep 26'},{id:'b2',from:'me',text:'I’ll bring the stove',t:'Sep 27',state:'delivered'},{sys:1,day:'Sep 28',text:'You were removed from the group · 14:02'},{id:'b3',from:'me',text:'Running late, start without me',t:'Sep 28',state:'delivered',late:'Written offline before removal'}]}],
+    invites:[{id:'i1',group:'Trail runners',by:'Sam',members:6,owner:'Meera K',hosts:'Arjun’s desktop, Meera’s desktop',left:'6 days'},{id:'i2',group:'Photo walk',by:'Dev',expired:true}],
+    reqIn:[{id:'r1',from:'priya',note:'Hi, it’s Priya. Can I ask about the lift?',via:'Weekend hike'}],
+    reqOut:[{id:'o1',to:'dev',state:'declined',when:'Oct 3'},{id:'o2',to:'kavya',state:'expired',when:'Sep 30'}],
+    privates:[{id:'p-arjun',type:'private',person:'arjun',calls:true,msgs:[{id:'a1',from:'arjun',text:'See you at 6',t:'11:02'}]}]};
+  return S}
+const wide=()=>matchMedia('(min-width:900px)').matches;
+let deep=false;
+function fresh(){const s=seed();s.open={};if(wide()){s.cur='hike';s.groups[0].unread=0}
+  const q=new URLSearchParams(location.search).get('group');
+  if(q&&/^[a-z0-9-]{1,40}$/.test(q)){const g=s.groups.find(x=>x.id===q);if(g){s.cur=g.id;g.unread=0;s.view='conv';deep=true}}
+  return s}
+let S=fresh();
+if(EMBED&&deep)$('#app').classList.add('solo');   // embed=1 (home's detail pane): one locked conversation
+
+/* ---------- derived ---------- */
+const conv=id=>S.groups.find(g=>g.id===id)||S.privates.find(p=>p.id===id);
+const hostsOn=g=>g.hosts.filter(x=>x.online&&!(S.hostsOffline&&g.id==='hike')).length;
+const closed=g=>g.status==='removed'||g.status==='left';
+const isAdmin=g=>g.members.find(m=>m.id==='me')?.roles.some(r=>r==='admin'||r==='owner');
+function statusLine(g){if(g.status==='removed')return 'You’re no longer a member';if(g.status==='left')return 'You left this group';
+  return g.members.length+' member'+(g.members.length===1?'':'s')}
+const queued=g=>g.msgs.filter(m=>m.state==='queued');
+
+/* ---------- dialogs ---------- */
+function dialog(cls,build){
+  const opener=document.activeElement;const d=h('dialog',{class:cls||''});const body=h('div',{class:'dlg'});d.append(body);
+  const api={el:d,body,close:()=>d.close(),set(...n){body.replaceChildren(...n);const nx=api.next;api.next=null;const f=(nx&&body.querySelector(nx))||body.querySelector('[autofocus]')||body.querySelector('h2');if(f&&!f.matches('button,input,textarea'))f.tabIndex=-1;requestAnimationFrame(()=>f&&f.focus())}};
+  const born=Date.now();d.addEventListener('click',e=>{if(e.target===d&&Date.now()-born>400)d.close()});
+  d.addEventListener('close',()=>{d.remove();if(api.onclose)api.onclose();if(api.noRestore)return;const o=api.restoreSel?$(api.restoreSel):(api.restoreEl||opener);const top=[...document.querySelectorAll('dialog[open]')].pop();
+    if(o&&document.contains(o)&&(!top||top.contains(o)))o.focus({preventScroll:true});else if(top){const t=top.querySelector('h2');t.tabIndex=-1;t.focus()}else($('#convPane h2')||$('#newBtn')).focus()});
+  document.body.append(d);d.showModal();build(api);return api}
+function confirmDlg({title,text,confirm,danger,meter,onYes}){
+  return dialog('',api=>{
+    const kids=[h('h2',null,title)];
+    if(meter)kids.push(h('div',{class:'meter',role:'img','aria-label':meter.label},[0,1,2].map(i=>h('i',{class:i<meter.on?'on':''}))));
+    (Array.isArray(text)?text:[text]).forEach(t=>kids.push(h('p',null,t)));
+    kids.push(h('div',{class:'acts'},h('button',{class:'btn tx',type:'button',autofocus:'',onclick:api.close},'Cancel'),
+      h('button',{class:'btn'+(danger?' dg':''),type:'button',onclick:()=>{api.close();onYes()}},confirm)));
+    api.set(...kids)})}
+const closeBtn=(api,label)=>h('button',{class:'ib',type:'button','aria-label':label||'Close',onclick:api.close},ic('close'));
+
+/* ---------- list pane ---------- */
+function avatar(id,cls){const p=P[id];return h('span',{class:'t-avatar av '+hue(p.n)+' '+(cls||''),'aria-hidden':'true'},p.i)}
+function gAvatar(g){return h('span',{class:'gav'+(g&&closed(g)?' off':''),'aria-hidden':'true'},ic('users'))}
+function renderList(){
+  const L=$('#listPane');L.replaceChildren();
+  const head=h('div',{class:'lhead'},h('h2',null,'Groups'),h('button',{type:'button',id:'newBtn','aria-label':'New group',onclick:openCreate},ic('plus')));
+  const sIn=h('input',{id:'q',type:'search',placeholder:'Search','aria-label':'Search groups and chats',value:S.query,autocomplete:'off',
+    oninput:e=>{S.query=e.target.value;fillList($('#listScroll'));$('#clrQ').hidden=!S.query;
+      clearTimeout(sIn.t);sIn.t=setTimeout(()=>say(resultCount()+' result'+(resultCount()===1?'':'s')),500)},
+    onkeydown:e=>{if(e.key==='Escape'&&S.query){S.query='';renderList();$('#q').focus();say('Search cleared')}}});
+  const clr=h('button',{class:'ib',id:'clrQ',type:'button',hidden:S.query?null:'','aria-label':'Clear search',onclick:()=>{S.query='';renderList();$('#q').focus();say('Search cleared')}},ic('close'));
+  L.append(head,h('div',{class:'search',role:'search'},ic('search'),sIn,clr));
+  const sc=h('div',{class:'scroll',id:'listScroll'});L.append(sc);fillList(sc)}
+function fold(key,label,count,icon,rows,quiet){
+  const open=S.open[key]===undefined?!S.groups.length:S.open[key];
+  return h('div',{class:'fold'},
+    h('button',{class:'row qrow',type:'button',id:'fold-'+key,'aria-expanded':String(open),'aria-controls':'fold-'+key+'-items',onclick:()=>{S.open[key]=!open;fillList($('#listScroll'));$('#fold-'+key).focus()}},
+      h('span',{class:'gav','aria-hidden':'true'},ic(icon)),h('span',{class:'tx1'},h('span',{class:'nm'},label)),
+      h('span',{class:'t-badge'+(quiet?' muted':'')},String(count),h('span',{class:'sr'},quiet?' total':' waiting')),h('span',{class:'chev'},ic('chev'))),
+    open?h('div',{class:'qitems',id:'fold-'+key+'-items'},rows):null)}
+function fillList(sc){
+  const q=S.query.trim().toLowerCase();sc.replaceChildren();
+  const match=s=>!q||s.toLowerCase().includes(q);
+  const gs=S.groups.filter(g=>match(g.name)),ps=S.privates.filter(p=>match(P[p.person].n));
+  const ni=S.invites.length,nr=S.reqIn.length;
+  if(!q){
+    if(ni)sc.append(fold('inv','Invitations',ni,'mail',S.invites.map(inviteRow)));
+    if(nr)sc.append(fold('req','Chat requests',nr,'chat',S.reqIn.map(requestRow)))}
+  if(!S.groups.length&&!q){
+    sc.append(h('div',{class:'empty'},h('h3',null,'No groups yet'),h('p',null,'Start one with people you already know.'),
+      h('button',{class:'btn',type:'button',onclick:openCreate},ic('plus'),'New group')))
+  }else if(q&&!gs.length&&!ps.length){
+    sc.append(h('div',{class:'empty'},h('h3',null,'No results'),h('p',null,'Search covers group and chat names.'),
+      h('button',{class:'btn ol',type:'button',onclick:()=>{S.query='';renderList();$('#q').focus()}},'Clear search')))
+  }else{
+    if(gs.length){sc.append(h('h3',{class:'sec'},'Groups'));gs.forEach(g=>sc.append(groupRow(g)))}
+    if(ps.length){sc.append(h('h3',{class:'sec'},'Private chats'));ps.forEach(p=>sc.append(privRow(p)))}
+  }
+  if(!q&&S.reqOut.length)sc.append(h('div',{style:'height:8px'}),fold('sent','Sent requests',S.reqOut.length,'send',S.reqOut.map(sentRow),true));
+}
+function resultCount(){const q=S.query.trim().toLowerCase();return S.groups.filter(g=>g.name.toLowerCase().includes(q)).length+S.privates.filter(p=>P[p.person].n.toLowerCase().includes(q)).length}
+const lastMsg=c=>[...c.msgs].reverse().find(x=>!x.sys);
+function lastText(g){const m=lastMsg(g);if(g.status==='removed')return 'You were removed from this group';if(g.status==='left')return 'You left this group';
+  return m?(m.from==='me'?'You: ':P[m.from]?first(m.from)+': ':'')+m.text:'No messages yet'}
+function rowTime(c,unread){const m=lastMsg(c);return h('span',{class:'rt'},h('span',{class:'tm'},m?.day&&m.day!=='Today'?m.day:(m?.t&&m.t!=='before removal'?m.t:'')),unread?h('span',{class:'t-badge'},String(unread),h('span',{class:'sr'},' unread')):null)}
+function groupRow(g){
+  return h('button',{class:'row'+(S.cur===g.id?' on':'')+(closed(g)?' gone':'')+(g.unread?' unread':''),type:'button','data-row':g.id,onclick:()=>openConv(g.id)},gAvatar(g),
+    h('span',{class:'tx1'},h('span',{class:'nm'},g.name),h('span',{class:'sub'},lastText(g))),rowTime(g,g.unread))}
+function privRow(p){return h('button',{class:'row'+(S.cur===p.id?' on':'')+(p.unread?' unread':''),type:'button','data-row':p.id,onclick:()=>openConv(p.id)},avatar(p.person),
+  h('span',{class:'tx1'},h('span',{class:'nm'},P[p.person].n),h('span',{class:'sub'},p.msgs.at(-1)?.text||'')),rowTime(p,p.unread))}
+function sentRow(r){
+  const txt={waiting:'Waiting for '+first(r.to)+' · via '+(r.via||'a group'),declined:'Declined · '+r.when,expired:'Expired after 7 days'}[r.state];
+  return h('div',{class:'row'},avatar(r.to),h('span',{class:'tx1'},h('span',{class:'nm'},P[r.to].n),h('span',{class:'sub'},txt)),
+    h('button',{class:'ib',type:'button',style:'color:var(--muted)','aria-label':(r.state==='waiting'?'Cancel request to ':'Dismiss ')+P[r.to].n,onclick:()=>{const i=S.reqOut.indexOf(r);S.reqOut.splice(i,1);
+      S.events=S.events.filter(e=>e.req!==r.id);renderAll();say(r.state==='waiting'?'Request to '+first(r.to)+' cancelled. They won’t be told.':'Dismissed',()=>{S.reqOut.splice(i,0,r);renderAll()});($('#fold-sent')||$('#newBtn')).focus()}},ic('close')))}
+function inviteRow(i){
+  if(i.expired)return h('div',{class:'row'},h('span',{class:'gav off','aria-hidden':'true'},ic('users')),h('span',{class:'tx1'},h('span',{class:'nm'},i.group),h('span',{class:'sub'},'Expired · ask '+i.by+' again')),
+    h('button',{class:'lnk',type:'button','aria-label':'Dismiss expired invite to '+i.group,onclick:()=>{S.invites=S.invites.filter(x=>x!==i);renderAll();say('Expired invite dismissed');($('#fold-inv')||$('#newBtn')).focus()}},'Dismiss'));
+  return h('div',{class:'row'},h('span',{class:'gav','aria-hidden':'true'},ic('users')),h('span',{class:'tx1'},h('span',{class:'nm'},i.group),h('span',{class:'sub'},'From '+i.by+' · '+i.members+' members')),
+    h('button',{class:'lnk',type:'button','aria-label':'Review invitation to '+i.group,onclick:()=>reviewInvite(i)},'Review'))}
+function reviewInvite(i){
+  dialog('dsheet',api=>{
+    api.set(h('div',{class:'dhead'},h('h2',null,'Join “'+i.group+'”?'),closeBtn(api)),
+      h('p',null,'Invited by '+i.by+' · '+i.members+' members · owner '+i.owner+'. Expires in '+i.left+'.'),
+      h('ul',{class:'facts'},
+        h('li',null,h('b',null,'The group’s hosts can read everything shared in it.'),' Hosts: '+i.hosts+'.'),
+        h('li',null,'Hosts also see your group address and when you’re online.'),
+        h('li',null,'Members see your name and messages, never your address.')),
+      h('div',{class:'acts'},h('button',{class:'btn tx',type:'button',onclick:()=>{api.close();const k=S.invites.indexOf(i);S.invites.splice(k,1);renderAll();say('Invite from '+i.by+' dismissed',()=>{S.invites.splice(k,0,i);renderAll()})}},'Not now'),
+        h('button',{class:'btn',type:'button',onclick:()=>{api.noRestore=true;api.close();joinInvite(i)}},'Join')))})}
+function joinInvite(i){
+  S.invites=S.invites.filter(x=>x!==i);
+  const g={id:'g'+S.uid++,name:i.group,status:'active',role:'member',unread:0,hosts:[{name:'Arjun’s desktop',online:true},{name:'Meera’s desktop',online:true}],
+    members:[{id:'meera',roles:['owner','host'],since:'Aug 2'},{id:'arjun',roles:['host'],since:'Aug 2'},{id:'sam',roles:['admin'],since:'Aug 2'},{id:'dev',roles:[],since:'Aug 5'},{id:'kavya',roles:[],since:'Aug 9'},{id:'me',roles:[],since:'today'}],
+    pending:[],flags:{},msgs:[{sys:1,text:'You joined, invited by '+i.by},{id:'j1',from:'sam',text:'Welcome. Long run Sunday 6:30.',t:'09:10'}]};
+  S.groups.unshift(g);say('Joined '+g.name);openConv(g.id)}
+function requestRow(r){
+  return h('div',{class:'row'},avatar(r.from),h('span',{class:'tx1'},h('span',{class:'nm'},P[r.from].n),h('span',{class:'sub'},r.note)),
+    h('button',{class:'lnk',type:'button','aria-label':'Review chat request from '+P[r.from].n,onclick:()=>reviewRequest(r)},'Review'))}
+function reviewRequest(r){
+  dialog('dsheet',api=>{
+    api.set(h('div',{class:'dhead'},h('h2',null,'Chat request from '+first(r.from)),closeBtn(api)),
+      h('div',{style:'display:flex;gap:12px;align-items:center'},avatar(r.from,'lg'),h('div',null,h('div',{class:'nm'},P[r.from].n),h('div',{class:'hint'},'Member of '+r.via))),
+      h('div',{class:'quote'},r.note),
+      h('p',null,'Accepting starts a private chat, messages only. Declining or blocking tells '+first(r.from)+' and nothing else.'),
+      h('div',{class:'acts'},
+        h('button',{class:'btn tx dg sm',type:'button',onclick:()=>{api.close();confirmDlg({title:'Block '+first(r.from)+'?',text:[first(r.from)+' is told they’re blocked and can’t send more requests or calls. They stay in the group.'],confirm:'Block '+first(r.from),danger:true,onYes:()=>{S.reqIn=S.reqIn.filter(x=>x!==r);renderAll();say(first(r.from)+' blocked. They were told.');$('#newBtn').focus()}})}},'Block'),
+        h('button',{class:'btn ol sm',type:'button',onclick:()=>{api.close();S.reqIn=S.reqIn.filter(x=>x!==r);renderAll();say(first(r.from)+' is told you declined.');$('#newBtn').focus()}},'Decline'),
+        h('button',{class:'btn sm',type:'button',onclick:()=>{api.noRestore=true;api.close();acceptReq(r)}},'Accept')))})}
+function acceptReq(r){S.reqIn=S.reqIn.filter(x=>x!==r);
+  const p={id:'p-'+r.from,type:'private',person:r.from,calls:false,msgs:[{sys:1,text:'You accepted '+first(r.from)+'’s request from '+r.via},{id:'q'+S.uid++,from:r.from,text:r.note,t:clock()}]};
+  S.privates.push(p);say('Accepted. Private chat with '+first(r.from)+' is open.');openConv(p.id)}
+
+/* ---------- navigation ---------- */
+function applyView(){$('#app').dataset.view=S.view}
+function openConv(id){S.cur=id;S.view='conv';S.unseen=0;const c=conv(id);if(c&&c.unread)c.unread=0;renderAll();applyView();$('#convPane h2')?.focus()}
+function closeConv(){if(FROM_HOME&&deep){location.href='home.html';return}const id=S.cur;S.view='list';applyView();renderList();(document.querySelector('[data-row="'+id+'"]')||$('#newBtn'))?.focus()}
+
+/* ---------- conversation ---------- */
+function renderAll(){renderList();renderConv();renderSim();applyView()}
+function renderConv(){
+  $('#mobilePreview').href='mobile.html?screen=groups&group='+encodeURIComponent(S.groups.some(x=>x.id===S.cur)?S.cur:'hike');
+  const C=$('#convPane');C.replaceChildren();const c=conv(S.cur);
+  if(!c){C.append(h('div',{class:'placeholder'},h('div',{class:'empty'},h('h3',null,'Choose a group'),h('p',null,'Messages stay on your devices.'))));return}
+  const g=c.type==='private'?null:c;
+  const title=g?g.name:P[c.person].n;
+  const head=h('div',{class:'chead'},h('button',{class:'ib backbtn',type:'button','aria-label':FROM_HOME&&deep?'Back to home':'Back to groups',onclick:closeConv},ic('back')),
+    g?gAvatar(g):avatar(c.person,'sm'),
+    h('div',{class:'ttl'},h('h2',{tabindex:'-1'},title),h('div',{class:'st',id:'stLine'},g?statusLine(g):'Online')),
+    g&&!closed(g)?callButton(g):null,
+    g&&!closed(g)?h('button',{class:'ib',type:'button',id:'memBtn','aria-label':'Members','aria-haspopup':'dialog',onclick:()=>openMembers(g)},ic('users')):null);
+  C.append(head);
+  C.append(h('div',{id:'bannerHost'}));
+  const list=h('div',{class:'msgs',id:'msgs',role:'log','aria-label':'Messages in '+title,tabindex:'0'});C.append(list);
+  list.addEventListener('scroll',()=>{pressStops.forEach(f=>f());if(S.unseen&&list.scrollHeight-list.scrollTop-list.clientHeight<40){S.unseen=0;$('#tobot')?.remove()}},{passive:true});
+  C.append(h('div',{id:'compHost'}));
+  renderBanner();renderMsgs(true);renderComposer();
+}
+/* group call: in-page overlay with the shared roster; never rings anyone (cues: call-audio.js). Needs a live host, so it is disabled (not hidden) while hosts are degraded.
+   While a call is live the button only ever returns to it. */
+function callButton(g){
+  if(CALL)return h('button',{class:'ib live',type:'button',id:'callBtn','aria-label':'Return to call with '+CALL.name,onclick:openCall},ic('phone'));
+  if(!g.hosts.length||!hostsOn(g))return h('button',{class:'ib',type:'button',id:'callBtn','aria-disabled':'true','aria-label':'Group call unavailable while no host is online',title:'Needs a host online'},ic('phone'));
+  return h('button',{class:'ib',type:'button',id:'callBtn','aria-label':'Start group call','aria-haspopup':'dialog',onclick:()=>startCall(g)},ic('phone'))}
+/* The call is app state in call-state.js (TinCall): it outlives this page and may have been started in
+   chat.html (a direct call) — the overlay renders whichever call is live. Only "overlay up here" is local.
+   ?call=open raises the overlay on load; ?callbar=host means Home's desktop pane draws the strip instead. */
+const HOST_BAR=QS.get('callbar')==='host';
+let CALL=TinCall.get(),callOpen=false;
+const callStrip=TinCall.bar({id:'callStrip'});callStrip.addEventListener('click',()=>openCall());$('#app').prepend(callStrip);
+function refreshCallBtn(){const b=$('#callBtn'),g=conv(S.cur);if(b&&g&&g.type!=='private'){const f=document.activeElement===b;b.replaceWith(callButton(g));if(f)$('#callBtn').focus()}}
+/* Who is in the call (SPEC "Group call"): the host's device forwards up to k speakers (3 for a desktop
+   host), everyone else sits in the quiet row. Weekend hike is hosted on Arjun's desktop; the plan is
+   simulation data, the roster itself (and its clock) lives in call-state.js so chat.html shows the same. */
+const CALLPLAN={hike:{host:'arjun',k:3,fwd:['arjun','sam','priya'],muted:['priya','kavya'],away:['ravi'],join:{leo:8000},leave:{dev:24000}}};
+function callRoster(g){
+  const ids=g.members.map(m=>m.id),hostId=(g.members.find(m=>m.roles.includes('host'))||g.members[0]||{id:'me'}).id;
+  const plan=CALLPLAN[g.id]||{host:hostId,k:3,fwd:[hostId,...ids.filter(i=>i!==hostId&&i!=='me')].slice(0,3),muted:[],away:[],join:{},leave:{}};
+  const order=[...plan.fwd,'me',...ids].filter((id,i,a)=>a.indexOf(id)===i&&(ids.includes(id)||id==='me')&&!plan.away.includes(id));
+  return {k:plan.k,roster:order.map(id=>({id,name:id==='me'?'You':P[id].n,ini:P[id].i,me:id==='me',host:id===plan.host,fwd:plan.fwd.includes(id),muted:plan.muted.includes(id),join:plan.join[id],leave:plan.leave[id]}))}}
+function startCall(g){if(CALL){openCall();return}TinAudio.arm();TinCall.start({kind:'group',id:g.id,name:g.name,...callRoster(g)});openCall()}
+const gStage=TinCall.stage();TinAudio.follow(TinCall);
+TinAudio.onQuiet(on=>{const b=$('#swQuiet');if(b)b.setAttribute('aria-checked',String(on))});
+function reducedMotion(){return matchMedia('(prefers-reduced-motion:reduce)').matches||document.documentElement.dataset.motion==='reduce'}
+function tickCall(){const t=TinCall.get();if(!t)return;
+  const tm=$('#callOv .ctime');if(tm){tm.textContent=t.time||'00:00';tm.style.visibility=t.connected?'visible':'hidden';$('#callOv .cst').textContent=t.connected?'Connected':t.preLabel}
+  $('#callMark')?.classList.toggle('taut',!!t.connected)}
+function callMark(){const m=h('span',{});m.innerHTML='<svg class="callmark" id="callMark" viewBox="0 9 40 22" aria-hidden="true" focusable="false"><path class="mk-can" d="M14,11H8A5,5 0 0 0 3,16V24A5,5 0 0 0 8,29H14Z"/><path class="mk-can" d="M26,11H32A5,5 0 0 1 37,16V24A5,5 0 0 1 32,29H26Z"/><path class="mk-str" d="M14 20Q20 28 26 20"/></svg>';return m}
+function setInert(on){['#listPane','#convPane'].forEach(x=>{$(x).inert=on});callStrip.inert=on}
+const callInitials=n=>n.split(' ').map(w=>w[0]).slice(0,2).join('');
+function muteIcon(b){b.setAttribute('aria-pressed',String(!!CALL?.muted));b.replaceChildren(ic(CALL?.muted?'micoff':'mic'))}
+function renderCall(){
+  const keep=$('#callOv')?.contains(document.activeElement);
+  $('#callOv')?.remove();if(!CALL)callOpen=false;
+  callStrip.hidden=!CALL||callOpen||HOST_BAR;setInert(callOpen);
+  if(!callOpen)return;const app=$('#app');
+  const mute=h('button',{class:'cbtn mute',type:'button','aria-label':'Mute',onclick:()=>{if(!CALL)return;TinCall.update({muted:!CALL.muted});$('#live').textContent=CALL.muted?'Muted':'Unmuted'}});muteIcon(mute);
+  const face=CALL.kind==='group'?h('span',{class:'gav','aria-hidden':'true'},ic('users')):h('span',{class:'t-avatar big '+hue(CALL.name),'aria-hidden':'true'},callInitials(CALL.name));
+  const ov=h('div',{class:'callov',id:'callOv',role:'dialog','aria-label':'Call with '+CALL.name,tabindex:'-1',onkeydown:e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();minimizeCall()}}},
+    h('button',{class:'ib cmin',type:'button','aria-label':'Back to chat — call continues',onclick:minimizeCall},ic('chev')),
+    CALL.people?gStage:h('div',{class:'cbody'},face,h('h2',null,CALL.name),CALL.kind==='direct'?callMark():null,h('div',{class:'cst',role:'status'},''),h('div',{class:'ctime'},'00:00')),
+    h('div',{class:'cctl'},h('label',null,mute,'Mute'),h('label',null,h('button',{class:'cbtn end',type:'button','aria-label':'End call',onclick:()=>endCall()},ic('phone')),'End')));
+  gStage.hidden=!CALL.people;app.append(ov);tickCall();if(keep)ov.focus()}
+function openCall(){if(!CALL)return;TinAudio.arm();callOpen=true;renderCall();$('#callOv').focus()}
+function minimizeCall(){if(!CALL)return;callOpen=false;renderCall();(HOST_BAR?($('#callBtn')||$('#convPane h2')||$('#newBtn')):callStrip).focus()}
+function endCall(){
+  if(!CALL)return;
+  const snap=TinCall.get();// read before TinCall.end() clears connected/secs
+  TinAudio.ending();
+  if(reducedMotion()){finishEndCall(snap);return}
+  $('#callMark')?.classList.remove('taut');// the string goes slack again
+  $('#callOv')?.classList.add('ending');
+  setTimeout(()=>finishEndCall(snap),220)
+}
+function finishEndCall(snap){
+  if(snap&&snap.kind==='group'){const g=conv(snap.id);if(g){g.msgs.push({sys:1,text:'Call ended · '+TinCall.mmss(snap.secs)});if(S.cur===g.id)renderMsgs(true)}}
+  TinCall.end();say('Call ended');($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()
+}
+TinCall.subscribe(v=>{const was=CALL,inside=!!$('#callOv')?.contains(document.activeElement);CALL=v;
+  const changed=!was!==!v||(was&&v&&was.ringAt!==v.ringAt);
+  if(changed){renderCall();refreshCallBtn();if(!v&&inside)($('#callBtn')||$('#convPane h2')||$('#newBtn'))?.focus()}   // ended elsewhere
+  else{const m=$('#callOv .mute');if(m)muteIcon(m)}});
+TinCall.onTick(tickCall);
+addEventListener('message',e=>{if(e.source===parent&&e.data&&e.data.type==='tinline-call-open')openCall()});   // Home's strip, desktop pane
+/* degraded-host strip: only shown when something is actually wrong */
+function renderBanner(){
+  const g=conv(S.cur);const B=$('#bannerHost');if(!B)return;B.replaceChildren();
+  if(!g||g.type==='private'||closed(g))return;
+  if(!g.hosts.length)B.append(h('div',{class:'strip'},h('span',null,'No host yet — messages wait'),h('button',{type:'button',onclick:()=>askHost(g)},'Ask to host')));
+  else if(!hostsOn(g))B.append(h('div',{class:'strip'},h('span',null,'Host offline — messages wait'),h('button',{type:'button',id:'tryBtn',onclick:()=>retry(g)},'Try again')));
+}
+function retry(g){const b=$('#tryBtn');b.disabled=true;b.textContent='Trying…';$('#convPane').setAttribute('aria-busy','true');say('Trying the group’s hosts…');
+  setTimeout(()=>{ $('#convPane').removeAttribute('aria-busy');g.lastTry=clock();
+    if(hostsOn(g)){flush(g)}else{renderBanner();say('Still no host reachable. '+queued(g).length+' message(s) stay saved on this phone.');$('#tryBtn')?.focus()}},1100)}
+function flush(g){const n=queued(g).length;g.msgs.forEach(m=>{if(m.state==='queued')m.state='delivered'});
+  g.msgs.push({sys:1,text:'A host is back. Waiting messages were delivered.'});if(S.cur===g.id){renderBanner();renderMsgs();$('#stLine').textContent=statusLine(g);$('#callBtn')?.replaceWith(callButton(g))}
+  renderList();say(n?n+' waiting message'+(n>1?'s':'')+' delivered':'A host is back')}
+const STATE={queued:['clock','Waiting for a host'],sending:['clock','Sending'],delivered:['check','Delivered']};
+const HHMM=/^\d\d:\d\d$/;
+const dayOf=t=>HHMM.test(t||'')?'Today':t==='Yesterday'?'Yesterday':/^[A-Z][a-z]{2} \d{1,2}$/.test(t||'')?t:null;
+const near=(a,b)=>HHMM.test(a)&&HHMM.test(b)?(d=>d>=0&&d<=5)((+b.slice(0,2)*60+ +b.slice(3))-(+a.slice(0,2)*60+ +a.slice(3))):a===b;
+function tick(state){const [n,l]=STATE[state];const s=h('span',{class:'tick'+(n==='clock'?' pend':''),'aria-hidden':'true'});s.innerHTML='<svg viewBox="0 0 24 24">'+ICONS[n]+'</svg>';return [s,h('span',{class:'sr'},l)]}
+function renderMsgs(jump){
+  pressStops=[];
+  const g=conv(S.cur);const M=$('#msgs');if(!M)return;const atEnd=jump||M.scrollHeight-M.scrollTop-M.clientHeight<80,top=M.scrollTop;M.replaceChildren();
+  if(!g.msgs.length)M.append(h('div',{class:'empty'},h('h3',null,'No messages yet'),h('p',null,'Say hello.')));
+  /* 1: flatten into day pills, event lines and messages; a message continues a group when same author, same day, ≤5 min */
+  const items=[];let prev=null,day=g.msgs.map(m=>!m.sys&&(m.day||dayOf(m.t))).find(Boolean)||null;
+  if(day&&g.msgs.length)items.push({day});
+  g.msgs.forEach(m=>{
+    const d=m.sys?m.day:(m.day||dayOf(m.t));if(d&&d!==day){day=d;items.push({day:d});prev=null}
+    if(m.sys){items.push({sys:m});prev=null;return}
+    items.push({m,cont:!!prev&&prev.from===m.from&&near(prev.t,m.t)});prev=m});
+  /* 2: render with corner positions */
+  items.forEach((it,i)=>{
+    if(it.day){M.append(h('div',{class:'day'},it.day));return}
+    if(it.sys){M.append(h('div',{class:'sys'},it.sys.text));return}
+    const m=it.m,nx=items[i+1],more=!!(nx&&nx.m&&nx.cont);
+    const pos=it.cont?(more?' g-mid':' g-last'):(more?' g-first':'');
+    const out=m.from==='me',p=P[m.from];
+    const el=h('div',{class:'bub '+(out?'out':'in')+pos+(S.justSent===m.id?' rise':''),'data-mid':m.id,'data-state':m.state||null,tabindex:'-1'});
+    if(!out&&g.type!=='private'&&!it.cont)el.append(h('span',{class:'who',style:'color:var(--'+hue(p.n)+'-ink)'},p.n+(m.late?' · removed':'')));
+    if(m.reply){const o=g.msgs.find(x=>x.id===m.reply);if(o)el.append(h('button',{class:'rq',type:'button','aria-label':'Replying to '+(o.from==='me'?'you':first(o.from))+': '+o.text+'. Jump to message',onclick:()=>jumpTo(o.id)},h('b',{style:o.from==='me'?'':'color:var(--'+hue(P[o.from].n)+'-ink)'},o.from==='me'?'You':first(o.from)),h('span',null,o.text)))}
+    el.append(m.text);
+    if(m.late)el.append(h('span',{class:'late'},m.late));
+    const meta=h('span',{class:'meta'},m.edited?'edited ':'',m.t||'');
+    if(out&&m.state)meta.append(...tick(m.state));
+    el.append(meta);
+    const row=h('div',{class:'brow '+(out?'out':'in')+(it.cont?'':' f'),'data-mrow':m.id});
+    if(!closed(g)){
+      const who=out?'your message':'message from '+first(m.from);
+      const mo=h('button',{class:'mo',type:'button','aria-haspopup':'menu','aria-label':'Actions for '+who,onclick:()=>openMenu(g,m,mo)},ic('chev'));
+      el.addEventListener('contextmenu',e=>{e.preventDefault();if($('dialog.dmenu[open],dialog.dpop[open]'))return;const touch=e.pointerType==='touch'||!popMode();
+        el.focus({preventScroll:true});if(touch)feel(el);openMenu(g,m,el,touch?null:{x:e.clientX,y:e.clientY},touch)});
+      pressable(el,()=>{if($('dialog.dmenu[open],dialog.dpop[open]'))return;el.focus({preventScroll:true});getSelection()?.removeAllRanges();feel(el);openMenu(g,m,el,null,true)});
+      out?row.append(mo,el):row.append(el,mo)}
+    else row.append(el);
+    M.append(row)});
+  S.justSent=null;
+  if(S.unseen)M.append(h('button',{class:'tobot',id:'tobot',type:'button','aria-label':S.unseen+' new message'+(S.unseen>1?'s':'')+'. Scroll to latest',onclick:()=>{S.unseen=0;M.scrollTop=M.scrollHeight;$('#tobot')?.remove();M.focus()}},ic('down'),h('span',{class:'t-badge','aria-hidden':'true'},String(S.unseen))));
+  M.scrollTop=atEnd?M.scrollHeight:top}
+/* long-press: touch/pen only, 500 ms; a 10px move, scroll, release or cancel aborts it */
+function pressable(el,fire){let t=null,x=0,y=0;
+  const stop=()=>{clearTimeout(t);t=null};
+  el.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||e.button>0||e.target.closest('button'))return;x=e.clientX;y=e.clientY;stop();t=setTimeout(()=>{t=null;fire()},500)});
+  el.addEventListener('pointermove',e=>{if(t&&Math.hypot(e.clientX-x,e.clientY-y)>10)stop()});
+  ['pointerup','pointercancel','pointerleave'].forEach(n=>el.addEventListener(n,stop));
+  pressStops.push(stop)}
+let pressStops=[];
+function feel(el){el.classList.add('pressed');setTimeout(()=>el.classList.remove('pressed'),140)}
+const popMode=()=>matchMedia('(hover:hover) and (pointer:fine) and (min-width:860px)').matches;
+/* one action list; bottom sheet on touch / narrow, anchored popover on fine pointers ≥860px */
+function openMenu(g,m,anchor,at,touch){
+  const out=m.from==='me',pop=!touch&&popMode();
+  const back=anchor;
+  /* a touch-opened sheet appears under the finger: ignore item activation until that finger lifts */
+  let armed=!touch;
+  if(touch){const arm=()=>{['pointerup','pointercancel','touchend'].forEach(n=>document.removeEventListener(n,arm,true));setTimeout(()=>armed=true,80)};['pointerup','pointercancel','touchend'].forEach(n=>document.addEventListener(n,arm,true))}
+  const item=(icn,label,fn,cls)=>h('button',{class:'mi'+(cls?' '+cls:''),type:'button'},ic(icn),h('span',null,label));
+  const api=dialog(pop?'dpop':'dmenu',api=>{
+    api.el.setAttribute('aria-label',out?'Your message':'Message from '+first(m.from));
+    const go=(fn,keep)=>e=>{if(!armed){e.preventDefault();return}if(!keep)api.noRestore=true;api.close();fn()};
+    const acts=[['reply','Reply',go(()=>setReply(m.id))],['copy','Copy',go(()=>copyMsg(m),true)]];
+    if(out)acts.push(['edit','Edit',go(()=>setEdit(m.id))],['trash','Delete',go(()=>delMsg(g,m)),'dg']);
+    acts.push(['info','Message info',go(()=>msgInfo(g,m,back))]);
+    const kids=pop?[]:[h('div',{class:'notch','aria-hidden':'true'}),h('div',{class:'mprev'},m.text)];
+    acts.forEach(([i,l,fn,cls],k)=>{const b=item(i,l,fn,cls);b.addEventListener('click',fn);if(!k)b.setAttribute('autofocus','');kids.push(b)});
+    api.set(...kids)});
+  if(pop){const d=api.el,r=at?{left:at.x,right:at.x,top:at.y,bottom:at.y}:anchor.getBoundingClientRect(),w=d.offsetWidth,hh=d.offsetHeight;
+    let x=at?at.x:(out?r.right-w:r.left),y=r.bottom+4;if(y+hh>innerHeight-8)y=Math.max(8,r.top-hh-4);x=Math.min(Math.max(8,x),innerWidth-w-8);
+    d.style.left=x+'px';d.style.top=y+'px'}
+  return api}
+function copyMsg(m){try{navigator.clipboard?.writeText(m.text).catch(()=>{})}catch(e){}say('Copied')}
+function delMsg(g,m){const i=g.msgs.indexOf(m);g.msgs.splice(i,1);if(S.edits[g.id]===m.id){delete S.edits[g.id];S.drafts[g.id]='';renderComposer()}
+  renderMsgs();renderBanner();renderList();$('#msgs').focus();say(m.state==='queued'?'Waiting message deleted':'Message deleted',()=>{g.msgs.splice(i,0,m);renderMsgs();renderBanner();renderList()})}
+function msgInfo(g,m,back){
+  dialog('dsheet',api=>{api.restoreEl=back;const out=m.from==='me';
+    const st={delivered:g.type==='private'?'Delivered to '+first(g.person)+'’s phone':'Delivered to the group’s hosts',queued:'Waiting for a host. Saved on this phone; it sends when a host is back.',sending:'Sending'};
+    const kv=out?[['Sent',m.t],['Status',st[m.state]||'Sent']]:[['From',P[m.from].n],['Received',m.t]];
+    if(m.edited)kv.push(['Edited','Yes']);
+    api.set(h('div',{class:'dhead'},h('h2',null,'Message info'),closeBtn(api)),h('div',{class:'quote'},m.text),
+      h('dl',{class:'kv'},kv.flatMap(([k,v])=>[h('dt',null,k),h('dd',null,v)])),
+      h('div',{class:'acts'},h('button',{class:'btn tx',type:'button',autofocus:'',onclick:api.close},'Close')))})}
+function jumpTo(id){const el=document.querySelector('[data-mid="'+id+'"]');if(!el)return;el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1400)}
+function setReply(mid){S.replies[S.cur]=mid;if(S.edits[S.cur]){delete S.edits[S.cur];S.drafts[S.cur]=''}renderComposer();$('#ta').focus();say('Replying. Escape cancels.')}
+function setEdit(mid){const c=conv(S.cur),m=c.msgs.find(x=>x.id===mid);S.edits[c.id]=mid;delete S.replies[c.id];S.drafts[c.id]=m.text;renderComposer();const t=$('#ta');t.focus();t.setSelectionRange(t.value.length,t.value.length);say('Editing. Escape cancels.')}
+function cancelCtx(c){if(S.edits[c.id]){delete S.edits[c.id];S.drafts[c.id]='';say('Edit cancelled')}else{delete S.replies[c.id];say('Reply cancelled')}renderComposer();$('#ta').focus()}
+function renderComposer(){
+  const c=conv(S.cur),H=$('#compHost');if(!H)return;H.replaceChildren();
+  if(c.type!=='private'&&closed(c)){H.append(h('div',{class:'closed'},h('span',null,c.status==='removed'?'You can’t send messages to this group.':'You left, so you can’t send messages here.'),
+    c.status==='removed'?h('button',{class:'lnk',type:'button',onclick:()=>showRemoval(c)},'Why you were removed'):null));return}
+  if(c.type==='private')H.append(h('div',{class:'callnote'},h('span',null,c.calls?'Calls are on':'Calls are off'),
+    c.calls?h('button',{class:'lnk',type:'button',onclick:()=>{c.calls=false;c.msgs.push({sys:1,text:'You turned calls off for '+first(c.person)});renderConv();say('Calls turned off for '+first(c.person));renderList()}},'Turn off')
+      :h('button',{class:'lnk',type:'button',id:'allowCalls',onclick:()=>{c.calls=true;c.msgs.push({sys:1,text:'You allowed calls from '+first(c.person)});renderConv();$('#convPane h2').focus();say('Calls allowed for '+first(c.person)+'.');renderList()}},'Allow calls')));
+  const comp=h('div',{class:'comp'});
+  const eid=S.edits[c.id],rid=S.replies[c.id],o=(eid||rid)&&c.msgs.find(m=>m.id===(eid||rid));
+  if(o)comp.append(h('div',{class:'reply'+(eid?' edit':'')},h('span',{class:'tt'},h('b',null,eid?'Editing message':'Replying to '+(o.from==='me'?'yourself':first(o.from))),h('span',null,o.text)),
+    h('button',{class:'ib',type:'button','aria-label':eid?'Cancel edit':'Cancel reply',onclick:()=>cancelCtx(c)},ic('close'))));
+  const ta=h('textarea',{id:'ta',rows:'1','aria-label':'Message '+(c.type==='private'?P[c.person].n:c.name),placeholder:c.type==='private'?'Message':'Message the group'});
+  ta.value=S.drafts[c.id]||'';
+  const sendB=h('button',{class:'send',type:'button',id:'sendBtn','aria-label':eid?'Save edit':'Send',disabled:ta.value.trim()?null:'',onclick:send},ic('send'));
+  const fit=()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight+2,140)+'px'};
+  ta.addEventListener('input',()=>{S.drafts[c.id]=ta.value;sendB.disabled=!ta.value.trim();fit()});
+  ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&matchMedia('(pointer:fine)').matches){e.preventDefault();send()}else if(e.key==='Escape'&&(S.replies[c.id]||S.edits[c.id])){e.stopPropagation();cancelCtx(c)}});
+  const file=h('input',{type:'file',class:'sr',tabindex:'-1','aria-hidden':'true',onchange:e=>{const f=e.target.files[0];if(f)sendText('📎 '+f.name);e.target.value=''}});
+  comp.append(h('div',{class:'cin'},h('button',{class:'ib att',type:'button','aria-label':'Attach a file',onclick:()=>file.click()},ic('clip')),file,ta,sendB));
+  H.append(comp);fit()}
+function send(){
+  const c=conv(S.cur),ta=$('#ta'),text=ta.value.trim();
+  if(!text){ta.focus();return}
+  const eid=S.edits[c.id];
+  if(eid){const m=c.msgs.find(x=>x.id===eid);delete S.edits[c.id];S.drafts[c.id]='';if(m&&m.text!==text){m.text=text;m.edited=true}renderComposer();$('#ta').focus();renderMsgs();renderList();say('Message edited');return}
+  S.drafts[c.id]='';sendText(text);$('#ta').focus()}
+function sendText(text){
+  const c=conv(S.cur),g=c.type==='private'?null:c;
+  const m={id:'m'+S.uid++,from:'me',text,t:clock(),state:g&&!hostsOn(g)?'queued':'sending',reply:S.replies[c.id]};
+  c.msgs.push(m);delete S.replies[c.id];S.justSent=m.id;TinAudio.sent();renderComposer();renderMsgs(true);renderBanner();renderList();
+  if(m.state==='queued')say('No host reachable. Message saved on this phone and will send later.');
+  else{setTimeout(()=>{if(m.state==='sending'){m.state='delivered';if(S.cur===c.id){const el=document.querySelector('[data-mid="'+m.id+'"]'),t=el?.querySelector('.meta');if(t){el.dataset.state='delivered';t.querySelectorAll('.tick,.sr').forEach(x=>x.remove());t.append(...tick('delivered'))}}say(g?'Delivered':'Delivered to '+first(c.person))}},650)}}
+function incoming(g,m){g.msgs.push(m);if(S.cur!==g.id){g.unread=(g.unread||0)+1;renderList();return}
+  const M=$('#msgs');if(M&&M.scrollHeight-M.scrollTop-M.clientHeight>=80)S.unseen++;renderMsgs();renderList()}
+
+/* ---------- create / invite ---------- */
+function pickList(sel,exclude,onchange){
+  const wrap=h('fieldset',{style:'border:0;padding:0;margin:0;display:flex;flex-direction:column'},h('legend',{class:'lbl',style:'padding:0 0 4px'},'Add people'));
+  const cs=CONTACTS.filter(id=>!exclude.includes(id));
+  if(!cs.length)wrap.append(h('p',null,'Everyone you know is already here.'));
+  cs.forEach(id=>wrap.append(h('label',{class:'pick'},h('input',{type:'checkbox',checked:sel.includes(id)?'':null,onchange:e=>{if(e.target.checked)sel.push(id);else sel.splice(sel.indexOf(id),1);onchange&&onchange()}}),avatar(id,'sm'),P[id].n)));
+  return wrap}
+function openCreate(){
+  const d=S.createDraft;
+  dialog('dsheet',api=>{
+    const err=h('div',{class:'err',id:'nmErr',role:'alert'});
+    const name=h('input',{id:'gn',value:d.name,maxlength:'60',autocomplete:'off',oninput:e=>{d.name=e.target.value;name.removeAttribute('aria-invalid');err.textContent=''}});
+    const note=h('p',{class:'hint'});
+    const cnt=h('div',{class:'hint',role:'status'});
+    const sync=()=>{note.textContent=d.host==='desktop'?'Your desktop keeps the group running. The group’s hosts can read everything shared in it.':'Messages wait on phones until a member’s desktop hosts the group.';cnt.textContent=d.sel.length+' selected'};
+    const radios=h('fieldset',{style:'border:0;padding:0;margin:0'},h('legend',{class:'lbl',style:'padding:0 0 4px'},'Who hosts it?'),
+      [['desktop','My desktop'],['later','Ask a member later']].map(([v,l])=>h('label',{class:'pick'},h('input',{type:'radio',name:'host',value:v,checked:d.host===v?'':null,onchange:()=>{d.host=v;sync()}}),l)));
+    api.set(h('div',{class:'dhead'},h('h2',null,'New group'),closeBtn(api)),
+      h('div',{class:'field'},h('label',{for:'gn'},'Group name'),name,err),pickList(d.sel,[],sync),cnt,radios,note,
+      h('div',{class:'acts'},h('button',{class:'btn tx',type:'button',onclick:api.close},'Cancel'),
+        h('button',{class:'btn',type:'button',onclick:()=>{
+          if(!d.name.trim()){name.setAttribute('aria-invalid','true');err.textContent='Give the group a name.';name.focus();return}
+          api.noRestore=true;api.close();createGroup(d)}},'Create group')));
+    sync();api.onclose=()=>{if((d.name||d.sel.length)&&!d.done)say('Draft kept')};
+    requestAnimationFrame(()=>name.focus())})}
+function createGroup(d){
+  const sel=[...d.sel];
+  const g={id:'g'+S.uid++,name:d.name.trim(),status:'active',role:'owner',unread:0,hosts:d.host==='desktop'?[{name:'Your desktop',online:true,self:true}]:[],
+    members:[{id:'me',roles:d.host==='desktop'?['owner','host']:['owner'],since:'today'}],pending:sel.map(id=>({id,left:'7 days'})),flags:{},
+    msgs:[{sys:1,text:'You created the group'+(sel.length?'. Invited '+sel.map(first).join(', '):'')}]};
+  sel.forEach(id=>S.events.push({id:'inv-'+g.id+id,label:first(id)+' joins “'+g.name+'”',run:()=>{const gg=conv(g.id);if(!gg)return;gg.pending=gg.pending.filter(x=>x.id!==id);gg.members.push({id:id,roles:[],since:'today',by:'You'});gg.msgs.push({sys:1,text:first(id)+' joined, invited by you'});say(first(id)+' joined '+gg.name)},grp:g.id,pid:id}));
+  S.groups.unshift(g);d.done=true;S.createDraft={name:'',sel:[],host:'desktop'};
+  say('Group created. '+(sel.length?'Waiting for '+sel.length+' to accept.':''));openConv(g.id)}
+function inviteMore(g){
+  const sel=[];dialog('dsheet',api=>{
+    api.set(h('div',{class:'dhead'},h('h2',null,'Invite to '+g.name),closeBtn(api)),
+      pickList(sel,[...g.members.map(m=>m.id),...g.pending.map(p=>p.id)]),
+      h('p',{class:'hint'},'Invites arrive in your 1:1 chat and expire in 7 days.'),
+      h('div',{class:'acts'},h('button',{class:'btn tx',type:'button',onclick:api.close},'Cancel'),h('button',{class:'btn',type:'button',onclick:()=>{
+        if(!sel.length){say('Pick at least one person first');return}
+        sel.forEach(id=>{g.pending.push({id,left:'7 days'});S.events.push({id:'inv-'+g.id+id,label:first(id)+' joins “'+g.name+'”',grp:g.id,pid:id,run:()=>{g.pending=g.pending.filter(x=>x.id!==id);g.members.push({id:id,roles:[],since:'today',by:'You'});g.msgs.push({sys:1,text:first(id)+' joined, invited by you'});say(first(id)+' joined')}})});
+        api.close();say('Invite sent to '+sel.map(first).join(', '));renderAll();refreshMembers()}},'Send invites')))})}
+function askHost(g){
+  dialog('dsheet',api=>{
+    const cands=g.members.filter(m=>m.id!=='me'&&['arjun','meera','sam'].includes(m.id));let pick=cands[0]?.id;
+    api.set(h('div',{class:'dhead'},h('h2',null,'Ask a member to host'),closeBtn(api)),
+      h('p',null,'A host is a member’s desktop that keeps the group running. It can read everything shared in the group. They can say no.'),
+      cands.length?h('fieldset',{style:'border:0;padding:0;margin:0'},h('legend',{class:'lbl'},'Member'),cands.map((m,i)=>h('label',{class:'pick'},h('input',{type:'radio',name:'hh',checked:i===0?'':null,onchange:()=>pick=m.id}),avatar(m.id,'sm'),P[m.id].n))):h('p',null,'No other members yet. Invite someone first.'),
+      h('div',{class:'acts'},h('button',{class:'btn tx',type:'button',onclick:api.close},'Cancel'),cands.length?h('button',{class:'btn',type:'button',onclick:()=>{
+        S.events=S.events.filter(e=>e.id!=='host-'+g.id);
+        S.events.push({id:'host-'+g.id,label:first(pick)+'’s desktop accepts hosting “'+g.name+'”',grp:g.id,run:()=>{g.hosts.push({name:first(pick)+'’s desktop',online:true});g.msgs.push({sys:1,text:first(pick)+'’s desktop is now a host'});flush(g)}});
+        api.close();say('Asked '+first(pick)+' to host. Waiting for them.');renderSim()}},'Send request'):null))})}
+
+/* ---------- members sheet ---------- */
+let mem=null;
+function openMembers(g){
+  dialog('ddrawer dsheet',api=>{mem={api,g,pid:null};api.onclose=()=>{mem=null};api.restoreSel='#memBtn';drawMembers()})}
+function refreshMembers(){if(mem)drawMembers(true)}
+const rolePills=roles=>roles.map(r=>h('span',{class:'pill'+(r==='host'?' hst':'')},r[0].toUpperCase()+r.slice(1)));
+function drawMembers(){
+  const {api,g,pid}=mem;const admin=isAdmin(g);
+  if(pid){drawMember(pid);return}
+  const kids=[h('div',{class:'dhead'},h('h2',null,'Members · '+g.members.length),closeBtn(api,'Close members'))];
+  kids.push(h('h3',{class:'sec'},'Hosts'));
+  if(!g.hosts.length)kids.push(h('p',null,'No host yet. Messages wait on phones until a member’s desktop hosts the group.'),h('button',{class:'btn ol sm',type:'button',style:'align-self:flex-start',onclick:()=>{api.close();askHost(g)}},'Ask a member to host'));
+  g.hosts.forEach(x=>{const on=x.online&&!(S.hostsOffline&&g.id==='hike');kids.push(h('div',{class:'mrow'},h('span',{class:'dot'+(on?' on':''),'aria-hidden':'true'}),h('span',{style:'flex:1;min-width:0'},h('span',{class:'nm'},x.name),h('span',{class:'sub'},on?'Online':'Offline'+(x.note?' for 2 h':'')))))});
+  if(g.hosts.length)kids.push(h('p',{class:'hint'},'Hosts keep a full copy of the group and can read it.'));
+  kids.push(h('h3',{class:'sec'},'Members'));
+  g.members.forEach(m=>{const f=(g.flags[m.id]||[]).length;
+    kids.push(h('button',{class:'mrow',type:'button','data-mem':m.id,onclick:()=>{mem.pid=m.id;drawMembers()}},avatar(m.id,'sm'),
+      h('span',{style:'flex:1;min-width:0'},h('span',{class:'nm'},m.id==='me'?'You':P[m.id].n),admin&&f?h('span',{class:'sub'},f+' of 3 flags'):null),
+      rolePills(m.roles),S.blocked?.[m.id]?h('span',{class:'pill er'},'Blocked'):null))});
+  if(g.pending.length){kids.push(h('h3',{class:'sec'},'Invited'));
+    g.pending.forEach(p=>kids.push(h('div',{class:'mrow'},avatar(p.id,'sm'),h('span',{style:'flex:1;min-width:0'},h('span',{class:'nm'},P[p.id].n),h('span',{class:'sub'},'Expires in '+p.left)),
+      h('button',{class:'btn tx dg sm',type:'button','aria-label':'Cancel invite to '+P[p.id].n,onclick:()=>{g.pending=g.pending.filter(x=>x!==p);S.events=S.events.filter(e=>!(e.grp===g.id&&e.pid===p.id));drawMembers();renderSim();say('Invite to '+first(p.id)+' cancelled')}},'Cancel'))))}
+  kids.push(h('div',{class:'acts',style:'justify-content:space-between'},h('button',{class:'btn ol sm',type:'button',onclick:()=>inviteMore(g)},ic('plus'),'Invite'),
+    h('button',{class:'btn tx dg sm',type:'button',id:'leaveBtn',onclick:()=>leaveGroup(g)},ic('out'),'Leave group')));
+  if(mem.back){api.next='[data-mem="'+mem.back+'"]';mem.back=null}
+  api.set(...kids)}
+function drawMember(pid){
+  const {api,g}=mem;const m=g.members.find(x=>x.id===pid);if(!m){mem.pid=null;drawMembers();return}
+  const p=P[pid],me=pid==='me',admin=isAdmin(g),f=(g.flags[pid]||[]).length;
+  const priv=S.privates.find(x=>x.person===pid),out=S.reqOut.find(r=>r.to===pid&&r.state==='waiting'),blocked=S.blocked?.[pid];
+  const mi=(icn,label,sub,fn,cls)=>h('button',{class:'mi '+(cls||''),type:'button',onclick:fn},ic(icn),h('span',{style:'flex:1;min-width:0'},label,sub?h('span',{class:'sub',style:cls==='dg'?'color:var(--danger)':''},sub):null));
+  const kids=[h('div',{class:'dhead'},h('button',{class:'ib',type:'button','aria-label':'Back to members',onclick:()=>{mem.back=pid;mem.pid=null;drawMembers()}},ic('back')),h('h2',null,me?'You':p.n),closeBtn(api,'Close members')),
+    h('div',{style:'display:flex;gap:12px;align-items:center'},avatar(pid,'lg'),h('div',null,h('div',{class:'hint'},'Member since '+m.since+(m.by?' · invited by '+m.by:'')),h('div',{style:'display:flex;gap:6px;margin-top:4px;flex-wrap:wrap'},m.roles.length?rolePills(m.roles):h('span',{class:'pill'},'Member'),blocked?h('span',{class:'pill er'},'Blocked by you'):null)))];
+  if(me){kids.push(h('p',null,'Others see your name and messages, never your address.'));api.set(...kids);return}
+  kids.push(h('p',null,first(pid)+' sees your name and group messages, never your address.'));
+  kids.push(h('h3',{class:'sec'},'Private chat'));
+  if(blocked)kids.push(h('p',null,'You blocked '+first(pid)+'. They stay in the group.'),mi('block','Unblock '+first(pid),null,()=>{delete S.blocked[pid];say(first(pid)+' unblocked');drawMembers()}));
+  else if(priv)kids.push(mi('chat','Open chat with '+first(pid),priv.calls?'Messages and calls':'Messages only',()=>{api.noRestore=true;api.close();openConv(priv.id)}));
+  else if(out)kids.push(h('p',null,'Request sent. Waiting for '+first(pid)+'.'),mi('close','Cancel request',null,()=>{S.reqOut=S.reqOut.filter(r=>r!==out);S.events=S.events.filter(e=>e.req!==out.id);renderAll();drawMembers();say('Request cancelled. '+first(pid)+' won’t be told.')}));
+  else kids.push(mi('chat','Message privately','Sends '+first(pid)+' a chat request',()=>askPrivate(pid,g)));
+  if(!blocked)kids.push(mi('block','Block '+first(pid),'Only private chats and calls',()=>confirmDlg({title:'Block '+first(pid)+'?',text:[first(pid)+' is told they’re blocked and can’t ask you for private chats or calls.','They stay in “'+g.name+'”. Blocking never removes anyone from a group.'],confirm:'Block '+first(pid),danger:true,onYes:()=>{(S.blocked=S.blocked||{})[pid]=true;drawMembers();say(first(pid)+' blocked. They were told.')}}),'dg'));
+  if(admin&&!m.roles.includes('owner')){
+    kids.push(h('h3',{class:'sec'},'Admin'));
+    if(!m.roles.includes('admin'))kids.push(mi('shield','Make admin','Admins can flag members for removal',()=>{m.roles.push('admin');say(first(pid)+' is now an admin');drawMember(pid)}));
+    kids.push(mi('flag','Flag to remove',f+' of 3 flags',()=>flagDlg(g,pid),'dg'))}
+  api.set(...kids)}
+function askPrivate(pid,g){
+  dialog('dsheet',api=>{const note=h('input',{id:'note',value:'Hi '+first(pid)+', it’s Asha. Can I ask about the lift?',maxlength:'140'});
+    api.set(h('div',{class:'dhead'},h('h2',null,'Ask '+first(pid)+' for a private chat'),closeBtn(api)),h('div',{class:'field'},h('label',{for:'note'},'Note (optional)'),note),
+      h('p',null,first(pid)+' sees your name, “'+g.name+'” and your note. The host can’t read the note, but sees that you asked.'),
+      h('div',{class:'acts'},h('button',{class:'btn tx',type:'button',onclick:api.close},'Cancel'),h('button',{class:'btn',type:'button',onclick:()=>{
+        const r={id:'o'+S.uid++,to:pid,state:'waiting',via:g.name};S.reqOut.unshift(r);
+        S.events.push({id:'acc-'+r.id,req:r.id,label:first(pid)+' accepts my private chat request',run:()=>{S.reqOut=S.reqOut.filter(x=>x!==r);const pc={id:'p-'+pid,type:'private',person:pid,calls:false,msgs:[{sys:1,text:first(pid)+' accepted your request from '+g.name},{id:'z'+S.uid++,from:'me',text:note.value||'(no note)',t:clock(),state:'delivered'}]};S.privates.push(pc);say(first(pid)+' accepted. Chat is open, messages only.')}});
+        S.events.push({id:'dec-'+r.id,req:r.id,label:first(pid)+' declines',run:()=>{r.state='declined';r.when='today';say(first(pid)+' declined your request')}});
+        api.close();say('Request sent to '+first(pid)+'.');renderAll();refreshMembers()}},'Send request'))); })}
+function flagDlg(g,pid){
+  const n=(g.flags[pid]||[]).length+1,removing=n>=3;
+  confirmDlg({title:removing?'Flag '+first(pid)+' and remove them?':'Flag '+first(pid)+' for removal?',meter:{on:n,label:'Flag '+n+' of 3 after yours'},
+    text:[removing?'Yours is flag 3 of 3. '+first(pid)+' is removed right away and told. Hosts change address 2 days later.':'Yours will be flag '+n+' of 3. At 3 flags '+first(pid)+' is removed and told.','Flags can’t be taken back, and '+first(pid)+' can see who flagged them.'],
+    confirm:removing?'Flag and remove':'Flag',danger:true,onYes:()=>{
+      (g.flags[pid]=g.flags[pid]||[]).push('me');
+      if(g.flags[pid].length>=3){g.members=g.members.filter(m=>m.id!==pid);g.msgs.push({sys:1,text:first(pid)+' was removed after 3 admin flags'});
+        setTimeout(()=>{g.msgs.push({id:'late'+S.uid++,from:pid,text:'Running late, start without me',t:'before removal',late:'Written before '+first(pid)+' was removed'});if(S.cur===g.id)renderMsgs()},900);
+        mem.pid=null;renderAll();drawMembers();say(first(pid)+' removed. They were told.')}
+      else{drawMember(pid);say('Flagged. '+first(pid)+' now has '+g.flags[pid].length+' of 3 flags.')}}})}
+function leaveGroup(g){
+  const sole=g.hosts.length===1&&g.hosts[0].self;
+  confirmDlg({title:'Leave “'+g.name+'”?',text:['You stop receiving messages and the group sees that you left. The chat stays on this phone, read-only.',sole?'Your desktop is the only host. Nobody can host this group until another member does.':'To come back, an admin has to invite you again.'],confirm:'Leave group',danger:true,onYes:()=>{
+    g.status='left';g.msgs.push({sys:1,text:'You left the group'});mem?.api.close();renderAll();say('You left '+g.name+'.');}})}
+function showRemoval(g){
+  dialog('dsheet',api=>{api.set(h('div',{class:'dhead'},h('h2',null,'Why you were removed'),closeBtn(api)),
+    h('div',null,g.flaggers.map(f=>h('div',{class:'mrow'},avatar(f[0],'sm'),h('span',null,h('span',{class:'nm'},f[1]),h('span',{class:'sub'},'Flagged '+f[2]))))),
+    h('p',null,'Three admins flagged you. You keep the messages already here; the hosts refuse anything new and change address on Sep 30.'),
+    h('p',null,'To rejoin, an admin has to invite you again.'),h('div',{class:'acts'},h('button',{class:'btn tx',type:'button',autofocus:'',onclick:api.close},'Close')))})}
+
+/* ---------- simulation drawer (harness only) ---------- */
+const CHAT=['Weather looks clear now.','Parking is free before 8.','I can bring a spare jacket.','Who has the first-aid kit?'];
+function renderSim(){
+  const B=$('#simBody');B.replaceChildren();
+  B.append(h('label',{class:'sw'},h('input',{type:'checkbox',checked:S.hostsOffline?'':null,onchange:e=>{S.hostsOffline=e.target.checked;const g=conv('hike');if(!g)return;
+    if(!S.hostsOffline)flush(g);else{g.msgs.push({sys:1,text:'Both host desktops went offline'});renderConv();renderList();say('Weekend hike hosts are now offline')}}}),'Weekend hike: host desktops offline'));
+  const qs=h('button',{class:'qsw',type:'button',role:'switch',id:'swQuiet','aria-checked':String(TinAudio.quiet()),onclick:()=>{const q=!TinAudio.quiet();TinAudio.setQuiet(q);say(q?'Quiet mode on. Call sounds are off.':'Quiet mode off. Call sounds play.')}},h('span',null,'Quiet mode'),h('i',{'aria-hidden':'true'}));
+  B.append(qs);
+  B.append(h('label',{class:'sw'},h('input',{type:'checkbox',checked:S.empty?'':null,onchange:e=>{const on=e.target.checked;S=seed();S.open={};S.hostsOffline=false;if(on){S.empty=true;S.groups=[];S.invites=[];S.reqIn=[];S.reqOut=[];S.privates=[]}renderAll();say(on?'Empty account':'Sample data restored')}}),'Start with an empty account'));
+  if(conv('hike')&&!closed(conv('hike')))B.append(h('button',{class:'btn ol sm',type:'button',onclick:()=>{const g=conv('hike');incoming(g,{id:'s'+S.uid++,from:'sam',text:CHAT[S.chat++%CHAT.length],t:clock()});say('Sam sent a message')}},'Simulate: Sam sends a message'));
+  S.events.forEach(ev=>B.append(h('button',{class:'btn ol sm',type:'button',onclick:()=>{S.events=S.events.filter(x=>x.id!==ev.id&&!(ev.req&&x.req===ev.req));ev.run();renderAll();refreshMembers()}},'Simulate: '+ev.label)));
+  B.append(h('button',{class:'btn tx sm',type:'button',onclick:()=>{S=fresh();renderAll();say('Prototype reset')}},'Reset prototype'))}
+function setSim(open){const el=$('#sim');el.hidden=!open;$('#simBtn').setAttribute('aria-expanded',String(open));if(open)$('#simTitle').focus()}
+$('#simBtn').append(ic('sliders'));$('#simClose').append(ic('close'));
+$('#simBtn').addEventListener('click',()=>setSim($('#sim').hidden));
+$('#simClose').addEventListener('click',()=>{setSim(false);$('#simBtn').focus()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sim').hidden&&!$('dialog[open]')){const inside=$('#sim').contains(document.activeElement)||document.activeElement===document.body;setSim(false);if(inside)$('#simBtn').focus()}});
+
+/* ---------- theme ---------- */
+const mq=matchMedia('(prefers-color-scheme: dark)');
+function dark(){const t=document.documentElement.dataset.theme;return t?t==='dark':mq.matches}
+function syncTheme(){const b=$('#theme');b.setAttribute('aria-pressed',String(dark()));b.setAttribute('aria-label','Dark theme');b.title=dark()?'Switch to light theme':'Switch to dark theme';b.replaceChildren(ic(dark()?'sun':'moon'))}
+$('#theme').addEventListener('click',()=>{document.documentElement.dataset.theme=dark()?'light':'dark';syncTheme()});
+mq.addEventListener('change',syncTheme);syncTheme();
+renderAll();
+if(CALL){if(QS.get('call')==='open')openCall();else renderCall()}   // a call that is already live (maybe started in chat.html)
+if(QS.has('call')){QS.delete('call');history.replaceState(history.state,'',location.pathname+(QS.toString()?'?'+QS:'')+location.hash)}
+</script>
+</body>
+</html>

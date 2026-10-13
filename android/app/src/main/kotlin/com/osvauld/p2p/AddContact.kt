@@ -147,7 +147,7 @@ private fun MyCodeTab(app: P2pApp, meName: String, tab: Int, onTab: (Int) -> Uni
             TinButton("Paste their card", onPaste, style = BtnStyle.Tonal, icon = Icons.Rounded.ContentPaste)
         }
         Row(
-            Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Dot(c.pr, 10.dp)
@@ -194,7 +194,7 @@ fun PasteCardScreen(app: P2pApp, text: String, onChange: (String) -> Unit, onBac
             }, style = TinType.bodyL, color = c.ink2)
             TinField(text, onChange, "Contact card", mono = true, singleLine = false, minHeight = 150.dp)
             if (looks) Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.prc).padding(14.dp),
+                Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.prc).padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Column(Modifier.weight(1f)) {
@@ -270,7 +270,7 @@ fun FailedScreen(me: String, reason: String?, onRetry: () -> Unit, onOther: () -
         PairAvatars(me, "", null, unknown = true)
         H1("Couldn’t add them", align = TextAlign.Center)
         Lead("Both phones need Tinline open and online at the same time. Ask them to keep their code on screen, then try again.", Modifier.widthIn(max = 330.dp), align = TextAlign.Center)
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf2).padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Column(Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 16.dp, vertical = 14.dp)) {
             Text("Other reasons", style = TinType.bodyM.copy(fontWeight = FontWeight.Bold), color = c.ink)
             Text("· The code was already used — ask for a new one.\n· One of you is offline or on a network that blocks it.", style = TinType.bodyM, color = c.ink2)
             if (!reason.isNullOrBlank()) Text("\n$reason", style = TinType.caption, color = c.ink2)

@@ -70,7 +70,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="row"><div class="av" style="width:40px;height:40px;font-size:15px;background:var(--sf2);color:var(--ink2)">YO</div><div style="flex:1"><div class="nm">You</div></div><span class="pill adm">Admin</span></div>
 <div class="row"><div class="av" style="width:40px;height:40px;font-size:15px;background:var(--sf2);color:var(--ink2)">LB</div><div style="flex:1"><div class="nm">Leo B</div><div class="sub">1 flag</div></div></div>
 </div>
-<p class="desc">Hosts come first, with a live status dot, because they decide whether messages flow. Members show role pills: Owner, Admin, Host (a member can be both). Admins see flag counts on members; other members don’t. Edit (pencil) is for the owner and admins: name, photo, who can invite.</p>
+<p class="desc">Hosts come first, with a live status dot, because they decide whether messages flow. Members show role pills: Owner, Admin, Host (a member can be both). Admins see flag counts on members; other members don’t. Edit (pencil) is for the owner and admins: name, photo, who can invite. <b>Refined:</b> Leave asks for confirmation (Cancel is focused first); if you are the only host the dialog says nobody can host until another member does. <a href="../refined/groups.html">Interactive prototype</a>.</p>
 </div>
 
 <div class="col">
@@ -88,7 +88,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <button class="mi" style="color:var(--er)"><svg class="i" viewBox="0 0 24 24"><path d="M4 22V4 M4 4h12l-2 4 2 4H4"></path></svg><span style="flex:1">Flag to remove<br><span class="sub" style="color:var(--er)">3 flags remove Leo from the group</span></span></button>
 </div>
 </div>
-<p class="desc">Tapping a member opens this sheet. Everyone sees Message privately and Block. Admins also see Make admin, Make host and Flag to remove, with the current flag count. Block is personal and never removes anyone from the group; Flag is the group action.</p>
+<p class="desc">Tapping a member opens this sheet. Everyone sees Message privately and Block. Admins also see Make admin, Make host and Flag to remove, with the current flag count. Block is personal and never removes anyone from the group; Flag is the group action. <b>Open:</b> whether the owner can be flagged is not decided; the prototype hides Flag for the owner. Block here must confirm and say what the blocked member is told.</p>
 </div>
 
 <div class="col">
@@ -105,7 +105,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><button class="btn tx" style="width:auto">Cancel</button><button class="btn" style="width:auto;background:var(--er);color:#FFFFFF;padding:0 24px">Flag</button></div>
 </div>
 </div>
-<p class="desc">A three-segment meter shows the count including yours. The copy states the three facts that matter: removal happens at 3, it is immediate, and flags are final and visible to the person. Any admin can flag; the same admin flagging again counts.</p>
+<p class="desc">A three-segment meter shows the count including yours. The copy states the three facts that matter: removal happens at 3, it is immediate, and flags are final and visible to the person. Any admin can flag; the same admin flagging again counts (decision U15: 3 flags need not come from 3 admins). The refined dialog adds that last sentence to its body, focuses Cancel first, and on flag 3 changes its title and button to “Flag and remove”.</p>
 </div>
 
 <div class="col">
@@ -120,9 +120,9 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="row"><div class="dot" style="background:var(--ln2)"></div><div style="flex:1"><div class="nm">Meera’s desktop</div><div class="sub">Owner’s host · offline 2 h</div></div><button class="btn tx" style="width:auto;height:40px;color:var(--er);padding:0 12px">Remove</button></div>
 </div>
 <button class="btn ol"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>Add a host</button>
-<div style="background:var(--wn);border-radius:16px;padding:14px 16px;font-size:14px;line-height:20px;color:var(--onwn)"><b>Removing a host</b> changes every member’s group address within 2 days, so the removed desktop can’t reach the group again. Messages it already stored stay with it.</div>
+<div style="background:var(--wn);border-radius:16px;padding:14px 16px;font-size:14px;line-height:20px;color:var(--onwn)"><b>Removing a host</b> moves the whole group to a new address right away: a signed revocation makes every member and each remaining host rotate. Members do nothing; the remaining hosts reconnect them. (Removing a <i>member</i> is different: only the hosts rotate, 2 days later.) Messages the removed desktop already stored stay with it.</div>
 <div style="flex:1"></div>
-<div class="hint">Two or more hosts keep the group working when one is off. Phones can’t host.</div>
+<div class="hint">Two or more hosts keep the group working when one is off. Hosting works best on a desktop that stays on. Group calls (planned) will run through one call host that can hear them.</div>
 </div>
 </div>
 <p class="desc">Lists hosts with who appointed them and their status. Add a host picks from members’ linked desktops and asks that member to accept. Remove explains the consequence before it happens: the group changes addresses so the removed host is cut off.</p>

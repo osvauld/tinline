@@ -10,6 +10,9 @@ use super::*;
 use crate::app::chat::{preview_of, Cm, SideTab, Thumb, ViewBody, COMPOSER_ID};
 use crate::blocks::Composer;
 use crate::media::{self, Class};
+use crate::geom;
+use crate::shaped::shaped;
+
 
 /// Width of the hover actions beside a bubble: three 28 px buttons, 2 px apart.
 const ACTIONS_W: f32 = 3.0 * 28.0 + 2.0 * 2.0;
@@ -360,7 +363,7 @@ impl App {
     }
 
     fn message_list<'a>(&'a self, t: Tok, name: &str) -> El<'a> {
-        let mut col = column![].spacing(6).padding([16, 24]);
+        let mut col = column![].spacing(0).padding([16, 24]);
         if self.chat.msgs.is_empty() {
             let note = if self.chat.loading {
                 "Loading\u{2026}".to_string()
@@ -382,25 +385,33 @@ impl App {
         }
         // Earlier days: on this computer, or still on theirs ("You" has no "theirs").
         if !self.chat.peer.as_deref().is_some_and(|p| self.is_me(p)) {
-            col = col.push(self.history_note(t, name));
+            col = col.push(container(self.history_note(t, name)).padding(iced::Padding { bottom: 6.0, ..Default::default() }));
         }
         let mut last_day = String::new();
-        for m in &self.chat.msgs {
+        // Runs of one sender's messages (same day, within 5 minutes) stack: the corners facing the
+        // stack tighten and the gap shrinks (Conversation.svelte: 10 px between runs, 2 px inside).
+        let join = |a: &ChatMsg, b: &ChatMsg| a.outgoing == b.outgoing && day_label(a.at) == day_label(b.at) && a.at.abs_diff(b.at) <= geom::GROUP_GAP_MS;
+        let msgs = &self.chat.msgs;
+        for (i, m) in msgs.iter().enumerate() {
             let d = day_label(m.at);
             if d != last_day {
                 col = col.push(
                     container(container(semi(d.clone(), 12.0, t.ink2)).padding([4, 12]).style(ui::plain(t.surface2, 999.0)))
                         .center_x(Fill)
-                        .padding([8, 0]),
+                        .padding(iced::Padding { top: 14.0, bottom: 4.0, ..Default::default() }),
                 );
                 last_day = d;
             }
-            col = col.push(self.message_row(t, m, name));
+            let prev = i > 0 && join(&msgs[i - 1], m);
+            let next = msgs.get(i + 1).is_some_and(|n| join(m, n));
+            let pos = geom::Pos::of(prev, next);
+            let gap = if prev { 2.0 } else { 10.0 };
+            col = col.push(container(self.message_row(t, m, name, pos)).padding(iced::Padding { top: gap, ..Default::default() }));
         }
         if let Some(peer) = self.chat.peer.as_deref() {
-            col = col.push(self.block_note(t, peer, name));
+            col = col.push(container(self.block_note(t, peer, name)).padding(iced::Padding { top: 6.0, ..Default::default() }));
         }
-        scroll(t, col).anchor_bottom().width(Fill).height(Fill).into()
+        container(scroll(t, col).anchor_bottom().width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0)).into()
     }
 
     fn history_note<'a>(&'a self, t: Tok, name: &str) -> El<'a> {
@@ -427,8 +438,8 @@ impl App {
         container(c).center_x(Fill).padding([4, 40]).into()
     }
 
-    fn message_row<'a>(&'a self, t: Tok, m: &'a ChatMsg, name: &str) -> El<'a> {
-        let (bg, fg) = if m.outgoing { (t.primary_c, t.on_primary_c) } else { (t.surface2, t.ink) };
+    fn message_row<'a>(&'a self, t: Tok, m: &'a ChatMsg, name: &str, pos: geom::Pos) -> El<'a> {
+        let (bg, fg) = if m.outgoing { (t.primary_c, t.on_primary_c) } else { (t.bub_in, t.ink) };
         let dim = ui::alpha(fg, 0.7);
         // No Fill-width descendants: they make every bubble occupy the maximum width.
         // Align the shrink-sized metadata to the trailing edge of the content.
@@ -471,7 +482,13 @@ impl App {
             meta = meta.push(tx(crate::blocks::not_delivered_text(name), 11.0, t.error));
         }
         body = body.push(meta.width(Length::Shrink));
-        let bubble = container(body).width(Length::Shrink).padding([8, 12]).max_width(520).style(ui::plain(bg, 14.0));
+        // Smooth Bézier corners (geom.rs), mine against the right edge, theirs against the left.
+        let side = if m.outgoing { geom::Side::Right } else { geom::Side::Left };
+        let radii = geom::bubble_radii(pos, side, geom::R_BUB, geom::R_BUB_TIGHT);
+        let mut bubble = shaped(container(body).width(Length::Shrink).padding([8, 12]).max_width(520), radii, bg);
+        if !m.outgoing {
+            bubble = bubble.stroke(t.bub_in_line, 1.0);
+        }
 
         let open = self.chat.menu.as_ref() == Some(&m.id);
         let hot = open || self.chat.hover.as_ref() == Some(&m.id);
@@ -538,7 +555,7 @@ impl App {
                 .padding([4, 14])
                 .max_width(240));
         }
-        container(c).padding(6).width(260).style(ui::card(t)).into()
+        ui::raised(container(c).padding(6).width(260), t, ui::Depth::Pop, ui::pop_surface(t, 14.0))
     }
 
     fn attachment_view<'a>(&'a self, t: Tok, m: &'a ChatMsg, a: &'a p2pcore::Attachment, fg: Color, dim: Color) -> El<'a> {

@@ -65,7 +65,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="row"><div class="gav" style="width:48px;height:48px;background:var(--sf2);color:var(--ink2)"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16.5 14.6c2.6.2 4.5 2 5 4.9"></path></svg></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between"><span class="nm" style="color:var(--ink2)">Book club</span><span class="tm">Sep 28</span></div><div class="sub">You were removed from this group</div></div></div>
 <button class="fab"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>New</button>
 </div>
-<p class="desc">Groups sit in the same list as people, with a rounded-square group avatar. The filter chips narrow to People or Groups. A group you were removed from stays, greyed, with the reason as its last line, until you delete it. “New” offers New group or Add contact.</p>
+<p class="desc">Groups sit in the same list as people, with a rounded-square group avatar. The filter chips narrow to People or Groups. A group you were removed from stays, greyed, with the reason as its last line, read-only. Chats are never deleted for you. “New” offers New group or Add contact. <b>Refined:</b> <a href="../refined/groups.html">interactive prototype</a> (search, empty state, invitations, requests); spec in <code>refined/groups.md</code>.</p>
 </div>
 
 <div class="col">
@@ -83,7 +83,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 <div class="comp"><button class="ib" aria-label="Attach"><svg class="i" viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7L14 5.5a3.5 3.5 0 0 1 5 5L10.5 19a2 2 0 0 1-3-3L15 8.5"></path></svg></button><div class="field">Message the group</div><button class="ib" aria-label="Send" style="background:var(--pr);color:var(--onpr)"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></div>
 </div>
-<p class="desc">Author name above each message, coloured per person. The header shows how many desktops host the group; if none is reachable the composer still works and messages wait (“Waiting for a host”). Small grey lines report joins, removals and host changes in plain words, never addresses or keys. No call button: groups have no calls.</p>
+<p class="desc">Author name above each message, coloured per person. The header shows how many desktops host the group; if none is reachable the composer still works and messages wait (“Waiting for a host”). Small grey lines report joins, removals and host changes in plain words, never addresses or keys. No call button is drawn: group calls are planned (one call host, which can hear them) but not part of this board. <b>Message states (refined):</b> a message shows “Sending…”, then “Delivered” once a host has it (not “read by everyone”); with no host it stays “Waiting for a host”, drawn with a dashed outline so it isn’t colour-only, and can be discarded. Drafts and the reply target are kept per chat. <a href="../refined/groups.html">Try it</a>.</p>
 </div>
 
 <div class="col">
@@ -99,14 +99,14 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="row" style="padding:0;min-height:56px"><div class="av" style="width:40px;height:40px;font-size:15px;background:var(--sf2);color:var(--ink2)">PN</div><span style="flex:1;font-size:15px">Priya N</span><span class="chk"></span></div>
 <div class="card" style="background:var(--wn);border-color:#E9CF94;color:var(--onwn)">
 <div style="font-size:15px;font-weight:700">This group needs a host</div>
-<div style="font-size:14px;line-height:20px">A host is a desktop that keeps the group running when phones sleep. Your phone can’t host. Link your desktop, or ask a member to host from theirs after the group is made.</div>
+<div style="font-size:14px;line-height:20px">A host is a desktop that keeps the group running when phones sleep. Hosting works best on a desktop that stays on: link your desktop, or ask a member to host from theirs after the group is made. Hosts can read everything shared in the group.</div>
 <div style="display:flex;gap:8px"><button class="btn ol" style="height:40px;width:auto;font-size:14px;color:var(--onwn)">Use my desktop</button><button class="btn tx" style="height:40px;width:auto;font-size:14px;color:var(--onwn)">Ask later</button></div>
 </div>
 <div style="flex:1"></div>
 <button class="btn">Create group</button>
 </div>
 </div>
-<p class="desc">Only contacts can be added directly. You become the owner. A group needs at least one host before messages flow while you are offline; from a phone you pick a linked desktop or ask a member. Adding someone sends them an invite in your 1:1 chat.</p>
+<p class="desc">Only contacts can be added directly. You become the owner. A group needs at least one host before messages flow while you are offline; from a phone you pick a linked desktop or ask a member. Adding someone sends them an invite in your 1:1 chat. The sheet and the invite both say the hosts can read everything shared in the group. <b>Refined:</b> the name is required (inline error, not a toast); closing the sheet keeps the draft; nobody counts as a member until they join, and unanswered invites can be cancelled from Members. Invite lifetime (7 days) is a proposal, not a decided value.</p>
 </div>
 
 <div class="col">
@@ -118,14 +118,14 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="card" style="align-self:flex-start;width:300px;box-sizing:border-box">
 <div style="display:flex;gap:12px;align-items:center"><div class="gav" style="width:48px;height:48px"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16.5 14.6c2.6.2 4.5 2 5 4.9"></path></svg></div><div><div style="font-size:17px;font-weight:700">Weekend hike</div><div class="hint">Group invite from Sam · 7 members</div></div></div>
 <div class="hint">Owner: Meera K · Hosts: Arjun’s desktop, Meera’s desktop</div>
-<div style="font-size:14px;line-height:20px;color:var(--ink2)">Members will see your name and your messages. They won’t get your address: anyone who wants a private chat has to ask first.</div>
+<div style="font-size:14px;line-height:20px;color:var(--ink2)"><b>The group’s hosts can read everything shared in it.</b> Members will see your name and your messages. They won’t get your address: anyone who wants a private chat has to ask first.</div>
 <div style="display:flex;gap:8px"><button class="btn" style="height:44px">Join</button><button class="btn tx" style="height:44px;width:auto">Not now</button></div>
 </div>
 <div class="tm" style="align-self:flex-start;padding-left:4px">Invite signed by Sam · expires in 6 days</div>
 </div>
 <div class="comp"><div class="field">Message</div></div>
 </div>
-<p class="desc">Invites arrive as a card in the inviter’s 1:1 chat. It shows the group name, the inviter, the owner and the hosts, and says plainly what members will and won’t learn about you. Join sends a signed request; the card switches to “Joined” or “Invite expired”.</p>
+<p class="desc">Invites arrive as a card in the inviter’s 1:1 chat. It shows the group name, the inviter, the owner and the hosts, and says plainly what members will and won’t learn about you. Join sends a signed request; the card switches to “Joined” or “Invite expired”. <b>Refined:</b> “Not now” can be undone from the confirmation toast; an expired invite shows who to ask for a new one and only offers Dismiss.</p>
 </div>
 
 </div>

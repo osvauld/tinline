@@ -57,19 +57,6 @@ object Glyphs {
     }
 }
 
-/** The brand mark: teal cans joined by an amber string. 24-grid scaled to [size]. */
-@Composable
-fun TinMark(size: Dp, can: Color = Tin.c.pr, string: Color = Tin.c.thread, modifier: Modifier = Modifier) {
-    Canvas(modifier.size(size)) {
-        val s = this.size.width / 24f
-        val r = CornerRadius(1.5f * s)
-        drawRoundRect(can, Offset(1.5f * s, 8f * s), Size(6f * s, 8f * s), r)
-        drawRoundRect(can, Offset(16.5f * s, 8f * s), Size(6f * s, 8f * s), r)
-        val p = Path().apply { moveTo(8.5f * s, 12f * s); quadraticTo(12f * s, 14.5f * s, 15.5f * s, 12f * s) }
-        drawPath(p, string, style = Stroke(1.75f * s, cap = StrokeCap.Round))
-    }
-}
-
 /** Welcome / empty-state illustration: two cans far apart, the string sagging between them. */
 @Composable
 fun StringIllustration(modifier: Modifier = Modifier, height: Dp = 180.dp) {

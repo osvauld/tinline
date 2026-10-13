@@ -10,7 +10,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -33,6 +36,10 @@ class TinColors(
     val warn: Color, val onWarn: Color,
     val pk: Color, val onPk: Color,
     val callAccept: Color, val callEnd: Color,
+    /** Received bubble fill and its hairline (tokens.css --bub-in, --bub-in-line). */
+    val bubIn: Color, val bubInLine: Color,
+    /** Fill of raised things (--surface-raised): the surface in light, the lighter surface in dark. */
+    val sfRaised: Color,
     val dark: Boolean,
 )
 
@@ -40,25 +47,27 @@ val LightTin = TinColors(
     bg = Color(0xFFF5F6F3), sf = Color(0xFFFFFFFF), sf2 = Color(0xFFECEFEB), sf3 = Color(0xFFE2E6E1),
     ink = Color(0xFF17201D), ink2 = Color(0xFF4D5853), ln = Color(0xFFD3D9D4), ln2 = Color(0xFF8E9A94),
     pr = Color(0xFF0B6B5B), onPr = Color(0xFFFFFFFF), prc = Color(0xFFCDEBE3), onPrc = Color(0xFF06352D),
-    thread = Color(0xFFC98A1E), threadText = Color(0xFF8A5A00),
-    er = Color(0xFFB3261E), onEr = Color(0xFFFFFFFF), erc = Color(0xFFF9DEDC), onErc = Color(0xFF410E0B),
-    relay = Color(0xFF4B5AA8), relayC = Color(0xFFE1E4F7), onRelayC = Color(0xFF2F3A75),
+    thread = Color(0xFFC98A1E), threadText = Color(0xFF845A10),
+    er = Color(0xFFA12B23), onEr = Color(0xFFFFFFFF), erc = Color(0xFFF8E3E1), onErc = Color(0xFF410E0B),
+    relay = Color(0xFF4B5AA8), relayC = Color(0xFFE1E4F7), onRelayC = Color(0xFF374582),
     warn = Color(0xFFFCEFD2), onWarn = Color(0xFF5C3B00),
     pk = Color(0xFFF3DDE6), onPk = Color(0xFF5E1F3A),
-    callAccept = Color(0xFF0E7C69), callEnd = Color(0xFFC8372D), dark = false,
+    callAccept = Color(0xFF0E7C69), callEnd = Color(0xFFC8372D),
+    bubIn = Color(0xFFFFFFFF), bubInLine = Color(0xFFE2E7E1), sfRaised = Color(0xFFFFFFFF), dark = false,
 )
 
 val DarkTin = TinColors(
-    bg = Color(0xFF0F1513), sf = Color(0xFF161D1B), sf2 = Color(0xFF1D2623), sf3 = Color(0xFF26302D),
+    bg = Color(0xFF0F1513), sf = Color(0xFF161D1B), sf2 = Color(0xFF242D2A), sf3 = Color(0xFF26302D),
     ink = Color(0xFFE6ECE9), ink2 = Color(0xFFA6B2AD), ln = Color(0xFF33403B), ln2 = Color(0xFF7C8984),
     pr = Color(0xFF6FD3BD), onPr = Color(0xFF00382E), prc = Color(0xFF0E4E43), onPrc = Color(0xFFBDEFE2),
     thread = Color(0xFFE8B04A), threadText = Color(0xFFE8B04A),
     // The boards give the dark error only as text #F2B8B5 on container #8C1D18.
-    er = Color(0xFFF2B8B5), onEr = Color(0xFF601410), erc = Color(0xFF8C1D18), onErc = Color(0xFFFFDAD6),
+    er = Color(0xFFF2B8B5), onEr = Color(0xFF601410), erc = Color(0xFF4D201C), onErc = Color(0xFFFFDAD6),
     relay = Color(0xFFB8C1F5), relayC = Color(0xFF2F3A75), onRelayC = Color(0xFFE1E4F7),
     warn = Color(0xFF4A3500), onWarn = Color(0xFFFFDFA0),
     pk = Color(0xFF5A2A3E), onPk = Color(0xFFF3DDE6),
-    callAccept = Color(0xFF0E7C69), callEnd = Color(0xFFC8372D), dark = true,
+    callAccept = Color(0xFF0E7C69), callEnd = Color(0xFFC8372D),
+    bubIn = Color(0xFF1C2422), bubInLine = Color(0xFF2A3531), sfRaised = Color(0xFF242D2A), dark = true,
 )
 
 val LocalTin = staticCompositionLocalOf { LightTin }
@@ -96,6 +105,10 @@ private val M3Type = Typography(
     labelLarge = TinType.label, labelMedium = TinType.caption, labelSmall = TinType.caption,
 )
 
+/** Material3 takes menu (and snackbar) corners from the theme's extraSmall, and 1.3.1's DropdownMenu does not honour its `shape`
+ * parameter, so the 14 dp control radius goes here. Theme shapes must be CornerBasedShape, so these are circular, not smoothed. */
+private val TinShapes = androidx.compose.material3.Shapes(extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+
 private fun scheme(c: TinColors) = if (c.dark) darkColorScheme(
     primary = c.pr, onPrimary = c.onPr, primaryContainer = c.prc, onPrimaryContainer = c.onPrc,
     secondary = c.relay, onSecondary = c.onRelayC, secondaryContainer = c.relayC, onSecondaryContainer = c.onRelayC,
@@ -119,11 +132,37 @@ private fun scheme(c: TinColors) = if (c.dark) darkColorScheme(
 fun TinlineTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val c = if (dark) DarkTin else LightTin
     CompositionLocalProvider(LocalTin provides c) {
-        MaterialTheme(colorScheme = scheme(c), typography = M3Type, content = content)
+        MaterialTheme(colorScheme = scheme(c), typography = M3Type, shapes = TinShapes, content = content)
     }
 }
 
 /** Shorthand: `Tin.c.pr`. */
 object Tin {
     val c: TinColors @Composable @ReadOnlyComposable get() = LocalTin.current
+}
+
+/**
+ * The depth ladder (PHILOSOPHY section 9; tokens.css --shadow-lift/pop/sheet). Flat is no shadow, only a hairline.
+ * Each step is two layers, a tight contact shadow and a wide ambient one; light tints them with the palette green-black
+ * (9, 23, 17), dark uses black and leans on [TinColors.sfRaised]. Android draws shadows from an elevation, so the CSS blur radii
+ * map to elevations (contact, ambient) and the CSS alphas to the colour alpha.
+ */
+enum class Depth(val contactDp: Float, val ambientDp: Float, val lightAlpha: Float, val darkAlpha: Float) {
+    Flat(0f, 0f, 0f, 0f),
+    Lift(1.5f, 5f, 0.30f, 0.60f),
+    Pop(3f, 12f, 0.32f, 0.70f),
+    Sheet(4f, 22f, 0.36f, 0.75f),
+}
+
+private val ShadowTint = Color(9, 23, 17)
+
+/** Raise this element to [level]. Apply before clip/background; [shape] is the outline the shadow follows. */
+@Composable
+fun Modifier.depth(level: Depth, shape: androidx.compose.ui.graphics.Shape): Modifier {
+    if (level == Depth.Flat) return this
+    val dark = Tin.c.dark
+    val tint = (if (dark) Color.Black else ShadowTint).copy(alpha = if (dark) level.darkAlpha else level.lightAlpha)
+    return this
+        .shadow(level.ambientDp.dp, shape, clip = false, ambientColor = tint, spotColor = tint)
+        .shadow(level.contactDp.dp, shape, clip = false, ambientColor = tint, spotColor = tint)
 }

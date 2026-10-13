@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Chat · Tinline refined design</title>
+<script>{ const q = new URLSearchParams(location.search), r = document.documentElement;
+  if (q.get("embed") === "1" || q.get("preview") === "mobile") r.classList.add("embed");
+  if (/^(light|dark)$/.test(q.get("theme") || "")) r.dataset.theme = q.get("theme");
+  if (q.get("motion") === "reduce") r.dataset.motion = "reduce"; }</script>
+<link rel="stylesheet" href="tokens.css">
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-size:var(--fs-body);line-height:1.4;-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:18px;height:18px}
+svg.i.xs{width:14px;height:14px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0;margin:-1px}
+
+/* harness chrome (study only; hidden by ?embed=1) */
+.page{display:flex;flex-direction:column;height:100dvh;max-width:1280px;margin:0 auto;padding:0 16px 16px}
+.harness{display:flex;align-items:center;gap:2px;min-height:52px;flex:none;font-size:var(--fs-sub);color:var(--muted)}
+.crumb{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.crumb a,.plink{color:var(--accent-ink);text-decoration:none;font-weight:600;border-radius:8px;padding:6px 4px}
+.crumb a:hover,.plink:hover{text-decoration:underline;text-underline-offset:3px}
+.plink{margin-right:6px}
+.hb{width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--muted)}
+.hb:hover{background:var(--surface-2);color:var(--ink)}
+.hb[aria-expanded=true]{background:var(--accent-soft);color:var(--accent-ink)}
+.hb svg.i{width:20px;height:20px}
+.sim{flex:none;margin:0 0 12px;padding:14px 16px 16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);font-size:var(--fs-sub);color:var(--muted)}
+.sim h2{margin:0 0 4px;font-size:var(--fs-sub);color:var(--ink)}
+.sim p{margin:0 0 4px;max-width:80ch;line-height:19px}
+.sim .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.sim .btn{min-height:36px;padding:0 14px;font-size:var(--fs-sub)}
+.sw{display:inline-flex;align-items:center;gap:10px;min-height:36px;padding:0 14px 0 10px;border-radius:18px;border:1px solid var(--line);background:var(--surface);font-size:var(--fs-sub);font-weight:600}
+.sw .track{width:32px;height:18px;border-radius:9px;background:var(--line);position:relative;transition:background .15s}
+.sw .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);transition:transform .15s}
+.sw[aria-checked=true] .track{background:var(--accent)}
+.sw[aria-checked=true] .track::after{transform:translateX(14px)}
+
+/* buttons */
+.btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;border-radius:22px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:var(--fs-body);text-decoration:none;color:var(--ink)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:var(--danger);border-color:transparent;color:var(--on-danger)}
+.btn.danger:hover{filter:brightness(1.08)}
+.btn.quiet{background:transparent;border-color:transparent}
+.btn.quiet:hover{background:var(--surface-2)}
+.btn.dangertx{color:var(--danger)}
+.ib{width:var(--btn);height:var(--btn);display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--ink);flex:none;padding:0}
+.ib:hover{background:var(--surface-2)}
+.ib:disabled{opacity:.38;cursor:default;background:transparent}
+a.ib{color:var(--ink);text-decoration:none}
+.ib[aria-disabled=true]{color:var(--muted);opacity:.45;cursor:default}
+.ib[aria-disabled=true]:hover{background:transparent}
+
+/* app frame */
+.app{flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
+.list-pane,.conv-pane{display:flex;flex-direction:column;min-height:0;min-width:0;grid-row:2}
+/* in-conversation call: overlay + minimized strip (visual simulation; cues from call-audio.js) */
+/* the strip itself is the shared .t-callbar from call-state.js; here it only takes the app frame's first row */
+#callStrip{grid-row:1;grid-column:1/-1}
+.callov{position:absolute;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:8px 16px calc(32px + env(safe-area-inset-bottom));animation:rise 180ms ease-out}
+.callov:focus{outline:0}
+.callov .min{align-self:flex-start;color:var(--ink)}
+.callov .who2{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;min-height:0}
+.t-avatar.s96{width:96px;height:96px;font-size:32px;margin-bottom:14px}
+.callov .gglyph{display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:var(--surface-2);color:var(--accent-ink);margin-bottom:14px}.callov .gglyph svg.i{width:44px;height:44px;stroke-width:1.5}
+.callov h2{margin:0;font-size:24px;font-weight:600;line-height:30px}
+.callmark{width:52px;height:29px;margin:2px 0}
+.callmark .mk-can{fill:var(--accent)}
+.callmark .mk-str{fill:none;stroke:var(--gold);stroke-width:2.6;stroke-linecap:round;d:path("M14 20Q20 28 26 20");transition:d 260ms ease-out}
+.callmark.taut .mk-str{d:path("M14 20 L26 20")}
+.callov .cst{font-size:var(--fs-sub);color:var(--muted);line-height:18px}
+.callov .ctm{display:inline-block;min-width:6ch;font-size:var(--fs-body);font-variant-numeric:tabular-nums;color:var(--ink);line-height:22px}
+.callctl{display:flex;align-items:flex-start;justify-content:center;gap:48px}
+.callctl label{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.cbtn{display:grid;place-items:center;border:0;border-radius:50%;padding:0}
+.cbtn.mute{width:56px;height:56px;margin:4px 0;background:var(--surface-2);color:var(--ink)}
+.cbtn.mute[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.cbtn.end{width:64px;height:64px;background:var(--danger-btn);color:var(--on-danger-btn)}
+.cbtn.end svg.i{transform:rotate(135deg)}
+.cbtn.end:hover{filter:brightness(1.08)}
+#callBtn.live{color:var(--accent-ink);background:var(--accent-soft)}
+.list-pane{background:var(--surface)}
+.conv-pane{background:var(--canvas);position:relative}
+.app[data-view=list] .conv-pane{display:none}
+.app[data-view=conv] .list-pane{display:none}
+@media (min-width:860px){
+  .app{grid-template-columns:340px 1fr}
+  .list-pane{border-right:1px solid var(--line)}
+  .app[data-view] .conv-pane,.app[data-view] .list-pane{display:flex}
+  .back-list{display:none!important}
+}
+.t-avatar.s36{width:36px;height:36px;font-size:13px}
+.t-avatar.s44{width:44px;height:44px;font-size:15px}
+.t-avatar.s56{width:56px;height:56px;font-size:19px}
+
+/* list */
+.lhead{display:flex;align-items:center;gap:2px;min-height:60px;padding:8px 8px 4px 20px;flex:none}
+.lhead h2{flex:1;margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.search{display:flex;align-items:center;gap:8px;margin:4px 12px 8px;padding:0 4px 0 14px;min-height:44px;border-radius:22px;background:var(--surface-2);border:1px solid transparent;color:var(--muted);flex:none}
+.search:focus-within{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--press-wash)}
+.search svg.i{width:18px;height:18px}
+.search input{flex:1;min-width:0;border:0;background:none;outline:0;min-height:42px;color:var(--ink);font-size:var(--fs-body)}
+.search input::placeholder{color:var(--muted)}
+.search input::-webkit-search-cancel-button{display:none}
+.search .ib{width:36px;height:36px}
+.chats{list-style:none;margin:0;padding:0 8px 8px;overflow:auto;flex:1}
+.chat-row{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:10px 10px;border:0;border-radius:var(--r-ctl);background:none;text-align:left}
+@media (hover:hover){.chat-row:hover{background:var(--surface-2)}}
+.chat-row:active{background:var(--press-wash)}
+@media (min-width:860px){.chat-row[aria-current=true]{background:var(--accent-soft)}}
+.chat-row .mid{flex:1;min-width:0;display:grid;gap:2px}
+.chat-row .l1,.chat-row .l2{display:flex;align-items:center;gap:8px;min-width:0}
+.chat-row .l1 b{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:21px}
+.chat-row .l1 .when{display:inline-flex;align-items:center;gap:4px;flex:none;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chat-row.unread .when{color:var(--accent-ink);font-weight:600}
+.chat-row.unread.muted .when{color:var(--muted);font-weight:400}
+.pv{flex:1;min-width:0;font-size:var(--fs-sub);line-height:19px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv svg.i{width:14px;height:14px;vertical-align:-2px;margin-right:3px;stroke-width:2}
+.pv .dr{color:var(--accent-ink);font-weight:600}
+.pv .bad{color:var(--danger);font-weight:600}
+.empty{margin:auto;padding:32px 24px;text-align:center;max-width:320px;color:var(--muted);font-size:var(--fs-sub);line-height:19px}
+.empty h3{color:var(--ink);margin:14px 0 4px;font-size:var(--fs-body);font-weight:600}
+.empty p{margin:0}
+.empty .art{width:52px;height:52px;border-radius:50%;background:var(--surface-2);color:var(--muted);display:grid;place-items:center;margin:0 auto}
+.empty .btn{margin-top:18px}
+
+/* conversation header + strips */
+.bar{display:flex;align-items:center;gap:2px;min-height:60px;padding:8px 8px;background:var(--surface);border-bottom:1px solid var(--hairline);flex:none}
+.who{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;padding:4px 10px 4px 6px;border-radius:12px;min-height:var(--btn);text-align:left}
+.who:hover{background:var(--surface-2)}
+.who .tx{flex:1;min-width:0}
+.who .nm{display:flex;align-items:center;gap:6px;font-size:var(--fs-title);line-height:22px}
+.who .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .nm svg{color:var(--muted)}
+.who .pr{display:block;font-size:var(--fs-sub);line-height:18px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:var(--fs-sub);line-height:18px;color:var(--muted);background:var(--surface-2);flex:none}
+.strip svg.i{width:16px;height:16px}
+
+/* messages */
+.msgwrap{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.msgs{list-style:none;margin:0;padding:6px 16px 12px;overflow:auto;flex:1;min-height:0;display:flex;flex-direction:column;overscroll-behavior:contain}
+.msgs>:first-child{margin-top:auto}
+.day{align-self:center;margin:10px 0;padding:3px 10px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--hairline);color:var(--muted);font-size:var(--fs-meta);font-weight:600;line-height:16px}
+.m{position:relative;margin-top:10px}
+.day+.m{margin-top:0}
+.m.g-mid,.m.g-last{margin-top:2px}
+.line{display:flex;align-items:center;gap:4px}
+.me .line{flex-direction:row-reverse}
+.bub{max-width:min(78%,560px);min-width:0;padding:7px 12px;font-size:var(--fs-body);line-height:var(--lh-body);border-radius:var(--r-bub);overflow-wrap:anywhere;white-space:pre-wrap;
+  background:var(--bub-in);color:var(--bub-in-ink);border:1px solid var(--bub-in-line);transition:transform 120ms ease-out}
+.me .bub{background:var(--bub-out);color:var(--bub-out-ink);border-color:transparent}
+.me.g-first .bub{border-bottom-right-radius:var(--r-bub-tight)}
+.me.g-mid .bub{border-top-right-radius:var(--r-bub-tight);border-bottom-right-radius:var(--r-bub-tight)}
+.me.g-last .bub{border-top-right-radius:var(--r-bub-tight)}
+.them.g-first .bub{border-bottom-left-radius:var(--r-bub-tight)}
+.them.g-mid .bub{border-top-left-radius:var(--r-bub-tight);border-bottom-left-radius:var(--r-bub-tight)}
+.them.g-last .bub{border-top-left-radius:var(--r-bub-tight)}
+.bub.held{transform:scale(.97)}
+.bub.gone{background:transparent;border-color:var(--hairline);color:var(--muted);font-style:italic}
+.bub.emoji{background:transparent;border-color:transparent;padding:0 2px;font-size:34px;line-height:42px}
+.bub.emoji .meta{float:none;display:flex;justify-content:flex-end;margin:0;font-size:var(--fs-meta);line-height:1;color:var(--muted)}
+.meta{float:right;margin:10px -2px -2px 10px;font-size:var(--fs-meta);line-height:1;font-variant-numeric:tabular-nums;display:inline-flex;gap:3px;align-items:center;
+  user-select:none;-webkit-user-select:none;white-space:nowrap;font-style:normal;color:var(--bub-meta-in)}
+.me .meta{color:var(--bub-meta-out)}
+.meta .tk{display:inline-grid;place-items:center;width:13px;height:11px}
+.meta .tk svg{width:12px;height:12px;stroke-width:2.2}
+.meta .tk svg.clk{width:11px;height:11px;stroke-width:2}
+.quote{display:block;margin:2px 0 6px;padding:5px 10px 6px;border-radius:12px;background:var(--surface-2);border-left:3px solid var(--accent);white-space:normal;font-size:var(--fs-sub);line-height:18px;color:var(--ink)}
+.quote b{display:block;font-size:12px;font-weight:700;color:var(--accent-ink)}
+.quote span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--muted)}
+.fail{display:flex;justify-content:flex-end;align-items:center;gap:5px;margin:3px 2px 0 0;font-size:12px;line-height:16px;color:var(--danger)}
+.fail button{position:relative;border:0;background:none;padding:0;color:var(--danger);font-weight:700;font-size:12px;line-height:16px}
+.fail button::before{content:"";position:absolute;inset:-14px -10px}
+.fail button:hover{text-decoration:underline;text-underline-offset:2px}
+.more{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0;margin:-1px;background:none}
+@media (hover:hover) and (pointer:fine) and (min-width:860px){
+  .more{position:static;width:28px;height:28px;margin:0;clip:auto;overflow:visible;display:grid;place-items:center;border-radius:50%;color:var(--muted);opacity:0;transition:opacity 120ms ease-out,background-color 120ms ease}
+  .m:hover .more,.m:focus-within .more,.m.menu-open .more{opacity:1}
+  .more:hover,.m.menu-open .more{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--hairline)}
+  .more svg.i{width:20px;height:20px}
+}
+@media not ((hover:hover) and (pointer:fine) and (min-width:860px)){.m:has(.more:focus-visible) .bub{outline:2px solid var(--accent-ink);outline-offset:2px}}
+@media (pointer:coarse){.bub{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}
+.rise{animation:rise 120ms ease-out}
+.file{display:flex;gap:10px;align-items:center;min-width:min(240px,58vw);white-space:normal;margin:2px 0}
+.file .ficon{width:40px;height:40px;border-radius:10px;background:color-mix(in srgb,currentColor 9%,transparent);display:grid;place-items:center;flex:none}
+.file .fi{min-width:0;flex:1;display:grid}
+.file .fn{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:20px}
+.file .fm{font-size:12px;line-height:16px;color:var(--bub-meta-in);font-variant-numeric:tabular-nums}
+.me .file .fm{color:var(--bub-meta-out)}
+.callrow{background:none;border:0;padding:0;text-align:left;width:100%;font:inherit;color:inherit}
+.file .fm.missed,.me .file .fm.missed{color:var(--danger)}
+.prog{height:4px;border-radius:2px;background:color-mix(in srgb,currentColor 14%,transparent);margin-top:8px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .25s linear}
+.facts{display:flex;justify-content:flex-end;margin-top:6px;white-space:normal}
+.qbtn{min-height:32px;display:inline-flex;align-items:center;gap:4px;padding:0 12px 0 8px;border-radius:16px;border:0;background:color-mix(in srgb,currentColor 9%,transparent);color:inherit;font-size:var(--fs-sub);font-weight:600}
+.qbtn:hover{background:color-mix(in srgb,currentColor 15%,transparent)}
+.tobottom{position:absolute;right:16px;bottom:12px;width:36px;height:36px;border-radius:50%;border:0;padding:0;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-pop);display:grid;place-items:center;animation:rise 160ms ease-out}
+.tobottom .t-badge{position:absolute;top:-6px;right:-6px;box-shadow:0 0 0 2px var(--canvas)}
+
+/* composer */
+.composer{display:grid;grid-template-columns:var(--btn) minmax(0,1fr) var(--btn);column-gap:6px;align-items:end;padding:8px 10px 10px;flex:none}
+.composer>.ib,.composer>textarea,.composer>.send{grid-row:2}
+.composer>.ib{color:var(--muted)}
+.composer>.ib:hover{color:var(--ink)}
+.ctx{grid-row:1;grid-column:2;display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:4px 2px 4px 10px;border-radius:12px;background:var(--surface-2);border-left:3px solid var(--accent);font-size:var(--fs-sub);line-height:18px}
+.ctx .tx{flex:1;min-width:0}
+.ctx .tx b,.ctx .tx span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctx .tx b{color:var(--accent-ink);font-weight:600}
+.ctx .tx span{color:var(--muted)}
+.ctx .ib{width:36px;height:36px;color:var(--muted)}
+.composer textarea{display:block;width:100%;resize:none;min-height:var(--btn);max-height:140px;padding:10px 16px;border-radius:var(--r-field);border:1px solid var(--hairline);background:var(--surface);color:var(--ink);font-size:var(--fs-body);line-height:22px}
+.composer textarea::placeholder{color:var(--muted)}
+.composer textarea:focus,.composer textarea:focus-visible{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--press-wash)}
+.send{width:var(--btn);height:var(--btn);border-radius:50%;border:0;padding:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center}
+.send svg.i{width:20px;height:20px;margin:0 2px 0 0}
+.send[aria-disabled=true]{opacity:.38;box-shadow:none!important;cursor:default;transform:none!important;filter:none!important}
+.noconv{margin:auto}
+
+/* dialogs, sheets, popover */
+dialog{border:0;padding:0;border-radius:var(--r-sheet);background:var(--surface);color:var(--ink);width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);box-shadow:var(--shadow-sheet);overflow:auto}
+dialog::backdrop{background:rgb(10 16 14 / .5)}
+dialog[open]{animation:rise 180ms ease-out}
+.dlg{padding:20px 20px 16px}
+.dlg h2{margin:0 0 4px;font-size:var(--fs-title);font-weight:650;line-height:24px}
+.dlg p{margin:6px 0;color:var(--muted);font-size:var(--fs-sub);line-height:19px}
+.dlg .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+.list{display:flex;flex-direction:column;margin:8px -8px 0}
+.li{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 10px;border:0;border-radius:var(--r-ctl);background:none;text-align:left;width:100%;color:var(--ink)}
+@media (hover:hover){.li:hover{background:var(--surface-2)}}
+.li>svg.i{color:var(--muted)}
+.li .grow{flex:1;min-width:0;display:grid}
+.li .grow b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .grow small{font-size:var(--fs-sub);color:var(--muted)}
+dialog.sheet{margin:auto auto 0;width:min(520px,100%);max-width:100%;border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding-bottom:env(safe-area-inset-bottom)}
+dialog.sheet[open]{animation:sheetup 180ms ease-out}
+dialog.pop{margin:0;inset:auto;width:216px;border-radius:14px;box-shadow:var(--shadow-pop);border:1px solid var(--hairline)}
+dialog.pop[open]{animation:fadein 120ms ease-out}
+dialog.pop::backdrop{background:transparent}
+.notch{width:28px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 2px}
+.menu{display:flex;flex-direction:column;padding:6px 0 10px}
+.mi{display:flex;align-items:center;gap:16px;min-height:52px;padding:0 24px;border:0;background:none;text-align:left;width:100%;font-size:var(--fs-body);color:var(--ink)}
+@media (hover:hover){.mi:hover{background:var(--surface-2)}}
+.mi:active{background:var(--press-wash)}
+.mi svg.i{color:var(--muted)}
+.mi.dangertx,.mi.dangertx svg.i{color:var(--danger)}
+.pop .menu{padding:6px 0}
+.pop .mi{min-height:38px;padding:0 14px;gap:12px;font-size:14px}
+.pop .mi svg.i{width:18px;height:18px}
+.rows{margin:14px 0 0;display:grid}
+.rows .r{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:11px 0;border-top:1px solid var(--hairline);font-size:14px;line-height:20px}
+.rows .r span:last-child{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.mprev{margin:12px 0 0;padding:8px 12px;border-radius:14px;background:var(--surface-2);font-size:14px;line-height:20px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.ihead{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:4px 0 6px}
+.ihead h2{margin-top:10px}
+.ihead p{margin:0}
+.kv{margin:10px 0 0;display:grid}
+.kv div{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--hairline);font-size:var(--fs-sub);line-height:19px;color:var(--muted)}
+.kv div svg.i{color:var(--muted);width:20px;height:20px;margin-top:1px}
+.kv div b{display:block;color:var(--ink);font-size:var(--fs-body);font-weight:600;line-height:21px}
+.kv a{font-weight:600;text-decoration:none}
+.kv a:hover{text-decoration:underline}
+.callrow{display:flex;align-items:center;gap:14px;width:calc(100% + 16px);min-height:52px;margin:12px -8px 0;padding:0 8px;border:0;background:none;text-align:left;border-radius:var(--r-ctl);color:var(--ink);font-size:var(--fs-body);font-weight:600}
+@media (hover:hover){button.callrow:hover{background:var(--surface-2)}}
+.callrow svg.i{color:var(--accent-ink)}
+.callrow.off{flex-wrap:wrap;gap:4px 14px;min-height:0;padding:10px 8px;font-weight:400;font-size:var(--fs-sub);color:var(--muted)}
+.callrow.off svg.i{color:var(--muted)}
+.callrow.off span{flex:1;min-width:0}
+.callrow.off .btn{min-height:36px;padding:0 14px;font-size:var(--fs-sub);color:var(--accent-ink)}
+.callrow.off .btn[aria-disabled=true]{color:var(--muted);cursor:default}
+fieldset{border:0;margin:16px 0 0;padding:0}
+legend{font-weight:700;padding:0;margin-bottom:4px;font-size:var(--fs-sub);color:var(--muted)}
+.opt{display:flex;align-items:center;gap:12px;min-height:var(--btn);padding:4px 8px;margin:0 -8px;border-radius:12px;cursor:pointer}
+.opt:hover{background:var(--surface-2)}
+.opt input{width:20px;height:20px;accent-color:var(--accent);margin:0;flex:none}
+.opt .d{display:block;font-size:var(--fs-sub);color:var(--muted)}
+.opt .grow{flex:1}
+.opt .btn{min-height:36px;padding:0 12px;font-size:var(--fs-sub)}
+.opt:has(input:focus-visible){outline:2px solid var(--accent-ink);outline-offset:1px}
+.row2{display:flex;align-items:center;gap:12px}
+@media (max-width:699px){
+  dialog{margin:auto auto 0;width:100%;max-width:none;border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding-bottom:env(safe-area-inset-bottom)}
+  dialog[open]{animation:sheetup 180ms ease-out}
+  .dlg .acts.stack{flex-direction:column-reverse}
+  .dlg .acts.stack .btn{width:100%}
+}
+
+/* toasts */
+.toasts{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;z-index:50;width:min(440px,calc(100vw - 24px));pointer-events:none}
+body:has(.app[data-view=conv]) .toasts{bottom:84px}
+.toast{background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;box-shadow:var(--shadow-pop);font-size:var(--fs-sub);line-height:19px;animation:rise .18s ease-out;max-width:100%}
+.toast.notif{background:var(--surface);color:var(--ink);border:1px solid var(--hairline);display:flex;gap:10px;align-items:flex-start;width:100%}
+.toast.notif small{display:block;color:var(--muted)}
+@keyframes rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes callend{to{opacity:0;transform:scale(.96)}}
+.callov.ending{animation:callend 200ms ease-in forwards}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes sheetup{from{opacity:.4;transform:translateY(24px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.bub.held{transform:none}}
+:root[data-motion=reduce] *{animation:none!important;transition:none!important}
+:root[data-motion=reduce] .bub.held{transform:none}
+
+@media (max-width:859px){
+  .page{padding:0 8px 8px}
+  .plink{display:none}
+  .app[data-view=list] .chats{overflow:auto}
+  body:has(.app[data-view=conv]){overflow:hidden}
+  body:has(.app[data-view=conv]) .toasts .toast:not(:last-child){display:none}
+  body:has(.app[data-view=conv]) .page{padding:0}
+  body:has(.app[data-view=conv]) :is(.harness,.sim){display:none}
+  .app[data-view=conv]{position:fixed;inset:0;height:100dvh;border:0;border-radius:0;z-index:5}
+  .app[data-view=conv] .bar{min-height:56px;padding:4px 6px}
+  .composer{padding:6px 8px calc(8px + env(safe-area-inset-bottom))}
+  .msgs{padding:6px 10px 10px}
+}
+
+/* embed contract: ?embed=1 (alias ?preview=mobile) */
+.embed body{background:var(--surface)}
+.embed .harness,.embed .sim{display:none!important}
+.embed .page{padding:0;max-width:none;height:100dvh}
+.embed .app{border:0;border-radius:0;box-shadow:none}
+.embed .back-list{display:none!important}
+.embed .app[data-view=conv] .bar{padding-left:10px}
+@media (min-width:860px){
+  .embed .app{grid-template-columns:1fr}
+  .embed .app[data-view=conv] .list-pane,.embed .app[data-view=list] .conv-pane{display:none}
+  .embed .list-pane{border-right:0}
+}
+</style>
+<link rel="stylesheet" href="interactions.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<defs>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><path d="M21 11l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2.5"/><circle cx="9" cy="12" r="2.5"/><circle cx="17" cy="18" r="2.5"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-reply" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13 7l4 4"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-retry" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+<symbol id="i-mute" viewBox="0 0 24 24"><path d="M8.5 5.3A6 6 0 0 1 18 11v4M6 11v5l-2 2h12M10 21h4M3 3l18 18"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+<symbol id="i-devices" viewBox="0 0 24 24"><path d="M3 6h13v9H3zM1 18h17M18 9h4v9h-4z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-off" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+<symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16.5 9a4 4 0 0 1 0 6"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h3.5l1.5 4.5-2.2 1.4a11 11 0 0 0 6.3 6.3l1.4-2.2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+<symbol id="i-micoff" viewBox="0 0 24 24"><path d="M15 9.3V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 4.6 2.5M5 11a7 7 0 0 0 11.5 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.6.2 4.5 2 5 4.9"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+</defs>
+</svg>
+
+<div class="page">
+  <header class="harness">
+    <nav class="crumb" aria-label="Study"><a href="./index.html">← Home</a><span aria-hidden="true">·</span><span>Chat</span></nav>
+    <a class="plink" id="mobilePreview" href="mobile.html?screen=chat&amp;chat=arjun">Phone preview ↗</a>
+    <button class="hb" id="themeBtn" type="button" aria-label="Switch to dark theme"><svg class="i" aria-hidden="true"><use id="themeUse" href="#i-moon"/></svg></button>
+    <button class="hb" id="simBtn" type="button" aria-label="Simulation" aria-expanded="false" aria-controls="sim"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg></button>
+  </header>
+
+  <section class="sim" id="sim" aria-labelledby="tSim" hidden>
+    <h2 id="tSim">Simulation</h2>
+    <p>Interactive design study with simulated data. Nothing is sent, stored on a server, or encrypted here; these controls stand in for the network, which the real app handles itself.</p>
+    <p>Attachments: choosing a real file reads only its name and size. Transfer progress is simulated. Per-message deletion is a proposal, not a decided Tinline feature.</p>
+    <div class="row">
+      <button class="sw" type="button" role="switch" aria-checked="true" id="swOnline"><span class="track"></span><span id="swOnlineLbl">Contact online</span></button>
+      <button class="sw" type="button" role="switch" aria-checked="false" id="swFail"><span class="track"></span>Next send fails</button>
+      <button class="sw" type="button" role="switch" aria-checked="true" id="swQuiet"><span class="track"></span>Quiet mode</button>
+      <button class="btn" type="button" id="simIncoming">Simulate incoming message</button>
+      <button class="btn" type="button" id="simClear">Empty the chat list</button>
+      <button class="btn" type="button" id="simReset">Reset demo</button>
+    </div>
+  </section>
+
+  <main class="app" id="app" data-view="list">
+    <div id="callStrip" hidden></div>
+    <div class="callov" id="callOv" role="dialog" aria-labelledby="callName" tabindex="-1" hidden>
+      <button class="ib min" type="button" id="callMin" aria-label="Back to chat — call continues"><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg></button>
+      <div class="who2"><span id="callAv"></span><h2 id="callName"></h2><svg class="callmark" id="callMark" viewBox="0 9 40 22" aria-hidden="true" focusable="false"><path class="mk-can" d="M14,11H8A5,5 0 0 0 3,16V24A5,5 0 0 0 8,29H14Z"/><path class="mk-can" d="M26,11H32A5,5 0 0 1 37,16V24A5,5 0 0 1 32,29H26Z"/><path class="mk-str" d="M14 20Q20 28 26 20"/></svg><span class="cst" id="callStatus" aria-live="polite"></span><span class="ctm" id="callTime"></span></div>
+      <div class="callctl">
+        <label><button class="cbtn mute" type="button" id="callMute" aria-pressed="false" aria-label="Mute"><svg class="i" aria-hidden="true"><use id="callMuteUse" href="#i-mic"/></svg></button><span aria-hidden="true" id="callMuteLbl">Mute</span></label>
+        <label><button class="cbtn end" type="button" id="callEnd" aria-label="End call"><svg class="i" aria-hidden="true"><use href="#i-phone"/></svg></button><span aria-hidden="true">End</span></label>
+      </div>
+    </div>
+    <section class="list-pane" aria-label="Chats">
+      <div class="lhead"><h2>Chats</h2>
+        <button class="ib" type="button" id="settingsBtn" aria-label="Chat settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg></button>
+        <button class="ib" type="button" id="newBtn" aria-label="New chat"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button>
+      </div>
+      <form class="search" role="search" id="searchForm" onsubmit="return false">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <label class="vh" for="q">Search chats</label>
+        <input id="q" type="search" placeholder="Search" autocomplete="off">
+        <button class="ib" type="button" id="qClear" aria-label="Clear search" hidden><svg class="i sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </form>
+      <ul class="chats" id="chats"></ul>
+      <div id="listEmpty"></div>
+    </section>
+    <section class="conv-pane" id="conv" aria-label="Conversation"></section>
+  </main>
+</div>
+
+<!-- Settings -->
+<dialog id="dSettings" aria-labelledby="tSettings"><div class="dlg">
+  <h2 id="tSettings">Chat settings</h2>
+  <fieldset><legend>Notification preview</legend>
+    <label class="opt"><input type="radio" name="preview" value="full"><span class="grow">Name and message<span class="d">Shows who wrote and what they said.</span></span></label>
+    <label class="opt"><input type="radio" name="preview" value="name"><span class="grow">Name only<span class="d">“Meera sent a message.”</span></span></label>
+    <label class="opt"><input type="radio" name="preview" value="none"><span class="grow">Hidden<span class="d">“New message.” Best for shared lock screens.</span></span></label>
+  </fieldset>
+  <fieldset><legend>Message sound</legend>
+    <div class="opt"><label class="row2 grow" style="cursor:pointer"><input type="radio" name="sound" value="chime"><span>Soft chime</span></label><button class="btn quiet" type="button" data-play="chime" aria-label="Play soft chime"><svg class="i sm" aria-hidden="true"><use href="#i-vol"/></svg>Play</button></div>
+    <div class="opt"><label class="row2 grow" style="cursor:pointer"><input type="radio" name="sound" value="pop"><span>Pop</span></label><button class="btn quiet" type="button" data-play="pop" aria-label="Play pop"><svg class="i sm" aria-hidden="true"><use href="#i-vol"/></svg>Play</button></div>
+    <label class="opt"><input type="radio" name="sound" value="off"><span class="grow">Silent<span class="d">Badge and notification only.</span></span></label>
+    <label class="opt"><input type="checkbox" id="vib"><span class="grow">Vibrate on new message<span class="d" id="vibD"></span></span></label>
+  </fieldset>
+  <p>Muted chats never make a sound. Calls ring separately.</p>
+  <fieldset><legend>Enter key</legend>
+    <label class="opt"><input type="radio" name="enter" value="send"><span class="grow">Enter sends<span class="d">Shift + Enter adds a new line.</span></span></label>
+    <label class="opt"><input type="radio" name="enter" value="newline"><span class="grow">Enter adds a new line<span class="d">Ctrl or ⌘ + Enter sends. Default on touch screens.</span></span></label>
+  </fieldset>
+  <fieldset><legend>Appearance</legend>
+    <label class="opt"><input type="radio" name="theme" value="system"><span class="grow">Match this device</span></label>
+    <label class="opt"><input type="radio" name="theme" value="light"><span class="grow">Light</span></label>
+    <label class="opt"><input type="radio" name="theme" value="dark"><span class="grow">Dark</span></label>
+  </fieldset>
+  <div class="acts"><button class="btn primary" type="button" data-close>Done</button></div>
+</div></dialog>
+
+<!-- Chat info -->
+<dialog id="dInfo" aria-labelledby="tInfo"><div class="dlg" id="infoBody"></div></dialog>
+<!-- Message menu (sheet or popover) / message info / delete / attach / new chat -->
+<dialog id="dActions" aria-labelledby="tActions"><div id="actionsBody"></div></dialog>
+<dialog id="dMsgInfo" aria-labelledby="tMsgInfo"><div class="dlg" id="msgInfoBody"></div></dialog>
+<dialog id="dDelete" aria-labelledby="tDelete"><div class="dlg" id="deleteBody"></div></dialog>
+<dialog id="dAttach" aria-labelledby="tAttach"><div class="dlg">
+  <h2 id="tAttach">Attach</h2>
+  <div class="list" id="samples"></div>
+  <div class="list"><button class="li" type="button" id="pickReal"><svg class="i" aria-hidden="true"><use href="#i-clip"/></svg><span class="grow"><b>Choose a file…</b></span></button></div>
+  <input type="file" id="realFile" class="vh" tabindex="-1" aria-hidden="true">
+  <div class="acts"><button class="btn quiet" type="button" data-close>Cancel</button></div>
+</div></dialog>
+<dialog id="dNew" aria-labelledby="tNew"><div class="dlg">
+  <h2 id="tNew">New chat</h2>
+  <div class="list" id="contacts"></div>
+  <div class="acts"><button class="btn quiet" type="button" data-close>Cancel</button></div>
+</div></dialog>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+<div class="vh" id="sr" role="status" aria-live="polite"></div>
+
+<script src="call-state.js"></script>
+<script src="call-audio.js"></script>
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === false || v == null) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k === "text") e.textContent = v;
+    else e.setAttribute(k, v === true ? (k.startsWith("aria-") ? "true" : "") : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(k));
+  return e;
+}
+const icon = (n, c = "") => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("class", "i " + c); s.setAttribute("aria-hidden", "true"); const u = document.createElementNS("http://www.w3.org/2000/svg", "use"); u.setAttribute("href", "#i-" + n); s.append(u); return s; };
+const pad = n => String(n).padStart(2, "0");
+const clock = (d = new Date()) => pad(d.getHours()) + ":" + pad(d.getMinutes());
+const fmtSize = b => b >= 1e6 ? (b / 1e6).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1e3)) + " KB";
+const store = { get(k, d) { try { const v = localStorage.getItem("tinline-chat-" + k); return v == null ? d : v; } catch { return d; } }, set(k, v) { try { localStorage.setItem("tinline-chat-" + k, v); } catch {} } };
+const fname = c => c.name.split(" ")[0];
+const initials = n => n.split(" ").map(w => w[0]).slice(0, 2).join("");
+const hue = n => "av" + [...n].reduce((a, ch) => a + ch.codePointAt(0), 0) % 6; // shared hash, SPEC §Avatars
+const avatar = (n, size) => h("span", { class: `t-avatar ${hue(n)} s${size}`, "aria-hidden": "true", text: initials(n) });
+const isEmoji = t => !!t && /^(?:\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic}|\p{EMod})*\s*){1,3}$/u.test(t.trim());
+const popMode = () => matchMedia("(hover:hover) and (pointer:fine) and (min-width:860px)").matches;
+const sr = t => { const r = $("#sr"); r.textContent = ""; setTimeout(() => r.textContent = t, 30); };
+
+/* ---------- state ---------- */
+const CONTACTS = [
+  { id: "arjun", name: "Arjun Oommen", devices: ["Phone"] },
+  { id: "meera", name: "Meera Nair", devices: ["Phone"] },
+  { id: "dev", name: "Dev Patel", devices: ["Phone"] },
+  { id: "sana", name: "Sana Rao", devices: ["Phone", "Laptop"] },
+  { id: "kavya", name: "Kavya Iyer", devices: ["Phone"] },
+  { id: "ravi", name: "Ravi Menon", devices: ["Phone"] },
+];
+let seq = 100, chats, openId = null;
+const prefs = {
+  preview: store.get("preview", "full"), sound: store.get("sound", "chime"), vib: store.get("vib", "0") === "1",
+  enter: store.get("enter", matchMedia("(pointer:coarse)").matches ? "newline" : "send"), theme: store.get("theme", "system"),
+};
+{ const t = new URLSearchParams(location.search).get("theme"); if (/^(light|dark)$/.test(t || "")) prefs.theme = t; } // forced by an embedding page
+let failNext = false;
+
+function mkChat(id, online, msgs, extra) {
+  const c = CONTACTS.find(x => x.id === id);
+  return Object.assign({ id, name: c.name, devices: c.devices, online, muted: false, unread: 0, below: 0, draft: "", stash: "", ctx: null, msgs: msgs.map(m => Object.assign({ id: ++seq }, m)) }, extra);
+}
+function seed() {
+  const Y = "Yesterday";
+  chats = [
+    mkChat("arjun", true, [
+      { from: "them", text: "Did you get home ok?", time: "21:12", day: Y, st: "in" },
+      { from: "me", text: "Yes, train was on time for once", time: "21:14", day: Y, st: "delivered" },
+      { from: "me", text: "Thanks for dinner. That place was great", time: "21:15", day: Y, st: "delivered" },
+      { from: "them", text: "Anytime 🙂", time: "21:20", day: Y, st: "in" },
+      { from: "them", text: "Are we still on for the call about the flat?", time: "12:38", st: "in" },
+      { from: "me", text: "Yes, after 6 works for me", time: "12:40", st: "delivered", edited: true, editedAt: "12:43" },
+      { from: "me", text: "I’ll call from the office, it’s quieter there", time: "12:41", st: "delivered" },
+      { from: "them", text: "I have the landlord’s numbers now", time: "12:44", st: "in", reply: { who: "You", text: "Yes, after 6 works for me" } },
+      { from: "them", text: "Sending them over in a bit", time: "12:44", st: "in" },
+    ]),
+    mkChat("meera", false, [
+      { from: "me", text: "Running 10 min late, sorry", time: "17:36", st: "waiting" },
+      { from: "them", text: "Can you send the scan when you’re back online?", time: "17:40", st: "in" },
+      { from: "them", text: "No rush", time: "17:41", st: "in" },
+    ], { unread: 2, lastSeen: "17:42" }),
+    mkChat("dev", true, [
+      { from: "me", text: "Lunch Thursday?", time: "11:02", st: "delivered" },
+      { from: "them", text: "Thursday works. The place near the station?", time: "11:05", st: "in" },
+      { from: "them", text: "👍", time: "11:06", st: "in" },
+    ]),
+    mkChat("sana", true, [
+      { from: "them", text: "Sent the draft to your laptop too", time: "08:20", st: "in" },
+    ], { laptopOffline: true }),
+  ];
+  chats.forEach(c => c.msgs.forEach(m => { if (m.st === "delivered") m.deliveredAt = m.time; }));
+  chats[2].muted = true; chats[2].unread = 1;
+  chats[2].messageOnly = true; chats[2].callRequested = false; // met through a group request: calling needs separate permission
+}
+seed();
+const chatBy = id => chats.find(c => c.id === id);
+const mins = m => { const [H, M] = m.time.split(":").map(Number); return H * 60 + M - (m.day === "Yesterday" ? 1440 : 0); };
+const lastMsg = c => c.msgs[c.msgs.length - 1];
+const lastTime = c => { const m = lastMsg(c); return !m ? "" : m.day === "Yesterday" ? "Yesterday" : m.time; };
+const sortKey = c => { const m = lastMsg(c); return m ? mins(m) * 1e4 + m.id : -1e9; };
+
+/* ---------- live feedback ---------- */
+function say(text, opts = {}) {
+  const t = h("div", { class: "toast" + (opts.notif ? " notif" : "") });
+  if (opts.notif) { t.append(icon("bell"), h("div", {}, h("b", { text: opts.title }), opts.body ? h("small", { text: opts.body }) : null)); }
+  else t.textContent = text;
+  const box = $("#toasts"); box.append(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => t.remove(), opts.notif ? 6000 : 4200);
+}
+
+/* ---------- sound (short synthesized tones, created only on user action) ---------- */
+let ac;
+function tone(kind) {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  try {
+    ac = ac || new AC(); if (ac.state === "suspended") ac.resume();
+    const t0 = ac.currentTime + 0.02;
+    const notes = kind === "pop" ? [[520, 0, .12, .16]] : [[784, 0, .5, .14], [1047, .14, .7, .12]];
+    for (const [f, at, dur, vol] of notes) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = kind === "pop" ? "triangle" : "sine"; o.frequency.setValueAtTime(f, t0 + at);
+      if (kind === "pop") o.frequency.exponentialRampToValueAtTime(260, t0 + at + dur);
+      g.gain.setValueAtTime(0.0001, t0 + at); g.gain.exponentialRampToValueAtTime(vol, t0 + at + .02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+      o.connect(g).connect(ac.destination); o.start(t0 + at); o.stop(t0 + at + dur + .05);
+    }
+    return true;
+  } catch { return false; }
+}
+
+/* ---------- theme + harness ---------- */
+const mq = matchMedia("(prefers-color-scheme:dark)");
+const isDark = () => prefs.theme === "dark" || (prefs.theme === "system" && mq.matches);
+function applyTheme() {
+  const r = document.documentElement;
+  if (prefs.theme === "system") r.removeAttribute("data-theme"); else r.dataset.theme = prefs.theme;
+  const d = isDark();
+  $("#themeBtn").setAttribute("aria-label", d ? "Switch to light theme" : "Switch to dark theme");
+  $("#themeUse").setAttribute("href", d ? "#i-sun" : "#i-moon");
+}
+mq.addEventListener("change", applyTheme);
+$("#themeBtn").onclick = () => { prefs.theme = isDark() ? "light" : "dark"; store.set("theme", prefs.theme); applyTheme(); };
+$("#simBtn").onclick = () => { const s = $("#sim"), open = s.hidden; s.hidden = !open; $("#simBtn").setAttribute("aria-expanded", open); };
+$("#sim").addEventListener("keydown", e => { if (e.key === "Escape") { e.stopPropagation(); $("#sim").hidden = true; $("#simBtn").setAttribute("aria-expanded", "false"); $("#simBtn").focus(); } });
+
+/* ---------- dialogs ---------- */
+function openDlg(d, opener) {
+  d._opener = opener || document.activeElement;
+  d._sel = d._opener && d._opener.closest && d._opener.closest("[data-mid]") ? d._opener.closest("[data-mid]").dataset.mid : null;
+  d.showModal();
+}
+$$("dialog").forEach(d => {
+  d.addEventListener("close", () => {
+    const a = document.activeElement;
+    if (a && a !== document.body && a !== document.documentElement) return; // focus was moved on purpose
+    let o = d._opener;
+    if (o && !o.isConnected && o.id) o = document.getElementById(o.id);
+    if (!o || !o.isConnected) o = (d._sel && $(`[data-mid="${d._sel}"] .more`)) || $("#ta") || $("#settingsBtn");
+    if (o) o.focus({ preventScroll: true });
+  });
+  d.addEventListener("click", e => { if (e.target === d) d.close(); });
+  d.addEventListener("click", e => { if (e.target.closest("[data-close]")) d.close(); });
+});
+$("#dActions").addEventListener("close", e => {
+  const d = e.currentTarget; $$(".m.menu-open,.bub.held").forEach(x => x.classList.remove("menu-open", "held"));
+  if (!d._moved && d._opener && d._opener.isConnected) d._opener.focus({ preventScroll: true }); // Escape / scrim: back to the message
+});
+
+/* ---------- list ---------- */
+function preview(c) {
+  const out = h("span", { class: "pv" });
+  if (c.draft.trim()) { out.append(h("span", { class: "dr", text: "Draft: " }), c.draft.trim().replace(/\s+/g, " ")); return out; }
+  const m = lastMsg(c);
+  if (!m) { out.textContent = "No messages yet"; return out; }
+  if (m.gone) { out.textContent = m.gone === "me" ? "You deleted this message" : fname(c) + " deleted this message"; return out; }
+  if (m.call) { const missed = m.call.outcome === "noanswer"; out.append(missed ? h("span", { class: "bad", text: "Missed voice call" }) : "📞 Voice call · " + TinCall.mmss(m.call.dur)); return out; }
+  const body = m.file ? "📎 " + m.file.name : m.text;
+  if (m.from === "me") {
+    if (m.st === "failed") out.append(h("span", { class: "bad", text: "Not delivered · " }));
+    else out.append(icon(m.st === "delivered" ? "check" : "clock"), h("span", { class: "vh", text: m.st === "delivered" ? "You: " : "Waiting: " }));
+  }
+  out.append(body.replace(/\s+/g, " ")); return out;
+}
+function renderList() {
+  const q = $("#q").value.trim().toLowerCase();
+  $("#qClear").hidden = !q;
+  const ul = $("#chats"); ul.replaceChildren();
+  const le = $("#listEmpty"); le.replaceChildren();
+  const rows = chats.filter(c => !q || c.name.toLowerCase().includes(q) || c.msgs.some(m => !m.gone && (m.text || (m.file && m.file.name) || "").toLowerCase().includes(q)))
+    .sort((a, b) => sortKey(b) - sortKey(a));
+  for (const c of rows) {
+    const b = h("button", { class: "chat-row" + (c.unread ? " unread" : "") + (c.muted ? " muted" : ""), type: "button", "data-chat": c.id, "aria-current": c.id === openId, onclick: e => openChat(c.id, e.currentTarget) },
+      avatar(c.name, 44),
+      h("span", { class: "mid" },
+        h("span", { class: "l1" }, h("b", { text: c.name }), h("span", { class: "when" }, c.muted ? icon("mute", "xs") : null, c.muted ? h("span", { class: "vh", text: "Muted. " }) : null, h("time", { text: lastTime(c) }))),
+        h("span", { class: "l2" }, preview(c), c.unread ? h("span", { class: "t-badge" + (c.muted ? " muted" : ""), "aria-label": c.unread + " unread" }, String(c.unread)) : null)));
+    ul.append(h("li", {}, b));
+  }
+  if (!rows.length) {
+    if (q) le.append(h("div", { class: "empty" }, h("div", { class: "art" }, icon("search")), h("h3", { text: "No chats match “" + $("#q").value.trim() + "”" }),
+      h("p", { text: "Search covers names and messages on this phone." }),
+      h("button", { class: "btn", type: "button", onclick: () => { $("#q").value = ""; renderList(); $("#q").focus(); } }, "Clear search")));
+    else le.append(h("div", { class: "empty" }, h("div", { class: "art" }, icon("chat")), h("h3", { text: "No chats yet" }),
+      h("p", { text: "Messages stay on your devices." }),
+      h("button", { class: "btn primary", type: "button", onclick: e => openNew(e.currentTarget) }, "Start a chat")));
+  }
+}
+$("#q").addEventListener("input", renderList);
+$("#qClear").onclick = () => { $("#q").value = ""; renderList(); $("#q").focus(); };
+$("#q").addEventListener("keydown", e => { if (e.key === "Escape" && $("#q").value) { e.preventDefault(); $("#qClear").click(); } });
+
+/* ---------- conversation ---------- */
+let ta = null, convFor = null;
+function openChat(id, opener) {
+  openId = id; const c = chatBy(id);
+  $("#mobilePreview").href = "mobile.html?screen=chat&chat=" + encodeURIComponent(id);
+  c.unread = 0;
+  $("#app").dataset.view = "conv";
+  renderList(); renderConv(true);
+  if (matchMedia("(min-width:860px)").matches) ta && ta.focus({ preventScroll: true });
+  else { const t = $("#convTitle"); t && t.focus(); }
+}
+function closeChat() {
+  if (new URLSearchParams(location.search).get("from") === "home") { location.href = "home.html#chats"; return; }
+  const id = openId; openId = null; $("#app").dataset.view = "list"; renderList(); renderConv();
+  const r = $(`[data-chat="${id}"]`); (r || $("#q")).focus();
+}
+function callBtn(c) {
+  if (c.messageOnly) return h("button", { class: "ib", type: "button", id: "callBtn", "aria-disabled": true, "aria-label": `Voice call unavailable. Calling ${fname(c)} needs their permission`, title: "Calling needs their permission", onclick: () => openInfo($("#callBtn")) }, icon("phone"));
+  if (call) return h("button", { class: "ib live", type: "button", id: "callBtn", "aria-label": "Return to call with " + call.name, title: "Return to call", onclick: openCall }, icon("phone"));
+  return h("button", { class: "ib", type: "button", id: "callBtn", "aria-label": "Voice call " + fname(c), title: "Voice call", onclick: () => startCall(c) }, icon("phone"));
+}
+/* ---------- in-conversation call (visual simulation; cues come from the shared call-audio.js) ----------
+   The call itself is app state in call-state.js (TinCall): it outlives this page, so a call started here
+   still shows on Home and in groups.html, and a call started elsewhere shows here. Only "is the overlay
+   up in this document" is local. ?call=open raises the overlay on load; ?callbar=host means the embedding
+   page (Home's detail pane) draws the strip, so this page must not draw a second one. */
+const CALLQ = new URLSearchParams(location.search), HOST_BAR = CALLQ.get("callbar") === "host";
+let call = TinCall.get(), callOpen = false;
+{ const s = TinCall.bar({ id: "callStrip" }); $("#callStrip").replaceWith(s); s.onclick = openCall; }
+// A group call (maybe started in groups.html) shows the shared roster from call-state.js instead of one avatar.
+const gStage = TinCall.stage(); $("#callOv .who2").after(gStage);
+TinAudio.follow(TinCall);
+function reducedMotion() { return matchMedia("(prefers-reduced-motion:reduce)").matches || document.documentElement.dataset.motion === "reduce"; }
+function callTick() {
+  const t = TinCall.get(); if (!t) return;
+  $("#callStatus").textContent = t.connected ? (t.muted ? "Muted" : "Connected") : t.preLabel;
+  $("#callTime").textContent = t.time;
+  $("#callMark").classList.toggle("taut", !!t.connected);
+}
+function paintCall() {
+  if (!call) return;
+  const roster = !!call.people, ov = $("#callOv");
+  $("#callAv").replaceChildren(call.kind === "group" ? h("span", { class: "gglyph", "aria-hidden": "true" }, icon("users")) : avatar(call.name, 96));
+  $("#callName").textContent = call.name; $("#callOv .who2").hidden = roster; gStage.hidden = !roster;
+  if (roster) { ov.removeAttribute("aria-labelledby"); ov.setAttribute("aria-label", "Call with " + call.name); }
+  else { ov.removeAttribute("aria-label"); ov.setAttribute("aria-labelledby", "callName"); }
+  syncMute(); callTick();
+}
+function setCallInert(on) { $$("#app > .list-pane, #app > .conv-pane, #callStrip").forEach(e => e.inert = on); }
+function syncCallUI() {
+  if (!call) callOpen = false;
+  $("#callOv").hidden = !callOpen; $("#callStrip").hidden = !call || callOpen || HOST_BAR; setCallInert(callOpen);
+}
+function syncCallBtn() { const c = openId && chatBy(openId), b = $("#callBtn"); if (c && b) b.replaceWith(callBtn(c)); }
+function startCall(c) {
+  if (call) { openCall(); return; }
+  if (c.messageOnly) return;
+  TinAudio.arm(); // the call button is the gesture that may start sound (unless Quiet mode is on)
+  TinCall.start({ kind: "direct", id: c.id, name: c.name }); // subscriber below paints + syncs
+  openCall();
+}
+function openCall() {
+  if (!call) return;
+  TinAudio.arm(); callOpen = true; paintCall(); syncCallUI();
+  $("#callOv").focus({ preventScroll: true });
+}
+function minimizeCall() {
+  if (!call) return;
+  callOpen = false; syncCallUI();
+  (HOST_BAR ? ($("#callBtn") || $("#ta") || $("#q")) : $("#callStrip")).focus({ preventScroll: true });
+}
+function endCall(quiet) {
+  if (!call) return;
+  const snap = TinCall.get(); // read before TinCall.end() clears connected/secs
+  if (!quiet) TinAudio.ending(); // the End tap plays the ended cue here, in sync with the release below
+  if (quiet || reducedMotion()) { finishEndCall(quiet, snap); return; }
+  $("#callMark").classList.remove("taut"); // the string goes slack again
+  $("#callOv").classList.add("ending");
+  setTimeout(() => finishEndCall(quiet, snap), 220);
+}
+function finishEndCall(quiet, snap) {
+  $("#callOv").classList.remove("ending");
+  if (!quiet && snap && snap.kind === "direct") logCallEnd(snap);
+  TinCall.end(); // clears this page via the subscriber, and every other page through call-state.js
+  if (!quiet) { say("Call ended"); ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true }); }
+}
+function logCallEnd(snap) { // the WhatsApp convention: a record in the thread, not just a toast
+  const c = chatBy(snap.id); if (!c) return;
+  c.msgs.push({ id: ++seq, from: "me", time: clock(), call: { outcome: snap.connected ? "answered" : "noanswer", dur: snap.secs } });
+  if (openId === c.id) renderConv(true);
+  renderList();
+}
+TinCall.subscribe(v => {
+  const was = call, focusInside = $("#callOv").contains(document.activeElement), btnFocus = document.activeElement && document.activeElement.id === "callBtn";
+  call = v;
+  const changed = !was !== !call || (was && call && was.ringAt !== call.ringAt);
+  if (call && changed) paintCall(); else syncMute();
+  syncCallUI(); callTick();
+  if (changed) { syncCallBtn(); if (btnFocus && $("#callBtn")) $("#callBtn").focus({ preventScroll: true }); }
+  if (!call && focusInside) ($("#callBtn") || $("#ta") || $("#q")).focus({ preventScroll: true }); // ended elsewhere
+});
+TinCall.onTick(callTick);
+function syncMute() { const m = !!(call && call.muted); $("#callMute").setAttribute("aria-pressed", m); $("#callMuteUse").setAttribute("href", m ? "#i-micoff" : "#i-mic"); $("#callMuteLbl").textContent = m ? "Unmute" : "Mute"; }
+$("#callMute").onclick = () => { if (call) TinCall.update({ muted: !call.muted }); };
+$("#callEnd").onclick = () => endCall();
+$("#callMin").onclick = minimizeCall;
+$("#callOv").addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); minimizeCall(); } });
+addEventListener("message", e => { if (e.source === parent && e.data && e.data.type === "tinline-call-open") openCall(); }); // Home's strip, desktop pane
+
+const presence = c => c.online ? "Online" : c.lastSeen ? "Last seen " + c.lastSeen : "Offline";
+function renderConv(toEnd) {
+  const root = $("#conv"), old = $("#msgs");
+  const prev = old && convFor === openId ? { top: old.scrollTop, atEnd: old.scrollHeight - old.scrollTop - old.clientHeight < 80 } : null;
+  root.replaceChildren(); ta = null; convFor = openId;
+  const c = openId && chatBy(openId);
+  if (!c) {
+    root.append(h("div", { class: "empty noconv" }, h("div", { class: "art" }, icon("chat")), h("h3", { text: chats.length ? "Choose a chat" : "No chats yet" }),
+      h("p", { text: "Messages stay on your devices." }),
+      chats.length ? null : h("button", { class: "btn primary", type: "button", onclick: e => openNew(e.currentTarget) }, "Start a chat")));
+    return;
+  }
+  if (c.ctx) { const cm = c.msgs.find(x => x.id === c.ctx.id); if (!cm || cm.gone) { if (c.ctx.type === "edit") { c.draft = c.stash; c.stash = ""; } c.ctx = null; } }
+  const pres = presence(c), fn = fname(c);
+  root.append(h("div", { class: "bar" },
+    h("button", { class: "ib back-list", type: "button", "aria-label": "Back to chats", onclick: closeChat }, icon("back")),
+    h("button", { class: "who", type: "button", id: "convTitle", "aria-label": `${c.name}. ${pres}${c.muted ? ". Muted" : ""}. Chat details`, onclick: e => openInfo(e.currentTarget) },
+      avatar(c.name, 36),
+      h("span", { class: "tx" }, h("span", { class: "nm" }, h("b", { text: c.name }), c.muted ? icon("mute", "xs") : null), h("span", { class: "pr", text: pres }))),
+    callBtn(c),
+    h("button", { class: "ib", type: "button", "aria-label": "Chat details", onclick: e => openInfo(e.currentTarget) }, icon("info"))));
+  if (!c.online) root.append(h("div", { class: "strip", id: "bnOff" }, icon("off"), `${fn} is offline. Messages send when you’re both online.`));
+  else if (c.laptopOffline) root.append(h("div", { class: "strip" }, icon("devices"), `${fn}’s laptop is offline. It catches up when it reconnects.`));
+  const list = h("ul", { class: "msgs", id: "msgs", role: "log", "aria-label": "Messages with " + c.name });
+  if (!c.msgs.length) list.append(h("li", { class: "empty" }, h("div", { class: "art" }, icon("shield")), h("h3", { text: "Say hello to " + fn }), h("p", { text: "Messages go straight to their phone." })));
+  let day = null;
+  c.msgs.forEach(m => { const d = m.day || "Today"; if (d !== day) { day = d; list.append(h("li", { class: "day", text: d })); } list.append(msgNode(c, m)); });
+  const toBottom = h("button", { class: "tobottom", id: "toBottom", type: "button", hidden: true, "aria-label": "Scroll to latest", onclick: () => { list.scrollTo({ top: list.scrollHeight, behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth" }); c.below = 0; } }, icon("chev"), h("span", { class: "t-badge", hidden: true }));
+  root.append(h("div", { class: "msgwrap" }, list, toBottom));
+  // context strip + composer
+  const editing = !!(c.ctx && c.ctx.type === "edit");
+  const comp = h("div", { class: "composer" });
+  if (c.ctx) {
+    const m = c.msgs.find(x => x.id === c.ctx.id);
+    comp.append(h("div", { class: "ctx" },
+      h("div", { class: "tx" }, h("b", { text: editing ? "Editing message" : "Replying to " + (m.from === "me" ? "yourself" : fn) }), h("span", { text: m.text || (m.file && m.file.name) || "" })),
+      h("button", { class: "ib", type: "button", "aria-label": editing ? "Cancel edit" : "Cancel reply", onclick: () => cancelCtx(c) }, icon("x", "sm"))));
+  }
+  ta = h("textarea", { id: "ta", rows: "1", "aria-label": "Message to " + c.name, placeholder: "Message", maxlength: "4000", enterkeyhint: prefs.enter === "send" ? "send" : "enter" });
+  ta.value = c.draft;
+  const send = h("button", { class: "send", type: "button", id: "sendBtn", "aria-label": editing ? "Save edit" : "Send", "aria-disabled": !c.draft.trim(), onclick: () => submit(c) }, icon(editing ? "check" : "send"));
+  comp.append(h("button", { class: "ib", type: "button", "aria-label": "Attach a file", onclick: e => { buildSamples(c); openDlg($("#dAttach"), e.currentTarget); }, disabled: editing }, icon("clip")), ta, send);
+  root.append(comp);
+  autosize();
+  ta.addEventListener("input", () => { c.draft = ta.value; send.setAttribute("aria-disabled", !ta.value.trim()); autosize(); renderListSoft(); });
+  ta.addEventListener("keydown", e => {
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Enter") {
+      const wantSend = prefs.enter === "send" ? !e.shiftKey : (e.ctrlKey || e.metaKey);
+      if (wantSend) { e.preventDefault(); submit(c); }
+    } else if (e.key === "Escape" && c.ctx) { e.preventDefault(); cancelCtx(c); }
+  });
+  if (toEnd || !prev || prev.atEnd) list.scrollTop = list.scrollHeight; else list.scrollTop = prev.top;
+  list.addEventListener("scroll", () => { pressCancel(); syncToBottom(c); }, { passive: true });
+  bindPress(list, c);
+  syncToBottom(c);
+}
+function syncToBottom(c) {
+  const nl = $("#msgs"), b = $("#toBottom"); if (!nl || !b) return;
+  const far = nl.scrollHeight - nl.scrollTop - nl.clientHeight > 160;
+  if (!far) c.below = 0;
+  b.hidden = !far;
+  const bd = b.querySelector(".t-badge"); bd.hidden = !c.below; bd.textContent = c.below;
+  b.setAttribute("aria-label", c.below ? `Scroll to latest, ${c.below} new` : "Scroll to latest");
+}
+function renderListSoft() { // refresh draft previews without stealing focus
+  const row = $(`[data-chat="${openId}"] .l2`); const c = chatBy(openId);
+  if (row && c) row.querySelector(".pv").replaceWith(preview(c));
+}
+function autosize() { if (!ta) return; ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight + 2, 140) + "px"; }
+
+/* message grouping: same author, same day, gap ≤ 5 min */
+function grp(c, i) {
+  const join = (a, b) => !!(a && b) && a.from === b.from && (a.day || "Today") === (b.day || "Today") && Math.abs(mins(b) - mins(a)) <= 5;
+  const a = join(c.msgs[i - 1], c.msgs[i]), b = join(c.msgs[i], c.msgs[i + 1]);
+  return a && b ? "g-mid" : a ? "g-last" : b ? "g-first" : "g-solo";
+}
+function metaNode(c, m) {
+  const mine = m.from === "me";
+  const meta = h("span", { class: "meta" });
+  if (m.edited && !m.gone) meta.append(h("span", { text: "edited" }));
+  meta.append(h("time", { text: m.time }));
+  if (mine && m.st !== "failed" && !(m.gone && !m.pendingDelete) && !m.call) {
+    const pending = m.gone ? true : (m.st !== "delivered" || !!m.pendingEdit);
+    const lbl = !pending ? "Delivered" : (m.st === "waiting" || m.pendingEdit || m.pendingDelete) ? `Waiting for ${fname(c)} to be online` : "Sending";
+    meta.append(h("span", { class: "tk" }, pending ? icon("clock", "clk") : icon("check")), h("span", { class: "vh", text: lbl }));
+  }
+  return meta;
+}
+function callNode(c, m) { // a call record is content, like an attachment — tap it to call back
+  const missed = m.call.outcome === "noanswer", dur = missed ? "No answer" : TinCall.mmss(m.call.dur);
+  return h("button", { class: "file callrow", type: "button", onclick: () => startCall(c),
+    "aria-label": `${missed ? "Missed voice call" : "Voice call, " + dur}. Call ${fname(c)} back` },
+    h("span", { class: "ficon" }, icon("phone")),
+    h("span", { class: "fi" }, h("span", { class: "fn", text: "Voice call" }), h("span", { class: "fm" + (missed ? " missed" : ""), text: dur })));
+}
+function msgNode(c, m) {
+  const mine = m.from === "me", fn = fname(c);
+  const li = h("li", { class: `m ${mine ? "me" : "them"} ${grp(c, c.msgs.indexOf(m))}${m._new ? " rise" : ""}`, "data-mid": m.id });
+  delete m._new;
+  const emo = !m.gone && !m.file && !m.call && !m.reply && isEmoji(m.text);
+  const bub = h("div", { class: "bub" + (m.gone ? " gone" : "") + (emo ? " emoji" : "") });
+  if (m.gone) bub.append(m.gone === "me" ? "You deleted this message" : fn + " deleted this message", metaNode(c, m));
+  else if (m.call) bub.append(callNode(c, m), metaNode(c, m));
+  else {
+    if (m.reply) bub.append(h("span", { class: "quote" }, h("b", { text: m.reply.who }), h("span", { text: m.reply.text })));
+    if (m.file) bub.append(fileNode(c, m)); else bub.append(m.text);
+    bub.append(metaNode(c, m));
+  }
+  const line = h("div", { class: "line" }, bub);
+  if (!m.gone) line.append(h("button", { class: "more", type: "button", "aria-haspopup": "dialog", "aria-label": `Actions for ${mine ? "your" : fn + "’s"} message at ${m.time}: ${msgSummary(m).slice(0, 40)}`, onclick: e => openActions(c, m, e.currentTarget, popMode() ? "pop" : "sheet") }, icon("chev")));
+  li.append(line);
+  if (mine && m.st === "failed" && !m.gone) li.append(h("div", { class: "fail" },
+    h("span", { text: m.file && m.file.state === "cancelled" ? "Cancelled" : "Not delivered" }), h("span", { "aria-hidden": "true", text: "·" }),
+    h("button", { type: "button", "data-act": "retry", "aria-label": m.file ? "Retry sending " + m.file.name : "Retry sending", onclick: () => m.file ? retryFile(c, m) : retry(c, m) }, "Retry")));
+  return li;
+}
+function fileNode(c, m) {
+  const f = m.file, fn = fname(c);
+  const kind = f.kind === "image" ? "Photo" : f.kind === "video" ? "Video" : "File";
+  const pct = Math.round(f.progress * 100) + "%";
+  const stateTxt = { sending: " · " + pct, waiting: ` · waiting for ${fn}`, done: "", failed: "", cancelled: "" }[f.state];
+  const wrap = h("div", {});
+  wrap.append(h("div", { class: "file" }, h("span", { class: "ficon" }, icon(f.kind === "image" ? "image" : "file")),
+    h("span", { class: "fi" }, h("span", { class: "fn", dir: "auto", title: f.name, text: f.name }), h("span", { class: "fm", text: `${kind} · ${fmtSize(f.size)}${stateTxt}` }))));
+  if (f.state === "sending" || f.state === "waiting") {
+    wrap.append(h("div", { class: "prog", role: "progressbar", "aria-label": "Sending " + f.name, "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": Math.round(f.progress * 100) }, h("i", { style: `width:${f.progress * 100}%` })));
+    wrap.append(h("div", { class: "facts" }, h("button", { class: "qbtn", type: "button", "data-act": "cancel", "aria-label": "Cancel sending " + f.name, onclick: () => cancelFile(c, m) }, icon("x", "xs"), "Cancel")));
+  }
+  return wrap;
+}
+function refreshMsg(c, m) {
+  if (openId !== c.id) { renderList(); return; }
+  const old = $(`.m[data-mid="${m.id}"]`); if (!old) { renderConv(); return; }
+  const act = document.activeElement && old.contains(document.activeElement) ? (document.activeElement.dataset.act || (document.activeElement.classList.contains("more") ? "more" : null)) : null;
+  const nl = $("#msgs"), atEnd = nl.scrollHeight - nl.scrollTop - nl.clientHeight < 80;
+  const nn = msgNode(c, m); if (old.classList.contains("menu-open")) nn.classList.add("menu-open"); old.replaceWith(nn);
+  if (act) { const t = nn.querySelector(act === "more" ? ".more" : `[data-act="${act}"]`) || nn.querySelector(".more"); t && t.focus({ preventScroll: true }); }
+  if (atEnd) nl.scrollTop = nl.scrollHeight;
+  renderListSoft();
+}
+
+/* ---------- long-press / context menu ---------- */
+let press = null;
+function pressCancel() { if (press) { clearTimeout(press.t); press = null; } }
+function bindPress(list, c) {
+  const msgOf = li => li && c.msgs.find(x => String(x.id) === li.dataset.mid);
+  list.addEventListener("pointerdown", e => {
+    const bub = e.target.closest(".bub"); if (!bub || e.target.closest("button,a")) return;
+    if (e.pointerType === "mouse" && (e.button !== 0 || popMode())) return; // desktop uses the hover chevron / right click
+    const m = msgOf(bub.closest(".m")); if (!m || m.gone) return;
+    pressCancel();
+    press = { x: e.clientX, y: e.clientY, t: setTimeout(() => {
+      press = null; if ($("#dActions").open) return;
+      const li = $(`.m[data-mid="${m.id}"]`); if (!li) return;
+      li.querySelector(".bub").classList.add("held");
+      openActions(c, m, li.querySelector(".more"), "sheet");
+    }, 500) };
+  });
+  list.addEventListener("pointermove", e => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) pressCancel(); });
+  ["pointerup", "pointercancel"].forEach(t => list.addEventListener(t, pressCancel));
+  list.addEventListener("contextmenu", e => {
+    const li = e.target.closest(".m"), m = msgOf(li); if (!m || m.gone) return;
+    e.preventDefault(); pressCancel();
+    if ($("#dActions").open) return;
+    const sheet = !popMode();
+    if (sheet) li.querySelector(".bub").classList.add("held");
+    openActions(c, m, li.querySelector(".more"), sheet ? "sheet" : "pop");
+  });
+}
+
+/* ---------- sending ---------- */
+const sleep = (ms, f) => setTimeout(f, ms);
+function submit(c) {
+  const text = ta.value.trim();
+  if (!text) { ta.focus(); return; }
+  if (c.ctx && c.ctx.type === "edit") {
+    const m = c.msgs.find(x => x.id === c.ctx.id);
+    if (text !== m.text) { m.text = text; m.edited = true; m.editedAt = clock(); m.pendingEdit = !c.online; }
+    c.draft = c.stash; c.stash = ""; c.ctx = null; renderConv(); renderList();
+    say(c.online ? "Edit sent." : `Edit saved. It reaches ${fname(c)} when you’re both online.`); ta.focus(); return;
+  }
+  const m = { id: ++seq, from: "me", text, time: clock(), st: "sending", _new: true };
+  if (c.ctx && c.ctx.type === "reply") { const r = c.msgs.find(x => x.id === c.ctx.id); m.reply = { who: r.from === "me" ? "You" : fname(c), text: r.text || (r.file && r.file.name) || "" }; }
+  c.msgs.push(m); c.draft = ""; c.ctx = null;
+  TinAudio.sent(); // the Send click/Enter is its own gesture; not tied to delivery
+  renderConv(true); renderList(); ta.focus();
+  settle(c, m);
+}
+function settle(c, m) { // simulated transport
+  m.st = "sending";
+  sleep(650, () => {
+    if (!chatBy(c.id) || !c.msgs.includes(m) || m.st !== "sending") return;
+    if (!c.online) m.st = "waiting";
+    else if (failNext) { failNext = false; syncSwitch("#swFail", false); m.st = "failed"; sr("Message not delivered. Retry is next to it."); }
+    else { m.st = "delivered"; m.deliveredAt = clock(); }
+    refreshMsg(c, m);
+  });
+}
+function retry(c, m) { settle(c, m); refreshMsg(c, m); say("Retrying…"); }
+function cancelCtx(c) { if (c.ctx && c.ctx.type === "edit") { c.draft = c.stash; c.stash = ""; } c.ctx = null; renderConv(); ta.focus(); }
+
+/* ---------- attachments ---------- */
+const SAMPLES = [
+  { name: "holiday-coast.jpg", size: 2.4e6, kind: "image", note: "Photo · 2.4 MB" },
+  { name: "flat-lease.pdf", size: 6.4e5, kind: "file", note: "Document · 640 KB" },
+  { name: "wedding-clip.mp4", size: 48e6, kind: "video", note: "Video · 48 MB" },
+];
+function buildSamples(c) {
+  const box = $("#samples"); box.replaceChildren();
+  SAMPLES.forEach(s => box.append(h("button", { class: "li", type: "button", onclick: () => { $("#dAttach").close(); attach(c, s); } }, icon(s.kind === "image" ? "image" : "file"), h("span", { class: "grow" }, h("b", { text: s.name }), h("small", { text: s.note })))));
+}
+$("#pickReal").onclick = () => $("#realFile").click();
+$("#realFile").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return; e.target.value = "";
+  const kind = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : "file";
+  $("#dAttach").close(); attach(chatBy(openId), { name: f.name, size: f.size, kind });
+});
+function attach(c, s) {
+  if (!c) return;
+  const m = { id: ++seq, from: "me", text: "", time: clock(), st: "sending", _new: true, file: { name: s.name, size: s.size, kind: s.kind, progress: 0, state: c.online ? "sending" : "waiting" } };
+  c.msgs.push(m); TinAudio.sent(); renderConv(true); renderList();
+  sr(`${s.name} added.`);
+}
+function retryFile(c, m) { m.file.progress = 0; m.file.state = c.online ? "sending" : "waiting"; m.st = "sending"; refreshMsg(c, m); say("Starting again from the beginning."); }
+function cancelFile(c, m) { m.file.state = "cancelled"; m.st = "failed"; refreshMsg(c, m); say(`Cancelled ${m.file.name}. Nothing was left on ${fname(c)}’s phone.`); const b = $(`.m[data-mid="${m.id}"] [data-act="retry"]`); b && b.focus(); }
+setInterval(() => { // simulated transfer
+  for (const c of chats) for (const m of c.msgs) {
+    const f = m.file; if (!f) continue;
+    if (f.state === "waiting" && c.online) f.state = "sending";
+    if (f.state === "sending" && !c.online) { f.state = "waiting"; refreshMsg(c, m); continue; }
+    if (f.state !== "sending") continue;
+    f.progress = Math.min(1, f.progress + Math.max(0.01, 1.5e6 / f.size * 0.12) * (f.size > 1e7 ? 1 : 2));
+    if (failNext && f.progress > 0.5) { failNext = false; syncSwitch("#swFail", false); f.state = "failed"; m.st = "failed"; say(`${f.name} wasn’t delivered. Retry it from the chat.`); }
+    else if (f.progress >= 1) { f.state = "done"; m.st = "delivered"; m.deliveredAt = clock(); }
+    refreshMsg(c, m);
+  }
+}, 400);
+
+/* ---------- message menu ---------- */
+function msgSummary(m) { return m.call ? (m.call.outcome === "noanswer" ? "Missed voice call" : "Voice call") : m.text || (m.file ? m.file.name : ""); }
+function placePop(d, anchor) {
+  const r = anchor.getBoundingClientRect(), w = d.offsetWidth, ht = d.offsetHeight;
+  let x = anchor.closest(".m.me") ? r.right - w : r.left;
+  x = Math.max(8, Math.min(innerWidth - w - 8, x));
+  let y = r.bottom + 4; if (y + ht > innerHeight - 8) y = Math.max(8, r.top - ht - 4);
+  d.style.left = x + "px"; d.style.top = y + "px";
+}
+function openActions(c, m, opener, mode) {
+  const d = $("#dActions"), mine = m.from === "me";
+  d.className = mode; d.style.left = d.style.top = ""; d._moved = false;
+  const body = $("#actionsBody"); body.replaceChildren();
+  if (mode === "sheet") body.append(h("div", { class: "notch", "aria-hidden": "true" }));
+  body.append(h("h2", { id: "tActions", class: "vh", text: "Message options" }));
+  const list = h("div", { class: "menu" });
+  const add = (ic, label, fn, cls = "") => list.append(h("button", { class: "mi " + cls, type: "button", onclick: () => { d._moved = true; d.close(); fn(); } }, icon(ic), label));
+  if (!m.call) add("reply", "Reply", () => { if (c.ctx && c.ctx.type === "edit") { c.draft = c.stash; c.stash = ""; } c.ctx = { type: "reply", id: m.id }; renderConv(); ta.focus(); });
+  if (m.text) add("copy", "Copy", async () => { try { await navigator.clipboard.writeText(m.text); say("Copied."); } catch { say("Copying isn’t available here. Select the text and copy it instead."); } });
+  if (mine && m.text && m.st !== "sending") add("edit", "Edit", () => { c.stash = c.draft; c.ctx = { type: "edit", id: m.id }; c.draft = m.text; renderConv(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
+  if (mine) add("trash", "Delete", () => openDelete(c, m, opener), "dangertx");
+  if (!m.call) add("info", "Message info", () => openMsgInfo(c, m, opener));
+  body.append(list);
+  const li = opener && opener.closest(".m"); li && li.classList.add("menu-open");
+  openDlg(d, opener);
+  if (mode === "pop") placePop(d, opener);
+}
+function deliveryRows(c, m) {
+  const fn = fname(c);
+  return c.devices.map(dv => {
+    const who = `${fn}’s ${dv.toLowerCase()}`;
+    let v;
+    if (m.st === "failed") v = "Not delivered";
+    else if (m.st === "sending") v = "Sending…";
+    else if (m.st === "waiting") v = "Waiting until online";
+    else if (dv === "Laptop" && c.laptopOffline) v = "Waiting · laptop offline";
+    else v = "Delivered " + (m.deliveredAt || m.time);
+    return [who, v];
+  });
+}
+function openMsgInfo(c, m, opener) {
+  const mine = m.from === "me", fn = fname(c), b = $("#msgInfoBody");
+  const rows = h("div", { class: "rows" });
+  const row = (k, v) => rows.append(h("div", { class: "r" }, h("span", { text: k }), h("span", { text: v })));
+  if (mine) {
+    row("Sent", (m.day && m.day !== "Today" ? m.day + " " : "") + m.time);
+    if (m.edited) row("Edited", (m.editedAt || m.time) + (m.pendingEdit ? ` · reaches ${fn} when online` : ""));
+    deliveryRows(c, m).forEach(([k, v]) => row(k, v));
+  } else {
+    row("From", c.name);
+    row("Received", (m.day && m.day !== "Today" ? m.day + " " : "") + m.time);
+  }
+  b.replaceChildren(h("h2", { id: "tMsgInfo", text: "Message info" }), h("div", { class: "mprev", text: msgSummary(m) }), rows,
+    mine ? h("p", { text: `Tinline shows when a message reaches ${fn}’s devices, not when it’s read.` }) : null,
+    h("div", { class: "acts" }, h("button", { class: "btn primary", type: "button", "data-close": "" }, "Done")));
+  openDlg($("#dMsgInfo"), opener);
+}
+function openDelete(c, m, opener) {
+  const fn = fname(c), b = $("#deleteBody");
+  const both = m.st !== "failed" && !(m.file && m.file.state !== "done");
+  b.replaceChildren(h("h2", { id: "tDelete", text: "Delete message?" }),
+    h("p", { text: !both ? "It was never delivered, so it’s only on this phone." : c.online ? `Delete for everyone asks ${fn}’s phone to remove it too. Copies elsewhere can’t be recalled.` : `${fn} is offline. Delete for everyone reaches their phone when you’re both online.` }));
+  const acts = h("div", { class: "acts stack" }, h("button", { class: "btn quiet", type: "button", "data-close": "", id: "delCancel" }, "Cancel"),
+    h("button", { class: "btn " + (both ? "quiet dangertx" : "danger"), type: "button", onclick: () => doDelete(c, m, false) }, "Delete for me"));
+  if (both) acts.append(h("button", { class: "btn danger", type: "button", onclick: () => doDelete(c, m, true) }, "Delete for everyone"));
+  b.append(acts);
+  openDlg($("#dDelete"), opener);
+  $("#delCancel").focus();
+}
+function doDelete(c, m, both) {
+  $("#dDelete").close();
+  if (both) { m.gone = "me"; m.pendingDelete = !c.online; delete m.file; m.text = ""; refreshMsg(c, m); say(c.online ? "Deleted for everyone." : `Deleted here. It reaches ${fname(c)}’s phone when you’re both online.`); }
+  else { const i = $(`.m[data-mid="${m.id}"]`); let nx = i && (i.nextElementSibling || i.previousElementSibling); while (nx && !nx.dataset.mid) nx = nx.previousElementSibling; c.msgs.splice(c.msgs.indexOf(m), 1); renderConv(); renderList(); say("Deleted from this phone."); const t = nx && $(`.m[data-mid="${nx.dataset.mid}"] .more`); (t || $("#ta"))?.focus(); }
+}
+
+/* ---------- chat info ---------- */
+function openInfo(opener) {
+  const c = chatBy(openId), fn = fname(c);
+  const b = $("#infoBody"); b.replaceChildren(h("div", { class: "ihead" }, avatar(c.name, 56), h("h2", { id: "tInfo", text: c.name }), h("p", { text: presence(c) })));
+  if (c.messageOnly) {
+    const req = h("button", { class: "btn quiet", type: "button", id: "reqCall", "aria-disabled": c.callRequested, onclick: () => { if (c.callRequested) return; c.callRequested = true; req.textContent = "Requested"; req.setAttribute("aria-disabled", "true"); say(`Asked ${fn} for permission to call.`); } }, c.callRequested ? "Requested" : "Request calling");
+    b.append(h("div", { class: "callrow off" }, icon("phone"), h("span", { text: "Messages only — calling needs their permission" }), req));
+  } else b.append(h("button", { class: "callrow", type: "button", id: "infoCall", onclick: () => { $("#dInfo").close(); call ? openCall() : startCall(c); } }, icon("phone"), call ? "Return to call" : "Voice call"));
+  const kv = h("div", { class: "kv" });
+  kv.append(h("div", {}, icon("shield"), h("span", {}, h("b", { text: "End-to-end encrypted" }), "Messages go directly between your devices and theirs. No server keeps them.")));
+  kv.append(h("div", {}, icon("devices"), h("span", {}, h("b", { text: "Devices" }), c.devices.map((d, i) => d + (d === "Laptop" && c.laptopOffline ? " (offline)" : (i === 0 ? (c.online ? " (online)" : " (offline)") : " (online)"))).join(", ") + ". An offline device catches up later. ", h("a", { href: "./privacy.html" }, "What linked devices can see"))));
+  kv.append(h("div", {}, icon("check"), h("span", {}, h("b", { text: "Delivery, not read receipts" }), `A check means it reached ${fn}’s phone. Nobody is told when a message is read.`)));
+  b.append(kv);
+  b.append(h("fieldset", {}, h("label", { class: "opt" }, h("input", { type: "checkbox", id: "muteBox", checked: c.muted }), h("span", { class: "grow" }, "Mute this chat", h("span", { class: "d", text: "No sound or preview. The unread count still shows." })))));
+  b.append(h("div", { class: "acts" }, h("button", { class: "btn primary", type: "button", "data-close": "" }, "Done")));
+  openDlg($("#dInfo"), opener);
+  $("#muteBox").addEventListener("change", e => { c.muted = e.target.checked; renderList(); renderConv(); say(c.muted ? `${fn} muted.` : `${fn} unmuted.`); });
+}
+
+/* ---------- new chat ---------- */
+function openNew(opener) {
+  const box = $("#contacts"); box.replaceChildren();
+  CONTACTS.forEach(k => box.append(h("button", { class: "li", type: "button", onclick: () => {
+    $("#dNew").close(); let c = chatBy(k.id);
+    if (!c) { c = mkChat(k.id, k.id !== "ravi", []); chats.push(c); }
+    $("#q").value = ""; openChat(k.id, null);
+  } }, avatar(k.name, 36), h("span", { class: "grow" }, h("b", { text: k.name }), chatBy(k.id) ? h("small", { text: "Open chat" }) : null))));
+  openDlg($("#dNew"), opener);
+}
+$("#newBtn").onclick = e => openNew(e.currentTarget);
+
+/* ---------- incoming (simulated) ---------- */
+const INCOMING = ["Are you free for a quick call?", "Just landed. Will message when I’m home.", "Can you check the shared folder?", "Ha, that’s the best news today"];
+$("#simIncoming").onclick = () => {
+  if (!chats.length) { say("No chats to receive in. Start a chat first."); return; }
+  const live = chats.filter(c => c.online); if (!live.length) { say("Everyone is offline, so nothing can arrive. Turn a contact online first."); return; }
+  const others = live.filter(c => c.id !== openId); const c = others.length ? others[Math.floor(Math.random() * others.length)] : live[0];
+  const m = { id: ++seq, from: "them", text: INCOMING[Math.floor(Math.random() * INCOMING.length)], time: clock(), st: "in" };
+  c.msgs.push(m);
+  const viewing = openId === c.id;
+  if (!viewing) c.unread++;
+  if (viewing) {
+    const nl = $("#msgs"), atEnd = !nl || nl.scrollHeight - nl.scrollTop - nl.clientHeight < 80;
+    m._new = true; if (!atEnd) c.below++;
+    renderConv(); sr(`New message from ${fname(c)}: ${m.text}`);
+  }
+  else if (c.muted) say(`${fname(c)} is muted: badge only, no sound or preview.`);
+  else {
+    const p = prefs.preview;
+    say("", { notif: true, title: p === "none" ? "New message" : c.name, body: p === "full" ? m.text : p === "name" ? "Sent a message" : "" });
+    if (prefs.sound !== "off") { if (!tone(prefs.sound)) say("Sound isn’t available in this browser."); }
+    if (prefs.vib) { if (navigator.vibrate) navigator.vibrate(120); }
+  }
+  renderList();
+};
+$("#simClear").onclick = () => { endCall(true); chats = []; openId = null; $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Chat list emptied. Previewing the first-run state."); };
+$("#simReset").onclick = () => { endCall(true); seed(); openId = null; failNext = false; syncSwitch("#swFail", false); syncSwitch("#swOnline", true); $("#app").dataset.view = "list"; $("#q").value = ""; renderList(); renderConv(); say("Demo reset."); };
+
+function syncSwitch(sel, on) { $(sel).setAttribute("aria-checked", on); }
+syncSwitch("#swQuiet", TinAudio.quiet()); TinAudio.onQuiet(on => syncSwitch("#swQuiet", on));
+$("#swQuiet").onclick = () => { const q = !TinAudio.quiet(); TinAudio.setQuiet(q); say(q ? "Quiet mode on. Call sounds are off." : "Quiet mode off. Call sounds play."); };
+$("#swFail").onclick = e => { failNext = e.currentTarget.getAttribute("aria-checked") !== "true"; syncSwitch("#swFail", failNext); say(failNext ? "The next message or file will fail to send." : "Sending will work normally."); };
+$("#swOnline").onclick = e => {
+  if (!openId) { say("Open a chat first, then change whether that contact is online."); return; }
+  const c = chatBy(openId); c.online = !c.online; if (!c.online) c.lastSeen = clock(); syncOnline(); renderConv(); renderList();
+  say(c.online ? `${fname(c)} is online. Waiting messages send now.` : `${fname(c)} went offline.`);
+  if (c.online) c.msgs.filter(m => m.from === "me" && m.st === "waiting" && !m.file).forEach((m, i) => { m.st = "sending"; sleep(500 + i * 350, () => { if (c.msgs.includes(m)) { m.st = "delivered"; m.deliveredAt = clock(); refreshMsg(c, m); } }); });
+  if (c.online) c.msgs.filter(m => m.pendingDelete || m.pendingEdit).forEach(m => { delete m.pendingDelete; delete m.pendingEdit; });
+  renderConv();
+};
+function syncOnline() { const c = openId && chatBy(openId); syncSwitch("#swOnline", c ? c.online : true); $("#swOnlineLbl").textContent = c ? fname(c) + " online" : "Contact online"; }
+const _openChat = openChat; openChat = function (id, o) { _openChat(id, o); syncOnline(); };
+const _closeChat = closeChat; closeChat = function () { _closeChat(); syncOnline(); };
+
+/* ---------- settings ---------- */
+$("#settingsBtn").onclick = e => { syncSettings(); openDlg($("#dSettings"), e.currentTarget); };
+function syncSettings() {
+  for (const k of ["preview", "sound", "enter", "theme"]) $$(`input[name=${k}]`).forEach(r => r.checked = r.value === prefs[k]);
+  $("#vib").checked = prefs.vib;
+  $("#vibD").textContent = navigator.vibrate ? "Short buzz for chats that aren’t muted." : "This browser can’t vibrate. Phones can.";
+}
+$("#dSettings").addEventListener("change", e => {
+  const t = e.target;
+  if (t.name) { prefs[t.name] = t.value; store.set(t.name, t.value);
+    if (t.name === "theme") applyTheme();
+    if (t.name === "enter") { if (ta) ta.setAttribute("enterkeyhint", prefs.enter === "send" ? "send" : "enter"); say(prefs.enter === "send" ? "Enter now sends." : "Enter now adds a new line."); }
+    if (t.name === "sound") { if (t.value === "off") say("Message sound is silent."); else if (!tone(t.value)) say("Sound isn’t available in this browser."); }
+    if (t.name === "preview") say("Notification preview: " + { full: "name and message", name: "name only", none: "hidden" }[t.value] + ".");
+  } else if (t.id === "vib") { prefs.vib = t.checked; store.set("vib", t.checked ? "1" : "0"); if (t.checked && navigator.vibrate) navigator.vibrate(120); say(t.checked ? "Vibration on." : "Vibration off."); }
+});
+$$("[data-play]").forEach(b => b.onclick = () => { if (!tone(b.dataset.play)) say("Sound isn’t available in this browser."); });
+
+/* ---------- init ---------- */
+applyTheme(); renderList(); renderConv();
+const requestedChat = new URLSearchParams(location.search).get("chat");
+if (requestedChat && chatBy(requestedChat)) {
+  openChat(requestedChat, null);
+  // Announce the incoming screen without painting an initial pointer-style selection.
+  const title = $("#convTitle");
+  if (title && document.activeElement === title) {
+    title.style.outline = "none";
+    const revealFocus = () => title.style.removeProperty("outline");
+    document.addEventListener("keydown", revealFocus, { once: true });
+    document.addEventListener("pointerdown", revealFocus, { once: true });
+  }
+}
+// A call that is already live (started on another page) shows as the strip; ?call=open raises its overlay.
+if (call) { paintCall(); if (CALLQ.get("call") === "open") openCall(); else syncCallUI(); }
+if (CALLQ.has("call")) { CALLQ.delete("call"); history.replaceState(history.state, "", location.pathname + (CALLQ.toString() ? "?" + CALLQ : "") + location.hash); }
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !document.documentElement.classList.contains("embed") && !document.querySelector("dialog[open]") && $("#app").dataset.view === "conv" && !matchMedia("(min-width:860px)").matches && document.activeElement && document.activeElement.id !== "ta") closeChat(); });
+</script>
+</body>
+</html>

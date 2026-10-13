@@ -8,6 +8,8 @@ use chrono::{Local, TimeZone};
 use iced::widget::{button, column, container, mouse_area, opaque, row, text_input, Space};
 
 use super::*;
+use crate::geom;
+use crate::shaped::shaped;
 use crate::app::groups::{Dialog, Gm, Open};
 use crate::groups_fake::{
     self as gf, first_name, Block, Group, GroupDelivery, GroupItem, Host, Interval, Known, Member, PDelivery, Perm, Person, Role,
@@ -242,11 +244,18 @@ impl App {
             top = top.push(container(banner(t, "Waiting for a host", body, None, false)).padding([12, 20]));
         }
 
-        let mut list = column![].spacing(8).padding([16, 24]);
-        for it in &gr.items {
-            list = list.push(self.group_item(t, gr, it));
+        let mut list = column![].spacing(0).padding([16, 24]);
+        let join = |a: &GroupItem, b: &GroupItem| match (a, b) {
+            (GroupItem::Msg { author_did: x, at: ta, outgoing: oa, .. }, GroupItem::Msg { author_did: y, at: tb, outgoing: ob, .. }) => {
+                oa == ob && (*oa || x == y) && ta.abs_diff(*tb) <= geom::GROUP_GAP_MS && day(*ta) == day(*tb)
+            }
+            _ => false,
+        };
+        for (i, it) in gr.items.iter().enumerate() {
+            let pos = geom::run_pos(&gr.items, i, join);
+            list = list.push(container(self.group_item(t, gr, it, pos)).padding(iced::Padding { top: geom::gap_above(pos), ..Default::default() }));
         }
-        let msgs = scroll(t, list).anchor_bottom().width(Fill).height(Fill);
+        let msgs = container(scroll(t, list).anchor_bottom().width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0));
 
         let bottom: El = if let Some(r) = &gr.removed {
             let _ = r;
@@ -274,7 +283,7 @@ impl App {
         row![conv, self.members_pane(t, gr)].into()
     }
 
-    fn group_item<'a>(&'a self, t: Tok, gr: &'a Group, it: &'a GroupItem) -> El<'a> {
+    fn group_item<'a>(&'a self, t: Tok, gr: &'a Group, it: &'a GroupItem, pos: geom::Pos) -> El<'a> {
         match it {
             GroupItem::Note { text, .. } if gr.removed.is_some() && text.starts_with("You were removed") => self.removal_card(t, gr),
             GroupItem::Note { text, .. } => sys(t, text),
@@ -291,10 +300,12 @@ impl App {
                             meta = meta.push(tx(format!("Written offline before removal \u{b7} sending until {}", day(*until)), 11.0, dim));
                         }
                     }
-                    let b = container(column![message_body(text, t.on_primary_c), meta].spacing(4).align_x(Alignment::End))
-                        .padding([8, 12])
-                        .max_width(440)
-                        .style(ui::plain(t.primary_c, 16.0));
+                    let radii = geom::bubble_radii(pos, geom::Side::Right, geom::R_BUB, geom::R_BUB_TIGHT);
+                    let b = shaped(
+                        container(column![message_body(text, t.on_primary_c), meta].spacing(4).align_x(Alignment::End)).padding([8, 12]).max_width(440),
+                        radii,
+                        t.primary_c,
+                    );
                     return row![Space::new().width(Fill), b].into();
                 }
                 let name = self.preview_name(author_did, author);
@@ -314,13 +325,18 @@ impl App {
                 let removed_author = *before_removal;
                 let (_, color) = ui::avatar_colors(t, author_did);
                 let who = if removed_author { format!("{} \u{b7} removed", first_name(&name)) } else { first_name(&name).to_string() };
-                let mut c = column![bold(who, 12.0, if removed_author { t.ink2 } else { color }), message_body(text, t.ink)].spacing(2);
+                let mut c = column![].spacing(2);
+                if !matches!(pos, geom::Pos::Mid | geom::Pos::Last) {
+                    c = c.push(bold(who, 12.0, if removed_author { t.ink2 } else { color }));
+                }
+                c = c.push(message_body(text, t.ink));
                 let mut meta = row![tx(hhmm(*at), 11.0, t.ink2)].spacing(4);
                 if removed_author {
                     meta = meta.push(tx(format!("\u{b7} written before {} was removed", first_name(&name)), 11.0, t.ink2));
                 }
                 c = c.push(meta);
-                let b = container(c).padding([8, 12]).max_width(440).style(ui::outlined(t.surface, t.line, 16.0));
+                let radii = geom::bubble_radii(pos, geom::Side::Left, geom::R_BUB, geom::R_BUB_TIGHT);
+                let b = shaped(container(c).padding([8, 12]).max_width(440), radii, t.bub_in).stroke(t.bub_in_line, 1.0);
                 row![b, Space::new().width(Fill)].into()
             }
         }
@@ -516,13 +532,16 @@ impl App {
         .align_y(Alignment::Center);
         let top = self.top_extras(t, column![container(head).padding([10, 20]).width(Fill), rule(t)]);
 
-        let mut list = column![].spacing(8).padding([16, 24]);
-        for m in &p.msgs {
+        let mut run = column![].spacing(0);
+        let join = |a: &gf::PMsg, b: &gf::PMsg| !a.note && !b.note && a.outgoing == b.outgoing && a.at.abs_diff(b.at) <= geom::GROUP_GAP_MS && day(a.at) == day(b.at);
+        for (i, m) in p.msgs.iter().enumerate() {
+            let pos = geom::run_pos(&p.msgs, i, join);
+            let top = iced::Padding { top: geom::gap_above(pos), ..Default::default() };
             if m.note {
-                list = list.push(sys(t, &m.text));
+                run = run.push(container(sys(t, &m.text)).padding(top));
                 continue;
             }
-            let (bg, fg) = if m.outgoing { (t.primary_c, t.on_primary_c) } else { (t.surface, t.ink) };
+            let (bg, fg) = if m.outgoing { (t.primary_c, t.on_primary_c) } else { (t.bub_in, t.ink) };
             let dim = ui::alpha(fg, 0.7);
             let mut meta = row![tx(hhmm(m.at), 11.0, dim)].spacing(4).align_y(Alignment::Center);
             let mut failed = None;
@@ -536,10 +555,14 @@ impl App {
             if let Some(why) = failed {
                 meta = meta.push(tx(format!("Not delivered: {why}"), 11.0, t.error));
             }
-            let style = ui::outlined(bg, if m.outgoing { bg } else { t.line }, 16.0);
-            let b = container(column![message_body(&m.text, fg), meta].spacing(4)).padding([8, 12]).max_width(440).style(style);
-            list = list.push(if m.outgoing { row![Space::new().width(Fill), b] } else { row![b, Space::new().width(Fill)] });
+            let radii = geom::bubble_radii(pos, if m.outgoing { geom::Side::Right } else { geom::Side::Left }, geom::R_BUB, geom::R_BUB_TIGHT);
+            let mut b = shaped(container(column![message_body(&m.text, fg), meta].spacing(4)).padding([8, 12]).max_width(440), radii, bg);
+            if !m.outgoing {
+                b = b.stroke(t.bub_in_line, 1.0);
+            }
+            run = run.push(container(if m.outgoing { row![Space::new().width(Fill), b] } else { row![b, Space::new().width(Fill)] }).padding(top));
         }
+        let mut list = column![run].spacing(8).padding([16, 24]);
         match p.block {
             Block::ByMe { at, attempts, .. } => {
                 list = list.push(sys(t, &format!("You blocked {first} \u{b7} {}", when(at))));
@@ -599,7 +622,7 @@ impl App {
                 }
             }
         }
-        let msgs = scroll(t, list).anchor_bottom().width(Fill).height(Fill);
+        let msgs = container(scroll(t, list).anchor_bottom().width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0));
         let bottom: El = match p.block {
             Block::ByMe { .. } => footer(
                 t,
@@ -1093,7 +1116,7 @@ impl App {
                 c.push(acts).into()
             }
         };
-        let card = container(body).padding(28).width(520).style(ui::plain(t.surface, 20.0));
+        let card = ui::raised(container(body).padding(28).width(520), t, ui::Depth::Sheet, ui::sheet_surface(t, 24.0));
         let layer = container(opaque(card))
             .center_x(Fill)
             .center_y(Fill)

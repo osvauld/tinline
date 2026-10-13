@@ -56,7 +56,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="width:36px;height:4px;border-radius:2px;background:var(--ln2);align-self:center"></div>
 <div style="display:flex;align-items:center;gap:12px;margin-top:6px"><div class="av" style="width:48px;height:48px;font-size:17px;background:var(--sf2);color:var(--ink2)">LB</div><div><div style="font-size:20px;font-weight:700">Ask Leo for a private chat</div><div class="hint">Member of Weekend hike</div></div></div>
 <div style="display:flex;flex-direction:column;gap:6px"><label for="note" style="font-size:13px;font-weight:600;color:var(--ink2)">Add a note (optional)</label><input id="note" value="Hi Leo, it’s Priya. Can I ask about the lift?" style="height:56px;border-radius:8px;border:2px solid var(--pr);background:var(--bg);color:var(--ink);font:400 16px 'Figtree',sans-serif;padding:0 16px;box-sizing:border-box;width:100%"></div>
-<div style="font-size:14px;line-height:20px;color:var(--ink2)">Leo sees your name, the group and your note. The request goes through the group’s host sealed, so the host can’t read it.</div>
+<div style="font-size:14px;line-height:20px;color:var(--ink2)">Leo sees your name, the group and your note. The request goes through the group’s host sealed, so the host can’t read it, but the host can see that a request was made, who asked whom, and when.</div>
 <div style="font-size:14px;line-height:20px;color:var(--ink2)">If Leo accepts, you can message each other directly. Calls stay off until one of you allows them.</div>
 <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn tx" style="width:auto">Cancel</button><button class="btn" style="width:auto;padding:0 28px">Send request</button></div>
 </div>
@@ -76,7 +76,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="row"><div class="av" style="width:48px;height:48px;font-size:17px">AO</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between"><span class="nm">Arjun Oommen</span><span class="tm">11:02</span></div><div class="sub">See you at 6</div></div></div>
 <div style="margin:16px 20px 0" class="hint">You can send one request per person per day. A request expires after 7 days.</div>
 </div>
-<p class="desc">Sent requests sit at the top of Chats until answered, cancelled or expired. Three end states, each worded once: “Waiting for Leo”, “Leo declined”, “No answer after 7 days”. Rate limit and expiry are stated, not discovered by failing.</p>
+<p class="desc">Sent requests sit at the top of Chats until answered, cancelled or expired. Three end states, each worded once: “Waiting for Leo”, “Leo declined”, “No answer after 7 days”. Rate limit and expiry are stated, not discovered by failing. <b>Note:</b> “one per person per day” and “7 days” are proposals, not decided values. Cancelling a waiting request does not notify the recipient. <a href="../refined/groups.html">Interactive prototype</a>.</p>
 </div>
 
 <div class="col">
@@ -94,7 +94,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="sec">CHATS</div>
 <div class="row"><div class="av" style="width:48px;height:48px;font-size:17px">AO</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between"><span class="nm">Arjun Oommen</span><span class="tm">11:02</span></div><div class="sub">See you at 6</div></div></div>
 </div>
-<p class="desc">Requests are a separate block above chats, never mixed into conversations, and never ring. The card shows the shared group so the person is recognisable. Decline tells Priya “declined”. Block is the third choice: Priya is told she is blocked and can’t send more requests.</p>
+<p class="desc">Requests are a separate block above chats, never mixed into conversations, and never ring. The card shows the shared group so the person is recognisable. Decline tells Priya “declined”. Block is the third choice: Priya is told she is blocked and can’t send more requests. <b>Refined:</b> Block asks for confirmation first. Blocking from a request never changes group membership. Decline and Accept return focus to the list.</p>
 </div>
 
 <div class="col">

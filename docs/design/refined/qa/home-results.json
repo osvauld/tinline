@@ -1,0 +1,1192 @@
+[
+  {
+    "name": "320-light entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light no selected-row tint on mobile",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light FAB 56px bottom-right 16px above tab bar",
+    "ok": true,
+    "detail": "[{\"x\":248,\"y\":604,\"width\":56,\"height\":56},{\"x\":0,\"y\":676,\"width\":320,\"height\":64}]"
+  },
+  {
+    "name": "320-light tab badge clears icon glyph",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light active tab accent icon + label",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light bottom navigation visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light home opens conversation directly",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light conversation Back returns home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light account sheet links phone preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320-light no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light no selected-row tint on mobile",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light FAB 56px bottom-right 16px above tab bar",
+    "ok": true,
+    "detail": "[{\"x\":318,\"y\":708,\"width\":56,\"height\":56},{\"x\":0,\"y\":780,\"width\":390,\"height\":64}]"
+  },
+  {
+    "name": "390-light tab badge clears icon glyph",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light active tab accent icon + label",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light bottom navigation visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light home opens conversation directly",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light conversation Back returns home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light account sheet links phone preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-light no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark no selected-row tint on mobile",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark FAB 56px bottom-right 16px above tab bar",
+    "ok": true,
+    "detail": "[{\"x\":318,\"y\":708,\"width\":56,\"height\":56},{\"x\":0,\"y\":780,\"width\":390,\"height\":64}]"
+  },
+  {
+    "name": "390-dark tab badge clears icon glyph",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark active tab accent icon + label",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark bottom navigation visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark home opens conversation directly",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark conversation Back returns home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark account sheet links phone preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390-dark no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light empty detail when nothing selected",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light selecting chat embeds chat.html with embed=1",
+    "ok": true,
+    "detail": "chat.html?chat=arjun&embed=1&callbar=host"
+  },
+  {
+    "name": "1440-light iframe titled",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light row selected tint on desktop",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light stays on home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light iframe seam: border-left only, no radius",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light opening a chat marks it read",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light selecting group embeds groups.html with embed=1",
+    "ok": true,
+    "detail": "groups.html?group=hike&embed=1&callbar=host"
+  },
+  {
+    "name": "1440-light groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light account sheet links phone preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-light no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark entry opens home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark opening releases controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark conversation rows populated",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark no designer notes in app frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark filter chips are t-chip with aria-pressed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark unread badges use t-badge",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark muted chat shows bell-slash before time",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark avatars use shared hue hash",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark links never default blue",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark empty detail when nothing selected",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark selecting chat embeds chat.html with embed=1",
+    "ok": true,
+    "detail": "chat.html?chat=arjun&embed=1&callbar=host"
+  },
+  {
+    "name": "1440-dark iframe titled",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark row selected tint on desktop",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark stays on home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark iframe seam: border-left only, no radius",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark opening a chat marks it read",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark selecting group embeds groups.html with embed=1",
+    "ok": true,
+    "detail": "groups.html?group=hike&embed=1&callbar=host"
+  },
+  {
+    "name": "1440-dark groups navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark groups focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark calls navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark calls focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark contacts navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark contacts focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark chats navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark chats focus retained",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark search no match",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark clear returns focus to search",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark unread filter",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark settings within viewport",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark account sheet links phone preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark settings Escape returns focus",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440-dark no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "pause shows nonblocking banner",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "resume hides pause banner",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "expired ticket inline recovery",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "ticket requires consent",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "confirm opens contacts, no real network",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "offline state has distinct copy",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "reconnect clears banner",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "slow loading marks busy",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "skeleton layout preserves row geometry",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "loading resolves to content",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "load failure gives retry",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "load retry succeeds",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "switch cancels stale loading result",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "opening replay visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "skip releases input immediately",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "opening hidden after skip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "opening does not repeat during same session",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "empty account has add path",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "manual reduced motion skips opening",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "reduced motion keeps press still",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "system reduced motion skips first opening",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "system reduced motion removes entry animations",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "button gives a visible pressed transform",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "raised control has layered shadow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 no strip without a call",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 conversation strip ticking before Back",
+    "ok": true,
+    "detail": 1
+  },
+  {
+    "name": "callbar 390 Back keeps the call: strip on Home",
+    "ok": true,
+    "detail": "{\"vis\":true,\"t\":\"Arjun Oommen · 00:01\",\"name\":\"Return to call with Arjun Oommen\",\"r\":{\"x\":0,\"y\":0,\"width\":390,\"height\":40,\"top\":0,\"right\":390,\"bottom\":40,\"left\":0},\"live\":null}"
+  },
+  {
+    "name": "callbar 390 timer continues, never resets",
+    "ok": true,
+    "detail": "Arjun Oommen · 00:01 vs 1"
+  },
+  {
+    "name": "callbar 390 strip full width 40px at the very top",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":0,\"width\":390,\"height\":40,\"top\":0,\"right\":390,\"bottom\":40,\"left\":0}"
+  },
+  {
+    "name": "callbar 390 accessible name, not a live region",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 header sits below the strip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip pushes the app down without overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 FAB still 16px above tab bar",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 Home strip ticks",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip on Groups tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip on Calls tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip on Contacts tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip on Chats tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 strip first in tab order, focus visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 tap strip → conversation with overlay open",
+    "ok": true,
+    "detail": "{\"ov\":true,\"f\":\"callOv\",\"strip\":false,\"t\":\"00:03\",\"url\":\"?chat=arjun&from=home\"}"
+  },
+  {
+    "name": "callbar 390 overlay timer continues",
+    "ok": true,
+    "detail": "00:03 vs 3"
+  },
+  {
+    "name": "callbar 390 End toast",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 after End Home has no strip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 history Back keeps the call",
+    "ok": true,
+    "detail": "Meera Nair · Ringing…"
+  },
+  {
+    "name": "callbar 390 one strip only",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 no AudioContext created",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 390 no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar light no layout shift Ringing… → MM:SS",
+    "ok": true,
+    "detail": "Arjun Oommen · Ringing… Arjun Oommen · 00:00 99,16,8,8|115,11,97,18|232,11,59,18 / 99,16,8,8|115,11,97,18|232,11,59,18"
+  },
+  {
+    "name": "callbar light strip identical on Home, chat, groups, embed",
+    "ok": true,
+    "detail": "{\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(11, 107, 91)|rgb(255, 255, 255)\",\"dot\":\"8px|8px|50%|rgb(255, 255, 255)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(11, 107, 91)|rgb(255, 255, 255)\",\"dot\":\"8px|8px|50%|rgb(255, 255, 255)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(11, 107, 91)|rgb(255, 255, 255)\",\"dot\":\"8px|8px|50%|rgb(255, 255, 255)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(11, 107, 91)|rgb(255, 255, 255)\",\"dot\":\"8px|8px|50%|rgb(255, 255, 255)\",\"pos\":[98.9,114.9,231.7]}"
+  },
+  {
+    "name": "callbar dark no layout shift Ringing… → MM:SS",
+    "ok": true,
+    "detail": "Arjun Oommen · Ringing… Arjun Oommen · 00:00 99,16,8,8|115,11,97,18|232,11,59,18 / 99,16,8,8|115,11,97,18|232,11,59,18"
+  },
+  {
+    "name": "callbar dark strip identical on Home, chat, groups, embed",
+    "ok": true,
+    "detail": "{\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(17, 126, 107)|rgb(242, 255, 251)\",\"dot\":\"8px|8px|50%|rgb(242, 255, 251)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(17, 126, 107)|rgb(242, 255, 251)\",\"dot\":\"8px|8px|50%|rgb(242, 255, 251)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(17, 126, 107)|rgb(242, 255, 251)\",\"dot\":\"8px|8px|50%|rgb(242, 255, 251)\",\"pos\":[98.9,114.9,231.7]} ~ {\"h\":40,\"font\":\"system-ui, -apple-system, \\\"Segoe UI\\\", Roboto, \\\"Noto Sans\\\", sans-serif|13px|600|18px|tabular-nums\",\"box\":\"16px|16px|8px|0px|0px\",\"paint\":\"rgb(17, 126, 107)|rgb(242, 255, 251)\",\"dot\":\"8px|8px|50%|rgb(242, 255, 251)\",\"pos\":[98.9,114.9,231.7]}"
+  },
+  {
+    "name": "callbar 1440 light embedded page is told Home hosts the strip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light call starts in the pane, Home strip on top",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light switching chats keeps the call",
+    "ok": true,
+    "detail": "{\"strip\":{\"x\":0,\"y\":0,\"width\":1440,\"height\":40,\"top\":0,\"right\":1440,\"bottom\":40,\"left\":0},\"rail\":40,\"list\":40,\"detail\":[40,960],\"t\":\"Arjun Oommen · 00:01\",\"src\":\"chat.html?chat=meera&embed=1&callbar=host\"}"
+  },
+  {
+    "name": "callbar 1440 light exactly one strip (pane suppresses its own)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light strip spans the app; three columns start below it",
+    "ok": true,
+    "detail": "{\"strip\":{\"x\":0,\"y\":0,\"width\":1440,\"height\":40,\"top\":0,\"right\":1440,\"bottom\":40,\"left\":0},\"rail\":40,\"list\":40,\"detail\":[40,960],\"t\":\"Arjun Oommen · 00:01\",\"src\":\"chat.html?chat=meera&embed=1&callbar=host\"}"
+  },
+  {
+    "name": "callbar 1440 light strip returns to Arjun with the overlay up",
+    "ok": true,
+    "detail": "{\"src\":\"chat.html?chat=arjun&embed=1&callbar=host&call=open\",\"sel\":true,\"f\":\"convo\",\"inner\":\"callOv\"}"
+  },
+  {
+    "name": "callbar 1440 light strip on the same chat reopens without reload",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light End in the pane clears Home strip at once",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 light no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark embedded page is told Home hosts the strip",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark call starts in the pane, Home strip on top",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark switching chats keeps the call",
+    "ok": true,
+    "detail": "{\"strip\":{\"x\":0,\"y\":0,\"width\":1440,\"height\":40,\"top\":0,\"right\":1440,\"bottom\":40,\"left\":0},\"rail\":40,\"list\":40,\"detail\":[40,960],\"t\":\"Arjun Oommen · 00:01\",\"src\":\"chat.html?chat=meera&embed=1&callbar=host\"}"
+  },
+  {
+    "name": "callbar 1440 dark exactly one strip (pane suppresses its own)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark strip spans the app; three columns start below it",
+    "ok": true,
+    "detail": "{\"strip\":{\"x\":0,\"y\":0,\"width\":1440,\"height\":40,\"top\":0,\"right\":1440,\"bottom\":40,\"left\":0},\"rail\":40,\"list\":40,\"detail\":[40,960],\"t\":\"Arjun Oommen · 00:01\",\"src\":\"chat.html?chat=meera&embed=1&callbar=host\"}"
+  },
+  {
+    "name": "callbar 1440 dark strip returns to Arjun with the overlay up",
+    "ok": true,
+    "detail": "{\"src\":\"chat.html?chat=arjun&embed=1&callbar=host&call=open\",\"sel\":true,\"f\":\"convo\",\"inner\":\"callOv\"}"
+  },
+  {
+    "name": "callbar 1440 dark strip on the same chat reopens without reload",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark End in the pane clears Home strip at once",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar 1440 dark no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group call visible on Home",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group strip → group overlay with the roster",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group End clears",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "callbar group no errors",
+    "ok": true,
+    "detail": ""
+  }
+]

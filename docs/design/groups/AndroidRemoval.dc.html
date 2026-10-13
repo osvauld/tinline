@@ -61,10 +61,11 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 <div style="padding:12px 16px 28px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--ln);flex:none">
 <div class="hint" style="text-align:center">You can’t send messages to this group.</div>
-<div style="display:flex;gap:8px"><button class="btn ol" style="height:44px">Delete group</button><button class="btn tx" style="height:44px">Keep as archive</button></div>
+<div style="display:flex;gap:8px"><button class="btn tx" style="height:44px">Why you were removed</button></div>
+<div class="hint" style="text-align:center">The chat stays here, read-only. It is never deleted for you.</div>
 </div>
 </div>
-<p class="desc">The removed person is told, plainly, in the chat: when, why (3 admin flags) and by whom. The composer is replaced. A message they wrote offline before the removal is still delivered until the hosts refresh their addresses 2 days later; it is labelled so they know.</p>
+<p class="desc">The removed person is told, plainly, in the chat: when, why (3 admin flags) and by whom. The composer is replaced. A message they wrote offline before the removal is still delivered until the hosts refresh their addresses 2 days later; it is labelled so they know (decisions U11/U12: honest earlier posts survive; the 2-day host rotation is the only cut-off). <a href="../refined/groups.html">Interactive prototype</a> includes this view.</p>
 </div>
 
 <div class="col">
@@ -79,13 +80,13 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 <div style="display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:20px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="color:var(--pr);width:20px;height:20px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg><span>Each flag is signed by the admin who made it and was checked by your phone. Nobody else could have added them.</span></div>
 <div style="font-size:15px;font-weight:700;margin-top:6px">What happens now</div>
-<div style="font-size:14px;line-height:21px;color:var(--ink2)">You keep the messages already on your phone. The group’s hosts stop accepting your new messages and calls now, and refresh their addresses on Oct 12, after which your phone can’t reach them at all.</div>
+<div style="font-size:14px;line-height:21px;color:var(--ink2)">You keep the messages already on your phone. The group’s hosts refuse anything new from you now, and refresh their addresses on Oct 12, after which your phone can’t reach them at all. Other members change nothing; only the hosts move.</div>
 <div style="font-size:14px;line-height:21px;color:var(--ink2)">To rejoin, an admin has to invite you again.</div>
 <div style="flex:1"></div>
-<button class="btn ol">Message Sam privately</button>
+<div class="hint">You can’t ask members for a private chat from here: requests go through a group host, and the hosts no longer accept you. Private chats you already have stay open.</div>
 </div>
 </div>
-<p class="desc">Lists each flag with the admin, their role and the time, and says the flags were signature-checked on this phone. Explains what continues and what stops, with real dates. Offers a private message only to people who are already contacts.</p>
+<p class="desc">Lists each flag with the admin, their role and the time, and says the flags were signature-checked on this phone. Explains what continues and what stops, with real dates. Offers no new private request (it would go through a host that now refuses you); existing private chats stay open. Flags from the same admin count separately, so three flags can come from one admin. Group calls are planned and not drawn here.</p>
 </div>
 
 <div class="col">
@@ -117,7 +118,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 <div class="comp"><div class="field">Message the group</div><button class="ib" aria-label="Send" style="background:var(--pr);color:var(--onpr)"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></div>
 </div>
-<p class="desc">When no host can be reached, the header says “Waiting for a host” and outgoing messages show that state instead of a tick. When a host is removed, members get one line saying the group is moving and that they don’t need to do anything; the hosts reconnect them.</p>
+<p class="desc">When no host can be reached, the header says “Waiting for a host” and outgoing messages show that state instead of a tick. When a host is removed, members get one line saying the group is moving and that they don’t need to do anything; the hosts reconnect them. <b>Refined:</b> the banner offers “Try again”, which says what it is doing (“Trying…”) and reports the result, including “Still no host reachable” with the time of the last attempt; messages written meanwhile can be discarded (with undo) until a host returns.</p>
 </div>
 
 </div>

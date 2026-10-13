@@ -1,0 +1,572 @@
+[
+ {
+  "page": "groups",
+  "name": "group call: 44px phone button left of Members",
+  "ok": true,
+  "detail": "{\"tag\":\"BUTTON\",\"w\":44,\"h\":44,\"left\":true,\"dis\":null}"
+ },
+ {
+  "page": "groups",
+  "name": "call: in-page overlay fills the app frame, no navigation, focus on overlay",
+  "ok": true,
+  "detail": "{\"fill\":true,\"f\":true,\"st\":\"Connecting…\",\"av\":44,\"h2\":\"17px\",\"one\":true,\"mute\":56,\"end\":64,\"min\":\"Back to chat — call continues\"}"
+ },
+ {
+  "page": "groups",
+  "name": "call: connects (group calls do not ring) and the MM:SS timer ticks",
+  "ok": true,
+  "detail": "10 in the call 00:01"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: k=3 speaking tiles (72px .t-avatar, shared hue hash), first names, never one big avatar",
+  "ok": true,
+  "detail": "[[\"arjun\",72,\"av5\"],[\"sam\",72,\"av5\"],[\"priya\",72,\"av3\"]]"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: the host (Arjun) carries one \"Hosting\" .t-badge.muted tag",
+  "ok": true,
+  "detail": "[\"Hosting\",\"\",\"\"]"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: exactly one speaking tile with a 2px solid ring, no animation on any tile",
+  "ok": true,
+  "detail": "[[\"arjun\",true,\"solid 2px\",\"none\"],[\"sam\",false,\"none 3px\",\"none\"],[\"priya\",false,\"none 3px\",\"none\"]]"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: speaking ring does not redraw between level changes (0 DOM mutations in 1.5s while the timer ticks)",
+  "ok": true,
+  "detail": "mutations=0"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: muted speaker (Priya) shows a mic-off badge named \"Muted\"",
+  "ok": true,
+  "detail": "[\"\",\"\",\"Muted\"]"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: quiet row = 6 x 40px avatars (you first, muted Kavya named) then \"+1\" (44px button, real name)",
+  "ok": true,
+  "detail": "[\"You\",\"Meera K\",\"Dev T\",\"Kavya S, muted\",\"Nisha R\",\"Omar F\",\"Show everyone in the call, 1 more\"] 10 in the call"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: \"+1\" opens the whole roster in a sheet (10 rows, tags spelled out)",
+  "ok": true,
+  "detail": "{\"open\":true,\"h\":\"10 in the call\",\"rows\":[\"Arjun OommenHosting · Speaking\",\"Sam Rao\",\"Priya NMuted\",\"You\",\"Meera K\",\"Dev T\",\"Kavya SMuted\",\"Nisha R\",\"Omar F\",\"Tara M\"],\"focus\":true}"
+ },
+ {
+  "page": "groups",
+  "name": "desktop roster: Escape closes the sheet only (call overlay stays), focus back on \"+1\"",
+  "ok": true,
+  "detail": "{\"open\":false,\"ov\":true,\"f\":\"t-gc-more\"}"
+ },
+ {
+  "page": "groups",
+  "name": "call: Mute toggles (aria-pressed)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call: Escape minimizes (never ends) to a 40px accent strip with name and timer; focus on strip",
+  "ok": true,
+  "detail": "{\"h\":40,\"t\":\"Weekend hike · 00:04\",\"f\":true,\"ov\":false}"
+ },
+ {
+  "page": "groups",
+  "name": "call minimized: chatting works; header phone button now returns to the call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call minimized: strip stays when switching chats; other group phone button also returns (no second call)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call: strip returns to the overlay",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call: End closes overlay + strip, toast \"Call ended\", focus back on phone button",
+  "ok": true,
+  "detail": "callBtn"
+ },
+ {
+  "page": "groups",
+  "name": "group call: no call button in the removed (read-only) group",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "harness: Phone preview link visible at 1440, points at the open group",
+  "ok": true,
+  "detail": "mobile.html?screen=groups&group=hike mobile.html?screen=groups&group=family"
+ },
+ {
+  "page": "groups",
+  "name": "new group dialog opens, focus inside",
+  "ok": true,
+  "detail": "focus=gn"
+ },
+ {
+  "page": "groups",
+  "name": "Escape closes new-group dialog and restores focus to New group button",
+  "ok": true,
+  "detail": "focus=newBtn"
+ },
+ {
+  "page": "groups",
+  "name": "Create with empty name is blocked with an explanation",
+  "ok": true,
+  "detail": "New groupGroup nameGive the group a name.Add peopleAOArjun OommenMKMeera KSRSam RaoPNPriya NDTDev T0 selectedWho hosts it?My desktopAsk a member laterYour desktop keeps the group running. The group’s "
+ },
+ {
+  "page": "groups",
+  "name": "selected count updates",
+  "ok": true,
+  "detail": "2 selected"
+ },
+ {
+  "page": "groups",
+  "name": "group created: appears in list, dialog closed",
+  "ok": true,
+  "detail": "GroupsInvitations2 waitingChat requests1 waitingGroupsClimbing crewNo messages yetWeekend hikeYou: typing during the cal"
+ },
+ {
+  "page": "groups",
+  "name": "focus after create not lost to BODY",
+  "ok": true,
+  "detail": "Climbing crew"
+ },
+ {
+  "page": "groups",
+  "name": "new group conversation shows invite-pending/hosts honest state",
+  "ok": true,
+  "detail": "Climbing crew1 memberYou created the group. Invited Arjun, Sam"
+ },
+ {
+  "page": "groups",
+  "name": "invitation dialog discloses hosts can read content",
+  "ok": true,
+  "detail": "Join “Trail runners”?Invited by Sam · 6 members · owner Meera K. Expires in 6 days.The group’s hosts can read everything"
+ },
+ {
+  "page": "groups",
+  "name": "invitation Escape restores focus to Review button",
+  "ok": true,
+  "detail": "Review invitation to Trail runners"
+ },
+ {
+  "page": "groups",
+  "name": "Join: group appears in Groups, invitation count decreases",
+  "ok": true,
+  "detail": "GroupsInvitations1 waitingPhoto walkExpired · ask Dev againDismissChat requests1 waitingPNPriya NHi, it’s Priya. Can I ask about the lift?ReviewGroupsTrail runnersSam: Welcome. Long run Sunday 6:30.09"
+ },
+ {
+  "page": "groups",
+  "name": "focus after Join not lost to BODY",
+  "ok": true,
+  "detail": "Trail runners"
+ },
+ {
+  "page": "groups",
+  "name": "Accept chat request: Priya shows under Private chats",
+  "ok": true,
+  "detail": "Private chatsAOArjun OommenSee you at 611:02PNPriya NHi, it’s Priya. Can I ask about the lift?23:53Sent requests2 totalD"
+ },
+ {
+  "page": "groups",
+  "name": "focus after Accept not lost to BODY",
+  "ok": true,
+  "detail": "Priya N"
+ },
+ {
+  "page": "groups",
+  "name": "group message sent: appears in transcript, composer cleared",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "sent message reaches a delivered/relayed state (hosts online)",
+  "ok": true,
+  "detail": "see you at the gate23:53Delivered"
+ },
+ {
+  "page": "groups",
+  "name": "group call: disabled (aria-disabled, muted) while hosts are degraded; no extra banner; click does nothing",
+  "ok": true,
+  "detail": "{\"dis\":\"true\",\"op\":\"0.38\",\"strips\":1}"
+ },
+ {
+  "page": "groups",
+  "name": "hosts offline: thin strip under header, title stays \"12 members\"",
+  "ok": true,
+  "detail": "Host offline — messages waitTry again"
+ },
+ {
+  "page": "groups",
+  "name": "hosts offline: message shows waiting/not delivered state explaining why",
+  "ok": true,
+  "detail": "nobody is hosting23:53Waiting for a host"
+ },
+ {
+  "page": "groups",
+  "name": "members dialog Escape restores focus to Members button",
+  "ok": true,
+  "detail": "memBtn"
+ },
+ {
+  "page": "groups",
+  "name": "Leave group asks for confirmation with consequences",
+  "ok": true,
+  "detail": "Leave “Weekend hike”?You stop receiving messages and the group sees that you left. The chat stays on this phone, read-only.To come back, an admin has to invite you again.CancelLeave group"
+ },
+ {
+  "page": "groups",
+  "name": "Escape on leave confirm does not leave the group",
+  "ok": true,
+  "detail": "focus=leaveBtn"
+ },
+ {
+  "page": "groups",
+  "name": "after Escape from leave confirm, focus is not BODY",
+  "ok": true,
+  "detail": "leaveBtn"
+ },
+ {
+  "page": "groups",
+  "name": "confirmed leave: group shows left/removed state and composer disabled or hidden",
+  "ok": true,
+  "detail": "GroupsInvitations1 waitingPhoto walkExpired · ask Dev againDismissGroupsTrail runnersSam: Welcome. Long run Sunday 6:30.09:10Climbing crewNo messages yetWeekend taDisabled=true"
+ },
+ {
+  "page": "groups",
+  "name": "focus after leave not lost to BODY",
+  "ok": true,
+  "detail": "Weekend hike"
+ },
+ {
+  "page": "groups",
+  "name": "no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "no failed/404 requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "empty account: empty state with a New group action",
+  "ok": true,
+  "detail": "GroupsNo groups yetStart one with people you already know.New group"
+ },
+ {
+  "page": "groups",
+  "name": "mobile: call overlay + strip across conversation and list views at 390",
+  "ok": true,
+  "detail": "44,true,true"
+ },
+ {
+  "page": "groups",
+  "name": "mobile: Phone preview link hidden under 860px",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "mobile list: no overflow",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "groups",
+  "name": "mobile conversation: composer within first viewport",
+  "ok": true,
+  "detail": "ta.bottom=834"
+ },
+ {
+  "page": "groups",
+  "name": "mobile Back returns to list with focus on opened row",
+  "ok": true,
+  "detail": "focus=Weekend hikeKavya: Fir"
+ },
+ {
+  "page": "groups",
+  "name": "mobile new-group dialog fits viewport",
+  "ok": true,
+  "detail": "[0,390,101,844]"
+ },
+ {
+  "page": "groups",
+  "name": "mobile: touch targets ≥44px for visible buttons/inputs in dialog",
+  "ok": true,
+  "detail": "[]"
+ },
+ {
+  "page": "groups",
+  "name": "embed=1: call overlay fills the iframe viewport, stays in page",
+  "ok": true,
+  "detail": "[0,0,true,true]"
+ },
+ {
+  "page": "groups",
+  "name": "embed=1: minimized strip sits above the conversation header",
+  "ok": true,
+  "detail": "40,40"
+ },
+ {
+  "page": "groups",
+  "name": "embed=1: Phone preview link not shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "cross-page: roster lives in the shared call state (sessionStorage), k=3, Arjun hosts",
+  "ok": true,
+  "detail": "[\"arjun\",\"sam\",\"priya\",\"me\",\"meera\",\"leo\",\"dev\",\"kavya\",\"nisha\",\"omar\",\"tara\"]"
+ },
+ {
+  "page": "groups",
+  "name": "cross-page: group call strip in chat.html; chat phone button returns to it",
+  "ok": true,
+  "detail": "Weekend hike · 00:00"
+ },
+ {
+  "page": "groups",
+  "name": "cross-page: chat.html shows the same group roster, not one avatar (identical tiles, quiet row, +n)",
+  "ok": true,
+  "detail": "Call with Weekend hike same"
+ },
+ {
+  "page": "groups",
+  "name": "cross-page: ended in chat → gone in groups",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "cross-page: no AudioContext, no errors",
+  "ok": true,
+  "detail": "{\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440-light: host, speaking, muted and \"+1\" overflow all on screen",
+  "ok": true,
+  "detail": "inView=true"
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440: speaking tiles share one row",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440-light: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440-dark: host, speaking, muted and \"+1\" overflow all on screen",
+  "ok": true,
+  "detail": "inView=true"
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440: speaking tiles share one row",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 1440-dark: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 390-light: host, speaking, muted and \"+1\" overflow all on screen",
+  "ok": true,
+  "detail": "inView=true"
+ },
+ {
+  "page": "groups",
+  "name": "roster 390: speaking tiles wrap to two rows, quiet row starts below both",
+  "ok": true,
+  "detail": "rows=255,395 quietTop=523"
+ },
+ {
+  "page": "groups",
+  "name": "roster 390-light: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "roster 390-dark: host, speaking, muted and \"+1\" overflow all on screen",
+  "ok": true,
+  "detail": "inView=true"
+ },
+ {
+  "page": "groups",
+  "name": "roster 390: speaking tiles wrap to two rows, quiet row starts below both",
+  "ok": true,
+  "detail": "rows=255,395 quietTop=523"
+ },
+ {
+  "page": "groups",
+  "name": "roster 390-dark: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "quiet mode: \"Quiet mode\" switch in the Simulation drawer (role=switch), on by default",
+  "ok": true,
+  "detail": "{\"role\":\"switch\",\"on\":\"true\",\"t\":\"Quiet mode\",\"h\":44}"
+ },
+ {
+  "page": "groups",
+  "name": "quiet mode on: a whole group call creates no AudioContext and no oscillator",
+  "ok": true,
+  "detail": "{\"played\":[],\"freqs\":[],\"ctx\":0,\"started\":0,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "quiet mode off: switch flips, still nothing plays until a call",
+  "ok": true,
+  "detail": "{\"played\":[],\"freqs\":[],\"ctx\":1,\"started\":0,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "sound on, after reload: no AudioContext before a gesture",
+  "ok": true,
+  "detail": "{\"played\":[],\"freqs\":[],\"ctx\":0,\"started\":0,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "group call joining: one short pulse, no ringback",
+  "ok": true,
+  "detail": "{\"played\":[\"pulse\"],\"freqs\":[330,660],\"ctx\":1,\"started\":2,\"live\":2,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "group call: connected cue once you are in the roster",
+  "ok": true,
+  "detail": "{\"played\":[\"pulse\",\"connected\"],\"freqs\":[330,523,660,784,1046,1568],\"ctx\":1,\"started\":6,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "group call: Leo joins → soft pulse, \"11 in the call\", \"+2\", announced politely",
+  "ok": true,
+  "detail": "[\"pulse\",\"connected\",\"pulse:soft\"] 11 in the call Leo joined the call"
+ },
+ {
+  "page": "groups",
+  "name": "group call End: ended cue once, nothing left playing, never a ring/back oscillator",
+  "ok": true,
+  "detail": "{\"played\":[\"pulse\",\"connected\",\"pulse:soft\",\"ended\"],\"freqs\":[330,523,660,784,1046,1568],\"ctx\":1,\"started\":12,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "group sound: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "message sent, Quiet mode on by default: no AudioContext at all",
+  "ok": true,
+  "detail": "{\"played\":[],\"freqs\":[],\"ctx\":0,\"started\":0,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "Quiet mode off: sending plays the pluck cue (659Hz) at once",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\"],\"freqs\":[659,1318],\"ctx\":1,\"started\":2,\"live\":2,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "pluck is a one-shot: zero live oscillators once it settles",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\"],\"freqs\":[659,1318],\"ctx\":1,\"started\":2,\"live\":0,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "a group call is not interrupted by this page's own send button (file attach reuses sendText, same path)",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\",\"pulse\"],\"freqs\":[330,659,660,1318],\"ctx\":1,\"started\":4,\"live\":2,\"liveBack\":0,\"ringOrBack\":0}"
+ },
+ {
+  "page": "groups",
+  "name": "message-sent sound in groups.html: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call ended leaves an event line \"Call ended · MM:SS\" (same .sys style as \"Kavya joined…\")",
+  "ok": true,
+  "detail": "{\"t\":\"Call ended · 00:00\",\"cls\":\"sys\"}"
+ },
+ {
+  "page": "groups",
+  "name": "group calls never ring (U21), so there is no \"No answer\" case here — only a duration",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "event lines never reach the chat-list preview (same rule as every other one)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "call record (group): no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "group call has no brand mark (roster-based, not a two-can metaphor)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "cross-page: a direct call shown in groups.html's overlay has the mark, sagging while ringing",
+  "ok": true,
+  "detail": "{\"taut\":false}"
+ },
+ {
+  "page": "groups",
+  "name": "cross-page: the mark goes taut once that direct call connects",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "groups",
+  "name": "brand mark (groups.html): no console errors",
+  "ok": true,
+  "detail": ""
+ }
+]

@@ -287,7 +287,7 @@ fun VoiceMicButton(state: VoiceRecState, modifier: Modifier = Modifier) {
 fun VoiceRecordingBar(state: VoiceRecState, modifier: Modifier = Modifier) {
     val c = Tin.c
     Row(
-        modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(24.dp))
+        modifier.heightIn(min = 48.dp).clip(SmoothCornerShape(24.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(24.dp))
             .padding(start = 16.dp, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {

@@ -44,7 +44,7 @@ fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, a
                 else -> "Locked · not ringing here"
             }
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button) { if (a.current) onDismiss() else onPick(a.did) },
+                Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button) { if (a.current) onDismiss() else onPick(a.did) },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 if (a.current) SelfAvatar(a.name.ifBlank { "?" }, 44.dp) else Avatar(a.name.ifBlank { "?" }, a.did, 44.dp)
@@ -69,7 +69,7 @@ fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, a
 private fun SheetRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, sub: String?, enabled: Boolean, onClick: () -> Unit) {
     val c = Tin.c
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp)).clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(SmoothCornerShape(12.dp)).clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Icon(icon, null, tint = if (enabled) c.pr else c.ink2, modifier = Modifier.padding(start = 10.dp))

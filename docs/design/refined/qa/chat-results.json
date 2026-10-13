@@ -1,0 +1,614 @@
+[
+ {
+  "page": "chat",
+  "name": "harness: slim bar, drawer closed by default, no disclaimers visible, no hint row",
+  "ok": true,
+  "detail": "drawerVisible=false"
+ },
+ {
+  "page": "chat",
+  "name": "no default-blue links",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "simulation controls reachable & switches have role/aria-checked",
+  "ok": true,
+  "detail": "switch:true:null switch:false:null"
+ },
+ {
+  "page": "chat",
+  "name": "bubbles: meta inline (short message is one line, meta inside last line box)",
+  "ok": true,
+  "detail": "[[37,8],[37,8],[37,8]]"
+ },
+ {
+  "page": "chat",
+  "name": "bubbles: sent uses --bub-out, no delivery prose in bubbles",
+  "ok": true,
+  "detail": "rgb(205, 235, 227)"
+ },
+ {
+  "page": "chat",
+  "name": "grouping: 2px inside a group, tight stack-facing corner",
+  "ok": true,
+  "detail": "[[\"2px\",\"6px\"],[\"2px\",\"6px\"],[\"2px\",\"6px\"]]"
+ },
+ {
+  "page": "chat",
+  "name": "no persistent menu buttons (chevrons hidden until hover)",
+  "ok": true,
+  "detail": "0,0,0,0"
+ },
+ {
+  "page": "chat",
+  "name": "header call button is an in-page button (no navigation)",
+  "ok": true,
+  "detail": "[\"BUTTON\",null,null,\"Voice call Arjun\"]"
+ },
+ {
+  "page": "chat",
+  "name": "call button sits between name block and info button",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "call: overlay fills the app frame, focus on overlay, status Ringing, no navigation, no audio",
+  "ok": true,
+  "detail": "{\"o\":{\"x\":97,\"y\":247.1875,\"width\":1246,\"height\":735.8125},\"st\":\"Ringing…\",\"f\":\"callOv\",\"au\":{\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}}"
+ },
+ {
+  "page": "chat",
+  "name": "call: connects after ~2.5s and timer ticks MM:SS",
+  "ok": true,
+  "detail": "00:01 -> 00:02"
+ },
+ {
+  "page": "chat",
+  "name": "call: mute toggles aria-pressed",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "Escape minimizes (call continues) into strip; focus on strip",
+  "ok": true,
+  "detail": "Arjun Oommen · 00:02 h=40"
+ },
+ {
+  "page": "chat",
+  "name": "while live, header phone button means return to call",
+  "ok": true,
+  "detail": "Return to call with Arjun Oommen"
+ },
+ {
+  "page": "chat",
+  "name": "chatting works while minimized",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "strip persists when switching chats; Meera header button returns to the call (no second call)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "return to call reopens the same call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "strip tap returns to overlay",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "End: overlay + strip gone, toast Call ended, focus on phone button, still no audio",
+  "ok": true,
+  "detail": "Call ended focus=callBtn"
+ },
+ {
+  "page": "chat",
+  "name": "contact sheet has a Voice call row that starts the overlay",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "Dev (message-only): call button disabled but focusable, no in-conversation banner",
+  "ok": true,
+  "detail": "[\"BUTTON\",\"true\",0,\"0.45\"] strips=0"
+ },
+ {
+  "page": "chat",
+  "name": "Dev: disabled call opens contact sheet with message-only line + Request calling that flips to Requested",
+  "ok": true,
+  "detail": "DPDev PatelOnlineMessages only — calling needs their permissionRequest callingEnd-to-end encryptedMessages go directly b -> Requested"
+ },
+ {
+  "page": "chat",
+  "name": "Dev: focus returns to call button after sheet",
+  "ok": true,
+  "detail": "callBtn"
+ },
+ {
+  "page": "chat",
+  "name": "open chat: composer visible, Send not enabled when empty",
+  "ok": true,
+  "detail": "disabled=true"
+ },
+ {
+  "page": "chat",
+  "name": "switch chat: composer empty for other chat",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "chat list shows Draft marker for chat with unsent text",
+  "ok": true,
+  "detail": "AOArjun Oommen23:51Draft: half written thoughtMNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍SRSana Rao08:20Sent the draft to your laptop too"
+ },
+ {
+  "page": "chat",
+  "name": "draft restored on returning to chat",
+  "ok": true,
+  "detail": "half written thought"
+ },
+ {
+  "page": "chat",
+  "name": "Shift+Enter inserts newline, does not send",
+  "ok": true,
+  "detail": "\"line1\\nline2\""
+ },
+ {
+  "page": "chat",
+  "name": "Enter sends; message appears; composer cleared and keeps focus",
+  "ok": true,
+  "detail": "line1 line223:51Sending focus=ta"
+ },
+ {
+  "page": "chat",
+  "name": "sent message progresses to sent/delivered state",
+  "ok": true,
+  "detail": "line1 line223:51Delivered"
+ },
+ {
+  "page": "chat",
+  "name": "Next send fails switch on",
+  "ok": true,
+  "detail": "true"
+ },
+ {
+  "page": "chat",
+  "name": "failed send shows failure and Retry control",
+  "ok": true,
+  "detail": "goes nowhere first23:51Not delivered·Retry retryBtns=1"
+ },
+ {
+  "page": "chat",
+  "name": "Next send fails switch resets after one failure (one-shot)",
+  "ok": true,
+  "detail": "false"
+ },
+ {
+  "page": "chat",
+  "name": "retry: focus not lost to BODY",
+  "ok": true,
+  "detail": "Actions for your message at 23:51: goes nowhere first"
+ },
+ {
+  "page": "chat",
+  "name": "retry succeeds (no failed message remains)",
+  "ok": true,
+  "detail": "goes nowhere first23:51Delivered visibleRetry=0"
+ },
+ {
+  "page": "chat",
+  "name": "contact offline: header/status changes",
+  "ok": true,
+  "detail": "AOArjun OommenLast seen 23:51Arjun is offline. Messages send when you’re both online.YesterdayDid you get home ok?21:12Yes, train was on tim"
+ },
+ {
+  "page": "chat",
+  "name": "send while offline shows waiting/queued state",
+  "ok": true,
+  "detail": "sent while offline23:51Waiting for Arjun to be online"
+ },
+ {
+  "page": "chat",
+  "name": "back online: queued message delivered",
+  "ok": true,
+  "detail": "sent while offline23:51Delivered"
+ },
+ {
+  "page": "chat",
+  "name": "simulate incoming adds a message or badge",
+  "ok": true,
+  "detail": "AOArjun Oommen23:51Ha, that’s the best news today1MNMeera Nair17:41No rushDPDev PatelMuted. 11:06👍S"
+ },
+ {
+  "page": "chat",
+  "name": "search no match: empty state shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "dialog settings: opens with focus inside, Escape closes, focus returns to trigger",
+  "ok": true,
+  "detail": "open=true focusInside=true closed=true focus=settingsBtn want=settingsBtn"
+ },
+ {
+  "page": "chat",
+  "name": "dialog new chat: opens with focus inside, Escape closes, focus returns to trigger",
+  "ok": true,
+  "detail": "open=true focusInside=true closed=true focus=newBtn want=newBtn"
+ },
+ {
+  "page": "chat",
+  "name": "dialog attach: opens with focus inside, Escape closes, focus returns to trigger",
+  "ok": true,
+  "detail": "open=true focusInside=true closed=true focus=Attach a file want=Attach a file"
+ },
+ {
+  "page": "chat",
+  "name": "dialog info: opens with focus inside, Escape closes, focus returns to trigger",
+  "ok": true,
+  "detail": "open=true focusInside=true closed=true focus=Chat details want=Chat details"
+ },
+ {
+  "page": "chat",
+  "name": "desktop: chevron appears on hover",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "message menu is an anchored popover listing Reply/Copy/Edit/Delete/Message info",
+  "ok": true,
+  "detail": "pop Message optionsReplyCopyEditDeleteMessage info"
+ },
+ {
+  "page": "chat",
+  "name": "actions Escape restores focus to the actions button",
+  "ok": true,
+  "detail": "Actions for your message at 11:02: Lunch Thursday?"
+ },
+ {
+  "page": "chat",
+  "name": "right-click opens the same popover",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "Message info shows sent time and per-device delivery",
+  "ok": true,
+  "detail": "Message infoLunch Thursday?Sent11:02Dev’s phoneDelivered 11:02Tinline shows when a message reaches Dev’s devices, not when it’s read.Done"
+ },
+ {
+  "page": "chat",
+  "name": "Tab from filled composer reaches Send button",
+  "ok": true,
+  "detail": "sendBtn > BODY > A"
+ },
+ {
+  "page": "chat",
+  "name": "Reset demo restores initial state",
+  "ok": true,
+  "detail": "rows=4"
+ },
+ {
+  "page": "chat",
+  "name": "Empty the chat list shows empty state with action",
+  "ok": true,
+  "detail": "No chats yetMessages stay on your devices.Start a chat"
+ },
+ {
+  "page": "chat",
+  "name": "no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "no failed/404 requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "mobile list: no horizontal overflow",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "chat",
+  "name": "mobile conversation: composer inside viewport, no overflow",
+  "ok": true,
+  "detail": "[58,332,836]{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "chat",
+  "name": "mobile conversation: Back button present and returns to list, focus restored to opened row",
+  "ok": true,
+  "detail": "listVisible=true focus=arjun"
+ },
+ {
+  "page": "chat",
+  "name": "mobile: ≥44px touch targets on primary controls",
+  "ok": true,
+  "detail": "[]"
+ },
+ {
+  "page": "chat",
+  "name": "cross-page: a chat call shows as the strip in groups; group phone button returns to it (no second call)",
+  "ok": true,
+  "detail": "Arjun Oommen · 00:00 | Return to call with Arjun Oommen"
+ },
+ {
+  "page": "chat",
+  "name": "cross-page: groups overlay renders the direct call with the person avatar",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "?call=open raises the overlay on load, then leaves the URL",
+  "ok": true,
+  "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun"
+ },
+ {
+  "page": "chat",
+  "name": "mute state travels with the call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "reload mid-call: strip shows, timer never resets",
+  "ok": true,
+  "detail": "Arjun Oommen · 00:03 vs 1"
+ },
+ {
+  "page": "chat",
+  "name": "?callbar=host: no strip of its own (Home draws it); phone button still returns to the call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "?callbar=host: minimise sends focus to the phone button, not a hidden strip",
+  "ok": true,
+  "detail": "callBtn"
+ },
+ {
+  "page": "chat",
+  "name": "ending in groups ended it for chat too",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "cross-page call flow never creates an AudioContext",
+  "ok": true,
+  "detail": "{\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "chat",
+  "name": "cross-page: no runtime errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "quiet mode: \"Quiet mode\" switch in the Simulation drawer (role=switch, same pattern as the other switches), on by default",
+  "ok": true,
+  "detail": "{\"role\":\"switch\",\"on\":\"true\",\"t\":\"Quiet mode\",\"cls\":\"sw\"}"
+ },
+ {
+  "page": "chat",
+  "name": "quiet mode on: ring, connect and End create no AudioContext and no oscillator",
+  "ok": true,
+  "detail": "{\"played\":[],\"ctx\":\"\",\"started\":0,\"live\":0,\"back\":0,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct call: ringback (392/494 Hz two-tone) loops while \"Ringing…\"; never the incoming ring",
+  "ok": true,
+  "detail": "{\"played\":[\"back\"],\"ctx\":\"running\",\"started\":4,\"live\":4,\"back\":1,\"liveBack\":2,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct call: on connect the ringback stops and the connected cue plays once",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\"],\"ctx\":\"running\",\"started\":8,\"live\":2,\"back\":1,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct call connected: no further ringback cycles",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\"],\"ctx\":\"running\",\"started\":8,\"live\":0,\"back\":1,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "mute silences the mic, never the cues (no cue on mute)",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\"],\"ctx\":\"running\",\"started\":8,\"live\":0,\"back\":1,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct call End: ended cue once, then zero live oscillators",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\"],\"ctx\":\"running\",\"started\":12,\"live\":0,\"back\":1,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "after End: nothing scheduled (no new oscillators 4s later)",
+  "ok": true,
+  "detail": "12→12"
+ },
+ {
+  "page": "chat",
+  "name": "End while ringing: ringback stopped at once, ended cue, zero live oscillators",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\"],\"ctx\":\"running\",\"started\":20,\"live\":0,\"back\":2,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "minimized while ringing: ringback keeps going (the call continues)",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\",\"back\"],\"ctx\":\"running\",\"started\":24,\"live\":4,\"back\":3,\"liveBack\":2,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "Quiet mode turned on mid-ring: every oscillator stops, strip and timer still shown",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\",\"back\"],\"ctx\":\"running\",\"started\":24,\"live\":0,\"back\":3,\"liveBack\":0,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "Quiet mode off again while still ringing: ringback resumes",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\",\"back\",\"back\"],\"ctx\":\"running\",\"started\":28,\"live\":4,\"back\":4,\"liveBack\":2,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "pagehide: current sound stopped and the AudioContext closed (calls.html discipline)",
+  "ok": true,
+  "detail": "{\"played\":[\"back\",\"connected\",\"ended\",\"back\",\"ended\",\"back\",\"back\"],\"ctx\":\"closed\",\"started\":28,\"live\":4,\"back\":4,\"liveBack\":2,\"ring\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "direct sound: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "message sent, Quiet mode on by default: no AudioContext at all",
+  "ok": true,
+  "detail": "{\"played\":[],\"ctx\":\"\",\"started\":0,\"live\":0,\"pluck\":0,\"liveBack\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "Quiet mode off: sending plays the pluck cue (E5/659Hz) at once",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\"],\"ctx\":\"running\",\"started\":2,\"live\":2,\"pluck\":1,\"liveBack\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "pluck is a one-shot: zero live oscillators once it settles",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\"],\"ctx\":\"running\",\"started\":2,\"live\":0,\"pluck\":1,\"liveBack\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "ringback loops while ringing",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\",\"back\"],\"ctx\":\"running\",\"started\":6,\"live\":4,\"pluck\":1,\"liveBack\":2}"
+ },
+ {
+  "page": "chat",
+  "name": "sending while ringing interrupts the ringback to play the pluck",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\",\"back\",\"pluck\"],\"ctx\":\"running\",\"started\":8,\"live\":2,\"pluck\":2,\"liveBack\":0}"
+ },
+ {
+  "page": "chat",
+  "name": "ringback resumes on its own once the pluck finishes",
+  "ok": true,
+  "detail": "{\"played\":[\"pluck\",\"back\",\"pluck\",\"back\"],\"ctx\":\"running\",\"started\":12,\"live\":4,\"pluck\":2,\"liveBack\":2}"
+ },
+ {
+  "page": "chat",
+  "name": "message-sent sound: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "answered call leaves a call-record bubble: phone icon, \"Voice call\", MM:SS duration, no delivery tick",
+  "ok": true,
+  "detail": "{\"cls\":\"bub\",\"fn\":\"Voice call\",\"fm\":\"00:00\",\"fmCls\":\"fm\",\"tick\":false}"
+ },
+ {
+  "page": "chat",
+  "name": "call record shows in the chat-list preview like an attachment",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "call record menu: only Delete (no Reply/Copy/Edit/Message info)",
+  "ok": true,
+  "detail": "Message optionsDelete"
+ },
+ {
+  "page": "chat",
+  "name": "tapping the call record calls back: overlay reopens",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "call ended before connecting: \"No answer\" in --danger, not a duration",
+  "ok": true,
+  "detail": "{\"t\":\"No answer\",\"cls\":\"fm missed\",\"c\":\"rgb(161, 43, 35)\"}"
+ },
+ {
+  "page": "chat",
+  "name": "missed call shows \"Missed voice call\" in the chat-list preview",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "call record sound: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "mark sags while ringing",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "chat",
+  "name": "mark goes taut the instant status reads Connected",
+  "ok": true,
+  "detail": "{\"taut\":true,\"status\":\"Connected\"}"
+ },
+ {
+  "page": "chat",
+  "name": "End: mark sags back and the overlay releases before it hides (not an instant cut)",
+  "ok": true,
+  "detail": "{\"taut\":false,\"ending\":true,\"hidden\":false}"
+ },
+ {
+  "page": "chat",
+  "name": "overlay actually hides only after the release (~220ms), not before",
+  "ok": true,
+  "detail": "hidden after 443ms"
+ },
+ {
+  "page": "chat",
+  "name": "reduced motion: skips both the mark transition and the End delay",
+  "ok": true,
+  "detail": "{\"taut\":true,\"hidden\":true}"
+ },
+ {
+  "page": "chat",
+  "name": "brand mark: no console errors",
+  "ok": true,
+  "detail": ""
+ }
+]

@@ -80,7 +80,7 @@ fun GroupAvatar(tint: Int, size: Dp, dim: Boolean = false, radius: Dp = size / 3
         tint == 2 -> c.sf2 to c.ink2
         else -> c.prc to c.onPrc
     }
-    Box(Modifier.size(size).clip(RoundedCornerShape(radius)).background(bg), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(size).clip(SmoothCornerShape(radius)).background(bg), contentAlignment = Alignment.Center) {
         Icon(Icons.Outlined.Groups, null, tint = fg, modifier = Modifier.size(size / 2))
     }
 }
@@ -176,7 +176,7 @@ fun ChatHeader(
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
         Row(
-            Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
+            Modifier.weight(1f).heightIn(min = 48.dp).clip(SmoothCornerShape(12.dp))
                 .let { if (onTitle != null) it.clickable(role = Role.Button, onClickLabel = "Open details", onClick = onTitle) else it }
                 .padding(end = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -199,12 +199,12 @@ fun ColumnScope.Bubble(
     tickIcon: (@Composable () -> Unit)? = null,
 ) {
     val c = Tin.c
-    val shape = if (outgoing) RoundedCornerShape(18.dp, 18.dp, 6.dp, 18.dp) else RoundedCornerShape(18.dp, 18.dp, 18.dp, 6.dp)
-    val bg = when { greyed -> c.sf2; outgoing -> c.prc; else -> c.sf }
+    val shape = bubbleShape(BubblePos.First, outgoing)
+    val bg = when { greyed -> c.sf2; outgoing -> c.prc; else -> c.bubIn }
     val fg = when { greyed -> c.ink2; outgoing -> c.onPrc; else -> c.ink }
     Column(
         Modifier.align(if (outgoing) Alignment.End else Alignment.Start).widthIn(max = 300.dp).alpha(if (faded) 0.7f else 1f)
-            .clip(shape).background(bg).let { if (!outgoing && !greyed) it.border(1.dp, c.ln, shape) else it }
+            .clip(shape).background(bg).let { if (!outgoing && !greyed) it.border(1.dp, c.bubInLine, shape) else it }
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .semantics(mergeDescendants = true) {},
     ) {
@@ -239,7 +239,7 @@ fun Composer(draft: String, onDraft: (String) -> Unit, placeholder: String, onSe
             draft, onDraft, Modifier.weight(1f).heightIn(min = 48.dp).semantics { contentDescription = placeholder },
             textStyle = TinType.bodyL.copy(fontSize = 15.sp, color = c.ink), cursorBrush = SolidColor(c.pr),
             decorationBox = { inner ->
-                Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(24.dp)).padding(horizontal = 16.dp, vertical = 12.dp),
+                Box(Modifier.heightIn(min = 48.dp).clip(SmoothCornerShape(24.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(24.dp)).padding(horizontal = 16.dp, vertical = 12.dp),
                     contentAlignment = Alignment.CenterStart) {
                     if (draft.isEmpty()) Text(placeholder, style = TinType.bodyL.copy(fontSize = 15.sp), color = c.ink2)
                     inner()
@@ -268,7 +268,7 @@ fun BlockedFooter(hint: String, buttons: (@Composable RowScope.() -> Unit)? = nu
 /** Board's tinted notice card (erc for removal / blocked, warn for lost contact). */
 @Composable
 fun NoticeCard(bg: Color, fg: Color, title: String, body: String, modifier: Modifier = Modifier, extra: @Composable ColumnScope.() -> Unit = {}) {
-    Column(modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(20.dp)).background(bg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier.fillMaxWidth().padding(top = 8.dp).clip(SmoothCornerShape(20.dp)).background(bg).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = fg, modifier = Modifier.semantics { heading() })
         Text(body, style = TinType.bodyM, color = fg)
         extra()
@@ -355,7 +355,7 @@ fun dayAndTime(ms: Long, nowMs: Long): String =
 fun ShrinkFab(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, wide: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val c = Tin.c
     Row(
-        modifier.padding(end = 20.dp, bottom = 20.dp).shadow(3.dp, RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp)).background(c.prc)
+        modifier.padding(end = 20.dp, bottom = 20.dp).depth(Depth.Lift, SmoothCornerShape(18.dp)).clip(SmoothCornerShape(18.dp)).background(c.prc)
             .clickable(role = Role.Button, onClick = onClick).semantics(mergeDescendants = true) {}
             .heightIn(min = 56.dp).widthIn(min = 56.dp).animateContentSize().padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),

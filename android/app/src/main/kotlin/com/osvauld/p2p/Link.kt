@@ -272,7 +272,7 @@ private fun LinkScanScreen(newDevice: Boolean, note: String?, nonce: Int, onBack
             Box(Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp)) {
                 key(nonce) { QrCameraBox(Modifier.fillMaxSize(), if (newDevice) "Point at the code on your other device" else "Point at the QR code on your other device", torch, { granted = it }, onText) }
                 if (note != null) Column(
-                    Modifier.align(Alignment.Center).padding(24.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xE6101614)).padding(20.dp),
+                    Modifier.align(Alignment.Center).padding(24.dp).clip(SmoothCornerShape(16.dp)).background(Color(0xE6101614)).padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(Icons.Rounded.ErrorOutline, null, tint = Color(0xFFFFB4AB), modifier = Modifier.size(32.dp))
@@ -310,7 +310,7 @@ private fun LinkShowScreen(newDevice: Boolean, showing: LinkController.Ui.Showin
             )
             CardBox(Modifier.fillMaxWidth(), radius = 24.dp) {
                 Column(Modifier.padding(20.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Box(Modifier.size(248.dp).clip(RoundedCornerShape(14.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(248.dp).clip(SmoothCornerShape(14.dp)).background(Color.White), contentAlignment = Alignment.Center) {
                         if (qr != null) {
                             val bmp = remember(qr) { qrBitmap(qr, 720, fg = 0xFF17201D.toInt()) }
                             Image(bmp.asImageBitmap(), "QR code to link a device", Modifier.fillMaxSize().padding(10.dp).let { if (expired) it.background(Color.White.copy(alpha = 0.9f)) else it },
@@ -341,7 +341,7 @@ private fun CircularDots() { LinearProgressIndicator(Modifier.width(120.dp), col
 @Composable
 private fun BigCode(code: String) {
     val c = Tin.c
-    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(16.dp)).padding(vertical = 22.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().clip(SmoothCornerShape(16.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(16.dp)).padding(vertical = 22.dp), contentAlignment = Alignment.Center) {
         Text(code, style = TinType.mono.copy(fontSize = 44.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 4.sp), color = c.ink)
     }
 }
