@@ -181,28 +181,10 @@ class IncomingCallActivity : ComponentActivity() {
 fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: () -> Unit) {
     val c = Tin.c
     val who = name.ifBlank { "Unknown" }
-    Column(Modifier.fillMaxSize().background(Color(0xFF0B100F)).systemBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(Modifier.padding(top = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Glyphs.Cans, null, tint = c.ink2, modifier = Modifier.size(20.dp))
-            Text("Tinline call", style = TinType.bodyM, color = c.ink2)
-        }
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
-            // Two thin amber rings around the avatar: the line is ringing.
-            Box(Modifier.size(168.dp).border(2.dp, c.thread.copy(alpha = 0.35f), CircleShape), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(144.dp).border(2.dp, c.thread.copy(alpha = 0.6f), CircleShape), contentAlignment = Alignment.Center) {
-                    Avatar(who, did, 120.dp)
-                }
-            }
-            Text(who, Modifier.padding(top = 10.dp, start = 24.dp, end = 24.dp), style = TinType.display, color = c.ink, textAlign = TextAlign.Center)
-            Text("is calling you", style = TinType.bodyL.copy(fontSize = 17.sp), color = c.ink2)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(16.dp))
-                Text("End-to-end encrypted", style = TinType.bodyM.copy(fontSize = 13.sp), color = c.ink2)
-            }
-        }
-        Row(Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, bottom = 56.dp), horizontalArrangement = Arrangement.SpaceAround) {
-            LabeledRound("Decline") { RoundBtn(Icons.Rounded.CallEnd, "Decline", c.callEnd, Color.White, onDecline) }
-            LabeledRound("Answer") { RoundBtn(Icons.Rounded.Call, "Answer", c.callAccept, Color.White, onAnswer) }
+    CallFocus(who, did, active = false, ringing = true, incoming = true) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(36.dp, Alignment.CenterHorizontally)) {
+            LabeledRound("Decline") { RoundBtn(CallGlyphs.Phone, "Decline", c.callButtonEnd, Color.White, onDecline, size = 64.dp, rotate = 135f) }
+            LabeledRound("Answer") { RoundBtn(CallGlyphs.Phone, "Answer", c.callButtonAnswer, Color.White, onAnswer, size = 64.dp) }
         }
     }
 }
@@ -211,7 +193,7 @@ fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: 
 
 private fun routeLabel(speaker: Boolean) = if (speaker) "Speaker" else "Phone"
 
-/** "Arjun is calling" over the in-call screen: no hold, no call waiting, so the two choices end one call or the other. */
+/** One caller waiting over the answered call; no hold. Existing controller callbacks decide admission. */
 @Composable
 fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer: () -> Unit) {
     val c = Tin.c
@@ -236,7 +218,7 @@ fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer:
                     Text("End & answer", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
-            Text("Decline tells $name you\u2019re busy. No hold, no call waiting.", style = TinType.bodyM.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2)
+            Text("End & answer ends your current call. There is no hold.", style = TinType.bodyM.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2)
         }
     }
 }
@@ -288,55 +270,15 @@ fun InCallContent(
     /** Set when the call has video: the camera button (the camera is off on this screen). */
     onCamera: (() -> Unit)? = null,
 ) {
-    val c = Tin.c
-    var sheet by remember { mutableStateOf(startWithSheet) }
-    Page {
-        Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconBtn(Icons.Rounded.KeyboardArrowDown, "Minimise", onMinimise)
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
-                if (!active) Badge(if (ringing) "Ringing…" else "Finding a path…", BadgeKind.Neutral) { Dot(c.thread, 8.dp) }
-                else if (reconnecting) Badge("Reconnecting\u2026", BadgeKind.Warn, Icons.Rounded.SyncProblem)
-                else {
-                    if (direct == true) Badge("Direct", BadgeKind.Direct, Glyphs.Direct)
-                    if (direct == false) Badge("Relayed · encrypted", BadgeKind.Relayed, Glyphs.Relayed)
-                    if (bars != null) Badge(qualityLabel(bars), BadgeKind.Neutral) { QualityBars(bars, warn = bars <= 1) }
-                }
-            }
-            Spacer(Modifier.width(48.dp))
-        }
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
-            PairAvatars(meName.ifBlank { "?" }, name, did, otherAlpha = if (reconnecting) 0.6f else 1f)
-            Text(name, Modifier.padding(top = 16.dp), style = TinType.h1.copy(fontSize = 30.sp, lineHeight = 36.sp), color = c.ink, textAlign = TextAlign.Center)
-            if (active) Text(clock(secs), style = TinType.mono.copy(fontSize = 20.sp, lineHeight = 28.sp), color = c.ink2)
-            else Text(if (ringing) "Ringing…" else "Calling…", style = TinType.bodyL.copy(fontSize = 17.sp), color = c.ink2)
-            if (active && reconnecting) Text(
-                "Your network changed. Hold on \u2014 Tinline is finding the line again.", Modifier.widthIn(max = 300.dp).padding(top = 6.dp),
-                style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 22.sp), color = c.ink2, textAlign = TextAlign.Center,
-            )
-            else if (active && direct != null) Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(16.dp))
-                Text("End-to-end encrypted · " + if (direct) "straight to their phone" else "through an encrypted relay", style = TinType.bodyM.copy(fontSize = 13.sp), color = c.ink2)
-            }
-            if (micProblem != null) Text(micProblem, Modifier.padding(top = 4.dp), style = TinType.bodyM, color = c.er, textAlign = TextAlign.Center)
-        }
-        Row(Modifier.fillMaxWidth().padding(bottom = 28.dp), horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)) {
-            LabeledRound(if (muted) "Muted" else "Mute") {
-                RoundBtn(if (muted) Icons.Rounded.MicOff else Icons.Rounded.Mic, if (muted) "Unmute" else "Mute",
-                    if (muted) c.ink else c.sf3, if (muted) c.bg else c.ink, onMute, size = 64.dp, iconSize = 26.dp)
-            }
-            if (onCamera != null) LabeledRound("Camera") {
-                RoundBtn(Icons.Rounded.VideocamOff, "Turn camera on", c.sf3, c.ink, onCamera, size = 64.dp, iconSize = 26.dp)
-            }
-            LabeledRound(routeLabel(speaker)) {
-                RoundBtn(if (speaker) Icons.Rounded.VolumeUp else Icons.Rounded.PhoneInTalk, "Audio: ${routeLabel(speaker)}", c.sf3, c.ink, { sheet = true }, size = 64.dp, iconSize = 26.dp)
-            }
-        }
-        Box(Modifier.fillMaxWidth().padding(bottom = 64.dp), contentAlignment = Alignment.Center) {
-            RoundBtn(Icons.Rounded.CallEnd, if (active) "End call" else "Cancel call", c.callEnd, Color.White, onEnd)
-        }
+    var routeSheet by remember { mutableStateOf(startWithSheet) }
+    var info by remember { mutableStateOf(false) }
+    CallFocus(name.ifBlank { "Unknown" }, did, active, ringing, secs, reconnecting, micProblem,
+        onMinimise = onMinimise, onInfo = { info = true }) {
+        CallControls(muted, speaker, camera = false, onMute, onSpeaker, onCamera, onFlip = null, onEnd)
     }
-    if (sheet) AudioRouteSheet(speaker, relayed = direct == false, onDismiss = { sheet = false }, onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); sheet = false })
+    if (info) CallInfo(name, active, onDismiss = { info = false })
+    if (routeSheet) AudioRouteSheet(speaker, relayed = active && direct == false, onDismiss = { routeSheet = false },
+        onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false })
 }
 
 @Composable
@@ -381,7 +323,7 @@ fun VideoCallContent(
     remote: @Composable (Modifier) -> Unit, selfView: @Composable (Modifier) -> Unit,
 ) {
     val c = Tin.c
-    var sheet by remember { mutableStateOf(false) }
+    var info by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxSize().background(VideoBg)) {
         if (remoteCamera) remote(Modifier.fillMaxSize())
         else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
@@ -398,11 +340,7 @@ fun VideoCallContent(
                     Text(name, style = TinType.titleM, color = Color.White, maxLines = 1)
                     Text(if (reconnecting) "Reconnecting…" else clock(secs), style = TinType.mono.copy(fontSize = 14.sp), color = Color.White.copy(alpha = 0.8f))
                 }
-                if (!reconnecting) {
-                    if (direct == true) Badge("Direct", BadgeKind.Direct, Glyphs.Direct)
-                    if (direct == false) Badge("Relayed", BadgeKind.Relayed, Glyphs.Relayed)
-                    if (bars != null) Badge(qualityLabel(bars), BadgeKind.Neutral) { QualityBars(bars, warn = bars <= 1) }
-                }
+                IconBtn(Icons.Rounded.Info, "About this call", { info = true }, tint = Color.White)
             }
         }
         // Self-view: our camera (the front one mirrored), top right under the bar.
@@ -414,21 +352,14 @@ fun VideoCallContent(
             .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
             .navigationBarsPadding().padding(top = 32.dp, bottom = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (problem != null) Text(problem, Modifier.padding(horizontal = 24.dp), style = TinType.bodyM, color = c.er, textAlign = TextAlign.Center)
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                val off = Color.White.copy(alpha = 0.18f)
-                RoundBtn(if (muted) Icons.Rounded.MicOff else Icons.Rounded.Mic, if (muted) "Unmute" else "Mute",
-                    if (muted) Color.White else off, if (muted) VideoBg else Color.White, onMute, size = 56.dp, iconSize = 24.dp)
-                RoundBtn(if (localCamera) Icons.Rounded.Videocam else Icons.Rounded.VideocamOff, if (localCamera) "Turn camera off" else "Turn camera on",
-                    if (localCamera) off else Color.White, if (localCamera) Color.White else VideoBg, onCamera, size = 56.dp, iconSize = 24.dp)
-                if (localCamera) RoundBtn(Icons.Rounded.Cameraswitch, "Switch camera", off, Color.White, onFlip, size = 56.dp, iconSize = 24.dp)
-                RoundBtn(if (speaker) Icons.Rounded.VolumeUp else Icons.Rounded.PhoneInTalk, "Audio: ${routeLabel(speaker)}", off, Color.White,
-                    { sheet = true }, size = 56.dp, iconSize = 24.dp)
-                RoundBtn(Icons.Rounded.CallEnd, "End call", c.callEnd, Color.White, onEnd, size = 56.dp, iconSize = 24.dp)
+            Text(problem ?: " ", Modifier.padding(horizontal = 24.dp).fillMaxWidth().heightIn(min = 38.dp),
+                style = TinType.bodyM, color = c.er, maxLines = 2, textAlign = TextAlign.Center)
+            Box(Modifier.padding(horizontal = 20.dp)) {
+                CallControls(muted, speaker, localCamera, onMute, onSpeaker, onCamera, onFlip, onEnd)
             }
         }
     }
-    if (sheet) AudioRouteSheet(speaker, relayed = direct == false, onDismiss = { sheet = false }, onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); sheet = false })
+    if (info) CallInfo(name, active = true, onDismiss = { info = false })
 }
 
 /** The peer's decoded frames, pulled on the display clock by a [RemoteRenderer] while shown. */

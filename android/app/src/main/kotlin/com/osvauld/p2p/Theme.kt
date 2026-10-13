@@ -70,6 +70,10 @@ val DarkTin = TinColors(
     bubIn = Color(0xFF1C2422), bubInLine = Color(0xFF2A3531), sfRaised = Color(0xFF242D2A), dark = true,
 )
 
+/** Playground --danger-btn / --accent: call action fills, distinct from danger/accent text. */
+val TinColors.callButtonEnd: Color get() = if (dark) Color(0xFFC73A30) else Color(0xFFA12B23)
+val TinColors.callButtonAnswer: Color get() = if (dark) Color(0xFF117E6B) else Color(0xFF0B6B5B)
+
 val LocalTin = staticCompositionLocalOf { LightTin }
 
 @OptIn(ExperimentalTextApi::class)
@@ -166,3 +170,44 @@ fun Modifier.depth(level: Depth, shape: androidx.compose.ui.graphics.Shape): Mod
         .shadow(level.ambientDp.dp, shape, clip = false, ambientColor = tint, spotColor = tint)
         .shadow(level.contactDp.dp, shape, clip = false, ambientColor = tint, spotColor = tint)
 }
+
+// ---- tokens.css values the screens port needs that TinColors has no slot for (shell area, 2026-10-13; additive) ----
+/** --accent: filled primary surfaces (badges, Answer). Dark is #117e6b, not [TinColors.pr] (which is --accent-ink there). */
+val TinColors.accent: Color get() = if (dark) Color(0xFF117E6B) else Color(0xFF0B6B5B)
+val TinColors.onAccent: Color get() = if (dark) Color(0xFFF2FFFB) else Color.White
+/** --accent-ink: teal as text and icons. */
+val TinColors.accentInk: Color get() = if (dark) Color(0xFF6FD3BD) else Color(0xFF0A5D50)
+/** --accent-soft: selected chips, active nav fills, the new-chat button. */
+val TinColors.accentSoft: Color get() = if (dark) Color(0xFF14433A) else Color(0xFFD7ECE6)
+/** --hairline. */
+val TinColors.hairline: Color get() = if (dark) Color(0xFF2A3531) else Color(0xFFE2E7E1)
+/** --danger-btn / --on-danger-btn: filled Decline. */
+val TinColors.dangerBtn: Color get() = if (dark) Color(0xFFC73A30) else Color(0xFFA12B23)
+/** --danger as text. */
+val TinColors.danger: Color get() = if (dark) Color(0xFFF2B8B5) else Color(0xFFA12B23)
+
+/** tokens.css type scale: --fs-title 17, --fs-body 15 (line 21), --fs-sub 13, --fs-meta 11. */
+object TinFs {
+    val body = TextStyle(fontFamily = Figtree, fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.Normal)
+    val sub = TextStyle(fontFamily = Figtree, fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal)
+    val meta = TextStyle(fontFamily = Figtree, fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal, fontFeatureSettings = "tnum")
+    /** Section headers: 12, 650, uppercase, .06em. */
+    val section = TextStyle(fontFamily = Figtree, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight(650), letterSpacing = 0.06.em)
+}
+
+// Conversation tokens from tokens.css.
+/** --canvas: the conversation's scroll area behind the bubbles. */
+val TinColors.canvas: Color get() = if (dark) Color(0xFF0B100E) else Color(0xFFEDEFE9)
+/** --bub-meta-in / --bub-meta-out: the inline time and status in a received / sent bubble. */
+val TinColors.bubMetaIn: Color get() = if (dark) Color(0xFF95A19B) else Color(0xFF68746E)
+val TinColors.bubMetaOut: Color get() = if (dark) Color(0xFF8FC9B9) else Color(0xFF33655A)
+/** --accent / --on-accent: primary-action fills (dark `pr` is --accent-ink, a text colour). */
+val TinColors.accentFill: Color get() = accent
+val TinColors.onAccentFill: Color get() = onAccent
+
+/** Shared people/groups palette from tokens.css. */
+val TinColors.onDangerBtn: Color get() = Color.White
+val TinColors.lav: Color get() = if (dark) Color(0xFF2F3A75) else Color(0xFFE1E4F7)
+val TinColors.lavInk: Color get() = if (dark) Color(0xFFDFE3FF) else Color(0xFF374582)
+val TinColors.gold: Color get() = if (dark) Color(0xFFE8B04A) else Color(0xFFC98A1E)
+val TinColors.goldInk: Color get() = if (dark) Color(0xFFE8B04A) else Color(0xFF845A10)

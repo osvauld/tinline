@@ -17,6 +17,8 @@ use crate::media::{self, Class, Pixels};
 use crate::voice::{Player, Recorder};
 use super::{blocking, notify, s, App, Msg, Screen};
 use crate::ChatEv;
+#[path = "compose_state.rs"]
+mod compose_state;
 
 #[cfg(feature = "test-hooks")]
 #[path = "chat_fake.rs"]
@@ -106,6 +108,8 @@ impl Source {
 }
 
 pub(super) struct ChatState {
+    /// Invalidates in-flight text submissions when the current account changes.
+    pub account_epoch: u64,
     pub tab: SideTab,
     pub chats: Vec<Chat>,
     /// The conversation whose messages are loaded.
@@ -119,6 +123,7 @@ pub(super) struct ChatState {
     /// Set when asking the peer for earlier days found nothing.
     pub no_more: bool,
     pub input: text_editor::Content,
+    compose_memory: compose_state::Memory,
     pub reply: Option<String>,
     pub editing: Option<String>,
     pub hover: Option<String>,
@@ -172,6 +177,7 @@ pub(super) struct Viewer {
 impl Default for ChatState {
     fn default() -> Self {
         ChatState {
+            account_epoch: 0,
             tab: SideTab::Chats,
             chats: Vec::new(),
             peer: None,
@@ -181,6 +187,7 @@ impl Default for ChatState {
             fetching: false,
             no_more: false,
             input: text_editor::Content::new(),
+            compose_memory: compose_state::Memory::default(),
             reply: None,
             editing: None,
             hover: None,
@@ -210,6 +217,7 @@ pub(super) enum Cm {
     Day(String, bool, Result<DayPage, String>),
     Edit(text_editor::Action),
     Send,
+    Submitted(String, compose_state::Submission, Result<ChatMsg, String>),
     /// A message came back from send / edit / delete.
     Done(Result<ChatMsg, String>),
     Hover(Option<String>),
@@ -347,7 +355,16 @@ impl ChatState {
             .collect()
     }
 
+    pub(super) fn draft_for(&self, peer: &str) -> String {
+        if self.peer.as_deref() == Some(peer) {
+            self.compose_memory.edit_stash.clone().unwrap_or_else(|| self.input.text())
+        } else { self.compose_memory.restore(peer).text }
+    }
+
     fn clear_compose(&mut self) {
+        if let Some(peer) = &self.peer {
+            self.compose_memory.suspend(peer, self.input.text(), self.reply.clone(), self.editing.is_some());
+        }
         self.input = text_editor::Content::new();
         self.reply = None;
         self.editing = None;
@@ -442,7 +459,7 @@ impl App {
         self.screen == Screen::Home
             && self.sel.is_some()
             && !self.chat.info
-            && self.call.is_none()
+            && (self.call.is_none() || self.call_ui.minimized)
             && self.ended.is_none()
     }
 
@@ -482,6 +499,9 @@ impl App {
         }
         self.chat.clear_compose();
         self.chat.peer = Some(did.to_string());
+        let draft = self.chat.compose_memory.restore(did);
+        self.chat.input = text_editor::Content::with_text(&draft.text);
+        self.chat.reply = draft.reply;
         self.chat.msgs.clear();
         self.chat.older = None;
         self.chat.no_more = false;
@@ -508,9 +528,9 @@ impl App {
     }
 
     pub(super) fn leave_chat(&mut self) {
+        self.chat.clear_compose();
         self.chat.peer = None;
         self.chat.info = false;
-        self.chat.clear_compose();
     }
 
     /// The name to show for a conversation partner.
@@ -589,11 +609,43 @@ impl App {
                 let (reply, editing) = (self.chat.reply.take(), self.chat.editing.take());
                 self.chat.input = text_editor::Content::new();
                 self.chat.menu = None;
-                self.mark_pluck += 1;
-                return self.send_task(peer, move |src, peer| match editing {
-                    Some(id) => src.edit_message(peer, id, text),
-                    None => src.send_text(peer, text, reply),
-                });
+                if editing.is_none() { self.chat.compose_memory.clear_sent(&peer, &text); }
+                let submission = compose_state::Submission { epoch: self.chat.account_epoch, text, reply, editing };
+                let (src, p, request) = (self.src(), peer.clone(), submission.clone());
+                return blocking(move || match request.editing {
+                    Some(id) => src.edit_message(p, id, request.text).map_err(s),
+                    None => src.send_text(p, request.text, request.reply).map_err(s),
+                }, move |r| Msg::Chat(Cm::Submitted(peer.clone(), submission.clone(), r)));
+            }
+            Cm::Submitted(peer, submission, result) => {
+                if !submission.is_current(self.chat.account_epoch) || self.lock != p2pcore::LockState::Unlocked {
+                    return Task::none();
+                }
+                if submission.pluck(result.is_ok()) { self.mark_pluck += 1; }
+                let current = self.chat.peer.as_deref() == Some(peer.as_str());
+                match result {
+                    Ok(message) => {
+                        if current {
+                            if submission.editing.is_some() && self.chat.editing.is_none() {
+                                let draft = self.chat.compose_memory.finish_edit();
+                                if self.chat.input.text().is_empty() { self.chat.input = text_editor::Content::with_text(&draft); }
+                            }
+                            self.chat.upsert(message);
+                        }
+                        return self.refresh_chats();
+                    }
+                    Err(error) => {
+                        // Never overwrite something typed while IO was in flight.
+                        if current && self.chat.input.text().is_empty() && self.chat.editing.is_none() && self.chat.reply.is_none() {
+                            self.chat.input = text_editor::Content::with_text(&submission.text);
+                            self.chat.reply = submission.reply;
+                            self.chat.editing = submission.editing;
+                        } else if !current && submission.editing.is_none() && self.chat.compose_memory.restore(&peer).text.is_empty() {
+                            self.chat.compose_memory.suspend(&peer, submission.text, submission.reply, false);
+                        }
+                        self.notice = Some(format!("Could not send: {error}"));
+                    }
+                }
             }
             Cm::Done(r) => match r {
                 Ok(m) => self.chat.upsert(m),
@@ -602,6 +654,9 @@ impl App {
             Cm::Hover(h) => self.chat.hover = h,
             Cm::Menu(id) => self.chat.menu = if self.chat.menu.as_ref() == Some(&id) { None } else { Some(id) },
             Cm::Reply(id) => {
+                if self.chat.editing.is_some() {
+                    self.chat.input = text_editor::Content::with_text(&self.chat.compose_memory.finish_edit());
+                }
                 self.chat.reply = Some(id);
                 self.chat.editing = None;
                 self.chat.menu = None;
@@ -609,7 +664,9 @@ impl App {
             }
             Cm::StartEdit(id) => {
                 if let Some(m) = self.chat.find(&id).filter(|m| m.outgoing && !m.deleted) {
-                    self.chat.input = text_editor::Content::with_text(&m.text);
+                    let text = m.text.clone();
+                    self.chat.compose_memory.start_edit(self.chat.input.text());
+                    self.chat.input = text_editor::Content::with_text(&text);
                     self.chat.editing = Some(id);
                     self.chat.reply = None;
                     self.chat.menu = None;
@@ -618,7 +675,7 @@ impl App {
             }
             Cm::CancelCompose => {
                 if self.chat.editing.is_some() {
-                    self.chat.input = text_editor::Content::new();
+                    self.chat.input = text_editor::Content::with_text(&self.chat.compose_memory.finish_edit());
                 }
                 self.chat.editing = None;
                 self.chat.reply = None;

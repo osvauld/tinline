@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.Contact
+import uniffi.p2pcore.CallRecord
 
 private fun String.matchesQuery(q: String) = q.isBlank() || contains(q.trim(), ignoreCase = true)
 
@@ -58,6 +59,8 @@ fun HomeScreen(
     onPreview: (PRoute) -> Unit = {},
     /** The Groups tab (real groups, GroupsLive.kt). */
     onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {}, say: (String) -> Unit = {},
+    /** Opens the full-screen search (Search.kt). */
+    onSearch: () -> Unit = {},
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val status by app.status.collectAsState()
@@ -91,7 +94,22 @@ fun HomeScreen(
     val subs = remember(history, contacts, now, blocks) { contacts.associate { it.did to (blocks.status(it.did) ?: contactSubLine(it.did, history, now)) } }
     val online = status?.online == true
     val myDid = remember(chats) { app.currentDid() }
-    val rows = remember(chats, contacts, links, online, now, myDid, blocks) { chatRows(chats, contacts, links, online, now * 1000, myDid, blocks) }
+    val rows = remember(chats, contacts, links, online, now, myDid, blocks, groupList) {
+        val you = myDid
+        val all = chatRows(chats, contacts, links, online, now * 1000, myDid, blocks) + groupChatRows(groupList, app.groups.myDid, now * 1000)
+        // "You" stays pinned first; the rest newest first, 1:1 and groups together.
+        all.sortedWith(compareBy<ChatRowUi> { it.did != you || it.group }.thenByDescending { it.atMs })
+    }
+    val inCall by app.calls.ui.collectAsState()
+    val callPhase = when (val u = inCall) {
+        null -> CallPhase.None
+        else -> when (u.state) {
+            is uniffi.p2pcore.CallState.Dialing -> CallPhase.Outgoing
+            is uniffi.p2pcore.CallState.Ringing -> if (u.info.incoming) CallPhase.Incoming else CallPhase.Outgoing
+            is uniffi.p2pcore.CallState.Active -> if (u.stats?.reconnecting == true) CallPhase.Reconnecting else CallPhase.Active
+            else -> CallPhase.None
+        }
+    }
     HomeContent(
         contacts = contacts, online = online, connectingGrace = grace, missing = missing,
         onFix = onFix, onAdd = onAdd, onSettings = onSettings, onContact = onContact, onCall = onCall,
@@ -100,8 +118,11 @@ fun HomeScreen(
         tab = tab, onTab = { tab = it }, chatRows = rows, myDid = myDid, onChat = onChat, onNewChat = onNewChat,
         chatBadge = rows.sumOf { it.unread } + pendingRequests, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
-        groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup, say) }, groupBadge = groupBadge,
+        groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup, say, onChat) }, groupBadge = groupBadge,
         requestsBlock = { GroupRequestsBlock(app, onChat, say) },
+        onSearch = onSearch, history = history,
+        canCall = { did -> blocks.callGate(did, byDid.containsKey(did)) == CallGate.Ok && byDid.containsKey(did) },
+        isBlocked = { did -> blocks.of(did).blockedByMe }, onGroup = onGroup, onNewGroup = onNewGroup, callLook = callPhase,
     )
     if (sheet) AvailabilitySheet(avail.available, avail.until?.toLong(), app.node.profile()?.name ?: "", onDismiss = { sheet = false }) { available, until ->
         sheet = false
@@ -124,8 +145,8 @@ private fun TopBanner(online: Boolean, grace: Boolean, missing: List<Need>, onFi
 }
 
 /**
- * Home: top bar (pill and Settings on every tab), the tab's body, and the Chats · Calls · Contacts bar.
- * Calls is the old Recent list; Contacts is the contact list with the Add contact button.
+ * Home (screens/shell/AndroidShell.svelte): the 56 dp app bar with the live mark, the tab's title and list (fading through
+ * on a tab change, each tab keeping its scroll), the search dock on Chats and Groups, and the 4-tab bar.
  */
 @Composable
 fun HomeContent(
@@ -140,101 +161,55 @@ fun HomeContent(
     groupsBody: (@Composable () -> Unit)? = null, groupBadge: Int = 0,
     /** Group chat requests (U3), above the chats; draws nothing when there are none. */
     requestsBlock: (@Composable () -> Unit)? = null,
+    /** Opens the full-screen search. */
+    onSearch: () -> Unit = {},
+    /** The call log for the Calls tab (newest first). */
+    history: List<CallRecord> = emptyList(),
+    canCall: (String) -> Boolean = { true },
+    isBlocked: (String) -> Boolean = { false },
+    onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {},
+    callLook: CallPhase = CallPhase.None,
 ) {
     val c = Tin.c
-    var searching by remember { mutableStateOf(startSearching) }
-    var query by remember { mutableStateOf(startQuery) }
-    val pill = when { !online && !connectingGrace -> PillState.Offline; !online -> PillState.Connecting; !available -> PillState.Away; else -> PillState.Available }
-    val sorted = remember(contacts) { contacts.sortedBy { it.display().lowercase() } }
-    // A search belongs to one tab: leaving the tab closes it.
-    LaunchedEffect(tab) { searching = false; query = "" }
     val banner: @Composable () -> Unit = { TopBanner(online, connectingGrace, missing, onFix, available, onTurnOn) }
-
-    // No contacts yet: the home screen is the add screen (my code, Copy, Share, Scan, Paste), on Chats and Contacts alike.
-    val firstRunShown = firstRun != null && contacts.isEmpty() && !searching && tab != HomeTab.Calls && tab != HomeTab.Groups
-    Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().imePadding()) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
+    val byDid = remember(contacts) { contacts.associateBy { it.did } }
+    // No contacts yet: Chats and Contacts are the add screen (my code, Copy, Share, Scan, Paste).
+    val firstRunShown = firstRun != null && contacts.isEmpty() && tab != HomeTab.Calls && tab != HomeTab.Groups &&
+        chatRows.none { it.group || (it.did != myDid && it.atMs > 0) }
+    val dock = tab == HomeTab.Chats || (tab == HomeTab.Groups && groupsBody != null)
+    val look = statusLook(call = callLook, conn = when { online -> ConnState.Online; connectingGrace -> ConnState.Connecting; else -> ConnState.Offline })
+    Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding()) {
+        HomeAppBar(look, showSearch = !dock, onSearch = onSearch, onSettings = onSettings)
+        TabPanel(tab, Modifier.weight(1f).fillMaxWidth()) { t ->
             Column(Modifier.fillMaxSize()) {
-                if (searching) SearchBar(query, { query = it }, onClose = { searching = false; query = "" }, hint = if (tab == HomeTab.Chats) "Search chats" else "Search contacts")
-                else {
-                    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val look = statusLook(conn = when { online -> ConnState.Online; connectingGrace -> ConnState.Connecting; else -> ConnState.Offline })
-                        TinMark(28.dp, live = true, state = look.state, sway = look.sway, dim = look.dim, description = look.label)
-                        Text("Tinline", Modifier.weight(1f), style = TinType.titleL.copy(fontSize = 22.sp, lineHeight = 28.sp), color = c.ink)
-                        StatusPill(pill, onAvailability)
-                        IconBtn(Icons.Rounded.Settings, "Settings", onSettings)
-                    }
-                }
-                if (firstRunShown) Column(Modifier.weight(1f)) { banner(); firstRun?.invoke() } else when (tab) {
-                    HomeTab.Chats -> Column(Modifier.weight(1f)) {
-                        if (!searching) requestsBlock?.invoke()
-                        Box(Modifier.weight(1f)) { ChatsBody(chatRows, query, banner, onSearch = { searching = true }, onChat = onChat, onNewChat = onNewChat, searching = searching, myDid = myDid) }
-                    }
-                    HomeTab.Groups -> Box(Modifier.weight(1f)) { groupsBody?.invoke() }
-                    HomeTab.Calls -> if (recents.isEmpty()) Column(Modifier.weight(1f)) {
-                        banner()
-                        if (callError != null) Text(callError, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = TinType.bodyM, color = c.er)
-                        Hint("No calls yet. History stays on this phone only.", Modifier.padding(24.dp))
-                    } else LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 24.dp)) {
-                        item { banner() }
-                        if (callError != null) item { Text(callError, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = TinType.bodyM, color = c.er) }
-                        item { SectionLabel("RECENT") }
-                        items(recents, key = { "r" + it.callId + it.whenText }) { r ->
-                            val k = r.kind
-                            val red = k == RecentCall.Kind.Missed
-                            val ctc = contacts.firstOrNull { it.did == r.did }
-                            RowItem(r.name, r.did, subIcon = recentIcon(k), sub = r.whenText, nameColor = if (red) c.er else c.ink, subColor = if (red) c.er else c.ink2,
-                                onClick = { ctc?.let(onContact) }, onCall = { ctc?.let(onCall) })
-                        }
-                        item { Hint("History stays on this phone only.", Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) }
-                    }
-                    HomeTab.Contacts -> Box(Modifier.weight(1f)) {
-                        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 112.dp)) {
-                            if (!searching) {
-                                item { banner() }
-                                item {
-                                    Row(
-                                        Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(50)).background(c.sf2)
-                                            .clickable(role = Role.Button) { searching = true }.padding(horizontal = 16.dp),
-                                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        Icon(Icons.Rounded.Search, null, tint = c.ink2)
-                                        Text("Search contacts", style = TinType.bodyL, color = c.ink2)
-                                    }
+                TabTitle(t.title)
+                val state = HomeScroll.states.getValue(t)
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    if (firstRunShown && t != HomeTab.Calls && t != HomeTab.Groups) Column(Modifier.fillMaxSize()) { banner(); firstRun?.invoke() }
+                    else when (t) {
+                        HomeTab.Chats -> ChatsTabBody(chatRows, state, onOpen = { r -> if (r.group) onGroup(r.did) else onChat(r.did) },
+                            top = { Column { banner(); requestsBlock?.invoke() } })
+                        HomeTab.Groups -> groupsBody?.invoke()
+                        HomeTab.Calls -> CallsTabBody(
+                            history, nameOf = { r -> byDid[r.peerDid]?.display() ?: r.peerName.ifBlank { "Unknown" } }, canCall = canCall, state = state,
+                            onProfile = { did -> byDid[did]?.let(onContact) }, onChat = onChat, onCall = { did -> byDid[did]?.let(onCall) },
+                            top = {
+                                Column {
+                                    banner()
+                                    if (callError != null) Text(callError, Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = TinFs.sub, color = c.danger)
                                 }
-                                if (callError != null) item { Text(callError, Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = TinType.bodyM, color = c.er) }
-                                item { SectionLabel("CONTACTS · ${contacts.size}") }
-                            } else item { SectionLabel("CONTACTS") }
-                            val shown = sorted.filter { it.display().matchesQuery(query) || it.name.matchesQuery(query) }
-                            items(shown, key = { it.did }) { ct ->
-                                RowItem(ct.display(), ct.did, sub = subLines[ct.did], subColor = if (subLines[ct.did]?.let { it.startsWith("Missed") || it.startsWith("Blocked") } == true) c.er else c.ink2, highlight = query, onClick = { onContact(ct) }, onCall = { onCall(ct) })
-                            }
-                            if (searching) item {
-                                Row(
-                                    Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp).fillMaxWidth().drawBehind {
-                                        drawRoundRect(c.ln2, cornerRadius = CornerRadius(14.dp.toPx()), style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))))
-                                    }.padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                ) {
-                                    Icon(Icons.Rounded.PersonAdd, null, tint = c.ink2)
-                                    Text("Not here? Tinline has no directory — add people with their code.", Modifier.weight(1f), style = TinType.bodyM, color = c.ink2)
-                                    Text("Add", Modifier.clickable(role = Role.Button) { onAdd(false) }.padding(8.dp), style = TinType.label.copy(fontWeight = FontWeight.Bold), color = c.pr)
-                                }
-                            }
-                        }
-                        if (!searching && contacts.isNotEmpty()) Row(
-                            Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp).depth(Depth.Lift, SmoothCornerShape(16.dp)).clip(SmoothCornerShape(16.dp)).background(c.pr)
-                                .clickable(role = Role.Button) { onAdd(false) }.heightIn(min = 56.dp).padding(start = 16.dp, end = 20.dp),
-                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Icon(Icons.Rounded.Add, null, tint = c.onPr)
-                            Text("Add contact", style = TinType.button, color = c.onPr)
-                        }
+                            },
+                        )
+                        HomeTab.Contacts -> ContactsTabBody(
+                            contacts, blocked = isBlocked, sub = { did -> if (isBlocked(did)) "Blocked" else subLines[did]?.takeIf { it.startsWith("Blocked") }.orEmpty() },
+                            state = state, onOpen = onContact, onAdd = { onAdd(false) }, top = { banner() },
+                        )
                     }
                 }
             }
         }
-        if (!searching) TinNavBar(tab, onTab, chatBadge, callBadge, showGroups = groupsBody != null, groupBadge = groupBadge) else Spacer(Modifier.navigationBarsPadding())
+        if (dock) SearchDock(if (tab == HomeTab.Groups) "New group" else "New chat", onSearch, if (tab == HomeTab.Groups) onNewGroup else onNewChat)
+        TinTabBar(tab, onTab, chatBadge, showGroups = groupsBody != null)
     }
 }
 

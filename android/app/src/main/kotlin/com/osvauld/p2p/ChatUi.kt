@@ -105,4 +105,8 @@ data class ChatRowUi(
     val mine: Boolean, val tick: Tick, val unread: Int,
     /** The preview is a block state ("Blocked" / "Blocked you"), shown in red. */
     val alert: Boolean = false,
+    /** A group conversation (the Chats tab lists 1:1 and groups together); [did] is then the group id. */
+    val group: Boolean = false,
+    /** Last activity, unix ms: the list's sort key. */
+    val atMs: Long = 0,
 )

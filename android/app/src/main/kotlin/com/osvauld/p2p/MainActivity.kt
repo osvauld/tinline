@@ -65,7 +65,7 @@ private sealed interface Route {
     data class Verify(val did: String) : Route
     data object Settings : Route
     data object History : Route
-    data class Chat(val did: String) : Route
+    data class Chat(val did: String, val searchHit: uniffi.p2pcore.MessageHit? = null) : Route
     data object NewChat : Route
     data object Battery : Route
     data object Passphrase : Route
@@ -94,6 +94,8 @@ private sealed interface Route {
     data object NewGroup : Route
     /** [token]: a tapped tinline://g/ link, prefilled. */
     data class JoinGroup(val token: String? = null) : Route
+    /** Full-screen search (Search.kt). */
+    data object Search : Route
 }
 
 @Composable
@@ -106,6 +108,8 @@ private fun Root(app: P2pApp) {
     val history by app.history.collectAsState()
     val adding by app.adding.collectAsState()
     val acct by app.accountDid.collectAsState()
+    LaunchedEffect(acct, lock) { if (lock != LockState.UNLOCKED) { ConversationDrafts.clear(); SearchJump.pending.value = null } }
+    DisposableEffect(acct) { onDispose { ConversationDrafts.clear(); SearchJump.pending.value = null } }
     val snack = remember { androidx.compose.material3.SnackbarHostState() }
     var forgot by rememberSaveable { mutableStateOf(false) }
     var onboarding by rememberSaveable { mutableStateOf(!app.node.hasIdentity()) }
@@ -242,7 +246,14 @@ private fun Root(app: P2pApp) {
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                     homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
                     say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
+                    onSearch = { stack.add(Route.Search) },
                 )
+                Route.Search -> SearchScreen(app, onBack = ::pop, onChat = { did ->
+                    val hit = SearchJump.pending.value?.takeIf { it.conv == did && it.kind == uniffi.p2pcore.SearchConvKind.DM }
+                    SearchJump.pending.value = null
+                    stack.add(Route.Chat(did, hit))
+                }, onGroup = { SearchJump.pending.value = null; stack.add(Route.Group(it)) },
+                    onContact = { SearchJump.pending.value = null; stack.add(Route.Contact(it)) })
                 is Route.Group -> GroupChatLive(app, r.id, onBack = ::pop, onInfo = { stack.add(Route.GroupInfo(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say)
                 is Route.GroupInfo -> GroupInfoLive(app, r.id, onBack = ::pop, onLink = { stack.add(Route.GroupToken(r.id)) }, onAddMembers = { stack.add(Route.AddMembers(r.id)) }, onRemoval = { stack.add(Route.GroupRemoval(r.id)) }, say = ::say,
                     onChat = { stack.add(Route.Chat(it)) })
@@ -266,7 +277,9 @@ private fun Root(app: P2pApp) {
                     ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self,
                         block = if (self) null else ConvBlock(blocks.of(r.did), blocks.composer(r.did, c != null), blocks.callGate(r.did, c != null)),
                         onUnblock = { app.unblock(r.did) }, onAddContact = { stack.add(Route.Add(true)) },
-                        notDelivered = { id -> app.notDeliveredReason(r.did, id) })
+                        notDelivered = { id -> app.notDeliveredReason(r.did, id) },
+                        onInfo = if (c != null) ({ stack.add(Route.Contact(r.did)) }) else null,
+                        searchHit = r.searchHit)
                 }
                 Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
                 is Route.Add -> AddContactScreen(app, r.scan, r.ticket, r.paste, onClose = ::pop,
