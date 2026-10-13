@@ -54,16 +54,22 @@ text in the app.
   is at least 4.5:1. Every control has a screen-reader label. RTL works (use start/end, never
   left/right).
 
-## 3. Foundations (being built now, use them, don't redo them)
-
-On branch `design/apps` (dev plus these docs), merged in from parallel branches as they land:
+## 3. Foundations (done, on `design/apps`; use them, don't redo them)
 
 | Foundation | Android | Desktop | Spec |
 |---|---|---|---|
-| Smooth corners (bubbles 18 outer / 6 stacking side, smoothing 0.6, grouped single/first/middle/last) | `Geometry.kt` (`SmoothCornerShape`) | `geom.rs` | `playground/src/lib/geom/GEOMETRY.md` |
-| Depth ladder flat / lift / pop / sheet | `Theme.kt` tokens | theme/shadow tokens | `PHILOSOPHY.md` §9, `playground/src/tokens.css` |
-| Logo Mark D, live (idle, ringing sway, connected taut, send pluck) | `Mark.kt` | `mark.rs` | `playground/src/lib/brand/` |
-| Icons (launcher, themed, notification, tray, window, packaging) | `res/` | `assets/` | `docs/design/brand/` |
+| Smooth corners (bubbles 18 outer / 6 stacking side, smoothing 0.6, grouped single/first/middle/last; runs = same sender, same day, within 5 min) | `Geometry.kt`: `SmoothCornerShape`, `bubbleShape(pos, mine)` | `geom.rs` (`run_pos`, `gap_above`), `shaped.rs` (widget that paints the smooth surface, rasterised with tiny-skia) | `playground/src/lib/geom/GEOMETRY.md` |
+| Depth ladder flat / lift / pop / sheet | `Theme.kt`: `Depth`, `Modifier.depth(level, shape)` | `ui.rs`: `ui::Depth`, `raised`, `pop_surface`, `sheet_surface` | `PHILOSOPHY.md` §9, `playground/src/tokens.css` |
+| Colours (bub-in, hairline, canvas, raised, danger, gold-ink) aligned with tokens.css | `Theme.kt` | `ui.rs` `Tok` | `playground/src/tokens.css` |
+| Logo Mark D, live (idle, ringing sway, connected taut, send pluck) and `statusLook` | `Mark.kt`: `TinMark`, `statusLook()`, `TinFx.messageSent()` | `mark.rs`, `ui::logo` / `ui::logo_live`, `status_look()` | `playground/src/lib/brand/` |
+| Icons (launcher, themed, notification, tray, window, packaging) | `res/` | `assets/`, `packaging/linux/` | `docs/design/brand/` |
+
+Notes from the port:
+- Android menus have plain round 14 dp corners: Material 3 1.3.1 menus only take theme `Shapes`, which must be
+  plain round corners. The dialog's shadow needs room inside its window (`TinDialog` keeps a 72 dp margin).
+- Desktop iced MSAA on this surface format is coarse, so curves (bubbles, logo) are rasterised with tiny-skia
+  and cached; draw new curved surfaces the same way.
+- The desktop tray icon states (available / in call / unavailable) are pending a user decision.
 
 Wiring left for the screens (the logo foundation exposes it; the screens hook it up):
 - Android call screen: the live mark (`TinMark(28.dp, live = true, state = Ringing | Taut)`) is centred in
