@@ -254,7 +254,7 @@ pub fn set_scale(s: f32) {
     }
 }
 
-fn scale() -> f32 {
+pub fn scale() -> f32 {
     f32::from_bits(SCALE_BITS.load(Ordering::Relaxed))
 }
 

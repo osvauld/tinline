@@ -470,6 +470,8 @@ impl Model {
 const KAPPA: f64 = 0.552_284_749_8;
 
 struct Space {
+    /// Draw-origin snap (px): moves the whole drawing, not the geometry.
+    snap: (f64, f64),
     ox: f64,
     oy: f64,
     k: f64,
@@ -479,7 +481,7 @@ struct Space {
 impl Space {
     fn pt(&self, x: f64, y: f64) -> Point {
         let x = if self.mirror { 24.0 - x } else { x };
-        Point::new(((x - self.ox) * self.k) as f32, ((y - self.oy) * self.k) as f32)
+        Point::new(((x - self.ox) * self.k + self.snap.0) as f32, ((y - self.oy) * self.k + self.snap.1) as f32)
     }
 }
 
@@ -510,16 +512,16 @@ fn body(sp: &Space, p: &Params, cx: f64) -> Path {
 }
 
 /// Draws the mark filling `size` x `size` px in `frame`.
-fn paint(frame: &mut canvas::Frame, size: f32, p: &Params, pose: Pose, can: Color, string: Color, mouth: Color) {
+fn paint(frame: &mut canvas::Frame, size: f32, snap: (f64, f64), p: &Params, pose: Pose, can: Color, string: Color, mouth: Color) {
     let k = size as f64 / p.vb.2;
     let cx = p.c - pose.delta;
     for mirror in [false, true] {
-        let sp = Space { ox: p.vb.0, oy: p.vb.1, k, mirror };
+        let sp = Space { snap, ox: p.vb.0, oy: p.vb.1, k, mirror };
         frame.fill(&body(&sp, p, cx), can);
         frame.fill(&ellipse(&sp, cx, p.a, p.b), can);
         frame.fill(&ellipse(&sp, cx, p.mu * p.a, p.mu * p.b), mouth);
     }
-    let sp = Space { ox: p.vb.0, oy: p.vb.1, k, mirror: false };
+    let sp = Space { snap, ox: p.vb.0, oy: p.vb.1, k, mirror: false };
     let x1 = p.c - pose.delta + p.ko;
     let x2 = 24.0 - x1;
     let line = Path::new(|q| {
@@ -655,7 +657,10 @@ impl<M> canvas::Program<M> for Prog {
             }
         };
         let fade = |c: Color| if self.look.dim { Color { a: c.a * 0.45, ..c } } else { c };
-        paint(&mut frame, self.size, m.params(), m.pose(), fade(self.can), fade(self.string), fade(MOUTH));
+        // The tiers are hinted for whole device pixels: round the draw origin to the device grid.
+        let sc = crate::ui::scale() as f64;
+        let snap = (((bounds.x as f64 * sc).round() / sc) - bounds.x as f64, ((bounds.y as f64 * sc).round() / sc) - bounds.y as f64);
+        paint(&mut frame, self.size, snap, m.params(), m.pose(), fade(self.can), fade(self.string), fade(MOUTH));
         vec![frame.into_geometry()]
     }
 }
