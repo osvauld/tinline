@@ -1,0 +1,14 @@
+[package]
+name = "tin-icons"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Tinline's line icons, generated from the mark's geometry; emits iced, Compose and playground sources"
+
+[dependencies]
+kurbo = "0.13"
+thiserror.workspace = true
+
+[[bin]]
+name = "tin-icons-gen"
+path = "src/bin/gen.rs"
