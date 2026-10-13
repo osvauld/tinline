@@ -10,9 +10,11 @@
 //! has settled it asks for nothing, so a still mark costs no CPU. Reduced motion jumps to end poses.
 
 use iced::mouse;
-use iced::widget::canvas::{self, Canvas, Path, Stroke};
-use iced::{window, Color, Element, Length, Point, Rectangle, Renderer, Theme};
-use std::sync::OnceLock;
+use iced::widget::canvas::{self, Canvas};
+use resvg::tiny_skia as sk;
+use std::collections::HashMap;
+use iced::{window, Color, Element, Length, Rectangle, Renderer, Theme};
+use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
 // ---- constants (tinmark.js DEF) ------------------------------------------------------------------------------
@@ -467,11 +469,11 @@ impl Model {
 }
 
 // ---- drawing --------------------------------------------------------------------------------------------------
+// Rasterised with tiny-skia at device pixels (exact anti-aliasing; iced's MSAA on the 10-bit surface gives
+// coarse edge coverage) and drawn as an image, cached by (tier, pose, colours, scale).
 const KAPPA: f64 = 0.552_284_749_8;
 
 struct Space {
-    /// Draw-origin snap (px): moves the whole drawing, not the geometry.
-    snap: (f64, f64),
     ox: f64,
     oy: f64,
     k: f64,
@@ -479,56 +481,115 @@ struct Space {
 }
 
 impl Space {
-    fn pt(&self, x: f64, y: f64) -> Point {
+    fn pt(&self, x: f64, y: f64) -> (f32, f32) {
         let x = if self.mirror { 24.0 - x } else { x };
-        Point::new(((x - self.ox) * self.k + self.snap.0) as f32, ((y - self.oy) * self.k + self.snap.1) as f32)
+        (((x - self.ox) * self.k) as f32, ((y - self.oy) * self.k) as f32)
     }
 }
 
-fn ellipse(sp: &Space, cx: f64, rx: f64, ry: f64) -> Path {
+fn ellipse(sp: &Space, cx: f64, rx: f64, ry: f64) -> Option<sk::Path> {
     let (cy, k) = (12.0, KAPPA);
-    Path::new(|p| {
-        p.move_to(sp.pt(cx + rx, cy));
-        p.bezier_curve_to(sp.pt(cx + rx, cy + k * ry), sp.pt(cx + k * rx, cy + ry), sp.pt(cx, cy + ry));
-        p.bezier_curve_to(sp.pt(cx - k * rx, cy + ry), sp.pt(cx - rx, cy + k * ry), sp.pt(cx - rx, cy));
-        p.bezier_curve_to(sp.pt(cx - rx, cy - k * ry), sp.pt(cx - k * rx, cy - ry), sp.pt(cx, cy - ry));
-        p.bezier_curve_to(sp.pt(cx + k * rx, cy - ry), sp.pt(cx + rx, cy - k * ry), sp.pt(cx + rx, cy));
-        p.close();
-    })
+    let mut b = sk::PathBuilder::new();
+    let m = |b: &mut sk::PathBuilder, c1: (f64, f64), c2: (f64, f64), e: (f64, f64)| {
+        let (a, c, d) = (sp.pt(c1.0, c1.1), sp.pt(c2.0, c2.1), sp.pt(e.0, e.1));
+        b.cubic_to(a.0, a.1, c.0, c.1, d.0, d.1);
+    };
+    let p = sp.pt(cx + rx, cy);
+    b.move_to(p.0, p.1);
+    m(&mut b, (cx + rx, cy + k * ry), (cx + k * rx, cy + ry), (cx, cy + ry));
+    m(&mut b, (cx - k * rx, cy + ry), (cx - rx, cy + k * ry), (cx - rx, cy));
+    m(&mut b, (cx - rx, cy - k * ry), (cx - k * rx, cy - ry), (cx, cy - ry));
+    m(&mut b, (cx + k * rx, cy - ry), (cx + rx, cy - k * ry), (cx + rx, cy));
+    b.close();
+    b.finish()
 }
 
 /// The can body: flat front at the rim, rounded back.
-fn body(sp: &Space, p: &Params, cx: f64) -> Path {
+fn body(sp: &Space, p: &Params, cx: f64) -> Option<sk::Path> {
     let (ym, yp, l, a, b, k) = (12.0 - p.b, 12.0 + p.b, p.l, p.a, p.b, KAPPA);
     let bx = cx - l;
-    Path::new(|q| {
-        q.move_to(sp.pt(cx, ym));
-        q.line_to(sp.pt(bx, ym));
-        q.bezier_curve_to(sp.pt(bx - k * a, ym), sp.pt(bx - a, 12.0 - k * b), sp.pt(bx - a, 12.0));
-        q.bezier_curve_to(sp.pt(bx - a, 12.0 + k * b), sp.pt(bx - k * a, yp), sp.pt(bx, yp));
-        q.line_to(sp.pt(cx, yp));
-        q.close();
-    })
+    let mut q = sk::PathBuilder::new();
+    let pt = |x, y| sp.pt(x, y);
+    let s = pt(cx, ym);
+    q.move_to(s.0, s.1);
+    let e = pt(bx, ym);
+    q.line_to(e.0, e.1);
+    let (c1, c2, d) = (pt(bx - k * a, ym), pt(bx - a, 12.0 - k * b), pt(bx - a, 12.0));
+    q.cubic_to(c1.0, c1.1, c2.0, c2.1, d.0, d.1);
+    let (c1, c2, d) = (pt(bx - a, 12.0 + k * b), pt(bx - k * a, yp), pt(bx, yp));
+    q.cubic_to(c1.0, c1.1, c2.0, c2.1, d.0, d.1);
+    let e = pt(cx, yp);
+    q.line_to(e.0, e.1);
+    q.close();
+    q.finish()
 }
 
-/// Draws the mark filling `size` x `size` px in `frame`.
-fn paint(frame: &mut canvas::Frame, size: f32, snap: (f64, f64), p: &Params, pose: Pose, can: Color, string: Color, mouth: Color) {
-    let k = size as f64 / p.vb.2;
+fn skc(c: Color) -> sk::Paint<'static> {
+    let mut p = sk::Paint::default();
+    p.set_color(sk::Color::from_rgba(c.r, c.g, c.b, c.a).unwrap_or(sk::Color::TRANSPARENT));
+    p.anti_alias = true;
+    p
+}
+
+/// The mark as straight-alpha RGBA, `px` x `px` device pixels for a `size` logical px box.
+fn rasterise(px: u32, p: &Params, pose: Pose, can: Color, string: Color, mouth: Color) -> iced::widget::image::Handle {
+    let blank = || iced::widget::image::Handle::from_rgba(1, 1, vec![0, 0, 0, 0]);
+    let Some(mut pm) = sk::Pixmap::new(px, px) else { return blank() };
+    let k = px as f64 / p.vb.2;
     let cx = p.c - pose.delta;
+    let id = sk::Transform::identity();
     for mirror in [false, true] {
-        let sp = Space { snap, ox: p.vb.0, oy: p.vb.1, k, mirror };
-        frame.fill(&body(&sp, p, cx), can);
-        frame.fill(&ellipse(&sp, cx, p.a, p.b), can);
-        frame.fill(&ellipse(&sp, cx, p.mu * p.a, p.mu * p.b), mouth);
+        let sp = Space { ox: p.vb.0, oy: p.vb.1, k, mirror };
+        if let Some(b) = body(&sp, p, cx) {
+            pm.fill_path(&b, &skc(can), sk::FillRule::Winding, id, None);
+        }
+        if let Some(r) = ellipse(&sp, cx, p.a, p.b) {
+            pm.fill_path(&r, &skc(can), sk::FillRule::Winding, id, None);
+        }
+        if let Some(m) = ellipse(&sp, cx, p.mu * p.a, p.mu * p.b) {
+            pm.fill_path(&m, &skc(mouth), sk::FillRule::Winding, id, None);
+        }
     }
-    let sp = Space { snap, ox: p.vb.0, oy: p.vb.1, k, mirror: false };
+    let sp = Space { ox: p.vb.0, oy: p.vb.1, k, mirror: false };
     let x1 = p.c - pose.delta + p.ko;
     let x2 = 24.0 - x1;
-    let line = Path::new(|q| {
-        q.move_to(sp.pt(x1, 12.0));
-        q.quadratic_curve_to(sp.pt(12.0 + 2.0 * pose.sag * pose.phi.sin(), 12.0 + 2.0 * pose.sag * pose.phi.cos()), sp.pt(x2, 12.0));
-    });
-    frame.stroke(&line, Stroke::default().with_width((p.stroke * k) as f32).with_color(string).with_line_cap(canvas::LineCap::Round).with_line_join(canvas::LineJoin::Round));
+    let mut q = sk::PathBuilder::new();
+    let a = sp.pt(x1, 12.0);
+    q.move_to(a.0, a.1);
+    let c = sp.pt(12.0 + 2.0 * pose.sag * pose.phi.sin(), 12.0 + 2.0 * pose.sag * pose.phi.cos());
+    let e = sp.pt(x2, 12.0);
+    q.quad_to(c.0, c.1, e.0, e.1);
+    if let Some(line) = q.finish() {
+        let st = sk::Stroke { width: (p.stroke * k) as f32, line_cap: sk::LineCap::Round, line_join: sk::LineJoin::Round, ..Default::default() };
+        pm.stroke_path(&line, &skc(string), &st, id, None);
+    }
+    let mut out = Vec::with_capacity(pm.data().len());
+    for p in pm.pixels() {
+        let c = p.demultiply();
+        out.extend_from_slice(&[c.red(), c.green(), c.blue(), c.alpha()]);
+    }
+    iced::widget::image::Handle::from_rgba(px, px, out)
+}
+
+type Key = (u32, u32, [u64; 3], [u32; 12]);
+
+/// Identical poses share one raster (a still mark rasterises once; moving marks fill and recycle the map).
+fn shared(px: u32, tier: u32, pose: Pose, cols: [Color; 3], make: impl FnOnce() -> iced::widget::image::Handle) -> iced::widget::image::Handle {
+    static CACHE: OnceLock<Mutex<HashMap<Key, iced::widget::image::Handle>>> = OnceLock::new();
+    let c = |c: Color| [c.r.to_bits(), c.g.to_bits(), c.b.to_bits(), c.a.to_bits()];
+    let [a, b, d] = cols;
+    let key: Key = (px, tier, [pose.delta.to_bits(), pose.sag.to_bits(), pose.phi.to_bits()], [c(a), c(b), c(d)].concat().try_into().unwrap());
+    let cache = CACHE.get_or_init(Default::default);
+    let mut map = cache.lock().unwrap();
+    if let Some(h) = map.get(&key) {
+        return h.clone();
+    }
+    if map.len() > 128 {
+        map.clear();
+    }
+    let h = make();
+    map.insert(key, h.clone());
+    h
 }
 
 // ---- widget -----------------------------------------------------------------------------------------------------
@@ -657,10 +718,19 @@ impl<M> canvas::Program<M> for Prog {
             }
         };
         let fade = |c: Color| if self.look.dim { Color { a: c.a * 0.45, ..c } } else { c };
-        // The tiers are hinted for whole device pixels: round the draw origin to the device grid.
-        let sc = crate::ui::scale() as f64;
-        let snap = (((bounds.x as f64 * sc).round() / sc) - bounds.x as f64, ((bounds.y as f64 * sc).round() / sc) - bounds.y as f64);
-        paint(&mut frame, self.size, snap, m.params(), m.pose(), fade(self.can), fade(self.string), fade(MOUTH));
+        let (can, string, mouth) = (fade(self.can), fade(self.string), fade(MOUTH));
+        // Device-pixel size and origin: exact edge pixels, no resampling.
+        let sc = crate::ui::scale();
+        let px = (self.size * sc).round().max(1.0) as u32;
+        let at = Rectangle {
+            x: (bounds.x * sc).round() / sc - bounds.x,
+            y: (bounds.y * sc).round() / sc - bounds.y,
+            width: px as f32 / sc,
+            height: px as f32 / sc,
+        };
+        let pose = m.pose();
+        let handle = shared(px, pick_tier(self.size), pose, [can, string, mouth], || rasterise(px, m.params(), pose, can, string, mouth));
+        frame.draw_image(at, canvas::Image::new(handle).filter_method(iced::widget::image::FilterMethod::Nearest).snap(true));
         vec![frame.into_geometry()]
     }
 }
