@@ -140,6 +140,9 @@ fn read_len(buf: &mut &[u8]) -> uniffi::Result<usize> {
     Ok(usize::try_from(i32::from_be_bytes(n.try_into().expect("4 bytes")))?)
 }
 
+#[path = "video_call/traffic.rs"]
+mod traffic;
+
 #[derive(Debug, Clone, Default, PartialEq, uniffi::Record)]
 pub struct VideoStats {
     pub frames_sent: u64,
@@ -152,6 +155,20 @@ pub struct VideoStats {
     pub decode_errors: u64,
     pub recv_width: u32,
     pub recv_height: u32,
+    /// AV1 payload accepted into the local sender, NOT transmitted/ACKed QUIC bytes.
+    pub admitted_payload_bytes: u64,
+    /// Complete validated AV1 payload received before decode/decoder-queue admission.
+    pub received_payload_bytes: u64,
+    pub frames_received: u64,
+}
+
+impl VideoStats {
+    fn record_admitted(&mut self, len: usize) {
+        traffic::record(&mut self.admitted_payload_bytes, &mut self.frames_sent, len);
+    }
+    fn record_received(&mut self, len: usize) {
+        traffic::record(&mut self.received_payload_bytes, &mut self.frames_received, len);
+    }
 }
 
 /// Video state changes of the current call (`negotiated` is known when the call goes active;
@@ -630,7 +647,7 @@ fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
             if send.send(capture_us, p.key, &p.data).is_err() {
                 return;
             }
-            st.frames_sent += 1;
+            st.record_admitted(p.data.len());
             st.keyframes_sent += p.key as u64;
         }
         send.encode_time(took.as_micros() as u64);
@@ -663,6 +680,7 @@ async fn run_recv(conn: Connection, pipe: Arc<Pipe>) {
         tokio::select! {
             f = recv.recv() => match f {
                 Ok(f) => {
+                    pipe.stats.lock().record_received(f.payload.len());
                     if tx.send(f).await.is_err() {
                         return;
                     }
@@ -912,6 +930,19 @@ impl Node {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn video_stats_keep_admission_receive_and_decode_distinct() {
+        let mut st = VideoStats::default();
+        st.bitrate_bps = 500_000;
+        st.record_admitted(137);
+        st.record_admitted(211);
+        st.record_received(137);
+        assert_eq!((st.admitted_payload_bytes, st.frames_sent), (348, 2));
+        assert_eq!((st.received_payload_bytes, st.frames_received), (137, 1));
+        assert_eq!(st.frames_decoded, 0);
+        assert_eq!(st.bitrate_bps, 500_000, "target is not measured payload traffic");
+    }
 
     #[test]
     fn fit_keeps_aspect_and_orientation() {

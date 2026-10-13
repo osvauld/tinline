@@ -7,6 +7,10 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Controlled quality experiment. Opt-in debug only; no release/default preference change.
+val videoHdCapture = (findProperty("videoHdCapture") as String? ?: "false").toBooleanStrictOrNull()
+    ?: throw GradleException("-PvideoHdCapture must be true or false")
+
 android {
     namespace = "com.osvauld.p2p"
     compileSdk = 36
@@ -15,6 +19,7 @@ android {
         applicationId = "com.osvauld.tinline"
         minSdk = 28
         targetSdk = 36
+        buildConfigField("boolean", "VIDEO_HD_CAPTURE", "false")
         // Play needs a higher code on every upload; scripts/build_android.py --bundle passes the commit count.
         versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (findProperty("versionName") as String?) ?: "0.1.31"
@@ -39,6 +44,9 @@ android {
         }
     }
     buildTypes {
+        getByName("debug") {
+            buildConfigField("boolean", "VIDEO_HD_CAPTURE", videoHdCapture.toString())
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
