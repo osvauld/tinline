@@ -368,6 +368,36 @@ impl App {
                             a.state = TransferState::Failed;
                         }
                     }
+                    // Runs of one-line and multi-line bubbles from each side, to look at the corners.
+                    "chat-runs" => {
+                        let tpl = self.chat.msgs.iter().find(|m| m.attachment.is_none() && !m.outgoing).cloned().unwrap();
+                        let lines = [
+                            (false, "Are you around?"),
+                            (false, "I found the place near the station, the kitchen is bigger than the photos made it look and there is a balcony facing the park"),
+                            (false, "Ok"),
+                            (true, "Yes, after five"),
+                            (true, "I will call you when I leave the office, the bus takes about twenty minutes and then we can walk over together"),
+                            (true, "Sounds good"),
+                            (true, "Bring the lease?"),
+                            (false, "Always"),
+                        ];
+                        let t0 = tpl.at;
+                        self.chat.msgs = lines
+                            .iter()
+                            .enumerate()
+                            .map(|(i, (out, text))| {
+                                let mut m = tpl.clone();
+                                m.id = format!("{peer}-r{i}");
+                                m.outgoing = *out;
+                                m.author_did = if *out { "did:me".into() } else { peer.clone() };
+                                m.at = t0 + i as u64 * 20_000;
+                                m.text = text.to_string();
+                                m.reply_to = None;
+                                m
+                            })
+                            .collect();
+                        self.chat.older = None;
+                    }
                     "chat-empty" => {
                         self.chat.msgs.clear();
                         self.chat.older = None;

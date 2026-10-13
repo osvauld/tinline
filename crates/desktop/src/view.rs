@@ -204,11 +204,7 @@ impl App {
 
     fn notice_bar(&self, t: Tok) -> El<'_> {
         match &self.notice {
-            Some(n) => container(tx(n.clone(), 14.0, t.on_primary_c))
-                .padding([10, 14])
-                .width(Fill)
-                .style(ui::plain(t.primary_c, 10.0))
-                .into(),
+            Some(n) => ui::raised(container(tx(n.clone(), 14.0, t.on_primary_c)).padding([10, 14]).width(Fill), t, ui::Depth::Pop, ui::plain(t.primary_c, 10.0)),
             None => Space::new().into(),
         }
     }
@@ -1667,13 +1663,23 @@ impl App {
             _ => t.ink,
         };
         let style = ui::button_style(t, if active { Kind::Primary } else { kind }, 999.0);
+        // Lift: the round call buttons sit above the surface. The fill under the button is its own.
+        let fill = match if active { Kind::Primary } else { kind } {
+            Kind::Primary => t.primary,
+            Kind::Accept => t.accept,
+            Kind::End => t.end,
+            _ => t.surface2,
+        };
+        let enabled = on.is_some();
+        let circle = button(container(ui::icon(icon, 28.0, fg)).center_x(68).center_y(68))
+            .padding(0)
+            .width(68)
+            .height(68)
+            .style(style)
+            .on_press_maybe(on);
+        let circle = ui::raised(circle, t, if enabled { ui::Depth::Lift } else { ui::Depth::Flat }, ui::plain(fill, 999.0));
         column![
-            button(container(ui::icon(icon, 28.0, fg)).center_x(68).center_y(68))
-                .padding(0)
-                .width(68)
-                .height(68)
-                .style(style)
-                .on_press_maybe(on),
+            circle,
             tx(text_.to_string(), 13.0, t.ink2),
         ]
         .spacing(8)
@@ -1878,7 +1884,8 @@ impl App {
     /// "Arjun is calling" over the call: no hold, so the choice is to refuse or to swap.
     fn waiting_banner<'a>(&self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
         let name = if w.peer_name.is_empty() { "Unknown".to_string() } else { w.peer_name.clone() };
-        container(
+        ui::raised(
+            container(
             row![
                 avatar(t, &name, &w.peer_did, 44.0),
                 column![
@@ -1892,11 +1899,13 @@ impl App {
             ]
             .spacing(12)
             .align_y(Alignment::Center),
+            )
+            .padding(14)
+            .width(Fill),
+            t,
+            ui::Depth::Pop,
+            ui::pop_surface(t, 14.0),
         )
-        .padding(14)
-        .width(Fill)
-        .style(ui::card(t))
-        .into()
     }
 
     fn ended_view(&self, t: Tok) -> El<'_> {

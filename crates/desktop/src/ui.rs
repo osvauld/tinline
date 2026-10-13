@@ -39,6 +39,13 @@ pub struct Tok {
     pub surface: Color,
     pub surface2: Color,
     pub surface3: Color,
+    /// Raised surfaces (tokens.css --surface-raised): the surface in light, the lighter --surface-2 in dark.
+    pub raised: Color,
+    /// Conversation area behind bubbles, hairline borders, received bubble fill and its hairline (tokens.css).
+    pub canvas: Color,
+    pub hairline: Color,
+    pub bub_in: Color,
+    pub bub_in_line: Color,
     pub ink: Color,
     pub ink2: Color,
     pub line: Color,
@@ -66,6 +73,11 @@ pub const LIGHT: Tok = Tok {
     surface: rgb(0xFFFFFF),
     surface2: rgb(0xECEFEB),
     surface3: rgb(0xE2E6E1),
+    raised: rgb(0xFFFFFF),
+    canvas: rgb(0xEDEFE9),
+    hairline: rgb(0xE2E7E1),
+    bub_in: rgb(0xFFFFFF),
+    bub_in_line: rgb(0xE2E7E1),
     ink: rgb(0x17201D),
     ink2: rgb(0x4D5853),
     line: rgb(0xD3D9D4),
@@ -80,9 +92,9 @@ pub const LIGHT: Tok = Tok {
     on_relay_c: rgb(0x4B5AA8),
     warn: rgb(0xFCEFD2),
     on_warn: rgb(0x5C3B00),
-    error: rgb(0xB3261E),
-    error_c: rgb(0xF9DEDC),
-    on_error_c: rgb(0x8C1D18),
+    error: rgb(0xA12B23),
+    error_c: rgb(0xF8E3E1),
+    on_error_c: rgb(0xA12B23),
     accept: rgb(0x0E7C69),
     end: rgb(0xC8372D),
 };
@@ -93,6 +105,11 @@ pub const DARK: Tok = Tok {
     surface: rgb(0x161D1B),
     surface2: rgb(0x1D2623),
     surface3: rgb(0x26302D),
+    raised: rgb(0x242D2A),
+    canvas: rgb(0x0B100E),
+    hairline: rgb(0x2A3531),
+    bub_in: rgb(0x1C2422),
+    bub_in_line: rgb(0x2A3531),
     ink: rgb(0xE6ECE9),
     ink2: rgb(0xA6B2AD),
     line: rgb(0x33403B),
@@ -108,8 +125,8 @@ pub const DARK: Tok = Tok {
     warn: rgb(0x4A3500),
     on_warn: rgb(0xFFDFA0),
     error: rgb(0xF2B8B5),
-    error_c: rgb(0x601410),
-    on_error_c: rgb(0xF9DEDC),
+    error_c: rgb(0x4D201C),
+    on_error_c: rgb(0xF2B8B5),
     accept: rgb(0x0E7C69),
     end: rgb(0xC8372D),
 };
@@ -372,10 +389,95 @@ pub fn card(t: Tok) -> impl Fn(&Theme) -> container::Style {
     }
 }
 
-pub fn plain(bg: Color, radius: f32) -> impl Fn(&Theme) -> container::Style {
+pub fn plain(bg: Color, radius: f32) -> impl Fn(&Theme) -> container::Style + Copy {
     move |_| container::Style {
         background: Some(Background::Color(bg)),
         border: Border { radius: radius.into(), ..Default::default() },
+        ..Default::default()
+    }
+}
+
+/// The depth ladder of tokens.css (PHILOSOPHY section 9). Flat is a hairline and no shadow; each step
+/// above is a contact layer plus an ambient layer. iced draws one shadow per quad, so `raised` nests two
+/// containers of the same size, one per layer. Light shadows are tinted with the palette green-black
+/// (9 23 17); dark raises with `Tok::raised` and the black shadow only helps.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Depth {
+    Flat,
+    /// Touchable raised controls: round call buttons, the to-bottom arrow.
+    Lift,
+    /// Menus, popovers, banners, toasts, incoming-call cards.
+    Pop,
+    /// Dialogs, sheets, drawers.
+    Sheet,
+}
+
+impl Depth {
+    /// (contact, ambient) as (alpha, y offset, blur) from `--shadow-*`.
+    fn layers(self, dark: bool) -> [(f32, f32, f32); 2] {
+        match (self, dark) {
+            (Depth::Flat, _) => [(0.0, 0.0, 0.0); 2],
+            (Depth::Lift, false) => [(0.10, 1.0, 2.0), (0.10, 3.0, 10.0)],
+            (Depth::Pop, false) => [(0.08, 2.0, 6.0), (0.14, 10.0, 32.0)],
+            (Depth::Sheet, false) => [(0.08, 2.0, 6.0), (0.18, 18.0, 56.0)],
+            (Depth::Lift, true) => [(0.34, 1.0, 2.0), (0.28, 3.0, 10.0)],
+            (Depth::Pop, true) => [(0.30, 2.0, 6.0), (0.40, 10.0, 32.0)],
+            (Depth::Sheet, true) => [(0.24, 2.0, 6.0), (0.40, 20.0, 64.0)],
+        }
+    }
+
+    fn shadow(l: (f32, f32, f32), dark: bool) -> iced::Shadow {
+        let c = if dark { Color::BLACK } else { rgb(0x091711) };
+        iced::Shadow { color: alpha(c, l.0), offset: iced::Vector::new(0.0, l.1), blur_radius: l.2 }
+    }
+
+    /// [contact, ambient] shadows for a scheme.
+    pub fn shadows(self, t: Tok) -> [iced::Shadow; 2] {
+        self.layers(t.dark).map(|l| Self::shadow(l, t.dark))
+    }
+
+    /// For widgets that take a single shadow (menus, buttons): the ambient layer alone, with the
+    /// contact layer's alpha folded in so the edge does not look weaker than the pair.
+    pub fn single(self, t: Tok) -> iced::Shadow {
+        let [c, a] = self.layers(t.dark);
+        Self::shadow((a.0 + c.0 * 0.5, a.1, a.2), t.dark)
+    }
+}
+
+/// Wraps `content` in `base` (background, border, radius) with the two shadow layers of `depth`.
+/// The wrapper takes the content's own size, so it can replace a plain `container(..).style(base)`.
+pub fn raised<'a, M: 'a>(
+    content: impl Into<Element<'a, M>>,
+    t: Tok,
+    depth: Depth,
+    base: impl Fn(&Theme) -> container::Style + Copy + 'a,
+) -> Element<'a, M> {
+    let content = content.into();
+    let size = content.as_widget().size();
+    if depth == Depth::Flat {
+        return container(content).width(size.width).height(size.height).style(base).into();
+    }
+    let [contact, ambient] = depth.shadows(t);
+    let inner = container(content).width(size.width).height(size.height).style(move |th: &Theme| container::Style { shadow: contact, ..base(th) });
+    container(inner).width(size.width).height(size.height).style(move |th: &Theme| container::Style { shadow: ambient, ..base(th) }).into()
+}
+
+/// Surface of a pop-level thing (menu, banner, card over content): raised fill and a hairline.
+pub fn pop_surface(t: Tok, radius: f32) -> impl Fn(&Theme) -> container::Style + Copy {
+    move |_| container::Style {
+        background: Some(Background::Color(t.raised)),
+        border: Border { color: t.surface3, width: 1.0, radius: radius.into() },
+        text_color: Some(t.ink),
+        ..Default::default()
+    }
+}
+
+/// Surface of a modal dialog or sheet: raised fill, no border (the shadow separates it).
+pub fn sheet_surface(t: Tok, radius: f32) -> impl Fn(&Theme) -> container::Style + Copy {
+    move |_| container::Style {
+        background: Some(Background::Color(t.raised)),
+        border: Border { radius: radius.into(), ..Default::default() },
+        text_color: Some(t.ink),
         ..Default::default()
     }
 }
@@ -506,7 +608,7 @@ pub fn menu_style(t: Tok) -> impl Fn(&Theme) -> iced::overlay::menu::Style {
         text_color: t.ink,
         selected_text_color: t.on_primary_c,
         selected_background: Background::Color(t.primary_c),
-        shadow: Default::default(),
+        shadow: Depth::Pop.single(t),
     }
 }
 

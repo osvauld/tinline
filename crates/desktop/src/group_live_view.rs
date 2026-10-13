@@ -7,6 +7,8 @@ use p2pcore::{GroupDelivery, GroupItemKind, GroupMessage, GroupRole};
 
 use super::groups_view::{btn, dot, footer, gav, hhmm, link_btn, message_body, ordinal, rule, short_time, sys, tag, when};
 use super::*;
+use crate::geom;
+use crate::shaped::shaped;
 use crate::app::group_live::{self as gl, first_name, short_dev, Action, LDialog, Lm, FLAGS_TO_REMOVE};
 
 fn l(m: Lm) -> Msg {
@@ -185,17 +187,28 @@ impl App {
             top = top.push(container(banner(t, "Waiting for a host", body, None, false)).padding([12, 20]));
         }
 
-        let mut list = column![].spacing(8).padding([16, 24]);
+        let mut list = column![].spacing(0).padding([16, 24]);
         if self.live.older.is_some() {
             list = list.push(container(link_btn(t, "Show earlier messages", t.primary, l(Lm::Older))).center_x(Fill));
         }
-        for m in &self.live.msgs {
-            list = list.push(self.live_item(t, m));
+        // Runs of one author's posts stack: tight corners on the stacking side, 2 px apart.
+        let join = |a: &GroupMessage, b: &GroupMessage| {
+            a.kind == GroupItemKind::Post
+                && b.kind == GroupItemKind::Post
+                && a.outgoing == b.outgoing
+                && (a.outgoing || a.author_did == b.author_did)
+                && !self.blocks.blocked_by_me(&b.author_did)
+                && a.at.abs_diff(b.at) <= geom::GROUP_GAP_MS
+                && super::groups_view::day(a.at) == super::groups_view::day(b.at)
+        };
+        for (i, m) in self.live.msgs.iter().enumerate() {
+            let pos = geom::run_pos(&self.live.msgs, i, join);
+            list = list.push(container(self.live_item(t, m, pos)).padding(iced::Padding { top: geom::gap_above(pos), ..Default::default() }));
         }
         if self.live.msgs.is_empty() {
             list = list.push(sys(t, "No messages yet"));
         }
-        let msgs = scroll(t, list).anchor_bottom().width(Fill).height(Fill);
+        let msgs = container(scroll(t, list).anchor_bottom().width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0));
 
         let bottom: El = match d.my_role {
             GroupRole::Removed => footer(
@@ -259,7 +272,7 @@ impl App {
         footer(t, c.into())
     }
 
-    fn live_item<'a>(&'a self, t: Tok, m: &'a GroupMessage) -> El<'a> {
+    fn live_item<'a>(&'a self, t: Tok, m: &'a GroupMessage, pos: geom::Pos) -> El<'a> {
         if m.kind == GroupItemKind::Removed && m.subject_did == self.live.me {
             return self.live_removal_card(t);
         }
@@ -286,7 +299,8 @@ impl App {
                 c = c.push(container(tx(q, 12.0, t.on_primary_c)).padding([4, 8]).style(ui::plain(ui::alpha(t.on_primary_c, 0.1), 8.0)));
             }
             c = c.push(message_body(&m.text, t.on_primary_c)).push(meta);
-            let b = container(c).padding([8, 12]).max_width(440).style(ui::plain(t.primary_c, 16.0));
+            let radii = geom::bubble_radii(pos, geom::Side::Right, geom::R_BUB, geom::R_BUB_TIGHT);
+            let b = shaped(container(c).padding([8, 12]).max_width(440), radii, t.primary_c);
             return row![Space::new().width(Fill), reply_btn, b].spacing(4).align_y(Alignment::Center).into();
         }
         let name = self.live_name(&m.author_did, &m.author_name);
@@ -307,7 +321,10 @@ impl App {
         }
         let (_, color) = ui::avatar_colors(t, &m.author_did);
         let who = if m.before_removal { format!("{} \u{b7} removed", first_name(&name)) } else { first_name(&name).to_string() };
-        let mut c = column![bold(who, 12.0, if m.before_removal { t.ink2 } else { color })].spacing(2);
+        let mut c = column![].spacing(2);
+        if !matches!(pos, geom::Pos::Mid | geom::Pos::Last) {
+            c = c.push(bold(who, 12.0, if m.before_removal { t.ink2 } else { color }));
+        }
         if let Some(q) = quote {
             c = c.push(container(tx(q, 12.0, t.ink2)).padding([4, 8]).style(ui::plain(t.surface2, 8.0)));
         }
@@ -317,7 +334,8 @@ impl App {
             meta = meta.push(tx(format!("\u{b7} written before {} was removed", first_name(&name)), 11.0, t.ink2));
         }
         c = c.push(meta);
-        let b = container(c).padding([8, 12]).max_width(440).style(ui::outlined(t.surface, t.line, 16.0));
+        let radii = geom::bubble_radii(pos, geom::Side::Left, geom::R_BUB, geom::R_BUB_TIGHT);
+        let b = shaped(container(c).padding([8, 12]).max_width(440), radii, t.bub_in).stroke(t.bub_in_line, 1.0);
         row![avatar(t, &name, &m.author_did, 28.0), b, reply_btn, Space::new().width(Fill)].spacing(6).align_y(Alignment::Center).into()
     }
 
@@ -942,7 +960,7 @@ impl App {
             LDialog::Host { accept } => c.push(actions("Cancel", Some(if *accept { ("Host here", Kind::Primary) } else { ("Stop hosting", Kind::Danger) }))),
             LDialog::Token { .. } | LDialog::Removal => c,
         };
-        let card = container(c).padding(28).width(540).style(ui::plain(t.surface, 20.0));
+        let card = ui::raised(container(c).padding(28).width(540), t, ui::Depth::Sheet, ui::sheet_surface(t, 24.0));
         let layer = container(opaque(card))
             .center_x(Fill)
             .center_y(Fill)
