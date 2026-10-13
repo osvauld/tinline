@@ -121,6 +121,14 @@ Recorded here so area work and the core teams see them. Drawer notes say "Decide
   bubbles stay pill-shaped (smoothing has no room there); the smoothing shows on taller shapes. Apps
   port the same construction (`src/lib/geom/GEOMETRY.md`).
 
+- **Open questions (user, 2026-10-13: "others are fine for now")**: the playground's current
+  answers stand for now: Android voice call keeps 5 controls (Mute · Camera · End · Flip · Speaker);
+  the desktop ring row, the send pluck strength and the step-8 people/devices answers (scanned-code
+  decline, pasted-code check, passphrase per device, unblock, device limit) stay as drawn. Their
+  drawer notes stay **Proposed** until the core decides them.
+- **Next (2026-10-13)**: port the designs to the apps (Android Compose, desktop iced), foundations
+  first: shapes, logo, icons, depth/tokens. Branch `design/apps` from dev.
+
 Core follow-ups these imply (not playground work):
 - Availability: the core refuses calls while unavailable (`set_available` controls call admission);
   it must keep admitting calls while Busy.
