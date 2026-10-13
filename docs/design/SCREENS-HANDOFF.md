@@ -71,6 +71,8 @@ Wiring left for the screens (the logo foundation exposes it; the screens hook it
   screen: a ringing mark replaces the `Glyphs.Cans` icon.
 - Send pluck: call `TinFx.messageSent()` when a send succeeds (`send()` in `Conversation.kt`). The
   home header mark uses `live = true` so it plucks.
+- Message spacing: 2 px between bubbles in a run, 10 px between runs (Android still uses 4 dp
+  everywhere). Emoji-only messages have no bubble surface, as in the playground.
 - Desktop: the same states from `mark.rs`, in the sidebar brand row and the call screen.
 
 Colours, type sizes, radii and spacing come from `playground/src/tokens.css`. Durations and easing
