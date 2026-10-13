@@ -14,6 +14,7 @@ import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.telecom.DisconnectCause
 import android.util.Log
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -31,12 +32,17 @@ data class CallUi(
     val info: CallInfo,
     val state: CallState,
     val muted: Boolean = false,
-    val speaker: Boolean = false,
+    /** Where the audio plays and what else is available (from Telecom, or the in-app fallback). */
+    val routes: RouteState = RouteState(),
+    /** On hold because another call (e.g. a phone call) took over; both directions are silent. */
+    val held: Boolean = false,
     val stats: CallStats? = null,
     val activeSinceMs: Long? = null,
     /** Shown on the call screen when the mic cannot be used (denied permission or init failure). */
     val micProblem: String? = null,
-)
+) {
+    val speaker: Boolean get() = routes.speaker
+}
 
 /** What the "Call ended" / "Couldn't reach" screens show once the call is gone. */
 data class EndedUi(
@@ -48,7 +54,10 @@ data class EndedUi(
 /** Thrown by [CallController.place] when the microphone permission is missing. */
 class MicPermissionNeeded : Exception("Microphone permission needed to place a call")
 
-/** Single place that reacts to call events: UI state, ringing, notifications, audio, service type. */
+/**
+ * Single place that reacts to call events: UI state, ringing, notifications, audio, service type.
+ * Each call is also registered with Android's Telecom through a [CallSession], which owns routing.
+ */
 class CallController(private val app: P2pApp) {
     private val _ui = MutableStateFlow<CallUi?>(null)
     val ui: StateFlow<CallUi?> = _ui
@@ -70,6 +79,12 @@ class CallController(private val app: P2pApp) {
     /** Whether the call screen is on top; if not, the waiting call also gets a notification. */
     @Volatile var callScreenShown = false
     private var proximity: PowerManager.WakeLock? = null
+
+    /** The current call's Telecom registration and audio; replaced per call. */
+    @Volatile private var session: CallSession? = null
+    @Volatile private var sessionWatch: Job? = null
+    /** Set when this side ends the call (a [DisconnectCause] code), so Telecom gets the right cause. */
+    @Volatile private var localEnd: Int? = null
 
     // Events for a call we are still placing arrive before node.call() has returned its id and
     // before _ui is set; they are held here and replayed (the desktop keeps the same `early` list).
@@ -97,6 +112,7 @@ class CallController(private val app: P2pApp) {
         everActive = false; _ended.value = null
         app.video.reset()
         _ui.value = CallUi(call, CallState.Ringing)
+        newSession(call)
         CoreService.ensureRunning(app)
         Notifications.incoming(app, call)
         startRinging()
@@ -141,16 +157,17 @@ class CallController(private val app: P2pApp) {
                     ?: return
                 inCallService(cur.info)
                 audio.muted = cur.muted
-                audio.start(cur.speaker)
-                updateProximity(!cur.speaker)
+                session?.connected() ?: audio.start()
+                updateProximity(cur.routes.earpiece)
                 startStats()
             }
             is CallState.Ended -> {
                 ringTimeout?.cancel()
                 stopRinging(); Notifications.cancelIncoming(app)
-                statsJob?.cancel(); audio.stop(); updateProximity(false)
+                statsJob?.cancel(); updateProximity(false)
                 app.video.reset()
                 val cur = _ui.value
+                endSession(cur?.takeIf { it.info.callId == callId }, state.reason)
                 if (cur != null && cur.info.callId == callId) {
                     val reason = state.reason
                     if (!everActive && isMissedReason(reason, cur.info.incoming)) Notifications.missed(app, cur.info.peerName)
@@ -165,6 +182,7 @@ class CallController(private val app: P2pApp) {
                     )
                     // End & answer: straight on to the new call, no "call ended" screen in between.
                     _ui.update { u -> if (u?.info?.callId == callId) next?.let { CallUi(it, CallState.Ringing) } else u }
+                    if (next != null) newSession(next)
                 }
                 CoreService.ensureRunning(app, CoreService.ACTION_IDLE)
             }
@@ -186,6 +204,7 @@ class CallController(private val app: P2pApp) {
         everActive = false; _ended.value = null
         val replay = synchronized(lock) {
             _ui.value = CallUi(info, CallState.Dialing)
+            newSession(info)
             placing = false
             early.filter { it.first == info.callId }.also { early.clear() }
         }
@@ -201,6 +220,7 @@ class CallController(private val app: P2pApp) {
         stopRinging(); Notifications.cancelIncoming(app)
         // Raise the service to microphone type while still allowed (user-initiated).
         inCallService(c.info)
+        session?.answering()
         app.scope.launch { try { app.node.answer(c.info.callId) } catch (e: Exception) { Log.w("Call", "answer: $e") } }
     }
 
@@ -208,6 +228,7 @@ class CallController(private val app: P2pApp) {
         val c = _ui.value ?: return
         ringTimeout?.cancel()
         stopRinging(); Notifications.cancelIncoming(app)
+        localEnd = DisconnectCause.REJECTED
         app.scope.launch { try { app.node.decline(c.info.callId) } catch (e: Exception) { Log.w("Call", "decline: $e") } }
     }
 
@@ -223,6 +244,7 @@ class CallController(private val app: P2pApp) {
         val w = _waiting.value ?: return
         clearWaiting()
         takeover = w
+        localEnd = DisconnectCause.LOCAL
         inCallService(w)
         everActive = false
         app.scope.launch {
@@ -252,6 +274,7 @@ class CallController(private val app: P2pApp) {
 
     fun hangup() {
         val c = _ui.value ?: return
+        localEnd = DisconnectCause.LOCAL
         app.scope.launch { try { app.node.hangup(c.info.callId) } catch (e: Exception) { Log.w("Call", "hangup: $e") } }
     }
 
@@ -260,19 +283,69 @@ class CallController(private val app: P2pApp) {
         audio.muted = n.muted
     }
 
+    /** The system microphone mute changed (a car or headset mute button): follow it. */
+    private fun systemMute(callId: String, m: Boolean) {
+        val n = _ui.updateAndGet { if (it?.info?.callId == callId) it.copy(muted = m) else it } ?: return
+        if (n.info.callId == callId) audio.muted = m
+    }
+
+    /** Answer/hang-up from outside the app (headset button, car, watch). */
+    private fun systemAnswer(callId: String) {
+        val c = _ui.value ?: return
+        if (c.info.callId == callId && c.info.incoming && c.state is CallState.Ringing) answer()
+    }
+
+    private fun systemDisconnect(callId: String) {
+        val c = _ui.value ?: return
+        if (c.info.callId != callId) return
+        if (c.info.incoming && c.state is CallState.Ringing) decline() else hangup()
+    }
+
+    /** Registers [info] with Telecom; the routes and hold state it reports feed [ui]. */
+    private fun newSession(info: CallInfo) {
+        session?.end(DisconnectCause.LOCAL)
+        sessionWatch?.cancel()
+        localEnd = null
+        val id = info.callId
+        val s = CallSession(
+            app.scope, app, audio, info.peerName.ifBlank { "Tinline call" }, info.incoming, preferSpeaker = false,
+            onAnswer = { systemAnswer(id) }, onDisconnect = { systemDisconnect(id) }, onSystemMute = { systemMute(id, it) },
+        )
+        session = s
+        sessionWatch = app.scope.launch {
+            launch { s.held.collect { h -> _ui.update { if (it?.info?.callId == id) it.copy(held = h) else it } } }
+            s.routes.collect { st ->
+                val n = _ui.updateAndGet { if (it?.info?.callId == id) it.copy(routes = st) else it }
+                if (n?.info?.callId == id && n.state is CallState.Active) updateProximity(st.earpiece)
+            }
+        }
+    }
+
+    private fun endSession(cur: CallUi?, reason: String) {
+        val s = session ?: run { audio.stop(); return }
+        session = null
+        sessionWatch?.cancel(); sessionWatch = null
+        val cause = localEnd ?: when {
+            cur != null && !everActive && cur.info.incoming && isMissedReason(reason, true) -> DisconnectCause.MISSED
+            else -> DisconnectCause.REMOTE
+        }
+        localEnd = null
+        s.end(cause)
+    }
+
     /** The call screen's remote-video renderer while it shows video; read by the stats log. */
     @Volatile var renderer: RemoteRenderer? = null
 
-    /** Video calls are held away from the ear: the camera going on also moves audio to the speaker. */
-    fun speakerForVideo() { if (_ui.value?.speaker == false) toggleSpeaker() }
+    /** Video calls are held away from the ear: the camera going on moves the earpiece to the speaker (headsets stay). */
+    fun speakerForVideo() { session?.speakerIfEarpiece() }
 
-    fun toggleSpeaker() {
-        val n = _ui.updateAndGet { it?.copy(speaker = !it.speaker) } ?: return
-        audio.setSpeaker(n.speaker)
-        if (n.state is CallState.Active) updateProximity(!n.speaker)
-    }
+    /** Earpiece/headset <-> loudspeaker. */
+    fun toggleSpeaker() { session?.toggleSpeaker() }
 
-    /** Screen off against the ear while a call is active and not on speaker. */
+    /** Play the call through [route] (one of [CallUi.routes]). */
+    fun selectRoute(route: AudioRoute) { session?.select(route) }
+
+    /** Screen off against the ear while a call is active on the earpiece. */
     @Synchronized
     private fun updateProximity(want: Boolean) {
         try {

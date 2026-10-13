@@ -193,6 +193,24 @@ fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: 
 
 private fun routeLabel(speaker: Boolean) = if (speaker) "Speaker" else "Phone"
 
+private fun routeIcon(k: AudioRoute.Kind): ImageVector = when (k) {
+    AudioRoute.Kind.Earpiece -> Icons.Rounded.PhoneInTalk
+    AudioRoute.Kind.Speaker -> Icons.Rounded.VolumeUp
+    AudioRoute.Kind.Bluetooth -> Icons.Rounded.Bluetooth
+    AudioRoute.Kind.Wired -> Icons.Rounded.Headphones
+    AudioRoute.Kind.Other -> Icons.Rounded.VolumeUp
+}
+
+/** The speaker slot's caption and icon: "Speaker" until a headset is connected, then the route in use. */
+private fun routeSlot(routes: RouteState?): Pair<String, ImageVector> {
+    val cur = routes?.current
+    return if (routes?.hasHeadset == true && cur != null && cur.kind != AudioRoute.Kind.Speaker)
+        Routes.label(cur) to routeIcon(cur.kind)
+    else "Speaker" to CallGlyphs.Speaker
+}
+
+private const val HELD = "On hold while your other call is on"
+
 /** One caller waiting over the answered call; no hold. Existing controller callbacks decide admission. */
 @Composable
 fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer: () -> Unit) {
@@ -244,20 +262,22 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
             VideoCallContent(
                 name = name, did = ui.info.peerDid, secs = secs, direct = s?.direct, bars = bars, reconnecting = s?.reconnecting == true,
                 muted = ui.muted, speaker = ui.speaker, localCamera = v.localCamera, remoteCamera = v.remoteCamera,
-                problem = ui.micProblem ?: videoProblem,
+                problem = if (ui.held) HELD else ui.micProblem ?: videoProblem,
                 onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onCamera = onCamera,
                 onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
                 remote = { m -> RemoteVideo(app, calls, m) },
                 selfView = { m -> SelfView(app, front, m) },
+                routes = ui.routes, onRoute = { calls.selectRoute(it) },
             )
         }
     } else InCallContent(
         name = name, did = ui.info.peerDid, meName = meName,
         active = active, ringing = ui.state is CallState.Ringing, secs = secs,
         direct = s?.direct, bars = bars,
-        muted = ui.muted, speaker = ui.speaker, micProblem = ui.micProblem ?: videoProblem, reconnecting = s?.reconnecting == true,
+        muted = ui.muted, speaker = ui.speaker, micProblem = if (ui.held) HELD else ui.micProblem ?: videoProblem, reconnecting = s?.reconnecting == true,
         onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
         onCamera = if (v != null) onCamera else null,
+        routes = ui.routes, onRoute = { calls.selectRoute(it) },
     )
 }
 
@@ -269,26 +289,38 @@ fun InCallContent(
     reconnecting: Boolean = false,
     /** Set when the call has video: the camera button (the camera is off on this screen). */
     onCamera: (() -> Unit)? = null,
+    /** The live routes; with a headset connected the speaker slot opens the route sheet instead of toggling. */
+    routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {},
 ) {
     var routeSheet by remember { mutableStateOf(startWithSheet) }
     var info by remember { mutableStateOf(false) }
+    val (caption, icon) = routeSlot(routes)
     CallFocus(name.ifBlank { "Unknown" }, did, active, ringing, secs, reconnecting, micProblem,
         onMinimise = onMinimise, onInfo = { info = true }) {
-        CallControls(muted, speaker, camera = false, onMute, onSpeaker, onCamera, onFlip = null, onEnd)
+        CallControls(muted, speaker, camera = false, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
+            onCamera, onFlip = null, onEnd, caption, icon)
     }
     if (info) CallInfo(name, active, onDismiss = { info = false })
-    if (routeSheet) AudioRouteSheet(speaker, relayed = active && direct == false, onDismiss = { routeSheet = false },
-        onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false })
+    if (routeSheet) AudioRouteSheet(speaker, routes, relayed = active && direct == false, onDismiss = { routeSheet = false },
+        onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false },
+        onRoute = { onRoute(it); routeSheet = false })
 }
 
 @Composable
-private fun AudioRouteSheet(speaker: Boolean, relayed: Boolean, onDismiss: () -> Unit, onPick: (speaker: Boolean) -> Unit) {
+private fun AudioRouteSheet(speaker: Boolean, routes: RouteState?, relayed: Boolean, onDismiss: () -> Unit,
+    onPick: (speaker: Boolean) -> Unit, onRoute: (AudioRoute) -> Unit) {
     val c = Tin.c
     TinSheet(onDismiss) {
         Text("Play call through", Modifier.padding(start = 8.dp, top = 12.dp, bottom = 8.dp), style = TinType.titleL.copy(fontSize = 20.sp), color = c.ink)
-        RouteOption(Icons.Rounded.PhoneInTalk, "Phone", !speaker) { onPick(false) }
-        RouteOption(Icons.Rounded.VolumeUp, "Speaker", speaker) { onPick(true) }
-        // Bluetooth and wired headsets join this list once AudioEngine can route to them.
+        if (routes != null && routes.available.isNotEmpty()) {
+            // Earpiece first, then speaker, then headsets, as a phone's own call screen orders them.
+            routes.available.sortedBy { it.kind.ordinal }.forEach { r ->
+                RouteOption(routeIcon(r.kind), Routes.label(r), r.key == routes.current?.key) { onRoute(r) }
+            }
+        } else {
+            RouteOption(Icons.Rounded.PhoneInTalk, "Phone", !speaker) { onPick(false) }
+            RouteOption(Icons.Rounded.VolumeUp, "Speaker", speaker) { onPick(true) }
+        }
         if (relayed) Hint("Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you.", Modifier.padding(start = 8.dp, end = 8.dp, top = 12.dp))
     }
 }
@@ -321,9 +353,12 @@ fun VideoCallContent(
     muted: Boolean, speaker: Boolean, localCamera: Boolean, remoteCamera: Boolean, problem: String?,
     onMute: () -> Unit, onSpeaker: () -> Unit, onCamera: () -> Unit, onFlip: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit,
     remote: @Composable (Modifier) -> Unit, selfView: @Composable (Modifier) -> Unit,
+    routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {},
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
+    var routeSheet by remember { mutableStateOf(false) }
+    val (caption, icon) = routeSlot(routes)
     Box(Modifier.fillMaxSize().background(VideoBg)) {
         if (remoteCamera) remote(Modifier.fillMaxSize())
         else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
@@ -355,11 +390,15 @@ fun VideoCallContent(
             Text(problem ?: " ", Modifier.padding(horizontal = 24.dp).fillMaxWidth().heightIn(min = 38.dp),
                 style = TinType.bodyM, color = c.er, maxLines = 2, textAlign = TextAlign.Center)
             Box(Modifier.padding(horizontal = 20.dp)) {
-                CallControls(muted, speaker, localCamera, onMute, onSpeaker, onCamera, onFlip, onEnd)
+                CallControls(muted, speaker, localCamera, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
+                    onCamera, onFlip, onEnd, caption, icon)
             }
         }
     }
     if (info) CallInfo(name, active = true, onDismiss = { info = false })
+    if (routeSheet) AudioRouteSheet(speaker, routes, relayed = direct == false, onDismiss = { routeSheet = false },
+        onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false },
+        onRoute = { onRoute(it); routeSheet = false })
 }
 
 /** The peer's decoded frames, pulled on the display clock by a [RemoteRenderer] while shown. */

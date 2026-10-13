@@ -74,7 +74,9 @@ private fun CallTopButton(icon: ImageVector, label: String, onClick: () -> Unit)
 /** Five stable slots. End stays on the axis; Flip never vanishes when the camera turns off. */
 @Composable
 internal fun CallControls(muted: Boolean, speaker: Boolean, camera: Boolean, onMute: () -> Unit,
-    onSpeaker: () -> Unit, onCamera: (() -> Unit)?, onFlip: (() -> Unit)?, onEnd: () -> Unit) {
+    onSpeaker: () -> Unit, onCamera: (() -> Unit)?, onFlip: (() -> Unit)?, onEnd: () -> Unit,
+    /** With a headset connected the speaker slot becomes the route picker: its name and icon. */
+    routeCaption: String = "Speaker", routeIcon: ImageVector = CallGlyphs.Speaker) {
     val c = Tin.c
     val fill = if (c.dark) lerp(c.sf, c.ink, .14f) else c.sf
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -84,7 +86,7 @@ internal fun CallControls(muted: Boolean, speaker: Boolean, camera: Boolean, onM
             if (camera) c.ink else fill, if (camera) c.bg else c.ink, onCamera ?: {}, enabled = onCamera != null, selected = camera)
         CallControl("End call", "End", CallGlyphs.Phone, c.callButtonEnd, Color.White, onEnd)
         CallControl("Flip camera", "Flip", CallGlyphs.Flip, fill, c.ink, onFlip ?: {}, enabled = camera && onFlip != null)
-        CallControl("Speaker", "Speaker", CallGlyphs.Speaker, if (speaker) c.ink else fill,
+        CallControl(if (routeCaption == "Speaker") "Speaker" else "Audio: $routeCaption", routeCaption, routeIcon, if (speaker) c.ink else fill,
             if (speaker) c.bg else c.ink, onSpeaker, selected = speaker)
     }
 }
