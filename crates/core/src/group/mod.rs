@@ -12,6 +12,7 @@ pub mod mail;
 pub mod own;
 pub mod record;
 pub mod requests;
+pub mod shard;
 pub mod state;
 pub mod store;
 pub mod wire;

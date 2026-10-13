@@ -12,6 +12,11 @@ use super::policy::*;
 use super::select::*;
 use super::*;
 
+#[path = "tests/stall.rs"]
+mod stall;
+#[path = "tests/mix_alloc.rs"]
+mod mix_alloc;
+
 const OLGA: usize = 0;
 const A1: usize = 1; // alice, device 1
 const A2: usize = 2; // alice, device 2 (same DID)

@@ -16,8 +16,10 @@ pub mod gcall;
 mod logging;
 mod node;
 mod rekey;
+mod search;
 mod store;
 mod sync;
+pub mod synth;
 mod version;
 #[cfg(test)]
 mod account_tests;
@@ -29,12 +31,26 @@ mod voice;
 mod wire;
 
 pub use error::Error;
+
+/// Benchmark entry for the `search-bench` binary.
+#[doc(hidden)]
+pub fn search_bench(n: usize, dir: &std::path::Path) {
+    search::bench::run(n, dir)
+}
+
+/// Benchmark entry for `search-bench <n> <dir> live`: the send path with production timing.
+#[doc(hidden)]
+pub fn search_bench_live(n: usize, dir: &std::path::Path) {
+    search::bench::run_live(n, dir)
+}
+
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
 pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary};
 pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents};
 pub use group::calls::{GroupCall, GroupCallConditions, GroupCallDeviceClass, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupCallHere, GroupCallThermal};
 pub use group::invitations::{GroupInvitation, GroupInvitationEvents, GroupInvitationState};
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
+pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameKind, SearchResults};
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
