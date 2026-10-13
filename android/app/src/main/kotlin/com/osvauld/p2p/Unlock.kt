@@ -45,7 +45,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun AppIconBadge(size: androidx.compose.ui.unit.Dp) {
     Box(Modifier.size(size).clip(RoundedCornerShape(size * 0.28f)).background(Color(0xFF0B6B5B)), contentAlignment = Alignment.Center) {
-        TinMark(size * 0.62f, can = Color(0xFFF5F6F3), string = Color(0xFFE8B04A))
+        TinMark(size * 0.62f, can = Color(0xFFF5F6F3), string = Color(0xFFE8B04A), mouth = Color(0xFF0B6B5B))
     }
 }
 
