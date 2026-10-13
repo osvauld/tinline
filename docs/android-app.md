@@ -48,9 +48,20 @@ Mic: `AudioRecord(VOICE_COMMUNICATION, 48000, MONO, PCM_16BIT)` with `AcousticEc
 `NoiseSuppressor`, `AutomaticGainControl` enabled when available; a thread reads 960-sample
 frames → `pushMic`. Speaker: `AudioTrack` (`USAGE_VOICE_COMMUNICATION`,
 `CONTENT_TYPE_SPEECH`, 48 kHz mono PCM16, stream mode, low-latency perf mode); a thread loops
-`pullSpeaker` → blocking `write` (the write paces the loop). Earpiece by default; speaker toggle
-via `setCommunicationDevice` (API 31+) / `isSpeakerphoneOn` below. Mute pushes zeros. Bluetooth
-is out of scope for v1.
+`pullSpeaker` → blocking `write` (the write paces the loop). Mute pushes zeros.
+
+Routing: every 1:1 and group call is registered with Telecom as a self-managed call
+(`CallSession`, androidx `core-telecom` 1.0.1, `MANAGE_OWN_CALLS`). Telecom owns audio mode, focus and
+routing: its endpoints (earpiece, speaker, Bluetooth/LE/hearing aid by name, wired) feed the route
+sheet; headset/car/watch answer and hang-up reach `CallController`; a phone call taking over puts
+ours on hold (`held`: silence both ways). Only the display name (peer or group name) goes to
+Telecom; the address is the constant `tinline:call`, never a DID. If Telecom refuses the call,
+`AudioEngine.takeRouting` does it in-app (communication devices on API 31+, speakerphone/SCO
+below), following headsets that connect or disconnect. Starting route (`Routes.pickDefault`): a
+headset, else earpiece for 1:1 and speaker for group/video. With a headset available the speaker
+slot opens the route sheet. Proximity screen-off only on the earpiece. Without `BLUETOOTH_CONNECT`
+(Android 12+) a headset shows as "Bluetooth" and Telecom picks which one; the route sheet then offers
+"Show my headset names", which asks for it (gallery: `incall_bt`, `incall_bt_sheet`).
 
 ## UI (Compose, Material 3, Tinline design)
 

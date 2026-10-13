@@ -1,12 +1,14 @@
 package com.osvauld.p2p
 
 import android.Manifest
+import android.telecom.DisconnectCause
 import android.util.Log
 import java.util.concurrent.Executors
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.GroupCallEvent
 import uniffi.p2pcore.GroupCallEventKind
@@ -24,7 +26,10 @@ import uniffi.p2pcore.GroupCallHere
  * threads and can arrive out of order (a superseded call's Left after the winner's Joined).
  * `Node.pushMicPcm16`/`pullSpeakerPcm16` reach the group call whenever no 1:1 call is active.
  *
- * The call screens (next packet) use [here], [events], [prepare], [leave] and [setSpeaker].
+ * While in the call it is registered with Telecom as a [CallSession] named after the group, so
+ * headsets, cars and watches see it; it starts on the loudspeaker unless a headset is connected.
+ *
+ * The call screens (next packet) use [here], [events], [prepare], [leave], [routes] and [setSpeaker]/[selectRoute].
  */
 class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
     private val audio by lazy { AudioEngine(app, { app.node }, ::micUnavailable) }
@@ -39,9 +44,12 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
     private val _micProblem = MutableStateFlow<String?>(null)
     val micProblem: StateFlow<String?> = _micProblem
 
-    /** Group calls default to the loudspeaker (no proximity handling yet). */
-    @Volatile var speaker = true
-        private set
+    private val _routes = MutableStateFlow(RouteState())
+    /** Where the group call's audio plays (empty while not in a call). */
+    val routes: StateFlow<RouteState> = _routes
+    /** Worker thread only. */
+    private var session: CallSession? = null
+    private var sessionWatch: Job? = null
     /** [prepare] raised the service for a call that has not shown up yet. */
     @Volatile private var prepared = false
 
@@ -74,9 +82,37 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
         app.scope.launch { try { app.node.groupCallLeave() } catch (e: Exception) { Log.w(TAG, "leave: $e") } }
     }
 
+    /** Group calls start on the loudspeaker unless a headset is connected; this switches explicitly. */
     fun setSpeaker(on: Boolean) {
-        speaker = on
-        audio.setSpeaker(on)
+        worker.execute { if (_routes.value.speaker != on) session?.toggleSpeaker() }
+    }
+
+    fun selectRoute(route: AudioRoute) {
+        worker.execute { session?.select(route) }
+    }
+
+    private fun groupName(groupId: String): String =
+        try { app.node.groups().firstOrNull { it.id == groupId }?.name } catch (e: Exception) { null }?.ifBlank { null } ?: NAME
+
+    /** Worker thread only. */
+    private fun startSession(h: GroupCallHere) {
+        if (session != null) return
+        val s = CallSession(
+            app.scope, app, audio, groupName(h.groupId), incoming = false, preferSpeaker = true,
+            onAnswer = {}, onDisconnect = { leave() }, onSystemMute = { audio.muted = it },
+        )
+        session = s
+        sessionWatch = app.scope.launch { s.routes.collect { _routes.value = it } }
+        s.connected()
+    }
+
+    /** Worker thread only. */
+    private fun endSession() {
+        val s = session ?: run { audio.stop(); return }
+        session = null
+        sessionWatch?.cancel(); sessionWatch = null
+        s.end(DisconnectCause.LOCAL)
+        _routes.value = RouteState()
     }
 
     private fun micUnavailable() {
@@ -94,8 +130,8 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
         _here.value = h
         if (h?.inCall == true) {
             if (was?.inCall != true) _micProblem.value = null
-            audio.start(speaker)
-        } else audio.stop()
+            startSession(h)
+        } else endSession()
         if (h != null) {
             prepared = false
             if (was == null) CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL, NAME)
