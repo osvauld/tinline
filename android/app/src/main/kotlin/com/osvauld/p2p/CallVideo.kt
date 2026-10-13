@@ -37,6 +37,9 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     val io = VideoIo { app.node }
     /** The camera was on when the call screen went away; it comes back on with the screen. */
     @Volatile private var paused = false
+    private val rates = VideoRateMeter()
+    @Volatile private var capturePreference = "-"
+    @Volatile private var actualCapture = "-"
 
     override fun onVideoState(info: VideoInfo) {
         testLog("video_state id=${info.callId} negotiated=${info.negotiated} local=${info.localCamera} remote=${info.remoteCamera}")
@@ -68,13 +71,24 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     /** The call ended. */
     fun reset() {
         _info.value = null; _problem.value = null; paused = false; _front.value = true
+        rates.reset(); capturePreference = "-"; actualCapture = "-"
     }
 
     fun statsLine(r: RemoteRenderer?): String {
         val i = app.node.videoInfo()
         val s = app.node.videoStats()
+        val measured = if (i != null && s != null) rates.sample(System.nanoTime(), VideoRateSnapshot(
+            i.callId, s.framesSent, s.framesReceived, s.framesDecoded,
+            s.admittedPayloadBytes, s.receivedPayloadBytes,
+        )) else { rates.reset(); null }
+        fun value(v: Double?) = v?.let { "%.1f".format(java.util.Locale.ROOT, it) } ?: "unknown"
+        val rateLine = "target_kbps=${s?.bitrateBps?.div(1000u)} " +
+            "admitted_payload_kbps=${value(measured?.admittedPayloadKbps)} received_payload_kbps=${value(measured?.receivedPayloadKbps)} " +
+            "admitted_fps=${value(measured?.admittedFps)} received_fps=${value(measured?.receivedFps)} decoded_fps=${value(measured?.decodedFps)} " +
+            "capture_pref=$capturePreference capture_actual=$actualCapture "
         return "video_stats negotiated=${i?.negotiated} local=${i?.localCamera} remote=${i?.remoteCamera} " +
             "sent=${s?.framesSent} keys=${s?.keyframesSent} send=${s?.sendWidth}x${s?.sendHeight} kbps=${s?.bitrateBps?.div(1000u)} " +
+            rateLine + "admitted_payload_bytes=${s?.admittedPayloadBytes} received_payload_bytes=${s?.receivedPayloadBytes} received=${s?.framesReceived} " +
             "enc_ms=${s?.encodeMs?.let { "%.1f".format(it) }} decoded=${s?.framesDecoded} errors=${s?.decodeErrors} " +
             "recv=${s?.recvWidth}x${s?.recvHeight} path=${if (io.jni) "jni" else "uniffi"} camera=${io.inSize} pushed=${io.pushed} pack_ms=${"%.2f".format(io.packNs / 1e6)} " +
             "push_ms=${"%.2f".format(io.pushNs / 1e6)} push_cpu_ms=${"%.2f".format(io.pushCpuNs / 1e6)} " +
@@ -85,7 +99,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
 
     private val analysisExec = Executors.newSingleThreadExecutor { Thread(it, "tl-camera") }
     private var bound: ProcessCameraProvider? = null
-    private var cameraGen = 0
+    @Volatile private var cameraGen = 0
 
     /** Binds preview + analysis to [owner] (the call screen): CameraX stops them when it stops. */
     fun startCamera(owner: LifecycleOwner, preview: Preview.SurfaceProvider, front: Boolean) {
@@ -94,24 +108,37 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
         future.addListener({
             if (gen != cameraGen) return@addListener  // stopped before the provider was ready
             val provider = try { future.get() } catch (e: Exception) { Log.w(TAG, "camera provider: $e"); return@addListener }
-            val selector = ResolutionSelector.Builder()
-                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
-                .setResolutionStrategy(ResolutionStrategy(Size(640, 480), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
-                .build()
-            val analysis = ImageAnalysis.Builder()
-                .setResolutionSelector(selector)
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-                .build()
-            analysis.setAnalyzer(analysisExec) { img -> img.use { io.push(it) } }
-            val pv = Preview.Builder().setResolutionSelector(selector).build().also { it.setSurfaceProvider(preview) }
             var cam = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
             if (!provider.hasCamera(cam)) cam = if (front) CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
             try {
-                provider.unbindAll()
-                provider.bindToLifecycle(owner, cam, pv, analysis)
-                bound = provider
-                testLog("camera started front=$front")
+                actualCapture = "-"
+                val chosen = bindCapture(capturePreferences(BuildConfig.DEBUG, BuildConfig.VIDEO_HD_CAPTURE)) { requested ->
+                    val selector = ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(if (requested.wide) AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY
+                            else AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                        .setResolutionStrategy(ResolutionStrategy(Size(requested.width, requested.height),
+                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
+                        .build()
+                    val analysis = ImageAnalysis.Builder()
+                        .setResolutionSelector(selector)
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+                        .build()
+                    analysis.setAnalyzer(analysisExec) { img -> img.use {
+                        if (gen == cameraGen) {
+                            actualCapture = "${it.width}x${it.height}@${it.imageInfo.rotationDegrees}"
+                            io.push(it)
+                        }
+                    } }
+                    val pv = Preview.Builder().setResolutionSelector(selector).build().also { it.setSurfaceProvider(preview) }
+                    testLog("camera attempt preference=${requested.width}x${requested.height} front=$front")
+                    provider.unbindAll()
+                    provider.bindToLifecycle(owner, cam, pv, analysis)
+                    bound = provider
+                }
+                capturePreference = "${chosen.width}x${chosen.height}"
+                _problem.value = null
+                testLog("camera started front=$front preference=$capturePreference (actual size from analysis frames)")
             } catch (e: Exception) {
                 Log.w(TAG, "bind camera: $e")
                 _problem.value = "Camera unavailable"
@@ -123,6 +150,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     fun stopCamera() {
         cameraGen++
         bound?.unbindAll(); bound = null
+        capturePreference = "-"; actualCapture = "-"
         testLog("camera stopped")
     }
 
