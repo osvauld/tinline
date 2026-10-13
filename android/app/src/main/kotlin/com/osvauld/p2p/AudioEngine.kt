@@ -2,6 +2,7 @@ package com.osvauld.p2p
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioFormat
@@ -14,6 +15,8 @@ import android.media.audiofx.AudioEffect
 import android.media.audiofx.AutomaticGainControl
 import android.media.audiofx.NoiseSuppressor
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.Process
 import android.util.Log
 import uniffi.p2pcore.Node
@@ -27,9 +30,11 @@ import uniffi.p2pcore.Node
  * engine must never hold on to an old one. Each start() gets a new generation; threads of an older
  * generation exit on their own, so a late stop()/start() pair can never leave two engines running.
  *
- * Audio focus: a GAIN_TRANSIENT request with the voice-communication usage is held for the call.
- * If another app takes focus (e.g. a GSM call, an alarm) the mic is MUTED until focus comes back;
- * we do not hang up, the user decides.
+ * Routing, audio mode and focus normally belong to Telecom ([CallSession]). Only when the call
+ * could not be registered there does [takeRouting] make the engine do it itself: communication
+ * mode, a GAIN_TRANSIENT voice-communication focus request (another app taking focus, e.g. a GSM
+ * call, MUTES the mic until it comes back; we do not hang up, the user decides), and the route
+ * list in [onRoutes] (communication devices on API 31+, speakerphone/SCO below).
  */
 class AudioEngine(
     private val ctx: Context,
@@ -40,43 +45,108 @@ class AudioEngine(
     @Volatile private var running = false
     @Volatile private var generation = 0
     @Volatile var muted = false
+    /** Telecom put the call on hold (another call took over): send and play silence. */
+    @Volatile var held = false
     @Volatile private var focusMuted = false
     private var micThread: Thread? = null
     private var spkThread: Thread? = null
+
+    // Fallback routing ([takeRouting]); untouched while Telecom owns the call.
+    /** Fallback route changes; set by the owner before [takeRouting]. */
+    @Volatile var onRoutes: (RouteState) -> Unit = {}
+    private var owns = false
+    private var preferSpeaker = false
     private var prevMode = AudioManager.MODE_NORMAL
     private var focus: AudioFocusRequest? = null
     private var scoStarted = false
+    /** API < 31: the route we last applied (there is no getter for it). */
+    private var legacyCurrent = AudioRoute.Kind.Earpiece
+    private val main = Handler(Looper.getMainLooper())
 
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         focusMuted = change != AudioManager.AUDIOFOCUS_GAIN
         Log.i(TAG, "audio focus change=$change -> focusMuted=$focusMuted")
     }
 
+    private val deviceCallback = object : AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>) {
+            // A headset connected mid-call: move to it, as a phone call would.
+            synchronized(this@AudioEngine) {
+                if (!owns) return
+                val headset = added.mapNotNull { routeOf(it) }
+                    .firstOrNull { it.kind == AudioRoute.Kind.Bluetooth || it.kind == AudioRoute.Kind.Wired }
+                if (headset != null) applyRoute(Routes.pickDefault(routes().available, preferSpeaker))
+                else publish()
+            }
+        }
+        override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) {
+            synchronized(this@AudioEngine) {
+                if (!owns) return
+                val st = routes()
+                if (st.current == null || st.available.none { it.key == st.current.key }) applyRoute(Routes.pickDefault(st.available, preferSpeaker))
+                else publish()
+            }
+        }
+    }
+
+    // Lazy: the listener type only exists on API 31+.
+    private val commListener by lazy { AudioManager.OnCommunicationDeviceChangedListener { synchronized(this) { if (owns) publish() } } }
+
+    /** Starts the mic and speaker loops. Routing stays with Telecom unless [takeRouting] is called. */
     @Synchronized
-    fun start(speaker: Boolean) {
+    fun start() {
         if (running) return
         running = true
         val gen = ++generation
-        prevMode = am.mode
-        am.mode = AudioManager.MODE_IN_COMMUNICATION
-        requestFocus()
-        setSpeaker(speaker)
         micThread = Thread({ micLoop(gen) }, "p2p-mic").also { it.start() }
         spkThread = Thread({ speakerLoop(gen) }, "p2p-spk").also { it.start() }
     }
 
     @Synchronized
     fun stop() {
-        if (!running) return
-        running = false
-        generation++
-        // Fully join: the old threads release the AudioRecord/AudioTrack, which a following
-        // start() would otherwise race with. The loops wake at least every 20 ms.
-        for (t in listOf(micThread, spkThread)) {
-            try { t?.join(2000) } catch (_: InterruptedException) { Thread.currentThread().interrupt() }
-            if (t?.isAlive == true) Log.w(TAG, "audio thread ${t.name} did not exit in time")
+        if (running) {
+            running = false
+            generation++
+            // Fully join: the old threads release the AudioRecord/AudioTrack, which a following
+            // start() would otherwise race with. The loops wake at least every 20 ms.
+            for (t in listOf(micThread, spkThread)) {
+                try { t?.join(2000) } catch (_: InterruptedException) { Thread.currentThread().interrupt() }
+                if (t?.isAlive == true) Log.w(TAG, "audio thread ${t.name} did not exit in time")
+            }
+            micThread = null; spkThread = null
         }
-        micThread = null; spkThread = null
+        held = false
+        releaseRouting()
+    }
+
+    /**
+     * Telecom is not handling this call: take communication mode, focus and routing ourselves and
+     * start on [Routes.pickDefault]. Idempotent; undone by [stop].
+     */
+    @Synchronized
+    fun takeRouting(preferSpeaker: Boolean) {
+        if (owns) return
+        owns = true
+        this.preferSpeaker = preferSpeaker
+        Log.i(TAG, "taking routing (no Telecom), preferSpeaker=$preferSpeaker")
+        prevMode = am.mode
+        am.mode = AudioManager.MODE_IN_COMMUNICATION
+        requestFocus()
+        try {
+            am.registerAudioDeviceCallback(deviceCallback, main)
+            if (Build.VERSION.SDK_INT >= 31) am.addOnCommunicationDeviceChangedListener(ctx.mainExecutor, commListener)
+        } catch (e: Exception) { Log.w(TAG, "device listeners: $e") }
+        applyRoute(Routes.pickDefault(routes().available, preferSpeaker))
+    }
+
+    @Synchronized
+    private fun releaseRouting() {
+        if (!owns) return
+        owns = false
+        try {
+            am.unregisterAudioDeviceCallback(deviceCallback)
+            if (Build.VERSION.SDK_INT >= 31) am.removeOnCommunicationDeviceChangedListener(commListener)
+        } catch (_: Exception) {}
         try {
             if (Build.VERSION.SDK_INT >= 31) am.clearCommunicationDevice()
             else {
@@ -87,6 +157,14 @@ class AudioEngine(
         abandonFocus()
         focusMuted = false
         am.mode = prevMode
+        legacyCurrent = AudioRoute.Kind.Earpiece
+    }
+
+    /** Fallback routing only: play through [route] (one of the last published routes). */
+    @Synchronized
+    fun selectRoute(route: AudioRoute) {
+        if (!owns) return
+        applyRoute(routes().available.firstOrNull { it.key == route.key })
     }
 
     private fun requestFocus() {
@@ -107,30 +185,66 @@ class AudioEngine(
         focus = null
     }
 
-    /**
-     * speaker=true forces the loudspeaker. speaker=false hands routing back to the system, which
-     * prefers a connected wired/Bluetooth headset and otherwise uses the earpiece (forcing the
-     * earpiece, as before, overrode headsets).
-     */
-    @Synchronized
-    fun setSpeaker(on: Boolean) {
+    private fun routeOf(d: AudioDeviceInfo): AudioRoute? {
+        val kind = when (d.type) {
+            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> AudioRoute.Kind.Earpiece
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> AudioRoute.Kind.Speaker
+            AudioDeviceInfo.TYPE_BLUETOOTH_SCO, AudioDeviceInfo.TYPE_HEARING_AID,
+            AudioDeviceInfo.TYPE_BLE_HEADSET, AudioDeviceInfo.TYPE_BLE_SPEAKER -> AudioRoute.Kind.Bluetooth
+            AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+            AudioDeviceInfo.TYPE_USB_HEADSET -> AudioRoute.Kind.Wired
+            else -> return null
+        }
+        val name = when (kind) {
+            AudioRoute.Kind.Bluetooth, AudioRoute.Kind.Wired -> d.productName?.toString().orEmpty()
+            else -> ""
+        }
+        return AudioRoute(kind, name, "dev:${d.id}")
+    }
+
+    /** The fallback's current routes. */
+    private fun routes(): RouteState = try {
+        if (Build.VERSION.SDK_INT >= 31) {
+            val avail = am.availableCommunicationDevices.mapNotNull { routeOf(it) }.distinctBy { it.key }
+            RouteState(am.communicationDevice?.let { routeOf(it) }, avail)
+        } else {
+            // Below 31 a wired headset simply replaces the earpiece; Bluetooth needs SCO.
+            val sco = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
+            val avail = listOfNotNull(
+                AudioRoute(AudioRoute.Kind.Earpiece, "", "earpiece"),
+                AudioRoute(AudioRoute.Kind.Speaker, "", "speaker"),
+                sco?.let { AudioRoute(AudioRoute.Kind.Bluetooth, it.productName?.toString().orEmpty(), "sco") },
+            )
+            RouteState(avail.firstOrNull { it.kind == legacyCurrent } ?: avail.first(), avail)
+        }
+    } catch (e: Exception) { Log.w(TAG, "routes: $e"); RouteState() }
+
+    private fun publish() {
+        val st = routes()
+        try { onRoutes(st) } catch (e: Exception) { Log.w(TAG, "onRoutes: $e") }
+    }
+
+    private fun applyRoute(route: AudioRoute?) {
         try {
-            if (Build.VERSION.SDK_INT >= 31) {
-                if (on) {
-                    am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
-                        ?.let { am.setCommunicationDevice(it) }
-                } else am.clearCommunicationDevice()
-            } else {
-                @Suppress("DEPRECATION") run {
-                    if (on) { stopSco(); am.isSpeakerphoneOn = true }
-                    else {
-                        am.isSpeakerphoneOn = false
-                        val sco = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
-                        if (sco && !scoStarted) { am.startBluetoothSco(); am.isBluetoothScoOn = true; scoStarted = true }
+            if (route != null) {
+                if (Build.VERSION.SDK_INT >= 31) {
+                    val id = route.key.removePrefix("dev:").toIntOrNull()
+                    am.availableCommunicationDevices.firstOrNull { it.id == id }?.let { am.setCommunicationDevice(it) }
+                } else @Suppress("DEPRECATION") {
+                    when (route.kind) {
+                        AudioRoute.Kind.Speaker -> { stopSco(); am.isSpeakerphoneOn = true }
+                        AudioRoute.Kind.Bluetooth -> {
+                            am.isSpeakerphoneOn = false
+                            if (!scoStarted) { am.startBluetoothSco(); am.isBluetoothScoOn = true; scoStarted = true }
+                        }
+                        else -> { stopSco(); am.isSpeakerphoneOn = false }
                     }
+                    legacyCurrent = route.kind
                 }
+                Log.i(TAG, "route -> ${route.kind} ${route.name}")
             }
-        } catch (e: Exception) { Log.w(TAG, "setSpeaker failed: $e") }
+        } catch (e: Exception) { Log.w(TAG, "applyRoute failed: $e") }
+        publish()
     }
 
     @Suppress("DEPRECATION")
@@ -215,7 +329,7 @@ class AudioEngine(
                         if (mic == null) onMicUnavailable()
                     }
                 }
-                node().pushMicPcm16(if (filled && !muted && !focusMuted) buf else zeros)
+                node().pushMicPcm16(if (filled && !muted && !focusMuted && !held) buf else zeros)
                 pacer.tick()
             } catch (e: InterruptedException) { break } catch (e: Throwable) {
                 Log.w(TAG, "mic loop: $e")
@@ -262,6 +376,8 @@ class AudioEngine(
                 val pcm = node().pullSpeakerPcm16()
                 val t = track
                 if (t != null) {
+                    // On hold the frames are still drained, but the other call has the speaker.
+                    if (held) pcm.fill(0)
                     val n = t.write(pcm, 0, pcm.size)
                     if (n < 0) errors++ else errors = 0
                     if (errors >= MAX_ERRORS) {
