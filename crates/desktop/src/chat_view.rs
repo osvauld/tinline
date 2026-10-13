@@ -3,7 +3,7 @@
 
 use chrono::{DateTime, Datelike, Local, TimeZone};
 use iced::widget::{button, column, container, mouse_area, progress_bar, row, text, text_editor, Space};
-use p2pcore::{AttachmentKind, Chat, Contact, DeliveryState, Message as ChatMsg, TransferState};
+use p2pcore::{AttachmentKind, Contact, DeliveryState, Message as ChatMsg, TransferState};
 
 use crate::voice::{self, VoiceView};
 use super::*;
@@ -68,6 +68,13 @@ fn block_when(secs: u64) -> String {
     local(secs.saturating_mul(1000)).map(|d| d.format("%b %-d, %H:%M").to_string()).unwrap_or_default()
 }
 
+/// What a chat row's second line says (ChatsList `preview()` and its draft / waiting forms).
+pub(super) enum Preview {
+    Plain(String, Option<Color>),
+    Draft(String),
+    Waiting(String),
+}
+
 fn rule<'a>(t: Tok) -> El<'a> {
     container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)).into()
 }
@@ -97,105 +104,102 @@ impl App {
         .into()
     }
 
-    /// The chat rows: one per contact, those with messages first.
+    /// ChatsList.svelte: 1:1 and group conversations together, most recent first, behind the
+    /// All / Unread chips. Rows are 72px (8px padding, 48px avatar, 12px gap) inside 8px side margins.
     pub(super) fn chat_list(&self, t: Tok, q: &str) -> El<'_> {
-        let mut rows: Vec<Chat> = self.chat.chats.clone();
-        for c in &self.contacts {
-            if !rows.iter().any(|r| r.peer_did == c.did) {
-                rows.push(Chat {
-                    peer_did: c.did.clone(),
-                    peer_name: Self::display(c),
-                    preview: String::new(),
-                    last_outgoing: false,
-                    last_delivery: DeliveryState::Delivered,
-                    last_activity: 0,
-                    unread: 0,
-                });
+        let unread_only = self.shell_search.unread_only;
+        let mut items: Vec<(u64, El)> = Vec::new();
+        for r in &self.chat.chats {
+            let me = self.is_me(&r.peer_did);
+            if !self.selectable(&r.peer_did) || (r.last_activity == 0 && !me) || (me && r.last_activity == 0) {
+                continue;
             }
+            let name = self.chat_name(&r.peer_did);
+            if (!q.is_empty() && !name.to_lowercase().contains(q)) || (unread_only && r.unread == 0) {
+                continue;
+            }
+            let sel = self.sel.as_ref() == Some(&r.peer_did) && !self.chat.info && self.live.open.is_none();
+            let draft = self.chat.draft_for(&r.peer_did);
+            let pv = if let Some(st) = self.blocks.status(&r.peer_did) {
+                Preview::Plain(st.to_string(), Some(t.error))
+            } else if !draft.trim().is_empty() {
+                Preview::Draft(draft.replace('\n', " "))
+            } else if r.last_outgoing && r.last_delivery == DeliveryState::Pending && !self.status.online {
+                Preview::Waiting(r.preview.clone())
+            } else if me && r.preview.is_empty() {
+                Preview::Plain(crate::app::SELF_SUB.to_string(), None)
+            } else {
+                Preview::Plain(r.preview.clone(), None)
+            };
+            let face = self.profile_avatar(t, &name, &r.peer_did, 48.0);
+            items.push((r.last_activity, self.pg_chat_row(t, sel, face, name, r.last_activity, r.unread, false, pv, Msg::Select(r.peer_did.clone()))));
         }
-        // Contacts, "You", and kept chats of people who are no longer contacts (U20, U24).
-        rows.retain(|r| self.selectable(&r.peer_did));
-        // "You" is pinned first.
-        rows.sort_by_key(|r| !self.is_me(&r.peer_did));
-        let mut list = column![].spacing(2);
+        for s in &self.live.list {
+            if !super::super::group_live::active(s.my_role) || (!q.is_empty() && !s.name.to_lowercase().contains(q)) || (unread_only && s.unread == 0) {
+                continue;
+            }
+            let at = s.last.as_ref().map_or(0, |m| m.at);
+            let sel = self.live.open.as_deref() == Some(s.id.as_str());
+            let text = super::super::group_live::preview(s, &self.live.me);
+            let pv = if s.last.as_ref().is_some_and(|m| m.outgoing && m.delivery == p2pcore::GroupDelivery::Waiting) { Preview::Waiting(text) } else { Preview::Plain(text, None) };
+            let face = container(crate::pg_icons::pgi("users", 22.0, t.accent_ink)).width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.surface2, 24.0)).into();
+            items.push((at, self.pg_chat_row(t, sel, face, s.name.clone(), at, s.unread, false, pv, Msg::Live(super::super::group_live::Lm::Open(s.id.clone())))));
+        }
+        items.extend(self.preview_rows(t, q));
+        items.sort_by(|a, b| b.0.cmp(&a.0));
+        let mut list = column![].spacing(0);
         if let Some(b) = self.live_requests(t) {
             list = list.push(b);
         }
-        // Real chats and the preview's sample people, newest first; "You" stays pinned.
-        let mut items: Vec<(bool, u64, El)> = Vec::new();
-        let mut n = 0;
-        for r in &rows {
-            let me = self.is_me(&r.peer_did);
-            let name = self.chat_name(&r.peer_did);
-            if !q.is_empty() && !name.to_lowercase().contains(q) {
-                continue;
-            }
-            n += usize::from(!me);
-            let sel = self.sel.as_ref() == Some(&r.peer_did) && !self.chat.info;
-            let unread = r.unread > 0;
-            let fg = if sel { t.on_primary_c } else { t.ink };
-            let dim = if sel { t.on_primary_c } else { t.ink2 };
-            let nm = if unread { bold(name.clone(), 15.0, fg) } else { semi(name.clone(), 15.0, fg) };
-            let mut sub = row![].spacing(4).align_y(Alignment::Center);
-            let draft = self.chat.draft_for(&r.peer_did);
-            if draft.trim().is_empty() && r.last_outgoing && r.last_activity > 0 {
-                sub = sub.push(self.ticks(t, r.last_delivery, 14.0, dim));
-            }
-            let preview = if !draft.trim().is_empty() { format!("Draft: {}", draft.replace('\n', " ")) }
-                else if me && r.preview.is_empty() { crate::app::SELF_SUB.to_string() } else { r.preview.clone() };
-            // Blocked people stay in the list with a red line, so the state is never hidden.
-            let pv = match self.blocks.status(&r.peer_did) {
-                Some(st) => tx(st, 13.0, if sel { dim } else { t.error }),
-                None if unread => semi(preview, 13.0, t.ink),
-                None => tx(preview, 13.0, dim),
-            }
-            .wrapping(iced::widget::text::Wrapping::None);
-            sub = sub.push(container(pv).width(Fill).clip(true));
-            sub = sub.push(container(if unread { count_badge(t, r.unread) } else { Space::new().into() }).width(32));
-            items.push((me, r.last_activity, 
-                button(
-                    row![
-                        avatar(t, &name, &r.peer_did, 40.0),
-                        column![row![container(nm.wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true), container(tx(list_time(r.last_activity), 11.0, dim)).width(72)], sub]
-                            .spacing(2)
-                            .width(Fill),
-                    ]
-                    .spacing(12)
-                    .align_y(Alignment::Center),
-                )
-                .padding([16, 12])
-                .height(72)
-                .width(Fill)
-                .style(ui::row_style(t, sel))
-                .on_press(Msg::Select(r.peer_did.clone()))
-                .into(),
-            ));
-        }
-        let preview = self.preview_rows(t, q);
-        let any_preview = !preview.is_empty();
-        items.extend(preview.into_iter().map(|(at, el)| (false, at, el)));
-        items.sort_by(|a, b| b.0.cmp(&a.0).then(b.1.cmp(&a.1)));
-        for (_, _, el) in items {
+        let empty = items.is_empty();
+        for (_, el) in items {
             list = list.push(el);
         }
-        if n == 0 && !any_preview {
-            list = list.push(
-                container(
-                    column![
-                        semi("No chats yet", 14.0, t.ink),
-                        tx(
-                            "Messages stay on your devices.",
-                            13.0,
-                            t.ink2
-                        ),
-                        tx("You can message anyone in your contacts.", 13.0, t.ink2),
-                    ]
-                    .spacing(6),
-                )
-                .padding([8, 12]),
-            );
+        if empty && !unread_only && q.is_empty() {
+            list = list.push(container(column![semi("No chats yet", 15.0, t.ink).line_height(lh(21.0)),
+                tx("Start one with the + button, or from a contact.", 13.0, t.ink2).line_height(lh(21.0))].spacing(2)).padding([12, 8]));
         }
-        list.into()
+        container(list).padding([0, 8]).width(Fill).into()
+    }
+
+    /// One ChatsList row. `when` is listStamp(); the stamp turns accent-ink bold while unread.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn pg_chat_row<'a>(&self, t: Tok, sel: bool, face: El<'a>, title: String, at: u64, unread: u32, muted: bool, pv: Preview, on: Msg) -> El<'a> {
+        use crate::fit::{ellipsize, width};
+        // 380 pane - 2x8 list margin - 2x8 row padding - 48 avatar - 12 gap = the text column.
+        const MID: f32 = 380.0 - 1.0 - 16.0 - 16.0 - 48.0 - 12.0;
+        let hot = unread > 0 && !muted;
+        let stamp = list_time(at);
+        let stamp_font = if hot { ui::SANS_BOLD } else { ui::SANS };
+        let stamp_w = width(&stamp, stamp_font, 11.0);
+        let name = ellipsize(&title, ui::SANS_SEMI, 15.0, MID - stamp_w - 8.0);
+        let top = row![semi(name, 15.0, t.ink).line_height(lh(21.0)).width(Fill).wrapping(iced::widget::text::Wrapping::None),
+            text(stamp).size(11).font(stamp_font).line_height(lh(21.0)).color(if hot { t.accent_ink } else { t.ink2 })].spacing(8).align_y(Alignment::Center);
+        let badge_w = if unread > 0 { width(&unread.min(99).to_string(), ui::SANS_BOLD, 11.0).max(8.0) + 10.0 + 8.0 } else { 0.0 };
+        let room = MID - badge_w;
+        let line: El = match pv {
+            Preview::Plain(s, color) => text(ellipsize(&s, ui::SANS, 13.0, room)).size(13).line_height(lh(21.0)).color(color.unwrap_or(t.ink2)).wrapping(iced::widget::text::Wrapping::None).into(),
+            Preview::Draft(s) => {
+                let lead = "Draft: ";
+                let rest = ellipsize(&s, ui::SANS, 13.0, room - width(lead, ui::SANS_SEMI, 13.0));
+                iced::widget::rich_text![iced::widget::span::<(), iced::Font>(lead).font(ui::SANS_SEMI).color(t.accent_ink), iced::widget::span::<(), iced::Font>(rest).color(t.ink2)]
+                    .size(13).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None).into()
+            }
+            Preview::Waiting(s) => {
+                let lead_w = 13.0 + 3.0 + width("Waiting", ui::SANS_SEMI, 13.0);
+                let rest = ellipsize(&format!(" \u{b7} {s}"), ui::SANS, 13.0, room - lead_w);
+                row![crate::pg_icons::pgi("clock", 13.0, t.gold_ink), Space::new().width(3), semi("Waiting", 13.0, t.gold_ink).line_height(lh(21.0)),
+                    tx(rest, 13.0, t.ink2).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None)].align_y(Alignment::Center).into()
+            }
+        };
+        let mut bot = row![container(line).width(Fill).clip(true)].spacing(8).align_y(Alignment::Center);
+        if unread > 0 {
+            bot = bot.push(super::shell_view::t_badge(t, unread, muted));
+        }
+        button(row![face, column![top, bot].spacing(2).width(Fill)].spacing(12).align_y(Alignment::Center).height(56))
+            .padding(8).width(Fill)
+            .style(super::shell_view::wash(t, sel.then_some(t.accent_soft), (!sel).then_some(t.surface2), 14.0))
+            .on_press(on).into()
     }
 
     /// One tick = only on this computer (a clock while we are offline); two = on theirs.

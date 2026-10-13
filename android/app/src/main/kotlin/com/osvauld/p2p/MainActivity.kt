@@ -96,6 +96,12 @@ private sealed interface Route {
     data class JoinGroup(val token: String? = null) : Route
     /** Full-screen search (Search.kt). */
     data object Search : Route
+    /** Playground-ported settings/profile pages (SettingsRoutes.kt). */
+    data object Me : Route
+    data object Notifications : Route
+    data object Sounds : Route
+    data object Privacy : Route
+    data object CallsAllowed : Route
 }
 
 @Composable
@@ -311,13 +317,19 @@ private fun Root(app: P2pApp) {
                         })
                     }
                 }
-                Route.Settings -> SettingsScreen(
-                    app, missing, onBack = ::pop, onBattery = { stack.add(Route.Battery) }, onPassphrase = { stack.add(Route.Passphrase) },
-                    onPhrase = { stack.add(Route.PhraseGate) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
-                    onSwitchPick = { stack.add(Route.SwitchConfirm(it)) }, onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) },
-                    onDevices = { stack.add(Route.Devices) }, onLinkDevice = { stack.add(Route.LinkDevice) }, onLinkAccount = { addAccount(false, link = true) },
-                    onPreview = { stack.add(Route.Preview(PRoute.parse(it))) }, onBlocked = { stack.add(Route.Blocked) },
+                Route.Settings -> SettingsRoute(
+                    app, missing, onBack = ::pop, onMe = { stack.add(Route.Me) }, onSwitchPick = { stack.add(Route.SwitchConfirm(it)) },
+                    onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) }, onLinkAccount = { addAccount(false, link = true) },
+                    onDevices = { stack.add(Route.Devices) }, onPrivacy = { stack.add(Route.Privacy) }, onNotifications = { stack.add(Route.Notifications) },
+                    onSounds = { stack.add(Route.Sounds) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
+                    onPreview = { stack.add(Route.Preview(PRoute.parse(it))) },
                 )
+                Route.Me -> MyProfileRoute(app, onBack = ::pop)
+                Route.Notifications -> NotificationsPage(missing, onBack = ::pop, fix = fix)
+                Route.Sounds -> SoundsPage(onBack = ::pop)
+                Route.Privacy -> PrivacyRoute(app, onBack = ::pop, onBlocked = { stack.add(Route.Blocked) }, onCalls = { stack.add(Route.CallsAllowed) },
+                    onPhrase = { stack.add(Route.PhraseGate) }, onPassphrase = { stack.add(Route.Passphrase) })
+                Route.CallsAllowed -> CallsAllowedRoute(app, onBack = ::pop)
                 Route.Blocked -> BlockedPeopleScreen(app, onBack = ::pop, say = ::say)
                 is Route.SwitchConfirm -> SwitchConfirmScreen(app, r.did, onBack = ::pop, onSwitched = { home() }, onMessage = ::say)
                 Route.Devices -> LinkedDevicesScreen(app, ::pop, onLink = { stack.add(Route.LinkDevice) }, onDetail = { stack.add(Route.DeviceDetail(it)) })

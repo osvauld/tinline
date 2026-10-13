@@ -30,6 +30,12 @@ mod groups_fake;
 mod hostcond;
 mod keystore;
 mod mark;
+/// Motion tokens (playground lib/fx/motion.ts) and tweens.
+mod motion;
+/// The playground's own icon set (icons.ts).
+mod pg_icons;
+/// CSS-like text ellipsis by measurement.
+mod fit;
 mod call_field;
 mod call_ui;
 mod raise;
@@ -54,6 +60,8 @@ use tokio::sync::mpsc;
 pub enum Ev {
     Status(NodeStatus),
     Contacts,
+    /// Account-scoped profile invalidation, never decoded on a core callback thread.
+    Profile { epoch: u64, did: String },
     Incoming(CallInfo),
     State(String, CallState),
     Tray(tray::TrayCmd),

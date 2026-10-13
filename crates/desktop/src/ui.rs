@@ -9,9 +9,10 @@ pub const FIGTREE_BYTES: &[u8] = include_bytes!("../assets/fonts/figtree_variabl
 pub const PLEX_REGULAR_BYTES: &[u8] = include_bytes!("../assets/fonts/plexmono_regular.ttf");
 pub const PLEX_MEDIUM_BYTES: &[u8] = include_bytes!("../assets/fonts/plexmono_medium.ttf");
 
-pub const SANS: Font = Font::with_name("Figtree");
-pub const SANS_SEMI: Font = Font { weight: font::Weight::Semibold, ..Font::with_name("Figtree") };
-pub const SANS_BOLD: Font = Font { weight: font::Weight::Bold, ..Font::with_name("Figtree") };
+// Chromium's current playground system-ui resolves to Noto Sans on this desktop.
+pub const SANS: Font = Font::with_name("Noto Sans");
+pub const SANS_SEMI: Font = Font { weight: font::Weight::Semibold, ..Font::with_name("Noto Sans") };
+pub const SANS_BOLD: Font = Font { weight: font::Weight::Bold, ..Font::with_name("Noto Sans") };
 pub const MONO: Font = Font::with_name("IBM Plex Mono");
 /// The colour emoji font of the platform: without it a text font's plain glyphs (DejaVu has some)
 /// win the fallback and emojis show black and white.
@@ -52,6 +53,21 @@ pub struct Tok {
     pub primary: Color,
     pub on_primary: Color,
     pub primary_c: Color,
+    /// tokens.css brand set for ported playground screens: --accent (primary actions only),
+    /// --on-accent, --accent-ink (teal as text), --accent-soft (selected fills).
+    pub accent: Color,
+    pub on_accent: Color,
+    pub accent_soft: Color,
+    pub accent_ink: Color,
+    /// --warn-ink, --gold-ink, --danger, --danger-bg, --danger-btn, --on-danger-btn, --lav, --lav-ink.
+    pub warn_ink: Color,
+    pub gold_ink: Color,
+    pub danger: Color,
+    pub danger_bg: Color,
+    pub danger_btn: Color,
+    pub on_danger_btn: Color,
+    pub lav: Color,
+    pub lav_ink: Color,
     pub on_primary_c: Color,
     pub thread: Color,
     pub thread_text: Color,
@@ -84,6 +100,18 @@ pub const LIGHT: Tok = Tok {
     primary: rgb(0x0B6B5B),
     on_primary: rgb(0xFFFFFF),
     primary_c: rgb(0xCDEBE3),
+    accent: rgb(0x0B6B5B),
+    on_accent: rgb(0xFFFFFF),
+    accent_soft: rgb(0xD7ECE6),
+    accent_ink: rgb(0x0A5D50),
+    warn_ink: rgb(0x5C3B00),
+    gold_ink: rgb(0x845A10),
+    danger: rgb(0xA12B23),
+    danger_bg: rgb(0xF8E3E1),
+    danger_btn: rgb(0xA12B23),
+    on_danger_btn: rgb(0xFFFFFF),
+    lav: rgb(0xE1E4F7),
+    lav_ink: rgb(0x374582),
     on_primary_c: rgb(0x06352D),
     thread: rgb(0xC98A1E),
     thread_text: rgb(0x8A5A00),
@@ -103,7 +131,7 @@ pub const DARK: Tok = Tok {
     dark: true,
     bg: rgb(0x0F1513),
     surface: rgb(0x161D1B),
-    surface2: rgb(0x1D2623),
+    surface2: rgb(0x242D2A),
     surface3: rgb(0x26302D),
     raised: rgb(0x242D2A),
     canvas: rgb(0x0B100E),
@@ -116,6 +144,18 @@ pub const DARK: Tok = Tok {
     primary: rgb(0x6FD3BD),
     on_primary: rgb(0x00382E),
     primary_c: rgb(0x0E4E43),
+    accent: rgb(0x117E6B),
+    on_accent: rgb(0xF2FFFB),
+    accent_soft: rgb(0x14433A),
+    accent_ink: rgb(0x6FD3BD),
+    warn_ink: rgb(0xFFDFA0),
+    gold_ink: rgb(0xE8B04A),
+    danger: rgb(0xF2B8B5),
+    danger_bg: rgb(0x4D201C),
+    danger_btn: rgb(0xC73A30),
+    on_danger_btn: rgb(0xFFFFFF),
+    lav: rgb(0x2F3A75),
+    lav_ink: rgb(0xDFE3FF),
     on_primary_c: rgb(0xBDEFE2),
     thread: rgb(0xE8B04A),
     thread_text: rgb(0xE8B04A),
@@ -200,11 +240,25 @@ pub enum Icon {
     Server,
     Video,
     VideoOff,
+    Search,
+    Contact,
+    Plus,
+    Camera,
+    Bell,
+    Devices,
+    Volume,
 }
 
 impl Icon {
     fn body(self) -> &'static str {
         match self {
+            Icon::Search => r#"<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>"#,
+            Icon::Contact => r#"<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7.5 17c.8-2 2.5-3 4.5-3s3.7 1 4.5 3"/><path d="M2 7h2M2 12h2M2 17h2"/>"#,
+            Icon::Plus => r#"<path d="M12 5v14M5 12h14"/>"#,
+            Icon::Camera => r#"<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/>"#,
+            Icon::Bell => r#"<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>"#,
+            Icon::Devices => r#"<path d="M3 6h13v9H3zM1 18h17M18 9h4v9h-4z"#,
+            Icon::Volume => r#"<path d="M4 9v6h4l5 4V5L8 9zM16.5 9a4 4 0 0 1 0 6"/>"#,
             Icon::Phone => r#"<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>"#,
             Icon::PhoneOff => r#"<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="M22 2 2 22"/>"#,
             Icon::Mic => r#"<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>"#,
@@ -487,7 +541,7 @@ pub fn sheet_surface(t: Tok, radius: f32) -> impl Fn(&Theme) -> container::Style
 }
 
 /// A flat filled container with a 1 px outline.
-pub fn outlined(bg: Color, line: Color, radius: f32) -> impl Fn(&Theme) -> container::Style {
+pub fn outlined(bg: Color, line: Color, radius: f32) -> impl Fn(&Theme) -> container::Style + Copy {
     move |_| container::Style {
         background: Some(Background::Color(bg)),
         border: Border { color: line, width: 1.0, radius: radius.into() },
@@ -629,34 +683,46 @@ pub fn toggle_style(t: Tok) -> impl Fn(&Theme, toggler::Status) -> toggler::Styl
     }
 }
 
-/// Avatar tints: four tinted containers picked by hashing the contact key (stable across devices).
-pub fn avatar_colors(t: Tok, key: &str) -> (Color, Color) {
-    let h = key.bytes().fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32));
-    if t.dark {
-        match h % 4 {
-            0 => (rgb(0x0E4E43), rgb(0xBDEFE2)),
-            1 => (rgb(0x2F3A75), rgb(0xD9DEFB)),
-            2 => (rgb(0x5A3F00), rgb(0xFFDFA0)),
-            _ => (rgb(0x5C2336), rgb(0xFFD9E2)),
-        }
-    } else {
-        match h % 4 {
-            0 => (rgb(0xCDEBE3), rgb(0x06352D)),
-            1 => (rgb(0xE1E4F7), rgb(0x2F3A75)),
-            2 => (rgb(0xFCEFD2), rgb(0x5C3B00)),
-            _ => (rgb(0xF8DDE5), rgb(0x5C2336)),
-        }
+/// Avatar hue pairs (tokens.css --av0..5-bg / -ink). People carry a hue; the owner is hue 0.
+pub fn avatar_pair(t: Tok, hue: usize) -> (Color, Color) {
+    const LIGHT_AV: [(u32, u32); 6] =
+        [(0xD7ECE6, 0x0B5447), (0xE1E4F7, 0x374582), (0xF6E3E6, 0x8C3A4A), (0xF3E8D2, 0x6D4E12), (0xE3EDD9, 0x44622A), (0xECE2F2, 0x5D3F73)];
+    const DARK_AV: [(u32, u32); 6] =
+        [(0x164F45, 0xB7E6D8), (0x2F3A75, 0xDFE3FF), (0x5C2A35, 0xFFD9E0), (0x58431A, 0xFFE2AE), (0x3A4F26, 0xD8F0C0), (0x4A3458, 0xECD9FA)];
+    let (bg, ink) = if t.dark { DARK_AV[hue % 6] } else { LIGHT_AV[hue % 6] };
+    (rgb(bg), rgb(ink))
+}
+
+static HUES: OnceLock<Mutex<HashMap<String, usize>>> = OnceLock::new();
+
+/// Test-hooks demos pin the playground seed's hues for paired screenshots.
+#[cfg(feature = "test-hooks")]
+pub fn pin_hue(key: &str, hue: usize) {
+    HUES.get_or_init(Default::default).lock().unwrap().insert(key.to_string(), hue);
+}
+
+/// A stable hue for a person key (the same on every device); "me" is the account hue 0.
+pub fn avatar_hue(key: &str) -> usize {
+    if key == "me" {
+        return 0;
     }
+    if let Some(h) = HUES.get().and_then(|m| m.lock().unwrap().get(key).copied()) {
+        return h;
+    }
+    key.bytes().fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32)) as usize % 6
+}
+
+pub fn avatar_colors(t: Tok, key: &str) -> (Color, Color) {
+    avatar_pair(t, avatar_hue(key))
 }
 
 pub fn initials(name: &str) -> String {
-    // First letter or digit of each word, so "Lena (work)" is "LW", not "L(".
-    let mut it = name.split_whitespace().filter_map(|w| w.chars().find(|c| c.is_alphanumeric()));
-    let a = it.next();
-    let b = it.next();
-    match (a, b) {
-        (Some(a), Some(b)) => format!("{}{}", a.to_uppercase(), b.to_uppercase()),
-        (Some(a), None) => a.to_uppercase().to_string(),
+    // store.svelte.ts initials(): first letter of the first and the last word. The first letter
+    // or digit of each word, so "Lena (work)" is "LW", not "L(".
+    let words: Vec<char> = name.split_whitespace().filter_map(|w| w.chars().find(|c| c.is_alphanumeric())).collect();
+    match (words.first(), words.len()) {
+        (Some(a), 1) => a.to_uppercase().to_string(),
+        (Some(a), _) => format!("{}{}", a.to_uppercase(), words[words.len() - 1].to_uppercase()),
         _ => "?".into(),
     }
 }

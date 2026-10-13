@@ -7,6 +7,10 @@ use super::*;
 impl App {
     pub(super) fn load_demo(&mut self, name: &str) {
         use p2pcore::{CallRecord, CallStats};
+        if let Some(route) = name.strip_prefix("pg") {
+            self.load_pg(route.trim_start_matches('-'));
+            return;
+        }
         self.demo = true;
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

@@ -194,29 +194,17 @@ fun initialsOf(name: String): String {
     }
 }
 
-/** Initials on one of four tinted containers, picked by hashing the contact key (stable across devices). */
+/** The person avatar (lib/ui/Avatar.svelte via [PgAvatar]): [key] is the person's DID where there is one, so their picture shows. */
 @Composable
-fun Avatar(name: String, key: String, size: Dp, modifier: Modifier = Modifier, alpha: Float = 1f) {
-    val c = Tin.c
-    val (bg, fg) = when (hashOf(key) % 4) {
-        0 -> c.prc to c.onPrc
-        1 -> c.relayC to c.onRelayC
-        2 -> c.warn to c.onWarn
-        else -> c.pk to c.onPk
-    }
-    Box(modifier.size(size).clip(CircleShape).background(bg.copy(alpha = alpha)), contentAlignment = Alignment.Center) {
-        Text(initialsOf(name), color = fg, style = TinType.titleM.copy(fontSize = (size.value * 0.36f).sp, lineHeight = (size.value * 0.44f).sp,
-            fontWeight = if (size.value >= 60) FontWeight.Bold else FontWeight.SemiBold))
-    }
-}
+fun Avatar(name: String, key: String, size: Dp, modifier: Modifier = Modifier, alpha: Float = 1f) =
+    PgAvatar(name, hashOf(key) % 6, size, person = key, modifier = modifier, alpha = alpha)
 
-/** My own avatar is always the teal container. */
+/** My own avatar: hue 0 (the seed's account hue) and my picture. */
 @Composable
 fun SelfAvatar(name: String, size: Dp, modifier: Modifier = Modifier) {
-    val c = Tin.c
-    Box(modifier.size(size).clip(CircleShape).background(c.prc), contentAlignment = Alignment.Center) {
-        Text(initialsOf(name).take(1), color = c.onPrc, style = TinType.titleM.copy(fontSize = (size.value * 0.36f).sp, lineHeight = (size.value * 0.44f).sp, fontWeight = FontWeight.Bold))
-    }
+    val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as? P2pApp
+    val did = app?.let { ProfileBackend.of(it).self.collectAsState().value }
+    PgAvatar(name, 0, size, person = did, modifier = modifier)
 }
 
 /** Me - string - them, used on Adding / Added / Calling screens. */

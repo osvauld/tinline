@@ -239,6 +239,7 @@ class CallController(private val app: P2pApp) {
     /** The quiet in-call "call waiting" beep, on the voice-call stream so it does not disturb the call audio. */
     private fun startWaitingTone() {
         waitingTone?.cancel()
+        if (AlertPrefs.quiet(app)) return   // Settings › Sounds › Quiet
         waitingTone = app.scope.launch {
             val tg = try { ToneGenerator(AudioManager.STREAM_VOICE_CALL, 35) } catch (e: Exception) { Log.w("Call", "tone: $e"); null }
             try {
@@ -310,7 +311,8 @@ class CallController(private val app: P2pApp) {
 
     private fun startRinging() {
         stopRinging()
-        try {
+        if (!AlertPrefs.calls(app)) return   // Settings › Notifications › Calls off: no ringing
+        if (!AlertPrefs.quiet(app)) try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
             ringtone = RingtoneManager.getRingtone(app, uri)?.apply {
                 audioAttributes = AudioAttributes.Builder()

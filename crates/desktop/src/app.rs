@@ -6,6 +6,9 @@ mod view;
 
 #[path = "demo.rs"]
 mod demo;
+#[cfg(feature = "test-hooks")]
+#[path = "demo_pg.rs"]
+mod demo_pg;
 
 #[path = "chat.rs"]
 mod chat;
@@ -27,6 +30,8 @@ use link::{LinkState, Role, UnlinkedInfo};
 use chat::{ChatState, Cm};
 #[path = "shell_search.rs"]
 mod shell_search;
+#[path = "profile_ui.rs"]
+mod profile_ui;
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -165,6 +170,9 @@ struct App {
     rename_in: String,
     search: String,
     shell_search: shell_search::State,
+    profiles: profile_ui::State,
+    /// Running transitions (nav highlight, fades); see `crate::motion`.
+    fx: crate::motion::Fx,
     recents: Vec<CallRecord>,
     detail_calls: Vec<CallRecord>,
     avail: Availability,
@@ -284,6 +292,8 @@ pub enum Target {
 enum Msg {
     Ev(EvBox),
     Tick,
+    /// A display frame while a transition runs.
+    Frame(Instant),
     WindowOpened(#[allow(dead_code)] window::Id),
     CloseReq(window::Id),
     Closed(window::Id),
@@ -375,6 +385,7 @@ enum Msg {
     SetVerified(bool),
     SearchIn(String),
     ShellSearch(shell_search::Action),
+    Profile(profile_ui::Action),
     ToggleAvail,
     SetAvail(bool, Option<u64>),
     OpenAdd,
@@ -576,6 +587,8 @@ impl App {
         self.chat = ChatState::default();
         self.chat.account_epoch = account_epoch;
         self.chat.tab = tab;
+        self.profiles = profile_ui::State::default();
+        self.install_profile_events();
         #[cfg(feature = "test-hooks")]
         {
             self.chat.fake = fake;
@@ -655,6 +668,8 @@ impl App {
             rename_in: String::new(),
             search: String::new(),
             shell_search: shell_search::State::default(),
+            profiles: profile_ui::State::default(),
+            fx: Default::default(),
             recents: node.recent_calls(RECENTS),
             detail_calls: Vec::new(),
             avail: node.availability(),
@@ -740,6 +755,7 @@ impl App {
             app.screen = Screen::Settings;
             settings_devices = true;
         }
+        app.install_profile_events();
         *app.ctl.devices.lock().unwrap() = (app.settings.input.clone(), app.settings.output.clone());
         *app.ctl.tone.lock().unwrap() = app.tone_hz();
         app.node.set_video_enabled(!app.settings.no_video);
@@ -779,6 +795,7 @@ impl App {
             // Locked identities stay offline until the passphrase is entered.
             tasks.push(app.start_node());
         }
+        tasks.push(app.refresh_profiles());
         (app, Task::batch(tasks))
     }
 
@@ -1081,6 +1098,10 @@ impl App {
     }
 
     fn update(&mut self, msg: Msg) -> Task<Msg> {
+        if let Msg::Frame(now) = msg {
+            self.fx.now = now;
+            return Task::none();
+        }
         let identity_may_change = matches!(
             msg,
             Msg::Tick
@@ -1097,16 +1118,32 @@ impl App {
         );
         let account = self.accounts.iter().find(|a| a.current && self.lock == LockState::Unlocked).map(|a| a.did.as_str());
         if self.shell_search.bind(account) { self.search.clear(); }
+        // Serialise UI account mutations with profile writes; reads still reject late epochs.
+        if self.profiles.pending && matches!(msg, Msg::SwitchGo | Msg::SwitchNow(_) | Msg::NewAccount(_) | Msg::NewLink | Msg::GoRestore | Msg::RemoveGo(_)) {
+            self.notice = Some("Wait for the profile save to finish.".into());
+            return Task::none();
+        }
+        let old_owner = self.profile_owner();
         let task = self.update_inner(msg);
+        self.settle_motion();
         self.call_ui.bind(self.call.as_ref().map(|c| c.info.call_id.as_str()));
         if identity_may_change {
             self.refresh_identity();
+        }
+        if old_owner != self.profile_owner() {
+            // Invalidate profile presentation even if the owner changes before
+            // its account-worker completion. Keep unrelated navigation intact.
+            self.chat.account_epoch = self.chat.account_epoch.checked_add(1).expect("account epoch exhausted");
+            self.profiles = profile_ui::State::default();
+            self.install_profile_events();
+            return Task::batch([task, self.refresh_profiles()]);
         }
         task
     }
 
     fn update_inner(&mut self, msg: Msg) -> Task<Msg> {
         match msg {
+            Msg::Frame(now) => self.fx.now = now,
             Msg::Ev(b) => {
                 let Some(ev) = b.0.lock().unwrap().take() else { return Task::none() };
                 return self.on_event(ev);
@@ -1632,7 +1669,29 @@ impl App {
                 use iced::keyboard::Key;
                 let ringing = self.call.as_ref().is_some_and(|c| c.info.incoming && !c.answered && c.state == CallState::Ringing);
                 let active = self.call.as_ref().is_some_and(|c| c.state == CallState::Active);
+                // Cropper.svelte keys: arrows move (Shift = 40px), + / - zoom by .1, Home recentres.
+                if let Some(profile_ui::Layer::Picture { crop, .. }) = &self.profiles.layer {
+                    use profile_ui::Action as A;
+                    let d = if mods.shift() { 40.0 } else { 10.0 };
+                    let a = match key.as_ref() {
+                        Key::Named(Named::ArrowLeft) => Some(A::Nudge(d, 0.0)),
+                        Key::Named(Named::ArrowRight) => Some(A::Nudge(-d, 0.0)),
+                        Key::Named(Named::ArrowUp) => Some(A::Nudge(0.0, d)),
+                        Key::Named(Named::ArrowDown) => Some(A::Nudge(0.0, -d)),
+                        Key::Named(Named::Home) => Some(A::Recenter),
+                        Key::Character("+" | "=") => Some(A::Zoom(crop.zoom + 0.1)),
+                        Key::Character("-" | "_") => Some(A::Zoom(crop.zoom - 0.1)),
+                        _ => None,
+                    };
+                    if let Some(a) = a {
+                        return self.profile_update(a);
+                    }
+                }
                 match key.as_ref() {
+                    // Layer.svelte: Escape closes the open dialog first (new chat, then profile layers).
+                    Key::Named(Named::Escape) if self.shell_search.new_chat.is_some() => return self.shell_search_update(shell_search::Action::NewChat(false)),
+                    Key::Named(Named::Escape) if self.profiles.layer.is_some() => return self.profile_update(profile_ui::Action::CloseLayer),
+                    Key::Named(Named::Escape) if self.profiles.edit.is_some() => return self.profile_update(profile_ui::Action::CancelEdit),
                     Key::Named(Named::Escape) if self.chat.viewer.is_some() => return self.update_chat(Cm::CloseView),
                     Key::Named(Named::ArrowLeft) if self.chat.viewer.is_some() => return self.update_chat(Cm::Step(-1)),
                     Key::Named(Named::ArrowRight) if self.chat.viewer.is_some() => return self.update_chat(Cm::Step(1)),
@@ -1645,9 +1704,10 @@ impl App {
                     Key::Named(Named::Escape) if self.live.dialog.is_some() => return self.update_live(Lm::Dismiss),
                     Key::Named(Named::Escape) if self.call.is_none() && self.shell_search.active => return self.shell_search_update(shell_search::Action::Escape),
                     Key::Named(Named::Escape) if self.call.is_none() && self.live.open.is_some() => return self.update_live(Lm::Close),
-                    Key::Named(Named::Escape) if self.call.is_none() && (self.sel.is_some() || self.groups.open.is_some() || self.screen != Screen::Home) => {
-                        return self.update(Msg::Home);
-                    }
+                    // DesktopShell has no Escape-to-close for the detail pane: Escape belongs to the field,
+                    // the open layer, the composer's reply/edit context and the call screen only.
+                    // Add contact / link screens stand in for the playground's Layer dialogs, which Escape closes.
+                    Key::Named(Named::Escape) if self.call.is_none() && !matches!(self.screen, Screen::Home | Screen::Settings) => return self.update(Msg::Home),
                     // Only reaches here when no text input took the paste.
                     Key::Character("v") if mods.command() && self.can_offer() && self.chat.viewer.is_none() => {
                         return self.check_clipboard(true);
@@ -1836,6 +1896,7 @@ impl App {
             }
             Msg::SearchIn(v) => return self.shell_search_query(v),
             Msg::ShellSearch(action) => return self.shell_search_update(action),
+            Msg::Profile(action) => return self.profile_update(action),
             Msg::ToggleAvail => self.avail_open = !self.avail_open,
             Msg::SetAvail(on, hours) => {
                 let until = hours.map(|h| {
@@ -1845,9 +1906,7 @@ impl App {
                         .unwrap_or(0)
                         + h * 3600
                 });
-                let node = self.node.clone();
-                self.avail = Availability { available: on, until: if on { None } else { until } };
-                return blocking(move || node.set_available(on, until).map_err(s), Msg::Done);
+                return self.profile_write(profile_ui::Save::Availability, move |node| node.set_available(on, until).map_err(s));
             }
             Msg::CloseEnded => self.ended = None,
             // The contact, the chat and the call history stay (U19, U24); only the state changes.
@@ -1912,6 +1971,11 @@ impl App {
             }
             Msg::OpenSettings => {
                 self.screen = Screen::Settings;
+                self.profiles.page = Some(profile_ui::Page::Settings);
+                self.profiles.history.clear();
+                self.profiles.layer = None;
+                self.profiles.edit = None;
+                self.leave_chat();
                 self.acct_menu = false;
                 self.remove_ask = None;
                 self.refresh_accounts();
@@ -1923,10 +1987,11 @@ impl App {
                 self.old_in.zeroize();
                 self.notice = None;
                 // Enumerating devices can block for a while (PulseAudio/WASAPI).
-                return blocking(audio::list_devices, Msg::Devices);
+                return Task::batch([blocking(audio::list_devices, Msg::Devices), self.refresh_profiles()]);
             }
             Msg::Devices(d) => self.devices = d,
             Msg::Back => {
+                if self.screen == Screen::Settings { return self.profile_update(profile_ui::Action::Back); }
                 self.screen = Screen::Home;
                 self.hide_phrase();
                 self.notice = None;
@@ -1937,19 +2002,7 @@ impl App {
                 if name.is_empty() {
                     return Task::none();
                 }
-                let node = self.node.clone();
-                self.notice = Some("Name saved".into());
-                return Task::perform(
-                    async move {
-                        tokio::task::spawn_blocking(move || {
-                            node.set_name(name).map_err(s)?;
-                            node.my_ticket().map_err(s)
-                        })
-                        .await
-                        .unwrap_or_else(|e| Err(e.to_string()))
-                    },
-                    Msg::Ticket,
-                );
+                return self.profile_write(profile_ui::Save::Field("name".into()), move |node| node.set_name(name).map_err(s));
             }
             Msg::InDev(d) => {
                 self.settings.input = (d != DEFAULT_LABEL).then_some(d);
@@ -2033,6 +2086,8 @@ impl App {
             Msg::RemoveAsk(did) => self.remove_ask = Some(did),
             Msg::RemoveCancel => self.remove_ask = None,
             Msg::RemoveGo(did) => {
+                if self.busy { return Task::none(); }
+                self.busy = true;
                 self.remove_ask = None;
                 let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
                 return blocking(
@@ -2041,6 +2096,7 @@ impl App {
                 );
             }
             Msg::Removed(r) => {
+                self.busy = false;
                 self.refresh_accounts();
                 self.accounts = self.node.accounts();
                 self.notice = Some(match r {
@@ -2125,7 +2181,13 @@ impl App {
                     if self.screen == Screen::LinkSync && !self.contacts.is_empty() {
                         self.screen = Screen::Home;
                     }
-                    return self.refresh_chats();
+                    return Task::batch([self.refresh_chats(), self.refresh_profiles()]);
+                }
+            }
+            Ev::Profile { epoch, did } => {
+                if epoch == self.chat.account_epoch {
+                    if let Some(cached) = self.profiles.cache.get_mut(&did) { cached.photo = None; }
+                    return self.refresh_profile(did);
                 }
             }
             Ev::Chat(c) => return self.on_chat_event(c),
@@ -2245,6 +2307,7 @@ impl App {
                 iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::Chat(Cm::DropHover(false))),
                 _ => None,
             }),
+            if self.fx.running() { window::frames().map(Msg::Frame) } else { Subscription::none() },
             if self.video_ticking() {
                 iced::time::every(Duration::from_millis(33)).map(|_| Msg::Video(Vm::Tick))
             } else {

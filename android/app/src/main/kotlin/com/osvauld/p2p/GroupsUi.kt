@@ -84,24 +84,17 @@ fun GroupAvatar(tint: Int, size: Dp, dim: Boolean = false, radius: Dp = size / 2
     }
 }
 
-/**
- * Person avatar. Contacts get the board's tints (Arjun relay, Meera teal, Sam/Priya amber); people who are
- * only fellow group members (not contacts) are neutral grey, as on the boards.
- */
+/** Person avatar in group surfaces (GroupInfo / MemberSheet use the one Avatar with the person's hue and picture, contact or not). */
 @Composable
 fun PersonAvatar(name: String, did: String, size: Dp, contact: Boolean = true, isMe: Boolean = false) {
-    val c = Tin.c
-    val (bg, fg) = when {
-        isMe || !contact -> c.sf2 to c.ink2
-        did == FakeGroupsPrivacy.ARJUN -> c.relayC to c.onRelayC
-        did == FakeGroupsPrivacy.MEERA -> c.prc to c.onPrc
-        did == FakeGroupsPrivacy.SAM || did == FakeGroupsPrivacy.PRIYA -> c.warn to c.onWarn
-        else -> null to null
+    if (isMe) { SelfAvatar(name, size); return }
+    val hue = when (did) {
+        FakeGroupsPrivacy.ARJUN -> 1
+        FakeGroupsPrivacy.MEERA -> 0
+        FakeGroupsPrivacy.SAM, FakeGroupsPrivacy.PRIYA -> 3
+        else -> null
     }
-    if (bg == null || fg == null) { Avatar(name, did, size); return }
-    Box(Modifier.size(size).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
-        Text(if (isMe) "YO" else initialsOf(name), color = fg, style = TinType.titleM.copy(fontSize = (size.value * 0.36f).sp, lineHeight = (size.value * 0.44f).sp, fontWeight = FontWeight.Bold))
-    }
+    if (hue != null) PgAvatar(name, hue, size, person = did) else Avatar(name, did, size)
 }
 
 @Composable

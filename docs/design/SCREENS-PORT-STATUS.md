@@ -34,3 +34,48 @@ PASS for the integrated source: normal and test-hooks `cargo check -p desktop`; 
 Heavy checks use `/home/abe/p2p_chat/scripts/buildlock.py`. CPU admission has been blocked above its 40% threshold; no bypass or unrelated-process termination is authorized.
 
 Original `ds-*` working trees remain intact and uncommitted; integration copies and backups are external. No push or installation to the user's phone is authorized.
+
+
+## Uncommitted recovery follow-up — 2026-10-13
+
+Coordinator: goose UI recovery. Original parity-android-aauim450 and
+parity-desktop-aauim450 worktrees remain read-only, both based on 15ad3cd.
+Recovered 37 platform files into dev after checking every destination against the
+base; preserved external source snapshots and hashes. No commits, staging, phone
+installation, account changes or data clearing performed. Unrelated checkout work
+is excluded. External evidence:
+/home/abe/build-cache/p2p_chat/goose-ui-recovery-20261013-160014/.
+
+Pre-fix baseline from recovered current source: normal/test-hooks desktop checks
+passed; 6 profile helper tests passed (0 ignored, 129 filtered); Android debug and
+release Kotlin compilation plus 14 gate/geometry JVM tests passed (0 skipped).
+Android used existing warm JNI/bindings with cargoNdkBuild/uniffiBindgen excluded,
+not a fresh Rust Android build. Compiler warnings remain.
+
+Follow-up safeguards added (pending post-fix validation):
+- Production Busy cannot call core unavailable: explicit unsupported feedback,
+  no call-admission policy change; debug fixtures remain simulation-only.
+- Profile writes and account transitions have reciprocal desktop UI guards;
+  legacy name/availability writes share the profile worker barrier.
+- Desktop invalidation clears decoded pictures; reads recheck selected hash and
+  readiness, and owner changes invalidate profile presentation/generations.
+- Android failed metadata reads/parses retain accepted data; matching request
+  slots are released; locked identity and debug-fixture disposal are corrected.
+- Android settings reads and Allow calls writes are session-bound worker tasks.
+- Groups notifications are recorded as unsupported instead of an ineffective
+  switch; Quiet suppresses message/missed notification sound without changing
+  OS channel preferences. Availability feedback uses reserved single-line space.
+- Added targeted Busy/session/transition regression tests. The attempted red run
+  was delayed by memory admission until after safeguards existed; no genuine
+  test-first red result is claimed.
+
+Post-fix validation is serialized in external followup.sh after the existing
+queued test job. Memory admission is currently below the 4 GiB threshold; do not
+bypass it or duplicate jobs. results.txt, command logs and followup.done contain
+the eventual outcomes. New fixes are NOT accepted until checks complete.
+
+Visual acceptance remains incomplete: existing native/Svelte images predate these
+fixes; fresh paired measurements, native flow checks, account-switch races,
+accessibility/motion/RTL, and the full screen/state matrix still need validation.
+Desktop's original 335-state inventory is not proof of parity. No whole-app or
+real-device integration claim. See external acceptance.md for blockers.

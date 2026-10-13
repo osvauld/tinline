@@ -26,12 +26,19 @@ mod groups_view;
 mod group_live_view;
 #[path = "shell_view.rs"]
 mod shell_view;
+#[path = "profile_view.rs"]
+mod profile_view;
 #[path = "call_screen.rs"]
 mod call_screen;
 type El<'a> = Element<'a, Msg>;
 
 fn scroll<'a>(t: Tok, c: impl Into<El<'a>>) -> iced::widget::Scrollable<'a, Msg> {
     iced::widget::scrollable(c).style(ui::scroll_style(t))
+}
+
+/// An absolute CSS line height in px (iced's f32 conversion is relative to the font size).
+fn lh(px: f32) -> iced::widget::text::LineHeight {
+    iced::widget::text::LineHeight::Absolute(px.into())
 }
 
 fn tx<'a>(s: impl Into<String>, size: f32, color: Color) -> iced::widget::Text<'a> {
@@ -55,9 +62,10 @@ fn label<'a>(t: Tok, s: &str) -> iced::widget::Text<'a> {
     semi(s.to_uppercase(), 12.0, t.ink2).font(ui::SANS_SEMI)
 }
 
+/// Avatar.svelte initials: hue pair, 700 weight, round(size * .34) px, a circle (intentional, not smoothed).
 fn avatar<'a>(t: Tok, name: &str, key: &str, size: f32) -> El<'a> {
     let (bg, fg) = ui::avatar_colors(t, key);
-    container(semi(ui::initials(name), size * 0.38, fg))
+    container(bold(ui::initials(name), (size * 0.34).round(), fg).line_height(lh((size * 0.34).round() * 1.2)))
         .width(size)
         .height(size)
         .center_x(size)
@@ -192,7 +200,7 @@ impl App {
                 Screen::Phrase => self.phrase_view(t),
                 Screen::Home => self.home_view(t),
                 Screen::AddContact => self.add_view(t),
-                Screen::Settings => self.settings_view(t),
+                Screen::Settings => self.profile_shell(t),
                 Screen::Link => self.link_screen(t),
                 Screen::LinkSecure => self.link_secure_screen(t),
                 Screen::LinkSync => self.link_sync_screen(t),
@@ -200,7 +208,7 @@ impl App {
             }
         };
         let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
-        match self.viewer_overlay(t).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
+        match self.viewer_overlay(t).or_else(|| self.new_chat_overlay(t)).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
             Some(o) => iced::widget::stack![base, o].into(),
             None => base.into(),
         }
@@ -706,18 +714,20 @@ impl App {
     fn list_pane(&self, t: Tok) -> El<'_> {
         let mut col = column![self.desktop_search_field(t)].spacing(0);
         if self.shell_search.active {
-            return container(column![col, self.shell_search_results(t)].height(Fill)).width(380).height(Fill).style(ui::sidebar(t)).into();
+            return self.sidebar_frame(t, col, self.shell_search_results(t));
         }
         let title = match self.chat.tab {
             super::chat::SideTab::Chats => "Chats", super::chat::SideTab::Groups => "Groups",
             super::chat::SideTab::Calls => "Calls", super::chat::SideTab::Contacts => "Contacts",
         };
-        col = col.push(container(bold(title, 24.0, t.ink)).padding([16, 20]));
-        // Retain supported add-contact entry instead of inventing a new-chat sheet in this milestone.
-        col = col.push(container(pill(t, Kind::Quiet, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd))).padding([4, 16]));
+        col = col.push(self.list_header(t, title));
         let q = String::new();
         if self.chat.tab == super::chat::SideTab::Chats {
+            col = col.push(self.chat_chips(t));
             return self.sidebar_frame(t, col, self.chat_list(t, &q));
+        }
+        if self.chat.tab == super::chat::SideTab::Contacts {
+            return self.sidebar_frame(t, col, self.contacts_list(t));
         }
         if self.chat.tab == super::chat::SideTab::Groups {
             return self.sidebar_frame(t, col, self.live_list(t, &q));
@@ -893,15 +903,14 @@ impl App {
         container(c).padding(12).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into()
     }
 
+    /// `.listpane`: 380px on --surface with a 1px hairline end edge (no gap to its neighbours).
     fn sidebar_frame<'a>(&'a self, t: Tok, col: iced::widget::Column<'a, Msg>, list: El<'a>) -> El<'a> {
-        container(
-            column![col, scroll(t, list).height(Fill)]
-                .spacing(0),
-        )
-        .padding(0)
+        row![
+            container(column![col, scroll(t, list).height(Fill)].spacing(0)).width(379).height(Fill).style(ui::plain(t.surface, 0.0)),
+            container(Space::new()).width(1).height(Fill).style(ui::plain(t.hairline, 0.0)),
+        ]
         .width(380)
         .height(Fill)
-        .style(ui::sidebar(t))
         .into()
     }
 
@@ -1360,7 +1369,7 @@ impl App {
 
     // ---- settings ----
 
-    fn settings_view(&self, t: Tok) -> El<'_> {
+    fn native_settings_view(&self, t: Tok) -> El<'_> {
         let opts = |v: &Vec<String>| {
             let mut o = vec![DEFAULT_LABEL.to_string()];
             o.extend(v.iter().cloned());
@@ -1580,7 +1589,7 @@ impl App {
         }
         let nav = container(nav).padding(16).width(240).height(Fill).style(ui::sidebar(t));
         let page: El = match self.settings_tab {
-            0 => profile,
+            0 | 11 => profile,
             1 => devices,
             2 => calls,
             3 => audio,
@@ -1591,12 +1600,9 @@ impl App {
             _ => column![about, quit].spacing(20).into(),
         };
         let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or("About");
-        let content = column![bold(title_, 24.0, t.ink), self.notice_bar(t), page].spacing(20);
-        row![
-            nav,
-            scroll(t, container(container(content).max_width(640).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill)
-        ]
-        .into()
+        let _ = (nav, title_); // Native-only content stays reachable without a second settings sidebar.
+        let content = column![self.notice_bar(t), page].spacing(20);
+        scroll(t, container(container(content).max_width(560).width(Fill)).padding(16).center_x(Fill).width(Fill)).height(Fill).into()
     }
 
     // ---- calls ----

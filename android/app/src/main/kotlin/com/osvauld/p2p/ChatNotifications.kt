@@ -49,6 +49,7 @@ object ChatNotifier {
 
     fun incoming(app: P2pApp, m: Message) {
         if (m.deleted || OpenChat.peer == m.peerDid) return
+        if (!AlertPrefs.messages(app)) return   // Settings › Notifications › Messages
         val text = previewOf(m).ifBlank { return }
         lines.getOrPut(m.peerDid) { mutableListOf() }.let { synchronized(it) { it.add(Line(text, m.at.toLong(), false)); while (it.size > KEEP) it.removeAt(0) } }
         post(app, m.peerDid)
@@ -77,6 +78,7 @@ object ChatNotifier {
             .addRemoteInput(RemoteInput.Builder(KEY_REPLY).setLabel("Message").build())
             .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).setShowsUserInterface(false).build()
         val n = NotificationCompat.Builder(c, Notifications.CH_MESSAGES)
+            .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setColor(0xFF0B6B5B.toInt())
             .setStyle(style)

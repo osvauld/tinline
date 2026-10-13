@@ -114,6 +114,7 @@ object Notifications {
     }
 
     fun incoming(c: Context, call: CallInfo) {
+        if (!AlertPrefs.calls(c)) return   // Settings › Notifications › Calls off
         val name = call.peerName.ifBlank { "Unknown" }
         val full = activity(c, IncomingCallActivity::class.java, 20)
         val answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) }
@@ -174,7 +175,8 @@ object Notifications {
     fun cancelLocked(c: Context) = nm(c).cancel(ID_LOCKED)
 
     fun missed(c: Context, name: String) {
-        val n = Notification.Builder(c, CH_MISSED)
+        val n = androidx.core.app.NotificationCompat.Builder(c, CH_MISSED)
+            .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setContentTitle("Missed call")
             .setContentText(name.ifBlank { "Unknown" })

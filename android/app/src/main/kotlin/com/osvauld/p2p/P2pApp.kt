@@ -45,6 +45,8 @@ class P2pApp : Application(), NodeEvents {
     /** Device linking: the state machine behind the Link a device screens, and the core's LinkEvents. */
     lateinit var links: LinkController
         private set
+    lateinit var profiles: ProfilesController
+        private set
     /** The chat backend: the node's, or the in-memory fake the debug gallery swaps in. */
     val chat: ChatSource get() = ChatBackend.current(this)
 
@@ -79,6 +81,8 @@ class P2pApp : Application(), NodeEvents {
         calls = CallController(this)
         video = CallVideo(this)
         node = newNode()
+        profiles = ProfilesController(this)
+        node.setProfileEvents(profiles)
         node.setVideoEvents(video)
         node.setVideoEnabled(videoEnabled)
         links = LinkController(this)
@@ -117,6 +121,11 @@ class P2pApp : Application(), NodeEvents {
         }
     }
 
+    /** A contact's profile changed (their name may have): re-read the contact list only. */
+    fun refreshContacts() {
+        try { _contacts.value = node.contacts() } catch (e: Exception) { Log.w(TAG, "contacts: ${e.javaClass.simpleName}") }
+    }
+
     fun setAvailable(available: Boolean, until: Long? = null) {
         try { node.setAvailable(available, until?.toULong()) } catch (e: Exception) { Log.w(TAG, "setAvailable: $e") }
         refreshAvailability()
@@ -126,6 +135,7 @@ class P2pApp : Application(), NodeEvents {
         _lock.value = node.lockState()
         _hasIdentity.value = node.hasIdentity()
         _accountDid.value = currentDid()
+        profiles.select(_accountDid.value.takeIf { _lock.value == LockState.UNLOCKED })
         rememberName()
         _contacts.value = node.contacts()
         refreshBlocks()
@@ -252,6 +262,7 @@ class P2pApp : Application(), NodeEvents {
         try {
             lifecycle.submit {
                 val from = currentDid()
+                profiles.invalidate()
                 node.beginNewAccount()
                 _adding.value = Adding(from, restore, link)
                 refresh()
@@ -285,6 +296,7 @@ class P2pApp : Application(), NodeEvents {
 
     private fun switchToNow(did: String, passphrase: String?) {
         val prev = currentDid()
+        profiles.invalidate()
         node.switchAccount(did)
         if (passphrase == null) { tryAutoUnlock(); return }
         try {
@@ -317,6 +329,7 @@ class P2pApp : Application(), NodeEvents {
         if (uniffi.p2pcore.didOfPhrase(phrase) != oldDid) {
             throw IllegalArgumentException("That recovery phrase belongs to a different identity")
         }
+        profiles.invalidate()
         node.beginNewAccount()
         try {
             node.restoreIdentity(phrase, name, passphrase)
@@ -353,6 +366,16 @@ class P2pApp : Application(), NodeEvents {
 
     /** Node start/stop and identity swaps run one at a time on this thread, never on the callers' locks. */
     private val lifecycle = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "p2p-lifecycle") }
+
+    /** Profile reads/writes serialize with identity swaps. Called only on a worker, never the UI or a core callback. */
+    fun <T> profileWork(ticket: ProfileSession.Ticket, work: (Node) -> T): T {
+        try {
+            return lifecycle.submit<T> {
+                check(profiles.session.accepts(ticket) && node.lockState() == LockState.UNLOCKED && currentDid() == ticket.did) { "Account changed" }
+                work(node)
+            }.get()
+        } catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
+    }
 
     /** Unlocks (if needed) and starts the node. Queued on the lifecycle thread; returns immediately. */
     fun startNode() {
@@ -406,9 +429,13 @@ class P2pApp : Application(), NodeEvents {
     }
 
     /** "Allow calls" (U13, P6): whether [did] may ring us. They keep messaging either way. */
-    fun allowCalls(did: String, allowed: Boolean) = scope.launch {
-        try { node.allowCalls(did, allowed) } catch (e: Exception) { Log.w(TAG, "allowCalls: $e") }
-        refreshBlocks()
+    fun allowCalls(did: String, allowed: Boolean) {
+        val ticket = profiles.session.ticket() ?: return
+        scope.launch {
+            try {
+                profileWork(ticket) { it.allowCalls(did, allowed); refreshBlocks() }
+            } catch (e: Exception) { Log.w(TAG, "allowCalls: $e") }
+        }
     }
 
     fun unblock(did: String) = scope.launch {
