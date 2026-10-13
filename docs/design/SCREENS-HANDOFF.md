@@ -262,3 +262,31 @@ it in your report.
   confirm nothing else moves.
 - Builds go through `/home/abe/p2p_chat/scripts/buildlock.py`. `scripts/build_android.py` takes the
   lock itself. Emulator `emulator-5554` only; never the user's USB phone.
+
+## 7. Gotchas from the foundation port (2026-10-13)
+
+- **Shared emulator.** Agents overwrite each other's APKs and flip night mode. Before every screenshot, reinstall
+  your own APK (`adb install -r -d`), set `cmd uimode night yes|no` explicitly, then force-stop and relaunch.
+- **Desktop screenshots.** grim and scrot capture black here. Use the app's own capture:
+  `P2P_DEMO=<demo> P2P_DARK=0|1 P2P_SHOT=<png>` with a throwaway `--data` dir (demos are in `demo.rs`).
+  The cargo package is `desktop`; the binary is `p2p-desktop`.
+- **Desktop curves.** iced MSAA on this surface format is coarse. Draw curved surfaces through `shaped.rs`
+  (tiny-skia raster, cached; `mark.rs` shows the pattern for animated drawing).
+- **Android menus and dialogs.** `DropdownMenu` (Material 3 1.3.1) ignores `shape=`, so corners come from the
+  theme's `Shapes.extraSmall`. Use `TinDialog` for dialogs: it keeps room for the shadow.
+- **Values beyond tokens.css.**
+  - `--gold-ink` is #845a10 (changed 2026-10-13).
+  - Android and desktop dark `pr` is `--accent-ink`; the logo's dark can is #117e6b.
+  - Desktop keeps the call-end colour #C8372D.
+- **Not to port as-is.**
+  - The Simulation drawer and its notes.
+  - The simulated OS chrome (LockScreen, Shade, StatusBar, HeadsUp, Notice(s), DesktopSystem, Home, AppTile).
+    Port only Tinline's notification content and actions through the real platform APIs.
+  - `IncomingAlert.svelte`: replaced by RingHead.
+  - Fake QR codes, the generated camera feed and the WebAudio synth palettes (Proposed).
+  - The cloud field: Fog or Clouds is still undecided. Measure its CPU cost first.
+  - Proposed sign-up and unlock extras (strength bars, blurred phrase, "Remember on this phone", a shared Done
+    step).
+- **The playground tests are spec with caveats.** The full suite hasn't been run since the last merges. Some
+  video, field and profile flows may still reference the removed IncomingAlert banner, and call.flow has timing
+  flakes.
