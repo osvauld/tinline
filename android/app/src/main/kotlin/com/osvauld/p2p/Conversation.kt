@@ -66,6 +66,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.flow.first
 import uniffi.p2pcore.Attachment
 import uniffi.p2pcore.AttachmentKind
 import uniffi.p2pcore.DeliveryState
@@ -101,6 +103,9 @@ fun ConversationScreen(
     onAddContact: () -> Unit = {},
     /** Why our message is not delivered ("blocked"), from the core. Called off the main thread. */
     notDelivered: (String) -> String? = { null },
+    onInfo: (() -> Unit)? = null,
+    /** Global-search integration: route passes the real hit, including its UTC day. */
+    searchHit: uniffi.p2pcore.MessageHit? = null,
 ) {
     val c = Tin.c
     val ctx = LocalContext.current
@@ -116,11 +121,20 @@ fun ConversationScreen(
     val requested = remember { mutableStateListOf<String>() }
     val link = (source.links.collectAsState().value[peerDid] ?: Link.Unknown)
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var draft by remember { mutableStateOf(preview?.draft ?: "") }
+    val savedDraft = remember(peerDid) { ConversationDrafts.forPeer(peerDid) }
+    var draft by savedDraft::text
     var actionsFor by remember { mutableStateOf(preview?.actionsFor) }
     var attachOpen by remember { mutableStateOf(preview?.attach == true) }
-    var editing by remember { mutableStateOf(preview?.editing) }
-    var replying by remember { mutableStateOf(preview?.replying) }
+    var editing by savedDraft::edit
+    var replying by savedDraft::reply
+    var sending by remember { mutableStateOf(false) }
+    val find = remember(peerDid) { FindState() }
+    LaunchedEffect(Unit) {
+        if (preview != null) { draft = preview.draft; replying = preview.replying; editing = preview.editing }
+    }
+    LaunchedEffect(draft, editing) { ConversationDrafts.publish(peerDid, savedDraft) }
+    DisposableEffect(peerDid) { onDispose { savedDraft.cancelEdit(); ConversationDrafts.publish(peerDid, savedDraft) } }
+    BackHandler(find.open) { find.close() }
     var viewer by remember { mutableStateOf(preview?.viewer) }
     var docViewer by remember { mutableStateOf<String?>(null) }
     val brokenImages = remember { mutableStateListOf<String>() }
@@ -187,6 +201,7 @@ fun ConversationScreen(
             }
         }.reversed()
     }
+    val currentRows = rememberUpdatedState(rows)
     // Reached the oldest loaded day: read the next older one from this phone, else ask their phone once.
     val atTop = !listState.canScrollForward
     LaunchedEffect(atTop, loaded, olderDay, msgs.size, link) {
@@ -204,7 +219,61 @@ fun ConversationScreen(
             }
         }
     }
-    LaunchedEffect(msgs.size) { if (listState.firstVisibleItemIndex <= 2) listState.animateScrollToItem(0) }
+    LaunchedEffect(msgs.size) { if (!find.open && searchHit == null && listState.firstVisibleItemIndex <= 2) listState.scrollToItem(0) }
+    suspend fun jumpTo(hit: FindHit) {
+        if (hit.day.isNotBlank()) {
+            val page = withContext(Dispatchers.IO) { source.day(peerDid, hit.day) }
+            page.messages.forEach(::upsert)
+        }
+        val index = withTimeout(2000) {
+            snapshotFlow { currentRows.value.indexOfFirst { it is ConvRow.Msg && it.m.id == hit.id } }
+                .first { it >= 0 }
+        }
+        listState.scrollToItem(index + if (block != null && (block.view.blockedByMe || blockedMeAt != null)) 1 else 0)
+    }
+    var foundId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(searchHit, loaded) {
+        val hit = searchHit ?: return@LaunchedEffect
+        if (!loaded || hit.conv != peerDid) return@LaunchedEffect
+        runCatching { jumpTo(FindHit(hit.id, hit.day)) }.onSuccess { foundId = hit.id; delay(2600); foundId = null }
+            .onFailure { toast(friendly(it)) }
+    }
+    val app = remember(ctx) { ctx.applicationContext as? P2pApp }
+    val coreFindSource = app?.let { runCatching { source === it.realChat }.getOrDefault(false) } == true
+    // Loading a hit's day must not restart indexed search or reset its cursor/current selection.
+    val localFindMessages = if (coreFindSource) null else msgs.toList()
+    LaunchedEffect(find.open, find.q, localFindMessages) {
+        if (!find.open) return@LaunchedEffect
+        val query = find.q.trim()
+        find.error = null; find.cur = 0; find.next = null
+        if (query.codePointCount(0, query.length) < 2) { find.hits = emptyList(); return@LaunchedEffect }
+        delay(150)
+        val result = withContext(Dispatchers.IO) { runCatching { ChatFind.core(app, source, peerDid, query, null) } }
+        val page = result.getOrNull()
+        find.hits = page?.first ?: if (result.isSuccess && source !is CoreChatSource) ChatFind.local(msgs, query) else emptyList()
+        find.next = page?.second
+        find.error = result.exceptionOrNull()?.let(::friendly)
+    }
+    LaunchedEffect(find.current, find.open) {
+        if (find.open) find.current?.let { runCatching { jumpTo(it) }.onFailure { toast(friendly(it)) } }
+    }
+    fun olderMatch() {
+        if (find.cur + 1 < find.hits.size) { find.cur++; return }
+        val cursor = find.next
+        if (cursor == null) { find.cur = 0; return }
+        scope.launch {
+            val query = find.q
+            val result = withContext(Dispatchers.IO) { runCatching { ChatFind.core(app, source, peerDid, query.trim(), cursor) } }
+            if (!find.open || query != find.q) return@launch
+            result.onSuccess { page ->
+                if (page != null) {
+                    val oldSize = find.hits.size
+                    find.hits = (find.hits + page.first).distinctBy { it.id }; find.next = page.second
+                    if (find.hits.size > oldSize) find.cur = oldSize
+                }
+            }.onFailure { find.error = friendly(it) }
+        }
+    }
     val pendingIds = msgs.filter { it.outgoing && it.delivery == DeliveryState.PENDING }.map { it.id }
     LaunchedEffect(blockedMeAt, pendingIds) {
         val ids = if (blockedMeAt == null) emptyList() else withContext(Dispatchers.IO) { pendingIds.filter { notDelivered(it) != null } }
@@ -213,14 +282,21 @@ fun ConversationScreen(
 
     fun send() {
         val text = draft.trim()
-        if (text.isEmpty()) return
+        if (text.isEmpty() || sending) return
         val edit = editing
         val reply = replying
-        draft = ""; editing = null; replying = null
-        scope.launch(Dispatchers.IO) {
-            runCatching { if (edit != null) source.edit(peerDid, edit, text) else source.sendText(peerDid, text, reply) }
-                .onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); listState.animateScrollToItem(0) } }
-                .onFailure { withContext(Dispatchers.Main) { toast("Couldn’t send that message."); if (edit == null) draft = text } }
+        val originalDraft = draft
+        sending = true
+        scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) { runCatching { if (edit != null) source.edit(peerDid, edit, text) else source.sendText(peerDid, text, reply) } }
+                result.onSuccess { m ->
+                    upsert(m)
+                    if (draft == originalDraft && editing == edit && replying == reply) savedDraft.sent()
+                    if (edit == null) TinFx.messageSent()
+                    listState.scrollToItem(0)
+                }.onFailure { toast(friendly(it)) }
+            } finally { sending = false }
         }
     }
     fun sendFile(file: File, mime: String) {
@@ -285,29 +361,27 @@ fun ConversationScreen(
     val byId = remember(msgs.toList()) { msgs.associateBy { it.id } }
     Box(Modifier.fillMaxSize()) {
         Page {
-            ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf, composerState, block?.callGate ?: CallGate.Ok)
-            if (link == Link.Offline && composerState == ComposerState.Open) InfoCard(
-                "$first isn’t reachable right now. Your messages stay on this phone and send by themselves when you’re both online.",
-                Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp), icon = Icons.Rounded.Schedule, kind = BannerKind.Warn,
-            )
+            Box(Modifier.fillMaxWidth().height(56.dp)) {
+                if (find.open) FindBar(find, {}, ::olderMatch, { if (find.hits.isNotEmpty()) find.cur = (find.cur - 1 + find.hits.size) % find.hits.size }, { find.close() })
+                else ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf, composerState, block?.callGate ?: CallGate.Ok, { find.show() }, onInfo)
+            }
+            Box(Modifier.weight(1f).fillMaxWidth().background(c.canvas)) {
             LazyColumn(
-                Modifier.weight(1f).fillMaxWidth(), state = listState, reverseLayout = true,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
+                Modifier.fillMaxSize(), state = listState, reverseLayout = true,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
             ) {
                 // Newest at the bottom (reversed list): the block note sits under the last message.
                 if (block != null && (block.view.blockedByMe || blockedMeAt != null)) item(key = "block") { BlockNote(name, block.view) }
                 items(rows, key = { r -> when (r) { is ConvRow.Day -> "d" + r.label + rows.indexOf(r); is ConvRow.Msg -> r.m.id } }) { r ->
                     when (r) {
-                        is ConvRow.Day -> Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 6.dp), contentAlignment = Alignment.Center) {
-                            Text(r.label, Modifier.clip(RoundedCornerShape(50)).background(c.sf2).padding(horizontal = 12.dp, vertical = 4.dp),
-                                style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.ink2)
-                        }
+                        is ConvRow.Day -> PgDayPill(r.label, Modifier.padding(vertical = 10.dp))
                         is ConvRow.Msg -> Bubble(
                             r.m, r.pos, name, link, online, nowMs, progress, requested, byId, source,
                             notDelivered = if (r.m.id in undelivered) BlockCopy.notDelivered(name) else null,
-                            selected = actionsFor == r.m.id,
+                            selected = actionsFor == r.m.id || foundId == r.m.id,
+                            findQuery = if (find.open && find.hits.any { it.id == r.m.id }) find.q else "", findCurrent = find.current?.id == r.m.id,
                             onLong = { if (!r.m.deleted) actionsFor = r.m.id },
-                            onReply = { editing = null; replying = r.m.id },
+                            onReply = { savedDraft.beginReply(r.m.id) },
                             onDownload = { download(r.m) }, onCancel = { cancel(r.m) }, onOpenPhoto = { viewer = r.m.id }, onSaveFile = { saveToPhone(r.m) },
                             onOpenFile = { openFile(r.m) }, broken = r.m.id in brokenImages, onBroken = { if (r.m.id !in brokenImages) brokenImages.add(r.m.id) },
                         )
@@ -330,11 +404,15 @@ fun ConversationScreen(
                     }
                 }
             }
+            if ((!online || link == Link.Offline) && composerState == ComposerState.Open) PgStrip(
+                if (!online) "You’re offline. Messages send when you’re back online." else "$first is offline. Messages send when you’re both online.", Pg.Off, modifier = Modifier.align(Alignment.TopCenter),
+            )
+            }
             if (composerState != ComposerState.Open) BlockedFooter(name, composerState, onUnblock, onAddContact)
             else Composer(
                 draft, { draft = it }, editing != null, replying?.let { byId[it] }?.let { ComposerBanner("Replying to ${if (it.outgoing) "yourself" else first}", ChatNotifier.previewOf(it)) },
-                editing?.let { byId[it] }?.let { ComposerBanner("Editing", it.text) },
-                onCancelBanner = { if (editing != null) draft = ""; editing = null; replying = null },
+                editing?.let { byId[it] }?.let { ComposerBanner("Editing message", it.text) },
+                onCancelBanner = { savedDraft.cancel() },
                 onAttach = { attachOpen = true }, onSend = ::send,
                 onVoice = { path, ms, wave -> scope.launch(Dispatchers.IO) { runCatching { source.sendVoice(peerDid, path, ms, wave) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m) } }.onFailure { withContext(Dispatchers.Main) { toast("Couldn’t send that voice message.") } } } },
             )
@@ -351,9 +429,9 @@ fun ConversationScreen(
     val am = actionsFor?.let { byId[it] }
     if (am != null) ActionsSheet(
         am, first, isSelf, onDismiss = { actionsFor = null },
-        onReply = { actionsFor = null; editing = null; replying = am.id },
+        onReply = { actionsFor = null; savedDraft.beginReply(am.id) },
         onCopy = { actionsFor = null; clipboard.setText(AnnotatedString(am.text)); toast("Copied") },
-        onEdit = { actionsFor = null; replying = null; editing = am.id; draft = am.text },
+        onEdit = { actionsFor = null; savedDraft.beginEdit(am.id, am.text) },
         onDelete = {
             actionsFor = null
             scope.launch(Dispatchers.IO) { runCatching { source.delete(peerDid, am.id) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m) } }.onFailure { withContext(Dispatchers.Main) { toast("Couldn’t delete that message.") } } }
@@ -372,11 +450,11 @@ fun ConversationScreen(
 }
 
 @Composable
-private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean, blockState: ComposerState = ComposerState.Open, callGate: CallGate = CallGate.Ok) {
+private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean, blockState: ComposerState = ComposerState.Open, callGate: CallGate = CallGate.Ok, onFind: () -> Unit = {}, onInfo: (() -> Unit)? = null) {
     val c = Tin.c
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
-        Avatar(name, peerDid, 40.dp)
+    Row(Modifier.fillMaxWidth().height(56.dp).background(c.sf).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        PgIconBtn(Pg.Back, "Back to chats", onBack)
+        Avatar(name, peerDid, 36.dp)
         Column(Modifier.weight(1f)) {
             Text(name, style = TinType.bodyL.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (isSelf) Text(SELF_SUB, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
@@ -394,8 +472,9 @@ private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> 
             if (blockState == ComposerState.Open && callGate == CallGate.Ok) IconBtn(Icons.Rounded.Call, "Call $first", onCall, tint = c.pr)
             else IconBtn(Icons.Rounded.PhoneDisabled, "Can’t call $first", onCall, tint = c.ink2)
         }
+        PgIconBtn(Pg.Search, "Find in this chat", onFind)
+        if (onInfo != null) PgIconBtn(Pg.Info, "Chat details", onInfo)
     }
-    Box(Modifier.fillMaxWidth().height(1.dp).background(c.ln))
 }
 
 private class ComposerBanner(val title: String, val text: String)
@@ -408,40 +487,11 @@ private fun Composer(
     val c = Tin.c
     val voice = rememberVoiceRecState { r -> onVoice(r.path, r.durationMs, r.waveform) }
     val banner = editBanner ?: replyBanner
-    if (banner != null) Row(
-        Modifier.padding(horizontal = 8.dp).fillMaxWidth().clip(SmoothCornerShape(topStart = 16.dp, topEnd = 16.dp)).background(c.sf)
-            .border(1.dp, c.ln, SmoothCornerShape(topStart = 16.dp, topEnd = 16.dp)).padding(start = 14.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(if (editBanner != null) Icons.Rounded.Edit else Icons.AutoMirrored.Rounded.Reply, null, tint = c.pr, modifier = Modifier.size(20.dp))
-        Column(Modifier.weight(1f)) {
-            Text(banner.title, style = TinType.bodyM.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = c.pr)
-            BannerLine(banner.text)
-        }
-        IconBtn(Icons.Rounded.Close, if (editBanner != null) "Cancel editing" else "Cancel reply", onCancelBanner, tint = c.ink2)
-    }
-    Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = if (banner != null) 0.dp else 8.dp, bottom = 12.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        val shape = if (banner != null) SmoothCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp) else SmoothCornerShape(24.dp)
-        if (voice.recording) VoiceRecordingBar(voice, Modifier.weight(1f)) else Row(
-            Modifier.weight(1f).heightIn(min = 48.dp).clip(shape).background(if (editing) c.sf else c.sf2).let { if (editing) it.border(1.dp, c.pr, shape) else it },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (!editing) Box(Modifier.padding(start = 4.dp)) { IconBtn(Icons.Rounded.Add, "Attach", onAttach, tint = c.ink2) } else Spacer(Modifier.width(14.dp))
-            Box(Modifier.weight(1f).padding(vertical = 10.dp, horizontal = 4.dp)) {
-                if (draft.isEmpty()) Text("Message", style = TinType.bodyL, color = c.ink2)
-                BasicTextField(
-                    draft, onDraft, Modifier.fillMaxWidth(), maxLines = 6, textStyle = TinType.bodyL.copy(color = c.ink), cursorBrush = SolidColor(c.pr),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                )
-            }
-            Spacer(Modifier.width(8.dp))
-        }
-        if (draft.isBlank() && !editing) VoiceMicButton(voice)
-        else Box(
-            Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank()) Tin.c.sf3 else c.pr).clickable(enabled = draft.isNotBlank(), role = Role.Button, onClick = onSend),
-            contentAlignment = Alignment.Center,
-        ) { Icon(if (editing) Icons.Rounded.Check else Icons.AutoMirrored.Rounded.Send, if (editing) "Save edit" else "Send", tint = if (draft.isBlank()) c.ink2 else c.onPr) }
-    }
+    PgComposer(draft, onDraft, "Message", banner?.let { ComposerCtx(it.title, it.text, if (editing) "Cancel edit" else "Cancel reply") },
+        editing, onCancelBanner, onSend, onAttach,
+        field = if (voice.recording) { modifier -> VoiceRecordingBar(voice, modifier) } else null,
+        trailing = { VoiceMicButton(voice) },
+    )
 }
 
 @Composable
@@ -457,6 +507,7 @@ private fun Bubble(
     byId: Map<String, Message>, source: ChatSource, notDelivered: String? = null, selected: Boolean,
     onLong: () -> Unit, onReply: () -> Unit, onDownload: () -> Unit, onCancel: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
     onOpenFile: () -> Unit, broken: Boolean, onBroken: () -> Unit,
+    findQuery: String = "", findCurrent: Boolean = false,
 ) {
     val c = Tin.c
     val out = m.outgoing
@@ -479,9 +530,9 @@ private fun Bubble(
             }
         }
     }
-    BoxWithConstraints(Modifier.fillMaxWidth().then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(top = gapAbove(pos)).then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
         // Up to 82% of the screen (capped for tablets), so text is not wrapped into a narrow column.
-        val bubbleMaxWidth = minOf(maxWidth * .82f, 480.dp)
+        val bubbleMaxWidth = minOf(maxWidth * .78f, 560.dp)
         if (drag > 0f) Icon(Icons.AutoMirrored.Rounded.Reply, "Reply", tint = c.pr,
             modifier = Modifier.align(Alignment.CenterStart).size(24.dp))
         if (m.deleted) {
@@ -494,6 +545,19 @@ private fun Bubble(
             return@BoxWithConstraints
         }
         val a = m.attachment
+        if (a == null && notDelivered == null) {
+            val meta = BubbleMeta(msClock(m.at.toLong()), m.editedAt != null,
+                if (!out) MetaTick.None else if (m.delivery == DeliveryState.DELIVERED) MetaTick.Delivered else MetaTick.Pending,
+                if (out && tickOf(m, link, online, nowMs) == Tick.Clock) "Waiting until you are both online" else null)
+            PgTextBubble(
+                ChatFind.marked(Emoji.styled(m.text), findQuery, findCurrent, c.thread), pos, out, meta,
+                Modifier.widthIn(max = bubbleMaxWidth).combinedClickable(onClick = {}, onLongClick = onLong)
+                    .let { if (selected) it.border(2.dp, c.accentInk, shape) else it },
+                emoji = m.replyTo == null && Emoji.isBig(m.text), held = selected,
+                quote = m.replyTo?.let { rid -> { val q = byId[rid]; PgQuote(if (q == null) null else if (q.outgoing) "You" else first, c.accentInk, q?.let(ChatNotifier::previewOf) ?: "Original message unavailable", null) } },
+            )
+            return@BoxWithConstraints
+        }
         val photo = a != null && a.isImage() && !broken
         val prog = a?.let { progress[it.hash] }
         val tick = if (out) tickOf(m, link, online, nowMs) else null
@@ -714,7 +778,7 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
         }
         Row(Modifier.padding(start = 4.dp, top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
             Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(18.dp))
-            Hint(if (isSelf) "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each." else "Files go straight to $first’s phone, encrypted. Up to 2 GB each. Both of you need to be online while it transfers.")
+            Hint(if (isSelf) "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each." else "Files are end-to-end encrypted. Up to 2 GB each. Both of you need to be online while it transfers.")
         }
     }
 }

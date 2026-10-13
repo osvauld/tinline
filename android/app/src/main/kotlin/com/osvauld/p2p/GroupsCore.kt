@@ -68,6 +68,10 @@ interface GroupApi {
     fun invitationsOutgoing(id: String): List<GroupInvitation>
     fun invitationAccept(invitationId: String): GroupInvitation
     fun invitationDecline(invitationId: String): GroupInvitation
+    // Call hosts (a separate permit from chat hosting; the device accepts it itself). Defaults keep JVM stand-ins compiling.
+    fun appointCallHost(id: String, did: String, deviceId: String): Unit = throw UnsupportedOperationException()
+    fun revokeCallHost(id: String, did: String, deviceId: String): Unit = throw UnsupportedOperationException()
+    fun acceptCallHost(id: String, accept: Boolean): Unit = throw UnsupportedOperationException()
 }
 
 class NodeGroupApi(private val node: () -> Node) : GroupApi {
@@ -98,6 +102,9 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun invitationsOutgoing(id: String) = node().groupInvitationsOutgoing(id)
     override fun invitationAccept(invitationId: String) = node().groupInvitationAccept(invitationId)
     override fun invitationDecline(invitationId: String) = node().groupInvitationDecline(invitationId)
+    override fun appointCallHost(id: String, did: String, deviceId: String) = node().groupAppointCallHost(id, did, deviceId)
+    override fun revokeCallHost(id: String, did: String, deviceId: String) = node().groupRevokeCallHost(id, did, deviceId)
+    override fun acceptCallHost(id: String, accept: Boolean) = node().groupAcceptCallHost(id, accept)
 }
 
 /** A contact as the "Add members" picker sees it. */
@@ -409,6 +416,12 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun acceptHost(id: String, accept: Boolean) = act(
         if (accept) "This phone agreed to host. It hosts as soon as an admin has appointed it." else "This phone stopped hosting the group."
     ) { api.acceptHost(id, accept) }
+
+    fun appointCall(id: String, did: String, dev: String) = act("Asked. The device carries calls once it accepts.") { api.appointCallHost(id, did, dev) }
+    fun revokeCall(id: String, did: String, dev: String) = act("That device no longer hosts calls for the group.") { api.revokeCallHost(id, did, dev) }
+    fun acceptCallHost(id: String, accept: Boolean) = act(
+        if (accept) "This device now hosts the group’s calls." else "This device won’t host the group’s calls."
+    ) { api.acceptCallHost(id, accept) }
 
     private fun reloadRequests() {
         _incoming.value = try { api.requestsIncoming() } catch (_: Exception) { emptyList() }

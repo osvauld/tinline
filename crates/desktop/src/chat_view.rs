@@ -137,10 +137,12 @@ impl App {
             let dim = if sel { t.on_primary_c } else { t.ink2 };
             let nm = if unread { bold(name.clone(), 15.0, fg) } else { semi(name.clone(), 15.0, fg) };
             let mut sub = row![].spacing(4).align_y(Alignment::Center);
-            if r.last_outgoing && r.last_activity > 0 {
+            let draft = self.chat.draft_for(&r.peer_did);
+            if draft.trim().is_empty() && r.last_outgoing && r.last_activity > 0 {
                 sub = sub.push(self.ticks(t, r.last_delivery, 14.0, dim));
             }
-            let preview = if me && r.preview.is_empty() { crate::app::SELF_SUB.to_string() } else { r.preview.clone() };
+            let preview = if !draft.trim().is_empty() { format!("Draft: {}", draft.replace('\n', " ")) }
+                else if me && r.preview.is_empty() { crate::app::SELF_SUB.to_string() } else { r.preview.clone() };
             // Blocked people stay in the list with a red line, so the state is never hidden.
             let pv = match self.blocks.status(&r.peer_did) {
                 Some(st) => tx(st, 13.0, if sel { dim } else { t.error }),
@@ -149,21 +151,20 @@ impl App {
             }
             .wrapping(iced::widget::text::Wrapping::None);
             sub = sub.push(container(pv).width(Fill).clip(true));
-            if unread {
-                sub = sub.push(count_badge(t, r.unread));
-            }
+            sub = sub.push(container(if unread { count_badge(t, r.unread) } else { Space::new().into() }).width(32));
             items.push((me, r.last_activity, 
                 button(
                     row![
                         avatar(t, &name, &r.peer_did, 40.0),
-                        column![row![nm, Space::new().width(Fill), tx(list_time(r.last_activity), 12.0, dim)], sub]
+                        column![row![container(nm.wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true), container(tx(list_time(r.last_activity), 11.0, dim)).width(72)], sub]
                             .spacing(2)
                             .width(Fill),
                     ]
                     .spacing(12)
                     .align_y(Alignment::Center),
                 )
-                .padding([8, 12])
+                .padding([16, 12])
+                .height(72)
                 .width(Fill)
                 .style(ui::row_style(t, sel))
                 .on_press(Msg::Select(r.peer_did.clone()))
@@ -183,7 +184,7 @@ impl App {
                     column![
                         semi("No chats yet", 14.0, t.ink),
                         tx(
-                            "Messages go straight from your computer to theirs, end-to-end encrypted. Nothing is stored on a server.",
+                            "Messages stay on your devices.",
                             13.0,
                             t.ink2
                         ),
@@ -368,7 +369,7 @@ impl App {
             let note = if self.chat.loading {
                 "Loading\u{2026}".to_string()
             } else {
-                "Messages go straight from your computer to theirs, end-to-end encrypted. Nothing is stored on a server.".to_string()
+                "Messages stay on your devices.".to_string()
             };
             let mut empty = column![bold(if self.chat.loading { "" } else { "No messages yet" }, 20.0, t.ink), tx(note, 14.0, t.ink2)]
                 .spacing(6)
@@ -795,7 +796,7 @@ impl App {
         if let Some(m) = self.chat.reply.as_deref().and_then(|id| self.chat.find(id)) {
             col = col.push(bar(format!("Replying to {}", if m.outgoing { "yourself".to_string() } else { name.to_string() }), preview_of(m)));
         } else if let Some(m) = self.chat.editing.as_deref().and_then(|id| self.chat.find(id)) {
-            col = col.push(bar("Editing".to_string(), preview_of(m)));
+            col = col.push(bar("Editing message".to_string(), preview_of(m)));
         }
         let editor = text_editor(&self.chat.input)
             .id(COMPOSER_ID)
@@ -832,10 +833,10 @@ impl App {
             });
         let has_text = !self.chat.input.text().trim().is_empty();
         let last: El = if has_text {
-            button(container(ui::icon(Icon::Send, 18.0, t.on_primary)).center_x(40).center_y(40))
+            button(container(ui::icon(Icon::Send, 18.0, t.on_primary)).center_x(44).center_y(44))
                 .padding(0)
-                .width(40)
-                .height(40)
+                .width(44)
+                .height(44)
                 .style(ui::button_style(t, Kind::Primary, 999.0))
                 .on_press(Msg::Chat(Cm::Send))
                 .into()
@@ -868,10 +869,10 @@ fn fit(w: f32, h: f32) -> (f32, f32) {
 }
 
 fn icon_btn_big<'a>(t: Tok, i: Icon, on: Msg) -> El<'a> {
-    button(container(ui::icon(i, 20.0, t.ink2)).center_x(40).center_y(40))
+    button(container(ui::icon(i, 20.0, t.ink2)).center_x(44).center_y(44))
         .padding(0)
-        .width(40)
-        .height(40)
+        .width(44)
+        .height(44)
         .style(ui::button_style(t, Kind::Ghost, 999.0))
         .on_press(on)
         .into()

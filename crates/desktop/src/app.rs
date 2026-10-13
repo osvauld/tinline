@@ -25,6 +25,8 @@ use vcall::{VideoUi, Vm};
 use link::{LinkState, Role, UnlinkedInfo};
 
 use chat::{ChatState, Cm};
+#[path = "shell_search.rs"]
+mod shell_search;
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -162,6 +164,7 @@ struct App {
     detail: Detail,
     rename_in: String,
     search: String,
+    shell_search: shell_search::State,
     recents: Vec<CallRecord>,
     detail_calls: Vec<CallRecord>,
     avail: Availability,
@@ -226,6 +229,7 @@ struct App {
     qr: Option<Qr>,
     add_in: String,
     call: Option<CallView>,
+    call_ui: crate::call_ui::State,
     /// A second incoming call, shown as a banner over the call; the call carries on until the user chooses.
     waiting: Option<CallInfo>,
     /// "End & answer" was chosen: this call takes over when the current one ends.
@@ -346,6 +350,7 @@ enum Msg {
     Added(Result<Contact, String>),
     CallPressed(String),
     CallStarted(Result<CallInfo, String>),
+    CallUi(crate::call_ui::Action),
     /// Block a contact (after the confirmation).
     Block(String),
     Unblock(String),
@@ -369,6 +374,7 @@ enum Msg {
     RenameClear,
     SetVerified(bool),
     SearchIn(String),
+    ShellSearch(shell_search::Action),
     ToggleAvail,
     SetAvail(bool, Option<u64>),
     OpenAdd,
@@ -566,7 +572,9 @@ impl App {
         let tab = self.chat.tab;
         #[cfg(feature = "test-hooks")]
         let fake = self.chat.fake.take();
+        let account_epoch = self.chat.account_epoch.checked_add(1).expect("chat account epoch exhausted");
         self.chat = ChatState::default();
+        self.chat.account_epoch = account_epoch;
         self.chat.tab = tab;
         #[cfg(feature = "test-hooks")]
         {
@@ -646,6 +654,7 @@ impl App {
             detail: Detail::View,
             rename_in: String::new(),
             search: String::new(),
+            shell_search: shell_search::State::default(),
             recents: node.recent_calls(RECENTS),
             detail_calls: Vec::new(),
             avail: node.availability(),
@@ -700,6 +709,7 @@ impl App {
             qr: None,
             add_in: String::new(),
             call: None,
+            call_ui: crate::call_ui::State::default(),
             waiting: None,
             takeover: None,
             early: Vec::new(),
@@ -1085,7 +1095,10 @@ impl App {
                 | Msg::Finished(_)
                 | Msg::Ticket(_)
         );
+        let account = self.accounts.iter().find(|a| a.current && self.lock == LockState::Unlocked).map(|a| a.did.as_str());
+        if self.shell_search.bind(account) { self.search.clear(); }
         let task = self.update_inner(msg);
+        self.call_ui.bind(self.call.as_ref().map(|c| c.info.call_id.as_str()));
         if identity_may_change {
             self.refresh_identity();
         }
@@ -1625,9 +1638,12 @@ impl App {
                     Key::Named(Named::ArrowRight) if self.chat.viewer.is_some() => return self.update_chat(Cm::Step(1)),
                     Key::Named(Named::Escape) if self.chat.rec.is_some() => return self.update_chat(Cm::RecCancel),
                     Key::Named(Named::Enter) if ringing => return self.update(Msg::Answer),
+                    Key::Named(Named::Escape) if self.call_ui.about => return self.update(Msg::CallUi(crate::call_ui::Action::CloseAbout)),
                     Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),
+                    Key::Named(Named::Escape) if self.call.is_some() && !self.call_ui.minimized => return self.update(Msg::CallUi(crate::call_ui::Action::Minimize)),
                     Key::Named(Named::Escape) if self.groups.dialog.is_some() => return self.update_groups(Gm::Dismiss),
                     Key::Named(Named::Escape) if self.live.dialog.is_some() => return self.update_live(Lm::Dismiss),
+                    Key::Named(Named::Escape) if self.call.is_none() && self.shell_search.active => return self.shell_search_update(shell_search::Action::Escape),
                     Key::Named(Named::Escape) if self.call.is_none() && self.live.open.is_some() => return self.update_live(Lm::Close),
                     Key::Named(Named::Escape) if self.call.is_none() && (self.sel.is_some() || self.groups.open.is_some() || self.screen != Screen::Home) => {
                         return self.update(Msg::Home);
@@ -1636,7 +1652,7 @@ impl App {
                     Key::Character("v") if mods.command() && self.can_offer() && self.chat.viewer.is_none() => {
                         return self.check_clipboard(true);
                     }
-                    Key::Character("k") if mods.command() && self.call.is_none() => return operation::focus(SEARCH_ID),
+                    Key::Character("k") if mods.command() && self.call.is_none() => return self.shell_search_update(shell_search::Action::Focus),
                     Key::Character("m") if mods.command() && active => return self.update(Msg::ToggleMute),
                     Key::Character("e") if mods.command() && self.call.is_some() => return self.update(Msg::Hangup),
                     _ => {}
@@ -1734,6 +1750,10 @@ impl App {
                     ]);
                 }
             }
+            Msg::CallUi(action) => {
+                let can_minimize = self.call.as_ref().is_some_and(|c| !(c.info.incoming && !c.answered && c.state == CallState::Ringing));
+                self.call_ui.apply(action, can_minimize);
+            }
             Msg::CallPressed(did) => return self.dial(did),
             Msg::CallAgain(did) => return self.dial(did),
             Msg::CallStarted(r) => match r {
@@ -1814,7 +1834,8 @@ impl App {
                     return clipboard::write(n);
                 }
             }
-            Msg::SearchIn(v) => self.search = v,
+            Msg::SearchIn(v) => return self.shell_search_query(v),
+            Msg::ShellSearch(action) => return self.shell_search_update(action),
             Msg::ToggleAvail => self.avail_open = !self.avail_open,
             Msg::SetAvail(on, hours) => {
                 let until = hours.map(|h| {

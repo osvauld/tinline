@@ -33,44 +33,13 @@ import uniffi.p2pcore.Contact
 /** The tabs of the bottom bar. Chats opens by default. Groups is group chat on the core (GroupsLive.kt). */
 enum class HomeTab { Chats, Groups, Calls, Contacts }
 
-/** Bottom bar: Chats · Calls · Contacts, with a red count on Chats (unread) and Calls (missed since you looked). */
-@Composable
-fun TinNavBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int = 0, callBadge: Int = 0, showGroups: Boolean = false, groupBadge: Int = 0) {
-    val c = Tin.c
-    Row(Modifier.fillMaxWidth().background(c.sf2).navigationBarsPadding().height(80.dp)) {
-        listOf(
-            Triple(HomeTab.Chats, Icons.Rounded.ChatBubbleOutline to Icons.Rounded.Chat, "Chats") to chatBadge,
-            Triple(HomeTab.Groups, Icons.Outlined.GroupsOutlined to Icons.Rounded.Groups, "Groups") to groupBadge,
-            Triple(HomeTab.Calls, Icons.Rounded.Call to Icons.Rounded.Call, "Calls") to callBadge,
-            Triple(HomeTab.Contacts, Icons.Rounded.PeopleOutline to Icons.Rounded.People, "Contacts") to 0,
-        ).filter { showGroups || it.first.first != HomeTab.Groups }.forEach { (t, badge) ->
-            val (id, icons, label) = t
-            val on = id == tab
-            Column(
-                Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) { onTab(id) }
-                    .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = "$badge new" },
-                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-            ) {
-                Box(Modifier.size(64.dp, 32.dp).clip(RoundedCornerShape(50)).background(if (on) c.prc else androidx.compose.ui.graphics.Color.Transparent), contentAlignment = Alignment.Center) {
-                    Icon(if (on) icons.second else icons.first, null, tint = if (on) c.onPrc else c.ink2)
-                    if (badge > 0) Box(
-                        Modifier.align(Alignment.TopEnd).offset(x = (-6).dp, y = (-2).dp).defaultMinSize(18.dp, 18.dp).clip(RoundedCornerShape(50)).background(c.callEnd).padding(horizontal = 4.dp),
-                        contentAlignment = Alignment.Center,
-                    ) { Text(if (badge > 99) "99+" else "$badge", style = TinType.caption.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold), color = androidx.compose.ui.graphics.Color.White) }
-                }
-                Text(label, style = TinType.caption.copy(fontWeight = if (on) FontWeight.Bold else FontWeight.Medium), color = if (on) c.ink else c.ink2)
-            }
-        }
-    }
-}
-
 /** Chat list rows from the core's conversations. Only conversations that have a message; a contact's name wins over what they call themselves.
  *  "You" (our DID: saved items for our own devices) is always there, pinned first. */
 fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link>, online: Boolean, nowMs: Long, myDid: String? = null, blocks: Blocks = Blocks()): List<ChatRowUi> {
     val by = contacts.associateBy { it.did }
     val you = chats.firstOrNull { it.peerDid == myDid }?.let { ch ->
         val at = ch.lastActivity.toLong()
-        ChatRowUi(ch.peerDid, "You", ch.preview.ifBlank { SELF_SUB }, if (at > 0) listTime(at, nowMs) else "", false, Tick.Two, ch.unread.toInt())
+        ChatRowUi(ch.peerDid, "You", ch.preview.ifBlank { SELF_SUB }, if (at > 0) listTime(at, nowMs) else "", false, Tick.Two, ch.unread.toInt(), atMs = at)
     }
     return listOfNotNull(you) + chats.filter { it.lastActivity > 0UL && it.peerDid != myDid }.map { ch ->
         val name = by[ch.peerDid]?.display() ?: ch.peerName.ifBlank { "Unknown" }
@@ -85,97 +54,17 @@ fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link
             listTime(at, nowMs), ch.lastOutgoing,
             when { waiting -> Tick.Clock; ch.lastDelivery == uniffi.p2pcore.DeliveryState.DELIVERED -> Tick.Two; else -> Tick.One },
             ch.unread.toInt(),
-            alert = status != null,
+            alert = status != null, atMs = at,
         )
     }
 }
 
-/** Chats tab body: the list, or the empty state. The FAB sits above the bar. */
-@Composable
-fun ChatsBody(rows: List<ChatRowUi>, query: String, banner: @Composable () -> Unit, onSearch: () -> Unit, onChat: (String) -> Unit, onNewChat: () -> Unit, searching: Boolean, myDid: String? = null) {
-    val c = Tin.c
-    // Only an unused "You" row: still the empty state, with a way into "You".
-    if (rows.all { it.did == myDid && it.time.isEmpty() } && !searching) {
-        Column(Modifier.fillMaxSize()) {
-            banner()
-            Column(
-                Modifier.weight(1f).fillMaxWidth().padding(start = 32.dp, end = 32.dp, bottom = 40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-            ) {
-                StringIllustration(height = 150.dp)
-                Text("No messages yet", style = TinType.titleL, color = c.ink, textAlign = TextAlign.Center)
-                Text("Messages go straight from your phone to theirs, end-to-end encrypted. Nothing is stored on a server.", style = TinType.bodyL, color = c.ink2, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(2.dp))
-                TinButton("Start a chat", onNewChat)
-                Hint("You can message anyone in your contacts.", align = TextAlign.Center)
-                if (myDid != null && rows.any { it.did == myDid }) TinButton("Notes to yourself", { onChat(myDid) }, style = BtnStyle.Outlined)
-            }
-        }
-        return
+/** Active groups as Chats rows (the playground's Chats tab lists 1:1 and group conversations together, newest first). */
+fun groupChatRows(list: List<uniffi.p2pcore.GroupSummary>, me: String, nowMs: Long): List<ChatRowUi> =
+    list.filter { GroupText.active(it.myRole) }.map { s ->
+        val at = s.last?.at?.toLong() ?: 0L
+        ChatRowUi(s.id, s.name, GroupText.preview(s, me), if (at > 0) listTime(at, nowMs) else "", false, Tick.Two, s.unread.toInt(), group = true, atMs = at)
     }
-    val shown = rows.filter { query.isBlank() || it.name.contains(query.trim(), true) || it.preview.contains(query.trim(), true) }
-    Box(Modifier.fillMaxSize()) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 112.dp)) {
-            if (!searching) {
-                item { banner() }
-                item {
-                    Row(
-                        Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp).fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(50)).background(c.sf2)
-                            .clickable(role = Role.Button, onClick = onSearch).padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Icon(Icons.Rounded.Search, null, tint = c.ink2)
-                        Text("Search chats", style = TinType.bodyL, color = c.ink2)
-                    }
-                }
-            }
-            items(shown, key = { it.did }) { ChatRow(it, onClick = { onChat(it.did) }) }
-            if (searching && shown.isEmpty()) item { Hint("No chats match.", Modifier.padding(24.dp)) }
-        }
-        if (!searching) NewChatFab(onNewChat, Modifier.align(Alignment.BottomEnd))
-    }
-}
-
-@Composable
-private fun NewChatFab(onClick: () -> Unit, modifier: Modifier) {
-    val c = Tin.c
-    Row(
-        modifier.padding(end = 20.dp, bottom = 20.dp).depth(Depth.Lift, SmoothCornerShape(16.dp)).clip(SmoothCornerShape(16.dp)).background(c.pr)
-            .clickable(role = Role.Button, onClick = onClick).heightIn(min = 56.dp).padding(start = 16.dp, end = 20.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(Icons.Rounded.Edit, null, tint = c.onPr)
-        Text("New chat", style = TinType.button, color = c.onPr)
-    }
-}
-
-@Composable
-private fun ChatRow(r: ChatRowUi, onClick: () -> Unit) {
-    val c = Tin.c
-    val unread = r.unread > 0
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 76.dp).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 20.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Avatar(r.name, r.did, 48.dp)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(r.name, Modifier.weight(1f), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold, lineHeight = 22.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(r.time, style = TinType.caption.copy(fontWeight = if (unread) FontWeight.Bold else FontWeight.Medium), color = if (unread) c.pr else c.ink2)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (r.mine) TickIcon(r.tick, when (r.tick) { Tick.Two -> c.pr; Tick.Clock -> c.thread; Tick.One -> c.ink2 }, 16.dp)
-                Text(
-                    r.preview, Modifier.weight(1f), style = TinType.bodyM, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    color = if (r.alert) c.er else if (unread) c.ink else c.ink2, fontWeight = if (unread || r.alert) FontWeight.SemiBold else FontWeight.Normal,
-                )
-                if (unread) Box(Modifier.defaultMinSize(22.dp, 22.dp).clip(RoundedCornerShape(50)).background(c.pr).padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
-                    Text("${r.unread}", style = TinType.caption.copy(fontWeight = FontWeight.Bold), color = c.onPr)
-                }
-            }
-        }
-    }
-}
 
 /** "New chat": pick a contact, or add one. */
 @Composable

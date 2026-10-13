@@ -58,6 +58,7 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
     val none = {}
     val needs = listOf(Need.Battery)
     when (which) {
+        "groups_live" -> Page { GroupsLiveTab(app, {}, none, none) }
         "welcome" -> WelcomeScreen(none, none)
         "name" -> NameScreen("Maya", {}, none, 1, none)
         "pass" -> PassphraseStep("correct-horse-lamp-river", {}, false, null, 2, "Add a passphrase", "Continue", none, none, none)
@@ -75,6 +76,7 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
         "history" -> HistoryScreen(app, none) {}
         "reconnecting" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 771, true, 3, false, false, null, {}, {}, {}, {}, reconnecting = true)
         "home_plain" -> HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null)
+        "search" -> SearchScreen(app, none, {}, {}, {})
         "home_search" -> HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null, startSearching = true, startQuery = "jo")
         "home_empty" -> HomeContent(emptyList(), true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null)
         "home_offline" -> HomeContent(contacts, false, false, listOf(Need.Mic), {}, {}, none, {}, {}, none, emptyList(), null)

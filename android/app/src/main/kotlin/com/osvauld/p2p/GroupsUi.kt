@@ -1,6 +1,10 @@
 package com.osvauld.p2p
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -70,18 +74,13 @@ fun PlaceholderStrip() {
 
 // ------------------------------------------------------------------ avatars, pills
 
-/** Rounded-square group avatar (board: `.gav`, radius 16 at 48 dp). [tint] 0 teal, 1 relay, 2 grey; [dim] for a removed group. */
+/** Group avatar (playground Avatar `group`): a circle in surface-2 with the accent-ink people glyph at 46 %. [tint] and [radius] are
+ * kept for older callers and ignored; [dim] (a group we left or were removed from) fades it to 72 %. */
 @Composable
-fun GroupAvatar(tint: Int, size: Dp, dim: Boolean = false, radius: Dp = size / 3) {
+fun GroupAvatar(tint: Int, size: Dp, dim: Boolean = false, radius: Dp = size / 2) {
     val c = Tin.c
-    val (bg, fg) = when {
-        dim -> c.sf2 to c.ink2
-        tint == 1 -> c.relayC to c.onRelayC
-        tint == 2 -> c.sf2 to c.ink2
-        else -> c.prc to c.onPrc
-    }
-    Box(Modifier.size(size).clip(SmoothCornerShape(radius)).background(bg), contentAlignment = Alignment.Center) {
-        Icon(Icons.Outlined.Groups, null, tint = fg, modifier = Modifier.size(size / 2))
+    Box(Modifier.size(size).alpha(if (dim) 0.72f else 1f).clip(CircleShape).background(c.sf2), contentAlignment = Alignment.Center) {
+        Icon(GIcons.Users, null, tint = c.accentInk, modifier = Modifier.size(size * 0.46f))
     }
 }
 
@@ -155,12 +154,20 @@ fun <T> Segmented(options: List<T>, selected: T, label: (T) -> String, onSelect:
     }
 }
 
-/** Three-segment flag meter: [filled] red segments of [total]. */
+/** Three-segment flag meter (playground `.meter`): 6 dp bars, radius 3, gap 6; [filled] in danger-btn, the next one ([yours]) at 45 %. */
 @Composable
-fun FlagMeter(filled: Int, total: Int = FakeGroupsPrivacy.FLAGS_TO_REMOVE) {
+fun FlagMeter(filled: Int, total: Int = FakeGroupsPrivacy.FLAGS_TO_REMOVE, yours: Boolean = false, desc: String = "$filled of $total flags") {
     val c = Tin.c
-    Row(Modifier.fillMaxWidth().semantics { contentDescription = "$filled of $total flags" }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(total) { i -> Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(if (i < filled) c.er else c.sf3)) }
+    Row(Modifier.fillMaxWidth().semantics { contentDescription = desc }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(total) { i ->
+            val col = when {
+                i < filled -> c.dangerBtn
+                yours && i == filled -> lerp(c.ln, c.dangerBtn, 0.45f)
+                else -> c.ln
+            }
+            val anim by animateColorAsState(col, tween(GMotion.ENTER, easing = GMotion.EaseOut), label = "meter")
+            Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(anim))
+        }
     }
 }
 

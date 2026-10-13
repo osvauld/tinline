@@ -1,8 +1,18 @@
 package com.osvauld.p2p
 
 import android.content.Intent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.stateDescription
+import uniffi.p2pcore.GroupSummary
+import uniffi.p2pcore.GroupChatRequest
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -97,166 +107,321 @@ private fun HostAskCard(app: P2pApp, d: GroupDetail, say: (String) -> Unit) {
 }
 
 /**
- * Chat requests (U3) above the chats (board AndroidChatRequest): incoming with Accept / Decline / Block,
- * then our sent ones with their state. Nothing when there are none.
+ * Chat requests used to sit above the chats; the playground moved them to the Groups tab (GroupsList.svelte), so this block
+ * is empty now and Home's `requestsBlock` slot can go when the shell is next touched.
  */
 @Composable
-fun GroupRequestsBlock(app: P2pApp, onChat: (String) -> Unit, say: (String) -> Unit) {
-    val c = Tin.c
-    val incoming by app.groups.incoming.collectAsState()
-    val sent by app.groups.outgoing.collectAsState()
-    val contacts by app.contacts.collectAsState()
-    val exec = rememberRunner()
-    val pending = incoming.filter { it.state == ChatRequestState.PENDING }
-    if (pending.isEmpty() && sent.isEmpty()) return
-    val done: (Result<String>) -> Unit = { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) }
-    val now = System.currentTimeMillis()
-    Column(Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
-        if (pending.isNotEmpty()) {
-            SectionLabel("REQUESTS · ${pending.size}")
-            pending.forEach { r ->
-                val name = nameOf(app, r.peerDid, r.peerName)
-                CardBox(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), radius = 20.dp) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            PersonAvatar(name, r.peerDid, 40.dp, contact = false)
-                            Column(Modifier.weight(1f)) {
-                                Text(name, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                                Text("Member of ${r.groupName}", style = TinType.bodyM, color = c.ink2)
-                            }
-                        }
-                        Hint("Accepting adds ${firstName(name)} as a contact for messages only. You can allow calls later.")
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TinButton("Accept", { exec({ app.groups.accept(r.id) }, done) }, Modifier.weight(1f), height = 44.dp)
-                            TinButton("Decline", { exec({ app.groups.decline(r.id) }, done) }, Modifier.weight(1f), style = BtnStyle.Outlined, height = 44.dp)
-                        }
-                        TinButton("Block ${firstName(name)}", { exec({ app.groups.blockRequester(r.id, r.peerDid) }, done) }, style = BtnStyle.Text, fill = false, height = 40.dp)
-                    }
-                }
-            }
-        }
-        if (sent.isNotEmpty()) {
-            SectionLabel("SENT REQUESTS")
-            sent.forEach { r ->
-                val name = nameOf(app, r.peerDid, r.peerName)
-                val (line, bad) = GroupText.sentLine(r)
-                val open = r.contactAdded && contacts.any { it.did == r.peerDid }
-                Row(
-                    Modifier.fillMaxWidth().heightIn(min = 64.dp).let { if (open) it.clickable(role = Role.Button) { onChat(r.peerDid) } else it }
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    PersonAvatar(name, r.peerDid, 40.dp, contact = open)
-                    Column(Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(name, Modifier.weight(1f), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(agoOrDate(r.at.toLong(), now), style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
-                        }
-                        Text(line, style = TinType.bodyM, color = if (bad) c.er else c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-            }
-            Hint("A request waits at the group’s hosts for up to 7 days.", Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
-        }
-        SectionLabel("CHATS")
-    }
-}
+@Suppress("UNUSED_PARAMETER")
+fun GroupRequestsBlock(app: P2pApp, onChat: (String) -> Unit, say: (String) -> Unit) {}
 
-// ------------------------------------------------------------------ the Groups tab
+// ------------------------------------------------------------------ the Groups tab (playground screens/groups/GroupsList.svelte)
 
+private fun dayOnly(ms: Long): String = java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneId.systemDefault())
+    .format(java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.getDefault()))
+
+/** A group call running in a group, as far as the list knows: whether this device is in it. */
+private data class LiveCall(val joined: Boolean)
+
+/**
+ * The Groups tab: New group (and Join with a link), invitations to me, chat requests (incoming cards, then the sent ones),
+ * my groups newest first, and the folded "Left or removed". Sections fold in and out in place; nothing else moves.
+ */
 @Composable
-fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJoin: () -> Unit, say: (String) -> Unit = {}) {
+fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJoin: () -> Unit, say: (String) -> Unit = {}, onChat: (String) -> Unit = {}) {
     val c = Tin.c
     val list by app.groups.list.collectAsState()
     val invitations by app.groups.invitations.collectAsState()
+    val incoming by app.groups.incoming.collectAsState()
+    val sent by app.groups.outgoing.collectAsState()
+    val contacts by app.contacts.collectAsState()
     val pendingInv = GroupText.pendingInvitations(invitations)
+    val requestsIn = incoming.filter { it.state == ChatRequestState.PENDING }
     val exec = rememberRunner()
     var joining by remember { mutableStateOf<String?>(null) }
+    var creating by remember { mutableStateOf(false) }
+    var goneOpen by rememberSaveable { mutableStateOf(false) }
     val me = app.groups.myDid
     val now = System.currentTimeMillis()
-    val state = rememberLazyListState()
-    val wide by remember { derivedStateOf { state.firstVisibleItemIndex == 0 && state.firstVisibleItemScrollOffset == 0 } }
-    var menu by remember { mutableStateOf(false) }
+    val active = list.filter { GroupText.active(it.myRole) }
+    val gone = list.filter { !GroupText.active(it.myRole) }
+    val done: (Result<String>) -> Unit = { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) }
     LaunchedEffect(Unit) { withContext(Dispatchers.IO) { app.groups.refresh() } }
-    Box(Modifier.fillMaxSize()) {
-        LazyColumn(Modifier.fillMaxSize(), state = state, contentPadding = PaddingValues(bottom = 96.dp)) {
-            if (pendingInv.isNotEmpty()) {
-                item { SectionLabel("INVITATIONS · ${pendingInv.size}") }
-                items(pendingInv, key = { "i" + it.id }) { inv ->
-                    InvitationCard(app, inv, busy = joining == inv.id,
-                        onJoin = {
-                            joining = inv.id
-                            exec({ app.groups.acceptInvitation(inv.id) }) { r -> joining = null; r.onSuccess { onOpen(it); say("You joined ${inv.groupName}.") }.onFailure { say(it.message ?: "Couldn’t join") } }
-                        },
-                        onDecline = { exec({ app.groups.declineInvitation(inv.id) }) { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) } })
-                }
-            }
-            item { SectionLabel("GROUPS · ${list.size}") }
-            if (list.isEmpty()) item {
-                Hint("No groups yet. Make one, or join with an invite someone sent you.", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
-            }
-            items(list, key = { it.id }) { s ->
-                val gone = !GroupText.active(s.myRole)
-                val at = s.last?.at?.toLong() ?: 0L
-                Row(
-                    Modifier.fillMaxWidth().heightIn(min = 72.dp).clickable(role = Role.Button) { onOpen(s.id) }.padding(horizontal = 20.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    GroupAvatar(tintOf(s.id), 48.dp, dim = gone, radius = 16.dp)
-                    Column(Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(s.name, Modifier.weight(1f), style = TinType.bodyL.copy(fontWeight = if (s.unread > 0u && !gone) FontWeight.Bold else FontWeight.SemiBold),
-                                color = if (gone) c.ink2 else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (at > 0) Text(listTime(at, now), style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            if (!gone && !s.hostedHere && !s.hostReachable) Icon(Icons.Rounded.Schedule, "Waiting for a host", tint = c.ink2, modifier = Modifier.size(14.dp))
-                            Text(GroupText.preview(s, me), Modifier.weight(1f), style = TinType.bodyM, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (s.unread > 0u && !gone) Box(Modifier.defaultMinSize(22.dp, 22.dp).clip(RoundedCornerShape(50)).background(c.pr).padding(horizontal = 6.dp)
-                                .semantics { contentDescription = "${s.unread} unread" }, contentAlignment = Alignment.Center) {
-                                Text("${s.unread}", style = TinType.caption.copy(fontWeight = FontWeight.Bold), color = c.onPr)
+    // Group calls running in my groups, re-read when the core says something about calls changed.
+    var calls by remember { mutableStateOf<Map<String, LiveCall>>(emptyMap()) }
+    val callTick by app.groupCalls.here.collectAsState()
+    LaunchedEffect(active.map { it.id }, callTick) {
+        calls = withContext(Dispatchers.IO) {
+            active.mapNotNull { s ->
+                runCatching { app.node.groupCalls(s.id) }.getOrNull()?.firstOrNull()?.let { s.id to LiveCall(it.joined) }
+            }.toMap()
+        }
+    }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
+        item(key = "new") {
+            TopRow(GIcons.Plus, "New group", "You’ll be the owner") { creating = true }
+        }
+        item(key = "join") {
+            TopRow(GIcons.Link, "Join with a link", "Paste or scan a group invite", onJoin)
+        }
+        // ---- invitations to me
+        item(key = "inv") {
+            GFold(pendingInv.isNotEmpty()) {
+                GSec("Invitations to you", pendingInv.size)
+                Column(Modifier.padding(horizontal = 8.dp)) {
+                    pendingInv.forEach { inv ->
+                        key(inv.id) {
+                            val who = nameOf(app, inv.inviterDid, inv.inviterName)
+                            val busy = joining == inv.id
+                            ReqCard {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Avatar(who, inv.inviterDid, 40.dp)
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                        Text(bold(firstName(who), " invited you to ", inv.groupName), style = GType.body, color = c.ink)
+                                        Text("Valid until ${dayOnly(inv.expires.toLong() * 1000)}", style = GType.sub, color = c.ink2)
+                                    }
+                                }
+                                GActs(top = 0.dp) {
+                                    GBtn("Decline", { exec({ app.groups.declineInvitation(inv.id) }, done) }, GBtnKind.Quiet, enabled = !busy)
+                                    GBtn(if (busy) "Joining…" else "Accept", {
+                                        joining = inv.id
+                                        exec({ app.groups.acceptInvitation(inv.id) }) { r -> joining = null; r.onSuccess { onOpen(it); say("You joined ${inv.groupName}.") }.onFailure { say(it.message ?: "Couldn’t join") } }
+                                    }, GBtnKind.Primary, enabled = !busy)
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        Box(Modifier.align(Alignment.BottomEnd)) {
-            ShrinkFab(Icons.Rounded.GroupAdd, "Group", wide) { menu = true }
-            DropdownMenu(menu, { menu = false }, containerColor = c.sfRaised) {
-                DropdownMenuItem({ Text("New group", style = TinType.bodyL, color = c.ink) }, { menu = false; onNew() },
-                    leadingIcon = { Icon(Icons.Rounded.GroupAdd, null, tint = c.ink2) })
-                DropdownMenuItem({ Text("Join with an invite", style = TinType.bodyL, color = c.ink) }, { menu = false; onJoin() },
-                    leadingIcon = { Icon(Icons.Rounded.QrCodeScanner, null, tint = c.ink2) })
-            }
-        }
-    }
-}
-
-private fun tintOf(id: String) = (id.hashCode() and 0x7fffffff) % 2
-
-/** "Sam invited you to Hike": Join / Decline (G3, an invitation sent over the 1:1 chat). */
-@Composable
-private fun InvitationCard(app: P2pApp, inv: GroupInvitation, busy: Boolean, onJoin: () -> Unit, onDecline: () -> Unit) {
-    val c = Tin.c
-    val who = nameOf(app, inv.inviterDid, inv.inviterName)
-    CardBox(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), radius = 20.dp) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                GroupAvatar(tintOf(inv.groupId), 44.dp, radius = 14.dp)
-                Column(Modifier.weight(1f)) {
-                    Text(inv.groupName, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${firstName(who)} invited you", style = TinType.bodyM, color = c.ink2)
+        // ---- chat requests, incoming then sent
+        item(key = "req") {
+            GFold(requestsIn.isNotEmpty() || sent.isNotEmpty()) {
+                GSec("Chat requests", requestsIn.size.takeIf { it > 0 })
+                Column(Modifier.padding(horizontal = 8.dp)) {
+                    requestsIn.forEach { r ->
+                        key(r.id) {
+                            val name = nameOf(app, r.peerDid, r.peerName)
+                            ReqCard {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Avatar(name, r.peerDid, 40.dp)
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                        Text(bold(name, " wants to chat"), style = GType.body, color = c.ink)
+                                        Text("Member of ${r.groupName}", style = GType.sub, color = c.ink2)
+                                    }
+                                }
+                                Text("Accepting adds ${firstName(name)} as a contact for messages only. You can allow calls later.", style = GType.sub, color = c.ink2)
+                                GActs(top = 0.dp) {
+                                    GBtn("Block", { exec({ app.groups.blockRequester(r.id, r.peerDid) }, done) }, GBtnKind.DangerQuiet)
+                                    GBtn("Decline", { exec({ app.groups.decline(r.id) }, done) }, GBtnKind.Quiet)
+                                    GBtn("Accept", { exec({ app.groups.accept(r.id) }, done) }, GBtnKind.Primary)
+                                }
+                            }
+                        }
+                    }
+                }
+                if (sent.isNotEmpty()) {
+                    GSub2("Sent")
+                    Column(Modifier.padding(horizontal = 8.dp)) {
+                        sent.forEach { r ->
+                            key(r.id) {
+                                val name = nameOf(app, r.peerDid, r.peerName)
+                                val (line, bad) = GroupText.sentLine(r)
+                                val open = r.contactAdded && contacts.any { it.did == r.peerDid }
+                                ListRow(onClick = if (open) ({ onChat(r.peerDid) }) else null) {
+                                    Avatar(name, r.peerDid, 48.dp)
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Text(name, Modifier.weight(1f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(listTime(r.at.toLong(), now), style = GType.meta, color = c.ink2)
+                                        }
+                                        Text(line, style = GType.sub, color = if (bad) c.er else c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            Hint("Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone.")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TinButton(if (busy) "Joining…" else "Join", onJoin, Modifier.weight(1f), height = 44.dp, enabled = !busy)
-                TinButton("Decline", onDecline, Modifier.weight(1f), style = BtnStyle.Outlined, height = 44.dp, enabled = !busy)
+        }
+        // ---- my groups
+        item(key = "yours") { GSec("Your groups", active.size) }
+        item(key = "empty") {
+            GFold(active.isEmpty()) {
+                Text("No groups yet. Create one, or accept an invitation.", Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = GType.note, color = c.ink2)
+            }
+        }
+        items(active, key = { "g" + it.id }) { s ->
+            Box(Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null, placementSpec = tween(GMotion.ENTER, easing = GMotion.EaseOut)).padding(horizontal = 8.dp)) {
+                GroupRow(s, me, now, calls[s.id]) { onOpen(s.id) }
+            }
+        }
+        // ---- left or removed, folded
+        if (gone.isNotEmpty()) item(key = "gone") {
+            Column(Modifier.padding(top = 6.dp)) {
+                val rot by animateFloatAsState(if (goneOpen) 180f else 0f, tween(GMotion.ENTER, easing = GMotion.EaseOut), label = "chev")
+                Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).gTap(label = if (goneOpen) "Fold" else "Unfold") { goneOpen = !goneOpen }
+                    .semantics { stateDescription = if (goneOpen) "Expanded" else "Collapsed" }, contentAlignment = Alignment.CenterStart) {
+                    GSec("Left or removed", gone.size) {
+                        Icon(GIcons.Chev, null, tint = c.ink2, modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = rot })
+                    }
+                }
+                GCollapse(goneOpen) {
+                    Column(Modifier.padding(horizontal = 8.dp)) {
+                        gone.forEach { s ->
+                            key(s.id) {
+                                ListRow(onClick = { onOpen(s.id) }) {
+                                    GroupAvatar(0, 48.dp, dim = true)
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(s.name, Modifier.alpha(.72f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        val at = s.last?.at?.toLong()
+                                        Text((if (s.myRole == CoreRole.REMOVED) "Removed" else "You left") + (at?.let { " · " + dayOnly(it) } ?: ""),
+                                            style = GType.sub, color = c.ink2, maxLines = 1)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (creating) NewGroupSheet(app, onDismiss = { creating = false }) { id -> creating = false; onOpen(id) }
+}
+
+/** "**a** b **c**": the playground's `<b>` runs inside a line (650 there, 600 here). */
+private fun bold(vararg parts: String) = androidx.compose.ui.text.buildAnnotatedString {
+    parts.forEachIndexed { i, p ->
+        if (i % 2 == 0) { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.SemiBold)); append(p); pop() } else append(p)
+    }
+}
+
+/** The tab's top rows (`.wrap > .row`): a 48 dp accent-soft disc with a 22 dp glyph, a title and a sub-line, 64 dp. */
+@Composable
+private fun TopRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, sub: String, onClick: () -> Unit) {
+    val c = Tin.c
+    Row(
+        Modifier.padding(horizontal = 8.dp).fillMaxWidth().heightIn(min = 64.dp).clip(SmoothCornerShape(14.dp)).gTap(onClick = onClick).padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(48.dp).clip(CircleShape).background(c.accentSoft), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = c.accentInk, modifier = Modifier.size(22.dp))
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = GType.bodyStrong, color = c.ink)
+            Text(sub, style = GType.sub, color = c.ink2)
+        }
+    }
+}
+
+/** A list row (`.row`): 72 dp, 8 dp padding, radius 14, gap 12; tappable when [onClick] is set. */
+@Composable
+private fun ListRow(onClick: (() -> Unit)?, content: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 72.dp).clip(SmoothCornerShape(14.dp)).let { if (onClick != null) it.gTap(onClick = onClick) else it }.padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp), content = content,
+    )
+}
+
+/** An invitation or request card (`.card`): surface, hairline, radius 14, padding 14, 10 between parts, 6 above and below. */
+@Composable
+private fun ReqCard(content: @Composable ColumnScope.() -> Unit) {
+    GCard(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
+    }
+}
+
+/** One of my groups: avatar, name and time on top; preview (or the call line, or "Waiting for a host"), Join and the badge below. */
+@Composable
+private fun GroupRow(s: GroupSummary, me: String, now: Long, call: LiveCall?, onClick: () -> Unit) {
+    val c = Tin.c
+    val at = s.last?.at?.toLong() ?: 0L
+    val waiting = !s.hostedHere && !s.hostReachable
+    val hot = s.unread > 0u
+    ListRow(onClick) {
+        GroupAvatar(0, 48.dp)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(s.name, Modifier.weight(1f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(if (at > 0) listTime(at, now) else "", style = GType.meta.copy(fontWeight = if (hot) FontWeight.Bold else FontWeight.Normal),
+                    color = if (hot) c.accentInk else c.ink2)
+            }
+            Row(Modifier.heightIn(min = 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) {
+                    when {
+                        call != null -> GCallLine(if (call.joined) "You’re in the call" else "Call in progress")
+                        waiting -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Icon(GIcons.Clock, null, tint = c.goldInk, modifier = Modifier.size(13.dp))
+                            Text("Waiting for a host", style = GType.sub.copy(fontWeight = FontWeight.SemiBold), color = c.goldInk, maxLines = 1)
+                        }
+                        else -> Text(GroupText.preview(s, me).ifEmpty { "No posts yet" }, style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                if (call != null && !call.joined) GJoinChip()
+                GBadge(s.unread.toInt())
             }
         }
     }
 }
+
+/** New group (the playground's dialog; a sheet on Android): a name, then Create. This device is the group's first host. */
+@Composable
+private fun NewGroupSheet(app: P2pApp, onDismiss: () -> Unit, onCreated: (String) -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var err by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    GSheet(onDismiss, "New group") { close ->
+        GDialogBody("New group") {
+            Spacer(Modifier.height(10.dp))
+            GField(name, { name = it.take(60); err = null }, "Group name", "Name", error = err)
+            GPara("You’ll be the owner. This device is the group’s first host, so it stores the group and passes posts on.", top = 10.dp)
+            GActs {
+                GBtn("Cancel", close, GBtnKind.Quiet)
+                GBtn(if (busy) "Creating…" else "Create", {
+                    busy = true
+                    scope.launch {
+                        val r = withContext(Dispatchers.IO) { app.groups.create(name) }
+                        busy = false
+                        r.onSuccess(onCreated).onFailure { err = it.message }
+                    }
+                }, GBtnKind.Primary, enabled = name.isNotBlank() && !busy)
+            }
+        }
+    }
+}
+
+/** `.fld`: a 13 sp label over a 44 dp field, radius 14, 1 px line; focus turns the line accent with a soft halo. */
+@Composable
+private fun GField(value: String, onChange: (String) -> Unit, label: String, placeholder: String, error: String? = null, minLines: Int = 1) {
+    val c = Tin.c
+    var focused by remember { mutableStateOf(false) }
+    val shape = SmoothCornerShape(14.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(label, style = GType.sub.copy(fontWeight = FontWeight.SemiBold), color = c.ink2)
+        androidx.compose.foundation.text.BasicTextField(
+            value, onChange,
+            Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }.semantics { contentDescription = label },
+            textStyle = GType.body.copy(color = c.ink, lineHeight = 21.sp), cursorBrush = androidx.compose.ui.graphics.SolidColor(c.accentInk),
+            singleLine = minLines == 1, minLines = minLines,
+            decorationBox = { inner ->
+                Box(
+                    Modifier.fillMaxWidth().heightIn(min = 44.dp)
+                        .let { if (focused) it.border(3.dp, c.accentInk.copy(alpha = .14f), shape) else it }
+                        .padding(if (focused) 0.dp else 0.dp)
+                        .clip(shape).background(c.sf).border(1.dp, if (error != null) c.er else if (focused) c.accentFill else c.ln, shape)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    if (value.isEmpty()) Text(placeholder, style = GType.body, color = c.ink2)
+                    inner()
+                }
+            },
+        )
+        if (error != null) Text(error, style = GType.sub, color = c.er)
+    }
+}
+
+private fun tintOf(@Suppress("UNUSED_PARAMETER") id: String) = 0
 
 // ------------------------------------------------------------------ chat
 
@@ -388,242 +553,580 @@ private fun ColumnScope.GroupItemLive(
     }
 }
 
-// ------------------------------------------------------------------ group info
+// ------------------------------------------------------------------ group info (playground screens/groups/GroupInfo.svelte)
 
+private sealed interface InfoSheet {
+    data class Member(val did: String) : InfoSheet
+    data object Invite : InfoSheet
+    data object Leave : InfoSheet
+}
+
+/** "n members" / "1 member". */
+private fun plural(n: Int, one: String, many: String = one + "s") = "$n ${if (n == 1) one else many}"
+
+/**
+ * Group info: header, flags on me, invites (admins), hosts, call hosts, members, leave. What I can do depends on my role; the
+ * owner can't leave. A removed group shows the removal view instead.
+ */
 @Composable
 fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Unit, onAddMembers: () -> Unit, onRemoval: () -> Unit, say: (String) -> Unit, onChat: (String) -> Unit = {}) {
     val c = Tin.c
     val open by app.groups.open.collectAsState()
     val sent by app.groups.sent.collectAsState()
+    val outgoing by app.groups.outgoing.collectAsState()
     val blocks by app.blocks.collectAsState()
     val exec = rememberRunner()
     LaunchedEffect(id) { withContext(Dispatchers.IO) { if (app.groups.open.value?.id != id) app.groups.open(id) } }
-    val d = open?.takeIf { it.id == id }?.detail ?: run { Page { TopBar(null, onBack) }; return }
-    var sheetFor by remember { mutableStateOf<String?>(null) }
-    var confirm by remember { mutableStateOf<GroupConfirm?>(null) }
+    val d = open?.takeIf { it.id == id }?.detail ?: run { InfoPage("Group info", onBack) {}; return }
+    var sheet by remember { mutableStateOf<InfoSheet?>(null) }
     val admin = GroupText.isAdmin(d.myRole)
-    val active = GroupText.active(d.myRole)
     val done: (Result<String>) -> Unit = { r -> r.onSuccess { if (it.isNotEmpty()) say(it) }.onFailure { say(it.message ?: "Couldn’t do that") } }
-    Page {
-        TopBar(null, onBack)
-        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 24.dp)) {
-            item {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    GroupAvatar(tintOf(d.id), 80.dp, dim = !active, radius = 24.dp)
-                    Text(d.name, style = TinType.h1.copy(fontSize = 26.sp), color = c.ink, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
-                    val role = when (d.myRole) {
-                        CoreRole.OWNER -> " · you are the owner"; CoreRole.ADMIN -> " · you are an admin"; CoreRole.MEMBER -> ""
-                        CoreRole.REMOVED -> " · you were removed"; CoreRole.LEFT -> " · you left"
-                    }
-                    Text("${d.members.size} members$role", style = TinType.bodyM, color = c.ink2)
-                    if (active) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                        if (admin) InfoActionLive(Icons.Rounded.PersonAdd, "Add members", c.pr, onAddMembers)
-                        if (admin) InfoActionLive(Icons.Rounded.Link, "Invite link", c.pr, onLink)
-                        if (d.myRole != CoreRole.OWNER) InfoActionLive(Icons.AutoMirrored.Rounded.Logout, "Leave", c.er) { confirm = GroupConfirm.Leave }
-                    }
-                    if (d.removal != null) TinButton("Why was I removed?", onRemoval, style = BtnStyle.Outlined, fill = false, height = 44.dp)
-                }
+    val name: (String, String) -> String = { did, fb -> nameOf(app, did, fb).let { if (it == "You") app.node.profile()?.name?.ifBlank { null } ?: "You" else it } }
+    InfoPage(if (d.myRole == CoreRole.REMOVED) "Removed" else "Group info", onBack) {
+        item(key = "hero") {
+            Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                GroupAvatar(0, 72.dp, dim = !GroupText.active(d.myRole))
+                Text(d.name, Modifier.padding(top = 12.dp).semantics { heading() }, style = GType.hero, color = c.ink, textAlign = TextAlign.Center)
+                Text(
+                    when (d.myRole) {
+                        CoreRole.OWNER -> "${plural(d.members.size, "member")} · You are the owner"
+                        CoreRole.ADMIN -> "${plural(d.members.size, "member")} · You are an admin"
+                        CoreRole.MEMBER -> "${plural(d.members.size, "member")} · You are a member"
+                        CoreRole.LEFT -> "You left this group"
+                        CoreRole.REMOVED -> "You’re no longer a member"
+                    },
+                    Modifier.padding(top = 2.dp), style = GType.note, color = c.ink2, textAlign = TextAlign.Center,
+                )
             }
-            item { HostAskCard(app, d, say) }
-            item { SectionLabel("HOSTS · KEEP THE GROUP RUNNING") }
-            if (d.hosts.isEmpty()) item { Hint("No host yet. Messages wait until a member’s device hosts the group; a computer that stays on is best.", Modifier.padding(horizontal = 20.dp)) }
-            items(d.hosts, key = { "h" + it.did + it.deviceId }) { h ->
-                HostRow(if (h.isMe) "This phone" else "${firstName(nameOf(app, h.did, h.name))}’s device ${GroupText.shortDev(h.deviceId)}",
-                    if (h.isMe) "Hosting now" else if (h.online) "Connected" else "Not connected", if (h.online) c.pr else c.ln2)
+        }
+        when (d.myRole) {
+            CoreRole.REMOVED -> item(key = "removal") { RemovalBody(app, d.removal, onBack) }
+            CoreRole.LEFT -> item(key = "left") {
+                GNote("You can still read the posts on this device. To come back, someone in the group has to invite you again.", Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
             }
-            if (admin && d.hostRequests.isNotEmpty()) {
-                item { SectionLabel("ASKED TO HOST") }
-                items(d.hostRequests, key = { "q" + it.did + it.deviceId }) { h ->
-                    HostRow(if (h.isMe) "This phone" else "${firstName(nameOf(app, h.did, h.name))}’s device ${GroupText.shortDev(h.deviceId)}", "No answer yet", c.thread) {
-                        TinButton("Withdraw", { exec({ app.groups.revoke(id, h.did, h.deviceId) }, done) }, style = BtnStyle.Text, fill = false, height = 40.dp)
-                    }
-                }
-            }
-            if (admin && d.hostOffers.isNotEmpty()) {
-                item { SectionLabel("OFFERED TO HOST") }
-                items(d.hostOffers, key = { "o" + it.did + it.deviceId }) { h ->
-                    HostRow(if (h.isMe) "This phone" else "${firstName(nameOf(app, h.did, h.name))}’s device ${GroupText.shortDev(h.deviceId)}", "Agreed to host; needs an admin", c.thread) {
-                        TinButton("Appoint", { exec({ app.groups.appoint(id, h.did, h.deviceId) }, done) }, style = BtnStyle.Tonal, fill = false, height = 40.dp)
-                    }
-                }
-            }
-            if (active) item {
-                val offered = d.hostOffers.any { it.isMe }
-                Column(Modifier.padding(horizontal = 20.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (d.amHost || offered) TinButton(if (d.amHost) "Stop hosting on this phone" else "Withdraw host offer", { confirm = GroupConfirm.Host(false) }, style = BtnStyle.Outlined, height = 44.dp)
-                    else {
-                        TinButton("Host from this phone", { confirm = GroupConfirm.Host(true) }, style = BtnStyle.Outlined, height = 44.dp)
-                        Hint("A computer that stays on is a better host: a phone sleeps and runs on battery.")
-                    }
-                }
-            }
-            val shownSent = sent.filter { it.groupId == id && d.members.none { m -> m.did == it.inviteeDid } }
-            if (admin && shownSent.isNotEmpty()) {
-                item { SectionLabel("INVITED · ${shownSent.size}") }
-                items(shownSent, key = { "s" + it.id }) { inv ->
-                    val n = nameOf(app, inv.inviteeDid, inv.inviteeName)
-                    val (line, bad) = GroupText.sentInvitationLine(inv)
-                    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 20.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        PersonAvatar(n, inv.inviteeDid, 40.dp)
-                        Column(Modifier.weight(1f)) {
-                            Text(n, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(line, style = TinType.bodyM, color = if (bad) c.er else c.ink2)
+            else -> {
+                val mine = d.members.firstOrNull { it.isMe }
+                if (mine != null && mine.flags > 0u && !mine.isOwner) item(key = "flags") { FlagsOnMe(mine.flags.toInt()) }
+                if (admin) item(key = "invites") {
+                    val shownSent = sent.filter { it.groupId == id && d.members.none { m -> m.did == it.inviteeDid } }
+                    val noHost = d.hosts.isEmpty() && !d.amHost
+                    InfoSec("Invites") {
+                        GCard(Modifier.fillMaxWidth()) {
+                            ActRow(GIcons.UserPlus, "Invite contacts", "A private invite to each person", trailing = GIcons.ChevR) { sheet = InfoSheet.Invite }
+                            GRule()
+                            ActRow(GIcons.Link, "Create invite link", if (noHost) "Appoint a host first. A link names one host." else "Valid for 7 days",
+                                trailing = GIcons.Plus, enabled = !noHost, onClick = onLink)
+                        }
+                        if (shownSent.isNotEmpty()) Column(Modifier.padding(top = 6.dp)) {
+                            shownSent.forEach { inv ->
+                                key(inv.id) {
+                                    val n = name(inv.inviteeDid, inv.inviteeName)
+                                    val (line, bad) = GroupText.sentInvitationLine(inv)
+                                    MRow {
+                                        Avatar(n, inv.inviteeDid, 40.dp)
+                                        TwoLine(n, line, subColor = if (bad) c.er else c.ink2)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-            item { SectionLabel("MEMBERS · ${d.members.size}") }
-            items(d.members.sortedBy { m -> if (m.isOwner) 0 else if (m.isAdmin) 1 else 2 }, key = { it.did }) { m ->
-                val acts = GroupText.actions(d, m)
-                Row(
-                    Modifier.fillMaxWidth().heightIn(min = 64.dp).let { if (acts.isNotEmpty()) it.clickable(role = Role.Button, onClickLabel = "Member actions") { sheetFor = m.did } else it }
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    val n = nameOf(app, m.did, m.name)
-                    PersonAvatar(n, m.did, 40.dp, contact = app.contacts.value.any { it.did == m.did }, isMe = m.isMe)
-                    Column(Modifier.weight(1f).padding(start = 4.dp)) {
-                        Text(n, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        val sub = listOfNotNull(
-                            if (admin && m.flags > 0u) (if (m.flags == 1u) "1 flag" else "${m.flags} flags") else null,
-                            if (blocks.blockedByMe(m.did)) "Blocked by you" else null,
-                        )
-                        if (sub.isNotEmpty()) Text(sub.joinToString(" · "), style = TinType.bodyM, color = if (m.flags > 0u) c.er else c.ink2)
+                item(key = "hosts") {
+                    HostsSection(app, d, admin, name, exec, done)
+                }
+                item(key = "callhosts") {
+                    CallHostsSection(app, d, admin, name, exec, done)
+                }
+                item(key = "members") {
+                    val order = { m: CoreMember -> if (m.isOwner) 0 else if (m.isAdmin) 1 else 2 }
+                    val sorted = d.members.sortedWith(compareBy<CoreMember>({ order(it) }, { !it.isMe }))
+                    InfoSec("Members", count = d.members.size) {
+                        sorted.forEach { m ->
+                            key(m.did) {
+                                val n = name(m.did, m.name)
+                                val req = outgoing.filter { it.peerDid == m.did }.maxByOrNull { it.at }
+                                val reqNote = when (req?.state) {
+                                    ChatRequestState.PENDING -> "Chat request sent"
+                                    ChatRequestState.DECLINED -> "Declined your chat request"
+                                    ChatRequestState.BLOCKED -> "Blocked"
+                                    else -> null
+                                }
+                                val since = m.invitedBy?.let { "Invited by ${firstName(name(it, ""))} · ${dayOnly(m.joinedAt.toLong())}" } ?: "Since ${dayOnly(m.joinedAt.toLong())}"
+                                val showFlags = (admin || m.isMe) && m.flags > 0u && !m.isOwner
+                                val desc = "$n${if (m.isMe) " (you)" else ""}, ${if (m.isOwner) "owner" else if (m.isAdmin) "admin" else "member"}" +
+                                    (if (m.isHost) ", host" else "") + (if (d.callHosts.any { it.did == m.did }) ", call host" else "") + ". Open actions"
+                                MRow(onClick = { sheet = InfoSheet.Member(m.did) }, desc = desc) {
+                                    Avatar(n, m.did, 40.dp)
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                        Text(if (m.isMe) "$n (you)" else n, style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(androidx.compose.ui.text.buildAnnotatedString {
+                                            append(since)
+                                            if (showFlags) { pushStyle(androidx.compose.ui.text.SpanStyle(color = c.er, fontWeight = FontWeight.SemiBold)); append(" · ${m.flags} of ${GroupText.FLAGS_TO_REMOVE} flags"); pop() }
+                                            if (blocks.blockedByMe(m.did)) append(" · Blocked by you")
+                                            else if (reqNote != null) append(" · $reqNote")
+                                        }, style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        if (m.isOwner) GPill("Owner", GTone.Owner) else if (m.isAdmin) GPill("Admin", GTone.Admin)
+                                        if (m.isHost) GMark(GIcons.Server, "Host")
+                                        if (d.callHosts.any { it.did == m.did }) GMark(GIcons.Phone, "Call host", call = true)
+                                    }
+                                }
+                            }
+                        }
                     }
-                    if (m.isOwner) RolePill(GroupRole.Owner) else if (m.isAdmin) RolePill(GroupRole.Admin)
-                    if (m.isHost) RolePill(GroupRole.Host)
+                }
+                item(key = "leave") {
+                    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp)) {
+                        GCard(Modifier.fillMaxWidth()) {
+                            if (d.myRole != CoreRole.OWNER) ActRow(GIcons.Leave, "Leave group", danger = true) { sheet = InfoSheet.Leave }
+                            else ActRow(GIcons.Leave, "Leave group", "The owner can’t leave yet", enabled = false, off = true) {}
+                        }
+                    }
                 }
             }
         }
     }
-    sheetFor?.let { did -> d.members.firstOrNull { it.did == did }?.let { m ->
-        val name = nameOf(app, m.did, m.name)
-        TinSheet({ sheetFor = null }) {
-            Text(name, style = TinType.titleM, color = c.ink)
-            Text(buildString {
-                append("Member since ${whenDate(m.joinedAt.toLong())}")
-                m.invitedBy?.let { append(" · invited by ${firstName(nameOf(app, it, ""))}") }
-                if (admin) append(" · ${m.flags} of ${GroupText.FLAGS_TO_REMOVE} flags")
-            }, Modifier.padding(vertical = 4.dp), style = TinType.bodyM, color = c.ink2)
-            val several = m.deviceIds.size > 1
-            GroupText.actions(d, m).forEach { a ->
-                when (a) {
-                    MemberAction.Message -> {
-                        val contact = app.contacts.value.any { it.did == m.did }
-                        SheetItem(Icons.Rounded.ChatBubbleOutline, "Message privately",
-                            if (contact) "Opens your chat" else "Sends ${firstName(name)} a chat request through the host") {
-                            sheetFor = null
-                            if (contact) onChat(m.did) else confirm = GroupConfirm.Request(m.did, name)
-                        }
-                    }
-                    MemberAction.MakeAdmin -> SheetItem(Icons.Rounded.AdminPanelSettings, "Make admin", "Can invite, flag members and appoint hosts") { sheetFor = null; confirm = GroupConfirm.Admin(m.did, name, true) }
-                    MemberAction.RevokeAdmin -> SheetItem(Icons.Rounded.AdminPanelSettings, "Remove as admin", "${firstName(name)} stays a member") { sheetFor = null; confirm = GroupConfirm.Admin(m.did, name, false) }
-                    is MemberAction.Appoint -> SheetItem(Icons.Rounded.Dns, if (several) "Make device ${GroupText.shortDev(a.deviceId)} a host" else "Make host",
-                        "Hosts once ${firstName(name)} agrees on that device; a computer that stays on is best") { sheetFor = null; exec({ app.groups.appoint(id, m.did, a.deviceId) }, done) }
-                    is MemberAction.Revoke -> SheetItem(Icons.Rounded.Dns, if (several) "Stop device ${GroupText.shortDev(a.deviceId)} hosting" else "Stop hosting",
-                        "Members stop going through it") { sheetFor = null; exec({ app.groups.revoke(id, m.did, a.deviceId) }, done) }
-                    MemberAction.Flag -> SheetItem(Icons.Rounded.Flag, "Flag to remove", "${GroupText.FLAGS_TO_REMOVE} flags remove ${firstName(name)} from the group", color = c.er) {
-                        sheetFor = null; confirm = GroupConfirm.Flag(m.did, name, m.flags.toInt())
-                    }
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-        }
-    } }
-    when (val k = confirm) {
+    when (val k = sheet) {
         null -> {}
-        is GroupConfirm.Flag -> {
-            val (yours, text) = GroupText.flagCopy(k.name, k.flags)
-            TinDialog("Flag ${firstName(k.name)} for removal?", { confirm = null }, "Flag", { confirm = null; exec({ app.groups.flag(id, k.did) }, done) }, destructive = true, icon = Icons.Rounded.Flag) {
-                FlagMeter(yours, GroupText.FLAGS_TO_REMOVE)
-                DialogText(text)
-                DialogText("A flag is signed by you and can’t be taken back. ${firstName(k.name)} can see who flagged them and when.")
+        is InfoSheet.Member -> d.members.firstOrNull { it.did == k.did }?.let { m ->
+            MemberSheet(app, d, m, name(m.did, m.name), outgoing.filter { it.peerDid == m.did }.maxByOrNull { it.at }, blocks.blockedByMe(m.did),
+                exec, done, onChat, onDismiss = { sheet = null })
+        } ?: run { sheet = null }
+        InfoSheet.Invite -> InviteSheet(app, d, sent, exec, say, onDismiss = { sheet = null })
+        InfoSheet.Leave -> GSheet({ sheet = null }, "Leave group") { close ->
+            GDialogBody("Leave ${d.name}?") {
+                GPara("You’ll stop getting posts. What’s already on this device stays, and you can read it. To come back, someone in the group has to invite you again.", top = 4.dp)
+                if (d.myRole == CoreRole.ADMIN) GPara("You’re an admin. The owner and the other admins stay.")
+                GActs {
+                    GBtn("Cancel", close, GBtnKind.Quiet)
+                    GBtn("Leave", { exec({ app.groups.leave(id) }) { r -> done(r); r.onSuccess { sheet = null; onBack() } } }, GBtnKind.Danger)
+                }
             }
         }
-        is GroupConfirm.Admin -> TinDialog(if (k.admin) "Make ${firstName(k.name)} an admin?" else "Remove ${firstName(k.name)} as admin?", { confirm = null },
-            if (k.admin) "Make admin" else "Remove", { confirm = null; exec({ app.groups.setAdmin(id, k.did, k.admin) }, done) }) {
-            DialogText(if (k.admin) "${firstName(k.name)} will be able to invite people, flag members (3 flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
-                else "${firstName(k.name)} stays in the group as a member. Flags they already made still count.")
-        }
-        is GroupConfirm.Request -> TinDialog("Ask ${firstName(k.name)} for a private chat", { confirm = null }, "Send request",
-            { confirm = null; exec({ app.groups.request(id, k.did) }, done) }, icon = Icons.Rounded.ChatBubbleOutline) {
-            DialogText("Member of ${d.name}")
-            DialogText("${firstName(k.name)} sees your name and the group. The request goes through the group’s host sealed, so the host can’t read it.")
-            DialogText("If ${firstName(k.name)} accepts, you can message each other directly. Calls stay off until one of you allows them.")
-        }
-        GroupConfirm.Leave -> TinDialog("Leave ${d.name}?", { confirm = null }, "Leave", { confirm = null; exec({ app.groups.leave(id) }, done) }, destructive = true, icon = Icons.AutoMirrored.Rounded.Logout) {
-            DialogText("Members see that you left. The messages stay on this phone, read-only. To come back, an admin has to invite you again.")
-        }
-        is GroupConfirm.Host -> if (k.accept) TinDialog("Host ${d.name} on this phone?", { confirm = null }, "Host here", { confirm = null; exec({ app.groups.acceptHost(id, true) }, done) }, icon = Icons.Rounded.Dns) {
-            DialogText("A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay online and uses battery.")
-            DialogText("A computer that stays on is a better host. This phone starts hosting once an admin appoints it.")
-        } else TinDialog("Stop hosting ${d.name} here?", { confirm = null }, "Stop hosting", { confirm = null; exec({ app.groups.acceptHost(id, false) }, done) }, destructive = true) {
-            DialogText("This phone stops passing the group’s messages on. You stay a member." + if (d.amHost && d.hosts.size == 1) " The group has no other host: messages wait until another device hosts it." else "")
-        }
     }
 }
 
-private sealed interface GroupConfirm {
-    data class Flag(val did: String, val name: String, val flags: Int) : GroupConfirm
-    data class Admin(val did: String, val name: String, val admin: Boolean) : GroupConfirm
-    data object Leave : GroupConfirm
-    data class Request(val did: String, val name: String) : GroupConfirm
-    data class Host(val accept: Boolean) : GroupConfirm
-}
-
+/** Info pages: the 60 dp surface bar with a hairline under it, then a scrolling column capped at 640 dp. */
 @Composable
-private fun HostRow(title: String, sub: String, dot: Color, trailing: @Composable () -> Unit = {}) {
+private fun InfoPage(title: String, onBack: () -> Unit, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
     val c = Tin.c
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 20.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Dot(dot, 8.dp)
-        Column(Modifier.weight(1f)) {
-            Text(title, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-            Text(sub, style = TinType.bodyM, color = c.ink2)
+    Column(Modifier.fillMaxSize().background(c.bg).systemBarsPadding()) {
+        Row(Modifier.fillMaxWidth().background(c.sf).heightIn(min = 60.dp).padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.size(44.dp).clip(CircleShape).gTap(label = null, onClick = onBack).semantics { contentDescription = "Back" }, contentAlignment = Alignment.Center) {
+                Icon(GIcons.Back, null, tint = c.ink, modifier = Modifier.size(22.dp))
+            }
+            Text(title, style = GType.title, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        trailing()
+        GRule()
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().widthIn(max = 640.dp), contentPadding = PaddingValues(bottom = 32.dp), content = content)
     }
 }
 
+/** A section of the info page (`.sec`): 16 dp sides, 24 above, the head inset 4 more with 8 below. */
 @Composable
-private fun InfoActionLive(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: Color, onClick: () -> Unit) {
+private fun InfoSec(title: String, count: Int? = null, countText: String? = null, countColor: Color? = null, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp)) {
+        GSec(title, count, countText = countText, countColor = countColor, padding = PaddingValues(start = 4.dp, end = 4.dp, bottom = 8.dp))
+        content()
+    }
+}
+
+/** A row in a card (`.act`): 20 dp glyph, title and sub, an optional trailing glyph; 60 dp, 16 dp sides, 14 gap. */
+@Composable
+private fun ActRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, sub: String? = null, trailing: androidx.compose.ui.graphics.vector.ImageVector? = null,
+                   enabled: Boolean = true, danger: Boolean = false, off: Boolean = false, onClick: () -> Unit) {
     val c = Tin.c
-    Column(
-        Modifier.width(88.dp).clip(SmoothCornerShape(16.dp)).clickable(role = Role.Button, onClick = onClick).padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
+    val tint = if (danger) c.er else c.ink2
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).let { if (!off) it.gTap(enabled = enabled, onClick = onClick) else it }.alpha(if (!enabled && !off) .55f else 1f)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Box(Modifier.size(52.dp).clip(RoundedCornerShape(50)).background(c.sf2), contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint) }
-        Text(label, style = TinType.caption.copy(fontSize = 13.sp), color = c.ink)
+        Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(title, style = GType.bodyStrong, color = if (danger) c.er else if (off) c.ink2 else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (sub != null) Text(sub, style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (trailing != null) Icon(trailing, null, tint = c.ink2, modifier = Modifier.size(18.dp))
+    }
+}
+
+/** A member / host row (`.mrow`): 60 dp, 12 gap; tappable rows get the wash with 8 dp sides. */
+@Composable
+private fun MRow(onClick: (() -> Unit)? = null, desc: String? = null, content: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 60.dp)
+            .let { if (onClick != null) it.padding(horizontal = 0.dp).clip(SmoothCornerShape(14.dp)).gTap(onClick = onClick).let { m -> if (desc != null) m.semantics(mergeDescendants = true) { contentDescription = desc } else m } else it }
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp), content = content,
+    )
+}
+
+@Composable
+private fun RowScope.TwoLine(title: String, sub: String, subColor: Color = Tin.c.ink2, dot: Boolean? = null) {
+    val c = Tin.c
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        Text(title, style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (dot != null) { GDot(dot); Spacer(Modifier.width(6.dp)) }
+            Text(sub, style = GType.sub, color = subColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** A status line whose three wordings share one cell (`.status` + `.stk`), so it changing never moves what is below. */
+@Composable
+private fun StatusLine(lines: List<String>, current: Int, on: Boolean) {
+    val c = Tin.c
+    val col by androidx.compose.animation.animateColorAsState(if (on) c.ink else c.onWarn, tween(GMotion.ENTER, easing = GMotion.EaseOut), label = "st")
+    Row(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.padding(top = 6.dp)) { GDot(on) }
+        GStack(lines, current, GType.note, col, Modifier.weight(1f))
+    }
+}
+
+/** Hosts: the status line, the hosts with pending asks and offers, then what a host is. */
+@Composable
+private fun HostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (String, String) -> String,
+                         exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit) {
+    val noHost = d.hosts.isEmpty()
+    val up = d.amHost || d.hosts.any { it.online }
+    val online = d.hosts.count { it.online || it.isMe }
+    val line = if (noHost) 0 else if (up) 1 else 2
+    val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) "This device" else name(h.did, h.name) + if (d.members.firstOrNull { it.did == h.did }?.deviceIds?.size ?: 1 > 1) " · ${GroupText.shortDev(h.deviceId)}" else "" }
+    InfoSec("Hosts") {
+        StatusLine(listOf(
+            "This group has no host. Posts wait until a host is appointed.",
+            "${plural(online.coerceAtLeast(1), "host")} online. Posts go through right away.",
+            "No host is online. Your posts are saved and send when one is.",
+        ), line, line == 1)
+        d.hosts.forEach { h ->
+            key("h" + h.did + h.deviceId) {
+                MRow {
+                    Avatar(name(h.did, h.name), h.did, 40.dp)
+                    val on = h.isMe || h.online
+                    TwoLine(dev(h), (if (on) "Online" else "Offline") + if (d.callHosts.any { it.did == h.did && it.deviceId == h.deviceId }) " · also hosts calls" else "", dot = on)
+                    if (admin) TrailBtn("Remove", "Remove ${dev(h)} as host") { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
+                }
+            }
+        }
+        d.hostRequests.forEach { h ->
+            key("q" + h.did + h.deviceId) {
+                MRow {
+                    Avatar(name(h.did, h.name), h.did, 40.dp)
+                    TwoLine(dev(h), "Waiting to accept")
+                    if (h.isMe && d.hostRequestedHere) {
+                        GBtn("Decline", { exec({ app.groups.acceptHost(d.id, false) }, done) }, GBtnKind.Quiet)
+                        GBtn("Accept", { exec({ app.groups.acceptHost(d.id, true) }, done) }, GBtnKind.Primary)
+                    } else if (admin) TrailBtn("Cancel", "Cancel host request to ${dev(h)}") { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
+                }
+            }
+        }
+        d.hostOffers.forEach { h ->
+            key("o" + h.did + h.deviceId) {
+                MRow {
+                    Avatar(name(h.did, h.name), h.did, 40.dp)
+                    TwoLine(dev(h), "Offered to host · needs an admin")
+                    if (admin) GBtn("Appoint", { exec({ app.groups.appoint(d.id, h.did, h.deviceId) }, done) }, GBtnKind.Primary)
+                }
+            }
+        }
+        GNote("Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group." +
+            if (admin) " Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it." else "",
+            Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
+    }
+}
+
+/** Call hosts: a separate permit from chat hosting (the core's call_hosts / call_host_requests). */
+@Composable
+private fun CallHostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (String, String) -> String,
+                             exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit) {
+    val ready = d.callHosts.count { it.online || it.isMe }
+    val line = if (d.callHosts.isEmpty()) 0 else if (ready > 0) 1 else 2
+    val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) "This device" else name(h.did, h.name) }
+    InfoSec("Call hosts") {
+        StatusLine(listOf(
+            "This group has no call host. Nobody can start a call until an admin appoints one.",
+            "${plural(ready.coerceAtLeast(1), "call host")} ready. Calls start through ${if (ready == 1) "it" else "them"}.",
+            "No call host is available right now. A call can’t start until one is back.",
+        ), line, line == 1)
+        d.callHosts.forEach { h ->
+            key("c" + h.did + h.deviceId) {
+                MRow {
+                    Avatar(name(h.did, h.name), h.did, 40.dp)
+                    val on = h.isMe || h.online
+                    TwoLine(dev(h), if (on) "Online" else "Offline", dot = on)
+                    if (admin) TrailBtn("Remove", "Remove ${dev(h)} as call host") { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
+                }
+            }
+        }
+        d.callHostRequests.forEach { h ->
+            key("cq" + h.did + h.deviceId) {
+                MRow {
+                    Avatar(name(h.did, h.name), h.did, 40.dp)
+                    TwoLine(dev(h), "Waiting to accept")
+                    if (h.isMe && d.callHostRequestedHere) {
+                        GBtn("Decline", { exec({ app.groups.acceptCallHost(d.id, false) }, done) }, GBtnKind.Quiet)
+                        GBtn("Accept", { exec({ app.groups.acceptCallHost(d.id, true) }, done) }, GBtnKind.Primary)
+                    } else if (admin) TrailBtn("Cancel", "Cancel call host request to ${dev(h)}") { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
+                }
+            }
+        }
+        GNote("A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: " +
+            "a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept." +
+            if (admin) " Appoint one from a member’s menu. A phone only hosts calls that its owner starts." else "",
+            Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
+    }
+}
+
+/** A trailing quiet text button whose label lines up with the pills' right edge (`margin-inline-end: -11px`, weight 500). */
+@Composable
+private fun TrailBtn(text: String, desc: String, onClick: () -> Unit) {
+    val c = Tin.c
+    Box(Modifier.offset(x = 11.dp).heightIn(min = 44.dp).clip(RoundedCornerShape(22.dp)).gTap(onClick = onClick).semantics { contentDescription = desc }
+        .padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = GType.body.copy(fontWeight = FontWeight.Medium), color = c.ink)
+    }
+}
+
+/** Flags on me while I'm still a member (FlagsOnMe.svelte). The core gives the count; who and when come only with a removal. */
+@Composable
+private fun FlagsOnMe(n: Int) {
+    val total = GroupText.FLAGS_TO_REMOVE
+    val left = (total - n).coerceAtLeast(0)
+    InfoSec("Flags on you", countText = "$n of $total", countColor = Tin.c.er) {
+        Box(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp, top = 2.dp)) { FlagMeter(n, total, desc = "$n of $total flags") }
+        GNote((if (left == 1) "One more flag" else "$left more flags") + " from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then.",
+            Modifier.padding(start = 4.dp, end = 4.dp, top = 6.dp))
+    }
+}
+
+/** The removed person's view (Removal.svelte): who flagged, when, and what it means. */
+@Composable
+private fun RemovalBody(app: P2pApp, r: uniffi.p2pcore.GroupRemoval?, onBack: () -> Unit) {
+    val c = Tin.c
+    val ord = listOf("First flag", "Second flag", "Third flag")
+    Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 32.dp)) {
+        Text("Removed after ${GroupText.FLAGS_TO_REMOVE} admin flags", Modifier.padding(top = 8.dp, bottom = 2.dp).semantics { heading() }, style = GType.hero, color = c.ink)
+        if (r != null && r.at > 0u) Text(dayAndTime(r.at.toLong(), System.currentTimeMillis()), style = GType.note, color = c.ink2)
+        RemSec("Who flagged you")
+        r?.flags?.forEachIndexed { i, f ->
+            val who = nameOf(app, f.byDid, f.byName)
+            Row(Modifier.fillMaxWidth().heightIn(min = 60.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Avatar(who, f.byDid, 40.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(who, style = GType.bodyStrong, color = c.ink)
+                    Text(ord.getOrElse(i) { "Flag" } + if (f.at > 0u) " · " + dayAndTime(f.at.toLong(), System.currentTimeMillis()) else "", style = GType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+                }
+            }
+            if (i < r.flags.lastIndex) GRule()
+        }
+        GNote("Each flag was made by an admin of the group, and this device checked them before showing this.", Modifier.padding(top = 6.dp))
+        RemSec("What this means")
+        Text("You keep the posts already on this device, and you can read them. You can’t post, and the group’s hosts no longer accept anything from you. Removal is final: to come back, an admin has to invite you again.",
+            style = GType.body.copy(lineHeight = 22.sp), color = c.ink)
+        Box(Modifier.padding(top = 20.dp)) { GBtn("Read the posts", onBack, GBtnKind.Outline) }
+    }
+}
+
+@Composable
+private fun RemSec(text: String) = Text(text.uppercase(), Modifier.padding(top = 24.dp, bottom = 6.dp).semantics { heading() }, style = GType.sec, color = Tin.c.ink2)
+
+/** Invite contacts (InviteSheet.svelte): pick contacts who aren't in the group and have no invite waiting. */
+@Composable
+private fun InviteSheet(app: P2pApp, d: GroupDetail, sent: List<GroupInvitation>, exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit,
+                        say: (String) -> Unit, onDismiss: () -> Unit) {
+    val c = Tin.c
+    val contacts by app.contacts.collectAsState()
+    val blocks by app.blocks.collectAsState()
+    val choices = remember(contacts, d, sent, blocks) {
+        GroupText.pickRows(contacts.map { InviteCandidate(it.did, it.display()) }, d, sent, { blocks.blockedByMe(it) }, { blocks.blockedMeAt(it) != null }).filter { it.why == null }
+    }
+    val picked = remember { mutableStateListOf<String>() }
+    var busy by remember { mutableStateOf(false) }
+    GSheet(onDismiss, "Invite contacts") { close ->
+        GDialogBody("Invite to ${d.name}") {
+            if (choices.isNotEmpty()) {
+                Column(Modifier.padding(top = 8.dp).offset(x = (-8).dp).fillMaxWidth().padding(end = 0.dp)) {
+                    choices.forEach { p ->
+                        key(p.did) {
+                            val on = p.did in picked
+                            Row(
+                                Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(SmoothCornerShape(14.dp))
+                                    .gTap(role = Role.Checkbox) { if (on) picked.remove(p.did) else picked.add(p.did) }
+                                    .semantics(mergeDescendants = true) { toggleableState = ToggleableState(on) }.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Avatar(p.name, p.did, 40.dp)
+                                Text(p.name, Modifier.weight(1f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                CheckBox(on)
+                            }
+                        }
+                    }
+                }
+                GPara("Each person gets a private invite that works for 7 days. Anyone you invite can read the group’s posts once they join.", top = 10.dp)
+            } else GPara("Everyone in your contacts is already in this group or has an invite waiting.", top = 10.dp)
+            GActs {
+                GBtn("Cancel", close, GBtnKind.Quiet)
+                GBtn(if (busy) "Sending…" else if (picked.isEmpty()) "Invite" else "Invite ${plural(picked.size, "person", "people")}", {
+                    busy = true
+                    val dids = picked.toList()
+                    exec({ app.groups.inviteContacts(d.id, dids) }) { r -> busy = false; r.onSuccess { say(it); close() }.onFailure { say(it.message ?: "Couldn’t invite") } }
+                }, GBtnKind.Primary, enabled = picked.isNotEmpty() && !busy)
+            }
+        }
+    }
+}
+
+/** `.box`: 22 dp, radius 7, a 2 px line ring; checked fills accent with a 16 dp check (120 ms). */
+@Composable
+private fun CheckBox(on: Boolean) {
+    val c = Tin.c
+    val shape = RoundedCornerShape(7.dp)
+    val bg by androidx.compose.animation.animateColorAsState(if (on) c.accentFill else Color.Transparent, tween(GMotion.SWITCH, easing = GMotion.EaseOut), label = "box")
+    Box(Modifier.size(22.dp).clip(shape).background(bg).let { if (!on) it.border(2.dp, c.ln, shape) else it }, contentAlignment = Alignment.Center) {
+        if (on) Icon(GIcons.Check, null, tint = c.onAccent, modifier = Modifier.size(16.dp))
+    }
+}
+
+private enum class MView { Actions, Flag, Ask }
+
+/**
+ * A member's sheet (MemberSheet.svelte): per-member actions by my role, then the two confirm steps (flag, chat request),
+ * cross-faded in place. Request admission and cooldown remain the core's responsibility.
+ */
+@Composable
+private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, req: GroupChatRequest?, blockedByMe: Boolean,
+                        exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit,
+                        onChat: (String) -> Unit, onDismiss: () -> Unit) {
+    val c = Tin.c
+    var view by remember { mutableStateOf(MView.Actions) }
+    val fn = firstName(n)
+    val admin = GroupText.isAdmin(d.myRole)
+    val contact = app.contacts.value.any { it.did == m.did }
+    val acts = GroupText.actions(d, m)
+    val several = m.deviceIds.size > 1
+    GSheet(onDismiss, if (m.isMe) "Your role in this group" else "$n in ${d.name}") { close ->
+        androidx.compose.animation.Crossfade(view, animationSpec = tween(GMotion.CROSSFADE, easing = GMotion.EaseOut), label = "view") { v ->
+            when (v) {
+                MView.Actions -> Column {
+                    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Avatar(n, m.did, 48.dp)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(if (m.isMe) "$n (you)" else n, style = GType.title.copy(lineHeight = 22.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(m.invitedBy?.let { "Invited by ${firstName(nameOf(app, it, ""))} · ${dayOnly(m.joinedAt.toLong())}" } ?: "Member since ${dayOnly(m.joinedAt.toLong())}",
+                                style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            GPill(if (m.isOwner) "Owner" else if (m.isAdmin) "Admin" else "Member", if (m.isOwner) GTone.Owner else if (m.isAdmin) GTone.Admin else GTone.Muted)
+                            if (m.isHost) GPill("Host", GTone.Host)
+                            if (d.callHosts.any { it.did == m.did }) GPill("Call host", GTone.Call)
+                        }
+                    }
+                    if (admin && !m.isMe && !m.isOwner) Text("${m.flags} of ${GroupText.FLAGS_TO_REMOVE} flags", Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
+                        style = GType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+                    Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp)) {
+                        if (!m.isMe) when {
+                            contact && !blockedByMe -> MItem(GIcons.Chat, "Message $fn") { onDismiss(); onChat(m.did) }
+                            blockedByMe -> MItem(GIcons.Off, "You blocked $fn", "They stay in the group. Unblock them in Contacts to chat.", off = true)
+                            req?.state == ChatRequestState.PENDING -> MItem(GIcons.Clock, "Request sent", "Waiting for $fn to answer", off = true)
+                            req?.state == ChatRequestState.BLOCKED -> MItem(GIcons.Off, "Blocked", "$fn can’t receive requests from you.", off = true)
+                            MemberAction.Message in acts -> MItem(GIcons.Chat, if (req?.state == ChatRequestState.DECLINED) "Ask $fn again" else "Ask $fn for a private chat",
+                                if (req?.state == ChatRequestState.DECLINED) "$fn declined your last request" else "Sends a chat request through the group’s host") { view = MView.Ask }
+                        }
+                        acts.forEach { a ->
+                            when (a) {
+                                MemberAction.MakeAdmin -> MItem(GIcons.Shield, "Make admin") { exec({ app.groups.setAdmin(d.id, m.did, true) }, done); close() }
+                                MemberAction.RevokeAdmin -> MItem(GIcons.Shield, "Remove admin") { exec({ app.groups.setAdmin(d.id, m.did, false) }, done); close() }
+                                is MemberAction.Appoint -> MItem(GIcons.Server, if (several) "Make device ${GroupText.shortDev(a.deviceId)} a host" else "Make host",
+                                    "Asks $fn to host. They have to accept.") { exec({ app.groups.appoint(d.id, m.did, a.deviceId) }, done); close() }
+                                is MemberAction.Revoke -> MItem(GIcons.Server, if (several) "Stop device ${GroupText.shortDev(a.deviceId)} hosting" else "Remove as host") {
+                                    exec({ app.groups.revoke(d.id, m.did, a.deviceId) }, done); close()
+                                }
+                                else -> {}
+                            }
+                        }
+                        if (admin && !m.isMe) m.deviceIds.forEach { dev ->
+                            val isCh = d.callHosts.any { it.did == m.did && it.deviceId == dev }
+                            val pend = d.callHostRequests.any { it.did == m.did && it.deviceId == dev }
+                            val suffix = if (several) " · ${GroupText.shortDev(dev)}" else ""
+                            when {
+                                pend -> MItem(GIcons.Phone, "Cancel call host request$suffix", "Waiting for $fn’s device to accept") { exec({ app.groups.revokeCall(d.id, m.did, dev) }, done); close() }
+                                isCh -> MItem(GIcons.Phone, "Remove as call host$suffix") { exec({ app.groups.revokeCall(d.id, m.did, dev) }, done); close() }
+                                else -> MItem(GIcons.Phone, "Make call host$suffix", "Asks $fn to carry group calls. They have to accept.") { exec({ app.groups.appointCall(d.id, m.did, dev) }, done); close() }
+                            }
+                        }
+                        if (m.isMe && GroupText.active(d.myRole)) {
+                            if (d.amHost) MItem(GIcons.Server, "Stop hosting on this device") { exec({ app.groups.acceptHost(d.id, false) }, done); close() }
+                            else if (d.hostOffers.none { it.isMe }) MItem(GIcons.Server, "Host on this device", "An admin has to appoint it too. A computer that stays on is a better host.") {
+                                exec({ app.groups.acceptHost(d.id, true) }, done); close()
+                            }
+                            if (d.amCallHost) MItem(GIcons.Phone, "Stop hosting calls on this device") { exec({ app.groups.acceptCallHost(d.id, false) }, done); close() }
+                        }
+                        if (MemberAction.Flag in acts) MItem(GIcons.Flag, "Flag for removal", "${GroupText.FLAGS_TO_REMOVE} flags remove $fn from the group", danger = true) { view = MView.Flag }
+                        else if (m.isOwner && !m.isMe) MItem(GIcons.Flag, "The owner can’t be flagged", off = true)
+                    }
+                    Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 14.dp), horizontalArrangement = Arrangement.End) {
+                        GBtn("Close", close, GBtnKind.Quiet)
+                    }
+                }
+                MView.Flag -> {
+                    val (next, lead) = GroupText.flagCopy(n, m.flags.toInt())
+                    Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
+                        Text("Flag $fn for removal?", Modifier.padding(bottom = 12.dp).semantics { heading() }, style = GType.title, color = c.ink)
+                        FlagMeter(m.flags.toInt(), GroupText.FLAGS_TO_REMOVE, yours = true, desc = "Flag $next of ${GroupText.FLAGS_TO_REMOVE}")
+                        GPara(lead, top = 12.dp, color = c.ink, style = GType.body.copy(lineHeight = 21.sp))
+                        GPara("Flags can’t be taken back, and removal is final. The same admin can flag more than once; each flag counts.")
+                        GPara("Flagging is a decision for the group. It is separate from blocking, which only affects you. $fn sees each flag: who made it and when.")
+                        GActs {
+                            GBtn("Back", { view = MView.Actions }, GBtnKind.Quiet)
+                            GBtn("Flag $fn", { exec({ app.groups.flag(d.id, m.did) }, done); close() }, if (next >= GroupText.FLAGS_TO_REMOVE) GBtnKind.Danger else GBtnKind.Outline)
+                        }
+                    }
+                }
+                MView.Ask -> Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
+                    Text("Ask $fn for a private chat", Modifier.padding(bottom = 4.dp).semantics { heading() }, style = GType.title, color = c.ink)
+                    GPara("$fn sees your name and the group. The request goes through the group’s host, sealed, so the host can’t read it.")
+                    GPara("If $fn accepts, you can message each other directly. Calls stay off until one of you allows them. A request expires after 7 days.")
+                    GActs {
+                        GBtn("Back", { view = MView.Actions }, GBtnKind.Quiet)
+                        GBtn("Send request", { exec({ app.groups.request(d.id, m.did) }, done); close() }, GBtnKind.Primary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A sheet menu item (`.mi`): 56 dp, 6/12 padding, radius 14, 20 dp glyph, 16 gap; off items are muted and inert. */
+@Composable
+private fun MItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, sub: String? = null, danger: Boolean = false, off: Boolean = false, onClick: () -> Unit = {}) {
+    val c = Tin.c
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(SmoothCornerShape(14.dp)).let { if (!off) it.gTap(onClick = onClick) else it.semantics(mergeDescendants = true) {} }
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(icon, null, tint = if (danger) c.er else c.ink2, modifier = Modifier.size(20.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(title, style = GType.bodyStrong, color = if (danger) c.er else if (off) c.ink2 else c.ink)
+            if (sub != null) Text(sub, style = GType.sub.copy(lineHeight = 17.sp), color = c.ink2)
+        }
     }
 }
 
 // ------------------------------------------------------------------ removal
 
+/** "Why you were removed" (the route from the conversation): the same view as a removed group's info. */
 @Composable
 fun GroupRemovalLive(app: P2pApp, id: String, onBack: () -> Unit) {
-    val c = Tin.c
     val open by app.groups.open.collectAsState()
     LaunchedEffect(id) { withContext(Dispatchers.IO) { if (app.groups.open.value?.id != id) app.groups.open(id) } }
     val r = open?.takeIf { it.id == id }?.detail?.removal
-    Page {
-        TopBar("Why you were removed", onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            if (r == null) { Hint("Nothing to show."); return@Column }
-            r.flags.forEachIndexed { i, f ->
-                val who = nameOf(app, f.byDid, f.byName)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PersonAvatar(who, f.byDid, 40.dp, contact = app.contacts.value.any { it.did == f.byDid })
-                    Column {
-                        Text(who, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                        Text("Flagged ${whenFull(f.at.toLong())}" + if (i == r.flags.lastIndex) " · flag ${i + 1}" else "", style = TinType.bodyM, color = c.ink2)
-                    }
-                }
-            }
-            InfoCard("Each flag is signed by the admin who made it and was checked on this phone. Nobody else could have added them.", icon = Icons.Rounded.VerifiedUser)
-            Text("What happens now", style = TinType.titleM, color = c.ink)
-            DialogText("You keep the messages already on this phone. The group’s hosts refuse your new messages. To rejoin, an admin has to invite you again.")
-        }
-    }
+    InfoPage("Removed", onBack) { item { RemovalBody(app, r, onBack) } }
 }
 
 // ------------------------------------------------------------------ new group

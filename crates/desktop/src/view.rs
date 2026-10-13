@@ -16,12 +16,18 @@ use crate::ui::{self, Icon, Kind, Tok};
 
 #[path = "chat_view.rs"]
 mod chat_view;
+#[path = "gate_view.rs"]
+mod gate_view;
 #[path = "link_view.rs"]
 mod link_view;
 #[path = "groups_view.rs"]
 mod groups_view;
 #[path = "group_live_view.rs"]
 mod group_live_view;
+#[path = "shell_view.rs"]
+mod shell_view;
+#[path = "call_screen.rs"]
+mod call_screen;
 type El<'a> = Element<'a, Msg>;
 
 fn scroll<'a>(t: Tok, c: impl Into<El<'a>>) -> iced::widget::Scrollable<'a, Msg> {
@@ -172,8 +178,8 @@ impl App {
 
     pub(super) fn view(&self, _id: iced::window::Id) -> El<'_> {
         let t = self.t();
-        let body: El = if self.call.is_some() {
-            row![self.sidebar(t), self.call_view(t)].into()
+        let body: El = if self.call.is_some() && !self.call_ui.minimized {
+            self.call_view(t)
         } else if self.ended.is_some() {
             row![self.sidebar(t), self.ended_view(t)].into()
         } else {
@@ -211,18 +217,7 @@ impl App {
 
     /// A centred card on the background, for the screens before the home screen.
     fn shell<'a>(&'a self, t: Tok, title: &str, sub: &str, content: El<'a>) -> El<'a> {
-        let head = column![
-            ui::logo(48.0, t),
-            bold(title.to_string(), 26.0, t.ink),
-            tx(sub.to_string(), 15.0, t.ink2),
-        ]
-        .spacing(8)
-        .align_x(Alignment::Start);
-        let card = container(column![head, content].spacing(20))
-            .padding(32)
-            .width(460)
-            .style(ui::card(t));
-        scroll(t, container(card).center_x(Fill).padding([32, 0]).width(Fill)).height(Fill).into()
+        gate_view::frame(t, title, sub, content)
     }
 
     fn pass_field<'a>(&'a self, t: Tok, title: &'a str, value: &'a str, on: fn(String) -> Msg, submit: Option<Msg>) -> El<'a> {
@@ -448,11 +443,9 @@ impl App {
         let name = self.profile_name.clone();
         let mut col = column![
             self.pass_field(t, "Passphrase", &self.pass_in, Msg::PassIn, Some(Msg::Unlock)),
+            container(tx(self.notice.clone().unwrap_or_default(), 13.0, t.error)).height(78).width(Fill).clip(true),
         ]
         .spacing(12);
-        if let Some(n) = &self.notice {
-            col = col.push(tx(n.clone(), 13.0, t.error));
-        }
         col = col
             .push(self.wide(
                 if self.busy { "Unlocking..." } else { "Unlock" },
@@ -710,48 +703,19 @@ impl App {
         crate::mark::Look { state: l.state, sway: l.sway, dim: l.dim, pluck: self.mark_pluck }
     }
 
-    fn sidebar(&self, t: Tok) -> El<'_> {
-        // The name doubles as the way home, like a site's logo.
-        let home = button(row![ui::logo_live(28.0, t, self.mark_look()), bold("Tinline", 20.0, t.ink)].spacing(4).align_y(Alignment::Center))
-            .padding([2, 4])
-            .style(ui::button_style(t, Kind::Ghost, 8.0))
-            .on_press(Msg::Home);
-        let head = row![
-            home,
-            Space::new().width(Fill),
-            icon_btn(t, Icon::UserPlus, Msg::OpenAdd),
-            icon_btn(t, Icon::Sliders, Msg::OpenSettings),
-        ]
-        .spacing(4)
-        .align_y(Alignment::Center);
-        let mut col = column![head, self.account_chip(t), self.side_tabs(t)].spacing(12);
-        let bare = move |_: &Theme, _: text_input::Status| text_input::Style {
-            background: iced::Background::Color(Color::TRANSPARENT),
-            border: Border::default(),
-            icon: t.ink2,
-            placeholder: ui::alpha(t.ink2, 0.8),
-            value: t.ink,
-            selection: ui::alpha(t.primary, 0.3),
+    fn list_pane(&self, t: Tok) -> El<'_> {
+        let mut col = column![self.desktop_search_field(t)].spacing(0);
+        if self.shell_search.active {
+            return container(column![col, self.shell_search_results(t)].height(Fill)).width(380).height(Fill).style(ui::sidebar(t)).into();
+        }
+        let title = match self.chat.tab {
+            super::chat::SideTab::Chats => "Chats", super::chat::SideTab::Groups => "Groups",
+            super::chat::SideTab::Calls => "Calls", super::chat::SideTab::Contacts => "Contacts",
         };
-        col = col.push(
-            container(
-                row![
-                    text_input("Search", &self.search)
-                        .id(SEARCH_ID)
-                        .on_input(Msg::SearchIn)
-                        .padding([9, 4])
-                        .size(14)
-                        .style(bare),
-                    mono("Ctrl K", 11.0, t.ink2),
-                ]
-                .spacing(8)
-                .align_y(Alignment::Center),
-            )
-            .padding([0, 12])
-            .style(ui::outlined(t.surface, t.line, 8.0)),
-        );
-
-        let q = self.search.trim().to_lowercase();
+        col = col.push(container(bold(title, 24.0, t.ink)).padding([16, 20]));
+        // Retain supported add-contact entry instead of inventing a new-chat sheet in this milestone.
+        col = col.push(container(pill(t, Kind::Quiet, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd))).padding([4, 16]));
+        let q = String::new();
         if self.chat.tab == super::chat::SideTab::Chats {
             return self.sidebar_frame(t, col, self.chat_list(t, &q));
         }
@@ -931,17 +895,20 @@ impl App {
 
     fn sidebar_frame<'a>(&'a self, t: Tok, col: iced::widget::Column<'a, Msg>, list: El<'a>) -> El<'a> {
         container(
-            column![col, scroll(t, list).height(Fill), self.avail_footer(t)]
-                .spacing(12),
+            column![col, scroll(t, list).height(Fill)]
+                .spacing(0),
         )
-        .padding(16)
-        .width(300)
+        .padding(0)
+        .width(380)
         .height(Fill)
         .style(ui::sidebar(t))
         .into()
     }
 
     fn home_view(&self, t: Tok) -> El<'_> {
+        if self.sel.is_none() && self.live.open.is_none() && self.groups.open.is_none() && self.offer.is_none() && self.notice.is_none() && self.problem().is_none() {
+            return row![self.sidebar(t), self.call_strip_pane(t, self.shell_empty_detail(t))].into();
+        }
         let mut main = column![].spacing(16);
         if let Some((title, body, action, error)) = self.problem() {
             main = main.push(banner(t, title, body, action, error));
@@ -950,28 +917,28 @@ impl App {
             main = main.push(self.notice_bar(t));
         }
         if let Some(pane) = self.live_pane(t) {
-            return row![self.sidebar(t), pane].into();
+            return row![self.sidebar(t), self.call_strip_pane(t, pane)].into();
         }
         if let Some(pane) = self.preview_pane(t) {
-            return row![self.sidebar(t), pane].into();
+            return row![self.sidebar(t), self.call_strip_pane(t, pane)].into();
         }
         if let Some(c) = self.selected().filter(|_| !self.chat.info) {
             let pane: El = match self.offer_bar(t) {
                 Some(o) => column![container(o).padding([12, 16]), self.conversation_view(t, c)].width(Fill).height(Fill).into(),
                 None => self.conversation_view(t, c),
             };
-            return row![self.sidebar(t), pane].into();
+            return row![self.sidebar(t), self.call_strip_pane(t, pane)].into();
         }
         if let Some(o) = self.offer_bar(t) {
             main = main.push(o);
         }
         main = main.push(match self.selected() {
             Some(c) => self.detail_view(t, c),
-            None => self.code_view(t),
+            None => self.shell_empty_detail(t),
         });
         row![
             self.sidebar(t),
-            scroll(t, container(main).padding(32).max_width(760).width(Fill)).width(Fill).height(Fill)
+            self.call_strip_pane(t, scroll(t, container(main).padding(32).max_width(760).width(Fill)).width(Fill).height(Fill).into())
         ]
         .into()
     }
@@ -1659,35 +1626,39 @@ impl App {
     fn round_btn<'a>(&self, t: Tok, kind: Kind, icon: Icon, text_: &str, on: Option<Msg>, active: bool) -> El<'a> {
         let fg = match kind {
             Kind::Accept | Kind::End => Color::WHITE,
-            _ if active => t.on_primary,
+            _ if active => t.bg,
             _ => t.ink,
         };
         let style = ui::button_style(t, if active { Kind::Primary } else { kind }, 999.0);
         // Lift: the round call buttons sit above the surface. The fill under the button is its own.
         let fill = match if active { Kind::Primary } else { kind } {
-            Kind::Primary => t.primary,
+            Kind::Primary => t.ink,
             Kind::Accept => t.accept,
             Kind::End => t.end,
-            _ => t.surface2,
+            _ if t.dark => Color { r: t.surface.r * 0.86 + t.ink.r * 0.14, g: t.surface.g * 0.86 + t.ink.g * 0.14, b: t.surface.b * 0.86 + t.ink.b * 0.14, a: 1.0 },
+            _ => t.surface,
         };
         let enabled = on.is_some();
-        let circle = button(container(ui::icon(icon, 28.0, fg)).center_x(68).center_y(68))
+        let circle = button(container(ui::icon(icon, 28.0, fg)).center_x(64).center_y(64))
             .padding(0)
-            .width(68)
-            .height(68)
-            .style(style)
+            .width(64)
+            .height(64)
+            .style(move |theme, status| button::Style { background: None, border: Border::default(), ..style(theme, status) })
             .on_press_maybe(on);
-        let circle = ui::raised(circle, t, if enabled { ui::Depth::Lift } else { ui::Depth::Flat }, ui::plain(fill, 999.0));
+        let circle = crate::shaped::shaped(circle, [32.0; 4], fill);
+        let circle = ui::raised(circle, t, if enabled { ui::Depth::Lift } else { ui::Depth::Flat }, ui::plain(Color::TRANSPARENT, 32.0));
         column![
             circle,
-            tx(text_.to_string(), 13.0, t.ink2),
+            container(tx(text_.to_string(), 13.0, t.ink)).height(18).center_x(76),
         ]
         .spacing(8)
+        .width(76)
         .align_x(Alignment::Center)
         .into()
     }
 
-    fn call_view(&self, t: Tok) -> El<'_> {
+    // Preserve the actual camera renderer while the voice screen is ported independently.
+    fn video_call_view(&self, t: Tok) -> El<'_> {
         let c = self.call.as_ref().unwrap();
         let secs = c.stats.as_ref().map(|s| s.secs).unwrap_or(0);
         let incoming_ring = c.info.incoming && !c.answered && c.state == CallState::Ringing;
@@ -1735,13 +1706,10 @@ impl App {
             )
             .into()
         } else if incoming_ring || matches!(c.state, CallState::Dialing | CallState::Ringing) {
-            row![ui::icon(Icon::Lock, 14.0, t.ink2), tx("End-to-end encrypted", 13.0, t.ink2)]
-                .spacing(6)
-                .align_y(Alignment::Center)
-                .into()
+            Space::new().height(18).into()
         } else if let Some(st) = c.stats.as_ref().filter(|_| active) {
             if st.direct {
-                row![ui::icon(Icon::Lock, 14.0, t.ink2), tx(format!("End-to-end encrypted \u{b7} straight to {}", c.info.peer_name), 13.0, t.ink2)]
+                row![ui::icon(Icon::Lock, 14.0, t.ink2), tx("End-to-end encrypted", 13.0, t.ink2)]
                     .spacing(6)
                     .align_y(Alignment::Center)
                     .into()
