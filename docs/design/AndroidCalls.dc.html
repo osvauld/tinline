@@ -44,10 +44,10 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 .opt .s{font-size:13px;color:var(--ink2)}
 </style>
 </helmet>
-<div class="root" style="width:4648px;height:1060px">
+<div class="root" style="width:6028px;height:1060px">
 
 <div class="col">
-<div class="lbl">Incoming · lock screen <span>· full-screen intent, always dark</span></div>
+<div class="lbl">Incoming · lock screen <span>· full-screen intent, always dark · <a href="./refined/calls.html">Interactive prototype with sound preview</a> · <a href="./refined/calls.md">spec</a></span></div>
 <div class="ph dk" style="background:#0B100F">
 <div style="display:flex;justify-content:center;align-items:center;gap:8px;padding-top:24px;font-size:14px;color:#A6B2AD"><svg viewBox="0 0 24 24" style="width:20px;height:20px;color:#6FD3BD"><rect x="1.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"></rect><path d="M8.5 12 Q12 14.5 15.5 12" fill="none" stroke="#E8B04A" stroke-width="1.75" stroke-linecap="round"></path></svg>Tinline call</div>
 <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-bottom:80px">
@@ -114,7 +114,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="display:flex;align-items:center"><div class="av" style="width:64px;height:64px;font-size:22px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q70 32 136 16" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path></svg><div class="av" style="width:96px;height:96px;font-size:34px">AO</div></div>
 <div style="font-size:30px;font-weight:700;margin-top:16px">Arjun Oommen</div>
 <div class="mono" style="font-size:20px;color:var(--ink2)">04:12</div>
-<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>End-to-end encrypted · straight to his phone</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2)"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"></path></svg>End-to-end encrypted · straight to Arjun’s phone</div>
 </div>
 <div style="display:flex;justify-content:center;gap:24px;padding-bottom:28px">
 <div class="ctl"><button class="cb on" aria-label="Unmute" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3 M3 3l18 18"></path></svg></button>Muted</div>
@@ -212,7 +212,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 28px;text-align:center">
 <div style="display:flex;align-items:center"><div class="av" style="width:64px;height:64px;font-size:22px;background:var(--prc);color:var(--onprc)">M</div><svg viewBox="0 0 140 40" style="width:140px;height:40px"><path d="M4 16 Q40 36 70 30" fill="none" stroke="var(--th)" stroke-width="3" stroke-linecap="round"></path><circle cx="78" cy="29" r="3" fill="var(--th)"></circle></svg><div class="av" style="width:96px;height:96px;font-size:34px;background:var(--sf3);color:var(--ink2)">LP</div></div>
 <div style="font-size:28px;font-weight:700;margin-top:16px">Couldn’t reach Lena</div>
-<div style="font-size:16px;line-height:24px;color:var(--ink2)">She may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages.</div>
+<div style="font-size:16px;line-height:24px;color:var(--ink2)">Lena may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages.</div>
 </div>
 <div style="display:flex;flex-direction:column;gap:8px;padding:0 24px 48px">
 <button class="btn">Try again</button>
@@ -237,9 +237,56 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 </div>
 </div>
 
+<div class="col">
+<div class="lbl">Group call <span>· one call host · <a href="./refined/calls.html">prototype</a></span></div>
+<div class="ph t">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 24px;text-align:center">
+<div class="av" style="width:104px;height:104px;font-size:36px">FG</div>
+<div style="font-size:28px;font-weight:700;margin-top:6px">Family group</div>
+<div class="mono" style="font-size:17px;color:var(--ink2)">04:12</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><span class="badge bR">Group · via Kofi’s desktop</span><span class="badge bW">Host can hear</span></div>
+<div class="hint" style="max-width:300px">Encrypted hop by hop to the call host, not end-to-end. Kofi’s desktop can hear the call and passes audio to the others. Members never see each other’s addresses. If the host drops, the call ends.</div>
+</div>
+<div style="display:flex;justify-content:center;gap:32px;padding:0 24px 48px"><div class="ctl"><button class="cb" aria-label="Mute"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"></path></svg></button>Mute</div><div class="ctl"><button class="end" aria-label="End call"><svg class="i big hang" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>End call</div></div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Group call · host dropped <span>· no reconnect</span></div>
+<div class="ph t">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 28px;text-align:center">
+<div class="av" style="width:96px;height:96px;font-size:34px;background:var(--sf3);color:var(--ink2)">FG</div>
+<div style="font-size:28px;font-weight:700;margin-top:12px">The call host dropped</div>
+<div style="font-size:16px;line-height:24px;color:var(--ink2)">A group call ends when its call host drops. Tinline does not reconnect or hand the live call to another host. Redialling through Mina’s phone is your choice.</div>
+<span class="badge bN mono">02:10</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 24px 48px">
+<button class="btn">Redial via Mina’s phone</button>
+<button class="btn tx">Close</button>
+<div class="hint" style="text-align:center">Only hosts allowed to host calls are offered. Chat hosting is not enough.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="lbl">Blocked by contact <span>· call off, no retry</span></div>
+<div class="ph t">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 28px;text-align:center">
+<div class="av" style="width:96px;height:96px;font-size:34px;background:var(--sf3);color:var(--ink2)">LB</div>
+<div style="font-size:28px;font-weight:700;margin-top:12px">Leo has blocked you</div>
+<span class="badge" style="background:var(--erc);color:var(--er)">Blocked by Leo</span>
+<div style="font-size:16px;line-height:24px;color:var(--ink2)">Tinline does not dial or retry. Calling works again only after Leo unblocks you and you add Leo again with their QR or ticket.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 24px 48px">
+<button class="btn ol" disabled style="opacity:.55">Call unavailable</button>
+<button class="btn tx">Close</button>
+</div>
+</div>
+</div>
+
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4648,"height":1060}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":6028,"height":1060}}'>
 class Component extends DCLogic {
   renderVals() { return {}; }
 }

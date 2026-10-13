@@ -1,0 +1,132 @@
+/* Tinline refined studies — design tokens. Single source of truth.
+   Load BEFORE the page's own <style>. Use these custom properties directly;
+   do not redefine palette values inside a study page.
+   Theme: system by default; <html data-theme="light"|"dark"> forces either. */
+
+:root{
+  color-scheme:light;
+
+  /* surfaces */
+  --bg:#f5f6f3;            /* page / app background */
+  --surface:#ffffff;       /* cards, panes, received bubbles */
+  --surface-2:#ecefeb;     /* soft fills: day pills, hover washes, quiet chips */
+  --canvas:#edefe9;        /* conversation scroll area behind bubbles */
+  --ink:#17201d;
+  --muted:#4d5853;
+  --line:#d3d9d4;          /* structural borders */
+  --hairline:#e2e7e1;      /* bubble + field borders */
+
+  /* brand */
+  --accent:#0b6b5b;        /* primary actions only */
+  --on-accent:#ffffff;
+  --accent-ink:#0a5d50;    /* teal as text/link on light surfaces */
+  --accent-soft:#d7ece6;   /* selected chips, active nav fills */
+
+  /* message bubbles (decided 2026-10-11: sent = soft mint, never solid teal) */
+  --bub-in:#ffffff;        --bub-in-ink:#17201d;   --bub-in-line:#e2e7e1;
+  --bub-out:#cdebe3;       --bub-out-ink:#06352d;
+  --bub-meta-in:#68746e;   --bub-meta-out:#33655a; /* 11px inline time/status */
+
+  /* secondary accents */
+  --lav:#e1e4f7;  --lav-ink:#374582;
+  --gold:#c98a1e; --gold-ink:#8a5f12; --warn-bg:#fcefd2; --warn-ink:#5c3b00;
+  --danger:#a12b23; --danger-bg:#f8e3e1; --on-danger:#ffffff; --danger-btn:#a12b23; --on-danger-btn:#ffffff;
+
+  /* avatar hue pairs — pick via hash, see SPEC.md §Avatars */
+  --av0-bg:#d7ece6; --av0-ink:#0b5447;
+  --av1-bg:#e1e4f7; --av1-ink:#374582;
+  --av2-bg:#f6e3e6; --av2-ink:#8c3a4a;
+  --av3-bg:#f3e8d2; --av3-ink:#6d4e12;
+  --av4-bg:#e3edd9; --av4-ink:#44622a;
+  --av5-bg:#ece2f2; --av5-ink:#5d3f73;
+
+  /* type scale */
+  --fs-title:17px; --fs-body:15px; --fs-sub:13px; --fs-meta:11px;
+  --lh-body:21px;
+
+  /* shape + size */
+  --r-bub:18px; --r-bub-tight:6px;   /* bubble outer / stack-facing corners */
+  --r-quote:12px;                    /* quote block inside a bubble, reply chip */
+  --smooth:.6;                       /* corner smoothing 0..1 (0 circular, .6 iOS-like): lib/geom/GEOMETRY.md. Read by JS, not by CSS */
+  --r-ctl:14px;                      /* buttons, inputs, list cards */
+  --r-field:22px;                    /* composer field pill */
+  --r-sheet:24px;                    /* dialogs, bottom sheets */
+  --btn:44px;                        /* minimum touch target */
+
+  /* DEPTH LADDER (PHILOSOPHY §9). Flat = hairline, no shadow. Each step is two layers: contact + ambient.
+     lift  - touchable raised controls: round call buttons, "to bottom" arrow, selected segment, switch knob, member badge
+     pop   - menus, popovers, banners, toasts, cards floating over content
+     sheet - dialogs, bottom sheets, drawers, the notification shade
+     Light tints with the palette's green-black (9 23 17), never grey. Dark leans on --surface-raised (lighter
+     surface) and the shadow only helps. Raised things use --surface-raised, never a one-off colour or shadow.
+     --ring-focus is the soft halo for a focused text field. */
+  --surface-raised:var(--surface);
+  --shadow-lift:0 1px 2px rgb(9 23 17 / .10),0 3px 10px rgb(9 23 17 / .10);
+  --shadow-pop:0 2px 6px rgb(9 23 17 / .08),0 10px 32px rgb(9 23 17 / .14);
+  --shadow-sheet:0 2px 6px rgb(9 23 17 / .08),0 18px 56px rgb(9 23 17 / .18);
+  --ring-focus:0 0 0 3px color-mix(in srgb,var(--accent-ink) 14%,transparent);
+}
+
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){
+  color-scheme:dark;
+  --bg:#0f1513; --surface:#161d1b; --surface-2:#242d2a; --canvas:#0b100e;
+  --ink:#e6ece9; --muted:#a6b2ad; --line:#33403b; --hairline:#2a3531;
+  --accent:#117e6b; --on-accent:#f2fffb; --accent-ink:#6fd3bd; --accent-soft:#14433a;
+  --bub-in:#1c2422; --bub-in-ink:#e6ece9; --bub-in-line:#2a3531;
+  --bub-out:#0e4e43; --bub-out-ink:#bdefe2;
+  --bub-meta-in:#95a19b; --bub-meta-out:#8fc9b9;
+  --lav:#2f3a75; --lav-ink:#dfe3ff;
+  --gold:#e8b04a; --gold-ink:#e8b04a; --warn-bg:#4a3500; --warn-ink:#ffdfa0;
+  --danger:#f2b8b5; --danger-bg:#4d201c; --on-danger:#2b0906; --danger-btn:#c73a30; --on-danger-btn:#ffffff;
+  --av0-bg:#164f45; --av0-ink:#b7e6d8;
+  --av1-bg:#2f3a75; --av1-ink:#dfe3ff;
+  --av2-bg:#5c2a35; --av2-ink:#ffd9e0;
+  --av3-bg:#58431a; --av3-ink:#ffe2ae;
+  --av4-bg:#3a4f26; --av4-ink:#d8f0c0;
+  --av5-bg:#4a3458; --av5-ink:#ecd9fa;
+  --surface-raised:var(--surface-2);
+  --shadow-lift:0 1px 2px rgb(0 0 0 / .34),0 3px 10px rgb(0 0 0 / .28);
+  --shadow-pop:0 2px 6px rgb(0 0 0 / .3),0 10px 32px rgb(0 0 0 / .4);
+  --shadow-sheet:0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);
+}}
+:root[data-theme=dark]{
+  color-scheme:dark;
+  --bg:#0f1513; --surface:#161d1b; --surface-2:#242d2a; --canvas:#0b100e;
+  --ink:#e6ece9; --muted:#a6b2ad; --line:#33403b; --hairline:#2a3531;
+  --accent:#117e6b; --on-accent:#f2fffb; --accent-ink:#6fd3bd; --accent-soft:#14433a;
+  --bub-in:#1c2422; --bub-in-ink:#e6ece9; --bub-in-line:#2a3531;
+  --bub-out:#0e4e43; --bub-out-ink:#bdefe2;
+  --bub-meta-in:#95a19b; --bub-meta-out:#8fc9b9;
+  --lav:#2f3a75; --lav-ink:#dfe3ff;
+  --gold:#e8b04a; --gold-ink:#e8b04a; --warn-bg:#4a3500; --warn-ink:#ffdfa0;
+  --danger:#f2b8b5; --danger-bg:#4d201c; --on-danger:#2b0906; --danger-btn:#c73a30; --on-danger-btn:#ffffff;
+  --av0-bg:#164f45; --av0-ink:#b7e6d8;
+  --av1-bg:#2f3a75; --av1-ink:#dfe3ff;
+  --av2-bg:#5c2a35; --av2-ink:#ffd9e0;
+  --av3-bg:#58431a; --av3-ink:#ffe2ae;
+  --av4-bg:#3a4f26; --av4-ink:#d8f0c0;
+  --av5-bg:#4a3458; --av5-ink:#ecd9fa;
+  --surface-raised:var(--surface-2);
+  --shadow-lift:0 1px 2px rgb(0 0 0 / .34),0 3px 10px rgb(0 0 0 / .28);
+  --shadow-pop:0 2px 6px rgb(0 0 0 / .3),0 10px 32px rgb(0 0 0 / .4);
+  --shadow-sheet:0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);
+}
+
+/* shared micro-components (t- prefix avoids collisions with page CSS) */
+.t-badge{display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  background:var(--accent);color:var(--on-accent);
+  font-size:var(--fs-meta);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.t-badge.muted{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line);font-weight:600}
+.t-chip{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;
+  border-radius:16px;border:1px solid var(--line);background:transparent;color:var(--ink);
+  font-size:var(--fs-sub);font-weight:600}
+.t-chip[aria-pressed=true],.t-chip.on{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink)}
+.t-avatar{display:inline-grid;place-items:center;border-radius:50%;
+  font-weight:700;letter-spacing:.02em;flex:none;user-select:none}
+.t-avatar.av0{background:var(--av0-bg);color:var(--av0-ink)}
+.t-avatar.av1{background:var(--av1-bg);color:var(--av1-ink)}
+.t-avatar.av2{background:var(--av2-bg);color:var(--av2-ink)}
+.t-avatar.av3{background:var(--av3-bg);color:var(--av3-ink)}
+.t-avatar.av4{background:var(--av4-bg);color:var(--av4-ink)}
+.t-avatar.av5{background:var(--av5-bg);color:var(--av5-ink)}

@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Calls · Tinline refined design</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 var(--fs-body)/var(--lh-body) system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent-ink)}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hang{transform:rotate(135deg)}
+/* harness bar + simulation drawer (shared chrome) */
+.hb{display:flex;align-items:center;gap:4px;max-width:1240px;margin:0 auto;padding:4px 10px 4px 16px;min-height:48px}
+.hb h1{flex:1;min-width:0;margin:0;display:flex;align-items:center;gap:6px;font-size:var(--fs-sub);font-weight:400;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb h1 a{display:inline-flex;align-items:center;min-height:44px;color:var(--accent-ink);font-weight:600;text-decoration:none}
+.hb h1 a:hover{text-decoration:underline;text-underline-offset:3px}
+.hb-ib{position:relative;width:36px;height:36px;flex:none;border:0;border-radius:50%;background:transparent;color:var(--muted);display:inline-grid;place-items:center;padding:0}
+.hb-ib::before{content:"";position:absolute;inset:-4px}
+.hb-ib:hover{background:var(--surface-2);color:var(--ink)}
+.hb-ib[aria-expanded=true]{background:var(--accent-soft);color:var(--accent-ink)}
+.hb-ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#theme[aria-pressed=true] .moon,#theme[aria-pressed=false] .sun{display:none}
+.scrim{position:fixed;inset:0;background:rgb(10 16 14 / .5);z-index:29}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:30;width:min(400px,100vw);display:flex;flex-direction:column;background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--shadow-sheet)}
+.drawer[hidden],.scrim[hidden]{display:none}
+.dr-h{display:flex;align-items:center;gap:8px;min-height:56px;padding:6px 10px 6px 20px;border-bottom:1px solid var(--hairline)}
+.dr-h h2{flex:1;margin:0;font-size:var(--fs-body);font-weight:600}
+.dr-b{flex:1;overflow:auto;padding:16px 20px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:24px}
+.dr-note{margin:0;font-size:var(--fs-sub);line-height:19px;color:var(--muted);background:var(--surface-2);border-radius:var(--r-ctl);padding:10px 12px}
+.dr-sec h3{margin:0 0 8px;font-size:var(--fs-meta);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dr-sec p{margin:0 0 8px;font-size:var(--fs-sub);line-height:19px;color:var(--muted)}
+@media(min-width:1100px){body.dr-open{padding-right:400px}.scrim{display:none!important}.drawer{box-shadow:none}}
+/* stage */
+main{max-width:1240px;margin:0 auto;padding:4px 12px 32px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.plat{display:flex;gap:8px}
+.t-chip{cursor:pointer}
+.t-chip:not([aria-pressed=true]):hover{background:var(--surface-2)}
+#stage{width:100%;display:flex;justify-content:center}
+.dev{background:var(--surface);border:1px solid var(--line);color:var(--ink);overflow:hidden;box-shadow:var(--shadow-pop);display:flex;flex-direction:column}
+.dev.phone{width:min(100%,380px);height:clamp(540px,calc(100dvh - 128px),740px);border-radius:36px}
+.dev.desk{width:min(100%,460px);height:clamp(460px,calc(100dvh - 140px),560px);border-radius:12px}
+.tb{display:none}
+.dev.desk .tb{display:flex;flex:none;height:32px;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:var(--surface-2);border-bottom:1px solid var(--hairline)}
+.body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;align-items:center;text-align:center;padding:64px 24px 40px}
+.desk .body{padding:40px 24px 28px}
+.body.idle{justify-content:center;padding-top:24px}
+.halo{position:relative;width:112px;height:112px;margin-bottom:20px;flex:none;border-radius:50%;display:grid;place-items:center}
+.halo.on{box-shadow:0 0 0 2px var(--gold);animation:pulse 1.6s ease-out infinite}
+.halo.wait{box-shadow:0 0 0 1.5px var(--line)}
+.halo.wait::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px dashed var(--line)}
+@keyframes pulse{0%{box-shadow:0 0 0 2px var(--gold),0 0 0 2px rgb(201 138 30 / .45)}100%{box-shadow:0 0 0 2px var(--gold),0 0 0 18px rgb(201 138 30 / 0)}}
+.av{width:96px;height:96px;font-size:34px}
+.av.bad{background:var(--surface-2);color:var(--muted)}
+.av.grp{background:var(--surface-2);color:var(--accent-ink)}
+.av.grp .i{width:40px;height:40px}
+.qicon{width:56px;height:56px;margin-bottom:16px;border-radius:50%;background:var(--surface-2);color:var(--muted);display:grid;place-items:center;flex:none}
+.desk .halo{width:96px;height:96px;margin-bottom:20px}
+.desk .av{width:80px;height:80px;font-size:28px}
+.idn h3{margin:0;font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.01em;outline:0;overflow-wrap:anywhere}
+.idle .idn h3{font-size:var(--fs-title);line-height:24px}
+.callmark{width:52px;height:29px;margin:4px 0 0}
+.callmark .mk-can{fill:var(--accent)}
+.callmark .mk-str{fill:none;stroke:var(--gold);stroke-width:2.6;stroke-linecap:round;d:path("M14 20Q20 28 26 20")}
+.callmark.taut .mk-str{d:path("M14 20 L26 20")}
+.st{margin:4px 0 0;min-height:18px;font-size:var(--fs-sub);line-height:18px;color:var(--muted);font-variant-numeric:tabular-nums}
+.st #dur{display:inline-block;min-width:5ch;font-variant-numeric:tabular-nums}
+.meta{margin:12px 0 0;display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:16px;color:var(--muted)}
+.meta .i{width:14px;height:14px}
+.meta.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:999px;padding:4px 10px}
+.desc{margin:16px 0 0;max-width:32ch;font-size:var(--fs-sub);line-height:19px;color:var(--muted)}
+.sp1{flex:1;min-height:24px}
+.ctl{display:flex;justify-content:center;align-items:flex-start;gap:20px;width:100%}
+.ctl.two{gap:88px}
+.cb{display:flex;flex-direction:column;align-items:center;gap:8px;width:76px;padding:0;border:0;background:transparent;color:var(--ink);-webkit-tap-highlight-color:transparent}
+.cb .cw{height:64px;display:grid;place-items:center}
+.cb .c{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--ink);transition:background-color 120ms ease,transform 100ms ease}
+.cb.big .c{width:64px;height:64px}
+.cb.end .c{background:var(--danger-btn);color:var(--on-danger-btn)}
+.cb.ans .c{background:var(--accent);color:var(--on-accent)}
+.cb[aria-pressed=true] .c{background:var(--ink);color:var(--surface)}
+.cb:active .c{transform:scale(.95)}
+.cb:hover:not(.end):not(.ans) .c{background:var(--line)}
+.cb:focus-visible{outline:0}.cb:focus-visible .c{outline:2px solid var(--accent);outline-offset:3px}
+.cb .l{max-width:76px;font-size:var(--fs-meta);line-height:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;flex-direction:column;gap:8px;width:100%;max-width:280px}
+.b{min-height:44px;border-radius:var(--r-ctl);border:1px solid transparent;padding:0 18px;font-size:var(--fs-body);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-2);color:var(--ink)}
+.b .i{width:18px;height:18px}
+.b.pri{background:var(--accent);color:var(--on-accent)}
+.b.ol{background:transparent;border-color:var(--line)}
+.b.tx{background:transparent;color:var(--accent-ink)}
+.b.dec{background:var(--danger-btn);color:var(--on-danger-btn)}
+.b.acc{background:var(--accent);color:var(--on-accent)}
+.b[disabled]{opacity:.45;cursor:default}
+.banner{width:100%;margin:0 0 20px;text-align:left;background:var(--surface-2);border-radius:var(--r-ctl);padding:12px 14px;display:flex;flex-direction:column;gap:4px;font-size:var(--fs-sub);line-height:19px}
+.banner p{margin:0}
+.banner .acts2{display:flex;gap:8px;margin-top:8px}
+.banner .acts2 .b{flex:1;min-height:40px;font-size:14px;padding:0 10px}
+.banner.after{margin:20px 0 0}
+/* drawer contents */
+.list{display:flex;flex-direction:column;gap:6px}
+.gl{margin:10px 0 0;font-size:12px;font-weight:600;color:var(--muted)}
+.gl:first-child{margin-top:0}
+.sc{width:100%;text-align:left;min-height:44px;border:1px solid var(--hairline);background:var(--surface);border-radius:12px;padding:7px 12px;display:flex;flex-direction:column;gap:1px;font-size:14px;line-height:19px;font-weight:600}
+.sc small{font-size:12px;line-height:16px;font-weight:400;color:var(--muted)}
+.sc:hover{background:var(--surface-2)}
+.sc[aria-current=true]{border-color:transparent;background:var(--accent-soft);color:var(--accent-ink)}
+.sc[aria-current=true] small{color:var(--accent-ink)}
+.rem{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.rem .b{min-height:40px;font-size:14px;padding:0 12px;background:var(--lav);color:var(--lav-ink)}
+.rem .empty{margin:0}
+.dr-cd{min-height:19px;font-variant-numeric:tabular-nums}
+.dr-cd:empty{display:none}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+.row label{font-weight:600;font-size:14px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;border:0;background:transparent;padding:0;font-size:14px;font-weight:600;text-align:left}
+.sw i{flex:none;width:40px;height:24px;border-radius:12px;background:var(--line);position:relative;transition:background-color 120ms ease}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .2);transition:transform 120ms ease}
+.sw[aria-checked=true] i{background:var(--accent)}.sw[aria-checked=true] i::after{transform:translateX(16px)}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--accent);min-height:44px}
+.mono{font-variant-numeric:tabular-nums}
+.pv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pv .b{min-height:40px;font-size:13px;padding:0 10px;justify-content:flex-start;background:var(--surface);border-color:var(--hairline)}
+.pv .b[aria-pressed=true]{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.btns .b{min-height:40px;font-size:14px}
+.cap{margin-top:10px;border-radius:12px;background:var(--surface-2);padding:10px 12px;font-size:13px;line-height:18px;color:var(--muted)}
+.cap b{display:block;color:var(--ink)}
+.hist,.log{margin:0;padding:0;list-style:none;font-size:13px;line-height:18px;display:flex;flex-direction:column;gap:6px}
+.hist li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--hairline);padding-bottom:6px}
+.hist .tag{font-size:11px;font-weight:600;border-radius:999px;padding:0 6px;background:var(--warn-bg);color:var(--warn-ink)}
+.log{max-height:240px;overflow:auto;color:var(--muted)}
+.log li span{color:var(--ink)}
+.empty{color:var(--muted);font-size:13px;margin:0}
+/* dialog: centered >=700px, bottom sheet below */
+dialog{border:0;border-radius:var(--r-sheet);background:var(--surface);color:var(--ink);padding:20px;width:min(380px,calc(100vw - 32px));box-shadow:var(--shadow-sheet)}
+dialog::backdrop{background:rgb(10 16 14 / .5)}
+dialog h2{margin:0 0 4px;font-size:var(--fs-title);font-weight:600}
+dialog .hint{margin:0 0 8px;font-size:var(--fs-sub);color:var(--muted)}
+dialog .acts{max-width:none;margin-top:8px}
+fieldset{border:0;padding:0;margin:8px 0}
+.opt{display:flex;align-items:center;gap:12px;min-height:52px;border-radius:var(--r-ctl);padding:4px 12px;cursor:pointer}
+.opt:has(input:checked){background:var(--accent-soft);color:var(--accent-ink)}
+.opt:has(input:focus-visible){outline:2px solid var(--accent)}
+.opt input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+.opt small{display:block;color:var(--muted);font-size:13px;line-height:17px}
+.opt:has(input:checked) small{color:inherit}
+@media(max-width:699px){
+ dialog{width:100%;max-width:100%;margin:auto 0 0;border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding:12px 20px calc(20px + env(safe-area-inset-bottom))}
+ dialog::before{content:"";display:block;width:28px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+ main{padding:0 12px 16px;gap:10px}
+ .dev.phone{height:clamp(520px,calc(100dvh - 116px),720px);border-radius:32px}
+ .body{padding-top:48px}
+}
+@media(max-width:360px){.ctl{gap:8px}.ctl.two{gap:56px}.body{padding-left:16px;padding-right:16px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:root[data-motion=reduce] *{animation:none!important}
+</style>
+<link rel="stylesheet" href="interactions.css">
+</head>
+<body>
+<header class="hb">
+  <h1 id="pg"><a href="./index.html">← Home</a><span aria-hidden="true">·</span><span>Calls</span></h1>
+  <button class="hb-ib" id="theme" type="button" aria-pressed="false" aria-label="Dark theme" title="Dark theme"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+  <button class="hb-ib" id="simtog" type="button" aria-expanded="false" aria-controls="drawer" aria-label="Simulation" title="Simulation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
+</header>
+
+<main aria-labelledby="pg">
+  <div class="plat" role="group" aria-label="Platform">
+    <button type="button" class="t-chip" id="p-android" aria-pressed="true">Android</button>
+    <button type="button" class="t-chip" id="p-desk" aria-pressed="false">Desktop</button>
+  </div>
+  <div id="stage"></div>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-labelledby="dr-t">
+  <div class="dr-h"><h2 id="dr-t">Simulation</h2><button class="hb-ib" id="drawer-x" type="button" aria-label="Close simulation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="dr-b">
+    <p class="dr-note">Simulated. No call is placed, no microphone is used, nothing leaves this page.</p>
+    <section class="dr-sec" aria-labelledby="rem-h">
+      <h3 id="rem-h">Other side and network</h3>
+      <p class="dr-cd" id="cd"></p>
+      <div class="rem" id="rem"></div>
+      <button class="b ol" type="button" id="restart">Replay scenario</button>
+    </section>
+    <section class="dr-sec" aria-labelledby="sc-h">
+      <h3 id="sc-h">Scenarios</h3>
+      <div id="scs" class="list"></div>
+    </section>
+    <section class="dr-sec" aria-labelledby="snd-h">
+      <h3 id="snd-h">Sound</h3>
+      <button class="sw" type="button" id="son" role="switch" aria-checked="false"><span>Play sounds during scenarios</span><i aria-hidden="true"></i></button>
+      <div class="row"><label for="vol">Volume</label><input type="range" id="vol" min="0" max="100" value="50" aria-describedby="volv"><span id="volv" class="mono" style="min-width:3ch">50</span></div>
+      <p id="pv-h">Preview a sound</p>
+      <div class="pv" role="group" aria-labelledby="pv-h" id="pv"></div>
+      <div class="btns"><button class="b ol" type="button" id="replay">Replay current sound</button><button class="b ol" type="button" id="stopsnd">Stop sound</button></div>
+      <div class="cap" id="cap" aria-live="off"></div>
+    </section>
+    <section class="dr-sec" aria-labelledby="pl-h">
+      <h3 id="pl-h">Platform</h3>
+      <p id="stage-note"></p>
+      <p>The ended screen closes itself after 4 seconds in the app. Here it stays open.</p>
+      <p>The sounds are a browser demo of character, level and timing. Native ringing, audio focus, volume streams and Do Not Disturb are separate work.</p>
+    </section>
+    <section class="dr-sec" aria-labelledby="h-h">
+      <h3 id="h-h">Call history</h3>
+      <ul class="hist" id="hist"></ul>
+      <p class="empty" id="hist-e">No calls yet.</p>
+    </section>
+    <section class="dr-sec" aria-labelledby="l-h">
+      <h3 id="l-h">Event log</h3>
+      <ul class="log" id="log"></ul>
+      <p class="empty" id="log-e">Events and the sound each one makes appear here.</p>
+    </section>
+  </div>
+</aside>
+
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+
+<dialog id="route" aria-labelledby="route-h">
+  <h2 id="route-h">Play call through</h2>
+  <p class="hint" id="route-s"></p>
+  <fieldset><legend class="sr">Audio output</legend><div id="route-o"></div></fieldset>
+  <div class="acts"><button class="b pri" type="button" id="route-x">Done</button></div>
+</dialog>
+
+<script src="call-audio.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var IC={
+ phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+ mic:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3"/>',
+ micoff:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3 M3 3l18 18"/>',
+ spk:'<path d="M11 5 6 9H2v6h4l5 4z M15.5 8.5a5 5 0 0 1 0 7 M19 5a10 10 0 0 1 0 14"/>',
+ retry:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8 M21 3v5h-5"/>',
+ lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ group:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.4.3 4 1.9 4.5 4.5"/>'
+};
+function svg(n,c){return '<svg class="i '+(c||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'}
+
+var PEERS={arjun:{n:'Arjun Oommen',s:'Arjun',i:'AO'},lena:{n:'Lena P.',s:'Lena',i:'LP'},rosa:{n:'Rosa Silva',s:'Rosa',i:'RS'},leo:{n:'Leo B.',s:'Leo',i:'LB'},family:{n:'Family group',s:'Family',i:'FG'},meera:{n:'Meera Nair',s:'Meera',i:'MN'},dev:{n:'Dev Patel',s:'Dev',i:'DP'},sana:{n:'Sana Rao',s:'Sana',i:'SR'},hike:{n:'Weekend hike',s:'Weekend hike',i:'WH'}};
+var HOSTS=[{n:'Kofi’s desktop',hc:true},{n:'Mina’s phone',hc:true},{n:'Raj’s laptop',hc:false}];
+var SCN=[
+ {id:'out-answer',g:'Outgoing',t:'Answered',d:'Connecting, remote ringing, connected.',peer:'arjun'},
+ {id:'out-decline',t:'Declined',d:'Remote person declines while it rings.',peer:'arjun'},
+ {id:'out-noanswer',t:'No answer',d:'Rings until the timeout, then offers retry.',peer:'arjun'},
+ {id:'out-offline',t:'Can’t reach, then retry',d:'Offline first, back online on retry.',peer:'lena'},
+ {id:'out-blocked',t:'Contact has calls off',d:'Never dials. Offers to ask instead.',peer:'leo'},
+ {id:'out-blockedby',t:'You were blocked',d:'Call is off. No retry until unblocked and re-added.',peer:'leo'},
+ {id:'out-mic',t:'Microphone denied',d:'Permission needed before the first call.',peer:'arjun'},
+ {id:'grp-call',g:'Group call (one call host)',t:'Group call, then the host drops',d:'Via Kofi’s desktop. Host can hear. Host loss ends the call.',peer:'family'},
+ {id:'grp-perm',t:'Chosen host can’t host calls',d:'A chat host without call-hosting permission.',peer:'family'},
+ {id:'in-ring',g:'Incoming',t:'Incoming call',d:'Answer, decline, or let the other side act.',peer:'arjun'},
+ {id:'in-second',t:'Second call during a call',d:'Already talking when someone else rings.',peer:'rosa'}
+];
+var DEV={
+ android:{def:{id:'phone',n:'Phone earpiece',s:'Private, default'},list:[{id:'phone',n:'Phone earpiece',s:'Private, default'},{id:'spk',n:'Speaker',s:'Loud, anyone nearby can hear'},{id:'ext',n:'Pixel Buds Pro',s:'Bluetooth'}],ext:'Pixel Buds Pro'},
+ desk:{def:{id:'spk',n:'Laptop speakers',s:'Built in'},list:[{id:'spk',n:'Laptop speakers',s:'Built in'},{id:'ext',n:'Jabra Evolve2 65',s:'USB headset'}],ext:'Jabra Evolve2 65'}
+};
+var RING_TIMEOUT=20, RECON_TIMEOUT=12, NOANS=9;
+
+/* ---------- sound ----------
+   The tone generator (PAT patterns + Snd synth) lives in call-audio.js, shared with the in-conversation
+   overlays in chat.html and groups.html so every page sounds the same. This page keeps its own switch,
+   captions and cleanup; Snd tells the caption when a sound ends or is stopped. */
+var PAT=TinAudio.PAT,Snd=TinAudio.Snd;
+Snd.onchange=function(how,s){UI.soundChanged(how,s)};
+
+/* ---------- state ---------- */
+var S,T=[],tickId=null,soundOn=false,lastCue=null,cap={mode:'none'},hist=[],logN=0,opener=null;
+function fresh(){return{scn:null,platform:S?S.platform:'android',phase:'idle',peer:'arjun',attempt:1,route:null,extOn:true,muted:false,path:'direct',activeAt:0,deadline:0,reason:'',second:null,settings:false,asked:false,startedAt:0,group:false,host:0,hostsTried:[],blk:'',refused:false,blkDial:false}}
+S=fresh();S.platform='android';
+
+/* simulation drawer: docked beside the frame on wide screens, overlay below */
+function docked(){return matchMedia('(min-width:1100px)').matches}
+function setDrawer(open,focus){
+ var d=$('#drawer');d.hidden=!open;$('#scrim').hidden=!open||docked();
+ $('#simtog').setAttribute('aria-expanded',String(open));document.body.classList.toggle('dr-open',open);
+ if(focus)(open?$('#drawer-x'):$('#simtog')).focus();
+}
+$('#simtog').addEventListener('click',function(){setDrawer($('#drawer').hidden,true)});
+$('#drawer-x').addEventListener('click',function(){setDrawer(false,true)});
+$('#scrim').addEventListener('click',function(){setDrawer(false,true)});
+document.addEventListener('keydown',function(e){
+ if(e.key!=='Escape'||$('#drawer').hidden||$('#route').open)return;
+ if($('#drawer').contains(e.target)||!docked()){e.preventDefault();e.stopImmediatePropagation();setDrawer(false,true)}
+},true);
+function later(fn,ms){var id=setTimeout(function(){T=T.filter(function(x){return x!==id});fn();UI.all()},ms);T.push(id)}
+function clearT(){T.forEach(clearTimeout);T=[]}
+function tickStart(){tickStop();tickId=setInterval(tick,1000)}
+function tickStop(){if(tickId){clearInterval(tickId);tickId=null}}
+function say(t){var l=$('#live');l.textContent='';setTimeout(function(){l.textContent=t},30)}
+function now(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+function log(text,cue){
+ var ul=$('#log'),li=document.createElement('li'),el=((Date.now()-S.startedAt)/1000)|0;
+ li.innerHTML='<span></span>';li.firstChild.textContent=(S.startedAt?('+'+el+'s '):'')+text;
+ if(cue){li.appendChild(document.createTextNode(' '+cue))}
+ ul.insertBefore(li,ul.firstChild);logN++;
+ while(ul.children.length>40)ul.removeChild(ul.lastChild);
+ $('#log-e').hidden=true;
+}
+function dur(){var s=Math.max(0,((Date.now()-S.activeAt)/1000)|0),m=(s/60)|0;s=s%60;return (m<10?'0':'')+m+':'+(s<10?'0':'')+s}
+function addHist(peer,text,tag){
+ hist.unshift({p:PEERS[peer].s,t:text,tag:tag||'',at:now()});hist=hist.slice(0,6);
+ $('#hist').innerHTML=hist.map(function(h){return '<li><span>'+h.p+' · '+h.t+(h.tag?' <span class="tag">'+h.tag+'</span>':'')+'</span><span class="mono">'+h.at+'</span></li>'}).join('');
+ $('#hist-e').hidden=true;
+}
+
+/* sound cues tied to the scenario. Explicit previews/replays always play. */
+function cue(kind,loop){
+ lastCue=kind;var p=PAT[kind];
+ if(!soundOn){
+  cap={mode:'off',kind:kind};log(p.label+' (sound off)','♪ would play: '+p.text);UI.cap();return;
+ }
+ if(!Snd.start(kind,loop?Infinity:1,'scenario')){cap={mode:'unsupported',kind:kind};UI.cap();return}
+ cap={mode:'playing',kind:kind,loop:loop};log(p.label,'♪ '+p.text);UI.cap();
+}
+function silence(why){
+ if(Snd.cur)Snd.stop();
+ if(why){cap={mode:'silent',why:why};UI.cap()}
+}
+
+/* ---------- transitions ---------- */
+function reset(){clearT();tickStop();Snd.stop();var p=S.platform;S=fresh();S.platform=p;S.startedAt=Date.now();S.route=DEV[p].def.id}
+function begin(id){
+ reset();var sc=SCN.filter(function(x){return x.id===id})[0];
+ S.scn=id;S.peer=sc.peer;S.attempt=1;
+ UI.scn();log('Scenario: '+sc.t);
+ if(id==='out-mic'){S.phase='mic-needed';say('Tinline can’t use the microphone. Choose Open settings or Not now.');log('Microphone permission denied');cue('failed');}
+ else if(id==='out-blocked'){S.phase='not-allowed';say(PEERS.leo.s+' hasn’t allowed calls from you. Nothing was dialled.');log('Call blocked locally: no dial, '+PEERS.leo.s+'’s phone does not ring');}
+ else if(id==='out-blockedby'){S.phase='blocked-by';S.blk='blocked';say(PEERS.leo.s+' has blocked you. Calls are off and Tinline will not retry.');log(PEERS.leo.s+' blocked you: call button off, nothing dialled');cap={mode:'silent',why:'No sound: a call that cannot start makes no tone, and nothing rings on either phone.'};UI.cap()}
+ else if(id==='grp-call'){S.group=true;S.host=0;S.hostsTried=[];dial()}
+ else if(id==='grp-perm'){S.group=true;S.host=2;S.phase='host-denied';say(HOSTS[2].n+' can’t host calls. Choose a call host that is allowed to.');log(HOSTS[2].n+' has no call-hosting permission: call not started');cue('failed')}
+ else if(id==='in-ring'){incoming('arjun')}
+ else if(id==='in-second'){
+  S.peer='arjun';S.phase='joining';S.activeAt=Date.now();goActive(true);
+  later(function(){secondRing()},1800);
+ }
+ else{dial()}
+ UI.all();
+ // A scenario can be started far below the call panel on a phone.
+ // Move focus and the viewport together so ringing never hides its controls.
+ if(!docked())setDrawer(false);
+ $('#stage-t').focus({preventScroll:true});
+ if(matchMedia('(max-width:700px)').matches) $('#stage').scrollIntoView({block:'start',behavior:'instant'});
+}
+function gdial(){
+ clearT();S.phase='connecting';S.deadline=0;S.startedAt=S.startedAt||Date.now();var h=HOSTS[S.host].n;
+ log('Connecting to the call host: '+h);say('Connecting to '+h+', the call host.');
+ silence('Connecting is quiet. A group call does not ring one person; members join on their own.');
+ tickStart();
+ later(function(){S.phase='joining';log(h+' accepted. Setting up audio…');UI.all();later(function(){goActive();UI.all()},1000)},1500);
+ UI.all();
+}
+function nextHost(){for(var i=0;i<HOSTS.length;i++){if(HOSTS[i].hc&&i!==S.host&&S.hostsTried.indexOf(i)<0)return i}return -1}
+function refuseBlocked(){
+ if(S.phase!=='connecting'||!S.blkDial)return;
+ S.blkDial=false;S.phase='blocked-by';S.refused=true;addHist('leo','Refused: blocked');
+ log('Refused with the reason “blocked”. No retry.');say('Leo’s app refused the call: you are blocked. Tinline will not retry.');cue('failed');
+}
+function dial(){
+ if(S.group){gdial();return}
+ clearT();S.phase='connecting';S.deadline=0;S.startedAt=S.startedAt||Date.now();
+ log('Connecting to '+PEERS[S.peer].s+'…');say('Connecting to '+PEERS[S.peer].s+'. Not ringing yet.');
+ silence('Connecting is quiet. Ringback starts only when the other device confirms it is ringing.');
+ tickStart();
+ if(S.scn==='out-offline'&&S.attempt===1){later(function(){endCall('unreachable')},2400)}
+ else{later(function(){remote('ring')},1600)}
+ UI.all();
+}
+function remote(k){
+ var ph=S.phase;
+ if(k==='ring'&&(ph==='connecting')){
+  clearT();S.phase='ringing';
+  var to=S.scn==='out-noanswer'?NOANS:0;S.deadline=to?Date.now()+to*1000:0;
+  log(PEERS[S.peer].s+'’s device confirmed it is ringing');say('Ringing on '+PEERS[S.peer].s+'’s device.');
+  cue('back',true);
+  if(S.scn==='out-answer'||S.scn==='out-offline')later(function(){remote('answer')},4200);
+  else if(S.scn==='out-decline')later(function(){remote('decline')},3200);
+  else if(S.scn==='out-noanswer')later(function(){remote('noanswer')},to*1000);
+ }else if(k==='answer'&&(ph==='ringing'||ph==='connecting')){
+  clearT();silence();S.phase='joining';log(PEERS[S.peer].s+' answered. Setting up audio…');say(PEERS[S.peer].s+' answered. Connecting audio.');
+  later(function(){goActive()},1200);
+ }else if(k==='decline'&&(ph==='ringing'||ph==='connecting')){endCall('declined')}
+ else if(k==='noanswer'&&ph==='ringing'){endCall('noanswer')}
+ else if(k==='offline'&&(ph==='ringing'||ph==='connecting')){endCall('unreachable')}
+ else if(k==='cancel'&&ph==='incoming'){endCall('missed-cancel')}
+ else if(k==='elsewhere'&&ph==='incoming'){endCall('elsewhere')}
+ else if(k==='timeout'&&ph==='incoming'){endCall('missed-timeout')}
+ else if(k==='hangup'&&(ph==='active'||ph==='reconnecting')){endCall('remote-hangup')}
+ else if(k==='drop'&&ph==='active'){
+  S.phase='reconnecting';S.deadline=Date.now()+RECON_TIMEOUT*1000;
+  log('Network changed. Reconnecting…');say('Reconnecting. Your network changed.');cue('pulse');
+  clearT();later(function(){endCall('lost')},RECON_TIMEOUT*1000);
+ }else if(k==='back'&&ph==='reconnecting'){
+  clearT();S.phase='active';S.deadline=0;log('Line restored');say('Reconnected.');cue('connected');
+ }else if(k==='giveup'&&ph==='reconnecting'){endCall('lost')}
+ else if(k==='micok'&&ph==='mic-needed'){ACT.micok();return}
+ else if(k==='path'&&ph==='active'){S.path=S.path==='direct'?'relayed':'direct';log('Path is now '+S.path);say('Call is now '+S.path+(S.path==='relayed'?', encrypted through a relay.':'.'))}
+ else if(k==='hostdrop'&&ph==='active'&&S.group){S.hostsTried.push(S.host);endCall('host-lost')}
+ else if(k==='hostdown'&&ph==='connecting'&&S.group){S.hostsTried.push(S.host);endCall('host-unreachable')}
+ else if(k==='dialanyway'&&ph==='blocked-by'&&S.blk==='blocked'&&!S.refused){
+  clearT();S.phase='connecting';S.blkDial=true;log('An older or modified app dials '+PEERS[S.peer].s+' anyway');say('Dialling '+PEERS[S.peer].s+'.');
+  later(function(){refuseBlocked();UI.all()},1400);
+ }
+ else if(k==='unblock'&&ph==='blocked-by'&&S.blk==='blocked'){S.blk='unblocked';silence();log(PEERS[S.peer].s+' unblocked you. Calls stay off until you add them again.');say(PEERS[S.peer].s+' unblocked you. You must add them again before calling.')}
+ else if(k==='ext'&&ph!=='idle'){
+  var d=DEV[S.platform];
+  if(S.extOn){S.extOn=false;
+   if(S.route==='ext'){S.route=d.def.id;log(d.ext+' disconnected. Audio moved to '+d.def.n+'.');say(d.ext+' disconnected. Audio moved to '+d.def.n+'. Check your volume.')}
+   else{log(d.ext+' disconnected');say(d.ext+' disconnected.')}
+  }else{S.extOn=true;log(d.ext+' is available again. Audio stays where it is.');say(d.ext+' is available again. Audio stays on '+routeName()+'.')}
+ }else if(k==='rosa-cancel'&&S.second){
+  addHist('rosa','Incoming','Missed');log('Rosa cancelled before you answered');say('Rosa stopped calling.');S.second=null;clearT();silence();
+ }
+ UI.all();
+}
+function incoming(peer){
+ clearT();S.peer=peer;S.phase='incoming';S.deadline=Date.now()+RING_TIMEOUT*1000;
+ log(PEERS[peer].s+' is calling');say(PEERS[peer].n+' is calling. Answer or decline.');
+ cue('ring',true);tickStart();
+ later(function(){remote('timeout')},RING_TIMEOUT*1000);
+}
+function secondRing(){
+ S.second='rosa';log('Rosa is calling while you are in a call');say('Rosa Silva is calling. Your call with Arjun continues until you choose.');cue('ring',false);UI.all();
+}
+function goActive(quiet){
+ clearT();S.phase='active';S.deadline=0;S.activeAt=Date.now();S.path='direct';
+ if(!quiet){log('Connected');say('Connected to '+PEERS[S.peer].s+'.');cue('connected')}
+ tickStart();
+}
+var REASONS={
+ 'remote-hangup':{t:function(p){return p.s+' hung up'},h:'Call ended',kind:'end',tag:'',hist:'Ended',cue:'ended'},
+ 'local-hangup':{t:function(){return 'You hung up'},h:'Call ended',kind:'end',hist:'Ended',cue:'ended'},
+ 'cancelled':{t:function(){return 'You cancelled the call'},h:'Call cancelled',kind:'end',hist:'Cancelled',cue:'ended'},
+ 'declined':{t:function(p){return p.s+' declined'},h:'Call declined',kind:'fail',hist:'Declined',cue:'failed',d:'Try again later, or send a message instead.'},
+ 'noanswer':{t:function(){return 'No answer'},h:'No answer',kind:'fail',hist:'No answer',cue:'failed',d:'Tinline can’t leave messages. You can send a text message instead.'},
+ 'unreachable':{t:function(p){return 'Couldn’t reach '+p.s},h:'Couldn’t reach',kind:'fail',hist:'Not reached',cue:'failed',d:'May be offline, out of signal, or not taking calls right now. Tinline can’t leave messages.'},
+ 'lost':{t:function(){return 'Connection lost'},h:'Call ended',kind:'fail',hist:'Dropped',cue:'failed',d:'Tinline could not find the line again in time.'},
+ 'missed-cancel':{t:function(p){return 'Missed call from '+p.n},h:'Missed',kind:'miss',hist:'Incoming',tag:'Missed',cue:null,d:'The caller hung up before you answered.'},
+ 'missed-timeout':{t:function(p){return 'Missed call from '+p.n},h:'Missed',kind:'miss',hist:'Incoming',tag:'Missed',cue:null,d:'It stopped ringing.'},
+ 'elsewhere':{t:function(){return 'Answered on another device'},h:'Answered elsewhere',kind:'end',hist:'Answered elsewhere',cue:null,d:'One of your other devices took this call. No missed call is recorded, and this device stopped ringing.'},
+ 'host-lost':{t:function(){return 'The call host dropped'},h:'Call ended',kind:'fail',hist:'Host lost',cue:'failed',d:'A group call ends when its call host drops. Tinline does not reconnect or hand the live call to another host.'},
+ 'host-unreachable':{t:function(){return 'Couldn’t reach the call host'},h:'Couldn’t reach',kind:'fail',hist:'Host not reached',cue:'failed',d:'Nothing was started. The members did not hear anything.'},
+ 'declined-local':{t:function(){return 'You declined'},h:'Declined',kind:'end',hist:'Declined',cue:null,d:'The caller was told you are busy.'}
+};
+function endCall(reason){
+ var r=REASONS[reason],p=PEERS[S.peer],was=S.phase,len=(S.activeAt&&(was==='active'||was==='reconnecting'))?dur():'';
+ clearT();tickStop();silence();
+ S.phase='ended';S.reason=reason;S.deadline=0;S.len=len;
+ var title=r.t(p);
+ log(title);say(title+'.'+(r.d?' '+r.d:''));
+ addHist(S.peer,r.hist+(len?' '+len:''),r.tag);
+ if(r.cue)cue(r.cue);else{cap={mode:'silent',why:'No sound: missed and answered-elsewhere calls are shown as text and a notification, not a tone.'};UI.cap()}
+ UI.all();
+}
+
+/* ---------- actions ---------- */
+function routeName(){var l=DEV[S.platform].list;for(var i=0;i<l.length;i++)if(l[i].id===S.route)return l[i].n;return ''}
+var ACT={
+ start:function(){begin('out-answer')},
+ startin:function(){begin('in-ring')},
+ settings:function(){S.settings=true;log('Open settings pressed. The real app opens system Settings; here we stay on this page.');say('In the real app this opens system Settings. Here, use Simulate to continue.')},
+ micok:function(){S.settings=false;log('Simulated: microphone allowed');S.phase='connecting';dial()},
+ notnow:function(){toIdle('Call not started')},
+ close:function(){toIdle('Closed')},
+ ask:function(){S.asked=true;log('Simulated: a normal message “Would you like to allow calls?” is sent to '+PEERS[S.peer].s);say('Request sent as a message, simulated. '+PEERS[S.peer].s+'’s phone did not ring.')},
+ cancel:function(){
+  if(S.blkDial){S.blkDial=false;clearT();silence();S.phase='blocked-by';log('You cancelled the dial');say('Cancelled. '+PEERS[S.peer].s+' still has you blocked.');return}
+  endCall('cancelled')
+ },
+ redialhost:function(){var n=nextHost();if(n<0)return;S.host=n;S.reason='';log('Redial through '+HOSTS[n].n+' (you chose this)');dial()},
+ usehost:function(){S.host=0;S.hostsTried=[];log('Call host changed to '+HOSTS[0].n);dial()},
+ addleo:function(){S.blk='readded';log('Simulated: you scanned '+PEERS[S.peer].s+'’s QR and added them again');say('Added '+PEERS[S.peer].s+' again. Calls are on.')},
+ calleo:function(){S.scn='out-answer';S.blk='';S.refused=false;UI.scn();dial()},
+ answer:function(){
+  clearT();silence();S.phase='joining';S.deadline=0;log('You answered. Other devices stop ringing; only this one starts audio.');say('Answered. Connecting audio.');
+  later(function(){goActive();UI.all()},1200);
+ },
+ decline:function(){endCall('declined-local')},
+ end:function(){endCall('local-hangup')},
+ mute:function(){S.muted=!S.muted;log(S.muted?'Microphone muted (simulated, nothing is captured)':'Microphone on (simulated)');say(S.muted?'Muted.':'Unmuted.')},
+ route:function(b){openRoute(b)},
+ retry:function(){S.attempt++;log('Try again');dial()},
+ again:function(){S.attempt=1;if(!S.group){S.scn='out-answer';UI.scn()}dial()},
+ callback:function(){S.scn='out-answer';S.attempt=1;S.reason='';UI.scn();dial()},
+ eanda:function(){
+  var arjunLen=dur();clearT();addHist('arjun','Ended '+arjunLen);log('Ended call with Arjun, answered Rosa');
+  S.second=null;S.peer='rosa';S.phase='joining';S.activeAt=Date.now();silence();say('Ended the call with Arjun. Answering Rosa.');
+  later(function(){goActive();UI.all()},1000);
+ },
+ decl2:function(){S.second=null;silence();addHist('rosa','Declined (busy)');log('Declined Rosa: she is told you are busy');say('Declined. Rosa is told you are busy. Your call continues.')}
+};
+function toIdle(why){clearT();tickStop();silence();S.phase='idle';S.scn=null;log(why);UI.scn();say(why+'.');UI.all()}
+document.addEventListener('click',function(e){
+ var a=e.target.closest('[data-act]');
+ if(a&&a.closest('#stage')){ACT[a.dataset.act]&&ACT[a.dataset.act](a);UI.all();return}
+ var r=e.target.closest('[data-rem]');
+ if(r){remote(r.dataset.rem);if(!docked())setDrawer(false);return}
+ var s=e.target.closest('[data-scn]');
+ if(s){begin(s.dataset.scn);return}
+});
+
+/* ---------- route dialog ---------- */
+function openRoute(btn){
+ opener=btn;var d=DEV[S.platform],dlg=$('#route');
+ $('#route-s').textContent=S.platform==='android'?'Calls can be moved at any time. Speaker is never picked automatically.':'Choose where you hear the call.';
+ var h='';d.list.forEach(function(o){
+  var off=o.id==='ext'&&!S.extOn;
+  h+='<label class="opt"><input type="radio" name="rt" value="'+o.id+'"'+(S.route===o.id?' checked':'')+(off?' disabled':'')+'><span>'+o.n+'<small>'+(off?'Not connected':o.s)+'</small></span></label>';
+ });
+ $('#route-o').innerHTML=h;
+ dlg.showModal();
+}
+$('#route-o').addEventListener('change',function(e){
+ S.route=e.target.value;log('Audio output: '+routeName());say('Playing through '+routeName()+'.');UI.all();
+});
+$('#route-x').addEventListener('click',function(){$('#route').close()});
+$('#route').addEventListener('click',function(e){if(e.target===this)this.close()});
+$('#route').addEventListener('close',function(){if(opener){var o=document.querySelector('[data-act=route]')||opener;o.focus()}opener=null});
+
+/* ---------- view ---------- */
+function hue(n){return 'av'+([].slice.call(n).reduce(function(a,c){return a+c.codePointAt(0)},0)%6)}
+function shortRoute(){var n=routeName();return n==='Phone earpiece'?'Earpiece':n==='Laptop speakers'?'Speakers':n}
+function view(){
+ var p=PEERS[S.peer],P=S.platform==='desk',v={name:p.n,ini:p.i,icon:'',status:'',meta:'',desc:'',ctl:[],acts:[],halo:'',bad:false,banner:'',after:'',two:false,cls:''};
+ var grp=S.group||S.peer==='family';
+ var END={a:'end',l:'End',al:'End call',k:'end big',i:'phone',ic:'hang'};
+ var CTL=function(){return [{a:'mute',l:S.muted?'Unmute':'Mute',k:'',i:S.muted?'micoff':'mic',pr:S.muted},END,{a:'route',l:shortRoute(),al:'Audio output: '+routeName(),k:'',i:'spk'}]};
+ switch(S.phase){
+ case 'idle':v.cls='idle';v.ini='';v.icon='phone';v.name='No active call';v.desc='Calls go straight to the other device.';
+  v.acts=[{a:'start',l:'Call Arjun',c:'pri',i:'phone'},{a:'startin',l:'Incoming call',c:'ol'}];break;
+ case 'mic-needed':v.ini='';v.icon='micoff';v.name='Tinline can’t use the microphone';v.desc='Without it, '+p.s+' won’t hear you. Tinline only listens during calls, never in the background.';
+  v.acts=[{a:'settings',l:'Open settings',c:'pri'},{a:'notnow',l:'Not now',c:'tx'}];break;
+ case 'not-allowed':v.bad=true;v.name=p.s+' hasn’t allowed calls from you';v.status='Messages only';v.desc='You can still message '+p.s+'. Nothing was dialled, so '+p.s+'’s phone didn’t ring.';
+  v.acts=S.asked?[{a:'close',l:'Close',c:'tx'}]:[{a:'ask',l:'Ask '+p.s+' to allow calls',c:'pri'},{a:'close',l:'Close',c:'tx'}];
+  if(S.asked)v.after='<p><b>Request sent as a message.</b> '+p.s+' sees an Allow button.</p>';break;
+ case 'host-denied':v.name='Family group';v.status='Can’t start through '+HOSTS[S.host].n;
+  v.desc=HOSTS[S.host].n+' hosts the chat but isn’t allowed to host calls. Hosting a call is a separate permission, because the host can hear it.';
+  v.acts=[{a:'usehost',l:'Start via '+HOSTS[0].n,c:'pri',i:'phone'},{a:'close',l:'Close',c:'tx'}];break;
+ case 'blocked-by':
+  v.bad=true;
+  if(S.blk==='blocked'){v.name=p.s+' has blocked you';v.status='Calls and messages are off';
+   v.desc='Tinline won’t dial or retry. Calling works again only after '+p.s+' unblocks you and you add '+p.s+' again with their QR or ticket.';
+   v.acts=[{a:'noop',l:'Call unavailable',c:'ol',dis:1},{a:'close',l:'Close',c:'tx'}];
+   if(S.refused)v.after='<p><b>Refused: blocked.</b> '+p.s+'’s app turned the call away. It won’t be tried again.</p>'}
+  else if(S.blk==='unblocked'){v.name=p.s+' unblocked you';v.status='Calls still off';
+   v.desc='Your contact entry for '+p.s+' was removed when they blocked you. The old chat stays readable. Add '+p.s+' again to call.';
+   v.acts=[{a:'addleo',l:'Scan '+p.s+'’s QR',c:'pri'},{a:'close',l:'Close',c:'tx'}]}
+  else{v.bad=false;v.status='Contact added again';v.desc='You can call '+p.s+' now.';v.acts=[{a:'calleo',l:'Call '+p.s,c:'pri',i:'phone'},{a:'close',l:'Close',c:'tx'}]}
+  break;
+ case 'connecting':v.status=S.blkDial?'Calling…':'Connecting…';v.halo='wait';
+  if(S.group)v.meta='<span class="meta">Via '+HOSTS[S.host].n+'</span>';
+  v.ctl=[{a:'cancel',l:'Cancel',al:'Cancel call',k:'end big',i:'phone',ic:'hang'}];break;
+ case 'ringing':v.status='Ringing…';v.halo='on';v.ctl=[{a:'cancel',l:'Cancel',al:'Cancel call',k:'end big',i:'phone',ic:'hang'}];break;
+ case 'incoming':v.status='Incoming call';v.halo='on';v.meta='<span class="meta">'+svg('lock')+'End-to-end encrypted</span>';v.two=true;
+  v.ctl=[{a:'decline',l:'Decline',k:'end big',i:'phone',ic:'hang'},{a:'answer',l:'Answer',k:'ans big',i:'phone'}];break;
+ case 'joining':v.status='Connecting…';v.halo='wait';v.ctl=CTL();break;
+ case 'active':v.status='<span id="dur">'+dur()+'</span>';v.ctl=CTL();
+  if(S.group){v.meta='<span class="meta warn">Via '+HOSTS[S.host].n+' · host can hear</span>';v.desc='Not end-to-end. '+HOSTS[S.host].n+' passes the audio on and can hear it. If it drops, the call ends.'}
+  else if(S.path==='direct')v.meta='<span class="meta">'+svg('lock')+'End-to-end encrypted · direct</span>';
+  else{v.meta='<span class="meta">'+svg('lock')+'End-to-end encrypted · relayed</span>';v.desc='A direct line wasn’t possible on this network. An encrypted relay passes the call along. It can’t hear you.'}
+  if(S.second){var q=PEERS[S.second];v.banner='<p><b>'+q.n+' is calling</b></p><p>Your call with '+p.s+' continues until you choose. Decline tells '+q.s+' you’re busy.</p><div class="acts2"><button class="b" type="button" data-act="decl2">Decline</button><button class="b acc" type="button" data-act="eanda">End &amp; answer</button></div>'}
+  break;
+ case 'reconnecting':v.status='Reconnecting…';v.halo='wait';v.meta='<span class="meta warn">Audio paused</span>';v.ctl=CTL();break;
+ case 'ended':
+  var r=REASONS[S.reason];v.name=r.t(p);v.bad=true;
+  v.status=S.len?r.h+' · <span class="mono">'+S.len+'</span>':(r.h==='Call ended'?r.h:'');
+  v.desc=r.d||'';
+  var hostEnd=S.reason==='host-lost'||S.reason==='host-unreachable';
+  if(hostEnd){var nx=nextHost();v.desc=r.d+(nx>=0?' Redialling through '+HOSTS[nx].n+' is your choice; nothing is retried for you.':' No other call host is allowed to host calls right now.');
+   v.acts=nx>=0?[{a:'redialhost',l:'Redial via '+HOSTS[nx].n,c:'pri',i:'retry'},{a:'close',l:'Close',c:'tx'}]:[{a:'close',l:'Close',c:'pri'}]}
+  else if(r.kind==='fail')v.acts=[{a:'retry',l:'Try again',c:'pri',i:'retry'},{a:'close',l:'Close',c:'tx'}];
+  else if(r.kind==='miss')v.acts=[{a:'callback',l:'Call back',c:'pri',i:'phone'},{a:'close',l:'Dismiss',c:'tx'}];
+  else if(S.reason==='remote-hangup'||S.reason==='local-hangup'||S.reason==='cancelled')v.acts=[{a:'again',l:'Call again',c:'ol',i:'phone'},{a:'close',l:'Close',c:'tx'}];
+  else v.acts=[{a:'close',l:'Close',c:'tx'}];
+ }
+ if(grp&&v.ini)v.grp=true;
+ if(!v.grp&&['connecting','ringing','incoming','joining','active','reconnecting'].indexOf(S.phase)>=0)v.mark=S.phase==='active'?'taut':'sag';
+ return v;
+}
+function markHtml(state){return '<svg class="callmark'+(state==='taut'?' taut':'')+'" viewBox="0 9 40 22" aria-hidden="true" focusable="false"><path class="mk-can" d="M14,11H8A5,5 0 0 0 3,16V24A5,5 0 0 0 8,29H14Z"/><path class="mk-can" d="M26,11H32A5,5 0 0 1 37,16V24A5,5 0 0 1 32,29H26Z"/><path class="mk-str" d="M14 20Q20 28 26 20"/></svg>'}
+function btn(x){return '<button type="button" class="b '+(x.c||'')+'" data-act="'+x.a+'"'+(x.dis?' disabled aria-disabled="true"':'')+'>'+(x.i?svg(x.i,x.ic):'')+x.l+'</button>'}
+function cbtn(x){return '<button type="button" class="cb '+(x.k||'')+'" data-act="'+x.a+'"'+(x.al?' aria-label="'+x.al+'"':'')+(x.pr!==undefined?' aria-pressed="'+x.pr+'"':'')+'><span class="cw"><span class="c">'+svg(x.i,x.ic)+'</span></span><span class="l" aria-hidden="'+(x.al?'true':'false')+'">'+x.l+'</span></button>'}
+function renderStage(){
+ var v=view(),P=S.platform==='desk',st=$('#stage'),fa=document.activeElement,fkey=null,inside=false;
+ if(fa&&st.contains(fa)){inside=true;fkey=fa.dataset.act||null}
+ var p=PEERS[S.peer],top;
+ if(v.icon)top='<div class="qicon" aria-hidden="true">'+svg(v.icon)+'</div>';
+ else top='<div class="halo '+v.halo+'"><div class="t-avatar av'+(v.grp?' grp':v.bad?' bad':' '+hue(p.n))+'" aria-hidden="true">'+(v.grp?svg('group'):v.ini)+'</div></div>';
+ st.innerHTML='<section class="dev '+(P?'desk':'phone')+'" aria-label="'+(P?'Desktop call window':'Android call screen')+'">'+
+  '<div class="tb">'+(S.phase==='incoming'?'Incoming call — Tinline':'Tinline')+'</div>'+
+  '<div class="body '+v.cls+'">'+(v.banner?'<div class="banner">'+v.banner+'</div>':'')+top+
+  '<div class="idn"><h3 id="stage-t" tabindex="-1">'+v.name+'</h3>'+(v.mark?markHtml(v.mark):'')+(v.status?'<p class="st">'+v.status+'</p>':'')+'</div>'+
+  v.meta+
+  (v.desc?'<p class="desc">'+v.desc+'</p>':'')+
+  (v.after?'<div class="banner after">'+v.after+'</div>':'')+
+  (v.cls==='idle'?'<div style="height:28px"></div>':'<div class="sp1"></div>')+
+  (v.ctl.length?'<div class="ctl'+(v.two?' two':'')+'">'+v.ctl.map(cbtn).join('')+'</div>':'')+
+  (v.acts.length?'<div class="acts">'+v.acts.map(btn).join('')+'</div>':'')+
+  '</div></section>';
+ if(inside){
+  var t=fkey&&st.querySelector('[data-act="'+fkey+'"]');
+  (t||st.querySelector('#stage-t')).focus();
+ }
+ $('#stage-note').textContent=P?'Desktop: an always-on-top window, also shown as a system notification. Tray and window both show call state. Enter answers and Esc declines while the window has focus.':'Android: full-screen intent on the lock screen, heads-up notification while the phone is in use.';
+ tick();
+}
+function renderRem(){
+ var b=[],ph=S.phase,d=DEV[S.platform];
+ function a(k,l){b.push('<button type="button" class="b" data-rem="'+k+'">'+l+'</button>')}
+ var n=PEERS[S.peer].s;
+ if(ph==='mic-needed')a('micok','Microphone allowed in settings');
+ if(ph==='connecting'&&S.group)a('hostdown','Call host can’t be reached');
+ if(ph==='connecting'&&!S.group&&!S.blkDial){a('ring','Device starts ringing');a('offline','Can’t be reached')}
+ if(ph==='ringing'){a('answer',n+' answers');a('decline',n+' declines');a('noanswer','Ring times out');a('offline','Can’t be reached')}
+ if(ph==='incoming'){a('cancel','Caller hangs up first');a('elsewhere','Answered on another device');a('timeout','Stops ringing (timeout)')}
+ if(ph==='active'){a('drop','Network drops');if(S.group)a('hostdrop','Call host drops ('+HOSTS[S.host].n+')');else{a('path','Path switches to '+(S.path==='direct'?'relayed':'direct'));a('hangup',n+' hangs up')}}
+ if(ph==='blocked-by'&&S.blk==='blocked'){if(!S.refused)a('dialanyway','Dial anyway (older or modified app)');a('unblock',n+' unblocks you')}
+ if(ph==='reconnecting'){a('back','Network returns');a('giveup','Time runs out');if(!S.group)a('hangup',n+' hangs up')}
+ if(S.second)a('rosa-cancel','Rosa hangs up first');
+ if(ph==='active'||ph==='reconnecting'||ph==='joining')a('ext',S.extOn?d.ext+' disconnects':d.ext+' reconnects');
+ var el=$('#rem'),fa=document.activeElement,key=fa&&el.contains(fa)?fa.dataset.rem:null;
+ el.innerHTML=b.length?b.join(''):'<p class="empty">Nothing to simulate right now. Pick a scenario below.</p>';
+ if(key){var t=el.querySelector('[data-rem="'+key+'"]');if(t)t.focus();else $('#restart').focus()}
+}
+function tick(){
+ var d=$('#dur');if(d)d.textContent=dur();
+ var c=$('#cd');
+ if(c&&S.deadline){
+  var s=Math.max(0,Math.ceil((S.deadline-Date.now())/1000));
+  c.textContent=S.phase==='reconnecting'?'Gives up in '+s+' s':S.phase==='ringing'?'Rings out in '+s+' s (shortened)':'Stops ringing in '+s+' s (shortened)';
+ }else if(c){c.textContent=''}
+}
+function renderCap(){
+ var el=$('#cap'),h;
+ var p=cap.kind&&PAT[cap.kind];
+ if(cap.mode==='playing')h='<b>♪ Playing: '+p.label+'</b>'+p.text+(cap.loop?'. Stops when you answer, decline, cancel or leave.':'.');
+ else if(cap.mode==='preview')h='<b>♪ Preview: '+p.label+'</b>'+p.text+'.';
+ else if(cap.mode==='off')h='<b>Sound off · would play: '+p.label+'</b>'+p.text+'. The pulsing ring and the text are the same signal.';
+ else if(cap.mode==='stopped')h='<b>Sound stopped</b>'+(cap.why||'Press Replay current sound to hear it again.');
+ else if(cap.mode==='silent')h='<b>Silent</b>'+cap.why;
+ else if(cap.mode==='unsupported')h='<b>Sound unavailable</b>This browser can’t play Web Audio. Every sound is described in text instead.';
+ else h='<b>Silent</b>No sound has played. Each sound here is also described in text.';
+ el.innerHTML=h;
+ var pv=document.querySelectorAll('#pv button');
+ pv.forEach(function(b){b.setAttribute('aria-pressed',String(!!Snd.cur&&Snd.cur.kind===b.dataset.k&&Snd.cur.src==='preview'))});
+}
+var UI={
+ all:function(){renderStage();renderRem()},
+ scn:function(){document.querySelectorAll('.sc').forEach(function(b){if(b.dataset.scn===S.scn)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')})},
+ cap:renderCap,
+ soundChanged:function(how,s){
+  if(how==='ended'&&cap.mode==='preview')cap={mode:'none'};
+  if(how==='ended'&&cap.mode==='playing'&&!cap.loop)cap={mode:'silent',why:'The sound finished.'};
+  if(how==='stopped'&&(cap.mode==='playing'||cap.mode==='preview')&&cap.keep!==true)cap={mode:'stopped',why:'Press Replay current sound to hear it again.'};
+  renderCap();
+ }
+};
+
+/* ---------- static build ---------- */
+(function build(){
+ var h='',g='';
+ SCN.forEach(function(s){
+  if(s.g){h+='<p class="gl">'+s.g+'</p>'}
+  h+='<button type="button" class="sc" data-scn="'+s.id+'"><span>'+s.t+'</span><small>'+s.d+'</small></button>';
+ });
+ $('#scs').innerHTML=h;
+ var k=['ring','back','connected','ended','failed','pulse'];
+ $('#pv').innerHTML=k.map(function(x){return '<button type="button" class="b" data-k="'+x+'" aria-pressed="false">'+PAT[x].label+'</button>'}).join('');
+})();
+
+$('#pv').addEventListener('click',function(e){
+ var b=e.target.closest('button');if(!b)return;
+ var k=b.dataset.k;
+ if(Snd.cur&&Snd.cur.kind===k&&Snd.cur.src==='preview'){Snd.stop();return}
+ lastCue=k;
+ if(Snd.start(k,PAT[k].period?2:1,'preview')){cap={mode:'preview',kind:k};log('Preview: '+PAT[k].label,'♪ '+PAT[k].text)}
+ else cap={mode:'unsupported'};
+ renderCap();
+});
+$('#replay').addEventListener('click',function(){
+ var k=S.phase==='incoming'?'ring':S.phase==='ringing'?'back':lastCue;
+ if(!k){k='ring'}
+ lastCue=k;
+ if(Snd.start(k,PAT[k].period?(S.phase==='incoming'||S.phase==='ringing'?Infinity:2):1,'replay')){cap={mode:'playing',kind:k,loop:S.phase==='incoming'||S.phase==='ringing'};log('Replay: '+PAT[k].label,'♪ '+PAT[k].text)}
+ else cap={mode:'unsupported'};
+ renderCap();
+});
+$('#stopsnd').addEventListener('click',function(){
+ if(Snd.cur){Snd.stop();log('Sound stopped by you')}else{cap={mode:'silent',why:'Nothing was playing.'};renderCap()}
+ say('Sound stopped.');
+});
+$('#son').addEventListener('click',function(){
+ soundOn=!soundOn;this.setAttribute('aria-checked',String(soundOn));
+ if(soundOn){
+  if(Snd.start('connected',1,'preview')){cap={mode:'preview',kind:'connected'}}else cap={mode:'unsupported'};
+  say('Scenario sounds on. Ringtone, ringback and cues play during scenarios.');
+ }else{Snd.stop();cap={mode:'silent',why:'Scenario sounds are off. Sounds are described in text and the event log.'};say('Scenario sounds off.')}
+ renderCap();
+});
+$('#vol').addEventListener('input',function(){$('#volv').textContent=this.value;Snd.setVol(this.value/100)});
+$('#restart').addEventListener('click',function(){
+ var id=S.scn||'out-answer';begin(id);
+});
+function setPlat(p){
+ S.platform=p;S.route=DEV[p].def.id;S.extOn=true;
+ $('#p-android').setAttribute('aria-pressed',String(p==='android'));$('#p-desk').setAttribute('aria-pressed',String(p==='desk'));
+ log('Showing '+(p==='desk'?'desktop':'Android')+' layout');UI.all();
+}
+$('#p-android').addEventListener('click',function(){setPlat('android')});
+$('#p-desk').addEventListener('click',function(){setPlat('desk')});
+
+/* theme (icon-only, follows system until chosen) */
+(function(){
+ var m=window.matchMedia('(prefers-color-scheme: dark)'),b=$('#theme'),root=document.documentElement;
+ function paint(){var t=root.getAttribute('data-theme'),dark=t?t==='dark':m.matches;b.setAttribute('aria-pressed',String(dark));var l=dark?'Light theme':'Dark theme';b.setAttribute('aria-label',l);b.title=l}
+ b.addEventListener('click',function(){var dark=b.getAttribute('aria-pressed')==='true';root.setAttribute('data-theme',dark?'light':'dark');paint()});
+ if(m.addEventListener)m.addEventListener('change',paint);
+ paint();
+})();
+
+/* desktop keys: Enter answers, Esc declines (only when focus is not on a control) */
+document.addEventListener('keydown',function(e){
+ if(S.platform!=='desk'||S.phase!=='incoming'||$('#route').open)return;
+ if(e.target.closest&&e.target.closest('button,input,a,select,[role=switch]'))return;
+ if(e.key==='Enter'){e.preventDefault();ACT.answer();UI.all()}
+ else if(e.key==='Escape'){e.preventDefault();ACT.decline();UI.all()}
+});
+
+/* stop everything when the page goes away or is hidden */
+function halt(){Snd.stop();tickStop()}
+document.addEventListener('visibilitychange',function(){
+ if(document.hidden){
+  var was=!!Snd.cur;halt();
+  if(was){cap={mode:'stopped',why:'Sound stopped because the tab was hidden. Press Replay current sound to hear it again.'};}
+ }else{
+  if(S.phase!=='idle'&&S.phase!=='ended')tickStart();
+  renderCap();tick();
+ }
+});
+window.addEventListener('pagehide',function(){clearT();tickStop();Snd.close()});
+
+S.route=DEV.android.def.id;
+renderCap();UI.all();
+
+/* deep link from chat/groups headers: calls.html?call=<id> | ?call=group:hike
+   Starts visually (ringing pulse) and silent: no AudioContext exists before a user gesture.
+   The Sound controls in the drawer can start audio afterwards. Unknown ids stay idle. */
+(function(){
+ var id=new URLSearchParams(location.search).get('call');if(!id)return;
+ var one={arjun:1,meera:1,dev:1,sana:1},grp=id==='group:hike';
+ if(!one[id]&&!grp)return;
+ var plat=matchMedia('(max-width:859px)').matches?'android':'desk';
+ S.platform=plat;S.route=DEV[plat].def.id;
+ $('#p-android').setAttribute('aria-pressed',String(plat==='android'));$('#p-desk').setAttribute('aria-pressed',String(plat==='desk'));
+ reset();S.scn='deeplink';S.attempt=1;
+ if(grp){S.peer='hike';S.group=true;S.host=0;S.hostsTried=[];log('Group call from Weekend hike');gdial()}
+ else{
+  S.peer=id;log('Call '+PEERS[id].s+' from the chat');
+  S.phase='connecting';tickStart();remote('ring');
+  later(function(){remote('answer')},6000);
+ }
+ UI.all();$('#stage-t').focus({preventScroll:true});
+})();
+})();
+</script>
+</body>
+</html>

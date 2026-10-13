@@ -59,15 +59,15 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="display:flex;gap:6px"><span class="pill" style="background:var(--sf2);color:var(--ink2)">From Weekend hike</span><span class="pill" style="background:var(--prc);color:var(--onprc)">Verified</span></div>
 </div>
 <div class="sec">WHAT PRIYA CAN DO</div>
-<div class="set"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><div style="flex:1"><div style="font-size:16px">Message you</div><div class="s">On since you accepted her request</div></div><span class="sw on" role="img" aria-label="On"></span></div>
+<div class="set"><svg class="i" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><div style="flex:1"><div style="font-size:16px">Message you</div><div class="s">Always on for a contact. To stop messages, block</div></div><span class="pill" style="background:var(--prc);color:var(--onprc)">On</span></div>
 <div class="set"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg><div style="flex:1"><div style="font-size:16px">Call you</div><div class="s">Off. Turn on to let Priya ring your phone</div></div><span class="sw" role="img" aria-label="Off"></span></div>
 <div class="sec">CONNECTION</div>
 <div class="set"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"></path></svg><div style="flex:1"><div style="font-size:16px">Address up to date</div><div class="s">Priya got your new address yesterday. Hers changed 2 days ago.</div></div></div>
 <div class="set"><svg class="i" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"></path></svg><div style="flex:1"><div style="font-size:16px">Safety number</div><div class="s">Verified Oct 4</div></div></div>
 <div style="flex:1"></div>
-<div style="display:flex;gap:8px;padding:0 20px 28px"><button class="btn ol" style="color:var(--er)">Block</button><button class="btn ol" style="color:var(--er)">Remove</button></div>
+<div style="display:flex;gap:8px;padding:0 20px 28px"><button class="btn ol" style="color:var(--er)">Block</button></div>
 </div>
-<p class="desc">Two switches make the separate permissions visible: Message you and Call you. Contacts added by QR start with both on; contacts from a group request start with calls off. Turning a switch off takes effect at once on all your devices. “Connection” reassures that address changes are flowing without exposing any address.</p>
+<p class="desc">Message you is a status, not a switch: a contact can always message, and Block is the only way to stop that. Call you is the one switch. Contacts added by QR start with both on; contacts from a group request start with calls off. Turning calls off takes effect at once on this phone, and on linked devices as they sync. There is no Remove for a contact (Block replaces it); Remove is only for group members. Block tells the contact (signed notice), keeps the chat read-only (chats are never deleted, U24), and refuses them on every device; see the Blocking board. “Connection” reassures that address changes are flowing without exposing any address. Interactive version: <a href="../refined/privacy.html">refined/privacy.html</a>.</p>
 </div>
 
 <div class="col">
@@ -85,7 +85,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <button class="btn tx" style="height:40px">OK</button>
 </div>
 </div>
-<p class="desc">Tapping call on a contact who hasn’t allowed calls never dials. A sheet explains and offers to ask, which sends a normal message “Priya would like to be able to call you” with an Allow button for Leo. Leo’s phone never rings for a refused call.</p>
+<p class="desc">Tapping call on a contact who hasn’t allowed calls never dials. A sheet explains and offers to ask, which sends a normal message “Priya would like to be able to call you” with an Allow button for Leo. Leo’s phone never rings for a refused call. The “Ask Leo to allow calls” message and the exact refusal wording are proposed; the agreed rule is only that calling needs its own permission and starts off for contacts from a group request.</p>
 </div>
 
 <div class="col">
@@ -93,7 +93,7 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div class="ph t">
 <div class="bar"><button class="ib" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button><span class="bt">Address changes</span></div>
 <div style="display:flex;flex-direction:column;gap:16px;padding:4px 20px;flex:1">
-<div style="font-size:15px;line-height:22px;color:var(--ink2)">Your phone gets a new network address on a schedule. Your contacts and group hosts are told automatically; blocked people and anyone else holding an old address lose the way to reach you.</div>
+<div style="font-size:15px;line-height:22px;color:var(--ink2)">Your phone gets a new network address on a schedule, whether or not anyone is blocked. Your contacts and group hosts are told automatically. Old addresses stop working; this doesn’t hide you from people you talk to.</div>
 <div style="display:flex;flex-direction:column;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--ink2)">Change my address every</div><div class="seg" role="group" aria-label="Interval"><span>Day</span><span class="on">3 days</span><span>Week</span></div></div>
 <div style="background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px">
 <div style="display:flex;justify-content:space-between;font-size:15px"><span>Last change</span><b>Yesterday, 03:12</b></div>
@@ -101,11 +101,11 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="display:flex;justify-content:space-between;font-size:15px"><span>Contacts told</span><b>11 of 12</b></div>
 <div class="hint">1 contact hasn’t been online since. They’ll get it when either of you next connects.</div>
 </div>
-<div style="display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:20px;color:var(--onwn);background:var(--wn);border-radius:16px;padding:12px 14px"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M12 9v4M12 17h.01 M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span>Shorter intervals cut off old addresses sooner but use a little more battery, and a contact who is offline for longer than two of your intervals may need to re-share a QR.</span></div>
+<div style="display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:20px;color:var(--onwn);background:var(--wn);border-radius:16px;padding:12px 14px"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M12 9v4M12 17h.01 M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span>Shorter intervals cut off old addresses sooner and may use a little more battery (not measured yet). If you and a contact both change address while apart and share no group, you reconnect with a QR.</span></div>
 <div style="flex:1"></div>
 </div>
 </div>
-<p class="desc">One setting: how often. The card shows the last and next change and how many contacts already have the current address, so people trust it is working. The trade-off is stated in one warning line. Linked devices each change their own address; the setting syncs.</p>
+<p class="desc">One setting: how often. The card shows the last and next change and how many contacts already have the current address, so people trust it is working. The trade-off is stated in one warning line. Linked devices each change their own address; the setting syncs. The interval choices and default are proposed; the real values are an open decision. Contact and group addresses are separate (hosts never learn the contact address; hosts are members’ devices and can read group chats). Blocking never changes either address by itself and never changes group membership. Overdue, failed and waiting states are in the interactive version.</p>
 </div>
 
 <div class="col">
@@ -120,11 +120,11 @@ a{color:#0B6B5B}a:hover{color:#06352D}
 <div style="font-size:16px;font-weight:700">You and Sam lost each other’s address</div>
 <div style="font-size:14px;line-height:20px">You were both offline while your addresses changed, and you share no group that could pass the new ones on. Meet or send your QR another way to reconnect.</div>
 <div style="display:flex;gap:8px"><button class="btn" style="height:44px">Show my QR</button><button class="btn ol" style="height:44px;color:var(--onwn)">Scan Sam’s</button></div>
-<div style="font-size:12px;opacity:.85">Your chat history and verification are kept.</div>
+<div style="font-size:12px;opacity:.85">Your chat history is kept.</div>
 </div>
 </div>
 </div>
-<p class="desc">Shown only when the app can’t find a contact after both sides changed address and no shared group host can pass the new address on. Messages wait with “Waiting to reach Sam”. Re-scanning reconnects the same contact: history and verification stay.</p>
+<p class="desc">Shown only when the app can’t find a contact after both sides changed address and no shared group host can pass the new address on. Messages wait with “Waiting to reach Sam”. Re-scanning reconnects the same contact: history stays; keeping the Verified flag is proposed, not yet decided.</p>
 </div>
 
 </div>

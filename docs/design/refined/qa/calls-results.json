@@ -1,0 +1,470 @@
+[
+ {
+  "page": "calls",
+  "name": "idle: no AudioContext/oscillator created on load",
+  "ok": true,
+  "detail": "{\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "harness: drawer closed by default, no disclaimer text visible",
+  "ok": true,
+  "detail": "hidden=true text=← Home · Calls Android Desktop No active call Calls go straight to the other device. Call Arjun Incoming call"
+ },
+ {
+  "page": "calls",
+  "name": "harness: theme toggle is icon-only with an accessible name",
+  "ok": true,
+  "detail": "{\"txt\":\"\",\"al\":\"Dark theme\",\"w\":36}"
+ },
+ {
+  "page": "calls",
+  "name": "idle: one bold line + one plain line + two actions",
+  "ok": true,
+  "detail": "{\"h\":\"No active call\",\"p\":[\"Calls go straight to the other device.\"],\"a\":[\"Call Arjun\",\"Incoming call\"]}"
+ },
+ {
+  "page": "calls",
+  "name": "sound switch off by default (aria-checked=false)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "sound OFF: scenario ringing creates no audio",
+  "ok": true,
+  "detail": "{\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "sound OFF: caption states what would play",
+  "ok": true,
+  "detail": "Sound off · would play: Ringbackcalm two-tone hum, about 1 s on and 3 s off. The pulsing ring and th"
+ },
+ {
+  "page": "calls",
+  "name": "sound switch toggles aria-checked=true",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "connecting phase is silent",
+  "ok": true,
+  "detail": "{\"started\":4,\"stopped\":8,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended\"}"
+ },
+ {
+  "page": "calls",
+  "name": "ringback starts only once remote ringing (oscillators started, one AudioContext)",
+  "ok": true,
+  "detail": "started=8 ctx=running"
+ },
+ {
+  "page": "calls",
+  "name": "caption shows playing",
+  "ok": true,
+  "detail": "♪ Playing: Ringbackcalm two-tone hum, about 1 s on and 3 s off. Stops when you answer, decline, cancel or leave."
+ },
+ {
+  "page": "calls",
+  "name": "cancel during ringing: every oscillator stop()ed and ended within ~850ms (gain ramps to 0 at once)",
+  "ok": true,
+  "detail": "started=12 stopped=24 notEnded=0"
+ },
+ {
+  "page": "calls",
+  "name": "after cancel + 1s: zero live oscillators (no more cycles scheduled)",
+  "ok": true,
+  "detail": "before 12 after 12 live 0 stage=\"TinlineAOYou cancelled the callCall againClose\""
+ },
+ {
+  "page": "calls",
+  "name": "focus after cancel is not lost to BODY",
+  "ok": true,
+  "detail": "stage-t:You cancelled the ca"
+ },
+ {
+  "page": "calls",
+  "name": "answered flow: stage re-renders to connected (timer) after Connected is logged",
+  "ok": true,
+  "detail": "TinlineAOArjun Oommen00:02End-to-end encrypted · directMuteEndEarpiece {\"started\":24,\"stopped\":48,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended\"}"
+ },
+ {
+  "page": "calls",
+  "name": "in-call: timer is tabular and does not shift layout as it ticks",
+  "ok": true,
+  "detail": "[{\"x\":501,\"w\":37,\"num\":\"tabular-nums\",\"cy\":713,\"t\":\"00:02\"},{\"x\":501,\"w\":37,\"num\":\"tabular-nums\",\"cy\":713,\"t\":\"00:04\"}]"
+ },
+ {
+  "page": "calls",
+  "name": "in-call: control cluster centered and symmetric (mute | end | output)",
+  "ok": true,
+  "detail": "{\"acts\":[\"mute\",\"end\",\"route\"],\"sizes\":[56,64,56],\"offs\":[-96,0,96],\"cy\":[745,745,745]}"
+ },
+ {
+  "page": "calls",
+  "name": "connected event logged even if stage stale",
+  "ok": true,
+  "detail": "+7s Connected cue ♪ two quick rising notes+7s Connected+5s Arjun answered. Setti"
+ },
+ {
+  "page": "calls",
+  "name": "mute toggles aria-pressed",
+  "ok": true,
+  "detail": "false→true"
+ },
+ {
+  "page": "calls",
+  "name": "route dialog opens, focus moves inside",
+  "ok": true,
+  "detail": "open=true focusInside=true"
+ },
+ {
+  "page": "calls",
+  "name": "Escape closes route dialog and restores focus to route button",
+  "ok": true,
+  "detail": "open=false focus=route"
+ },
+ {
+  "page": "calls",
+  "name": "Done closes route dialog and restores focus",
+  "ok": true,
+  "detail": "route"
+ },
+ {
+  "page": "calls",
+  "name": "end call: history record added",
+  "ok": true,
+  "detail": "Arjun · Ended 00:0023:49Arjun · Cancelled23:49"
+ },
+ {
+  "page": "calls",
+  "name": "declined: shows declined state, silent after cue",
+  "ok": true,
+  "detail": "TinlineAOArjun declinedTry again later, or send a message instead.Try againClose {\"started\":36,\"stopped\":72,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended\"}"
+ },
+ {
+  "page": "calls",
+  "name": "offline: couldn't reach with Try again",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "retry re-enters connecting (focus not BODY)",
+  "ok": true,
+  "detail": "TinlineLPLena P.Connecting…Cancel focus=stage-t:Lena P."
+ },
+ {
+  "page": "calls",
+  "name": "retry eventually connects (back online)",
+  "ok": true,
+  "detail": "TinlineLPLena P.00:02End-to-end encrypted · directMuteEndEarpiece"
+ },
+ {
+  "page": "calls",
+  "name": "no answer: timeout shows retry option and silences ringback",
+  "ok": true,
+  "detail": "TinlineAONo answerTinline can’t leave messages. You can send a text message instead.Try againClose live=0"
+ },
+ {
+  "page": "calls",
+  "name": "incoming: ringtone oscillators started",
+  "ok": true,
+  "detail": "started=76"
+ },
+ {
+  "page": "calls",
+  "name": "incoming ringtone repeats (cycle 2 started)",
+  "ok": true,
+  "detail": "started 76→84"
+ },
+ {
+  "page": "calls",
+  "name": "Decline silences ringtone within 400ms",
+  "ok": true,
+  "detail": "notEnded=0"
+ },
+ {
+  "page": "calls",
+  "name": "decline: focus not lost to BODY",
+  "ok": true,
+  "detail": "stage-t:You declined"
+ },
+ {
+  "page": "calls",
+  "name": "Answer silences ringtone",
+  "ok": true,
+  "detail": "notEnded=0"
+ },
+ {
+  "page": "calls",
+  "name": "answer: connected view",
+  "ok": true,
+  "detail": "TinlineAOArjun Oommen00:02End-to-end encrypted · directMuteEndEarpiece"
+ },
+ {
+  "page": "calls",
+  "name": "incoming timeout: silent + missed in history",
+  "ok": true,
+  "detail": "Arjun · Incoming Missed23:50Arjun · Declined23:50Arjun · No answer23:49Lena · Not reached23:49Arjun  live=0"
+ },
+ {
+  "page": "calls",
+  "name": "switching scenario mid-ring stops ringtone",
+  "ok": true,
+  "detail": "notEnded=0"
+ },
+ {
+  "page": "calls",
+  "name": "mic denied: Not now → focus",
+  "ok": true,
+  "detail": "focus=stage-t:No active call stage=TinlineNo active callCalls go straight to the other device.C"
+ },
+ {
+  "page": "calls",
+  "name": "platform switch mid-ring: audio stops or restarts consistently",
+  "ok": true,
+  "detail": "{\"started\":124,\"stopped\":240,\"live\":0,\"ctxStates\":[\"running\"],\"log\":\"start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,ended,ended,ended,ended,ended,ended,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,stop,stop,stop,stop,stop,stop,stop,stop,start,stop,start,stop,start,stop,start,stop,ended,ended,ended,ended,ended,ended,ended,ended,ended,ended,stop,stop,stop,stop,ended,ended,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,start,stop,ended,ended\"} Incoming call — TinlineAOArjun OommenIncoming callEnd-to-end encrypted"
+ },
+ {
+  "page": "calls",
+  "name": "preview Ringtone: plays then Stop sound silences",
+  "ok": true,
+  "detail": "during live=0 after notEnded=0"
+ },
+ {
+  "page": "calls",
+  "name": "preview Ringback: plays then Stop sound silences",
+  "ok": true,
+  "detail": "during live=0 after notEnded=0"
+ },
+ {
+  "page": "calls",
+  "name": "replay does not stack ringtones (oscillators in flight ≤ one cycle)",
+  "ok": true,
+  "detail": "unstopped=0"
+ },
+ {
+  "page": "calls",
+  "name": "volume slider updates readout, has label",
+  "ok": true,
+  "detail": "0"
+ },
+ {
+  "page": "calls",
+  "name": "keyboard Enter on scenario starts it",
+  "ok": true,
+  "detail": "TinlineAOArjun OommenConnecting…Cancel"
+ },
+ {
+  "page": "calls",
+  "name": "keyboard Space toggles sound switch",
+  "ok": true,
+  "detail": "false"
+ },
+ {
+  "page": "calls",
+  "name": "theme toggle sets aria-pressed and changes page background",
+  "ok": true,
+  "detail": "pressed=true bg=rgb(15, 21, 19)"
+ },
+ {
+  "page": "calls",
+  "name": "no console errors during calls flows",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "no failed requests / 404s",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "back link resolves",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "mobile: starting a scenario brings the call screen (Answer/Decline) into view",
+  "ok": true,
+  "detail": "{\"top\":687,\"vh\":844}"
+ },
+ {
+  "page": "calls",
+  "name": "mobile: incoming answer/decline buttons ≥44px and inside viewport",
+  "ok": true,
+  "detail": "[[76,86,151],[76,86,315]]"
+ },
+ {
+  "page": "calls",
+  "name": "mobile: no horizontal overflow during scenario",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "calls",
+  "name": "mobile: no overflow in second-call",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "calls",
+  "name": "mobile: no overflow in desktop-platform view",
+  "ok": true,
+  "detail": "{\"sw\":390,\"cw\":390,\"bw\":390}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=arjun @390: outgoing ringing to Arjun Oommen, hue av5, android picked, silent (no AudioContext)",
+  "ok": true,
+  "detail": "{\"name\":\"Arjun Oommen\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av5\",\"ring\":true,\"and\":\"true\",\"desk\":\"false\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link: platform still switchable",
+  "ok": true,
+  "detail": "{\"name\":\"Arjun Oommen\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av5\",\"ring\":true,\"and\":\"false\",\"desk\":\"true\",\"drawer\":true}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link: sound starts only after a gesture (switch on) and Cancel stops every oscillator",
+  "ok": true,
+  "detail": "afterGesture=4 notEnded=0"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=arjun @1440: outgoing ringing to Arjun Oommen, hue av5, desk picked, silent (no AudioContext)",
+  "ok": true,
+  "detail": "{\"name\":\"Arjun Oommen\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av5\",\"ring\":true,\"and\":\"false\",\"desk\":\"true\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=meera @390: outgoing ringing to Meera Nair, hue av4, android picked, silent (no AudioContext)",
+  "ok": true,
+  "detail": "{\"name\":\"Meera Nair\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av4\",\"ring\":true,\"and\":\"true\",\"desk\":\"false\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=meera @1440: outgoing ringing to Meera Nair, hue av4, desk picked, silent (no AudioContext)",
+  "ok": true,
+  "detail": "{\"name\":\"Meera Nair\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av4\",\"ring\":true,\"and\":\"false\",\"desk\":\"true\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=dev @390: outgoing ringing to Dev Patel, hue av5, android picked, silent (no AudioContext)",
+  "ok": true,
+  "detail": "{\"name\":\"Dev Patel\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av5\",\"ring\":true,\"and\":\"true\",\"desk\":\"false\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=dev @1440: outgoing ringing to Dev Patel, hue av5, desk picked, silent (no AudioContext)",
+  "ok": true,
+  "detail": "{\"name\":\"Dev Patel\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av5\",\"ring\":true,\"and\":\"false\",\"desk\":\"true\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=sana @390: outgoing ringing to Sana Rao, hue av1, android picked, silent (no AudioContext)",
+  "ok": true,
+  "detail": "{\"name\":\"Sana Rao\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av1\",\"ring\":true,\"and\":\"true\",\"desk\":\"false\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=sana @1440: outgoing ringing to Sana Rao, hue av1, desk picked, silent (no AudioContext)",
+  "ok": true,
+  "detail": "{\"name\":\"Sana Rao\",\"st\":\"Ringing…\",\"av\":\"t-avatar av av1\",\"ring\":true,\"and\":\"false\",\"desk\":\"true\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=group:hike @390: Weekend hike group call screen, group glyph, silent",
+  "ok": true,
+  "detail": "{\"name\":\"Weekend hike\",\"st\":\"Connecting…\",\"av\":\"t-avatar av grp\",\"ring\":false,\"and\":\"true\",\"desk\":\"false\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link ?call=group:hike @1440: Weekend hike group call screen, group glyph, silent",
+  "ok": true,
+  "detail": "{\"name\":\"Weekend hike\",\"st\":\"Connecting…\",\"av\":\"t-avatar av grp\",\"ring\":false,\"and\":\"false\",\"desk\":\"true\",\"drawer\":true} {\"started\":0,\"stopped\":0,\"live\":0,\"ctxStates\":[],\"log\":\"\"}"
+ },
+ {
+  "page": "calls",
+  "name": "deep link group: reaches the active group call via the host",
+  "ok": true,
+  "detail": "TinlineWeekend hike00:01Via Kofi’s desktop · host can hearNot end-to-end. Kofi’s desktop passes the "
+ },
+ {
+  "page": "calls",
+  "name": "deep link unknown id: normal idle screen, no audio",
+  "ok": true,
+  "detail": "{\"name\":\"No active call\",\"st\":\"\",\"av\":\"\",\"ring\":false,\"and\":\"true\",\"desk\":\"false\",\"drawer\":true}"
+ },
+ {
+  "page": "calls",
+  "name": "deep links: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: calls.html loads call-audio.js and keeps no inline PAT/Snd copy",
+  "ok": true,
+  "detail": "56158 bytes"
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: the cues keep their original notes (Hz) and labels",
+  "ok": true,
+  "detail": "{\"ring\":\"Ringtone:3200:784/988/1175/1568\",\"back\":\"Ringback:4000:392/494\",\"connected\":\"Connected cue:0:523/784\",\"ended\":\"Ended cue:0:784/523\",\"failed\":\"Couldn’t connect cue:0:247/196\",\"pulse\":\"Reconnecting cue:0:330\",\"pluck\":\"Sent cue:0:659\"}"
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: a drawer preview plays through the shared Snd and the caption follows it",
+  "ok": true,
+  "detail": "{\"cur\":\"ring\",\"src\":\"preview\",\"cap\":\"♪ Preview: Ringtonesoft rising four-note chime, repeating about every 3 s.\",\"pressed\":\"true\"}"
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: Stop sound stops it (onchange hook updates the caption), zero live oscillators",
+  "ok": true,
+  "detail": "{\"cur\":null,\"cap\":\"Sound stoppedPress Replay current sound to hear it again.\",\"live\":0}"
+ },
+ {
+  "page": "calls",
+  "name": "shared audio: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "idle: no mark (nothing to be taut or slack about yet)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "connecting: mark present, sagging",
+  "ok": true,
+  "detail": "{\"taut\":false}"
+ },
+ {
+  "page": "calls",
+  "name": "active: mark taut, in sync with the connected status",
+  "ok": true,
+  "detail": "{\"taut\":true,\"st\":\"00:00\"}"
+ },
+ {
+  "page": "calls",
+  "name": "ended: no mark (not a live call anymore)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "calls",
+  "name": "brand mark (calls.html): no console errors",
+  "ok": true,
+  "detail": ""
+ }
+]

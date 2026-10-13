@@ -1,0 +1,926 @@
+[
+ {
+  "page": "group-polish",
+  "name": "desktop: Weekend hike selected by default; header is one line \"12 members\"; no host strip",
+  "ok": true,
+  "detail": "12 members"
+ },
+ {
+  "page": "group-polish",
+  "name": "harness: slim bar, icon-only toggles, simulation drawer closed, no disclaimer visible",
+  "ok": true,
+  "detail": "{\"sim\":true,\"theme\":\"\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "desktop idle: no Reply/Discard text, no visible message controls",
+  "ok": true,
+  "detail": "visible .mo=0"
+ },
+ {
+  "page": "group-polish",
+  "name": "grouping: corner classes and 2px/10px spacing for Sam’s run and own run",
+  "ok": true,
+  "detail": "m1,g-first,m1b,g-mid,2px,m1c,g-last,2px,m2,-,10px,m3,g-first,10px,m3b,g-last,2px"
+ },
+ {
+  "page": "group-polish",
+  "name": "grouping: corners follow --r-bub / --r-bub-tight table",
+  "ok": true,
+  "detail": "18px 18px 18px 6px|6px 18px 18px 6px|6px 18px 18px|18px 18px 6px|18px 6px 18px 18px"
+ },
+ {
+  "page": "group-polish",
+  "name": "sender name only on first bubble of a group, 13px bold, avatar-hue ink",
+  "ok": true,
+  "detail": "{\"b\":false,\"c\":false,\"fs\":\"13px\",\"fw\":\"700\",\"col\":\"rgb(93, 63, 115)\",\"want\":\"rgb(93, 63, 115)\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "bubbles: sent mint no border, received surface + hairline border, canvas background",
+  "ok": true,
+  "detail": "{\"ob\":true,\"obw\":\"0px\",\"ib\":true,\"il\":true,\"cv\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "meta inline: single-line bubble stays one line tall; meta 11px tabular-nums inside bubble",
+  "ok": true,
+  "detail": "{\"h\":35,\"in\":true,\"fs\":\"11px\",\"num\":\"tabular-nums\",\"fl\":\"right\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "composer: attach 44 · field ≥44 · paper-plane send 44 at 38% when empty",
+  "ok": true,
+  "detail": "{\"s\":44,\"sh\":44,\"dis\":true,\"op\":\"0.38\",\"plane\":true,\"t\":44,\"a\":44,\"ph\":\"Message the group\",\"hint\":\"\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "composer: send enabled when draft present",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "sidebar: request rows are quiet rows with t-badge counts, no banner",
+  "ok": true,
+  "detail": "{\"rows\":[\"Invitations:2\",\"Chat requests:1\",\"Sent requests:2\"],\"wait\":0,\"txt\":false}"
+ },
+ {
+  "page": "group-polish",
+  "name": "event line centered 12px muted; day separator is a pill",
+  "ok": true,
+  "detail": "12px,center,11px,999px,Today"
+ },
+ {
+  "page": "group-polish",
+  "name": "light desktop hover reveals 24px chevron beside bubble, bubble size unchanged",
+  "ok": true,
+  "detail": "op=1 mo.x=760.109375 w=24 bubbleRight=754.109375"
+ },
+ {
+  "page": "group-polish",
+  "name": "light chevron opens anchored popover (not a sheet): Reply, Copy, Message info",
+  "ok": true,
+  "detail": "Reply,Copy,Message info {\"pop\":true,\"dy\":4,\"w\":212}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Escape closes popover, focus returns to the message’s menu button",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "light keyboard Tab reaches the menu button and reveals it",
+  "ok": true,
+  "detail": "Actions for message from Sam op=1"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Enter opens the menu with focus on Reply",
+  "ok": true,
+  "detail": "Reply"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Escape restores focus to the menu button",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "light own message menu: Reply, Copy, Edit, Delete, Message info",
+  "ok": true,
+  "detail": "Reply,Copy,Edit,Delete,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Message info explains delivery (not in the bubble)",
+  "ok": true,
+  "detail": "Message infoI can, I’ll message you.Sent12:46StatusDelivered to the group’s hostsClose"
+ },
+ {
+  "page": "group-polish",
+  "name": "light closing Message info returns focus to the message’s menu button",
+  "ok": true,
+  "detail": "Actions for your message"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Reply: context strip names Sam, textarea focused, no dialog",
+  "ok": true,
+  "detail": "Replying to SamSaturday 7am at the trailhead. focus=ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Escape cancels reply, textarea keeps focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light send reply: quote inside bubble, strip gone, delivered tick",
+  "ok": true,
+  "detail": "rq=1 bar=0 state=delivered"
+ },
+ {
+  "page": "group-polish",
+  "name": "light Edit puts the text in the composer with an Editing strip",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light edited message shows \"edited\" in the inline meta",
+  "ok": true,
+  "detail": "edited 21:38Delivered"
+ },
+ {
+  "page": "group-polish",
+  "name": "light desktop: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":1440,\"cw\":1440,\"mw\":894,\"mc\":894}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light right-click opens the same popover",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light offline host: thin warn strip under header, title block unchanged",
+  "ok": true,
+  "detail": "Host offline — messages waitTry again"
+ },
+ {
+  "page": "group-polish",
+  "name": "light queued message: pending clock glyph, no explanatory text in bubble",
+  "ok": true,
+  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting21:38\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "delete removes only the queued message, with undo toast; focus not lost",
+  "ok": true,
+  "detail": "msgs"
+ },
+ {
+  "page": "group-polish",
+  "name": "host back: strip disappears",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "incoming while scrolled up: 36px scroll-to-latest button with t-badge",
+  "ok": true,
+  "detail": "{\"w\":36,\"b\":\"1\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "scroll-to-latest clears the badge",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: opens on list; New group is a 56px FAB",
+  "ok": true,
+  "detail": "56,absolute"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: no list-row selection tint on mobile",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 idle: no Reply text; full-height conversation; no visible menu controls",
+  "ok": true,
+  "detail": "app h=844 visible mo=0"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":390,\"cw\":390,\"mw\":390,\"mc\":390}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 long-press opens bottom sheet anchored to the bottom; focus inside",
+  "ok": true,
+  "detail": "{\"menu\":true,\"l\":0,\"r\":390,\"b\":844,\"f\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 sheet actions for received message",
+  "ok": true,
+  "detail": "Reply,Copy,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 Escape closes sheet; focus returns to the message",
+  "ok": true,
+  "detail": "bub:m1"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 long-press cancelled by finger movement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 short press (tap) does not open sheet",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: Enter on touch inserts a newline (does not send)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: transcript scrolls and composer stays visible",
+  "ok": true,
+  "detail": "[true,834]"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 long-press cancelled by scroll",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 long-press cancelled by pointercancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 own message sheet includes Edit and Delete",
+  "ok": true,
+  "detail": "Reply,Copy,Edit,Delete,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 sheet Reply: strip visible, textarea focused; cancel works",
+  "ok": true,
+  "detail": "ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 after sends: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":390,\"cw\":390,\"mw\":390,\"mc\":390}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844: textarea select-all unaffected by long-press handler",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 offline strip under header on phone",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 390x844 new-group sheet sits at the bottom and fits",
+  "ok": true,
+  "detail": "[0,390,844,101.125]"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: opens on list; New group is a 56px FAB",
+  "ok": true,
+  "detail": "56,absolute"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: no list-row selection tint on mobile",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 idle: no Reply text; full-height conversation; no visible menu controls",
+  "ok": true,
+  "detail": "app h=740 visible mo=0"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":320,\"cw\":320,\"mw\":320,\"mc\":320}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 long-press opens bottom sheet anchored to the bottom; focus inside",
+  "ok": true,
+  "detail": "{\"menu\":true,\"l\":0,\"r\":320,\"b\":740,\"f\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 sheet actions for received message",
+  "ok": true,
+  "detail": "Reply,Copy,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 Escape closes sheet; focus returns to the message",
+  "ok": true,
+  "detail": "bub:m1"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 long-press cancelled by finger movement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 short press (tap) does not open sheet",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: Enter on touch inserts a newline (does not send)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: transcript scrolls and composer stays visible",
+  "ok": true,
+  "detail": "[true,730]"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 long-press cancelled by scroll",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 long-press cancelled by pointercancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 own message sheet includes Edit and Delete",
+  "ok": true,
+  "detail": "Reply,Copy,Edit,Delete,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 sheet Reply: strip visible, textarea focused; cancel works",
+  "ok": true,
+  "detail": "ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740 after sends: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":320,\"cw\":320,\"mw\":320,\"mc\":320}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light 320x740: textarea select-all unaffected by long-press handler",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light deep link ?group=hike opens real mobile conversation",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark desktop hover reveals 24px chevron beside bubble, bubble size unchanged",
+  "ok": true,
+  "detail": "op=1 mo.x=760.109375 w=24 bubbleRight=754.109375"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark chevron opens anchored popover (not a sheet): Reply, Copy, Message info",
+  "ok": true,
+  "detail": "Reply,Copy,Message info {\"pop\":true,\"dy\":4,\"w\":212}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Escape closes popover, focus returns to the message’s menu button",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark keyboard Tab reaches the menu button and reveals it",
+  "ok": true,
+  "detail": "Actions for message from Sam op=1"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Enter opens the menu with focus on Reply",
+  "ok": true,
+  "detail": "Reply"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Escape restores focus to the menu button",
+  "ok": true,
+  "detail": "Actions for message from Sam"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark own message menu: Reply, Copy, Edit, Delete, Message info",
+  "ok": true,
+  "detail": "Reply,Copy,Edit,Delete,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Message info explains delivery (not in the bubble)",
+  "ok": true,
+  "detail": "Message infoI can, I’ll message you.Sent12:46StatusDelivered to the group’s hostsClose"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark closing Message info returns focus to the message’s menu button",
+  "ok": true,
+  "detail": "Actions for your message"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Reply: context strip names Sam, textarea focused, no dialog",
+  "ok": true,
+  "detail": "Replying to SamSaturday 7am at the trailhead. focus=ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Escape cancels reply, textarea keeps focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark send reply: quote inside bubble, strip gone, delivered tick",
+  "ok": true,
+  "detail": "rq=1 bar=0 state=delivered"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Edit puts the text in the composer with an Editing strip",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark edited message shows \"edited\" in the inline meta",
+  "ok": true,
+  "detail": "edited 21:39Delivered"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark desktop: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":1440,\"cw\":1440,\"mw\":894,\"mc\":894}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark right-click opens the same popover",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark offline host: thin warn strip under header, title block unchanged",
+  "ok": true,
+  "detail": "Host offline — messages waitTry again"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark queued message: pending clock glyph, no explanatory text in bubble",
+  "ok": true,
+  "detail": "{\"st\":\"queued\",\"clock\":true,\"txt\":\"nobody is hosting21:39\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: opens on list; New group is a 56px FAB",
+  "ok": true,
+  "detail": "56,absolute"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: no list-row selection tint on mobile",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 idle: no Reply text; full-height conversation; no visible menu controls",
+  "ok": true,
+  "detail": "app h=844 visible mo=0"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":390,\"cw\":390,\"mw\":390,\"mc\":390}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 long-press opens bottom sheet anchored to the bottom; focus inside",
+  "ok": true,
+  "detail": "{\"menu\":true,\"l\":0,\"r\":390,\"b\":844,\"f\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 sheet actions for received message",
+  "ok": true,
+  "detail": "Reply,Copy,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 Escape closes sheet; focus returns to the message",
+  "ok": true,
+  "detail": "bub:m1"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 long-press cancelled by finger movement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 short press (tap) does not open sheet",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: Enter on touch inserts a newline (does not send)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: transcript scrolls and composer stays visible",
+  "ok": true,
+  "detail": "[true,834]"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 long-press cancelled by scroll",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 long-press cancelled by pointercancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 own message sheet includes Edit and Delete",
+  "ok": true,
+  "detail": "Reply,Copy,Edit,Delete,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 sheet Reply: strip visible, textarea focused; cancel works",
+  "ok": true,
+  "detail": "ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 after sends: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":390,\"cw\":390,\"mw\":390,\"mc\":390}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844: textarea select-all unaffected by long-press handler",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 offline strip under header on phone",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 390x844 new-group sheet sits at the bottom and fits",
+  "ok": true,
+  "detail": "[0,390,844,101.125]"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: opens on list; New group is a 56px FAB",
+  "ok": true,
+  "detail": "56,absolute"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: no list-row selection tint on mobile",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 idle: no Reply text; full-height conversation; no visible menu controls",
+  "ok": true,
+  "detail": "app h=740 visible mo=0"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":320,\"cw\":320,\"mw\":320,\"mc\":320}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 long-press opens bottom sheet anchored to the bottom; focus inside",
+  "ok": true,
+  "detail": "{\"menu\":true,\"l\":0,\"r\":320,\"b\":740,\"f\":true}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 sheet actions for received message",
+  "ok": true,
+  "detail": "Reply,Copy,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 Escape closes sheet; focus returns to the message",
+  "ok": true,
+  "detail": "bub:m1"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 long-press cancelled by finger movement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 short press (tap) does not open sheet",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: Enter on touch inserts a newline (does not send)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: transcript scrolls and composer stays visible",
+  "ok": true,
+  "detail": "[true,730]"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 long-press cancelled by scroll",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 long-press cancelled by pointercancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 own message sheet includes Edit and Delete",
+  "ok": true,
+  "detail": "Reply,Copy,Edit,Delete,Message info"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 sheet Reply: strip visible, textarea focused; cancel works",
+  "ok": true,
+  "detail": "ta"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740 after sends: no clip/overflow",
+  "ok": true,
+  "detail": "{\"bad\":[],\"sw\":320,\"cw\":320,\"mw\":320,\"mc\":320}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark 320x740: textarea select-all unaffected by long-press handler",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark deep link ?group=hike opens real mobile conversation",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "mobile.html contract (?group=hike&preview=mobile): conversation, harness hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "?embed=1: no harness/drawer, zero padding, frame fills 100dvh without border/radius",
+  "ok": true,
+  "detail": "{\"bar\":\"none\",\"sim\":\"none\",\"top\":0,\"left\":0,\"h\":700,\"bw\":\"0px\",\"rad\":\"0px\",\"list\":\"none\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "?embed=1&group: conversation locked — no back control, no list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "?embed=1 at narrow width: still the locked conversation, no back control",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "theme/motion query params honoured; home-style attribute sync also works",
+  "ok": true,
+  "detail": "dark,reduce,rgb(11, 16, 14) -> rgb(237, 239, 233)"
+ },
+ {
+  "page": "group-polish",
+  "name": "?embed=1 without a group keeps the two-pane app",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link invalid \"nope\" falls back to list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link invalid \"%3Cscript%3E\" falls back to list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link invalid \"hike%22%3E\" falls back to list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link invalid \"../x\" falls back to list",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "mobile ?group=hike&from=home deep-links into the conversation; back goes home",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "mobile ?group=family&from=home deep-links into the conversation; back goes home",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "mobile ?group=book&from=home deep-links into the conversation; back goes home",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "deep link to removed group: read-only, no menu buttons, no composer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light roster colours come from tokens: avatar hue pairs, accent ring, muted Hosting badge, --bg overlay",
+  "ok": true,
+  "detail": "{\"hues\":true,\"ring\":true,\"host\":true,\"bg\":true,\"n\":9}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light reduced motion: no animation or transition on roster tiles",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "keyboard: Tab from the overlay reaches the \"+1\" button (with a visible focus ring)",
+  "ok": true,
+  "detail": "ib cmin > t-gc-more ring=solid"
+ },
+ {
+  "page": "group-polish",
+  "name": "keyboard: Enter opens the roster sheet with focus on Done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "keyboard: Done closes the sheet, focus returns to \"+1\"",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "scrim click closes the roster sheet; the call overlay stays",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "Escape in the overlay still minimizes (never ends) a group call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "light Family (your desktop hosts): \"You\" tile carries Hosting; no \"+n\" when everyone fits",
+  "ok": true,
+  "detail": "{\"tiles\":[\"YOYouHosting\",\"MKMeeraSpeaking\",\"AOArjun\"],\"more\":0,\"sub\":\"5 in the call\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "light roster: no console errors",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark roster colours come from tokens: avatar hue pairs, accent ring, muted Hosting badge, --bg overlay",
+  "ok": true,
+  "detail": "{\"hues\":true,\"ring\":true,\"host\":true,\"bg\":true,\"n\":9}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark reduced motion: no animation or transition on roster tiles",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "page": "group-polish",
+  "name": "dark Family (your desktop hosts): \"You\" tile carries Hosting; no \"+n\" when everyone fits",
+  "ok": true,
+  "detail": "{\"tiles\":[\"YOYouHosting\",\"MKMeeraSpeaking\",\"AOArjun\"],\"more\":0,\"sub\":\"5 in the call\"}"
+ },
+ {
+  "page": "group-polish",
+  "name": "dark roster: no console errors",
+  "ok": true,
+  "detail": ""
+ }
+]

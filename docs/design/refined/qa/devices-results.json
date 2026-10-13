@@ -1,0 +1,1778 @@
+[
+ {
+  "group": "layout m390-light",
+  "name": "setup-welcome",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "setup-name-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "setup-phrase-hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "setup-phrase-shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "setup-check-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "setup-protect",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "setup-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "unlock-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "unlock-wait",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "link-choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "link-qr-show",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "link-qr-expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "link-verify",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "link-authorize",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "link-transfer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "link-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "devices",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "devices-unlink-dialog",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "devices-unlink-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "accounts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "accounts-switch-call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-light",
+  "name": "no network requests beyond page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "setup-welcome",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "setup-name-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "setup-phrase-hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "setup-phrase-shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "setup-check-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "setup-protect",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "setup-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "unlock-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "unlock-wait",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "link-choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "link-qr-show",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "link-qr-expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "link-verify",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "link-authorize",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "link-transfer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "link-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "devices",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "devices-unlink-dialog",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "devices-unlink-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "accounts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "accounts-switch-call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m390-dark",
+  "name": "no network requests beyond page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "setup-welcome",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "setup-name-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "setup-phrase-hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "setup-phrase-shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "setup-check-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "setup-protect",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "setup-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "unlock-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "unlock-wait",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "link-choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "link-qr-show",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "link-qr-expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "link-verify",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "link-authorize",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "link-transfer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "link-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "devices",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "devices-unlink-dialog",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "devices-unlink-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "accounts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "accounts-switch-call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-dark",
+  "name": "no network requests beyond page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "setup-welcome",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "setup-name-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "setup-phrase-hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "setup-phrase-shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "setup-check-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "setup-protect",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "setup-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "unlock-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "unlock-wait",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "link-choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "link-qr-show",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "link-qr-expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "link-verify",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "link-authorize",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "link-transfer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "link-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "devices",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "devices-unlink-dialog",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "devices-unlink-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "accounts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "accounts-switch-call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout m320-light",
+  "name": "no network requests beyond page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "setup-welcome",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "setup-name-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "setup-phrase-hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "setup-phrase-shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "setup-check-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "setup-protect",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "setup-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "unlock-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "unlock-wait",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "link-choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "link-qr-show",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "link-qr-expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "link-verify",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "link-authorize",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "link-transfer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "link-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "devices",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "devices-unlink-dialog",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "devices-unlink-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "accounts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "accounts-switch-call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-dark",
+  "name": "no network requests beyond page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "setup-welcome",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "setup-name-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "setup-phrase-hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "setup-phrase-shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "setup-check-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "setup-protect",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "setup-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "unlock-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "unlock-wait",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "link-choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "link-qr-show",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "link-qr-expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "link-verify",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "link-authorize",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "link-transfer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "link-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "devices",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "devices-unlink-dialog",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "devices-unlink-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "accounts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "accounts-switch-call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout d1440-light",
+  "name": "no network requests beyond page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "setup-welcome",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "setup-name-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "setup-phrase-hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "setup-phrase-shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "setup-check-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "setup-protect",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "setup-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "unlock-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "unlock-wait",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "link-choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "link-qr-show",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "link-qr-expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "link-verify",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "link-authorize",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "link-transfer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "link-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "devices",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "devices-unlink-dialog",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "devices-unlink-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "accounts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "accounts-switch-call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-m390",
+  "name": "no network requests beyond page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "setup-welcome",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "setup-name-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "setup-phrase-hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "setup-phrase-shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "setup-check-error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "setup-protect",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "setup-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "unlock-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "unlock-wait",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "link-choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "link-qr-show",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "link-qr-expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "link-verify",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "link-authorize",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "link-transfer",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "link-done",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "devices",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "devices-unlink-dialog",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "devices-unlink-wrong",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "accounts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "accounts-switch-call",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "no console errors / failed requests",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "layout zoom200-d1440",
+  "name": "no network requests beyond page",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "harness",
+  "name": "drawer closed by default; no disclaimer or designer voice visible",
+  "ok": true,
+  "detail": "hidden=true"
+ },
+ {
+  "group": "harness",
+  "name": "theme toggle icon-only 36px with accessible name",
+  "ok": true,
+  "detail": "{\"t\":\"\",\"l\":\"Dark theme\",\"w\":36}"
+ },
+ {
+  "group": "harness",
+  "name": "chip row at 390px: scrolls, every chip reachable with its full label",
+  "ok": true,
+  "detail": "{\"ovx\":\"auto\",\"o\":[true,true,true,true,true]}"
+ },
+ {
+  "group": "harness",
+  "name": "chip row at 320px: scrolls, every chip reachable with its full label",
+  "ok": true,
+  "detail": "{\"ovx\":\"auto\",\"o\":[true,true,true,true,true]}"
+ },
+ {
+  "group": "setup",
+  "name": "welcome states no-server loss in one sentence",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "setup",
+  "name": "choose create focuses name step heading",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "setup",
+  "name": "empty name -> alert + focus on account field",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "setup",
+  "name": "over-32 chars rejected",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "setup",
+  "name": "suggestion chip fills device name only",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "hidden by default: words absent from DOM/innerText/aria",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "drawer says example words only; frame has no simulation talk",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "no copy button / no select-all affordance",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "continue without ticking box -> error + focus on checkbox",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "reveal shows words, aria-pressed true, countdown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "focus stays on toggle after reveal",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "hide button hides again",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "auto-hide after countdown (timers sped 60x)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "hides on page visibility change",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "hides when switching tabs and returning",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "phrase",
+  "name": "hides when going back then forward",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "check",
+  "name": "wrong words name which failed, no lockout",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "check",
+  "name": "show-again returns to phrase, hidden",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "check",
+  "name": "correct words pass",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "protect",
+  "name": "short passphrase / mismatch errors with focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "protect",
+  "name": "device lock removes passphrase fields; keeps radio focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "protect",
+  "name": "passphrase fields are type=password",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "done",
+  "name": "create done: phrase is only backup, no simulation talk in the frame",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "done",
+  "name": "status live region announced",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "restore",
+  "name": "empty -> message, focus textarea",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "restore",
+  "name": "wrong count reports count",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "restore",
+  "name": "non-letters rejected",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "restore",
+  "name": "24 letters but bad checksum rejected",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "restore",
+  "name": "example fill + clipboard untouched",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "restore",
+  "name": "done says identity only, offers link",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "restore",
+  "name": "link button routes to Link with new-device preselected",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "show/hide toggle: aria-pressed + type + ≥44px",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "wrong: message with tries left, field cleared, focus in field",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "after 3 misses: disabled, countdown, nothing erased",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "wait ends by itself (timers sped) and focus returns",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "correct passphrase unlocks; Lock again returns",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "device lock sheet: Escape restores focus to opener",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "device lock Cancel says passphrase still works",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "forgot dialog: no reset/delete offered; Close restores focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "dialog focus is trapped (Tab x6 stays inside)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "unlock",
+  "name": "backdrop click closes and restores focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "link",
+  "name": "submit with nothing chosen -> role error, focus on first radio",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "link",
+  "name": "role chosen, no method -> method error",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "link",
+  "name": "new-device label required",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "link",
+  "name": "directions panel updates with radios",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "link",
+  "name": "diagram marks \"You are here\"",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "qr-show",
+  "name": "QR labelled not scannable, timer 5:00 -> counts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "qr-show",
+  "name": "timer text is not in a live region",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "qr-show",
+  "name": "QR expires on its own (timers sped) -> expired state, focus heading",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "qr-show",
+  "name": "regenerate -> fresh timer and new QR",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "qr-show",
+  "name": "manual expire button -> expired",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "cancel",
+  "name": "cancel (before anything shared) opens dialog; Keep linking keeps state + focus on Cancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "cancel",
+  "name": "Escape on cancel dialog keeps linking, focus restored",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "cancel",
+  "name": "Stop linking -> back to choose, nothing copied announced",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "verify",
+  "name": "shows both codes, existing sees device name, match is a button (not automatic)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "verify",
+  "name": "still on verify after 2.5s (no auto-advance)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "verify",
+  "name": "'They don't match' -> mismatch failure, says nothing shared, Try again works",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "authorize",
+  "name": "warns that approving sends the phrase",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "authorize",
+  "name": "wrong passphrase: error, nothing shared, focus back",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "authorize",
+  "name": "'Don't link' opens stop dialog, Stop -> choose",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "transfer",
+  "name": "four text-status steps (done / in progress / waiting)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "transfer",
+  "name": "cancel after account sent: dialog warns account may already be on device",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "transfer",
+  "name": "failed page has no overclaiming copy",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "transfer",
+  "name": "connection drop after send -> \"may already be on the new device\" + unlink advice",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "transfer",
+  "name": "success -> done, simulated, device appears in My devices",
+  "ok": true,
+  "detail": "Pixel tablet is linked\n\nPixel tablet now has your account. It starts syncing con|My devices\n\nNames are private to your devices. Contacts neve"
+ },
+ {
+  "group": "scan",
+  "name": "camera ask -> prompt dialog; Deny shows 3 fallbacks",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "scan",
+  "name": "manual: empty / malformed give distinct errors with focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "scan",
+  "name": "EXPIRED / USED codes route to correct failure",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "scan",
+  "name": "settings sheet can turn camera on",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "scan",
+  "name": "Allow camera -> simulated viewfinder says no camera used",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "scan",
+  "name": "valid example code -> verify; new device waits (nothing copied), cancel available",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "waiting",
+  "name": "refused -> declined, nothing copied",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "waiting",
+  "name": "approved -> transfer -> done on new device",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "theme",
+  "name": "toggle switches theme, aria-pressed, label, persists across tabs",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "theme",
+  "name": "toggle back to light",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "list: dot+text status, This device tag, stale nudge at 41 days",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "Rename/Unlink buttons carry the device name in accessible label",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "touch targets >=44px",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "rename: empty rejected in place, dialog stays, focus on input",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "rename: duplicate rejected (case-insensitive)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "rename: Escape closes, focus back on the same row Rename",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "rename: save updates row + announces + focus restored",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "unlink offline device: dialog says not a lock + offline wording",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "unlink dialog default focus is the safe Cancel",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "unlink: Cancel button keeps device, focus restored to Unlink opener",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "unlink: Escape cancels, nothing removed, focus restored",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "unlink: backdrop click cancels",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "unlink: empty/wrong passphrase keeps dialog + device, focus in field",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "unlink: correct passphrase removes row, announces, focus lands on heading/list (not body)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "unlink online device: dialog wording differs and is not an overclaim",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "page never says unlink revokes / excludes phrase holder",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "remove this device (multi): no ack needed, wrong pass rejected",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "only device: remove needs recovery-phrase acknowledgement",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "devices",
+  "name": "after removal: focus on heading, restore demo works",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "accounts",
+  "name": "switch dialog states one-online, draft kept, own passphrase",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "accounts",
+  "name": "wrong passphrase leaves you on current account",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "accounts",
+  "name": "switch ok: draft saved per account, switching back restores draft",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "accounts",
+  "name": "call active: End call and switch warning",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "accounts",
+  "name": "add account never replaces; Escape restores focus",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "keyboard",
+  "name": "tab bar reachable and Enter activates a tab",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "keyboard",
+  "name": "tab buttons expose aria-current",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "secrets",
+  "name": "no clipboard/copy/cut/exec calls across whole session",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "secrets",
+  "name": "no localStorage/sessionStorage/cookies written",
+  "ok": true,
+  "detail": "{\"l\":0,\"s\":0,\"c\":\"\"}"
+ },
+ {
+  "group": "secrets",
+  "name": "no URL hash/query leaks words or passphrase",
+  "ok": true,
+  "detail": "http://127.0.0.1:8768/refined/devices.html#unlock"
+ },
+ {
+  "group": "secrets",
+  "name": "phrase words appear only in the revealed phrase state (never in other tabs / hidden)",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "secrets",
+  "name": "passphrases are type=password except explicit toggle",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "group": "secrets",
+  "name": "no real network traffic (only same-origin page)",
+  "ok": true,
+  "detail": "http://127.0.0.1:8768/refined/devices.html http://127.0.0.1:8768/refined/tokens.css http://127.0.0.1:8768/refined/interactions.css"
+ },
+ {
+  "group": "console",
+  "name": "no console errors / page errors / browser dialogs in flows",
+  "ok": true,
+  "detail": ""
+ }
+]

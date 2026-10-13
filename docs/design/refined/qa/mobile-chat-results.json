@@ -1,0 +1,867 @@
+[
+  {
+    "name": "1440 mobile.html iframe src deep-links chat",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe composer visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe uses embed=1",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: no in-frame back, no harness chrome",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: call button present (44px)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: call overlay fills the iframe, outer page unchanged",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: minimized strip above header inside the frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: call ended",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 embed: app fills frame, no border/radius",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe shows Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe width 390",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 outer no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 iframe inner no overflow",
+    "ok": true,
+    "detail": "{\"sw\":390,\"iw\":390,\"bw\":390}"
+  },
+  {
+    "name": "1440 phone fits in viewport",
+    "ok": true,
+    "detail": "{\"x\":525,\"y\":59,\"width\":390,\"height\":844}"
+  },
+  {
+    "name": "1440 composer inside iframe",
+    "ok": true,
+    "detail": "{\"x\":525,\"y\":845,\"width\":390,\"height\":58}"
+  },
+  {
+    "name": "toggle 320 iframe width",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 iframe inner no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 iframe composer visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "toggle back to 390",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "desktop link href",
+    "ok": true,
+    "detail": "chat.html?chat=arjun"
+  },
+  {
+    "name": "desktop link opens desktop chat (split)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mobile.html chat=meera selects Meera",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mobile.html invalid chat \"nobody\" safe fallback",
+    "ok": true,
+    "detail": "AO\nArjun Oommen\nOnline "
+  },
+  {
+    "name": "mobile.html invalid chat \"<script>alert(1)</script>\" safe fallback",
+    "ok": true,
+    "detail": "AO\nArjun Oommen\nOnline "
+  },
+  {
+    "name": "mobile.html invalid chat \"\" safe fallback",
+    "ok": true,
+    "detail": "AO\nArjun Oommen\nOnline "
+  },
+  {
+    "name": "mobile.html invalid chat \"__proto__\" safe fallback",
+    "ok": true,
+    "detail": "AO\nArjun Oommen\nOnline "
+  },
+  {
+    "name": "chat.html invalid param shows list, no errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "chat.html invalid param no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 native conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 native selected Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 no overflow",
+    "ok": true,
+    "detail": "{\"sw\":390,\"iw\":390,\"bw\":390}"
+  },
+  {
+    "name": "390 composer within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":786,\"width\":390,\"height\":58}"
+  },
+  {
+    "name": "390 back target >=44",
+    "ok": true,
+    "detail": "{\"x\":6,\"y\":6,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "390 #sendBtn >=44px",
+    "ok": true,
+    "detail": "{\"x\":338,\"y\":792,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "390 [aria-label=\"Attach a file\"] >=44px",
+    "ok": true,
+    "detail": "{\"x\":8,\"y\":792,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "390 send enabled with draft",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 back (no from) shows list",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 draft preview in list",
+    "ok": true,
+    "detail": "AO\nArjun Oommen\n12:44\nDraft: Draft for QA"
+  },
+  {
+    "name": "390 draft restored",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 send adds message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 composer cleared",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 new message above composer",
+    "ok": true,
+    "detail": "{\"x\":10,\"y\":739,\"width\":370,\"height\":37}"
+  },
+  {
+    "name": "390 empty send gives no message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 long draft composer stays in viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":690,\"width\":390,\"height\":154}"
+  },
+  {
+    "name": "390 long draft no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 attach sheet within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":498,\"width\":390,\"height\":346}"
+  },
+  {
+    "name": "390 attachment adds message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 attach sheet closes",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 focus returns sensible after attach",
+    "ok": true,
+    "detail": "<textarea id=\"ta\" rows=\"1\" aria-label=\"Message to Arjun Oommen\" placeholder=\"Mes"
+  },
+  {
+    "name": "390 no visible per-message menu buttons",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 long-press cancelled by >10px move",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 short press does not open menu",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 long-press (500ms) opens message sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 sheet docked to bottom, within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":554,\"width\":390,\"height\":290}"
+  },
+  {
+    "name": "390 sheet items Reply/Copy/Edit/Delete/Message info",
+    "ok": true,
+    "detail": "Message optionsReplyCopyEditDeleteMessage info"
+  },
+  {
+    "name": "390 menu Escape closes",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 focus returns to the message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 contextmenu opens sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 scrim tap closes sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 keyboard: hidden menu button opens sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 Message info sheet opens",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 details sheet within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":229.8125,\"width\":390,\"height\":614.1875}"
+  },
+  {
+    "name": "390 keyboard-height: composer visible",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":364,\"width\":390,\"height\":58}"
+  },
+  {
+    "name": "390 keyboard-height: header visible",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":0,\"width\":390,\"height\":57}"
+  },
+  {
+    "name": "390 keyboard-height: message list has room (>=40px)",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":57,\"width\":390,\"height\":307}"
+  },
+  {
+    "name": "390 native no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 native conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 native selected Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 no overflow",
+    "ok": true,
+    "detail": "{\"sw\":320,\"iw\":320,\"bw\":320}"
+  },
+  {
+    "name": "320 composer within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":582,\"width\":320,\"height\":58}"
+  },
+  {
+    "name": "320 back target >=44",
+    "ok": true,
+    "detail": "{\"x\":6,\"y\":6,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "320 #sendBtn >=44px",
+    "ok": true,
+    "detail": "{\"x\":268,\"y\":588,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "320 [aria-label=\"Attach a file\"] >=44px",
+    "ok": true,
+    "detail": "{\"x\":8,\"y\":588,\"width\":44,\"height\":44}"
+  },
+  {
+    "name": "320 send enabled with draft",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 back (no from) shows list",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 draft preview in list",
+    "ok": true,
+    "detail": "AO\nArjun Oommen\n12:44\nDraft: Draft for QA"
+  },
+  {
+    "name": "320 draft restored",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 send adds message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 composer cleared",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 new message above composer",
+    "ok": true,
+    "detail": "{\"x\":10,\"y\":535,\"width\":300,\"height\":37}"
+  },
+  {
+    "name": "320 empty send gives no message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 long draft composer stays in viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":486,\"width\":320,\"height\":154}"
+  },
+  {
+    "name": "320 long draft no overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 attach sheet within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":294,\"width\":320,\"height\":346}"
+  },
+  {
+    "name": "320 attachment adds message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 attach sheet closes",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 focus returns sensible after attach",
+    "ok": true,
+    "detail": "<textarea id=\"ta\" rows=\"1\" aria-label=\"Message to Arjun Oommen\" placeholder=\"Mes"
+  },
+  {
+    "name": "320 no visible per-message menu buttons",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 long-press cancelled by >10px move",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 short press does not open menu",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 long-press (500ms) opens message sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 sheet docked to bottom, within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":350,\"width\":320,\"height\":290}"
+  },
+  {
+    "name": "320 sheet items Reply/Copy/Edit/Delete/Message info",
+    "ok": true,
+    "detail": "Message optionsReplyCopyEditDeleteMessage info"
+  },
+  {
+    "name": "320 menu Escape closes",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 focus returns to the message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 contextmenu opens sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 scrim tap closes sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 keyboard: hidden menu button opens sheet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 Message info sheet opens",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 details sheet within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":32,\"width\":320,\"height\":608}"
+  },
+  {
+    "name": "320 keyboard-height: composer visible",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":262,\"width\":320,\"height\":58}"
+  },
+  {
+    "name": "320 keyboard-height: header visible",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":0,\"width\":320,\"height\":57}"
+  },
+  {
+    "name": "320 keyboard-height: message list has room (>=40px)",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":57,\"width\":320,\"height\":205}"
+  },
+  {
+    "name": "320 native no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 home->Arjun lands on chat.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "390 from=home in URL",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "390 no modal open after navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 direct chat conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 chat shows Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 no overflow after nav",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 Back returns home.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "390 Back lands on Chats tab",
+    "ok": true,
+    "detail": "Chats"
+  },
+  {
+    "name": "390 home list rows after Back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 home no modal after back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 home launch not blocking after Back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 home->Meera correct person",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 browser Back returns home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "390 group row opens groups.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/groups.html?group=hike&from=home"
+  },
+  {
+    "name": "390 Escape in from=home chat returns home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "390 home flow no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 home->Arjun lands on chat.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "320 from=home in URL",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "320 no modal open after navigation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 direct chat conv view",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 chat shows Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 no overflow after nav",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 Back returns home.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "320 Back lands on Chats tab",
+    "ok": true,
+    "detail": "Chats"
+  },
+  {
+    "name": "320 home list rows after Back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 home no modal after back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 home launch not blocking after Back",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 home->Meera correct person",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "320 browser Back returns home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "320 group row opens groups.html",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/groups.html?group=hike&from=home"
+  },
+  {
+    "name": "320 Escape in from=home chat returns home",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html#chats"
+  },
+  {
+    "name": "320 home flow no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "1440 home click stays on home with detail",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/home.html"
+  },
+  {
+    "name": "home 1440 embeds chat.html with embed=1",
+    "ok": true,
+    "detail": "chat.html?chat=arjun&embed=1&callbar=host"
+  },
+  {
+    "name": "home 1440 embedded chat has no back button or harness",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "chat.html mobilePreview href resolves to mobile.html chat=arjun",
+    "ok": true,
+    "detail": "mobile.html?screen=chat&chat=arjun"
+  },
+  {
+    "name": "mobilePreview click loads mobile iframe with Arjun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mobile.html at 390: fills viewport no overflow",
+    "ok": true,
+    "detail": "{\"sw\":390,\"iw\":390,\"bw\":390}"
+  },
+  {
+    "name": "mobile.html at 390: iframe composer visible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "mobile.html at 390: iframe within viewport",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":48,\"width\":390,\"height\":796}"
+  },
+  {
+    "name": "mobile.html at 320: no overflow",
+    "ok": true,
+    "detail": "{\"sw\":320,\"iw\":320,\"bw\":320}"
+  },
+  {
+    "name": "links runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: Arjun opens chat.html inside the bezel",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "light mobile home: overlay up, no strip yet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: one strip in the conversation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: Back → Home inside the bezel keeps the strip, timer continues",
+    "ok": true,
+    "detail": "Arjun Oommen · 00:02 1"
+  },
+  {
+    "name": "light mobile home: strip at the top of the phone, header below it",
+    "ok": true,
+    "detail": "[{\"x\":0,\"y\":0,\"width\":390,\"height\":40,\"top\":0,\"right\":390,\"bottom\":40,\"left\":0},40]"
+  },
+  {
+    "name": "light mobile home: strip on Calls tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: strip → conversation with overlay open",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "light mobile home: after End no strip anywhere",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "light mobile home: no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: Arjun opens chat.html inside the bezel",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "dark mobile home: overlay up, no strip yet",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: one strip in the conversation",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: Back → Home inside the bezel keeps the strip, timer continues",
+    "ok": true,
+    "detail": "Arjun Oommen · 00:02 1"
+  },
+  {
+    "name": "dark mobile home: strip at the top of the phone, header below it",
+    "ok": true,
+    "detail": "[{\"x\":0,\"y\":0,\"width\":390,\"height\":40,\"top\":0,\"right\":390,\"bottom\":40,\"left\":0},40]"
+  },
+  {
+    "name": "dark mobile home: strip on Calls tab",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: strip → conversation with overlay open",
+    "ok": true,
+    "detail": "http://127.0.0.1:8768/refined/chat.html?chat=arjun&from=home"
+  },
+  {
+    "name": "dark mobile home: after End no strip anywhere",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: no AudioContext",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "dark mobile home: no runtime errors",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "embed chat: exactly one strip, inside the frame",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "390 bezel group call: 3 speaking tiles in two rows (host, speaker, muted), one quiet row below ending in \"+1\" (6 shown), nothing clipped",
+    "ok": true,
+    "detail": "{\"tiles\":[{\"top\":255,\"bottom\":375,\"right\":187,\"host\":true,\"mic\":false,\"on\":true},{\"top\":255,\"bottom\":375,\"right\":323,\"host\":false,\"mic\":false,\"on\":false},{\"top\":395,\"bottom\":491,\"right\":255,\"host\":false,\"mic\":true,\"on\":false}],\"qTop\":523,\"qRows\":1,\"maxRight\":359,\"iw\":390,\"sw\":390,\"more\":\"+1\",\"ctrl\":714.609375,\"ih\":844}"
+  },
+  {
+    "name": "390 bezel group call: Quiet mode default — no AudioContext anywhere",
+    "ok": true,
+    "detail": "{\"ctx\":0,\"started\":0}"
+  },
+  {
+    "name": "320 bezel group call: 3 speaking tiles in two rows (host, speaker, muted), one quiet row below ending in \"+2\" (5 shown), nothing clipped",
+    "ok": true,
+    "detail": "{\"tiles\":[{\"top\":255,\"bottom\":375,\"right\":152,\"host\":true,\"mic\":false,\"on\":true},{\"top\":255,\"bottom\":375,\"right\":288,\"host\":false,\"mic\":false,\"on\":false},{\"top\":395,\"bottom\":491,\"right\":220,\"host\":false,\"mic\":true,\"on\":false}],\"qTop\":523,\"qRows\":1,\"maxRight\":300,\"iw\":320,\"sw\":320,\"more\":\"+2\",\"ctrl\":714.609375,\"ih\":844}"
+  },
+  {
+    "name": "320 bezel group call: Quiet mode default — no AudioContext anywhere",
+    "ok": true,
+    "detail": "{\"ctx\":0,\"started\":0}"
+  }
+]
