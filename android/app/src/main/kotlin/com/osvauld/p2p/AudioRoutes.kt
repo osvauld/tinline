@@ -34,12 +34,19 @@ object Routes {
         if (state.speaker) pickDefault(state.available.filter { it.kind != AudioRoute.Kind.Speaker }, preferSpeaker = false)
         else state.available.firstOrNull { it.kind == AudioRoute.Kind.Speaker }
 
+    /** core-telecom's name for a Bluetooth device it may not read (no BLUETOOTH_CONNECT). */
+    const val GENERIC_BT = "Bluetooth Device"
+
+    /** A Bluetooth route shows without its own name: allowing Nearby devices would name it. */
+    fun unnamedBluetooth(st: RouteState): Boolean =
+        st.available.any { it.kind == AudioRoute.Kind.Bluetooth && (it.name.isBlank() || it.name == GENERIC_BT) }
+
     /** Short label for the route button and sheet. */
     fun label(r: AudioRoute): String = when (r.kind) {
         AudioRoute.Kind.Earpiece -> "Phone"
         AudioRoute.Kind.Speaker -> "Speaker"
         AudioRoute.Kind.Wired -> r.name.ifBlank { "Headset" }
-        AudioRoute.Kind.Bluetooth -> r.name.ifBlank { "Bluetooth" }
+        AudioRoute.Kind.Bluetooth -> r.name.takeUnless { it.isBlank() || it == GENERIC_BT } ?: "Bluetooth"
         AudioRoute.Kind.Other -> r.name.ifBlank { "Other" }
     }
 }

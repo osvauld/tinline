@@ -45,6 +45,15 @@ class AudioRoutesTest {
         assertFalse(RouteState().earpiece)
     }
 
+    @Test fun genericBluetoothNameCountsAsUnnamed() {
+        val generic = bt.copy(name = Routes.GENERIC_BT)
+        assertTrue(Routes.unnamedBluetooth(RouteState(generic, listOf(ear, spk, generic))))
+        assertTrue(Routes.unnamedBluetooth(RouteState(ear, listOf(ear, bt.copy(name = "")))))
+        assertFalse(Routes.unnamedBluetooth(RouteState(bt, listOf(ear, spk, bt))))
+        assertFalse(Routes.unnamedBluetooth(RouteState(ear, listOf(ear, spk))))
+        assertEquals("Bluetooth", Routes.label(generic))
+    }
+
     @Test fun labels() {
         assertEquals("Phone", Routes.label(ear))
         assertEquals("Buds", Routes.label(bt))

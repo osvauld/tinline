@@ -59,8 +59,9 @@ Telecom; the address is the constant `tinline:call`, never a DID. If Telecom ref
 `AudioEngine.takeRouting` does it in-app (communication devices on API 31+, speakerphone/SCO
 below), following headsets that connect or disconnect. Starting route (`Routes.pickDefault`): a
 headset, else earpiece for 1:1 and speaker for group/video. With a headset available the speaker
-slot opens the route sheet. Proximity screen-off only on the earpiece. Bluetooth device names on
-Android 12–13 need `BLUETOOTH_CONNECT`, which the app does not request (it shows "Bluetooth").
+slot opens the route sheet. Proximity screen-off only on the earpiece. Without `BLUETOOTH_CONNECT`
+(Android 12+) a headset shows as "Bluetooth" and Telecom picks which one; the route sheet then offers
+"Show my headset names", which asks for it (gallery: `incall_bt`, `incall_bt_sheet`).
 
 ## UI (Compose, Material 3, Tinline design)
 

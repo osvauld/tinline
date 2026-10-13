@@ -96,6 +96,17 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
         "calling" -> InCallContent("Arjun Oommen", arjun.did, maya, false, false, 0, null, null, false, false, null, {}, {}, {}, {})
         "incall" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 252, true, 4, true, false, null, {}, {}, {}, {})
         "incall_relayed" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 767, false, 3, false, true, null, {}, {}, {}, {}, startWithSheet = true)
+        "incall_bt" -> {
+            val bt = AudioRoute(AudioRoute.Kind.Bluetooth, "Pixel Buds", "bt")
+            val r = RouteState(bt, listOf(AudioRoute(AudioRoute.Kind.Earpiece, "", "ear"), AudioRoute(AudioRoute.Kind.Speaker, "", "spk"), bt))
+            InCallContent("Arjun Oommen", arjun.did, maya, true, false, 252, true, 4, false, false, null, {}, {}, {}, {}, routes = r)
+        }
+        "incall_bt_sheet" -> {
+            val bt = AudioRoute(AudioRoute.Kind.Bluetooth, Routes.GENERIC_BT, "bt")
+            val r = RouteState(bt, listOf(AudioRoute(AudioRoute.Kind.Earpiece, "", "ear"), AudioRoute(AudioRoute.Kind.Speaker, "", "spk"), bt))
+            InCallContent("Arjun Oommen", arjun.did, maya, true, false, 252, true, 4, false, false, null, {}, {}, {}, {},
+                startWithSheet = true, routes = r, onAllowBtNames = {})
+        }
         "ended" -> EndedContent("Arjun Oommen", arjun.did, maya, endReasonText("hangup_remote", "Arjun"), 1084, true, 3, {}, {}, autoClose = false)
         "unreach" -> UnreachableContent("Lena", contacts[4].did, maya, none, none)
         "mic" -> MicNeededScreen(none, none)

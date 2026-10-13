@@ -69,6 +69,8 @@ const val ENDED_AUTOCLOSE_MS = 4000L
 class CallActivity : ComponentActivity() {
     private lateinit var answerWithMic: () -> Unit
     private lateinit var cameraOn: () -> Unit
+    /** Android 12+: Nearby devices lets Telecom name Bluetooth headsets and switch between them. */
+    private val btAllowed = mutableStateOf(true)
 
     override fun onStart() {
         super.onStart()
@@ -99,6 +101,10 @@ class CallActivity : ComponentActivity() {
             if (Perms.granted(this, android.Manifest.permission.CAMERA)) { app.video.setCamera(true); app.calls.speakerForVideo() }
             else cameraLauncher.launch(android.Manifest.permission.CAMERA)
         }
+        btAllowed.value = Build.VERSION.SDK_INT < 31 || Perms.granted(this, android.Manifest.permission.BLUETOOTH_CONNECT)
+        val btLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { ok ->
+            btAllowed.value = ok
+        }
         // Only a fresh launch answers: a recreation (rotation) must not answer a second time.
         if (savedInstanceState == null) handle(intent)
         val meName = app.node.profile()?.name ?: ""
@@ -124,7 +130,9 @@ class CallActivity : ComponentActivity() {
                     u != null && u.info.incoming && u.state is CallState.Ringing ->
                         IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() })
                     u != null -> {
-                        InCallScreen(u, meName, app, onCameraOn = cameraOn, onMinimise = { finish() })
+                        val allowed by btAllowed
+                        InCallScreen(u, meName, app, onCameraOn = cameraOn, onMinimise = { finish() },
+                            onAllowBtNames = if (allowed) null else ({ btLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT) }))
                         val w by app.calls.waiting.collectAsState()
                         w?.let { WaitingBanner(it.peerName.ifBlank { "Unknown" }, it.peerDid, onDecline = { app.calls.declineWaiting() }, onEndAnswer = { app.calls.endAndAnswer() }) }
                     }
@@ -242,7 +250,8 @@ fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer:
 }
 
 @Composable
-fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit, onMinimise: () -> Unit) {
+fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit, onMinimise: () -> Unit,
+    onAllowBtNames: (() -> Unit)? = null) {
     val calls = app.calls
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(500); now = System.currentTimeMillis() } }
@@ -267,7 +276,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
                 remote = { m -> RemoteVideo(app, calls, m) },
                 selfView = { m -> SelfView(app, front, m) },
-                routes = ui.routes, onRoute = { calls.selectRoute(it) },
+                routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames,
             )
         }
     } else InCallContent(
@@ -277,7 +286,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         muted = ui.muted, speaker = ui.speaker, micProblem = if (ui.held) HELD else ui.micProblem ?: videoProblem, reconnecting = s?.reconnecting == true,
         onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
         onCamera = if (v != null) onCamera else null,
-        routes = ui.routes, onRoute = { calls.selectRoute(it) },
+        routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames,
     )
 }
 
@@ -291,6 +300,8 @@ fun InCallContent(
     onCamera: (() -> Unit)? = null,
     /** The live routes; with a headset connected the speaker slot opens the route sheet instead of toggling. */
     routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {},
+    /** Set while Nearby devices is not allowed (Android 12+): the sheet offers it when a headset is unnamed. */
+    onAllowBtNames: (() -> Unit)? = null,
 ) {
     var routeSheet by remember { mutableStateOf(startWithSheet) }
     var info by remember { mutableStateOf(false) }
@@ -303,12 +314,12 @@ fun InCallContent(
     if (info) CallInfo(name, active, onDismiss = { info = false })
     if (routeSheet) AudioRouteSheet(speaker, routes, relayed = active && direct == false, onDismiss = { routeSheet = false },
         onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false },
-        onRoute = { onRoute(it); routeSheet = false })
+        onRoute = { onRoute(it); routeSheet = false }, onAllowBtNames = onAllowBtNames)
 }
 
 @Composable
 private fun AudioRouteSheet(speaker: Boolean, routes: RouteState?, relayed: Boolean, onDismiss: () -> Unit,
-    onPick: (speaker: Boolean) -> Unit, onRoute: (AudioRoute) -> Unit) {
+    onPick: (speaker: Boolean) -> Unit, onRoute: (AudioRoute) -> Unit, onAllowBtNames: (() -> Unit)? = null) {
     val c = Tin.c
     TinSheet(onDismiss) {
         Text("Play call through", Modifier.padding(start = 8.dp, top = 12.dp, bottom = 8.dp), style = TinType.titleL.copy(fontSize = 20.sp), color = c.ink)
@@ -320,6 +331,11 @@ private fun AudioRouteSheet(speaker: Boolean, routes: RouteState?, relayed: Bool
         } else {
             RouteOption(Icons.Rounded.PhoneInTalk, "Phone", !speaker) { onPick(false) }
             RouteOption(Icons.Rounded.VolumeUp, "Speaker", speaker) { onPick(true) }
+        }
+        if (onAllowBtNames != null && routes != null && Routes.unnamedBluetooth(routes)) {
+            Hint("Allow nearby devices and Tinline can show your headset’s name and switch between headsets.",
+                Modifier.padding(start = 8.dp, end = 8.dp, top = 12.dp))
+            TinButton("Show my headset names", onAllowBtNames, Modifier.padding(horizontal = 8.dp, vertical = 8.dp), style = BtnStyle.Tonal)
         }
         if (relayed) Hint("Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you.", Modifier.padding(start = 8.dp, end = 8.dp, top = 12.dp))
     }
@@ -353,7 +369,7 @@ fun VideoCallContent(
     muted: Boolean, speaker: Boolean, localCamera: Boolean, remoteCamera: Boolean, problem: String?,
     onMute: () -> Unit, onSpeaker: () -> Unit, onCamera: () -> Unit, onFlip: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit,
     remote: @Composable (Modifier) -> Unit, selfView: @Composable (Modifier) -> Unit,
-    routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {},
+    routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {}, onAllowBtNames: (() -> Unit)? = null,
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
@@ -398,7 +414,7 @@ fun VideoCallContent(
     if (info) CallInfo(name, active = true, onDismiss = { info = false })
     if (routeSheet) AudioRouteSheet(speaker, routes, relayed = direct == false, onDismiss = { routeSheet = false },
         onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false },
-        onRoute = { onRoute(it); routeSheet = false })
+        onRoute = { onRoute(it); routeSheet = false }, onAllowBtNames = onAllowBtNames)
 }
 
 /** The peer's decoded frames, pulled on the display clock by a [RemoteRenderer] while shown. */
