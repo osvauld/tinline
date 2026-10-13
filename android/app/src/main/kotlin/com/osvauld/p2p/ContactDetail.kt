@@ -95,7 +95,7 @@ fun ContactScreen(
 private fun ActionChip(icon: ImageVector, label: String, tint: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
     val c = Tin.c
     Column(
-        Modifier.width(88.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onClick),
+        Modifier.width(88.dp).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(Modifier.size(52.dp).clip(CircleShape).background(c.sf2), contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint) }

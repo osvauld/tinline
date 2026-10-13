@@ -337,7 +337,7 @@ fun WordGrid(phrase: String) {
             for (col in 0..1) {
                 val i = r + col * half
                 if (i < words.size) Row(
-                    Modifier.weight(1f).heightIn(min = 32.dp).clip(RoundedCornerShape(8.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp),
+                    Modifier.weight(1f).heightIn(min = 32.dp).clip(SmoothCornerShape(8.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(8.dp)).padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text("${i + 1}", Modifier.width(18.dp), style = TinType.caption, color = c.ink2, textAlign = TextAlign.End)
@@ -444,7 +444,7 @@ fun TermsScreen(progress: Int?, onBack: (() -> Unit)?, onAgree: () -> Unit) {
         Spacer(Modifier.weight(1f, fill = false).heightIn(min = 8.dp))
         val link = SpanStyle(color = c.pr, textDecoration = TextDecoration.Underline, fontWeight = FontWeight.SemiBold)
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(14.dp))
+            Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(14.dp))
                 .clickable(role = Role.Checkbox) { agreed = !agreed }.padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top,
         ) {
@@ -491,10 +491,10 @@ fun PermissionsScreen(missing: List<Need>, onFix: (Need) -> Unit, onDone: () -> 
 private fun PermRow(icon: ImageVector, title: String, desc: String, granted: Boolean, onAllow: () -> Unit) {
     val c = Tin.c
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(14.dp)).padding(16.dp),
+        Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(14.dp)).padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top,
     ) {
-        Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
+        Box(Modifier.size(40.dp).clip(SmoothCornerShape(12.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
         Column(Modifier.weight(1f)) {
             Text(title, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
             Text(desc, style = TinType.bodyM.copy(lineHeight = 19.sp), color = c.ink2)

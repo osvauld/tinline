@@ -83,7 +83,7 @@ class ConvPreview(
 
 private sealed interface ConvRow {
     data class Day(val label: String) : ConvRow
-    data class Msg(val m: Message) : ConvRow
+    data class Msg(val m: Message, val pos: BubblePos = BubblePos.Solo) : ConvRow
 }
 
 private fun List<Message>.sortedChat() = sortedWith(compareBy<Message>({ it.at }, { it.id }))
@@ -176,10 +176,14 @@ fun ConversationScreen(
     val rows = remember(msgs.toList(), nowMs / 3_600_000) {
         buildList<ConvRow> {
             var last: Long? = null
-            msgs.forEach { m ->
+            // Same sender, same day, within 5 minutes: one run (playground Conversation.svelte), so stack-facing corners go tight.
+            fun joined(a: Message?, b: Message?) = a != null && b != null && a.outgoing == b.outgoing &&
+                sameDay(a.at.toLong(), b.at.toLong()) && kotlin.math.abs(b.at.toLong() - a.at.toLong()) <= 5 * 60_000
+            msgs.forEachIndexed { i, m ->
                 val at = m.at.toLong()
                 if (last == null || !sameDay(last!!, at)) add(ConvRow.Day(dayLabel(at, System.currentTimeMillis())))
-                add(ConvRow.Msg(m)); last = at
+                val a = joined(msgs.getOrNull(i - 1), m); val b = joined(m, msgs.getOrNull(i + 1))
+                add(ConvRow.Msg(m, if (a && b) BubblePos.Mid else if (a) BubblePos.Last else if (b) BubblePos.First else BubblePos.Solo)); last = at
             }
         }.reversed()
     }
@@ -299,7 +303,7 @@ fun ConversationScreen(
                                 style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.ink2)
                         }
                         is ConvRow.Msg -> Bubble(
-                            r.m, name, link, online, nowMs, progress, requested, byId, source,
+                            r.m, r.pos, name, link, online, nowMs, progress, requested, byId, source,
                             notDelivered = if (r.m.id in undelivered) BlockCopy.notDelivered(name) else null,
                             selected = actionsFor == r.m.id,
                             onLong = { if (!r.m.deleted) actionsFor = r.m.id },
@@ -315,7 +319,7 @@ fun ConversationScreen(
                 val mayHaveOlder = oldestDay != null && addedDay != null && addedDay.isBefore(oldestDay) && !noOlder
                 if (loaded && olderDay == null && mayHaveOlder) item(key = "older") {
                     Row(
-                        Modifier.fillMaxWidth().padding(start = 0.dp, end = 0.dp, top = 8.dp, bottom = 8.dp).border(1.dp, c.ln2, RoundedCornerShape(14.dp)).padding(16.dp),
+                        Modifier.fillMaxWidth().padding(start = 0.dp, end = 0.dp, top = 8.dp, bottom = 8.dp).border(1.dp, c.ln2, SmoothCornerShape(14.dp)).padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Icon(Icons.Rounded.History, null, tint = c.ink2)
@@ -405,8 +409,8 @@ private fun Composer(
     val voice = rememberVoiceRecState { r -> onVoice(r.path, r.durationMs, r.waveform) }
     val banner = editBanner ?: replyBanner
     if (banner != null) Row(
-        Modifier.padding(horizontal = 8.dp).fillMaxWidth().clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)).background(c.sf)
-            .border(1.dp, c.ln, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)).padding(start = 14.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
+        Modifier.padding(horizontal = 8.dp).fillMaxWidth().clip(SmoothCornerShape(topStart = 16.dp, topEnd = 16.dp)).background(c.sf)
+            .border(1.dp, c.ln, SmoothCornerShape(topStart = 16.dp, topEnd = 16.dp)).padding(start = 14.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(if (editBanner != null) Icons.Rounded.Edit else Icons.AutoMirrored.Rounded.Reply, null, tint = c.pr, modifier = Modifier.size(20.dp))
@@ -417,7 +421,7 @@ private fun Composer(
         IconBtn(Icons.Rounded.Close, if (editBanner != null) "Cancel editing" else "Cancel reply", onCancelBanner, tint = c.ink2)
     }
     Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = if (banner != null) 0.dp else 8.dp, bottom = 12.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        val shape = if (banner != null) RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp) else RoundedCornerShape(24.dp)
+        val shape = if (banner != null) SmoothCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp) else SmoothCornerShape(24.dp)
         if (voice.recording) VoiceRecordingBar(voice, Modifier.weight(1f)) else Row(
             Modifier.weight(1f).heightIn(min = 48.dp).clip(shape).background(if (editing) c.sf else c.sf2).let { if (editing) it.border(1.dp, c.pr, shape) else it },
             verticalAlignment = Alignment.CenterVertically,
@@ -449,14 +453,14 @@ private fun BannerLine(text: String) =
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun Bubble(
-    m: Message, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: List<String>,
+    m: Message, pos: BubblePos, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: List<String>,
     byId: Map<String, Message>, source: ChatSource, notDelivered: String? = null, selected: Boolean,
     onLong: () -> Unit, onReply: () -> Unit, onDownload: () -> Unit, onCancel: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
     onOpenFile: () -> Unit, broken: Boolean, onBroken: () -> Unit,
 ) {
     val c = Tin.c
     val out = m.outgoing
-    val shape = RoundedCornerShape(18.dp, 18.dp, if (out) 6.dp else 18.dp, if (out) 18.dp else 6.dp)
+    val shape = bubbleShape(pos, out)
     val first = firstName(name)
     var drag by remember(m.id) { mutableFloatStateOf(0f) }
     val threshold = with(LocalDensity.current) { 64.dp.toPx() }
@@ -493,11 +497,11 @@ private fun Bubble(
         val photo = a != null && a.isImage() && !broken
         val prog = a?.let { progress[it.hash] }
         val tick = if (out) tickOf(m, link, online, nowMs) else null
-        val bg = if (out) c.prc else c.sf
+        val bg = if (out) c.prc else c.bubIn
         val fg = if (out) c.onPrc else c.ink
         Column(
             Modifier.offset { IntOffset(drag.roundToInt(), 0) }.widthIn(max = bubbleMaxWidth)
-                .clip(shape).background(bg).let { if (!out) it.border(1.dp, c.ln, shape) else it }
+                .clip(shape).background(bg).let { if (!out) it.border(1.dp, c.bubInLine, shape) else it }
                 .let { if (selected) it.border(3.dp, c.pr, shape) else it }
                 .combinedClickable(onClick = {}, onLongClick = onLong)
                 .padding(if (photo) PaddingValues(4.dp) else PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp)),
@@ -505,7 +509,7 @@ private fun Bubble(
             m.replyTo?.let { rid ->
                 val q = byId[rid]
                 Column(
-                    Modifier.padding(bottom = 8.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                    Modifier.padding(bottom = 8.dp).fillMaxWidth().clip(SmoothCornerShape(8.dp))
                         .background(if (out) Color.White.copy(alpha = .22f) else c.bg)
                         .drawLeftBar(c.pr).padding(start = 12.dp, top = 7.dp, end = 10.dp, bottom = 7.dp),
                 ) {
@@ -600,7 +604,7 @@ private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, L
         // Ready but undecodable (odd GIF/WebP/HEIC): fall back to a file bubble with Open/Save.
         if (ready && value == null) onBroken()
     }
-    Box(Modifier.size(240.dp, 180.dp).clip(RoundedCornerShape(12.dp)).background(c.sf3).clickable(role = Role.Button) { if (ready && bmp != null) onOpen() else if (!ready && a.state == TransferState.DOWNLOADING) onCancel() else if (!ready) onDownload() }, contentAlignment = Alignment.Center) {
+    Box(Modifier.size(240.dp, 180.dp).clip(SmoothCornerShape(12.dp)).background(c.sf3).clickable(role = Role.Button) { if (ready && bmp != null) onOpen() else if (!ready && a.state == TransferState.DOWNLOADING) onCancel() else if (!ready) onDownload() }, contentAlignment = Alignment.Center) {
         bmp?.let { Image(it, a.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
         val frac = prog?.let { if (it.second > 0) it.first.toFloat() / it.second else 0f }
             ?: if (a.state == TransferState.DOWNLOADING && a.size > 0UL) a.transferred.toFloat() / a.size.toFloat() else null
@@ -643,10 +647,10 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
     }
     val canDownload = !ready && (a.state == TransferState.REMOTE || a.state == TransferState.FAILED) && !asked
     Row(
-        Modifier.widthIn(min = 240.dp).clip(RoundedCornerShape(8.dp)).combinedClickable(role = Role.Button, onLongClick = onLong) { if (ready) (if (canOpen) onOpen() else onSave()) else if (canDownload) onDownload() },
+        Modifier.widthIn(min = 240.dp).clip(SmoothCornerShape(8.dp)).combinedClickable(role = Role.Button, onLongClick = onLong) { if (ready) (if (canOpen) onOpen() else onSave()) else if (canDownload) onDownload() },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (out) Color.White.copy(alpha = .55f) else c.sf2), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(44.dp).clip(SmoothCornerShape(12.dp)).background(if (out) Color.White.copy(alpha = .55f) else c.sf2), contentAlignment = Alignment.Center) {
             Icon(if (a.isVideo()) Icons.Rounded.Videocam else Icons.Rounded.Description, null, tint = c.pr)
         }
         Column(Modifier.weight(1f, fill = false)) {
@@ -687,7 +691,7 @@ private fun ActionsSheet(
 @Composable
 private fun SheetAction(icon: ImageVector, label: String, color: Color = Tin.c.ink, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 8.dp),
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Icon(icon, null, tint = if (color == Tin.c.ink) Tin.c.ink2 else color)
@@ -702,8 +706,8 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
         Text(if (isSelf) "Save for yourself" else "Send to $first", Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             listOf(Triple(Icons.Rounded.PhotoLibrary, "Photos & videos", onPhotos), Triple(Icons.Rounded.PhotoCamera, "Camera", onCamera), Triple(Icons.Rounded.InsertDriveFile, "File", onFile)).forEach { (icon, label, go) ->
-                Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = go).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.size(60.dp).clip(RoundedCornerShape(18.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
+                Column(Modifier.weight(1f).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button, onClick = go).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.size(60.dp).clip(SmoothCornerShape(18.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
                     Text(label, style = TinType.bodyM.copy(fontWeight = FontWeight.Medium), color = c.ink)
                 }
             }
@@ -785,7 +789,7 @@ private fun BlockNote(name: String, v: BlockView) {
             Modifier.clip(RoundedCornerShape(50)).background(c.sf2).padding(horizontal = 12.dp, vertical = 4.dp),
             style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.ink2)
     } else if (blockedMeAt != null) Column(
-        Modifier.fillMaxWidth().padding(vertical = 8.dp).clip(RoundedCornerShape(16.dp)).background(c.erc).padding(16.dp),
+        Modifier.fillMaxWidth().padding(vertical = 8.dp).clip(SmoothCornerShape(16.dp)).background(c.erc).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(BlockCopy.blockedYouTitle(name), style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.onErc)

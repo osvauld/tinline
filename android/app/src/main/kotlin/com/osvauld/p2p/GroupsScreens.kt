@@ -125,7 +125,7 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
             }
             Box(Modifier.align(Alignment.BottomEnd)) {
                 ShrinkFab(Icons.Rounded.Add, "New", fabWide) { newMenu = true }
-                DropdownMenu(newMenu, { newMenu = false }, containerColor = c.sf) {
+                DropdownMenu(newMenu, { newMenu = false }, containerColor = c.sfRaised, shape = SmoothCornerShape(14.dp)) {
                     DropdownMenuItem({ Text("New group", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.go(PRoute.NewGroup) },
                         leadingIcon = { Icon(Icons.Rounded.GroupAdd, null, tint = c.ink2) })
                     DropdownMenuItem({ Text("Add contact", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.addContact() },
@@ -172,7 +172,7 @@ private fun SimulateMenu(src: FakeGroupsPrivacy, nav: PNav, open: Boolean, onDis
     val hikeUp = groups.firstOrNull { it.id == FakeGroupsPrivacy.HIKE }?.hostReachable == true
     val familyUp = groups.firstOrNull { it.id == FakeGroupsPrivacy.FAMILY }?.hostReachable == true
     @Composable fun item(t: String, f: () -> Unit) = DropdownMenuItem({ Text(t, style = TinType.bodyM, color = c.ink) }, { onDismiss(); f() })
-    DropdownMenu(open, onDismiss, containerColor = c.sf) {
+    DropdownMenu(open, onDismiss, containerColor = c.sfRaised, shape = SmoothCornerShape(14.dp)) {
         Text("SIMULATE (PLACEHOLDER)", Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = TinType.caption, color = c.ink2)
         if (leoWaiting != null) {
             item("Leo accepts your request") { src.simulateRequestAnswered(leoWaiting.id, true); nav.say("Leo accepted: new messages-only chat") }
@@ -282,7 +282,7 @@ fun PGroupChatScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
 private fun ColumnScope.CollapsedMessage(author: String, onShow: () -> Unit) {
     val c = Tin.c
     Row(
-        Modifier.align(Alignment.Start).heightIn(min = 48.dp).clip(RoundedCornerShape(18.dp)).border(1.dp, c.ln, RoundedCornerShape(18.dp))
+        Modifier.align(Alignment.Start).heightIn(min = 48.dp).clip(SmoothCornerShape(18.dp)).border(1.dp, c.ln, SmoothCornerShape(18.dp))
             .clickable(role = Role.Button, onClickLabel = "Show message", onClick = onShow).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -327,7 +327,7 @@ fun PNewGroupScreen(src: FakeGroupsPrivacy, nav: PNav) {
             pickable.forEach { p ->
                 val on = p.did in picked
                 Row(
-                    Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp))
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(SmoothCornerShape(12.dp))
                         .clickable(role = Role.Checkbox, onClick = { if (on) picked.remove(p.did) else picked.add(p.did) })
                         .semantics(mergeDescendants = true) { toggleableState = ToggleableState(on) },
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -337,7 +337,7 @@ fun PNewGroupScreen(src: FakeGroupsPrivacy, nav: PNav) {
                     Checkbox(on, null, colors = CheckboxDefaults.colors(checkedColor = c.pr, uncheckedColor = c.ln2, checkmarkColor = c.onPr))
                 }
             }
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.warn).border(1.dp, c.thread.copy(alpha = 0.45f), RoundedCornerShape(20.dp)).padding(16.dp),
+            Column(Modifier.fillMaxWidth().clip(SmoothCornerShape(20.dp)).background(c.warn).border(1.dp, c.thread.copy(alpha = 0.45f), SmoothCornerShape(20.dp)).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(when (host) { true -> "Your desktop will host"; false -> "You’ll ask a member to host"; null -> "This group needs a host" },
                     style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.onWarn, modifier = Modifier.semantics { heading() })
@@ -456,7 +456,7 @@ private fun hostStatus(h: GroupHost, now: Long, info: Boolean): String = when {
 private fun InfoAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
     val c = Tin.c
     Column(
-        Modifier.width(88.dp).clip(RoundedCornerShape(16.dp)).clickable(role = Role.Button, onClick = onClick).padding(vertical = 4.dp),
+        Modifier.width(88.dp).clip(SmoothCornerShape(16.dp)).clickable(role = Role.Button, onClick = onClick).padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(Modifier.size(52.dp).clip(CircleShape).background(c.sf2), contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint) }

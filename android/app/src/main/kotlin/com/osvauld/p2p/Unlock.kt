@@ -135,7 +135,7 @@ fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Bo
             if (error != null) Hint("Checking takes a second — it’s deliberately slow to stop guessing.", align = TextAlign.Center)
         }
         if (error != null) Column(
-            Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf2).padding(16.dp),
+            Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text("Forgot it?", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
@@ -201,8 +201,8 @@ fun RestoreScreen(onBack: () -> Unit, error: String?, busy: Boolean, warning: St
                     val w = words[i]
                     val bad = w.isNotEmpty() && w !in set && !isActive
                     Row(
-                        Modifier.weight(1f).heightIn(min = 38.dp).clip(RoundedCornerShape(8.dp)).background(c.sf)
-                            .border(if (isActive) 2.dp else 1.dp, if (isActive) c.pr else if (bad) c.er else c.ln, RoundedCornerShape(8.dp))
+                        Modifier.weight(1f).heightIn(min = 38.dp).clip(SmoothCornerShape(8.dp)).background(c.sf)
+                            .border(if (isActive) 2.dp else 1.dp, if (isActive) c.pr else if (bad) c.er else c.ln, SmoothCornerShape(8.dp))
                             .clickable(enabled = !isActive, role = Role.Button) { if (draft.isNotBlank()) commit(draft.trim(), active); active = i; draft = words[i] }
                             .padding(horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),

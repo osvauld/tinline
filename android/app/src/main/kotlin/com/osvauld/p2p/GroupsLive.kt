@@ -223,7 +223,7 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
         }
         Box(Modifier.align(Alignment.BottomEnd)) {
             ShrinkFab(Icons.Rounded.GroupAdd, "Group", wide) { menu = true }
-            DropdownMenu(menu, { menu = false }, containerColor = c.sf) {
+            DropdownMenu(menu, { menu = false }, containerColor = c.sfRaised, shape = SmoothCornerShape(14.dp)) {
                 DropdownMenuItem({ Text("New group", style = TinType.bodyL, color = c.ink) }, { menu = false; onNew() },
                     leadingIcon = { Icon(Icons.Rounded.GroupAdd, null, tint = c.ink2) })
                 DropdownMenuItem({ Text("Join with an invite", style = TinType.bodyL, color = c.ink) }, { menu = false; onJoin() },
@@ -352,7 +352,7 @@ private fun ColumnScope.GroupItemLive(
     if (authorBlocked && !m.outgoing && !shown) {
         // A personal block never changes the group; the message is folded, not dropped.
         Row(
-            Modifier.align(Alignment.Start).heightIn(min = 48.dp).clip(RoundedCornerShape(18.dp)).background(c.sf2)
+            Modifier.align(Alignment.Start).heightIn(min = 48.dp).clip(SmoothCornerShape(18.dp)).background(c.sf2)
                 .clickable(role = Role.Button, onClickLabel = "Show message") { shown = true }.padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -589,7 +589,7 @@ private fun HostRow(title: String, sub: String, dot: Color, trailing: @Composabl
 private fun InfoActionLive(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: Color, onClick: () -> Unit) {
     val c = Tin.c
     Column(
-        Modifier.width(88.dp).clip(RoundedCornerShape(16.dp)).clickable(role = Role.Button, onClick = onClick).padding(vertical = 4.dp),
+        Modifier.width(88.dp).clip(SmoothCornerShape(16.dp)).clickable(role = Role.Button, onClick = onClick).padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(Modifier.size(52.dp).clip(RoundedCornerShape(50)).background(c.sf2), contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint) }
@@ -686,7 +686,7 @@ fun AddMembersLive(app: P2pApp, id: String, onBack: () -> Unit, say: (String) ->
                 val on = r.did in picked
                 val can = r.why == null
                 Row(
-                    Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(12.dp))
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(SmoothCornerShape(12.dp))
                         .let { if (can) it.clickable(role = Role.Checkbox) { if (on) picked.remove(r.did) else picked.add(r.did) }.semantics(mergeDescendants = true) { toggleableState = ToggleableState(on) } else it },
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
@@ -803,7 +803,7 @@ fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
             Hint("Anyone with this link or QR can join $name for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members.")
             val t = token
             // Large, high contrast, the full width: easy to scan from another phone. Tap for full screen.
-            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(Color.White)
+            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(SmoothCornerShape(16.dp)).background(Color.White)
                 .let { m -> if (t != null) m.clickable(role = Role.Button, onClickLabel = "Show full screen") { full = true } else m },
                 contentAlignment = Alignment.Center) {
                 when {

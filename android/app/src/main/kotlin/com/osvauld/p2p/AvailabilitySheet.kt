@@ -61,7 +61,7 @@ fun AvailabilitySheet(
 private fun BreakOption(label: String, selected: Boolean, onClick: () -> Unit) {
     val c = Tin.c
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.RadioButton, onClick = onClick),
+        Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(SmoothCornerShape(12.dp)).clickable(role = Role.RadioButton, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         RadioButton(selected, null, Modifier.padding(start = 4.dp), colors = RadioButtonDefaults.colors(selectedColor = c.pr, unselectedColor = c.ln2))

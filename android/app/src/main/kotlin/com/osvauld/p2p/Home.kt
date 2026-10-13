@@ -222,7 +222,7 @@ fun HomeContent(
                             }
                         }
                         if (!searching && contacts.isNotEmpty()) Row(
-                            Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp).shadow(3.dp, RoundedCornerShape(16.dp)).clip(RoundedCornerShape(16.dp)).background(c.pr)
+                            Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp).depth(Depth.Lift, SmoothCornerShape(16.dp)).clip(SmoothCornerShape(16.dp)).background(c.pr)
                                 .clickable(role = Role.Button) { onAdd(false) }.heightIn(min = 56.dp).padding(start = 16.dp, end = 20.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
@@ -332,7 +332,7 @@ private fun FirstRunAdd(app: P2pApp, onScan: () -> Unit, onPaste: () -> Unit) {
         TinButton("Scan their code", onScan, icon = Icons.Rounded.QrCodeScanner)
         TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Dot(c.pr, 10.dp)
