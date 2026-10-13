@@ -148,7 +148,7 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
             CheckRow(Icons.Rounded.PhoneLocked, "Ring over lock screen", null, Need.FullScreen !in missing, "On") { onFix(Need.FullScreen) }
             CheckRow(Icons.Rounded.Mic, "Microphone", null, Need.Mic !in missing, "Allowed") { onFix(Need.Mic) }
             Column(
-                Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf2).padding(14.dp),
+                Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(14.dp),
             ) {
                 Text(buildAnnotatedStringBold("Still missing calls?", "Some phones need an extra step to keep apps running."), style = TinType.bodyM, color = c.ink2)
                 Text("Steps for your phone", Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button) { openUrl(ctx, "https://dontkillmyapp.com") }.padding(vertical = 8.dp),

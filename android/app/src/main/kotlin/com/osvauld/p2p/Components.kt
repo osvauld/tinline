@@ -116,7 +116,7 @@ fun TinButton(
 @Composable
 fun RoundBtn(icon: ImageVector, desc: String, bg: Color, fg: Color, onClick: () -> Unit, size: Dp = 72.dp, iconSize: Dp = 30.dp, rotate: Float = 0f) {
     Box(
-        Modifier.size(size).clip(CircleShape).background(bg).clickable(role = Role.Button, onClick = onClick).semantics { contentDescription = desc },
+        Modifier.size(size).depth(Depth.Lift, CircleShape).clip(CircleShape).background(bg).clickable(role = Role.Button, onClick = onClick).semantics { contentDescription = desc },
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, null, tint = fg, modifier = Modifier.size(iconSize).then(if (rotate != 0f) Modifier.rotate(rotate) else Modifier))
@@ -155,8 +155,8 @@ fun TinField(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(label, style = TinType.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = if (err) c.er else c.ink2)
         Row(
-            Modifier.fillMaxWidth().heightIn(min = minHeight).clip(RoundedCornerShape(8.dp)).background(c.sf)
-                .border(bw, borderColor, RoundedCornerShape(8.dp)),
+            Modifier.fillMaxWidth().heightIn(min = minHeight).clip(SmoothCornerShape(8.dp)).background(c.sf)
+                .border(bw, borderColor, SmoothCornerShape(8.dp)),
             verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
         ) {
             BasicTextField(
@@ -262,7 +262,7 @@ fun Banner(kind: BannerKind, icon: ImageVector, title: String, body: String, act
         BannerKind.Neutral -> c.sf2 to c.ink
     }
     Row(
-        Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(bg)
+        Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(bg)
             .padding(start = 14.dp, top = 14.dp, bottom = 14.dp, end = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top,
     ) {
@@ -365,7 +365,7 @@ fun InfoCard(text: String, modifier: Modifier = Modifier, icon: ImageVector? = n
         BannerKind.Error -> c.erc to c.onErc
         BannerKind.Neutral -> c.sf2 to c.ink2
     }
-    Row(modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(bg).padding(14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(bg).padding(14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         if (icon != null) Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
         Text(buildAnnotatedStringBold(bold, text), style = TinType.bodyM, color = fg)
     }
@@ -389,7 +389,7 @@ fun TinSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit)
     val c = Tin.c
     ModalBottomSheet(
         onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = c.sf, contentColor = c.ink, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = c.sfRaised, contentColor = c.ink, shape = SmoothCornerShape(topStart = 24.dp, topEnd = 24.dp),
         dragHandle = { Box(Modifier.padding(top = 12.dp).size(36.dp, 4.dp).clip(RoundedCornerShape(2.dp)).background(c.ln2)) },
     ) {
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp).navigationBarsPadding(), content = content)
@@ -404,9 +404,17 @@ fun TinDialog(
     body: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Tin.c
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+    // The dialog window wraps its content and clips whatever is drawn outside it, so the sheet shadow needs room inside the window:
+    // full-width transparent window, the surface at the platform's 78 % width in the middle, 40 dp of margin above and below.
+    // Taps in that margin dismiss like taps on the scrim.
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+      Box(
+          Modifier.fillMaxWidth().clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDismiss),
+          contentAlignment = Alignment.Center,
+      ) {
         Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(c.sf).padding(24.dp),
+            Modifier.padding(vertical = 40.dp).fillMaxWidth(0.78f).depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp)).background(c.sfRaised)
+                .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {}).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (icon != null) Box(Modifier.size(44.dp).clip(CircleShape).background(if (destructive) c.erc else c.prc), contentAlignment = Alignment.Center) {
@@ -419,6 +427,7 @@ fun TinDialog(
                 TinButton(confirm, onConfirm, style = if (destructive) BtnStyle.DangerFilled else BtnStyle.Filled, fill = false, enabled = confirmEnabled)
             }
         }
+      }
     }
 }
 
@@ -429,5 +438,5 @@ fun DialogText(text: String) = Text(text, style = TinType.bodyM.copy(fontSize = 
 @Composable
 fun CardBox(modifier: Modifier = Modifier, radius: Dp = 14.dp, content: @Composable ColumnScope.() -> Unit) {
     val c = Tin.c
-    Column(modifier.clip(RoundedCornerShape(radius)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(radius)), content = content)
+    Column(modifier.clip(SmoothCornerShape(radius)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(radius)), content = content)
 }

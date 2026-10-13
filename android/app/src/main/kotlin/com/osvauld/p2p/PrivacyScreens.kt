@@ -72,7 +72,7 @@ fun IncomingRequestCard(src: FakeGroupsPrivacy, nav: PNav, r: IncomingRequest) {
     val c = Tin.c
     val fn = first(r.fromName)
     Column(
-        Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(20.dp)).padding(16.dp),
+        Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(SmoothCornerShape(20.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(20.dp)).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -82,7 +82,7 @@ fun IncomingRequestCard(src: FakeGroupsPrivacy, nav: PNav, r: IncomingRequest) {
                 Hint("Member of ${r.viaGroup} · you share ${if (r.sharedGroups == 1) "1 group" else "${r.sharedGroups} groups"}")
             }
         }
-        if (r.note.isNotBlank()) Text(r.note, Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf2).padding(horizontal = 12.dp, vertical = 10.dp),
+        if (r.note.isNotBlank()) Text(r.note, Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 12.dp, vertical = 10.dp),
             style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = c.ink)
         Hint("Accepting adds $fn as a contact for messages only. You can allow calls later.")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -201,7 +201,7 @@ fun PDmScreen(src: FakeGroupsPrivacy, nav: PNav, did: String) {
                             Text("Signed by $fn · ${whenFull(row.notice.atMs)}", style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.onErc)
                         }
                         DmRow.CallsChip -> Row(
-                            Modifier.align(Alignment.CenterHorizontally).clip(RoundedCornerShape(16.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(16.dp))
+                            Modifier.align(Alignment.CenterHorizontally).clip(SmoothCornerShape(16.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(16.dp))
                                 .padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
@@ -260,7 +260,7 @@ private fun ColumnScope.DmItemView(src: FakeGroupsPrivacy, nav: PNav, p: Person,
         is DmItem.Invite -> invites.firstOrNull { it.id == item.inviteId }?.let { InviteCard(src, nav, it) }
         is DmItem.CallAsk -> if (item.outgoing) Bubble("${first(src.myName)} would like to be able to call you", true, tick = "Asked $fn to allow calls")
         else Column(
-            Modifier.align(Alignment.Start).widthIn(max = 300.dp).clip(RoundedCornerShape(18.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(18.dp)).padding(12.dp),
+            Modifier.align(Alignment.Start).widthIn(max = 300.dp).clip(SmoothCornerShape(18.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(18.dp)).padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text("$fn would like to be able to call you", style = TinType.bodyL.copy(fontSize = 15.sp), color = c.ink)
@@ -282,7 +282,7 @@ internal fun ColumnScope.InviteCard(src: FakeGroupsPrivacy, nav: PNav, inv: Grou
     val expired = inv.state == InviteState.Expired || (inv.state == InviteState.Pending && now > inv.expiresAtMs)
     Column(Modifier.align(if (mine) Alignment.End else Alignment.Start).width(300.dp)) {
         Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(20.dp)).padding(16.dp),
+            Modifier.fillMaxWidth().clip(SmoothCornerShape(20.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(20.dp)).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

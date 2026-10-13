@@ -92,11 +92,11 @@ fun MyCodeBlock(app: P2pApp, meName: String, qr: Dp = 248.dp, showNewCode: Boole
             Column(Modifier.padding(20.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(meName, style = TinType.titleL.copy(fontSize = 20.sp), color = c.ink)
                 val t = ticket
-                Box(Modifier.size(qr).clip(RoundedCornerShape(14.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(qr).clip(SmoothCornerShape(14.dp)).background(Color.White), contentAlignment = Alignment.Center) {
                     if (t != null) {
                         val bmp = remember(t) { qrBitmap(t, 720, fg = 0xFF17201D.toInt()) }
                         Image(bmp.asImageBitmap(), "QR code of your contact card", Modifier.fillMaxSize().padding(10.dp))
-                        Box(Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color.White).padding(3.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF0B6B5B)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(40.dp).clip(SmoothCornerShape(10.dp)).background(Color.White).padding(3.dp).clip(SmoothCornerShape(8.dp)).background(Color(0xFF0B6B5B)), contentAlignment = Alignment.Center) {
                             TinMark(26.dp, can = Color.White, string = Color(0xFFE8B04A), mouth = Color(0xFF0B6B5B))
                         }
                     } else Text(err ?: "Preparing your code…", Modifier.padding(16.dp), style = TinType.bodyM, color = Color(0xFF4D5853), textAlign = TextAlign.Center)
@@ -178,7 +178,7 @@ fun CardPrompts(app: P2pApp, clipboardOk: Boolean, shareOk: Boolean, showOnScree
         val c = Tin.c
         Box(Modifier.fillMaxSize().zIndex(10f).statusBarsPadding().padding(12.dp), contentAlignment = Alignment.TopCenter) {
             Row(
-                Modifier.fillMaxWidth().shadow(6.dp, RoundedCornerShape(20.dp)).clip(RoundedCornerShape(20.dp)).background(c.sf2).padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+                Modifier.fillMaxWidth().depth(Depth.Pop, SmoothCornerShape(20.dp)).clip(SmoothCornerShape(20.dp)).background(c.sfRaised).padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Avatar(p.name.ifBlank { "?" }, p.did, 44.dp)

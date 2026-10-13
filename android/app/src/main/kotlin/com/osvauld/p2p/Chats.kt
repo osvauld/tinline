@@ -140,7 +140,7 @@ fun ChatsBody(rows: List<ChatRowUi>, query: String, banner: @Composable () -> Un
 private fun NewChatFab(onClick: () -> Unit, modifier: Modifier) {
     val c = Tin.c
     Row(
-        modifier.padding(end = 20.dp, bottom = 20.dp).shadow(3.dp, RoundedCornerShape(16.dp)).clip(RoundedCornerShape(16.dp)).background(c.pr)
+        modifier.padding(end = 20.dp, bottom = 20.dp).depth(Depth.Lift, SmoothCornerShape(16.dp)).clip(SmoothCornerShape(16.dp)).background(c.pr)
             .clickable(role = Role.Button, onClick = onClick).heightIn(min = 56.dp).padding(start = 16.dp, end = 20.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {

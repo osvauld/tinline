@@ -216,7 +216,7 @@ private fun routeLabel(speaker: Boolean) = if (speaker) "Speaker" else "Phone"
 fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer: () -> Unit) {
     val c = Tin.c
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.28f)).statusBarsPadding().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(c.sf).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxWidth().depth(Depth.Pop, SmoothCornerShape(20.dp)).clip(SmoothCornerShape(20.dp)).background(c.sfRaised).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text("$name is calling", style = TinType.h1.copy(fontSize = 16.sp, lineHeight = 22.sp), color = c.ink)
@@ -225,12 +225,12 @@ fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer:
                 Avatar(name, did, 44.dp)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.clip(RoundedCornerShape(22.dp)).background(c.callEnd).clickable(onClickLabel = "Decline", role = Role.Button, onClick = onDecline)
+                Row(Modifier.clip(SmoothCornerShape(22.dp)).background(c.callEnd).clickable(onClickLabel = "Decline", role = Role.Button, onClick = onDecline)
                     .height(44.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Rounded.CallEnd, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Text("Decline", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
-                Row(Modifier.clip(RoundedCornerShape(22.dp)).background(c.callAccept).clickable(onClickLabel = "End and answer", role = Role.Button, onClick = onEndAnswer)
+                Row(Modifier.clip(SmoothCornerShape(22.dp)).background(c.callAccept).clickable(onClickLabel = "End and answer", role = Role.Button, onClick = onEndAnswer)
                     .height(44.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Rounded.Call, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Text("End & answer", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
@@ -355,7 +355,7 @@ private fun AudioRouteSheet(speaker: Boolean, relayed: Boolean, onDismiss: () ->
 private fun RouteOption(icon: ImageVector, label: String, on: Boolean, onClick: () -> Unit) {
     val c = Tin.c
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(14.dp)).background(if (on) c.prc else Color.Transparent)
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(SmoothCornerShape(14.dp)).background(if (on) c.prc else Color.Transparent)
             .clickable(role = Role.RadioButton, onClick = onClick).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -407,8 +407,8 @@ fun VideoCallContent(
         }
         // Self-view: our camera (the front one mirrored), top right under the bar.
         if (localCamera) Box(Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 72.dp, end = 12.dp)
-            .size(width = 104.dp, height = 140.dp).clip(RoundedCornerShape(16.dp)).background(Color.Black)
-            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(16.dp))) { selfView(Modifier.fillMaxSize()) }
+            .size(width = 104.dp, height = 140.dp).clip(SmoothCornerShape(16.dp)).background(Color.Black)
+            .border(1.dp, Color.White.copy(alpha = 0.25f), SmoothCornerShape(16.dp))) { selfView(Modifier.fillMaxSize()) }
         // Bottom: problem line and controls.
         Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
             .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
