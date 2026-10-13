@@ -129,6 +129,8 @@ Recorded here so area work and the core teams see them. Drawer notes say "Decide
 - **Next (2026-10-13)**: port the designs to the apps (Android Compose, desktop iced), foundations
   first: shapes, logo, icons, depth/tokens. Branch `design/apps` from dev.
 
+- **Desktop tray (2026-10-13)**: available = taut (as the header's online), unavailable = taut at 45 %,
+  in a call = taut plus a small accent dot centred under the string.
 Core follow-ups these imply (not playground work):
 - Availability: the core refuses calls while unavailable (`set_available` controls call admission);
   it must keep admitting calls while Busy.
