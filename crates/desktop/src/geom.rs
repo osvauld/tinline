@@ -42,6 +42,21 @@ impl Pos {
     }
 }
 
+/// Messages from one sender this close together form a run.
+pub const GROUP_GAP_MS: u64 = 5 * 60_000;
+
+/// Position of item `i` in a run, where `join(a, b)` says two neighbours belong to the same run.
+pub fn run_pos<T>(items: &[T], i: usize, join: impl Fn(&T, &T) -> bool) -> Pos {
+    let prev = i > 0 && join(&items[i - 1], &items[i]);
+    let next = items.get(i + 1).is_some_and(|n| join(&items[i], n));
+    Pos::of(prev, next)
+}
+
+/// Space above a bubble: 10 px between runs, 2 px inside one (Conversation.svelte).
+pub fn gap_above(pos: Pos) -> f32 {
+    if matches!(pos, Pos::Mid | Pos::Last) { 2.0 } else { 10.0 }
+}
+
 /// Which side of the bubble faces the screen edge it sits against.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Side {

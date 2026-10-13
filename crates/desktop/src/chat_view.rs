@@ -13,8 +13,6 @@ use crate::media::{self, Class};
 use crate::geom;
 use crate::shaped::shaped;
 
-/// Messages from one sender this close together form a run.
-const GROUP_GAP_MS: u64 = 5 * 60_000;
 
 /// Width of the hover actions beside a bubble: three 28 px buttons, 2 px apart.
 const ACTIONS_W: f32 = 3.0 * 28.0 + 2.0 * 2.0;
@@ -392,7 +390,7 @@ impl App {
         let mut last_day = String::new();
         // Runs of one sender's messages (same day, within 5 minutes) stack: the corners facing the
         // stack tighten and the gap shrinks (Conversation.svelte: 10 px between runs, 2 px inside).
-        let join = |a: &ChatMsg, b: &ChatMsg| a.outgoing == b.outgoing && day_label(a.at) == day_label(b.at) && a.at.abs_diff(b.at) <= GROUP_GAP_MS;
+        let join = |a: &ChatMsg, b: &ChatMsg| a.outgoing == b.outgoing && day_label(a.at) == day_label(b.at) && a.at.abs_diff(b.at) <= geom::GROUP_GAP_MS;
         let msgs = &self.chat.msgs;
         for (i, m) in msgs.iter().enumerate() {
             let d = day_label(m.at);
@@ -413,7 +411,7 @@ impl App {
         if let Some(peer) = self.chat.peer.as_deref() {
             col = col.push(container(self.block_note(t, peer, name)).padding(iced::Padding { top: 6.0, ..Default::default() }));
         }
-        scroll(t, col).anchor_bottom().width(Fill).height(Fill).into()
+        container(scroll(t, col).anchor_bottom().width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0)).into()
     }
 
     fn history_note<'a>(&'a self, t: Tok, name: &str) -> El<'a> {
@@ -441,7 +439,7 @@ impl App {
     }
 
     fn message_row<'a>(&'a self, t: Tok, m: &'a ChatMsg, name: &str, pos: geom::Pos) -> El<'a> {
-        let (bg, fg) = if m.outgoing { (t.primary_c, t.on_primary_c) } else { (t.surface2, t.ink) };
+        let (bg, fg) = if m.outgoing { (t.primary_c, t.on_primary_c) } else { (t.bub_in, t.ink) };
         let dim = ui::alpha(fg, 0.7);
         // No Fill-width descendants: they make every bubble occupy the maximum width.
         // Align the shrink-sized metadata to the trailing edge of the content.
@@ -487,7 +485,10 @@ impl App {
         // Smooth Bézier corners (geom.rs), mine against the right edge, theirs against the left.
         let side = if m.outgoing { geom::Side::Right } else { geom::Side::Left };
         let radii = geom::bubble_radii(pos, side, geom::R_BUB, geom::R_BUB_TIGHT);
-        let bubble = shaped(container(body).width(Length::Shrink).padding([8, 12]).max_width(520), radii, bg);
+        let mut bubble = shaped(container(body).width(Length::Shrink).padding([8, 12]).max_width(520), radii, bg);
+        if !m.outgoing {
+            bubble = bubble.stroke(t.bub_in_line, 1.0);
+        }
 
         let open = self.chat.menu.as_ref() == Some(&m.id);
         let hot = open || self.chat.hover.as_ref() == Some(&m.id);
