@@ -15,10 +15,13 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlin.math.abs
@@ -132,6 +135,7 @@ internal class MarkModel(private val p: MarkTier) {
     private var taut = false; private var hit = false
     private var tw = -1.0; private var twA = 0.0
     private var swayT = MarkDef.T; private var swayAmp = MarkDef.PHI0
+    fun setSway(period: Double, amp: Double) { swayT = period; swayAmp = amp }
 
     private val endOmega: Double = run {
         val z = MarkDef.END_ZETA; val k = z + sqrt(z * z - 1); val m = z - sqrt(z * z - 1)
@@ -202,19 +206,26 @@ internal class MarkModel(private val p: MarkTier) {
 private fun reducedMotion(c: android.content.Context): Boolean =
     Settings.Global.getFloat(c.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
 
-private fun DrawScope.drawCan(p: MarkTier, cx: Double, can: Color, mouth: Color) {
-    val ym = (12 - p.b).toFloat(); val yp = (12 + p.b).toFloat()
-    val x = cx.toFloat(); val a = p.a.toFloat(); val b = p.b.toFloat(); val l = p.len.toFloat()
+/** Draws one can in device pixels (no canvas transform: Skia flattens curves before scaling, which polylines tiny model-space paths). [m] mirrors about x = 12. */
+private fun DrawScope.drawCan(p: MarkTier, cx: Double, k: Float, can: Color, mouth: Color, m: Boolean) {
+    fun X(v: Double): Float = ((if (m) 24 - v else v) - p.vb).toFloat() * k
+    fun Y(v: Double): Float = (v - p.vb).toFloat() * k
+    val ym = 12 - p.b; val yp = 12 + p.b
+    val ax = (p.a * k).toFloat(); val bx = (p.b * k).toFloat()
+    // body: flat top and bottom behind the rim, half-ellipse back (left in the unmirrored frame)
+    val back = cx - p.len
     val body = Path().apply {
-        moveTo(x, ym); lineTo(x - l, ym)
-        arcTo(Rect(x - l - a, ym, x - l + a, yp), 270f, -180f, false)
-        lineTo(x, yp); close()
+        moveTo(X(cx), Y(ym)); lineTo(X(back), Y(ym))
+        val rx = X(back); val ry = Y(12.0)
+        if (m) arcTo(Rect(rx - ax, ry - bx, rx + ax, ry + bx), 270f, 180f, false)
+        else arcTo(Rect(rx - ax, ry - bx, rx + ax, ry + bx), 270f, -180f, false)
+        lineTo(X(cx), Y(yp)); close()
     }
     drawPath(body, can)
-    drawOval(can, Offset(x - a, ym), androidx.compose.ui.geometry.Size(2 * a, 2 * b))
+    drawOval(can, Offset(X(cx) - ax, Y(12.0) - bx), androidx.compose.ui.geometry.Size(2 * ax, 2 * bx))
     if (p.hasMouth) {
         val mu = p.mu.toFloat()
-        drawOval(mouth, Offset(x - mu * a, 12f - mu * b), androidx.compose.ui.geometry.Size(2 * mu * a, 2 * mu * b))
+        drawOval(mouth, Offset(X(cx) - mu * ax, Y(12.0) - mu * bx), androidx.compose.ui.geometry.Size(2 * mu * ax, 2 * mu * bx))
     }
 }
 
@@ -227,6 +238,8 @@ private fun DrawScope.drawCan(p: MarkTier, cx: Double, can: Color, mouth: Color)
 fun TinMark(
     size: Dp, can: Color = if (Tin.c.dark) MarkColors.CanDark else Tin.c.pr, string: Color = Tin.c.thread, modifier: Modifier = Modifier,
     mouth: Color? = null, state: MarkState = MarkState.Slack, live: Boolean = false,
+    /** Ringing sway: period (s) and amplitude (deg); lock the period to the cue that is playing. */
+    sway: Sway? = null, dim: Boolean = false, description: String? = null,
 ) {
     val ctx = LocalContext.current
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -236,6 +249,8 @@ fun TinMark(
     var kick by remember { mutableIntStateOf(0) }
     val reduced = reducedMotion(ctx)
     val hole = mouth ?: MarkColors.Mouth
+    val str = if (dim) Tin.c.ink2 else string
+    LaunchedEffect(model, sway) { if (sway != null) model.setSway(sway.period, sway.amp) }
 
     // state -> springs. The first composition sets the pose; later changes retarget mid-flight.
     val appliedBox = remember(model) { arrayOfNulls<MarkState>(1) }
@@ -267,19 +282,56 @@ fun TinMark(
         }
     }
 
-    Canvas(modifier.size(size)) {
+    val sem = if (description != null) Modifier.semantics { contentDescription = description } else Modifier
+    Canvas(modifier.size(size).then(if (dim) Modifier.alpha(0.45f) else Modifier).then(sem)) {
         frame // observe
         val k = this.size.width / tier.vbSize.toFloat()
-        withTransform({ scale(k, k, Offset.Zero); translate(-tier.vb.toFloat(), -tier.vb.toFloat()) }) {
-            val cx = tier.c - model.delta
-            drawCan(tier, cx, can, hole)
-            withTransform({ scale(-1f, 1f, Offset(12f, 0f)) }) { drawCan(tier, cx, can, hole) }
-            val x1 = cx + tier.ko; val x2 = 24 - x1; val s = model.sagNow; val phi = model.phi
-            val str = Path().apply {
-                moveTo(x1.toFloat(), 12f)
-                quadraticTo((12 + 2 * s * sin(phi)).toFloat(), (12 + 2 * s * cos(phi)).toFloat(), x2.toFloat(), 12f)
-            }
-            drawPath(str, string, style = Stroke(tier.sw.toFloat(), cap = StrokeCap.Round))
+        val cx = tier.c - model.delta
+        drawCan(tier, cx, k, can, hole, false)
+        drawCan(tier, cx, k, can, hole, true)
+        val x1 = cx + tier.ko; val x2 = 24 - x1; val sg = model.sagNow; val phi = model.phi
+        fun X(v: Double) = (v - tier.vb).toFloat() * k
+        val path = Path().apply {
+            moveTo(X(x1), X(12.0))
+            quadraticTo(X(12 + 2 * sg * sin(phi)), X(12 + 2 * sg * cos(phi)), X(x2), X(12.0))
         }
+        drawPath(path, str, style = Stroke(tier.sw.toFloat() * k, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+}
+
+/** Ringing sway: period in seconds, amplitude in degrees. */
+data class Sway(val period: Double, val amp: Double)
+
+/** What the app-bar mark shows (status.svelte.ts MarkLook). */
+data class MarkLook(val state: MarkState, val sway: Sway? = null, val dim: Boolean = false, val label: String)
+
+enum class CallPhase { None, Incoming, Outgoing, Connecting, Active, Reconnecting }
+enum class GroupCallPhase { None, Starting, Connecting, Active, Reconnecting }
+enum class ConnState { Offline, Connecting, Online }
+
+/**
+ * Port of statusLook(): call phase wins, then group call phase, then the network connection.
+ * Sway periods are locked to the cue patterns: ringtone every 3.2 s (two swings per ring), ringback every 4 s.
+ */
+fun statusLook(call: CallPhase = CallPhase.None, gcall: GroupCallPhase = GroupCallPhase.None, conn: ConnState): MarkLook {
+    when (call) {
+        CallPhase.Incoming -> return MarkLook(MarkState.Ringing, Sway(1.6, 12.0), label = "Incoming call")
+        CallPhase.Outgoing -> return MarkLook(MarkState.Ringing, Sway(2.0, 9.0), label = "Calling")
+        CallPhase.Connecting -> return MarkLook(MarkState.Ringing, Sway(1.2, 6.0), label = "Connecting")
+        CallPhase.Active -> return MarkLook(MarkState.Taut, label = "In a call")
+        CallPhase.Reconnecting -> return MarkLook(MarkState.Ringing, Sway(2.0, 4.0), label = "Reconnecting")
+        CallPhase.None -> {}
+    }
+    when (gcall) {
+        GroupCallPhase.Starting -> return MarkLook(MarkState.Ringing, Sway(2.0, 9.0), label = "Starting a group call")
+        GroupCallPhase.Connecting -> return MarkLook(MarkState.Ringing, Sway(1.2, 6.0), label = "Connecting")
+        GroupCallPhase.Active -> return MarkLook(MarkState.Taut, label = "In a group call")
+        GroupCallPhase.Reconnecting -> return MarkLook(MarkState.Ringing, Sway(2.0, 4.0), label = "Reconnecting")
+        GroupCallPhase.None -> {}
+    }
+    return when (conn) {
+        ConnState.Offline -> MarkLook(MarkState.Slack, dim = true, label = "No connection")
+        ConnState.Connecting -> MarkLook(MarkState.Ringing, Sway(3.2, 5.0), label = "Connecting")
+        ConnState.Online -> MarkLook(MarkState.Taut, label = "Connected to the network")
     }
 }

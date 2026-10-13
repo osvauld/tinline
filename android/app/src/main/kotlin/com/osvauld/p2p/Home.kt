@@ -158,7 +158,8 @@ fun HomeContent(
                 if (searching) SearchBar(query, { query = it }, onClose = { searching = false; query = "" }, hint = if (tab == HomeTab.Chats) "Search chats" else "Search contacts")
                 else {
                     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TinMark(28.dp)
+                        val look = statusLook(conn = when { online -> ConnState.Online; connectingGrace -> ConnState.Connecting; else -> ConnState.Offline })
+                        TinMark(28.dp, live = true, state = look.state, sway = look.sway, dim = look.dim, description = look.label)
                         Text("Tinline", Modifier.weight(1f), style = TinType.titleL.copy(fontSize = 22.sp, lineHeight = 28.sp), color = c.ink)
                         StatusPill(pill, onAvailability)
                         IconBtn(Icons.Rounded.Settings, "Settings", onSettings)
