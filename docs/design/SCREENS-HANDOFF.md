@@ -127,7 +127,7 @@ same steps.
 - **Modals** (`Layer.svelte`): a bottom sheet on Android; a popover or centred dialog on desktop.
 - **Send pluck** on the logo: silent, nothing under reduced motion.
 
-### Search (drawer: *Search*; core API: `docs/search.md` on branch `search`, not merged into dev yet)
+### Search (drawer: *Search*; core API: `docs/search.md`, on dev since 0030b17)
 `screens/search/*`.
 - **Android**: a search pill plus the new-chat button in one row **at the bottom, above the tab
   bar** (user decision). It opens a full-screen search with the field at the bottom.
