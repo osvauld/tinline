@@ -888,6 +888,78 @@ mod tests {
         assert_eq!(status_look(None, Net::Online).state, MarkState::Taut);
     }
 
+    /// Drives the widget's update() with redraw events 16 ms apart, as the window would.
+    struct Rig {
+        st: Live,
+        t: Instant,
+        size: f32,
+    }
+    impl Rig {
+        fn new(size: f32) -> Rig {
+            Rig { st: Live::default(), t: Instant::now(), size }
+        }
+        /// One frame; true when the widget asked for another one.
+        fn frame(&mut self, look: Look) -> bool {
+            let prog = Prog { size: self.size, look, can: Color::BLACK, string: Color::BLACK };
+            self.t += std::time::Duration::from_millis(16);
+            let ev = iced::Event::Window(window::Event::RedrawRequested(self.t));
+            let a = <Prog as canvas::Program<()>>::update(&prog, &mut self.st, &ev, Rectangle::with_size(iced::Size::new(self.size, self.size)), mouse::Cursor::Unavailable);
+            a.is_some()
+        }
+        fn model(&self) -> &Model {
+            self.st.model.as_ref().unwrap()
+        }
+    }
+
+    #[test]
+    fn widget_ringing_keeps_asking_for_frames_and_the_string_moves() {
+        let mut r = Rig::new(28.0);
+        let look = Look { state: MarkState::Ringing, sway: Some((1.6, 12.0)), ..Look::default() };
+        let mut phis = std::collections::BTreeSet::new();
+        for _ in 0..100 {
+            assert!(r.frame(look), "ringing must request the next frame");
+            phis.insert((r.model().pose().phi * 1e4) as i64);
+        }
+        assert!(phis.len() > 50, "the swing angle changes frame to frame");
+        assert!(r.model().pose().phi.abs() > 0.0);
+    }
+
+    #[test]
+    fn widget_connect_twangs_once_then_goes_quiet_and_send_plucks() {
+        let mut r = Rig::new(28.0);
+        let slack = Look::default();
+        assert!(!r.frame(slack), "a still mark asks for nothing");
+        let taut = Look { state: MarkState::Taut, ..Look::default() };
+        let (mut twangs, mut frames, mut was) = (0, 0, false);
+        while r.frame(taut) {
+            frames += 1;
+            let now = r.model().tw >= 0.0;
+            if now && !was {
+                twangs += 1;
+            }
+            was = now;
+            assert!(frames < 400);
+        }
+        assert_eq!(twangs, 1, "one twang when the string goes tight");
+        assert_eq!(r.model().pose().delta, r.model().params().dt);
+        assert!(!r.frame(taut), "still again: no more frames");
+        // send: pluck counter changes -> a small twang, then quiet
+        let plucked = Look { pluck: 1, ..taut };
+        assert!(r.frame(plucked));
+        assert_eq!(r.model().tw_a, PLUCK_A);
+        let mut n = 0;
+        while r.frame(plucked) {
+            n += 1;
+            assert!(n < 100);
+        }
+        assert!(!r.frame(plucked));
+        // and on a slack mark a pluck is a little swing
+        let mut s = Rig::new(28.0);
+        assert!(!s.frame(slack));
+        assert!(s.frame(Look { pluck: 1, ..slack }));
+        assert!(s.model().phv.abs() > 0.0);
+    }
+
     #[test]
     fn tier_picking_matches_the_table() {
         assert_eq!(pick_tier(28.0), 28);
