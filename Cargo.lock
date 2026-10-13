@@ -527,7 +527,7 @@ dependencies = [
 
 [[package]]
 name = "audio"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "opusic-sys",
  "thiserror 2.0.21",
@@ -1544,7 +1544,7 @@ dependencies = [
 
 [[package]]
 name = "cryptography"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1801,7 +1801,7 @@ dependencies = [
 
 [[package]]
 name = "desktop"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "audio",
  "chrono",
@@ -2531,7 +2531,7 @@ dependencies = [
 
 [[package]]
 name = "gcall-bench"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "audio",
  "bytes",
@@ -2947,7 +2947,7 @@ dependencies = [
 
 [[package]]
 name = "group-sim"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "aes-gcm",
  "blake3",
@@ -3628,7 +3628,7 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "identity"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "bincode",
  "bip39",
@@ -6103,7 +6103,7 @@ dependencies = [
 
 [[package]]
 name = "p2pcore"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "aes-gcm",
  "audio",
@@ -6242,7 +6242,7 @@ checksum = "35fb2e5f958ec131621fdd531e9fc186ed768cbe395337403ae56c17a74c68ec"
 
 [[package]]
 name = "peer"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "audio",
  "hound",
@@ -6716,7 +6716,7 @@ dependencies = [
 
 [[package]]
 name = "proto"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
@@ -8103,7 +8103,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "storage"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "cryptography",
  "redb 2.6.4",
@@ -9143,7 +9143,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "video"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "bytes",
  "cc",
