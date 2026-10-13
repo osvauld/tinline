@@ -29,7 +29,7 @@ if readelf -d target/distribution/release/p2p-desktop | grep -q 'NEEDED.*libaom'
 fi
 
 OUT="dist/releases/v${VERSION}"
-STAGE="target/package/tinline-${VERSION}-${TARBALL_ARCH}-linux"
+STAGE="target/package/tinline-${VERSION}-linux-${TARBALL_ARCH}"
 rm -rf "$STAGE"
 mkdir -p "$STAGE/bin" "$STAGE/share/applications" "$STAGE/share/icons/hicolor/512x512/apps"
 install -m 0755 target/distribution/release/p2p-desktop "$STAGE/bin/tinline"
@@ -38,6 +38,6 @@ install -m 0644 packaging/linux/tinline.png "$STAGE/share/icons/hicolor/512x512/
 install -m 0644 LICENSE "$STAGE/LICENSE"
 install -Dm 0644 -t "$STAGE/licenses" packaging/licenses/*.txt
 mkdir -p "$OUT"
-tar -C "$(dirname "$STAGE")" -czf "$OUT/tinline-v${VERSION}-${TARBALL_ARCH}-linux.tar.gz" "$(basename "$STAGE")"
-sha256sum "$OUT/tinline-v${VERSION}-${TARBALL_ARCH}-linux.tar.gz" > "$OUT/tinline-v${VERSION}-${TARBALL_ARCH}-linux.tar.gz.sha256"
-echo "$OUT/tinline-v${VERSION}-${TARBALL_ARCH}-linux.tar.gz"
+tar -C "$(dirname "$STAGE")" -czf "$OUT/tinline-${VERSION}-linux-${TARBALL_ARCH}.tar.gz" "$(basename "$STAGE")"
+sha256sum "$OUT/tinline-${VERSION}-linux-${TARBALL_ARCH}.tar.gz" > "$OUT/tinline-${VERSION}-linux-${TARBALL_ARCH}.tar.gz.sha256"
+echo "$OUT/tinline-${VERSION}-linux-${TARBALL_ARCH}.tar.gz"

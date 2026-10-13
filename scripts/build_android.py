@@ -12,6 +12,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -72,6 +73,13 @@ def main():
         print(f"AAB: {dest}  (versionCode {code})")
         return
     apk = RELEASE_APK if a.release else APK
+    if a.release:
+        with (ROOT / "Cargo.toml").open("rb") as manifest:
+            version = tomllib.load(manifest)["workspace"]["package"]["version"]
+        OUT.mkdir(exist_ok=True)
+        dest = OUT / f"tinline-{version}-android.apk"
+        shutil.copy2(apk, dest)
+        apk = dest
     print(f"APK: {apk}")
 
     if a.install:
