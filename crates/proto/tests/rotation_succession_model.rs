@@ -1,3 +1,6 @@
+//! Superseded by the permit model (`rotation_permit_model.rs`, `rotation_history_*.rs`,
+//! `support/rotation_permit_*.rs`); kept for history because no permit test serializes and
+//! restores a receiver mid-catch-up. See `docs/archive/models.md`.
 //! Test-only strict-history candidate. Not an exported protocol or frozen wire format.
 //! Real DID signatures; fake transport addresses. No networking, expiry or disk I/O.
 use identity::Identity;
