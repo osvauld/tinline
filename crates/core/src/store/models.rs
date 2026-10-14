@@ -1,0 +1,303 @@
+//! The persisted models: profile, contacts, `State` and the call log record.
+
+use std::collections::{BTreeSet, HashMap, HashSet};
+
+use serde::{Deserialize, Serialize};
+use zeroize::ZeroizeOnDrop;
+
+
+/// Current on-disk profile (`"version": 2`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileV2 {
+    pub version: u32,
+    pub name: String,
+    pub did: String,
+    pub device_public: [u8; 32],
+    pub vault: crate::vault::Vault,
+    /// This install's device ID (hex of 32 random bytes; U16's "device value", P9b): new when
+    /// the account is created, linked or restored over this directory, kept when only the device
+    /// key changes (endpoint rotation). Never derived from any key. The chat writer ID is
+    /// `writer_id(DID, device ID)`. Absent in profiles from before P9b until the chat store
+    /// first opens.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub device_id: Option<String>,
+    /// A name edited while locked must be applied as a local profile edit on next unlock.
+    #[serde(default)]
+    pub profile_name_pending: bool,
+    /// A newly linked/restored install must learn the account profile, not publish defaults
+    /// that could overwrite the existing account's name or availability.
+    #[serde(default)]
+    pub profile_inherited: bool,
+}
+
+/// A fresh device ID (`ProfileV2::device_id`).
+pub fn new_device_id() -> String {
+    hex::encode(crate::chat::doc::new_device_value())
+}
+
+impl ProfileV2 {
+    /// The device ID as bytes, if the profile has a well-formed one.
+    pub fn device_id_bytes(&self) -> Option<[u8; 32]> {
+        self.device_id.as_deref().and_then(|h| hex::decode(h).ok()).and_then(|b| b.try_into().ok())
+    }
+}
+
+#[derive(Clone)]
+pub enum Disk {
+    V2(ProfileV2),
+    Legacy(Profile),
+}
+
+/// The old clear-text profile; also what an unlocked identity is loaded from.
+#[derive(Clone, Serialize, Deserialize, ZeroizeOnDrop)]
+pub struct Profile {
+    pub mnemonic: String,
+    pub name: String,
+    /// The install's iroh secret key; random per install, attested by the DID.
+    pub device_secret: [u8; 32],
+}
+
+/// One callable device of a contact, with the relay it was last seen on.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ContactDevice {
+    pub device: [u8; 32],
+    #[serde(default)]
+    pub relay: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(from = "RawContact")]
+pub struct StoredContact {
+    pub did: String,
+    pub name: String,
+    /// Calls dial all of them. Without a `device_list`: newest first (at most
+    /// `proto::MAX_LIST_DEVICES`); with one: the list's order.
+    pub devices: Vec<ContactDevice>,
+    /// The newest signed device list we hold for them; once present it, not `note_device`,
+    /// decides which devices we dial.
+    pub device_list: Option<proto::SignedBlob>,
+    /// Their message token for us (U13): opens chat with them. Replaced by a renewal that
+    /// outlives it. A legacy (pre-P6) `call` grant counts as message + call.
+    pub grant_from_them: proto::SignedGrant,
+    /// Their call token for us, if they let us call (`None`: we can only message them).
+    /// Replaced by a renewal that outlives it; dropped when they answer "calls not allowed".
+    pub call_grant_from_them: Option<proto::SignedGrant>,
+    /// Whether WE let them call us (we issued them a call token and have not taken it back).
+    /// Ticket contacts: true; group chat-request contacts: false (U13). Synced to own devices.
+    pub calls_allowed: bool,
+    pub added_at: u64,
+    /// Local-only name we gave them; `name` stays what they call themselves.
+    pub alias: Option<String>,
+    /// We compared safety numbers with them in person. Reset when their device changes.
+    pub verified: bool,
+}
+
+impl StoredContact {
+    pub fn has_device(&self, device: &[u8; 32]) -> bool {
+        self.devices.iter().any(|d| &d.device == device)
+    }
+
+    pub fn device_keys(&self) -> Vec<[u8; 32]> {
+        self.devices.iter().map(|d| d.device).collect()
+    }
+
+    pub fn relay_for(&self, device: &[u8; 32]) -> Option<&str> {
+        self.devices.iter().find(|d| &d.device == device).and_then(|d| d.relay.as_deref())
+    }
+}
+
+/// A device as older versions stored it (a bare key) or as now.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum RawDevice {
+    Old([u8; 32]),
+    New(ContactDevice),
+}
+
+/// Reads both shapes: before multi-device a contact had `devices: [key]` and one contact-wide
+/// `relay`, which becomes the hint of the first (newest) device.
+#[derive(Deserialize)]
+struct RawContact {
+    did: String,
+    name: String,
+    devices: Vec<RawDevice>,
+    #[serde(default)]
+    relay: Option<String>,
+    #[serde(default)]
+    device_list: Option<proto::SignedBlob>,
+    grant_from_them: proto::SignedGrant,
+    #[serde(default)]
+    call_grant_from_them: Option<proto::SignedGrant>,
+    #[serde(default = "yes")]
+    calls_allowed: bool,
+    added_at: u64,
+    #[serde(default)]
+    alias: Option<String>,
+    #[serde(default)]
+    verified: bool,
+}
+
+fn yes() -> bool {
+    true
+}
+
+impl From<RawContact> for StoredContact {
+    fn from(r: RawContact) -> Self {
+        let mut legacy_relay = r.relay;
+        let devices = r
+            .devices
+            .into_iter()
+            .map(|d| match d {
+                RawDevice::Old(device) => ContactDevice { device, relay: legacy_relay.take() },
+                RawDevice::New(d) => d,
+            })
+            .collect();
+        StoredContact {
+            did: r.did,
+            name: r.name,
+            devices,
+            device_list: r.device_list,
+            // U13 migration: a legacy `call` grant also lets us call (records from before P6
+            // have no call slot and default to `calls_allowed`).
+            call_grant_from_them: r
+                .call_grant_from_them
+                .or_else(|| proto::peek_grant(&r.grant_from_them).filter(|g| g.is_legacy()).map(|_| r.grant_from_them.clone())),
+            grant_from_them: r.grant_from_them,
+            calls_allowed: r.calls_allowed,
+            added_at: r.added_at,
+            alias: r.alias,
+            verified: r.verified,
+        }
+    }
+}
+
+/// One install of this account, as our own registry knows it. Sealed with the rest of the state.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OwnDevice {
+    pub device: [u8; 32],
+    pub attestation: proto::SignedAttestation,
+    pub label: String,
+    #[serde(default)]
+    pub removed: bool,
+    #[serde(default)]
+    pub last_seen: u64,
+    /// The relay it was last known on (our own entry is refreshed from the endpoint).
+    #[serde(default)]
+    pub relay: Option<String>,
+}
+
+/// "Not now": calls are turned away (and not shown) until `until`, or until switched back on.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AvailabilityState {
+    pub unavailable: bool,
+    pub until: Option<u64>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct State {
+    pub contacts: Vec<StoredContact>,
+    /// Ids of grants we issued and then took back. Not written today: tokens are taken back per
+    /// DID with `cut_offs` (every renewal mints a new id, so ids would leak).
+    pub revoked: HashSet<String>,
+    /// Per holder DID: tokens we issued at or before these times (unix seconds) are refused
+    /// (P6, U13). A block raises both, "disallow calls" the call one. Only ever raised; synced
+    /// to own devices (max wins). Unblocking does not lower it: the contact needs fresh tokens.
+    pub cut_offs: HashMap<String, CutOffs>,
+    /// Tokens this device still has to deliver, per DID: capability names ("message", "call").
+    /// Local (only the device that queued them delivers); fresh tokens are minted on delivery.
+    pub token_outbox: HashMap<String, BTreeSet<String>>,
+    /// DIDs we block (U19: the contact is kept). Everything from them is refused with the notice
+    /// in `sent_notices`. Always the DIDs whose `sent_notices` entry is a block.
+    pub blocked: HashSet<String>,
+    /// The latest block / unblock notice we signed for each DID (`proto::sign_block_notice`);
+    /// synced to own devices, which hand out the same notice instead of signing their own.
+    pub sent_notices: HashMap<String, proto::SignedBlob>,
+    /// Notices this device still has to deliver (local: only the device that signed one sends it).
+    pub notice_outbox: HashSet<String>,
+    /// The latest notice each DID sent us, verified on intake; a block there is "<name> blocked
+    /// you". Kept after an unblock so an older notice replayed later is refused.
+    pub notices: HashMap<String, HeldNotice>,
+    /// Invite nonces already spent; a ticket adds one contact.
+    pub redeemed: HashSet<String>,
+    /// The ticket we hand out until someone redeems it, so the QR stays stable across launches.
+    pub ticket: Option<String>,
+    pub availability: AvailabilityState,
+    /// Our own installs (task 34c: seeded with this device; linking fills it later).
+    pub registry: Vec<OwnDevice>,
+    /// The latest `DeviceList` we signed from the registry; sent in every call hello and accept,
+    /// and pushed to contacts when its device set changes (U8, `devlist.rs`).
+    pub own_list: Option<proto::SignedBlob>,
+    /// Contacts this device still has to send its current `own_list` to (local: the device that
+    /// saw the change pushes; the list is read fresh on each attempt).
+    pub list_outbox: HashSet<String>,
+    /// Contacts owed our current profile version, delivered on existing chat control sessions.
+    pub profile_outbox: HashSet<String>,
+    /// The device keys (text form, sorted) of the last list queued for every contact, so a change
+    /// is pushed once even if a call re-signed the list first.
+    pub pushed_list_keys: Vec<String>,
+    /// One-time contact tickets we handed out by accepting a group chat request (U3), by
+    /// invite nonce: only that DID may redeem one, and it gets message-only tokens (P6). Local:
+    /// the ticket names this device's private endpoint.
+    pub req_tickets: HashMap<String, ReqTicket>,
+}
+
+/// See `State::req_tickets`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReqTicket {
+    pub did: String,
+    /// Unix seconds.
+    pub exp: u64,
+}
+
+/// See `State::cut_offs`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CutOffs {
+    pub message: u64,
+    pub call: u64,
+}
+
+impl CutOffs {
+    /// Raises each field to the other's (merge between own devices).
+    pub fn merge(&mut self, other: &CutOffs) {
+        self.message = self.message.max(other.message);
+        self.call = self.call.max(other.call);
+    }
+}
+
+/// A notice someone sent us, with the name we knew them by (their contact entry is deleted on a
+/// block, U20, but the kept conversation still needs a name).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HeldNotice {
+    pub notice: proto::SignedBlob,
+    pub name: String,
+    /// From the verified notice: a block (true) or an unblock, and its `at` (unix ms).
+    pub blocked: bool,
+    pub at: u64,
+}
+
+/// Most calls kept in the call log; the oldest fall off.
+pub(super) const MAX_HISTORY: usize = 500;
+
+/// One finished call, as the UI lists it. `reason` is one of the stable end reasons in
+/// `docs/protocol.md`.
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+pub struct CallRecord {
+    pub call_id: String,
+    pub peer_did: String,
+    /// Their name when the call happened (our alias for them if we had one).
+    pub peer_name: String,
+    pub incoming: bool,
+    /// Unix seconds when the call started (dialing, or the first ring).
+    pub started_at: u64,
+    /// Seconds from answer to end; 0 if it never became active.
+    pub duration_secs: u32,
+    pub reason: String,
+    /// Media went over a direct path rather than a relay (as last seen).
+    pub direct: bool,
+    /// Incoming and we never answered it (not one we declined, nor one turned away while
+    /// unavailable).
+    pub missed: bool,
+}
