@@ -18,6 +18,9 @@ object Notifications {
     const val CH_MISSED = "missed"
     const val CH_LOCKED = "locked"
     const val CH_MESSAGES = "messages"
+    const val CH_REQUESTS = "requests"
+    const val CH_GROUPS = "groups"
+    const val EXTRA_REQUEST = "contact_request"
     const val ID_SERVICE = 1
     const val ID_INCOMING = 2
     const val ID_MISSED = 3
@@ -47,6 +50,12 @@ object Notifications {
         n.createNotificationChannel(NotificationChannel(CH_MISSED, "Missed calls", NotificationManager.IMPORTANCE_DEFAULT))
         n.createNotificationChannel(NotificationChannel(CH_MESSAGES, "Messages", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "New messages from your contacts"
+        })
+        n.createNotificationChannel(NotificationChannel(CH_GROUPS, "Groups", NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = "Posts in your groups and invitations to join one"
+        })
+        n.createNotificationChannel(NotificationChannel(CH_REQUESTS, "Contact requests", NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = "When someone asks to add you as a contact"
         })
         n.createNotificationChannel(NotificationChannel(CH_LOCKED, "Locked", NotificationManager.IMPORTANCE_LOW).apply {
             description = "Shown while the app needs your passphrase to receive calls"
@@ -173,6 +182,19 @@ object Notifications {
     }
 
     fun cancelLocked(c: Context) = nm(c).cancel(ID_LOCKED)
+
+    /** Someone used my code while Tinline was in the background (SIGNUP-HANDOFF § 6f ask 2). A tap opens the request sheet. */
+    fun request(c: Context, did: String, name: String) {
+        val n = androidx.core.app.NotificationCompat.Builder(c, CH_REQUESTS)
+            .setSilent(AlertPrefs.quiet(c))
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setContentTitle("Contact request")
+            .setContentText("${name.ifBlank { "Someone" }} wants to add you as a contact")
+            .setAutoCancel(true)
+            .setContentIntent(activity(c, MainActivity::class.java, 40 + (did.hashCode() and 0xfff)) { it.putExtra(EXTRA_REQUEST, did) })
+            .build()
+        try { nm(c).notify(2000 + (did.hashCode() and 0xffff), n) } catch (e: SecurityException) { }
+    }
 
     fun missed(c: Context, name: String) {
         val n = androidx.core.app.NotificationCompat.Builder(c, CH_MISSED)

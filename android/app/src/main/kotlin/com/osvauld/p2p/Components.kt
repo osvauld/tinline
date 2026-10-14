@@ -61,7 +61,7 @@ fun TopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (onBack != null) IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
+        if (onBack != null) IconBtn(PgIcons.Back, "Back", onBack)
         else Spacer(Modifier.width(16.dp))
         Text(title.orEmpty(), Modifier.weight(1f), style = TinType.titleM.copy(fontSize = 20.sp, lineHeight = 26.sp), color = Tin.c.ink,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -172,7 +172,7 @@ fun TinField(
                     }
                 },
             )
-            if (password) IconBtn(if (shown) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+            if (password) IconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye,
                 if (shown) "Hide passphrase" else "Show passphrase", { shown = !shown }, tint = c.ink2)
             else trailing?.invoke()
         }
@@ -327,7 +327,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier, trailing: (@Compos
 @Composable
 fun ListItem(
     title: String, onClick: (() -> Unit)? = null, sub: String? = null, icon: ImageVector? = null,
-    trailing: (@Composable () -> Unit)? = { Icon(Icons.Rounded.ChevronRight, null, tint = Tin.c.ink2) },
+    trailing: (@Composable () -> Unit)? = { Icon(PgIcons.Chevr, null, tint = Tin.c.ink2) },
     titleColor: Color = Tin.c.ink,
 ) {
     Row(

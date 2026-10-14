@@ -16,6 +16,7 @@
             android:name=".GalleryActivity"
             android:exported="true"
             android:permission="android.permission.DUMP"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.P2P" />
     </application>
 </manifest>

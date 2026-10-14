@@ -60,23 +60,23 @@ fun ContactScreen(
                         Modifier.heightIn(min = 22.dp).clip(RoundedCornerShape(50)).background(c.prc).padding(start = 6.dp, end = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Icon(Icons.Rounded.VerifiedUser, null, tint = c.onPrc, modifier = Modifier.size(14.dp))
+                        Icon(PgIcons.Shield, null, tint = c.onPrc, modifier = Modifier.size(14.dp))
                         Text("Verified", style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.onPrc)
                     }
                 }
-                TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = if (canCall) Icons.Rounded.Call else Icons.Rounded.PhoneDisabled, enabled = !closed)
+                TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = if (canCall) PgIcons.Phone else Icons.Rounded.PhoneDisabled, enabled = !closed)
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (onMessage != null) ActionChip(Icons.Rounded.Chat, "Message", c.pr, onMessage)
-                    ActionChip(Icons.Rounded.Edit, "Rename", c.pr) { renaming = true }
-                    ActionChip(Icons.Rounded.VerifiedUser, "Verify", c.pr, onVerify)
-                    if (block.blockedByMe) ActionChip(Icons.Rounded.Block, "Unblock", c.pr, onUnblock)
-                    else ActionChip(Icons.Rounded.Block, "Block", c.er) { confirmBlock = true }
+                    if (onMessage != null) ActionChip(PgIcons.Chat, "Message", c.pr, onMessage)
+                    ActionChip(PgIcons.Edit, "Rename", c.pr) { renaming = true }
+                    ActionChip(PgIcons.Shield, "Verify", c.pr, onVerify)
+                    if (block.blockedByMe) ActionChip(PgIcons.Off, "Unblock", c.pr, onUnblock)
+                    else ActionChip(PgIcons.Off, "Block", c.er) { confirmBlock = true }
                 }
             }
             if (callsAllowed != null) {
                 val f = firstName(shown)
                 SectionLabel("WHAT ${f.uppercase()} CAN DO", Modifier.padding(top = 8.dp))
-                ListItem("Allow calls", icon = Icons.Rounded.Call,
+                ListItem("Allow calls", icon = PgIcons.Phone,
                     sub = when { block.blockedByMe -> "Blocked: nothing gets through until you unblock."; callsAllowed -> "$f can ring this phone and your other devices."; else -> "Off. $f can message you; their calls don’t ring." },
                     trailing = { TinSwitch(callsAllowed, { if (!block.blockedByMe) onAllowCalls(it) }, "Allow calls") })
             }
@@ -108,7 +108,7 @@ private fun HistoryRow(r: RecentCall) {
     val c = Tin.c
     val red = r.kind == RecentCall.Kind.Missed || r.kind == RecentCall.Kind.Unreached
     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Icon(when (r.kind) { RecentCall.Kind.Incoming -> Icons.Rounded.CallReceived; RecentCall.Kind.Missed -> Icons.Rounded.CallMissed; else -> Icons.Rounded.CallMade },
+        Icon(when (r.kind) { RecentCall.Kind.Incoming -> PgIcons.CallIn; RecentCall.Kind.Missed -> Icons.Rounded.CallMissed; else -> PgIcons.CallOut },
             null, tint = if (red) c.er else c.ink2, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
             Text(r.title.ifBlank { "Call" }, style = TinType.bodyL.copy(fontSize = 15.sp), color = if (red) c.er else c.ink)
@@ -164,7 +164,7 @@ fun VerifyScreen(
             }
         }
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            TinButton("They match", onMatch, icon = Icons.Rounded.Check, enabled = groups != null)
+            TinButton("They match", onMatch, icon = PgIcons.Check, enabled = groups != null)
             TinButton("They don’t match", { mismatch = true }, style = BtnStyle.Text)
             Hint("If they don’t match, block $name and add each other again face to face.", Modifier.fillMaxWidth(), align = TextAlign.Center)
         }

@@ -120,7 +120,7 @@ private fun AddMain(app: P2pApp, meName: String, tab: Int, onTab: (Int) -> Unit,
 private fun Segmented(tab: Int, onTab: (Int) -> Unit, outline: Color) {
     val c = Tin.c
     Row(Modifier.padding(horizontal = 24.dp, vertical = 4.dp).fillMaxWidth().clip(RoundedCornerShape(50)).border(1.dp, outline, RoundedCornerShape(50))) {
-        listOf(Icons.Rounded.QrCode2 to "My code", Icons.Rounded.QrCodeScanner to "Scan").forEachIndexed { i, (ic, label) ->
+        listOf(PgIcons.Qr to "My code", PgIcons.Scan to "Scan").forEachIndexed { i, (ic, label) ->
             val on = i == tab
             Row(
                 Modifier.weight(1f).heightIn(min = 44.dp).background(if (on) c.prc else Color.Transparent).clickable(role = Role.Tab) { onTab(i) },
@@ -222,7 +222,7 @@ private fun CenterScreen(footer: @Composable ColumnScope.() -> Unit = {}, body: 
 private fun ConfirmScreen(p: uniffi.p2pcore.CardPeek, onAdd: () -> Unit, onBack: () -> Unit) {
     val name = p.name.ifBlank { "this contact" }
     CenterScreen(footer = {
-        TinButton("Add $name", onAdd, icon = Icons.Rounded.PersonAdd)
+        TinButton("Add $name", onAdd, icon = PgIcons.Userplus)
         TinButton("Not now", onBack, style = BtnStyle.Text)
     }) {
         Avatar(p.name.ifBlank { "?" }, p.did, 88.dp)
@@ -248,8 +248,8 @@ fun AddedScreen(me: String, contact: Contact, onCall: () -> Unit, onVerify: () -
     val shown = saveAs.trim().ifEmpty { name }
     fun commit() { val t = saveAs.trim(); onSaveAs(if (t.isEmpty() || t == contact.name) null else t) }
     CenterScreen(footer = {
-        TinButton("Call $shown", { commit(); onCall() }, icon = Icons.Rounded.Call)
-        TinButton("Verify identity", { commit(); onVerify() }, style = BtnStyle.Outlined, icon = Icons.Rounded.VerifiedUser)
+        TinButton("Call $shown", { commit(); onCall() }, icon = PgIcons.Phone)
+        TinButton("Verify identity", { commit(); onVerify() }, style = BtnStyle.Outlined, icon = PgIcons.Shield)
         TinButton("Done", { commit(); onDone() }, style = BtnStyle.Text)
     }) {
         PairAvatars(me, name, contact.did)

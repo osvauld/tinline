@@ -105,6 +105,19 @@ fun SettingsLanding(
             Text("Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again.",
                 Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp), style = PgType.sub, color = c.ink2)
         }
+        // Appearance (Settings.svelte LOOKS, 2026-10-14): the same choice the sign-up switch makes; switches at once.
+        PfSec("Appearance") {
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            val look by Appearance.dark.collectAsState()
+            PfCard {
+                listOf(Triple(null as Boolean?, "Match my phone", "Light or dark, as this phone is set"), Triple(false, "Light", null), Triple(true, "Dark", null)).forEach { (v, label, sub) ->
+                    act {
+                        PfAct(label, onClick = { if (v == null) Appearance.follow(ctx) else Appearance.set(ctx, v) }, sub = sub, role = Role.RadioButton, minHeight = 56.dp,
+                            leading = { PgRadio(look == v) })
+                    }
+                }
+            }
+        }
         PfSec {
             PfCard {
                 act { PfAct("Devices", onClick = onDevices, icon = PgIcons.Devices, chevron = true) }
@@ -152,7 +165,8 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
             Box(Modifier.alpha(if (off) .55f else 1f)) {
                 PfCard {
                     listOf(Triple("messages", PgIcons.Chat, "Messages" to "From people, not groups"),
-                        Triple("calls", PgIcons.Phone, "Calls" to "Ringing when someone calls")).forEach { (k, icon, t) ->
+                        Triple("calls", PgIcons.Phone, "Calls" to "Ringing when someone calls"),
+                        Triple("groups", PgIcons.Users, "Groups" to "Posts, invites and requests")).forEach { (k, icon, t) ->
                         val on = prefs[k] ?: true
                         act {
                             PfAct(t.first, onClick = if (off) null else ({ AlertPrefs.set(ctx, k, !on) }), icon = icon, sub = t.second, role = Role.Switch, plain = true,
@@ -161,7 +175,6 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
                     }
                 }
             }
-            PfNote("Group notification controls are not available yet.")
             PfNote("A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification.")
         }
         PfSec("Permissions") {

@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap
 /** Which conversation is on screen (resumed), so its own messages do not notify. */
 object OpenChat {
     @Volatile var peer: String? = null
+    /** The group conversation in front of the user (its posts don't notify). */
+    @Volatile var group: String? = null
     /** A tap on a message notification asks the UI to open this conversation. */
     val request = MutableStateFlow<String?>(null)
 }
@@ -120,5 +122,46 @@ class ReplyReceiver : BroadcastReceiver() {
                 ChatNotifier.cancel(app, peer)
             } finally { pending.finish() }
         }.start()
+    }
+}
+
+/**
+ * Settings › Notifications › Groups ("Posts, invites and requests"): a post from someone else in a group that isn't in
+ * front of the user, one notification per group (MessagingStyle, the group's name as the title). Mute is per chat in the
+ * playground and the core has none yet, so every group alerts while the switch is on.
+ */
+object GroupNotifier {
+    private class Line(val who: String, val text: String, val at: Long)
+    private val lines = java.util.concurrent.ConcurrentHashMap<String, MutableList<Line>>()
+    private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private fun id(gid: String) = 3000 + (gid.hashCode() and 0xffff)
+
+    fun post(app: P2pApp, m: uniffi.p2pcore.GroupMessage, groupName: String?) {
+        if (m.outgoing || m.kind != uniffi.p2pcore.GroupItemKind.POST || OpenChat.group == m.groupId) return
+        if (!AlertPrefs.groups(app)) return
+        if (app.blocks.value.blockedByMe(m.authorDid)) return
+        val who = m.authorName.trim().substringBefore(' ').ifBlank { "Someone" }
+        lines.getOrPut(m.groupId) { mutableListOf() }.let { synchronized(it) { it.add(Line(who, m.text, m.at.toLong())); while (it.size > 6) it.removeAt(0) } }
+        val me = Person.Builder().setName("You").build()
+        val style = NotificationCompat.MessagingStyle(me).setConversationTitle(groupName ?: "Group").setGroupConversation(true)
+        lines[m.groupId]?.let { synchronized(it) { it.forEach { l -> style.addMessage(l.text, l.at, Person.Builder().setName(l.who).build()) } } }
+        val open = PendingIntent.getActivity(app, id(m.groupId), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val n = NotificationCompat.Builder(app, Notifications.CH_GROUPS)
+            .setSilent(AlertPrefs.quiet(app))
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setColor(0xFF0B6B5B.toInt())
+            .setStyle(style)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .build()
+        try { nm(app).notify(id(m.groupId), n) } catch (_: SecurityException) { }
+    }
+
+    fun cancel(c: Context, gid: String) {
+        lines.remove(gid)
+        nm(c).cancel(id(gid))
     }
 }

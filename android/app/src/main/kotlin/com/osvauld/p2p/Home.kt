@@ -77,6 +77,10 @@ fun HomeScreen(
     val groupInvitations by app.groups.invitations.collectAsState()
     val groupBadge = GroupText.badge(groupList, groupInvitations)
     val requestsIn by app.groups.incoming.collectAsState()
+    val waitingIn by app.requestsIn.collectAsState()
+    val waitingOut by app.requestsOut.collectAsState()
+    // "Not now" on a Contacts card hides it for now; the request stays in the core (and comes back next time).
+    var hiddenRequests by remember { mutableStateOf(emptySet<String>()) }
     val pendingRequests = requestsIn.count { it.state == uniffi.p2pcore.ChatRequestState.PENDING }
     // Relative times ("4 min ago") go stale: refresh them once a minute.
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
@@ -123,6 +127,8 @@ fun HomeScreen(
         onSearch = onSearch, history = history,
         canCall = { did -> blocks.callGate(did, byDid.containsKey(did)) == CallGate.Ok && byDid.containsKey(did) },
         isBlocked = { did -> blocks.of(did).blockedByMe }, onGroup = onGroup, onNewGroup = onNewGroup, callLook = callPhase,
+        waitingIn = waitingIn.filter { it.did !in hiddenRequests }, waitingOut = waitingOut,
+        onAcceptRequest = { did -> app.scope.launch { app.acceptRequest(did) } }, onNotNowRequest = { did -> hiddenRequests = hiddenRequests + did },
     )
     if (sheet) AvailabilitySheet(avail.available, avail.until?.toLong(), app.node.profile()?.name ?: "", onDismiss = { sheet = false }) { available, until ->
         sheet = false
@@ -135,8 +141,8 @@ fun HomeScreen(
 private fun TopBanner(online: Boolean, grace: Boolean, missing: List<Need>, onFix: (Need) -> Unit, available: Boolean, onTurnOn: () -> Unit) {
     when {
         !online && !grace -> Banner(BannerKind.Error, Icons.Rounded.WifiOff, "You’re offline", "Calls can’t reach you until you’re back on the internet.")
-        Need.Mic in missing -> Banner(BannerKind.Error, Icons.Rounded.MicOff, "Microphone is off", "People won’t hear you on calls.", "Allow") { onFix(Need.Mic) }
-        Need.Notifications in missing -> Banner(BannerKind.Warn, Icons.Rounded.NotificationsOff, "Calls won’t ring", "Notifications are off for Tinline.", "Turn on") { onFix(Need.Notifications) }
+        Need.Mic in missing -> Banner(BannerKind.Error, PgIcons.Micoff, "Microphone is off", "People won’t hear you on calls.", "Allow") { onFix(Need.Mic) }
+        Need.Notifications in missing -> Banner(BannerKind.Warn, PgIcons.Mute, "Calls won’t ring", "Notifications are off for Tinline.", "Turn on") { onFix(Need.Notifications) }
         Need.Battery in missing -> Banner(BannerKind.Warn, Icons.Rounded.BatteryAlert, "Calls may be missed when idle", "Android is limiting Tinline in the background.", "Fix") { onFix(Need.Battery) }
         Need.FullScreen in missing -> Banner(BannerKind.Warn, Icons.Rounded.PhoneLocked, "Calls won’t show on the lock screen", "Allow full-screen calls so Tinline rings like the phone app.", "Allow") { onFix(Need.FullScreen) }
         !available -> Banner(BannerKind.Neutral, Icons.Rounded.PhoneDisabled, "You’re not available", "Calls won’t ring until you turn it back on.", "Turn on", onTurnOn)
@@ -169,13 +175,17 @@ fun HomeContent(
     isBlocked: (String) -> Boolean = { false },
     onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {},
     callLook: CallPhase = CallPhase.None,
+    /** Contact requests: made with my code (Contacts › "Waiting for you"), and mine waiting for theirs. */
+    waitingIn: List<uniffi.p2pcore.ContactRequest> = emptyList(), waitingOut: List<uniffi.p2pcore.ContactRequest> = emptyList(),
+    onAcceptRequest: (String) -> Unit = {}, onNotNowRequest: (String) -> Unit = {},
 ) {
     val c = Tin.c
     val banner: @Composable () -> Unit = { TopBanner(online, connectingGrace, missing, onFix, available, onTurnOn) }
     val byDid = remember(contacts) { contacts.associateBy { it.did } }
     // No contacts yet: Chats and Contacts are the add screen (my code, Copy, Share, Scan, Paste).
-    val firstRunShown = firstRun != null && contacts.isEmpty() && tab != HomeTab.Calls && tab != HomeTab.Groups &&
-        chatRows.none { it.group || (it.did != myDid && it.atMs > 0) }
+    // The old first-run add screen is replaced by the one empty state (EmptyLine.kt): the hero on Chats and Calls.
+    val firstRunShown = false
+    val hero: @Composable () -> Unit = { EmptyHero(contacts, onAdd = { onAdd(false) }, onMessage = onChat, onNewChat = onNewChat, sent = waitingOut) }
     val dock = tab == HomeTab.Chats || (tab == HomeTab.Groups && groupsBody != null)
     val look = statusLook(call = callLook, conn = when { online -> ConnState.Online; connectingGrace -> ConnState.Connecting; else -> ConnState.Offline })
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding()) {
@@ -187,22 +197,24 @@ fun HomeContent(
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     if (firstRunShown && t != HomeTab.Calls && t != HomeTab.Groups) Column(Modifier.fillMaxSize()) { banner(); firstRun?.invoke() }
                     else when (t) {
-                        HomeTab.Chats -> ChatsTabBody(chatRows, state, onOpen = { r -> if (r.group) onGroup(r.did) else onChat(r.did) },
-                            top = { Column { banner(); requestsBlock?.invoke() } })
+                        HomeTab.Chats -> ChatsTabBody(if (chatRows.any { it.group || (it.did != myDid && it.atMs > 0) }) chatRows else emptyList(), state, onOpen = { r -> if (r.group) onGroup(r.did) else onChat(r.did) },
+                            top = { Column { banner(); requestsBlock?.invoke() } }, empty = hero)
                         HomeTab.Groups -> groupsBody?.invoke()
                         HomeTab.Calls -> CallsTabBody(
                             history, nameOf = { r -> byDid[r.peerDid]?.display() ?: r.peerName.ifBlank { "Unknown" } }, canCall = canCall, state = state,
-                            onProfile = { did -> byDid[did]?.let(onContact) }, onChat = onChat, onCall = { did -> byDid[did]?.let(onCall) },
+                            onProfile = { did -> byDid[did]?.let(onContact) }, onCall = { did -> byDid[did]?.let(onCall) },
                             top = {
                                 Column {
                                     banner()
                                     if (callError != null) Text(callError, Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = TinFs.sub, color = c.danger)
                                 }
                             },
+                            empty = if (contacts.isEmpty()) hero else null,
                         )
                         HomeTab.Contacts -> ContactsTabBody(
                             contacts, blocked = isBlocked, sub = { did -> if (isBlocked(did)) "Blocked" else subLines[did]?.takeIf { it.startsWith("Blocked") }.orEmpty() },
                             state = state, onOpen = onContact, onAdd = { onAdd(false) }, top = { banner() },
+                            waitingIn = waitingIn, waitingOut = waitingOut, onAccept = onAcceptRequest, onNotNow = onNotNowRequest,
                         )
                     }
                 }
@@ -214,9 +226,9 @@ fun HomeContent(
 }
 
 fun recentIcon(k: RecentCall.Kind): ImageVector = when (k) {
-    RecentCall.Kind.Incoming -> Icons.Rounded.CallReceived
+    RecentCall.Kind.Incoming -> PgIcons.CallIn
     RecentCall.Kind.Missed -> Icons.Rounded.CallMissed
-    else -> Icons.Rounded.CallMade
+    else -> PgIcons.CallOut
 }
 
 /** The full call log (Home "See all"). */
@@ -248,7 +260,7 @@ fun SearchBar(query: String, onChange: (String) -> Unit, onClose: () -> Unit, hi
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Close search", onClose)
+        IconBtn(PgIcons.Back, "Close search", onClose)
         Box(Modifier.weight(1f).heightIn(min = 48.dp), contentAlignment = Alignment.CenterStart) {
             if (query.isEmpty()) Text(hint, style = TinType.bodyL.copy(fontSize = 18.sp), color = c.ink2)
             BasicTextField(
@@ -257,7 +269,7 @@ fun SearchBar(query: String, onChange: (String) -> Unit, onClose: () -> Unit, hi
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(),
             )
         }
-        if (query.isNotEmpty()) IconBtn(Icons.Rounded.Close, "Clear", { onChange("") })
+        if (query.isNotEmpty()) IconBtn(PgIcons.X, "Clear", { onChange("") })
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(c.ln))
 }
@@ -289,7 +301,7 @@ private fun RowItem(
                 Text(sub, style = TinType.bodyM, color = subColor)
             }
         }
-        if (onCall != null) IconBtn(Icons.Rounded.Call, "Call $name", onCall, tint = c.pr) else Spacer(Modifier.width(12.dp))
+        if (onCall != null) IconBtn(PgIcons.Phone, "Call $name", onCall, tint = c.pr) else Spacer(Modifier.width(12.dp))
     }
 }
 
@@ -305,7 +317,7 @@ private fun FirstRunAdd(app: P2pApp, onScan: () -> Unit, onPaste: () -> Unit) {
         H1("Add your first contact", align = TextAlign.Center)
         Lead("Show your code to a friend, or copy it and send it. Or scan theirs.", Modifier.widthIn(max = 320.dp), align = TextAlign.Center)
         MyCodeBlock(app, meName, qr = 220.dp, showNewCode = false)
-        TinButton("Scan their code", onScan, icon = Icons.Rounded.QrCodeScanner)
+        TinButton("Scan their code", onScan, icon = PgIcons.Scan)
         TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
         Row(
             Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),

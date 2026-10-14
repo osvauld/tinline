@@ -36,9 +36,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -377,7 +380,7 @@ fun GField(
                         }
                     },
                 )
-                if (secret) PgIconBtn(if (shown) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                if (secret) PgIconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye,
                     if (shown) "Hide ${label.lowercase()}" else "Show ${label.lowercase()}", { shown = !shown }, tint = c.ink2, iconSize = 20.dp)
             }
         }
@@ -426,7 +429,7 @@ fun PassField(value: String, onChange: (String) -> Unit, label: String = "Passph
                     }
                 },
             )
-            if (secret) PgIconBtn(if (shown) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (shown) "Hide passphrase" else "Show passphrase",
+            if (secret) PgIconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye, if (shown) "Hide passphrase" else "Show passphrase",
                 { shown = !shown }, tint = c.ink2, iconSize = 20.dp)
         }
         Text(error.ifEmpty { hint }, Modifier.fillMaxWidth().heightIn(min = (19 * msgLines).dp).semantics { if (bad) liveRegion = LiveRegionMode.Assertive },
@@ -448,7 +451,7 @@ fun GNotice(text: AnnotatedString, kind: NKind = NKind.Info, icon: ImageVector? 
             .semantics { if (kind == NKind.Error) liveRegion = LiveRegionMode.Assertive },
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top,
     ) {
-        Icon(icon ?: if (kind == NKind.Info) Icons.Rounded.Info else Icons.Rounded.WarningAmber, null, Modifier.padding(top = 1.dp).size(20.dp), tint = fg)
+        Icon(icon ?: if (kind == NKind.Info) PgIcons.Info else PgIcons.Warning, null, Modifier.padding(top = 1.dp).size(20.dp), tint = fg)
         Text(text, style = PgType.sub19, color = fg)
     }
 }
@@ -480,9 +483,19 @@ fun IconDisc(icon: ImageVector, size: Dp, iconSize: Dp, danger: Boolean = false)
 fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String = "") {
     val c = Tin.c
     val reduced = rememberReducedMotion()
-    if (onBack == null && progress == null) { Spacer(Modifier.height(24.dp)); return }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    // Light/dark right in sign-up (Gate.svelte): the first screens are where someone decides if this feels like theirs.
+    val theme: @Composable () -> Unit = {
+        PgIconBtn(if (c.dark) PgIcons.Sun else PgIcons.Moon, if (c.dark) "Switch to light" else "Switch to dark",
+            { Appearance.set(ctx, !c.dark) }, tint = c.ink2, iconSize = 20.dp, size = 40.dp, modifier = Modifier.offset(x = 10.dp))
+    }
+    // Android `.head.empty`: no back and no progress; only the theme switch, at the end.
+    if (onBack == null && progress == null) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(start = 8.dp, end = 20.dp), horizontalArrangement = Arrangement.End) { theme() }
+        return
+    }
     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = 8.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.width(44.dp)) { if (onBack != null) PgIconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack) }
+        Box(Modifier.width(44.dp)) { if (onBack != null) PgIconBtn(PgIcons.Back, "Back", onBack) }
         Spacer(Modifier.weight(1f))
         if (progress != null) Row(
             Modifier.semantics { contentDescription = "Setup progress, step ${progress.first} of ${progress.second}" + if (stepLabel.isNotEmpty()) ": $stepLabel" else "" },
@@ -494,8 +507,41 @@ fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String
                     Box(Modifier.size(14.dp, 6.dp).clip(RoundedCornerShape(3.dp)).background(col))
                 }
             }
-            Text("${progress.first} of ${progress.second}", Modifier.widthIn(min = 42.dp), style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+            // step 0 (Welcome, Choose): the count keeps its width, hidden, so "1 of 6" appears in place
+            Text("${progress.first} of ${progress.second}", Modifier.widthIn(min = 42.dp).graphicsLayer { alpha = if (progress.first == 0) 0f else 1f },
+                style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
         }
+        theme()
+    }
+}
+
+/**
+ * gate/Btn.svelte `next` on Android: Continue is a 56 round accent button with an arrow at the end of the footer; the label stays
+ * the accessible name, and busy swaps the arrow for a spinner so the size never changes. The arrow mirrors in RTL.
+ */
+@Composable
+fun GNext(label: String, onClick: () -> Unit, enabled: Boolean = true, busy: Boolean = false) {
+    val c = Tin.c
+    val src = remember { MutableInteractionSource() }
+    val on = enabled && !busy
+    val (bg, fg) = when { busy -> c.accent.copy(alpha = 0.85f) to c.onAccent; on -> c.accent to c.onAccent; else -> c.sf2 to c.ink2 }
+    Box(
+        Modifier.size(56.dp).press(src, on).clip(CircleShape).background(bg)
+            .clickable(src, androidx.compose.material3.ripple(color = fg), enabled = on, role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (busy) PgSpinner(20.dp, fg)
+        else Icon(PgIcons.Next, null, Modifier.size(24.dp), tint = fg)
+    }
+}
+
+/** The footer row when Continue is the round arrow: an optional secondary at the start, the arrow at the end. */
+@Composable
+fun GNextRow(next: @Composable () -> Unit, start: (@Composable () -> Unit)? = null) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        if (start != null) start() else Spacer(Modifier.width(1.dp))
+        next()
     }
 }
 
@@ -507,7 +553,10 @@ fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String
 @Composable
 fun GateStep(
     title: String, lead: String? = null, center: Boolean = false, anchor: Boolean = false, bigTitle: Boolean = false,
-    hero: (@Composable () -> Unit)? = null, foot: (@Composable ColumnScope.() -> Unit)? = null, body: @Composable ColumnScope.() -> Unit = {},
+    hero: (@Composable () -> Unit)? = null, foot: (@Composable ColumnScope.() -> Unit)? = null,
+    /** The body fills the height instead of scrolling (Welcome's mark, Choose's options and Terms' consent line sit at the bottom). */
+    fill: Boolean = false,
+    body: @Composable ColumnScope.() -> Unit = {},
 ) {
     val c = Tin.c
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -516,9 +565,9 @@ fun GateStep(
         val anchorTop = if (keyboardOpen) 0.dp else minOf(maxHeight * 0.14f, 96.dp)
         Column(Modifier.fillMaxSize()) {
             Column(
-                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                Modifier.weight(1f).fillMaxWidth().let { if (fill) it else it.verticalScroll(rememberScrollState()) }
                     .padding(start = 24.dp, end = 24.dp, top = if (center && anchor) 8.dp + anchorTop else 8.dp, bottom = 16.dp)
-                    .let { if (center && !anchor) it.fillMaxHeight() else it },
+                    .let { if ((center && !anchor) || fill) it.fillMaxHeight() else it },
                 verticalArrangement = if (center && !anchor) Arrangement.spacedBy(16.dp, Alignment.CenterVertically) else Arrangement.spacedBy(16.dp),
                 horizontalAlignment = if (center) Alignment.CenterHorizontally else Alignment.Start,
             ) {

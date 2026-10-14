@@ -77,39 +77,39 @@ fun SettingsScreen(
                         Text(name, style = TinType.titleM, color = c.ink, maxLines = 1)
                         Hint(if (deviceLabel != null) "On this phone as “$deviceLabel”" else "Shown to people you add")
                     }
-                    IconBtn(Icons.Rounded.Edit, "Edit name", { editing = true }, tint = c.pr)
+                    IconBtn(PgIcons.Edit, "Edit name", { editing = true }, tint = c.pr)
                     TinButton("Switch", { sheet = true }, style = BtnStyle.Tonal, fill = false, height = 40.dp, textStyle = TinType.label)
                 }
             }
             SectionLabel("DEVICES")
             val devVer by app.links.devicesVersion.collectAsState()
             val devCount by produceState(1, devVer) { value = withContext(Dispatchers.IO) { runCatching { app.node.linkedDevices().count { !it.removed } }.getOrDefault(1) } }
-            ListItem("Linked devices", onClick = onDevices, icon = Icons.Rounded.Devices, sub = if (devCount <= 1) "This phone only" else "$devCount devices")
+            ListItem("Linked devices", onClick = onDevices, icon = PgIcons.Devices, sub = if (devCount <= 1) "This phone only" else "$devCount devices")
             ListItem("Link a device", onClick = onLinkDevice, icon = Icons.Rounded.AddLink, sub = "Use your account on another phone or computer")
             SectionLabel("CALLS")
-            ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = Icons.Rounded.Call,
+            ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = PgIcons.Phone,
                 trailing = { TinSwitch(available, { on -> scope.launch(Dispatchers.IO) { app.setAvailable(on) } }, "Available for calls") })
             var video by remember { mutableStateOf(app.videoEnabled) }
-            ListItem("Video in calls", sub = if (video) "You can turn your camera on in a call" else "Calls are voice only", icon = Icons.Rounded.Videocam,
+            ListItem("Video in calls", sub = if (video) "You can turn your camera on in a call" else "Calls are voice only", icon = PgIcons.Video,
                 trailing = { TinSwitch(video, { on -> video = on; app.videoEnabled = on }, "Video in calls") })
-            ListItem("Background & battery", onClick = onBattery, icon = Icons.Rounded.BatteryChargingFull,
+            ListItem("Background & battery", onClick = onBattery, icon = PgIcons.Battery,
                 sub = if (bgOk) "All set — calls will ring" else "Needs attention")
             SectionLabel("SECURITY")
-            if (hasPass) ListItem("Change passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key)
-            else ListItem("Add passphrase", onClick = onPassphrase, icon = Icons.Rounded.Key, sub = "Optional — encrypts your account")
-            ListItem("Recovery phrase", onClick = onPhrase, icon = Icons.Rounded.Lock, sub = if (hasPass) "Needs your passphrase" else "Needs your screen lock")
+            if (hasPass) ListItem("Change passphrase", onClick = onPassphrase, icon = PgIcons.Key)
+            else ListItem("Add passphrase", onClick = onPassphrase, icon = PgIcons.Key, sub = "Optional — encrypts your account")
+            ListItem("Recovery phrase", onClick = onPhrase, icon = PgIcons.Lock, sub = if (hasPass) "Needs your passphrase" else "Needs your screen lock")
             SectionLabel("PRIVACY")
             val blocks by app.blocks.collectAsState()
-            ListItem("Blocked people", onClick = onBlocked, icon = Icons.Rounded.Block,
+            ListItem("Blocked people", onClick = onBlocked, icon = PgIcons.Off,
                 sub = when (val n = blocks.list.size) { 0 -> "Nobody"; 1 -> "1 person"; else -> "$n people" })
             if (previewOn == true) {
                 SectionLabel("PRIVACY · PREVIEW")
-                ListItem("People, requests & blocking", onClick = { onPreview("chats") }, icon = Icons.Rounded.Groups, sub = "Demo chats with Meera, Arjun, Priya · placeholder data")
-                ListItem("Blocked people (preview)", onClick = { onPreview("blocked") }, icon = Icons.Rounded.Block, sub = "Placeholder data")
-                ListItem("Address changes", onClick = { onPreview("address") }, icon = Icons.Rounded.Sync, sub = "Placeholder data")
+                ListItem("People, requests & blocking", onClick = { onPreview("chats") }, icon = PgIcons.Users, sub = "Demo chats with Meera, Arjun, Priya · placeholder data")
+                ListItem("Blocked people (preview)", onClick = { onPreview("blocked") }, icon = PgIcons.Off, sub = "Placeholder data")
+                ListItem("Address changes", onClick = { onPreview("address") }, icon = PgIcons.Retry, sub = "Placeholder data")
             }
             SectionLabel("ABOUT")
-            ListItem("About Tinline", onClick = onAbout, icon = Icons.Rounded.Info, sub = "Version, licences, terms, privacy")
+            ListItem("About Tinline", onClick = onAbout, icon = PgIcons.Info, sub = "Version, licences, terms, privacy")
             if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = Icons.Rounded.BugReport, sub = "Test tone and core version (debug builds)")
             if (PreviewFlags.available) ListItem(PreviewFlags.LABEL, icon = Icons.Rounded.Science, sub = "Debug builds only. Screens for features the core doesn’t have yet",
                 trailing = { TinSwitch(previewOn == true, { PreviewFlags.set(ctx, it) }, PreviewFlags.LABEL) })
@@ -143,10 +143,10 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
                 Hint("Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that.")
             }
             SectionLabel("CHECKLIST")
-            CheckRow(Icons.Rounded.BatteryChargingFull, "Battery", if (Need.Battery in missing) "Optimised — Android may pause Tinline" else null, Need.Battery !in missing, "On") { onFix(Need.Battery) }
-            CheckRow(Icons.Rounded.Notifications, "Notifications", null, Need.Notifications !in missing, "On") { onFix(Need.Notifications) }
+            CheckRow(PgIcons.Battery, "Battery", if (Need.Battery in missing) "Optimised — Android may pause Tinline" else null, Need.Battery !in missing, "On") { onFix(Need.Battery) }
+            CheckRow(PgIcons.Bell, "Notifications", null, Need.Notifications !in missing, "On") { onFix(Need.Notifications) }
             CheckRow(Icons.Rounded.PhoneLocked, "Ring over lock screen", null, Need.FullScreen !in missing, "On") { onFix(Need.FullScreen) }
-            CheckRow(Icons.Rounded.Mic, "Microphone", null, Need.Mic !in missing, "Allowed") { onFix(Need.Mic) }
+            CheckRow(PgIcons.Mic, "Microphone", null, Need.Mic !in missing, "Allowed") { onFix(Need.Mic) }
             Column(
                 Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(14.dp),
             ) {
@@ -163,7 +163,7 @@ private fun CheckRow(icon: androidx.compose.ui.graphics.vector.ImageVector, titl
     val c = Tin.c
     ListItem(title, icon = icon, sub = sub, trailing = {
         if (ok) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(Icons.Rounded.Check, null, tint = c.pr, modifier = Modifier.size(18.dp)); Text(okText, style = TinType.label, color = c.pr)
+            Icon(PgIcons.Check, null, tint = c.pr, modifier = Modifier.size(18.dp)); Text(okText, style = TinType.label, color = c.pr)
         } else TinButton("Fix", onFix, fill = false, height = 40.dp, textStyle = TinType.label)
     })
 }
@@ -196,7 +196,7 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
     Page {
         TopBar("Recovery phrase", onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Box(Modifier.size(64.dp).clip(CircleShape).background(Tin.c.prc), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Lock, null, tint = Tin.c.onPrc, modifier = Modifier.size(28.dp)) }
+            Box(Modifier.size(64.dp).clip(CircleShape).background(Tin.c.prc), contentAlignment = Alignment.Center) { Icon(PgIcons.Lock, null, tint = Tin.c.onPrc, modifier = Modifier.size(28.dp)) }
             Text(if (hasPass) "Enter your passphrase" else "Confirm it’s you", style = TinType.h1.copy(fontSize = 26.sp, lineHeight = 32.sp), color = Tin.c.ink)
             Lead(if (hasPass) "Your recovery phrase is the key to your account, so we check it’s really you first."
             else "Your recovery phrase is the key to your account, so we ask for your phone’s screen lock first.")
@@ -217,15 +217,15 @@ fun PhraseShownScreen(phrase: String, onHide: () -> Unit) {
     Page {
         TopBar("Recovery phrase", onHide)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            InfoCard("Anyone who sees these words can become you. Check nobody is looking.", icon = Icons.Rounded.Warning, kind = BannerKind.Warn)
+            InfoCard("Anyone who sees these words can become you. Check nobody is looking.", icon = PgIcons.Warning, kind = BannerKind.Warn)
             WordGrid(phrase)
             TinButton(if (copied) "Copied" else "Copy recovery phrase", {
                 copyToClipboard(ctx, "Recovery phrase", phrase)
                 copied = true
-            }, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentCopy)
+            }, style = BtnStyle.Outlined, icon = PgIcons.Copy)
             Hint("Paste into a trusted password manager. Anyone with these words can access your account.")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Lock, null, tint = Tin.c.ink2, modifier = Modifier.size(16.dp))
+                Icon(PgIcons.Lock, null, tint = Tin.c.ink2, modifier = Modifier.size(16.dp))
                 Hint("Screenshots and screen recording are blocked here.")
             }
         }
@@ -287,7 +287,7 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
                     color = c.ink2, textAlign = TextAlign.Center)
             }
             ListItem("Source code", { openUrl(ctx, URL_SOURCE) }, sub = "GPL-3.0", icon = Icons.Rounded.Code, trailing = ext)
-            ListItem("Terms of Use", { openUrl(ctx, URL_TERMS) }, icon = Icons.Rounded.Description, trailing = ext)
+            ListItem("Terms of Use", { openUrl(ctx, URL_TERMS) }, icon = PgIcons.File, trailing = ext)
             ListItem("Privacy Policy", { openUrl(ctx, URL_PRIVACY) }, icon = Icons.Rounded.PrivacyTip, trailing = ext)
             ListItem("Open-source licences", onLicences, icon = Icons.Rounded.Gavel)
             ListItem("tinline.osvauld.com", { openUrl(ctx, URL_SITE) }, icon = Icons.Rounded.Language, trailing = ext)

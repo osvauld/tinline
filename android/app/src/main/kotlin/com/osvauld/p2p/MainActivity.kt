@@ -13,8 +13,15 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -46,12 +53,27 @@ class MainActivity : ComponentActivity() {
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
         intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
-        if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent) }
-        setContent { TinlineTheme { Root(app) } }
+        if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent); requestFrom(intent) }
+        Appearance.load(this)
+        setContent {
+            val chosen by Appearance.dark.collectAsState()
+            TinlineTheme(dark = chosen ?: androidx.compose.foundation.isSystemInDarkTheme()) { Root(app) }
+        }
     }
+
+    /** A tap on "Maya wants to add you as a contact": open the request sheet for it, if it is still waiting. */
+    private fun requestFrom(intent: android.content.Intent?) {
+        val did = intent?.getStringExtra(Notifications.EXTRA_REQUEST) ?: return
+        val app = P2pApp.get(this)
+        app.requestsIn.value.firstOrNull { it.did == did }?.let { app.incoming.value = IncomingSheet(it.did, it.name, joined = false, theirs = false) }
+    }
+
+    override fun onResume() { super.onResume(); AppVisible.resumed = true }
+    override fun onPause() { AppVisible.resumed = false; super.onPause() }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
+        requestFrom(intent)
         intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
         CardInbox.take(intent)
         GroupLinkInbox.take(intent)
@@ -226,11 +248,20 @@ private fun Root(app: P2pApp) {
     val unlinkedName by app.unlinked.collectAsState()
     // The account went away (unlinked here or from another device): leave whatever screen was open.
     LaunchedEffect(has) { if (!has) home() }
+    // A minimised call's strip sits in flow at the bottom (CallStrip.kt), above the keyboard or the navigation bar, and
+    // takes those insets from the app above it; the group call screen lies over all.
+    val stripOn = callStripOn(app)
     Box(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize()) {
+    Box(Modifier.weight(1f).fillMaxWidth()
+        .then(if (stripOn) Modifier.consumeWindowInsets(WindowInsets.navigationBars.union(WindowInsets.ime)) else Modifier)) {
     when {
         unlinkedName != null -> UnlinkedScreen(unlinkedName!!, onOk = { app.dismissUnlinked(); home() },
             onLinkAgain = { app.dismissUnlinked(); if (!app.node.hasIdentity()) onboarding = true else addAccount(false, link = true) })
-        onboarding || !has || adding != null -> key(adding) { OnboardingFlow(app, missing, fix) { onboarding = false; home(); termsOk = LegalStore.accepted(ctx); missing = Perms.missing(ctx) } }
+        onboarding || !has || adding != null -> key(adding) { OnboardingFlow(app, missing, fix,
+            // Done "Add my first contact": Chats (its empty hero) with Add contact open over it, on By code.
+            onAddFirst = { onboarding = false; home(); homeTab.value = HomeTab.Chats; termsOk = LegalStore.accepted(ctx); missing = Perms.missing(ctx); stack.add(Route.Add(false)) },
+        ) { onboarding = false; home(); homeTab.value = HomeTab.Chats; termsOk = LegalStore.accepted(ctx); missing = Perms.missing(ctx) } }
         lock == LockState.LOCKED ->
             if (forgot) OnboardingFlow(app, missing, fix, forgot = true, onCancelForgot = { forgot = false }) { forgot = false; missing = Perms.missing(ctx) }
             else key(acct) { UnlockScreen(app) { forgot = true } }
@@ -241,19 +272,32 @@ private fun Root(app: P2pApp) {
             val inCall by app.calls.ui.collectAsState()
             val top = stack.last()
             val onHomeOrAdd = top is Route.Home || top is Route.Add
+            // Someone used my code, or accepted my request while the sheet was closed: the sheet opens by itself over
+            // Home (my own open Add contact sheet turns into it), never over a call or another screen; else it's dropped
+            // and the request waits in Contacts.
+            val inc by app.incoming.collectAsState()
+            LaunchedEffect(inc) {
+                inc ?: return@LaunchedEffect
+                when (stack.last()) {
+                    is Route.Add -> {}
+                    Route.Home -> if (app.calls.ui.value == null) stack.add(Route.Add(false)) else app.incoming.value = null
+                    else -> app.incoming.value = null
+                }
+            }
             CardPrompts(app, clipboardOk = onHomeOrAdd && inCall == null, shareOk = true, showOnScreen = inCall == null, onChat = { p -> if (top is Route.Add) pop(); stack.add(Route.Chat(p.did)) }) { p ->
                 if (stack.last() is Route.Add) pop()
                 stack.add(Route.Add(false, ticket = p.ticket))
             }
-            when (val r = stack.last()) {
-                Route.Home -> HomeScreen(
+            val homeScreen: @Composable () -> Unit = { HomeScreen(
                     app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onPaste = { stack.add(Route.Add(false, paste = true)) }, onSettings = { stack.add(Route.Settings) },
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                     homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
                     say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
                     onSearch = { stack.add(Route.Search) },
-                )
+                ) }
+            when (val r = stack.last()) {
+                Route.Home -> homeScreen()
                 Route.Search -> SearchScreen(app, onBack = ::pop, onChat = { did ->
                     val hit = SearchJump.pending.value?.takeIf { it.conv == did && it.kind == uniffi.p2pcore.SearchConvKind.DM }
                     SearchJump.pending.value = null
@@ -285,11 +329,14 @@ private fun Root(app: P2pApp) {
                         onUnblock = { app.unblock(r.did) }, onAddContact = { stack.add(Route.Add(true)) },
                         notDelivered = { id -> app.notDeliveredReason(r.did, id) },
                         onInfo = if (c != null) ({ stack.add(Route.Contact(r.did)) }) else null,
-                        searchHit = r.searchHit)
+                        searchHit = r.searchHit,
+                        calls = app.history.collectAsState().value.filter { it.peerDid == r.did },
+                        onVideo = { app.video.wantCamera = true; call(r.did) })
                 }
                 Route.History -> HistoryScreen(app, onBack = ::pop, onContact = { stack.add(Route.Contact(it.did)) })
-                is Route.Add -> AddContactScreen(app, r.scan, r.ticket, r.paste, onClose = ::pop,
-                    onCall = { c -> pop(); call(c.did) }, onVerify = { c -> pop(); stack.add(Route.Contact(c.did)); stack.add(Route.Verify(c.did)) })
+                // Add contact is a sheet over Chats (the first screen's hero shows through and pulls tight behind it).
+                is Route.Add -> { homeScreen(); AddContactSheet(app, r.scan, r.ticket, r.paste, onClose = { app.incoming.value = null; pop() },
+                    onMessage = { did -> app.incoming.value = null; pop(); stack.add(Route.Chat(did)) }, onProfile = { did -> pop(); stack.add(Route.Contact(did)) }) }
                 is Route.Contact -> {
                     val c = contacts.firstOrNull { it.did == r.did }
                     if (c == null) LaunchedEffect(Unit) { pop() }
@@ -352,6 +399,10 @@ private fun Root(app: P2pApp) {
         }
     }
     androidx.compose.material3.SnackbarHost(snack, Modifier.align(androidx.compose.ui.Alignment.BottomCenter).navigationBarsPadding().padding(16.dp))
+    }
+    CallStrips(app)
+    }
+    GroupCallLayer(app)
     }
 }
 

@@ -174,7 +174,7 @@ fun ChatHeader(
 ) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
+        IconBtn(PgIcons.Back, "Back", onBack)
         Row(
             Modifier.weight(1f).heightIn(min = 48.dp).clip(SmoothCornerShape(12.dp))
                 .let { if (onTitle != null) it.clickable(role = Role.Button, onClickLabel = "Open details", onClick = onTitle) else it }
@@ -234,7 +234,7 @@ fun ColumnScope.SysLine(text: String, onClick: (() -> Unit)? = null) {
 fun Composer(draft: String, onDraft: (String) -> Unit, placeholder: String, onSend: () -> Unit, onAttach: (() -> Unit)? = null) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (onAttach != null) IconBtn(Icons.Rounded.AttachFile, "Attach", onAttach)
+        if (onAttach != null) IconBtn(PgIcons.Clip, "Attach", onAttach)
         BasicTextField(
             draft, onDraft, Modifier.weight(1f).heightIn(min = 48.dp).semantics { contentDescription = placeholder },
             textStyle = TinType.bodyL.copy(fontSize = 15.sp, color = c.ink), cursorBrush = SolidColor(c.pr),
@@ -249,7 +249,7 @@ fun Composer(draft: String, onDraft: (String) -> Unit, placeholder: String, onSe
         Box(Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank()) c.sf3 else c.pr)
             .clickable(enabled = draft.isNotBlank(), role = Role.Button, onClick = onSend).semantics { contentDescription = "Send" },
             contentAlignment = Alignment.Center) {
-            Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = if (draft.isBlank()) c.ink2 else c.onPr)
+            Icon(PgIcons.Next, null, tint = if (draft.isBlank()) c.ink2 else c.onPr)
         }
     }
 }
