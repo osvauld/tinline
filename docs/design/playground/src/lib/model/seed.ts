@@ -68,6 +68,8 @@ export function seedChats(): Chat[] {
       // Older posts (additive, for search): earlier days, before the join line below.
       msg({ from: 'sam', at: at(18, 0, 8), text: 'Trail map and the parking details are in the shared folder.' }),
       msg({ from: 'priya', at: at(9, 30, 5), text: 'Anyone have a spare headlamp for Saturday? Mine died last time.' }),
+      msg({ from: 'sam', at: at(20, 10, 3), text: '', call: { kind: 'voice', outcome: 'answered', durationS: 1140, direction: 'in', group: true, people: 4 } }),
+      msg({ from: 'priya', at: at(19, 5, 2), text: '', call: { kind: 'voice', outcome: 'missed', durationS: 300, direction: 'in', group: true, people: 3 } }),
       msg({ from: 'kavya', at: at(9, 2), text: 'Kavya joined, invited by Priya', system: true }),
       msg({ from: 'sam', at: at(12, 30), text: 'Saturday 7am at the trailhead.' }),
       msg({ from: 'sam', at: at(12, 31), text: 'Bring rain jackets, the forecast says showers after 10.' }),

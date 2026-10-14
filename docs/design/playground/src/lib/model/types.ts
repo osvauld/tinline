@@ -44,7 +44,9 @@ export interface CallRecord {
   outcome: 'answered' | 'missed' | 'declined' | 'failed' | 'cancelled';
   durationS: number;
   direction: 'out' | 'in';
-  group?: boolean;         // a group call (step 6): shown "Group call · 12 min"; the pill joins / starts a call in this group
+  group?: boolean;         // a group call (step 6): shown "Group call · 12 min · 3 people"; the pill joins / starts a call in this group
+  /** Group calls: how many people were in it at most (me included when I was). Missed = it happened without me. */
+  people?: number;
 }
 
 export interface Message {

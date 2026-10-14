@@ -422,6 +422,8 @@ class GroupCall {
     if (this.phase === 'idle' || this.phase === 'ended' || this.phase === 'failed') return;
     const gid = this.groupId!, lc = this.live[gid];
     const seconds = this.#connectedMono ? Math.floor((performance.now() - this.#connectedMono) / 1000) : 0;
+    // Most people in it at once that this device saw (me included), for "Group call · 12 min · 3 people".
+    const people = Math.max(this.participants.length, lc?.parts.length ?? 1, 1);
     this.#clearTimers();
     const wasHost = lc?.hostId === 'me';
     if (lc && !mine) this.frozen = this.participants.map((p) => ({ ...p, speaking: false, level: 0 }));
@@ -429,7 +431,7 @@ class GroupCall {
       lc.parts = lc.parts.filter((x) => x !== 'me');
       if (!lc.parts.length) this.#worldEnd(gid, true);
     }
-    if (!this.#recorded && this.#connectedMono) { this.#recorded = true; this.#record(gid, lc?.by ?? 'me', seconds); }
+    if (!this.#recorded && this.#connectedMono) { this.#recorded = true; this.#record(gid, lc?.by ?? 'me', seconds, people); }
     this.endReason = reason; this.asking = '';
     this.phase = kind === 'failed' ? 'failed' : 'ended';
     emitFx({ type: kind === 'failed' ? 'failed' : 'end' });
@@ -444,11 +446,11 @@ class GroupCall {
     this.phase = 'idle'; this.groupId = null; this.callId = ''; this.view = 'full'; this.fading = false; this.endReason = null;
     this.muted = false; this.speaker = 'earpiece'; this.elapsedS = 0; this.asking = ''; this.loud = []; this.levels = {}; this.hostNote = ''; this.frozen = [];
   }
-  /** One record per call per device, written when my part ends: "Group call · 12 min". */
-  #record(gid: Id, by: Id, durationS: number) {
+  /** One record per call per device, written when my part ends: "Group call · 12 min · 3 people". */
+  #record(gid: Id, by: Id, durationS: number, people: number) {
     const g = chat(gid);
     if (!g) return;
-    pushMessage(g, { from: by, text: '', call: { kind: 'voice', outcome: 'answered', durationS, direction: by === 'me' ? 'out' : 'in', group: true } });
+    pushMessage(g, { from: by, text: '', call: { kind: 'voice', outcome: 'answered', durationS, direction: by === 'me' ? 'out' : 'in', group: true, people } });
   }
   #note(gid: Id, by: Id) {
     const g = chat(gid);
@@ -462,8 +464,9 @@ class GroupCall {
     if (this.announce?.gid === gid) this.announce = null;
     const g = chat(gid);
     if (g && !quiet && !lc.everJoinedByMe) {
+      // A call that happened without me: a call record too (the thread and the Calls tab), calm, not red.
       const s = Math.max(1, Math.round((performance.now() - lc.startedAt) / 1000));
-      pushMessage(g, { from: lc.by, text: `Call ended · ${s >= 60 ? Math.round(s / 60) + ' min' : s + ' s'}`, system: true });
+      pushMessage(g, { from: lc.by, text: '', call: { kind: 'voice', outcome: 'missed', durationS: s, direction: 'in', group: true, people: Math.max(lc.parts.length, 1) } });
     }
   }
   /** Host gone: everyone redials the backups. kind: planned (End{host_leaving}), crash (heartbeats), rotate (End{host_rotating}). */
