@@ -8,25 +8,25 @@ use std::collections::{BTreeMap, BTreeSet};
 const DOMAIN: &[u8] = b"tinline/group-simulation/not-production/v1\0";
 const MAX_PENDING: usize = 16;
 
-#[path = "block_in_group.rs"]
+#[path = "block_in_group/mod.rs"]
 mod block_in_group;
-#[path = "chat_request.rs"]
+#[path = "chat_request/mod.rs"]
 mod chat_request;
 #[path = "flags/mod.rs"]
 mod flags;
-#[path = "host_only.rs"]
+#[path = "host_only/mod.rs"]
 mod host_only;
-#[path = "host_relay.rs"]
+#[path = "host_relay/mod.rs"]
 mod host_relay;
-#[path = "multi_host.rs"]
+#[path = "multi_host/mod.rs"]
 mod multi_host;
-#[path = "persistence.rs"]
+#[path = "persistence/mod.rs"]
 mod persistence;
-#[path = "policy_candidates.rs"]
+#[path = "policy_candidates/mod.rs"]
 mod policy_candidates;
-#[path = "reachability.rs"]
+#[path = "reachability/mod.rs"]
 mod reachability;
-#[path = "removal_rotation.rs"]
+#[path = "removal_rotation/mod.rs"]
 mod removal_rotation;
 
 // LEGACY ENVELOPE FIXTURE (R1b). `Body.device`, the device-derived `peer` and the attestation
