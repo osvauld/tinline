@@ -189,6 +189,10 @@ impl App {
 
     fn gcall_event(&mut self, e: GroupCallEvent) -> Task<Msg> {
         let mine = self.gcall.gid.as_deref() == Some(e.group_id.as_str()) && self.gcall.live();
+        // The core logs the call before it tells us; the thread and the Calls tab read it back.
+        if !self.demo && matches!(e.kind, GroupCallEventKind::Ended | GroupCallEventKind::Left) {
+            self.group_log = self.node.group_call_history(None).unwrap_or_default();
+        }
         match e.kind {
             GroupCallEventKind::Announced => self.gcall_refresh_live(&e.group_id),
             GroupCallEventKind::Ended => {

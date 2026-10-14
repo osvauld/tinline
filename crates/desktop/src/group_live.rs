@@ -353,6 +353,8 @@ pub(super) enum Lm {
     Open(String),
     Close,
     ToggleInfo,
+    /// Open the group with its info page showing (the Calls tab avatar).
+    OpenInfo(String),
     /// The member whose menu is open.
     Menu(Option<String>),
     Input(String),
@@ -656,6 +658,10 @@ impl GroupsLive {
             }
             Lm::Close => self.close(),
             Lm::ToggleInfo => self.hide_info = !self.hide_info,
+            Lm::OpenInfo(gid) => {
+                out = self.step(api, Lm::Open(gid));
+                self.hide_info = false;
+            }
             Lm::Menu(did) => self.menu = if self.menu == did { None } else { did },
             Lm::Input(v) => self.input = v,
             Lm::Reply(id) => self.reply = id,

@@ -215,10 +215,34 @@ impl App {
                     && super::groups_view::day(a.at) == super::groups_view::day(b.at)
             };
             let mut last_day = String::new();
+            // This group's call log, oldest first, merged in by time (MessageRow `.callrec`).
+            let open_id = self.live.open.clone().unwrap_or_default();
+            let calls: Vec<&p2pcore::GroupCallRecord> = {
+                let mut v: Vec<_> = self.group_log.iter().filter(|r| r.group_id == open_id).collect();
+                v.sort_by_key(|r| r.started_at);
+                v
+            };
+            let mut ci = 0;
+            let day_chip = |at: u64| -> El<'_> {
+                let chip = container(semi(chip_day(at), 11.0, t.ink2).line_height(lh(16.0))).padding([3, 10]).style(move |_: &iced::Theme| container::Style {
+                    background: Some(t.surface.into()), border: iced::Border { color: t.hairline, width: 1.0, radius: 999.0.into() }, ..Default::default() });
+                container(chip).center_x(Fill).padding([10, 0]).into()
+            };
             // Before the oldest of the posts that were unread when the group was opened.
             let n_unread = self.live.unread_at_open as usize;
             let divider = if n_unread > 0 { self.live.msgs.iter().rev().filter(|m| !m.outgoing && m.kind == GroupItemKind::Post).nth(n_unread - 1).map(|m| m.id.clone()) } else { None };
             for (i, m) in self.live.msgs.iter().enumerate() {
+                while ci < calls.len() && calls[ci].started_at * 1000 <= m.at {
+                    let at = calls[ci].started_at * 1000;
+                    let dk = super::groups_view::day(at);
+                    let new_day = dk != last_day;
+                    if new_day {
+                        last_day = dk;
+                        list = list.push(day_chip(at));
+                    }
+                    list = list.push(container(self.group_call_pill(t, calls[ci])).padding(Padding { top: if new_day { 0.0 } else { 10.0 }, ..Default::default() }));
+                    ci += 1;
+                }
                 let dk = super::groups_view::day(m.at);
                 let new_day = dk != last_day;
                 if new_day {
@@ -237,7 +261,18 @@ impl App {
                 }
                 list = list.push(container(self.live_item(t, m, pos, max_bub)).padding(iced::Padding { top: gap, ..Default::default() }));
             }
-            if self.live.msgs.is_empty() {
+            while ci < calls.len() {
+                let at = calls[ci].started_at * 1000;
+                let dk = super::groups_view::day(at);
+                let new_day = dk != last_day;
+                if new_day {
+                    last_day = dk;
+                    list = list.push(day_chip(at));
+                }
+                list = list.push(container(self.group_call_pill(t, calls[ci])).padding(Padding { top: if new_day { 0.0 } else { 10.0 }, ..Default::default() }));
+                ci += 1;
+            }
+            if self.live.msgs.is_empty() && calls.is_empty() {
                 list = list.push(sys(t, "No messages yet"));
             }
 
@@ -313,6 +348,23 @@ impl App {
             .on_press_maybe(can.then_some(l(Lm::Send)));
         c = c.push(row![container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
         container(c).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
+    }
+
+    /// MessageRow `.callrec` for a group call: "Group call · 19 min · 4 people", or "Missed group call · 5 min"
+    /// (calm: never the error colour). A call I started sits on my side. Tap = start or join a call here.
+    fn group_call_pill<'a>(&'a self, t: Tok, r: &p2pcore::GroupCallRecord) -> El<'a> {
+        let stamp = hhmm(r.started_at * 1000);
+        let gid = r.group_id.clone();
+        let gone = self.live.detail.as_ref().is_none_or(|d| !gl::active(d.my_role));
+        let label = p2pcore::group_call_label(r.clone());
+        let pill = button(row![crate::pg_icons::pgi("phone", 16.0, t.ink2), semi(label, 13.0, t.ink).line_height(lh(18.0)),
+                tx(stamp, 11.0, t.ink2).line_height(lh(18.0))].spacing(6).height(Fill).align_y(Alignment::Center))
+            .padding([0, 12]).height(32)
+            .style(move |_: &iced::Theme, st| button::Style {
+                background: Some(if matches!(st, button::Status::Hovered) { t.surface2 } else { t.surface }.into()),
+                border: Border { color: t.hairline, width: 1.0, radius: 16.0.into() }, text_color: t.ink, ..Default::default() })
+            .on_press_maybe((!gone).then(|| Msg::GCall(crate::app::gcall::Gm::Call(gid))));
+        if !r.missed && r.started_by == self.live.me { row![Space::new().width(Fill), pill].into() } else { row![pill, Space::new().width(Fill)].into() }
     }
 
     fn live_item<'a>(&'a self, t: Tok, m: &'a GroupMessage, pos: geom::Pos, max_bub: f32) -> El<'a> {
