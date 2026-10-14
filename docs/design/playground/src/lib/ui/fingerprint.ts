@@ -46,12 +46,14 @@ export function params(b: ArrayLike<number>) {
   };
 }
 
-function layers(p: ReturnType<typeof params>, small: boolean): Piece[] {
+/** `group`: a group's mandala always keeps the Seed-of-Life ring (togetherness), even small, where it drops the star
+ *  instead; a person's drops the ring when small. */
+function layers(p: ReturnType<typeof params>, small: boolean, group = false): Piece[] {
   const { n } = p, phi = (1 + Math.sqrt(5)) / 2, half = 180 / n, out: Piece[] = [];
   const add = (layer: number, alpha: number, paths: Path[], closed = true) => { for (const pts of paths) out.push({ layer, alpha, pts, closed }); };
-  add(0, 1, poly(R, n, p.k, 0));
+  if (!(group && small)) add(0, 1, poly(R, n, p.k, 0));
   const ring = Array.from({ length: n }, (_, i) => pt(p.cd, i, n, half));
-  if (!small) add(1, 0.75, ring.map((c) => circle(c[0], c[1], p.cr)));
+  if (!small || group) add(1, group ? 1 : 0.75, ring.map((c) => circle(c[0], c[1], p.cr)));
   if (p.innerKind === 0) add(2, 1, [circle(C, C, p.ir)]);
   else if (p.innerKind === 1) add(2, 1, poly(p.ir, n, 1, half));
   else add(2, 1, poly(p.ir, n, Math.max(2, Math.floor((n - 1) / 2)), half));
@@ -81,9 +83,9 @@ function colour(l1: number, c1: number, l2: number, c2: number, h: number): Colo
   return { bg: css(bgArgb), fg: css(fgArgb), bgArgb, fgArgb };
 }
 
-export function artFromFingerprint(b: ArrayLike<number>, small: boolean): AvatarArt {
+export function artFromFingerprint(b: ArrayLike<number>, small: boolean, group = false): AvatarArt {
   const p = params(b), rad = (p.rot * Math.PI) / 180, s = Math.sin(rad), c = Math.cos(rad);
-  const strokes = layers(p, small).map((q) => ({
+  const strokes = layers(p, small, group).map((q) => ({
     points: q.pts.flatMap(([x, y]) => { const dx = x - C, dy = y - C; return [C + dx * c - dy * s, C + dx * s + dy * c]; }),
     closed: q.closed, gold: q.layer === p.gold, alpha: q.alpha,
   }));
@@ -134,6 +136,15 @@ export const syntheticDid = (id: string): string => didFromPublicKey(blake3Hash(
 export function fingerprint(did: string): number[] | null {
   const pk = publicKeyFromDid(did);
   return pk && blake3DeriveKey(CTX, pk);
+}
+/** A group's fingerprint: its group id (BLAKE3(domain ‖ owner DID ‖ random nonce), permanent, known to every member)
+ *  under its own context, so a group never draws the same mandala as a person. (Proposed, 2026-10-14.) */
+export const GROUP_CTX = 'tinline/avatar/v1/group';
+export const groupFingerprint = (gid: string): number[] => blake3DeriveKey(GROUP_CTX, new TextEncoder().encode(gid));
+/** The one thing that marks a group is its frame (a rounded square, the avatar draws it); inside, the same mandala rules
+ *  as a person (decided 2026-10-14: one marker, not two). */
+export function groupAvatarArt(gid: string, small: boolean): AvatarArt {
+  return artFromFingerprint(groupFingerprint(gid), small);
 }
 const cache = new Map<string, AvatarArt | null>();
 /** Art for a DID (cached per DID and size class). null for a malformed DID. */

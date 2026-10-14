@@ -8,6 +8,7 @@
         Strings (the tin-line strings), Rose. Each can carry the
         initial on top, so the name still reads. Not a security check on its own: the safety number stays the proof. */
   import { onMount } from 'svelte';
+  import { groupAvatarArt, strokePath } from '../../lib/ui/fingerprint';
 
   const NAMES = ['Maya', 'Studio', 'Home', 'arjun', 'Tara', 'Sam', 'Ravi', 'Nina'];
   const didOf = (n: string) => 'did:key:z6Mk' + n.toLowerCase() + 'synthetic' + n.length;
@@ -22,6 +23,10 @@
   ];
   let listStyle = $state<'harmo' | 'strands' | 'rose' | 'sacred'>('sacred');
   let tag = $state(true);
+  /** Section 4: groups draw from their group id (permanent, shared by every member). Synthetic ids here. */
+  const GROUPS = ['Weekend hike', 'Family', 'Book club', 'Studio team', 'Cousins', 'Climbing'];
+  const gidOf = (n: string) => 'g' + [...n].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7).toString(16) + 'synthetic';
+  let groupFrame = $state<'circle' | 'square'>('square');
   $effect(() => { document.documentElement.dataset.theme = theme; });
 
   /** 32 bytes per identity from SHA-256 of its DID. */
@@ -327,6 +332,36 @@
       </div>
     </section>
   {/if}
+
+  <section>
+    <h2>4 · Groups (picked: rounded square)</h2>
+    <p class="note">A group has a permanent id every member knows (BLAKE3 of the owner and a random number, made once). Its mandala comes from that, under its own context, so a group never draws the same mandala as a person. One thing marks a group: the rounded-square frame (picked 2026-10-14); inside, the same mandala rules as people.</p>
+    <div class="bar left">
+      <div class="seg" role="group" aria-label="Group frame">
+        <button type="button" aria-pressed={groupFrame === 'square'} onclick={() => (groupFrame = 'square')}>Rounded square</button>
+        <button type="button" aria-pressed={groupFrame === 'circle'} onclick={() => (groupFrame = 'circle')}>Circle</button>
+      </div>
+    </div>
+    <div class="lists">
+      {#each [44, 28] as sz (sz)}
+        <div class="list" class:small={sz < 40} aria-label="Chats list, {sz} px">
+          {#each GROUPS as g, i (g)}
+            {@const ga = groupAvatarArt(gidOf(g), sz < 40)}
+            {@const col = theme === 'dark' ? ga.dark : ga.light}
+            <div class="li">
+              <span class="fpav" class:sq={groupFrame === 'square'} style:--s="{sz}px" style:--bg={col.bg} style:--fg={col.fg} aria-hidden="true">
+                <svg viewBox="0 0 100 100" width={sz} height={sz}><g fill="none" stroke-width={ga.strokeWidth} stroke-linecap="round" stroke-linejoin="round">
+                  {#each ga.strokes as st, j (j)}<path d={strokePath(st)} stroke={st.gold ? 'var(--gold)' : col.fg} opacity={st.alpha} />{/each}
+                </g></svg>
+              </span>
+              <span class="nm{sz < 40 ? ' one' : ''}"><b>{g}</b>{#if sz >= 40}<small>{4 + i} members</small>{/if}</span>
+            </div>
+            {#if i === 1 && Object.keys(fp).length}<div class="li">{@render art(fp['Maya'], sz, 'sacred')}<span class="nm{sz < 40 ? ' one' : ''}"><b>Maya</b>{#if sz >= 40}<small>A person, for comparison</small>{/if}</span></div>{/if}
+          {/each}
+        </div>
+      {/each}
+    </div>
+  </section>
 </main>
 
 <style>
@@ -354,6 +389,7 @@
   .ini > span, .over > span { display: inline-block; }
   .low { font-size: 1.12em; transform: translateY(-.02em); margin-inline-start: .01em; }
   .fpav svg { position: absolute; inset: 0; }
+  .fpav.sq { border-radius: 28%; }
   .bar.left { justify-content: flex-start; }
   .maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
   .map { display: flex; gap: 16px; align-items: flex-start; padding: 16px; border-radius: 18px; background: var(--surface); }
