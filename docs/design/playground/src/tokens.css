@@ -58,7 +58,8 @@
      pop   - menus, popovers, banners, toasts, cards floating over content
      sheet - dialogs, bottom sheets, drawers, the notification shade
      Light tints with the palette's green-black (9 23 17), never grey. Dark leans on --surface-raised (lighter
-     surface) and the shadow only helps. Raised things use --surface-raised, never a one-off colour or shadow.
+     surface) plus --rim (a 1px light top edge, inside every dark shadow token); the shadow only helps.
+     No underglow anywhere (tried on the first-run screens, dropped 2026-10-13: it didn't read as depth). Raised things use --surface-raised, never a one-off colour or shadow.
      --ring-focus is the soft halo for a focused text field. */
   --surface-raised:var(--surface);
   --shadow-lift:0 1px 2px rgb(9 23 17 / .10),0 3px 10px rgb(9 23 17 / .10);
@@ -85,9 +86,10 @@
   --av4-bg:#3a4f26; --av4-ink:#d8f0c0;
   --av5-bg:#4a3458; --av5-ink:#ecd9fa;
   --surface-raised:var(--surface-2);
-  --shadow-lift:0 1px 2px rgb(0 0 0 / .34),0 3px 10px rgb(0 0 0 / .28);
-  --shadow-pop:0 2px 6px rgb(0 0 0 / .3),0 10px 32px rgb(0 0 0 / .4);
-  --shadow-sheet:0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);
+  --rim:inset 0 1px 0 rgb(255 255 255 / .08);   /* dark depth: a 1px light edge along the top (light from above) */
+  --shadow-lift:var(--rim),0 1px 2px rgb(0 0 0 / .34),0 3px 10px rgb(0 0 0 / .28);
+  --shadow-pop:var(--rim),0 2px 6px rgb(0 0 0 / .3),0 10px 32px rgb(0 0 0 / .4);
+  --shadow-sheet:var(--rim),0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);
 }}
 :root[data-theme=dark]{
   color-scheme:dark;
@@ -107,9 +109,10 @@
   --av4-bg:#3a4f26; --av4-ink:#d8f0c0;
   --av5-bg:#4a3458; --av5-ink:#ecd9fa;
   --surface-raised:var(--surface-2);
-  --shadow-lift:0 1px 2px rgb(0 0 0 / .34),0 3px 10px rgb(0 0 0 / .28);
-  --shadow-pop:0 2px 6px rgb(0 0 0 / .3),0 10px 32px rgb(0 0 0 / .4);
-  --shadow-sheet:0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);
+  --rim:inset 0 1px 0 rgb(255 255 255 / .08);   /* dark depth: a 1px light edge along the top (light from above) */
+  --shadow-lift:var(--rim),0 1px 2px rgb(0 0 0 / .34),0 3px 10px rgb(0 0 0 / .28);
+  --shadow-pop:var(--rim),0 2px 6px rgb(0 0 0 / .3),0 10px 32px rgb(0 0 0 / .4);
+  --shadow-sheet:var(--rim),0 2px 6px rgb(0 0 0 / .24),0 20px 64px rgb(0 0 0 / .4);
 }
 
 /* shared micro-components (t- prefix avoids collisions with page CSS) */

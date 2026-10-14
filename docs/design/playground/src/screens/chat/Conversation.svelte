@@ -4,6 +4,7 @@
 </script>
 
 <script lang="ts">
+  import { incall } from '../../lib/calls/incall.svelte';
   import { onDestroy, onMount, tick, untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import Avatar from '../../lib/ui/Avatar.svelte';
@@ -130,6 +131,8 @@
     return (peer.online ? 'Online' : 'Offline') + (peer.callsAllowed ? '' : ' · messages only');
   });
   const callable = $derived(c?.kind === 'group' ? c.status === 'active' : !!peer?.callsAllowed);
+  /* In-call lab (`header`): my call with this person is running, so the phone returns to it (green, like a group's). */
+  const myCall = $derived(incall.header && c?.kind === 'direct' && call.peer === c.person && call.phase !== 'idle' && call.phase !== 'incoming');
   /* Group calls (step 6): the header button starts a call, joins the one running, or returns to mine. */
   const gLive = $derived(c?.kind === 'group' ? gcall.liveFor(c.id) : undefined);
   /* The banner is for a call I could join; once I am in it the strip above carries the call. */
@@ -375,8 +378,10 @@
           <Avatar name={chatTitle(c)} hue={peer?.hue ?? 0} group={c.kind === 'group'} person={peer?.id} size={36} />
           <span class="tx"><span class="nm"><b>{chatTitle(c)}</b>{#if c.muted}<Icon name="mute" size={14} />{/if}</span><span class="pr">{status}</span></span>
         </button>
-        {#if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
-          onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>
+        {#if c.kind === 'direct' && myCall}<button type="button" class="ib live press" aria-label="Return to call" title="Return to call" onclick={() => call.restore()}><Icon name="phone" /></button>
+        {:else if c.kind === 'direct'}<button type="button" class="ib press" class:dim={!callable} aria-label="Call" aria-disabled={!callable} title={callTitle}
+          onclick={() => { if (callable) startCall(); }}><Icon name="phone" /></button>{/if}
+        {#if c.kind === 'direct'}
           <button type="button" class="ib press" class:dim={!callable} aria-label="Video call" aria-disabled={!callable} title={callable ? 'Video call' : callTitle}
             onclick={() => { if (callable) startVideo(); }}><VIcon name="video" size={22} /></button>
         {:else if c.status === 'active'}<button type="button" class="ib press" class:dim={noCallHost && !gLive} class:live={!!gLive} aria-label={gLabel} aria-disabled={noCallHost && !gLive} title={callTitle} data-gcall-btn

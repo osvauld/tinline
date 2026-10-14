@@ -136,7 +136,7 @@
 
   <h2 class="sec"><span>Your groups <span class="n">{active.length}</span></span></h2>
   {#if !active.length}
-    <p class="empty" transition:fold>No groups yet. Create one, or accept an invitation.</p>
+    <p class="empty" transition:fold>{prefs.form === 'android' ? 'When someone invites you to a group, it shows up here.' : 'Groups you start or join show up here.'}</p>
   {/if}
   <ul class="list" role="list" aria-label="Groups">
     {#each active as g (g.id)}

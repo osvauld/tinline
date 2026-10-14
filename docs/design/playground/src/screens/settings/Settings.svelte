@@ -16,12 +16,20 @@
   import { profileOf } from '../../lib/model/actions/profile.svelte';
   import { untilLabel } from '../profile/info';
   import { gate, switchAccount } from '../../lib/model/actions/gate.svelte';
+  import { prefs } from '../../lib/model/prefs.svelte';
 
   let { section }: { section?: string } = $props();
 
   const status = $derived(profileOf('me')?.fields.status);
   const av = $derived(effectiveAvailability('me', clock.now));
   const avText = $derived(av.available ? 'Available' : av.until === undefined ? 'Busy' : `Busy until ${untilLabel(av.until)}`);
+  /* Appearance (2026-10-14): the same choice the sign-up switch makes, kept here for later. "Match my device" follows the
+     phone or computer; it switches at once and nothing moves. */
+  const LOOKS = [
+    { k: 'system', label: `Match my ${gate.noun}`, sub: `Light or dark, as this ${gate.noun} is set` },
+    { k: 'light', label: 'Light', sub: '' },
+    { k: 'dark', label: 'Dark', sub: '' },
+  ] as const;
   const AREAS = [
     { icon: 'devices', label: 'Devices', go: () => nav.push({ name: 'devices' }) },
     { icon: 'shield', label: 'Privacy', go: () => nav.push({ name: 'privacy' }) },
@@ -70,6 +78,20 @@
       <p class="accnote">Only the selected account is online on this {gate.noun}. Switching pauses the other one: it receives no calls until you select it again.</p>
     </section>
 
+    <section class="pf-sec" aria-labelledby="ap-h">
+      <h2 id="ap-h">Appearance</h2>
+      <div class="pf-card" role="radiogroup" aria-label="Appearance">
+        {#each LOOKS as l (l.k)}
+          <div class="pf-act opt">
+            <button type="button" role="radio" class="pick press" aria-checked={prefs.theme === l.k} onclick={() => (prefs.theme = l.k)}>
+              <span class="radio" aria-hidden="true"></span>
+              <span class="t"><b>{l.label}</b>{#if l.sub}<small>{l.sub}</small>{/if}</span>
+            </button>
+          </div>
+        {/each}
+      </div>
+    </section>
+
     <section class="pf-sec" aria-label="Settings areas">
       <div class="pf-card">
         {#each AREAS as a (a.label)}
@@ -84,6 +106,14 @@
 
 <style>
   .first { margin-block-start: 16px; }
+  /* Appearance radios: the Sounds page's rows (one look for every single choice in Settings). */
+  .opt { padding: 0; }
+  .pick { display: flex; align-items: center; gap: 14px; inline-size: 100%; min-block-size: 56px; padding: 8px 16px; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+  .pick:hover { background: var(--surface-2); }
+  .radio { flex: none; inline-size: 22px; block-size: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--line); display: grid; place-items: center; transition: box-shadow var(--dur-switch) var(--ease-out); }
+  .radio::after { content: ''; inline-size: 12px; block-size: 12px; border-radius: 50%; background: var(--accent); transform: scale(0); transition: transform var(--dur-switch) var(--ease-out); }
+  [aria-checked='true'] .radio { box-shadow: inset 0 0 0 2px var(--accent); }
+  [aria-checked='true'] .radio::after { transform: scale(1); }
   .me { min-block-size: 88px; gap: 16px; padding-block: 12px; }
   .me .t b { font-size: var(--fs-title); line-height: 24px; }
   .avl { font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }

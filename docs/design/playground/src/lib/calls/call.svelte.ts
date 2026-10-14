@@ -18,7 +18,8 @@ import { db, person, chat, pushMessage } from '../model/store.svelte';
 import type { CallRecord } from '../model/types';
 import { nav } from '../nav/router.svelte';
 import './cues';
-import { vid } from './video/video.svelte';   // video: the camera half of the call (new files under ./video)
+import { vid } from './video/video.svelte';
+import { link } from './link.svelte';   // the path (direct / relayed) and the signal   // video: the camera half of the call (new files under ./video)
 
 export type CallPhase = 'idle' | 'incoming' | 'outgoing' | 'connecting' | 'active' | 'reconnecting' | 'ended' | 'failed';
 export type Outcome = CallRecord['outcome'];
@@ -55,6 +56,9 @@ class Call {
   speaker = $state<'earpiece' | 'speaker'>('earpiece');
   /** 'full' = call screen; 'strip' = minimized strip. While incoming, 'strip' means the heads-up banner/card. */
   view = $state<'full' | 'strip'>('full');
+  /** Android: where the minimised call's strip sits. 'bottom' (proposed 2026-10-14) keeps End away from the top of the
+   *  phone, where the ear and the proximity sensor are when I come back to the chat mid-call. ?strip=top to compare. */
+  stripAt = $state<'top' | 'bottom'>(new URLSearchParams(location.search).get('strip') === 'top' ? 'top' : 'bottom');
   endReason = $state<string | null>(null);
   ringing = $state(false);          // outgoing: their device is ringing (vs. still reaching it)
   fading = $state(false);           // the ended/failed screen is leaving
@@ -260,7 +264,7 @@ class Call {
   }
   #connected() {
     if (this.phase !== 'connecting') return;
-    this.phase = 'active'; vid.connected();
+    this.phase = 'active'; vid.connected(); link.connected();
     this.#connectedMono = performance.now();
     this.elapsedS = 0;
     clearInterval(this.#tick);
@@ -275,7 +279,7 @@ class Call {
     const id = this.peer!, dir = this.direction!;
     const seconds = this.#connectedMono ? Math.floor((performance.now() - this.#connectedMono) / 1000) : 0;
     this.#clearTimers();
-    this.#leave(); vid.ended();
+    this.#leave(); vid.ended(); link.ended();
     if (!this.#recorded) { this.#recorded = true; this.#recordFor(id, dir, outcome, seconds, vid.recordKind()); }
     this.endReason = reason;
     this.ringing = false;

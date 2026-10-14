@@ -6,9 +6,9 @@
   const next = () => { if (gate.name.trim()) gate.go(gate.flow === 'restore' ? 'restorePass' : 'pass'); };
 </script>
 
-<StepShell title="What should people call you?" lead="Your name is shown to people you add. It never leaves your {gate.noun} otherwise." form onsubmit={next}>
-  <Field label="Your name" bind:value={gate.name} autofocus autocomplete="name" hint="You can change it any time in Settings." />
+<StepShell title="What should people call you?" lead="Only the people you add will see it." form onsubmit={next}>
+  <Field label="Your nickname" bind:value={gate.name} autofocus autocomplete="name" hint="You can change it any time in Settings." />
   {#snippet foot()}
-    <Btn type="submit" disabled={!gate.name.trim()}>Continue</Btn>
+    <Btn type="submit" next disabled={!gate.name.trim()}>Continue</Btn>
   {/snippet}
 </StepShell>

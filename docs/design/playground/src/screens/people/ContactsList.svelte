@@ -6,6 +6,7 @@
   import Icon from '../../lib/ui/Icon.svelte';
   import Btn from '../groups/Btn.svelte';
   import PersonRow from './PersonRow.svelte';
+  import EmptyLine from '../../lib/ui/EmptyLine.svelte';
   import { db, displayName } from '../../lib/model/store.svelte';
   import { nav } from '../../lib/nav/router.svelte';
   import { prefs } from '../../lib/model/prefs.svelte';
@@ -33,9 +34,13 @@
     return out;
   });
   const status = (p: Person) => { const s = profileOf(p.id)?.fields.status; return typeof s === 'string' ? s : ''; };
-  const sub = (p: Person) => (p.blocked ? 'Blocked' : status(p));
+  /* Core adds someone who used my code without asking me (protocol.md "Add contact"), so the row says how they came
+     until I've talked to them: it is the only place I learn of it today (no notification event exists in core). */
+  const sub = (p: Person) => (p.blocked ? 'Blocked' : pp.how[p.id] === 'them' && !db.chats.some((c) => c.kind === 'direct' && c.person === p.id && c.messages.length) ? 'Added you with your code' : status(p));
   const go = (p: Person) => (prefs.form === 'desktop' ? nav.open({ name: 'contact', person: p.id }) : nav.push({ name: 'contact', person: p.id }));
   const sel = (p: Person) => nav.top.name === 'contact' && nav.top.person === p.id;
+  /* "Not now" on a card tucks it away for this session; the request itself stays (core keeps it until the code expires). */
+  let later = $state(new Set<string>());
 </script>
 
 <div class="wrap" data-contacts>
@@ -47,23 +52,35 @@
   <ul class="list" role="list">
     <li><button type="button" class="add press" data-add-contact onclick={() => open('addContact')}>
       <span class="plus"><Icon name="userplus" size={22} /></span>
-      <span class="t"><b>Add contact</b><small>Scan a code or paste an invite</small></span>
+      <span class="t"><b>Add contact</b><small>Share your code or paste theirs</small></span>
     </button></li>
   </ul>
 
-  {#if pp.requests.length}
+  {#if pp.requests.some((r) => !later.has(r.id))}
     <h2 class="sec" id="rq-h">Waiting for you</h2>
     <ul class="cards" role="list" aria-labelledby="rq-h">
-      {#each pp.requests as r (r.id)}
+      {#each pp.requests.filter((r) => !later.has(r.id)) as r (r.id)}
         <li class="card" data-request={r.who} transition:slide={{ duration: ms }}>
           <div class="who"><Avatar name={r.name} hue={r.hue} person={r.who} size={44} />
-            <span class="t"><b>{r.name}</b><small>Scanned your code and wants to message you</small></span></div>
+            <span class="t"><b>{r.name}</b><small>Wants to add you as a contact</small></span></div>
           <div class="acts">
-            <Btn variant="primary" onclick={() => answerRequest(r.id, true)}>Add {r.name.split(' ')[0]}</Btn>
-            <Btn variant="quiet" onclick={() => answerRequest(r.id, false)}>Not now</Btn>
+            <Btn variant="primary" onclick={() => answerRequest(r.id, true)}>Accept</Btn>
+            <Btn variant="quiet" onclick={() => { answerRequest(r.id, false); later = new Set(later).add(r.id); }}>Not now</Btn>
           </div>
-          <p class="hint">Adding lets {r.name.split(' ')[0]} message you. You choose later whether to allow calls.</p>
+          <p class="hint">Accepting lets you message and call each other.</p>
         </li>
+      {/each}
+    </ul>
+  {/if}
+
+  <!-- Requests I sent with someone's code: they become contacts when accepted. No "declined" state: an unanswered
+       request just waits (kind to both). -->
+  {#if pp.sent.length}
+    <h2 class="sec" id="sent-h">Waiting for them</h2>
+    <ul class="list" role="list" aria-labelledby="sent-h">
+      {#each pp.sent as x (x.id)}
+        <li class="pending" data-sent={x.id} transition:slide={{ duration: ms }}><Avatar name={x.name} hue={x.hue} size={40} />
+          <span class="t"><b>{x.name}</b><small>Request sent. Your line opens when {x.name.split(' ')[0]} accepts.</small></span></li>
       {/each}
     </ul>
   {/if}
@@ -88,8 +105,11 @@
     </ul>
   {/if}
 
+  <!-- Nobody yet: the Add contact row above is the action, so the empty state is the quiet one (no second button). -->
+  {#if !total && !blocked.length && !pp.sent.length && !q.trim()}<EmptyLine where="contacts" size="quiet" />{/if}
   <p class="foot" aria-live="polite">
-    {#if q.trim() && !mine.length && !blocked.length}No one called “{q.trim()}” in your contacts.
+    {#if !total && !q.trim()}
+    {:else if q.trim() && !mine.length && !blocked.length}No one called “{q.trim()}” in your contacts.
     {:else}{total} {total === 1 ? 'contact' : 'contacts'}{/if}
   </p>
 </div>
@@ -101,6 +121,9 @@
   .find input::placeholder { color: var(--muted); }
   .find:focus-within { box-shadow: 0 0 0 2px var(--accent); }
   .list, .cards { list-style: none; margin: 0; padding: 0 8px; }
+  .pending { display: flex; align-items: center; gap: 12px; min-block-size: 64px; padding: 8px; }
+  .pending .t { display: grid; min-inline-size: 0; }
+  .pending small { color: var(--muted); font-size: var(--fs-sub); }
   .add { display: flex; gap: 12px; align-items: center; inline-size: 100%; min-block-size: 64px; padding: 0 8px; border: 0; border-radius: var(--r-ctl); background: transparent; text-align: start; cursor: pointer; color: inherit; font: inherit; }
   .add:hover { background: var(--surface-2); }
   .plus { inline-size: 44px; block-size: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-ink); flex: none; }

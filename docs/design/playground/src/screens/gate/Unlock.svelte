@@ -25,7 +25,7 @@
     <label class="rem"><span>Remember on this phone<small>Skips the passphrase when Tinline restarts, using the phone’s secure key store.</small></span><Switch label="Remember on this phone" bind:checked={gate.remember} /></label>
   {/if}
   {#snippet foot()}
-    <Btn type="submit" busy={gate.busy} disabled={!pass || lock > 0}>{gate.busy ? 'Unlocking…' : 'Unlock'}</Btn>
+    <Btn type="submit" enter busy={gate.busy} disabled={!pass || lock > 0}>{gate.busy ? 'Unlocking…' : 'Unlock'}</Btn>
     <Btn kind="text" disabled={gate.busy} onclick={() => gate.forgot()}>Forgot passphrase?</Btn>
   {/snippet}
 </StepShell>

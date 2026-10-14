@@ -5,6 +5,7 @@
   import Avatar from '../ui/Avatar.svelte';
   import Icon from '../ui/Icon.svelte';
   import { gcall } from './gcall.svelte';
+  import { call } from './call.svelte';
   import { system } from './system.svelte';
   import { displayName, person, chat as getChat, isGroup } from '../model/store.svelte';
   import { nav } from '../nav/router.svelte';
@@ -15,7 +16,7 @@
   const grp = $derived.by(() => { const c = a ? getChat(a.gid) : undefined; return isGroup(c) ? c : null; });
   const show = $derived(!!a && a.bannerOn && !a.dismissed && !!gcall.liveFor(a.gid) && !system.away && !gcall.holdsLine && !grp?.muted && nav.openChat !== a.gid);
   let pad = $state(0);
-  $effect(() => { if (show) pad = document.querySelector('[data-callstrip]') ? STRIP_H : 0; });
+  $effect(() => { if (show) pad = document.querySelector('[data-callstrip]') && (prefs.form === 'desktop' || call.stripAt === 'top') ? STRIP_H : 0; });
   const by = $derived(a?.by ?? '');
 </script>
 

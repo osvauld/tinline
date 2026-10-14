@@ -350,7 +350,7 @@ async function contrast(p) {
 
     /* ===== Calls tab ===== */
     p = await mk('android', 'calls');
-    ok('calls tab: empty state before any call', /No calls yet/.test(await p.locator('main.body').innerText()));
+    ok('calls tab: empty state before any call', /Calls you make and receive show up here|Your line is ready/.test(await p.locator('main.body').innerText()));
     await pg(p, async () => { const c = window.__pg.call; const w = (ms) => new Promise((r) => setTimeout(r, ms));
       c.place('arjun'); c.remote('answer'); await w(1900); c.hangup(); await w(700);
       c.receive('sana'); c.remote('cancel'); await w(1500);

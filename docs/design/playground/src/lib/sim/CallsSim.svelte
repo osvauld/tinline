@@ -7,6 +7,7 @@
   import { prefs } from '../model/prefs.svelte';
   import Switch from '../ui/Switch.svelte';
   import { field } from '../calls/field/texture.svelte';
+  import { link, SIGNAL_WORD, type Strength } from '../calls/link.svelte';
 
   let from = $state('arjun');
   let note = $state('');
@@ -61,6 +62,15 @@
     <button type="button" disabled={!call.waiting} onclick={third}>A third person calls</button>
   </div>
 
+  {#if android}
+    <h4>Minimised call</h4>
+    <div class="btns">
+      <button type="button" aria-pressed={call.stripAt === 'bottom'} onclick={() => (call.stripAt = 'bottom')}>Strip at the bottom</button>
+      <button type="button" aria-pressed={call.stripAt === 'top'} onclick={() => (call.stripAt = 'top')}>Strip at the top</button>
+    </div>
+    <p class="note">Decided 2026-10-14 (in-call lab, <code>?lab=incall</code>): the strip sits at the bottom, under the tab bar or the composer, away from the ear and the proximity sensor; it has no End; while I type it slims to a thin line above the keyboard. The call screen has a Message button; ← goes back to where I was; in their chat the phone turns green (Return to call). Tapping a call in the Calls tab calls them.</p>
+  {/if}
+
   <h4>Where {android ? 'the phone' : 'the window'} is</h4>
   {#if android}
     <label class="row"><span>Phone locked</span><Switch label="Phone locked" bind:checked={system.locked} onchange={(v) => system.setLocked(v)} /></label>
@@ -86,6 +96,16 @@
     <button type="button" disabled={call.phase !== 'reconnecting'} onclick={() => call.recover()}>Recovered</button>
     <button type="button" disabled={call.phase !== 'reconnecting'} onclick={() => call.dropForGood()}>Dropped for good</button>
   </div>
+  <p class="state">Path: <b>{link.path}</b> · signal <b>{SIGNAL_WORD[link.strength]}</b> ({link.rttMs} ms, {link.lossPct}% lost)</p>
+  <div class="btns">
+    {#each [4, 3, 2, 1] as n (n)}<button type="button" aria-pressed={link.strength === n} onclick={() => link.set(n as Strength)}>{SIGNAL_WORD[n as Strength]}</button>{/each}
+  </div>
+  <div class="btns">
+    <button type="button" aria-pressed={link.path === 'direct'} onclick={() => link.setPath('direct')}>Direct</button>
+    <button type="button" aria-pressed={link.path === 'relayed'} onclick={() => link.setPath('relayed')}>Relayed</button>
+  </div>
+  <label class="row"><span>Never finds a direct path</span><Switch label="Never finds a direct path" bind:checked={link.stayRelayed} /></label>
+  <p class="note">A call starts relayed and turns direct about 2 s later, when the devices find each other. Bars: core <code>CallStats</code> rtt + recent loss, desktop <code>quality()</code> thresholds.</p>
 
   <h4>Call background</h4>
   <div class="row">
@@ -126,6 +146,7 @@
   .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
   button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 6px 10px; font-size: var(--fs-sub); cursor: pointer; }
   button:disabled { opacity: .45; cursor: default; }
+  button[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); }
   .note { font-size: var(--fs-sub); color: var(--muted); margin: 6px 0 0; }
   .prop { font-style: normal; font-weight: 700; color: var(--gold-ink); margin-inline-end: 4px; }
 </style>

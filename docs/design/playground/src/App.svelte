@@ -10,6 +10,8 @@
   import { untrack } from 'svelte';
 
   let drawer = $state(false);
+  /* `?bare=1`: just the device, no harness bar (labs that frame several phones). */
+  const bare = new URLSearchParams(location.search).has('bare');
 
   $effect(() => {
     const t = prefs.theme;
@@ -32,8 +34,8 @@
   const cycleTheme = () => (prefs.theme = prefs.theme === 'system' ? 'dark' : prefs.theme === 'dark' ? 'light' : 'system');
 </script>
 
-<div class="harness">
-  <header class="hbar">
+<div class="harness" class:bare>
+  {#if !bare}<header class="hbar">
     <b>Tinline playground</b>
     <div class="seg" role="group" aria-label="Form factor">
       <button type="button" class="t-chip" aria-pressed={prefs.form === 'android'} onclick={() => (prefs.form = 'android')}>Android</button>
@@ -43,7 +45,7 @@
       <IconButton icon={prefs.theme === 'dark' ? 'moon' : 'sun'} label="Theme: {prefs.theme}" onclick={cycleTheme} />
       <IconButton icon="sliders" label="Simulation" pressed={drawer} onclick={() => (drawer = !drawer)} />
     </span>
-  </header>
+  </header>{/if}
 
   <!-- The drawer takes its own column: the app frame sits beside it, never under it (an incoming-call banner or
        Answer button must not be hidden behind the controls that triggered it). -->
@@ -60,6 +62,8 @@
 
 <style>
   .harness { display: flex; flex-direction: column; height: 100%; }
+  .bare .stage { padding: 0; }
+  .bare .android { height: 100dvh; border-radius: 28px; }
   .hbar { display: flex; align-items: center; gap: 16px; padding: 6px 16px; font-size: var(--fs-sub); color: var(--muted); }
   .hbar b { color: var(--ink); }
   .seg { display: flex; gap: 6px; }
