@@ -11,6 +11,14 @@
 //! - `0x10 [8 bytes]` ping, echoed by the host as `0x11 [same 8 bytes]`
 use std::time::Duration;
 
+pub mod talk_pattern;
+pub mod playout_level;
+pub mod spectral;
+pub mod feature_trace;
+
+#[cfg(test)]
+mod scheduled_voice_tests;
+
 pub use audio::FRAME;
 use iroh::endpoint::QuicTransportConfig;
 use iroh::{PublicKey, SecretKey};
@@ -42,7 +50,9 @@ pub fn public(slot: u8) -> PublicKey {
 pub fn transport() -> QuicTransportConfig {
     QuicTransportConfig::builder()
         .keep_alive_interval(Duration::from_secs(5))
-        .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
+        .max_idle_timeout(Some(
+            Duration::from_secs(20).try_into().expect("small timeout"),
+        ))
         .build()
 }
 
@@ -94,7 +104,15 @@ impl Voice {
         let f0 = 100.0 + 150.0 * rng.f();
         // Start silent for a random while so talkers do not all start together.
         let frames_left = (rng.f() * 4000.0 / FRAME_MS as f32) as u32 + 10;
-        Voice { rng, f0, phase: 0.0, t: 0, duty, frames_left, talking: false }
+        Voice {
+            rng,
+            f0,
+            phase: 0.0,
+            t: 0,
+            duty,
+            frames_left,
+            talking: false,
+        }
     }
 
     pub fn next_frame(&mut self, out: &mut [i16; FRAME]) -> VoiceFrame {
@@ -106,11 +124,29 @@ impl Voice {
                 0.6 + 2.4 * self.rng.f()
             } else {
                 let mean_talk = 1.8;
-                self.rng.exp(mean_talk * (1.0 - self.duty) / self.duty).max(0.3)
+                self.rng
+                    .exp(mean_talk * (1.0 - self.duty) / self.duty)
+                    .max(0.3)
             };
             self.frames_left = ((secs * 1000.0) as u64 / FRAME_MS).max(1) as u32;
         }
         self.frames_left -= 1;
+        self.render_frame(out);
+        VoiceFrame {
+            talking: self.talking,
+            onset,
+        }
+    }
+
+    /// Same synthetic signal, but experiment-controlled speech/silence edges.
+    pub fn next_scheduled_frame(&mut self, out: &mut [i16; FRAME], talking: bool) -> VoiceFrame {
+        let onset = talking && !self.talking;
+        self.talking = talking;
+        self.render_frame(out);
+        VoiceFrame { talking, onset }
+    }
+
+    fn render_frame(&mut self, out: &mut [i16; FRAME]) {
         let rate = audio::RATE as f32;
         for (i, s) in out.iter_mut().enumerate() {
             let n = self.t * FRAME as u64 + i as u64;
@@ -118,7 +154,8 @@ impl Voice {
             let noise = (self.rng.f() - 0.5) * 2.0;
             let v = if self.talking {
                 let f0 = self.f0 * (1.0 + 0.05 * (std::f32::consts::TAU * 0.7 * ts).sin());
-                self.phase = (self.phase + std::f32::consts::TAU * f0 / rate) % std::f32::consts::TAU;
+                self.phase =
+                    (self.phase + std::f32::consts::TAU * f0 / rate) % std::f32::consts::TAU;
                 let mut x = 0.0;
                 for h in 1..=12 {
                     x += (self.phase * h as f32).sin() / h as f32;
@@ -131,14 +168,17 @@ impl Voice {
             *s = v.clamp(-32767.0, 32767.0) as i16;
         }
         self.t += 1;
-        VoiceFrame { talking: self.talking, onset }
     }
 }
 
 /// CPU ticks (utime + stime) of this process.
 pub fn cpu_ticks_self() -> u64 {
-    let Ok(s) = std::fs::read_to_string("/proc/self/stat") else { return 0 };
-    let Some(rest) = s.rsplit_once(')').map(|(_, r)| r) else { return 0 };
+    let Ok(s) = std::fs::read_to_string("/proc/self/stat") else {
+        return 0;
+    };
+    let Some(rest) = s.rsplit_once(')').map(|(_, r)| r) else {
+        return 0;
+    };
     let f: Vec<&str> = rest.split_whitespace().collect();
     // After ")": state is field 3, utime field 14, stime field 15 -> indices 11, 12.
     f.get(11).and_then(|v| v.parse::<u64>().ok()).unwrap_or(0)
@@ -162,13 +202,19 @@ impl Args {
     }
     pub fn get(&self, key: &str) -> Option<&str> {
         let k = format!("--{key}");
-        self.0.iter().position(|a| *a == k).and_then(|i| self.0.get(i + 1)).map(|s| s.as_str())
+        self.0
+            .iter()
+            .position(|a| *a == k)
+            .and_then(|i| self.0.get(i + 1))
+            .map(|s| s.as_str())
     }
     pub fn flag(&self, key: &str) -> bool {
         let k = format!("--{key}");
         self.0.iter().any(|a| *a == k)
     }
     pub fn num<T: std::str::FromStr>(&self, key: &str, default: T) -> T {
-        self.get(key).and_then(|v| v.parse().ok()).unwrap_or(default)
+        self.get(key)
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(default)
     }
 }
