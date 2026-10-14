@@ -1,5 +1,5 @@
-use identity::{Identity, public_key_from_did, verify};
 use ed25519_dalek::SigningKey;
+use identity::{Identity, public_key_from_did, verify};
 use serde::Serialize;
 
 pub(crate) fn hex32(b: &[u8]) -> String {

@@ -1,6 +1,6 @@
 # group-sim
 
-Test-only first group simulation slice. No production API and no transport/UI wiring.
+Test-only group simulation. No production API and no transport/UI wiring.
 
 ```sh
 python3 scripts/buildlock.py --who group-sim -- cargo test -p group-sim
@@ -14,11 +14,21 @@ properties that do not depend on how content is signed (see "Superseded tests" b
 schedule seeds are deterministic test fixtures (never production secrets). Message keys and
 insert-only schemas are provisional; the signing domain explicitly marks simulation data.
 
+## Source layout
+
+Each model is a directory module `src/<model>/` with `mod.rs` (module doc + wiring), topic files for
+the model itself (types, replica, `World`, driver) and its `#[test]` functions in `tests.rs` or
+`tests/<topic>.rs`. Test function names are unchanged. `src/common/` holds the byte-identical shared
+helpers (`SimRng`, key/digest helpers, `permutations`, shared actor slots); `src/legacy/` is the old
+device-signed `Envelope` carrier (formerly `src/tests.rs`); `src/multi_host/group_call/` and
+`src/reachability/scheduler/` stay nested under their parent models because they reuse its `World`.
+Where text below says `foo.rs`, read `src/foo/`.
+
 Each test carries a `// KIND:` label: `invariant`, `limitation` or `candidate-policy <gate>`.
 A limitation test passes by demonstrating a missing guarantee; a candidate-policy test encodes
 one option of an open question and selects nothing.
 
-## Replica and authority tests (`src/tests.rs`, `src/authority.rs`)
+## Replica and authority tests (`src/legacy/`, `src/authority.rs`)
 
 - **Relaying and order independence.**
   - Original author envelopes survive host relay with their signatures intact.
@@ -83,7 +93,7 @@ one option of an open question and selects nothing.
     order, as a VV/frontier exchange would.
   - The receiver never keeps envelopes refused with `Limit`, so retrying is the sender's job.
 
-## Reachability (`src/reachability.rs`): MOCK verified-succession adapter
+## Reachability (`src/reachability/`): MOCK verified-succession adapter
 
 These tests use a mock adapter, not a rotation verifier.
 
@@ -116,7 +126,7 @@ Cryptographic succession, omitted-path detection, fork/rollback and proof-size b
 the rotation contract. Simulated host ID changes do not change author keys or prove writer
 migration. Retirement here means routing retirement, not access-grant expiry.
 
-## Five-node scheduler (`src/scheduler.rs`)
+## Five-node scheduler (`src/reachability/scheduler/`)
 
 The scheduler has five tests. Since R1b the fleet follows U7: nodes 0–2 are members, 3–4 are
 hosts; a member holds routes to the hosts only, and any member-to-member send, reconcile or
@@ -157,7 +167,7 @@ exchange had completed; there is no real handshake or session code. Bootstrap pa
 fixtures, and there is no automatic global directory refresh. Sleep keeps in-memory state, so it
 is not a process-crash test.
 
-## Group calls through one call host (`src/group_call.rs`, G6 / U21)
+## Group calls through one call host (`src/multi_host/group_call/`, G6 / U21)
 
 These are the GC-S01..GC-S17 tests from `docs/design/group-call-spec.md` §7, including G6-D1.
 The module is a child of `multi_host.rs`, so it reuses that `World`:
