@@ -40,7 +40,10 @@ pub struct Tap {
 
 impl Tap {
     pub fn new(tx: Sender<Ev>, logs: Arc<Mutex<Vec<String>>>) -> Tap {
-        Tap { tx: Mutex::new(tx), logs }
+        Tap {
+            tx: Mutex::new(tx),
+            logs,
+        }
     }
 }
 
@@ -74,11 +77,17 @@ pub struct LTap {
 
 impl LTap {
     pub fn new(tx: Sender<LEv>) -> LTap {
-        LTap { tx: Mutex::new(tx), noisy: false }
+        LTap {
+            tx: Mutex::new(tx),
+            noisy: false,
+        }
     }
 
     pub fn noisy(tx: Sender<LEv>) -> LTap {
-        LTap { tx: Mutex::new(tx), noisy: true }
+        LTap {
+            tx: Mutex::new(tx),
+            noisy: true,
+        }
     }
 
     fn send(&self, e: LEv) {

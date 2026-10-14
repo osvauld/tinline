@@ -14,7 +14,10 @@ pub fn encode(bytes: &[u8]) -> String {
 }
 
 pub fn decode(text: &str) -> Vec<u8> {
-    let vals: Vec<u32> = text.bytes().map(|c| B64.iter().position(|x| *x == c).unwrap() as u32).collect();
+    let vals: Vec<u32> = text
+        .bytes()
+        .map(|c| B64.iter().position(|x| *x == c).unwrap() as u32)
+        .collect();
     let mut out = Vec::new();
     for chunk in vals.chunks(4) {
         let n = chunk.iter().fold(0u32, |a, b| (a << 6) | b) << (6 * (4 - chunk.len()));

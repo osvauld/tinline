@@ -34,7 +34,10 @@ pub fn ended(id: &str) -> impl FnMut(&Ev) -> Option<String> + '_ {
 pub fn incoming(p: &Peer, secs: u64) -> String {
     let end = Instant::now() + Duration::from_secs(secs);
     loop {
-        match p.rx.recv_timeout(end.saturating_duration_since(Instant::now())) {
+        match p
+            .rx
+            .recv_timeout(end.saturating_duration_since(Instant::now()))
+        {
             Ok(Ev::Incoming(c)) => return c.call_id,
             Ok(_) => {}
             Err(_) => panic!("timed out waiting for an incoming call"),
@@ -46,8 +49,13 @@ pub fn incoming(p: &Peer, secs: u64) -> String {
 pub fn ended_after(p: &Peer, id: &str, t0: Instant, secs: u64) -> (String, Duration) {
     let end = Instant::now() + Duration::from_secs(secs);
     loop {
-        match p.rx.recv_timeout(end.saturating_duration_since(Instant::now())) {
-            Ok(Ev::State(i, CallState::Ended { reason })) if i == id => return (reason, t0.elapsed()),
+        match p
+            .rx
+            .recv_timeout(end.saturating_duration_since(Instant::now()))
+        {
+            Ok(Ev::State(i, CallState::Ended { reason })) if i == id => {
+                return (reason, t0.elapsed());
+            }
             Ok(_) => {}
             Err(_) => panic!("timed out waiting for call {id} to end"),
         }

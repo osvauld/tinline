@@ -5,7 +5,9 @@ use std::path::{Path, PathBuf};
 /// Every file named `name` under `dir`.
 pub fn find_files(dir: &Path, name: &str) -> Vec<PathBuf> {
     let mut out = Vec::new();
-    let Ok(rd) = std::fs::read_dir(dir) else { return out };
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return out;
+    };
     for e in rd.flatten() {
         let p = e.path();
         if p.is_dir() {

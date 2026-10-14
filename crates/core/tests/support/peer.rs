@@ -10,7 +10,12 @@ use p2pcore::Node;
 use super::{Ev, LEv, LTap, PASS, Tap, TempDir, online};
 
 /// Opened node plus its event receivers and log lines.
-pub type Opened = (Arc<Node>, Receiver<Ev>, Receiver<LEv>, Arc<Mutex<Vec<String>>>);
+pub type Opened = (
+    Arc<Node>,
+    Receiver<Ev>,
+    Receiver<LEv>,
+    Arc<Mutex<Vec<String>>>,
+);
 
 /// How `Peer::link_fresh` links a new install.
 pub struct LinkAs {
@@ -24,7 +29,11 @@ pub struct LinkAs {
 
 impl Default for LinkAs {
     fn default() -> LinkAs {
-        LinkAs { label: "Pixel", new_pass: "n-pass", wait_existing_done: false }
+        LinkAs {
+            label: "Pixel",
+            new_pass: "n-pass",
+            wait_existing_done: false,
+        }
     }
 }
 
@@ -55,8 +64,16 @@ impl Peer {
         let (tx, rx) = mpsc::channel();
         let (ltx, lrx) = mpsc::channel();
         let logs = Arc::new(Mutex::new(Vec::new()));
-        let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap::new(tx, logs.clone()))).unwrap();
-        node.set_link_events(Arc::new(if noisy_link { LTap::noisy(ltx) } else { LTap::new(ltx) }));
+        let node = Node::new(
+            dir.to_string_lossy().into(),
+            Arc::new(Tap::new(tx, logs.clone())),
+        )
+        .unwrap();
+        node.set_link_events(Arc::new(if noisy_link {
+            LTap::noisy(ltx)
+        } else {
+            LTap::new(ltx)
+        }));
         (node, rx, lrx, logs)
     }
 
@@ -68,7 +85,17 @@ impl Peer {
     pub fn blank_with(prefix: &str, name: &str, noisy_link: bool) -> Peer {
         let dir = TempDir::new(prefix, name);
         let (node, rx, lrx, logs) = Peer::open(&dir, noisy_link);
-        Peer { node, rx, lrx, logs, did: String::new(), phrase: String::new(), pass: PASS.into(), noisy_link, dir }
+        Peer {
+            node,
+            rx,
+            lrx,
+            logs,
+            did: String::new(),
+            phrase: String::new(),
+            pass: PASS.into(),
+            noisy_link,
+            dir,
+        }
     }
 
     /// A committed identity (passphrase `PASS`), started and online.
@@ -101,7 +128,9 @@ impl Peer {
     /// started and online.
     pub fn restored(prefix: &str, name: &str, phrase: &str) -> Peer {
         let mut p = Peer::blank(prefix, name);
-        p.node.restore_identity(phrase.into(), name.into(), PASS.into()).unwrap();
+        p.node
+            .restore_identity(phrase.into(), name.into(), PASS.into())
+            .unwrap();
         p.phrase = phrase.to_string();
         online(&p.node);
         p.did = p.node.profile().unwrap().did;
@@ -123,20 +152,32 @@ impl Peer {
         let qr = self.node.link_show_qr().unwrap();
         n.node.link_new_scan(qr, how.label.into()).unwrap();
         let code = |p: &Peer| loop {
-            if let LEv::Code(c) = p.lrx.recv_timeout(Duration::from_secs(30)).expect("link code") {
+            if let LEv::Code(c) = p
+                .lrx
+                .recv_timeout(Duration::from_secs(30))
+                .expect("link code")
+            {
                 break c;
             }
         };
         assert_eq!(code(self), code(&n));
         self.node.link_approve(Some(PASS.into())).unwrap();
         let did = loop {
-            if let LEv::Done(d) = n.lrx.recv_timeout(Duration::from_secs(30)).expect("link done") {
+            if let LEv::Done(d) = n
+                .lrx
+                .recv_timeout(Duration::from_secs(30))
+                .expect("link done")
+            {
                 break d;
             }
         };
         if how.wait_existing_done {
             loop {
-                if let LEv::Done(_) = self.lrx.recv_timeout(Duration::from_secs(30)).expect("link done") {
+                if let LEv::Done(_) = self
+                    .lrx
+                    .recv_timeout(Duration::from_secs(30))
+                    .expect("link done")
+                {
                     break;
                 }
             }
@@ -167,8 +208,14 @@ impl Peer {
         let name = self.node.profile().unwrap().name;
         let old_dev = self.node.device_key_for_test().unwrap();
         self.reopen();
-        self.node.restore_identity(self.phrase.clone(), name, "pass two".into()).unwrap();
-        assert_eq!(self.node.profile().unwrap().did, self.did, "restore keeps the DID");
+        self.node
+            .restore_identity(self.phrase.clone(), name, "pass two".into())
+            .unwrap();
+        assert_eq!(
+            self.node.profile().unwrap().did,
+            self.did,
+            "restore keeps the DID"
+        );
         let new_dev = self.node.device_key_for_test().unwrap();
         assert_ne!(new_dev, old_dev, "restore makes a fresh device key");
         (old_dev, new_dev)

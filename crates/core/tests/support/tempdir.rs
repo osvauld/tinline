@@ -8,7 +8,8 @@ pub struct TempDir(PathBuf);
 impl TempDir {
     /// The path only: the directory is not created (`Node::new` creates what it needs).
     pub fn new(prefix: &str, name: &str) -> TempDir {
-        let p = std::env::temp_dir().join(format!("p2pcore-{prefix}-{name}-{}", std::process::id()));
+        let p =
+            std::env::temp_dir().join(format!("p2pcore-{prefix}-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&p);
         TempDir(p)
     }

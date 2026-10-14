@@ -10,7 +10,9 @@ pub fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
     let mut page = p.node.chat_day(did.to_string(), None).ok();
     while let Some(pg) = page {
         out.extend(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
+        page = pg
+            .older_day
+            .and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
     }
     out
 }
@@ -21,7 +23,9 @@ pub fn all_msgs_oldest_first(p: &Peer, did: &str) -> Vec<Message> {
     let mut page = p.node.chat_day(did.to_string(), None).ok();
     while let Some(pg) = page {
         pages.push(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
+        page = pg
+            .older_day
+            .and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
     }
     pages.into_iter().rev().flatten().collect()
 }
@@ -36,9 +40,15 @@ pub fn has(p: &Peer, did: &str, id: &str) -> bool {
 }
 
 pub fn delivered(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id && m.delivery == DeliveryState::Delivered)
+    all_msgs(p, did)
+        .iter()
+        .any(|m| m.id == id && m.delivery == DeliveryState::Delivered)
 }
 
 pub fn ticks(p: &Peer, did: &str, id: &str) -> DeliveryState {
-    all_msgs(p, did).into_iter().find(|m| m.id == id).expect("message held").delivery
+    all_msgs(p, did)
+        .into_iter()
+        .find(|m| m.id == id)
+        .expect("message held")
+        .delivery
 }

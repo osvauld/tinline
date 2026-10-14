@@ -28,7 +28,9 @@ pub const WAIT: u64 = 90;
 /// fetch retries within its deadline, the join re-dials every 2 s while it waits), so the test-side
 /// retry GF added is gone: any error here is a real failure.
 pub fn join(p: &impl Member, link: String) -> String {
-    p.node().group_join(link).unwrap_or_else(|e| panic!("join: {e:?}"))
+    p.node()
+        .group_join(link)
+        .unwrap_or_else(|e| panic!("join: {e:?}"))
 }
 
 /// Every message of group `g`, oldest first.
@@ -51,7 +53,11 @@ pub fn all(p: &impl Member, g: &str) -> Vec<GroupMessage> {
 
 /// `(author, text)` of every post, oldest first.
 pub fn posts(p: &impl Member, g: &str) -> Vec<(String, String)> {
-    all(p, g).into_iter().filter(|m| m.kind == GroupItemKind::Post).map(|m| (m.author_did, m.text)).collect()
+    all(p, g)
+        .into_iter()
+        .filter(|m| m.kind == GroupItemKind::Post)
+        .map(|m| (m.author_did, m.text))
+        .collect()
 }
 
 pub fn has_post(p: &impl Member, g: &str, did: &str, text: &str) -> bool {
@@ -60,7 +66,14 @@ pub fn has_post(p: &impl Member, g: &str, did: &str, text: &str) -> bool {
 
 /// Sorted member DIDs of group `g` as `p` sees them.
 pub fn members(p: &impl Member, g: &str) -> Vec<String> {
-    let mut m: Vec<String> = p.node().group_detail(g.into()).unwrap().members.into_iter().map(|m| m.did).collect();
+    let mut m: Vec<String> = p
+        .node()
+        .group_detail(g.into())
+        .unwrap()
+        .members
+        .into_iter()
+        .map(|m| m.did)
+        .collect();
     m.sort();
     m
 }
@@ -77,9 +90,15 @@ pub fn group_with(o: &Peer, ms: &[&Peer]) -> String {
         let tok = o.node.group_invite(g.clone()).unwrap();
         assert_eq!(join(*m, tok), g);
     }
-    let want = sorted(std::iter::once(o.did.clone()).chain(ms.iter().map(|m| m.did.clone())).collect());
+    let want = sorted(
+        std::iter::once(o.did.clone())
+            .chain(ms.iter().map(|m| m.did.clone()))
+            .collect(),
+    );
     for p in std::iter::once(o).chain(ms.iter().copied()) {
-        eventually(WAIT, "everyone sees every member", || members(p, &g) == want);
+        eventually(WAIT, "everyone sees every member", || {
+            members(p, &g) == want
+        });
     }
     g
 }
