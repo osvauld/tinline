@@ -825,11 +825,24 @@ pub fn scroll_style(t: Tok) -> impl Fn(&Theme, scrollable::Status) -> scrollable
 /// Fingerprint avatar art (crates/core avatar.rs), cached per DID and size class: blake3 and the
 /// trigonometry run once, not on every view.
 fn fingerprint_art(did: &str, size: f32) -> Option<std::sync::Arc<p2pcore::avatar::AvatarArt>> {
-    type Cache = Mutex<HashMap<(String, bool), Option<std::sync::Arc<p2pcore::avatar::AvatarArt>>>>;
+    art_cached(did, size, false)
+}
+
+/// `group`: the id is a group id (its own fingerprint context, never fails) rather than a DID.
+fn art_cached(did: &str, size: f32, group: bool) -> Option<std::sync::Arc<p2pcore::avatar::AvatarArt>> {
+    type Cache = Mutex<HashMap<(String, bool, bool), Option<std::sync::Arc<p2pcore::avatar::AvatarArt>>>>;
     static CACHE: OnceLock<Cache> = OnceLock::new();
     let small = size < p2pcore::avatar::SMALL_BELOW_PX;
     let mut m = CACHE.get_or_init(Default::default).lock().unwrap();
-    m.entry((did.to_string(), small)).or_insert_with(|| p2pcore::avatar::avatar_art(did.to_string(), small).map(std::sync::Arc::new)).clone()
+    m.entry((did.to_string(), small, group))
+        .or_insert_with(|| {
+            if group {
+                Some(std::sync::Arc::new(p2pcore::avatar::group_avatar_art(did.to_string(), small)))
+            } else {
+                p2pcore::avatar::avatar_art(did.to_string(), small).map(std::sync::Arc::new)
+            }
+        })
+        .clone()
 }
 
 fn argb(c: u32) -> Color {
@@ -850,16 +863,26 @@ fn avatar_gold(dark: bool) -> u32 {
 /// A person's default avatar: the fingerprint mandala on its calm disc (docs/design/FINGERPRINT-AVATARS.md).
 /// The strokes are rasterised once per DID, size and theme. None when `did` is not a DID.
 pub fn fingerprint_face<'a, M: 'a>(t: Tok, did: &str, size: f32) -> Option<Element<'a, M>> {
-    let ar = fingerprint_art(did, size)?;
+    face(t, did, size, false)
+}
+
+/// A group's default avatar: its group-id mandala in a rounded square (corner radius 28 % of the size).
+pub fn group_face<'a, M: 'a>(t: Tok, gid: &str, size: f32) -> Element<'a, M> {
+    face(t, gid, size, true).expect("group art always exists")
+}
+
+fn face<'a, M: 'a>(t: Tok, id: &str, size: f32, group: bool) -> Option<Element<'a, M>> {
+    let did = id;
+    let ar = art_cached(did, size, group)?;
     let c = if t.dark { ar.dark } else { ar.light };
     let (fg, gold) = (c.fg & 0xFF_FFFF, avatar_gold(t.dark));
     let handle = raster(
-        hash_of((did, size < p2pcore::avatar::SMALL_BELOW_PX, t.dark)),
+        hash_of((did, size < p2pcore::avatar::SMALL_BELOW_PX, t.dark, group)),
         || fingerprint_svg(&ar, fg, gold),
         device_px(size),
         None,
     );
-    Some(container(art(handle, size)).width(size).height(size).style(plain(argb(c.bg), size / 2.0)).into())
+    Some(container(art(handle, size)).width(size).height(size).style(plain(argb(c.bg), if group { size * 0.28 } else { size / 2.0 })).into())
 }
 
 fn fingerprint_svg(ar: &p2pcore::avatar::AvatarArt, fg: u32, gold: u32) -> String {
@@ -899,5 +922,11 @@ mod fingerprint_tests {
             }
         }
         assert!(fingerprint_art("me", 40.0).is_none());
+        // A group id always has art, and not the same as a person key of the same text.
+        let g = art_cached("g-0f3a9c", 44.0, true).expect("group art");
+        let tree = usvg::Tree::from_str(&fingerprint_svg(&g, 0x1E5B33, 0xC98A1E), &usvg::Options::default()).expect("parses");
+        let mut pm = resvg::tiny_skia::Pixmap::new(96, 96).unwrap();
+        resvg::render(&tree, resvg::tiny_skia::Transform::from_scale(0.96, 0.96), &mut pm.as_mut());
+        assert!(pm.pixels().iter().filter(|p| p.alpha() > 0).count() > 100);
     }
 }
