@@ -459,12 +459,6 @@ impl Sender {
         &self.ladder
     }
 
-    /// Highest ladder rung the peer or device can take.
-    pub fn set_max_rung(&mut self, max: usize) {
-        self.ladder.set_max(max);
-        self.relayer();
-    }
-
     /// The encoder took `us` for the last frame.
     pub fn encode_time(&mut self, now_us: u64, us: u64) {
         self.now_us = self.now_us.max(now_us);

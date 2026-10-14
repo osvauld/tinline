@@ -34,10 +34,6 @@ impl Tier {
             Tier::S24 => 24,
         }
     }
-    /// Nearest designed tier for a display size in px/dp.
-    pub fn for_size(px: f64) -> Tier {
-        if px < 18.0 { Tier::S16 } else if px < 22.0 { Tier::S20 } else { Tier::S24 }
-    }
     /// Mouth size relative to the rim.
     fn mu(self) -> f64 {
         match self {
