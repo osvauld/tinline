@@ -8,6 +8,8 @@
 //!
 //! Prints `STAT ...` lines every 5 s (cumulative counters) for scripts/gcall_bench.py.
 use std::collections::VecDeque;
+use std::fs::File;
+use std::io::Write;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
 use std::time::{Duration, Instant};
@@ -15,8 +17,8 @@ use std::time::{Duration, Instant};
 use audio::{FRAME, GroupFrame, Receiver, SPEECH_LEVEL, Sender};
 use bytes::Bytes;
 use gcall_bench::*;
-use iroh::endpoint::{Connection, presets};
 use iroh::Endpoint;
+use iroh::endpoint::{Connection, presets};
 use parking_lot::Mutex;
 
 const WINDOW_MS: u64 = 300;
@@ -73,8 +75,9 @@ impl Sel {
                 self.cand_since[i] = None;
             }
         }
-        let mut cands: Vec<u8> =
-            (0..MAX_SLOTS as u8).filter(|&i| eligible(i) && !self.s.contains(&i)).collect();
+        let mut cands: Vec<u8> = (0..MAX_SLOTS as u8)
+            .filter(|&i| eligible(i) && !self.s.contains(&i))
+            .collect();
         cands.sort_by(|a, b| avg[*a as usize].total_cmp(&avg[*b as usize]));
         while self.s.len() < self.k && !cands.is_empty() {
             let c = cands.remove(0);
@@ -84,7 +87,11 @@ impl Sel {
             }
         }
         if self.s.len() == self.k && self.k > 0 {
-            let w = *self.s.iter().max_by(|a, b| avg[**a as usize].total_cmp(&avg[**b as usize])).unwrap();
+            let w = *self
+                .s
+                .iter()
+                .max_by(|a, b| avg[**a as usize].total_cmp(&avg[**b as usize]))
+                .unwrap();
             for &c in &cands.clone() {
                 if avg[c as usize] + HYST_DB <= avg[w as usize] {
                     let since = *self.cand_since[c as usize].get_or_insert(now);
@@ -127,6 +134,7 @@ impl Sel {
 
 struct Local {
     voice: Voice,
+    silent: bool,
     sender: Sender,
     gated: u32,
     rx: Vec<Option<Receiver>>,
@@ -150,9 +158,22 @@ struct Host {
     c: Counters,
     /// UDP counters (rx, tx, rx_pkts, tx_pkts) of connections that have closed.
     closed_udp: Mutex<[u64; 4]>,
+    /// Diagnostic only: unbuffered so the harness can terminate the host without losing traces.
+    trace: Option<Mutex<File>>,
 }
 
 impl Host {
+    fn trace(&self, kind: &str, source: u8, seq: u32) {
+        if let Some(out) = &self.trace {
+            writeln!(
+                out.lock(),
+                "{kind} {source} 0 {seq} {}",
+                self.start.elapsed().as_micros()
+            )
+            .expect("write host trace");
+        }
+    }
+
     fn now(&self) -> u64 {
         self.start.elapsed().as_millis() as u64
     }
@@ -171,13 +192,23 @@ impl Host {
         if !self.sel.lock().forwards(from) {
             return;
         }
+        self.trace(
+            "forward_admit",
+            from,
+            u32::from_be_bytes(audio[..4].try_into().unwrap()),
+        );
         self.c.fwd_audio.fetch_add(1, Relaxed);
         let mut v = Vec::with_capacity(audio.len() + 2);
         v.extend_from_slice(&[T_AUDIO_DOWN, from]);
         v.extend_from_slice(audio);
         let b = Bytes::from(v);
-        let targets: Vec<Connection> =
-            self.peers.lock().iter().filter(|(s, _)| *s != from).map(|(_, c)| c.clone()).collect();
+        let targets: Vec<Connection> = self
+            .peers
+            .lock()
+            .iter()
+            .filter(|(s, _)| *s != from)
+            .map(|(_, c)| c.clone())
+            .collect();
         for c in &targets {
             self.send(c, b.clone());
         }
@@ -185,7 +216,9 @@ impl Host {
             && let Some(l) = &self.local
         {
             let mut l = l.lock();
-            l.rx[from as usize].get_or_insert_with(|| Receiver::new_group().unwrap()).push(audio, now);
+            l.rx[from as usize]
+                .get_or_insert_with(|| Receiver::new_group().unwrap())
+                .push(audio, now);
         }
     }
 
@@ -195,6 +228,11 @@ impl Host {
         let now = self.now();
         match d.first() {
             Some(&T_AUDIO_UP) if d.len() > 1 + audio::HEADER => {
+                self.trace(
+                    "host_receive",
+                    from,
+                    u32::from_be_bytes(d[1..5].try_into().unwrap()),
+                );
                 self.sel.lock().note(from, now, d[5]);
                 self.forward(from, &d[1..], now);
             }
@@ -214,7 +252,11 @@ impl Host {
             let mut pcm = [0i16; FRAME];
             let out = {
                 let mut l = l.lock();
-                l.voice.next_frame(&mut pcm);
+                if l.silent {
+                    l.voice.next_scheduled_frame(&mut pcm, false);
+                } else {
+                    l.voice.next_frame(&mut pcm);
+                }
                 match l.sender.encode_group(&pcm).unwrap() {
                     GroupFrame::Opus(d) => {
                         l.gated = 0;
@@ -243,7 +285,8 @@ impl Host {
             v.extend_from_slice(&g.to_be_bytes());
             v.extend_from_slice(&act);
             let b = Bytes::from(v);
-            let targets: Vec<Connection> = self.peers.lock().iter().map(|(_, c)| c.clone()).collect();
+            let targets: Vec<Connection> =
+                self.peers.lock().iter().map(|(_, c)| c.clone()).collect();
             for c in &targets {
                 self.send(c, b.clone());
             }
@@ -325,6 +368,7 @@ async fn main() {
     let local = participate.then(|| {
         Mutex::new(Local {
             voice: Voice::new(1000, duty),
+            silent: a.flag("silent-host"),
             sender: Sender::new(32_000).unwrap(),
             gated: 0,
             rx: (0..MAX_SLOTS).map(|_| None).collect(),
@@ -347,8 +391,15 @@ async fn main() {
         local,
         c: Counters::default(),
         closed_udp: Mutex::new([0; 4]),
+        trace: a
+            .get("onset-trace")
+            .map(|path| Mutex::new(File::create(path).expect("create host trace"))),
     });
-    println!("READY id={} port={port} k={k} participate={participate} pid={}", ep.id(), std::process::id());
+    println!(
+        "READY id={} port={port} k={k} participate={participate} pid={}",
+        ep.id(),
+        std::process::id()
+    );
 
     let h = host.clone();
     tokio::spawn(async move {
@@ -386,7 +437,9 @@ async fn main() {
                 while let Ok(d) = conn.read_datagram().await {
                     h.on_datagram(slot, &conn, &d);
                 }
-                h.peers.lock().retain(|(s, c)| !(*s == slot && c.stable_id() == conn.stable_id()));
+                h.peers
+                    .lock()
+                    .retain(|(s, c)| !(*s == slot && c.stable_id() == conn.stable_id()));
                 let st = conn.stats();
                 let mut cu = h.closed_udp.lock();
                 cu[0] += st.udp_rx.bytes;

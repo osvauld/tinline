@@ -7,6 +7,7 @@
   import { prefs } from '../model/prefs.svelte';
   import Switch from '../ui/Switch.svelte';
   import { field } from '../calls/field/texture.svelte';
+  import { voiceIn } from '../calls/field/voicein.svelte';
   import { link, SIGNAL_WORD, type Strength } from '../calls/link.svelte';
 
   let from = $state('arjun');
@@ -113,6 +114,9 @@
     <select id="callsim-field" value={field.texture} onchange={(e) => field.set(e.currentTarget.value === 'clouds' ? 'clouds' : 'fog')}><option value="fog">Fog</option><option value="clouds">Clouds</option></select>
   </div>
   <p class="note">Compare: Fog is the soft colour haze; Clouds is puffier, with lit edges and depth. Both move with the tune. Switches live, even during a call.</p>
+  <label class="row"><span>Their voice from my mic</span><Switch label="Their voice from my mic" checked={voiceIn.on} onchange={(v) => (v ? void voiceIn.start() : voiceIn.stop())} /></label>
+  {#if voiceIn.error}<p class="note">Mic: {voiceIn.error}</p>{/if}
+  <p class="note">Once connected, the field moves with speech. Off: made-up talk bursts. On: your mic stands in for their voice, with the native audio-motion viewer’s mapping (level + low/mid/high balance). Tune it in <a href="?lab=voice">?lab=voice</a>.</p>
 
   <h4>Timings</h4>
   <label class="row"><span>Waiting-call timeout (s)</span><input type="number" min="1" max="120" value={CALL_MS.waitingTimeout / 1000} onchange={(e) => (CALL_MS.waitingTimeout = Math.max(1, +e.currentTarget.value) * 1000)} /></label>

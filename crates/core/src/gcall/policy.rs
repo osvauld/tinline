@@ -5,9 +5,17 @@
 pub const CAP_DESKTOP: usize = 12;
 pub const CAP_PHONE_WIFI: usize = 8;
 pub const CAP_PHONE_METERED: usize = 4;
-/// Q2: speakers forwarded.
-pub const K_DESKTOP: usize = 3;
-pub const K_PHONE: usize = 2;
+/// Q2 (decided 2026-10-14): speakers forwarded. Every speaker: each member hears everyone who is
+/// talking except themselves, so the host's set may hold all 12. Silent and muted members send
+/// only the level byte, so this costs bandwidth only while several people talk at once.
+pub const K_ALL: usize = proto::gcall::MAX_PARTICIPANTS;
+/// Q2: a phone host forwards the four loudest, a safety net so hosting never takes over the
+/// phone (it spends ~0.5 ms of CPU per forwarded packet; eight people all talking would be
+/// ~2800 packets/s at K = 12).
+pub const K_PHONE: usize = 4;
+/// Q2: a host on metered data forwards only the two loudest; every forwarded speaker costs its
+/// user N - 2 streams up.
+pub const K_METERED: usize = 2;
 /// §2.4 battery cutoffs (unplugged).
 pub const BATTERY_ADVERTISE_PCT: u8 = 30;
 pub const BATTERY_LIMIT_PCT: u8 = 15;
@@ -57,7 +65,13 @@ impl Cond {
         }
     }
     pub fn k(&self) -> usize {
-        if self.class == Class::Phone { K_PHONE } else { K_DESKTOP }
+        if self.metered {
+            K_METERED
+        } else if self.class == Class::Phone {
+            K_PHONE
+        } else {
+            K_ALL
+        }
     }
 }
 

@@ -18,6 +18,8 @@ const labs: Record<string, () => Promise<{ default: any }>> = {
   group: () => import('./screens/lab/GroupLab.svelte'),
   incall: () => import('./screens/lab/InCallLab.svelte'),
   photos: () => import('./screens/lab/PhotoLab.svelte'),
+  // `?lab=voice`: the call's cloud field driven by the live mic, Fog and Clouds side by side.
+  voice: () => import('./screens/lab/VoiceLab.svelte'),
 };
 const app = lab && labs[lab]
   ? mount((await labs[lab]()).default, { target: document.getElementById('app')! })
