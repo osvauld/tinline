@@ -4,6 +4,7 @@
 uniffi::setup_scaffolding!();
 
 pub mod accounts;
+pub mod avatar;
 mod block;
 mod caps;
 mod chat;
@@ -16,6 +17,7 @@ mod error;
 pub mod gcall;
 mod logging;
 mod node;
+mod recovery_key;
 mod rekey;
 mod search;
 mod store;
@@ -53,6 +55,7 @@ pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameK
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
+pub use recovery_key::{is_recovery_key, recovery_key_from_phrase, recovery_phrase_from_input};
 pub use store::CallRecord;
 pub use video_call::{Bytes, Pulled, VideoEvents, VideoFrame, VideoInfo, VideoStats};
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};

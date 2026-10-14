@@ -527,3 +527,36 @@ fn gc_u02_mix_of_decoded_slots() {
         }
     }
 }
+
+// Q2 (2026-10-14): every speaker is forwarded, so a member may mix eleven voices at once.
+#[test]
+fn gc_u02_eleven_voices_stay_clear_and_unclipped() {
+    const HZ: [f32; 11] = [310.0, 430.0, 570.0, 690.0, 830.0, 970.0, 1130.0, 1270.0, 1430.0, 1590.0, 1770.0];
+    for (amp, exact) in [(2000.0f32, true), (6000.0, false)] {
+        let mut tones: Vec<Tone> = HZ.iter().map(|&f| Tone::new(f, amp)).collect();
+        let (mut out, mut sum) = (vec![], vec![]);
+        for _ in 0..RATE as usize / GC_FRAME {
+            let mut frames = [[0i16; GC_FRAME]; 11];
+            for (t, f) in tones.iter_mut().zip(frames.iter_mut()) {
+                t.next_frame(f);
+            }
+            let refs: Vec<&[i16]> = frames.iter().map(|f| &f[..]).collect();
+            let mut o = [0i16; GC_FRAME];
+            mix(&refs, &mut o);
+            out.extend_from_slice(&o);
+            sum.extend((0..GC_FRAME).map(|j| frames.iter().map(|f| f[j] as i32).sum::<i32>()));
+        }
+        assert!(out.iter().all(|&o| o > i16::MIN && o < i16::MAX), "amp {amp}: hard clipping");
+        if exact {
+            // Eleven voices at speech level stay under the knee: the exact sum.
+            assert!(out.iter().zip(&sum).all(|(&o, &s)| o as i32 == s), "amp {amp}: not an exact sum");
+        } else {
+            assert!(sum.iter().any(|&s| s.abs() > 24_576), "test needs limiting at amp {amp}");
+        }
+        for &f in &HZ {
+            let a = amplitude_at(&out, f);
+            let floor = if exact { 0.99 } else { 0.6 };
+            assert!(a > amp * floor, "amp {amp}: {f} Hz came out at {a}");
+        }
+    }
+}

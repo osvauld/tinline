@@ -203,16 +203,21 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
 fun PhraseShownScreen(phrase: String, onHide: () -> Unit) {
     val ctx = LocalContext.current
     var copied by remember { mutableStateOf(false) }
+    // Words | Key: the same secret two ways (core recovery_key.rs).
+    var asKey by remember { mutableStateOf(false) }
+    val key = remember(phrase) { runCatching { uniffi.p2pcore.recoveryKeyFromPhrase(phrase) }.getOrDefault("") }
     Page {
         TopBar("Recovery phrase", onHide)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            InfoCard("Anyone who sees these words can become you. Check nobody is looking.", icon = PgIcons.Warning, kind = BannerKind.Warn)
-            WordGrid(phrase)
-            TinButton(if (copied) "Copied" else "Copy recovery phrase", {
-                copyToClipboard(ctx, "Recovery phrase", phrase)
+            InfoCard(if (asKey) "Anyone who sees this key can become you. Check nobody is looking." else "Anyone who sees these words can become you. Check nobody is looking.", icon = PgIcons.Warning, kind = BannerKind.Warn)
+            WordsKeySeg(asKey) { asKey = it; copied = false }
+            if (asKey) KeyCard(key) else WordGrid(phrase)
+            TinButton(if (copied) "Copied" else if (asKey) "Copy my key" else "Copy recovery phrase", {
+                if (asKey) copyToClipboard(ctx, "Recovery key", key) else copyToClipboard(ctx, "Recovery phrase", phrase)
                 copied = true
             }, style = BtnStyle.Outlined, icon = PgIcons.Copy)
-            Hint("Paste into a trusted password manager. Anyone with these words can access your account.")
+            Hint(if (asKey) "Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."
+                else "Paste into a trusted password manager. Anyone with these words can access your account.")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(PgIcons.Lock, null, tint = Tin.c.ink2, modifier = Modifier.size(16.dp))
                 Hint("Screenshots and screen recording are blocked here.")

@@ -522,9 +522,15 @@ impl HostEngine {
             }
             PhoneAction::Advertise | PhoneAction::StopAdvertising if self.st.limited => {
                 self.st.limited = false;
-                self.st.fwd.set_k(self.start.k as usize);
+                self.st.fwd.set_k(cond.k());
                 self.st.fwd.set_provisional(true);
                 out.push(HostAction::Notice(HostNotice::Unlimited));
+                out.extend(self.active_actions());
+            }
+            // Q2: on or off metered data mid-call, K follows (2 loudest vs every speaker).
+            _ if !self.st.limited && self.st.fwd.k() != cond.k() => {
+                self.st.fwd.set_k(cond.k());
+                out.extend(self.active_actions());
             }
             _ => {}
         }

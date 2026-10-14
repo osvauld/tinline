@@ -10,8 +10,11 @@
   import { cueFor } from '../cues';
   import { motion } from '../../fx/reduced.svelte';
   import { field } from './texture.svelte';
+  import { voiceIn } from './voicein.svelte';
 
-  let { state, anchorEl, scrimEls = [], muted = false }: { state: string; anchorEl?: HTMLElement; scrimEls?: HTMLElement[]; muted?: boolean } = $props();
+  let { state, anchorEl, scrimEls = [], muted = false, texture }: { state: string; anchorEl?: HTMLElement; scrimEls?: HTMLElement[]; muted?: boolean; texture?: 'fog' | 'clouds' } = $props();
+  /** A fixed texture (labs comparing both); the saved preference otherwise. */
+  const tex = () => texture ?? field.texture;
 
   let host: HTMLDivElement;
   let canvas: HTMLCanvasElement;
@@ -63,12 +66,12 @@
     const th = themeName();
     if (th !== theme) { theme = th; fx.setTheme(th); }
     const f = fx.update(t);
-    renderer?.draw({ ...f, texture: field.texture, scrim: { k: th === 'dark' ? SCRIM_DARK : 0, at: scrimAt }, gain: th === 'dark' ? GAIN_DARK : 1 }, fx.P);
+    renderer?.draw({ ...f, texture: tex(), scrim: { k: th === 'dark' ? SCRIM_DARK : 0, at: scrimAt }, gain: th === 'dark' ? GAIN_DARK : 1 }, fx.P);
     if (!alive) return;
     if (f.animating) raf = requestAnimationFrame(render);
     else if (f.wakeAt != null) timer = window.setTimeout(render, Math.max(0, f.wakeAt - t));
   }
-  function render0() { const th = themeName(), f = fx.update(performance.now()); renderer?.draw({ ...f, texture: field.texture, scrim: { k: th === 'dark' ? SCRIM_DARK : 0, at: scrimAt }, gain: th === 'dark' ? GAIN_DARK : 1 }, fx.P); }
+  function render0() { const th = themeName(), f = fx.update(performance.now()); renderer?.draw({ ...f, texture: tex(), scrim: { k: th === 'dark' ? SCRIM_DARK : 0, at: scrimAt }, gain: th === 'dark' ? GAIN_DARK : 1 }, fx.P); }
   function kick() {
     if (!alive || !started) return;
     cancelAnimationFrame(raf); clearTimeout(timer);
@@ -87,7 +90,9 @@
   });
   $effect(() => { fx.setReduced(motion.reduced); kick(); });
   $effect(() => { fx.setMute(muted); });
-  $effect(() => { field.texture; kick(); });   // live switch: redraw now, no remount
+  // Mic in the playground (sim drawer / ?lab=voice): the live level replaces the simulated voice.
+  $effect(() => { fx.setVoiceSource(voiceIn.on ? () => ({ level: voiceIn.level, balance: voiceIn.balance }) : null); kick(); });
+  $effect(() => { tex(); kick(); });   // live switch: redraw now, no remount
 
   onMount(() => {
     renderer = createRenderer(canvas, host);

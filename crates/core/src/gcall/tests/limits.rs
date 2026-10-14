@@ -89,7 +89,7 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
     let mut s = World::new();
     assert_eq!(s.start_call(HP, OLGA, vec![]), Err(Refusal::Refused), "a phone never hosts listen-only");
     let cid = s.start_call(HP, HP, vec![H1, BOB]).unwrap();
-    assert_eq!(s.hosts[&HP].k(), K_PHONE);
+    assert_eq!(s.hosts[&HP].k(), K_PHONE, "a phone host on Wi-Fi forwards the four loudest");
     for m in [HP, OLGA, A1, BOB] {
         s.join(m).unwrap();
     }
@@ -132,6 +132,7 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
     let metered = Cond { metered: true, ..Cond::phone(80, true) };
     let acts = s.hosts.get_mut(&HP).unwrap().set_cond(metered, &s.auth);
     assert_eq!(acts, vec![HostAction::Notice(HostNotice::MeteredData)]);
+    assert_eq!(s.hosts[&HP].k(), K_METERED, "metered: the two loudest only");
     assert_eq!(s.roster(HP).len(), 5, "continues above the metered cap");
     let acts = s.clients.get_mut(&A1).unwrap().leave(s.now);
     s.client_actions(A1, acts);

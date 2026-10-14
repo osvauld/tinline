@@ -20,7 +20,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -55,6 +62,54 @@ fun avatarColors(c: TinColors, hue: Int): Pair<Color, Color> = if (c.dark) when 
     else -> Color(0xFFECE2F2) to Color(0xFF5D3F73)
 }
 
+/**
+ * The fingerprint mandala of a DID (crates/core avatar.rs via UniFFI), built once per DID and size class into Compose paths
+ * (100 x 100 box units, theme independent). The colours are picked per theme at draw time. See docs/design/FINGERPRINT-AVATARS.md.
+ */
+class FingerprintDrawing(val strokes: List<Stroke>, val strokeWidth: Float, val lightBg: Color, val lightFg: Color, val darkBg: Color, val darkFg: Color) {
+    class Stroke(val path: Path, val gold: Boolean, val alpha: Float)
+}
+
+object FingerprintCache {
+    /** Below this many dp the small variant is drawn (the core's SMALL_BELOW_PX). */
+    const val SMALL_BELOW_DP = 40f
+    private val none = Any()
+    private val cache = java.util.concurrent.ConcurrentHashMap<String, Any>()
+
+    /** The drawing for [did], or null when it is not a DID (or the native library is not loaded, as in JVM unit tests). */
+    fun of(did: String?, sizeDp: Float): FingerprintDrawing? {
+        if (did == null || !did.startsWith("did:")) return null
+        val small = sizeDp < SMALL_BELOW_DP
+        val v = cache.getOrPut((if (small) "s" else "l") + did) {
+            runCatching { uniffi.p2pcore.avatarArt(did, small)?.let(::build) }.getOrNull() ?: none
+        }
+        return v as? FingerprintDrawing
+    }
+
+    private fun build(a: uniffi.p2pcore.AvatarArt): FingerprintDrawing {
+        val strokes = a.strokes.map { s ->
+            val p = Path()
+            for (i in 0 until s.points.size / 2) {
+                val x = s.points[2 * i]; val y = s.points[2 * i + 1]
+                if (i == 0) p.moveTo(x, y) else p.lineTo(x, y)
+            }
+            if (s.closed) p.close()
+            FingerprintDrawing.Stroke(p, s.gold, s.alpha)
+        }
+        fun col(v: UInt) = Color(v.toInt())
+        return FingerprintDrawing(strokes, a.strokeWidth, col(a.light.bg), col(a.light.fg), col(a.dark.bg), col(a.dark.fg))
+    }
+}
+
+/** Draws [d] filling the draw area: the strokes in [fg] (the gold layer in [gold]). */
+fun DrawScope.drawFingerprint(d: FingerprintDrawing, fg: Color, gold: Color) {
+    val s = size.minDimension / 100f
+    val style = androidx.compose.ui.graphics.drawscope.Stroke(width = d.strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    withTransform({ scale(s, s, Offset.Zero) }) {
+        for (st in d.strokes) drawPath(st.path, if (st.gold) gold else fg, alpha = st.alpha, style = style)
+    }
+}
+
 /** The profile of [did] from the app's profile adapter (watching it), or null. Every avatar and profile surface reads through here. */
 @Composable
 fun rememberProfileView(did: String?): ProfileView? {
@@ -75,7 +130,8 @@ fun rememberProfileView(did: String?): ProfileView? {
 @Composable
 fun PgAvatar(name: String, hue: Int, size: Dp, person: String? = null, modifier: Modifier = Modifier, alpha: Float = 1f) {
     val c = Tin.c
-    val (bg, fg) = avatarColors(c, hue)
+    val art = remember(person, size) { FingerprintCache.of(person, size.value) }
+    val (bg, fg) = if (art != null) (if (c.dark) art.darkBg to art.darkFg else art.lightBg to art.lightFg) else avatarColors(c, hue)
     val view = rememberProfileView(person)
     val image = view?.image
     val awaiting = view?.awaiting == true
@@ -85,7 +141,11 @@ fun PgAvatar(name: String, hue: Int, size: Dp, person: String? = null, modifier:
         modifier.size(size).graphicsLayer { this.alpha = alpha }.clip(CircleShape).background(bg).clearAndSetSemantics {},
         contentAlignment = Alignment.Center,
     ) {
-        Text(
+        if (art != null) {
+            // A person with a DID: the fingerprint mandala instead of initials (a picture, when ready, covers it below).
+            val gold = c.gold
+            Box(Modifier.fillMaxSize().drawBehind { drawFingerprint(art, fg, gold) })
+        } else Text(
             initialsOf(name), color = fg, maxLines = 1, softWrap = false,
             style = TextStyle(
                 fontFamily = Figtree, fontSize = fontPx.sp, lineHeight = fontPx.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.02.em,

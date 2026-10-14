@@ -81,6 +81,24 @@ fn gfield<'a>(t: Tok, label_: &str, input: text_input::TextInput<'a, Msg>, hint:
 }
 
 /// [`gfield`] with room at the end for an inline button (the passphrase eye: 52).
+/// Words | Key: the same secret two ways (recovery step, Settings). Hugs its two buttons.
+pub(super) fn words_key_seg<'a>(t: Tok, as_key: bool, on: impl Fn(bool) -> Msg) -> El<'a> {
+    let b = |label_: &'static str, on_: bool, msg: Msg| {
+        button(container(text(label_).size(14).font(if on_ { ui::SANS_SEMI } else { ui::SANS }).color(t.ink)).center_y(36)).padding([0, 14]).height(36)
+            .style(move |_: &Theme, _| button::Style { background: on_.then(|| t.raised.into()), border: Border { radius: 9.0.into(), ..Default::default() }, ..Default::default() })
+            .on_press(msg)
+    };
+    container(row![b("Words", !as_key, on(false)), b("Key", as_key, on(true))].spacing(4)).padding(3)
+        .style(move |_: &Theme| container::Style { background: Some(t.surface2.into()), border: Border { radius: 12.0.into(), ..Default::default() }, ..Default::default() })
+        .into()
+}
+
+/// The recovery key: monospace, broken anywhere (it has no spaces), in the same card look as the words.
+pub(super) fn key_box<'a>(t: Tok, key: String) -> El<'a> {
+    container(mono(key, 15.0, t.ink).line_height(lh(24.0)).wrapping(iced::widget::text::Wrapping::Glyph)).padding([14, 16]).width(Fill)
+        .style(ui::outlined(t.surface, t.line, 10.0)).into()
+}
+
 fn gfield_r<'a>(t: Tok, label_: &str, input: text_input::TextInput<'a, Msg>, hint: Option<&str>, error: Option<String>, reserve: u8, right: f32) -> El<'a> {
     let bad = error.is_some();
     let input = input
@@ -167,12 +185,13 @@ impl App {
     }
 
     /// Unlock.svelte in the gate card: the account's avatar (72), "Welcome back, Maya", the passphrase (with the eye),
-    /// an error/hint cell that reserves its lines (so a wrong try moves nothing), then Unlock and "Forgot passphrase?".
+    /// an error/hint cell that reserves its lines (so a wrong try moves nothing), then Unlock and "I forgot it".
     /// Desktop keeps the other accounts on this computer under the field (switching is the only way to reach them).
     pub(super) fn unlock_card(&self, t: Tok) -> El<'_> {
         let name = self.profile_name.clone();
-        let first = name.split_whitespace().next().unwrap_or("").to_string();
-        let title = if first.is_empty() { "Welcome back".to_string() } else { format!("Welcome back, {first}") };
+        // Identities have one nickname: the whole of it, never just the first word.
+        let nick = name.trim().to_string();
+        let others = self.accounts.iter().any(|a| !a.current);
         let me = self.accounts.iter().find(|a| a.current).map(|a| a.did.clone()).unwrap_or_default();
         let input = text_input("", &self.pass_in).id(PASS_ID).secure(!self.gate.show_pass).on_input(Msg::PassIn).on_submit(Msg::Unlock);
         let eye = button(container(pgi(if self.gate.show_pass { "eyeoff" } else { "eye" }, 20.0, t.ink2)).center_x(44).center_y(44))
@@ -184,19 +203,21 @@ impl App {
         let field_ = stack![field_, column![Space::new().height(26), row![Space::new().width(Fill), eye].padding(Padding { right: 2.0, ..Padding::ZERO })]];
         // reserve 4.25 lines (18 px each) for the error and the hint
         let msgs = container(tx(hint.unwrap_or(""), 13.0, t.ink2).line_height(lh(18.0))).height(53).width(Fill);
-        let mut body = column![
+        let body = column![
             container(self.profile_avatar(t, &name, &me, 72.0)).padding(Padding { top: 12.0, ..Padding::ZERO }),
-            bold(title, 28.0, t.ink).line_height(lh(34.0)),
-            tx("Enter your passphrase to open Tinline. Calls can\u{2019}t reach you until you do.", 15.0, t.ink2).line_height(lh(22.0)).align_x(Alignment::Center),
+            self.welcome_title(t, &nick, others),
             column![field_, msgs].spacing(6).width(Fill),
         ].spacing(16).align_x(Alignment::Center).width(Fill);
-        if self.accounts.iter().any(|a| !a.current) {
-            body = body.push(self.other_accounts_pub(t));
-        }
+        // "Open as": the identities on this computer, over the field (a menu, so nothing below moves).
+        let body: El = if others && self.gate.open_as {
+            stack![body, container(self.open_as_menu(t)).padding(Padding { top: 12.0 + 72.0 + 16.0 + 40.0, ..Padding::ZERO }).center_x(Fill)].into()
+        } else {
+            body.into()
+        };
         // .center.anchor: hangs from a fixed point (min(14dvh, 96)), so a new line never re-centres the rest.
         let body = container(body).padding(Padding { top: 8.0 + 40.0, right: 40.0, bottom: 16.0, left: 40.0 }).height(Fill);
         let unlock = gbtn(t, if self.busy { "Unlocking\u{2026}" } else { "Unlock" }, B::Primary, true, (!self.busy && !self.pass_in.is_empty()).then_some(Msg::Unlock));
-        let forgot = gbtn(t, "Forgot passphrase?", B::Text, false, (!self.busy).then_some(Msg::GoRestore));
+        let forgot = gbtn(t, "I forgot it", B::Text, false, (!self.busy).then_some(Msg::GoRestore));
         let foot = container(row![Space::new().width(Fill), forgot, unlock].spacing(12).align_y(Alignment::Center))
             .padding(Padding { top: 16.0, right: 40.0, bottom: 32.0, left: 40.0 }).width(Fill);
         let head = container(row![Space::new().width(44).height(44), row![ui::logo(24.0, t), semi("Tinline", 17.0, t.ink).line_height(lh(24.0))].spacing(8).align_y(Alignment::Center), Space::new().width(Fill),
@@ -205,6 +226,49 @@ impl App {
             .spacing(12).align_y(Alignment::Center).height(44))
             .padding(Padding { top: 12.0, right: 22.0, bottom: 0.0, left: 12.0 }).height(56).width(Fill);
         self.gate_frame(t, head.into(), body.into(), foot.into())
+    }
+
+    /// "Welcome back, Maya": with other identities here, the nickname is the switcher ("Maya ⌄"), the same type as
+    /// the title, a quiet chevron, a 44 px target (lab A, 2026-10-14).
+    fn welcome_title(&self, t: Tok, nick: &str, switcher: bool) -> El<'_> {
+        if nick.is_empty() {
+            return bold("Welcome back", 28.0, t.ink).line_height(lh(34.0)).into();
+        }
+        if !switcher {
+            return bold(format!("Welcome back, {nick}"), 28.0, t.ink).line_height(lh(34.0)).into();
+        }
+        let who = button(row![bold(nick.to_string(), 28.0, t.ink).line_height(lh(34.0)), pgi("chev", 20.0, t.ink2)].spacing(2).align_y(Alignment::Center))
+            .padding([5, 4])
+            .style(super::shell_view::wash(t, None, Some(t.surface2), 10.0))
+            .on_press_maybe((!self.busy).then_some(g(Gs::OpenAs)));
+        row![bold("Welcome back,", 28.0, t.ink).line_height(lh(34.0)), who].spacing(8).align_y(Alignment::Center).into()
+    }
+
+    /// The "Open as" menu: every identity here; the current one ticked. Picking another switches (nothing to lock
+    /// yet: we are at login), then this screen asks for that one's passphrase, or it opens right away.
+    fn open_as_menu(&self, t: Tok) -> El<'_> {
+        let mut col = column![tx("Open as", 13.0, t.ink2).line_height(lh(18.0))].spacing(2).padding(8).width(300);
+        for a in &self.accounts {
+            let sub = if a.has_passphrase { "Asks for your passphrase" } else { "Opens right away" };
+            let mut r = row![self.profile_avatar(t, &a.name, &a.did, 32.0), column![semi(a.name.clone(), 14.0, t.ink), tx(sub, 12.0, t.ink2)].spacing(1).width(Fill)]
+                .spacing(10)
+                .align_y(Alignment::Center);
+            if a.current {
+                r = r.push(pgi("check", 16.0, t.ink2));
+            }
+            let msg = if a.current { g(Gs::OpenAs) } else { Msg::SwitchNow(a.did.clone()) };
+            col = col.push(button(r).padding([6, 10]).width(Fill).style(super::shell_view::wash(t, a.current.then_some(t.surface), Some(t.surface2), 10.0)).on_press_maybe((!self.busy).then_some(msg)));
+        }
+        col = col.push(
+            button(row![pgi("plus", 18.0, t.ink2), tx("Add another name", 14.0, t.ink)].spacing(10).align_y(Alignment::Center))
+                .padding([10, 10])
+                .width(Fill)
+                .style(super::shell_view::wash(t, None, Some(t.surface2), 10.0))
+                .on_press_maybe((!self.busy).then_some(Msg::NewAccount(false))),
+        );
+        container(col)
+            .style(move |_| container::Style { background: Some(t.raised.into()), border: iced::Border { radius: 14.0.into(), ..Default::default() }, shadow: iced::Shadow { color: iced::Color { a: 0.18, ..iced::Color::BLACK }, offset: iced::Vector::new(0.0, 8.0), blur_radius: 24.0 }, ..Default::default() })
+            .into()
     }
 
     fn gate_head(&self, t: Tok) -> El<'_> {
@@ -361,7 +425,16 @@ impl App {
                         .on_press(g(Gs::WordPick(w))));
                 }
                 let dock = column![chips, container(semi(msg, 13.0, t.danger).line_height(lh(18.0))).height(18)].spacing(6);
-                let head = column![title("Restore account"), lead(t, &[format!("Type your 24 words in order, or paste them all into the first box. They stay on this {noun}.")], false), note, tools].spacing(16).width(Fill);
+                if !gs.rec_key.is_empty() {
+                    // A pasted recovery key replaces the boxes; "Use my words instead" brings them back.
+                    let card = container(column![tx("Recovery key", 12.0, t.ink2), mono(gs.rec_key.clone(), 15.0, t.ink).line_height(lh(24.0)).wrapping(iced::widget::text::Wrapping::Glyph),
+                            container(gbtn(t, "Use my words instead", B::Text, false, Some(g(Gs::ClearKey))))].spacing(6))
+                        .padding([14, 16]).width(Fill).style(ui::outlined(t.surface, t.accent_soft, 10.0));
+                    let err = container(semi(self.notice.clone().unwrap_or_default(), 13.0, t.danger).line_height(lh(18.0))).height(18);
+                    let head = column![title("Restore account"), lead(t, &[format!("Your recovery key is in. It stays on this {noun}.")], false), note, card, err].spacing(16).width(Fill);
+                    return (container(head).padding(pad).height(Fill).into(), foot(vec![gbtn(t, "Continue", B::Primary, true, Some(g(Gs::RestoreGo)))]));
+                }
+                let head = column![title("Restore account"), lead(t, &[format!("Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this {noun}.")], false), note, tools].spacing(16).width(Fill);
                 let body = column![head, iced::widget::scrollable(grid).height(Fill).style(ui::scroll_style(t)), dock].spacing(12).width(Fill).height(Fill);
                 (container(body).padding(pad).height(Fill).into(), foot(vec![gbtn(t, "Continue", B::Primary, true, (gs.filled() > 0).then_some(g(Gs::RestoreGo)))]))
             }
@@ -442,16 +515,33 @@ impl App {
                     }
                     grid = grid.push(line);
                 }
-                let body = shell(
-                    "Here are your recovery words",
-                    vec!["If you ever switch devices, these 24 words bring your account along.".into(), "Save a copy somewhere safe. Paper works great.".into()],
-                    vec![container(grid).padding([2, 4]).into()],
-                );
-                // One primary slot, two moments: the same button, the same size.
-                let b = if self.gate.copied {
-                    vec![gbtn(t, "I\u{2019}ve saved them", B::Primary, true, Some(g(Gs::Saved))), gbtn(t, "Check my copy", B::Text, false, Some(g(Gs::Check)))]
+                // Words or key: the same secret two ways (core recovery_key.rs). Words suit paper, the key a password manager.
+                let as_key = self.gate.as_key;
+                let seg = words_key_seg(t, as_key, |k| g(Gs::AsKey(k)));
+                let shown: El = if as_key {
+                    key_box(t, p2pcore::recovery_key_from_phrase(phrase.clone()).unwrap_or_default())
                 } else {
-                    vec![gbtn(t, "Copy my words", B::Primary, true, Some(g(Gs::CopyWords))), gbtn(t, "I wrote them down", B::Text, false, Some(g(Gs::Saved)))]
+                    container(grid).padding([2, 4]).into()
+                };
+                let body = shell(
+                    if as_key { "Here is your recovery key" } else { "Here are your recovery words" },
+                    if as_key {
+                        vec!["Your recovery key is the same as your 24 words, as one line.".into(), "Paste it somewhere safe. A password manager works great.".into()]
+                    } else {
+                        vec!["If you ever switch devices, these 24 words bring your account along.".into(), "Save a copy somewhere safe. Paper works great.".into()]
+                    },
+                    vec![seg, shown],
+                );
+                // One primary slot, two moments: the same button, the same size. The key gets no quiz: its checksum
+                // catches a bad copy when it is pasted.
+                let b = if self.gate.copied {
+                    let mut v = vec![gbtn(t, if as_key { "I\u{2019}ve saved it" } else { "I\u{2019}ve saved them" }, B::Primary, true, Some(g(Gs::Saved)))];
+                    if !as_key {
+                        v.push(gbtn(t, "Check my copy", B::Text, false, Some(g(Gs::Check))));
+                    }
+                    v
+                } else {
+                    vec![gbtn(t, if as_key { "Copy my key" } else { "Copy my words" }, B::Primary, true, Some(g(Gs::CopyWords))), gbtn(t, if as_key { "I saved it elsewhere" } else { "I wrote them down" }, B::Text, false, Some(g(Gs::Saved)))]
                 };
                 (container(scroll(t, container(body).padding(pad))).height(Fill).into(), foot(b))
             }

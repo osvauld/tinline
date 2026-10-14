@@ -35,6 +35,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -66,7 +68,7 @@ fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
     var sheet by remember { mutableStateOf(false) }
     val many = remember { app.node.accounts().size > 1 }
     val onSwitch: (() -> Unit)? = if (many) ({ sheet = true }) else null
-    if (sheet) AccountSheet(app, onDismiss = { sheet = false }, onPick = { did ->
+    if (sheet) AccountSheet(app, atLogin = true, onDismiss = { sheet = false }, onPick = { did ->
         sheet = false; busy = true
         scope.launch {
             val r = withContext(Dispatchers.IO) { runCatching { app.switchTo(did, null) } }
@@ -107,7 +109,7 @@ fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: 
         GateHead(null, null)
         GateStep(
             title = if (name.isNotBlank()) "Can’t open $name’s account" else "Can’t open your account",
-            lead = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Calls can’t reach you until you restore.",
+            lead = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Once you restore, your calls come through again.",
             center = true, anchor = true,
             hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Key, 72.dp, 32.dp) } },
             foot = {
@@ -129,19 +131,20 @@ fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: 
 fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Boolean, error: String?, onForgot: () -> Unit, onUnlock: () -> Unit, onSwitch: (() -> Unit)? = null) {
     val c = Tin.c
     // Reserved error footprint remains stable; current core has no lockout countdown.
-    val first = name.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
+    // Identities have one nickname: the whole of it, never just the first word.
+    val nick = name.trim()
     val submit = { if (pass.isNotEmpty() && !busy) onUnlock() }
     Page {
         GateHead(null, null)
         GateStep(
-            title = if (first.isNotBlank()) "Welcome back, $first" else "Welcome back",
-            lead = "Enter your passphrase to open Tinline. Calls can’t reach you until you do.",
+            title = if (nick.isNotBlank()) "Welcome back, $nick" else "Welcome back",
             center = true, anchor = true,
             hero = { Box(Modifier.padding(top = 12.dp)) { SelfAvatar(name.ifBlank { "?" }, 72.dp) } },
+            // With other identities here, the nickname in the title is the switcher (lab A, 2026-10-14).
+            titleSlot = if (onSwitch != null && nick.isNotBlank()) ({ WelcomeSwitcher(nick, enabled = !busy, onSwitch) }) else null,
             foot = {
                 GBtn(if (busy) "Unlocking…" else "Unlock", submit, enabled = pass.isNotEmpty(), busy = busy)
-                GBtn("Forgot passphrase?", onForgot, kind = GKind.Text, enabled = !busy)
-                if (onSwitch != null) GBtn("Switch account", onSwitch, kind = GKind.Text, enabled = !busy)
+                GBtn("I forgot it", onForgot, kind = GKind.Text, enabled = !busy)
             },
         ) {
             GField(
@@ -178,6 +181,29 @@ fun SetPassphraseScreen(app: P2pApp) {
             }) {
             NewPassphraseField(pass, { pass = it; error = null }, !busy, onDone = { seal(pass) }, why = false)
             error?.let { GNotice(it, NKind.Error) }
+        }
+    }
+}
+
+/** "Welcome back, Maya ⌄": the nickname opens "Open as" (the identities on this phone). Same type as the title, a quiet
+ *  chevron, a 48 dp target. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun WelcomeSwitcher(nick: String, enabled: Boolean, onSwitch: () -> Unit) {
+    val c = Tin.c
+    FlowRow(
+        Modifier.fillMaxWidth().semantics { heading() },
+        horizontalArrangement = Arrangement.Center, verticalArrangement = Arrangement.Center,
+    ) {
+        Text("Welcome back, ", style = PgType.h1, color = c.ink, modifier = Modifier.align(Alignment.CenterVertically))
+        Row(
+            Modifier.heightIn(min = 48.dp).clip(SmoothCornerShape(10.dp))
+                .clickable(enabled = enabled, role = Role.Button, onClickLabel = "Open as another identity", onClick = onSwitch)
+                .padding(horizontal = 4.dp).semantics { contentDescription = "$nick, switch identity" },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(nick, style = PgType.h1, color = c.ink, maxLines = 1)
+            Icon(PgIcons.Chev, null, Modifier.size(22.dp), tint = c.ink2)
         }
     }
 }

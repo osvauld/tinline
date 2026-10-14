@@ -291,7 +291,7 @@ pub fn open_start(blob: &SignedBlob) -> Result<CallStart> {
         && host_ref_ok(&c.host_ref)
         && text_ok(&c.starter_did)
         && c.k >= 1
-        && (c.k as usize) < MAX_PARTICIPANTS
+        && (c.k as usize) <= MAX_PARTICIPANTS
         && c.max_participants >= 2
         && c.max_participants as usize <= MAX_PARTICIPANTS
         && c.backups.len() <= MAX_BACKUPS

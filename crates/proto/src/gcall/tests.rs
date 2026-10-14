@@ -137,6 +137,13 @@ fn gcall_forged_tampered_and_cross_kind_blobs_are_refused() {
     let mut bad = start(&h, &cid);
     bad.k = 0;
     assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
+    // Q2: K may name every participant (each hears the other eleven), never more.
+    let mut all = start(&h, &cid);
+    all.k = MAX_PARTICIPANTS as u8;
+    assert_eq!(open_start(&sign_start(&h, all.clone())), Ok(all));
+    let mut bad = start(&h, &cid);
+    bad.k = MAX_PARTICIPANTS as u8 + 1;
+    assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
     let mut bad = start(&h, &cid);
     bad.call_id = "short".into();
     assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
