@@ -53,24 +53,20 @@ pub fn old_key(which: Which, dek: &[u8; 32]) -> [u8; 32] {
     )
 }
 
-fn io(e: storage::StorageError) -> Error {
-    Error::Io(e.to_string())
-}
-
 /// Whether the file holds data that is not yet under the phrase key.
 pub fn needs_migration(store: &Store) -> Result<bool, Error> {
-    if store.get(KEYVER).map_err(io)?.is_some() {
+    if store.get(KEYVER)?.is_some() {
         return Ok(false);
     }
-    Ok(!store.list_prefixed("").map_err(io)?.is_empty())
+    Ok(!store.list_prefixed("")?.is_empty())
 }
 
 /// The rows re-sealed from `old` to `new`, plus the marker; nothing is written.
 fn plan(store: &Store, old: &Sealed, new: &Sealed) -> Result<Vec<Op>, Error> {
     let mut ops = Vec::new();
-    for (path, raw) in store.scan("").map_err(io)? {
-        let plain = zeroize::Zeroizing::new(old.unseal(&path, &raw).map_err(io)?);
-        ops.push(new.put_op(&path, &plain).map_err(io)?);
+    for (path, raw) in store.scan("")? {
+        let plain = zeroize::Zeroizing::new(old.unseal(&path, &raw)?);
+        ops.push(new.put_op(&path, &plain)?);
     }
     ops.push(Op::Put(KEYVER.into(), V2.to_vec()));
     Ok(ops)
@@ -79,20 +75,20 @@ fn plan(store: &Store, old: &Sealed, new: &Sealed) -> Result<Vec<Op>, Error> {
 /// Opens a store under the phrase key, migrating first when it still has the old one. With
 /// `old = None` an old-keyed store is an error (`Io`), never touched.
 pub fn open(store: Store, new_key: [u8; 32], old: Option<[u8; 32]>) -> Result<Sealed, Error> {
-    match store.get(KEYVER).map_err(io)?.as_deref() {
+    match store.get(KEYVER)?.as_deref() {
         Some(v) if v == V2 => return Ok(Sealed::new(store, new_key)),
         Some(_) => return Err(Error::Io("store written by a newer version".into())),
         None => {}
     }
-    if store.list_prefixed("").map_err(io)?.is_empty() {
-        store.put(KEYVER, V2).map_err(io)?;
+    if store.list_prefixed("")?.is_empty() {
+        store.put(KEYVER, V2)?;
         return Ok(Sealed::new(store, new_key));
     }
     let Some(old_key) = old else {
         return Err(Error::Io("store is sealed under the previous key".into()));
     };
     let ops = plan(&store, &Sealed::new(store.clone(), old_key), &Sealed::new(store.clone(), new_key))?;
-    store.apply(&ops).map_err(io)?;
+    store.apply(&ops)?;
     Ok(Sealed::new(store, new_key))
 }
 
@@ -105,7 +101,7 @@ pub fn file_needs_migration(path: &std::path::Path) -> Result<bool, Error> {
     let store = loop {
         match Store::open(path) {
             Ok(s) => break s,
-            Err(e) if tries >= 20 => return Err(io(e)),
+            Err(e) if tries >= 20 => return Err(Error::from(e)),
             Err(_) => {
                 tries += 1;
                 std::thread::sleep(std::time::Duration::from_millis(100));

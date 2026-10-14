@@ -51,6 +51,12 @@ impl From<std::io::Error> for Error {
     }
 }
 
+impl From<storage::StorageError> for Error {
+    fn from(e: storage::StorageError) -> Self {
+        Error::Io(e.to_string())
+    }
+}
+
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
         Error::Io(e.to_string())
