@@ -553,15 +553,29 @@ impl App {
             let mut c = column![h2("Call hosts", None), status(ready > 0, ch_line)];
             for h in &d.call_hosts {
                 let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
-                let end: El = if admin { textbtn("Remove", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
+                // Removes the CALL host (was wired to the chat-host revoke).
+                let end: El = if admin { textbtn("Remove", t.ink, l(Lm::RevokeCall(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
                 c = c.push(mrow(&h.did, name, if h.online || h.is_me { "Online".into() } else { "Offline".into() }, end));
             }
             for h in &d.call_host_requests {
                 let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
                 c = c.push(mrow(&h.did, name, "Waiting to accept".into(), Space::new().into()));
             }
+            // This computer: carry the calls (an admin can appoint it in one step; a member accepts when asked).
+            let here: Option<El> = if d.am_call_host {
+                Some(act("phone", "Stop hosting calls on this computer".into(), None, None, Some(l(Lm::CallsHere(false))), false))
+            } else if d.call_host_requested_here {
+                Some(act("phone", "Host calls on this computer".into(), Some("An admin asked this computer to carry the group\u{2019}s calls".into()), None, Some(l(Lm::CallsHere(true))), false))
+            } else if admin {
+                Some(act("phone", "Host calls on this computer".into(), Some("Carries the group\u{2019}s calls; a computer that stays on is best".into()), None, Some(l(Lm::CallsHere(true))), false))
+            } else {
+                None
+            };
+            if let Some(h) = here {
+                c = c.push(container(card(vec![h])).padding(Padding { top: 8.0, ..Padding::ZERO }));
+            }
             c = c.push(note(format!("A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{}",
-                if admin { " Appoint one from a member\u{2019}s menu." } else { "" })));
+                if admin { " Appoint one from a member\u{2019}s menu, or host calls on this computer." } else { "" })));
             col = col.push(sec(c));
             // ---- members: owner, admins, then members; me first among equals. A row opens its actions.
             let mut members: Vec<&p2pcore::GroupMember> = d.members.iter().collect();
@@ -797,6 +811,20 @@ impl App {
                     "Members stop going through it".into(),
                     t.ink,
                     l(Lm::Revoke(m.did.clone(), dev)),
+                ),
+                Action::AppointCall(dev) => item(
+                    Icon::Phone,
+                    if several { format!("Make device {} a call host", short_dev(&dev)) } else { "Make call host".into() },
+                    format!("Asks {first} to carry group calls on that device; they have to accept"),
+                    t.ink,
+                    l(Lm::AppointCall(m.did.clone(), dev)),
+                ),
+                Action::RevokeCall(dev) => item(
+                    Icon::Phone,
+                    if several { format!("Stop device {} carrying calls", short_dev(&dev)) } else { "Stop hosting calls".into() },
+                    "Calls go through the other call hosts".into(),
+                    t.ink,
+                    l(Lm::RevokeCall(m.did.clone(), dev)),
                 ),
                 Action::Flag => item(
                     Icon::Flag,

@@ -927,9 +927,15 @@ private fun CallHostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: 
                 }
             }
         }
+        // This phone: carry the calls it starts (admin: appoint + accept in one go; asked: the Accept above; already: stop).
+        if (d.amCallHost) ActRow(GIcons.Phone, "Stop hosting calls on this phone") { exec({ app.groups.acceptCallHost(d.id, false) }, done) }
+        else if (admin && !d.callHostRequestedHere && GroupText.active(d.myRole))
+            ActRow(GIcons.Phone, "Host calls on this phone", "Carries the calls you start here. A computer that stays on can carry everyone’s.") {
+                exec({ app.groups.hostCallsHere(d.id, requested = false) }, done)
+            }
         GNote("A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: " +
             "a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept." +
-            if (admin) " Appoint one from a member’s menu. A phone only hosts calls that its owner starts." else "",
+            if (admin) " Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts." else "",
             Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
     }
 }

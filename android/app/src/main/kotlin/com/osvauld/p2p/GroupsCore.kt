@@ -423,6 +423,12 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         if (accept) "This device now hosts the group’s calls." else "This device won’t host the group’s calls."
     ) { api.acceptCallHost(id, accept) }
 
+    /** This phone carries the group's calls: accept when an admin asked; otherwise an admin appoints this device and accepts, in one go. */
+    fun hostCallsHere(id: String, requested: Boolean) = act("This phone carries the calls it starts in this group now.") {
+        if (!requested) api.appointCallHost(id, myDid, api.deviceId())
+        api.acceptCallHost(id, true)
+    }
+
     private fun reloadRequests() {
         _incoming.value = try { api.requestsIncoming() } catch (_: Exception) { emptyList() }
         _outgoing.value = try { api.requestsOutgoing() } catch (_: Exception) { emptyList() }

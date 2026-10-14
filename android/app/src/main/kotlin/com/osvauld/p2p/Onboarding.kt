@@ -914,7 +914,7 @@ internal fun WordsKeySeg(asKey: Boolean, onChange: (Boolean) -> Unit) {
         listOf(false to "Words", true to "Key").forEach { (k, label) ->
             val on = k == asKey
             Box(
-                Modifier.heightIn(min = 40.dp).clip(SmoothCornerShape(9.dp)).background(if (on) c.sf else Color.Transparent)
+                Modifier.heightIn(min = 40.dp).clip(SmoothCornerShape(9.dp)).background(if (on) c.sf else androidx.compose.ui.graphics.Color.Transparent)
                     .clickable(role = Role.Tab) { onChange(k) }.padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center,
             ) { Text(label, style = TinType.bodyM.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), color = c.ink) }
