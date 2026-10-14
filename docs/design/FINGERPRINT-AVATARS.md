@@ -78,9 +78,7 @@ extra layer reads as one circle) — tune the small stroke/what to drop, judge a
 - **Playground:** move the maths into `src/lib/ui/fingerprint.ts` (the lab's `sacred()`, with BLAKE3 derive-key to
   match Rust — e.g. a small vendored JS BLAKE3 or precomputed fixtures) and use it in `lib/ui/Avatar.svelte` as the
   no-picture fallback for people (synthetic DIDs per seed person).
-- **Text:** wherever an avatar shows a person, the full nickname is beside it (most rows already do). Short tag
-  ("Maya · d029", first 2 bytes of `fp` in hex) only where two visible names are the same — **open decision, the
-  user has not confirmed; implement it behind one small helper so it's easy to change.**
+- **Text:** wherever an avatar shows a person, the full nickname is beside it (most rows already do). Short tag: never (user, 2026-10-14) — no tag helper is built; the drawing alone tells two same-named people apart.
 
 ## Parity and tests
 
@@ -96,3 +94,15 @@ extra layer reads as one circle) — tune the small stroke/what to drop, judge a
 Read `AGENTS.md`. Heavy builds only through `python3 /home/abe/p2p_chat/scripts/buildlock.py --who <you> -- …`.
 Synthetic identities. Don't touch the user's phone or installed apps. Non-UI logic lives in Rust. Commit on your
 own branch; the lead merges.
+
+## Implementation notes (2026-10-14)
+
+- Built: `crates/core/src/avatar.rs` (+ `avatar_golden.txt`), `tools/avatar/golden.mjs` (playground parity), desktop `ui::fingerprint_face`,
+  Android `FingerprintCache`/`drawFingerprint` in `ProfileAvatar.kt`, playground `lib/ui/fingerprint.ts` (vendored single-chunk BLAKE3).
+  Circles and arcs are sampled at 48 / 24 segments per turn in Rust; the apps only draw polylines.
+- Short tag: never (user, 2026-10-14). No tag helper exists. Full nickname beside the avatar is what existing rows already show.
+- 28 px tuning (step F): compared small stroke 2.6 / 3.4 / 3.8 with the ring dropped, and the ring kept at 2.6 / 3.4, over 36 synthetic
+  identities in light and dark. Ring kept turns into a smudge at 28 px; 2.6 left thin stars and bare circles faint; 3.8 starts to
+  fill the inner shape. **Chosen: ring still dropped below 40 px, small stroke 3.4** (was 2.6). A {14/2}-with-no-extra avatar is still
+  mostly a ring plus a small inner shape, which is its true drawing; it is told apart by hue and star count rather than by detail.
+- Not verified: desktop and Android were compiled (`cargo check -p desktop`, `compileDebugKotlin`) but not run or screenshotted.

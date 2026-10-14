@@ -4,6 +4,7 @@
 uniffi::setup_scaffolding!();
 
 pub mod accounts;
+pub mod avatar;
 mod block;
 mod caps;
 mod chat;

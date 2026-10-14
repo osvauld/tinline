@@ -66,8 +66,12 @@ fn label<'a>(t: Tok, s: &str) -> iced::widget::Text<'a> {
     semi(s.to_uppercase(), 12.0, t.ink2).font(ui::SANS_SEMI)
 }
 
-/// Avatar.svelte initials: hue pair, 700 weight, round(size * .34) px, a circle (intentional, not smoothed).
+/// Person avatar: the key's fingerprint mandala (picture handled by `profile_avatar`), else Avatar.svelte initials: hue pair, 700 weight, round(size * .34) px, a circle (intentional, not smoothed).
 fn avatar<'a>(t: Tok, name: &str, key: &str, size: f32) -> El<'a> {
+    // A DID key draws its fingerprint mandala; anything else ("me" before the account loads, group ids) keeps the initials.
+    if let Some(face) = ui::fingerprint_face(t, key, size) {
+        return face;
+    }
     let (bg, fg) = ui::avatar_colors(t, key);
     container(bold(ui::initials(name), (size * 0.34).round(), fg).line_height(lh((size * 0.34).round() * 1.2)))
         .width(size)
