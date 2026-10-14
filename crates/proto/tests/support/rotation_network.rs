@@ -1,3 +1,5 @@
+//! Superseded by `rotation_permit_network.rs` / `rotation_permit_lifecycle.rs`; kept for history
+//! (see `docs/archive/models.md`).
 //! Signed queue and crash-boundary model. Atomic durable snapshots are an assumption,
 //! not a test of filesystem/vault durability. No live QUIC or discovery simulation.
 use super::*;
