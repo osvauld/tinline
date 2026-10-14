@@ -1,7 +1,6 @@
 //! Groups & privacy PREVIEW: UI state and updates for the screens in docs/design/groups/, driven
-//! by the placeholder `groups_fake` (no core support yet). Behind the "Preview groups & privacy
-//! (placeholder data)" switch in Settings › Privacy, on by default only in debug and test-hooks
-//! builds. Turning it off hides every preview screen and drops the fake state.
+//! by the placeholder `groups_fake`. Compiled only for tests and `test-hooks` builds (design
+//! screenshots); release builds have no preview and show the live screens only.
 
 use iced::Task;
 
@@ -9,7 +8,7 @@ use super::{App, Msg, Screen};
 use crate::groups_fake::{self as gf, Fake, Interval, Perm, Snap};
 
 /// Whether the preview starts switched on when the user never chose.
-pub(super) const PREVIEW_DEFAULT: bool = cfg!(debug_assertions) || cfg!(feature = "test-hooks");
+pub(super) const PREVIEW_DEFAULT: bool = cfg!(feature = "test-hooks");
 
 /// What the main pane shows from the preview.
 #[derive(Debug, Clone, PartialEq)]

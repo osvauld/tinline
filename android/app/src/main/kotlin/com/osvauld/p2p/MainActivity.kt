@@ -101,8 +101,6 @@ private sealed interface Route {
     data object Devices : Route
     data class DeviceDetail(val device: String) : Route
     data object LinkDevice : Route
-    /** PLACEHOLDER groups & privacy preview (debug builds, [PreviewFlags]). */
-    data class Preview(val start: PRoute) : Route
     /** Settings › Blocked people (real data). */
     data object Blocked : Route
     /** Group chat on the core (GroupsLive.kt). */
@@ -292,7 +290,7 @@ private fun Root(app: P2pApp) {
                     app, missing, fix, onAdd = { stack.add(Route.Add(it)) }, onPaste = { stack.add(Route.Add(false, paste = true)) }, onSettings = { stack.add(Route.Settings) },
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
-                    homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
+                    homeTab = homeTab,
                     say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
                     onSearch = { stack.add(Route.Search) },
                 ) }
@@ -369,7 +367,6 @@ private fun Root(app: P2pApp) {
                     onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) }, onLinkAccount = { addAccount(false, link = true) },
                     onDevices = { stack.add(Route.Devices) }, onPrivacy = { stack.add(Route.Privacy) }, onNotifications = { stack.add(Route.Notifications) },
                     onSounds = { stack.add(Route.Sounds) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
-                    onPreview = { stack.add(Route.Preview(PRoute.parse(it))) },
                 )
                 Route.Me -> MyProfileRoute(app, onBack = ::pop)
                 Route.Notifications -> NotificationsPage(missing, onBack = ::pop, fix = fix)
@@ -382,11 +379,6 @@ private fun Root(app: P2pApp) {
                 Route.Devices -> LinkedDevicesScreen(app, ::pop, onLink = { stack.add(Route.LinkDevice) }, onDetail = { stack.add(Route.DeviceDetail(it)) })
                 is Route.DeviceDetail -> DeviceDetailScreen(app, r.device, onBack = ::pop, onMessage = ::say)
                 Route.LinkDevice -> LinkSession(app, newDevice = false, label = "", onClose = ::pop)
-                is Route.Preview -> {
-                    val on by PreviewFlags.enabled(ctx).collectAsState()
-                    if (on == true) key(r) { PreviewApp(PreviewBackend.get(app.node.profile()?.name ?: ""), r.start, onExit = ::pop, onShowMyQr = { stack.add(Route.Add(false)) }, onAddContact = { stack.add(Route.Add(true)) }) }
-                    else LaunchedEffect(Unit) { pop() }
-                }
                 Route.Battery -> BatteryScreen(missing, onBack = ::pop, onFix = fix)
                 Route.Passphrase -> ChangePassphraseScreen(app, onBack = ::pop)
                 Route.PhraseGate -> PhraseGateScreen(app, onBack = ::pop, onPhrase = { p -> pop(); stack.add(Route.PhraseShown(p)) })

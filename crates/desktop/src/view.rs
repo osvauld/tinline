@@ -24,6 +24,9 @@ mod signup_view;
 mod link_view;
 #[path = "groups_view.rs"]
 mod groups_view;
+#[cfg(any(test, feature = "test-hooks"))]
+#[path = "groups_preview_view.rs"]
+mod groups_preview_view;
 #[path = "group_live_view.rs"]
 mod group_live_view;
 #[path = "shell_view.rs"]
@@ -216,7 +219,10 @@ impl App {
             }
         };
         let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
-        match self.add_overlay(t).or_else(|| self.viewer_overlay(t)).or_else(|| self.delete_overlay(t)).or_else(|| self.new_chat_overlay(t)).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
+        let overlay = self.add_overlay(t).or_else(|| self.viewer_overlay(t)).or_else(|| self.delete_overlay(t)).or_else(|| self.new_chat_overlay(t)).or_else(|| self.live_overlay(t));
+        #[cfg(any(test, feature = "test-hooks"))]
+        let overlay = overlay.or_else(|| self.groups_overlay(t));
+        match overlay {
             Some(o) => iced::widget::stack![base, o].into(),
             None => base.into(),
         }
@@ -973,7 +979,7 @@ impl App {
     }
 
     fn home_view(&self, t: Tok) -> El<'_> {
-        if self.sel.is_none() && self.live.open.is_none() && self.groups.open.is_none() && self.offer.is_none() && self.notice.is_none() && self.problem().is_none() {
+        if self.sel.is_none() && self.live.open.is_none() && !self.preview_open() && self.offer.is_none() && self.notice.is_none() && self.problem().is_none() {
             return self.framed(t, self.detail_empty(t));
         }
         let mut main = column![].spacing(16);
@@ -986,6 +992,7 @@ impl App {
         if let Some(pane) = self.live_pane(t) {
             return self.framed(t, pane);
         }
+        #[cfg(any(test, feature = "test-hooks"))]
         if let Some(pane) = self.preview_pane(t) {
             return self.framed(t, pane);
         }
@@ -1498,6 +1505,7 @@ impl App {
             2 => calls,
             3 => audio,
             4 => section(t, "Security", security),
+            #[cfg(any(test, feature = "test-hooks"))]
             6 if self.demo && self.groups.on => self.hosting_page(t),
             6 => self.live_hosting_page(t),
             7 => self.privacy_page(t),

@@ -56,7 +56,6 @@ fun HomeScreen(
     /** Hoisted tab, so coming back from a chat or group lands on the same tab. Null keeps it local. */
     homeTab: MutableState<HomeTab>? = null,
     /** Opens a PLACEHOLDER preview screen (Settings › Developer). */
-    onPreview: (PRoute) -> Unit = {},
     /** The Groups tab (real groups, GroupsLive.kt). */
     onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {}, say: (String) -> Unit = {},
     /** Opens the full-screen search (Search.kt). */

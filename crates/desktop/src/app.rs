@@ -20,8 +20,10 @@ use signup::{AddUi, Gate, Gs};
 #[path = "link.rs"]
 mod link;
 
+#[cfg(any(test, feature = "test-hooks"))]
 #[path = "groups.rs"]
 mod groups;
+#[cfg(any(test, feature = "test-hooks"))]
 use groups::{GroupsUi, Gm};
 #[path = "group_live.rs"]
 mod group_live;
@@ -85,8 +87,9 @@ struct Settings {
     input: Option<String>,
     output: Option<String>,
     tone: bool,
-    /// The groups & privacy preview switch; None follows the build (on in debug/test-hooks).
+    /// The groups & privacy preview switch (tests and test-hooks only).
     #[serde(default)]
+    #[cfg(any(test, feature = "test-hooks"))]
     groups_preview: Option<bool>,
     /// Calls are audio only (no video offered or taken).
     #[serde(default)]
@@ -352,6 +355,7 @@ struct App {
     link_joined: bool,
     unlinked: Option<UnlinkedInfo>,
     /// Groups, hosting, blocking and permissions preview on placeholder data.
+    #[cfg(any(test, feature = "test-hooks"))]
     groups: GroupsUi,
     /// Group chat on the core (G1): the Groups tab.
     live: GroupsLive,
@@ -541,6 +545,7 @@ enum Msg {
     UnlinkedOk,
     /// Test-hooks: the window's pixels, written to P2P_SHOT.
     Shot(window::Screenshot),
+    #[cfg(any(test, feature = "test-hooks"))]
     Groups(Gm),
     Live(Lm),
     Video(Vm),
@@ -773,8 +778,11 @@ impl App {
         self.refresh_identity();
         self.refresh_accounts();
         self.refresh_linked();
-        let preview_on = self.groups.on;
-        self.groups.enable(preview_on, &self.profile_name);
+        #[cfg(any(test, feature = "test-hooks"))]
+        {
+            let preview_on = self.groups.on;
+            self.groups.enable(preview_on, &self.profile_name);
+        }
         self.reload_contacts();
         self.recents = self.node.recent_calls(RECENTS);
         self.avail = self.node.availability();
@@ -810,7 +818,9 @@ impl App {
         let test_unlock = init.test_pass.clone().filter(|_| lock == LockState::Locked);
         let forced_dark = crate::test_env("P2P_DARK").map(|v| v == "1");
         settings.apply_alerts();
+        #[cfg(any(test, feature = "test-hooks"))]
         let preview_on = settings.groups_preview.unwrap_or(groups::PREVIEW_DEFAULT);
+        #[cfg(any(test, feature = "test-hooks"))]
         let me_name = node.profile().map(|p| p.name).unwrap_or_default();
         let mut app = App {
             win: None,
@@ -907,6 +917,7 @@ impl App {
             unlink_ask: None,
             link_joined: false,
             unlinked: None,
+            #[cfg(any(test, feature = "test-hooks"))]
             groups: GroupsUi::new(preview_on, &me_name),
             live: GroupsLive::default(),
             blocks: Default::default(),
@@ -1938,6 +1949,7 @@ impl App {
                     Key::Named(Named::Escape) if self.call_ui.about => return self.update(Msg::CallUi(crate::call_ui::Action::CloseAbout)),
                     Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),
                     Key::Named(Named::Escape) if self.call.is_some() && !self.call_ui.minimized => return self.update(Msg::CallUi(crate::call_ui::Action::Minimize)),
+                    #[cfg(any(test, feature = "test-hooks"))]
                     Key::Named(Named::Escape) if self.groups.dialog.is_some() => return self.update_groups(Gm::Dismiss),
                     Key::Named(Named::Escape) if self.live.dialog.is_some() => return self.update_live(Lm::Dismiss),
                     Key::Named(Named::Escape) if self.call.is_none() && self.shell_search.active => return self.shell_search_update(shell_search::Action::Escape),
@@ -2167,7 +2179,10 @@ impl App {
                 Err(e) => self.notice = Some(format!("Could not call: {e}")),
             },
             Msg::Select(did) => {
-                self.groups.open = None;
+                #[cfg(any(test, feature = "test-hooks"))]
+                {
+                    self.groups.open = None;
+                }
                 self.live.close();
                 self.sel = Some(did);
                 self.chat.info = false;
@@ -2181,10 +2196,13 @@ impl App {
                 return self.open_chat(&did);
             }
             Msg::Home => {
-                self.groups.open = None;
+                #[cfg(any(test, feature = "test-hooks"))]
+                {
+                    self.groups.open = None;
+                    self.groups.dialog = None;
+                }
                 self.live.close();
                 self.live.dialog = None;
-                self.groups.dialog = None;
                 self.leave_chat();
                 self.sel = None;
                 self.detail = Detail::View;
@@ -2445,6 +2463,7 @@ impl App {
                 });
             }
             Msg::Chat(m) => return self.update_chat(m),
+            #[cfg(any(test, feature = "test-hooks"))]
             Msg::Groups(m) => return self.update_groups(m),
             Msg::Live(m) => return self.update_live(m),
             m @ (Msg::LinkStartNew

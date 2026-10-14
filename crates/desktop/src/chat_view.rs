@@ -156,6 +156,7 @@ impl App {
             let face = container(crate::pg_icons::pgi("users", 22.0, t.accent_ink)).width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.surface2, 24.0)).into();
             items.push((at, self.pg_chat_row(t, sel, face, s.name.clone(), at, s.unread, false, pv, Msg::Live(super::super::group_live::Lm::Open(s.id.clone())))));
         }
+        #[cfg(any(test, feature = "test-hooks"))]
         items.extend(self.preview_rows(t, q));
         items.sort_by(|a, b| b.0.cmp(&a.0));
         let mut list = column![].spacing(0);

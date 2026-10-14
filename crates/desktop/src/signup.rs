@@ -593,6 +593,10 @@ impl App {
     /// Nothing else is in front (people.svelte.ts `incomingRequest`): the sheet may open by itself,
     /// but never over a call or another dialog.
     pub(super) fn sheet_free(&self) -> bool {
+        #[cfg(any(test, feature = "test-hooks"))]
+        if self.groups.on && self.groups.dialog.is_some() {
+            return false;
+        }
         self.call.is_none()
             && self.waiting.is_none()
             && self.ended.is_none()
@@ -600,7 +604,6 @@ impl App {
             && self.chat.viewer.is_none()
             && self.shell_search.new_chat.is_none()
             && self.live.dialog.is_none()
-            && !(self.groups.on && self.groups.dialog.is_some())
     }
 
     /// Someone used our code: the knock, and the "Contact request" sheet opens by itself (our own

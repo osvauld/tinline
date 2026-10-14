@@ -1096,8 +1096,11 @@ impl super::App {
         if out.opened {
             self.leave_chat();
             self.sel = None;
-            self.groups.open = None;
-            self.groups.dialog = None;
+            #[cfg(any(test, feature = "test-hooks"))]
+            {
+                self.groups.open = None;
+                self.groups.dialog = None;
+            }
             self.chat.info = false;
             self.screen = super::Screen::Home;
         }
