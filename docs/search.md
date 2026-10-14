@@ -452,7 +452,7 @@ hook", 0.1-0.6 ms.)
 
 ## Benchmarks (v1, kept for comparison)
 
-`search-bench` (crates/core/src/search/bench.rs, binary `crates/core/src/bin/search-bench.rs`)
+`search-bench` (crates/core/src/bin/search-bench/bench.rs, binary entry `crates/core/src/bin/search-bench/main.rs`)
 drives `SearchIndex` directly: no node, no network, no names or conversation lookups. Corpus:
 synthetic, seeded, 5-40 words a message, Zipf word frequencies; 72% English (8k pseudo-words plus
 common ones), 10% Hindi, 6% Malayalam, 8% CJK runs, 4% mixed Hindi/English; 50 conversations (10

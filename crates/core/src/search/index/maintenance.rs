@@ -50,7 +50,8 @@ impl SearchIndex {
         Ok(Some((before.file_bytes, after)))
     }
 
-    pub(crate) fn maintain_segments(&self, mode: Mode) -> Result<(), Error> {
+    #[doc(hidden)]
+    pub fn maintain_segments(&self, mode: Mode) -> Result<(), Error> {
         let mut memo = self.maint.lock();
         if self.is_closed() {
             return Ok(());

@@ -174,6 +174,7 @@ pub fn pick_from(ranking: &[HostRef], skip: &BTreeSet<HostRef>) -> Option<Pick> 
 }
 
 /// [`rank`] then [`pick_from`] with nothing skipped.
+#[cfg(test)]
 pub fn pick(auth: &(impl CallAuthority + ?Sized), statuses: &[SignedBlob], ctx: &RankCtx) -> Option<Pick> {
     pick_from(&rank(auth, statuses, ctx), &BTreeSet::new())
 }

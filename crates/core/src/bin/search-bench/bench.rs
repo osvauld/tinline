@@ -5,8 +5,7 @@
 //! of the last days on open, then times the query loop of `Inner::search` (scan, row, match,
 //! snippet) without the node-side name lookups.
 
-use super::index::{DocRow, Mark, Mode, SearchIndex};
-use super::text;
+use p2pcore::search_bench_support::{DocRow, Mark, Mode, PHASES, SearchIndex, day_of, day_start, text};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -106,7 +105,7 @@ fn rows(n: usize) -> Vec<DocRow> {
             DocRow {
                 src: if group { format!("g.{conv}") } else { format!("dm.{conv}") },
                 conv: conv.to_string(),
-                day: crate::chat::doc::day_of(at),
+                day: day_of(at),
                 id: format!("m{i:08}"),
                 at,
                 author: format!("did:{}", rng.below(8)),
@@ -167,7 +166,7 @@ fn lat(label: &str, mut v: Vec<Duration>) {
 }
 
 fn today_of(at: i64) -> String {
-    crate::chat::doc::day_of(at)
+    day_of(at)
 }
 
 pub fn run(n: usize, dir: &Path) {
@@ -231,7 +230,7 @@ pub fn run(n: usize, dir: &Path) {
 
     // 2. Rebuild: per (conversation, day) batches (the reconcile shape), cold days spilling
     // into segments over the memory cap, then a final write.
-    for p in &super::index::PHASES {
+    for p in &PHASES {
         p.store(0, std::sync::atomic::Ordering::Relaxed);
     }
     let rpath = dir.join("rebuild.redb");
@@ -254,7 +253,7 @@ pub fn run(n: usize, dir: &Path) {
     let rcomp = rix.compact_if_worthwhile().unwrap();
     println!("rebuild file before compaction {rbefore:.1} MiB; compaction {:?} took {:.2} s", rcomp.map(|(a, b)| (a >> 20, b >> 20)), t.elapsed().as_secs_f64());
     let rs = rix.stats();
-    let ph: Vec<String> = ["pick", "read-old", "build(incl read)", "write", "swap"].iter().zip(&super::index::PHASES).map(|(n, p)| format!("{n} {:.1}s", p.load(std::sync::atomic::Ordering::Relaxed) as f64 / 1e9)).collect();
+    let ph: Vec<String> = ["pick", "read-old", "build(incl read)", "write", "swap"].iter().zip(&PHASES).map(|(n, p)| format!("{n} {:.1}s", p.load(std::sync::atomic::Ordering::Relaxed) as f64 / 1e9)).collect();
     println!("maintain phases (whole run so far): {}", ph.join(", "));
     println!("full build ({nb} day batches, avg {:.1} msgs): {el:.2} s = {:.0} msgs/s; {rs:?}; search.redb {:.1} MiB = {:.0} B/msg", n as f64 / nb as f64, n as f64 / el, size(&rpath), size(&rpath) * 1048576.0 / rs.seg_docs.max(1) as f64);
 
@@ -265,7 +264,7 @@ pub fn run(n: usize, dir: &Path) {
     let reopened = SearchIndex::open(&path, "bench phrase").unwrap();
     reopened.set_today(Some(&end_day));
     let open_t = t.elapsed();
-    let cutoff = crate::chat::doc::day_start(&end_day).unwrap() - 7 * 86_400_000;
+    let cutoff = day_start(&end_day).unwrap() - 7 * 86_400_000;
     let recent: Vec<&DocRow> = data.iter().filter(|r| r.at >= cutoff).collect();
     let mut b2: std::collections::BTreeMap<(String, String), Vec<DocRow>> = Default::default();
     for r in &recent {
@@ -349,7 +348,7 @@ pub fn run_live(n: usize, dir: &Path) {
     println!("built in {:.1} s; {:?}; search.redb {:.1} MiB", t0.elapsed().as_secs_f64(), ix.stats(), size(&path));
 
     let mut serial = 0usize;
-    let mut clock = crate::chat::doc::day_start(&end_day).unwrap();
+    let mut clock = day_start(&end_day).unwrap();
     for (label, mode) in [("idle (production schedule)", 0), ("maintenance back to back, merging", 1), ("... and compaction every 3 s", 2)] {
         let stop = std::sync::atomic::AtomicBool::new(false);
         let mut each = Vec::with_capacity(LIVE);
@@ -371,7 +370,7 @@ pub fn run_live(n: usize, dir: &Path) {
                     } else {
                         // a day further, so that the previous day goes cold and is written
                         let d = today.fetch_add(day_ms, std::sync::atomic::Ordering::SeqCst) + day_ms;
-                        ixr.set_today(Some(&crate::chat::doc::day_of(d)));
+                        ixr.set_today(Some(&day_of(d)));
                     }
                     let t = Instant::now();
                     ixr.maintain(if mode == 0 { Mode::Tick } else { Mode::Force }).unwrap();
@@ -395,13 +394,13 @@ pub fn run_live(n: usize, dir: &Path) {
                 if mode == 0 && i == LIVE / 2 {
                     // the day rollover: the oldest hot day goes cold
                     let d = today.fetch_add(day_ms, std::sync::atomic::Ordering::SeqCst) + day_ms;
-                    ix.set_today(Some(&crate::chat::doc::day_of(d)));
+                    ix.set_today(Some(&day_of(d)));
                 }
                 let base = &data[i % data.len()];
                 let cur = today.load(std::sync::atomic::Ordering::SeqCst);
                 let at = cur + i as i64;
                 serial += 1;
-                let r = DocRow { id: format!("live{serial:08}"), at, day: crate::chat::doc::day_of(at), ..base.clone() };
+                let r = DocRow { id: format!("live{serial:08}"), at, day: day_of(at), ..base.clone() };
                 let mark = Mark { src: r.src.clone(), day: r.day.clone(), prev: None, vv: serial.to_be_bytes().to_vec() };
                 let t = Instant::now();
                 ix.apply(std::slice::from_ref(&r), &[], &[mark]).unwrap();

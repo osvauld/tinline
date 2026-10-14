@@ -13,7 +13,7 @@ path = "src/bin/uniffi-bindgen.rs"
 
 [[bin]]
 name = "search-bench"
-path = "src/bin/search-bench.rs"
+path = "src/bin/search-bench/main.rs"
 
 [[bin]]
 name = "year-bench"

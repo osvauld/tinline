@@ -25,7 +25,6 @@ use p2pcore::DeliveryState;
 
 mod support;
 use support::eventually_200ms as eventually;
-use support::wait::now_secs as now;
 use support::*;
 
 const TAG: &str = "rotk1";
@@ -119,7 +118,6 @@ struct Chat {
     b: Peer,
     m1: String,
     m2: Option<String>,
-    old_dev: String,
     new_dev: String,
 }
 
@@ -143,28 +141,8 @@ fn chat_fixture(tag: &str, a_holds_list: bool, pending: bool, a_verifies_b: bool
         assert_eq!(ticks(&b, &a.did, &m2), DeliveryState::Pending, "A is offline");
         m2
     });
-    let (old_dev, new_dev) = b.restore_in_place();
-    Chat { a, b, m1, m2, old_dev, new_dev }
-}
-
-// ---- 1. O1: the cached ticket -----------------------------------------------------------------
-
-// KIND: invariant
-// O1 fixed by P2 (`ticket()` now also requires `claim.device` to be our current device key). After
-// a restore `my_ticket()` mints a fresh ticket naming the new key, not the pre-restore one. Full
-// redeem/chat coverage lives in `tests/restore_ticket.rs`.
-#[test]
-fn o1_restore_reissues_the_ticket_for_the_new_device_key() {
-    let mut b = peer("o1-b", true);
-    let before = b.node.my_ticket().unwrap();
-    let (old_dev, new_dev) = b.restore_in_place();
-
-    let after = b.node.my_ticket().unwrap();
-    assert_ne!(after, before, "the pre-restore ticket is not handed out again");
-    let claim = proto::ContactTicket::from_text(&after).unwrap().verify(now()).unwrap();
-    assert_eq!(claim.iss, b.did);
-    assert_eq!(claim.device, new_dev, "it names the new device key");
-    assert_ne!(claim.device, old_dev);
+    let (_old_dev, new_dev) = b.restore_in_place();
+    Chat { a, b, m1, m2, new_dev }
 }
 
 // ---- 2. O3: a message sent but not yet delivered before the restore ---------------------------

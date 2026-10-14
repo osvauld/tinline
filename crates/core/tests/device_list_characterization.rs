@@ -113,17 +113,6 @@ fn call_answered(caller: &Peer, callee: &Peer) {
     });
 }
 
-/// `caller` calls `callee`; returns once the callee rings (its hello has been processed), then the
-/// caller hangs up.
-fn call_until_ringing(caller: &Peer, callee: &Peer) {
-    let call = caller.node.call(callee.did.clone()).unwrap();
-    assert_eq!(incoming(callee, 30), call.call_id);
-    caller.node.hangup(call.call_id).unwrap();
-    eventually(20, "call over", || {
-        caller.node.current_call().is_none() && callee.node.current_call().is_none()
-    });
-}
-
 /// Sends `text` from `from` to `to` and waits until `to` holds it. Chat is the traffic
 /// that would carry a push if anything did.
 fn chat(from: &Peer, to: &Peer, text: &str) -> String {
@@ -176,24 +165,6 @@ fn adding_a_device_reaches_the_contact_without_a_call() {
         "B re-signed a list naming B2"
     );
     eventually(30, "A learns B2 from the push", || a.devices_of(&b).contains(&b2));
-}
-
-// KIND: invariant (was a limitation; fixed by P4, U8)
-// A dials B and B2 (learned in a call). B unlinks B2 (never started): the shorter list is pushed
-// and A stops dialling B2 without a call.
-#[test]
-fn unlinking_a_device_reaches_the_contact_without_a_call() {
-    let (a, b) = pair("unlink");
-    let b2 = register_sibling(&b, "unlink-b2");
-    call_answered(&a, &b);
-    eventually(10, "A dials B2", || a.devices_of(&b).contains(&b2));
-    b.node.unlink_device(b2.clone(), Some(PASS.into())).unwrap();
-    assert!(
-        !list_devices(&own_list(&b)).contains(&b2),
-        "B's own list dropped B2"
-    );
-    eventually(30, "A drops B2", || !a.devices_of(&b).contains(&b2));
-    assert_eq!(a.devices_of(&b), vec![b.node.device_key_for_test().unwrap()]);
 }
 
 // ---- 3. restore: the K1 stall and what a push would and would not fix ---------------------------

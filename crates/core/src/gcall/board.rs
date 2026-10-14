@@ -110,11 +110,6 @@ impl CallBoard {
         self.starts.get(call_id)
     }
 
-    /// The CallStart of the generation before the current one (redial source).
-    pub fn previous(&self, call_id: &str) -> Option<&CallStart> {
-        self.prev.get(call_id)
-    }
-
     /// The generation this device may host on a first valid Join: it is a backup of the
     /// current CallStart.
     pub fn may_take(&self, call_id: &str) -> Option<u32> {
@@ -124,6 +119,7 @@ impl CallBoard {
     }
 
     /// The live call hosted by `host` (to follow an `End{superseded, next_host}`).
+    #[cfg(test)]
     pub fn hosted_by(&self, host: &HostRef) -> Option<&CallStart> {
         self.starts.values().find(|s| s.host_ref == *host)
     }

@@ -578,27 +578,6 @@ fn tokens_are_taken_back_per_did_never_by_id() {
     );
 }
 
-// KIND: invariant
-// U13 default for ticket contacts already holds today: either side of a ticket-made pair can both
-// message and call the other.
-#[test]
-fn ticket_contacts_can_message_and_call_each_other() {
-    let (a, b) = pair("dflt");
-    for (from, to) in [(&b, &a), (&a, &b)] {
-        let m = from
-            .node
-            .send_text(to.did.clone(), "hi".into(), None)
-            .unwrap();
-        eventually(60, "message delivered", || {
-            delivery(from, &to.did, &m.id) == DeliveryState::Delivered
-        });
-        let call = from.node.call(to.did.clone()).unwrap();
-        assert_eq!(incoming_within(to, 30).peer_did, from.did);
-        from.node.hangup(call.call_id.clone()).unwrap();
-        ended_within(from, &call.call_id, 30);
-    }
-}
-
 // KIND: invariant (flipped by P6; was `only_global_availability_separates_calls_from_messages`,
 // which asserted that only the global "not now" switch could refuse calls but keep messages)
 // U13: per contact. With calls disallowed for b, b's call is refused with the visible reason

@@ -43,6 +43,7 @@ fn after_restore_my_ticket_names_the_current_device_key_and_redeems() {
     let before = b.node.my_ticket().unwrap();
     let (old_dev, new_dev) = b.restore_in_place();
     assert_eq!(claim(&before).device, old_dev);
+    assert_ne!(old_dev, new_dev, "a restore replaces the device key");
 
     let offline = b.node.my_ticket().unwrap();
     assert_ne!(offline, before, "the pre-restore ticket is not handed out again");

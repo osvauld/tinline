@@ -211,10 +211,6 @@ impl HostEngine {
         self.st.fwd.k()
     }
 
-    pub fn is_limited(&self) -> bool {
-        self.st.limited
-    }
-
     /// `(gen, forwarded slots)` as last announced in `Active`.
     pub fn active(&self) -> (u32, &BTreeSet<u8>) {
         (self.st.active_gen, &self.st.active)
@@ -229,6 +225,7 @@ impl HostEngine {
     }
 
     /// Datagrams dropped per DID (malformed, oversize, over rate).
+    #[cfg(test)]
     pub fn dropped(&self, did: &str) -> u64 {
         self.dropped.get(did).copied().unwrap_or(0)
     }
@@ -265,13 +262,6 @@ impl HostEngine {
         let mut out = self.roster_actions();
         out.extend(self.active_actions());
         out
-    }
-
-    /// The host user's "lower priority" for a participant (§6).
-    pub fn lower_priority(&mut self, did: &str, lowered: bool) {
-        if let Some(p) = self.st.parts.get(did) {
-            self.st.fwd.set_lowered(p.slot, lowered);
-        }
     }
 
     /// A control frame from `conn`. Members send only `Join` and `Leave`.
