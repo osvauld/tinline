@@ -211,6 +211,13 @@ impl HostEngine {
         self.st.fwd.k()
     }
 
+    /// Every host forwards every speaker (Q2), so S is never full in a real call; tests of the
+    /// G6-D2 provisional slot shrink K by hand.
+    #[cfg(test)]
+    pub(crate) fn set_k_for_test(&mut self, k: usize) {
+        self.st.fwd.set_k(k);
+    }
+
     /// `(gen, forwarded slots)` as last announced in `Active`.
     pub fn active(&self) -> (u32, &BTreeSet<u8>) {
         (self.st.active_gen, &self.st.active)
@@ -527,7 +534,7 @@ impl HostEngine {
                 out.push(HostAction::Notice(HostNotice::Unlimited));
                 out.extend(self.active_actions());
             }
-            // Q2: on or off metered data mid-call, K follows (2 loudest vs every speaker).
+            // K follows the conditions if they ever differ by host state.
             _ if !self.st.limited && self.st.fwd.k() != cond.k() => {
                 self.st.fwd.set_k(cond.k());
                 out.extend(self.active_actions());

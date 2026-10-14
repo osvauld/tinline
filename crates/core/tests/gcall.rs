@@ -4,8 +4,8 @@
 //! 50 Hz as the platform audio threads do.
 //!
 //! - `group_call_on_real_nodes`: everyone joins (the host's own user through ConnId::LOCAL);
-//!   each member hears the other speakers' tones and not its own; with four speakers and K = 3
-//!   the host forwards at most K + 1 and settles on K; a member leaves and everyone re-rosters;
+//!   each member hears the other speakers' tones and not its own; with four speakers the host
+//!   forwards all four (K = 12, every speaker); a member leaves and everyone re-rosters;
 //!   the host `stop`s (End{host_leaving, next_host}) and the members redial backup 1 at once;
 //!   backup 1 then crashes without any close and backup 2 notices by missed heartbeats.
 //! - `phone_host_degrades`: `gcall_set_cond` on a phone host lowers K to 1 and refuses Joins,
@@ -26,7 +26,8 @@ use support::*;
 
 const FREQ: [f32; 4] = [440.0, 620.0, 830.0, 1070.0];
 const AMP: f32 = 8_000.0;
-const K: usize = 3;
+/// Every host forwards every speaker (Q2, 2026-10-14).
+const K: usize = 12;
 
 struct Tap(Mutex<mpsc::Sender<GcallEvent>>);
 
@@ -205,7 +206,7 @@ fn group_call_on_real_nodes() {
     drive(&mut all(&mut m), 2_500, true, |_| false);
     assert_hears(&all(&mut m), &[0, 1, 2, 3], &[0, 1, 2]);
 
-    // ---- four speakers, K = 3: at most K + 1 forwarded, settling on K ---------------------
+    // ---- four speakers: every one forwarded (K = 12), each hears the other three ------------
     for x in m.iter_mut() {
         x.speaking = true;
         x.rec.clear();
@@ -220,15 +221,15 @@ fn group_call_on_real_nodes() {
     let before: Vec<BTreeMap<u8, u64>> = m.iter().map(heard).collect();
     drive(&mut all(&mut m), 600, false, |_| false);
     let fwd = host.gcall_status().unwrap().hosting.unwrap().forwarded;
-    assert!(most <= K + 1, "forwarded {most} > K + 1");
-    assert_eq!(fwd.len(), K, "settles on K speakers");
+    assert!(most <= 4, "forwarded {most} > 4 speakers");
+    assert_eq!(fwd.len(), 4, "every speaker forwarded");
     for (x, b) in m.iter().zip(&before) {
         let now = heard(x);
         let mine = x.node.gcall_status().unwrap().client.unwrap().my_slot;
         let live: Vec<u8> = now.iter().filter(|(s, n)| **n > b.get(s).copied().unwrap_or(0)).map(|(s, _)| *s).collect();
         let expect: Vec<u8> = fwd.iter().copied().filter(|s| Some(*s) != mine).collect();
         assert_eq!(live, expect, "a member receives exactly the forwarded set minus itself");
-        assert!(live.len() <= K);
+        assert_eq!(live.len(), 3);
     }
 
     // ---- a member leaves: everyone re-rosters ----------------------------------------------
@@ -311,7 +312,7 @@ fn phone_host_degrades() {
     }
     let h0 = m[0].href.clone();
     assert!(drive(&mut all(&mut m), 10_000, false, |ms| ms[..3].iter().all(|x| joined(x, 1, &h0, 3))), "joins");
-    assert_eq!(m[0].node.gcall_status().unwrap().hosting.unwrap().k, 2, "phone K");
+    assert_eq!(m[0].node.gcall_status().unwrap().hosting.unwrap().k, K, "a phone host forwards every speaker");
 
     // Battery under 15 %: limited, K = 1, new Joins refused.
     m[0].node.gcall_set_cond(Cond::phone(12, false));

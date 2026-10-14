@@ -87,9 +87,9 @@ with chat datagrams. Each connection carries:
   where lower means louder. Its active set S is the K loudest senders whose average is below
   a speech threshold (e.g. 50 dBov). Hysteresis: a new sender replaces a member of S only if
   it is louder by at least 6 dB for at least 200 ms. Each member receives S without itself.
-  K is every speaker (12) on a desktop host, 4 on a phone host and 2 on any host on metered
-  data (Q2, decided 2026-10-14; was 3 desktop / 2 phone). K is stated in
-  `CallStart`.
+  K is every speaker (12) on every host, phone and metered data included (Q2, decided
+  2026-10-14; was 3 desktop / 2 phone, then briefly 4 phone / 2 metered). Only "hosting
+  limited" (§2.4) drops it to 1. K is stated in `CallStart`.
 - **Abuse.** The level is self-reported and unverifiable. A modified client that always
   reports level 0 holds a slot permanently and can push out real speakers. Mitigations and
   the decision are in §6 and Q5.
@@ -176,7 +176,7 @@ supersedes the original proposal and settles §9 G6–G8:
 | 1 | phone charging, unmetered |
 | 2 | phone on battery ≥ 50 %, or desktop/headless on battery ≥ 30 %, unmetered |
 | 3 | phone on battery 30–49 %, or desktop/headless on battery < 30 %, unmetered |
-| 4 | any metered host; only if expected N ≤ `CAP_PHONE_METERED` (4) |
+| 4 | any metered host |
 | (excluded) | busy, thermal ≥ Moderate, load ≥ 90, `max_participants` < expected, phone on battery < 30 % |
 
 Tie-breaks, in order:
@@ -203,8 +203,8 @@ After ranking:
 
 ### 2.4 Phone-host constraints [P]
 
-- **Participant caps.** At most 8 participants on unmetered Wi-Fi and at most 4 on metered data
-  (Q1). Desktop and headless hosts allow up to 12 (the launch cap).
+- **Participant caps.** Every host allows up to 12 (the launch cap), phones on Wi-Fi or
+  metered data included (Q1, decided 2026-10-14; was 8 on Wi-Fi and 4 on metered data).
 - **Foreground service.** A phone hosts only while its own user is in the call. The existing
   `CoreService` microphone foreground service then covers it (`AndroidManifest.xml:65-68`)
   [V for the declaration; A that it stays up for a hosting load].
@@ -221,7 +221,7 @@ After ranking:
 | Thermal ≥ MODERATE, or battery < 30 % and unplugged, or metered without user override | Stop advertising (`busy` / no status). |
 | Thermal SEVERE, or battery < 15 % and unplugged | Drop K to 1, refuse new `Join`s, show "hosting limited". |
 | Thermal CRITICAL, or battery < 8 % and unplugged, or user ends hosting | Send `End{reason: host_leaving, next_host: backups[0]}`. Members redial at once (§5). |
-| Wi-Fi to metered mid-call | Continue. Refuse joins beyond the metered cap and warn the host user about data use. |
+| Wi-Fi to metered mid-call | Continue with no new limits; warn the host user about data use. |
 
 ## 3. Signed call control
 
@@ -357,8 +357,9 @@ the whole table (Q3).
   - **Delay:** median added delay through the phone host +11 to +22 ms vs a direct 1:1 call
     (GC-D09 passes). GC-D09's "added delay" = mouth-to-ear through H minus mouth-to-ear direct.
   - **Data warning on metered (cap 4):** ~100 MB/h (interpolated from N = 3 and 5).
-  - Caps 8 (Wi-Fi) and K = 2 hold with headroom; do not raise to 12 before measuring N = 12 and
-    an on-battery run. To try: fewer ACKs on the call connection (larger `max_ack_delay` / ACK
+  - Caps 8 (Wi-Fi) and K = 2 held with headroom. **Open risk:** Q1/Q2 (2026-10-14) raised
+    every host to 12 and K = 12 before N = 12 and an on-battery run were measured; the
+    thermal/battery degrade (K = 1, then End) is the backstop until then. To try: fewer ACKs on the call connection (larger `max_ack_delay` / ACK
     frequency) and batched datagram sends. Still unmeasured: battery %/h on battery (GC-D02) and
     foreground service / Doze (GC-D03); both need the real app and a manual unplug.
 
@@ -466,7 +467,7 @@ reusing `multi_host.rs` fixtures). Each refusal case asserts byte-identical stat
 | GC-D02 | **ZD22257P6G as host**, Wi-Fi, charging; N = 3, then N = 5; 30 min each | CPU %, battery %/h, thermal status, uplink vs §4 |
 | GC-D03 | ZD22257P6G host on battery, screen off, doze | The call survives 30 min; the foreground service stays alive |
 | GC-D04 | ZD22257P6G host with `adb shell cmd thermalservice override-status 4` and `dumpsys battery unplug; dumpsys battery set level 7` | `End{host_leaving}`; members on the desktop backup within 5 s |
-| GC-D05 | Phone host switches from Wi-Fi to mobile data mid-call | The call continues; metered cap enforced; data warning |
+| GC-D05 | Phone host switches from Wi-Fi to mobile data mid-call | The call continues with the same cap and K; data warning |
 | GC-D06 | Kill the host (desktop `pkill`, phone `am force-stop`) | Members reconnect via the backup within 3 s detection plus 5 s redial |
 | GC-D07 | UDP blocked so the path goes through the iroh relay | Loss, latency and achievable N through the relay |
 | GC-D08 | Remove a member mid-call (3 flags) | Ejected at once; cannot rejoin |
@@ -475,23 +476,20 @@ reusing `multi_host.rs` fixtures). Each refusal case asserts byte-identical stat
 ## 8. Open questions for the user
 
 1. **Participant caps.**
-   *Recommended:* desktop or headless host 12; phone host on Wi-Fi 8; phone host on mobile
-   data 4, at about 270 MB/h with K = 2.
+   **Decided 2026-10-14:** 12 on every host, phones on Wi-Fi or metered data included.
+   (Was recommended: desktop 12, phone on Wi-Fi 8, phone on mobile data 4.)
 2. **K (number of speakers forwarded).** **Decided 2026-10-14:** every speaker (K = 12, so
-   each member hears everyone talking but themselves) on desktop hosts; K = 4 on phone hosts
-   on Wi-Fi, a safety net so hosting never takes over the phone; K = 2 for any host on metered
-   data, switched both ways mid-call with a new `Active`.
-   `CallStart.k` may now equal `MAX_PARTICIPANTS` (12). Silent and muted members send only the
-   level byte, so the cost appears only while several people talk at once. Why: nobody is cut
-   off when four or more react together, and a client that lies about its level can no
-   longer push real speakers out of a few slots. Selection, hysteresis, the provisional slot
-   and the dominance cap still run and matter on metered hosts and phones limited to K = 1.
-   Why 4 on phones: a phone host spends ~0.5 ms of CPU per forwarded packet (§5); eight people
-   all talking at K = 12 would be ~2800 packets/s, more than one core. At K = 4 the worst case
-   is ~1600 packets/s (4 talkers x 6 remote copies + 8 senders in, x 50/s); the thermal/battery degrade (K = 1) stays the backstop. Revisit after
-   measuring a phone host at N = 8. Tests: `gcall_q2_*` (core), `gc_u02_eleven_voices_*`
-   (audio), `capacity_twelve_talking_at_once_each_hears_the_other_eleven` (real nodes).
-   (Was: K = 3 on desktop hosts and K = 2 on phone hosts.)
+   each member hears everyone talking but themselves) on every host, phones and metered data
+   included. `CallStart.k` may equal `MAX_PARTICIPANTS` (12). Silent and muted members send
+   only the level byte, so the cost appears only while several people talk at once. Why:
+   nobody is cut off when several react together, and a client that lies about its level can
+   no longer push real speakers out of a few slots. Only "hosting limited" (K = 1) still
+   shrinks S, so the provisional slot (G6-D2) runs only in tests.
+   Risk: a phone host spends ~0.5 ms of CPU per forwarded packet (§5); eight people all
+   talking at K = 12 would be ~2800 packets/s, more than one core. The thermal/battery degrade
+   (K = 1) is the backstop; measure a phone host at N = 12 before launch. Tests: `gcall_q2_*`
+   (core), `gc_u02_eleven_voices_*` (audio), `capacity_twelve_talking_at_once_each_hears_the_other_eleven`
+   (real nodes). (Was: K = 3 desktop / 2 phone, then 12 desktop / 4 phone / 2 metered.)
 3. **Group-call bitrate.** 1:1 calls use 48 kbps.
    *Recommended:* 32 kbps for group calls. That is about 24 % less traffic at the host, and
    voice quality is still good.

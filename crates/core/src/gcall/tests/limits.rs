@@ -89,7 +89,7 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
     let mut s = World::new();
     assert_eq!(s.start_call(HP, OLGA, vec![]), Err(Refusal::Refused), "a phone never hosts listen-only");
     let cid = s.start_call(HP, HP, vec![H1, BOB]).unwrap();
-    assert_eq!(s.hosts[&HP].k(), K_PHONE, "a phone host on Wi-Fi forwards the four loudest");
+    assert_eq!(s.hosts[&HP].k(), K_ALL, "a phone host forwards every speaker");
     for m in [HP, OLGA, A1, BOB] {
         s.join(m).unwrap();
     }
@@ -121,7 +121,7 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
         assert_eq!(s.host_of(m), (H1, 2), "{m}");
         assert!(s.joins.contains(&(m, H1, 2, t)), "no heartbeat wait for {m}");
     }
-    // Wi-Fi to metered mid-call: everyone stays, Joins beyond the metered cap are refused, and
+    // Wi-Fi to metered mid-call: a data warning only; everyone stays, Joins up to 12 still come in, and
     // the phone's own user leaving ends the call with host_leaving.
     let mut s = World::new();
     s.d[HP].cond = Cond::phone(80, true);
@@ -132,18 +132,16 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
     let metered = Cond { metered: true, ..Cond::phone(80, true) };
     let acts = s.hosts.get_mut(&HP).unwrap().set_cond(metered, &s.auth);
     assert_eq!(acts, vec![HostAction::Notice(HostNotice::MeteredData)]);
-    assert_eq!(s.hosts[&HP].k(), K_METERED, "metered: the two loudest only");
-    assert_eq!(s.roster(HP).len(), 5, "continues above the metered cap");
+    assert_eq!(s.hosts[&HP].k(), K_ALL, "metered: still every speaker");
+    assert_eq!(s.roster(HP).len(), 5);
     let acts = s.clients.get_mut(&A1).unwrap().leave(s.now);
     s.client_actions(A1, acts);
     s.pump();
     s.advance(JOIN_MIN_GAP_MS);
     let r = w::sign_join(&s.d[A1].id.clone(), &gid(), &cid, 1, s.now).1;
     let a1ep = s.d[A1].ep;
-    let before = s.hosts[&HP].snapshot();
-    assert_eq!(s.raw_join(HP, a1ep, r), Err(Refusal::Full));
-    assert_eq!(s.hosts[&HP].snapshot(), before);
-    assert_eq!(s.roster(HP).len(), CAP_PHONE_METERED);
+    assert!(s.raw_join(HP, a1ep, r).is_ok(), "no metered cap");
+    assert_eq!(s.roster(HP).len(), 5);
     let acts = s.clients.get_mut(&HP).unwrap().leave(s.now);
     s.client_actions(HP, acts);
     s.pump();

@@ -158,12 +158,12 @@ fn gcall_s06b_active_on_every_change_and_level_only_never_forwarded() {
 // until it goes quiet).
 #[test]
 fn gcall_d2_new_speaker_forwarded_at_once_in_one_provisional_slot() {
+    const K: usize = 2;
     for loud in [true, false] {
-        // A metered host, where S can be full (K = 2); unmetered hosts forward every speaker.
+        // Every host forwards every speaker, so S is full only with K shrunk by hand (K = 2).
         let mut s = World::new();
-        s.d[H1].cond = Cond { metered: true, ..Cond::desktop() };
         s.start_call(H1, OLGA, vec![BOB, OLGA]).unwrap();
-        assert_eq!(s.hosts[&H1].k(), K_METERED);
+        s.hosts.get_mut(&H1).unwrap().set_k_for_test(K);
         for m in [OLGA, A1, BOB, CAROL, HP] {
             s.join(m).unwrap();
         }
@@ -210,12 +210,12 @@ fn gcall_d2_new_speaker_forwarded_at_once_in_one_provisional_slot() {
             s.speak(CAROL, level).unwrap();
             frames_fwd += usize::from(s.down[d..].iter().any(|(_, b)| b[1] == carol));
             let fw = s.hosts[&H1].forwarder().forwarded();
-            assert!(fw.len() <= K_METERED + 1, "frame {f}: {fw:?}");
+            assert!(fw.len() <= K + 1, "frame {f}: {fw:?}");
         }
         let fw = s.hosts[&H1].forwarder();
         if loud {
             assert!(fw.selected().contains(&carol), "promoted after 200 ms");
-            assert_eq!(fw.selected().len(), K_METERED);
+            assert_eq!(fw.selected().len(), K);
             assert_eq!(frames_fwd, HYST_FRAMES as usize + 5, "never cut");
         } else {
             assert!(!fw.is_forwarded(carol), "dropped after 200 ms");
@@ -261,39 +261,35 @@ fn gcall_q2_every_speaker_is_forwarded_and_silence_costs_only_the_level_byte() {
     }
 }
 
-// Q2: twelve slots all speaking fill S (K = 12), so each of the twelve hears the other eleven;
-// a phone host keeps the four loudest, a host on metered data the two loudest.
+// Q2: twelve slots all speaking fill S (K = 12), so each of the twelve hears the other eleven,
+// on every host: desktop, phone, and metered data.
 #[test]
-fn gcall_q2_twelve_speakers_fill_s_and_metered_keeps_two() {
+fn gcall_q2_twelve_speakers_fill_s_on_every_host() {
     let slots: BTreeMap<u8, u8> = (0..12u8).map(|s| (s, 10 + s)).collect();
-    let mut f = Forwarder::new(Cond::desktop().k());
-    let mut m = Forwarder::new(Cond { metered: true, ..Cond::desktop() }.k());
-    for _ in 0..AVG_FRAMES * 2 {
-        f.frame(&slots);
-        m.frame(&slots);
-    }
-    assert_eq!(f.selected().len(), 12);
-    for r in 0..12u8 {
-        assert_eq!(f.forwarded().iter().filter(|s| **s != r).count(), 11, "slot {r} hears eleven");
-    }
-    assert_eq!(m.selected(), &BTreeSet::from([0, 1]), "metered: the two loudest");
-    let mut ph = Forwarder::new(Cond::phone(80, true).k());
-    for _ in 0..AVG_FRAMES * 2 {
-        ph.frame(&slots);
-    }
-    assert_eq!(ph.selected(), &BTreeSet::from([0, 1, 2, 3]), "phone: the four loudest");
-    assert_eq!(Cond::desktop().k(), K_ALL);
-    for c in [Cond::phone(80, false), Cond::phone(80, true)] {
-        assert_eq!(c.k(), K_PHONE, "{c:?}");
-    }
-    for c in [Cond { metered: true, ..Cond::desktop() }, Cond { metered: true, ..Cond::phone(80, true) }] {
-        assert_eq!(c.k(), K_METERED, "{c:?}");
+    let conds = [
+        Cond::desktop(),
+        Cond::phone(80, false),
+        Cond::phone(80, true),
+        Cond { metered: true, ..Cond::desktop() },
+        Cond { metered: true, ..Cond::phone(80, true) },
+    ];
+    for c in conds {
+        assert_eq!((c.k(), c.cap()), (K_ALL, CAP), "{c:?}");
+        let mut f = Forwarder::new(c.k());
+        for _ in 0..AVG_FRAMES * 2 {
+            f.frame(&slots);
+        }
+        assert_eq!(f.selected().len(), 12, "{c:?}");
+        for r in 0..12u8 {
+            assert_eq!(f.forwarded().iter().filter(|s| **s != r).count(), 11, "slot {r} hears eleven ({c:?})");
+        }
     }
 }
 
-// Q2: off metered data mid-call, K goes back to every speaker and `Active` follows at once.
+// Q1/Q2: going onto metered data mid-call warns the host's user and changes nothing else:
+// every speaker is still forwarded.
 #[test]
-fn gcall_q2_metered_mid_call_switches_k_both_ways() {
+fn gcall_q2_metered_mid_call_warns_and_keeps_every_speaker() {
     let (mut s, _) = base();
     for m in [OLGA, A1, BOB, CAROL] {
         s.join(m).unwrap();
@@ -308,17 +304,11 @@ fn gcall_q2_metered_mid_call_switches_k_both_ways() {
     };
     talk(&mut s);
     assert_eq!(s.hosts[&H1].forwarder().forwarded().len(), 4);
-    let c0 = s.down_ctl.len();
     let acts = s.hosts.get_mut(&H1).unwrap().set_cond(Cond { metered: true, ..Cond::desktop() }, &s.auth);
-    s.host_actions(H1, acts);
-    s.pump();
-    assert_eq!(s.hosts[&H1].k(), K_METERED);
-    assert_eq!(s.hosts[&H1].forwarder().forwarded().len(), K_METERED, "the quietest two dropped at once");
-    assert!(s.down_ctl[c0..].iter().any(|(_, m)| matches!(m, GroupCallMsg::Active { slots, .. } if slots.len() == K_METERED)));
-    let acts = s.hosts.get_mut(&H1).unwrap().set_cond(Cond::desktop(), &s.auth);
+    assert_eq!(acts, vec![HostAction::Notice(HostNotice::MeteredData)]);
     s.host_actions(H1, acts);
     s.pump();
     assert_eq!(s.hosts[&H1].k(), K_ALL);
     talk(&mut s);
-    assert_eq!(s.hosts[&H1].forwarder().forwarded().len(), 4, "every speaker again");
+    assert_eq!(s.hosts[&H1].forwarder().forwarded().len(), 4, "every speaker, metered or not");
 }

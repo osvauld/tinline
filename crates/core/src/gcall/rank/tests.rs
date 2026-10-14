@@ -37,7 +37,7 @@ fn desktop(r: &HostRef) -> CallHostStatus {
 }
 
 fn phone(r: &HostRef, power: PowerState) -> CallHostStatus {
-    CallHostStatus { class: DeviceClass::Phone, power, max_participants: 8, ..desktop(r) }
+    CallHostStatus { class: DeviceClass::Phone, power, ..desktop(r) }
 }
 
 struct World {
@@ -163,18 +163,16 @@ fn gcall_rank_tiers_and_exclusions() {
         ("phone 30 % (G7)", phone(&r, PowerState::Battery(30)), 4, Some(3)),
         ("laptop on battery 29 % (G7)", CallHostStatus { power: PowerState::Battery(29), ..desktop(&r) }, 4, Some(3)),
         ("phone 29 %", phone(&r, PowerState::Battery(29)), 4, None),
-        ("phone metered, N = cap", CallHostStatus { network: NetworkKind::Metered, ..phone(&r, PowerState::Mains) }, CAP_PHONE_METERED, Some(4)),
-        ("phone metered, N > cap", CallHostStatus { network: NetworkKind::Metered, ..phone(&r, PowerState::Mains) }, CAP_PHONE_METERED + 1, None),
+        ("phone metered, N = 12", CallHostStatus { network: NetworkKind::Metered, ..phone(&r, PowerState::Mains) }, MAX_PARTICIPANTS, Some(4)),
         ("phone metered 29 %", CallHostStatus { network: NetworkKind::Metered, ..phone(&r, PowerState::Battery(29)) }, 2, None),
-        ("desktop metered (G7)", CallHostStatus { network: NetworkKind::Metered, ..desktop(&r) }, CAP_PHONE_METERED, Some(4)),
-        ("desktop metered, N > cap (G7)", CallHostStatus { network: NetworkKind::Metered, ..desktop(&r) }, CAP_PHONE_METERED + 1, None),
+        ("desktop metered, N = 12 (G7)", CallHostStatus { network: NetworkKind::Metered, ..desktop(&r) }, MAX_PARTICIPANTS, Some(4)),
         ("thermal light", CallHostStatus { thermal: ThermalLevel::Light, ..desktop(&r) }, 4, Some(0)),
         ("thermal moderate", CallHostStatus { thermal: ThermalLevel::Moderate, ..desktop(&r) }, 4, None),
         ("busy", CallHostStatus { busy: true, ..desktop(&r) }, 4, None),
         ("load full (G6)", CallHostStatus { load: LOAD_FULL_PCT, ..desktop(&r) }, 4, None),
         ("load just below full", CallHostStatus { load: LOAD_FULL_PCT - 1, ..desktop(&r) }, 4, Some(0)),
         ("too small", CallHostStatus { max_participants: 3, ..desktop(&r) }, 4, None),
-        ("phone Wi-Fi cap", phone(&r, PowerState::Mains), 9, None),
+        ("phone takes 12", phone(&r, PowerState::Mains), MAX_PARTICIPANTS, Some(1)),
     ];
     for (case, s, n, want) in rows {
         assert_eq!(tier(&s, n), want, "{case}");

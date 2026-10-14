@@ -14,7 +14,7 @@
 //! | 1 | phone, charging, unmetered |
 //! | 2 | phone on battery >= 50 %, unmetered; desktop/headless on battery >= 30 %, unmetered (G7) |
 //! | 3 | phone on battery 30–49 %, unmetered; desktop/headless on battery < 30 %, unmetered (G7) |
-//! | 4 | metered, any class and power; only if `expected <= CAP_PHONE_METERED` (G7 for desktops) |
+//! | 4 | metered, any class and power |
 //! | – | busy, thermal >= Moderate, `load >= LOAD_FULL_PCT`, `max_participants < expected`, phone on battery < 30 % |
 //!
 //! G7: a laptop on battery forwards a few Opus streams for a negligible share of its battery
@@ -22,7 +22,7 @@
 //! still beats nothing, so it is not excluded but ranked with the weak phones (tier 3). A
 //! phone at 30–49 % is still advertising (§2.4) but should be used only after every healthy
 //! unmetered host (tier 3). Metered data costs the host's user N−1 streams up, so any metered
-//! host is last and held to the metered cap, desktops included.
+//! host is last, desktops included; it still takes the full 12 (Q1, 2026-10-14).
 //!
 //! Tie-breaks inside a tier, in order:
 //! 1. The starter's own device, if it is in the best non-empty tier (G8: matched on the device,
@@ -41,7 +41,7 @@ use proto::SignedBlob;
 use proto::gcall::MAX_BACKUPS;
 use proto::gcall_status::{CallHostStatus, DeviceClass, NetworkKind, PowerState, ThermalLevel, open_status};
 
-use super::policy::{BATTERY_ADVERTISE_PCT, CAP_PHONE_METERED};
+use super::policy::BATTERY_ADVERTISE_PCT;
 use super::{ANSWER_TIMEOUT_MS, CallAuthority, HostRef, Refusal};
 
 /// §2.3: a phone on battery at or above this is tier 2.
@@ -59,8 +59,7 @@ pub struct RankCtx<'a> {
     pub gid: &'a str,
     /// The new call's id (`proto::gcall::new_call_id`); seeds the hash tie-break.
     pub call_id: &'a str,
-    /// Participants expected (group members who may join), for `max_participants` and the
-    /// metered cap.
+    /// Participants expected (group members who may join), for `max_participants`.
     pub expected: usize,
     /// The starter's own device, if it advertises as a candidate (G8).
     pub starter: Option<&'a HostRef>,
@@ -93,7 +92,7 @@ pub fn tier(s: &CallHostStatus, expected: usize) -> Option<u8> {
         return None;
     }
     if s.network == NetworkKind::Metered {
-        return (expected <= CAP_PHONE_METERED).then_some(TIER_METERED);
+        return Some(TIER_METERED);
     }
     Some(match (phone, s.power) {
         (false, p) if p.external() => 0,
