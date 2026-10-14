@@ -87,7 +87,8 @@ with chat datagrams. Each connection carries:
   where lower means louder. Its active set S is the K loudest senders whose average is below
   a speech threshold (e.g. 50 dBov). Hysteresis: a new sender replaces a member of S only if
   it is louder by at least 6 dB for at least 200 ms. Each member receives S without itself.
-  The defaults are K = 3 on a desktop host and K = 2 on a phone host (Q2). K is stated in
+  K is every speaker (12) on a desktop host, 4 on a phone host and 2 on any host on metered
+  data (Q2, decided 2026-10-14; was 3 desktop / 2 phone). K is stated in
   `CallStart`.
 - **Abuse.** The level is self-reported and unverifiable. A modified client that always
   reports level 0 holds a slot permanently and can push out real speakers. Mitigations and
@@ -476,9 +477,21 @@ reusing `multi_host.rs` fixtures). Each refusal case asserts byte-identical stat
 1. **Participant caps.**
    *Recommended:* desktop or headless host 12; phone host on Wi-Fi 8; phone host on mobile
    data 4, at about 270 MB/h with K = 2.
-2. **K (number of speakers forwarded).**
-   *Recommended:* K = 3 on desktop hosts and K = 2 on phone hosts. The host announces K in
-   `CallStart`.
+2. **K (number of speakers forwarded).** **Decided 2026-10-14:** every speaker (K = 12, so
+   each member hears everyone talking but themselves) on desktop hosts; K = 4 on phone hosts
+   on Wi-Fi, a safety net so hosting never takes over the phone; K = 2 for any host on metered
+   data, switched both ways mid-call with a new `Active`.
+   `CallStart.k` may now equal `MAX_PARTICIPANTS` (12). Silent and muted members send only the
+   level byte, so the cost appears only while several people talk at once. Why: nobody is cut
+   off when four or more react together, and a client that lies about its level can no
+   longer push real speakers out of a few slots. Selection, hysteresis, the provisional slot
+   and the dominance cap still run and matter on metered hosts and phones limited to K = 1.
+   Why 4 on phones: a phone host spends ~0.5 ms of CPU per forwarded packet (§5); eight people
+   all talking at K = 12 would be ~2800 packets/s, more than one core. At K = 4 the worst case
+   is ~1600 packets/s (4 talkers x 6 remote copies + 8 senders in, x 50/s); the thermal/battery degrade (K = 1) stays the backstop. Revisit after
+   measuring a phone host at N = 8. Tests: `gcall_q2_*` (core), `gc_u02_eleven_voices_*`
+   (audio), `capacity_twelve_talking_at_once_each_hears_the_other_eleven` (real nodes).
+   (Was: K = 3 on desktop hosts and K = 2 on phone hosts.)
 3. **Group-call bitrate.** 1:1 calls use 48 kbps.
    *Recommended:* 32 kbps for group calls. That is about 24 % less traffic at the host, and
    voice quality is still good.

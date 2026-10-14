@@ -119,7 +119,8 @@ fn capacity_speaker_recovers_when_previous_selected_speakers_go_silent() {
         let mut refs: Vec<&mut Peer> = ps.iter_mut().collect();
         drive(&mut refs, 2_000, false, |_| false);
     }
-    assert_eq!(ps[1].node.gcall_status().unwrap().hosting.unwrap().k, 3);
+    // Q2: an unmetered host forwards every speaker (K = 12).
+    assert_eq!(ps[1].node.gcall_status().unwrap().hosting.unwrap().k, 12);
     for (i, p) in ps.iter_mut().enumerate() {
         p.speaking = i == 4;
         p.rec.clear();
@@ -142,4 +143,48 @@ fn capacity_speaker_recovers_when_previous_selected_speakers_go_silent() {
     }
     let roster = ps[1].node.gcall_status().unwrap().hosting.unwrap().roster;
     assert_eq!(roster.len(), 5, "speaker changes never change membership");
+}
+
+/// Q2 (2026-10-14): twelve real nodes all talking at once, each with its own tone. The host
+/// forwards every speaker, so every node hears the other eleven tones and never its own.
+#[test]
+fn capacity_twelve_talking_at_once_each_hears_the_other_eleven() {
+    const HZ: [f32; 12] = [330.0, 450.0, 570.0, 690.0, 810.0, 930.0, 1050.0, 1170.0, 1290.0, 1410.0, 1530.0, 1650.0];
+    let mut ps = peers("all-talk", 12);
+    for (p, &f) in ps.iter_mut().zip(&HZ) {
+        // Speech-like level: eleven of them sum below the mixer's limiter knee.
+        p.tone = audio::Tone::new(f, 2_000.0);
+    }
+    let (g, call) = setup(&ps);
+    join_first(&mut ps, &g, &call, 12);
+    for p in ps.iter_mut() {
+        p.speaking = true;
+    }
+    {
+        let mut refs: Vec<&mut Peer> = ps.iter_mut().collect();
+        drive(&mut refs, 3_000, false, |_| false);
+    }
+    let hosting = ps[1].node.gcall_status().unwrap().hosting.unwrap();
+    assert_eq!(hosting.k, 12);
+    assert_eq!(hosting.roster.len(), 12);
+    for p in ps.iter_mut() {
+        p.rec.clear();
+    }
+    {
+        let mut refs: Vec<&mut Peer> = ps.iter_mut().collect();
+        drive(&mut refs, 3_000, true, |_| false);
+    }
+    let mut missing = vec![];
+    for (i, p) in ps.iter().enumerate() {
+        let last = &p.rec[p.rec.len().saturating_sub(audio::RATE as usize)..];
+        for (s, &f) in HZ.iter().enumerate() {
+            let a = amplitude_at(last, f);
+            if s == i {
+                assert!(a < 300.0, "node {i} hears its own tone ({a:.0})");
+            } else if a < 1_000.0 {
+                missing.push(format!("node {i} misses node {s} ({a:.0})"));
+            }
+        }
+    }
+    assert!(missing.is_empty(), "every node hears the other eleven: {missing:?}");
 }

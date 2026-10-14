@@ -281,7 +281,7 @@ pub fn open_start(blob: &SignedBlob) -> Result<CallStart> {
         && host_ref_ok(&c.host_ref)
         && text_ok(&c.starter_did)
         && c.k >= 1
-        && (c.k as usize) < MAX_PARTICIPANTS
+        && (c.k as usize) <= MAX_PARTICIPANTS
         && c.max_participants >= 2
         && c.max_participants as usize <= MAX_PARTICIPANTS
         && c.backups.len() <= MAX_BACKUPS
@@ -658,6 +658,13 @@ mod tests {
         assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
         let mut bad = start(&h, &cid);
         bad.k = 0;
+        assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
+        // Q2: K may name every participant (each hears the other eleven), never more.
+        let mut all = start(&h, &cid);
+        all.k = MAX_PARTICIPANTS as u8;
+        assert_eq!(open_start(&sign_start(&h, all.clone())), Ok(all));
+        let mut bad = start(&h, &cid);
+        bad.k = MAX_PARTICIPANTS as u8 + 1;
         assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
         let mut bad = start(&h, &cid);
         bad.call_id = "short".into();
