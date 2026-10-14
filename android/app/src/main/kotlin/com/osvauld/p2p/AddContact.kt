@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -144,7 +142,7 @@ private fun MyCodeTab(app: P2pApp, meName: String, tab: Int, onTab: (Int) -> Uni
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             MyCodeBlock(app, meName)
-            TinButton("Paste their card", onPaste, style = BtnStyle.Tonal, icon = Icons.Rounded.ContentPaste)
+            TinButton("Paste their card", onPaste, style = BtnStyle.Tonal, icon = PgIcons.Paste)
         }
         Row(
             Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
@@ -162,12 +160,12 @@ private fun ScanTab(tab: Int, onTab: (Int) -> Unit, onClose: () -> Unit, onPaste
     var torch by remember { mutableStateOf(false) }
     Page(Modifier.background(Color(0xFF050807))) {
         TopBar("Add contact", onClose) {
-            if (granted) IconBtn(if (torch) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, "Torch", { torch = !torch })
+            if (granted) IconBtn(if (torch) PgIcons.Torch else PgIcons.Torchoff, "Torch", { torch = !torch })
         }
         Segmented(tab, onTab, Color(0xFF4D5853))
         QrCameraBox(Modifier.weight(1f).fillMaxWidth().padding(top = 16.dp), "Point at their Tinline code", torch, { granted = it }, onScanned)
         Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
+            TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = PgIcons.Paste)
             Hint("Camera is used only to read the code. Nothing is recorded.", Modifier.fillMaxWidth(), align = TextAlign.Center)
         }
     }
@@ -184,7 +182,7 @@ fun PasteCardScreen(app: P2pApp, text: String, onChange: (String) -> Unit, onBac
     val looks = peek != null
     Page {
         TopBar("Paste a card", onBack) {
-            TinButton("Paste", { clipboardText(ctx)?.let(onChange) }, style = BtnStyle.Text, icon = Icons.Rounded.ContentPaste, fill = false, height = 40.dp, textStyle = TinType.label)
+            TinButton("Paste", { clipboardText(ctx)?.let(onChange) }, style = BtnStyle.Text, icon = PgIcons.Paste, fill = false, height = 40.dp, textStyle = TinType.label)
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if (note != null) Text(note, style = TinType.bodyM, color = c.er)

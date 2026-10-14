@@ -13,9 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -318,7 +315,7 @@ private fun FirstRunAdd(app: P2pApp, onScan: () -> Unit, onPaste: () -> Unit) {
         Lead("Show your code to a friend, or copy it and send it. Or scan theirs.", Modifier.widthIn(max = 320.dp), align = TextAlign.Center)
         MyCodeBlock(app, meName, qr = 220.dp, showNewCode = false)
         TinButton("Scan their code", onScan, icon = PgIcons.Scan)
-        TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
+        TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = PgIcons.Paste)
         Row(
             Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),

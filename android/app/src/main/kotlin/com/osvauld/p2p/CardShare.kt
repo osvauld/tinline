@@ -7,8 +7,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -105,7 +103,7 @@ fun MyCodeBlock(app: P2pApp, meName: String, qr: Dp = 248.dp, showNewCode: Boole
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TinButton("Share", { ticket?.let { t -> if (!shareCard(ctx, t)) share = "Nothing to share with" } }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = Icons.Rounded.Share, enabled = ticket != null)
+            TinButton("Share", { ticket?.let { t -> if (!shareCard(ctx, t)) share = "Nothing to share with" } }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = PgIcons.Share, enabled = ticket != null)
             CopyButton(ticket, Modifier.weight(1f))
         }
         share?.let { Hint(it, color = c.er) }

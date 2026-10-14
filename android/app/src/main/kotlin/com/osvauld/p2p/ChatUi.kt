@@ -1,10 +1,6 @@
 package com.osvauld.p2p
 
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Done
-import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier

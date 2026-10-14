@@ -9,8 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Switch
@@ -110,8 +108,8 @@ fun SettingsScreen(
             }
             SectionLabel("ABOUT")
             ListItem("About Tinline", onClick = onAbout, icon = PgIcons.Info, sub = "Version, licences, terms, privacy")
-            if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = Icons.Rounded.BugReport, sub = "Test tone and core version (debug builds)")
-            if (PreviewFlags.available) ListItem(PreviewFlags.LABEL, icon = Icons.Rounded.Science, sub = "Debug builds only. Screens for features the core doesn’t have yet",
+            if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = PgIcons.Bug, sub = "Test tone and core version (debug builds)")
+            if (PreviewFlags.available) ListItem(PreviewFlags.LABEL, icon = PgIcons.Flask, sub = "Debug builds only. Screens for features the core doesn’t have yet",
                 trailing = { TinSwitch(previewOn == true, { PreviewFlags.set(ctx, it) }, PreviewFlags.LABEL) })
         }
     }
@@ -291,11 +289,11 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
                 Text("Free and open source under the GPL. No ads, no tracking, no analytics.", Modifier.padding(top = 8.dp), style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 22.sp),
                     color = c.ink2, textAlign = TextAlign.Center)
             }
-            ListItem("Source code", { openUrl(ctx, URL_SOURCE) }, sub = "GPL-3.0", icon = Icons.Rounded.Code, trailing = ext)
+            ListItem("Source code", { openUrl(ctx, URL_SOURCE) }, sub = "GPL-3.0", icon = PgIcons.Code, trailing = ext)
             ListItem("Terms of Use", { openUrl(ctx, URL_TERMS) }, icon = PgIcons.File, trailing = ext)
             ListItem("Privacy Policy", { openUrl(ctx, URL_PRIVACY) }, icon = PgIcons.Shield, trailing = ext)
-            ListItem("Open-source licences", onLicences, icon = Icons.Rounded.Gavel)
-            ListItem("tinline.osvauld.com", { openUrl(ctx, URL_SITE) }, icon = Icons.Rounded.Language, trailing = ext)
+            ListItem("Open-source licences", onLicences, icon = PgIcons.Licence)
+            ListItem("tinline.osvauld.com", { openUrl(ctx, URL_SITE) }, icon = PgIcons.Globe, trailing = ext)
             Hint("Not for emergency calls.", Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
         }
     }
