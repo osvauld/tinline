@@ -209,7 +209,7 @@ private fun GroupCallRow(r: uniffi.p2pcore.GroupCallRecord, name: String, now: L
     val stamp = listTime(r.startedAt.toLong() * 1000, now)
     Row(Modifier.padding(horizontal = 8.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         Box(Modifier.pressable({ g.onInfo(r.groupId) }, RowShape).semantics { contentDescription = "$name, group info" }.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
-            GroupAvatar(0, 48.dp)
+            GroupAvatar(0, 48.dp, gid = r.groupId)
         }
         Row(
             Modifier.weight(1f).heightIn(min = 68.dp).pressable({ g.onCall(r.groupId) }, RowShape)

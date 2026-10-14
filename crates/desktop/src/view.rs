@@ -870,7 +870,8 @@ impl App {
             any = true;
             let gid = g.id.clone();
             let sel = self.live.open.as_deref() == Some(gid.as_str());
-            let face = container(crate::pg_icons::pgi("users", 22.0, t.accent_ink)).width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.surface2, 24.0));
+            // The group's own mandala in its rounded square (FINGERPRINT-AVATARS.md, Groups).
+            let face = ui::group_face(t, &gid, 48.0);
             let pf = button(face).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 8.0 })
                 .style(wash(t, None, None, 14.0)).on_press(Msg::Live(super::group_live::Lm::OpenInfo(gid.clone())));
             let sub = row![crate::pg_icons::pgi("users", 15.0, t.ink2), tx(p2pcore::group_call_label(r.clone()), 13.0, t.ink2).line_height(lh(21.0))].spacing(5).align_y(Alignment::Center);
