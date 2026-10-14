@@ -22,6 +22,7 @@
 //! out/{gid}/{mail id}           bytes      sealed mail of ours not yet taken by a host
 //! mail/{gid}/{to}/{mail id}     bytes      host side: (expiry ms, sealed mail) to deliver
 //! seen/{mail id}                u64        mail we already handled (recipient side)
+//! clog/{gid}/{call id}          GroupCallRecord  the group call log (calllog.rs), local to this device
 //! ```
 
 use serde::{Deserialize, Serialize};
@@ -317,6 +318,7 @@ impl GroupStore {
                 Op::DeletePrefix(format!("ack/{gid}/")),
                 Op::DeletePrefix(format!("out/{gid}/")),
                 Op::DeletePrefix(format!("mail/{gid}/")),
+                Op::DeletePrefix(format!("clog/{gid}/")),
             ])
             .map_err(io)
     }
