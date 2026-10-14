@@ -260,6 +260,7 @@ fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer:
 fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit, onMinimise: () -> Unit,
     onAllowBtNames: (() -> Unit)? = null, onMessage: (() -> Unit)? = null) {
     val calls = app.calls
+    val waiting by calls.waiting.collectAsState()
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(500); now = System.currentTimeMillis() } }
     val secs = ((now - (ui.activeSinceMs ?: now)) / 1000).coerceAtLeast(0)
@@ -294,6 +295,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
         onCamera = if (v != null) onCamera else null, rttMs = s?.rttMs?.toInt(), lossPct = loss,
         routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames, onMessage = onMessage,
+        waiting = waiting != null,
     )
 }
 
@@ -312,13 +314,15 @@ fun InCallContent(
     /** The numbers About this call shows (round trip, recent loss). */
     rttMs: Int? = null, lossPct: Double? = null, startWithInfo: Boolean = false,
     onMessage: (() -> Unit)? = null,
+    /** A second caller is waiting over this call (the field shows its waiting state). */
+    waiting: Boolean = false,
 ) {
     var routeSheet by remember { mutableStateOf(startWithSheet) }
     var info by remember { mutableStateOf(startWithInfo) }
     val (caption, icon) = routeSlot(routes)
     Box(Modifier.fillMaxSize()) {
         CallFocus(name.ifBlank { "Unknown" }, did, active, ringing, secs, reconnecting, micProblem,
-            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage) {
+            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage, waiting = waiting, muted = muted) {
             CallControls(muted, speaker, camera = false, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
                 onCamera, onFlip = null, onEnd, caption, icon)
         }
