@@ -78,9 +78,7 @@ extra layer reads as one circle) — tune the small stroke/what to drop, judge a
 - **Playground:** move the maths into `src/lib/ui/fingerprint.ts` (the lab's `sacred()`, with BLAKE3 derive-key to
   match Rust — e.g. a small vendored JS BLAKE3 or precomputed fixtures) and use it in `lib/ui/Avatar.svelte` as the
   no-picture fallback for people (synthetic DIDs per seed person).
-- **Text:** wherever an avatar shows a person, the full nickname is beside it (most rows already do). Short tag
-  ("Maya · d029", first 2 bytes of `fp` in hex) only where two visible names are the same — **open decision, the
-  user has not confirmed; implement it behind one small helper so it's easy to change.**
+- **Text:** wherever an avatar shows a person, the full nickname is beside it (most rows already do). Short tag: never (user, 2026-10-14) — no tag helper is built; the drawing alone tells two same-named people apart.
 
 ## Parity and tests
 
