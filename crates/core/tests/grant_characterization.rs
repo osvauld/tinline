@@ -510,45 +510,32 @@ fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
 // Tokens are taken back per DID (`State::cut_offs`), so the id set `State.revoked` is still
 // never written by production code (every renewal mints a new id; revoking by id would leak).
 // It is still read on both admission paths and merged between own installs. (Source scan of
-// every non-test file in `crates/core/src`; a new file is not covered until listed here.)
+// every non-test file under `crates/core/src`, walked at run time so split modules stay covered.)
 #[test]
 fn tokens_are_taken_back_per_did_never_by_id() {
-    let files: &[(&str, &str)] = &[
-        ("accounts.rs", include_str!("../src/accounts.rs")),
-        ("block.rs", include_str!("../src/block.rs")),
-        ("caps.rs", include_str!("../src/caps.rs")),
-        ("version.rs", include_str!("../src/version.rs")),
-        ("chat/api.rs", include_str!("../src/chat/api.rs")),
-        ("chat/blobs.rs", include_str!("../src/chat/blobs.rs")),
-        ("chat/crypt.rs", include_str!("../src/chat/crypt.rs")),
-        ("chat/doc.rs", include_str!("../src/chat/doc.rs")),
-        ("chat/engine.rs", include_str!("../src/chat/engine.rs")),
-        ("chat/mod.rs", include_str!("../src/chat/mod.rs")),
-        ("chat/own.rs", include_str!("../src/chat/own.rs")),
-        ("chat/presence.rs", include_str!("../src/chat/presence.rs")),
-        ("chat/store.rs", include_str!("../src/chat/store.rs")),
-        ("chat/wire.rs", include_str!("../src/chat/wire.rs")),
-        ("error.rs", include_str!("../src/error.rs")),
-        ("lib.rs", include_str!("../src/lib.rs")),
-        ("logging.rs", include_str!("../src/logging.rs")),
-        ("node.rs", include_str!("../src/node.rs")),
-        ("rekey.rs", include_str!("../src/rekey.rs")),
-        ("store.rs", include_str!("../src/store.rs")),
-        ("sync/accdoc.rs", include_str!("../src/sync/accdoc.rs")),
-        ("sync/api.rs", include_str!("../src/sync/api.rs")),
-        ("sync/engine.rs", include_str!("../src/sync/engine.rs")),
-        ("sync/frames.rs", include_str!("../src/sync/frames.rs")),
-        ("sync/link.rs", include_str!("../src/sync/link.rs")),
-        ("sync/mod.rs", include_str!("../src/sync/mod.rs")),
-        ("vault.rs", include_str!("../src/vault.rs")),
-        ("voice.rs", include_str!("../src/voice.rs")),
-        ("wire.rs", include_str!("../src/wire.rs")),
-    ];
+    fn walk(dir: &std::path::Path, root: &std::path::Path, out: &mut Vec<(String, String)>) {
+        for e in std::fs::read_dir(dir).unwrap().flatten() {
+            let p = e.path();
+            let name = p.file_name().unwrap().to_string_lossy().into_owned();
+            if p.is_dir() {
+                if name != "tests" {
+                    walk(&p, root, out);
+                }
+            } else if name.ends_with(".rs") && name != "tests.rs" && !name.ends_with("_tests.rs") {
+                let rel = p.strip_prefix(root).unwrap().to_string_lossy().replace('\\', "/");
+                out.push((rel, std::fs::read_to_string(&p).unwrap()));
+            }
+        }
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut files = Vec::new();
+    walk(&root, &root, &mut files);
+    assert!(files.len() > 50, "source scan found only {} files", files.len());
     let mut uses = Vec::new();
-    for (name, text) in files {
+    for (name, text) in &files {
         for line in text.lines().map(str::trim) {
             if line.contains("revoked") && !line.starts_with("//") {
-                uses.push((*name, line));
+                uses.push((name.as_str(), line));
             }
         }
     }
@@ -583,11 +570,11 @@ fn tokens_are_taken_back_per_did_never_by_id() {
     // Read on both admission paths.
     assert!(
         uses.iter()
-            .any(|(f, l)| *f == "node.rs" && l.contains("&s.state.revoked"))
+            .any(|(f, l)| f.starts_with("node/") && l.contains("&s.state.revoked"))
     );
     assert!(
         uses.iter()
-            .any(|(f, l)| *f == "chat/engine.rs" && l.contains("&s.state.revoked"))
+            .any(|(f, l)| f.starts_with("chat/engine") && l.contains("&s.state.revoked"))
     );
 }
 
