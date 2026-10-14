@@ -141,6 +141,9 @@
     let theme = THEMES[opts.theme || 'light'];
     let reduced = !!opts.reduced, muteG = 1, muted = false;
     const voice = makeVoice(opts.seed || 7);
+    let voiceSrc = null;          // () => { level, balance } live speech (voicein.svelte.ts); null = the simulated talk bursts
+    // Measured-speech envelopes, as tools/audio-motion-sim/cloud.rs Field::step (energy, balance, geometry_*).
+    let en = 0, bal = .5, gE = 0, gB = .5;
     const view = { w: 390, h: 844, avx: 195, avy: 178 };
     let cur = null, prevs = [], id = 0;
     const S = {};                 // eased state parameters
@@ -244,7 +247,17 @@
         lu[i] += (tu[i] - lu[i]) * (1 - Math.exp(-dt / ctc));
       }
       // gust: integrate the field's own clock; speed rises with energy, never a jump
-      const since = t - cur.t0, vo = cfg.voice ? voice(since) * muteG : 0;
+      const since = t - cur.t0;
+      // Live speech (mic): cloud.rs mapping. It stands in for THEIR voice, so local mute does not quiet it.
+      const live = voiceSrc ? (cfg.voice ? voiceSrc() : { level: 0, balance: 0 }) : null;
+      if (live) {
+        const s1 = dt / 1000, lvl = clamp(live.level, 0, 1);
+        en += (lvl - en) * (1 - Math.exp(-s1 / (lvl > en ? .045 : .32)));
+        bal += (clamp(live.balance, 0, 1) - bal) * (1 - Math.exp(-s1 / .18));
+        gE += (en - gE) * (1 - Math.exp(-s1 / .07));
+        gB += (bal - gB) * (1 - Math.exp(-s1 / .12));
+      }
+      const vo = live ? en : cfg.voice ? voice(since) * muteG : 0;
       tau += dt / 1000 * S.v * (1 + S.kappa * E + .5 * vo);
       // fade
       const inFade = cfg.fade && since >= cfg.fade.delay;
@@ -253,13 +266,24 @@
       const H = halfExt(), lobes = [];
       for (let i = 0; i < K; i++) {
         const p = lobePos(i, tau, H, S.pull, S.spread);
+        if (live) {
+          // cloud.rs: each mass swells with its share of the spectrum and shifts a little, never spawns; colour leans
+          // to the measured balance (NOT pitch). The cue notes (L) still add on top.
+          const band = Math.max(0, 1 - Math.abs(i + .5 - bal * 5) / 1.6), gBand = Math.max(0, 1 - Math.abs(i + .5 - gB * 5) / 1.6);
+          const dir = i * 2.3999632297, sh = .085 * gE * (gBand - .25);
+          const sigma = Math.min(.49, P.sigma0 * (1 + S.swell * L[i] + S.swell * 1.6 * gE * gBand + .36 * gE) * (1 - .3 * S.pull));
+          const alpha = clamp(S.a0 + .18 * en + .8 * en * band + S.ak * L[i], 0, 2) * F;
+          const u = lerp(lu[i], clamp(bal + (i - 2) * .07, 0, 1), .8 * en);
+          lobes.push({ x: p[0] + sh * Math.cos(dir), y: p[1] + sh * Math.sin(dir), sigma, alpha, lab: colourAt(u, S.chroma) });
+          continue;
+        }
         const sigma = P.sigma0 * (1 + S.swell * L[i] + .06 * vo) * (1 - .3 * S.pull);
         const alpha = (S.a0 + .07 * vo + S.ak * L[i]) * F;
         lobes.push({ x: p[0], y: p[1], sigma, alpha, lab: colourAt(lu[i], S.chroma) });
       }
       disp = { alpha: lobes.map((l) => l.alpha), u: lu.slice(), chroma: S.chroma };
       const animating = !(cfg.fade && fadeU <= 0);
-      const f = { state: cur.name, text: cfg.text, t, tau, E, L, lobes, warp: S.warp, bgLab: theme.bgLab, cap: capOf(), fade: F, animating, wakeAt: null, voice: vo, reduced: false };
+      const f = { state: cur.name, text: cfg.text, t, tau, E, L, lobes, warp: S.warp + (live ? .09 * gE : 0), bgLab: theme.bgLab, cap: capOf(), fade: F, animating, wakeAt: null, voice: vo, reduced: false };
       lastFrame = f; return f;
     }
 
@@ -267,6 +291,7 @@
       P, setState, update,
       setView(w, h, avx, avy) { view.w = w; view.h = h; view.avx = avx; view.avy = avy; },
       setMute(m) { muted = !!m; },
+      setVoiceSource(fn) { voiceSrc = fn || null; if (!voiceSrc) { en = 0; gE = 0; } },
       setTheme(n) { theme = THEMES[n]; },
       setReduced(r) {
         r = !!r; if (r === reduced) return;
