@@ -7,8 +7,8 @@ Packet W2-M. This is a simulation of the user decisions in
 section 9 Q5 (multiple hosts and host details) and Q6 (the host reconnects members itself). No
 production code was changed.
 
-- Model and tests: `crates/group-sim/src/multi_host.rs`. It is wired in at
-  `crates/group-sim/src/tests.rs:25-26`.
+- Model and tests: `design-models:crates/group-sim/src/multi_host.rs`. It is wired in at
+  `design-models:crates/group-sim/src/tests.rs:25-26`.
 - Line numbers below refer to the W2-M commit.
 - The model builds on `host_only.rs` (W2-H). `SimRng`, `Post`, `Writer`, `Board` and `EpNote`
   are copied from there with a provenance comment. The grant chain is copied from
@@ -73,9 +73,9 @@ production code was changed.
   - Appointment order uses grant nonces as a stand-in for an ordered op log.
   - Time is fake `u64` and everything is in memory.
 
-## 2. Verified in tests (`cargo test -p group-sim`: 147 passed = 129 baseline + 18 new)
+## 2. Verified in tests (`cargo test -p group-sim (design-models branch)`: 147 passed = 129 baseline + 18 new)
 
-| Test (`crates/group-sim/src/multi_host.rs`) | KIND | What it shows |
+| Test (`design-models:crates/group-sim/src/multi_host.rs`) | KIND | What it shows |
 |---|---|---|
 | `host_permit_must_chain_to_an_admin_and_bind_the_device_else_members_refuse` :1724 | invariant | Every member and host refuses each of eight single-cause bad records, and its full device state stays byte-identical. The eight cases are: a member grant used as a permit, a permit issued by a non-admin (under her member grant, or self-rooted), no permit, a tampered device, a permit for another device, a note signed by a non-holder, and a permit lacking `Host`. Positive control: the same host with a valid permit from alice is accepted everywhere and relays. After bob signs `RemoveHost`, the record is refused as `Revoked`, its links are refused, and state is unchanged. |
 | `host_without_admin_capability_relays_but_cannot_grant_flag_remove_or_appoint` :1918 | invariant | Hugo's host binary has its own DID and a `{Host}` permit. Admit, flag and remove-host ops it signs are refused as `NotAdmin`. A host appointment it signs is refused as `PermitInvalid`. A grant it issues lets nobody post. State is unchanged at every member and at H1. It still relays to members cut off from H1. Positive control: the owner's admit of the same newcomer is accepted. |
@@ -102,14 +102,14 @@ These are the tests listed in `docs/group-host-only-model.md` §4.D. Each now re
 `// KIND: candidate-policy G-BLOCK` followed by
 `// Rejected option per U5 revised (blocking is visible).`:
 
-- `crates/group-sim/src/chat_request.rs:1307` `host_drop_yields_no_answer_never_refused`.
+- `design-models:crates/group-sim/src/chat_request.rs:1307` `host_drop_yields_no_answer_never_refused`.
   It was `invariant`.
-- `crates/group-sim/src/chat_request.rs:1426`
+- `design-models:crates/group-sim/src/chat_request.rs:1426`
   `silent_block_is_indistinguishable_from_offline_or_unanswered_target`. It was `invariant`.
-- `crates/group-sim/src/chat_request.rs:1471`
+- `design-models:crates/group-sim/src/chat_request.rs:1471`
   `candidate_silent_decline_is_indistinguishable_from_block`. It was already G-BLOCK, and the
   comment was added.
-- `crates/group-sim/src/block_in_group.rs:618`
+- `design-models:crates/group-sim/src/block_in_group.rs:618`
   `blocker_host_candidate_neutral_relay_converges_and_is_silent`. It was already G-BLOCK, and
   the comment was added.
 

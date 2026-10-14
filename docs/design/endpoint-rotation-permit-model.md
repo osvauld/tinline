@@ -6,7 +6,7 @@ Reference reviewed: osvauld2 courier token/policy/proof modules at
 
 ## Pattern and distinction
 
-`crates/proto/tests/rotation_permit_model.rs` uses domain-separated signed claims
+`design-models:crates/proto/tests/rotation_permit_model.rs` uses domain-separated signed claims
 and payload-hash IDs, following courier's permit pattern. Claims explicitly bind
 owner DID, previous/replacement device IDs, replacement endpoint, predecessor,
 generation, audience, version and validity. Device IDs change; the nomination
@@ -43,7 +43,7 @@ revoked assignment remains denied even after successful device succession.
 ## Limitations and next tests
 
 - Now composed with a dedicated direct-session queue in
-  `crates/proto/tests/support/rotation_permit_network.rs`. Five added tests cover
+  `design-models:crates/proto/tests/support/rotation_permit_network.rs`. Five added tests cover
   five-device address distribution, replacement-ID sibling collisions, wrong
   signatures, gaps/catch-up, duplicate/session replay, blocked announcement
   exclusion, expired routes, mutual retirement failure, and separate audience

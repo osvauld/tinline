@@ -3,7 +3,7 @@
 Status: proposal — not approved. G-FORK, G-REVOCATION and G-AUTHORITY are open; nothing here
 selects an option.
 
-Model: `crates/proto/tests/rotation_fork_revocation.rs` (15 tests; fake time, real Ed25519,
+Model: `design-models:crates/proto/tests/rotation_fork_revocation.rs` (15 tests; fake time, real Ed25519,
 deterministic fixture owners/keys). This is not a production wire format, verifier API, storage
 design or recovery protocol. Rotation side of group gate **D06** (`docs/group-chat-tests.md:92`:
 "owner rotates assigned device slot/ID; conflicting succession or revoked predecessor ... define

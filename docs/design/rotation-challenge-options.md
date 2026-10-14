@@ -6,7 +6,7 @@ Question: does live possession of a rotated endpoint key need durable nonces at 
 This compares two **candidate-policy G-STORAGE** designs. Neither is selected. G-STORAGE,
 G-RETIREMENT and G-TIME stay open.
 
-Executable model: `crates/proto/tests/rotation_challenge_contracts.rs` (14 tests, fake time,
+Executable model: `design-models:crates/proto/tests/rotation_challenge_contracts.rs` (14 tests, fake time,
 real Ed25519, in-memory only, every rejection compares the whole receiver before/after).
 
 ## 1. Verified in source/tests
@@ -15,17 +15,17 @@ real Ed25519, in-memory only, every rejection compares the whole receiver before
 
 | Fact | Source |
 |---|---|
-| Per-receiver `next_nonce` described as "Persisted high-water mark; outstanding challenges are volatile and bounded" | `crates/proto/tests/support/rotation_permit_network.rs:23-25` |
+| Per-receiver `next_nonce` described as "Persisted high-water mark; outstanding challenges are volatile and bounded" | `design-models:crates/proto/tests/support/rotation_permit_network.rs:23-25` |
 | Issuance: prune expired, `>= 8` → `challenge_capacity`, `checked_add` → `nonce_exhausted`, deadline `now + 5` | `support/rotation_permit_network.rs:99-104` |
 | Challenge bytes = domain, receiver handle, nonce, newest permit ID; no sender key, no session | `support/rotation_permit_network.rs:48-52` |
 | Comment: "Counter allocation is assumed durable before issuance; real persistence is pending" | `support/rotation_permit_network.rs:97` |
 | Accept verifies the signature, THEN removes the nonce (`session_replay` if absent), then checks expiry | `support/rotation_permit_network.rs:119-124` |
 | Restart keeps high-water, clears outstanding | `support/rotation_permit_lifecycle.rs:51-56` |
 | One shared pool of 8 per receiver; a different receiver is unaffected | `support/rotation_permit_lifecycle.rs:243-263` |
-| B1 `Challenge {receiver, nonce, head}`; comment "C3 owns the real session/challenge design; this is not a replay-safe handshake" | `crates/proto/tests/rotation_history_paging.rs:182-200` |
+| B1 `Challenge {receiver, nonce, head}`; comment "C3 owns the real session/challenge design; this is not a replay-safe handshake" | `design-models:crates/proto/tests/rotation_history_paging.rs:182-200` |
 | B1 `bind` returns `challenge_unknown` for foreign/consumed nonces and consumes only on success | `rotation_history_paging.rs:410-430`; `docs/design/rotation-history-policy-options.md:32` |
-| B2 replayed challenge/proof → `challenge_unknown` | `crates/proto/tests/rotation_history_adversarial.rs:305`, `:1588` |
-| `rotation_permit_model.rs` `live()` accepts arbitrary challenge bytes; comment says production must bind to the connection or use iroh's authenticated transport | `crates/proto/tests/rotation_permit_model.rs:107-113` |
+| B2 replayed challenge/proof → `challenge_unknown` | `design-models:crates/proto/tests/rotation_history_adversarial.rs:305`, `:1588` |
+| `rotation_permit_model.rs` `live()` accepts arbitrary challenge bytes; comment says production must bind to the connection or use iroh's authenticated transport | `design-models:crates/proto/tests/rotation_permit_model.rs:107-113` |
 
 ### 1.2 What today's handshakes already bind to the QUIC/TLS session
 

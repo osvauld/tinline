@@ -8,8 +8,8 @@ corruption, eviction, pending queues and export behave. Cases are from
 `docs/group-chat-tests.md:97-110` (§4). The vocabulary matches C2
 (`docs/design/rotation-storage-failure-contract.md` §4, lines 110-114).
 
-Executable model: `crates/group-sim/src/persistence.rs` (15 tests), wired in through one
-`#[path]`+`mod` pair in `crates/group-sim/src/tests.rs`. It reuses the existing fixtures
+Executable model: `design-models:crates/group-sim/src/persistence.rs` (15 tests), wired in through one
+`#[path]`+`mod` pair in `design-models:crates/group-sim/src/tests.rs`. It reuses the existing fixtures
 read-only (`signed_fixture`, `Author`, `Replica::{receive, valid_proof, dependencies_ready}`).
 
 **Not modelled:** fsync, flush ordering, power loss, torn or partial writes, redb transactions,
@@ -30,9 +30,9 @@ store flushes/fsyncs before returning is a G-STORAGE question, not answered here
 | Push is best-effort; reconciliation repairs gaps | `docs/group-chat.md:222,236` |
 | A dishonest host can ack and later discard; eviction must not promise durability | `docs/group-chat.md:247-248,253-254` |
 | `QuotaExceeded` is a distinct outcome from `Invalid` | `docs/group-chat.md:185-187` |
-| The existing `Replica` keeps everything in memory, with no durable/volatile split | `crates/group-sim/src/tests.rs:159-167` |
-| The existing `Replica::apply` scratch-imports and then mutates in place, so a scratch must be forked to separate import from commit | `crates/group-sim/src/tests.rs:259,330-350` |
-| Pending queue bound `MAX_PENDING = 16` | `crates/group-sim/src/tests.rs:9,236-238` |
+| The existing `Replica` keeps everything in memory, with no durable/volatile split | `design-models:crates/group-sim/src/tests.rs:159-167` |
+| The existing `Replica::apply` scratch-imports and then mutates in place, so a scratch must be forked to separate import from commit | `design-models:crates/group-sim/src/tests.rs:259,330-350` |
+| Pending queue bound `MAX_PENDING = 16` | `design-models:crates/group-sim/src/tests.rs:9,236-238` |
 
 ## 2. Model (`persistence.rs`)
 
@@ -79,7 +79,7 @@ already dropped its copy, so nothing resends it.
 | P7 | Pending never becomes implicitly accepted (S06) | the accepted set after restart equals the accepted set before the crash; the queue stays ≤ `MAX_PENDING` |
 | P8 | Export = stored originals, never a synthesized diff (S07) | exported bytes ∈ `Durable.originals`; synthesized diffs are rejected and the peer `View` is unchanged |
 
-## 5. Tests (`cargo test -p group-sim persistence`)
+## 5. Tests (`cargo test -p group-sim (design-models branch) persistence`)
 
 | Test | KIND | Case |
 |---|---|---|
@@ -183,7 +183,7 @@ it.
 
 ## 9. Interface notes for the coordinator
 
-- Only shared edit: `crates/group-sim/src/tests.rs`, the added `#[path = "persistence.rs"] mod
+- Only shared edit: `design-models:crates/group-sim/src/tests.rs`, the added `#[path = "persistence.rs"] mod
   persistence;`, placed next to `reachability`.
 - `persistence.rs` defines local `View`/`view()` and `fork()` helpers because they were not
   exposed at base 9e6bbb5. After the G-H merge they could be replaced by G-H's `snapshot()` /
@@ -191,5 +191,5 @@ it.
 - Shared `CARGO_TARGET_DIR`: one run during development executed another worktree's 35-test
   `group-sim` binary, even though only `persistence.rs` had been touched. Mutation runs therefore
   used `CARGO_TARGET_DIR=/tmp/claude-1000/target-group-gc`. Final runs passed 39/39 both there and
-  in the shared target after `touch crates/group-sim/src/*.rs`. Each run showed `Compiling
+  in the shared target after `touch design-models:crates/group-sim/src/*.rs`. Each run showed `Compiling
   group-sim (.../rot-gc/...)` and listed the 15 `tests::persistence::*` tests.

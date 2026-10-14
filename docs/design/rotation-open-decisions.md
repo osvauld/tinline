@@ -229,7 +229,7 @@ semantics).
 ## 1. Highest leverage (unblock the most work)
 
 ### Q1 — Discovery baseline (G-DISCOVERY, G-AUTHORITY)
-Source: `rotation-linked-discovery-options.md` §4, §10; `scripts/test_rotation_linked_discovery_options.py`.
+Source: `rotation-linked-discovery-options.md` §4, §10; `design-models:scripts/test_rotation_linked_discovery_options.py`.
 
 Option I = independent random endpoints, authenticated updates to reachable peers, explicit
 recovery when both sides were offline across a rotation. Options P (shared prediction) and R
@@ -257,7 +257,7 @@ historical keys) are needed under BOTH options.
 Coordinator lean: (i). Needs group-side agreement on the author/writer-ID mapping.
 
 ### Q3 — History: strict chain vs checkpoint (G-HISTORY)
-Source: `rotation-history-policy-options.md`; `crates/proto/tests/rotation_history_paging.rs`.
+Source: `rotation-history-policy-options.md`; `design-models:crates/proto/tests/rotation_history_paging.rs`.
 
 For 1000 rotations: strict = 1001 signature checks / 1000 records / ~776 KB; checkpoint =
 43 / 42 / ~32 KB. Checkpoints silently miss a fork or revoked record between the receiver's
@@ -269,7 +269,7 @@ Coordinator lean: depends on Q2 — under (i) routing history no longer carries 
 a bounded/checkpointed private history becomes much less risky. Decide Q2 first.
 
 ### Q4 — Forks and revocation (G-FORK, G-REVOCATION, G-AUTHORITY)
-Source: `rotation-fork-revocation-options.md` §4–§8; `crates/proto/tests/rotation_fork_revocation.rs`.
+Source: `rotation-fork-revocation-options.md` §4–§8; `design-models:crates/proto/tests/rotation_fork_revocation.rs`.
 
 Tested facts: forks are always detected when receivers retain per-record evidence, never
 resolved by arrival order. Under the shared mnemonic **no** option excludes a hostile linked
@@ -288,7 +288,7 @@ replaces the honest one; strict history flags it.
 4. Must receivers retain per-record evidence for every audience (needed to detect older forks)?
 
 ### Q5 — Wire/input bounds and ID collisions (G-HISTORY, G-FORK)
-Source: `crates/proto/tests/rotation_history_adversarial.rs` (B2; analysis summarised here).
+Source: `design-models:crates/proto/tests/rotation_history_adversarial.rs` (B2; analysis summarised here).
 
 Tested facts: all delivery orders/duplicates converge; splices, malformed frames, forged and
 private-on-group input are rejected with state unchanged and before signature work where
@@ -307,7 +307,7 @@ registry-level ID index catches all of them but grows one entry per rotation for
    currently maps to the same signed claims.)
 
 ## 2. Timing and renewal (G-TIME, G-RENEWAL)
-Source: `rotation-time-contract.md` §7; `crates/proto/tests/rotation_time_contracts.rs`.
+Source: `rotation-time-contract.md` §7; `design-models:crates/proto/tests/rotation_time_contracts.rs`.
 
 1. Default / min / max rotation interval.
 2. Interval change: FromLastRotation with floor (tested: cannot be postponed) vs FromNow
@@ -334,7 +334,7 @@ Source: `rotation-lifecycle-hooks.md` §6–7.
    otherwise the remembered Keystore unlock key breaks. Accept adding it?
 
 ## 3b. Storage ordering and failure (G-STORAGE, G-RETIREMENT)
-Source: `rotation-storage-failure-contract.md` §8; `crates/proto/tests/rotation_storage_contracts.rs`.
+Source: `rotation-storage-failure-contract.md` §8; `design-models:crates/proto/tests/rotation_storage_contracts.rs`.
 
 Tested: crashing before/after every sender step never reuses a generation, never revives a
 retired key, never serves the old key past its deadline. Announcing before commit (two keys for
@@ -353,7 +353,7 @@ and `account.redb` (registry); no single atomic write covers both today.
 6. Forced transport restart acceptable when closing the old endpoint fails?
 
 ## 3c. Proving possession of the new key (G-STORAGE)
-Source: `rotation-challenge-options.md`; `crates/proto/tests/rotation_challenge_contracts.rs`.
+Source: `rotation-challenge-options.md`; `design-models:crates/proto/tests/rotation_challenge_contracts.rs`.
 
 (a) durable nonce counter written before each challenge (existing model) vs (b) challenge
 bound to the authenticated QUIC session, nothing persisted. Tested: (a) costs 2 disk writes per
@@ -442,7 +442,7 @@ From G-C (group persistence harness S01–S07, `docs/group-persistence-contract.
 
 ## 7. Wave 2 questions (W2-R, W2-Q, W2-B, W2-G — after U1–U6)
 
-Source files: `crates/group-sim/src/{host_relay,chat_request,block_in_group}.rs`,
+Source files: `design-models:crates/group-sim/src/{host_relay,chat_request,block_in_group}.rs`,
 `crates/proto/tests/rotation_silent_block.rs`, `crates/core/tests/block_characterization.rs`.
 
 **Findings that constrain choices (tested):**
@@ -521,7 +521,7 @@ Source files: `crates/group-sim/src/{host_relay,chat_request,block_in_group}.rs`
    ROMs/unlocked bootloaders, and self-built/F-Droid builds of an open-source app; needs
    Google's revocation list. Coordinator lean: not as a gate; never rely on it for security.
 
-## 9. W2-H questions (host-only, DID-signed group model; `crates/group-sim/src/host_only.rs`)
+## 9. W2-H questions (host-only, DID-signed group model; `design-models:crates/group-sim/src/host_only.rs`)
 
 Tested: DID-signed posts with random writer IDs converge across two own devices; members receive
 no other member's device key/transport key/endpoint; the W2-G private-endpoint leak is gone.
@@ -564,7 +564,7 @@ Loro silently and permanently diverges on a writer-ID collision — a collision 
 Superseded existing tests (device-key signing, member mesh, silent block) are listed with
 file:line in `docs/group-host-only-model.md` §4 — to be migrated, none edited yet.
 
-## 10. W2-M questions (multi-host model; `crates/group-sim/src/multi_host.rs`, `docs/group-multi-host-model.md`)
+## 10. W2-M questions (multi-host model; `design-models:crates/group-sim/src/multi_host.rs`, `docs/group-multi-host-model.md`)
 
 Tested: host permits chain to an admin and are checked by members; non-admin hosts can relay but
 not change membership; with ≥2 hosts, "both rotated while apart" recovers via another host with
@@ -593,7 +593,7 @@ endpoints until members rotate; a rogue host can keep serving reads to a removed
    until a legitimate host reaches them; an UNDETECTED rogue host (not yet revoked) is not
    covered.
 
-## 11. W2-F questions (flag removal + group rotation; `crates/group-sim/src/flags.rs`, `docs/group-flag-removal-model.md`)
+## 11. W2-F questions (flag removal + group rotation; `design-models:crates/group-sim/src/flags.rs`, `docs/group-flag-removal-model.md`)
 
 Tested: 3 flags from distinct admins remove the member and revoke the grant on every device, in
 all 120 delivery orders and across two partitioned hosts; forged / non-admin / host-only flags
@@ -649,7 +649,7 @@ Also: a list with seq = u64::MAX from any phrase holder pins every contact forev
 6. Must the pushed list arrive before / bundled with content from the new key, or should
    content from an unlisted key be queued?
 
-## 13. W2-U questions (delayed host rotation after removal; `crates/group-sim/src/removal_rotation.rs`)
+## 13. W2-U questions (delayed host rotation after removal; `design-models:crates/group-sim/src/removal_rotation.rs`)
 
 Tested: refusal of new posts and calls is immediate at every host and member; hosts announce
 only to remaining members, rotate once at +2 days and reconnect members themselves; afterwards
