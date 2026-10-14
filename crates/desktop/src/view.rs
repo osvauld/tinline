@@ -816,7 +816,7 @@ impl App {
     fn calls_list(&self, t: Tok) -> El<'_> {
         use shell_view::wash;
         let known = |did: &str| self.contacts.iter().any(|c| c.did == did);
-        let mut list = column![];
+        let mut items: Vec<(u64, El<'_>)> = Vec::new();
         let mut any = false;
         for r in self.recents.iter().filter(|r| known(&r.peer_did)).take(RECENTS as usize) {
             any = true;
@@ -862,11 +862,35 @@ impl App {
             let back = iced::widget::tooltip(back, text(why).size(13), iced::widget::tooltip::Position::Left);
             let item = button(row![pf, row_, back].spacing(2).align_y(Alignment::Center)).padding(0).width(Fill).on_press(press)
                 .style(wash(t, sel.then_some(t.accent_soft), Some(if sel { t.accent_soft } else { t.surface2 }), 14.0));
-            list = list.push(item);
+            items.push((r.started_at, item.into()));
+        }
+        // Group calls (CallsList.svelte): the group's avatar opens its info; the row starts or joins a call there.
+        for r in &self.group_log {
+            let Some(g) = self.live.list.iter().find(|g| g.id == r.group_id && super::group_live::active(g.my_role)) else { continue };
+            any = true;
+            let gid = g.id.clone();
+            let sel = self.live.open.as_deref() == Some(gid.as_str());
+            let face = container(crate::pg_icons::pgi("users", 22.0, t.accent_ink)).width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.surface2, 24.0));
+            let pf = button(face).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 8.0 })
+                .style(wash(t, None, None, 14.0)).on_press(Msg::Live(super::group_live::Lm::OpenInfo(gid.clone())));
+            let sub = row![crate::pg_icons::pgi("users", 15.0, t.ink2), tx(p2pcore::group_call_label(r.clone()), 13.0, t.ink2).line_height(lh(21.0))].spacing(5).align_y(Alignment::Center);
+            let press = if self.call.is_some() { Msg::CallUi(crate::call_ui::Action::Restore) } else { Msg::GCall(super::gcall::Gm::Call(gid.clone())) };
+            let row_ = button(row![column![semi(g.name.clone(), 15.0, t.ink).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None), sub].spacing(2).width(Fill),
+                    tx(chat_view::list_time(r.started_at * 1000), 11.0, t.ink2)].spacing(12).align_y(Alignment::Center))
+                .padding(Padding { top: 8.0, right: 8.0, bottom: 8.0, left: 12.0 }).height(68).width(Fill)
+                .style(wash(t, None, None, 14.0)).on_press(press.clone());
+            let back = button(container(crate::pg_icons::pgi("phone", 22.0, t.accent_ink)).center_x(44).center_y(44))
+                .padding(0).width(44).height(44).style(wash(t, None, Some(t.surface2), 22.0)).on_press(press.clone());
+            let back = iced::widget::tooltip(back, text("Start or join a call").size(13), iced::widget::tooltip::Position::Left);
+            let item = button(row![pf, row_, back].spacing(2).align_y(Alignment::Center)).padding(0).width(Fill).on_press(press)
+                .style(wash(t, sel.then_some(t.accent_soft), Some(if sel { t.accent_soft } else { t.surface2 }), 14.0));
+            items.push((r.started_at, item.into()));
         }
         if !any {
             return self.empty_quiet(t, "Calls you make and receive show up here.");
         }
+        items.sort_by(|a, b| b.0.cmp(&a.0));
+        let list = items.into_iter().fold(column![], |c, (_, e)| c.push(e));
         container(list).padding([0, 8]).width(Fill).into()
     }
 

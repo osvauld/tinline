@@ -293,7 +293,7 @@ private fun Root(app: P2pApp) {
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                     homeTab = homeTab, onPreview = { stack.add(Route.Preview(it)) },
-                    say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
+                    say = ::say, onGroup = { stack.add(Route.Group(it)) }, onGroupInfo = { stack.add(Route.GroupInfo(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
                     onSearch = { stack.add(Route.Search) },
                 ) }
             when (val r = stack.last()) {

@@ -242,6 +242,8 @@ struct App {
     /// Running transitions (nav highlight, fades); see `crate::motion`.
     fx: crate::motion::Fx,
     recents: Vec<CallRecord>,
+    /// Group calls this device was in or missed (core `group_call_history`), newest first.
+    group_log: Vec<p2pcore::GroupCallRecord>,
     detail_calls: Vec<CallRecord>,
     avail: Availability,
     avail_open: bool,
@@ -783,6 +785,7 @@ impl App {
         self.groups.enable(preview_on, &self.profile_name);
         self.reload_contacts();
         self.recents = self.node.recent_calls(RECENTS);
+        self.group_log = self.node.group_call_history(None).unwrap_or_default();
         self.avail = self.node.availability();
         self.name_edit = self.profile_name.clone();
         self.device_edit = self.device_label.clone();
@@ -832,6 +835,7 @@ impl App {
             profiles: profile_ui::State::default(),
             fx: Default::default(),
             recents: node.recent_calls(RECENTS),
+            group_log: node.group_call_history(None).unwrap_or_default(),
             detail_calls: Vec::new(),
             avail: node.availability(),
             avail_open: false,
@@ -1169,6 +1173,7 @@ impl App {
             return;
         }
         self.recents = self.node.recent_calls(RECENTS);
+        self.group_log = self.node.group_call_history(None).unwrap_or_default();
         self.avail = self.node.availability();
         self.refresh_detail_calls();
     }

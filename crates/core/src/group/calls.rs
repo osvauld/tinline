@@ -187,6 +187,8 @@ pub(crate) struct GroupCalls {
     pub(crate) paused: Mutex<HashSet<String>>,
     pub(crate) events: Mutex<Option<Arc<dyn GroupCallEvents>>>,
     st: Mutex<CallsSt>,
+    /// What the call log is tracking now (calllog.rs).
+    pub(crate) log: Mutex<super::calllog::CallLog>,
 }
 
 #[derive(Default)]
@@ -316,9 +318,25 @@ impl Inner {
     }
 
     fn calls_emit(&self, kind: GroupCallEventKind, gid: &str, call_id: &str, participants: Vec<String>, detail: String) {
+        self.calls_record(kind, gid, call_id, &participants, &detail);
         let Some(ev) = self.group.calls.events.lock().clone() else { return };
         let e = GroupCallEvent { kind, group_id: gid.into(), call_id: call_id.into(), participants, detail };
         self.handle.spawn_blocking(move || ev.on_group_call(e));
+    }
+
+    /// Feeds the call log (calllog.rs) and stores what a finished session leaves.
+    fn calls_record(&self, kind: GroupCallEventKind, gid: &str, call_id: &str, participants: &[String], detail: &str) {
+        if gid.is_empty() {
+            return;
+        }
+        // try_lock: never wait on the call table from inside an emit.
+        let known = self.group.calls.st.try_lock().and_then(|st| st.calls.get(gid)?.get(call_id).map(|(_, s)| (s.started_ms, s.starter_did.clone())));
+        let done = self.group.calls.log.lock().apply(kind, gid, call_id, participants, detail, now_ms(), known);
+        if let (Some(f), Some(core)) = (done, self.group.core.lock().clone())
+            && let Err(e) = core.store.clog_record(&f)
+        {
+            tracing::warn!("group call log: {e}");
+        }
     }
 
     fn call_gid(&self, call_id: &str) -> Option<String> {
@@ -980,6 +998,12 @@ impl Node {
     pub fn group_calls(&self, group_id: String) -> Result<Vec<GroupCall>, Error> {
         let core = self.inner.group_core()?;
         Ok(self.inner.group_calls_list(&core, &group_id))
+    }
+
+    /// Group calls this device was in or missed, newest first; `None` lists every group (the
+    /// Calls tab), `Some` one group (its thread). Local to this device.
+    pub fn group_call_history(&self, group_id: Option<String>) -> Result<Vec<super::calllog::GroupCallRecord>, Error> {
+        self.inner.group_core()?.store.clog_list(group_id.as_deref())
     }
 
     /// Test hook: the DIDs whose fresh `CallHostStatus` this device holds for the group.

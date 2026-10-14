@@ -3,6 +3,7 @@
 
 pub mod api;
 pub mod calldir;
+pub mod calllog;
 pub mod calls;
 pub mod doc;
 pub mod code;
