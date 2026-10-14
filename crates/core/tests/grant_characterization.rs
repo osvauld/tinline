@@ -38,114 +38,43 @@
 //! Real iroh endpoints (needs network, like `calls.rs`, `block_characterization.rs`). Some tests
 //! drive a node with a hand-rolled "raw" peer that speaks the wire protocol through `proto` so
 //! the grant bytes can be inspected and swapped; it never writes into a node's state. Waits are
-//! bounded. No production code is changed; helpers are copied from `block_characterization.rs` /
-//! `device_list_characterization.rs` (they are not in a shared module).
+//! bounded. No production code is changed; the shared harness is in `support/`.
 
 use std::collections::HashSet;
-use std::sync::{Arc, Mutex, mpsc};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 use identity::Identity;
 use iroh::endpoint::{Connection, RecvStream, SendStream, presets};
 use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey};
-use p2pcore::{CallInfo, CallState, DeliveryState, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, DeliveryState};
 use proto::Msg;
 use serde::{Deserialize, Serialize};
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::eventually_200ms as eventually;
+use support::wait::now_secs as now;
+use support::*;
+
 /// `GRANT_TTL` (`crates/core/src/node.rs:33`), private there.
 const GRANT_TTL: u64 = 365 * 24 * 3600;
 /// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 3 since P6.
 const CHAT_ALPN: &[u8] = b"tinline/chat/4";
 const WAIT: Duration = Duration::from_secs(30);
-
-// ---- helpers copied from block_characterization.rs / device_list_characterization.rs ----
-
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>, Arc<Mutex<Vec<String>>>);
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, line: String) {
-        self.1.lock().unwrap().push(line);
-    }
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    logs: Arc<Mutex<Vec<String>>>,
-    did: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+const TAG: &str = "w2c";
 
 impl Peer {
-    fn logged(&self, needle: &str) -> bool {
-        self.logs.lock().unwrap().iter().any(|l| l.contains(needle))
-    }
     fn dump(&self) -> String {
-        format!(
-            "{:?} {:?}",
-            self.node.contacts(),
-            self.node.blocked_for_test()
-        )
-    }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
+        format!("{:?} {:?}", self.node.contacts(), self.node.blocked_for_test())
     }
 }
 
 fn peer(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-w2c-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (tx, rx) = mpsc::channel();
-    let logs = Arc::new(Mutex::new(Vec::new()));
-    let node = Node::new(
-        dir.to_string_lossy().into(),
-        Arc::new(Tap(Mutex::new(tx), logs.clone())),
-    )
-    .unwrap();
-    node.create_identity(name.into(), PASS.into()).unwrap();
-    online(&node);
-    let did = node.profile().unwrap().did;
-    Peer {
-        node,
-        rx,
-        logs,
-        did,
-        dir,
-    }
+    Peer::new(TAG, name)
 }
 
 /// a and b, each a contact of the other (b scanned a's ticket).
 fn pair(tag: &str) -> (Peer, Peer) {
-    let a = peer(&format!("{tag}-a"));
-    let b = peer(&format!("{tag}-b"));
-    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    (a, b)
+    Peer::pair(TAG, tag)
 }
 
 fn ended_within(p: &Peer, id: &str, secs: u64) -> String {
@@ -176,48 +105,12 @@ fn incoming_within(p: &Peer, secs: u64) -> CallInfo {
     }
 }
 
-fn saw_incoming(p: &Peer) -> bool {
-    p.rx.try_iter().any(|e| matches!(e, Ev::Incoming(_)))
-}
-
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg
-            .older_day
-            .and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
-}
-
 fn delivery(p: &Peer, did: &str, id: &str) -> DeliveryState {
     all_msgs(p, did)
         .into_iter()
         .find(|m| m.id == id)
         .expect("message held")
         .delivery
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("not within {secs}s: {what}");
-}
-
-// ---- end of copied helpers.
-
-fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
 }
 
 /// The chat `Auth` frame, mirrored: variant 0 of `ChatMsg` (`crates/core/src/chat/wire.rs:30`),

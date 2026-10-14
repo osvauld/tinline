@@ -1,47 +1,28 @@
 //! Ticket and contact rules between real nodes (needs network, like calls.rs).
 
-use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Error, Node, NodeEvents, NodeStatus};
+use p2pcore::{Error, Node};
 
-const PASS: &str = "test-passphrase";
-
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
+mod support;
+use support::wait::now_secs as now;
+use support::*;
 
 struct Peer {
     node: Arc<Node>,
     did: String,
-    dir: PathBuf,
-}
-impl Drop for Peer {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
+    _dir: TempDir,
 }
 
 fn peer(tag: &str, started: bool) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-tickets-{tag}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
+    let dir = TempDir::new("tickets", tag);
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     node.create_identity(tag.into(), PASS.into()).unwrap();
     if started {
-        node.start().unwrap();
-        let t = Instant::now();
-        while !node.status().online && t.elapsed() < Duration::from_secs(10) {
-            std::thread::sleep(Duration::from_millis(100));
-        }
+        online(&node);
     }
     let did = node.profile().unwrap().did;
-    Peer { node, did, dir }
+    Peer { node, did, _dir: dir }
 }
 
 #[test]
@@ -116,8 +97,4 @@ fn failed_write_sends_no_welcome_and_spends_nothing() {
     let c = peer("s6-c", true);
     assert!(matches!(c.node.add_contact(t), Err(Error::Rejected(_))));
     assert_eq!(a.node.contacts().len(), 1);
-}
-
-fn now() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
 }

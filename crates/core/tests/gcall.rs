@@ -19,36 +19,20 @@ use std::time::{Duration, Instant};
 
 use p2pcore::gcall::net::{GcallConfig, GcallEvent, GcallEvents, StaticDirectory};
 use p2pcore::gcall::{ClientEnd, ClientState, Cond, EndReason, HEARTBEAT_MISSES, HEARTBEAT_MS, HostConfig, HostNotice, HostRef};
-use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
+use p2pcore::Node;
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::*;
+
 const FREQ: [f32; 4] = [440.0, 620.0, 830.0, 1070.0];
 const AMP: f32 = 8_000.0;
 const K: usize = 3;
-
-struct Quiet;
-
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
 
 struct Tap(Mutex<mpsc::Sender<GcallEvent>>);
 
 impl GcallEvents for Tap {
     fn on_gcall_event(&self, ev: GcallEvent) {
         let _ = self.0.lock().unwrap().send(ev);
-    }
-}
-
-struct Dir(std::path::PathBuf);
-
-impl Drop for Dir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }
 
@@ -61,14 +45,13 @@ struct M {
     tone: audio::Tone,
     speaking: bool,
     rec: Vec<i16>,
-    _dir: Dir,
+    _dir: TempDir,
 }
 
 /// Member `i` of a test's group; it holds a `host_call` permit (and is configured as a host)
 /// when `host`.
 fn member(tag: &str, i: usize, dir: &Arc<StaticDirectory>, host: bool, cond: Cond) -> M {
-    let path = std::env::temp_dir().join(format!("p2pcore-test-gcall-{tag}-{i}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&path);
+    let path = TempDir::new("test-gcall", &format!("{tag}-{i}"));
     let node = Node::new(path.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     node.create_identity(format!("m{i}"), PASS.into()).unwrap();
     node.start().unwrap();
@@ -86,7 +69,7 @@ fn member(tag: &str, i: usize, dir: &Arc<StaticDirectory>, host: bool, cond: Con
     dir.hosts.lock().insert(href.clone(), addr);
     let (tx, rx) = mpsc::channel();
     node.gcall_configure(GcallConfig { dir: dir.clone(), events: Arc::new(Tap(Mutex::new(tx))), host_ref: host.then(|| href.clone()), cond, note: None });
-    M { node, rx, evs: vec![], did, href, tone: audio::Tone::new(FREQ[i], AMP), speaking: false, rec: vec![], _dir: Dir(path) }
+    M { node, rx, evs: vec![], did, href, tone: audio::Tone::new(FREQ[i], AMP), speaking: false, rec: vec![], _dir: path }
 }
 
 fn host_cfg(m: &M, gid: &str, backups: Vec<HostRef>, cond: Cond) -> HostConfig {

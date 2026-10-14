@@ -27,12 +27,14 @@
 //! Note: today the device key IS the (only) iroh endpoint id, and `contact_devices_for_test`
 //! lists the keys a contact dials. Under U2 that list must hold private endpoints only.
 
-use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, DeliveryState, LinkEvents, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::CallState;
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::eventually_200ms as eventually;
+use support::*;
+
 /// Grace window used by the tests (production value is open).
 const GRACE: Duration = Duration::from_secs(10);
 
@@ -183,113 +185,23 @@ mod harness {
 use harness::{Probe, Reach, RotationInterval, RotationStep};
 
 // ---------------------------------------------------------------------------------------------
-// Real-node helpers (copied from calls.rs / link.rs / writer_id.rs).
+// Real-node helpers (the shared harness is in `support/`).
 // ---------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>);
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, _: String) {}
-}
-
-#[derive(Debug, Clone)]
-enum LEv {
-    Code(String),
-    Done(String),
-    Other,
-}
-
-struct LTap(Mutex<mpsc::Sender<LEv>>);
-impl LinkEvents for LTap {
-    fn on_link_code(&self, code: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Code(code));
-    }
-    fn on_link_done(&self, did: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Done(did));
-    }
-    fn on_link_failed(&self, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_devices_changed(&self) {}
-    fn on_history_changed(&self) {}
-    fn on_unlinked(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    lrx: mpsc::Receiver<LEv>,
-    did: String,
-    pass: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
-fn open(dir: &std::path::Path) -> (Arc<Node>, mpsc::Receiver<Ev>, mpsc::Receiver<LEv>) {
-    let (tx, rx) = mpsc::channel();
-    let (ltx, lrx) = mpsc::channel();
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
-    node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
-    (node, rx, lrx)
-}
-
-fn blank(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-r1a-rot-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (node, rx, lrx) = open(&dir);
-    Peer { node, rx, lrx, did: String::new(), pass: PASS.into(), dir }
-}
+const TAG: &str = "r1a-rot";
 
 fn peer(name: &str) -> Peer {
-    let mut p = blank(name);
-    p.node.create_identity(name.into(), PASS.into()).unwrap();
-    online(&p.node);
-    p.did = p.node.profile().unwrap().did;
-    p
+    Peer::new(TAG, name)
 }
 
 /// a and b, each a contact of the other (b scanned a's ticket).
 fn pair(tag: &str) -> (Peer, Peer) {
-    let a = peer(&format!("{tag}-a"));
-    let b = peer(&format!("{tag}-b"));
-    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    (a, b)
+    Peer::pair(TAG, tag)
 }
 
 /// Drops the node and opens the same data directory again (a process restart).
 fn restart(p: &mut Peer) {
-    p.node.stop();
-    let (node, rx, lrx) = open(&p.dir);
-    drop(std::mem::replace(&mut p.node, node));
-    p.rx = rx;
-    p.lrx = lrx;
+    p.reopen();
     // As in writer_id.rs: `chat_open` does not retry while the old tasks still hold chat.redb.
     std::thread::sleep(Duration::from_secs(2));
     p.node.unlock(p.pass.clone()).unwrap();
@@ -298,48 +210,7 @@ fn restart(p: &mut Peer) {
 
 /// `e` (existing) links a fresh install; returns it committed and online.
 fn link_fresh(e: &Peer, name: &str) -> Peer {
-    let mut n = blank(name);
-    let qr = e.node.link_show_qr().unwrap();
-    n.node.link_new_scan(qr, "Pixel".into()).unwrap();
-    let code = |p: &Peer| loop {
-        if let LEv::Code(c) = p.lrx.recv_timeout(Duration::from_secs(30)).expect("link code") {
-            break c;
-        }
-    };
-    assert_eq!(code(e), code(&n));
-    e.node.link_approve(Some(PASS.into())).unwrap();
-    let did = loop {
-        if let LEv::Done(d) = n.lrx.recv_timeout(Duration::from_secs(30)).expect("link done") {
-            break d;
-        }
-    };
-    n.node.set_passphrase(None, "n-pass".into()).unwrap();
-    online(&n.node);
-    n.did = did;
-    n.pass = "n-pass".into();
-    n
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-fn incoming(p: &Peer, secs: u64) -> String {
-    let end = Instant::now() + Duration::from_secs(secs);
-    loop {
-        match p.rx.recv_timeout(end.saturating_duration_since(Instant::now())) {
-            Ok(Ev::Incoming(c)) => return c.call_id,
-            Ok(_) => {}
-            Err(_) => panic!("timed out waiting for an incoming call"),
-        }
-    }
+    e.link_fresh(TAG, name, LinkAs::default())
 }
 
 fn ended(p: &Peer, id: &str, secs: u64) -> String {
@@ -353,23 +224,7 @@ fn ended(p: &Peer, id: &str, secs: u64) -> String {
     }
 }
 
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
-}
 
-fn holds(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id)
-}
-
-fn delivered(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id && m.delivery == DeliveryState::Delivered)
-}
 
 fn dials(p: &Peer, did: &str) -> Vec<String> {
     p.node.contact_devices_for_test(did.to_string())
