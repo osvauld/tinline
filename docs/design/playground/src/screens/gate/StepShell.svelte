@@ -1,8 +1,10 @@
 <script lang="ts">
   /* One step: heading (focus target), optional lead, body, footer actions. Layout differs by form factor in CSS. */
   import { onMount, type Snippet } from 'svelte';
-  let { title, lead, center = false, anchor = false, children, foot, form, onsubmit }:
-    { title: string; lead?: string | string[]; center?: boolean; anchor?: boolean; children?: Snippet; foot?: Snippet; form?: boolean; onsubmit?: () => void } = $props();
+  let { title, lead, center = false, anchor = false, children, foot, form, onsubmit, heading }:
+    { title: string; lead?: string | string[]; center?: boolean; anchor?: boolean; children?: Snippet; foot?: Snippet; form?: boolean; onsubmit?: () => void;
+      /** Replaces the title text inside the h1 (Unlock: "Welcome back, Maya ⌄", the nickname is the switcher). */
+      heading?: Snippet } = $props();
   let root: HTMLElement, h1: HTMLElement;
   onMount(() => {
     const f = root.querySelector<HTMLElement>('[data-autofocus]');
@@ -13,7 +15,7 @@
 <svelte:element this={form ? 'form' : 'div'} bind:this={root} class="step" class:center class:anchor novalidate
   onsubmit={form ? (e: Event) => { e.preventDefault(); onsubmit?.(); } : undefined}>
   <div class="body">
-    <h1 bind:this={h1} tabindex="-1">{title}</h1>
+    <h1 bind:this={h1} tabindex="-1">{#if heading}{@render heading()}{:else}{title}{/if}</h1>
     {#if Array.isArray(lead)}<p class="lead">{#each lead as l, i (i)}<span class="ln">{l}</span>{/each}</p>{:else if lead}<p class="lead">{lead}</p>{/if}
     {@render children?.()}
   </div>

@@ -554,6 +554,8 @@ fun GNextRow(next: @Composable () -> Unit, start: (@Composable () -> Unit)? = nu
 fun GateStep(
     title: String, lead: String? = null, center: Boolean = false, anchor: Boolean = false, bigTitle: Boolean = false,
     hero: (@Composable () -> Unit)? = null, foot: (@Composable ColumnScope.() -> Unit)? = null,
+    /** Replaces the plain title text (Unlock: "Welcome back, Maya ⌄", where the nickname is the switcher). */
+    titleSlot: (@Composable () -> Unit)? = null,
     /** The body fills the height instead of scrolling (Welcome's mark, Choose's options and Terms' consent line sit at the bottom). */
     fill: Boolean = false,
     body: @Composable ColumnScope.() -> Unit = {},
@@ -572,7 +574,8 @@ fun GateStep(
                 horizontalAlignment = if (center) Alignment.CenterHorizontally else Alignment.Start,
             ) {
                 hero?.invoke()
-                Text(title, Modifier.fillMaxWidth().semantics { heading() }, style = if (bigTitle) PgType.h1Center else PgType.h1, color = c.ink,
+                if (titleSlot != null) titleSlot()
+                else Text(title, Modifier.fillMaxWidth().semantics { heading() }, style = if (bigTitle) PgType.h1Center else PgType.h1, color = c.ink,
                     textAlign = if (center) TextAlign.Center else TextAlign.Start)
                 if (lead != null) Text(lead, Modifier.fillMaxWidth(), style = PgType.lead, color = c.ink2, textAlign = if (center) TextAlign.Center else TextAlign.Start)
                 body()

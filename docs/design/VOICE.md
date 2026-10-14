@@ -23,6 +23,11 @@ This sits beside PHILOSOPHY.md §2 (honest, never over-claiming): caring never m
 - In a conversation (the PROPOSED chat sign-up, `?gate=chat`), Tinline may speak as "I" in its own bubbles
   ("What should I call this computer?"); your replies stay first person.
 - Positive before negative: say what it is before what it isn’t, and at most one "no" per line.
+- Say when things come back, not what is blocked: "Your calls come through again once you’re back online",
+  not "Calls can’t reach you until…". Same for restore.
+- One word once per screen: the field is "Passphrase", so its link is "I forgot it", not "Forgot passphrase?".
+- Don’t say what the screen already shows. The unlock screen is "Welcome back, Maya", the passphrase box and
+  Unlock: no "Enter your passphrase to open Tinline".
 - No exclamation marks, emoji, "Oops", or jokes. No urgency words (now!, immediately) except for real danger.
 - Red is only for something that actually went wrong and needs fixing. An empty clipboard, an optional field or
   "not yet" is a hint, in muted ink.

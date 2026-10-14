@@ -21,6 +21,11 @@ export type LinkPhase = 'showing' | 'scanned' | 'approved' | 'failed';
 export type PermState = 'idle' | 'granted' | 'denied';
 
 /** The recovery phrase every simulated account has (24 words from the real list, fixed for stable tests/screens). */
+/** The recovery key: the same secret as the words, one line to paste (core `recovery_key_from_phrase`: `tlkey-` +
+    base58 of version ‖ 32 bytes ‖ 4-byte checksum). A fixed demo value here; the apps get the real one from the core. */
+export const DEMO_KEY = 'tlkey-2Hq7VbN9cT4mWkPz3rXy8EaJdL6sGfUo1QwRtYi5KhBn7MvCx';
+/** What a pasted key must look like before the core checks its checksum (mock: the playground can't decode it). */
+export const looksLikeKey = (s: string) => /^\s*tlkey-[1-9A-HJ-NP-Za-km-z\s]{40,}$/i.test(s);
 export const DEMO_PHRASE = 'abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual'.split(' ');
 /** 1-based word positions asked on the confirm step. */
 export const CONFIRM_AT = [4, 11, 19] as const;
@@ -64,6 +69,8 @@ class Gate {
   /** The phrase screen's reveal survives the optional check and coming back. */
   phraseShown = $state(false);
   words = $state<string[]>(Array(24).fill(''));
+  /** Restore: a pasted recovery key instead of the 24 words ('' = typing words). */
+  recKey = $state('');
   agreed = $state(false);
   deviceLabel = $state('');
   perms = $state<Record<string, PermState>>({ mic: 'idle', notif: 'idle', lock: 'idle', battery: 'idle', camera: 'idle' });
@@ -119,7 +126,7 @@ class Gate {
     this.history = [];
     this.busy = false; this.error = null; this.dir = 1;
     this.name = ''; this.pass = ''; this.skippedPass = false; this.phraseShown = false;
-    this.words = Array(24).fill(''); this.agreed = false; this.deviceLabel = ''; this.peer = '';
+    this.words = Array(24).fill(''); this.recKey = ''; this.agreed = false; this.deviceLabel = ''; this.peer = '';
     this.perms = { mic: 'idle', notif: 'idle', lock: 'idle', battery: 'idle', camera: 'idle' };
     this.tries = 0; this.lockedUntil = 0; this.remember = gateSim.remembered;
     this.flow = 'create'; this.adding = false;

@@ -251,9 +251,9 @@ impl App {
         if let Some(h) = cached.and_then(|c| c.photo.as_ref()) {
             return image(h.clone()).width(size).height(size).content_fit(ContentFit::Fill).filter_method(iced::widget::image::FilterMethod::Linear).into();
         }
-        let base = avatar(t, name, if key == "me" { "me" } else { did }, size);
+        let base = ui::fingerprint_face(t, did, size).unwrap_or_else(|| avatar(t, name, if key == "me" { "me" } else { did }, size));
         if cached.is_some_and(|c| c.awaiting) {
-            let (_, ink) = ui::avatar_colors(t, if key == "me" { "me" } else { did });
+            let ink = ui::fingerprint_ink(t, did).unwrap_or_else(|| ui::avatar_colors(t, if key == "me" { "me" } else { did }).1);
             let ring = move |_: &iced::Theme| iced::widget::container::Style {
                 border: Border { color: ui::alpha(ink, 0.45 * 0.5), width: (size * 0.34 * 0.03).max(1.5), radius: (size / 2.0).into() },
                 ..Default::default()
@@ -593,6 +593,21 @@ impl App {
             return self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0);
         };
         let shown = self.pv.shown;
+        let as_key = self.pv.as_key;
+        let seg = super::signup_view::words_key_seg(t, as_key, |k| Msg::Privacy(crate::app::PvMsg::AsKey(k)));
+        if as_key {
+            // The key: the same secret as one line, for a password manager, so it alone can be copied.
+            let key = p2pcore::recovery_key_from_phrase(words.to_string()).unwrap_or_default();
+            let shown_key: El = if shown { super::signup_view::key_box(t, key) } else { super::signup_view::key_box(t, "\u{2022}".repeat(24)) };
+            let left = self.pv.shown_at.map(|a| 30u64.saturating_sub(a.elapsed().as_secs())).unwrap_or(30);
+            let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { "Hide key" } else { "Show key" }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
+                pg_btn(t, Btn::Outline, Some("copy"), "Copy my key", Some(Msg::Privacy(crate::app::PvMsg::CopyKey))),
+                tx(if shown { format!("Hides in {left} s") } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
+            let c = column![lead_("Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), shown_key,
+                container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
+                pf_note(t, "Anyone who has it can act as you, just like the words. Tinline never asks for it except to restore your account.")];
+            return self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0);
+        }
         let mut grid = column![].spacing(0);
         let list: Vec<&str> = words.split_whitespace().collect();
         for chunk in list.chunks(3).enumerate() {
@@ -611,7 +626,7 @@ impl App {
         let left = self.pv.shown_at.map(|a| 30u64.saturating_sub(a.elapsed().as_secs())).unwrap_or(30);
         let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { "Hide words" } else { "Show words" }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
             tx(if shown { format!("Hides in {left} s") } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
-        let c = column![lead_("Write these 24 words down, in order, and keep them somewhere private."), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
+        let c = column![lead_("Write these 24 words down, in order, and keep them somewhere private."), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
             pf_note(t, "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages.")];
         self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0)
     }

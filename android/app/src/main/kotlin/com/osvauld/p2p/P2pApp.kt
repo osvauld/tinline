@@ -341,7 +341,7 @@ class P2pApp : Application(), NodeEvents {
     }
 
     /**
-     * "Forgot passphrase": restore the locked current account from its phrase. The core restores in place
+     * "I forgot it" (forgot passphrase): restore the locked current account from its phrase. The core restores in place
      * (34f): contacts, history and chats are kept, the passphrase and device key are new. A phrase of a
      * different identity is refused before anything changes. Blocking.
      */

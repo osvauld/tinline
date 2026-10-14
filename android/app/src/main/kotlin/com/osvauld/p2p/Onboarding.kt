@@ -506,19 +506,28 @@ internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit,
     // One primary slot, two moments: "Copy my words" first; once copied the same button says "I've saved them" (same size, so
     // nothing moves). Calm, never alarming: no blur, no warning box; paper is a suggestion, not a rule.
     var copied by remember { mutableStateOf(copiedAlready) }
-    GateStep("Here are your recovery words",
-        lead = "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great.",
+    // Words or key: the same secret two ways (core recovery_key.rs). Words suit paper, the key a password manager. Either
+    // copy counts as saved; the key gets no quiz (its checksum catches a bad copy when it is pasted).
+    var asKey by remember { mutableStateOf(false) }
+    val key = remember(phrase) { runCatching { uniffi.p2pcore.recoveryKeyFromPhrase(phrase) }.getOrDefault("") }
+    GateStep(if (asKey) "Here is your recovery key" else "Here are your recovery words",
+        lead = if (asKey) "Your recovery key is the same as your 24 words, as one line.\nPaste it somewhere safe. A password manager works great."
+            else "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great.",
         foot = {
             if (copied) {
-                GBtn("I’ve saved them", onNext)
-                GBtn("Check my copy", onCheck, kind = GKind.Text)
+                GBtn(if (asKey) "I’ve saved it" else "I’ve saved them", onNext)
+                if (!asKey) GBtn("Check my copy", onCheck, kind = GKind.Text)
             } else {
                 // flagged sensitive (EXTRA_IS_SENSITIVE), so Android 13+ keeps it out of the clipboard preview
-                GBtn("Copy my words", { copyToClipboard(ctx, "Recovery words", phrase); copied = true; onCopied() })
-                GBtn("I wrote them down", onNext, kind = GKind.Text)
+                GBtn(if (asKey) "Copy my key" else "Copy my words", {
+                    if (asKey) copyToClipboard(ctx, "Recovery key", key) else copyToClipboard(ctx, "Recovery words", phrase)
+                    copied = true; onCopied()
+                })
+                GBtn(if (asKey) "I saved it elsewhere" else "I wrote them down", onNext, kind = GKind.Text)
             }
         }) {
-        WordGrid(phrase)
+        WordsKeySeg(asKey) { asKey = it }
+        if (asKey) KeyCard(key) else WordGrid(phrase)
     }
 }
 
@@ -734,6 +743,8 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
     val seen = remember { mutableStateListOf<Boolean>().apply { repeat(24) { add(false) } } }
     var active by remember { mutableIntStateOf(-1) }
     var tried by remember { mutableStateOf(false) }
+    // A pasted recovery key (one line, `tlkey-…`) replaces the boxes ("" = typing words).
+    var recKey by remember { mutableStateOf("") }
     val focus = remember { List(24) { androidx.compose.ui.focus.FocusRequester() } }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(PgMotion.ENTER.toLong()); runCatching { focus[0].requestFocus() } }
 
@@ -743,6 +754,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
     val filled = words.count { it.isNotEmpty() }
     val sugg = if (active >= 0 && words[active] !in set) suggest(words[active], 4) else emptyList()
     fun setWord(i: Int, raw: String) {
+        if (uniffi.p2pcore.isRecoveryKey(raw)) { recKey = raw.trim(); onError(null); return }
         val toks = raw.lowercase().split(Regex("[^a-z]+")).filter { it.isNotEmpty() }
         if (toks.size > 1) {
             toks.forEachIndexed { k, t -> if (i + k < 24) words[i + k] = t }
@@ -751,6 +763,13 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
         onError(null)
     }
     fun submit() {
+        if (recKey.isNotEmpty()) {
+            // The core checks the key's checksum: a typo is caught before anything is restored.
+            runCatching { uniffi.p2pcore.recoveryPhraseFromInput(recKey) }
+                .onSuccess { onSubmit(it) }
+                .onFailure { onError("That key has a typo or is cut short. Paste it again from where you saved it.") }
+            return
+        }
         tried = true
         if (badList.isNotEmpty() || filled < 24) {
             val first = badList.firstOrNull() ?: words.indexOfFirst { it.isEmpty() }
@@ -766,7 +785,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
     }
     val msg = when {
         badList.isNotEmpty() -> "Word ${badList[0] + 1}${if (badList.size > 1) " and ${badList.size - 1} more" else ""} ${if (badList.size > 1) "aren’t" else "isn’t"} in the recovery word list. Check the spelling."
-        tried && filled < 24 -> "${24 - filled} words are still missing."
+        recKey.isEmpty() && tried && filled < 24 -> "${24 - filled} words are still missing."
         else -> error ?: ""
     }
 
@@ -774,9 +793,17 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Restore account", style = PgType.h1, color = c.ink)
-            Text("Type your 24 words in order, or paste them all into the first box. They stay on this phone.", style = PgType.lead, color = c.ink2)
+            Text(if (recKey.isNotEmpty()) "Your recovery key is in. It stays on this phone."
+                else "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this phone.", style = PgType.lead, color = c.ink2)
             GNotice(warning, NKind.Warn, PgIcons.Info)
-            Row(Modifier.fillMaxWidth().padding(top = 0.dp).offset(y = (-4).dp), verticalAlignment = Alignment.CenterVertically) {
+            if (recKey.isNotEmpty()) {
+                Column(Modifier.fillMaxWidth().clip(SmoothCornerShape(10.dp)).background(c.sf).border(1.dp, c.accentSoft, SmoothCornerShape(10.dp))
+                    .padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Recovery key", style = TinType.caption, color = c.ink2)
+                    Text(recKey, style = TinType.mono.copy(fontSize = 15.sp, lineHeight = 24.sp), color = c.ink)
+                    GBtn("Use my words instead", { recKey = ""; onError(null) }, kind = GKind.Text, fill = false, modifier = Modifier.offset(x = (-20).dp))
+                }
+            } else Row(Modifier.fillMaxWidth().padding(top = 0.dp).offset(y = (-4).dp), verticalAlignment = Alignment.CenterVertically) {
                 GBtn("Paste from clipboard", {
                     val t = clipboardText(ctx)
                     if (t == null) onError("Couldn’t read the clipboard. Paste into the first box instead.") else setWord(0, t)
@@ -784,7 +811,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
                 Spacer(Modifier.weight(1f))
                 Text("$filled of 24", style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
             }
-            Column(Modifier.semantics { contentDescription = "Recovery phrase words" }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (recKey.isEmpty()) Column(Modifier.semantics { contentDescription = "Recovery phrase words" }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (r in 0 until 12) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     for (col in 0..1) {
                         val i = r * 2 + col
@@ -811,7 +838,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
             }
             Text(msg, Modifier.fillMaxWidth().heightIn(min = 18.dp), style = PgType.sub.copy(fontWeight = FontWeight.SemiBold), color = c.er)
         }
-        Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)) { GBtn("Continue", ::submit, enabled = filled > 0) }
+        Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)) { GBtn("Continue", ::submit, enabled = filled > 0 || recKey.isNotEmpty()) }
     }
 }
 
@@ -876,5 +903,30 @@ internal fun GateStepPreview(which: String) {
             "perms" -> { GateHead(null, 6 to 6); PermsStep(listOf(Need.Mic, Need.FullScreen, Need.Battery), {}, none) }
             "done" -> { GateHead(null, null); DoneStep(name, none, none) }
         }
+    }
+}
+
+/** Words | Key: the same secret two ways (recovery step, Settings). Hugs its two buttons. */
+@Composable
+internal fun WordsKeySeg(asKey: Boolean, onChange: (Boolean) -> Unit) {
+    val c = Tin.c
+    Row(Modifier.clip(SmoothCornerShape(12.dp)).background(c.sf3).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        listOf(false to "Words", true to "Key").forEach { (k, label) ->
+            val on = k == asKey
+            Box(
+                Modifier.heightIn(min = 40.dp).clip(SmoothCornerShape(9.dp)).background(if (on) c.sf else androidx.compose.ui.graphics.Color.Transparent)
+                    .clickable(role = Role.Tab) { onChange(k) }.padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(label, style = TinType.bodyM.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), color = c.ink) }
+        }
+    }
+}
+
+/** The recovery key: monospace, broken anywhere (it has no spaces), the same card look as the words. */
+@Composable
+internal fun KeyCard(key: String) {
+    val c = Tin.c
+    Box(Modifier.fillMaxWidth().clip(SmoothCornerShape(10.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(10.dp)).padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Text(key, style = TinType.mono.copy(fontSize = 15.sp, lineHeight = 24.sp), color = c.ink)
     }
 }

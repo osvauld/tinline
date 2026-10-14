@@ -12,7 +12,7 @@
 
 {#if lost}
   <StepShell title={name ? 'Can’t open ' + name + '’s account' : 'Can’t open your account'}
-    lead="This {gate.noun} no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Calls can’t reach you until you restore." center anchor>
+    lead="This {gate.noun} no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Once you restore, your calls come through again." center anchor>
     <div class="ic"><Icon name="key" size={32} /></div>
     <Notice kind="warn" icon="info">You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.</Notice>
     {#if gate.error}<Notice kind="error">{gate.error}</Notice>{/if}

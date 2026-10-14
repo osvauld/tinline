@@ -31,14 +31,17 @@ class AccountActions(val onCreate: () -> Unit, val onRestore: () -> Unit, val on
 
 /** The account switcher bottom sheet. [onPick] gets a non-current account; the current one is just ticked. */
 @Composable
-fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, actions: AccountActions? = null) {
+fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, actions: AccountActions? = null, atLogin: Boolean = false) {
     val c = Tin.c
     val status by app.status.collectAsState()
     val list by produceState<List<AccountSummary>>(emptyList()) { value = withContext(Dispatchers.IO) { app.node.accounts() } }
     TinSheet(onDismiss) {
-        Text("Accounts", Modifier.padding(top = 4.dp, bottom = 8.dp), style = TinType.titleL, color = c.ink)
+        Text(if (atLogin) "Open as" else "Accounts", Modifier.padding(top = 4.dp, bottom = 8.dp), style = TinType.titleL, color = c.ink)
         list.forEach { a ->
-            val sub = when {
+            // At login nothing is open yet: say only whether picking it opens right away (key remembered here, or no
+            // passphrase) or asks for its passphrase.
+            val opensNow = !a.hasPassphrase || UnlockStore.exists(app, a.did)
+            val sub = if (atLogin) (if (opensNow) "Opens right away" else "Asks for your passphrase") else when {
                 a.current && status?.online == true -> "Online on this phone"
                 a.current -> "On this phone"
                 else -> "Locked · not ringing here"
@@ -61,7 +64,7 @@ fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, a
             SheetRow(PgIcons.Link, "Link an account from another device", null, true) { actions.onLink() }
             SheetRow(PgIcons.Key, "Restore with recovery phrase", null, true) { actions.onRestore() }
         }
-        Hint("One account is online at a time. Calls to a locked account ring only on your other devices.", Modifier.padding(top = 12.dp))
+        if (!atLogin) Hint("One account is online at a time. Calls to a locked account ring only on your other devices.", Modifier.padding(top = 12.dp))
     }
 }
 

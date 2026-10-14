@@ -140,7 +140,7 @@
               <div class="denied" data-camera-denied><Icon name="camera" size={28} /><b>The camera is off</b>
                 <Btn variant="outline" onclick={() => (pp.perms.camera = 'granted')}>Allow the camera</Btn></div>
             {/if}
-          {:else}<QrCode seed={77} size={176} label="Your QR code, a sample that can’t be scanned" />{/if}
+          {:else}<QrCode seed={77} size={260} label="Your QR code, a sample that can’t be scanned" />{/if}
         </div>
         <p class="why c">{scanning ? 'Point the camera at the code on their screen.' : 'Let them scan this with Tinline.'}</p>
         {#if isPhone}<Btn variant="outline" data-scan-toggle onclick={() => (scanning = !scanning)}>{scanning ? 'Show my code' : 'Scan their code'}</Btn>{/if}
@@ -195,8 +195,9 @@
 <style>
   .ac { display: grid; gap: 12px; }
   .ac h2 { margin: 0; }
-  /* 328: fits Your code + the two-line paste hint with room (was 316, clipped ~5px on desktop). */
-  .body { block-size: 328px; display: grid; align-content: center; grid-template-columns: minmax(0, 1fr); gap: 12px; overflow: hidden; }
+  /* 360: fits Your code + the two-line paste hint, and a 260 px QR (2026-10-14: the real code is long and dense, so 176 px
+     was too small to scan on a phone). Was 328 / 176. */
+  .body { block-size: 360px; display: grid; align-content: center; grid-template-columns: minmax(0, 1fr); gap: 12px; overflow: hidden; }
   .tabs { display: flex; gap: 4px; padding: 3px; border-radius: 20px; background: var(--surface-2); }
   .tabs.chips { padding: 0; background: none; border-radius: 0; gap: 8px; }
   .tab { flex: 1; min-block-size: 36px; border: 0; border-radius: 17px; background: transparent; color: var(--muted); font: inherit; font-weight: 600; font-size: var(--fs-sub); cursor: pointer; }
@@ -204,8 +205,8 @@
   .mine { display: grid; justify-items: center; gap: 10px; }
   .mine :global(.btn) { inline-size: 100%; }
   .why.c { text-align: center; }
-  .qrbox { inline-size: 196px; block-size: 196px; display: grid; place-items: center; }
-  .finder { position: relative; inline-size: 196px; block-size: 196px; border-radius: 20px; background: #0e1513; overflow: hidden; }
+  .qrbox { inline-size: 272px; block-size: 272px; display: grid; place-items: center; }
+  .finder { position: relative; inline-size: 272px; block-size: 272px; border-radius: 20px; background: #0e1513; overflow: hidden; }
   .c.tl, .c.tr, .c.bl, .c.br { position: absolute; inline-size: 30px; block-size: 30px; border: 3px solid #fff; opacity: .9; }
   .tl { inset: 14px auto auto 14px; border-width: 3px 0 0 3px !important; border-top-left-radius: 10px; }
   .tr { inset: 14px 14px auto auto; border-width: 3px 3px 0 0 !important; border-top-right-radius: 10px; }

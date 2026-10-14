@@ -604,6 +604,8 @@ pub(crate) struct Pv {
     /// Recovery phrase: the words are showing (they hide again after 30 s).
     pub shown: bool,
     pub shown_at: Option<Instant>,
+    /// Recovery phrase page: show the recovery key (one line) instead of the words.
+    pub as_key: bool,
     /// Passphrase: the repeat field, the three field errors, and "Passphrase changed".
     pub again: Zeroizing<String>,
     pub errs: [String; 3],
@@ -619,6 +621,10 @@ pub(crate) enum PvMsg {
     Unblock(Option<String>),
     UnblockGo,
     Words(bool),
+    /// Words | Key on the recovery phrase page.
+    AsKey(bool),
+    /// Copy the recovery key (only the key has a copy button: it is meant for a password manager).
+    CopyKey,
     Again(String),
     Change,
     Eye,
@@ -2108,6 +2114,15 @@ impl App {
                     self.pv.shown_at = on.then(Instant::now);
                     if on { self.revealed_at = Some(Instant::now()); }
                 }
+                PvMsg::AsKey(k) => self.pv.as_key = k,
+                PvMsg::CopyKey => {
+                    if let Some(p) = &self.revealed {
+                        if let Ok(k) = p2pcore::recovery_key_from_phrase(p.to_string()) {
+                            self.notice = Some("Your recovery key is copied.".into());
+                            return iced::clipboard::write(k);
+                        }
+                    }
+                }
                 PvMsg::Eye => self.pv.reveal = !self.pv.reveal,
                 PvMsg::Again(v) => {
                     self.pv.again = Zeroizing::new(v);
@@ -2370,6 +2385,7 @@ impl App {
                 self.switch_ask = Some(did);
             }
             Msg::SwitchNow(did) => {
+                self.gate.open_as = false;
                 self.switch_ask = Some(did);
                 return self.update(Msg::SwitchGo);
             }

@@ -74,6 +74,12 @@ pub(super) struct Gate {
     pub confirm: [String; 3],
     pub confirm_tried: bool,
     pub show_pass: bool,
+    /// Unlock: the "Open as" menu under "Welcome back, Maya ⌄" is open.
+    pub open_as: bool,
+    /// Recovery step: show the recovery key (one line) instead of the 24 words.
+    pub as_key: bool,
+    /// Restore: a pasted recovery key instead of the 24 words ("" = typing words).
+    pub rec_key: String,
     /// A create flow is between "the identity exists in memory" and Done.
     pub creating: bool,
     /// Done: the line has been told to pull tight.
@@ -90,7 +96,7 @@ pub(super) struct Gate {
 
 impl Default for Gate {
     fn default() -> Self {
-        Gate { step: Step::Welcome, history: Vec::new(), copied: false, confirm: Default::default(), confirm_tried: false, show_pass: false, creating: false, taut: false, tugs: 0,
+        Gate { step: Step::Welcome, history: Vec::new(), copied: false, confirm: Default::default(), confirm_tried: false, show_pass: false, open_as: false, as_key: false, rec_key: String::new(), creating: false, taut: false, tugs: 0,
             restoring: false, words: Default::default(), active: None, tried: false }
     }
 }
@@ -197,6 +203,9 @@ pub(super) enum Gs {
     PassGo,
     PassSkip,
     ShowPass,
+    OpenAs,
+    AsKey(bool),
+    ClearKey,
     CopyWords,
     Saved,
     Check,
@@ -367,6 +376,11 @@ impl App {
             }
             Gs::Word(i, raw) => {
                 self.notice = None;
+                // A recovery key (one line, `tlkey-…`) can go anywhere the words go: it replaces the boxes.
+                if p2pcore::is_recovery_key(raw.clone()) {
+                    self.gate.rec_key = raw.trim().to_string();
+                    return Task::none();
+                }
                 self.gate.active = Some(i);
                 let typed_space = raw.ends_with(' ');
                 let toks: Vec<String> = raw.to_lowercase().split(|c: char| !c.is_ascii_lowercase()).filter(|x| !x.is_empty()).map(str::to_string).collect();
@@ -407,6 +421,19 @@ impl App {
                 None => self.notice = Some("Couldn\u{2019}t read the clipboard. Paste into the first box instead.".into()),
             },
             Gs::RestoreGo => {
+                if !self.gate.rec_key.is_empty() {
+                    // The core checks the key's checksum: a typo is caught before anything is restored.
+                    match p2pcore::recovery_phrase_from_input(self.gate.rec_key.clone()) {
+                        Ok(p) => {
+                            self.phrase_in = Zeroizing::new(p);
+                            return self.gate_go(Step::Name);
+                        }
+                        Err(_) => {
+                            self.notice = Some("That key has a typo or is cut short. Paste it again from where you saved it.".into());
+                            return Task::none();
+                        }
+                    }
+                }
                 self.gate.tried = true;
                 let bad = (0..24).find(|&i| self.gate.bad_word(i));
                 let empty = (0..24).find(|&i| self.gate.words[i].is_empty());
@@ -418,10 +445,18 @@ impl App {
                 return self.gate_go(Step::Name);
             }
             Gs::ShowPass => self.gate.show_pass = !self.gate.show_pass,
+            Gs::OpenAs => self.gate.open_as = !self.gate.open_as,
+            Gs::AsKey(k) => self.gate.as_key = k,
+            Gs::ClearKey => {
+                self.gate.rec_key.clear();
+                self.notice = None;
+            }
             Gs::CopyWords => {
                 self.gate.copied = true;
                 if let Some(p) = &self.new_phrase {
-                    return clipboard::write(p.to_string());
+                    // Words or key: either copy counts as saved.
+                    let text = if self.gate.as_key { p2pcore::recovery_key_from_phrase(p.to_string()).unwrap_or_default() } else { p.to_string() };
+                    return clipboard::write(text);
                 }
             }
             Gs::Saved => return self.gate_go(Step::Device),

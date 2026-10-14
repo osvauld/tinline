@@ -155,17 +155,18 @@ fun AddContactSheet(
                 PgChip("Code", qrTab.not(), { if (i == null) { qrTab = false; scanning = false; reset() } })
                 PgChip("QR", qrTab, { if (i == null) { qrTab = true; reset() } })
             }
-            Box(Modifier.fillMaxWidth().padding(top = 12.dp).height(328.dp), contentAlignment = Alignment.Center) {
+            // 360: room for a 260 dp QR. The real code is long and dense; at 176 dp its modules were too small to scan.
+            Box(Modifier.fillMaxWidth().padding(top = 12.dp).height(360.dp), contentAlignment = Alignment.Center) {
                 val p = found
                 when {
                     i != null -> Incoming(meName, i)
                     p != null -> Found(meName, p, scanned, added, requested, adding, slow, fail, p.known, p.known && blocks.of(p.did).blockedByMe)
                     qrTab -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.size(196.dp), contentAlignment = Alignment.Center) {
-                            if (scanning) QrCameraBox(Modifier.size(196.dp).clip(SmoothCornerShape(20.dp)), "Point the camera at the code on their screen.", false, {}) { t -> scanning = false; look(t, true) }
-                            else Box(Modifier.size(176.dp).clip(SmoothCornerShape(12.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(272.dp), contentAlignment = Alignment.Center) {
+                            if (scanning) QrCameraBox(Modifier.size(272.dp).clip(SmoothCornerShape(20.dp)), "Point the camera at the code on their screen.", false, {}) { t -> scanning = false; look(t, true) }
+                            else Box(Modifier.size(260.dp).clip(SmoothCornerShape(12.dp)).background(Color.White), contentAlignment = Alignment.Center) {
                                 val t = myCode
-                                if (t != null) Image(remember(t) { qrBitmap(t, 528, fg = 0xFF17201D.toInt()) }.asImageBitmap(), "Your QR code", Modifier.fillMaxSize().padding(8.dp))
+                                if (t != null) Image(remember(t) { qrBitmap(t, 1040, fg = 0xFF17201D.toInt()) }.asImageBitmap(), "Your QR code", Modifier.fillMaxSize().padding(6.dp))
                                 else Text("Preparing your code…", style = PgType.sub, color = Color(0xFF4D5853))
                             }
                         }

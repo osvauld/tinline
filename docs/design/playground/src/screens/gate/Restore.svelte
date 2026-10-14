@@ -3,7 +3,7 @@
   import Btn from './Btn.svelte';
   import Notice from './Notice.svelte';
   import StepShell from './StepShell.svelte';
-  import { gate } from '../../lib/model/actions/gate.svelte';
+  import { gate, looksLikeKey } from '../../lib/model/actions/gate.svelte';
   import { WORDSET, suggest } from './wordlist';
 
   let active = $state(-1);
@@ -23,6 +23,8 @@
   const sugg = $derived(active >= 0 && !WORDSET.has(w(active)) ? suggest(w(active), 4) : []);
 
   function setWord(i: number, raw: string) {
+    // A recovery key (one line, `tlkey-…`) can go anywhere the words go: it replaces the boxes.
+    if (/^\s*tlkey-/i.test(raw)) { gate.recKey = raw.trim(); gate.error = null; return; }
     const toks = raw.toLowerCase().split(/[^a-z]+/).filter(Boolean);
     if (toks.length > 1) {                       // pasted a run of words: spread them from this field
       toks.forEach((t, k) => { if (i + k < 24) gate.words[i + k] = t; });
@@ -43,6 +45,12 @@
     try { setWord(0, await navigator.clipboard.readText()); } catch { gate.error = 'Couldn’t read the clipboard. Paste into the first box instead.'; }
   }
   function submit() {
+    if (gate.recKey) {
+      // The core checks the key's checksum (recovery_phrase_from_input); a typo is caught before anything is restored.
+      if (!looksLikeKey(gate.recKey)) { gate.error = 'That key has a typo or is cut short. Paste it again from where you saved it.'; return; }
+      gate.go(gate.flow === 'forgot' ? 'forgotPass' : 'restoreName');
+      return;
+    }
     tried = true;
     if (badList.length || filled < 24) {
       const first = badList[0] ?? gate.words.findIndex((x) => !x);
@@ -53,11 +61,18 @@
   }
   const msg = $derived(badList.length
     ? `Word ${badList[0] + 1}${badList.length > 1 ? ' and ' + (badList.length - 1) + ' more' : ''} ${badList.length > 1 ? 'aren’t' : 'isn’t'} in the recovery word list. Check the spelling.`
-    : tried && filled < 24 ? `${24 - filled} words are still missing.` : (gate.error ?? ''));
+    : !gate.recKey && tried && filled < 24 ? `${24 - filled} words are still missing.` : (gate.error ?? ''));
 </script>
 
-<StepShell title="Restore account" lead="Type your 24 words in order, or paste them all into the first box. They stay on this {gate.noun}." form onsubmit={submit}>
+<StepShell title="Restore account" lead={gate.recKey ? `Your recovery key is in. It stays on this ${gate.noun}.` : `Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this ${gate.noun}.`} form onsubmit={submit}>
   <Notice icon="info" kind="warn">{gate.flow === 'forgot' ? 'Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase.' : 'Next, you’ll choose a passphrase for this account.'}</Notice>
+  {#if gate.recKey}
+    <div class="keycard">
+      <span class="kh">Recovery key</span>
+      <code>{gate.recKey}</code>
+      <Btn kind="text" onclick={() => { gate.recKey = ''; gate.error = null; }}>Use my words instead</Btn>
+    </div>
+  {:else}
   <div class="tools"><Btn kind="text" onclick={paste}>Paste from clipboard</Btn><span class="cnt" aria-live="polite">{filled} of 24</span></div>
   <div class="grid" role="group" aria-label="Recovery phrase words">
     {#each gate.words as _, i (i)}
@@ -70,6 +85,7 @@
       </label>
     {/each}
   </div>
+  {/if}
   <div class="dock">
     <div class="sugg" aria-label="Suggestions" role="group">
       {#if sugg.length}{#each sugg as s (s)}<button type="button" class="chip press" onmousedown={(e) => e.preventDefault()} onclick={() => pick(s)}>{s}</button>{/each}{/if}
@@ -77,11 +93,15 @@
     <p id="rmsg" class="err" role="alert">{msg}</p>
   </div>
   {#snippet foot()}
-    <Btn type="submit" next disabled={filled === 0}>Continue</Btn>
+    <Btn type="submit" next disabled={filled === 0 && !gate.recKey}>Continue</Btn>
   {/snippet}
 </StepShell>
 
 <style>
+  .keycard { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid var(--accent-soft); border-radius: 10px; background: var(--surface); }
+  .keycard .kh { font-size: var(--fs-meta); color: var(--muted); }
+  .keycard code { font: 15px/24px ui-monospace, 'SF Mono', Menlo, Consolas, monospace; word-break: break-all; }
+  .keycard :global(.btn) { justify-self: start; }
   .tools { display: flex; align-items: center; justify-content: space-between; margin-block: -8px -4px; }
   .cnt { color: var(--muted); font-size: var(--fs-sub); font-variant-numeric: tabular-nums; }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
