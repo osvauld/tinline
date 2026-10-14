@@ -35,7 +35,7 @@ estimates use the 4 to 6x factor from the task.
 
 ```sh
 cd /home/abe/p2p_chat/.claude/worktree/search-year
-python3 /home/abe/p2p_chat/scripts/buildlock.py --who me -- cargo build --release -p p2pcore --bin year-bench
+python3 /home/abe/p2p_chat/scripts/buildlock.py --who me -- cargo build --release -p p2pcore --features bench --bin year-bench
 BIN=$PWD/target/release/year-bench; D=/home/abe/build-cache/search-year-data/s1.0
 python3 /home/abe/p2p_chat/scripts/buildlock.py --who me --run -- $BIN gen --scale 1.0 --dir $D   # ~16 min; --scale 0.02 for a quick one
 python3 /home/abe/p2p_chat/scripts/buildlock.py --who me --run -- $BIN run --dir $D --scenario intact > out.json

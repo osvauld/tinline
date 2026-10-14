@@ -592,6 +592,7 @@ impl SearchIndex {
     }
 
     /// `(records, key bytes + value bytes)` of the `x/`, `y/` and `m` records in the file.
+    #[cfg(any(test, feature = "bench"))]
     pub fn content_sizes(&self) -> Vec<(&'static str, usize, usize)> {
         ["x/", "y/", "m", "v"].into_iter().map(|p| {
             let rows = self.db.raw().scan(p).unwrap_or_default();

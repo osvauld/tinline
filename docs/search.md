@@ -460,11 +460,11 @@ groups), spread over 730 days. About 87 postings a message. Query times are the 
 `Inner::search` (page, row read, normalise, match, snippet) at 20 hits a page, warm cache, 30 runs.
 
 ```
-python3 scripts/buildlock.py --who me -- cargo build --release -p p2pcore --bin search-bench
+python3 scripts/buildlock.py --who me -- cargo build --release -p p2pcore --features bench --bin search-bench
 python3 scripts/buildlock.py --who me --run -- $PWD/target/release/search-bench 100000 /path/to/scratch/dir
 # Android x86_64 emulator (libaom install as in android/app/build.gradle.kts):
 ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/28.2.13676358 AOM_DIR_x86_64_linux_android=$HOME/build-cache/p2p_chat/libaom/install-v3.14.1-x86_64-linux-android \
-  python3 scripts/buildlock.py --who me -- cargo ndk -t x86_64 -P 28 build --release -p p2pcore --bin search-bench
+  python3 scripts/buildlock.py --who me -- cargo ndk -t x86_64 -P 28 build --release -p p2pcore --features bench --bin search-bench
 adb -s emulator-5554 push target/x86_64-linux-android/release/search-bench /data/local/tmp/
 python3 scripts/buildlock.py --who me --device emulator-5554 -- adb -s emulator-5554 shell /data/local/tmp/search-bench 10000 /data/local/tmp/sb
 ```

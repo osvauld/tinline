@@ -37,6 +37,7 @@ pub use error::Error;
 
 /// Search internals the `search-bench` binary drives (it lives outside the lib so the
 /// benchmark code is not compiled into the app libraries). Not part of the uniffi API.
+#[cfg(feature = "bench")]
 #[doc(hidden)]
 pub mod search_bench_support {
     pub use crate::search::index::{DocRow, Mark, Mode, PHASES, SearchIndex};

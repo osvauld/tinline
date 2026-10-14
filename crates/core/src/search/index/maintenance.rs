@@ -33,11 +33,13 @@ impl SearchIndex {
     }
 
     /// File length and live bytes (benchmarks).
+    #[cfg(feature = "bench")]
     pub fn usage(&self) -> Option<storage::Usage> {
         self.db.raw().usage().ok().flatten()
     }
 
     /// Compacts regardless of the thresholds (tests, tools).
+    #[cfg(any(test, feature = "bench"))]
     pub fn compact_now(&self) -> Result<Option<(u64, u64)>, Error> {
         let _m = self.maint.lock();
         self.compact_locked()

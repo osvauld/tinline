@@ -14,10 +14,16 @@ path = "src/bin/uniffi-bindgen.rs"
 [[bin]]
 name = "search-bench"
 path = "src/bin/search-bench/main.rs"
+required-features = ["bench"]
 
 [[bin]]
 name = "year-bench"
 path = "src/bin/year-bench.rs"
+required-features = ["bench"]
+
+[features]
+# Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
+bench = []
 
 [dependencies]
 proto.workspace = true
