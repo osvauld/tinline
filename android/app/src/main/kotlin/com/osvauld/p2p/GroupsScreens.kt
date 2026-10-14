@@ -11,10 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Chat
-import androidx.compose.material.icons.automirrored.rounded.Logout
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
@@ -111,7 +107,7 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
             Text("Chats", Modifier.weight(1f).semantics { heading() }, style = TinType.h1, color = c.ink)
             IconBtn(PgIcons.Search, "Search", { searching = true })
             Box {
-                IconBtn(Icons.Rounded.MoreVert, "Preview controls", { simMenu = true })
+                IconBtn(PgIcons.More, "Preview controls", { simMenu = true })
                 SimulateMenu(src, nav, simMenu) { simMenu = false }
             }
         }
@@ -415,7 +411,7 @@ fun PGroupInfoScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
                         Text(h.label, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
                         Text(hostStatus(h, now, info = true), style = TinType.bodyM, color = c.ink2)
                     }
-                    IconBtn(Icons.Rounded.MoreVert, "Host options", { nav.go(PRoute.Hosts(id)) })
+                    IconBtn(PgIcons.More, "Host options", { nav.go(PRoute.Hosts(id)) })
                 }
             }
             item { SectionLabel("MEMBERS · ${g.activeMembers.size}") }

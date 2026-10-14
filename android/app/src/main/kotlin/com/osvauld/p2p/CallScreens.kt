@@ -16,8 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -213,7 +211,7 @@ private fun routeLabel(speaker: Boolean) = if (speaker) "Speaker" else "Phone"
 private fun routeIcon(k: AudioRoute.Kind): ImageVector = when (k) {
     AudioRoute.Kind.Earpiece -> PgIcons.Phone
     AudioRoute.Kind.Speaker -> PgIcons.Vol
-    AudioRoute.Kind.Bluetooth -> Icons.Rounded.Bluetooth
+    AudioRoute.Kind.Bluetooth -> PgIcons.Bluetooth
     AudioRoute.Kind.Wired -> PgIcons.Vol
     AudioRoute.Kind.Other -> PgIcons.Vol
 }

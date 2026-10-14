@@ -23,10 +23,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Logout
-import androidx.compose.material.icons.automirrored.rounded.Reply
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
@@ -1316,7 +1312,7 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
                 TinButton("Paste", {
                     val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
                     cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(ctx)?.toString()?.let { token = it.trim() }
-                }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
+                }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = PgIcons.Paste)
                 TinButton("Scan", { scanning = true }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = PgIcons.Scan)
             }
             peek?.let { p ->
@@ -1384,7 +1380,7 @@ fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TinButton("Share", {
                     token?.let { tk -> runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Join $name on Tinline: $tk"), "Share group invite")) } }
-                }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = Icons.Rounded.Share, enabled = token != null)
+                }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = PgIcons.Share, enabled = token != null)
                 CopyButton(token, Modifier.weight(1f))
             }
         }

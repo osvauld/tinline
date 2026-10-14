@@ -10,9 +10,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Chat
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -341,7 +338,7 @@ fun BlockDialog(name: String, sharedGroups: List<String>, onDismiss: () -> Unit,
     val fn = first(name)
     TinDialog("Block $fn?", onDismiss, "Block", onBlock, destructive = true, icon = PgIcons.Off) {
         BlockLine(PgIcons.Callend, "$fn can’t message or call you, on any of your devices.")
-        BlockLine(Icons.Rounded.Campaign, "$fn is told you blocked them.")
+        BlockLine(PgIcons.Announce, "$fn is told you blocked them.")
         BlockLine(PgIcons.Off, "$fn won’t get your new address next time it changes, so $fn loses any way to reach this phone.")
         if (sharedGroups.isNotEmpty()) BlockLine(PgIcons.Users, null, rich = {
             Text(androidx.compose.ui.text.buildAnnotatedString {

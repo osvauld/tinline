@@ -12,12 +12,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.rounded.AttachFile
-import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,7 +61,7 @@ fun PlaceholderStrip() {
             .semantics(mergeDescendants = true) { contentDescription = "Preview with placeholder data. Nothing here is sent." },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(Icons.Rounded.Science, null, tint = c.onWarn, modifier = Modifier.size(14.dp))
+        Icon(PgIcons.Flask, null, tint = c.onWarn, modifier = Modifier.size(14.dp))
         Text("Preview · placeholder data, nothing is sent", style = TinType.caption, color = c.onWarn, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

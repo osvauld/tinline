@@ -75,6 +75,22 @@ object PgIcons {
     val Sliders = t(TinIcons.Sliders)
     val Warning = t(TinIcons.Warning)
     val Shield = t(TinIcons.Shield)
+    val Paste = t(TinIcons.Paste)
+    val Share = t(TinIcons.Share)
+    val Save = t(TinIcons.Save)
+    val Download = t(TinIcons.Download)
+    val Play = t(TinIcons.Play)
+    val Pause = t(TinIcons.Pause)
+    val More = t(TinIcons.More)
+    val Torch = t(TinIcons.Torch)
+    val Torchoff = t(TinIcons.Torchoff)
+    val Bluetooth = t(TinIcons.Bluetooth)
+    val Globe = t(TinIcons.Globe)
+    val Licence = t(TinIcons.Licence)
+    val Announce = t(TinIcons.Announce)
+    val Flask = t(TinIcons.Flask)
+    val Bug = t(TinIcons.Bug)
+    val Code = t(TinIcons.Code)
     val UserPlus = Userplus
     val MicOff = Micoff
 }

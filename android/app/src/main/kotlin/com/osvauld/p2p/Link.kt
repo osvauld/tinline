@@ -25,8 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -467,7 +465,7 @@ private fun LinkScanScreen(newDevice: Boolean, note: String?, nonce: Int, onBack
     TinlineTheme(dark = true) {
         Page(Modifier.background(Color(0xFF050807))) {
             TopBar(if (newDevice) "Scan instead" else "Scan the code", onBack) {
-                if (granted) IconBtn(if (torch) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, "Torch", { torch = !torch })
+                if (granted) IconBtn(if (torch) PgIcons.Torch else PgIcons.Torchoff, "Torch", { torch = !torch })
             }
             Box(Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp)) {
                 key(nonce) { QrCameraBox(Modifier.fillMaxSize(), if (newDevice) "Point at the code on your other device" else "Point the camera at the QR code on your new device", torch, { granted = it }, onText) }
