@@ -162,8 +162,8 @@ async function createPath(p, form) {
     await p.waitForSelector('text=/try again in/', { state: 'detached', timeout: 6000 });
     await p.getByLabel('Passphrase', { exact: true }).fill('correct horse'); await btn(p, 'Unlock').click();
     await p.waitForSelector('nav[aria-label=Main]', { timeout: 4000 }); ok(true, '[unlock] right passphrase opens the app');
-    await appState(p, 'locked'); await waitStep(p, 'unlock'); await btn(p, 'Forgot passphrase?').click(); await waitStep(p, 'restore');
-    ok(await p.getByText(/You’ll set a new passphrase/).isVisible(), '[unlock] Forgot passphrase -> restore from phrase');
+    await appState(p, 'locked'); await waitStep(p, 'unlock'); await btn(p, 'I forgot it').click(); await waitStep(p, 'restore');
+    ok(await p.getByText(/You’ll set a new passphrase/).isVisible(), '[unlock] I forgot it -> restore from phrase');
     await p.context().close(); }
 
   // ---- welcome offers Link and Restore on both forms; restore on a device with an account ADDS one

@@ -107,7 +107,7 @@ fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: 
         GateHead(null, null)
         GateStep(
             title = if (name.isNotBlank()) "Can’t open $name’s account" else "Can’t open your account",
-            lead = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Calls can’t reach you until you restore.",
+            lead = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Once you restore, your calls come through again.",
             center = true, anchor = true,
             hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Key, 72.dp, 32.dp) } },
             foot = {
@@ -135,12 +135,11 @@ fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Bo
         GateHead(null, null)
         GateStep(
             title = if (first.isNotBlank()) "Welcome back, $first" else "Welcome back",
-            lead = "Enter your passphrase to open Tinline. Calls can’t reach you until you do.",
             center = true, anchor = true,
             hero = { Box(Modifier.padding(top = 12.dp)) { SelfAvatar(name.ifBlank { "?" }, 72.dp) } },
             foot = {
                 GBtn(if (busy) "Unlocking…" else "Unlock", submit, enabled = pass.isNotEmpty(), busy = busy)
-                GBtn("Forgot passphrase?", onForgot, kind = GKind.Text, enabled = !busy)
+                GBtn("I forgot it", onForgot, kind = GKind.Text, enabled = !busy)
                 if (onSwitch != null) GBtn("Switch account", onSwitch, kind = GKind.Text, enabled = !busy)
             },
         ) {

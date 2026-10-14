@@ -84,7 +84,7 @@ object Notifications {
         val app = P2pApp.instance
         return when {
             !app.availability.value.available -> "Calls won’t ring. Tap to change."
-            app.status.value?.online == false -> "Calls can’t reach you right now."
+            app.status.value?.online == false -> "Your calls come through again once you’re back online."
             else -> "Your line is open. Tap to change."
         }
     }

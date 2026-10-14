@@ -134,7 +134,7 @@ Create/restore: `beginAdding()` → `beginNewAccount()`, then the onboarding flo
 `cancelAdding()` which selects the account that was left. `beginNewAccount` deselects in the core, so the app
 remembers the last committed account (prefs `accounts/did`) and re-selects it at start if the process died
 mid-add. Restoring a phrase whose account is already on the phone restores that account in place (core 34f):
-contacts, history and chats are kept, with a new passphrase and device key. "Forgot passphrase" on the unlock
+contacts, history and chats are kept, with a new passphrase and device key. "I forgot it" (forgot passphrase) on the unlock
 screen does exactly that for the locked current account, after checking `didOfPhrase(phrase)` matches it (a
 different identity's phrase is refused before anything changes). `AccountExists(did)` now only means that account
 is open right now.

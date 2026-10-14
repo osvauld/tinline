@@ -167,7 +167,7 @@ impl App {
     }
 
     /// Unlock.svelte in the gate card: the account's avatar (72), "Welcome back, Maya", the passphrase (with the eye),
-    /// an error/hint cell that reserves its lines (so a wrong try moves nothing), then Unlock and "Forgot passphrase?".
+    /// an error/hint cell that reserves its lines (so a wrong try moves nothing), then Unlock and "I forgot it".
     /// Desktop keeps the other accounts on this computer under the field (switching is the only way to reach them).
     pub(super) fn unlock_card(&self, t: Tok) -> El<'_> {
         let name = self.profile_name.clone();
@@ -187,7 +187,6 @@ impl App {
         let mut body = column![
             container(self.profile_avatar(t, &name, &me, 72.0)).padding(Padding { top: 12.0, ..Padding::ZERO }),
             bold(title, 28.0, t.ink).line_height(lh(34.0)),
-            tx("Enter your passphrase to open Tinline. Calls can\u{2019}t reach you until you do.", 15.0, t.ink2).line_height(lh(22.0)).align_x(Alignment::Center),
             column![field_, msgs].spacing(6).width(Fill),
         ].spacing(16).align_x(Alignment::Center).width(Fill);
         if self.accounts.iter().any(|a| !a.current) {
@@ -196,7 +195,7 @@ impl App {
         // .center.anchor: hangs from a fixed point (min(14dvh, 96)), so a new line never re-centres the rest.
         let body = container(body).padding(Padding { top: 8.0 + 40.0, right: 40.0, bottom: 16.0, left: 40.0 }).height(Fill);
         let unlock = gbtn(t, if self.busy { "Unlocking\u{2026}" } else { "Unlock" }, B::Primary, true, (!self.busy && !self.pass_in.is_empty()).then_some(Msg::Unlock));
-        let forgot = gbtn(t, "Forgot passphrase?", B::Text, false, (!self.busy).then_some(Msg::GoRestore));
+        let forgot = gbtn(t, "I forgot it", B::Text, false, (!self.busy).then_some(Msg::GoRestore));
         let foot = container(row![Space::new().width(Fill), forgot, unlock].spacing(12).align_y(Alignment::Center))
             .padding(Padding { top: 16.0, right: 40.0, bottom: 32.0, left: 40.0 }).width(Fill);
         let head = container(row![Space::new().width(44).height(44), row![ui::logo(24.0, t), semi("Tinline", 17.0, t.ink).line_height(lh(24.0))].spacing(8).align_y(Alignment::Center), Space::new().width(Fill),

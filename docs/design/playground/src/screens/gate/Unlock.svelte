@@ -13,7 +13,7 @@
   const submit = () => { if (pass && !lock) { const p = pass; gate.unlock(p).then(() => (pass = '')); } };
 </script>
 
-<StepShell title={first ? 'Welcome back, ' + first : 'Welcome back'} lead="Enter your passphrase to open Tinline. Calls can’t reach you until you do." center anchor form onsubmit={submit}>
+<StepShell title={first ? 'Welcome back, ' + first : 'Welcome back'} center anchor form onsubmit={submit}>
   <div class="av"><Avatar name={db.account.name} hue={db.account.hue} size={72} /></div>
   <div class="fld">
     <Field label="Passphrase" secret bind:value={pass} autofocus autocomplete="current-password" disabled={gate.busy || lock > 0}
@@ -26,7 +26,7 @@
   {/if}
   {#snippet foot()}
     <Btn type="submit" enter busy={gate.busy} disabled={!pass || lock > 0}>{gate.busy ? 'Unlocking…' : 'Unlock'}</Btn>
-    <Btn kind="text" disabled={gate.busy} onclick={() => gate.forgot()}>Forgot passphrase?</Btn>
+    <Btn kind="text" disabled={gate.busy} onclick={() => gate.forgot()}>I forgot it</Btn>
   {/snippet}
 </StepShell>
 

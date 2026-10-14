@@ -464,7 +464,7 @@ impl App {
         self.shell(
             t,
             "Can\u{2019}t open your account",
-            "This computer no longer has the key that opens it, and its keyring entry is missing. Calls can\u{2019}t reach you until you restore.",
+            "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again.",
             col.into(),
         )
     }
@@ -580,7 +580,7 @@ impl App {
             return None;
         }
         if self.status.started && !self.status.online {
-            return Some(("You\u{2019}re offline", "Calls can\u{2019}t reach you until you\u{2019}re back on the internet.", None, true));
+            return Some(("You\u{2019}re offline", "Your calls come through again once you\u{2019}re back online.", None, true));
         }
         if !self.avail.available {
             return Some((
