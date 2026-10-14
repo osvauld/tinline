@@ -20,6 +20,10 @@ const labs: Record<string, () => Promise<{ default: any }>> = {
   photos: () => import('./screens/lab/PhotoLab.svelte'),
   // `?lab=voice`: the call's cloud field driven by the live mic, Fog and Clouds side by side.
   voice: () => import('./screens/lab/VoiceLab.svelte'),
+  // `?lab=accounts`: switching identity on the login (unlock) screen, phone and desktop, three treatments.
+  accounts: () => import('./screens/lab/AccountsLab.svelte'),
+  // `?lab=avatars`: one-nickname initials and avatars drawn from the identity's fingerprint.
+  avatars: () => import('./screens/lab/AvatarLab.svelte'),
 };
 const app = lab && labs[lab]
   ? mount((await labs[lab]()).default, { target: document.getElementById('app')! })
