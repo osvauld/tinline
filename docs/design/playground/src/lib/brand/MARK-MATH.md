@@ -61,6 +61,17 @@ toward w₀: the travel is always (ℓ − w₀)/2; tune ℓ and s₀ together.)
 1. **Ringing / connecting (slack sway):** Δ = 0, s = s₀,
    φ(t) = φ₀ sin(2πt / T), φ₀ = 12°, T = 1.6 s (pendulum-like; can be phase-locked to the ring cue).
 2. **Connect (pull taut):** Δ springs 0 → Δ_T, critically damped (ζ = 1, ω ≈ 2π·3 Hz), so ~200 ms.
+   **Recoil (2026-10-13):** the pull now arrives with speed (target 1.6·Δ_T, `hitOver`), and when the string
+   goes tight the cans bounce back (velocity reflected, restitution `recoil` 0.5), then a soft 2 Hz pull
+   (`settleHz`, undamped) carries them out again. Each bounce re-plucks the string a little; the `hit` event
+   (and its cue) fires once. Bounces stop below `recoilMin` 1.2 units/s. Measured at 96px: about 1.7px, then
+   0.9px, then 0.4px, settled about 770ms after connect. `recoil: 0` restores the old dead stop.
+   **Windup (optional, `windup` units over `windupMs`):** before the pull the cans gather inward (Δ goes
+   briefly negative, so the string sags a little deeper), then the pull starts from there. Default 0 (off).
+   **Tugs (`tugs` n, event `tug`):** with n > 0 the string tugs exactly n times, each a full twang, then rests.
+   Done uses `{tugs 2, recoil 0.95, recoilMin 0, settleHz 1/(2·gap)}`, where gap is the `line` cue's
+   second-note offset (0.12s): the line gives ≈1.6px at 96 between the tugs, which land ~130ms apart.
+   (An earlier long four-bounce version with windup read as artificial; windup stays available, default off.)
    s follows from length conservation, and φ eases to 0 over the same spring.
    The string can't stretch, so Δ is clamped at Δ_T. The moment Δ reaches Δ_T is the event `hit`
    (sync the `connected` cue's second note to it).

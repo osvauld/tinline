@@ -31,11 +31,11 @@ const btn = (p, n) => p.getByRole('button', { name: n, exact: true });
 const next = (p) => btn(p, 'Continue');
 
 async function createPath(p, form) {
-  await btn(p, 'Create account').click(); await waitStep(p, 'name');
+  await btn(p, 'Create my account').click(); await waitStep(p, 'name');
   ok(await p.getByRole('heading', { name: 'What should people call you?' }).isVisible(), `[${form}] name step`);
   ok(await p.evaluate(() => document.activeElement?.tagName) === 'INPUT', `[${form}] name field focused`);
   ok(await next(p).isDisabled(), `[${form}] Continue disabled while name empty`);
-  await p.getByLabel('Your name').fill('Test User'); await next(p).click(); await waitStep(p, 'pass');
+  await p.getByLabel('Your nickname').fill('Test User'); await next(p).click(); await waitStep(p, 'pass');
   await p.getByLabel('Passphrase', { exact: true }).fill('purple elephant dance now');
   ok(await p.getByLabel(/^Confirm/).count() === 0, `[${form}] no confirm-passphrase field`);
   ok(await p.getByText('Strong').isVisible(), `[${form}] strength hint`);
@@ -43,9 +43,9 @@ async function createPath(p, form) {
   ok(await p.getByLabel('Passphrase', { exact: true }).getAttribute('type') === 'text', `[${form}] show/hide passphrase`);
   await next(p).click(); await waitStep(p, 'phrase');
   ok(await p.locator('[data-testid=phrase]').getAttribute('aria-hidden') === 'true', `[${form}] phrase hidden until revealed`);
-  ok(await btn(p, 'I’ve written them down').isDisabled(), `[${form}] cannot continue before reveal`);
+  ok(await btn(p, 'I’ve saved them').isDisabled(), `[${form}] cannot continue before reveal`);
   await btn(p, 'Show the words').click();
-  ok(await btn(p, 'I’ve written them down').isEnabled(), `[${form}] reveal enables continue`);
+  ok(await btn(p, 'I’ve saved them').isEnabled(), `[${form}] reveal enables continue`);
   // optional check: open, flag a wrong word, fix, return to the phrase
   await btn(p, 'Check my copy').click(); await waitStep(p, 'confirm');
   await p.getByLabel('Word 4', { exact: true }).fill('wrong'); await p.getByLabel('Word 11', { exact: true }).fill('access'); await p.getByLabel('Word 19', { exact: true }).fill('across');
@@ -53,7 +53,7 @@ async function createPath(p, form) {
   ok(await p.getByText('That isn’t word 4. Check your written copy.').isVisible(), `[${form}] check: wrong word flagged`);
   await p.getByLabel('Word 4', { exact: true }).fill('about'); await btn(p, 'Done').click(); await waitStep(p, 'phrase');
   ok(true, `[${form}] optional check returns to the phrase`);
-  await btn(p, 'I’ve written them down').click(); await waitStep(p, 'device');
+  await btn(p, 'I’ve saved them').click(); await waitStep(p, 'device');
   ok(await p.locator('.prog small').innerText() === '4 of 6', `[${form}] progress shows shorter flow (4 of 6)`);
   ok((await p.getByLabel('Device name').inputValue()) === (form === 'android' ? 'Personal phone' : 'Home computer'), `[${form}] device name default`);
   await next(p).click(); await waitStep(p, 'terms');
@@ -79,7 +79,7 @@ async function createPath(p, form) {
       const el = [...document.querySelectorAll(sel)].find((e) => !text || e.textContent.trim() === text || e.getAttribute('aria-label') === text); el.click();
       const xs = []; let n = 0; const f = () => { xs.push([...document.querySelectorAll('.pane')].map((e) => new DOMMatrix(getComputedStyle(e).transform).m41));
         if (++n < 14) requestAnimationFrame(f); else res(xs); }; requestAnimationFrame(f); }), [sel, text]);
-    const fwd = await clickSample('button', 'Create account'); const flat = fwd.flat();
+    const fwd = await clickSample('button', 'Create my account'); const flat = fwd.flat();
     ok(flat.some((x) => x > 1) && flat.some((x) => x < -1), 'forward: incoming starts at inline-end, outgoing leaves toward inline-start');
     ok(new Set(flat.map((x) => Math.round(x))).size > 4, 'step transition interpolates (several distinct offsets)');
     await waitStep(p, 'name');
@@ -92,7 +92,7 @@ async function createPath(p, form) {
 
   // ---- link path: approve
   { const p = await open(b, 'android', false);
-    await btn(p, 'Link to a device').click(); await waitStep(p, 'linkName');
+    await btn(p, 'Link my other device').click(); await waitStep(p, 'linkName');
     await next(p).click(); await waitStep(p, 'link');
     ok(await p.getByRole('img', { name: /QR code/ }).isVisible(), '[link] QR shown on the new device');
     ok(/Expires in 4:5\d|Expires in 5:00/.test(await p.getByRole('timer').innerText()), '[link] expiry countdown');
@@ -111,7 +111,7 @@ async function createPath(p, form) {
 
   // ---- link path: expire, cancel, fail
   { const p = await open(b, 'android', false);
-    await btn(p, 'Link to a device').click(); await waitStep(p, 'linkName');
+    await btn(p, 'Link my other device').click(); await waitStep(p, 'linkName');
     await next(p).click(); await waitStep(p, 'link');
     await drawer(p, (d) => d.getByRole('button', { name: 'Code expires' }).click());
     await p.waitForSelector('text=The code expired. Try again.', { timeout: 3000 });
@@ -129,7 +129,7 @@ async function createPath(p, form) {
 
   // ---- restore with a wrong word, then fixed; and "phrase restore fails"
   { const p = await open(b, 'android', false);
-    await btn(p, 'Restore from recovery phrase').click(); await waitStep(p, 'restore');
+    await btn(p, 'Restore my account').click(); await waitStep(p, 'restore');
     const words = 'abandon ability able about abondon absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual'.split(' ');
     await p.getByLabel('Word 1', { exact: true }).fill(words.join(' '));
     await next(p).click();
@@ -140,7 +140,7 @@ async function createPath(p, form) {
     ok(await p.getByRole('button', { name: 'absent' }).isVisible(), '[restore] suggestions for a prefix');
     await p.getByRole('button', { name: 'absent' }).click();
     await next(p).click(); await waitStep(p, 'restoreName');
-    await p.getByLabel('Your name').fill('Test User'); await next(p).click(); await waitStep(p, 'restorePass');
+    await p.getByLabel('Your nickname').fill('Test User'); await next(p).click(); await waitStep(p, 'restorePass');
     await drawer(p, (d) => d.getByLabel('Phrase restore fails').click());
     await btn(p, 'Skip for now').click(); await waitStep(p, 'restore');
     ok(await p.getByText('That phrase isn’t valid. Check each word and their order.').isVisible(), '[restore] simulated restore failure returns to words with error');
@@ -169,8 +169,8 @@ async function createPath(p, form) {
   // ---- welcome offers Link and Restore on both forms; restore on a device with an account ADDS one
   for (const form of ['desktop', 'android']) {
     const p = await open(b, form, false);
-    ok(await btn(p, 'Link to a device').isVisible() && await btn(p, 'Restore from recovery phrase').isVisible() && await btn(p, 'Create account').isVisible(), `[${form}] welcome offers Create, Link and Restore`);
-    const bx = await Promise.all(['Create account', 'Link to a device', 'Restore from recovery phrase'].map((n) => btn(p, n).boundingBox()));
+    ok(await btn(p, 'Link my other device').isVisible() && await btn(p, 'Restore my account').isVisible() && await btn(p, 'Create my account').isVisible(), `[${form}] welcome offers Create, Link and Restore`);
+    const bx = await Promise.all(['Create my account', 'Link my other device', 'Restore my account'].map((n) => btn(p, n).boundingBox()));
     const frame = await p.locator('.card').boundingBox();
     ok(bx.every((r) => r && r.x >= frame.x - 1 && r.x + r.width <= frame.x + frame.width + 1), `[${form}] welcome buttons stay inside the card`);
     await p.context().close();
@@ -180,10 +180,10 @@ async function createPath(p, form) {
     ok(/Only the selected account is online/.test(await p.locator('[data-accounts]').innerText()), '[add] settings says only the selected account is online');
     await btn(p, 'Add another account').click(); await waitStep(p, 'welcome');
     ok(await p.getByRole('heading', { name: 'Add an account' }).isVisible(), '[add] welcome says Add an account');
-    await btn(p, 'Restore from recovery phrase').click(); await waitStep(p, 'restore');
+    await btn(p, 'Restore my account').click(); await waitStep(p, 'restore');
     await drawer(p, (d) => d.getByRole('button', { name: 'Fill demo phrase (restore)' }).click());
     await next(p).click(); await waitStep(p, 'restoreName');
-    await p.getByLabel('Your name').fill('Anu Joseph'); await next(p).click(); await waitStep(p, 'restorePass');
+    await p.getByLabel('Your nickname').fill('Anu Joseph'); await next(p).click(); await waitStep(p, 'restorePass');
     await btn(p, 'Skip for now').click(); await waitStep(p, 'device');
     await next(p).click(); await waitStep(p, 'terms');
     await p.getByRole('checkbox').check(); await btn(p, 'Agree and continue').click(); await waitStep(p, 'perms');
@@ -202,7 +202,7 @@ async function createPath(p, form) {
   { const p = await open(b, 'android', false, true);
     ok(await p.evaluate(() => document.documentElement.dataset.motion) === 'reduce', '[reduced] data-motion=reduce from OS setting');
     const lens = p.evaluate(() => new Promise((res) => { const d = []; const f = () => { document.getAnimations().forEach((a) => { const t = a.effect?.getComputedTiming?.().duration; if (a.effect?.target?.classList?.contains('pane')) d.push(+t); }); }; const mo = new MutationObserver(f); mo.observe(document.body, { childList: true, subtree: true }); setTimeout(() => res(d), 700); }));
-    await btn(p, 'Create account').click(); await waitStep(p, 'name');
+    await btn(p, 'Create my account').click(); await waitStep(p, 'name');
     const d = await lens; ok(d.every((x) => x <= 1), `[reduced] pane transition durations <=1ms (${d.join(',') || 'none'})`);
     await p.context().close(); }
 

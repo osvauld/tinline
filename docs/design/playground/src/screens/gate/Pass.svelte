@@ -10,15 +10,15 @@
   const cta = $derived({ forgot: 'Restore account', link: 'Add passphrase', save: 'Save account', restore: 'Restore account', create: 'Continue' }[kind]);
   const canSkip = $derived(kind !== 'save');
   const protectLine = $derived(gate.isAndroid
-    ? 'Encrypts your account on this phone, so nobody holding it can copy it. Your phone remembers it so calls still ring after a restart.'
-    : 'Encrypts your account on this computer, so nobody who copies its files can read it. You type it each time Tinline starts.');
+    ? 'Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart.'
+    : 'Encrypts your account on this computer. You type it each time Tinline starts.');
 
   const strength = $derived.by(() => {
     const p = gate.pass; if (!p) return 0;
     const words = p.trim().split(/\s+/).length;
     return p.length >= 16 || words >= 4 ? 3 : p.length >= 8 ? 2 : 1;
   });
-  const says = $derived(['Any length works. A few random words is easy to remember.', 'Short: easy to guess', 'Fair', 'Strong']);
+  const says = $derived(['Any length works. A few random words are easy to remember.', 'Short. A few more words make it stronger.', 'Fair', 'Strong']);
   const cur = $derived(gate.pass ? strength : 0);
   const submit = () => {
     if (!gate.pass) return;
@@ -26,7 +26,7 @@
   };
 </script>
 
-<StepShell {title} lead="Optional. Anyone with your {gate.noun} could otherwise open your account." form onsubmit={submit}>
+<StepShell {title} lead="Optional. A lock, so only you can open Tinline on this {gate.noun}." form onsubmit={submit}>
   <div class="col">
     <Field label="Passphrase" secret bind:value={gate.pass} autofocus autocomplete="new-password" disabled={gate.busy} describedBy="strength" />
     <div class="meter" id="strength" aria-live="polite">
@@ -35,10 +35,10 @@
       <span class="says">{#each says as t, i (i)}<small class:cur={i === cur}>{t}</small>{/each}</span>
     </div>
   </div>
-  <Notice icon="lock">{protectLine} <b>It can’t be recovered</b>, only replaced by restoring with your recovery phrase.</Notice>
+  <Notice icon="lock">{protectLine} If you forget it, your recovery words let you set a new one.</Notice>
   {#if gate.error}<Notice kind="error">{gate.error}</Notice>{/if}
   {#snippet foot()}
-    <Btn type="submit" busy={gate.busy} disabled={!gate.pass}>{gate.busy ? 'Encrypting…' : cta}</Btn>
+    <Btn type="submit" busy={gate.busy} disabled={!gate.pass} next={kind === 'create'} enter label={gate.busy ? 'Encrypting…' : undefined}>{gate.busy ? 'Encrypting…' : cta}</Btn>
     {#if canSkip}<Btn kind="text" disabled={gate.busy} onclick={() => gate.submitPass(true)}>Skip for now</Btn>{/if}
   {/snippet}
 </StepShell>

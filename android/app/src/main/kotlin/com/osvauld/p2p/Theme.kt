@@ -12,6 +12,9 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.ExperimentalTextApi
@@ -140,6 +143,19 @@ fun TinlineTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () 
     }
 }
 
+/**
+ * Appearance: null follows the system; true/false is an explicit choice. The sign-up theme switch and Settings › Appearance
+ * write it; the root theme reads it.
+ */
+object Appearance {
+    val dark = kotlinx.coroutines.flow.MutableStateFlow<Boolean?>(null)
+    private fun prefs(c: android.content.Context) = c.getSharedPreferences("appearance", android.content.Context.MODE_PRIVATE)
+    fun load(c: android.content.Context) { val p = prefs(c); dark.value = if (p.contains("dark")) p.getBoolean("dark", false) else null }
+    fun set(c: android.content.Context, d: Boolean) { prefs(c).edit().putBoolean("dark", d).apply(); dark.value = d }
+    /** "Match my phone": forget the choice and follow the system again. */
+    fun follow(c: android.content.Context) { prefs(c).edit().remove("dark").apply(); dark.value = null }
+}
+
 /** Shorthand: `Tin.c.pr`. */
 object Tin {
     val c: TinColors @Composable @ReadOnlyComposable get() = LocalTin.current
@@ -166,9 +182,18 @@ fun Modifier.depth(level: Depth, shape: androidx.compose.ui.graphics.Shape): Mod
     if (level == Depth.Flat) return this
     val dark = Tin.c.dark
     val tint = (if (dark) Color.Black else ShadowTint).copy(alpha = if (dark) level.darkAlpha else level.lightAlpha)
-    return this
+    val base = this
         .shadow(level.ambientDp.dp, shape, clip = false, ambientColor = tint, spotColor = tint)
         .shadow(level.contactDp.dp, shape, clip = false, ambientColor = tint, spotColor = tint)
+    if (!dark) return base
+    // tokens.css --rim (dark only, inside every raised shadow token): a 1px light edge along the top, as if lit from above.
+    // Drawn over the element's own background, clipped to its outline so it follows the corners.
+    return base.drawWithContent {
+        drawContent()
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val path = androidx.compose.ui.graphics.Path().apply { addOutline(outline) }
+        clipPath(path) { drawRect(Color.White.copy(alpha = 0.08f), size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }
+    }
 }
 
 // ---- tokens.css values the screens port needs that TinColors has no slot for (shell area, 2026-10-13; additive) ----

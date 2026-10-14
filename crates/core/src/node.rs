@@ -488,6 +488,8 @@ pub(crate) struct Inner {
     /// Group calls (G6), `crate::gcall::net`.
     pub(crate) gcall: crate::gcall::net::Service,
     pub(crate) block: crate::block::BlockRt,
+    /// Contact requests (`contact_req.rs`).
+    pub(crate) requests: crate::contact_req::ReqRt,
     /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
     pub(crate) group: crate::group::engine::GroupRt,
     /// Token delivery (P6, `caps.rs`).
@@ -588,6 +590,7 @@ impl Node {
             link: Default::default(),
             gcall: Default::default(),
             block: Default::default(),
+            requests: Default::default(),
             group: Default::default(),
             caps: Default::default(),
             devlist: Default::default(),
@@ -955,18 +958,20 @@ impl Node {
                 s.me = Some(Arc::new(Me::load(profile, me.epoch)?));
             }
             // The old ticket carries the old name (and `ticket()` checks it, for the locked case
-            // where the sealed state cannot be touched).
-            s.state.ticket = None;
+            // where the sealed state cannot be touched). Reusable codes: the old one still adds
+            // contacts until it expires (whoever holds it sees the old name).
+            retire_ticket(&mut s.state, true);
             s.me.is_some()
         };
         if unlocked { self.inner.persist() } else { Ok(()) }
     }
 
-    /// Drops the ticket we hand out: the old QR/text stops working at once and the next
-    /// `my_ticket` mints a fresh one. For "the ticket may have leaked".
+    /// Drops the ticket we hand out, and every older one still live: the old QR/text stops
+    /// working at once and the next `my_ticket` mints a fresh one ("New code"; "the ticket may
+    /// have leaked"). Requests that already arrived stay to be answered.
     pub fn reset_ticket(&self) -> Result<(), Error> {
         self.inner.me()?;
-        self.inner.shared.lock().state.ticket = None;
+        retire_ticket(&mut self.inner.shared.lock().state, false);
         self.inner.persist()
     }
 
@@ -1004,7 +1009,10 @@ impl Node {
         self.inner.status()
     }
 
-    /// Our contact ticket (`OSVC2:…`), stable until someone redeems it.
+    /// Our contact ticket (`OSVC2:…`). Reusable: any number of people can add us with it until
+    /// it expires (7 days) or `reset_ticket`; each addition is a request we accept or not.
+    /// Replaced (the old one stays good until it expires) on its last day, after a rename and
+    /// when our relay changes.
     pub fn my_ticket(&self) -> Result<String, Error> {
         let inner = self.inner.clone();
         self.block_on(async move { inner.ticket().await })?
@@ -1643,7 +1651,7 @@ impl Inner {
         Ok(())
     }
 
-    fn write_state(&self, backing: &Backing, state: &State) -> Result<(), Error> {
+    pub(crate) fn write_state(&self, backing: &Backing, state: &State) -> Result<(), Error> {
         if self.fail_writes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
             return Err(Error::Io("injected write failure".into()));
         }
@@ -2002,6 +2010,7 @@ impl Inner {
         self.chat_started();
         self.selfsync_started();
         self.notices_started();
+        self.welcomes_started();
         self.group_started();
         self.tokens_started();
         // After a restore (new device key) or a change made while we were offline: tell contacts.
@@ -2122,6 +2131,13 @@ impl Inner {
             {
                 return Ok(text.clone());
             }
+            // The one it replaces was handed out and stays good until it expires.
+            if s.state.ticket.as_deref().and_then(|t| ContactTicket::from_text(t).ok()).and_then(|t| t.verify(now).ok()).is_some_and(|c| {
+                c.iss == me.id.did() && c.device == proto::device_to_text(&me.device)
+            }) {
+                retire_ticket(&mut s.state, true);
+            }
+            s.state.live_tickets.retain(|_, exp| *exp > now);
             let ticket = proto::issue_contact_ticket(
                 &me.id,
                 me.device,
@@ -2131,6 +2147,9 @@ impl Inner {
                 TICKET_TTL,
             );
             let text = ticket.to_text();
+            if let Ok(c) = ticket.verify(now) {
+                s.state.live_tickets.insert(c.nonce, c.exp);
+            }
             s.state.ticket = Some(text.clone());
             text
         };
@@ -2167,9 +2186,25 @@ impl Inner {
         self.add_contact_from(text, crate::caps::ContactOrigin::Ticket).await
     }
 
-    /// `add_contact`, giving them the tokens `origin` decides (P6: a group chat request gives
-    /// message only).
+    /// `add_contact_outcome` for callers that need the contact now (a group chat request ticket,
+    /// which its owner takes at once): a request held for their user is an error here.
     pub(crate) async fn add_contact_from(self: Arc<Self>, text: String, origin: crate::caps::ContactOrigin) -> Result<Contact, Error> {
+        match self.add_contact_outcome(text, origin).await? {
+            crate::contact_req::AddOutcome::Added { contact } => Ok(contact),
+            crate::contact_req::AddOutcome::Requested { .. } => Err(Error::Protocol(crate::contact_req::PENDING.into())),
+        }
+    }
+
+    /// Redeems a ticket, giving them the tokens `origin` decides (P6: a group chat request gives
+    /// message only). Their device either adds us at once (`Added`) or holds our hello as a
+    /// request for its user (`Requested`): our half is kept in `sent_requests`, and their
+    /// Welcome arrives later on a connection they dial (`welcome_incoming`).
+    pub(crate) async fn add_contact_outcome(
+        self: Arc<Self>,
+        text: String,
+        origin: crate::caps::ContactOrigin,
+    ) -> Result<crate::contact_req::AddOutcome, Error> {
+        use crate::contact_req::AddOutcome;
         let me = self.me()?;
         let ticket = ContactTicket::from_text(&text)?;
         let claim = ticket.verify(now())?;
@@ -2202,35 +2237,93 @@ impl Inner {
         if let Msg::ContactHello { relay, .. } = &mut hello {
             *relay = relay_of(&ep);
         }
+        // Our half is kept before the hello leaves: their user's Accept can dial back any time
+        // after. A request already delivered with an earlier hello stays delivered.
+        let prior = {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return Err(Error::Locked);
+            }
+            let prior = s.state.sent_requests.get(&claim.iss).cloned();
+            s.state.sent_requests.insert(
+                claim.iss.clone(),
+                crate::store::SentRequest {
+                    pending: pending.clone(),
+                    relay: relay.clone(),
+                    calls_allowed: policy.call,
+                    exp: claim.exp,
+                    at: prior.as_ref().map_or_else(now_ms, |p| p.at),
+                    delivered: prior.as_ref().is_some_and(|p| p.delivered),
+                },
+            );
+            prior
+        };
+        self.persist_async(me.epoch).await?;
         let addr = addr_for(&proto::device_from_text(&claim.device)?, relay.as_deref())?;
         self.log(format!("adding contact {}: dialing {}", claim.name, addr.id));
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CALL))
-            .await
-            .map_err(|_| Error::Timeout)??;
+        // Not reached: they never saw this hello, so what we held before stands.
+        let undo = |this: &Arc<Self>| {
+            let mut s = this.shared.lock();
+            match &prior {
+                Some(p) => s.state.sent_requests.insert(claim.iss.clone(), p.clone()),
+                None => s.state.sent_requests.remove(&claim.iss),
+            };
+        };
+        let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CALL)).await {
+            Ok(Ok(c)) => c,
+            Ok(Err(e)) => {
+                undo(&self);
+                let _ = self.persist_async(me.epoch).await;
+                return Err(e);
+            }
+            Err(_) => {
+                undo(&self);
+                let _ = self.persist_async(me.epoch).await;
+                return Err(Error::Timeout);
+            }
+        };
         let remote = *conn.remote_id().as_bytes();
         let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
         let mut ctrl = Ctrl::new(send, recv);
         ctrl.send(&hello).await?;
+        // From here the hello may have reached them: on a timeout our half stays (unlisted) so
+        // a late Accept still lands.
         let reply = tokio::time::timeout(HELLO_TIMEOUT, ctrl.recv())
             .await
             .map_err(|_| Error::Timeout)??
             .ok_or_else(|| Error::Protocol("peer closed".into()))?;
         let new = match reply {
-            Msg::Reject { reason } => return Err(Error::Rejected(clip_reason(&reason))),
+            Msg::Reject { reason } => {
+                undo(&self);
+                let _ = self.persist_async(me.epoch).await;
+                return Err(Error::Rejected(clip_reason(&reason)));
+            }
             // They block us: their app's notice is the answer (and is taken here).
             Msg::Notice { notice } if self.is_block_from(&claim.iss, &notice) => {
+                self.shared.lock().state.sent_requests.remove(&claim.iss);
                 let _ = self.take_notice(&notice);
                 return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
+            Msg::ContactPending => {
+                ctrl.finish();
+                conn.close(0u32.into(), b"pending");
+                if let Some(r) = self.shared.lock().state.sent_requests.get_mut(&claim.iss) {
+                    r.delivered = true;
+                }
+                self.persist_async(me.epoch).await?;
+                self.log(format!("contact request to {} delivered", claim.name));
+                return Ok(AddOutcome::Requested { did: claim.iss.clone(), name: pending.name.clone() });
             }
             other => proto::accept_contact_welcome(&me.id, &pending, &other, remote, now())?,
         };
         ctrl.finish();
         conn.close(0u32.into(), b"added");
+        self.shared.lock().state.sent_requests.remove(&claim.iss);
         // We scanned their ticket ourselves: that is the one way back from a block.
         let contact = self.save_contact(me.epoch, new, relay, true, policy.call).await?;
         self.log(format!("contact {} added", contact.name));
         self.list_for_new_contact(&contact.did);
-        Ok(contact)
+        Ok(AddOutcome::Added { contact })
     }
 
     /// `lift_block`: only when the user scanned this contact's ticket; a contact who arrives on
@@ -2257,11 +2350,13 @@ impl Inner {
         Ok(contact)
     }
 
-    /// An incoming `ContactHello`, answered with a `Welcome` only after the contact, the spent
-    /// nonce and the dropped ticket are durable in one write. Blocking: runs on the blocking
-    /// pool. If the write fails nothing changes in memory either, so the ticket is still good
-    /// and the joiner can retry.
-    fn accept_hello(&self, me: &Me, hello: &Msg, remote: [u8; 32], hint: Option<String>) -> Result<(Msg, Contact), HelloError> {
+    /// An incoming `ContactHello`. Checked, then either held as a request for the user's Accept
+    /// (the default for a ticket hello, 2026-10-13: nobody becomes a contact without our yes) or,
+    /// for a group chat request ticket we already said yes to, an existing contact re-adding, or
+    /// the test switch, answered with a `Welcome` at once. Either way the outcome is durable in
+    /// one write before the joiner hears anything. Blocking: runs on the blocking pool. If the
+    /// write fails nothing changes in memory either, and the joiner can retry.
+    fn accept_hello(&self, me: &Me, hello: &Msg, remote: [u8; 32], hint: Option<String>) -> Result<Hello, HelloError> {
         let _w = self.writing.lock();
         let (mut next, backing) = {
             let s = self.shared.lock();
@@ -2271,8 +2366,7 @@ impl Inner {
             (s.state.clone(), s.committed.then(|| s.acct.as_ref().and_then(|a| a.backing.clone())).flatten())
         };
         let now = now();
-        let current = current_nonce(&next, now);
-        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now, &next.redeemed, GRANT_TTL, |did| {
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now, &spent_nonces(&next), GRANT_TTL, |did| {
             // A DID we accepted a group chat request from gets message-only tokens (U3, P6).
             let origin = if next.req_tickets.values().any(|t| t.did == did && t.exp >= now) {
                 crate::caps::ContactOrigin::GroupRequest
@@ -2284,24 +2378,56 @@ impl Inner {
         .map_err(|e| HelloError::Refused(e.to_string()))?;
         let by_request = next.req_tickets.get(&new.redeemed_nonce).is_some_and(|t| t.did == new.did && t.exp >= now);
         let calls_allowed = matches!(&welcome, Msg::ContactWelcome { call_grant_for_you: Some(_), .. });
-        // Only the ticket we hand out right now can be redeemed: an older one that leaked (or
-        // was reset) is dead even though its nonce is unspent.
-        if !by_request && current.as_deref() != Some(new.redeemed_nonce.as_str()) {
-            return Err(HelloError::Refused("not the current ticket".into()));
+        // Only a ticket we still hand out can be redeemed: the current one, or an older one that
+        // was replaced but not reset (reusable codes). A reset one is dead though unspent.
+        if !by_request && !ticket_live(&next, &new.redeemed_nonce, now) {
+            return Err(HelloError::Refused("not a live ticket".into()));
         }
         if let Some(notice) = self.refusal_for(&new.did) {
             return Err(HelloError::Blocked(notice));
         }
+        let known = next.contacts.iter().any(|c| c.did == new.did);
+        let welcome_now = by_request || known || self.requests.auto_accept.load(Ordering::SeqCst);
+        if !welcome_now {
+            let exp = proto::hello_invite(hello).map_err(|e| HelloError::Refused(e.to_string()))?.exp;
+            let fresh = !next.contact_requests.contains_key(&new.did);
+            let held = crate::store::HeldRequest {
+                hello: hello.clone(),
+                device: remote,
+                relay: hint,
+                name: proto::sanitize_name(&new.name),
+                nonce: new.redeemed_nonce.clone(),
+                exp,
+                // A replayed or repeated hello stays one request, first arrival first.
+                at: next.contact_requests.get(&new.did).map_or_else(now_ms, |r| r.at),
+            };
+            let apply = |st: &mut State| -> Result<(), Error> {
+                st.contact_requests.retain(|_, r| r.exp > now);
+                if fresh && st.contact_requests.len() >= crate::contact_req::MAX_HELD {
+                    return Err(Error::Rejected("too many requests".into()));
+                }
+                st.contact_requests.insert(new.did.clone(), held.clone());
+                Ok(())
+            };
+            apply(&mut next).map_err(|e| HelloError::Refused(e.to_string()))?;
+            if let Some(b) = &backing {
+                self.write_state(b, &next).map_err(HelloError::Failed)?;
+            }
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return Err(HelloError::Failed(Error::Locked));
+            }
+            apply(&mut s.state).map_err(|e| HelloError::Refused(e.to_string()))?;
+            return Ok(Hello::Held { request: crate::contact_req::request_view(&new.did, &held), fresh });
+        }
         let stored = stored_contact(&new, hint, calls_allowed);
         let contact = Contact::from(&stored);
         let apply = |st: &mut State| {
-            st.redeemed.insert(new.redeemed_nonce.clone());
+            st.redeemed.insert(proto::redeemed_key(&new.did, &new.redeemed_nonce));
             if by_request {
                 st.req_tickets.remove(&new.redeemed_nonce);
-            } else {
-                // Spent: the next `my_ticket` mints a fresh one.
-                st.ticket = None;
             }
+            st.contact_requests.remove(&new.did);
             apply_contact(st, stored.clone(), new.device, false)
         };
         apply(&mut next).map_err(HelloError::Failed)?;
@@ -2313,7 +2439,7 @@ impl Inner {
             return Err(HelloError::Failed(Error::Locked));
         }
         apply(&mut s.state).map_err(HelloError::Failed)?;
-        Ok((welcome, contact))
+        Ok(Hello::Welcome(welcome, contact))
     }
 
     /// The slot in `permit` is held until this connection has become a call or a contact, or is
@@ -2358,7 +2484,7 @@ impl Inner {
                     .await
                     .map_err(|_| Error::Io("contact task failed".into()))?;
                 match accepted {
-                    Ok((welcome, contact)) => {
+                    Ok(Hello::Welcome(welcome, contact)) => {
                         // Durable now; only then does the joiner hear of it.
                         self.events.on_contacts_changed();
                         ctrl.send(&welcome).await?;
@@ -2368,6 +2494,17 @@ impl Inner {
                         self.list_for_new_contact(&contact.did);
                         // Let the joiner read the welcome and close first.
                         let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
+                    }
+                    Ok(Hello::Held { request, fresh }) => {
+                        // Durable now: the joiner shows "request sent", our user decides.
+                        ctrl.send(&Msg::ContactPending).await?;
+                        ctrl.finish();
+                        drop(permit);
+                        self.log(format!("contact request from {}", request.name));
+                        if fresh {
+                            self.request_event(request);
+                        }
+                        let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                     }
                     Err(HelloError::Blocked(notice)) => {
                         self.log("refused a contact hello: blocked");
@@ -2393,6 +2530,13 @@ impl Inner {
                 Ok(())
             }
             hello @ Msg::CallHello { .. } => self.incoming_call(conn, ctrl, hello, remote, &me, permit).await,
+            welcome @ Msg::ContactWelcome { .. } => {
+                // Their user accepted our request and they dialled back with the Welcome.
+                drop(permit);
+                self.welcome_incoming(ctrl, welcome, remote, &me).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
             Msg::Notice { notice } => {
                 drop(permit);
                 self.notice_incoming(ctrl, notice).await?;
@@ -3477,7 +3621,14 @@ pub(crate) fn relay_hint(hint: &Option<String>) -> Option<String> {
         .map(|u| u.to_string())
 }
 
-/// The nonce of the ticket we currently hand out, if it is still valid.
+/// What `accept_hello` did with a good hello.
+enum Hello {
+    /// Added at once: send this `ContactWelcome`.
+    Welcome(Msg, Contact),
+    /// Held for the user's Accept: send `ContactPending`. `fresh`: the first from that DID.
+    Held { request: crate::contact_req::ContactRequest, fresh: bool },
+}
+
 enum HelloError {
     /// Not acceptable (bad, spent, old or blocked ticket): the joiner is turned away.
     Refused(String),
@@ -3487,7 +3638,7 @@ enum HelloError {
     Blocked(proto::SignedBlob),
 }
 
-fn stored_contact(new: &proto::NewContact, relay: Option<String>, calls_allowed: bool) -> StoredContact {
+pub(crate) fn stored_contact(new: &proto::NewContact, relay: Option<String>, calls_allowed: bool) -> StoredContact {
     StoredContact {
         did: new.did.clone(),
         name: proto::sanitize_name(&new.name),
@@ -3504,7 +3655,7 @@ fn stored_contact(new: &proto::NewContact, relay: Option<String>, calls_allowed:
 
 /// Adds `stored`, or refreshes the contact of that DID. A device we have not seen before resets
 /// `verified`: the safety numbers were compared with another phone.
-fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_block: bool) -> Result<(), Error> {
+pub(crate) fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_block: bool) -> Result<(), Error> {
     // A block is lifted only by `unblock` (which signs the notice); `add_contact` does that
     // before it gets here.
     if !lift_block && st.blocked.contains(&stored.did) {
@@ -3564,6 +3715,36 @@ pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedBlob)
     c.devices = devices;
     c.device_list = Some(blob.clone());
     true
+}
+
+/// Stops handing out the current ticket (the next `my_ticket` mints a fresh one). `keep`: it
+/// stays redeemable until it expires (reusable codes); otherwise every ticket we handed out
+/// stops working at once (`reset_ticket`, a block).
+pub(crate) fn retire_ticket(st: &mut State, keep: bool) {
+    if keep {
+        let now = now();
+        if let Some(c) = st.ticket.as_deref().and_then(|t| ContactTicket::from_text(t).ok()).and_then(|t| t.verify(now).ok()) {
+            st.live_tickets.insert(c.nonce, c.exp);
+        }
+    } else {
+        st.live_tickets.clear();
+    }
+    st.ticket = None;
+}
+
+/// The redeemed entries that refuse a hello. A shared code is good until it expires or is reset,
+/// for anyone and any number of times (decided 2026-10-14): the same person's other devices add
+/// us with it, and a re-add lifts a block. The (joiner, nonce) entries stay a record only; a bare
+/// nonce (single-use tickets from before) still spends its ticket, and one-time request tickets
+/// are dropped when used.
+pub(crate) fn spent_nonces(st: &State) -> std::collections::HashSet<String> {
+    st.redeemed.iter().filter(|k| !k.contains('/')).cloned().collect()
+}
+
+/// Whether our ticket with this nonce still adds contacts: the current one, or an older one
+/// that was replaced but not reset, until it expires.
+pub(crate) fn ticket_live(st: &State, nonce: &str, now: u64) -> bool {
+    st.live_tickets.get(nonce).is_some_and(|&exp| exp > now) || current_nonce(st, now).as_deref() == Some(nonce)
 }
 
 fn current_nonce(state: &State, now: u64) -> Option<String> {
@@ -3634,6 +3815,8 @@ fn msg_name(m: &Msg) -> &'static str {
         Msg::GroupLetter { .. } => "GroupLetter",
         Msg::GroupLetterTaken => "GroupLetterTaken",
         Msg::Video { .. } => "Video",
+        Msg::ContactPending => "ContactPending",
+        Msg::WelcomeTaken => "WelcomeTaken",
     }
 }
 
@@ -3742,7 +3925,7 @@ mod tests {
 
 /// The first word of `text` that looks like a contact card (`OSVC2:` or `osvc1.`), so a card
 /// pasted with a greeting around it still works.
-fn find_card(text: &str) -> Option<String> {
+pub(crate) fn find_card(text: &str) -> Option<String> {
     text.split(|c: char| c.is_whitespace() || matches!(c, '<' | '>' | '"' | '\'' | '(' | ')'))
         .map(|w| w.trim_end_matches(['.', ',', ';', '!', '?']))
         .find(|w| {

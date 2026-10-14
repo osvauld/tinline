@@ -2,6 +2,8 @@
 use super::*;
 use p2pcore::{SearchResults, NameHit, SearchNameKind};
 
+pub(super) const NEW_CHAT_ID: &str = "new-chat-find";
+
 #[derive(Default)]
 pub(super) struct State {
     pub active: bool,
@@ -10,6 +12,12 @@ pub(super) struct State {
     pub busy: bool,
     pub error: Option<String>,
     account: Option<String>,
+    /// ChatsList filter chips (All / Unread).
+    pub unread_only: bool,
+    /// NewChat.svelte: open with its "Find a contact" text.
+    pub new_chat: Option<String>,
+    /// ContactsList "Find a contact".
+    pub contacts_q: String,
 }
 impl State {
     pub fn clear(&mut self) {
@@ -19,7 +27,7 @@ impl State {
     pub fn bind(&mut self, account: Option<&str>) -> bool {
         if self.account.as_deref() == account { return false; }
         self.account = account.map(str::to_owned);
-        self.clear(); self.active = false; true
+        self.clear(); self.active = false; self.new_chat = None; self.unread_only = false; true
     }
     pub fn accept(&mut self, generation: u64, append: bool, result: Result<SearchResults, String>) {
         if generation != self.generation { return; }
@@ -39,6 +47,11 @@ impl State {
 #[derive(Debug, Clone)]
 pub(super) enum Action {
     Focus, Escape, More, Tab(chat::SideTab),
+    /// Chats filter chip.
+    Unread(bool),
+    /// Open / close the New chat picker; its find text; a contact chosen; its shortcuts.
+    ContactsFind(String), OpenPerson(String),
+    NewChat(bool), NewChatFind(String), NewChatPick(String), NewChatAdd, NewChatGroup,
     Ready(u64, bool, Result<SearchResults, String>),
     OpenName(NameHit),
 }
@@ -61,6 +74,26 @@ impl App {
                 self.search.clear(); self.shell_search.clear(); self.shell_search.active = false;
                 let home = self.update(Msg::Home);
                 return Task::batch([home, self.update_chat(Cm::Tab(tab))]);
+            }
+            Action::Unread(on) => self.shell_search.unread_only = on,
+            Action::ContactsFind(q) => self.shell_search.contacts_q = q,
+            // Desktop `nav.open({ name: 'contact' })`: the person's profile replaces the detail pane.
+            Action::OpenPerson(did) => {
+                self.profiles.history.clear();
+                self.profiles.page = None;
+                return self.profile_update(profile_ui::Action::Open(profile_ui::Page::Person(did)));
+            }
+            Action::NewChat(open) => {
+                self.shell_search.new_chat = open.then(String::new);
+                if open { return operation::focus(NEW_CHAT_ID); }
+            }
+            Action::NewChatFind(q) => if let Some(f) = self.shell_search.new_chat.as_mut() { *f = q; },
+            Action::NewChatPick(did) => { self.shell_search.new_chat = None; return self.update(Msg::Select(did)); }
+            Action::NewChatAdd => { self.shell_search.new_chat = None; return self.update(Msg::OpenAdd); }
+            Action::NewChatGroup => {
+                self.shell_search.new_chat = None;
+                let tab = self.shell_search_update(Action::Tab(chat::SideTab::Groups));
+                return Task::batch([tab, self.update_live(Lm::NewGroup)]);
             }
             Action::Focus => { self.shell_search.active = true; return operation::focus(SEARCH_ID); }
             Action::Escape if !self.search.is_empty() => return self.shell_search_query(String::new()),

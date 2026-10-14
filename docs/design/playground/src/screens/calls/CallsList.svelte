@@ -1,7 +1,9 @@
 <script lang="ts">
-  /* Calls tab: every call record across chats, newest first. Row = open the chat; button = call back. */
+  /* Calls tab: every call record across chats, newest first. The row calls them (this is the Calls tab; the chat lives
+     in Chats); the avatar opens their profile. Someone I can't call: the row opens their profile, which says why. */
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
+  import EmptyLine from '../../lib/ui/EmptyLine.svelte';
   import { db, chatTitle, person } from '../../lib/model/store.svelte';
   import { listStamp } from '../../lib/model/clock.svelte';
   import { nav } from '../../lib/nav/router.svelte';
@@ -23,7 +25,6 @@
     if (r.direction === 'in') return missed(r) ? 'Missed' : 'Declined';
     return ({ missed: 'No answer', declined: 'Declined', cancelled: 'Cancelled', failed: 'Couldn\'t connect' } as Record<string, string>)[r.outcome] ?? 'Call';
   }
-  const open = (c: DirectChat) => (prefs.form === 'desktop' ? nav.open({ name: 'conversation', chat: c.id }) : nav.push({ name: 'conversation', chat: c.id }));
   const callable = (c: DirectChat) => call.canCall(c.person);
   const why = (c: DirectChat) => {
     const r = call.refusal(c.person);
@@ -32,7 +33,8 @@
 </script>
 
 {#if !entries.length}
-  <div class="empty"><div class="art"><Icon name="phone" /></div><h3>No calls yet</h3><p>Calls you make and receive show up here.</p></div>
+  <!-- A new account (nobody added yet) gets the hero on a phone; otherwise just a quiet line. -->
+  <EmptyLine where="calls" size={prefs.form === 'android' && !db.people.some((p) => p.contact && !p.blocked) ? 'hero' : 'quiet'} />
 {:else}
   <ul class="list" role="list">
     {#each entries as e (e.key)}
@@ -41,16 +43,15 @@
         <button type="button" class="pf press" aria-label="{chatTitle(e.c)}’s profile" onclick={() => nav.push({ name: 'contact', person: e.c.person })}>
           <Avatar name={chatTitle(e.c)} hue={person(e.c.person)?.hue ?? 0} person={e.c.person} />
         </button>
-        <button type="button" class="row press" onclick={() => open(e.c)}
-          aria-label="{chatTitle(e.c)}, {what(e.r)} call{e.r.outcome === 'answered' ? ', ' + fmtShort(e.r.durationS) : ''}, {listStamp(e.m.at)}. Open chat">
+        <button type="button" class="row press" title={why(e.c)} onclick={() => (callable(e.c) ? call.place(e.c.person) : nav.push({ name: 'contact', person: e.c.person }))}
+          aria-label="{chatTitle(e.c)}, {what(e.r)} call{e.r.outcome === 'answered' ? ', ' + fmtShort(e.r.durationS) : ''}, {listStamp(e.m.at)}. {callable(e.c) ? 'Call' : why(e.c)}">
           <span class="mid">
             <span class="name">{chatTitle(e.c)}</span>
             <span class="sub" class:bad><Icon name={e.r.direction === 'out' ? 'call-out' : 'call-in'} size={15} /><span>{what(e.r)}{#if e.r.outcome === 'answered'}{' · '}<span class="dur">{fmtShort(e.r.durationS)}</span>{/if}</span></span>
           </span>
           <span class="when">{listStamp(e.m.at)}</span>
+          <span class="back" class:dim={!callable(e.c)} aria-hidden="true"><Icon name="phone" size={22} /></span>
         </button>
-        <button type="button" class="back press" class:dim={!callable(e.c)} aria-disabled={!callable(e.c)} title={why(e.c)}
-          aria-label="Call {chatTitle(e.c)} back" onclick={() => { if (callable(e.c)) call.place(e.c.person); }}><Icon name="phone" size={22} /></button>
       </li>
     {/each}
   </ul>
@@ -71,10 +72,9 @@
   .sub.bad { color: var(--danger); }
   .dur, .when { font-variant-numeric: tabular-nums; }
   .when { font-size: var(--fs-meta); color: var(--muted); flex: none; }
-  .back { flex: none; inline-size: var(--btn); block-size: var(--btn); border-radius: 50%; border: 0; background: transparent; color: var(--accent-ink); display: grid; place-items: center; cursor: pointer; }
-  .back:hover { background: var(--surface-2); }
-  .back.dim { color: var(--muted); opacity: .45; cursor: default; }
-  .back.dim:hover { background: transparent; }
+  .row { padding-inline-end: 0; }   /* the phone sits where the old call-back button was */
+  .back { flex: none; inline-size: var(--btn); block-size: var(--btn); display: grid; place-items: center; color: var(--accent-ink); }
+  .back.dim { color: var(--muted); opacity: .45; }
   .empty { margin: 48px auto 0; padding: 0 24px; text-align: center; max-inline-size: 320px; color: var(--muted); font-size: var(--fs-sub); line-height: 19px; }
   .empty h3 { color: var(--ink); margin: 14px 0 4px; font-size: var(--fs-body); font-weight: 600; }
   .empty p { margin: 0; }

@@ -79,7 +79,8 @@ impl App {
             }
             Vm::Found(src) => {
                 self.video.source = Some(src);
-                if self.video.has_camera() && !self.video.local_on() && crate::test_env("P2P_AUTO_CAMERA").is_some() {
+                let intent = std::mem::take(&mut self.video_intent);
+                if self.video.has_camera() && !self.video.local_on() && (intent || crate::test_env("P2P_AUTO_CAMERA").is_some()) {
                     return self.video_update(Vm::ToggleCamera);
                 }
                 self.sync_camera();

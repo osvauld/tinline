@@ -59,6 +59,7 @@ fn make_peer(name: &str, restore: Option<&str>) -> Peer {
     let dir = tempdir::new(name);
     let (tx, rx) = mpsc::channel();
     let node = Node::new(dir.0.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
+    node.auto_accept_contacts_for_test(true);
     let phrase = match restore {
         Some(p) => {
             node.restore_identity(p.into(), name.into(), PASS.into()).unwrap();

@@ -56,7 +56,7 @@ const PASS: &str = "test-passphrase";
 /// `GRANT_TTL` (`crates/core/src/node.rs:33`), private there.
 const GRANT_TTL: u64 = 365 * 24 * 3600;
 /// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 3 since P6.
-const CHAT_ALPN: &[u8] = b"tinline/chat/4";
+const CHAT_ALPN: &[u8] = b"tinline/chat/5";
 const WAIT: Duration = Duration::from_secs(30);
 
 // ---- helpers copied from block_characterization.rs / device_list_characterization.rs ----
@@ -128,6 +128,7 @@ fn peer(name: &str) -> Peer {
         Arc::new(Tap(Mutex::new(tx), logs.clone())),
     )
     .unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.create_identity(name.into(), PASS.into()).unwrap();
     online(&node);
     let did = node.profile().unwrap().did;

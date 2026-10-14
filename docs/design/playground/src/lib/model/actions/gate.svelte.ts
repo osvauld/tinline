@@ -235,6 +235,12 @@ class Gate {
       return;
     }
     if (this.name.trim()) db.account.name = this.name.trim();
+    /* A NEW account starts empty, like the real app: no people, chats or groups, and only this device.
+       (Restore/link keep the sample data: their contacts arrive from the other device.) */
+    if (this.flow === 'create') {
+      db.people = []; db.chats = [];
+      db.devices = [{ id: 'self', name: this.deviceLabel || this.defaultLabel, kind: this.isAndroid ? 'phone' : 'desktop', self: true, lastSeen: clock.now }];
+    }
     db.account.gate = 'ready';
     this.enter('onboarding');
   }
@@ -315,6 +321,9 @@ export function progressOf(step: Step, flow: Flow): [number, number] | null {
     link: ['linkName', 'link', 'linkPass', 'terms', 'perms'],
     forgot: [],
   };
+  /* Welcome and Choose are step 0 of the create count: the header and its empty line are already there, so the
+     first Continue only fills a segment and nothing appears or moves. */
+  if (step === 'welcome' || step === 'choose') return [0, orders.create.length];
   const o = orders[flow];
   const i = o.indexOf(step);
   return i < 0 ? null : [i + 1, o.length];

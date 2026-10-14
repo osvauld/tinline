@@ -60,7 +60,7 @@ messages/<id> = { id, author, at, reply_to?, file?,
 - Reactions (later): `reactions/<did>/<emoji>`, each DID writes only its own slot.
 
 ### Wire
-ALPN `tinline/chat/4` (account profiles; `/1`, `/2`, and `/3` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
+ALPN `tinline/chat/5` (photo sizes; `/1` to `/4` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
 same proof as a call (attestation + grant, `proto`); the rest is framed like the call control
 stream.
 
@@ -191,7 +191,7 @@ What differs from or settles the text above.
 
 ### Code map
 `crypt.rs` chunked blob AEAD · `blobs.rs` iroh-blobs hub (store, gated serving, GC) ·
-`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/4` ·
+`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/5` ·
 `store.rs` sealed records · `engine.rs` sessions, sync, outbox, transfers, history ·
 `api.rs` the UniFFI surface. New crate `crates/storage` (redb + sealed records, copied from
 osvauld2 `storage` @ 90d22ec with the `vault` entry idea).
@@ -221,6 +221,15 @@ For chat day shards, a device only ever sends **its own** ops (export from the p
 masked), so a receiver can require that every op of a live chat batch is the signer's own.
 **Version 3 (P6 too).** `Auth` presents the peer's *message* token (a call token does not open
 chat; a token taken back by a block is refused).
+**Version 5 (photo sizes, 2026-10-14).** A file record of a picture adds `width`, `height` (the size it is
+shown at, EXIF orientation applied) and `preview` (hex of a 4x3 RGB grid of its colours, 36 bytes), made by
+the sender's core when it sends an `image/*` (`chat/photo.rs`; png, jpeg, webp; 0x0 and empty if it can't
+read it). The DID signature input appends them (marker `2`, `u32 BE` width, `u32 BE` height, the preview
+string) only when any is set, so every record written before keeps its input. Validation: width and height
+at most 100 000, preview at most 72 hex characters. `Attachment` gains `width`, `height` and `preview`
+(raw 36 bytes) so apps can draw a photo's box at its real shape, softly coloured, before it downloads.
+`/4` peers are refused (426, update the app, no wipe); own-device sync moves to `tinline/self/4` with it,
+because an own device relays these records and checks their signatures.
 **Version 4 (account profiles).** `Hello.shards`, `Sync.doc`, and `Ack.doc` also accept the
 reserved document name `profile`. It exchanges the authenticated sender DID's account profile
 (all its linked-device edits), not a chat shard. Profile updates have field/bounds/permit

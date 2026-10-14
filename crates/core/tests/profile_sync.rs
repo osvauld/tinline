@@ -27,6 +27,7 @@ fn peer(tag: &str) -> Peer {
     let dir = std::env::temp_dir().join(format!("profile-sync-{tag}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Events)).unwrap();
+    node.auto_accept_contacts_for_test(true);
     let phrase = node.create_identity(tag.into(), "pass".into()).unwrap();
     let did = node.profile().unwrap().did;
     Peer {

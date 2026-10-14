@@ -323,6 +323,9 @@ pub(super) enum Lm {
     Reply(Option<String>),
     Older,
     NewGroup,
+    /// Open or close the "Left or removed" fold.
+    GoneFold,
+    Hover(Option<String>),
     NameIn(String),
     JoinOpen,
     TokenIn(String),
@@ -400,6 +403,12 @@ pub(super) struct GroupsLive {
     pub reply: Option<String>,
     /// The members pane beside the chat (on by default).
     pub hide_info: bool,
+    /// GroupsList "Left or removed" fold (closed by default).
+    pub gone_open: bool,
+    /// Unread posts when the open group was opened (the "n new messages" divider).
+    pub unread_at_open: u32,
+    /// The post the pointer is over (its reply button shows).
+    pub hover: Option<String>,
     pub menu: Option<String>,
     pub dialog: Option<LDialog>,
     /// A dialog's job is running.
@@ -585,6 +594,8 @@ impl GroupsLive {
                 }
             }
             Lm::Open(gid) => {
+                self.unread_at_open = self.list.iter().find(|s| s.id == gid).map_or(0, |s| s.unread);
+                self.hover = None;
                 self.open = Some(gid.clone());
                 self.menu = None;
                 self.input.clear();
@@ -646,6 +657,8 @@ impl GroupsLive {
                 }
             }
             Lm::NewGroup => self.show(LDialog::NewGroup { name: String::new() }),
+            Lm::GoneFold => self.gone_open = !self.gone_open,
+            Lm::Hover(h) => self.hover = h,
             Lm::NameIn(v) => {
                 if let Some(LDialog::NewGroup { name }) = &mut self.dialog {
                     *name = v.chars().take(100).collect();

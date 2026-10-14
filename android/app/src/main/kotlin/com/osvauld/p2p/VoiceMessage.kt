@@ -231,8 +231,8 @@ fun VoiceMicButton(state: VoiceRecState, modifier: Modifier = Modifier) {
                     .border(1.dp, c.ln, RoundedCornerShape(50)).padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(20.dp))
-                Icon(Icons.Rounded.KeyboardArrowUp, null, tint = c.ink2, modifier = Modifier.size(18.dp))
+                Icon(PgIcons.Lock, null, tint = c.ink2, modifier = Modifier.size(20.dp))
+                Icon(PgIcons.Chevup, null, tint = c.ink2, modifier = Modifier.size(18.dp))
             }
         }
         Box(
@@ -277,7 +277,7 @@ fun VoiceMicButton(state: VoiceRecState, modifier: Modifier = Modifier) {
                 },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(if (state.locked) Icons.AutoMirrored.Rounded.Send else Icons.Rounded.Mic, null, tint = c.onPr, modifier = Modifier.size(if (size == 64.dp) 28.dp else 24.dp))
+            Icon(if (state.locked) PgIcons.Send else PgIcons.Mic, null, tint = c.onPr, modifier = Modifier.size(if (size == 64.dp) 28.dp else 24.dp))
         }
     }
 }
@@ -299,13 +299,13 @@ fun VoiceRecordingBar(state: VoiceRecState, modifier: Modifier = Modifier) {
                 Modifier.size(40.dp).clip(CircleShape).semantics { contentDescription = "Discard recording" }
                     .pointerInput(state) { detectTapGestures { state.cancel() } },
                 contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Rounded.Delete, null, tint = c.er) }
+            ) { Icon(PgIcons.Trash, null, tint = c.er) }
         } else {
             Row(
                 Modifier.weight(1f).offset(x = (-state.cancelPull * 48).dp), horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, null, tint = c.ink2, modifier = Modifier.size(16.dp))
+                Icon(PgIcons.Back, null, tint = c.ink2, modifier = Modifier.size(16.dp))
                 Text("Slide to cancel", color = c.ink2, fontSize = 14.sp)
             }
         }

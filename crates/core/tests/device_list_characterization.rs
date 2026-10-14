@@ -96,6 +96,7 @@ fn open(dir: &std::path::Path) -> Opened {
         Arc::new(Tap(Mutex::new(tx), logs.clone())),
     )
     .unwrap();
+    node.auto_accept_contacts_for_test(true);
     (node, rx, logs)
 }
 

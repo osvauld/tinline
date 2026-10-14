@@ -31,6 +31,6 @@ fun PhraseScreen(phrase: String, onNext: () -> Unit) {
     Page {
         GateHead(if (checking) ({ checking = false }) else null, 3 to 6)
         if (checking) ConfirmStep(phrase) { checking = false }
-        else PhraseStep(phrase, onNext) { checking = true }
+        else PhraseStep(phrase, onNext, onCheck = { checking = true })
     }
 }

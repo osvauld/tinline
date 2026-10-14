@@ -9,9 +9,10 @@ pub const FIGTREE_BYTES: &[u8] = include_bytes!("../assets/fonts/figtree_variabl
 pub const PLEX_REGULAR_BYTES: &[u8] = include_bytes!("../assets/fonts/plexmono_regular.ttf");
 pub const PLEX_MEDIUM_BYTES: &[u8] = include_bytes!("../assets/fonts/plexmono_medium.ttf");
 
-pub const SANS: Font = Font::with_name("Figtree");
-pub const SANS_SEMI: Font = Font { weight: font::Weight::Semibold, ..Font::with_name("Figtree") };
-pub const SANS_BOLD: Font = Font { weight: font::Weight::Bold, ..Font::with_name("Figtree") };
+// Chromium's current playground system-ui resolves to Noto Sans on this desktop.
+pub const SANS: Font = Font::with_name("Noto Sans");
+pub const SANS_SEMI: Font = Font { weight: font::Weight::Semibold, ..Font::with_name("Noto Sans") };
+pub const SANS_BOLD: Font = Font { weight: font::Weight::Bold, ..Font::with_name("Noto Sans") };
 pub const MONO: Font = Font::with_name("IBM Plex Mono");
 /// The colour emoji font of the platform: without it a text font's plain glyphs (DejaVu has some)
 /// win the fallback and emojis show black and white.
@@ -46,12 +47,30 @@ pub struct Tok {
     pub hairline: Color,
     pub bub_in: Color,
     pub bub_in_line: Color,
+    /// --bub-meta-in / --bub-meta-out: the 11px inline time and status in a bubble.
+    pub bub_meta_in: Color,
+    pub bub_meta_out: Color,
     pub ink: Color,
     pub ink2: Color,
     pub line: Color,
     pub primary: Color,
     pub on_primary: Color,
     pub primary_c: Color,
+    /// tokens.css brand set for ported playground screens: --accent (primary actions only),
+    /// --on-accent, --accent-ink (teal as text), --accent-soft (selected fills).
+    pub accent: Color,
+    pub on_accent: Color,
+    pub accent_soft: Color,
+    pub accent_ink: Color,
+    /// --warn-ink, --gold-ink, --danger, --danger-bg, --danger-btn, --on-danger-btn, --lav, --lav-ink.
+    pub warn_ink: Color,
+    pub gold_ink: Color,
+    pub danger: Color,
+    pub danger_bg: Color,
+    pub danger_btn: Color,
+    pub on_danger_btn: Color,
+    pub lav: Color,
+    pub lav_ink: Color,
     pub on_primary_c: Color,
     pub thread: Color,
     pub thread_text: Color,
@@ -78,12 +97,26 @@ pub const LIGHT: Tok = Tok {
     hairline: rgb(0xE2E7E1),
     bub_in: rgb(0xFFFFFF),
     bub_in_line: rgb(0xE2E7E1),
+    bub_meta_in: rgb(0x68746E),
+    bub_meta_out: rgb(0x33655A),
     ink: rgb(0x17201D),
     ink2: rgb(0x4D5853),
     line: rgb(0xD3D9D4),
     primary: rgb(0x0B6B5B),
     on_primary: rgb(0xFFFFFF),
     primary_c: rgb(0xCDEBE3),
+    accent: rgb(0x0B6B5B),
+    on_accent: rgb(0xFFFFFF),
+    accent_soft: rgb(0xD7ECE6),
+    accent_ink: rgb(0x0A5D50),
+    warn_ink: rgb(0x5C3B00),
+    gold_ink: rgb(0x845A10),
+    danger: rgb(0xA12B23),
+    danger_bg: rgb(0xF8E3E1),
+    danger_btn: rgb(0xA12B23),
+    on_danger_btn: rgb(0xFFFFFF),
+    lav: rgb(0xE1E4F7),
+    lav_ink: rgb(0x374582),
     on_primary_c: rgb(0x06352D),
     thread: rgb(0xC98A1E),
     thread_text: rgb(0x8A5A00),
@@ -103,19 +136,33 @@ pub const DARK: Tok = Tok {
     dark: true,
     bg: rgb(0x0F1513),
     surface: rgb(0x161D1B),
-    surface2: rgb(0x1D2623),
+    surface2: rgb(0x242D2A),
     surface3: rgb(0x26302D),
     raised: rgb(0x242D2A),
     canvas: rgb(0x0B100E),
     hairline: rgb(0x2A3531),
     bub_in: rgb(0x1C2422),
     bub_in_line: rgb(0x2A3531),
+    bub_meta_in: rgb(0x95A19B),
+    bub_meta_out: rgb(0x8FC9B9),
     ink: rgb(0xE6ECE9),
     ink2: rgb(0xA6B2AD),
     line: rgb(0x33403B),
     primary: rgb(0x6FD3BD),
     on_primary: rgb(0x00382E),
     primary_c: rgb(0x0E4E43),
+    accent: rgb(0x117E6B),
+    on_accent: rgb(0xF2FFFB),
+    accent_soft: rgb(0x14433A),
+    accent_ink: rgb(0x6FD3BD),
+    warn_ink: rgb(0xFFDFA0),
+    gold_ink: rgb(0xE8B04A),
+    danger: rgb(0xF2B8B5),
+    danger_bg: rgb(0x4D201C),
+    danger_btn: rgb(0xC73A30),
+    on_danger_btn: rgb(0xFFFFFF),
+    lav: rgb(0x2F3A75),
+    lav_ink: rgb(0xDFE3FF),
     on_primary_c: rgb(0xBDEFE2),
     thread: rgb(0xE8B04A),
     thread_text: rgb(0xE8B04A),
@@ -200,11 +247,25 @@ pub enum Icon {
     Server,
     Video,
     VideoOff,
+    Search,
+    Contact,
+    Plus,
+    Camera,
+    Bell,
+    Devices,
+    Volume,
 }
 
 impl Icon {
     fn body(self) -> &'static str {
         match self {
+            Icon::Search => r#"<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>"#,
+            Icon::Contact => r#"<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7.5 17c.8-2 2.5-3 4.5-3s3.7 1 4.5 3"/><path d="M2 7h2M2 12h2M2 17h2"/>"#,
+            Icon::Plus => r#"<path d="M12 5v14M5 12h14"/>"#,
+            Icon::Camera => r#"<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/>"#,
+            Icon::Bell => r#"<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>"#,
+            Icon::Devices => r#"<path d="M3 6h13v9H3zM1 18h17M18 9h4v9h-4z"#,
+            Icon::Volume => r#"<path d="M4 9v6h4l5 4V5L8 9zM16.5 9a4 4 0 0 1 0 6"/>"#,
             Icon::Phone => r#"<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>"#,
             Icon::PhoneOff => r#"<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="M22 2 2 22"/>"#,
             Icon::Mic => r#"<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>"#,
@@ -342,20 +403,57 @@ pub fn glyph<'a, M: 'a>(paint: &'static str, body: &'static str, size: f32, colo
 
 pub const STROKE: &str = r##"fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round""##;
 
-/// An icon of `size` px in `color`.
+/// An icon of `size` px in `color`: the tin icon of the same meaning when there is one (crates/tin-icons).
 pub fn icon<'a, M: 'a>(i: Icon, size: f32, color: Color) -> Element<'a, M> {
+    let tin = match i {
+        Icon::Phone => Some("phone"), Icon::PhoneOff => Some("callend"), Icon::Mic => Some("mic"), Icon::MicOff => Some("micoff"), Icon::UserPlus => Some("userplus"),
+        Icon::Sliders => Some("sliders"), Icon::ArrowLeft | Icon::ChevronLeft => Some("back"), Icon::Copy => Some("copy"), Icon::Check => Some("check"),
+        Icon::X => Some("x"), Icon::Lock => Some("lock"), Icon::ChevronRight => Some("chevr"), Icon::ChevronDown => Some("chev"), Icon::Info => Some("info"),
+        Icon::Pencil => Some("edit"), Icon::Trash => Some("trash"), Icon::Incoming => Some("call-in"), Icon::Outgoing => Some("call-out"),
+        Icon::Direct => Some("direct"), Icon::Relayed => Some("relayed"), Icon::LogOut => Some("leave"), Icon::Key => Some("key"), Icon::Clock => Some("clock"),
+        Icon::Paperclip => Some("clip"), Icon::Send => Some("send"), Icon::File => Some("file"), Icon::Reply => Some("reply"), Icon::MessageSquare => Some("chat"),
+        Icon::RotateCw => Some("retry"), Icon::Users => Some("users"), Icon::Flag => Some("flag"), Icon::Server => Some("server"), Icon::Video => Some("video"),
+        Icon::VideoOff => Some("camoff"), Icon::Search => Some("search"), Icon::Contact => Some("contact"), Icon::Plus => Some("plus"), Icon::Camera => Some("camera"),
+        Icon::Bell => Some("bell"), Icon::Devices => Some("devices"), Icon::Volume => Some("vol"),
+        _ => None,
+    };
+    if let Some(g) = tin.and_then(|n| crate::tin_icons::get(n, size)) {
+        return glyph2(crate::tin_icons::STROKE, g.body, g.string, size, color);
+    }
     glyph(STROKE, i.body(), size, color)
 }
 
+/// A tin icon (crates/tin-icons): its body and its string, one colour.
+pub fn glyph2<'a, M: 'a>(paint: &'static str, body: &'static str, string: &'static str, size: f32, color: Color) -> Element<'a, M> {
+    let h = raster(
+        hash_of((paint, body, string)),
+        || format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {paint}>{body}{string}</svg>"#),
+        device_px(size),
+        Some(color),
+    );
+    art(h, size)
+}
+
 /// The brand mark (Mark D, see mark.rs) in the theme's colours. Static.
-pub fn logo<'a, M: 'a>(size: f32, t: Tok) -> Element<'a, M> {
+pub fn logo<'a, M: Clone + 'a>(size: f32, t: Tok) -> Element<'a, M> {
     logo_live(size, t, crate::mark::Look::default())
 }
 
 /// The mark that shows state (ringing sway, taut when connected, pluck on send).
-pub fn logo_live<'a, M: 'a>(size: f32, t: Tok, look: crate::mark::Look) -> Element<'a, M> {
+pub fn logo_live<'a, M: Clone + 'a>(size: f32, t: Tok, look: crate::mark::Look) -> Element<'a, M> {
     let (can, string) = crate::mark::colors(t.dark);
     crate::mark::mark(size, can, if look.dim { t.ink2 } else { string }, look)
+}
+
+/// A sign-up / first-screen mark (Mark.svelte `lineColor`): the slack line is gold 55 % into --line
+/// and warms to full gold on the first tug; `on_tug` is published on each tug. No glow: dark depth
+/// is the rim only (decided 2026-10-13).
+pub fn line_logo<'a, M: Clone + 'a>(size: f32, t: Tok, look: crate::mark::Look, on_tug: Option<M>) -> Element<'a, M> {
+    let (can, gold) = crate::mark::colors(t.dark);
+    // color-mix(in oklab, gold 55%, line): mixed in sRGB here (the two are close in lightness).
+    let slack = mix(gold, t.line, 0.45);
+    let look = crate::mark::Look { line_color: true, ..look };
+    crate::mark::mark_with(size, can, gold, slack, look, on_tug)
 }
 
 /// Four quality bars, `n` of them filled.
@@ -380,6 +478,26 @@ pub fn bars<'a, M: 'a>(n: u8, on: Color, off: Color) -> Element<'a, M> {
     };
     let key = hash_of(("bars", n, [on, off].map(|c| [c.r, c.g, c.b, c.a].map(f32::to_bits))));
     art(raster(key, build, device_px(18.0), None), 18.0)
+}
+
+/// SignalBars.svelte: four rising bars in a 24 box, 3 wide at x 3.5/8.5/13.5/18.5, heights 6/10/14/18 on
+/// y 20, radius 1.5. `alphas` is each bar's opacity (ghost .28 .. lit 1, see `motion::Fx::bar_alphas`),
+/// quantised to 1/50 so the raster cache stays small while bars fade.
+pub fn signal_bars<'a, M: 'a>(alphas: [f32; 4], size: f32, color: Color) -> Element<'a, M> {
+    let q = alphas.map(|a| (a.clamp(0.0, 1.0) * 50.0).round() as u8);
+    let build = move || {
+        let mut body = String::new();
+        for (i, h) in [6u32, 10, 14, 18].into_iter().enumerate() {
+            body += &format!(
+                r##"<rect x="{}" y="{}" width="3" height="{h}" rx="1.5" fill="#000" fill-opacity="{}"/>"##,
+                3.5 + i as f32 * 5.0,
+                20 - h,
+                q[i] as f32 / 50.0
+            );
+        }
+        format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">{body}</svg>"#)
+    };
+    art(raster(hash_of(("signal", q)), build, device_px(size), Some(color)), size)
 }
 
 // ---- widget styles ----
@@ -463,8 +581,24 @@ pub fn raised<'a, M: 'a>(
     }
     let [contact, ambient] = depth.shadows(t);
     let inner = container(content).width(size.width).height(size.height).style(move |th: &Theme| container::Style { shadow: contact, ..base(th) });
-    container(inner).width(size.width).height(size.height).style(move |th: &Theme| container::Style { shadow: ambient, ..base(th) }).into()
+    let outer = container(inner).width(size.width).height(size.height).style(move |th: &Theme| container::Style { shadow: ambient, ..base(th) });
+    if !t.dark {
+        return outer.into();
+    }
+    // tokens.css --rim (dark only, inside every raised shadow token): a 1px light edge along the top,
+    // as if lit from above. CSS draws it as an inset shadow that follows the corners; here it is a
+    // straight 1px line between the corner curves (see SCREENS-PORT-STATUS.md).
+    let b = base(&Theme::Dark).border;
+    let r = b.radius.top_left;
+    let rim = container(iced::widget::Space::new().width(Length::Fill).height(1)).style(plain(RIM, 0.0));
+    iced::widget::stack![outer, container(rim).padding(iced::Padding { top: b.width, left: r * 0.75, right: r * 0.75, ..iced::Padding::ZERO }).width(Length::Fill)]
+        .width(size.width)
+        .height(size.height)
+        .into()
 }
+
+/// --rim: white at 8 %.
+pub const RIM: Color = Color { r: 1.0, g: 1.0, b: 1.0, a: 0.08 };
 
 /// Surface of a pop-level thing (menu, banner, card over content): raised fill and a hairline.
 pub fn pop_surface(t: Tok, radius: f32) -> impl Fn(&Theme) -> container::Style + Copy {
@@ -487,7 +621,7 @@ pub fn sheet_surface(t: Tok, radius: f32) -> impl Fn(&Theme) -> container::Style
 }
 
 /// A flat filled container with a 1 px outline.
-pub fn outlined(bg: Color, line: Color, radius: f32) -> impl Fn(&Theme) -> container::Style {
+pub fn outlined(bg: Color, line: Color, radius: f32) -> impl Fn(&Theme) -> container::Style + Copy {
     move |_| container::Style {
         background: Some(Background::Color(bg)),
         border: Border { color: line, width: 1.0, radius: radius.into() },
@@ -629,34 +763,46 @@ pub fn toggle_style(t: Tok) -> impl Fn(&Theme, toggler::Status) -> toggler::Styl
     }
 }
 
-/// Avatar tints: four tinted containers picked by hashing the contact key (stable across devices).
-pub fn avatar_colors(t: Tok, key: &str) -> (Color, Color) {
-    let h = key.bytes().fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32));
-    if t.dark {
-        match h % 4 {
-            0 => (rgb(0x0E4E43), rgb(0xBDEFE2)),
-            1 => (rgb(0x2F3A75), rgb(0xD9DEFB)),
-            2 => (rgb(0x5A3F00), rgb(0xFFDFA0)),
-            _ => (rgb(0x5C2336), rgb(0xFFD9E2)),
-        }
-    } else {
-        match h % 4 {
-            0 => (rgb(0xCDEBE3), rgb(0x06352D)),
-            1 => (rgb(0xE1E4F7), rgb(0x2F3A75)),
-            2 => (rgb(0xFCEFD2), rgb(0x5C3B00)),
-            _ => (rgb(0xF8DDE5), rgb(0x5C2336)),
-        }
+/// Avatar hue pairs (tokens.css --av0..5-bg / -ink). People carry a hue; the owner is hue 0.
+pub fn avatar_pair(t: Tok, hue: usize) -> (Color, Color) {
+    const LIGHT_AV: [(u32, u32); 6] =
+        [(0xD7ECE6, 0x0B5447), (0xE1E4F7, 0x374582), (0xF6E3E6, 0x8C3A4A), (0xF3E8D2, 0x6D4E12), (0xE3EDD9, 0x44622A), (0xECE2F2, 0x5D3F73)];
+    const DARK_AV: [(u32, u32); 6] =
+        [(0x164F45, 0xB7E6D8), (0x2F3A75, 0xDFE3FF), (0x5C2A35, 0xFFD9E0), (0x58431A, 0xFFE2AE), (0x3A4F26, 0xD8F0C0), (0x4A3458, 0xECD9FA)];
+    let (bg, ink) = if t.dark { DARK_AV[hue % 6] } else { LIGHT_AV[hue % 6] };
+    (rgb(bg), rgb(ink))
+}
+
+static HUES: OnceLock<Mutex<HashMap<String, usize>>> = OnceLock::new();
+
+/// Test-hooks demos pin the playground seed's hues for paired screenshots.
+#[cfg(feature = "test-hooks")]
+pub fn pin_hue(key: &str, hue: usize) {
+    HUES.get_or_init(Default::default).lock().unwrap().insert(key.to_string(), hue);
+}
+
+/// A stable hue for a person key (the same on every device); "me" is the account hue 0.
+pub fn avatar_hue(key: &str) -> usize {
+    if key == "me" {
+        return 0;
     }
+    if let Some(h) = HUES.get().and_then(|m| m.lock().unwrap().get(key).copied()) {
+        return h;
+    }
+    key.bytes().fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32)) as usize % 6
+}
+
+pub fn avatar_colors(t: Tok, key: &str) -> (Color, Color) {
+    avatar_pair(t, avatar_hue(key))
 }
 
 pub fn initials(name: &str) -> String {
-    // First letter or digit of each word, so "Lena (work)" is "LW", not "L(".
-    let mut it = name.split_whitespace().filter_map(|w| w.chars().find(|c| c.is_alphanumeric()));
-    let a = it.next();
-    let b = it.next();
-    match (a, b) {
-        (Some(a), Some(b)) => format!("{}{}", a.to_uppercase(), b.to_uppercase()),
-        (Some(a), None) => a.to_uppercase().to_string(),
+    // store.svelte.ts initials(): first letter of the first and the last word. The first letter
+    // or digit of each word, so "Lena (work)" is "LW", not "L(".
+    let words: Vec<char> = name.split_whitespace().filter_map(|w| w.chars().find(|c| c.is_alphanumeric())).collect();
+    match (words.first(), words.len()) {
+        (Some(a), 1) => a.to_uppercase().to_string(),
+        (Some(a), _) => format!("{}{}", a.to_uppercase(), words[words.len() - 1].to_uppercase()),
         _ => "?".into(),
     }
 }
@@ -665,9 +811,12 @@ pub fn initials(name: &str) -> String {
 pub fn scroll_style(t: Tok) -> impl Fn(&Theme, scrollable::Status) -> scrollable::Style {
     move |th, st| {
         let mut s = scrollable::default(th, st);
+        // Overlay-style: the scroller shows while the pointer is over the list (or dragging), like the
+        // playground's overlay scrollbars; at rest nothing sits beside the rows.
+        let shown = !matches!(st, scrollable::Status::Active { .. });
         for r in [&mut s.vertical_rail, &mut s.horizontal_rail] {
             r.background = None;
-            r.scroller.background = Background::Color(alpha(t.ink2, 0.35));
+            r.scroller.background = Background::Color(alpha(t.ink2, if shown { 0.35 } else { 0.0 }));
         }
         s
     }

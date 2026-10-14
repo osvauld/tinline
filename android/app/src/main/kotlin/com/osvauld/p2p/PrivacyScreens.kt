@@ -116,8 +116,8 @@ fun SentRequestRow(src: FakeGroupsPrivacy, r: SentRequest, now: Long) {
             }
             Text(sub, style = TinType.bodyM, color = if (red) c.er else c.ink2, maxLines = 1)
         }
-        if (r.state == SentRequestState.Waiting) IconBtn(Icons.Rounded.Close, "Cancel request to $fn", { src.cancelRequest(r.id) }, tint = c.ink2)
-        else IconBtn(Icons.Rounded.Close, "Dismiss", { src.dismissRequest(r.id) }, tint = c.ink2)
+        if (r.state == SentRequestState.Waiting) IconBtn(PgIcons.X, "Cancel request to $fn", { src.cancelRequest(r.id) }, tint = c.ink2)
+        else IconBtn(PgIcons.X, "Dismiss", { src.dismissRequest(r.id) }, tint = c.ink2)
     }
 }
 
@@ -181,7 +181,7 @@ fun PDmScreen(src: FakeGroupsPrivacy, nav: PNav, did: String) {
             onTitle = { nav.go(PRoute.Contact(did)) },
         ) {
             val allowed = check == CallCheck.Allowed
-            IconBtn(if (allowed) Icons.Rounded.Call else Icons.Rounded.PhoneDisabled, if (allowed) "Call $fn" else "Call $fn, not available", {
+            IconBtn(if (allowed) PgIcons.Phone else Icons.Rounded.PhoneDisabled, if (allowed) "Call $fn" else "Call $fn, not available", {
                 when (check) {
                     CallCheck.Allowed -> nav.say("Calls aren’t connected in the preview")
                     CallCheck.TheyHaveNotAllowed -> callSheet = true
@@ -207,7 +207,7 @@ fun PDmScreen(src: FakeGroupsPrivacy, nav: PNav, did: String) {
                         ) {
                             Text("Calls are off for $fn.", style = TinType.bodyM, color = c.ink)
                             TinButton("Allow calls", { src.setCanCall(did, true); nav.say("$fn can call you now") }, style = BtnStyle.Outlined, fill = false, height = 40.dp, textStyle = TinType.label)
-                            IconBtn(Icons.Rounded.Close, "Dismiss", { src.dismissCallsChip(did) }, tint = c.ink2)
+                            IconBtn(PgIcons.X, "Dismiss", { src.dismissCallsChip(did) }, tint = c.ink2)
                         }
                         is DmRow.Attempts -> SysLine("$fn tried to message you ${if (row.n == 1) "once" else "${row.n} times"} since")
                         DmRow.Lost -> NoticeCard(c.warn, c.onWarn, "You and $fn lost each other’s address",
@@ -339,11 +339,11 @@ fun CallsNotAllowedSheet(name: String, onDismiss: () -> Unit, onAsk: () -> Unit)
 fun BlockDialog(name: String, sharedGroups: List<String>, onDismiss: () -> Unit, onBlock: () -> Unit) {
     val c = Tin.c
     val fn = first(name)
-    TinDialog("Block $fn?", onDismiss, "Block", onBlock, destructive = true, icon = Icons.Rounded.Block) {
+    TinDialog("Block $fn?", onDismiss, "Block", onBlock, destructive = true, icon = PgIcons.Off) {
         BlockLine(Icons.Rounded.PhoneDisabled, "$fn can’t message or call you, on any of your devices.")
         BlockLine(Icons.Rounded.Campaign, "$fn is told you blocked them.")
         BlockLine(Icons.Rounded.WifiOff, "$fn won’t get your new address next time it changes, so $fn loses any way to reach this phone.")
-        if (sharedGroups.isNotEmpty()) BlockLine(Icons.Rounded.Groups, null, rich = {
+        if (sharedGroups.isNotEmpty()) BlockLine(PgIcons.Users, null, rich = {
             Text(androidx.compose.ui.text.buildAnnotatedString {
                 append("You both stay in ")
                 pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = c.ink)); append(sharedGroups.joinToString()); pop()
@@ -390,14 +390,14 @@ fun PContactScreen(src: FakeGroupsPrivacy, nav: PNav, did: String) {
                 }
             }
             SectionLabel("WHAT ${fn.uppercase()} CAN DO")
-            SwitchRow(Icons.AutoMirrored.Rounded.Chat, "Message you",
+            SwitchRow(PgIcons.Chat, "Message you",
                 when {
                     isBlocked -> "Off while blocked"
                     p.canMessage && p.origin == ContactOrigin.GroupRequest -> "On since you accepted $fn’s request"
                     p.canMessage -> "On. $fn can message you"
                     else -> "Off. $fn’s messages are refused"
                 }, p.canMessage && !isBlocked, enabled = !isBlocked) { src.setCanMessage(did, it) }
-            SwitchRow(Icons.Rounded.Call, "Call you",
+            SwitchRow(PgIcons.Phone, "Call you",
                 when {
                     isBlocked -> if (p.canCall) "Off while blocked. Comes back on if you unblock" else "Off while blocked"
                     p.canCall -> "On. $fn can ring your phone"
@@ -405,7 +405,7 @@ fun PContactScreen(src: FakeGroupsPrivacy, nav: PNav, did: String) {
                 }, p.canCall && !isBlocked, enabled = !isBlocked) { src.setCanCall(did, it) }
             SectionLabel("CONNECTION")
             val theirs = p.theirAddressChangedAtMs?.let { " Theirs changed ${agoOrDate(it, now).let { s -> if (s.first().isDigit() || s.startsWith("Just")) s.lowercase() else "on $s" }}." } ?: ""
-            InfoRow(Icons.Rounded.Sync,
+            InfoRow(PgIcons.Retry,
                 when { p.lost -> "Can’t reach $fn"; isBlocked -> "Not getting your new address"; p.hasMyCurrentAddress -> "Address up to date"; else -> "Waiting to pass on your address" },
                 when {
                     p.lost -> "You both changed address while apart. Re-scan a QR to reconnect."
@@ -413,13 +413,13 @@ fun PContactScreen(src: FakeGroupsPrivacy, nav: PNav, did: String) {
                     p.hasMyCurrentAddress -> "$fn has your current address.$theirs"
                     else -> "$fn gets it when either of you next connects.$theirs"
                 })
-            InfoRow(Icons.Rounded.VerifiedUser, "Safety number", p.verifiedAtMs?.let { "Verified ${whenDate(it)}" } ?: "Not verified yet")
+            InfoRow(PgIcons.Shield, "Safety number", p.verifiedAtMs?.let { "Verified ${whenDate(it)}" } ?: "Not verified yet")
             val shared = groups.filter { g -> g.removal == null && g.activeMembers.any { it.did == did } }
-            if (shared.isNotEmpty()) InfoRow(Icons.Rounded.Groups, "Groups in common", shared.joinToString { it.name })
+            if (shared.isNotEmpty()) InfoRow(PgIcons.Users, "Groups in common", shared.joinToString { it.name })
         }
         Box(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp)) {
             if (isBlocked) TinButton("Unblock", { src.unblock(did) }, style = BtnStyle.Outlined)
-            else TinButton("Block", { blocking = true }, style = BtnStyle.OutlinedDanger, icon = Icons.Rounded.Block)
+            else TinButton("Block", { blocking = true }, style = BtnStyle.OutlinedDanger, icon = PgIcons.Off)
         }
     }
     if (blocking) BlockDialog(p.name, groups.filter { g -> g.removal == null && g.activeMembers.any { it.did == did } }.map { it.name }, onDismiss = { blocking = false }) {
@@ -524,7 +524,7 @@ fun PAddressScreen(src: FakeGroupsPrivacy, nav: PNav) {
                 }
             }
             InfoCard("Shorter intervals cut off old addresses sooner but use a little more battery, and a contact who is offline for longer than two of your intervals may need to re-share a QR.",
-                icon = Icons.Rounded.Warning, kind = BannerKind.Warn)
+                icon = PgIcons.Warning, kind = BannerKind.Warn)
             Hint("Linked devices each change their own address; the setting syncs.")
         }
     }

@@ -9,7 +9,7 @@
   import { prefs } from '../../model/prefs.svelte';
   import { dur } from '../../fx/motion';
   import { motion } from '../../fx/reduced.svelte';
-  import { easeOut } from '../motion';
+  import { easeOut, STRIP_H } from '../motion';
 
   const live = $derived(call.phase === 'active' || call.phase === 'reconnecting');
   const theirs = $derived(vid.peerSeen);
@@ -21,7 +21,7 @@
 </script>
 
 {#if show}
-  <button type="button" class="mini press" class:frozen aria-label="Return to video call with {name}" onclick={() => call.restore()} data-minivideo transition:pop>
+  <button type="button" class="mini press" style:--sb="{call.stripAt === 'bottom' ? STRIP_H : 0}px" class:frozen aria-label="Return to video call with {name}" onclick={() => call.restore()} data-minivideo transition:pop>
     <span class="mir" class:flipx={!theirs && vid.facing === 'front'}>
       {#key theirs}<span class="lay" in:fade={{ duration: dur('crossfade') }} out:fade={{ duration: dur('crossfade') }}>
         <Feed kind={theirs ? 'peer' : vid.facing === 'front' ? 'self' : 'back'} {hue} {frozen} stream={theirs ? null : vid.stream} seed={theirs ? hue : 2} w={180} h={240} />
@@ -31,7 +31,7 @@
 {/if}
 
 <style>
-  .mini { position: absolute; z-index: 38; inset-inline-end: 12px; inset-block-end: 92px; inline-size: 92px; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 16px; overflow: hidden; cursor: pointer; background: #15171c;
+  .mini { position: absolute; z-index: 38; inset-inline-end: 12px; inset-block-end: calc(92px + var(--sb, 0px)); inline-size: 92px; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 16px; overflow: hidden; cursor: pointer; background: #15171c;
     box-shadow: 0 0 0 1.5px rgb(255 255 255 / .38), var(--shadow-pop); }
   .mini.frozen { filter: saturate(.8) brightness(.8); }
   .mir { position: absolute; inset: 0; display: grid; }

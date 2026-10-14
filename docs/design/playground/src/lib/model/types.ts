@@ -32,6 +32,11 @@ export interface FileInfo {
   kind: 'image' | 'doc' | 'video' | 'other';
   progress: number;        // 0..1
   state: 'sending' | 'waiting' | 'done' | 'failed' | 'cancelled';
+  /** Pictures (core chat/5): the size it is shown at; the bubble draws its true shape before it downloads. */
+  w?: number;
+  h?: number;
+  /** An incoming picture not downloaded yet (over the auto-download limit): its box shows the colour preview. */
+  remote?: boolean;
 }
 
 export interface CallRecord {

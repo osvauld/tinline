@@ -356,12 +356,12 @@ private fun ExistingDeviceLink(
                     }
                     "done" -> {
                         val peer = (ui as? LinkController.Ui.Done)?.peer?.ifBlank { null } ?: "The new device"
-                        ResultBlock(Icons.Rounded.Check, ok = true, title = "$peer is linked",
+                        ResultBlock(PgIcons.Check, ok = true, title = "$peer is linked",
                             body = "It syncs when both devices are online at the same time. Contacts you haven’t blocked get your updated device list when they’re next online.")
                         PfActs(top = 6.dp) { PBtn("Done", onClose, variant = PVariant.Primary) }
                     }
                     else -> (ui as? LinkController.Ui.Failed)?.let { u ->
-                        ResultBlock(Icons.Rounded.Info, ok = false, title = "Couldn’t link", body = linkFailText(u.reason, u.detail))
+                        ResultBlock(PgIcons.Info, ok = false, title = "Couldn’t link", body = linkFailText(u.reason, u.detail))
                         PfActs(top = 6.dp) { PBtn("Close", onClose, variant = PVariant.Quiet); PBtn("Try again", onRetry, variant = PVariant.Primary) }
                     }
                 }
@@ -386,7 +386,7 @@ private fun ScanStep(note: String?, onScan: () -> Unit, onShow: () -> Unit, onTy
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Column(Modifier.size(220.dp).clip(SmoothCornerShape(20.dp)).background(Color(0xFF0E1513)), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
-            Icon(Icons.Rounded.PhotoCamera, null, Modifier.size(30.dp), tint = Color(0xFF9DB0AA))
+            Icon(PgIcons.Camera, null, Modifier.size(30.dp), tint = Color(0xFF9DB0AA))
             PBtn("Scan QR code", onScan, variant = PVariant.Primary)
         }
     }
@@ -429,7 +429,7 @@ private fun ApproveStep(app: P2pApp, who: String, onCancel: () -> Unit) {
     }
     PageH1("Approve $who?")
     Row(Modifier.fillMaxWidth().clip(SmoothCornerShape(12.dp)).background(c.warn).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Icon(Icons.Rounded.WarningAmber, null, Modifier.padding(top = 1.dp).size(18.dp), tint = c.onWarn)
+        Icon(PgIcons.Warning, null, Modifier.padding(top = 1.dp).size(18.dp), tint = c.onWarn)
         Text(buildAnnotatedString {
             append("Approving sends your "); pushStyle(SpanStyle(fontWeight = FontWeight.Bold)); append("recovery phrase"); pop()
             append(" to $who. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold.")

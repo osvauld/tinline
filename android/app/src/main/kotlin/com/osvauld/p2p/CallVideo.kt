@@ -37,6 +37,8 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     val io = VideoIo { app.node }
     /** The camera was on when the call screen went away; it comes back on with the screen. */
     @Volatile private var paused = false
+    /** The call was placed with the conversation's video button: the camera turns on once video is negotiated. */
+    @Volatile var wantCamera = false
     private val rates = VideoRateMeter()
     @Volatile private var capturePreference = "-"
     @Volatile private var actualCapture = "-"
@@ -46,6 +48,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
         val cur = app.calls.ui.value
         if (cur != null && cur.info.callId != info.callId) return
         _info.value = info
+        if (wantCamera && info.negotiated && !info.localCamera) { wantCamera = false; setCamera(true) }
     }
 
     fun setCamera(on: Boolean) {

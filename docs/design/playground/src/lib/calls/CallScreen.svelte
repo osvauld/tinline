@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { incall } from './incall.svelte';
   /* The full call screen: cloud field behind, avatar (plain, no ring), name, status, timer, controls.
      Text is ink-level (not muted) so the field can carry real colour in dark mode.
      Copy: no encryption claim before connection; no anonymity or IP-privacy claims. */
@@ -12,7 +13,7 @@
   import WaitingCard from './WaitingCard.svelte';
   import { call, fmtDuration } from './call.svelte';
   import { overlayIn, overlayOut } from './motion';
-  import { displayName, person } from '../model/store.svelte';
+  import { displayName, person, firstName } from '../model/store.svelte';
   import { prefs } from '../model/prefs.svelte';
   import { dur } from '../fx/motion';
   import { motion } from '../fx/reduced.svelte';
@@ -24,13 +25,15 @@
   import VideoNotice from './video/VideoNotice.svelte';
   import VIcon from './video/VIcon.svelte';
   import { vid } from './video/video.svelte';
+  import SignalBars from './SignalBars.svelte';
+  import { link } from './link.svelte';
 
   const name = $derived(call.peer ? displayName(call.peer) : '');
   const hue = $derived((call.peer && person(call.peer)?.hue) || 0);
   const phase = $derived(call.phase);
   const live = $derived(phase === 'outgoing' || phase === 'connecting' || phase === 'active' || phase === 'reconnecting');
   /* Second line: the encryption note once live; while reconnecting or after the end, the call's length. */
-  const sub = $derived(phase === 'active' ? 'End-to-end encrypted' : (phase === 'reconnecting' || phase === 'ended') && call.elapsedS > 0 ? fmtDuration(call.elapsedS) : '');
+  const sub = $derived(phase === 'active' ? `End-to-end encrypted · ${link.path === 'direct' ? 'Direct' : 'Relayed'}` : (phase === 'reconnecting' || phase === 'ended') && call.elapsedS > 0 ? fmtDuration(call.elapsedS) : '');
   const connected = $derived(phase === 'active' || phase === 'reconnecting' || (phase === 'ended' && call.elapsedS > 0));
   const android = $derived(prefs.form === 'android');
   /* Over the device lock screen (full-screen incoming): no minimize, the OS status bar sits above. */
@@ -38,6 +41,11 @@
   const fadeMs = $derived(motion.reduced ? 0 : dur('crossfade'));
   /* The same mark as the app bar, so the call's state reads here too: sways while ringing, pulls taut on connect. */
   const look = $derived(statusLook());
+  /* Signal + path. The bars replace the "i": tapping them opens About this call, which explains both. */
+  const linkUp = $derived(phase === 'active');
+  const first = $derived(call.peer ? firstName(call.peer) : '');
+  const pathWord = $derived(link.path === 'direct' ? 'Direct' : 'Relayed');
+  const infoLabel = $derived(linkUp ? `About this call. ${link.word} signal, ${pathWord.toLowerCase()}.` : phase === 'reconnecting' ? 'About this call. Reconnecting.' : 'About this call');
 
   /* About this call: the same calm card the group call uses for its host. */
   let infoOpen = $state(false);
@@ -63,7 +71,7 @@
 
   function key(e: KeyboardEvent) {
     if (e.key === 'Escape' && infoOpen) { e.preventDefault(); closeInfo(); return; }
-    if (e.key === 'Escape' && live) { e.preventDefault(); call.minimize(); return; }
+    if (e.key === 'Escape' && live) { e.preventDefault(); incall.goBack(); return; }
     if (e.key !== 'Tab') return;
     const items = [...(infoOpen && infoCard ? infoCard : root).querySelectorAll<HTMLElement>('button:not([disabled])')];
     if (!items.length) return;
@@ -88,10 +96,13 @@
 
   <div class="content" inert={infoOpen}>
     <header class="top" inert={idleHide}>
-      <button type="button" class="min press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-label="Minimize call" onclick={() => call.minimize()}><Icon name="chev" size={24} /></button>
+      <button type="button" class="min press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-label={android ? 'Back to the app (the call continues)' : 'Minimize call'} title={android ? 'Back' : 'Minimize'} onclick={() => incall.goBack()}><Icon name={android ? 'back' : 'chev'} size={24} /></button>
       <VideoTitle />
+      {#if android && incall.msg}
+        <button type="button" class="min msg press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-label="Message {first} (the call continues)" title="Message {first}" onclick={() => incall.message()}><Icon name="chat" size={24} /></button>
+      {/if}
       <span class="mark" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /></span>
-      <button type="button" class="min end-side press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} bind:this={infoBtn} aria-expanded={infoOpen} aria-haspopup="dialog" aria-label="About this call" onclick={openInfo}><Icon name="info" size={22} /></button>
+      <button type="button" class="min end-side press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} bind:this={infoBtn} aria-expanded={infoOpen} aria-haspopup="dialog" aria-label={infoLabel} title={infoLabel} onclick={openInfo}><SignalBars level={linkUp ? link.strength : 0} wave={phase === 'reconnecting'} /></button>
     </header>
 
     <VideoChip />
@@ -172,7 +183,16 @@
     <div class="info" role="dialog" aria-modal="true" aria-label="About this call" tabindex="-1" bind:this={infoCard} in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>
       <h3>About this call</h3>
       {#if phase === 'active' || phase === 'reconnecting'}
-        <p><b>End-to-end encrypted.</b> {vid.videoCall ? 'Your voice and picture are' : 'Your voice is'} encrypted on this device and only decrypted on {name}’s. When a relay helps connect you, it passes the call along but can’t {vid.videoCall ? 'listen or watch' : 'listen'}.</p>
+        <p><b>End-to-end encrypted.</b> {vid.videoCall ? 'Your voice and picture are' : 'Your voice is'} encrypted on this device and only decrypted on {name}’s.</p>
+        <div class="conn">
+          <SignalBars level={linkUp ? link.strength : 0} wave={phase === 'reconnecting'} size={22} />
+          <p><b>{phase === 'reconnecting' ? 'Reconnecting' : `${link.word} signal · ${pathWord}`}</b><br />
+            {#if phase === 'reconnecting'}The connection dropped for a moment. Tinline is finding a way back to {first}.
+            {:else if link.path === 'direct'}Your call goes straight between your device and {first}’s.
+            {:else}Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t {vid.videoCall ? 'listen or watch' : 'listen'}.{/if}
+            {#if linkUp && link.strength === 1}{' '}The line is weak, so {first}’s voice may break up.{/if}</p>
+        </div>
+        {#if linkUp}<p class="nums">{link.rttMs} ms round trip · {link.lossPct}% lost</p>{/if}
       {:else}
         <p>Connecting to {name}. Once the call is connected, it is end-to-end encrypted.</p>
       {/if}
@@ -196,6 +216,8 @@
   .min { transition: opacity var(--dur-crossfade) var(--ease-out); }
   .min.gone { opacity: 0; pointer-events: none; }
   .top .end-side { position: absolute; inset-inline-end: 0; inset-block-start: 50%; translate: 0 -50%; }
+  /* in-call lab: Message sits beside the signal bars, away from the centred mark */
+  .top .msg { position: absolute; inset-inline-end: 48px; inset-block-start: 50%; translate: 0 -50%; }
   .min:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
   .who { flex: 1; min-block-size: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-block-end: 8cqb; }
   .txt { display: flex; flex-direction: column; align-items: center; max-inline-size: 100%; }
@@ -256,6 +278,11 @@
   .info h3 { margin: 0 0 10px; font-size: var(--fs-title); line-height: 24px; font-weight: 650; }
   .info p { margin: 8px 0 0; font-size: var(--fs-sub); line-height: 19px; color: var(--muted); }
   .info p b { color: var(--ink); }
+  /* Connection row: bars beside a fixed two-to-three line text block; numbers last, small, for the curious. */
+  .conn { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; margin-block-start: 12px; color: var(--ink); }
+  .conn :global(.sb) { margin-block-start: 1px; }
+  .conn p { margin: 0; min-block-size: 95px; }   /* title + up to four lines (weak and relayed), so the card never grows */
+  .info .nums { margin-block-start: 6px; padding-inline-start: 34px; font-size: var(--fs-meta); font-variant-numeric: tabular-nums; }
   .b { margin-block-start: 16px; inline-size: 100%; min-block-size: var(--btn); border: 0; border-radius: 22px; background: var(--accent); color: var(--on-accent); font-weight: 650; font-size: var(--fs-body); cursor: pointer; }
   .b:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   .round:focus-visible, .min:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }

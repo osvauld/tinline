@@ -9,13 +9,15 @@
   import { timeScale } from '../fx/motion';
 
   type MarkState = 'slack' | 'ringing' | 'taut';
-  let { size = 24, state = 'slack', live = false, mono = false, label, sway, dim = false }:
-    { size?: number; state?: MarkState; live?: boolean; mono?: boolean; label?: string;
+  let { size = 24, state = 'slack', live = false, mono = false, label, sway, dim = false, spring, ontug, lineColor = false }:
+    { size?: number; /** Spring overrides for one moment (e.g. Done's longer pull); calls use the defaults. */ spring?: Record<string, number>; /** Sign-up marks: the slack line is a faded gold that warms when it pulls tight. */ lineColor?: boolean; /** Each tug of the string going tight (1, 2, …). */ ontug?: (n: number) => void; state?: MarkState; live?: boolean; mono?: boolean; label?: string;
       /** Ringing sway: period (s) and amplitude (deg). Lock the period to the cue that's playing. */
       sway?: { period: number; amp: number }; dim?: boolean } = $props();
 
   let svg: SVGSVGElement;
   let api: any = null;
+  // the line has gone tight (colour); set on the element directly: the `state` prop shadows the $state rune here
+  const setTaut = (on: boolean) => svg?.classList.toggle('taut', on);
 
   onMount(() => {
     // optical-size tier for the rendered size (hinted small tiers: see MARK-MATH.md section 4)
@@ -27,9 +29,10 @@
       else TinMark.render(svg, { ...params, s: 0, delta: TinMark.resolve(params).DT });
       return;
     }
-    api = TinMark.attach(svg, { params: { ...params, ...(sway ? { T: sway.period, phi0: sway.amp } : {}) }, reduced: motion.reduced, timeScale: timeScale() });
+    api = TinMark.attach(svg, { params: { ...params, ...(spring || {}), ...(sway ? { T: sway.period, phi0: sway.amp } : {}) }, reduced: motion.reduced, timeScale: timeScale() });
     api.on('hit', () => emitFx({ type: 'taut-hit' }));
-    api.set(state === 'taut' ? 'taut' : 'slack');
+    api.on('tug', (e: { n: number }) => { setTaut(true); ontug?.(e.n); });
+    api.set(state === 'taut' ? 'taut' : 'slack'); setTaut(state === 'taut');
     if (state === 'ringing') api.ring(true);
     // silent send pluck: only a visible, live mark answers; reduced motion does nothing (tinmark ignores it)
     const off = onFx((e) => { if (e.type === 'sent' && svg.isConnected && svg.getClientRects().length && getComputedStyle(svg).visibility !== 'hidden') api?.pluck(); });
@@ -50,7 +53,7 @@
     if (s === prev) return;
     if (s === 'taut') api.connect();
     else if (s === 'ringing') api.ring(true);
-    else { api.ring(false); api.end(); }
+    else { api.ring(false); api.end(); setTaut(false); }
     prev = s;
   });
 
@@ -58,11 +61,15 @@
   export function pluck() { api?.pluck(); }
 </script>
 
-<svg bind:this={svg} class="mark" class:dim width={size} height={size} viewBox="0 0 24 24"
+<svg bind:this={svg} class="mark" class:dim class:live-line={lineColor} width={size} height={size} viewBox="0 0 24 24"
   role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : 'true'}></svg>
 
 <style>
   .mark { flex: none; overflow: visible; transition: opacity var(--dur-crossfade) var(--ease-out);
     --tm-can: var(--accent); --tm-mouth: #9fd6c8; --tm-str: var(--gold); --tm-ink: currentColor; }
   .mark.dim { opacity: .45; --tm-str: var(--muted); }
+  /* Line colour: a slack line is a soft, faded gold; it warms to full gold the moment it pulls tight. */
+  .mark.live-line { --tm-str: color-mix(in oklab, var(--gold) 55%, var(--line)); }
+  .mark.live-line > :global(path) { transition: stroke var(--dur-switch, 240ms) var(--ease-out); }
+  .mark.live-line:global(.taut) { --tm-str: var(--gold); }
 </style>

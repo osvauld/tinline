@@ -57,6 +57,7 @@ fn peer(name: &str) -> Peer {
     let _ = std::fs::remove_dir_all(&dir);
     let (tx, rx) = mpsc::channel();
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.create_identity(name.into(), PASS.into()).unwrap();
     node.start().unwrap();
     let t = Instant::now();

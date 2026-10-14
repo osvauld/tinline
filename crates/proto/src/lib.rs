@@ -25,7 +25,7 @@ pub const ALPN: &[u8] = b"osvauld/p2p/1";
 /// Own-device sync (docs/design/device-linking.md §4); only devices of the same DID. Version 3
 /// (P10 per-writer chat versions; P6: the account doc carries call tokens, call permissions and
 /// token cut-offs); versions 2 and 1 are refused by the app.
-pub const SELF_ALPN: &[u8] = b"tinline/self/3";
+pub const SELF_ALPN: &[u8] = b"tinline/self/4";
 
 const ATTEST_DOMAIN: &[u8] = b"osvauld/p2p/attest/v1\0";
 const INVITE_DOMAIN: &[u8] = b"osvauld/p2p/invite/v1\0";
@@ -841,6 +841,14 @@ pub enum Msg {
         letter: String,
     },
     GroupLetterTaken,
+    /// The ticket owner's answer to a good `ContactHello` it holds as a request for its user
+    /// (instead of a `ContactWelcome`): the joiner shows "request sent". If the user accepts, the
+    /// owner dials the joiner's attested device and sends the `ContactWelcome` as the first
+    /// message of that connection, answered `WelcomeTaken` (or `Reject` if no request of the
+    /// joiner's matches). "Not now" sends nothing.
+    ContactPending,
+    /// A dialled-back `ContactWelcome` was checked against our pending request and stored.
+    WelcomeTaken,
     /// Mid-call, only once both sides offered video: the sender's camera turned on or off.
     /// Sent when the call goes active if the camera is on, then on every change.
     Video {
@@ -1093,7 +1101,10 @@ pub fn accept_self_hello(
 
 // ---- add-contact handshake ---------------------------------------------------------
 
-#[derive(Debug, Clone)]
+/// The joiner's half of an add, kept until the owner's `ContactWelcome` arrives: on the same
+/// connection (the owner took it at once) or later on a connection the owner dials back after
+/// its user accepted the request (`ContactPending`). Serialisable so the joiner can keep it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PendingContact {
     pub did: String,
     pub name: String,
@@ -1112,6 +1123,21 @@ pub struct NewContact {
     /// Their call token for us, if they let us call.
     pub call_grant_from_them: Option<SignedGrant>,
     pub redeemed_nonce: String,
+}
+
+/// The signed invite inside a `ContactHello` (signature checked, nothing else): for the owner
+/// to learn which of its tickets a held request used and when that ticket expires.
+pub fn hello_invite(msg: &Msg) -> Result<InviteClaim> {
+    match msg {
+        Msg::ContactHello { invite, .. } => open_invite(invite),
+        _ => Err(Error::UnexpectedMessage),
+    }
+}
+
+/// The entry the owner keeps in its redeemed set once `joiner` has been added with the ticket
+/// whose nonce is `nonce`: the same joiner can't redeem that ticket again, others still can.
+pub fn redeemed_key(joiner: &str, nonce: &str) -> String {
+    format!("{nonce}/{joiner}")
 }
 
 /// Binds the joiner's DID to *this* invite and *this* pair of devices, so a hello can't be
@@ -1221,12 +1247,14 @@ pub fn accept_contact_hello_with(
     if dec32(&claim.device)? != my_device {
         return Err(Error::DeviceMismatch);
     }
-    if redeemed_nonces.contains(&claim.nonce) {
-        return Err(Error::Replayed);
-    }
     let att = verify_attestation(attestation)?;
     if att.device_key()? != remote_device {
         return Err(Error::DeviceMismatch);
+    }
+    // A ticket adds any number of joiners until it expires; each joiner DID redeems it once. A
+    // bare nonce in the set (single-use tickets, before reusable codes) still spends it for all.
+    if redeemed_nonces.contains(&claim.nonce) || redeemed_nonces.contains(&redeemed_key(&att.did, &claim.nonce)) {
+        return Err(Error::Replayed);
     }
     let their_pub = public_key_from_did(&att.did).ok_or(Error::Decode)?;
     let sig: [u8; 64] = dec(binding)?.try_into().map_err(|_| Error::Decode)?;

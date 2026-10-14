@@ -114,7 +114,7 @@ fun FileViewer(m: Message, plan: OpenPlan, source: ChatSource, onClose: () -> Un
         val s = state
         var page by remember { mutableIntStateOf(1) }
         Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            IconBtn(Icons.Rounded.Close, "Close", onClose, tint = Color.White)
+            IconBtn(PgIcons.X, "Close", onClose, tint = Color.White)
             Column(Modifier.weight(1f)) {
                 Text(a?.name ?: "File", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val sub = if (s is Loaded.Pdf) "Page $page of ${s.doc.pageCount}" else viewerWhen(m.at.toLong(), System.currentTimeMillis())

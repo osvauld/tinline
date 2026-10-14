@@ -256,6 +256,7 @@ fn open(dir: &std::path::Path) -> (Arc<Node>, mpsc::Receiver<Ev>, mpsc::Receiver
     let (tx, rx) = mpsc::channel();
     let (ltx, lrx) = mpsc::channel();
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
     (node, rx, lrx)
 }

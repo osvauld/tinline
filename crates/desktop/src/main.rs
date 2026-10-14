@@ -24,12 +24,23 @@ mod shaped;
 mod blocks;
 mod emoji;
 mod audio;
+mod cues;
 mod flow;
 /// Placeholder data for the groups & privacy preview screens.
 mod groups_fake;
 mod hostcond;
 mod keystore;
 mod mark;
+/// Motion tokens (playground lib/fx/motion.ts) and tweens.
+mod motion;
+/// The playground's own icon set (icons.ts).
+mod pg_icons;
+/// Tinline's line icons, generated from the mark's geometry (crates/tin-icons); the source of truth for glyphs.
+#[path = "../../tin-icons/generated/tin_icons.rs"]
+#[allow(dead_code)]
+mod tin_icons;
+/// CSS-like text ellipsis by measurement.
+mod fit;
 mod call_field;
 mod call_ui;
 mod raise;
@@ -54,6 +65,8 @@ use tokio::sync::mpsc;
 pub enum Ev {
     Status(NodeStatus),
     Contacts,
+    /// Account-scoped profile invalidation, never decoded on a core callback thread.
+    Profile { epoch: u64, did: String },
     Incoming(CallInfo),
     State(String, CallState),
     Tray(tray::TrayCmd),
@@ -67,6 +80,24 @@ pub enum Ev {
     Video(VideoInfo),
     /// A group-call event (the audio already followed it; the call UI comes next).
     GroupCall(GroupCallEvent),
+    /// Someone used our code: "Maya wants to add you as a contact" (once per person).
+    Request(p2pcore::ContactRequest),
+    /// They accepted the request we sent: our line to them is open.
+    Accepted(p2pcore::Contact),
+}
+
+/// Bridges `ContactRequestEvents` into the same channel as `NodeEvents`.
+pub struct RequestBridge(pub mpsc::UnboundedSender<Ev>);
+
+impl p2pcore::ContactRequestEvents for RequestBridge {
+    fn on_contact_request(&self, request: p2pcore::ContactRequest) {
+        tlog!("CONTACT_REQUEST {} {}", request.did, request.name);
+        let _ = self.0.send(Ev::Request(request));
+    }
+    fn on_request_accepted(&self, contact: p2pcore::Contact) {
+        tlog!("REQUEST_ACCEPTED {} {}", contact.did, contact.name);
+        let _ = self.0.send(Ev::Accepted(contact));
+    }
 }
 
 /// Bridges `VideoEvents` into the same channel as `NodeEvents`.
@@ -387,6 +418,7 @@ fn main() -> Result<(), String> {
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
     node.set_group_events(Arc::new(GroupBridge(tx.clone())));
     node.set_group_request_events(Arc::new(GroupBridge(tx.clone())));
+    node.set_contact_request_events(Arc::new(RequestBridge(tx.clone())));
     node.set_group_invitation_events(Arc::new(GroupBridge(tx.clone())));
     node.set_link_events(Arc::new(LinkBridge(tx.clone())));
     node.set_video_events(Arc::new(VideoBridge(tx.clone())));

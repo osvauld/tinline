@@ -17,7 +17,7 @@
     {/each}
   </div>
   {#snippet foot()}
-    <Btn type="submit" {busy} disabled={!gate.deviceLabel.trim()}>Continue</Btn>
+    <Btn type="submit" next {busy} disabled={!gate.deviceLabel.trim()}>Continue</Btn>
   {/snippet}
 </StepShell>
 

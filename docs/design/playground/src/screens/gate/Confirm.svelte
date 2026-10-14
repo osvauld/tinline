@@ -10,14 +10,14 @@
   const submit = () => { tried = true; if (gate.confirmOk(answers)) gate.back(); };
 </script>
 
-<StepShell title="Check my copy" lead="Optional. Type the words you wrote down, to be sure the paper is right." form onsubmit={submit}>
+<StepShell title="Check my copy" lead="Optional. Type a few words from your saved copy, to be sure it’s right." form onsubmit={submit}>
   <div class="col">
     {#each CONFIRM_AT as p, i (p)}
-      <Field label="Word {p}" reserve={1} mono bind:value={answers[i]} autofocus={i === 0} error={wrong(i) ? 'That isn’t word ' + p + '. Check your written copy.' : null} />
+      <Field label="Word {p}" reserve={1} mono bind:value={answers[i]} autofocus={i === 0} error={wrong(i) ? 'That isn’t word ' + p + '. Check your saved copy.' : null} />
     {/each}
   </div>
   {#snippet foot()}
-    <Btn type="submit" disabled={answers.some((a) => !a.trim())}>Done</Btn>
+    <Btn type="submit" enter disabled={answers.some((a) => !a.trim())}>Done</Btn>
     <Btn kind="text" onclick={() => gate.back()}>Back to the words</Btn>
   {/snippet}
 </StepShell>

@@ -115,6 +115,9 @@ impl Node {
             kind: "file".into(),
             duration_ms: 0,
             waveform: Vec::new(),
+            width: 0,
+            height: 0,
+            preview: String::new(),
         });
         self.block_on(async move { inner.synth_dm(&with, &author, text, at, file).await })?
     }

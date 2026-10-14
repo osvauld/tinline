@@ -143,7 +143,7 @@ object BlockCopy {
 /** "Block X?" with every consequence listed before the tap. */
 @Composable
 fun BlockDialog(name: String, onDismiss: () -> Unit, onBlock: () -> Unit) {
-    TinDialog(BlockCopy.dialogTitle(name), onDismiss, "Block", { onDismiss(); onBlock() }, destructive = true, icon = Icons.Rounded.Block) {
+    TinDialog(BlockCopy.dialogTitle(name), onDismiss, "Block", { onDismiss(); onBlock() }, destructive = true, icon = PgIcons.Off) {
         BlockCopy.dialogLines(name).forEach { DialogText("• $it") }
     }
 }

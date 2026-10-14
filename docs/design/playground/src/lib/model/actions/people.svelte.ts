@@ -5,14 +5,17 @@
    Nothing here talks to a network, camera or system. */
 import { db, newId, person } from '../store.svelte';
 import { clock, T } from '../clock.svelte';
+import { emitFx } from '../../fx/bus';
 
 export type Perm = 'granted' | 'denied';
 export interface Request { id: string; who: string; name: string; hue: number; at: number }
+/** A request I sent with someone's code, waiting for them to accept. */
+export interface Sent { id: string; name: string; hue: number; at: number }
 
 export const pp = $state({
   /** Dialogs drawn above the whole app (PeopleLayers): the new-chat picker and the add-contact sheet. */
   dialog: null as null | 'newChat' | 'addContact',
-  addTab: 'scan' as 'scan' | 'mine' | 'paste',
+  addTab: 'code' as 'person' | 'code',
   /** OS permissions the app has been given. Android also has battery optimisation. */
   perms: { notifications: 'granted' as Perm, microphone: 'granted' as Perm, camera: 'granted' as Perm, battery: 'ok' as 'ok' | 'restricted' },
   /** Notification switches (mine, per account on this device). */
@@ -21,30 +24,65 @@ export const pp = $state({
   newContactsCall: false,
   /** People who scanned my code or sent me a request and wait for my answer. */
   requests: [] as Request[],
-  /** How I added a contact. Absent = unknown (older contacts). */
-  how: {} as Record<string, 'scan' | 'code'>,
+  /** How a contact came: I scanned / pasted their code, or `them`: they used MY code (core adds them with no
+      question asked, see protocol.md "Add contact"). Absent = unknown (older contacts). */
+  how: {} as Record<string, 'scan' | 'code' | 'them'>,
+  /** When they added me (for "Added you just now"). */
+  addedAt: {} as Record<string, number>,
+  /** Someone is using my code right now (core: a ContactHello arrived). `joining` while the handshake runs, `joined`
+      once it is complete. Shown in the Add contact sheet as "New contact" (it opens on its own, except during a call). */
+  /** Who the open Add contact sheet is showing (its found face), so an acceptance knows whether it lands in place. */
+  facing: null as null | string,
+  incoming: null as null | { id: string; name: string; hue: number; phase: 'asking' | 'joined'; kind: 'request' | 'accepted' },
+  /** Requests I sent (I used their code), waiting for them to accept. */
+  sent: [] as Sent[],
+  /** My current contact code. DECIDED by the user 2026-10-13 (PROPOSED core change, see SIGNUP-HANDOFF § 6f): a code
+      works for anyone who has it until it expires (7 days) or I make a new one. Core today: single use. */
+  myCode: '',
+  myCodeExp: 0,
 });
 
 export function resetPeopleState() {
-  pp.dialog = null; pp.addTab = 'scan';
+  pp.dialog = null; pp.addTab = 'code';
   pp.perms.notifications = 'granted'; pp.perms.microphone = 'granted'; pp.perms.camera = 'granted'; pp.perms.battery = 'ok';
   pp.notif.messages = true; pp.notif.calls = true; pp.notif.groups = true;
-  pp.newContactsCall = false; pp.requests = []; pp.how = {};
+  pp.newContactsCall = false; pp.requests = []; pp.sent = []; pp.incoming = null; pp.how = {}; pp.addedAt = {}; pp.myCode = MY_CODE; pp.myCodeExp = clock.now + CODE_DAYS * T.DAY;
   link.reset(); linkSim.failure = 'none'; linkSim.name = 'Tablet';
 }
 
-export const open = (d: 'newChat' | 'addContact', tab: 'scan' | 'mine' | 'paste' = 'scan') => { pp.addTab = tab; pp.dialog = d; };
-export const closeDialog = () => { pp.dialog = null; };
+/** Add contact opens on Code everywhere (decided 2026-10-13): your code first; QR (in person) is one tap away. */
+export const open = (d: 'newChat' | 'addContact', tab: 'person' | 'code' = 'code') => { pp.addTab = tab; pp.dialog = d; };
+export const closeDialog = () => { pp.dialog = null; pp.incoming = null; };
 
 /* ---------- contacts ---------- */
-export const MY_CODE = 'TIN-MAYA-7K2Q';
+/* A contact code is the core's ticket: `OSVC2:` + ~250 base32 characters (crates/core node.rs `my_ticket`), not
+   something to read or type. These are synthetic, same shape and length. */
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+export function sampleCard(seed: string, len = 248): string {
+  let h = [...seed].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 2166136261), out = 'OSVC2:';
+  for (let i = 0; i < len; i++) { h = (Math.imul(h ^ (h >>> 15), 2246822519) + i) >>> 0; out += B32[h % 32]; }
+  return out;
+}
+export const MY_CODE = sampleCard('maya');
+export const CODE_DAYS = 7;
+pp.myCode = MY_CODE; pp.myCodeExp = clock.now + CODE_DAYS * T.DAY;
+/** "New code" (core `reset_ticket`): the old code stops working at once, the new one runs 7 days. The two-phone lab
+    replaces this so the other window learns the new code. */
+let renewals = 0;
+export const codeHooks = { renew: () => { pp.myCode = sampleCard('me#' + ++renewals); pp.myCodeExp = clock.now + CODE_DAYS * T.DAY; } };
+export const codeUntil = () => new Date(pp.myCodeExp).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 /** People the simulated scanner / pasted codes can resolve to. */
 export const DIRECTORY = [
-  { id: 'tara', key: 'TARA', name: 'Tara Iyer', hue: 3 },
-  { id: 'nikhil', key: 'NIKH', name: 'Nikhil Das', hue: 1 },
-  { id: 'isha', key: 'ISHA', name: 'Isha Verma', hue: 5 },
+  { id: 'tara', key: 'TARA', name: 'Tara Iyer', hue: 3, card: sampleCard('tara') },
+  { id: 'nikhil', key: 'NIKH', name: 'Nikhil Das', hue: 1, card: sampleCard('nikhil') },
+  { id: 'isha', key: 'ISHA', name: 'Isha Verma', hue: 5, card: sampleCard('isha') },
 ];
-export type Found = { ok: true; id: string; name: string; hue: number; already: boolean; blocked: boolean } | { ok: false; error: string };
+/** The first word in `text` that looks like a contact code, like core `find_card`: a code pasted inside a
+    message ("Add me on Tinline: OSVC2:…") still works. */
+export function findCard(text: string): string | null {
+  return text.split(/[\s<>"'()]+/).map((w) => w.replace(/[.,;!?]+$/, '')).find((w) => /^osvc2:/i.test(w) && w.length > 20) ?? null;
+}
+export type Found = { ok: true; id: string; name: string; hue: number; already: boolean; blocked: boolean; code?: string } | { ok: false; error: string };
 
 const found = (d: { id: string; name: string; hue: number }): Found => {
   const p = person(d.id);
@@ -58,35 +96,107 @@ export function scanResult(): Found {
 }
 
 export function resolveCode(raw: string): Found {
-  const c = raw.trim().toUpperCase().replace(/\s+/g, '');
-  if (!c) return { ok: false, error: 'Paste or type the code first.' };
-  if (!/^TIN-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(c)) return { ok: false, error: 'That doesn’t look like a Tinline code. Codes look like TIN-7K2M-Q4RX.' };
-  if (c === MY_CODE) return { ok: false, error: 'That is your own code. Share it with someone else.' };
-  const d = DIRECTORY.find((x) => c.startsWith('TIN-' + x.key + '-'));
+  if (!raw.trim()) return { ok: false, error: 'Paste their code first.' };
+  const c = findCard(raw)?.toUpperCase();
+  if (!c) return { ok: false, error: 'That doesn’t look like a Tinline code. Could they copy it again for you?' };
+  const owner = CARD_OWNER.get(c);
+  if (c === pp.myCode || owner?.id === 'me') return { ok: false, error: 'That’s your own code. Send it to them, and paste theirs here.' };
+  // Expired (7 days): core `peek_card` returns None today, so the app can't name them or say why. PROPOSED core change:
+  // return the reason (and the signed name) so this message can be specific.
+  if (owner?.expired) return { ok: false, error: `That code from ${owner.name.split(' ')[0]} has expired. Codes last 7 days, so ask them for a fresh one.` };
+  if (owner) return { ...(found(owner) as Found & { ok: true }), code: c };
+  const signed = pairing.owner?.(c);
+  if (signed?.id === 'me') return { ok: false, error: 'That’s your own code. Send it to them, and paste theirs here.' };
+  if (signed) return { ...(found(signed) as Found & { ok: true }), code: c };
+  const d = DIRECTORY.find((x) => x.card === c);
   if (d) return found(d);
   const h = [...c].reduce((n, ch) => n + ch.charCodeAt(0), 0);
   return found(DIRECTORY[h % DIRECTORY.length]);
 }
 
-/** Add someone to my contacts. They start message-only unless I chose otherwise in Privacy (PROPOSED default). */
-export function addPerson(f: { id: string; name: string; hue: number }, how: 'scan' | 'code' | 'request'): void {
-  const p = person(f.id);
-  if (p) { p.contact = true; }
-  else db.people.push({ id: f.id, name: f.name, hue: f.hue, online: true, callsAllowed: pp.newContactsCall, blocked: false, contact: true });
+/** Codes the simulation knows the owner of, current or spent (like core `peek_card`, which reads the signed name
+    from the code itself without dialling). Filled by the two-phone lab (lib/sim/pair.ts). */
+export const CARD_OWNER = new Map<string, { id: string; name: string; hue: number; expired?: boolean }>();
+
+/** Adding someone by their code dials them (core `add_contact`): their device must be on, and the code must be the
+    one they hand out now. The two-phone lab replaces `pairing.reach` with a real round trip to the other window. */
+/* Outcomes of core `add_contact` (node.rs `add_contact_from`), as the joiner sees them:
+   ok        Welcome received; both sides now have each other (and may call).
+   timeout   Error::Timeout: the dial (up to 30 s) or the answer (up to 15 s) never came. Their device is off/offline.
+   refused   Error::Rejected("refused"): their device answered but the code is not the one it hands out now. Core can't
+             say which: someone else used it, they made a new one, or they changed their nickname (set_name drops it).
+   blocked   Error::Rejected("blocked"): they blocked me (their notice is the answer).
+   nonet     My own device is offline (checked before dialling). */
+export type Reach = 'ok' | 'pending' | 'timeout' | 'refused' | 'blocked' | 'nonet';
+/* DECIDED by the user 2026-10-13: adding by code is a REQUEST. Their device takes it (pending = delivered) and they
+   choose Accept or Not now. PROPOSED core change (SIGNUP-HANDOFF § 6f): today the owner's device accepts on its own. */
+type Dial = { id: string; name: string; hue: number; code?: string };
+export const pairing = {
+  reach: null as null | ((f: Dial) => Promise<Reach>),
+  /** My answer to a request, so the lab can tell the other window (a "Not now" sends nothing). */
+  answered: null as null | ((r: Request, yes: boolean) => void),
+  /** Like core `peek_card` reading the signed name inside a code: the lab's codes carry their owner, so a window
+      recognises its own code (and a peer's old one) even after a reload, without having seen it announced. */
+  owner: null as null | ((code: string) => { id: string; name: string; hue: number } | undefined),
+};
+/** My request was delivered: remember it ("Waiting for Tara"). */
+export function requestSent(f: { id: string; name: string; hue: number }) {
+  if (!pp.sent.some((x) => x.id === f.id)) pp.sent.push({ ...f, at: clock.now });
+}
+/** They accepted my request: they become a contact, and I see the line open (the sheet, unless I'm in a call). */
+export function accepted(f: { id: string; name: string; hue: number }, inCall = false) {
+  if (!pp.sent.some((x) => x.id === f.id) || person(f.id)?.contact) return;
+  pp.sent = pp.sent.filter((x) => x.id !== f.id);
+  addPerson(f, 'code');
+  // If my Add contact sheet is on them, it turns taut by itself. Otherwise (closed, or open on someone else / the
+  // other tab) the moment takes the sheet. Never over a call or another dialog.
+  if (inCall || (pp.dialog === 'addContact' && pp.facing === f.id) || (pp.dialog && pp.dialog !== 'addContact')) return;
+  pp.incoming = { ...f, phase: 'joined', kind: 'accepted' }; pp.dialog = 'addContact';
+}
+export async function reach(f: Dial): Promise<Reach> {
+  if (!db.env.networkOnline) { await new Promise((r) => setTimeout(r, 300)); return 'nonet'; }
+  if (pairing.reach) return pairing.reach(f);
+  // Single window: they get it at once and accept a moment later (the two-phone lab, ?lab=pair, lets you answer).
+  await new Promise((r) => setTimeout(r, 700));
+  setTimeout(() => accepted(f), 2500);
+  return 'pending';
+}
+
+/** Add someone to my contacts. Core (caps.rs `policy_for`): a contact made from a ticket can call both ways from the
+    start; one met through a group request is message-only. `pp.newContactsCall` stays a PROPOSAL for requests. */
+export function addPerson(f: { id: string; name: string; hue: number }, how: 'scan' | 'code' | 'request' | 'them'): void {
+  const p = person(f.id), wasContact = !!p?.contact;
+  const calls = how === 'request' ? pp.newContactsCall : true;
+  if (p) { p.contact = true; p.callsAllowed = calls; }
+  else db.people.push({ id: f.id, name: f.name, hue: f.hue, online: true, callsAllowed: calls, blocked: false, contact: true });
   if (how !== 'request') pp.how[f.id] = how;
+  if (how === 'them') pp.addedAt[f.id] = clock.now;
+  if (!wasContact) emitFx({ type: 'line' });   // a new line opened: the same two tugs as Done
 }
 
 let rq = 0;
-export function incomingRequest(d = DIRECTORY[rq % DIRECTORY.length]) {
+/** Someone used my code: their request arrives (the knock). Returns false if they're already a contact. */
+export function incomingRequest(d: { id: string; name: string; hue: number } = DIRECTORY[rq % DIRECTORY.length], open = true) {
   rq++;
-  if (person(d.id)?.contact || pp.requests.some((r) => r.who === d.id)) return;
-  pp.requests.push({ id: newId('rq'), who: d.id, name: d.name, hue: d.hue, at: clock.now });
+  if (person(d.id)?.contact) return false;
+  if (!pp.requests.some((r) => r.who === d.id)) pp.requests.push({ id: newId('rq'), who: d.id, name: d.name, hue: d.hue, at: clock.now });
+  emitFx({ type: 'request' });
+  // The sheet opens over what I'm doing (my own Add contact sheet turns into it); never over a call or another dialog.
+  if (open && (pp.dialog === null || pp.dialog === 'addContact')) {
+    pp.incoming = { id: d.id, name: d.name, hue: d.hue, phase: 'asking', kind: 'request' }; pp.dialog = 'addContact';
+  }
+  return true;
 }
+/** Accept / Not now. Accepting makes them a contact who may message and call (ticket policy); the requester is told.
+    "Not now" tells them nothing: their request just stays unanswered (kind to both). */
 export function answerRequest(id: string, accept: boolean) {
   const r = pp.requests.find((x) => x.id === id);
   if (!r) return;
-  if (accept) addPerson({ id: r.who, name: r.name, hue: r.hue }, 'request');
-  pp.requests = pp.requests.filter((x) => x.id !== id);
+  if (accept) addPerson({ id: r.who, name: r.name, hue: r.hue }, 'them');
+  // Not now keeps the request in Contacts › "Waiting for you" to answer later (§ 6f); only Accept removes it.
+  if (accept) pp.requests = pp.requests.filter((x) => x.id !== id);
+  if (pp.incoming?.id === r.who) { if (accept) pp.incoming.phase = 'joined'; else closeDialog(); }
+  pairing.answered?.(r, accept);
 }
 
 /* ---------- blocking (visible, U5) ---------- */

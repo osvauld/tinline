@@ -8,7 +8,7 @@
 //! cutoffs/<did>          our token cut-offs for <did> (JSON `CutOffs`; per field, max wins)
 //! sent/<did>             our latest signed block/unblock notice to <did> (JSON; newest `at` wins)
 //! notices/<did>          the latest notice <did> signed to us + their name (JSON; newest wins)
-//! redeemed/<nonce>       "1"                              set, never shrinks
+//! redeemed/<key>         "1"   <nonce>/<joiner did> (or a bare nonce from single-use days); set, never shrinks
 //! revoked/<grant id>     "1"                              set, never shrinks
 //! calls/<call_id>        (written by older builds, no longer read: see `callsdoc.rs`)
 //! ```

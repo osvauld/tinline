@@ -109,14 +109,14 @@ fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: 
             title = if (name.isNotBlank()) "Can’t open $name’s account" else "Can’t open your account",
             lead = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Calls can’t reach you until you restore.",
             center = true, anchor = true,
-            hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(Icons.Rounded.Key, 72.dp, 32.dp) } },
+            hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Key, 72.dp, 32.dp) } },
             foot = {
                 GBtn("Restore with recovery phrase", onRestore, enabled = !busy)
                 GBtn("Try again", onRetry, kind = GKind.Text, busy = busy)
                 if (onSwitch != null) GBtn("Switch account", onSwitch, kind = GKind.Text, enabled = !busy)
             },
         ) {
-            GNotice("You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.", NKind.Warn, Icons.Rounded.Info)
+            GNotice("You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.", NKind.Warn, PgIcons.Info)
         }
     }
 }

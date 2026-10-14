@@ -86,7 +86,11 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
 
     override fun onMessageAdded(message: Message) {
         _events.tryEmit(ChatEvent.Added(message))
-        if (!message.outgoing) ChatNotifier.incoming(app, message)
+        if (!message.outgoing) {
+            ChatNotifier.incoming(app, message)
+            // audio.ts `received`: the can, tapped once, while the app is open.
+            if (AppVisible.resumed && !message.deleted) Cues.received()
+        }
     }
     override fun onMessageChanged(message: Message) { _events.tryEmit(ChatEvent.Changed(message)) }
     override fun onChatChanged(chat: Chat) {

@@ -73,6 +73,7 @@ fn blank(name: &str) -> Peer {
     let _ = std::fs::remove_dir_all(&dir);
     let (ltx, lrx) = mpsc::channel();
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
     Peer { node, lrx, did: String::new(), dir }
 }
@@ -198,6 +199,7 @@ fn restart(p: &mut Peer, lose_groups: bool) {
     p.node.stop();
     std::thread::sleep(Duration::from_secs(2));
     let node = Node::new(p.dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    node.auto_accept_contacts_for_test(true);
     let (ltx, lrx) = mpsc::channel();
     node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
     p.lrx = lrx;

@@ -7,6 +7,13 @@ use super::*;
 impl App {
     pub(super) fn load_demo(&mut self, name: &str) {
         use p2pcore::{CallRecord, CallStats};
+        if let Some(route) = name.strip_prefix("pg") {
+            self.load_pg(route.trim_start_matches('-'));
+            return;
+        }
+        if self.signup_demo(name) {
+            return;
+        }
         self.demo = true;
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -139,10 +146,11 @@ impl App {
                 self.add_alias = "Arjun".into();
                 self.add_phase = AddPhase::Added(contacts[0].clone());
             }
-            "unlock" => self.screen = Screen::Unlock,
+            "unlock" => { self.screen = Screen::Unlock; self.has_pass = true; }
             "unlock-wrong" => {
                 self.screen = Screen::Unlock;
-                self.notice = Some("That passphrase is not right. Try again.".into());
+                self.has_pass = true;
+                self.notice = Some("That passphrase didn\u{2019}t open the account.".into());
             }
             "accounts-menu" | "switch-confirm" => {
                 self.acct_menu = true;
@@ -191,7 +199,7 @@ impl App {
                     "link-approve-wrong" => {
                         self.link = st(Role::Existing, Step::Code);
                         self.has_pass = true;
-                        self.notice = Some("That passphrase is not right. Try again.".into());
+                        self.notice = Some("That passphrase didn\u{2019}t open the account.".into());
                     }
                     "link-done" => self.link = st(Role::Existing, Step::Done),
                     "link-secure" | "link-secure-nokeyring" => {
@@ -256,13 +264,14 @@ impl App {
             "incoming" => {
                 self.call = Some(CallView { info: info(true), state: CallState::Ringing, answered: false, stats: None });
             }
-            "incall" | "incall-relay" | "reconnecting" | "incall-about" | "incall-minimized" => {
-                let direct = name != "incall-relay";
+            "incall" | "incall-relay" | "reconnecting" | "incall-about" | "incall-minimized"
+            | "incall-relay-about" | "incall-weak-about" | "reconnecting-about" => {
+                let direct = !name.starts_with("incall-relay");
                 self.call = Some(CallView {
                     info: info(true),
                     state: CallState::Active,
                     answered: true,
-                    stats: Some(stats(direct, 252, if direct { 38 } else { 140 }, name == "reconnecting")),
+                    stats: Some(stats(direct, 252, if name == "incall-weak-about" { 520 } else if direct { 38 } else { 140 }, name.starts_with("reconnecting"))),
                 });
             }
             "ended" | "unreachable" => {
@@ -413,7 +422,7 @@ impl App {
         }
         self.contacts = contacts;
         self.call_ui.bind(self.call.as_ref().map(|c| c.info.call_id.as_str()));
-        if name == "incall-about" {
+        if name.ends_with("-about") {
             self.call_ui.apply(crate::call_ui::Action::About, true);
         }
         if name == "incall-minimized" {

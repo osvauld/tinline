@@ -19,6 +19,9 @@
   import { dur, timeScale } from '../fx/motion';
   import { motion } from '../fx/reduced.svelte';
   import { plural } from '../../screens/groups/util';
+  import SignalBars from './SignalBars.svelte';
+  import { glink, lineOf } from './glink.svelte';
+  import { SIGNAL_WORD } from './link.svelte';
 
   const android = $derived(prefs.form === 'android');
   const g = $derived(gcall.group);
@@ -31,6 +34,11 @@
   const hostLost = $derived(phase === 'ended' && gcall.endReason === 'host-lost');
   const fadeMs = $derived(motion.reduced ? 0 : dur('crossfade'));
   const look = $derived(statusLook());
+  /* Signal: my line to the call host in the header (tap = About this call), and each person's line on their tile.
+     The host's tile and, on the host's own screen, the header show no line: the host is the hub. */
+  const iHost = $derived(lc?.hostId === 'me');
+  const myLine = $derived(connected && !iHost ? lineOf('me') : 0);
+  const infoLabel = $derived(iHost ? 'About this call. You’re the call host.' : connected ? `About this call. ${SIGNAL_WORD[lineOf('me')]} signal to the call host.` : 'About this call');
 
   /* ---- roster: who is drawn, and how big ---- */
   const MAX_SHOWN = $derived(android ? 8 : 12);
@@ -124,7 +132,7 @@
     <header class="top">
       <button type="button" class="min press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-label="Minimize call" onclick={() => gcall.minimize()}><Icon name="chev" size={24} /></button>
       <span class="mark" title={look.label}><Mark size={28} live state={look.state} sway={look.sway} dim={look.dim} /></span>
-      <button type="button" class="min end-side press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-haspopup="dialog" aria-expanded={infoOpen} aria-label="About the call host" onclick={(e) => { infoBtn = e.currentTarget; openInfo(); }}><Icon name="info" size={22} /></button>
+      <button type="button" class="min end-side press" class:gone={!live} disabled={!live} tabindex={live ? 0 : -1} aria-hidden={!live} aria-haspopup="dialog" aria-expanded={infoOpen} aria-label={infoLabel} title={infoLabel} onclick={(e) => { infoBtn = e.currentTarget; openInfo(); }}>{#if iHost}<Icon name="info" size={22} />{:else}<SignalBars level={myLine} wave={phase === 'reconnecting'} />{/if}</button>
     </header>
 
     <div class="head" bind:this={headEl}>
@@ -143,11 +151,11 @@
       <ul class="roster" class:dim={phase === 'reconnecting' || phase === 'ended' || phase === 'failed'} role="list" aria-label="People in the call" style:--cols={grid.cols} style:--av="{grid.av}px">
         {#each shown as p (p.id)}
           <li class="tile" class:speaking={p.speaking} class:muted={p.muted} style:--lv={p.level} data-part={p.id}
-            aria-label="{p.me ? 'You' : p.name}{p.muted ? ', muted' : ''}{p.speaking ? ', speaking' : ''}"
+            aria-label="{p.me ? 'You' : p.name}{p.muted ? ', muted' : ''}{p.speaking ? ', speaking' : ''}{p.id !== lc?.hostId && connected ? `, ${SIGNAL_WORD[lineOf(p.id)].toLowerCase()} signal` : ''}"
             animate:glide in:tileIn out:tileOut>
             <span class="av"><span class="glow"></span><span class="pic"><Avatar name={p.me ? db.account.name : p.name} hue={p.hue} person={p.id} size={grid.av} /></span>
               {#if p.muted}<span class="mb" aria-hidden="true"><Icon name="micoff" size={Math.round(grid.av * .2) + 2} /></span>{/if}</span>
-            <span class="nm" dir="auto">{first(p)}</span>
+            <span class="nm" dir="auto"><span class="nt">{first(p)}</span>{#if p.id !== lc?.hostId}<span class="nb" class:weak={connected && lineOf(p.id) === 1}><SignalBars level={connected ? lineOf(p.id) : 0} wave={p.me && phase === 'reconnecting'} size={16} /></span>{/if}</span>
           </li>
         {/each}
         {#if more.length}
@@ -194,8 +202,11 @@
 
   {#if infoOpen && lc}
     <div class="scrim" role="presentation" onclick={closeInfo} transition:fade={{ duration: fadeMs }}></div>
-    <div class="info" role="dialog" aria-modal="true" aria-label="About the call host" tabindex="-1" bind:this={infoCard} in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>
-      <h3>About the call host</h3>
+    <div class="info" role="dialog" aria-modal="true" aria-label="About this call" tabindex="-1" bind:this={infoCard} in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>
+      <h3>About this call</h3>
+      {#if !iHost && connected}
+        <div class="conn"><SignalBars level={lineOf('me')} size={22} /><p><b>{SIGNAL_WORD[lineOf('me')]} signal · {glink.path === 'direct' ? 'Direct' : 'Relayed'}</b><br />Your line to {gcall.hostLabel(lc.hostId)}{glink.path === 'relayed' ? ' goes through a relay. It can’t listen.' : ' is direct.'}{lineOf('me') === 1 ? ' It’s weak, so you may break up for the others.' : ''}</p></div>
+      {/if}
       <p><b>{gcall.hostLabelCap(lc.hostId)}</b> {lc.hostId === 'me' ? 'is carrying' : 'carries'} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak.</p>
       <p>Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts.</p>
       <p>A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info.</p>
@@ -250,6 +261,13 @@
   .speaking .pic { scale: 1.04; }
   .nm { max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sub); line-height: 18px; font-weight: 500; transition: font-weight var(--dur-enter); }
   .speaking .nm { font-weight: 650; }
+  /* Name + a small signal glyph (16 px, fixed slot) for that person's line to the host. */
+  .nm { display: inline-flex; align-items: center; gap: 4px; }
+  .nt { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; }
+  .nb { flex: none; display: inline-flex; opacity: .7; }
+  .nb.weak { opacity: 1; color: var(--gold-ink); }
+  .conn { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; margin-block: 4px 4px; }
+  .info .conn p { margin: 0; min-block-size: 76px; }   /* title + up to three lines: the card never grows */
   .mb { position: absolute; inset-inline-end: -2px; inset-block-end: -2px; display: grid; place-items: center; inline-size: calc(var(--av) * .3); block-size: calc(var(--av) * .3); min-inline-size: 22px; min-block-size: 22px;
     border-radius: 50%; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lift), 0 0 0 2px var(--bg); }
   .plus { display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--ink) 11%, var(--surface)); color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }

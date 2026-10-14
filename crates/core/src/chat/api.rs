@@ -49,6 +49,12 @@ pub struct Attachment {
     pub duration_ms: u32,
     /// Voice only: about 64 peaks, 0..=255; empty otherwise.
     pub waveform: Vec<u8>,
+    /// Pictures sent by /5 apps: the size it is shown at (orientation applied), else 0x0.
+    pub width: u32,
+    pub height: u32,
+    /// Pictures: a 4x3 grid of its colours, RGB row by row (36 bytes), to draw scaled up and soft until the picture
+    /// is here; empty when unknown.
+    pub preview: Vec<u8>,
     pub state: TransferState,
     /// Bytes transferred so far while `Downloading`, else 0.
     pub transferred: u64,

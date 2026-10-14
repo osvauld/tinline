@@ -3,7 +3,7 @@
      it, and the OS taking permissions away. Lives only in the drawer; the app frame never mentions any of it. */
   import { db } from '../model/store.svelte';
   import { clock, T } from '../model/clock.svelte';
-  import { NEW_DEVICE_CODE, MY_CODE, incomingRequest, link, linkSim, otherDeviceUnlinks, pp, setLastSeen } from '../model/actions/people.svelte';
+  import { NEW_DEVICE_CODE, MY_CODE, DIRECTORY, incomingRequest, link, linkSim, otherDeviceUnlinks, pp, setLastSeen } from '../model/actions/people.svelte';
   import { newId } from '../model/store.svelte';
 
   const others = $derived(db.devices.filter((d) => !d.self));
@@ -18,7 +18,9 @@
     <button type="button" onclick={() => incomingRequest()}>Someone scanned my code</button>
     <button type="button" onclick={() => (pp.requests = [])} disabled={!pp.requests.length}>Clear requests ({pp.requests.length})</button>
   </div>
-  <div class="sub">My code: <code>{MY_CODE}</code>. Codes that resolve: TIN-TARA-0001, TIN-NIKH-0001, TIN-ISHA-0001 (any other valid code picks one).</div>
+  <div class="sub">Codes are long <code>OSVC2:…</code> tickets. Copy a sample to paste:
+    {#each DIRECTORY as d (d.id)}<button type="button" onclick={() => navigator.clipboard?.writeText('Add me on Tinline: ' + d.card)}>{d.name}</button>{/each}
+    (any other OSVC2: code picks one; mine is {MY_CODE.slice(0, 14)}…)</div>
 
   <h4>Devices</h4>
   <div class="btns">

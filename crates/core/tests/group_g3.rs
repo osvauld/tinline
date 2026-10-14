@@ -83,6 +83,7 @@ fn blank(name: &str) -> Peer {
     let _ = std::fs::remove_dir_all(&dir);
     let (ltx, lrx) = mpsc::channel();
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
     let inv = Arc::new(ITap(Mutex::new(Vec::new())));
     node.set_group_invitation_events(inv.clone());

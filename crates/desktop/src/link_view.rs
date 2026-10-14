@@ -29,13 +29,13 @@ impl App {
                         "Device name",
                         text_input("Work desktop", &self.device_in).on_input(Msg::DeviceIn).on_submit(Msg::LinkNameGo),
                     ),
-                    tx("Only your own devices see this name.", 12.0, t.ink2),
+                    tx("You can rename it later.", 13.0, t.ink2),
                     self.notice_bar(t),
                     self.wide(if self.busy { "Working..." } else { "Continue" }, Kind::Primary, t, (!self.busy).then_some(Msg::LinkNameGo)),
                     self.wide("Back", Kind::Ghost, t, Some(Msg::LinkCancel)),
                 ]
                 .spacing(12);
-                self.shell(t, "Link this computer to your account", "Name this computer, then scan its code with your phone.", col.into())
+                self.shell(t, "Name this computer", "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.", col.into())
             }
             Step::Qr => self.link_qr_screen(t, existing),
             Step::Connecting => {
@@ -47,19 +47,18 @@ impl App {
                 .spacing(14);
                 self.shell(t, "Connecting", "This takes a few seconds.", col.into())
             }
+            // Link.svelte `scanned`: the big code, the warning, waiting for approval there.
             Step::Code if !existing => {
+                let warn = container(tx("Different code, or you didn\u{2019}t start this? Cancel. Someone else may have scanned the QR.", 13.0, t.warn_ink).line_height(lh(19.0)))
+                    .padding([12, 14]).width(Fill).style(ui::plain(t.warn, 14.0));
                 let col = column![
-                    self.big_code(t, &l.code),
-                    tx("Code doesn\u{2019}t match? Cancel here and on the other device.", 13.0, t.ink2),
+                    container(text(l.code.clone()).size(44).font(ui::MONO).color(t.ink).line_height(lh(52.0))).center_x(Fill).padding([8, 0]),
+                    warn,
+                    container(row![container(Space::new()).width(8).height(8).style(ui::plain(t.accent, 4.0)), tx("Waiting for approval\u{2026}", 13.0, t.ink2)].spacing(10).align_y(Alignment::Center)).center_x(Fill),
                     self.wide("Cancel", Kind::Quiet, t, Some(Msg::LinkCancel)),
                 ]
                 .spacing(16);
-                self.shell(
-                    t,
-                    "Check the code",
-                    &format!("Connected to {peer}. It should show the same code. Approve there to finish."),
-                    col.into(),
-                )
+                self.shell(t, "Same code on both?", &format!("Check that {peer} shows this code, then approve there."), col.into())
             }
             Step::Code => {
                 let mut col = column![
@@ -93,6 +92,10 @@ impl App {
                 col = col.push(self.wide("Cancel", Kind::Quiet, t, Some(Msg::LinkCancel)));
                 self.shell(t, &format!("Link \u{201c}{peer}\u{201d}?"), "Make sure the other device shows this same code.", col.into())
             }
+            Step::Approving if !existing => {
+                let col = column![container(tx("\u{2026}", 28.0, t.accent)).center_x(Fill).padding([40, 0])];
+                self.shell(t, "Linking\u{2026}", "Receiving your account. Keep both devices open.", col.into())
+            }
             Step::Approving => {
                 let col = column![
                     tx("Sending your account over\u{2026}", 15.0, t.ink2),
@@ -112,6 +115,17 @@ impl App {
                 ]
                 .spacing(16);
                 self.shell(t, &format!("Linked {peer}"), "Your account is on the other device.", col.into())
+            }
+            Step::Failed(reason) if !existing => {
+                let err = container(tx(failure_text(reason), 13.0, t.danger).line_height(lh(19.0))).padding([12, 14]).width(Fill).style(ui::plain(t.danger_bg, 14.0));
+                let retry = if reason == "locked" { None } else { Some(Msg::LinkRegen) };
+                let col = column![
+                    err,
+                    self.wide("Try again", Kind::Primary, t, retry.filter(|_| !self.busy)),
+                    self.wide("Restore with recovery phrase instead", Kind::Ghost, t, (!self.busy).then_some(Msg::GoRestore)),
+                ]
+                .spacing(14);
+                self.shell(t, "Couldn\u{2019}t link", "", col.into())
             }
             Step::Failed(reason) => {
                 let retry = if reason == "locked" { None } else { Some(Msg::LinkRegen) };
@@ -142,9 +156,14 @@ impl App {
         let mut col = column![].spacing(14).align_x(Alignment::Center);
         if live {
             let q = l.qr.as_ref().unwrap();
+            // Link.svelte `.qr`: 208 on white, 12 padding, radius 20, a --line border.
             col = col
-                .push(container(canvas(super::QrView(q)).width(Length::Fixed(220.0)).height(Length::Fixed(220.0))).padding(6).style(ui::plain(Color::WHITE, 10.0)))
+                .push(container(canvas(super::QrView(q)).width(Length::Fixed(208.0)).height(Length::Fixed(208.0))).padding(12)
+                    .style(move |_: &Theme| container::Style { background: Some(Color::WHITE.into()), border: Border { color: t.line, width: 1.0, radius: 20.0.into() }, ..Default::default() }))
                 .push(tx(format!("Expires in {} \u{b7} works once", mmss(left)), 13.0, t.ink2));
+            if !existing {
+                col = col.push(container(tx("Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device.", 13.0, t.ink2).line_height(lh(18.0)).align_x(Alignment::Center)).max_width(320));
+            }
         } else if self.busy {
             col = col.push(tx("Making a code\u{2026}", 15.0, t.ink2));
         } else {
@@ -181,7 +200,8 @@ impl App {
             .spacing(10)
             .into()
         };
-        let mut all = column![col, steps].spacing(18);
+        // The new device: no numbered steps (the lead says it); the existing device keeps its three.
+        let mut all = if existing { column![col, steps].spacing(18) } else { column![col].spacing(18) };
         all = all.push(self.notice_bar(t));
         if l.paste_open {
             all = all.push(
@@ -203,10 +223,13 @@ impl App {
             all = all.push(self.wide("Paste a link code instead", Kind::Quiet, t, Some(Msg::LinkPasteToggle)));
         }
         all = all.push(self.wide(if existing { "Cancel" } else { "Back" }, Kind::Ghost, t, Some(Msg::LinkCancel)));
+        if !existing && live {
+            all = all.push(self.wide("New code", Kind::Ghost, t, (!self.busy).then_some(Msg::LinkRegen)));
+        }
         let (title, sub) = if existing {
             ("Link a device", "Show this to the device you want to add. It becomes you, so only link your own.")
         } else {
-            ("Link this computer to your account", "Scan this code from a device that already has your account.")
+            ("Link to your account", "On a device that already has your account, open Settings \u{203a} Link a device and scan this.")
         };
         self.shell(t, title, sub, all.into())
     }

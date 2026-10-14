@@ -9,6 +9,7 @@
   import { prefs } from '../../lib/model/prefs.svelte';
   import type { Chat } from '../../lib/model/types';
   import { open as openDialog } from '../../lib/model/actions/people.svelte';
+  import EmptyLine from '../../lib/ui/EmptyLine.svelte';
 
   let filter = $state<'all' | 'unread'>('all');
 
@@ -27,14 +28,23 @@
   const open = (c: Chat) => (prefs.form === 'desktop' ? nav.open({ name: 'conversation', chat: c.id }) : nav.push({ name: 'conversation', chat: c.id }));
 </script>
 
+<!-- No chats at all: filters mean nothing yet. The phone drops the row so the empty hero sits at the same height as
+     on Calls; the desktop keeps it for its + button. -->
+{#if db.chats.length || prefs.form === 'desktop'}
 <div class="chips" role="group" aria-label="Filter chats">
-  {#each [['all', 'All'], ['unread', 'Unread']] as [k, l] (k)}
+  {#if db.chats.length}{#each [['all', 'All'], ['unread', 'Unread']] as [k, l] (k)}
     <button type="button" class="t-chip press" aria-pressed={filter === k} onclick={() => (filter = k as typeof filter)}>{l}</button>
-  {/each}
+  {/each}{/if}
   <!-- Android has the + beside the search pill; desktop has no dock, so the button lives here. -->
   {#if prefs.form === 'desktop'}<button type="button" class="newc press" data-new-chat-btn aria-label="New chat" title="New chat" onclick={() => openDialog('newChat')}><Icon name="plus" size={20} /></button>{/if}
 </div>
+{/if}
 
+{#if !visible.length}
+  <!-- Empty: a new account sees the hero on a phone; the desktop column stays quiet because its detail pane shows it. -->
+  {#if filter === 'unread'}<EmptyLine where="unread" size="quiet" />
+  {:else}<EmptyLine where="chats" size={prefs.form === 'desktop' ? 'quiet' : 'hero'} />{/if}
+{/if}
 <ul class="list" role="list">
   {#each visible as c (c.id)}
     {@const m = lastMessage(c)}

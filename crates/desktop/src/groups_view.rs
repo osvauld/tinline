@@ -88,10 +88,11 @@ fn role_tag<'a>(t: Tok, r: Role) -> Option<El<'a>> {
 }
 
 /// A small grey line in a conversation.
+/// Conversation.svelte `.sys`: centred 12/17 muted text, 6 px above and below, at most 86 % wide.
 pub(super) fn sys<'a>(t: Tok, s: &str) -> El<'a> {
-    container(container(tx(s.to_string(), 12.0, t.ink2)).padding([4, 12]).style(ui::plain(t.surface2, 999.0)))
+    container(container(tx(s.to_string(), 12.0, t.ink2).line_height(iced::widget::text::LineHeight::Absolute(17.0.into())).align_x(Alignment::Center)).max_width(480))
         .center_x(Fill)
-        .padding([4, 0])
+        .padding([6, 0])
         .into()
 }
 

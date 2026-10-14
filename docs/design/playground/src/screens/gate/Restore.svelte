@@ -77,7 +77,7 @@
     <p id="rmsg" class="err" role="alert">{msg}</p>
   </div>
   {#snippet foot()}
-    <Btn type="submit" disabled={filled === 0}>Continue</Btn>
+    <Btn type="submit" next disabled={filled === 0}>Continue</Btn>
   {/snippet}
 </StepShell>
 

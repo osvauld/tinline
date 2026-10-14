@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import uniffi.p2pcore.CallRecord
 import uniffi.p2pcore.Contact
+import uniffi.p2pcore.ContactRequest
 
 /*
  * The home tabs' lists, from the playground: screens/home/ChatsList.svelte (72 dp rows), screens/calls/CallsList.svelte,
@@ -45,6 +46,8 @@ private val RowShape = RoundedCornerShape(14.dp)
 fun ChatsTabBody(
     rows: List<ChatRowUi>, state: LazyListState, onOpen: (ChatRowUi) -> Unit,
     top: @Composable () -> Unit = {}, header: @Composable () -> Unit = {},
+    /** The first screen's hero, shown while there are no chats at all. */
+    empty: (@Composable () -> Unit)? = null,
 ) {
     var unreadOnly by remember { mutableStateOf(false) }
     val drafts by ConversationDrafts.previews.collectAsState()
@@ -52,12 +55,15 @@ fun ChatsTabBody(
     LazyColumn(Modifier.fillMaxSize(), state = state, contentPadding = PaddingValues(bottom = 8.dp)) {
         item(key = "_title") { header() }
         item(key = "_top") { top() }
-        item(key = "_chips") {
+        // With no chats at all the filters mean nothing yet: the whole row goes, so the hero sits at the same height as on Calls.
+        if (rows.isNotEmpty()) item(key = "_chips") {
             Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip("All", !unreadOnly) { unreadOnly = false }
                 FilterChip("Unread", unreadOnly) { unreadOnly = true }
             }
         }
+        if (rows.isEmpty()) item(key = "_empty") { empty?.invoke() ?: EmptyQuietLine(EmptyQuiet.CHATS) }
+        else if (shown.isEmpty()) item(key = "_caughtup") { EmptyQuietLine(EmptyQuiet.UNREAD) }
         items(shown, key = { (if (it.group) "g" else "d") + it.did }) { r ->
             Box(Modifier.padding(horizontal = 8.dp)) { ChatListRow(r, drafts[r.did], onClick = { onOpen(r) }) }
         }
@@ -124,23 +130,17 @@ fun fmtShort(secs: Long): String {
 @Composable
 fun CallsTabBody(
     history: List<CallRecord>, nameOf: (CallRecord) -> String, canCall: (String) -> Boolean, state: LazyListState,
-    onProfile: (String) -> Unit, onChat: (String) -> Unit, onCall: (String) -> Unit,
+    onProfile: (String) -> Unit, onCall: (String) -> Unit,
     top: @Composable () -> Unit = {}, header: @Composable () -> Unit = {},
+    /** The first screen's hero while nobody is added yet; otherwise the quiet line. */
+    empty: (@Composable () -> Unit)? = null,
 ) {
     val c = Tin.c
     val now = System.currentTimeMillis()
     LazyColumn(Modifier.fillMaxSize(), state = state, contentPadding = PaddingValues(bottom = 8.dp)) {
         item(key = "_title") { header() }
         item(key = "_top") { top() }
-        if (history.isEmpty()) item(key = "_empty") {
-            Column(Modifier.fillMaxWidth().padding(top = 48.dp, start = 24.dp, end = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(52.dp).clip(CircleShape).background(c.sf2), contentAlignment = Alignment.Center) {
-                    Icon(PgIcons.Phone, null, tint = c.ink2, modifier = Modifier.size(22.dp))
-                }
-                Text("No calls yet", Modifier.padding(top = 14.dp, bottom = 4.dp), style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                Text("Calls you make and receive show up here.", Modifier.widthIn(max = 272.dp), style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2, textAlign = TextAlign.Center)
-            }
-        }
+        if (history.isEmpty()) item(key = "_empty") { empty?.invoke() ?: EmptyQuietLine(EmptyQuiet.CALLS) }
         items(history, key = { it.callId + ":" + it.startedAt }) { r ->
             val name = nameOf(r)
             val bad = r.missed
@@ -151,12 +151,14 @@ fun CallsTabBody(
                 Box(Modifier.pressable({ onProfile(r.peerDid) }, RowShape).semantics { contentDescription = "$name’s profile" }.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
                     Avatar(name, r.peerDid, 48.dp)
                 }
+                // The row calls them (decided 2026-10-14: this is the Calls tab; the chat lives in Chats). Someone I can't
+                // call: their profile, which says why.
                 Row(
-                    Modifier.weight(1f).heightIn(min = 68.dp).pressable({ onChat(r.peerDid) }, RowShape)
+                    Modifier.weight(1f).heightIn(min = 68.dp).pressable({ if (callable) onCall(r.peerDid) else onProfile(r.peerDid) }, RowShape)
                         .semantics(mergeDescendants = true) {
-                            contentDescription = "$name, $what call" + (if (r.durationSecs > 0u) ", " + fmtShort(r.durationSecs.toLong()) else "") + ", $stamp. Open chat"
+                            contentDescription = "$name, $what call" + (if (r.durationSecs > 0u) ", " + fmtShort(r.durationSecs.toLong()) else "") + ", $stamp. " + if (callable) "Call" else "Can’t call"
                         }
-                        .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                        .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -168,9 +170,10 @@ fun CallsTabBody(
                         }
                     }
                     Text(stamp, style = TinFs.meta, color = c.ink2)
+                    Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                        Icon(PgIcons.Phone, null, Modifier.size(22.dp).alpha(if (callable) 1f else .45f), tint = if (callable) c.accentInk else c.ink2)
+                    }
                 }
-                PgIconButton(PgIcons.Phone, "Call $name back", { if (callable) onCall(r.peerDid) },
-                    tint = if (callable) c.accentInk else c.ink2, enabled = callable)
             }
         }
     }
@@ -204,6 +207,8 @@ fun PersonRow(name: String, key: String, sub: String, onClick: (() -> Unit)?, se
 fun ContactsTabBody(
     contacts: List<Contact>, blocked: (String) -> Boolean, sub: (String) -> String, state: LazyListState,
     onOpen: (Contact) -> Unit, onAdd: () -> Unit, top: @Composable () -> Unit = {}, header: @Composable () -> Unit = {},
+    waitingIn: List<ContactRequest> = emptyList(), waitingOut: List<ContactRequest> = emptyList(),
+    onAccept: (String) -> Unit = {}, onNotNow: (String) -> Unit = {},
 ) {
     val c = Tin.c
     var q by remember { mutableStateOf("") }
@@ -242,7 +247,41 @@ fun ContactsTabBody(
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                     Text("Add contact", style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                    Text("Scan a code or paste an invite", style = TinFs.sub, color = c.ink2)
+                    Text("Share your code or paste theirs", style = TinFs.sub, color = c.ink2)
+                }
+            }
+        }
+        // People waiting for my answer: a card each (Accept / Not now). No "declined" anywhere: an unanswered request waits.
+        if (waitingIn.isNotEmpty()) {
+            item(key = "_hrq") { ListSection("Waiting for you", Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp)) }
+            items(waitingIn, key = { "rq" + it.did }) { r ->
+                Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.sf)
+                    .border(1.dp, c.hairline, RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Avatar(r.name.ifBlank { "?" }, r.did, 44.dp)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(r.name, style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("Wants to add you as a contact", style = TinFs.sub, color = c.ink2)
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PBtn("Accept", { onAccept(r.did) }, variant = PVariant.Primary)
+                        PBtn("Not now", { onNotNow(r.did) }, variant = PVariant.Quiet)
+                    }
+                    Text("Accepting lets you message and call each other.", style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2)
+                }
+            }
+        }
+        if (waitingOut.isNotEmpty()) {
+            item(key = "_hsent") { ListSection("Waiting for them", Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp)) }
+            items(waitingOut, key = { "sent" + it.did }) { x ->
+                Row(Modifier.padding(horizontal = 8.dp).fillMaxWidth().heightIn(min = 64.dp).padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Avatar(x.name.ifBlank { "?" }, x.did, 40.dp)
+                    Column(Modifier.weight(1f)) {
+                        Text(x.name, style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("Request sent. Your line opens when ${firstName(x.name)} accepts.", style = TinFs.sub, color = c.ink2)
+                    }
                 }
             }
         }
@@ -258,7 +297,9 @@ fun ContactsTabBody(
                 Box(Modifier.padding(horizontal = 8.dp)) { PersonRow(ct.display(), ct.did, "Blocked", onClick = { onOpen(ct) }, dim = true) }
             }
         }
-        item(key = "_foot") {
+        if (total == 0 && gone.isEmpty() && waitingOut.isEmpty() && q.isBlank()) item(key = "_empty") { EmptyQuietLine(EmptyQuiet.CONTACTS) }
+        else if (total == 0 && q.isBlank()) Unit
+        else item(key = "_foot") {
             val t = if (q.isNotBlank() && mine.isEmpty() && gone.isEmpty()) "No one called “${q.trim()}” in your contacts." else "$total ${if (total == 1) "contact" else "contacts"}"
             Text(t, Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp).heightIn(min = 19.dp), style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2, textAlign = TextAlign.Center)
         }

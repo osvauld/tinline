@@ -41,7 +41,7 @@
   <div class="scroll">
     {#if !q.trim()}
       <button type="button" class="act press" data-nc-group onclick={newGroup}><span class="plus"><Icon name="users" size={22} /></span><span class="t"><b>New group</b><small>You’ll be the owner</small></span></button>
-      <button type="button" class="act press" data-nc-add onclick={() => open('addContact')}><span class="plus"><Icon name="userplus" size={22} /></span><span class="t"><b>Add contact</b><small>Scan a code or paste an invite</small></span></button>
+      <button type="button" class="act press" data-nc-add onclick={() => open('addContact')}><span class="plus"><Icon name="userplus" size={22} /></span><span class="t"><b>Add contact</b><small>Share your code or paste theirs</small></span></button>
       <h3>Contacts</h3>
     {/if}
     <ul role="list">

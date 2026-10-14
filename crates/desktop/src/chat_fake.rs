@@ -73,9 +73,70 @@ fn file(name: &str, size: u64, mime: &str, state: TransferState) -> Attachment {
         kind: AttachmentKind::File,
         duration_ms: 0,
         waveform: Vec::new(),
+        // Pictures carry their size and colour preview, as the core sends them (chat/5); .png ones are portraits.
+        width: if mime.starts_with("image/") { fake_size(name.ends_with(".png")).0 } else { 0 },
+        height: if mime.starts_with("image/") { fake_size(name.ends_with(".png")).1 } else { 0 },
+        preview: if mime.starts_with("image/") { fake_preview(name.ends_with(".png")) } else { Vec::new() },
         state,
         transferred: 0,
     }
+}
+
+/// `P2P_DEMO=pg-*`: the playground seed's 1:1 conversations (seed.ts), for paired screenshots.
+fn pg_seed(peer: &str) -> Option<Vec<Message>> {
+    use chrono::{Local, TimeZone};
+    let id = peer.strip_prefix("did:key:z6Mkpg")?;
+    let at = |h: u32, m: u32, d: i64| {
+        let day = Local::now().date_naive() - chrono::Duration::days(d);
+        Local.from_local_datetime(&day.and_hms_opt(h, m, 0).unwrap()).single().map(|x| x.timestamp_millis() as u64).unwrap_or(0)
+    };
+    let mut n = 0;
+    let mut m = |out: bool, (h, mi, d): (u32, u32, i64), text: &str| { n += 1; base(&format!("{id}-{n}"), peer, out, at(h, mi, d), text) };
+    let v = match id {
+        "arjun" => {
+            let mut v = vec![
+                m(false, (19, 2, 9), "The flat on Marine Drive is still available."),
+                m(true, (19, 10, 9), "Can we see it on Saturday?"),
+                m(false, (11, 20, 6), "Booked the café near the station for lunch. Their coffee is excellent."),
+                m(true, (11, 25, 6), "Perfect, I\u{2019}ll bring the lease papers"),
+                m(false, (17, 45, 4), "The landlord wants the deposit by Friday."),
+                m(false, (21, 12, 1), "Did you get home ok?"),
+                m(true, (21, 14, 1), "Yes, train was on time for once"),
+                m(true, (21, 15, 1), "Thanks for dinner. That place was great"),
+                m(false, (21, 20, 1), "Anytime \u{1f642}"),
+                m(false, (12, 36, 0), "Are we still on for the call about the flat?"),
+                m(true, (12, 38, 0), "Yes, after 6 works for me"),
+                m(true, (12, 39, 0), "I\u{2019}ll call from the office, it\u{2019}s quieter there"),
+                m(false, (12, 41, 0), "I have the landlord\u{2019}s numbers now"),
+            ];
+            v[10].edited_at = Some(v[10].at + 60_000);
+            let after6 = v[10].id.clone();
+            v[12].reply_to = Some(after6);
+            v
+        }
+        "dev" => vec![
+            m(false, (14, 0, 7), "Lunch last Thursday was fun, same place again sometime?"),
+            m(true, (11, 2, 0), "Free this week?"),
+            m(false, (11, 5, 0), "Thursday works. The place near the station?"),
+        ],
+        "sana" => vec![
+            m(false, (10, 12, 11), "明日の会議は十時です。資料を送ります。"),
+            m(false, (10, 14, 11), "Meeting notes attached, the draft review is on Friday."),
+            m(false, (8, 20, 0), "Sent the draft to your laptop too"),
+        ],
+        "meera" => {
+            let mut v = vec![
+                m(false, (10, 15, 12), "Which station do you use for the Bengaluru trip?"),
+                m(true, (10, 20, 12), "Whichever has the earlier train"),
+                m(false, (17, 40, 1), "Can you send the scan when you\u{2019}re back online?"),
+                m(true, (17, 46, 1), "Running 10 minutes late, sorry"),
+            ];
+            v[3].delivery = DeliveryState::Pending;
+            v
+        }
+        _ => return None,
+    };
+    Some(v)
 }
 
 /// The conversation every contact starts with. `now` is unix ms.
@@ -99,6 +160,9 @@ pub fn seed(peer: &str, now: u64) -> Vec<Message> {
         kind: AttachmentKind::Voice,
         duration_ms: 32_000,
         waveform: wave(),
+        width: 0,
+        height: 0,
+        preview: Vec::new(),
         state: TransferState::Ready,
         transferred: 0,
     });
@@ -125,25 +189,54 @@ pub fn seed(peer: &str, now: u64) -> Vec<Message> {
 }
 
 /// A PNG to look at: sky gradient with a sun and a hill (landscape), or a dusk-coloured portrait.
+fn fake_size(portrait: bool) -> (u32, u32) {
+    if portrait { (520, 700) } else { (900, 600) }
+}
+
+fn fake_px(portrait: bool, x: u32, y: u32) -> [u8; 3] {
+    let (w, h) = fake_size(portrait);
+    let (fx, fy) = (x as f32 / w as f32, y as f32 / h as f32);
+    let hill = 0.72 + 0.08 * (fx * 6.0).sin();
+    let (cx, cy) = (0.7 * w as f32, 0.3 * h as f32);
+    let d = ((x as f32 - cx).powi(2) + (y as f32 - cy).powi(2)).sqrt();
+    if fy > hill {
+        [40, (110.0 + 60.0 * fy) as u8, 70]
+    } else if d < 0.09 * w as f32 {
+        [255, 214, 120]
+    } else if portrait {
+        [(60.0 + 120.0 * fy) as u8, (50.0 + 60.0 * fy) as u8, (120.0 + 80.0 * fy) as u8]
+    } else {
+        [(90.0 + 90.0 * fy) as u8, (160.0 + 60.0 * fy) as u8, (235.0 - 30.0 * fy) as u8]
+    }
+}
+
+/// The 4x3 colour grid the core would send with this picture (chat/5): each cell's average.
+fn fake_preview(portrait: bool) -> Vec<u8> {
+    let (w, h) = fake_size(portrait);
+    let mut out = Vec::with_capacity(36);
+    for gy in 0..3 {
+        for gx in 0..4 {
+            let mut s = [0u32; 3];
+            let mut n = 0;
+            for y in (gy * h / 3..(gy + 1) * h / 3).step_by(7) {
+                for x in (gx * w / 4..(gx + 1) * w / 4).step_by(7) {
+                    let p = fake_px(portrait, x, y);
+                    for c in 0..3 { s[c] += p[c] as u32; }
+                    n += 1;
+                }
+            }
+            out.extend(s.map(|v| (v / n.max(1)) as u8));
+        }
+    }
+    out
+}
+
 fn fake_picture(portrait: bool) -> Vec<u8> {
-    let (w, h) = if portrait { (520u32, 700u32) } else { (900u32, 600u32) };
+    let (w, h) = fake_size(portrait);
     let mut px = Vec::with_capacity((w * h * 3) as usize);
     for y in 0..h {
         for x in 0..w {
-            let (fx, fy) = (x as f32 / w as f32, y as f32 / h as f32);
-            let hill = 0.72 + 0.08 * (fx * 6.0).sin();
-            let (cx, cy) = (0.7 * w as f32, 0.3 * h as f32);
-            let d = ((x as f32 - cx).powi(2) + (y as f32 - cy).powi(2)).sqrt();
-            let c = if fy > hill {
-                [40, (110.0 + 60.0 * fy) as u8, 70]
-            } else if d < 0.09 * w as f32 {
-                [255, 214, 120]
-            } else if portrait {
-                [(60.0 + 120.0 * fy) as u8, (50.0 + 60.0 * fy) as u8, (120.0 + 80.0 * fy) as u8]
-            } else {
-                [(90.0 + 90.0 * fy) as u8, (160.0 + 60.0 * fy) as u8, (235.0 - 30.0 * fy) as u8]
-            };
-            px.extend_from_slice(&c);
+            px.extend_from_slice(&fake_px(portrait, x, y));
         }
     }
     let mut out = Vec::new();
@@ -168,7 +261,7 @@ impl Fake {
 
     fn with<T>(&self, peer: &str, f: impl FnOnce(&mut State, &str) -> T) -> T {
         let mut st = self.st.lock().unwrap();
-        st.msgs.entry(peer.to_string()).or_insert_with(|| seed(peer, now()));
+        st.msgs.entry(peer.to_string()).or_insert_with(|| pg_seed(peer).unwrap_or_else(|| seed(peer, now())));
         f(&mut st, peer)
     }
 
