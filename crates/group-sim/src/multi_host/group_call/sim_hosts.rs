@@ -113,7 +113,13 @@ impl Sim {
         for n in dir {
             if let Ok(j) = self.w.dial(h, &n.claims.endpoint) {
                 if self.did(j) == n.claims.owner {
-                    self.w.send(h, j, n.claims.endpoint.clone(), "call-host-record", bytes.clone());
+                    self.w.send(
+                        h,
+                        j,
+                        n.claims.endpoint.clone(),
+                        "call-host-record",
+                        bytes.clone(),
+                    );
                     if self.accept_call_record(j, &bytes).is_ok() {
                         reached.push(j);
                     }
@@ -129,7 +135,10 @@ impl Sim {
         if r.note.claims.audience != Audience::Group(self.w.gid.clone()) {
             return Err(CR::WrongGroup);
         }
-        if !r.permit.allows(&self.w.g, &r.note.claims.owner, Cap::CallHost) {
+        if !r
+            .permit
+            .allows(&self.w.g, &r.note.claims.owner, Cap::CallHost)
+        {
             return Err(CR::PermitInvalid);
         }
         if r.permit.body.device != Some(r.note.claims.slot) {
@@ -185,7 +194,9 @@ impl Sim {
             return Err(CR::Duplicate);
         }
         self.c[i].revoked.insert(permit.clone());
-        self.c[i].records.retain(|_, r| r.permit.digest() != *permit);
+        self.c[i]
+            .records
+            .retain(|_, r| r.permit.digest() != *permit);
         Ok(())
     }
     // Delivers a revocation to devices and runs the §5 reaction on each one: an honest host
@@ -252,7 +263,14 @@ impl Sim {
             && !self.c[i].revoked.contains(&r.permit_digest)
             && self.is_member(i, &r.holder_did)
     }
-    pub(super) fn rank_at(&self, i: usize, st: &[Status], call_id: &str, starter: &str, n: usize) -> Vec<HostRef> {
+    pub(super) fn rank_at(
+        &self,
+        i: usize,
+        st: &[Status],
+        call_id: &str,
+        starter: &str,
+        n: usize,
+    ) -> Vec<HostRef> {
         let ok: Vec<StatusBody> = st
             .iter()
             .filter(|s| self.accept_status(i, s))
@@ -262,7 +280,14 @@ impl Sim {
     }
 
     // ---- CallStart ----
-    pub(super) fn start_msg(&self, h: usize, call_id: &str, hgen: u32, starter: usize, backups: Vec<HostRef>) -> Ctl {
+    pub(super) fn start_msg(
+        &self,
+        h: usize,
+        call_id: &str,
+        hgen: u32,
+        starter: usize,
+        backups: Vec<HostRef>,
+    ) -> Ctl {
         let c = &self.c[h].cond;
         let frontier = digest(&self.w.d[h].view.ops.keys().collect::<Vec<_>>());
         self.msg(
@@ -282,7 +307,12 @@ impl Sim {
     }
     // CallHostRequest answered by candidate `h`. It re-checks local consent and conditions
     // (§2.3), and that a phone hosts only while its own user is in the call (§2.4, Q11).
-    pub(super) fn start_call(&mut self, h: usize, starter: usize, backups: Vec<HostRef>) -> Result<String, CR> {
+    pub(super) fn start_call(
+        &mut self,
+        h: usize,
+        starter: usize,
+        backups: Vec<HostRef>,
+    ) -> Result<String, CR> {
         let call_id = self.new_call_id();
         self.begin_hosting(h, &call_id, 1, starter, backups)?;
         Ok(call_id)
@@ -405,7 +435,11 @@ impl Sim {
         else {
             return Err(CR::Malformed);
         };
-        if m.v != 1 || *k == 0 || *max_participants as usize > CAP_DESKTOP || backups.len() > MAX_BACKUPS {
+        if m.v != 1
+            || *k == 0
+            || *max_participants as usize > CAP_DESKTOP
+            || backups.len() > MAX_BACKUPS
+        {
             return Err(CR::Malformed);
         }
         if m.gid != self.w.gid {
@@ -459,7 +493,11 @@ impl Sim {
             }
         }
         let key = dir_key(&rec.note.claims.owner, rec.note.claims.slot);
-        if self.c[i].records.get(&key).is_none_or(|r| r.note.claims.seq < rec.note.claims.seq) {
+        if self.c[i]
+            .records
+            .get(&key)
+            .is_none_or(|r| r.note.claims.seq < rec.note.claims.seq)
+        {
             self.c[i].records.insert(key, rec.clone());
         }
         self.c[i].hgen.insert(call_id.clone(), m.host_gen);
@@ -472,7 +510,11 @@ impl Sim {
                 self.c[i].may_take.remove(&call_id);
             }
         }
-        self.c[i].shown = self.c[i].starts.keys().min_by_key(|c| call_hash(c)).cloned();
+        self.c[i].shown = self.c[i]
+            .starts
+            .keys()
+            .min_by_key(|c| call_hash(c))
+            .cloned();
         Ok(())
     }
     pub(super) fn host_ref_of(&self, i: usize) -> Option<HostRef> {
@@ -486,10 +528,15 @@ impl Sim {
             };
             let call_id = hc.call_id.clone();
             let winner_call = self.c[h].shown.clone();
-            let winner = winner_call.as_ref().and_then(|w| self.c[h].starts.get(w)).cloned();
+            let winner = winner_call
+                .as_ref()
+                .and_then(|w| self.c[h].starts.get(w))
+                .cloned();
             let Some(winner) = winner else { continue };
             let (wref, _) = winner.start().unwrap();
-            if *wref != self.host_ref(h) && (winner.msg.call_id != call_id || winner.msg.host_gen == hc.host_gen) {
+            if *wref != self.host_ref(h)
+                && (winner.msg.call_id != call_id || winner.msg.host_gen == hc.host_gen)
+            {
                 let wref = wref.clone();
                 self.host_end(h, EndReason::Superseded, Some(wref), None);
             }
@@ -497,7 +544,13 @@ impl Sim {
     }
 
     // ---- Join (§3.2 at H) ----
-    pub(super) fn join_req(&mut self, m: usize, call_id: &str, hgen: u32, issued_ms: u64) -> Vec<u8> {
+    pub(super) fn join_req(
+        &mut self,
+        m: usize,
+        call_id: &str,
+        hgen: u32,
+        issued_ms: u64,
+    ) -> Vec<u8> {
         let nonce = self.w.rng.next_u64();
         let join = self.msg(m, call_id, hgen, Kind::Join { issued_ms, nonce });
         serde_json::to_vec(&JoinReq {

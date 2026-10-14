@@ -25,7 +25,13 @@ fn gc_s01_bad_joins_are_refused_and_leave_every_state_byte_identical() {
     let m_note = EpNote::sign(&mallory, Audience::Group(gid.clone()), 77, &m_ep, 1);
     let carol_ep = s.w.gep(CAROL);
     let carol_note = s.w.d[CAROL].my_note.clone();
-    let mk = |s: &Sim, id: &Identity, signer: String, call_id: &str, gid: &str, hgen: u32, nonce: u64| {
+    let mk = |s: &Sim,
+              id: &Identity,
+              signer: String,
+              call_id: &str,
+              gid: &str,
+              hgen: u32,
+              nonce: u64| {
         let m = CallMsg {
             v: 1,
             gid: gid.into(),
@@ -39,7 +45,13 @@ fn gc_s01_bad_joins_are_refused_and_leave_every_state_byte_identical() {
         };
         Ctl::sign(id, m)
     };
-    let req = |j: Ctl, n: &EpNote| serde_json::to_vec(&JoinReq { join: j, note: n.clone() }).unwrap();
+    let req = |j: Ctl, n: &EpNote| {
+        serde_json::to_vec(&JoinReq {
+            join: j,
+            note: n.clone(),
+        })
+        .unwrap()
+    };
     let carol = s.w.d[CAROL].id.clone();
     let carol_did = s.did(CAROL);
     let mut tampered = mk(&s, &carol, carol_did.clone(), &cid, &gid, hgen, 1);
@@ -50,23 +62,104 @@ fn gc_s01_bad_joins_are_refused_and_leave_every_state_byte_identical() {
     let wrong_signer = mk(&s, &mallory, carol_did.clone(), &cid, &gid, hgen, 3);
     let hugo_note = s.w.d[H2].my_note.clone();
     let hugo = s.w.d[H2].id.clone();
-    let accepted_a1 = s.c[H1].hosting.as_ref().unwrap().parts[&s.did(A1)].join.clone();
+    let accepted_a1 = s.c[H1].hosting.as_ref().unwrap().parts[&s.did(A1)]
+        .join
+        .clone();
     let a1_note = s.w.d[A1].my_note.clone();
     let a1_ep = s.w.gep(A1);
     let bob_join = mk(&s, &s.w.d[BOB].id.clone(), s.did(BOB), &cid, &gid, hgen, 4);
     let bob_note = s.w.d[BOB].my_note.clone();
-    let mut oversize = req(mk(&s, &carol, carol_did.clone(), &cid, &gid, hgen, 5), &carol_note);
+    let mut oversize = req(
+        mk(&s, &carol, carol_did.clone(), &cid, &gid, hgen, 5),
+        &carol_note,
+    );
     oversize.extend(vec![b' '; MAX_CONTROL]);
     let cases: Vec<(&str, String, Vec<u8>, CR)> = vec![
-        ("non-member", m_ep.clone(), req(mk(&s, &mallory, mallory.did().into(), &cid, &gid, hgen, 6), &m_note), CR::NotMember),
-        ("non-member host binary", s.w.gep(H2), req(mk(&s, &hugo, hugo.did().into(), &cid, &gid, hgen, 7), &hugo_note), CR::NotMember),
-        ("tampered body", carol_ep.clone(), req(tampered, &carol_note), CR::BadSignature),
-        ("signed by another key", carol_ep.clone(), req(wrong_signer, &carol_note), CR::BadSignature),
-        ("wrong gid", carol_ep.clone(), req(mk(&s, &carol, carol_did.clone(), &cid, &"f".repeat(64), hgen, 8), &carol_note), CR::WrongGroup),
-        ("wrong call_id", carol_ep.clone(), req(mk(&s, &carol, carol_did.clone(), &"0".repeat(32), &gid, hgen, 9), &carol_note), CR::WrongCall),
-        ("future host_gen", carol_ep.clone(), req(mk(&s, &carol, carol_did.clone(), &cid, &gid, hgen + 1, 10), &carol_note), CR::StaleGen),
-        ("replayed accepted Join", a1_ep.clone(), req(accepted_a1, &a1_note), CR::Replay),
-        ("bob's Join from carol's connection", carol_ep.clone(), req(bob_join, &bob_note), CR::EndpointMismatch),
+        (
+            "non-member",
+            m_ep.clone(),
+            req(
+                mk(&s, &mallory, mallory.did().into(), &cid, &gid, hgen, 6),
+                &m_note,
+            ),
+            CR::NotMember,
+        ),
+        (
+            "non-member host binary",
+            s.w.gep(H2),
+            req(
+                mk(&s, &hugo, hugo.did().into(), &cid, &gid, hgen, 7),
+                &hugo_note,
+            ),
+            CR::NotMember,
+        ),
+        (
+            "tampered body",
+            carol_ep.clone(),
+            req(tampered, &carol_note),
+            CR::BadSignature,
+        ),
+        (
+            "signed by another key",
+            carol_ep.clone(),
+            req(wrong_signer, &carol_note),
+            CR::BadSignature,
+        ),
+        (
+            "wrong gid",
+            carol_ep.clone(),
+            req(
+                mk(
+                    &s,
+                    &carol,
+                    carol_did.clone(),
+                    &cid,
+                    &"f".repeat(64),
+                    hgen,
+                    8,
+                ),
+                &carol_note,
+            ),
+            CR::WrongGroup,
+        ),
+        (
+            "wrong call_id",
+            carol_ep.clone(),
+            req(
+                mk(
+                    &s,
+                    &carol,
+                    carol_did.clone(),
+                    &"0".repeat(32),
+                    &gid,
+                    hgen,
+                    9,
+                ),
+                &carol_note,
+            ),
+            CR::WrongCall,
+        ),
+        (
+            "future host_gen",
+            carol_ep.clone(),
+            req(
+                mk(&s, &carol, carol_did.clone(), &cid, &gid, hgen + 1, 10),
+                &carol_note,
+            ),
+            CR::StaleGen,
+        ),
+        (
+            "replayed accepted Join",
+            a1_ep.clone(),
+            req(accepted_a1, &a1_note),
+            CR::Replay,
+        ),
+        (
+            "bob's Join from carol's connection",
+            carol_ep.clone(),
+            req(bob_join, &bob_note),
+            CR::EndpointMismatch,
+        ),
         ("oversize", carol_ep.clone(), oversize, CR::Oversize),
     ];
     let roster = roster_of(&s, H1);
@@ -165,7 +258,8 @@ fn gc_s02_callstart_without_a_valid_call_permit_is_refused_and_no_call_is_shown(
     let at = forged.windows(4).position(|w| w == b"\"k\":").unwrap();
     forged[at + 4] = b'9';
     let mismatched = {
-        let mut a: Announce = serde_json::from_slice(&announce(&s, H1, good.clone(), &gid, &none)).unwrap();
+        let mut a: Announce =
+            serde_json::from_slice(&announce(&s, H1, good.clone(), &gid, &none)).unwrap();
         if let Kind::Start { host_ref, .. } = &mut a.start.msg.kind {
             host_ref.device_slot ^= 1;
         }
@@ -173,19 +267,47 @@ fn gc_s02_callstart_without_a_valid_call_permit_is_refused_and_no_call_is_shown(
         serde_json::to_vec(&a).unwrap()
     };
     let cases: Vec<(&str, Vec<u8>, CR)> = vec![
-        ("chat host without host_call (R05)", announce(&s, H1, chat_permit, &gid, &none), CR::PermitInvalid),
-        ("non-member host binary with a CallHost permit", announce(&s, H2, hugo_call, &gid, &none), CR::NotMember),
-        ("sibling device's permit", announce(&s, H1, sibling, &gid, &none), CR::DeviceMismatch),
-        ("permit issued by a non-admin", announce(&s, H1, carol_made, &gid, &none), CR::PermitInvalid),
+        (
+            "chat host without host_call (R05)",
+            announce(&s, H1, chat_permit, &gid, &none),
+            CR::PermitInvalid,
+        ),
+        (
+            "non-member host binary with a CallHost permit",
+            announce(&s, H2, hugo_call, &gid, &none),
+            CR::NotMember,
+        ),
+        (
+            "sibling device's permit",
+            announce(&s, H1, sibling, &gid, &none),
+            CR::DeviceMismatch,
+        ),
+        (
+            "permit issued by a non-admin",
+            announce(&s, H1, carol_made, &gid, &none),
+            CR::PermitInvalid,
+        ),
         ("forged signature", forged, CR::BadSignature),
-        ("wrong gid", announce(&s, H1, good.clone(), &"e".repeat(64), &none), CR::WrongGroup),
-        ("host_ref does not match the record", mismatched, CR::DeviceMismatch),
+        (
+            "wrong gid",
+            announce(&s, H1, good.clone(), &"e".repeat(64), &none),
+            CR::WrongGroup,
+        ),
+        (
+            "host_ref does not match the record",
+            mismatched,
+            CR::DeviceMismatch,
+        ),
     ];
     let members = [OLGA, A1, A2, BOB, CAROL, HP];
     for (case, bytes, want) in cases {
         let before = s.snap_all();
         for &m in &members {
-            assert_eq!(s.accept_start(m, &bytes), Err(want.clone()), "{case} at {m}");
+            assert_eq!(
+                s.accept_start(m, &bytes),
+                Err(want.clone()),
+                "{case} at {m}"
+            );
             assert!(s.c[m].shown.is_none(), "{case}");
         }
         assert_unchanged(&s, &before, case);
@@ -260,12 +382,28 @@ fn gc_s03_stale_end_and_callstart_after_redial_are_ignored_everywhere() {
     let before = s.snap_all();
     for &i in &all {
         if s.c[i].hgen.contains_key(&cid) {
-            assert_eq!(s.accept_end(i, &stale_end.wire()), Err(CR::StaleGen), "end at {i}");
-            assert_eq!(s.accept_start(i, &gen1), Err(CR::StaleGen), "replayed start at {i}");
-            assert_eq!(s.accept_start(i, &fresh_gen1), Err(CR::StaleGen), "fresh gen-1 at {i}");
+            assert_eq!(
+                s.accept_end(i, &stale_end.wire()),
+                Err(CR::StaleGen),
+                "end at {i}"
+            );
+            assert_eq!(
+                s.accept_start(i, &gen1),
+                Err(CR::StaleGen),
+                "replayed start at {i}"
+            );
+            assert_eq!(
+                s.accept_start(i, &fresh_gen1),
+                Err(CR::StaleGen),
+                "fresh gen-1 at {i}"
+            );
         }
         if s.c[i].joined.is_some() {
-            assert_eq!(s.accept_roster(i, &stale_roster.wire()), Err(CR::StaleGen), "roster at {i}");
+            assert_eq!(
+                s.accept_roster(i, &stale_roster.wire()),
+                Err(CR::StaleGen),
+                "roster at {i}"
+            );
         }
     }
     assert_unchanged(&s, &before, "stale gen-1 control");
@@ -286,14 +424,20 @@ fn gc_s04_same_status_set_gives_identical_ranking_and_backups_everywhere() {
     let cid = s.new_call_id();
     s.c[HP].cond = Cond::phone(90, true); // phone charging on Wi-Fi: tier 1
     let now = s.now;
-    let mut st: Vec<Status> = CALL_HOSTS.iter().map(|&h| s.status(h, now - 1_000, STATUS_TTL_MS)).collect();
+    let mut st: Vec<Status> = CALL_HOSTS
+        .iter()
+        .map(|&h| s.status(h, now - 1_000, STATUS_TTL_MS))
+        .collect();
     // A forged status (busy flipped after signing), and one from a non-permit device.
     let mut forged = s.status(BOB, now, STATUS_TTL_MS);
     forged.body.max_participants = 1;
     st.push(forged);
     let mut carol = s.status(BOB, now, STATUS_TTL_MS);
     carol.body.host_ref.holder_did = s.did(CAROL);
-    carol.sig = s.w.d[CAROL].id.sign(&signed(STATUS_DOMAIN, &carol.body)).to_vec();
+    carol.sig = s.w.d[CAROL]
+        .id
+        .sign(&signed(STATUS_DOMAIN, &carol.body))
+        .to_vec();
     st.push(carol);
     let starter = s.did(CAROL);
     let reference = s.rank_at(CAROL, &st, &cid, &starter, 4);
@@ -301,14 +445,21 @@ fn gc_s04_same_status_set_gives_identical_ranking_and_backups_everywhere() {
     tier0.sort_by_key(|r| tie_hash(&cid, r));
     let mut expect = tier0.clone();
     expect.push(s.host_ref(HP));
-    assert_eq!(reference, expect, "tier 0 ordered by hash, then the tier-1 phone");
+    assert_eq!(
+        reference, expect,
+        "tier 0 ordered by hash, then the tier-1 phone"
+    );
     let mut rng = SimRng(4);
     for m in [OLGA, A1, A2, BOB, HP] {
         let mut shuffled = st.clone();
         for i in (1..shuffled.len()).rev() {
             shuffled.swap(i, (rng.next_u64() % (i as u64 + 1)) as usize);
         }
-        assert_eq!(s.rank_at(m, &shuffled, &cid, &starter, 4), reference, "member {m}");
+        assert_eq!(
+            s.rank_at(m, &shuffled, &cid, &starter, 4),
+            reference,
+            "member {m}"
+        );
     }
     let backups: Vec<HostRef> = reference[1..=MAX_BACKUPS].to_vec();
     assert_eq!(backups.len(), 2);
@@ -325,17 +476,67 @@ fn gc_s04_same_status_set_gives_identical_ranking_and_backups_everywhere() {
         b
     };
     let rows: Vec<(&str, StatusBody, usize, Option<u8>)> = vec![
-        ("desktop mains unmetered", body(&s, BOB, &|_| {}), 4, Some(0)),
-        ("phone charging", body(&s, HP, &|b| b.power = Power::Mains), 4, Some(1)),
-        ("phone 50 %", body(&s, HP, &|b| b.power = Power::Battery(50)), 4, Some(2)),
-        ("phone 49 % (gap G7)", body(&s, HP, &|b| b.power = Power::Battery(49)), 4, Some(TIER_UNLISTED)),
-        ("phone 29 %", body(&s, HP, &|b| b.power = Power::Battery(29)), 4, None),
-        ("phone metered, N = cap", body(&s, HP, &|b| b.metered = true), CAP_PHONE_METERED, Some(3)),
-        ("phone metered, N > cap", body(&s, HP, &|b| b.metered = true), CAP_PHONE_METERED + 1, None),
-        ("thermal not ok", body(&s, BOB, &|b| b.thermal_ok = false), 4, None),
+        (
+            "desktop mains unmetered",
+            body(&s, BOB, &|_| {}),
+            4,
+            Some(0),
+        ),
+        (
+            "phone charging",
+            body(&s, HP, &|b| b.power = Power::Mains),
+            4,
+            Some(1),
+        ),
+        (
+            "phone 50 %",
+            body(&s, HP, &|b| b.power = Power::Battery(50)),
+            4,
+            Some(2),
+        ),
+        (
+            "phone 49 % (gap G7)",
+            body(&s, HP, &|b| b.power = Power::Battery(49)),
+            4,
+            Some(TIER_UNLISTED),
+        ),
+        (
+            "phone 29 %",
+            body(&s, HP, &|b| b.power = Power::Battery(29)),
+            4,
+            None,
+        ),
+        (
+            "phone metered, N = cap",
+            body(&s, HP, &|b| b.metered = true),
+            CAP_PHONE_METERED,
+            Some(3),
+        ),
+        (
+            "phone metered, N > cap",
+            body(&s, HP, &|b| b.metered = true),
+            CAP_PHONE_METERED + 1,
+            None,
+        ),
+        (
+            "thermal not ok",
+            body(&s, BOB, &|b| b.thermal_ok = false),
+            4,
+            None,
+        ),
         ("busy", body(&s, BOB, &|b| b.busy = true), 4, None),
-        ("too small", body(&s, BOB, &|b| b.max_participants = 3), 4, None),
-        ("desktop on battery (gap G7)", body(&s, BOB, &|b| b.power = Power::Battery(90)), 4, Some(TIER_UNLISTED)),
+        (
+            "too small",
+            body(&s, BOB, &|b| b.max_participants = 3),
+            4,
+            None,
+        ),
+        (
+            "desktop on battery (gap G7)",
+            body(&s, BOB, &|b| b.power = Power::Battery(90)),
+            4,
+            Some(TIER_UNLISTED),
+        ),
     ];
     for (case, b, n, want) in rows {
         assert_eq!(tier(&b, n), want, "{case}");
@@ -344,7 +545,10 @@ fn gc_s04_same_status_set_gives_identical_ranking_and_backups_everywhere() {
     let old = s.status(BOB, now - STATUS_TTL_MS, STATUS_TTL_MS);
     let long = s.status(OLGA, now - STATUS_TTL_MS, 10 * STATUS_TTL_MS);
     let fresh = s.status(H1, now - STATUS_TTL_MS + 1, STATUS_TTL_MS);
-    assert_eq!(s.rank_at(CAROL, &[old, long, fresh], &cid, &starter, 4), vec![s.host_ref(H1)]);
+    assert_eq!(
+        s.rank_at(CAROL, &[old, long, fresh], &cid, &starter, 4),
+        vec![s.host_ref(H1)]
+    );
     // Picker (§2.3): the first candidate refuses (consent off), the second is offline (no answer
     // within ANSWER_TIMEOUT_MS), and the third hosts.
     let first = s.dev_of(&reference[0]);
@@ -359,7 +563,12 @@ fn gc_s04_same_status_set_gives_identical_ranking_and_backups_everywhere() {
             elapsed += ANSWER_TIMEOUT_MS;
             continue;
         }
-        let b: Vec<HostRef> = reference.iter().filter(|x| *x != r).take(MAX_BACKUPS).cloned().collect();
+        let b: Vec<HostRef> = reference
+            .iter()
+            .filter(|x| *x != r)
+            .take(MAX_BACKUPS)
+            .cloned()
+            .collect();
         if s.start_call(h, CAROL, b).is_ok() {
             host = Some(h);
             break;
@@ -410,10 +619,17 @@ fn gc_s05_concurrent_starts_converge_on_one_call_and_the_loser_ends_superseded()
     };
     assert!(s.c[lose_host].hosting.is_none(), "loser stopped hosting");
     for m in [OLGA, A1, A2, BOB, CAROL, HP, H1] {
-        assert_eq!(s.c[m].shown.as_deref(), Some(winner.as_str()), "shown at {m}");
+        assert_eq!(
+            s.c[m].shown.as_deref(),
+            Some(winner.as_str()),
+            "shown at {m}"
+        );
     }
     for m in [OLGA, A1, BOB, CAROL] {
-        let j = s.c[m].joined.as_ref().unwrap_or_else(|| panic!("{m} not in a call"));
+        let j = s.c[m]
+            .joined
+            .as_ref()
+            .unwrap_or_else(|| panic!("{m} not in a call"));
         assert_eq!(j.call_id, winner, "{m} converged");
         assert_eq!(s.dev_of(&j.host), win_host);
     }
@@ -422,7 +638,10 @@ fn gc_s05_concurrent_starts_converge_on_one_call_and_the_loser_ends_superseded()
         .iter()
         .filter(|&&m| s.c[m].log.iter().any(|l| l == "end:Superseded"))
         .count();
-    assert_eq!(superseded, 2, "the losing call's two participants got End{{superseded}}");
+    assert_eq!(
+        superseded, 2,
+        "the losing call's two participants got End{{superseded}}"
+    );
 }
 
 // KIND: invariant
@@ -464,11 +683,18 @@ fn gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping() {
         let cp = copies(&f.set, &slots, &slots);
         assert!(cp.iter().all(|(a, b)| a != b), "no self-echo");
         for r in &slots {
-            assert!(cp.iter().filter(|(_, to)| to == r).count() <= k, "member downlink <= K");
+            assert!(
+                cp.iter().filter(|(_, to)| to == r).count() <= k,
+                "member downlink <= K"
+            );
         }
         let h_up = cp.iter().filter(|(_, to)| *to != 0).count();
         let h_down = slots.len() - 1;
-        let formula = if n > k { (n - 2) * k + 1 } else { (n - 1) * (n - 1) };
+        let formula = if n > k {
+            (n - 2) * k + 1
+        } else {
+            (n - 1) * (n - 1)
+        };
         assert_eq!(h_up, formula, "N={n} K={k}");
         assert_eq!(h_up, up_s, "table row N={n} K={k}");
         let per = kbps(48_000);
@@ -476,17 +702,30 @@ fn gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping() {
         assert_eq!(h_down as u64 * per, down_k);
         assert_eq!(h_up as u64 * 50, out_pps);
         assert_eq!(h_down as u64 * 50, in_pps);
-        assert_eq!(((h_up + h_down) as u64 * per * 3600 + 4000) / 8000, mbh, "MB/h N={n} K={k}");
+        assert_eq!(
+            ((h_up + h_down) as u64 * per * 3600 + 4000) / 8000,
+            mbh,
+            "MB/h N={n} K={k}"
+        );
         assert_eq!(k.min(n - 1) as u64 * per, mem_k);
         // H not in S (quietest) costs one stream less, so the formula really is the worst case.
         let mut g = Fwd::new(k);
-        let quiet_h: BTreeMap<u8, u8> = slots.iter().map(|&s| (s, if s == 0 { 45 } else { 10 + s })).collect();
+        let quiet_h: BTreeMap<u8, u8> = slots
+            .iter()
+            .map(|&s| (s, if s == 0 { 45 } else { 10 + s }))
+            .collect();
         for _ in 0..AVG_FRAMES * 2 {
             g = select(&g, &quiet_h);
         }
         if n > k {
             assert!(!g.set.contains(&0));
-            assert_eq!(copies(&g.set, &slots, &slots).iter().filter(|(_, t)| *t != 0).count(), (n - 2) * k);
+            assert_eq!(
+                copies(&g.set, &slots, &slots)
+                    .iter()
+                    .filter(|(_, t)| *t != 0)
+                    .count(),
+                (n - 2) * k
+            );
         }
         // Dedicated host: all N are remote.
         let ded = copies(&f.set, &slots, &slots).len();
@@ -500,7 +739,11 @@ fn gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping() {
             }
             let sent = BTreeSet::from([speaker]);
             let c = copies(&gte.set, &sent, &slots);
-            assert_eq!(c.iter().filter(|(_, t)| *t != 0).count(), up, "gated up N={n}");
+            assert_eq!(
+                c.iter().filter(|(_, t)| *t != 0).count(),
+                up,
+                "gated up N={n}"
+            );
             assert_eq!(usize::from(speaker != 0), down);
         }
     }
@@ -508,7 +751,10 @@ fn gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping() {
     // 60 kbps, about 21 % less. The spec says 145 bytes / 58 kbps / 24 %.
     assert_eq!(stream_bytes(GROUP_BITRATE_BPS), 150);
     assert_eq!(kbps(GROUP_BITRATE_BPS), 60);
-    assert_eq!((kbps(48_000) - kbps(GROUP_BITRATE_BPS)) * 100 / kbps(48_000), 21);
+    assert_eq!(
+        (kbps(48_000) - kbps(GROUP_BITRATE_BPS)) * 100 / kbps(48_000),
+        21
+    );
 
     // Hysteresis: three speakers with close, jittery levels and K = 2.
     let run = |hyst: bool| {
@@ -532,7 +778,11 @@ fn gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping() {
         changes
     };
     assert_eq!(run(true), 0, "no flapping with hysteresis");
-    assert!(run(false) >= 10, "flapping without hysteresis: {}", run(false));
+    assert!(
+        run(false) >= 10,
+        "flapping without hysteresis: {}",
+        run(false)
+    );
     // Replacement: S = {1 at 30, 2 at 32}. Slot 3 is present at 60 (not speech) and then bursts
     // at level 5 for L frames. Its average first reaches 32 - 6 = 26 on burst frame 10, so the
     // swap needs 10 qualifying frames and happens on frame 19. A 200 ms (10-frame) burst never
@@ -578,7 +828,11 @@ fn gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping() {
                 sel_at = Some(t);
             }
         }
-        assert_eq!((fwd_at, sel_at), (Some(1), Some(HYST_FRAMES as usize)), "D2 burst {burst}");
+        assert_eq!(
+            (fwd_at, sel_at),
+            (Some(1), Some(HYST_FRAMES as usize)),
+            "D2 burst {burst}"
+        );
     }
     // A quieter newcomer (not 6 dB louder) is forwarded for HYST_FRAMES, then dropped, and not
     // offered again while it keeps talking.

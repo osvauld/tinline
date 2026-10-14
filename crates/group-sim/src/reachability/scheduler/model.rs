@@ -142,7 +142,12 @@ impl Fleet {
     pub(super) fn linked(&self, from: usize, to: usize) -> bool {
         self.nodes[from].awake && self.nodes[to].awake && (!self.partitioned || from % 2 == to % 2)
     }
-    pub(super) fn send(&mut self, from: usize, to: usize, payload: Payload) -> Result<(), SendFailure> {
+    pub(super) fn send(
+        &mut self,
+        from: usize,
+        to: usize,
+        payload: Payload,
+    ) -> Result<(), SendFailure> {
         self.counts.sends += 1;
         if !linkable(from, to) {
             self.counts.no_address += 1;

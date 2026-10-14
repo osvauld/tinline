@@ -161,7 +161,10 @@ pub(super) struct Derived {
     pub(super) flags: BTreeMap<String, BTreeSet<String>>, // target -> flag op ids
 }
 
-pub(super) fn closure(ops: &BTreeMap<String, SignedOp>, frontier: &BTreeSet<String>) -> BTreeSet<String> {
+pub(super) fn closure(
+    ops: &BTreeMap<String, SignedOp>,
+    frontier: &BTreeSet<String>,
+) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
     let mut stack: Vec<String> = frontier.iter().cloned().collect();
     while let Some(id) = stack.pop() {
@@ -176,7 +179,11 @@ pub(super) fn closure(ops: &BTreeMap<String, SignedOp>, frontier: &BTreeSet<Stri
 
 impl Ctx {
     // Membership as a pure function of an op set (trimmed from flags.rs: distinct admins).
-    pub(super) fn derive(&self, ops: &BTreeMap<String, SignedOp>, ids: &BTreeSet<String>) -> Derived {
+    pub(super) fn derive(
+        &self,
+        ops: &BTreeMap<String, SignedOp>,
+        ids: &BTreeSet<String>,
+    ) -> Derived {
         let mut issuers: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
         let mut flags: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
         for id in ids {
@@ -233,7 +240,7 @@ pub(super) struct Replica {
     pub(super) late: BTreeMap<String, BTreeSet<String>>, // hosts: removed author -> posts taken since
     pub(super) announced: BTreeMap<String, Announce>, // members: host key -> latest verified announcement
     pub(super) member_due: Option<u64>,               // members, MembersToo only
-    pub(super) calls: Vec<String>,                    // relayed (host) or received (member) call ids
+    pub(super) calls: Vec<String>, // relayed (host) or received (member) call ids
 }
 impl Replica {
     pub(super) fn new(ctx: &Ctx, host: bool) -> Self {
@@ -453,7 +460,12 @@ impl Replica {
         Ok(())
     }
     // NEW (U10, U12): every member verifies an announcement itself before keeping it.
-    pub(super) fn accept_announce(&mut self, ctx: &Ctx, bytes: &[u8], me: &str) -> Result<(), Refuse> {
+    pub(super) fn accept_announce(
+        &mut self,
+        ctx: &Ctx,
+        bytes: &[u8],
+        me: &str,
+    ) -> Result<(), Refuse> {
         let Ok(a) = serde_json::from_slice::<Announce>(bytes) else {
             return Err(Refuse::Malformed);
         };
@@ -496,7 +508,12 @@ impl Replica {
     }
     // NEW: call request check. A host (`me = None`) relays only roster-to-roster calls; the
     // callee (`me = Some`) verifies again (U10). Refusal of a removed caller is immediate.
-    pub(super) fn accept_call(&mut self, ctx: &Ctx, bytes: &[u8], me: Option<&str>) -> Result<(), Refuse> {
+    pub(super) fn accept_call(
+        &mut self,
+        ctx: &Ctx,
+        bytes: &[u8],
+        me: Option<&str>,
+    ) -> Result<(), Refuse> {
         let Ok(c) = serde_json::from_slice::<CallReq>(bytes) else {
             return Err(Refuse::Malformed);
         };

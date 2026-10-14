@@ -23,16 +23,20 @@
 //! R1b: content here uses the LEGACY device-key-signed `Envelope` fixture (`tests.rs`; superseded
 //! by U4 revised + U16 DID-signed posts with an app-supplied writer ID, see `host_only.rs`). The
 //! envelope is only a carrier; the properties tested here do not depend on how a post is signed.
-use super::*;
+use crate::common::permutations;
+use crate::legacy::*;
 use identity::{public_key_from_did, verify};
 use std::cell::RefCell;
 
-mod ops;
 mod nodes;
+mod ops;
 mod world;
 
-use ops::{Change, MetaOp, Header, header, post, second_device_post, Members, authorized, Resolve, Membership, REMOVE_WINS, PostRule, Verdict, Admit, Ev, verify_cached};
 use nodes::{Node, Report};
-use world::{World, did, add, remove, epoch, m, p, explore, side, heal, D01};
+use ops::{
+    Admit, Change, Ev, Header, Members, Membership, MetaOp, PostRule, REMOVE_WINS, Resolve,
+    Verdict, authorized, header, post, second_device_post, verify_cached,
+};
+use world::{D01, World, add, epoch, explore, heal, m, p, remove, side};
 
 mod tests;

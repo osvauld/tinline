@@ -28,11 +28,14 @@
 //!   `host_only.rs` `host_rotation_reaches_online_members_directly_and_offline_member_by_host_retry`;
 //! - `host_and_all_forwarders_unreachable_means_no_recovery_without_reshare`: `host_only.rs`
 //!   `host_and_member_both_rotated_while_apart_lose_each_other`.
-use super::*;
+use crate::legacy::*;
 use identity::{public_key_from_did, verify};
 
 mod model;
 
-use model::{HOST, A, C, D, NoteAudience, RotationNote, Reject, GapPolicy, ForkPolicy, CatchUp, Policy, all_policies, RouteErr, Frame, World, world, contains};
+use model::{
+    A, C, CatchUp, D, ForkPolicy, Frame, GapPolicy, HOST, NoteAudience, Policy, Reject,
+    RotationNote, RouteErr, World, all_policies, contains, world,
+};
 
 mod tests;

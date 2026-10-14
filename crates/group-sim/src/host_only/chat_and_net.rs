@@ -8,7 +8,12 @@ pub(super) fn aad(h: &Header) -> Vec<u8> {
     ]
     .concat()
 }
-pub(super) fn seal(mut header: Header, recipient: &[u8; 32], eph_seed: [u8; 32], p: &SignedInner) -> Sealed {
+pub(super) fn seal(
+    mut header: Header,
+    recipient: &[u8; 32],
+    eph_seed: [u8; 32],
+    p: &SignedInner,
+) -> Sealed {
     let eph = StaticSecret::from(eph_seed);
     let eph_pub = PublicKey::from(&eph).to_bytes();
     header.ephemeral = eph_pub;
@@ -172,9 +177,6 @@ pub(super) struct World {
     pub(super) directory: BTreeMap<String, EpNote>,
     pub(super) live: BTreeMap<String, usize>, // listening endpoint -> device index
     pub(super) retiring: BTreeMap<String, u64>, // old host endpoint -> retire_at (overlap candidate)
-    pub(super) frames: Vec<Frame>,            // every frame on any link
+    pub(super) frames: Vec<Frame>,              // every frame on any link
     pub(super) keys_ever: Vec<(usize, KeyKind, [u8; 32])>,
-}
-pub(super) fn dir_key(did: &str, slot: u64) -> String {
-    format!("{did}#{slot}")
 }

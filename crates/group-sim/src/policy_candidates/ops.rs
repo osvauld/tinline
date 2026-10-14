@@ -85,7 +85,12 @@ pub(super) struct Header {
     pub(super) epoch: Option<String>,
     pub(super) msg: String,
 }
-pub(super) fn header_text(frontier: &[&MetaOp], at: u64, epoch: Option<&MetaOp>, msg: &str) -> String {
+pub(super) fn header_text(
+    frontier: &[&MetaOp],
+    at: u64,
+    epoch: Option<&MetaOp>,
+    msg: &str,
+) -> String {
     serde_json::to_string(&Header {
         frontier: frontier.iter().map(|m| m.id()).collect(),
         at,

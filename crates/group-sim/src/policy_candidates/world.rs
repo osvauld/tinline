@@ -39,9 +39,6 @@ impl World {
         MetaOp::issue(&issuer.id, &self.gid, parents, seen, at, change)
     }
 }
-pub(super) fn did(a: &Author) -> String {
-    a.id.did().to_string()
-}
 pub(super) fn add(m: &Author, admin: bool, expires_at: Option<u64>) -> Change {
     Change::Add {
         member: did(m),
@@ -52,7 +49,12 @@ pub(super) fn add(m: &Author, admin: bool, expires_at: Option<u64>) -> Change {
 pub(super) fn remove(m: &Author) -> Change {
     Change::Remove { member: did(m) }
 }
-pub(super) fn epoch(number: u64, members: &[&Author], admins: &[&Author], cut: &[&Envelope]) -> Change {
+pub(super) fn epoch(
+    number: u64,
+    members: &[&Author],
+    admins: &[&Author],
+    cut: &[&Envelope],
+) -> Change {
     Change::Epoch {
         number,
         members: members.iter().map(|m| did(m)).collect(),
@@ -66,27 +68,14 @@ pub(super) fn m(op: &MetaOp) -> Ev {
 pub(super) fn p(e: &Envelope) -> Ev {
     Ev::Post(e.clone())
 }
-
-pub(super) fn permutations(n: usize) -> Vec<Vec<usize>> {
-    fn go(prefix: &mut Vec<usize>, rest: &mut Vec<usize>, out: &mut Vec<Vec<usize>>) {
-        if rest.is_empty() {
-            out.push(prefix.clone());
-            return;
-        }
-        for i in 0..rest.len() {
-            let x = rest.remove(i);
-            prefix.push(x);
-            go(prefix, rest, out);
-            prefix.pop();
-            rest.insert(i, x);
-        }
-    }
-    let mut out = vec![];
-    go(&mut vec![], &mut (0..n).collect(), &mut out);
-    out
-}
 // Deliver `events` to a fresh node in EVERY order; collect distinct final outcomes.
-pub(super) fn explore(w: &World, rule: PostRule, mem: Membership, clock: u64, events: &[Ev]) -> Report {
+pub(super) fn explore(
+    w: &World,
+    rule: PostRule,
+    mem: Membership,
+    clock: u64,
+    events: &[Ev],
+) -> Report {
     let mut seen: Vec<(BTreeMap<String, Verdict>, Members, Vec<usize>)> = vec![];
     let mut retroactive = false;
     let orders = permutations(events.len());

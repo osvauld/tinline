@@ -462,6 +462,3 @@ pub(super) fn everyone() -> Vec<usize> {
     v.extend([H1, H2]);
     v
 }
-pub(super) fn set(xs: &[&str]) -> BTreeSet<String> {
-    xs.iter().map(|s| s.to_string()).collect()
-}

@@ -1,14 +1,18 @@
 use super::*;
 
-pub(super) const POST_DOMAIN: &[u8] = b"tinline/group-sim/removal-rotation-post/not-production/v1\0";
-pub(super) const NOTE_DOMAIN: &[u8] = b"tinline/group-sim/removal-rotation-endpoint-note/not-production/v1\0";
-pub(super) const GRANT_DOMAIN: &[u8] = b"tinline/group-sim/removal-rotation-grant/not-production/v1\0";
+pub(super) const POST_DOMAIN: &[u8] =
+    b"tinline/group-sim/removal-rotation-post/not-production/v1\0";
+pub(super) const NOTE_DOMAIN: &[u8] =
+    b"tinline/group-sim/removal-rotation-endpoint-note/not-production/v1\0";
+pub(super) const GRANT_DOMAIN: &[u8] =
+    b"tinline/group-sim/removal-rotation-grant/not-production/v1\0";
 pub(super) const OP_DOMAIN: &[u8] = b"tinline/group-sim/removal-rotation-op/not-production/v1\0";
-pub(super) const ANNOUNCE_DOMAIN: &[u8] = b"tinline/group-sim/removal-rotation-announce/not-production/v1\0";
-pub(super) const CALL_DOMAIN: &[u8] = b"tinline/group-sim/removal-rotation-call/not-production/v1\0";
+pub(super) const ANNOUNCE_DOMAIN: &[u8] =
+    b"tinline/group-sim/removal-rotation-announce/not-production/v1\0";
+pub(super) const CALL_DOMAIN: &[u8] =
+    b"tinline/group-sim/removal-rotation-call/not-production/v1\0";
 pub(super) const DOC: &str = "group/w2u/2026-10-10";
 pub(super) const MAX_PENDING: usize = 16;
-pub(super) const MAX_CHAIN: usize = 8;
 pub(super) const FLAG_THRESHOLD: usize = 3; // U9 / U10 (decided)
 pub(super) const TICKS_PER_DAY: u64 = 86_400; // 1 tick = 1 simulated second
 pub(super) const TICKS_PER_HOUR: u64 = 3_600;
@@ -18,10 +22,6 @@ pub(super) const T0: u64 = 1_000; // fixture start time
 // Devices. olga = owner/creator; alice (2 devices), bob, dave = admins; carol, erin = members;
 // hugo (H1), ivan (H2) = host binaries with their own DIDs and an owner-issued {Host} permit;
 // judy (H3) = a DID with no accepted host record (forgery fixture).
-pub(super) const OLGA: usize = 0;
-pub(super) const A1: usize = 1;
-pub(super) const A2: usize = 2;
-pub(super) const BOB: usize = 3;
 pub(super) const DAVE: usize = 4;
 pub(super) const CAROL: usize = 5;
 pub(super) const ERIN: usize = 6;
@@ -29,70 +29,6 @@ pub(super) const H1: usize = 7;
 pub(super) const H2: usize = 8;
 pub(super) const H3: usize = 9;
 pub(super) const MEMBERS: [usize; 7] = [OLGA, A1, A2, BOB, DAVE, CAROL, ERIN];
-
-// ---- helpers (copied from flags.rs @82d221f) -----------------------------------------------
-
-pub(super) fn hex32(b: &[u8]) -> String {
-    b.iter().map(|x| format!("{x:02x}")).collect()
-}
-pub(super) fn has(hay: &[u8], needle: &[u8]) -> bool {
-    hay.windows(needle.len()).any(|w| w == needle)
-}
-pub(super) fn ident(seed: u8) -> Identity {
-    let mnemonic = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
-    identity::recover(&mnemonic.to_string()).unwrap()
-}
-pub(super) fn ep(prefix: &str, k: &SigningKey) -> String {
-    format!("{prefix}-{}", hex32(&k.verifying_key().to_bytes()))
-}
-pub(super) fn signed<T: Serialize>(domain: &[u8], body: &T) -> Vec<u8> {
-    [domain, &serde_json::to_vec(body).unwrap()].concat()
-}
-pub(super) fn valid(did: &str, bytes: &[u8], sig: &[u8]) -> bool {
-    let (Some(key), Ok(sig)) = (public_key_from_did(did), <[u8; 64]>::try_from(sig)) else {
-        return false;
-    };
-    verify(&key, bytes, &sig)
-}
-pub(super) fn digest<T: Serialize>(x: &T) -> String {
-    blake3::hash(&serde_json::to_vec(x).unwrap())
-        .to_hex()
-        .to_string()
-}
-pub(super) fn dir_key(did: &str, slot: u64) -> String {
-    format!("{did}#{slot}")
-}
-pub(super) fn pair(a: usize, b: usize) -> (usize, usize) {
-    (a.min(b), a.max(b))
-}
-
-// Copied from flags.rs @82d221f. Deterministic SplitMix64: the ONLY source of writer IDs,
-// route slots (device IDs) and transport keys. Never seeded by key material.
-pub(super) struct SimRng(pub(super) u64);
-impl SimRng {
-    pub(super) fn next_u64(&mut self) -> u64 {
-        self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
-        let mut z = self.0;
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-        z ^ (z >> 31)
-    }
-    pub(super) fn bytes32(&mut self) -> [u8; 32] {
-        let mut out = [0u8; 32];
-        for c in out.chunks_mut(8) {
-            c.copy_from_slice(&self.next_u64().to_le_bytes());
-        }
-        out
-    }
-    pub(super) fn writer(&mut self) -> u64 {
-        loop {
-            let w = self.next_u64();
-            if w != u64::MAX {
-                return w;
-            }
-        }
-    }
-}
 
 // ---- grants and host permits (copied from flags.rs @82d221f) -------------------------------
 

@@ -133,7 +133,12 @@ pub(super) fn nomination(owner: &Author, group: &str) -> Nomination {
         group: group.into(),
     }
 }
-pub(super) fn evidence(n: &Nomination, device_id: u64, endpoint: &str, retire_at: u64) -> BindingEvidence {
+pub(super) fn evidence(
+    n: &Nomination,
+    device_id: u64,
+    endpoint: &str,
+    retire_at: u64,
+) -> BindingEvidence {
     BindingEvidence {
         owner: n.owner.clone(),
         device_id,

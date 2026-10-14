@@ -162,24 +162,6 @@ pub(super) fn deliver(rep: &mut Replica, ctx: &Ctx, ev: &Ev, now: u64) {
         }
     }
 }
-pub(super) fn permutations(n: usize) -> Vec<Vec<usize>> {
-    fn go(prefix: &mut Vec<usize>, rest: &mut Vec<usize>, out: &mut Vec<Vec<usize>>) {
-        if rest.is_empty() {
-            out.push(prefix.clone());
-            return;
-        }
-        for i in 0..rest.len() {
-            let x = rest.remove(i);
-            prefix.push(x);
-            go(prefix, rest, out);
-            prefix.pop();
-            rest.insert(i, x);
-        }
-    }
-    let mut out = vec![];
-    go(&mut vec![], &mut (0..n).collect(), &mut out);
-    out
-}
 pub(super) struct Explored {
     pub(super) orders: usize,
     pub(super) finals: BTreeSet<Vec<u8>>,
@@ -211,9 +193,6 @@ pub(super) fn explore(ctx: &Ctx, events: &[Ev]) -> Explored {
         retro_removal,
         last: last.unwrap(),
     }
-}
-pub(super) fn set(xs: &[&str]) -> BTreeSet<String> {
-    xs.iter().map(|s| s.to_string()).collect()
 }
 pub(super) fn ids(ops: &[&SignedOp]) -> BTreeSet<String> {
     ops.iter().map(|o| o.id()).collect()

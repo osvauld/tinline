@@ -322,7 +322,12 @@ impl World {
         });
     }
     // Raw adversarial delivery (no route check) straight into `to`'s group view.
-    pub(super) fn inject(&mut self, from: usize, to: usize, bytes: &[u8]) -> Result<RotationNote, Reject> {
+    pub(super) fn inject(
+        &mut self,
+        from: usize,
+        to: usize,
+        bytes: &[u8],
+    ) -> Result<RotationNote, Reject> {
         self.send(from, to, bytes);
         let policy = self.policy;
         self.nodes[to].view.accept(policy, bytes)

@@ -27,10 +27,12 @@
 //!   (device-key content, members holding each other's group endpoints): see `host_only.rs`
 //!   `blocked_member_learns_no_private_endpoint_from_did_signed_group_content` and
 //!   `members_receive_no_device_key_transport_key_or_endpoint_of_any_other_member`.
-use super::*;
+use crate::legacy::*;
 
 mod fixtures;
 
-use fixtures::{World, world, replica, did, catch_up, ids, HostRelay, run, Display, Line, render, texts};
+use fixtures::{
+    Display, HostRelay, Line, World, catch_up, ids, render, replica, run, texts, world,
+};
 
 mod tests;

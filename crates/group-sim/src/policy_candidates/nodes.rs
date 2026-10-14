@@ -232,7 +232,11 @@ impl Node {
             s.is_admin(did) as u8
         }
     }
-    pub(super) fn priority_fold(&self, ids: &BTreeSet<String>, excluded: &BTreeSet<String>) -> Members {
+    pub(super) fn priority_fold(
+        &self,
+        ids: &BTreeSet<String>,
+        excluded: &BTreeSet<String>,
+    ) -> Members {
         let mut s = Members::genesis(&self.creator);
         let mut done = BTreeSet::new();
         loop {

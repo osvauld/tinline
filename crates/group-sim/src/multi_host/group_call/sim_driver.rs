@@ -5,23 +5,33 @@ impl Sim {
         let n = self.w.d.len();
         // Members' keep-level datagrams (§1.4) keep H's view of them fresh.
         for m in 0..n {
-            let Some(j) = self.c[m].joined.clone() else { continue };
-            let Ok(h) = self.w.dial(m, &j.host_ep) else { continue };
+            let Some(j) = self.c[m].joined.clone() else {
+                continue;
+            };
+            let Ok(h) = self.w.dial(m, &j.host_ep) else {
+                continue;
+            };
             if h == m {
                 continue;
             }
             let now = self.now;
-            if let Some(hc) = self.c[h].hosting.as_mut().filter(|hc| hc.call_id == j.call_id && hc.host_gen == j.host_gen)
+            if let Some(hc) = self.c[h]
+                .hosting
+                .as_mut()
+                .filter(|hc| hc.call_id == j.call_id && hc.host_gen == j.host_gen)
             {
                 if let Some(p) = hc.parts.values_mut().find(|p| p.endpoint == j.my_ep) {
                     p.last_ms = now;
-                    self.w.send(m, h, j.host_ep.clone(), "keep-level", vec![LEVEL_ONLY, 127]);
+                    self.w
+                        .send(m, h, j.host_ep.clone(), "keep-level", vec![LEVEL_ONLY, 127]);
                 }
             }
         }
         // Heartbeats from every online host.
         for h in 0..n {
-            let Some(hc) = self.c[h].hosting.as_ref() else { continue };
+            let Some(hc) = self.c[h].hosting.as_ref() else {
+                continue;
+            };
             if !self.w.d[h].online {
                 continue;
             }
@@ -30,13 +40,18 @@ impl Sim {
             let me = self.host_ref(h);
             let eps: Vec<String> = hc.parts.values().map(|p| p.endpoint.clone()).collect();
             for ep in eps {
-                let Ok(dev) = self.w.dial(h, &ep) else { continue };
+                let Ok(dev) = self.w.dial(h, &ep) else {
+                    continue;
+                };
                 if dev == h {
                     continue;
                 }
                 self.w.send(h, dev, ep, "heartbeat", hb.clone());
                 let now = self.now;
-                if let Some(j) = self.c[dev].joined.as_mut().filter(|j| j.call_id == cid && j.host_gen == hg && j.host == me)
+                if let Some(j) = self.c[dev]
+                    .joined
+                    .as_mut()
+                    .filter(|j| j.call_id == cid && j.host_gen == hg && j.host == me)
                 {
                     j.last_hb_ms = now;
                 }
@@ -45,7 +60,9 @@ impl Sim {
         // Member drop at H (§5): 5 s without control or datagrams.
         for h in 0..n {
             let now = self.now;
-            let Some(hc) = self.c[h].hosting.as_mut() else { continue };
+            let Some(hc) = self.c[h].hosting.as_mut() else {
+                continue;
+            };
             let own = self.w.d[h].id.did().to_string();
             let gone: Vec<String> = hc
                 .parts
@@ -62,14 +79,18 @@ impl Sim {
         }
         // Host loss at members: 3 missed heartbeats.
         for m in 0..n {
-            let Some(j) = self.c[m].joined.clone() else { continue };
+            let Some(j) = self.c[m].joined.clone() else {
+                continue;
+            };
             if self.dev_of(&j.host) == m || !self.w.d[m].online {
                 continue;
             }
             if self.now >= j.last_hb_ms + HEARTBEAT_MISSES * HEARTBEAT_MS {
                 self.c[m].joined = None;
                 self.c[m].last_call = Some(j.call_id.clone());
-                self.c[m].log.push(format!("host lost at {}; Reconnecting…", self.now));
+                self.c[m]
+                    .log
+                    .push(format!("host lost at {}; Reconnecting…", self.now));
                 let r = self.redial_after_loss(m, &j, self.now);
                 self.redials.push((m, r));
             }
@@ -81,7 +102,12 @@ impl Sim {
             .prev
             .get(&j.call_id)
             .filter(|s| s.msg.host_gen == j.host_gen)
-            .or_else(|| self.c[m].starts.get(&j.call_id).filter(|s| s.msg.host_gen == j.host_gen))
+            .or_else(|| {
+                self.c[m]
+                    .starts
+                    .get(&j.call_id)
+                    .filter(|s| s.msg.host_gen == j.host_gen)
+            })
             .cloned();
         let backups: Vec<HostRef> = start
             .and_then(|s| s.start().map(|(_, b)| b.clone()))
@@ -114,10 +140,15 @@ impl Sim {
         let did = did.clone();
         let drop = if bytes.len() > MAX_DATAGRAM {
             Some(CR::Oversize)
-        } else if !((bytes.len() >= 6 && bytes[0] == UP) || (bytes.len() == 2 && bytes[0] == LEVEL_ONLY)) {
+        } else if !((bytes.len() >= 6 && bytes[0] == UP)
+            || (bytes.len() == 2 && bytes[0] == LEVEL_ONLY))
+        {
             Some(CR::Malformed)
         } else {
-            let b = hc.buckets.entry(did.clone()).or_insert((UP_BURST * 1000, now));
+            let b = hc
+                .buckets
+                .entry(did.clone())
+                .or_insert((UP_BURST * 1000, now));
             b.0 = (b.0 + (now - b.1) * MAX_UP_PPS).min(UP_BURST * 1000);
             b.1 = now;
             if b.0 < 1000 {
@@ -138,7 +169,10 @@ impl Sim {
             hc.level_only_rx += 1;
         } else {
             hc.levels.insert(slot, bytes[5]);
-            hc.pending.entry(slot).or_default().push(bytes[1..].to_vec());
+            hc.pending
+                .entry(slot)
+                .or_default()
+                .push(bytes[1..].to_vec());
         }
         Ok(())
     }
@@ -203,7 +237,11 @@ impl Sim {
         let levels = std::mem::take(&mut hc.levels);
         hc.fwd = select(&hc.fwd, &levels);
         let set = hc.fwd.forwarded(); // G6-D2: S plus the provisional slot
-        let parts: Vec<(u8, String)> = hc.parts.values().map(|p| (p.slot, p.endpoint.clone())).collect();
+        let parts: Vec<(u8, String)> = hc
+            .parts
+            .values()
+            .map(|p| (p.slot, p.endpoint.clone()))
+            .collect();
         if set != hc.active {
             // G6-D1: tell every participant before forwarding under the new set.
             hc.active_gen += 1;
@@ -214,7 +252,9 @@ impl Sim {
             })
             .unwrap();
             for (_, ep) in &parts {
-                let Ok(dev) = self.w.dial(h, ep) else { continue };
+                let Ok(dev) = self.w.dial(h, ep) else {
+                    continue;
+                };
                 if dev != h {
                     self.w.send(h, dev, ep.clone(), "active", msg.clone());
                 }
@@ -229,7 +269,9 @@ impl Sim {
                 if *to_slot == slot {
                     continue; // no self-echo
                 }
-                let Ok(dev) = self.w.dial(h, ep) else { continue };
+                let Ok(dev) = self.w.dial(h, ep) else {
+                    continue;
+                };
                 for d in &ds {
                     let mut down = vec![DOWN, slot];
                     down.extend(d);
@@ -244,7 +286,9 @@ impl Sim {
     }
     pub(super) fn client_rx(&mut self, i: usize, bytes: &[u8]) {
         let muted = self.c[i].muted.clone();
-        let Some(j) = self.c[i].joined.as_mut() else { return };
+        let Some(j) = self.c[i].joined.as_mut() else {
+            return;
+        };
         if bytes.len() < 2 || bytes[0] != DOWN {
             j.dropped += 1;
             return;
@@ -288,7 +332,9 @@ impl Sim {
     }
     // An honest H drops a participant who is no longer a member at once (§3.2 item 2).
     pub(super) fn host_sweep(&mut self, h: usize) {
-        let Some(hc) = self.c[h].hosting.as_ref() else { return };
+        let Some(hc) = self.c[h].hosting.as_ref() else {
+            return;
+        };
         let gone: Vec<String> = hc
             .parts
             .keys()

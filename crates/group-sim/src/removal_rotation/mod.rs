@@ -29,17 +29,27 @@
 //! by a host, the removed member's pre-removal upload on her dial, and the cap candidate.
 //!
 //! Fake `u64` time (1 tick = 1 simulated second), deterministic seeds, in-memory only.
-use super::*;
-use identity::{public_key_from_did, verify};
+use crate::common::{
+    A1, A2, BOB, MAX_CHAIN, OLGA, SimRng, digest, dir_key, ep, has, ident, pair, signed, valid,
+};
+use crate::legacy::*;
+use identity::public_key_from_did;
 
 mod fixtures;
 mod replica;
 mod world;
 mod world_driver;
 
-use fixtures::{ANNOUNCE_DOMAIN, CALL_DOMAIN, MAX_PENDING, FLAG_THRESHOLD, TICKS_PER_DAY, TICKS_PER_HOUR, ROTATION_DELAY, T0, OLGA, A1, BOB, DAVE, CAROL, ERIN, H1, H2, H3, MEMBERS, has, ident, ep, signed, valid, digest, dir_key, pair, SimRng, Cap, MGrant, Post, Writer, Why, Verdict, Board, EpNote, HostRecord, Op, SignedOp};
-use replica::{AnnBody, Announce, CallBody, CallReq, Refuse, Acc, UploadCap, Batching, MemberRotation, Cfg, Ctx, closure, Replica, Sched, Device};
-use world::{RouteErr, Path, World};
-use world_driver::{world, with, remaining, with_hosts, remove, note_seq};
+use fixtures::{
+    ANNOUNCE_DOMAIN, Board, CALL_DOMAIN, CAROL, Cap, DAVE, ERIN, EpNote, FLAG_THRESHOLD, H1, H2,
+    H3, HostRecord, MAX_PENDING, MEMBERS, MGrant, Op, Post, ROTATION_DELAY, SignedOp, T0,
+    TICKS_PER_DAY, TICKS_PER_HOUR, Verdict, Why, Writer,
+};
+use replica::{
+    Acc, AnnBody, Announce, Batching, CallBody, CallReq, Cfg, Ctx, Device, MemberRotation, Refuse,
+    Replica, Sched, UploadCap, closure,
+};
+use world::{Path, RouteErr, World};
+use world_driver::{note_seq, remaining, remove, with, with_hosts, world};
 
 mod tests;

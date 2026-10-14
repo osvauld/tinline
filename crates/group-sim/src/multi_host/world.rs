@@ -124,7 +124,14 @@ impl World {
     pub(super) fn pep(&self, i: usize) -> String {
         ep("prv", &self.d[i].private_key)
     }
-    pub(super) fn send(&mut self, from: usize, to: usize, to_ep: String, kind: &'static str, b: Vec<u8>) {
+    pub(super) fn send(
+        &mut self,
+        from: usize,
+        to: usize,
+        to_ep: String,
+        kind: &'static str,
+        b: Vec<u8>,
+    ) {
         self.frames.push(Frame {
             from,
             to,

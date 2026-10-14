@@ -2,7 +2,11 @@ use super::*;
 
 // Copies H sends: every datagram from a selected sender goes to every receiver except that
 // sender (no self-echo).
-pub(super) fn copies(set: &BTreeSet<u8>, sent: &BTreeSet<u8>, receivers: &BTreeSet<u8>) -> Vec<(u8, u8)> {
+pub(super) fn copies(
+    set: &BTreeSet<u8>,
+    sent: &BTreeSet<u8>,
+    receivers: &BTreeSet<u8>,
+) -> Vec<(u8, u8)> {
     let mut v = vec![];
     for s in set.intersection(sent) {
         for r in receivers {
@@ -14,7 +18,11 @@ pub(super) fn copies(set: &BTreeSet<u8>, sent: &BTreeSet<u8>, receivers: &BTreeS
     v
 }
 // §1.4 client mix: at most K forwarded slots, minus locally muted DIDs.
-pub(super) fn mix(forwarded: &BTreeSet<u8>, roster: &BTreeMap<u8, String>, muted: &BTreeSet<String>) -> BTreeSet<u8> {
+pub(super) fn mix(
+    forwarded: &BTreeSet<u8>,
+    roster: &BTreeMap<u8, String>,
+    muted: &BTreeSet<String>,
+) -> BTreeSet<u8> {
     forwarded
         .iter()
         .copied()
@@ -118,11 +126,11 @@ pub(super) struct CallDev {
     pub(super) records: BTreeMap<String, HostRecord>, // accepted call-host records
     pub(super) revoked: BTreeSet<String>,             // revoked call-host permit digests
     pub(super) rev_ops: BTreeSet<String>,
-    pub(super) hgen: BTreeMap<String, u32>,       // call_id -> highest host_gen seen
-    pub(super) starts: BTreeMap<String, Ctl>,    // call_id -> accepted CallStart at that hgen
-    pub(super) prev: BTreeMap<String, Ctl>,      // call_id -> CallStart of the previous hgen
-    pub(super) may_take: BTreeMap<String, u32>,  // call_id -> hgen this device may start on a Join
-    pub(super) shown: Option<String>,            // "Call in progress" (glare winner)
+    pub(super) hgen: BTreeMap<String, u32>, // call_id -> highest host_gen seen
+    pub(super) starts: BTreeMap<String, Ctl>, // call_id -> accepted CallStart at that hgen
+    pub(super) prev: BTreeMap<String, Ctl>, // call_id -> CallStart of the previous hgen
+    pub(super) may_take: BTreeMap<String, u32>, // call_id -> hgen this device may start on a Join
+    pub(super) shown: Option<String>,       // "Call in progress" (glare winner)
     pub(super) dialing: Option<Dialing>,
     pub(super) joined: Option<Joined>,
     pub(super) last_call: Option<String>,

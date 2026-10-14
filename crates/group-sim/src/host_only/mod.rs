@@ -21,19 +21,27 @@
 //! - Fake `u64` time, deterministic seeds, in-memory only.
 //! - Open policy (writer-ID collisions G-FORK, offline queue bound G-STORAGE, host endpoint
 //!   overlap G-TIME) is modelled as parameters; no option is selected.
-use super::*;
+use crate::common::{SimRng, dir_key, has, hex32, ident};
+use crate::legacy::*;
 use aes_gcm::aead::{Aead, KeyInit, Payload};
 use aes_gcm::{Aes256Gcm, Nonce};
 use identity::{public_key_from_did, verify};
 use x25519_dalek::{PublicKey, StaticSecret};
 
-mod fixtures;
 mod chat_and_net;
+mod fixtures;
 mod world;
 mod world_driver;
 
-use fixtures::{CHAT_DOMAIN, GROUP, HOST, A1, A2, BOB, CAROL, hex32, has, leaks_key, ident, tkey, ep, SimRng, Post, Writer, ForkPolicy, Why, Verdict, Board, Audience, EpNote, NoteReject, ReqKeyClaim, SignedReqKey, did_sign, did_verify, ChatKind, Header, Sealed, Inner, SignedInner, unpad, aead_key};
-use chat_and_net::{seal, open, Hello, ChatIn, Device, QueueBound, HostOverlap, Cfg, RouteErr, Path, Frame, KeyKind, World, dir_key};
-use world_driver::{world, ALL};
+use chat_and_net::{
+    Cfg, ChatIn, Device, Frame, Hello, HostOverlap, KeyKind, Path, QueueBound, RouteErr, World,
+    open, seal,
+};
+use fixtures::{
+    A1, A2, Audience, BOB, Board, CAROL, CHAT_DOMAIN, ChatKind, EpNote, ForkPolicy, GROUP, HOST,
+    Header, Inner, NoteReject, Post, ReqKeyClaim, Sealed, SignedInner, SignedReqKey, Verdict, Why,
+    Writer, aead_key, did_sign, did_verify, ep, leaks_key, tkey, unpad,
+};
+use world_driver::{ALL, world};
 
 mod tests;

@@ -27,9 +27,6 @@ pub(super) fn world() -> World {
 pub(super) fn replica(g: &Genesis) -> Replica {
     Replica::from_genesis(g.clone(), &g.id()).unwrap()
 }
-pub(super) fn did(a: &Author) -> String {
-    a.id.did().to_string()
-}
 // What a receiver gets on the wire for one envelope: signed bytes, signature, attestation.
 pub(super) fn envelope_wire(e: &Envelope) -> Vec<u8> {
     [

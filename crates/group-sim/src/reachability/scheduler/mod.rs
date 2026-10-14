@@ -11,6 +11,8 @@ use super::*;
 
 mod model;
 
-use model::{NODES, FIRST_HOST, is_host, QUEUE_LIMIT, BINDING_LIFETIME, Payload, SendFailure, Fleet};
+use model::{
+    BINDING_LIFETIME, FIRST_HOST, Fleet, NODES, Payload, QUEUE_LIMIT, SendFailure, is_host,
+};
 
 mod tests;

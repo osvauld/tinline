@@ -4,12 +4,15 @@
 //! R1b: content here uses the LEGACY device-key-signed `Envelope` fixture (`tests.rs`; superseded
 //! by U4 revised + U16 DID-signed posts with an app-supplied writer ID, see `host_only.rs`). The
 //! envelope is only a carrier; the properties tested here do not depend on how a post is signed.
-use super::*;
+use crate::legacy::*;
 
 mod scheduler;
 
 mod adapter;
 
-use adapter::{Nomination, BindingEvidence, Audience, VerifiedSuccession, MockRotation, HostDirectory, RouteFailure, Network, nomination, evidence, successor, NoVerifiedPath};
+use adapter::{
+    Audience, BindingEvidence, HostDirectory, MockRotation, Network, NoVerifiedPath, Nomination,
+    RouteFailure, VerifiedSuccession, evidence, nomination, successor,
+};
 
 mod tests;

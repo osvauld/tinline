@@ -27,8 +27,12 @@
 //! - No rogue fixture, writer-claim rule, retention, host cap, chat request or block notice.
 //!
 //! Fake `u64` time, deterministic seeds, in-memory only.
-use super::*;
-use identity::{public_key_from_did, verify};
+use crate::common::{
+    A1, A2, BOB, MAX_CHAIN, OLGA, SimRng, digest, dir_key, ep, has, ident, pair, permutations, set,
+    signed, valid,
+};
+use crate::legacy::*;
+use identity::public_key_from_did;
 
 mod fixtures;
 mod ops_rules;
@@ -37,15 +41,14 @@ mod world;
 mod world_driver;
 
 use fixtures::{
-    A1, A2, BOB, Board, CAROL, Cap, DAVE, ERIN, EpNote, FLAG_THRESHOLD, H1, H2, H3, HostRecord,
-    MAX_PENDING, MEMBERS, MGrant, OLGA, OP_DOMAIN, Op, OpBody, Post, SimRng, Verdict, Why, Writer,
-    digest, dir_key, ep, has, ident, pair, signed, valid,
+    Board, CAROL, Cap, DAVE, ERIN, EpNote, FLAG_THRESHOLD, H1, H2, H3, HostRecord, MAX_PENDING,
+    MEMBERS, MGrant, OP_DOMAIN, Op, OpBody, Post, Verdict, Why, Writer,
 };
 use ops_rules::{
     Acc, AdminRule, Cfg, Ctx, Derived, Expiry, FlagCount, OwnerRule, PostRule, Refuse, Rejoin,
     SignedOp, SmallGroup, Withdrawal, closure,
 };
 use replica::{Device, Frame, Path, Replica, RouteErr, World};
-use world_driver::{Ev, everyone, explore, ids, set, with, world};
+use world_driver::{Ev, everyone, explore, ids, with, world};
 
 mod tests;

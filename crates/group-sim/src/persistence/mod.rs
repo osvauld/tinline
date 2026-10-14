@@ -13,13 +13,17 @@
 //! R1b: content here uses the LEGACY device-key-signed `Envelope` fixture (`tests.rs`; superseded
 //! by U4 revised + U16 DID-signed posts with an app-supplied writer ID, see `host_only.rs`). The
 //! envelope is only a carrier; the properties tested here do not depend on how a post is signed.
-use super::*;
+use crate::legacy::*;
 use loro::{LoroValue, VersionVector};
 
 mod crash_model;
 mod runner;
 
-use crash_model::{Step, Fault, all_faults, AckOrder, PendingPolicy, OpenPolicy, encode, decode, Durable, Canonical, canonical, View, view, Net, Ingest, OpenReport, Availability, Host, Sender, deliver, reconcile, fresh, Fx, fixture, populated, control};
-use runner::{run, expect_injected, restart_if_down, recover, assert_converged};
+use crash_model::{
+    AckOrder, Availability, Canonical, Durable, Fault, Fx, Host, Ingest, Net, OpenPolicy,
+    OpenReport, PendingPolicy, Sender, Step, View, all_faults, canonical, control, decode, deliver,
+    encode, fixture, fresh, populated, reconcile, view,
+};
+use runner::{assert_converged, expect_injected, recover, restart_if_down, run};
 
 mod tests;

@@ -2,7 +2,13 @@ use super::*;
 
 impl Sim {
     // Member side: dial the host from the group endpoint and send a Join.
-    pub(super) fn join_call(&mut self, m: usize, call_id: &str, host: &HostRef, hgen: u32) -> Result<u8, CR> {
+    pub(super) fn join_call(
+        &mut self,
+        m: usize,
+        call_id: &str,
+        host: &HostRef,
+        hgen: u32,
+    ) -> Result<u8, CR> {
         let rec = self.c[m]
             .records
             .get(&dir_key(&host.holder_did, host.device_slot))
@@ -91,7 +97,11 @@ impl Sim {
             return Err(CR::EndpointMismatch);
         }
         let dk = dir_key(&n.claims.owner, n.claims.slot);
-        if let Some(cur) = self.w.d[h].host.as_ref().and_then(|hs| hs.directory.get(&dk)) {
+        if let Some(cur) = self.w.d[h]
+            .host
+            .as_ref()
+            .and_then(|hs| hs.directory.get(&dk))
+        {
             if cur.claims.seq > n.claims.seq {
                 return Err(CR::Stale);
             }
@@ -101,7 +111,11 @@ impl Sim {
             if hc.seen.contains(&j.id()) {
                 return Err(CR::Replay);
             }
-            if hc.last_join.get(&did).is_some_and(|t| t + JOIN_MIN_GAP_MS > self.now) {
+            if hc
+                .last_join
+                .get(&did)
+                .is_some_and(|t| t + JOIN_MIN_GAP_MS > self.now)
+            {
                 return Err(CR::RateLimited);
             }
             if !self.ctl_rate_ok(h, &did) {
@@ -167,7 +181,8 @@ impl Sim {
             if old.endpoint != conn_ep {
                 if let Some(&od) = self.w.live.get(&old.endpoint) {
                     let e = old.endpoint.clone();
-                    self.w.send(h, od, e, "close", b"answered-elsewhere".to_vec());
+                    self.w
+                        .send(h, od, e, "close", b"answered-elsewhere".to_vec());
                     if let Some(jd) = self.c[od].joined.take() {
                         self.c[od].last_call = Some(jd.call_id);
                     }
@@ -211,7 +226,9 @@ impl Sim {
             .collect();
         let mut out = vec![];
         for ep in eps {
-            let Ok(dev) = self.w.dial(h, &ep) else { continue };
+            let Ok(dev) = self.w.dial(h, &ep) else {
+                continue;
+            };
             if dev != h {
                 self.w.send(h, dev, ep, "roster", bytes.clone());
             }
@@ -279,7 +296,8 @@ impl Sim {
         }
         // ---- mutate ----
         let me = self.did(i);
-        let roster: BTreeMap<u8, String> = entries.iter().map(|e| (e.slot, e.did.clone())).collect();
+        let roster: BTreeMap<u8, String> =
+            entries.iter().map(|e| (e.slot, e.did.clone())).collect();
         if !dids.contains(&me) {
             if let Some(j) = self.c[i].joined.take() {
                 self.c[i].last_call = Some(j.call_id);
@@ -325,7 +343,14 @@ impl Sim {
     // ---- Leave / End ----
     pub(super) fn leave(&mut self, m: usize) -> Result<(), CR> {
         let j = self.c[m].joined.clone().ok_or(CR::Unknown)?;
-        let ctl = self.msg(m, &j.call_id, j.host_gen, Kind::Leave { issued_ms: self.now });
+        let ctl = self.msg(
+            m,
+            &j.call_id,
+            j.host_gen,
+            Kind::Leave {
+                issued_ms: self.now,
+            },
+        );
         let h = self.dev_of(&j.host);
         if h != m {
             self.w.send(m, h, j.host_ep.clone(), "leave", ctl.wire());
@@ -344,11 +369,20 @@ impl Sim {
         if ctl.msg.call_id != hc.call_id || ctl.msg.host_gen != hc.host_gen {
             return Err(CR::WrongCall);
         }
-        if hc.parts.get(&ctl.msg.signer).is_none_or(|p| p.endpoint != conn_ep) {
+        if hc
+            .parts
+            .get(&ctl.msg.signer)
+            .is_none_or(|p| p.endpoint != conn_ep)
+        {
             return Err(CR::NotParticipant);
         }
         let own = ctl.msg.signer == self.did(h);
-        self.c[h].hosting.as_mut().unwrap().parts.remove(&ctl.msg.signer);
+        self.c[h]
+            .hosting
+            .as_mut()
+            .unwrap()
+            .parts
+            .remove(&ctl.msg.signer);
         if own && self.c[h].cond.class == Class::Phone {
             // §2.4 / Q11: a phone hosts only while its own user is in the call.
             let next = self.next_backup(h);
@@ -361,10 +395,18 @@ impl Sim {
     pub(super) fn next_backup(&self, h: usize) -> Option<HostRef> {
         let hc = self.c[h].hosting.as_ref()?;
         let (_, b) = hc.start.start()?;
-        b.iter().find(|r| !self.c[h].revoked.contains(&r.permit_digest)).cloned()
+        b.iter()
+            .find(|r| !self.c[h].revoked.contains(&r.permit_digest))
+            .cloned()
     }
     // `only`: send End to that DID alone and keep hosting the others (§3.2 item 2).
-    pub(super) fn host_end(&mut self, h: usize, reason: EndReason, next: Option<HostRef>, only: Option<&str>) {
+    pub(super) fn host_end(
+        &mut self,
+        h: usize,
+        reason: EndReason,
+        next: Option<HostRef>,
+        only: Option<&str>,
+    ) {
         let hc = self.c[h].hosting.as_ref().unwrap();
         let (cid, hgen) = (hc.call_id.clone(), hc.host_gen);
         let targets: Vec<(String, String)> = hc
@@ -373,7 +415,15 @@ impl Sim {
             .filter(|(d, _)| only.is_none_or(|o| o == d.as_str()))
             .map(|(d, p)| (d.clone(), p.endpoint.clone()))
             .collect();
-        let end = self.msg(h, &cid, hgen, Kind::End { reason, next_host: next.clone() });
+        let end = self.msg(
+            h,
+            &cid,
+            hgen,
+            Kind::End {
+                reason,
+                next_host: next.clone(),
+            },
+        );
         let bytes = end.wire();
         match only {
             Some(o) => {
@@ -387,7 +437,9 @@ impl Sim {
             }
         }
         for (_, ep) in targets {
-            let Ok(dev) = self.w.dial(h, &ep) else { continue };
+            let Ok(dev) = self.w.dial(h, &ep) else {
+                continue;
+            };
             if dev != h {
                 self.w.send(h, dev, ep, "end", bytes.clone());
             }
@@ -441,7 +493,11 @@ impl Sim {
         let call_id = m.call_id.clone();
         if *reason == EndReason::Ended {
             self.c[i].starts.remove(&call_id);
-            self.c[i].shown = self.c[i].starts.keys().min_by_key(|c| call_hash(c)).cloned();
+            self.c[i].shown = self.c[i]
+                .starts
+                .keys()
+                .min_by_key(|c| call_hash(c))
+                .cloned();
         }
         let Some(j) = joined else { return Ok(()) };
         self.c[i].joined = None;
@@ -449,7 +505,10 @@ impl Sim {
         self.c[i].log.push(format!("end:{reason:?}"));
         if let (Some(nh), true) = (
             next_host.clone(),
-            matches!(reason, EndReason::HostLeaving | EndReason::HostRotating | EndReason::Superseded),
+            matches!(
+                reason,
+                EndReason::HostLeaving | EndReason::HostRotating | EndReason::Superseded
+            ),
         ) {
             // Redial at once; no heartbeat wait (§5 "planned host exit").
             let target = if *reason == EndReason::Superseded {

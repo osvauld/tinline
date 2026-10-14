@@ -27,17 +27,22 @@
 //!
 //! Ephemeral keys, request IDs and request-key secrets come from a deterministic blake3
 //! "RNG" keyed by fixture seeds. Never production randomness.
-use super::*;
+use crate::legacy::*;
 use aes_gcm::aead::{Aead, KeyInit, Payload};
 use aes_gcm::{Aes256Gcm, Nonce};
 use x25519_dalek::{PublicKey, StaticSecret};
 
 mod crypto;
-mod members_host;
 mod harness;
+mod members_host;
 
-use crypto::{GROUP, ANSWER_TIMEOUT, PAD, hex, sim_random, did_sign, did_verify, contains, RequestKeyClaim, SignedRequestKey, WireKind, Header, Wire, Inner, SignedInner, seal, open, Relay, DeclinePolicy, BlockReply, RetiredKeyPolicy, RateLimit, Policy, policy, Answer, Observation, DropReason, Delivery, KeySlot, Outgoing, Incoming, MemberState, DirectBody, DirectMsg};
-use members_host::{Member, route_direct, HostRefusal, Host, world};
-use harness::{pump, send, assert_rejected, flip};
+use crypto::{
+    ANSWER_TIMEOUT, Answer, BlockReply, DeclinePolicy, Delivery, DirectBody, DirectMsg, DropReason,
+    GROUP, Header, Incoming, Inner, KeySlot, MemberState, Observation, Outgoing, PAD, Policy,
+    RateLimit, Relay, RequestKeyClaim, RetiredKeyPolicy, SignedInner, SignedRequestKey, Wire,
+    WireKind, contains, did_sign, did_verify, hex, open, policy, seal, sim_random,
+};
+use harness::{assert_rejected, flip, pump, send};
+use members_host::{Host, HostRefusal, Member, route_direct, world};
 
 mod tests;

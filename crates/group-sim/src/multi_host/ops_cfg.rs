@@ -6,7 +6,13 @@ pub(super) struct SignedOp {
     pub(super) sig: Vec<u8>,
 }
 impl SignedOp {
-    pub(super) fn sign(id: &Identity, group: &str, grant: Option<MGrant>, nonce: u64, op: Op) -> Self {
+    pub(super) fn sign(
+        id: &Identity,
+        group: &str,
+        grant: Option<MGrant>,
+        nonce: u64,
+        op: Op,
+    ) -> Self {
         let body = OpBody {
             group: group.into(),
             issuer: id.did().into(),
@@ -128,11 +134,11 @@ impl Default for Cfg {
 pub(super) struct HostState {
     pub(super) record: HostRecord,
     pub(super) directory: BTreeMap<String, EpNote>, // member device "<did>#<slot>" -> group note (U7)
-    pub(super) held: BTreeMap<String, Post>,        // LowestAfterAllHostsSaw: unsettled writers' posts
+    pub(super) held: BTreeMap<String, Post>, // LowestAfterAllHostsSaw: unsettled writers' posts
     pub(super) claims: BTreeMap<u64, BTreeMap<String, String>>, // writer -> claim id -> DID
     pub(super) known_by: BTreeMap<String, BTreeSet<usize>>, // claim id -> hosts known to hold it
-    pub(super) settled: BTreeMap<u64, String>,      // writer -> winning claim id
-    pub(super) refusals: BTreeMap<String, Why>,     // post id -> why (told to the author device)
+    pub(super) settled: BTreeMap<u64, String>, // writer -> winning claim id
+    pub(super) refusals: BTreeMap<String, Why>, // post id -> why (told to the author device)
 }
 pub(super) struct Device {
     pub(super) id: Identity,

@@ -29,8 +29,12 @@
 //!   candidate uses grant nonces as a fixture stand-in for an ordered op log (not designed).
 //! - Fake `u64` time, deterministic seeds, in-memory only. Open policy is parameterised in
 //!   `Cfg`; no option is selected.
-use super::*;
-use identity::{public_key_from_did, verify};
+use crate::common::{
+    A1, A2, BOB, MAX_CHAIN, OLGA, SimRng, digest, dir_key, ep, has, hex32, ident, pair, set,
+    signed, valid,
+};
+use crate::legacy::*;
+use identity::public_key_from_did;
 
 // G6 group-call simulation; a child module so it reuses this file's private fixtures.
 mod group_call;
@@ -40,8 +44,14 @@ mod ops_cfg;
 mod world;
 mod world_driver;
 
-use fixtures::{hex32, OP_DOMAIN, NOTICE_DOMAIN, REMOVAL_FLAGS, OLGA, A1, A2, BOB, CAROL, HP, H1, H2, H3, MEMBERS, has, ident, ep, signed, valid, digest, dir_key, pair, SimRng, Cap, MGrant, Post, Writer, Why, Verdict, Board, Audience, EpNote, HostRecord, Op, OpBody};
-use ops_cfg::{SignedOp, BlockBody, BlockNotice, Refuse, View, ClaimRule, Retention, RemovalRule, HostCap, Cfg, HostState, Device, RouteErr, Path, Direct, Frame, World};
-use world_driver::{world, everyone, set};
+use fixtures::{
+    Audience, Board, CAROL, Cap, EpNote, H1, H2, H3, HP, HostRecord, MEMBERS, MGrant,
+    NOTICE_DOMAIN, OP_DOMAIN, Op, OpBody, Post, REMOVAL_FLAGS, Verdict, Why, Writer,
+};
+use ops_cfg::{
+    BlockBody, BlockNotice, Cfg, ClaimRule, Device, Direct, Frame, HostCap, HostState, Path,
+    Refuse, RemovalRule, Retention, RouteErr, SignedOp, View, World,
+};
+use world_driver::{everyone, world};
 
 mod tests;

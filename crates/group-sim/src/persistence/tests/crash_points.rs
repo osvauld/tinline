@@ -481,7 +481,10 @@ fn s05_earlier_stored_ack_does_not_guarantee_retention_after_eviction() {
 }
 
 // a1 withheld; a2..a(n) depend on it. Host baseline holds b1.
-pub(super) fn s06_setup(policy: PendingPolicy, extra: usize) -> (Genesis, Envelope, Vec<Envelope>, Host) {
+pub(super) fn s06_setup(
+    policy: PendingPolicy,
+    extra: usize,
+) -> (Genesis, Envelope, Vec<Envelope>, Host) {
     let (g, mut a, mut b, _c) = signed_fixture();
     let a1 = a.post("withheld");
     let later: Vec<Envelope> = (0..extra).map(|i| a.post(&format!("later {i}"))).collect();
@@ -494,7 +497,12 @@ pub(super) fn s06_setup(policy: PendingPolicy, extra: usize) -> (Genesis, Envelo
     ));
     (g, a1, later, host)
 }
-pub(super) fn s06_control(g: &Genesis, a1: &Envelope, later: &[Envelope], host: &Host) -> Canonical {
+pub(super) fn s06_control(
+    g: &Genesis,
+    a1: &Envelope,
+    later: &[Envelope],
+    host: &Host,
+) -> Canonical {
     let mut c = Host::new(g, AckOrder::CommitThenAck, PendingPolicy::Volatile);
     let mut net = Net::default();
     for e in host.replica().accepted.values() {

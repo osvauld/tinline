@@ -1,7 +1,8 @@
 use super::*;
 
 pub(super) const POST_DOMAIN: &[u8] = b"tinline/group-sim/host-only-post/not-production/v1\0";
-pub(super) const NOTE_DOMAIN: &[u8] = b"tinline/group-sim/host-only-endpoint-note/not-production/v1\0";
+pub(super) const NOTE_DOMAIN: &[u8] =
+    b"tinline/group-sim/host-only-endpoint-note/not-production/v1\0";
 pub(super) const CHAT_DOMAIN: &str = "tinline/group-sim/host-only-chat/not-production/v1";
 pub(super) const KDF_CONTEXT: &str = "tinline/group-sim/host-only-chat/not-production/v1 aead-key";
 pub(super) const GROUP: &str = "w2h-group";
@@ -14,15 +15,6 @@ pub(super) const A1: usize = 1; // alice, device 1
 pub(super) const A2: usize = 2; // alice, device 2 (same mnemonic / DID)
 pub(super) const BOB: usize = 3;
 pub(super) const CAROL: usize = 4;
-
-// ---- helpers -------------------------------------------------------------------------------
-
-pub(super) fn hex32(b: &[u8]) -> String {
-    b.iter().map(|x| format!("{x:02x}")).collect()
-}
-pub(super) fn has(hay: &[u8], needle: &[u8]) -> bool {
-    hay.windows(needle.len()).any(|w| w == needle)
-}
 // Encodings of a 32-byte key that could appear in anything a receiver holds.
 pub(super) fn leaks_key(hay: &[u8], key: &[u8; 32]) -> bool {
     [
@@ -33,44 +25,11 @@ pub(super) fn leaks_key(hay: &[u8], key: &[u8; 32]) -> bool {
     .iter()
     .any(|n| has(hay, n))
 }
-pub(super) fn ident(seed: u8) -> Identity {
-    let mnemonic = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
-    identity::recover(&mnemonic.to_string()).unwrap()
-}
 pub(super) fn tkey(k: &SigningKey) -> [u8; 32] {
     k.verifying_key().to_bytes()
 }
 pub(super) fn ep(prefix: &str, k: &SigningKey) -> String {
     format!("{prefix}-{}", hex32(&tkey(k)))
-}
-
-// Deterministic SplitMix64. The ONLY source of writer IDs, route slots and transport keys.
-// Seeded by a fixture constant; never by key material. Not production randomness.
-pub(super) struct SimRng(pub(super) u64);
-impl SimRng {
-    pub(super) fn next_u64(&mut self) -> u64 {
-        self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
-        let mut z = self.0;
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-        z ^ (z >> 31)
-    }
-    pub(super) fn bytes32(&mut self) -> [u8; 32] {
-        let mut out = [0u8; 32];
-        for c in out.chunks_mut(8) {
-            c.copy_from_slice(&self.next_u64().to_le_bytes());
-        }
-        out
-    }
-    // Loro reserves u64::MAX; redraw in that (fixture-irrelevant) case.
-    pub(super) fn writer(&mut self) -> u64 {
-        loop {
-            let w = self.next_u64();
-            if w != u64::MAX {
-                return w;
-            }
-        }
-    }
 }
 
 // ---- DID-signed content --------------------------------------------------------------------
@@ -402,7 +361,13 @@ impl EpNote {
     pub(super) fn bytes(c: &NoteClaims) -> Vec<u8> {
         [NOTE_DOMAIN, &serde_json::to_vec(c).unwrap()].concat()
     }
-    pub(super) fn sign(id: &Identity, audience: Audience, slot: u64, endpoint: &str, seq: u64) -> Self {
+    pub(super) fn sign(
+        id: &Identity,
+        audience: Audience,
+        slot: u64,
+        endpoint: &str,
+        seq: u64,
+    ) -> Self {
         let claims = NoteClaims {
             owner: id.did().into(),
             audience,

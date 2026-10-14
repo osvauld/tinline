@@ -343,11 +343,21 @@ pub(super) fn call_hash(call_id: &str) -> [u8; 32] {
 // §2.3 ranking. Input: statuses that have already been verified. Tie-breaks: (1) the starter's
 // DID when it is in the best tier (ASSUMPTION G8); (2) no-op (ASSUMPTION G6);
 // (3) lowest BLAKE3(call_id || host_ref).
-pub(super) fn rank(st: &[StatusBody], call_id: &str, starter: &str, expected: usize, now: u64) -> Vec<HostRef> {
+pub(super) fn rank(
+    st: &[StatusBody],
+    call_id: &str,
+    starter: &str,
+    expected: usize,
+    now: u64,
+) -> Vec<HostRef> {
     let mut latest: BTreeMap<&HostRef, &StatusBody> = BTreeMap::new();
     for s in st {
         let fresh = s.issued_ms <= now && now < s.issued_ms + s.ttl_ms.min(STATUS_TTL_MS);
-        if fresh && latest.get(&s.host_ref).is_none_or(|c| c.issued_ms < s.issued_ms) {
+        if fresh
+            && latest
+                .get(&s.host_ref)
+                .is_none_or(|c| c.issued_ms < s.issued_ms)
+        {
             latest.insert(&s.host_ref, s);
         }
     }
@@ -362,7 +372,10 @@ pub(super) fn rank(st: &[StatusBody], call_id: &str, starter: &str, expected: us
         .into_iter()
         .map(|(t, s)| {
             let starter_first = !(t == best && s.host_ref.holder_did == starter);
-            ((t, starter_first, tie_hash(call_id, &s.host_ref)), s.host_ref.clone())
+            (
+                (t, starter_first, tie_hash(call_id, &s.host_ref)),
+                s.host_ref.clone(),
+            )
         })
         .collect();
     v.sort();
@@ -555,6 +568,7 @@ pub(super) fn select(prev: &Fwd, levels: &BTreeMap<u8, u8>) -> Fwd {
             }
         }
     }
-    n.denied.retain(|s| avg.get(s).is_some_and(|a| *a < SPEECH_DBOV));
+    n.denied
+        .retain(|s| avg.get(s).is_some_and(|a| *a < SPEECH_DBOV));
     n
 }

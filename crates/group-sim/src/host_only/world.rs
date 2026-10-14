@@ -115,7 +115,14 @@ impl World {
     pub(super) fn did(&self, i: usize) -> String {
         self.d[i].did()
     }
-    pub(super) fn send(&mut self, from: usize, to: usize, to_ep: String, kind: &'static str, b: Vec<u8>) {
+    pub(super) fn send(
+        &mut self,
+        from: usize,
+        to: usize,
+        to_ep: String,
+        kind: &'static str,
+        b: Vec<u8>,
+    ) {
         self.frames.push(Frame {
             from,
             to,
@@ -159,7 +166,11 @@ impl World {
         self.directory.insert(key, n);
         Ok(())
     }
-    pub(super) fn member_accept_host_note(&mut self, i: usize, bytes: &[u8]) -> Result<(), NoteReject> {
+    pub(super) fn member_accept_host_note(
+        &mut self,
+        i: usize,
+        bytes: &[u8],
+    ) -> Result<(), NoteReject> {
         let Ok(n) = serde_json::from_slice::<EpNote>(bytes) else {
             return Err(NoteReject::Malformed);
         };

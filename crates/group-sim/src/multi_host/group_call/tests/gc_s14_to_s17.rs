@@ -23,18 +23,41 @@ fn gc_s15_revoked_host_call_mid_call_members_redial_the_next_valid_backup() {
         let want = if both { OLGA } else { BOB };
         for m in [A1, CAROL, HP] {
             let j = s.c[m].joined.as_ref().unwrap();
-            assert_eq!((j.call_id.as_str(), j.host_gen, s.dev_of(&j.host)), (cid.as_str(), 2, want), "both={both} {m}");
+            assert_eq!(
+                (j.call_id.as_str(), j.host_gen, s.dev_of(&j.host)),
+                (cid.as_str(), 2, want),
+                "both={both} {m}"
+            );
         }
         // The rogue H1 still sends a Roster and an End at gen 1. Both are refused.
-        let r = s.msg(H1, &cid, 1, Kind::Roster { epoch: 50, entries: vec![] });
-        let e = s.msg(H1, &cid, 1, Kind::End { reason: EndReason::Ended, next_host: None });
+        let r = s.msg(
+            H1,
+            &cid,
+            1,
+            Kind::Roster {
+                epoch: 50,
+                entries: vec![],
+            },
+        );
+        let e = s.msg(
+            H1,
+            &cid,
+            1,
+            Kind::End {
+                reason: EndReason::Ended,
+                next_host: None,
+            },
+        );
         let before = s.snap_all();
         for m in [A1, CAROL, HP] {
             assert!(s.accept_roster(m, &r.wire()).is_err());
             assert!(s.accept_end(m, &e.wire()).is_err());
         }
         assert_unchanged(&s, &before, "revoked host control");
-        assert_eq!(s.accept_call_record(A1, &s.record(H1).wire()), Err(CR::Revoked));
+        assert_eq!(
+            s.accept_call_record(A1, &s.record(H1).wire()),
+            Err(CR::Revoked)
+        );
     }
 }
 
@@ -65,15 +88,26 @@ fn gc_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over_with_host_leaving
         (p(90, true, Thermal::Severe, false), Limited),
         (p(90, true, Thermal::Critical, false), End),
         (p(90, true, Thermal::None, true), StopAdvertising),
-        (Cond { metered_override: true, ..p(90, true, Thermal::None, true) }, Advertise),
+        (
+            Cond {
+                metered_override: true,
+                ..p(90, true, Thermal::None, true)
+            },
+            Advertise,
+        ),
     ];
     for (c, want) in table {
         assert_eq!(phone_policy(&c), want, "{c:?}");
     }
     let mut s = Sim::new();
     s.c[HP].cond = Cond::phone(80, false);
-    assert_eq!(s.start_call(HP, OLGA, vec![]), Err(CR::Refused("phone never hosts listen-only")));
-    let cid = s.start_call(HP, HP, vec![s.host_ref(H1), s.host_ref(BOB)]).unwrap();
+    assert_eq!(
+        s.start_call(HP, OLGA, vec![]),
+        Err(CR::Refused("phone never hosts listen-only"))
+    );
+    let cid = s
+        .start_call(HP, HP, vec![s.host_ref(H1), s.host_ref(BOB)])
+        .unwrap();
     assert_eq!(s.c[HP].hosting.as_ref().unwrap().k, K_PHONE);
     for m in [HP, OLGA, A1, BOB] {
         s.join_shown(m).unwrap();
@@ -110,7 +144,11 @@ fn gc_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over_with_host_leaving
     s.host_end(HP, EndReason::HostLeaving, next, None);
     for m in [OLGA, A1, BOB] {
         let r = s.redials.iter().find(|(d, _)| *d == m).map(|(_, r)| r);
-        assert_eq!(r, Some(&Redial::Joined { host: H1, at_ms: t }), "no heartbeat wait for {m}");
+        assert_eq!(
+            r,
+            Some(&Redial::Joined { host: H1, at_ms: t }),
+            "no heartbeat wait for {m}"
+        );
         assert_eq!(s.c[m].joined.as_ref().unwrap().host_gen, 2);
     }
     // Wi-Fi to metered mid-call: everyone stays, and new Joins beyond the metered cap are refused.
@@ -122,7 +160,11 @@ fn gc_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over_with_host_leaving
     }
     s.c[HP].cond.metered = true;
     s.c[HP].hosting.as_mut().unwrap().warned_metered = true; // "data use" warning shown
-    assert_eq!(roster_of(&s, HP).len(), 5, "continues above the metered cap");
+    assert_eq!(
+        roster_of(&s, HP).len(),
+        5,
+        "continues above the metered cap"
+    );
     s.leave(A1).unwrap();
     s.advance(JOIN_MIN_GAP_MS);
     let r = s.join_req(A1, &cid, 1, s.now);
@@ -150,20 +192,32 @@ fn gc_s17_same_did_on_two_linked_devices_newer_join_replaces_older() {
     let (mut s, cid) = base();
     s.join_shown(OLGA).unwrap();
     s.join_shown(A1).unwrap();
-    let a1_join = s.c[H1].hosting.as_ref().unwrap().parts[&s.did(A1)].join.clone();
+    let a1_join = s.c[H1].hosting.as_ref().unwrap().parts[&s.did(A1)]
+        .join
+        .clone();
     s.advance(JOIN_MIN_GAP_MS);
     s.join_shown(A2).unwrap();
     let alice = s.did(A1);
     let r = roster_of(&s, H1);
-    assert_eq!(r.values().filter(|d| **d == alice).count(), 1, "one slot per DID");
+    assert_eq!(
+        r.values().filter(|d| **d == alice).count(),
+        1,
+        "one slot per DID"
+    );
     assert_eq!(r.len(), 2);
-    assert_eq!(s.c[H1].hosting.as_ref().unwrap().parts[&alice].endpoint, s.w.gep(A2));
+    assert_eq!(
+        s.c[H1].hosting.as_ref().unwrap().parts[&alice].endpoint,
+        s.w.gep(A2)
+    );
     assert!(s.c[A1].joined.is_none());
     assert!(s.c[A1].log.iter().any(|l| l == "call answered elsewhere"));
     assert!(s.c[A2].joined.is_some());
     let mut d = vec![UP];
     d.extend(audio(1, 10));
-    assert_eq!(s.host_ingress(H1, &s.w.gep(A1), &d), Err(CR::NotParticipant));
+    assert_eq!(
+        s.host_ingress(H1, &s.w.gep(A1), &d),
+        Err(CR::NotParticipant)
+    );
     s.advance(JOIN_MIN_GAP_MS);
     let replay = serde_json::to_vec(&JoinReq {
         join: a1_join,
@@ -171,13 +225,19 @@ fn gc_s17_same_did_on_two_linked_devices_newer_join_replaces_older() {
     })
     .unwrap();
     let older = s.join_req(A1, &cid, 1, s.now - 10 * JOIN_MIN_GAP_MS);
-    for (case, bytes, want) in [("replay", replay, CR::Replay), ("older issued_ms", older, CR::Stale)] {
+    for (case, bytes, want) in [
+        ("replay", replay, CR::Replay),
+        ("older issued_ms", older, CR::Stale),
+    ] {
         let before = s.snap_all();
         assert_eq!(s.host_join(H1, &s.w.gep(A1), &bytes), Err(want), "{case}");
         assert_unchanged(&s, &before, case);
     }
     s.join_shown(A1).unwrap();
-    assert_eq!(s.c[H1].hosting.as_ref().unwrap().parts[&alice].endpoint, s.w.gep(A1));
+    assert_eq!(
+        s.c[H1].hosting.as_ref().unwrap().parts[&alice].endpoint,
+        s.w.gep(A1)
+    );
     assert!(s.c[A2].joined.is_none());
     assert_eq!(roster_of(&s, H1).len(), 2);
 }
