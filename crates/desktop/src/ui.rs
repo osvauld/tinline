@@ -47,6 +47,9 @@ pub struct Tok {
     pub hairline: Color,
     pub bub_in: Color,
     pub bub_in_line: Color,
+    /// --bub-meta-in / --bub-meta-out: the 11px inline time and status in a bubble.
+    pub bub_meta_in: Color,
+    pub bub_meta_out: Color,
     pub ink: Color,
     pub ink2: Color,
     pub line: Color,
@@ -94,6 +97,8 @@ pub const LIGHT: Tok = Tok {
     hairline: rgb(0xE2E7E1),
     bub_in: rgb(0xFFFFFF),
     bub_in_line: rgb(0xE2E7E1),
+    bub_meta_in: rgb(0x68746E),
+    bub_meta_out: rgb(0x33655A),
     ink: rgb(0x17201D),
     ink2: rgb(0x4D5853),
     line: rgb(0xD3D9D4),
@@ -138,6 +143,8 @@ pub const DARK: Tok = Tok {
     hairline: rgb(0x2A3531),
     bub_in: rgb(0x1C2422),
     bub_in_line: rgb(0x2A3531),
+    bub_meta_in: rgb(0x95A19B),
+    bub_meta_out: rgb(0x8FC9B9),
     ink: rgb(0xE6ECE9),
     ink2: rgb(0xA6B2AD),
     line: rgb(0x33403B),
@@ -396,20 +403,57 @@ pub fn glyph<'a, M: 'a>(paint: &'static str, body: &'static str, size: f32, colo
 
 pub const STROKE: &str = r##"fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round""##;
 
-/// An icon of `size` px in `color`.
+/// An icon of `size` px in `color`: the tin icon of the same meaning when there is one (crates/tin-icons).
 pub fn icon<'a, M: 'a>(i: Icon, size: f32, color: Color) -> Element<'a, M> {
+    let tin = match i {
+        Icon::Phone => Some("phone"), Icon::PhoneOff => Some("callend"), Icon::Mic => Some("mic"), Icon::MicOff => Some("micoff"), Icon::UserPlus => Some("userplus"),
+        Icon::Sliders => Some("sliders"), Icon::ArrowLeft | Icon::ChevronLeft => Some("back"), Icon::Copy => Some("copy"), Icon::Check => Some("check"),
+        Icon::X => Some("x"), Icon::Lock => Some("lock"), Icon::ChevronRight => Some("chevr"), Icon::ChevronDown => Some("chev"), Icon::Info => Some("info"),
+        Icon::Pencil => Some("edit"), Icon::Trash => Some("trash"), Icon::Incoming => Some("call-in"), Icon::Outgoing => Some("call-out"),
+        Icon::Direct => Some("direct"), Icon::Relayed => Some("relayed"), Icon::LogOut => Some("leave"), Icon::Key => Some("key"), Icon::Clock => Some("clock"),
+        Icon::Paperclip => Some("clip"), Icon::Send => Some("send"), Icon::File => Some("file"), Icon::Reply => Some("reply"), Icon::MessageSquare => Some("chat"),
+        Icon::RotateCw => Some("retry"), Icon::Users => Some("users"), Icon::Flag => Some("flag"), Icon::Server => Some("server"), Icon::Video => Some("video"),
+        Icon::VideoOff => Some("camoff"), Icon::Search => Some("search"), Icon::Contact => Some("contact"), Icon::Plus => Some("plus"), Icon::Camera => Some("camera"),
+        Icon::Bell => Some("bell"), Icon::Devices => Some("devices"), Icon::Volume => Some("vol"),
+        _ => None,
+    };
+    if let Some(g) = tin.and_then(|n| crate::tin_icons::get(n, size)) {
+        return glyph2(crate::tin_icons::STROKE, g.body, g.string, size, color);
+    }
     glyph(STROKE, i.body(), size, color)
 }
 
+/// A tin icon (crates/tin-icons): its body and its string, one colour.
+pub fn glyph2<'a, M: 'a>(paint: &'static str, body: &'static str, string: &'static str, size: f32, color: Color) -> Element<'a, M> {
+    let h = raster(
+        hash_of((paint, body, string)),
+        || format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {paint}>{body}{string}</svg>"#),
+        device_px(size),
+        Some(color),
+    );
+    art(h, size)
+}
+
 /// The brand mark (Mark D, see mark.rs) in the theme's colours. Static.
-pub fn logo<'a, M: 'a>(size: f32, t: Tok) -> Element<'a, M> {
+pub fn logo<'a, M: Clone + 'a>(size: f32, t: Tok) -> Element<'a, M> {
     logo_live(size, t, crate::mark::Look::default())
 }
 
 /// The mark that shows state (ringing sway, taut when connected, pluck on send).
-pub fn logo_live<'a, M: 'a>(size: f32, t: Tok, look: crate::mark::Look) -> Element<'a, M> {
+pub fn logo_live<'a, M: Clone + 'a>(size: f32, t: Tok, look: crate::mark::Look) -> Element<'a, M> {
     let (can, string) = crate::mark::colors(t.dark);
     crate::mark::mark(size, can, if look.dim { t.ink2 } else { string }, look)
+}
+
+/// A sign-up / first-screen mark (Mark.svelte `lineColor`): the slack line is gold 55 % into --line
+/// and warms to full gold on the first tug; `on_tug` is published on each tug. No glow: dark depth
+/// is the rim only (decided 2026-10-13).
+pub fn line_logo<'a, M: Clone + 'a>(size: f32, t: Tok, look: crate::mark::Look, on_tug: Option<M>) -> Element<'a, M> {
+    let (can, gold) = crate::mark::colors(t.dark);
+    // color-mix(in oklab, gold 55%, line): mixed in sRGB here (the two are close in lightness).
+    let slack = mix(gold, t.line, 0.45);
+    let look = crate::mark::Look { line_color: true, ..look };
+    crate::mark::mark_with(size, can, gold, slack, look, on_tug)
 }
 
 /// Four quality bars, `n` of them filled.
@@ -434,6 +478,26 @@ pub fn bars<'a, M: 'a>(n: u8, on: Color, off: Color) -> Element<'a, M> {
     };
     let key = hash_of(("bars", n, [on, off].map(|c| [c.r, c.g, c.b, c.a].map(f32::to_bits))));
     art(raster(key, build, device_px(18.0), None), 18.0)
+}
+
+/// SignalBars.svelte: four rising bars in a 24 box, 3 wide at x 3.5/8.5/13.5/18.5, heights 6/10/14/18 on
+/// y 20, radius 1.5. `alphas` is each bar's opacity (ghost .28 .. lit 1, see `motion::Fx::bar_alphas`),
+/// quantised to 1/50 so the raster cache stays small while bars fade.
+pub fn signal_bars<'a, M: 'a>(alphas: [f32; 4], size: f32, color: Color) -> Element<'a, M> {
+    let q = alphas.map(|a| (a.clamp(0.0, 1.0) * 50.0).round() as u8);
+    let build = move || {
+        let mut body = String::new();
+        for (i, h) in [6u32, 10, 14, 18].into_iter().enumerate() {
+            body += &format!(
+                r##"<rect x="{}" y="{}" width="3" height="{h}" rx="1.5" fill="#000" fill-opacity="{}"/>"##,
+                3.5 + i as f32 * 5.0,
+                20 - h,
+                q[i] as f32 / 50.0
+            );
+        }
+        format!(r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">{body}</svg>"#)
+    };
+    art(raster(hash_of(("signal", q)), build, device_px(size), Some(color)), size)
 }
 
 // ---- widget styles ----
@@ -517,8 +581,24 @@ pub fn raised<'a, M: 'a>(
     }
     let [contact, ambient] = depth.shadows(t);
     let inner = container(content).width(size.width).height(size.height).style(move |th: &Theme| container::Style { shadow: contact, ..base(th) });
-    container(inner).width(size.width).height(size.height).style(move |th: &Theme| container::Style { shadow: ambient, ..base(th) }).into()
+    let outer = container(inner).width(size.width).height(size.height).style(move |th: &Theme| container::Style { shadow: ambient, ..base(th) });
+    if !t.dark {
+        return outer.into();
+    }
+    // tokens.css --rim (dark only, inside every raised shadow token): a 1px light edge along the top,
+    // as if lit from above. CSS draws it as an inset shadow that follows the corners; here it is a
+    // straight 1px line between the corner curves (see SCREENS-PORT-STATUS.md).
+    let b = base(&Theme::Dark).border;
+    let r = b.radius.top_left;
+    let rim = container(iced::widget::Space::new().width(Length::Fill).height(1)).style(plain(RIM, 0.0));
+    iced::widget::stack![outer, container(rim).padding(iced::Padding { top: b.width, left: r * 0.75, right: r * 0.75, ..iced::Padding::ZERO }).width(Length::Fill)]
+        .width(size.width)
+        .height(size.height)
+        .into()
 }
+
+/// --rim: white at 8 %.
+pub const RIM: Color = Color { r: 1.0, g: 1.0, b: 1.0, a: 0.08 };
 
 /// Surface of a pop-level thing (menu, banner, card over content): raised fill and a hairline.
 pub fn pop_surface(t: Tok, radius: f32) -> impl Fn(&Theme) -> container::Style + Copy {
@@ -731,9 +811,12 @@ pub fn initials(name: &str) -> String {
 pub fn scroll_style(t: Tok) -> impl Fn(&Theme, scrollable::Status) -> scrollable::Style {
     move |th, st| {
         let mut s = scrollable::default(th, st);
+        // Overlay-style: the scroller shows while the pointer is over the list (or dragging), like the
+        // playground's overlay scrollbars; at rest nothing sits beside the rows.
+        let shown = !matches!(st, scrollable::Status::Active { .. });
         for r in [&mut s.vertical_rail, &mut s.horizontal_rail] {
             r.background = None;
-            r.scroller.background = Background::Color(alpha(t.ink2, 0.35));
+            r.scroller.background = Background::Color(alpha(t.ink2, if shown { 0.35 } else { 0.0 }));
         }
         s
     }

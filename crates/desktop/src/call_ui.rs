@@ -7,6 +7,46 @@ pub struct State {
     id: Option<String>,
     pub minimized: bool,
     pub about: bool,
+    /// IncomingAlert: the incoming call was opened to the full screen (until then it is the card, top right).
+    pub expanded: bool,
+    /// Recent loss for the signal (link.svelte.ts): resets with each call.
+    pub loss: Loss,
+}
+
+/// link.svelte.ts `strength()`: the desktop's old `quality()` thresholds, so every app agrees.
+/// 4 Strong rtt < 100 and loss < 1 % · 3 Good < 200 / < 3 % · 2 Fair < 350 / < 8 % · 1 Weak.
+pub fn strength(rtt_ms: u32, loss_pct: f64) -> u8 {
+    if rtt_ms < 100 && loss_pct < 1.0 { 4 }
+    else if rtt_ms < 200 && loss_pct < 3.0 { 3 }
+    else if rtt_ms < 350 && loss_pct < 8.0 { 2 }
+    else { 1 }
+}
+
+/// A loss percentage the way the card prints it: "0", "0.2", "14".
+pub fn pct(v: f64) -> String {
+    let r = (v * 10.0).round() / 10.0;
+    if r.fract() == 0.0 || r >= 10.0 { format!("{}", r.round()) } else { format!("{r:.1}") }
+}
+
+/// `SIGNAL_WORD`, by strength (index 0 unused).
+pub const SIGNAL_WORD: [&str; 5] = ["", "Weak", "Fair", "Good", "Strong"];
+
+/// Loss over the last few seconds, not the whole call, or one bad minute would colour the rest of it.
+/// Fed `CallStats.received/lost` (running totals) about once a second.
+#[derive(Default)]
+pub struct Loss { seen: std::collections::VecDeque<(u64, u64)> }
+impl Loss {
+    const WINDOW: usize = 5;
+    pub fn push(&mut self, received: u64, lost: u64) {
+        if self.seen.back().is_some_and(|&(r, l)| r > received || l > lost) { self.seen.clear(); }
+        self.seen.push_back((received, lost));
+        while self.seen.len() > Self::WINDOW + 1 { self.seen.pop_front(); }
+    }
+    pub fn pct(&self) -> f64 {
+        let (Some(&(r0, l0)), Some(&(r1, l1))) = (self.seen.front(), self.seen.back()) else { return 0.0 };
+        let (r, l) = (r1 - r0, l1 - l0);
+        if r + l == 0 { 0.0 } else { l as f64 * 100.0 / (r + l) as f64 }
+    }
 }
 impl State {
     pub fn bind(&mut self, id: Option<&str>) {
@@ -14,6 +54,8 @@ impl State {
             self.id = id.map(str::to_owned);
             self.minimized = false;
             self.about = false;
+            self.expanded = false;
+            self.loss = Loss::default();
         }
     }
     pub fn apply(&mut self, action: Action, can_minimize: bool) {
@@ -21,7 +63,7 @@ impl State {
         match action {
             Action::Minimize if can_minimize => { self.minimized = true; self.about = false; }
             Action::Minimize => {}
-            Action::Restore => self.minimized = false,
+            Action::Restore => { self.minimized = false; self.expanded = true; }
             Action::About => self.about = true,
             Action::CloseAbout => self.about = false,
         }
@@ -55,6 +97,15 @@ mod tests {
         let mut s = State::default(); s.bind(Some("a"));
         s.apply(Action::Minimize, false); assert!(!s.minimized);
         s.apply(Action::About, false); s.apply(Action::CloseAbout, false); assert!(!s.about);
+    }
+    #[test]
+    fn signal_uses_recent_loss_and_shared_thresholds() {
+        let mut l = Loss::default();
+        l.push(0, 0); l.push(1000, 200);           // a bad first second
+        for i in 2..9 { l.push(1000 * i, 200); }  // then clean
+        assert_eq!(l.pct(), 0.0);
+        assert_eq!([strength(42, 0.2), strength(140, 1.4), strength(280, 5.0), strength(520, 14.0)], [4, 3, 2, 1]);
+        assert_eq!(SIGNAL_WORD[strength(140, 1.4) as usize], "Good");
     }
     #[test]
     fn fixed_boxes_match_the_playground_flex_equations() {

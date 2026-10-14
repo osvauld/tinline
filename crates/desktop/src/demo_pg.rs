@@ -120,6 +120,16 @@ impl App {
         let callable: Vec<String> = all.iter().filter(|d| !d.ends_with("dev")).cloned().collect();
         let _ = &all;
         self.blocks.demo(&callable, &callable, &[pg_did("ravi")]);
+        // seed.ts call messages: Sana missed (in), Arjun 12:22 out, Meera couldn't connect (out).
+        let rec = |id: &str, name: &str, incoming: bool, at_ms: u64, secs: u32, reason: &str, missed: bool| p2pcore::CallRecord {
+            call_id: format!("pg-{id}"), peer_did: pg_did(id), peer_name: name.into(), incoming,
+            started_at: at_ms / 1000, duration_secs: secs, reason: reason.into(), direct: true, missed,
+        };
+        self.recents = vec![
+            rec("sana", "Sana Rao", true, at(9, 2, 0), 0, "no_answer", true),
+            rec("arjun", "Arjun Oommen", false, at(21, 32, 1), 742, "hangup_local", false),
+            rec("meera", "Meera Nair", false, at(17, 50, 1), 0, "unreachable", false),
+        ];
         self.screen = Screen::Home;
         self.chat.tab = chat::SideTab::Chats;
         match route {
@@ -129,6 +139,37 @@ impl App {
             "settings" => {
                 self.screen = Screen::Settings;
                 self.profiles.page = Some(profile_ui::Page::Settings);
+            }
+            r if r.starts_with("privacy") => {
+                self.screen = Screen::Settings;
+                let id = match r { "privacy-blocked" => 21, "privacy-calls" => 22, "privacy-phrase" | "privacy-phrase-shown" => 23, "privacy-passphrase" => 24, _ => 7 };
+                self.profiles.page = Some(profile_ui::Page::Native(id));
+                self.has_pass = true;
+                if r == "privacy-phrase-shown" {
+                    self.revealed = Some(zeroize::Zeroizing::new("harbor velvet orbit candle meadow lunar ticket gravel salmon whisper copper anchor fabric jungle pepper quarter ripple saddle timber unveil walnut yellow zebra mosaic".into()));
+                    self.pv.shown = true;
+                    self.pv.shown_at = Some(std::time::Instant::now());
+                }
+            }
+            r if r.starts_with("devices") => {
+                self.screen = Screen::Settings;
+                self.profiles.page = Some(profile_ui::Page::Native(1));
+                // seedDevices(): this laptop and Maya's phone, online now.
+                self.linked = vec![
+                    p2pcore::LinkedDevice { device: "laptop".into(), label: "Work laptop".into(), this_device: true, last_seen: Some(now), removed: false },
+                    p2pcore::LinkedDevice { device: "pixel".into(), label: "Pixel 8".into(), this_device: false, last_seen: Some(now), removed: false },
+                ];
+                match r {
+                    "devices-menu" => self.dev_menu = Some("pixel".into()),
+                    "devices-unlink" => { self.unlink_ask = Some("pixel".into()); self.has_pass = true; }
+                    "devices-rename" => self.dev_rename = Some(("laptop".into(), "Work laptop".into())),
+                    _ => {}
+                }
+            }
+            "settings-notifications" | "settings-sounds" => {
+                self.screen = Screen::Settings;
+                self.profiles.page = Some(if route.ends_with("sounds") { profile_ui::Page::Sounds } else { profile_ui::Page::Notifications });
+                self.devices = (vec!["Built-in Audio".into()], vec!["Built-in Audio".into()]);
             }
             "profile" => {
                 self.screen = Screen::Settings;
@@ -140,6 +181,59 @@ impl App {
                 self.profiles.page = Some(profile_ui::Page::Person(pg_did(&r["contact-".len()..])));
             }
             "newchat" => self.shell_search.new_chat = Some(String::new()),
+            // `pg-chat-arjun` (with P2P_CHAT_FAKE=1 for the seed's messages): the conversation open.
+            "chat-hike" | "chat-hike-waiting" | "chat-hike-call" | "chat-hike-info" | "gcall" | "gcall-strip" | "gcall-about" => {
+                // seed.ts hike: nine members, Arjun's device hosts; Sam, Priya, Kavya and I post.
+                let names = [("meera", "Meera Nair"), ("arjun", "Arjun Oommen"), ("sam", "Sam Rao"), ("priya", "Priya Menon"), ("leo", "Leo Thomas"), ("dev", "Dev Patel"), ("kavya", "Kavya Iyer"), ("nisha", "Nisha Rao")];
+                let mut members: Vec<p2pcore::GroupMember> = names.iter().map(|(id, n)| p2pcore::GroupMember {
+                    did: pg_did(id), name: n.to_string(), is_me: false, is_owner: *id == "meera", is_admin: matches!(*id, "sam" | "priya"),
+                    is_host: *id == "arjun", flags: 0, joined_at: at(9, 0, 50), invited_by: None, device_ids: vec![],
+                }).collect();
+                members.push(p2pcore::GroupMember { did: me.clone(), name: "Maya Kurian".into(), is_me: true, is_owner: false, is_admin: true, is_host: false, flags: 0, joined_at: at(9, 0, 53), invited_by: None, device_ids: vec![] });
+                let waiting = route.ends_with("waiting");
+                let host = p2pcore::GroupHost { did: pg_did("arjun"), name: "Arjun Oommen".into(), device_id: "a1b2c3d4".into(), appointed_by: None, is_me: false, online: !waiting };
+                let msg = |n: u32, from: &str, name: &str, at_: u64, text: &str, kind: GroupItemKind| GroupMessage {
+                    id: format!("hike-{n}"), group_id: "hike".into(), kind, author_did: if from == "me" { me.clone() } else { pg_did(from) }, author_name: name.into(),
+                    subject_did: pg_did(from), subject_name: name.into(), at: at_, text: text.into(), reply_to: None, outgoing: from == "me",
+                    delivery: if waiting && from == "me" { GroupDelivery::Waiting } else { GroupDelivery::Delivered }, before_removal: false,
+                };
+                self.live.msgs = vec![
+                    msg(1, "sam", "Sam Rao", at(18, 0, 8), "Trail map and the parking details are in the shared folder.", GroupItemKind::Post),
+                    msg(2, "priya", "Priya Menon", at(9, 30, 5), "Anyone have a spare headlamp for Saturday? Mine died last time.", GroupItemKind::Post),
+                    msg(3, "kavya", "Kavya Iyer", at(9, 2, 0), "Kavya joined, invited by Priya", GroupItemKind::Joined),
+                    msg(4, "sam", "Sam Rao", at(12, 30, 0), "Saturday 7am at the trailhead.", GroupItemKind::Post),
+                    msg(5, "sam", "Sam Rao", at(12, 31, 0), "Bring rain jackets, the forecast says showers after 10.", GroupItemKind::Post),
+                    msg(6, "sam", "Sam Rao", at(12, 31, 0) + 1, "And snacks for the top.", GroupItemKind::Post),
+                    msg(7, "me", "Maya Kurian", at(12, 33, 0), "I can bring the stove.", GroupItemKind::Post),
+                    msg(8, "priya", "Priya Menon", at(12, 38, 0), "Can someone give me a lift from the station?", GroupItemKind::Post),
+                    msg(9, "kavya", "Kavya Iyer", at(12, 52, 0), "First hike with you all. Is the loop fine for beginners?", GroupItemKind::Post),
+                    msg(10, "sam", "Sam Rao", at(12, 55, 0), "It is. Easy grade, one steep bit near the top.", GroupItemKind::Post),
+                ];
+                self.live.open = Some("hike".into());
+                self.live.hide_info = route != "chat-hike-info";
+                self.live.unread_at_open = 3;
+                // A call in Weekend hike, hosted by Arjun's laptop: Sam started it; in it (gcall*), or not (chat-hike-call).
+                let call = p2pcore::GroupCall { group_id: "hike".into(), call_id: "c1".into(), host_did: pg_did("arjun"), host_device_id: Some("a1b2".into()),
+                    starter_did: pg_did("sam"), started_at: at(13, 2, 0), host_gen: 0, hosted_here: false, joined: route.starts_with("gcall") };
+                if route != "chat-hike" && route != "chat-hike-waiting" { self.gcall.live.insert("hike".into(), call); }
+                if route.starts_with("gcall") {
+                    self.gcall.gid = Some("hike".into());
+                    self.gcall.call_id = Some("c1".into());
+                    self.gcall.phase = super::gcall::Phase::Active;
+                    self.gcall.parts = vec![me.clone(), pg_did("arjun"), pg_did("sam"), pg_did("priya")];
+                    self.gcall.host = Some(pg_did("arjun"));
+                    self.gcall.since = std::time::Instant::now().checked_sub(std::time::Duration::from_secs(252));
+                    self.gcall.frozen = Some(252);
+                    self.gcall.minimized = route == "gcall-strip";
+                    self.gcall.about = route == "gcall-about";
+                }
+                self.live.detail = Some(p2pcore::GroupDetail {
+                    id: "hike".into(), name: "Weekend hike".into(), owner_did: pg_did("meera"), my_role: GroupRole::Admin, am_host: false,
+                    members, hosts: vec![host], host_offers: vec![], host_requests: vec![], host_requested_here: false, removal: None,
+                    am_call_host: false, call_hosts: vec![], call_host_requests: vec![], call_host_requested_here: false,
+                });
+            }
+            r if r.starts_with("chat-") => self.sel = Some(pg_did(r["chat-".len()..].trim_end_matches("-find").trim_end_matches("-reply"))),
             "unread" => self.shell_search.unread_only = true,
             _ => {}
         }

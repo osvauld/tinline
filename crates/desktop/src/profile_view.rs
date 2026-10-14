@@ -6,7 +6,7 @@ use super::super::profile_ui::{self as pf, Action, Layer, Page};
 use super::shell_view::{pg_dialog, wash};
 use crate::pg_icons::pgi;
 use iced::border::Radius;
-use iced::widget::{column, mouse_area, slider, stack, text_editor};
+use iced::widget::{column, mouse_area, rich_text, slider, span, stack, text_editor};
 use serde_json::Value;
 
 fn m(a: Action) -> Msg {
@@ -159,6 +159,18 @@ pub(super) fn pf_act<'a>(t: Tok, icon: Option<&'static str>, title: String, sub:
     }
 }
 
+/// people.svelte.ts `lastSeenText`.
+fn last_seen(now: u64, at: Option<u64>) -> String {
+    let Some(at) = at else { return "Not synced yet".into() };
+    let m = (now.saturating_sub(at) as f64 / 60.0).round() as u64;
+    if m < 2 { return "Last seen just now".into(); }
+    if m < 60 { return format!("Last seen {m} minutes ago"); }
+    let h = (m as f64 / 60.0).round() as u64;
+    if h < 24 { return format!("Last seen {h} {} ago", if h == 1 { "hour" } else { "hours" }); }
+    let d = (h as f64 / 24.0).round() as u64;
+    format!("Last seen {d} {} ago", if d == 1 { "day" } else { "days" })
+}
+
 fn chevron<'a>(t: Tok) -> El<'a> {
     pgi("chevr", 18.0, t.ink2)
 }
@@ -252,7 +264,7 @@ impl App {
     }
 
     pub(super) fn profile_shell(&self, t: Tok) -> El<'_> {
-        row![self.sidebar(t), self.call_strip_pane(t, self.profile_page(t))].height(Fill).into()
+        self.framed(t, self.profile_page(t))
     }
 
     /// `.pf-bar`: 60px, --surface, hairline below; back IconButton then the 17px/600 title.
@@ -273,10 +285,16 @@ impl App {
         let page = self.profiles.page.clone().unwrap_or(Page::Settings);
         let (title, body): (&str, El) = match &page {
             Page::Settings => ("Settings", self.settings_landing(t)),
-            Page::Notifications => ("Notifications", self.settings_unported(t, "Notifications")),
-            Page::Sounds => ("Sounds", self.settings_unported(t, "Sounds")),
+            Page::Notifications => ("Notifications", self.notifications_page(t)),
+            Page::Sounds => ("Sounds", self.sounds_page(t)),
             Page::Me => ("My profile", self.my_profile(t)),
             Page::Person(did) => ("Profile", self.person_profile(t, did)),
+            Page::Native(1) => ("Devices", self.devices_page(t)),
+            Page::Native(7) => ("Privacy", self.privacy_landing(t)),
+            Page::Native(21) => ("Blocked people", self.blocked_page(t)),
+            Page::Native(22) => ("Who can call me", self.calls_page(t)),
+            Page::Native(23) => ("Recovery phrase", self.phrase_page(t)),
+            Page::Native(24) => ("Passphrase", self.passphrase_page(t)),
             Page::Native(tab) => (
                 match tab {
                     0 => "This computer",
@@ -296,6 +314,12 @@ impl App {
         let mut layers = vec![base];
         if let Some(f) = self.profile_float(t) {
             layers.push(f);
+        }
+        if let Some(d) = self.privacy_layer(t) {
+            layers.push(d);
+        }
+        if let Some(d) = self.devices_layer(t) {
+            layers.push(d);
         }
         if let Some(l) = self.profile_layer(t) {
             layers.push(l);
@@ -367,11 +391,31 @@ impl App {
             .into_iter()
             .map(|(icon, label, page)| -> RowFn { Box::new(move |r| pf_act(t, Some(icon), label.into(), None, Some(chevron(t)), Some(m(Action::Open(page))), false, r)) })
             .collect();
+        // Settings.svelte LOOKS (2026-10-14): the same choice the sign-up switch makes; switches at once.
+        let look = self.settings.appearance;
+        let looks: Vec<RowFn> = [(None, "Match my computer", "Light or dark, as this computer is set"), (Some(false), "Light", ""), (Some(true), "Dark", "")]
+            .into_iter().map(|(v, name, info): (Option<bool>, &'static str, &'static str)| -> RowFn<'_> {
+            Box::new(move |r| {
+                let on = look == v;
+                let radio = container(container(Space::new()).width(if on { 12 } else { 0 }).height(if on { 12 } else { 0 }).style(ui::plain(t.accent, 6.0)))
+                    .width(22).height(22).center_x(22).center_y(22)
+                    .style(move |_: &iced::Theme| iced::widget::container::Style { border: Border { color: if on { t.accent } else { t.line }, width: 2.0, radius: 11.0.into() }, ..Default::default() });
+                let mut words = column![semi(name, 15.0, t.ink).line_height(lh(20.0))].spacing(1).width(Fill);
+                if !info.is_empty() { words = words.push(tx(info, 13.0, t.ink2).line_height(lh(18.0))); }
+                button(row![radio, words].spacing(14).align_y(Alignment::Center).height(40))
+                    .padding([8, 16]).height(56).width(Fill)
+                    .style(move |_, status| iced::widget::button::Style {
+                        background: matches!(status, iced::widget::button::Status::Hovered | iced::widget::button::Status::Pressed).then_some(iced::Background::Color(t.surface2)),
+                        border: Border { radius: r, ..Default::default() }, ..Default::default() })
+                    .on_press(Msg::Appearance(v)).into()
+            })
+        }).collect();
         let mut c = column![
             pf_sec(16.0, pf_card(t, vec![me_row])),
             pf_sec(24.0, column![pf_card(t, accounts),
                 container(tx(format!("Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."), 13.0, t.ink2).line_height(lh(18.0)))
                     .padding(Padding { top: 8.0, right: 16.0, bottom: 0.0, left: 16.0 })].into()),
+            pf_sec(24.0, column![pf_h2(t, "Appearance"), pf_card(t, looks)].into()),
             pf_sec(24.0, pf_card(t, areas)),
         ]
         .spacing(0);
@@ -383,15 +427,322 @@ impl App {
         self.pf_scroll(t, c.into(), 40.0)
     }
 
-    /// Notifications / Sounds: the playground's controls have no desktop service behind them yet.
-    fn settings_unported(&self, t: Tok, what: &str) -> El<'_> {
-        let line = if what == "Notifications" {
-            "Per-kind alert switches and the permission list aren\u{2019}t connected on this desktop yet. Calls and messages still use the system notifications this app already shows."
-        } else {
-            "Quiet and the call sound sets aren\u{2019}t connected to this desktop\u{2019}s audio yet. Microphone, speaker and the test tone are under This computer."
+    /// devices/Devices.svelte: this device, the devices linked to my account, and linking a new one. Each row opens
+    /// its actions (Rename; Unlink for the others). The core has no device kind, so the others use the devices glyph.
+    fn devices_page(&self, t: Tok) -> El<'_> {
+        let now = super::now_secs();
+        let live = |d: &p2pcore::LinkedDevice| d.last_seen.is_some_and(|s| now.saturating_sub(s) < 120);
+        let stale = |d: &p2pcore::LinkedDevice| d.last_seen.is_none_or(|s| now.saturating_sub(s) >= 30 * 86400);
+        let row = |d: &'_ p2pcore::LinkedDevice| -> RowFn<'_> {
+            let name = if d.label.is_empty() { "Unnamed device".to_string() } else { d.label.clone() };
+            let (sub, color, strong) = if d.this_device { ("This device \u{b7} Online".to_string(), t.ink2, false) }
+                else if live(d) { ("Online now".into(), t.accent_ink, true) }
+                else if let Some(s) = d.last_seen.filter(|_| stale(d)) { (format!("Not seen for {} days", now.saturating_sub(s) / 86400), t.warn_ink, true) }
+                else { (last_seen(now, d.last_seen), t.ink2, false) };
+            let icon = if d.this_device { "laptop" } else { "devices" };
+            let dev = d.device.clone();
+            Box::new(move |r| pf_act(t, Some(icon), name, Some((sub, color, strong)), Some(chevron(t)), Some(Msg::DevMenu(Some(dev))), false, r))
         };
-        let rows: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("sliders"), "Audio devices".into(), Some(("Microphone, speaker and test tone".into(), t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(3)))), false, r))];
-        let c = column![pf_sec(16.0, para(t, line.into())), section(t, "On this computer", rows, vec![])];
+        let me: Vec<RowFn> = self.linked.iter().filter(|d| d.this_device).map(row).collect();
+        let mut others: Vec<RowFn> = self.linked.iter().filter(|d| !d.this_device).map(row).collect();
+        let n_others = others.len();
+        others.push(Box::new(move |r| pf_act(t, Some("plus"), "Link a new device".into(), Some(("Show a QR code on the new device, then approve it here".into(), t.ink2, false)),
+            Some(chevron(t)), (!self.busy).then_some(Msg::LinkStartExisting), false, r)));
+        let note = if n_others == 0 {
+            "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
+        } else {
+            "Every linked device is a full copy of you: it can read your chats and act as you. Names here are private to your devices; contacts never see them."
+        };
+        let mut c = column![];
+        if !me.is_empty() {
+            c = c.push(pf_sec(16.0, column![pf_h2(t, "This device"), pf_card(t, me)].into()));
+        }
+        c = c.push(section(t, "Linked devices", others, vec![note.into()]));
+        self.pf_scroll(t, c.into(), 40.0)
+    }
+
+    /// Devices.svelte's layers: a device's actions, renaming it, unlinking it (honest: not a lock).
+    fn devices_layer(&self, t: Tok) -> Option<El<'_>> {
+        if self.profiles.page != Some(Page::Native(1)) {
+            return None;
+        }
+        let find = |id: &str| self.linked.iter().find(|d| d.device == id);
+        let name_of = |d: &p2pcore::LinkedDevice| if d.label.is_empty() { "Unnamed device".to_string() } else { d.label.clone() };
+        let now = super::now_secs();
+        let close = |m: Msg| pg_btn(t, Btn::Quiet, None, "Close", Some(m));
+        if let Some(id) = &self.dev_menu {
+            let d = find(id)?;
+            let name = name_of(d);
+            let sub = if d.this_device { "This device".to_string() } else if d.last_seen.is_some_and(|s| now.saturating_sub(s) < 120) { "Online now".into() } else { last_seen(now, d.last_seen) };
+            let mut items = column![hairline(t), pf_act(t, Some("edit"), "Rename".into(), None, None, Some(Msg::DevRenameStart(d.device.clone())), false, 0.0.into())];
+            if !d.this_device {
+                items = items.push(hairline(t)).push(pf_act(t, Some("leave"), "Unlink".into(), None, None, Some(Msg::UnlinkAsk(d.device.clone())), true, 0.0.into()));
+            }
+            let body = vec![para(t, sub), container(items).padding(Padding { top: 4.0, right: -20.0, bottom: 0.0, left: -20.0 }).into()];
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, name, body, vec![close(Msg::DevMenu(None))]), Msg::DevMenu(None)));
+        }
+        if let Some((_, text)) = &self.dev_rename {
+            let ok = crate::flow::valid_label(text).is_some();
+            let field = column![semi("Name", 13.0, t.ink).line_height(lh(18.0)),
+                text_input("", text).on_input(Msg::DevRenameIn).on_submit(Msg::DevRenameSave).padding([10.5, 14.0]).size(15).line_height(lh(21.0)).style(pf_input_style(t))].spacing(6);
+            let body = vec![para(t, "Only your own devices see this name.".into()), container(field).padding(Padding { top: 4.0, ..Padding::ZERO }).into()];
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, "Rename device".into(), body,
+                vec![pg_btn(t, Btn::Quiet, None, "Cancel", Some(Msg::DevRenameCancel)), pg_btn(t, Btn::Primary, None, "Save", ok.then_some(Msg::DevRenameSave))]), Msg::DevRenameCancel));
+        }
+        if let Some(id) = &self.unlink_ask {
+            let d = find(id)?;
+            if d.this_device {
+                return None;
+            }
+            let name = name_of(d);
+            let online = d.last_seen.is_some_and(|s| now.saturating_sub(s) < 120);
+            let notlock = container(row![pgi("warning", 18.0, t.warn_ink),
+                    rich_text![span::<(), iced::Font>("This is not a lock.").font(ui::SANS_SEMI).color(t.warn_ink),
+                        span::<(), iced::Font>(format!(" Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account.")).color(t.warn_ink)]
+                        .size(13).line_height(lh(19.0))].spacing(10))
+                .padding([10, 12]).width(Fill).style(ui::plain(t.warn, 12.0));
+            let mut body = vec![
+                lead(t, format!("{name} will stop syncing with your account and stop ringing when you\u{2019}re called. {}", if online { "Tinline tells it now." } else { "It is offline, so it finds out the next time it connects." })),
+                notlock.into(),
+                para(t, "Contacts you haven\u{2019}t blocked get your updated device list when they\u{2019}re next online.".into()),
+            ];
+            if self.has_pass {
+                body.push(self.pf_pass(t, "Enter your passphrase to confirm", &self.link.pass, Msg::LinkPassIn, Some(Msg::UnlinkGo)));
+            }
+            let go = (!self.busy && (!self.has_pass || !self.link.pass.is_empty())).then_some(Msg::UnlinkGo);
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, format!("Unlink {name}?"), body,
+                vec![pg_btn(t, Btn::Quiet, None, "Cancel", Some(Msg::UnlinkCancel)), pg_btn(t, Btn::Danger, None, if self.busy { "Unlinking\u{2026}" } else { "Unlink" }, go)]), Msg::UnlinkCancel));
+        }
+        None
+    }
+
+    /// privacy/Privacy.svelte: one row per area. Read receipts and online visibility aren't offered: the core has neither.
+    fn privacy_landing(&self, t: Tok) -> El<'_> {
+        let blocked = self.blocks.list.len();
+        let msg_only = self.contacts.iter().filter(|c| !self.blocks.blocked_by_me(&c.did) && !self.blocks.calls_allowed(&c.did)).count();
+        let rows_: [(&'static str, &'static str, String, u8); 4] = [
+            ("off", "Blocked people", if blocked == 0 { "No one".into() } else { format!("{blocked} {}", if blocked == 1 { "person" } else { "people" }) }, 21),
+            ("phone", "Who can call me", if msg_only == 0 { "All contacts can call".into() } else { format!("{msg_only} {} messages only", if msg_only == 1 { "contact is" } else { "contacts are" }) }, 22),
+            ("key", "Recovery phrase", if self.has_pass { "Needs your passphrase".into() } else { "Shown after you confirm".into() }, 23),
+            ("lock", "Passphrase", "Protects Tinline on this device".into(), 24),
+        ];
+        let rows: Vec<RowFn> = rows_.into_iter().map(|(icon, label, sub, id)| -> RowFn<'_> {
+            Box::new(move |r| pf_act(t, Some(icon), label.into(), Some((sub, t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(id)))), false, r))
+        }).collect();
+        let c = pf_sec(16.0, column![pf_card(t, rows),
+            pf_note(t, "Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats.")].into());
+        self.pf_scroll(t, c, 40.0)
+    }
+
+    /// PersonRow inside a card: avatar 44, name, a line under it, something at the end; 12 px side padding.
+    fn person_row<'a>(&'a self, t: Tok, did: &str, name: String, sub: String, end: El<'a>, r: Radius) -> El<'a> {
+        let _ = r;
+        container(row![self.profile_avatar(t, &name, did, 44.0),
+                column![semi(name, 15.0, t.ink).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None), tx(sub, 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill),
+                end].spacing(12).align_y(Alignment::Center).height(64))
+            .padding([0, 12]).width(Fill).into()
+    }
+
+    /// privacy/Blocked.svelte: the people I blocked (Unblock), "Block someone", and an honest note.
+    fn blocked_page(&self, t: Tok) -> El<'_> {
+        let mut list: Vec<&p2pcore::BlockedContact> = self.blocks.list.iter().collect();
+        list.sort_by_key(|b| b.name.to_lowercase());
+        let mut rows: Vec<RowFn> = list.into_iter().map(|b| -> RowFn<'_> {
+            let first = b.name.split_whitespace().next().unwrap_or(&b.name).to_string();
+            let _ = first;
+            Box::new(move |r| self.person_row(t, &b.did, b.name.clone(), "Told you blocked them".into(),
+                pg_btn(t, Btn::Outline, None, "Unblock", Some(Msg::Privacy(crate::app::PvMsg::Unblock(Some(b.did.clone()))))), r))
+        }).collect();
+        if rows.is_empty() {
+            rows.push(Box::new(move |_| container(tx("No one is blocked.", 13.0, t.ink2)).padding([18, 16]).width(Fill).center_x(Fill).into()));
+        }
+        rows.push(Box::new(move |r| pf_act(t, Some("off"), "Block someone".into(), None, None, Some(Msg::Privacy(crate::app::PvMsg::Pick(true))), false, r)));
+        let c = pf_sec(16.0, column![pf_h2(t, "Blocked"), pf_card(t, rows),
+            pf_note(t, "Blocking is not silent. The person is told, their app stops contacting you and removes you from their contacts. Your chat history stays on your devices. Groups you share aren\u{2019}t affected.")].into());
+        self.pf_scroll(t, c, 40.0)
+    }
+
+    /// privacy/CallsAllowed.svelte: each contact's Allow calls (the same switch as on their profile). The
+    /// playground's "New contacts can call me" default has no core setting yet, so it isn't shown.
+    fn calls_page(&self, t: Tok) -> El<'_> {
+        let mut people: Vec<&p2pcore::Contact> = self.contacts.iter().filter(|c| !self.blocks.blocked_by_me(&c.did)).collect();
+        people.sort_by_key(|c| Self::display(c).to_lowercase());
+        let rows: Vec<RowFn> = people.into_iter().map(|c| -> RowFn<'_> {
+            let on = self.blocks.calls_allowed(&c.did);
+            Box::new(move |r| self.person_row(t, &c.did, Self::display(c), if on { "Can call you".into() } else { "Messages only".into() },
+                pg_switch(t, on, Msg::AllowCalls(c.did.clone(), !on)), r))
+        }).collect();
+        let c = pf_sec(16.0, column![pf_h2(t, "Contacts"), pf_card(t, rows),
+            pf_note(t, "Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither.")].into());
+        self.pf_scroll(t, c, 40.0)
+    }
+
+    /// privacy/Phrase.svelte: behind the passphrase; then the 24 words, hidden until asked, hiding again after
+    /// 30 s; no copy button on purpose.
+    fn phrase_page(&self, t: Tok) -> El<'_> {
+        let lead_ = |s: &str| -> El<'_> { container(tx(s.to_string(), 15.0, t.ink).line_height(lh(21.0))).padding(Padding { top: 0.0, right: 4.0, bottom: 12.0, left: 4.0 }).into() };
+        let Some(words) = self.revealed.as_ref() else {
+            let mut c = column![lead_("Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you.")].spacing(6);
+            if self.has_pass {
+                c = c.push(self.pf_pass(t, "Enter your passphrase to continue", &self.pass_in, Msg::PassIn, Some(Msg::RevealSubmit)));
+            }
+            if let Some(n) = self.notice.as_ref().filter(|_| self.has_pass) {
+                c = c.push(tx(n.clone(), 13.0, t.danger).line_height(lh(19.0)));
+            }
+            c = c.push(container(pg_btn(t, Btn::Primary, None, if self.busy { "Checking\u{2026}" } else { "Continue" }, (!self.busy && (!self.has_pass || !self.pass_in.is_empty())).then_some(Msg::RevealSubmit))).align_right(Fill).padding(Padding { top: 6.0, ..Padding::ZERO }));
+            return self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0);
+        };
+        let shown = self.pv.shown;
+        let mut grid = column![].spacing(0);
+        let list: Vec<&str> = words.split_whitespace().collect();
+        for chunk in list.chunks(3).enumerate() {
+            let (ri, ws) = chunk;
+            let mut r = row![].spacing(0);
+            for (ci, w) in ws.iter().enumerate() {
+                let n = ri * 3 + ci + 1;
+                r = r.push(row![container(tx(n.to_string(), 12.0, t.ink2)).width(22).align_right(22),
+                        if shown { El::from(semi(w.to_string(), 15.0, t.ink)) } else { El::from(bold("\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}", 15.0, t.ink2)) }]
+                    .spacing(8).align_y(Alignment::Center).width(Fill).height(36));
+            }
+            grid = grid.push(r);
+        }
+        let card = container(grid).padding([8, 16]).width(Fill).style(move |_: &iced::Theme| iced::widget::container::Style {
+            background: Some(t.surface.into()), border: Border { color: t.hairline, width: 1.0, radius: 14.0.into() }, ..Default::default() });
+        let left = self.pv.shown_at.map(|a| 30u64.saturating_sub(a.elapsed().as_secs())).unwrap_or(30);
+        let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { "Hide words" } else { "Show words" }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
+            tx(if shown { format!("Hides in {left} s") } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
+        let c = column![lead_("Write these 24 words down, in order, and keep them somewhere private."), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
+            pf_note(t, "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages.")];
+        self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0)
+    }
+
+    /// privacy/ChangePass.svelte: current (when there is one), new, new again; "Passphrase changed" in place.
+    fn passphrase_page(&self, t: Tok) -> El<'_> {
+        let e = &self.pv.errs;
+        let err = |s: &str| -> El<'_> { container(tx(s.to_string(), 13.0, t.danger).line_height(lh(19.0))).height(19).into() };
+        let mut f = column![].spacing(6);
+        if self.has_pass {
+            f = f.push(self.pf_pass(t, "Current passphrase", &self.old_in, Msg::OldIn, None)).push(err(&e[0]));
+        }
+        f = f.push(self.pf_pass(t, "New passphrase", &self.pass_in, Msg::PassIn, None)).push(if e[1].is_empty() { container(tx("Any length works. A few words make it stronger.", 13.0, t.ink2).line_height(lh(19.0))).height(19).into() } else { err(&e[1]) })
+            .push(self.pf_pass(t, "New passphrase again", &self.pv.again, |v| Msg::Privacy(crate::app::PvMsg::Again(v)), Some(Msg::Privacy(crate::app::PvMsg::Change)))).push(err(&e[2]));
+        let saved: El = if self.pv.done { row![pgi("check", 16.0, t.accent_ink), semi("Passphrase changed", 13.0, t.accent_ink)].spacing(6).align_y(Alignment::Center).into() } else { Space::new().height(22).into() };
+        let ready = !self.busy && !self.pass_in.is_empty() && !self.pv.again.is_empty();
+        f = f.push(row![container(saved).width(Fill), pg_btn(t, Btn::Primary, None, if self.has_pass { "Change passphrase" } else { "Add passphrase" }, ready.then_some(Msg::Privacy(crate::app::PvMsg::Change)))].align_y(Alignment::Center));
+        let c = column![f, pf_note(t, "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can\u{2019}t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages.")];
+        self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0)
+    }
+
+    /// people/PassField.svelte: label 13 semibold, a 44 field (--r-ctl, --line, accent when focused) with the eye
+    /// at its end (show / hide the text).
+    fn pf_pass<'a>(&'a self, t: Tok, label_: &'a str, value: &'a str, on: impl Fn(String) -> Msg + 'a, submit: Option<Msg>) -> El<'a> {
+        let shown = self.pv.reveal;
+        let mut input = text_input("", value).secure(!shown).on_input(on).padding(Padding { top: 11.5, right: 48.0, bottom: 11.5, left: 14.0 }).size(15).line_height(lh(21.0)).style(pf_input_style(t));
+        if let Some(m) = submit { input = input.on_submit(m); }
+        let eye = button(container(pgi(if shown { "eyeoff" } else { "eye" }, 20.0, t.ink2)).center_x(44).center_y(44)).padding(0).width(44).height(44)
+            .style(wash(t, None, Some(t.surface2), 22.0)).on_press(Msg::Privacy(crate::app::PvMsg::Eye));
+        column![semi(label_, 13.0, t.ink).line_height(lh(18.0)), stack![input, container(eye).align_right(Fill)]].spacing(6).into()
+    }
+
+    /// Blocked.svelte's layers: pick someone to block (then the profile's Block dialog), and "Unblock {name}?".
+    fn privacy_layer(&self, t: Tok) -> Option<El<'_>> {
+        use crate::app::PvMsg;
+        if self.profiles.page != Some(Page::Native(21)) {
+            return None;
+        }
+        if self.pv.pick {
+            let mut people: Vec<&p2pcore::Contact> = self.contacts.iter().filter(|c| !self.blocks.blocked_by_me(&c.did)).collect();
+            people.sort_by_key(|c| Self::display(c).to_lowercase());
+            let mut list = column![].spacing(0);
+            for c in &people {
+                list = list.push(button(row![self.profile_avatar(t, &Self::display(c), &c.did, 44.0), semi(Self::display(c), 15.0, t.ink)].spacing(12).align_y(Alignment::Center).height(64))
+                    .padding([0, 8]).width(Fill).style(wash(t, None, Some(t.surface2), 14.0)).on_press(Msg::Privacy(PvMsg::PickPerson(c.did.clone()))));
+            }
+            if people.is_empty() {
+                list = list.push(container(tx("No one left to block.", 13.0, t.ink2)).padding([18, 16]).width(Fill).center_x(Fill));
+            }
+            let body = vec![para(t, "Pick a contact.".into()), container(iced::widget::scrollable(list).height(Length::Shrink)).max_height(320).into()];
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, "Block someone".into(), body, vec![pg_btn(t, Btn::Quiet, None, "Cancel", Some(Msg::Privacy(PvMsg::Pick(false))))]), Msg::Privacy(PvMsg::Pick(false))));
+        }
+        if let Some(did) = &self.pv.unblock {
+            let name = self.blocks.list.iter().find(|b| &b.did == did).map(|b| b.name.clone()).unwrap_or_default();
+            let first = name.split_whitespace().next().unwrap_or(&name).to_string();
+            let body = vec![lead(t, format!("{first}\u{2019}s app can reach you again. It removed you from their contacts when you blocked them, so you\u{2019}ll both need to add each other again before you can message or call.")),
+                para(t, "Your chat history is still here.".into())];
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, format!("Unblock {first}?"), body,
+                vec![pg_btn(t, Btn::Quiet, None, "Cancel", Some(Msg::Privacy(PvMsg::Unblock(None)))), pg_btn(t, Btn::Primary, None, "Unblock", Some(Msg::Privacy(PvMsg::UnblockGo)))]), Msg::Privacy(PvMsg::Unblock(None))));
+        }
+        None
+    }
+
+    /// settings/Notifications.svelte: "Alert me about" (Messages, Calls, Groups), then Permissions. On this
+    /// computer the system has no notification permission to ask for, and the microphone is "allowed" when one is
+    /// found; there is no battery row (the phone's).
+    fn notifications_page(&self, t: Tok) -> El<'_> {
+        use crate::app::Alerts;
+        let st = &self.settings;
+        let sw = |icon: &'static str, title: &'static str, sub: &'static str, on: bool, f: fn(bool) -> Alerts| -> RowFn<'_> {
+            Box::new(move |r| pf_act(t, Some(icon), title.into(), Some((sub.into(), t.ink2, false)), Some(pg_switch(t, on, Msg::Alerts(f(!on)))), None, false, r))
+        };
+        let alerts: Vec<RowFn> = vec![
+            sw("chat", "Messages", "From people, not groups", !st.no_notify_messages, Alerts::Messages),
+            sw("phone", "Calls", "Ringing when someone calls", !st.no_notify_calls, Alerts::Calls),
+            sw("users", "Groups", "Posts, invites and requests", !st.no_notify_groups, Alerts::Groups),
+        ];
+        let mic = !self.devices.0.is_empty();
+        let perm = |icon: &'static str, title: &'static str, ok: bool, no: &'static str| -> RowFn<'_> {
+            Box::new(move |r| pf_act(t, Some(icon), title.into(), Some((if ok { "Allowed".into() } else { no.into() }, if ok { t.ink2 } else { t.warn_ink }, !ok)), None, None, false, r))
+        };
+        let perms: Vec<RowFn> = vec![perm("bell", "Notifications", true, ""), perm("mic", "Microphone", mic, "No microphone found")];
+        let c = column![
+            pf_sec(12.0, column![pf_h2(t, "Alert me about"), pf_card(t, alerts),
+                pf_note(t, "A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification.")].into()),
+            section(t, "Permissions", perms, vec!["These are set by your system, not by Tinline. Tinline asks only when it needs one.".into()]),
+        ];
+        self.pf_scroll(t, c.into(), 40.0)
+    }
+
+    /// settings/Sounds.svelte: Quiet, then the call sound set (radios; picking one plays its ringtone once),
+    /// preview chips and a note that says whether previews can be heard.
+    fn sounds_page(&self, t: Tok) -> El<'_> {
+        use crate::app::Alerts;
+        use crate::cues::Palette;
+        let quiet = self.settings.quiet;
+        let quiet_row: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("mute"), "Quiet".into(), Some(("No sounds from Tinline: ringing, call tones, joins".into(), t.ink2, false)),
+            Some(pg_switch(t, quiet, Msg::Alerts(Alerts::Quiet(!quiet)))), None, false, r))];
+        let cur = Palette::from_key(&self.settings.palette);
+        let radios: Vec<RowFn> = Palette::ALL.into_iter().map(|p| -> RowFn<'_> {
+            Box::new(move |r| {
+                let (name, info) = p.label();
+                let on = p == cur;
+                // .radio: 22 round, 2px ring (--line, --accent when on), 12px accent dot.
+                let radio = container(container(Space::new()).width(if on { 12 } else { 0 }).height(if on { 12 } else { 0 }).style(ui::plain(t.accent, 6.0)))
+                    .width(22).height(22).center_x(22).center_y(22)
+                    .style(move |_: &iced::Theme| iced::widget::container::Style { border: Border { color: if on { t.accent } else { t.line }, width: 2.0, radius: 11.0.into() }, ..Default::default() });
+                button(row![radio, column![semi(name, 15.0, t.ink).line_height(lh(20.0)), tx(info, 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
+                        .spacing(14).align_y(Alignment::Center).height(48))
+                    .padding([8, 16]).height(64).width(Fill)
+                    .style(move |_, status| iced::widget::button::Style {
+                        background: matches!(status, iced::widget::button::Status::Hovered | iced::widget::button::Status::Pressed).then_some(iced::Background::Color(t.surface2)),
+                        border: Border { radius: r, ..Default::default() }, ..Default::default() })
+                    .on_press(Msg::Alerts(Alerts::Palette(p))).into()
+            })
+        }).collect();
+        let chip = |label: &'static str, kind: &'static str| -> El<'_> {
+            button(row![pgi("vol", 16.0, t.ink), semi(label, 13.0, t.ink).line_height(lh(18.0))].spacing(6).align_y(Alignment::Center))
+                .padding([0, 14]).height(32)
+                .style(move |_, status| iced::widget::button::Style {
+                    // tokens.css .t-chip: transparent, 1px --line, 16 radius.
+                    background: matches!(status, iced::widget::button::Status::Hovered).then_some(t.surface2.into()),
+                    border: Border { color: t.line, width: 1.0, radius: 16.0.into() }, ..Default::default() })
+                .on_press(Msg::Alerts(Alerts::Preview(kind))).into()
+        };
+        let chips = container(row![chip("Ringtone", "ring"), chip("Connected", "connected"), chip("Call ended", "ended")].spacing(8)).padding(Padding { top: 12.0, right: 4.0, bottom: 0.0, left: 4.0 });
+        let note = if quiet { "Quiet is on, so previews are silent." } else { "Tap a sound to hear it. The choice applies to the next call." };
+        let c = column![
+            pf_sec(16.0, column![pf_h2(t, "Quiet"), pf_card(t, quiet_row)].into()),
+            pf_sec(24.0, column![pf_h2(t, "Call sounds"), pf_card(t, radios), chips, pf_note(t, note)].into()),
+        ];
         self.pf_scroll(t, c.into(), 40.0)
     }
 

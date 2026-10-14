@@ -33,16 +33,26 @@ impl App {
                     CallState::Active => format!("{:02}:{:02}", secs / 60, secs % 60),
                     CallState::Ended { .. } => "Call ended".into(),
                 }};
+            let path = c.stats.as_ref().map(|s| if s.direct { "Direct" } else { "Relayed" });
             let sub = if reconnecting { format!("{:02}:{:02}", secs / 60, secs % 60) }
-                else if active { "End-to-end encrypted".into() } else { String::new() };
+                else if active { path.map_or("End-to-end encrypted".into(), |p| format!("End-to-end encrypted · {p}")) } else { String::new() };
+            // .min.gone: minimize and the bars only while the call is live (not incoming, not ended); the slots stay.
+            let live = !incoming && !matches!(c.state, CallState::Ended { .. });
+            let (level, _) = self.signal_now();
+            let info_label = if reconnecting { "About this call. Reconnecting.".to_string() }
+                else if level > 0 { format!("About this call. {} signal, {}.", crate::call_ui::SIGNAL_WORD[level as usize], path.unwrap_or("Relayed").to_lowercase()) }
+                else { "About this call".into() };
+            let bars = button(container(ui::signal_bars(self.fx.bar_alphas(), 24.0, t.ink)).center_x(44).center_y(44))
+                .padding(0).width(44).height(44).style(ui::button_style(t, Kind::Ghost, 999.0)).on_press(Msg::CallUi(Action::About));
+            let slot = |e: El<'static>| -> El<'static> { if live { e } else { Space::new().width(44).height(44).into() } };
             let head: El = container(row![
-                top_button(t, Icon::ChevronDown, "Minimize call", (!incoming).then_some(Msg::CallUi(Action::Minimize))),
+                slot(top_button(t, Icon::ChevronDown, "Minimize call", Some(Msg::CallUi(Action::Minimize)))),
                 container(ui::logo_live(28.0, t, self.mark_look())).center_x(Fill),
-                top_button(t, Icon::Info, "About this call", Some(Msg::CallUi(Action::About))),
+                slot(iced::widget::tooltip(bars, text(info_label).size(13), iced::widget::tooltip::Position::Bottom).into()),
             ].align_y(Alignment::Center)).height(48).padding([0, 20]).into();
             // Fixed line boxes; the timer, encryption and mute labels never alter sibling geometry.
             let who: El = column![
-                avatar(t, &c.info.peer_name, &c.info.peer_did, 128.0),
+                self.profile_avatar(t, &c.info.peer_name, &c.info.peer_did, 128.0),
                 Space::new().height(22),
                 container(semi(c.info.peer_name.clone(), 28.0, t.ink).wrapping(iced::widget::text::Wrapping::None))
                     .height(34).width(Fill).center_x(Fill).clip(true),
@@ -97,34 +107,65 @@ impl App {
         }).into()
     }
 
+    /// The bars' level (0 = ghosts) and whether the reconnecting wave runs (SignalBars in CallScreen).
+    pub(super) fn signal_now(&self) -> (u8, bool) {
+        let Some(c) = self.call.as_ref().filter(|c| c.state == CallState::Active) else { return (0, false) };
+        match c.stats.as_ref() {
+            Some(st) if st.reconnecting => (0, true),
+            Some(st) => (crate::call_ui::strength(st.rtt_ms, self.call_ui.loss.pct()), false),
+            None => (0, false),
+        }
+    }
+
+    /// CallScreen.svelte `.info`: encryption, then the connection row (bars + "Strong signal · Direct" and one
+    /// line, in a block that reserves title + four lines so the card never grows), then the numbers.
     fn call_about(&self, t: Tok) -> El<'_> {
         let c = self.call.as_ref().unwrap();
         let active = c.state == CallState::Active;
-        let text = if active {
-            format!("End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {}’s. When a relay helps connect you, it passes the call along but can’t listen.", c.info.peer_name)
-        } else {
-            format!("Connecting to {}. Once the call is connected, it is end-to-end encrypted.", c.info.peer_name)
-        };
-        let mut content = column![semi("About this call", 17.0, t.ink), tx(text, 13.0, t.ink2)].spacing(10);
+        let name = c.info.peer_name.clone();
+        let first = name.split_whitespace().next().unwrap_or(&name).to_string();
+        let p = |s: String| -> iced::widget::Text<'_> { tx(s, 13.0, t.ink2).line_height(lh(19.0)) };
+        let mut content = column![semi("About this call", 17.0, t.ink).line_height(lh(24.0)), Space::new().height(10)];
         if let Some(st) = c.stats.as_ref().filter(|_| active) {
-            let total = st.received + st.lost;
-            let loss = if total > 0 { st.lost as f64 * 100.0 / total as f64 } else { 0.0 };
-            let (_, quality) = quality(st.rtt_ms, loss);
-            content = content.push(tx(format!("{} · {quality}", if st.direct { "Direct" } else { "Relayed" }), 13.0, t.ink2));
-            // Retain the real device selectors, moved off the focus screen. No immediate-switch claim.
+            content = content.push(iced::widget::rich_text![
+                iced::widget::span::<(), iced::Font>("End-to-end encrypted.").font(ui::SANS_SEMI).color(t.ink),
+                iced::widget::span::<(), iced::Font>(format!(" Your voice is encrypted on this device and only decrypted on {name}’s.")).color(t.ink2),
+            ].size(13).line_height(lh(19.0)));
+            let (level, wave) = self.signal_now();
+            let title = if wave { "Reconnecting".to_string() }
+                else { format!("{} signal · {}", crate::call_ui::SIGNAL_WORD[level as usize], if st.direct { "Direct" } else { "Relayed" }) };
+            let mut line = if wave { format!("The connection dropped for a moment. Tinline is finding a way back to {first}.") }
+                else if st.direct { format!("Your call goes straight between your device and {first}’s.") }
+                else { "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen.".into() };
+            if !wave && level == 1 { line += &format!(" The line is weak, so {first}’s voice may break up."); }
+            let conn = row![
+                container(ui::signal_bars(self.fx.bar_alphas(), 22.0, t.ink)).padding(Padding { top: 1.0, ..Padding::ZERO }),
+                container(column![semi(title, 13.0, t.ink).line_height(lh(19.0)), p(line)]).width(Fill).height(95),
+            ].spacing(12);
+            content = content.push(Space::new().height(12)).push(conn);
+            if !wave {
+                content = content.push(container(tx(format!("{} ms round trip · {}% lost", st.rtt_ms, crate::call_ui::pct(self.call_ui.loss.pct())), 11.0, t.ink2))
+                    .padding(Padding { top: 6.0, left: 34.0, ..Padding::ZERO }));
+            }
+            // Desktop keeps the real device selectors here, off the focus screen. No immediate-switch claim.
             for (title, devices, selected, on) in [
                 ("Microphone", &self.devices.0, &self.settings.input, Msg::InDev as fn(String) -> Msg),
                 ("Speaker", &self.devices.1, &self.settings.output, Msg::OutDev as fn(String) -> Msg),
             ] {
                 let mut opts = vec![DEFAULT_LABEL.to_string()]; opts.extend(devices.iter().cloned());
-                content = content.push(column![tx(title, 13.0, t.ink2),
+                content = content.push(Space::new().height(12)).push(column![tx(title, 13.0, t.ink2),
                     pick_list(opts, Some(selected.clone().unwrap_or_else(|| DEFAULT_LABEL.into())), on)
                         .width(Fill).padding(12).text_size(14).style(ui::pick_style(t)).menu_style(ui::menu_style(t))].spacing(6));
             }
-            content = content.push(tx("Device changes apply from the next call.", 12.0, t.ink2));
+            content = content.push(Space::new().height(6)).push(tx("Device changes apply from the next call.", 12.0, t.ink2));
+        } else {
+            content = content.push(p(format!("Connecting to {name}. Once the call is connected, it is end-to-end encrypted.")));
         }
-        content = content.push(pill(t, Kind::Primary, None, "Got it", Some(Msg::CallUi(Action::CloseAbout))));
-        let card = crate::shaped::shaped(container(content).padding(20).width(420), [24.0; 4], t.raised);
+        // .b: full width, 44 tall, radius 22.
+        let got = button(container(semi("Got it", 15.0, t.on_primary)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+            .style(ui::button_style(t, Kind::Primary, 22.0)).on_press(Msg::CallUi(Action::CloseAbout));
+        content = content.push(Space::new().height(16)).push(got);
+        let card = crate::shaped::shaped(container(content).padding(Padding { top: 20.0, right: 20.0, bottom: 16.0, left: 20.0 }).width(420), [24.0; 4], t.raised);
         let card = ui::raised(card, t, ui::Depth::Sheet, ui::plain(Color::TRANSPARENT, 24.0));
         let scrim = button(Space::new().width(Fill).height(Fill)).padding(0)
             .style(move |_, _| button::Style { background: Some(ui::alpha(Color::BLACK, 0.24).into()), ..Default::default() })
@@ -132,21 +173,33 @@ impl App {
         stack![scrim, container(card).center_x(Fill).align_bottom(Fill).padding(24)].into()
     }
 
-    pub(super) fn call_strip_pane<'a>(&'a self, t: Tok, pane: El<'a>) -> El<'a> {
-        let Some(c) = self.call.as_ref().filter(|_| self.call_ui.minimized) else { return pane };
+    /// CallStrip.svelte: a minimised call, 44 px across the top of the list and detail columns (in flow, so the
+    /// app below moves down with it): accent, phone 18, the name 15/650, the timer (or status) 13 tabular at the end,
+    /// and End as a 32 px danger pill. Tapping the strip returns to the call.
+    pub(super) fn call_strip(&self, t: Tok) -> Option<El<'_>> {
+        let c = self.call.as_ref().filter(|_| self.call_ui.minimized)?;
         let secs = c.stats.as_ref().map_or(0, |s| s.secs);
         let status = if c.state == CallState::Active { format!("{:02}:{:02}", secs / 60, secs % 60) }
             else if c.state == CallState::Dialing { "Calling…".into() } else { "Ringing…".into() };
-        let open = button(row![ui::logo_live(24.0, t, self.mark_look()),
-            container(semi(c.info.peer_name.clone(), 14.0, t.ink).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true),
-            container(mono(status, 13.0, t.ink)).width(110)].spacing(8).align_y(Alignment::Center))
-            .padding([0, 16]).height(44).width(Fill).style(ui::button_style(t, Kind::Ghost, 0.0))
+        let open = button(row![crate::pg_icons::pgi("phone", 18.0, t.on_accent),
+                container(semi(c.info.peer_name.clone(), 15.0, t.on_accent).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true),
+                container(tx(status, 13.0, t.on_accent)).width(Length::Shrink)].spacing(10).align_y(Alignment::Center).height(44))
+            .padding([0, 12]).height(44).width(Fill).style(|_: &Theme, _| button::Style::default())
             .on_press(Msg::CallUi(Action::Restore));
-        let end = button(semi("End", 13.0, t.end)).height(44).padding([0, 16])
-            .style(ui::button_style(t, Kind::Ghost, 0.0)).on_press(Msg::Hangup);
-        let strip = container(row![open, end]).height(44).width(Fill).style(ui::plain(t.primary_c, 0.0));
-        let mut body = column![strip];
-        if let Some(w) = &self.waiting { body = body.push(self.waiting_banner(t, w)); }
-        body.push(pane).width(Fill).height(Fill).into()
+        let end = button(container(bold("End", 13.0, t.on_danger_btn)).center_y(32)).padding([0, 14]).height(32)
+            .style(move |_: &Theme, _| button::Style { background: Some(t.danger_btn.into()), border: Border { radius: 16.0.into(), ..Default::default() }, ..Default::default() })
+            .on_press(Msg::Hangup);
+        Some(container(row![open, end].spacing(8).align_y(Alignment::Center)).padding(Padding { top: 0.0, right: 8.0, bottom: 0.0, left: 4.0 })
+            .height(44).width(Fill).style(ui::plain(t.accent, 0.0)).into())
+    }
+
+    /// The desktop frame: navigation | (strip over (list | pane)); the waiting card under the strip.
+    pub(super) fn framed<'a>(&'a self, t: Tok, pane: El<'a>) -> El<'a> {
+        let mut right = column![];
+        if let Some(s) = self.call_strip(t) { right = right.push(s); }
+        if let Some(s) = self.gcall_strip(t) { right = right.push(s); }
+        if self.call_ui.minimized && let Some(w) = &self.waiting { right = right.push(self.waiting_banner(t, w)); }
+        right = right.push(row![self.list_pane(t), pane].height(Fill));
+        row![self.shell_navigation(t), right.width(Fill).height(Fill)].height(Fill).into()
     }
 }

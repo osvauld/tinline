@@ -198,17 +198,55 @@ pub struct Fx {
     pub clear: Tween,
     /// Settings/profile `Layer`: 0 closed .. 1 open (enter/exit).
     pub layer: Tween,
+    /// SignalBars.svelte: each bar's opacity (ghost .28, lit 1), 300 ms fades.
+    pub bars: [Tween; 4],
+    /// SignalBars.svelte `.wave`: reconnecting, a slow wave through the ghosts since this instant.
+    pub wave: Option<Instant>,
 }
 
 impl Default for Fx {
     fn default() -> Self {
-        Fx { now: Instant::now(), nav: Tween::settled(0.0), clear: Tween::settled(0.0), layer: Tween::settled(0.0) }
+        Fx { now: Instant::now(), nav: Tween::settled(0.0), clear: Tween::settled(0.0), layer: Tween::settled(0.0), bars: [Tween::settled(GHOST); 4], wave: None }
     }
 }
 
 impl Fx {
     pub fn running(&self) -> bool {
         let now = Instant::now();
-        [self.nav, self.clear, self.layer].iter().any(|t| t.running(now))
+        self.wave.is_some() || [self.nav, self.clear, self.layer].iter().chain(&self.bars).any(|t| t.running(now))
+    }
+
+    /// Light the first `level` bars (0 = all ghosts), or run the reconnecting wave. Fades 300 ms.
+    pub fn signal(&mut self, level: u8, wave: bool) {
+        let now = Instant::now();
+        let wave = wave && !reduced();
+        if wave != self.wave.is_some() {
+            self.now = now;
+            self.wave = wave.then_some(now);
+        }
+        for (i, b) in self.bars.iter_mut().enumerate() {
+            let to = if !wave && (i as u8) < level { 1.0 } else { GHOST };
+            if b.target() != to {
+                self.now = now;
+                b.go(to, 300.0, Ease::Out, now);
+            }
+        }
+    }
+
+    /// Each bar's opacity now. Wave: `sbw` keyframes 0/60/100 % ghost, 25 % .7; 1.6 s, bars 160 ms apart.
+    pub fn bar_alphas(&self) -> [f32; 4] {
+        let Some(start) = self.wave else { return self.bars.map(|b| b.at(self.now)) };
+        let el = self.now.saturating_duration_since(start).as_secs_f32() * 1000.0;
+        std::array::from_fn(|i| {
+            let t = el - i as f32 * 160.0;
+            if t < 0.0 { return GHOST; }
+            let p = (t % 1600.0) / 1600.0;
+            if p < 0.25 { GHOST + (0.7 - GHOST) * Ease::InOut.apply(p / 0.25) }
+            else if p < 0.6 { 0.7 + (GHOST - 0.7) * Ease::InOut.apply((p - 0.25) / 0.35) }
+            else { GHOST }
+        })
     }
 }
+
+/// SignalBars.svelte ghost: unlit bars stay at 28 % so the glyph never changes size.
+pub const GHOST: f32 = 0.28;

@@ -32,10 +32,50 @@ const PLUCK_A: f64 = 0.32;
 const PLUCK_SWING_DEG: f64 = 150.0;
 const TWANG_F: f64 = 7.0;
 const TWANG_TAU: f64 = 0.11;
-const HIT_OVER: f64 = 1.1;
 const CONNECT_HZ: f64 = 3.0;
 const END_ZETA: f64 = 1.6;
 const END_MS: f64 = 260.0;
+/// Offset of the `line` cue's second note (s, cues.rs `LINE`): the two tugs land this far apart.
+pub const LINE_GAP_S: f64 = 0.12;
+
+/// Per-use spring parameters of the one model (tinmark.js DEF and its overrides, MARK-MATH.md
+/// "Connect", 2026-10-13). The defaults are the everyday pull (calls, the status mark): the pull
+/// arrives with speed (`hit_over`), the cans bounce back off the tight string (`recoil` = restitution),
+/// and an undamped `settle_hz` pull carries them out again until a bounce is below `recoil_min`
+/// (grid units/s). `tugs` > 0 instead tugs exactly that many times, each a full twang, then rests.
+/// `windup` (grid units over `windup_ms`) gathers the cans in before the pull; off by default.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Spring {
+    pub hit_over: f64,
+    pub recoil: f64,
+    pub recoil_min: f64,
+    pub settle_hz: f64,
+    pub windup: f64,
+    pub windup_ms: f64,
+    pub tugs: u32,
+}
+
+impl Default for Spring {
+    fn default() -> Self {
+        Spring { hit_over: 1.6, recoil: 0.5, recoil_min: 1.2, settle_hz: 2.0, windup: 0.0, windup_ms: 180.0, tugs: 0 }
+    }
+}
+
+impl Spring {
+    /// The old dead stop (recoil 0): the string goes tight and the cans stay put.
+    #[allow(dead_code)]
+    pub fn dead_stop() -> Self {
+        Spring { hit_over: 1.1, recoil: 0.0, ..Spring::default() }
+    }
+
+    /// springs.ts LINE_SPRING, the "line opens" pull (sign-up Done, the first contact on the empty
+    /// state): two tugs in the rhythm of the `line` cue, so the gap is read from the cue itself.
+    pub fn line() -> Self {
+        let gap = LINE_GAP_S;
+        Spring { tugs: 2, recoil: 0.95, recoil_min: 0.0, settle_hz: 1.0 / (2.0 * gap), ..Spring::default() }
+    }
+}
+
 /// Fixed physics step (tinmark.js: ceil(dt / (1/480))).
 const SUBSTEP: f64 = 1.0 / 480.0;
 /// In-app colours per theme (playground: --accent / --gold in light and dark).
@@ -176,6 +216,7 @@ pub struct Params {
     /// Sway period (s) and amplitude (degrees).
     period: f64,
     amp: f64,
+    spring: Spring,
 }
 
 impl Params {
@@ -224,6 +265,7 @@ impl Params {
             dt: ((ell - w0) / 2.0).max(0.0),
             period: SWAY_T,
             amp: PHI0_DEG,
+            spring: Spring::default(),
         }
     }
 }
@@ -252,6 +294,14 @@ pub struct Model {
     /// Twang clock (< 0: none) and amplitude (0: default).
     tw: f64,
     tw_a: f64,
+    /// Tugs since the last connect, the speed of the first one, and the windup time left (s).
+    tugs: u32,
+    v0: f64,
+    wind: f64,
+    /// Every tug so far (the widget reports each new one, e.g. to play the `line` cue on the first).
+    pub tug_count: u64,
+    /// The string has gone tight since the last slack (the sign-up line colour warms on this).
+    pub tight: bool,
     /// Reduced motion: every state change jumps to its end pose.
     pub reduced: bool,
 }
@@ -266,7 +316,12 @@ pub struct Pose {
 
 impl Model {
     pub fn new(p: Params) -> Model {
-        Model { p, d: 0.0, v: 0.0, phi: 0.0, phv: 0.0, ring: false, ring_phase: 0.0, target: Target::Slack, hit: false, tw: -1.0, tw_a: 0.0, reduced: false }
+        Model { p, d: 0.0, v: 0.0, phi: 0.0, phv: 0.0, ring: false, ring_phase: 0.0, target: Target::Slack, hit: false, tw: -1.0, tw_a: 0.0, tugs: 0, v0: 0.0, wind: 0.0, tug_count: 0, tight: false, reduced: false }
+    }
+
+    /// Spring parameters for this use (Done's two tugs, the default pull for calls).
+    pub fn set_spring(&mut self, s: Spring) {
+        self.p.spring = s;
     }
 
     pub fn params(&self) -> &Params {
@@ -289,11 +344,19 @@ impl Model {
         self.tw = -1.0;
         self.target = if taut { Target::Taut } else { Target::Slack };
         self.hit = taut && self.p.dt > 0.0;
+        self.wind = 0.0;
+        self.tight = taut;
     }
 
+    /// Reduced-motion jump. A fresh taut still counts as the first tug, so the colour warms and
+    /// the cue plays.
     fn snap(&mut self, taut: bool) {
+        let fresh = taut && !self.hit;
         self.set(taut);
         self.hit = taut;
+        if fresh {
+            self.tug_count += 1;
+        }
     }
 
     pub fn ring(&mut self, on: bool) {
@@ -319,6 +382,10 @@ impl Model {
         self.ring = false;
         self.target = Target::Taut;
         self.hit = self.d >= self.p.dt && self.hit;
+        self.v0 = 0.0;
+        self.tugs = 0;
+        let sp = self.p.spring;
+        self.wind = if sp.windup > 0.0 && self.d < 0.01 { sp.windup_ms / 1000.0 } else { 0.0 };
     }
 
     pub fn end(&mut self) {
@@ -329,6 +396,8 @@ impl Model {
         self.ring = false;
         self.target = Target::Slack;
         self.hit = false;
+        self.tight = false;
+        self.wind = 0.0;
         self.tw = -1.0;
         if self.phi.abs() < rad(1.0) {
             self.phv += rad(242.0); // a ~6 degree swing as the slack returns
@@ -373,21 +442,64 @@ impl Model {
     }
 
     fn step_once(&mut self, h: f64) {
-        let wc = 2.0 * std::f64::consts::PI * CONNECT_HZ;
-        let (z, w, tgt) = if self.target == Target::Taut { (1.0, wc, self.p.dt * HIT_OVER) } else { (END_ZETA, self.end_omega(), 0.0) };
+        let tau = 2.0 * std::f64::consts::PI;
+        let wc = tau * CONNECT_HZ;
+        let sp = self.p.spring;
+        let (z, w, tgt) = if self.wind > 0.0 {
+            // anticipation: the cans gather in before the pull
+            self.wind -= h;
+            (1.0, tau / (sp.windup_ms / 1000.0) * 1.2, -sp.windup)
+        } else if self.target == Target::Taut && self.hit {
+            // after the tug: the string pulls the recoiling cans back out (undamped)
+            (0.0, tau * sp.settle_hz, self.p.dt)
+        } else if self.target == Target::Taut {
+            (1.0, wc, self.p.dt * sp.hit_over)
+        } else {
+            (END_ZETA, self.end_omega(), 0.0)
+        };
         let a = -2.0 * z * w * self.v - w * w * (self.d - tgt);
         self.v += a * h;
         self.d += self.v * h;
-        if self.target == Target::Taut && self.d >= self.p.dt {
+        if self.target == Target::Taut && self.d >= self.p.dt && self.v <= 0.0 {
+            // Resting at (or recoiling from) taut: not a tug. (tinmark.js counts this as one and
+            // re-plucks every frame once `tugs` have run out, so the twang never ends.)
             self.d = self.p.dt;
-            self.v = 0.0;
+        } else if self.target == Target::Taut && self.d >= self.p.dt {
+            // The string goes tight and tugs the cans back: they recoil (velocity reflected,
+            // `recoil` = restitution) and each smaller bounce re-plucks the string, until the bounce
+            // is below `recoil_min` and they rest at DT. recoil 0 = the old dead stop.
+            let v = self.v;
+            self.d = self.p.dt;
+            self.tugs += 1;
+            let last = sp.tugs > 0 && self.tugs >= sp.tugs;
+            self.v = if !last && v * sp.recoil >= sp.recoil_min && sp.recoil > 0.0 { -v * sp.recoil } else { 0.0 };
             if !self.hit {
                 self.hit = true;
                 self.tw = 0.0;
                 self.tw_a = 0.0;
+            } else if sp.tugs > 0 {
+                self.tw = 0.0;
+                self.tw_a = TWANG_A * 0.8;
+            } else if v > sp.recoil_min {
+                self.tw = 0.0;
+                let v0 = if self.v0 > 0.0 { self.v0 } else { v };
+                self.tw_a = TWANG_A.min(TWANG_A * v / v0) * 0.6;
+            }
+            if v > 0.0 {
+                self.tug_count += 1;
+                self.tight = true;
+            }
+            if self.v0 == 0.0 {
+                self.v0 = v;
             }
         }
-        if self.d < 0.0 {
+        if self.d < -sp.windup {
+            self.d = -sp.windup;
+            if self.v < 0.0 {
+                self.v = 0.0;
+            }
+        }
+        if self.d < 0.0 && self.wind <= 0.0 && self.target != Target::Taut {
             self.d = 0.0;
             if self.v < 0.0 {
                 self.v = 0.0;
@@ -419,7 +531,10 @@ impl Model {
         if self.ring || self.tw >= 0.0 {
             return true;
         }
-        let moving = if self.target == Target::Taut { self.d < self.p.dt } else { self.d >= 0.01 };
+        if self.wind > 0.0 {
+            return true;
+        }
+        let moving = if self.target == Target::Taut { self.d < self.p.dt || self.v != 0.0 } else { self.d >= 0.01 };
         moving || self.phi.abs() > rad(0.2) || self.phv.abs() > rad(2.0)
     }
 
@@ -533,8 +648,14 @@ fn skc(c: Color) -> sk::Paint<'static> {
 
 /// The mark as straight-alpha RGBA, `px` x `px` device pixels for a `size` logical px box.
 fn rasterise(px: u32, p: &Params, pose: Pose, can: Color, string: Color, mouth: Color) -> iced::widget::image::Handle {
-    let blank = || iced::widget::image::Handle::from_rgba(1, 1, vec![0, 0, 0, 0]);
-    let Some(mut pm) = sk::Pixmap::new(px, px) else { return blank() };
+    match pixels(px, p, pose, can, string, mouth) {
+        Some(out) => iced::widget::image::Handle::from_rgba(px, px, out),
+        None => iced::widget::image::Handle::from_rgba(1, 1, vec![0, 0, 0, 0]),
+    }
+}
+
+fn pixels(px: u32, p: &Params, pose: Pose, can: Color, string: Color, mouth: Color) -> Option<Vec<u8>> {
+    let mut pm = sk::Pixmap::new(px, px)?;
     let k = px as f64 / p.vb.2;
     let cx = p.c - pose.delta;
     let id = sk::Transform::identity();
@@ -568,7 +689,7 @@ fn rasterise(px: u32, p: &Params, pose: Pose, can: Color, string: Color, mouth: 
         let c = p.demultiply();
         out.extend_from_slice(&[c.red(), c.green(), c.blue(), c.alpha()]);
     }
-    iced::widget::image::Handle::from_rgba(px, px, out)
+    Some(out)
 }
 
 type Key = (u32, u32, [u64; 3], [u32; 12]);
@@ -610,6 +731,11 @@ pub struct Look {
     pub pluck: u64,
     /// No connection: the whole mark at 45 % (the string in the muted ink).
     pub dim: bool,
+    /// Spring parameters for this use (default: the everyday pull).
+    pub spring: Spring,
+    /// Sign-up and first-screen marks (Mark.svelte `lineColor`): a slack line is a faded gold
+    /// (gold 55 % into --line) that warms to full gold on the first tug, over --dur-switch.
+    pub line_color: bool,
 }
 
 /// True when the user asked the system for less motion (env `TINLINE_REDUCE_MOTION`, GNOME
@@ -630,6 +756,7 @@ pub fn reduced_motion() -> bool {
 
 fn model_for(size: f32, look: Look) -> Model {
     let mut m = Model::new(Params::tier(size));
+    m.set_spring(look.spring);
     m.reduced = reduced_motion();
     if let Some((t, a)) = look.sway {
         m.set_sway(t, a);
@@ -641,11 +768,18 @@ fn model_for(size: f32, look: Look) -> Model {
     m
 }
 
-struct Prog {
+/// --dur-switch: the line colour's warm-up.
+const WARM_S: f64 = 0.12;
+
+struct Prog<M> {
     size: f32,
     look: Look,
     can: Color,
     string: Color,
+    /// The faded slack colour of a `line_color` mark.
+    slack: Color,
+    /// Published on every tug of the string going tight (sign-up Done plays the `line` cue on it).
+    on_tug: Option<M>,
 }
 
 #[derive(Default)]
@@ -653,9 +787,13 @@ struct Live {
     model: Option<Model>,
     look: Look,
     last: Option<Instant>,
+    /// Tugs already reported.
+    told: u64,
+    /// Line colour warm-up: 0 slack colour .. 1 full gold.
+    warm: f64,
 }
 
-impl<M> canvas::Program<M> for Prog {
+impl<M: Clone> canvas::Program<M> for Prog<M> {
     type State = Live;
 
     fn update(&self, st: &mut Live, event: &iced::Event, _: Rectangle, _: mouse::Cursor) -> Option<canvas::Action<M>> {
@@ -664,7 +802,11 @@ impl<M> canvas::Program<M> for Prog {
         let mut woke = false;
         match st.model.as_mut() {
             None => {
-                st.model = Some(model_for(self.size, look));
+                let m = model_for(self.size, look);
+                // A mark that mounts already taut shows taut, without replaying the tug or the cue.
+                st.told = m.tug_count;
+                st.warm = if m.tight { 1.0 } else { 0.0 };
+                st.model = Some(m);
                 st.look = look;
                 woke = look.state == MarkState::Ringing;
             }
@@ -672,6 +814,9 @@ impl<M> canvas::Program<M> for Prog {
                 let prev = st.look;
                 if let Some((t, a)) = look.sway {
                     m.set_sway(t, a);
+                }
+                if look.spring != prev.spring {
+                    m.set_spring(look.spring);
                 }
                 if look.state != prev.state {
                     match look.state {
@@ -697,14 +842,31 @@ impl<M> canvas::Program<M> for Prog {
             _ => 0.0,
         };
         st.last = Some(*now);
+        let warming = |st: &Live| st.warm > 0.0 && st.warm < 1.0;
+        let mut more = false;
         if m.active() || woke {
-            if m.advance(dt) {
-                return Some(canvas::Action::request_redraw());
-            }
-        } else {
+            more = m.advance(dt);
+        }
+        let m = st.model.as_ref()?;
+        let tight = m.tight;
+        let new_tug = m.tug_count > st.told;
+        st.told = m.tug_count;
+        // The colour warms from the first tug (reduced motion: the warm-up is a cut) and cools
+        // back to the slack colour at once when the line goes slack again.
+        if !tight {
+            st.warm = 0.0;
+        } else if st.warm < 1.0 {
+            st.warm = if m.reduced { 1.0 } else { (st.warm + dt / WARM_S).max(1e-6).min(1.0) };
+        }
+        more |= warming(st);
+        if !more && !warming(st) {
             st.last = None;
         }
-        None
+        match (new_tug, &self.on_tug) {
+            (true, Some(msg)) => Some(canvas::Action::publish(msg.clone())),
+            _ if more => Some(canvas::Action::request_redraw()),
+            _ => None,
+        }
     }
 
     fn draw(&self, st: &Live, renderer: &Renderer, _: &Theme, bounds: Rectangle, _: mouse::Cursor) -> Vec<canvas::Geometry> {
@@ -718,7 +880,8 @@ impl<M> canvas::Program<M> for Prog {
             }
         };
         let fade = |c: Color| if self.look.dim { Color { a: c.a * 0.45, ..c } } else { c };
-        let (can, string, mouth) = (fade(self.can), fade(self.string), fade(MOUTH));
+        let string = if self.look.line_color { crate::ui::mix(self.slack, self.string, ease_out(st.warm) as f32) } else { self.string };
+        let (can, string, mouth) = (fade(self.can), fade(string), fade(MOUTH));
         // Device-pixel size and origin: exact edge pixels, no resampling.
         let sc = crate::ui::scale();
         let px = (self.size * sc).round().max(1.0) as u32;
@@ -735,9 +898,18 @@ impl<M> canvas::Program<M> for Prog {
     }
 }
 
+fn ease_out(t: f64) -> f64 {
+    1.0 - (1.0 - t).powi(3)
+}
+
 /// The mark at `size` logical px, in the given colours. Static unless `look` changes; animates itself.
-pub fn mark<'a, M: 'a>(size: f32, can: Color, string: Color, look: Look) -> Element<'a, M> {
-    Canvas::new(Prog { size, look, can, string }).width(Length::Fixed(size)).height(Length::Fixed(size)).into()
+pub fn mark<'a, M: Clone + 'a>(size: f32, can: Color, string: Color, look: Look) -> Element<'a, M> {
+    mark_with(size, can, string, string, look, None)
+}
+
+/// [`mark`] with the faded slack colour of a `line_color` mark and a message for each tug.
+pub fn mark_with<'a, M: Clone + 'a>(size: f32, can: Color, string: Color, slack: Color, look: Look, on_tug: Option<M>) -> Element<'a, M> {
+    Canvas::new(Prog { size, look, can, string, slack, on_tug }).width(Length::Fixed(size)).height(Length::Fixed(size)).into()
 }
 
 #[cfg(test)]
@@ -776,21 +948,75 @@ mod tests {
         }
     }
 
-    #[test]
-    fn connect_pulls_taut_once_and_settles() {
-        let mut m = Model::new(Params::tier(48.0));
+    /// Drives a connect at 60 fps; returns (tug times in s, settle time in s).
+    fn pull(m: &mut Model) -> (Vec<f64>, f64) {
         m.connect();
-        let mut hit_twang = false;
-        let mut t = 0.0;
-        while m.advance(1.0 / 60.0) {
-            hit_twang |= m.tw >= 0.0;
-            t += 1.0 / 60.0;
+        let (mut t, mut tugs, mut seen) = (0.0, Vec::new(), m.tug_count);
+        while m.advance(1.0 / 600.0) {
+            t += 1.0 / 600.0;
+            if m.tug_count > seen {
+                seen = m.tug_count;
+                tugs.push(t);
+            }
             assert!(t < 3.0, "still moving after 3 s");
         }
-        assert!(hit_twang, "the string twangs when it goes tight");
+        (tugs, t)
+    }
+
+    #[test]
+    fn connect_pulls_taut_once_and_settles() {
+        // The everyday pull (MARK-MATH 2026-10-13): arrives with speed, recoils off the tight
+        // string, bounces a few times smaller each time, and rests taut.
+        let mut m = Model::new(Params::tier(96.0));
+        let (tugs, settled) = pull(&mut m);
+        assert!(tugs.len() >= 2, "the cans bounce back off the string at least once, got {}", tugs.len());
+        assert!(settled < 1.2, "settles about 770 ms after connect, got {settled:.3}");
         assert_eq!(m.d, m.p.dt);
         assert!(m.pose().sag.abs() < 1e-6, "taut string has no sag");
         assert!(!m.active());
+        // recoil 0 restores the old dead stop: one tug, never pulled back in.
+        let mut dead = Model::new(Params::tier(96.0));
+        dead.set_spring(Spring::dead_stop());
+        let (tugs, _) = pull(&mut dead);
+        assert_eq!(tugs.len(), 1);
+        assert_eq!(dead.d, dead.p.dt);
+    }
+
+    #[test]
+    fn line_spring_tugs_twice_on_the_cue_gap_and_rests() {
+        let mut m = Model::new(Params::tier(96.0));
+        m.set_spring(Spring::line());
+        let mut give: f64 = 0.0;
+        m.connect();
+        let (mut t, mut tugs, mut seen) = (0.0, Vec::new(), 0);
+        while m.advance(1.0 / 600.0) {
+            t += 1.0 / 600.0;
+            if m.tug_count > seen {
+                seen = m.tug_count;
+                tugs.push(t);
+            }
+            if tugs.len() == 1 {
+                give = give.max(m.p.dt - m.d);
+            }
+            assert!(t < 3.0);
+        }
+        assert_eq!(tugs.len(), 2, "exactly two tugs");
+        let gap = tugs[1] - tugs[0];
+        assert!((0.10..0.16).contains(&gap), "the tugs land ~130 ms apart (cue gap 120 ms), got {gap:.3}");
+        // about 1.6 px at 96 between the tugs (grid units x 4 px)
+        let px = give * 96.0 / 24.0;
+        assert!((1.0..2.4).contains(&px), "the line gives about 1.6 px, got {px:.2}");
+        assert!(m.tight && m.d == m.p.dt && !m.active());
+    }
+
+    #[test]
+    fn reduced_motion_line_still_counts_one_tug() {
+        let mut m = Model::new(Params::tier(96.0));
+        m.set_spring(Spring::line());
+        m.reduced = true;
+        m.connect();
+        assert_eq!(m.tug_count, 1, "the colour warms and the cue plays");
+        assert!(m.tight && m.d == m.p.dt);
     }
 
     #[test]
@@ -900,10 +1126,10 @@ mod tests {
         }
         /// One frame; true when the widget asked for another one.
         fn frame(&mut self, look: Look) -> bool {
-            let prog = Prog { size: self.size, look, can: Color::BLACK, string: Color::BLACK };
+            let prog = Prog::<()> { size: self.size, look, can: Color::BLACK, string: Color::BLACK, slack: Color::BLACK, on_tug: None };
             self.t += std::time::Duration::from_millis(16);
             let ev = iced::Event::Window(window::Event::RedrawRequested(self.t));
-            let a = <Prog as canvas::Program<()>>::update(&prog, &mut self.st, &ev, Rectangle::with_size(iced::Size::new(self.size, self.size)), mouse::Cursor::Unavailable);
+            let a = <Prog<()> as canvas::Program<()>>::update(&prog, &mut self.st, &ev, Rectangle::with_size(iced::Size::new(self.size, self.size)), mouse::Cursor::Unavailable);
             a.is_some()
         }
         fn model(&self) -> &Model {
@@ -930,17 +1156,15 @@ mod tests {
         let slack = Look::default();
         assert!(!r.frame(slack), "a still mark asks for nothing");
         let taut = Look { state: MarkState::Taut, ..Look::default() };
-        let (mut twangs, mut frames, mut was) = (0, 0, false);
+        let mut frames = 0;
+        let mut twanged = false;
         while r.frame(taut) {
             frames += 1;
-            let now = r.model().tw >= 0.0;
-            if now && !was {
-                twangs += 1;
-            }
-            was = now;
+            twanged |= r.model().tw >= 0.0;
             assert!(frames < 400);
         }
-        assert_eq!(twangs, 1, "one twang when the string goes tight");
+        assert!(twanged, "the string twangs when it goes tight");
+        assert!(r.model().hit && r.model().tug_count >= 1);
         assert_eq!(r.model().pose().delta, r.model().params().dt);
         assert!(!r.frame(taut), "still again: no more frames");
         // send: pluck counter changes -> a small twang, then quiet
@@ -958,6 +1182,31 @@ mod tests {
         assert!(!s.frame(slack));
         assert!(s.frame(Look { pluck: 1, ..slack }));
         assert!(s.model().phv.abs() > 0.0);
+    }
+
+    #[test]
+    fn widget_reports_each_tug_and_warms_the_line_but_not_when_mounted_taut() {
+        let drive = |start: MarkState, end: MarkState| -> (usize, f64) {
+            let mut st = Live::default();
+            let mut t = Instant::now();
+            let mut tugs = 0;
+            let look = |state| Look { state, spring: Spring::line(), line_color: true, ..Look::default() };
+            for i in 0..200 {
+                let prog = Prog::<u8> { size: 96.0, look: look(if i == 0 { start } else { end }), can: Color::BLACK, string: Color::BLACK, slack: Color::WHITE, on_tug: Some(7) };
+                t += std::time::Duration::from_millis(16);
+                let ev = iced::Event::Window(window::Event::RedrawRequested(t));
+                if let Some(a) = <Prog<u8> as canvas::Program<u8>>::update(&prog, &mut st, &ev, Rectangle::with_size(iced::Size::new(96.0, 96.0)), mouse::Cursor::Unavailable) {
+                    if a.into_inner().0 == Some(7) {
+                        tugs += 1;
+                    }
+                }
+            }
+            (tugs, st.warm)
+        };
+        let (tugs, warm) = drive(MarkState::Slack, MarkState::Taut);
+        assert_eq!((tugs, warm), (2, 1.0), "two tugs reported, the line fully warm");
+        let (tugs, warm) = drive(MarkState::Taut, MarkState::Taut);
+        assert_eq!((tugs, warm), (0, 1.0), "mounted taut: no replayed tug or cue");
     }
 
     #[test]

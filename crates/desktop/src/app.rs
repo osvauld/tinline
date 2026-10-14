@@ -13,6 +13,10 @@ mod demo_pg;
 #[path = "chat.rs"]
 mod chat;
 
+#[path = "signup.rs"]
+mod signup;
+use signup::{AddUi, Gate, Gs};
+
 #[path = "link.rs"]
 mod link;
 
@@ -21,6 +25,8 @@ mod groups;
 use groups::{GroupsUi, Gm};
 #[path = "group_live.rs"]
 mod group_live;
+#[path = "gcall.rs"]
+mod gcall;
 use group_live::{GroupsLive, Lm};
 #[path = "vcall.rs"]
 mod vcall;
@@ -85,6 +91,34 @@ struct Settings {
     /// Calls are audio only (no video offered or taken).
     #[serde(default)]
     no_video: bool,
+    /// Appearance: None follows the system; Some(dark) is an explicit choice (the sign-up switch).
+    #[serde(default)]
+    appearance: Option<bool>,
+    /// Settings > Sounds: Quiet, and the call sound set ("classic", "slack", "triad").
+    #[serde(default)]
+    quiet: bool,
+    #[serde(default)]
+    palette: String,
+    /// Settings > Notifications, stored as what is switched off (so a missing file means all on).
+    #[serde(default)]
+    no_notify_messages: bool,
+    #[serde(default)]
+    no_notify_calls: bool,
+    #[serde(default)]
+    no_notify_groups: bool,
+}
+
+impl Settings {
+    /// Hands the sound and alert choices to the places that read them (audio threads, notify sites).
+    fn apply_alerts(&self) {
+        use std::sync::atomic::Ordering::Relaxed;
+        crate::audio::QUIET.store(self.quiet, Relaxed);
+        crate::audio::RING_CALLS.store(!self.no_notify_calls, Relaxed);
+        let p = crate::cues::Palette::from_key(&self.palette);
+        crate::audio::PALETTE.store(crate::cues::Palette::ALL.iter().position(|x| *x == p).unwrap_or(0) as u8, Relaxed);
+        NOTIFY_MESSAGES.store(!self.no_notify_messages, Relaxed);
+        NOTIFY_GROUPS.store(!self.no_notify_groups, Relaxed);
+    }
 }
 
 /// Onboarding in progress between creating the identity and the first Home.
@@ -129,9 +163,41 @@ enum Detail {
 /// Progress of adding a contact from a pasted card.
 enum AddPhase {
     Idle,
-    Connecting,
+    /// Dialling them since then ("Still trying…" after 2.5 s).
+    Connecting(Instant),
+    /// Their device holds it as a request: "Request sent. Your line opens when Tara accepts."
+    Requested,
     Added(Contact),
-    Failed(String),
+    Failed(Reach),
+}
+
+/// Why an add didn't work, from the core's `AddError` kind (never its display text); the copy
+/// is SIGNUP-HANDOFF.md § 6f.
+#[derive(Debug, Clone, PartialEq)]
+enum Reach {
+    /// `AddError::Unreachable`: the dial or the answer timed out (their device is off or offline).
+    Timeout,
+    /// `AddError::Refused`: their device turned the code away (reset, replaced and expired, or used by us).
+    Refused,
+    /// `AddError::Blocked`: they block us.
+    Blocked,
+    /// This device is offline (checked before dialling, or `AddError::Offline`).
+    Offline,
+    /// Anything else the core reports; shown with the Timeout line (see SCREENS-PORT-STATUS.md).
+    Other(String),
+}
+
+impl Reach {
+    fn of(e: p2pcore::AddError) -> Reach {
+        use p2pcore::AddError as A;
+        match e {
+            A::Unreachable => Reach::Timeout,
+            A::Refused => Reach::Refused,
+            A::Blocked => Reach::Blocked,
+            A::Offline => Reach::Offline,
+            e => Reach::Other(e.to_string()),
+        }
+    }
 }
 
 /// A finished call, shown for a few seconds.
@@ -163,6 +229,8 @@ struct App {
     dark: bool,
     /// A test can pin the scheme; otherwise the app follows the OS.
     forced_dark: Option<bool>,
+    /// What the system asks for (the last `Msg::Theme`), for Settings › Appearance › "Match my computer".
+    sys_dark: bool,
     /// Test-hooks only: fake data for screenshots; the node is not asked for it.
     demo: bool,
     sel: Option<String>,
@@ -231,13 +299,23 @@ struct App {
     mark_pluck: u64,
     status: NodeStatus,
     contacts: Vec<Contact>,
+    /// Requests made with our code, waiting for our answer (Contacts › "Waiting for you").
+    requests_in: Vec<p2pcore::ContactRequest>,
+    /// Requests we sent, waiting for theirs (Contacts › "Waiting for them", the empty state).
+    requests_out: Vec<p2pcore::ContactRequest>,
+    /// "Not now" on a Contacts card: hidden for this session (the request stays in the core).
+    hidden_requests: std::collections::HashSet<String>,
     ticket: Option<String>,
+    /// When our code stops working (unix seconds): "It works until Mon 19 Oct."
+    ticket_exp: Option<u64>,
     /// When "Copy card" was pressed; the button reads "Copied" for a moment after.
     copied_at: Option<Instant>,
     qr: Option<Qr>,
     add_in: String,
     call: Option<CallView>,
     call_ui: crate::call_ui::State,
+    /// The call was placed with the video button: turn the camera on when the call finds one.
+    video_intent: bool,
     /// A second incoming call, shown as a banner over the call; the call carries on until the user chooses.
     waiting: Option<CallInfo>,
     /// "End & answer" was chosen: this call takes over when the current one ends.
@@ -262,6 +340,12 @@ struct App {
     linked: Vec<p2pcore::LinkedDevice>,
     /// Rename in progress: device key and the text so far.
     dev_rename: Option<(String, String)>,
+    /// Devices.svelte: the device whose actions dialog is open.
+    dev_menu: Option<String>,
+    /// The group call on this computer, and the calls running in my groups.
+    gcall: gcall::State,
+    /// Privacy pages (privacy/*.svelte): their dialogs and fields.
+    pv: Pv,
     /// Device the user is being asked to confirm unlinking.
     unlink_ask: Option<String>,
     /// This computer joined an account by linking and has not saved it yet.
@@ -277,6 +361,10 @@ struct App {
     /// entry for them, U20), as contact-shaped rows for the chat screens; never real contacts.
     kept: Vec<Contact>,
     video: VideoUi,
+    /// Sign-up (the stepped gate).
+    gate: Gate,
+    /// The add-contact dialog's tab, hint and found card.
+    add_ui: AddUi,
 }
 
 /// Where a click on a notification should lead.
@@ -298,6 +386,8 @@ enum Msg {
     CloseReq(window::Id),
     Closed(window::Id),
     Theme(theme::Mode),
+    /// Settings › Appearance: None follows the system, Some(dark) is a choice.
+    Appearance(Option<bool>),
     Quit,
     Exit,
     NameChanged(String),
@@ -353,12 +443,18 @@ enum Msg {
     CopyPhrase,
     PhraseSaved,
     Started(Result<(), String>),
-    Ticket(Result<String, String>),
+    Ticket(Result<p2pcore::MyCode, String>),
     CopyTicket,
     AddChanged(String),
     AddPressed,
-    Added(Result<Contact, String>),
+    Added(Result<p2pcore::AddOutcome, Reach>),
+    /// Accept on a contact request answered (the DID, the new contact).
+    RequestAnswered(String, Result<Contact, String>),
     CallPressed(String),
+    /// The conversation's video button: dial, and turn the camera on once the call has video.
+    DialVideo(String),
+    /// Settings > Notifications / Sounds.
+    Alerts(Alerts),
     CallStarted(Result<CallInfo, String>),
     CallUi(crate::call_ui::Action),
     /// Block a contact (after the confirmation).
@@ -394,6 +490,8 @@ enum Msg {
     AddAlias(String),
     SaveAlias,
     CloseEnded,
+    /// The ended call's hold ran out (only closes the ended view it was started for).
+    EndedHoldDone(Option<Instant>),
     CallAgain(String),
     CopySafety,
     NameEdit(String),
@@ -427,6 +525,10 @@ enum Msg {
     LinkSecureGo,
     LinkSyncDone,
     DevRenameStart(String),
+    /// Open (Some) or close a device's actions dialog.
+    DevMenu(Option<String>),
+    Privacy(PvMsg),
+    GCall(gcall::Gm),
     DevRenameIn(String),
     DevRenameSave,
     DevRenameCancel,
@@ -442,6 +544,7 @@ enum Msg {
     Groups(Gm),
     Live(Lm),
     Video(Vm),
+    Gate(Gs),
 }
 
 /// `Ev` carries non-Clone data from the core; Debug/Clone for the message type go through here.
@@ -491,6 +594,52 @@ fn take_secret(z: &mut Zeroizing<String>) -> String {
 const RENAME_ID: &str = "rename";
 const SEARCH_ID: &str = "search";
 
+/// Privacy pages' local state.
+#[derive(Default)]
+pub(crate) struct Pv {
+    /// Blocked: the "Block someone" picker is open.
+    pub pick: bool,
+    /// Blocked: "Unblock {name}?" is open for this DID.
+    pub unblock: Option<String>,
+    /// Recovery phrase: the words are showing (they hide again after 30 s).
+    pub shown: bool,
+    pub shown_at: Option<Instant>,
+    /// Passphrase: the repeat field, the three field errors, and "Passphrase changed".
+    pub again: Zeroizing<String>,
+    pub errs: [String; 3],
+    pub done: bool,
+    /// PassField's eye: the passphrase fields on these pages show their text.
+    pub reveal: bool,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum PvMsg {
+    Pick(bool),
+    PickPerson(String),
+    Unblock(Option<String>),
+    UnblockGo,
+    Words(bool),
+    Again(String),
+    Change,
+    Eye,
+}
+
+/// Settings > Notifications / Sounds changes.
+#[derive(Debug, Clone)]
+pub(crate) enum Alerts {
+    Quiet(bool),
+    Palette(crate::cues::Palette),
+    /// Play a call cue once in the current sound set (Sounds' preview chips).
+    Preview(&'static str),
+    Messages(bool),
+    Calls(bool),
+    Groups(bool),
+}
+
+/// Settings > Notifications: alert me about messages (from people), calls, groups. Read by every notify site.
+pub(crate) static NOTIFY_MESSAGES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+pub(crate) static NOTIFY_GROUPS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+
 /// A desktop notification, off the UI thread (some servers block on show). Clicking it (the
 /// "default" action, Linux) sends `target` back into the app.
 fn notify(summary: &str, body: &str, target: Target) {
@@ -531,9 +680,9 @@ fn s<E: ToString>(e: E) -> String {
 /// Plain-language text for errors the passphrase screens can hit. Never includes the passphrase.
 fn friendly(e: Error) -> String {
     match e {
-        Error::WrongPassphrase => "That passphrase is not right. Try again.".into(),
+        Error::WrongPassphrase => "That passphrase didn\u{2019}t open the account.".into(),
         Error::WeakPassphrase => "Type a passphrase first.".into(),
-        Error::BadPhrase => "That recovery phrase is not valid. Check the 24 words.".into(),
+        Error::BadPhrase => "That phrase isn\u{2019}t valid. Check each word and their order.".into(),
         Error::Locked => "Unlock first.".into(),
         Error::NotStarted => "Tinline is still starting. Try again in a moment.".into(),
         Error::HaveIdentity => "An identity already exists here.".into(),
@@ -602,7 +751,11 @@ impl App {
         self.takeover = None;
         self.detail_calls.clear();
         self.add_phase = AddPhase::Idle;
+        self.add_ui = AddUi::default();
+        self.requests_in.clear();
+        self.requests_out.clear();
         self.ticket = None;
+        self.ticket_exp = None;
         self.qr = None;
         self.fetching = false;
         self.avail_open = false;
@@ -656,12 +809,14 @@ impl App {
         let mut settings_devices = false;
         let test_unlock = init.test_pass.clone().filter(|_| lock == LockState::Locked);
         let forced_dark = crate::test_env("P2P_DARK").map(|v| v == "1");
+        settings.apply_alerts();
         let preview_on = settings.groups_preview.unwrap_or(groups::PREVIEW_DEFAULT);
         let me_name = node.profile().map(|p| p.name).unwrap_or_default();
         let mut app = App {
             win: None,
-            dark: forced_dark.unwrap_or(false),
+            dark: forced_dark.or(settings.appearance).unwrap_or(false),
             forced_dark,
+            sys_dark: false,
             demo: false,
             sel: None,
             detail: Detail::View,
@@ -719,12 +874,17 @@ impl App {
             mark_pluck: 0,
             status: node.status(),
             contacts: node.contacts(),
+            requests_in: node.contact_requests(),
+            requests_out: node.sent_contact_requests(),
+            hidden_requests: Default::default(),
             ticket: None,
+            ticket_exp: None,
             copied_at: None,
             qr: None,
             add_in: String::new(),
             call: None,
             call_ui: crate::call_ui::State::default(),
+            video_intent: false,
             waiting: None,
             takeover: None,
             early: Vec::new(),
@@ -741,6 +901,9 @@ impl App {
             link: LinkState::new(Role::New),
             linked: Vec::new(),
             dev_rename: None,
+            dev_menu: None,
+            gcall: gcall::State::default(),
+            pv: Pv::default(),
             unlink_ask: None,
             link_joined: false,
             unlinked: None,
@@ -749,6 +912,8 @@ impl App {
             blocks: Default::default(),
             kept: Vec::new(),
             video: VideoUi::default(),
+            gate: Gate::default(),
+            add_ui: AddUi::default(),
             node,
         };
         if has && crate::test_env("P2P_SCREEN").is_some_and(|v| v == "settings") {
@@ -777,7 +942,15 @@ impl App {
         }
         if let Some(name) = crate::test_env("P2P_DEMO") {
             app.load_demo(&name);
+            // pg-chat-*: load the open conversation like a click would.
+            if name.starts_with("pg-chat-") && let Some(d) = app.sel.clone() {
+                tasks.push(app.open_chat(&d));
+                // pg-chat-<id>-find / -reply: the find bar open on "landlord", or replying to their newest message.
+                if name.ends_with("-find") { app.chat.find = Some("landlord".into()); }
+                if name.ends_with("-reply") { app.chat.reply = Some(format!("{}-13", &name["pg-chat-".len()..name.len() - "-reply".len()])); }
+            }
             tasks.push(app.ensure_thumbs());
+            tasks.push(app.gate_focus());
             if let Some(peer) = app.chat.peer.clone() {
                 match name.as_str() {
                     "chat-viewer" => tasks.push(app.update_chat(Cm::View(format!("{peer}-12")))),
@@ -873,7 +1046,7 @@ impl App {
     fn fetch_ticket(&mut self) -> Task<Msg> {
         self.fetching = true;
         let node = self.node.clone();
-        blocking(move || node.my_ticket().map_err(s), Msg::Ticket)
+        blocking(move || node.my_code().map_err(s), Msg::Ticket)
     }
 
     /// Writes the settings on a helper thread (tmp file + rename, so a crash never leaves half a
@@ -881,6 +1054,7 @@ impl App {
     fn save_settings(&self) {
         static PENDING: std::sync::Mutex<Option<Vec<u8>>> = std::sync::Mutex::new(None);
         static WRITE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        self.settings.apply_alerts();
         let Ok(b) = serde_json::to_vec_pretty(&self.settings) else { return };
         *PENDING.lock().unwrap() = Some(b);
         let path = settings_path();
@@ -914,6 +1088,8 @@ impl App {
         self.revealed = None;
         self.revealed_at = None;
         self.reveal_form = false;
+        self.pv.shown = false;
+        self.pv.shown_at = None;
     }
 
 
@@ -962,11 +1138,18 @@ impl App {
                 match presentation {
                     End::Hidden => {}
                     End::Missed(text) => {
-                        notify("Tinline", &text, Target::Show);
+                        if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &text, Target::Show); }
                         self.notice = Some(text);
                     }
+                    // call.svelte.ts #finish: my own hang-up leaves at once; otherwise the call screen holds the
+                    // reason for a moment (0.9 s, or 2.6 s when it couldn't connect), then goes.
+                    End::Screen(_) if reason == "hangup_local" => {}
                     End::Screen(text) => {
+                        let failed = matches!(reason.as_str(), "unreachable" | "connection_lost" | "failed");
+                        let hold = if failed { 2600 } else { 900 };
                         self.ended = Some(EndedView { reason: reason.clone(), did, name: who, text, direct, secs, at: Instant::now() });
+                        let at = self.ended.as_ref().map(|e| e.at);
+                        return Task::perform(tokio::time::sleep(Duration::from_millis(hold)), move |_| Msg::EndedHoldDone(at));
                     }
                 }
             }
@@ -1020,6 +1203,10 @@ impl App {
     /// Contacts from the core, then everything that depends on them.
     fn reload_contacts(&mut self) {
         self.contacts = self.node.contacts();
+        if !self.demo {
+            self.requests_in = self.node.contact_requests();
+            self.requests_out = self.node.sent_contact_requests();
+        }
         self.refresh_blocks();
     }
 
@@ -1170,6 +1357,11 @@ impl App {
                 if self.revealed_at.is_some_and(|t| t.elapsed() >= Duration::from_secs(REVEAL_SECS)) {
                     self.hide_phrase();
                 }
+                // privacy/Phrase.svelte: the words hide again after 30 s.
+                if self.pv.shown_at.is_some_and(|t| t.elapsed() >= Duration::from_secs(30)) {
+                    self.pv.shown = false;
+                    self.pv.shown_at = None;
+                }
                 if self.ended.as_ref().is_some_and(|e| e.at.elapsed() >= Duration::from_secs(ENDED_SECS)) {
                     self.ended = None;
                 }
@@ -1192,6 +1384,7 @@ impl App {
                 crate::tray::set_dark(self.dark);
                 if let Some(c) = self.call.as_mut() {
                     c.stats = self.node.call_stats();
+                    if let Some(st) = &c.stats { self.call_ui.loss.push(st.received, st.lost); }
                 }
                 let auto = self.auto_call();
                 return Task::batch([self.link_drive(), auto]);
@@ -1216,7 +1409,16 @@ impl App {
                     self.focused = false;
                 }
             }
-            Msg::Theme(m) => self.dark = self.forced_dark.unwrap_or(m != theme::Mode::Light),
+            Msg::Theme(m) => {
+                self.sys_dark = m != theme::Mode::Light;
+                self.dark = self.forced_dark.or(self.settings.appearance).unwrap_or(self.sys_dark);
+            }
+            Msg::Appearance(v) => {
+                self.settings.appearance = v;
+                self.dark = self.forced_dark.or(v).unwrap_or(self.sys_dark);
+                self.save_settings();
+            }
+            Msg::Gate(g) => return self.gate_update(g),
             Msg::Quit => {
                 chat::wipe_voice_dir();
                 crate::media::wipe_now();
@@ -1247,7 +1449,7 @@ impl App {
                     return Task::none();
                 }
                 self.busy = true;
-                self.notice = Some("Securing your identity...".into());
+                self.notice = None;
                 // An empty passphrase means none: the key then lives in the keyring.
                 let pass = take_secret(&mut self.pass_in);
                 let node = self.node.clone();
@@ -1262,7 +1464,7 @@ impl App {
                     Ok(p) => {
                         self.refresh_pass();
                         self.name_edit = self.name_in.trim().to_string();
-                        self.begin_name_device(Some(Zeroizing::new(p)));
+                        return self.gate_created(p);
                     }
                     Err(e) => self.notice = Some(e),
                 }
@@ -1324,6 +1526,10 @@ impl App {
                             self.screen = Screen::LinkSync;
                             return self.start_node();
                         }
+                        if self.gate.creating {
+                            self.setup = None;
+                            return self.gate_saved();
+                        }
                         match self.setup.take().and_then(|s| s.phrase) {
                             Some(p) => {
                                 self.new_phrase = Some(p);
@@ -1344,8 +1550,13 @@ impl App {
                     Err(SetupErr::Other(e)) => self.notice = Some(e),
                 }
             }
-            Msg::KeyringProbed(ok) => self.keyring_ok = ok,
-            Msg::ToggleRestore => self.restore = !self.restore,
+            Msg::KeyringProbed(ok) if !self.demo => self.keyring_ok = ok,
+            Msg::KeyringProbed(_) => {}
+            Msg::ToggleRestore => {
+                // Choose › Restore my account: the 24 words, in the sign-up card.
+                self.restore = true;
+                return self.gate_restore();
+            }
             Msg::PhraseChanged(v) => self.phrase_in = Zeroizing::new(v),
             Msg::TogglePhraseShow => self.show_phrase_in = !self.show_phrase_in,
             Msg::Restore => {
@@ -1388,6 +1599,14 @@ impl App {
                         self.notice = None;
                         self.refresh_pass();
                         self.name_edit = self.name_in.trim().to_string();
+                        if self.gate.restoring {
+                            // In the card: name this computer next, then the terms and Done.
+                            self.setup = Some(Setup { phrase: None });
+                            self.gate.creating = true;
+                            self.gate.words = Default::default();
+                            if self.device_in.trim().is_empty() { self.device_in = flow::suggest_label(); }
+                            return self.gate_go_pub(signup::Step::Device);
+                        }
                         self.begin_name_device(None);
                     }
                     Err((e, exists)) => {
@@ -1463,12 +1682,16 @@ impl App {
                 match r {
                     Ok(()) => {
                         self.reset_account_state();
+                        self.gate_reset();
                         self.restore = restore;
                         self.exists_hint = false;
                         self.name_in.clear();
                         self.phrase_in.zeroize();
                         self.notice = None;
                         self.screen = Screen::Onboarding;
+                        if restore {
+                            return Task::batch([self.probe_keyring(), self.gate_restore()]);
+                        }
                         return self.probe_keyring();
                     }
                     Err(e) => {
@@ -1599,8 +1822,12 @@ impl App {
                         self.hide_phrase();
                         self.change_form = false;
                         self.notice = Some(if added { "Passphrase added. You will need it next time Tinline starts." } else { "Passphrase changed" }.into());
+                        self.pv.done = true;
                     }
-                    Err(e) => self.notice = Some(e),
+                    Err(e) => {
+                        // A wrong current passphrase belongs under its field.
+                        if self.profiles.page == Some(profile_ui::Page::Native(24)) { self.pv.errs[0] = "That isn\u{2019}t your current passphrase.".into(); } else { self.notice = Some(e); }
+                    }
                 }
             }
             Msg::PhraseSaved => {
@@ -1628,10 +1855,11 @@ impl App {
             Msg::Ticket(r) => {
                 self.fetching = false;
                 match r {
-                Ok(t) => {
-                    crate::tlog!("TICKET {t}");
-                    self.qr = view::qr_of(&t);
-                    self.ticket = Some(t);
+                Ok(c) => {
+                    crate::tlog!("TICKET {}", c.code);
+                    self.qr = view::qr_of(&c.code);
+                    self.ticket = Some(c.code);
+                    self.ticket_exp = Some(c.expires_at);
                 }
                     Err(e) => self.notice = Some(format!("Ticket: {e}")),
                 }
@@ -1644,7 +1872,7 @@ impl App {
                 };
                 if let Some(phrase) = phrase {
                     let text = phrase.to_string();
-                    self.notice = Some("Recovery phrase copied. Paste only into a trusted password manager.".into());
+                    self.notice = Some("Your recovery words are copied.".into());
                     return clipboard::write(text);
                 }
             }
@@ -1687,12 +1915,22 @@ impl App {
                         return self.profile_update(a);
                     }
                 }
+                // Sign-up: Enter continues on every step (a focused text field submits itself first).
+                if self.screen == Screen::Onboarding
+                    && !self.restore
+                    && self.call.is_none()
+                    && matches!(key.as_ref(), Key::Named(Named::Enter))
+                    && !(mods.shift() || mods.control() || mods.alt() || mods.logo())
+                {
+                    return self.gate_update(Gs::Enter);
+                }
                 match key.as_ref() {
                     // Layer.svelte: Escape closes the open dialog first (new chat, then profile layers).
                     Key::Named(Named::Escape) if self.shell_search.new_chat.is_some() => return self.shell_search_update(shell_search::Action::NewChat(false)),
                     Key::Named(Named::Escape) if self.profiles.layer.is_some() => return self.profile_update(profile_ui::Action::CloseLayer),
                     Key::Named(Named::Escape) if self.profiles.edit.is_some() => return self.profile_update(profile_ui::Action::CancelEdit),
                     Key::Named(Named::Escape) if self.chat.viewer.is_some() => return self.update_chat(Cm::CloseView),
+                    Key::Named(Named::Escape) if self.chat.find.is_some() => return self.update_chat(Cm::Find(None)),
                     Key::Named(Named::ArrowLeft) if self.chat.viewer.is_some() => return self.update_chat(Cm::Step(-1)),
                     Key::Named(Named::ArrowRight) if self.chat.viewer.is_some() => return self.update_chat(Cm::Step(1)),
                     Key::Named(Named::Escape) if self.chat.rec.is_some() => return self.update_chat(Cm::RecCancel),
@@ -1713,6 +1951,9 @@ impl App {
                         return self.check_clipboard(true);
                     }
                     Key::Character("k") if mods.command() && self.call.is_none() => return self.shell_search_update(shell_search::Action::Focus),
+                    Key::Character("f") if mods.command() && self.call.is_none() && self.chat.peer.is_some() && !self.chat.info => {
+                        return self.update_chat(chat::Cm::Find(Some(self.chat.find.clone().unwrap_or_default())));
+                    }
                     Key::Character("m") if mods.command() && active => return self.update(Msg::ToggleMute),
                     Key::Character("e") if mods.command() && self.call.is_some() => return self.update(Msg::Hangup),
                     _ => {}
@@ -1763,6 +2004,7 @@ impl App {
             Msg::AddAlias(v) => self.add_alias = v,
             Msg::OpenAdd => {
                 self.screen = Screen::AddContact;
+                self.add_ui = AddUi::default();
                 self.add_phase = AddPhase::Idle;
                 self.add_in.clear();
                 self.add_alias.clear();
@@ -1770,28 +2012,59 @@ impl App {
             }
             Msg::AddPressed => {
                 let mut t = self.add_in.trim().to_string();
-                if t.is_empty() || matches!(self.add_phase, AddPhase::Connecting) {
+                if t.is_empty() || matches!(self.add_phase, AddPhase::Connecting(_)) {
                     return Task::none();
                 }
                 // A card pasted with text around it (a chat message, a mail) is cut out of it.
                 if let Some(p) = self.node.peek_card(t.clone()) {
-                    t = p.ticket;
+                    t = p.ticket.clone();
+                    self.add_ui.found = Some(p);
                 }
                 self.offer = None;
                 self.screen = Screen::AddContact;
-                self.add_phase = AddPhase::Connecting;
+                if self.status.started && !self.status.online {
+                    self.add_phase = AddPhase::Failed(Reach::Offline);
+                    return Task::none();
+                }
+                self.add_phase = AddPhase::Connecting(Instant::now());
                 let node = self.node.clone();
-                return blocking(move || node.add_contact(t).map_err(s), Msg::Added);
+                // "Reaching X's Tinline…" turns into "Still trying…" after 2.5 s.
+                let slow = Task::perform(tokio::time::sleep(Duration::from_millis(2500)), |_| Msg::Frame(Instant::now()));
+                return Task::batch([slow, blocking(move || node.add_contact_by_code(t).map_err(Reach::of), Msg::Added)]);
             }
             Msg::Added(r) => {
                 self.reload_contacts();
                 match r {
-                    Ok(c) => {
+                    Ok(p2pcore::AddOutcome::Added { contact: c }) => {
                         self.add_in.clear();
                         self.add_alias = c.name.clone();
                         self.add_phase = AddPhase::Added(c);
+                        // The line opens: one `line` cue, here (the first screen's tug plays none).
+                        self.play_line();
+                    }
+                    // Delivered: the line keeps its connecting sway while they decide.
+                    Ok(p2pcore::AddOutcome::Requested { .. }) => {
+                        self.add_in.clear();
+                        self.add_phase = AddPhase::Requested;
                     }
                     Err(e) => self.add_phase = AddPhase::Failed(e),
+                }
+            }
+            Msg::RequestAnswered(did, r) => {
+                self.add_ui.answering = false;
+                self.reload_contacts();
+                match r {
+                    Ok(_) => {
+                        // Both lines go taut together: ours now, theirs when the Welcome lands.
+                        if let Some(i) = self.add_ui.incoming.as_mut().filter(|i| i.did == did) {
+                            i.joined = true;
+                        }
+                        self.play_line();
+                    }
+                    Err(e) => {
+                        eprintln!("accept_contact_request: {e}");
+                        self.notice = Some("Couldn\u{2019}t accept just now. Try again in a moment.".into());
+                    }
                 }
             }
             Msg::SaveAlias => {
@@ -1814,7 +2087,69 @@ impl App {
                 let can_minimize = self.call.as_ref().is_some_and(|c| !(c.info.incoming && !c.answered && c.state == CallState::Ringing));
                 self.call_ui.apply(action, can_minimize);
             }
-            Msg::CallPressed(did) => return self.dial(did),
+            Msg::CallPressed(did) => {
+                self.video_intent = false;
+                return self.dial(did);
+            }
+            Msg::GCall(m) => return self.gcall_update(m),
+            Msg::Privacy(m) => match m {
+                PvMsg::Pick(on) => self.pv.pick = on,
+                PvMsg::PickPerson(did) => {
+                    self.pv.pick = false;
+                    return self.profile_update(profile_ui::Action::AskBlock(did));
+                }
+                PvMsg::Unblock(d) => self.pv.unblock = d,
+                PvMsg::UnblockGo => {
+                    let Some(did) = self.pv.unblock.take() else { return Task::none() };
+                    return self.update(Msg::Unblock(did));
+                }
+                PvMsg::Words(on) => {
+                    self.pv.shown = on;
+                    self.pv.shown_at = on.then(Instant::now);
+                    if on { self.revealed_at = Some(Instant::now()); }
+                }
+                PvMsg::Eye => self.pv.reveal = !self.pv.reveal,
+                PvMsg::Again(v) => {
+                    self.pv.again = Zeroizing::new(v);
+                    self.pv.errs = Default::default();
+                    self.pv.done = false;
+                }
+                PvMsg::Change => {
+                    // ChangePass.svelte's checks, with sign-up's rule that any length works.
+                    let mut e: [String; 3] = Default::default();
+                    if self.pass_in.is_empty() { e[1] = "Type a new passphrase.".into(); }
+                    else if self.has_pass && *self.pass_in == *self.old_in { e[1] = "Pick one that is different from the current one.".into(); }
+                    if e[1].is_empty() && *self.pv.again != *self.pass_in { e[2] = "The two passphrases differ.".into(); }
+                    if self.has_pass && self.old_in.is_empty() { e[0] = "Type your current passphrase.".into(); }
+                    let bad = e.iter().any(|x| !x.is_empty());
+                    self.pv.errs = e;
+                    if bad { return Task::none(); }
+                    self.pv.again.zeroize();
+                    return self.update(Msg::ChangePassSubmit);
+                }
+            },
+            Msg::Alerts(a) => {
+                match a {
+                    Alerts::Quiet(on) => self.settings.quiet = on,
+                    Alerts::Palette(p) => {
+                        self.settings.palette = p.key().into();
+                        self.settings.apply_alerts();
+                        crate::audio::play_call_cue(self.ctl.devices.lock().unwrap().1.clone(), "ring");
+                    }
+                    Alerts::Preview(kind) => {
+                        crate::audio::play_call_cue(self.ctl.devices.lock().unwrap().1.clone(), kind);
+                        return Task::none();
+                    }
+                    Alerts::Messages(on) => self.settings.no_notify_messages = !on,
+                    Alerts::Calls(on) => self.settings.no_notify_calls = !on,
+                    Alerts::Groups(on) => self.settings.no_notify_groups = !on,
+                }
+                self.save_settings();
+            }
+            Msg::DialVideo(did) => {
+                self.video_intent = true;
+                return self.dial(did);
+            }
             Msg::CallAgain(did) => return self.dial(did),
             Msg::CallStarted(r) => match r {
                 Ok(info) => {
@@ -1909,6 +2244,9 @@ impl App {
                 return self.profile_write(profile_ui::Save::Availability, move |node| node.set_available(on, until).map_err(s));
             }
             Msg::CloseEnded => self.ended = None,
+            Msg::EndedHoldDone(at) => {
+                if self.ended.as_ref().map(|e| e.at) == at { self.ended = None; }
+            }
             // The contact, the chat and the call history stay (U19, U24); only the state changes.
             Msg::Block(did) => {
                 self.detail = Detail::View;
@@ -1992,6 +2330,9 @@ impl App {
             Msg::Devices(d) => self.devices = d,
             Msg::Back => {
                 if self.screen == Screen::Settings { return self.profile_update(profile_ui::Action::Back); }
+                if self.screen == Screen::AddContact {
+                    self.add_ui.incoming = None;
+                }
                 self.screen = Screen::Home;
                 self.hide_phrase();
                 self.notice = None;
@@ -2125,6 +2466,7 @@ impl App {
             | Msg::LinkSecureGo
             | Msg::LinkSyncDone
             | Msg::DevRenameStart(_)
+            | Msg::DevMenu(_)
             | Msg::DevRenameIn(_)
             | Msg::DevRenameSave
             | Msg::DevRenameCancel
@@ -2173,6 +2515,8 @@ impl App {
             Ev::Contacts => {
                 if !self.demo {
                     self.reload_contacts();
+                    // Our code may have been replaced (a rename, a block): show the current one.
+                    let ticket = if self.ticket.is_some() && !self.fetching { self.fetch_ticket() } else { Task::none() };
                     if self.offer.as_ref().is_some_and(|o| self.contacts.iter().any(|c| c.did == o.did)) {
                         self.offer = None;
                     }
@@ -2181,7 +2525,7 @@ impl App {
                     if self.screen == Screen::LinkSync && !self.contacts.is_empty() {
                         self.screen = Screen::Home;
                     }
-                    return Task::batch([self.refresh_chats(), self.refresh_profiles()]);
+                    return Task::batch([ticket, self.refresh_chats(), self.refresh_profiles()]);
                 }
             }
             Ev::Profile { epoch, did } => {
@@ -2192,6 +2536,22 @@ impl App {
             }
             Ev::Chat(c) => return self.on_chat_event(c),
             Ev::Group(g) => {
+                // Notifications › Groups: a post from someone else, while that group isn't in front of me; invitations too.
+                if NOTIFY_GROUPS.load(Ordering::Relaxed) {
+                    let attended = self.win.is_some() && self.focused;
+                    match &g {
+                        crate::GroupEv::Message(m) if !m.outgoing && m.kind == p2pcore::GroupItemKind::Post
+                            && !(attended && self.live.open.as_deref() == Some(m.group_id.as_str())) && !self.blocks.blocked_by_me(&m.author_did) => {
+                            let group = self.live.list.iter().find(|s| s.id == m.group_id).map(|s| s.name.clone()).unwrap_or_else(|| "A group".into());
+                            let who = m.author_name.split_whitespace().next().unwrap_or(&m.author_name).to_string();
+                            notify(&group, &format!("{who}: {}", m.text), Target::Show);
+                        }
+                        crate::GroupEv::Invitation(i) if !attended && !i.outgoing && i.state == p2pcore::GroupInvitationState::Pending => {
+                            notify("Tinline", &format!("{} invited you to {}", i.inviter_name.split_whitespace().next().unwrap_or(&i.inviter_name), i.group_name), Target::Show);
+                        }
+                        _ => {}
+                    }
+                }
                 return self.update_live(match g {
                     crate::GroupEv::Message(m) => Lm::Message(m),
                     crate::GroupEv::Changed(id) => Lm::Changed(id),
@@ -2201,7 +2561,7 @@ impl App {
             }
             Ev::Link(l) => return self.link_event(l),
             Ev::Incoming(info) if self.call.as_ref().is_some_and(|c| c.state == CallState::Active && c.info.call_id != info.call_id) => {
-                notify("Tinline", &format!("{} is calling", info.peer_name), Target::Show);
+                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &format!("{} is calling", info.peer_name), Target::Show); }
                 let mut tasks = vec![self.show_window()];
                 if let Some(act) = INIT.get().unwrap().waiting_action.clone() {
                     let (node, id) = (self.node.clone(), info.call_id.clone());
@@ -2233,7 +2593,7 @@ impl App {
                     stats: None,
                 });
                 self.ended = None;
-                notify("Tinline", &format!("{name} is calling"), Target::Show);
+                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &format!("{name} is calling"), Target::Show); }
                 let mut tasks = vec![self.show_window()];
                 if let Some(secs) = INIT.get().unwrap().auto_answer {
                     let (node, id) = (self.node.clone(), info.call_id);
@@ -2254,7 +2614,7 @@ impl App {
                     self.refresh_history();
                     // Unanswered, or the caller gave up: a missed call like any other.
                     if let End::Missed(text) = reason::present(&reason, &w.peer_name, true, false) {
-                        notify("Tinline", &text, Target::Show);
+                        if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &text, Target::Show); }
                         self.notice = Some(text);
                     }
                 }
@@ -2274,7 +2634,9 @@ impl App {
             Ev::AudioNotice(m) => self.notice = Some(m),
             Ev::Video(info) => return self.video_state(info),
             // The group call screens come with the call UI packet; audio already follows these.
-            Ev::GroupCall(_) => {}
+            Ev::GroupCall(e) => return self.gcall_update(gcall::Gm::Ev(e)),
+            Ev::Request(r) => return self.contact_request(r),
+            Ev::Accepted(c) => return self.request_accepted(c),
             Ev::Tray(TrayCmd::Show) => return self.show_window(),
             Ev::Open(target) => {
                 let mut tasks = vec![self.show_window()];

@@ -136,6 +136,16 @@ pub(super) struct ChatState {
     pub drop_hover: bool,
     /// The contact details are shown instead of the conversation.
     pub info: bool,
+    /// Find in this chat (Ctrl+F): the query while the bar is open.
+    pub find: Option<String>,
+    /// The current match, counted among the matches oldest first; `usize::MAX` = the newest.
+    pub find_cur: usize,
+    /// How many unread messages the chat had when it was opened (the "n new messages" divider).
+    pub unread_at_open: u32,
+    /// "Delete message?" is open for this message.
+    pub confirm_delete: Option<String>,
+    /// The message a reply quote jumped to, ringed for a moment.
+    pub flash: Option<(String, std::time::Instant)>,
     /// A voice message being recorded, and the file it goes to.
     pub rec: Option<(Recorder, PathBuf)>,
     /// The voice message playing (or paused), by message id.
@@ -196,6 +206,11 @@ impl Default for ChatState {
             online: HashSet::new(),
             drop_hover: false,
             info: false,
+            find: None,
+            find_cur: usize::MAX,
+            unread_at_open: 0,
+            confirm_delete: None,
+            flash: None,
             rec: None,
             player: None,
             voice_files: HashMap::new(),
@@ -238,6 +253,15 @@ pub(super) enum Cm {
     Older,
     OlderDone(String, String, Result<u32, String>),
     Info(bool),
+    /// Open the find bar (Some), type into it, or close it (None).
+    Find(Option<String>),
+    /// Step to the older (true) or newer match.
+    FindStep(bool),
+    /// A reply quote: scroll to the quoted message and ring it for a moment.
+    Jump(String),
+    /// Confirmed in "Delete message?".
+    DeleteGo(String),
+    DeleteCancel,
     RecStart,
     RecSend,
     RecCancel,
@@ -260,6 +284,41 @@ pub(super) enum Cm {
     /// -1 / +1: the previous / next picture.
     Step(i32),
     Nop,
+}
+
+/// The find field's widget id.
+pub(super) const FIND_ID: &str = "chat-find";
+/// The message list's scrollable id (find scrolls it to the current match).
+pub(super) const LIST_ID: &str = "chat-list";
+
+impl App {
+    /// find.svelte / `findInChat`: the loaded messages whose text holds every term of the query, oldest first.
+    pub(super) fn find_matches(&self) -> Vec<&ChatMsg> {
+        let Some(q) = self.chat.find.as_deref() else { return Vec::new() };
+        let terms: Vec<String> = q.split_whitespace().map(str::to_lowercase).collect();
+        if terms.is_empty() {
+            return Vec::new();
+        }
+        self.chat.msgs.iter().filter(|m| !m.deleted).filter(|m| {
+            let text = format!("{} {}", m.text, m.attachment.as_ref().map(|a| a.name.as_str()).unwrap_or("")).to_lowercase();
+            terms.iter().all(|t| text.contains(t))
+        }).collect()
+    }
+
+    /// The current match's id, if any.
+    pub(super) fn find_current(&self) -> Option<String> {
+        let ms = self.find_matches();
+        (!ms.is_empty()).then(|| ms[self.chat.find_cur.min(ms.len() - 1)].id.clone())
+    }
+
+    /// Scroll so the current match is in view: by its share of the list (rows differ in height, so this is
+    /// close, not exact; the match is also ringed).
+    fn find_scroll(&self) -> Task<Msg> {
+        let Some(id) = self.find_current() else { return Task::none() };
+        let n = self.chat.msgs.len().max(2);
+        let i = self.chat.msgs.iter().position(|m| m.id == id).unwrap_or(n - 1);
+        iced::widget::operation::snap_to(LIST_ID, iced::widget::scrollable::RelativeOffset { x: 0.0, y: i as f32 / (n - 1) as f32 })
+    }
 }
 
 pub(super) fn mime_of(path: &std::path::Path) -> String {
@@ -375,6 +434,7 @@ impl ChatState {
         self.reply = None;
         self.editing = None;
         self.menu = None;
+        self.find = None;
     }
 }
 
@@ -504,6 +564,7 @@ impl App {
             return self.mark_read(did);
         }
         self.chat.clear_compose();
+        self.chat.unread_at_open = self.chat.chats.iter().find(|c| c.peer_did == did).map_or(0, |c| c.unread);
         self.chat.peer = Some(did.to_string());
         let draft = self.chat.compose_memory.restore(did);
         self.chat.input = text_editor::Content::with_text(&draft.text);
@@ -627,7 +688,11 @@ impl App {
                 if !submission.is_current(self.chat.account_epoch) || self.lock != p2pcore::LockState::Unlocked {
                     return Task::none();
                 }
-                if submission.pluck(result.is_ok()) { self.mark_pluck += 1; }
+                if submission.pluck(result.is_ok()) {
+                    self.mark_pluck += 1;
+                    // audio.ts `sent`: one faint high pluck, with the mark's pluck.
+                    self.play_sound(crate::cues::cue("sent"));
+                }
                 let current = self.chat.peer.as_deref() == Some(peer.as_str());
                 match result {
                     Ok(message) => {
@@ -688,6 +753,17 @@ impl App {
             }
             Cm::Delete(id) => {
                 self.chat.menu = None;
+                self.chat.confirm_delete = Some(id);
+            }
+            Cm::DeleteCancel => self.chat.confirm_delete = None,
+            Cm::Jump(id) => {
+                let n = self.chat.msgs.len().max(2);
+                let Some(i) = self.chat.msgs.iter().position(|m| m.id == id) else { return Task::none() };
+                self.chat.flash = Some((id, std::time::Instant::now()));
+                return iced::widget::operation::snap_to(LIST_ID, iced::widget::scrollable::RelativeOffset { x: 0.0, y: i as f32 / (n - 1) as f32 });
+            }
+            Cm::DeleteGo(id) => {
+                self.chat.confirm_delete = None;
                 let Some(peer) = self.chat.peer.clone() else { return Task::none() };
                 if self.chat.editing.as_ref() == Some(&id) {
                     self.chat.clear_compose();
@@ -811,6 +887,23 @@ impl App {
                 }
             }
             Cm::Info(on) => self.chat.info = on,
+            Cm::Find(q) => {
+                let opening = self.chat.find.is_none() && q.is_some();
+                self.chat.find_cur = usize::MAX;
+                self.chat.find = q;
+                if opening {
+                    return iced::widget::operation::focus(FIND_ID);
+                }
+                return self.find_scroll();
+            }
+            Cm::FindStep(older) => {
+                let n = self.find_matches().len();
+                if n > 0 {
+                    let i = self.chat.find_cur.min(n - 1);
+                    self.chat.find_cur = if older { (i + n - 1) % n } else { (i + 1) % n };
+                }
+                return self.find_scroll();
+            }
             Cm::RecStart => {
                 if self.chat.peer.is_none() || self.chat.rec.is_some() || !self.chat_io() {
                     return Task::none();
@@ -1001,8 +1094,12 @@ impl App {
                 let open = self.chat_visible() && self.chat.peer.as_deref() == Some(peer.as_str());
                 // Seen only if the window exists and the user is in it.
                 let attended = open && self.win.is_some() && self.focused;
-                if incoming && !attended {
+                if incoming && !attended && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed) {
                     notify(&self.chat_name(&peer), &preview_of(&m), Target::Chat(peer.clone()));
+                }
+                // audio.ts `received`: the can, tapped once, while the app is open.
+                if incoming && self.win.is_some() && self.focused {
+                    self.play_sound(crate::cues::cue("received"));
                 }
                 self.chat.upsert(m);
                 if open && !incoming {

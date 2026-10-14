@@ -444,48 +444,37 @@ fn run_call(
     }
 }
 
-/// One 20 ms slice of the ring tone: a classic double-ring on a 2 s cycle (two 0.4 s bursts,
-/// 0.2 s apart, then silence). `n` counts slices.
-fn ring_frame(n: u64, out: &mut Vec<f32>, waiting: bool) {
-    for i in 0..FRAME as u64 {
-        let t = n * FRAME as u64 + i;
-        if waiting {
-            // A second call during a call: one quiet beep every four seconds.
-            let ms = (t * 1000 / RATE as u64) % 4000;
-            let ph = t as f32 / RATE as f32;
-            out.push(if ms < 300 { (ph * 425.0 * std::f32::consts::TAU).sin() * 0.05 } else { 0.0 });
-            continue;
-        }
-        let ms = (t * 1000 / RATE as u64) % 2000;
-        let on = ms < 400 || (600..1000).contains(&ms);
-        let ph = t as f32 / RATE as f32;
-        let env = if on { 1.0 } else { 0.0 };
-        out.push(
-            ((ph * 440.0 * std::f32::consts::TAU).sin() + (ph * 480.0 * std::f32::consts::TAU).sin())
-                * 0.12
-                * env,
-        );
-    }
+/// Settings > Sounds "Quiet": no sounds from Tinline (ringing, call tones, cues).
+pub static QUIET: AtomicBool = AtomicBool::new(false);
+/// Settings > Notifications "Calls": off = no ringing (the call screen still shows).
+pub static RING_CALLS: AtomicBool = AtomicBool::new(true);
+/// Settings > Sounds: the call sound set (`cues::Palette` as 0/1/2).
+pub static PALETTE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+pub fn palette() -> crate::cues::Palette {
+    crate::cues::Palette::ALL[(PALETTE.load(Ordering::Relaxed) as usize).min(2)]
 }
 
-/// Plays a classic double-ring until stopped; with `waiting`, the quiet beep of a second call.
-pub fn start_ring(out_dev: Option<String>, waiting: bool) -> Session {
+/// Loops a call cue (`ring`, `back`, `waiting`; see `cues::call`) until stopped. Quiet plays nothing.
+pub fn start_loop(out_dev: Option<String>, kind: &'static str, gain: f64) -> Session {
     let stop = Arc::new(AtomicBool::new(false));
     let flag = stop.clone();
     let join = thread::Builder::new()
         .name("ringer".into())
         .spawn(move || {
+            if QUIET.load(Ordering::Relaxed) {
+                return;
+            }
+            let Some(cycle) = crate::cues::call(kind, palette(), gain) else { return };
             let quiet: Notice = Arc::new(|_| {});
             let mut spk = Slot::<Spk>::new("Speaker", out_dev);
-            let (mut n, mut buf) = (0u64, Vec::with_capacity(FRAME));
+            let mut i = 0usize;
             while !flag.load(Ordering::Relaxed) {
                 spk.maintain(|s| s.failed.load(Ordering::Relaxed), open_spk, &quiet);
                 if let Some(s) = spk.dev.as_mut() {
-                    while s.queued() < SPK_TARGET && s.prod.slots() >= FRAME {
-                        buf.clear();
-                        ring_frame(n, &mut buf, waiting);
-                        n += 1;
-                        buf.iter().for_each(|v| { let _ = s.prod.push(*v); });
+                    while s.queued() < SPK_TARGET && s.prod.slots() > 0 {
+                        let _ = s.prod.push(cycle[i]);
+                        i = (i + 1) % cycle.len();
                     }
                 }
                 thread::sleep(WORKER_TICK);
@@ -493,6 +482,42 @@ pub fn start_ring(out_dev: Option<String>, waiting: bool) -> Session {
         })
         .ok();
     Session { stop, join }
+}
+
+/// The ringtone, or with `waiting` the soft call-waiting cue over a call (audio.ts: gain 0.6).
+pub fn start_ring(out_dev: Option<String>, waiting: bool) -> Session {
+    if waiting { start_loop(out_dev, "waiting", 0.6) } else { start_loop(out_dev, "ring", 1.0) }
+}
+
+/// A call one-shot (`connected`, `ended`, `failed`, `pulse`, group cues) in the current sound set.
+pub fn play_call_cue(out_dev: Option<String>, kind: &str) {
+    if let Some(s) = crate::cues::call(kind, palette(), 1.0) {
+        play_cue(out_dev, s);
+    }
+}
+
+/// Plays a one-shot cue (48 kHz mono, see `crate::cues`) on the output device, off the caller's
+/// thread. It layers: a cue never stops a ring or a call (each opens its own stream).
+pub fn play_cue(out_dev: Option<String>, samples: Vec<f32>) {
+    if QUIET.load(Ordering::Relaxed) {
+        return;
+    }
+    let _ = thread::Builder::new().name("cue".into()).spawn(move || {
+        let Ok(mut spk) = open_spk(&out_dev) else { return };
+        let mut i = 0;
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while i < samples.len() && Instant::now() < deadline && !spk.failed.load(Ordering::Relaxed) {
+            while i < samples.len() && spk.prod.slots() > 0 && spk.queued() < SPK_TARGET * 4 {
+                let _ = spk.prod.push(samples[i]);
+                i += 1;
+            }
+            thread::sleep(WORKER_TICK);
+        }
+        // let the ring drain before the stream closes
+        while spk.queued() > 0 && Instant::now() < deadline && !spk.failed.load(Ordering::Relaxed) {
+            thread::sleep(WORKER_TICK);
+        }
+    });
 }
 
 /// Call audio and the ringer, driven straight from the core's event callbacks rather than the
@@ -510,6 +535,10 @@ pub struct Ctl {
     notice: std::sync::Mutex<Option<Notice>>,
     call: std::sync::Mutex<Option<Session>>,
     ring: std::sync::Mutex<Option<Session>>,
+    /// The ringback of my outgoing call while theirs rings.
+    back: std::sync::Mutex<Option<Session>>,
+    /// Incoming calls (they ring here; no ringback for them).
+    incoming: std::sync::Mutex<std::collections::HashSet<String>>,
     /// The call whose audio is running, so another call ending does not stop it.
     call_id: std::sync::Mutex<Option<String>>,
     /// The second incoming call whose beep is playing.
@@ -530,7 +559,12 @@ impl Ctl {
     }
 
     pub fn on_incoming(&self, id: &str) {
+        self.incoming.lock().unwrap().insert(id.to_string());
         let waiting = self.call.lock().unwrap().is_some();
+        // Settings > Notifications: Calls off = no ringing (a waiting beep over a call still sounds).
+        if !waiting && !RING_CALLS.load(Ordering::Relaxed) {
+            return;
+        }
         // Already talking: the UI shows the waiting call, with a quiet beep instead of a ring.
         *self.waiting_id.lock().unwrap() = waiting.then(|| id.to_string());
         let out = self.devices.lock().unwrap().1.clone();
@@ -544,8 +578,20 @@ impl Ctl {
 
     pub fn on_state(&self, id: &str, state: &p2pcore::CallState) {
         let Some(node) = self.node.lock().unwrap().upgrade() else { return };
+        let out = self.devices.lock().unwrap().1.clone();
+        let incoming = self.incoming.lock().unwrap().contains(id);
         match state {
+            // My call is ringing on their side: the ringback, until they answer or it ends.
+            p2pcore::CallState::Ringing if !incoming => {
+                if self.back.lock().unwrap().is_none() {
+                    *self.back.lock().unwrap() = Some(start_loop(out, "back", 1.0));
+                }
+            }
             p2pcore::CallState::Active => {
+                retire(self.back.lock().unwrap().take());
+                if self.call_id.lock().unwrap().as_deref() != Some(id) {
+                    play_call_cue(out.clone(), "connected");
+                }
                 self.stop_ring();
                 *self.waiting_id.lock().unwrap() = None;
                 *self.call_id.lock().unwrap() = Some(id.to_string());
@@ -556,7 +602,9 @@ impl Ctl {
                 let s = start_call(node, i, o, self.muted.clone(), notice);
                 retire(self.call.lock().unwrap().replace(s));
             }
-            p2pcore::CallState::Ended { .. } => {
+            p2pcore::CallState::Ended { reason } => {
+                self.incoming.lock().unwrap().remove(id);
+                retire(self.back.lock().unwrap().take());
                 // The second call giving up (or declined) leaves the call it rang over alone.
                 if self.waiting_id.lock().unwrap().as_deref() == Some(id) {
                     *self.waiting_id.lock().unwrap() = None;
@@ -566,9 +614,15 @@ impl Ctl {
                 if self.call_id.lock().unwrap().as_deref().is_some_and(|c| c != id) {
                     return;
                 }
-                *self.call_id.lock().unwrap() = None;
+                let was_on = self.call_id.lock().unwrap().take().is_some();
                 self.stop_all();
                 node.set_test_tone(None);
+                // audio.ts: `ended` after a call, `failed` when my call never got through.
+                if was_on {
+                    play_call_cue(out, "ended");
+                } else if !incoming && matches!(reason.as_str(), "unreachable" | "failed" | "error") {
+                    play_call_cue(out, "failed");
+                }
             }
             _ => {}
         }

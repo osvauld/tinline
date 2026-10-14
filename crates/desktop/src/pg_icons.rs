@@ -13,6 +13,8 @@ pub fn body(name: &str) -> &'static str {
         "send" => r##"<path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>"##,
         "clip" => r##"<path d="M21 11l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>"##,
         "chev" => r##"<path d="M7 10l5 5 5-5"/>"##,
+        "video" => r##"<rect x="3" y="6.5" width="12.5" height="11" rx="3"/><path d="M15.5 10.6l4.4-2.5a.6.6 0 0 1 .9.5v6.8a.6.6 0 0 1-.9.5l-4.4-2.5"/>"##,
+        "chevup" => r##"<path d="M7 14l5-5 5 5"/>"##,
         "sliders" => r##"<path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2.5"/><circle cx="9" cy="12" r="2.5"/><circle cx="17" cy="18" r="2.5"/>"##,
         "gear" => r##"<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>"##,
         "sun" => r##"<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>"##,
@@ -63,8 +65,12 @@ pub fn body(name: &str) -> &'static str {
     }
 }
 
-/// Icon.svelte: `name` at `size` px in `color`.
+/// Icon.svelte: `name` at `size` px in `color`. Tinline's own line icons (crates/tin-icons, at the tier for `size`)
+/// wherever one exists, as the playground draws them; the older set only for names the tin set doesn't have.
 pub fn pgi<'a, M: 'a>(name: &'static str, size: f32, color: Color) -> Element<'a, M> {
+    if let Some(g) = crate::tin_icons::get(name, size) {
+        return crate::ui::glyph2(crate::tin_icons::STROKE, g.body, g.string, size, color);
+    }
     crate::ui::glyph(STROKE, body(name), size, color)
 }
 

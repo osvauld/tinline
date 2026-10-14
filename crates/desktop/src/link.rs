@@ -78,13 +78,13 @@ pub struct UnlinkedInfo {
 /// Plain words for the core's `on_link_failed` reasons.
 pub fn failure_text(reason: &str) -> &'static str {
     match reason {
-        "expired" => "The code ran out of time. A code works for 5 minutes, once.",
-        "cancelled" => "The link was cancelled on the other device.",
+        "expired" => "The code expired. Try again.",
+        "cancelled" => "Cancelled on the other device.",
         "rejected" => "The other device didn\u{2019}t accept the link.",
-        "bad_proof" => "That code doesn\u{2019}t belong to this link, or it was already used. Make a new code and try again.",
-        "mismatch" => "The two devices don\u{2019}t belong to the same account, so nothing was linked.",
-        "timeout" => "Nobody approved in time. Nothing was linked.",
-        "net" => "Couldn\u{2019}t reach the other device. Check that both are online and try again.",
+        "bad_proof" => "That QR code was already used or isn\u{2019}t valid. Make a fresh one and try again.",
+        "mismatch" => "These two devices don\u{2019}t belong to the same account, so nothing was shared.",
+        "timeout" => "The other device didn\u{2019}t answer in time. Keep both open and try again.",
+        "net" => "Couldn\u{2019}t reach the other device. Check that both are online.",
         "locked" => "Tinline is locked. Unlock it and try again.",
         "busy" => "Another link is already in progress. Finish or cancel it first.",
         "bad_grant" => "What the other device sent wasn\u{2019}t valid, so nothing was linked.",
@@ -372,7 +372,13 @@ impl App {
                 self.screen = Screen::Home;
             }
             // ---- Settings > Linked devices ----
+            Msg::DevMenu(dev) => {
+                self.dev_rename = None;
+                self.unlink_ask = None;
+                self.dev_menu = dev;
+            }
             Msg::DevRenameStart(dev) => {
+                self.dev_menu = None;
                 let cur = self.linked.iter().find(|d| d.device == dev).map(|d| d.label.clone()).unwrap_or_default();
                 self.unlink_ask = None;
                 self.dev_rename = Some((dev, cur));
@@ -402,6 +408,7 @@ impl App {
                 }
             }
             Msg::UnlinkAsk(dev) => {
+                self.dev_menu = None;
                 self.dev_rename = None;
                 self.link.pass.zeroize();
                 self.notice = None;

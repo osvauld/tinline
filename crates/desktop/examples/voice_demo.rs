@@ -7,6 +7,9 @@
 #[path = "../src/mark.rs"]
 #[allow(dead_code)]
 mod mark;
+#[path = "../../tin-icons/generated/tin_icons.rs"]
+#[allow(dead_code)]
+mod tin_icons;
 #[path = "../src/ui.rs"]
 mod ui;
 #[path = "../src/voice.rs"]

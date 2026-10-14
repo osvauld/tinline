@@ -63,12 +63,18 @@ impl App {
             self.fx.now = now;
             self.fx.clear.go(clear, dur::CROSSFADE, Ease::Out, now);
         }
+        let (level, wave) = self.signal_now();
+        self.fx.signal(level, wave);
     }
 
-    fn shell_navigation(&self, t: Tok) -> El<'_> {
+    pub(super) fn shell_navigation(&self, t: Tok) -> El<'_> {
         // .brand: 4 8 16 padding, 8 gap, 19px bold "Tinline" beside the live mark.
-        let brand = container(row![ui::logo_live(28.0, t, self.mark_look()), bold("Tinline", 19.0, t.ink).line_height(lh(21.0))].spacing(8).align_y(Alignment::Center))
-            .padding(Padding { top: 4.0, right: 8.0, bottom: 16.0, left: 8.0 });
+        // While a call rings, RingHead takes the brand row's box (32 tall above its 16 px of spacing).
+        let brand_row: El = match self.ring_head(t) {
+            Some(rh) => rh,
+            None => row![ui::logo_live(28.0, t, self.mark_look()), bold("Tinline", 19.0, t.ink).line_height(lh(21.0))].spacing(8).align_y(Alignment::Center).height(32).into(),
+        };
+        let brand = container(brand_row).padding(Padding { top: 4.0, right: 8.0, bottom: 16.0, left: 8.0 });
         let mut items = column![].spacing(2);
         for (tab, label, icon) in TABS {
             let on = self.chat.tab == tab;
@@ -146,7 +152,9 @@ impl App {
         let new_chat = button(container(pgi("plus", 20.0, t.accent_ink)).width(36).height(36).center_x(36).center_y(36))
             .padding(0).width(36).height(36).style(wash(t, Some(t.accent_soft), Some(ui::mix(t.accent_soft, Color::BLACK, 0.03)), 18.0))
             .on_press(Msg::ShellSearch(Action::NewChat(true)));
-        container(row![chip("All", !unread, false), chip("Unread", unread, true), Space::new().width(Fill), new_chat].spacing(8).align_y(Alignment::Center))
+        // With no chats at all the filters mean nothing yet: only the + stays (desktop).
+        let chips: El = if self.has_chats() { row![chip("All", !unread, false), chip("Unread", unread, true)].spacing(8).into() } else { Space::new().height(32).into() };
+        container(row![chips, Space::new().width(Fill), new_chat].spacing(8).align_y(Alignment::Center))
             .padding(Padding { top: 4.0, right: 16.0, bottom: 8.0, left: 16.0 }).width(Fill).into()
     }
 
@@ -290,7 +298,7 @@ impl App {
         let find = container(stack![find, container(pgi("search", 18.0, t.ink2)).padding(Padding { left: 14.0, ..Padding::ZERO }).height(44).center_y(44)])
             .padding(Padding { top: 4.0, right: 16.0, bottom: 8.0, left: 16.0 });
         let add = button(row![container(pgi("userplus", 22.0, t.accent_ink)).width(44).height(44).center_x(44).center_y(44).style(ui::plain(t.accent_soft, 22.0)),
-                column![semi("Add contact", 15.0, t.ink).line_height(lh(21.0)), tx("Scan a code or paste an invite", 13.0, t.ink2).line_height(lh(18.0))].spacing(1)]
+                column![semi("Add contact", 15.0, t.ink).line_height(lh(21.0)), tx("Share your code or paste theirs", 13.0, t.ink2).line_height(lh(18.0))].spacing(1)]
                 .spacing(12).align_y(Alignment::Center).height(64))
             .padding([0, 8]).width(Fill).style(wash(t, None, Some(t.surface2), 14.0)).on_press(Msg::OpenAdd);
         let mut col = column![find, container(add).padding([0, 8])].spacing(0);
@@ -319,6 +327,51 @@ impl App {
                 .padding([0, 8]).width(Fill).style(wash(t, sel.then_some(t.accent_soft), (!sel).then_some(t.surface2), 14.0))
                 .on_press(Msg::ShellSearch(Action::OpenPerson(c.did.clone()))).into()
         };
+        // People waiting for my answer (cards: Accept / Not now), then requests I sent.
+        let waiting: Vec<&p2pcore::ContactRequest> = self.requests_in.iter().filter(|r| !self.hidden_requests.contains(&r.did)).collect();
+        if !waiting.is_empty() {
+            col = col.push(sec("WAITING FOR YOU".into()));
+            let btn = |label_: &'static str, primary: bool, on: Msg| -> El<'static> {
+                let style = move |_: &Theme, st: button::Status| {
+                    let hover = matches!(st, button::Status::Hovered);
+                    let bg = if primary { if hover { ui::mix(t.accent, Color::WHITE, 0.08) } else { t.accent } } else if hover { t.surface2 } else { Color::TRANSPARENT };
+                    button::Style { background: Some(iced::Background::Color(bg)), text_color: if primary { t.on_accent } else { t.ink }, border: Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() }
+                };
+                button(container(semi(label_, 15.0, if primary { t.on_accent } else { t.ink }).line_height(lh(20.0))).center_y(44)).padding([0, 18]).height(44).style(style).on_press(on).into()
+            };
+            let mut cards = column![].spacing(12);
+            for r in waiting {
+                let busy = self.add_ui.answering;
+                let accept: El = if busy { container(semi("Accept", 15.0, t.on_accent)).padding([12, 18]).style(ui::plain(ui::alpha(t.accent, 0.45), 22.0)).into() } else { btn("Accept", true, Msg::Gate(super::super::signup::Gs::CardAccept(r.did.clone()))) };
+                let card = column![
+                    row![avatar(t, &r.name, &r.did, 44.0), column![semi(r.name.clone(), 15.0, t.ink).line_height(lh(21.0)), tx("Wants to add you as a contact", 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
+                        .spacing(12)
+                        .align_y(Alignment::Center),
+                    row![accept, btn("Not now", false, Msg::Gate(super::super::signup::Gs::CardNotNow(r.did.clone())))].spacing(8),
+                    tx("Accepting lets you message and call each other.", 13.0, t.ink2).line_height(lh(19.0)),
+                ]
+                .spacing(10);
+                cards = cards.push(container(card).padding(14).width(Fill).style(move |_: &Theme| container::Style {
+                    background: Some(iced::Background::Color(t.surface)),
+                    border: Border { color: t.hairline, width: 1.0, radius: 14.0.into() },
+                    ..Default::default()
+                }));
+            }
+            col = col.push(container(cards).padding([6, 8]));
+        }
+        if !self.requests_out.is_empty() {
+            // No "declined": an unanswered request just waits (kind to both).
+            col = col.push(sec("WAITING FOR THEM".into()));
+            let mut g = column![].spacing(0);
+            for x in &self.requests_out {
+                let f = super::super::signup::first_name(&x.name);
+                let w = 380.0 - 1.0 - 32.0 - 40.0 - 12.0;
+                g = g.push(container(row![avatar(t, &x.name, &x.did, 40.0), column![semi(ellipsize(&x.name, ui::SANS_SEMI, 15.0, w), 15.0, t.ink).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None),
+                    tx(format!("Request sent. Your line opens when {f} accepts."), 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
+                    .spacing(12).align_y(Alignment::Center)).padding([12, 8]).width(Fill));
+            }
+            col = col.push(container(g).padding([0, 8]));
+        }
         let mut letter = String::new();
         let mut group = column![].spacing(0);
         for c in &mine {
@@ -344,7 +397,13 @@ impl App {
             }
             col = col.push(container(g).padding([0, 8]));
         }
-        let foot = if !q.is_empty() && mine.is_empty() && blocked.is_empty() {
+        if total == 0 && blocked.is_empty() && self.requests_out.is_empty() && q.is_empty() {
+            // EmptyLine `contacts`: replaces "0 contacts"; the Add contact row above is the action.
+            return col.push(self.empty_quiet(t, "The people you add show up here.")).into();
+        }
+        let foot = if total == 0 && q.is_empty() {
+            String::new()
+        } else if !q.is_empty() && mine.is_empty() && blocked.is_empty() {
             format!("No one called \u{201c}{}\u{201d} in your contacts.", self.shell_search.contacts_q.trim())
         } else {
             format!("{total} {}", if total == 1 { "contact" } else { "contacts" })
