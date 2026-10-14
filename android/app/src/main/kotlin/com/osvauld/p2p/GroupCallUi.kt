@@ -139,6 +139,7 @@ class GroupCallUi(private val app: P2pApp) {
     private fun onEvent(e: GroupCallEvent) {
         val s = _s.value
         val mine = s.gid == e.groupId && s.active
+        if (e.kind == GroupCallEventKind.ENDED || e.kind == GroupCallEventKind.LEFT) app.scope.launch(Dispatchers.IO) { app.refreshGroupLog() }
         try {
             when (e.kind) {
                 GroupCallEventKind.ANNOUNCED -> app.scope.launch(Dispatchers.IO) { refreshLive(e.groupId) }

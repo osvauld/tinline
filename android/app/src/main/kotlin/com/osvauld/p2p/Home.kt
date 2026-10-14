@@ -58,7 +58,7 @@ fun HomeScreen(
     /** Opens a PLACEHOLDER preview screen (Settings › Developer). */
     onPreview: (PRoute) -> Unit = {},
     /** The Groups tab (real groups, GroupsLive.kt). */
-    onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {}, say: (String) -> Unit = {},
+    onGroup: (String) -> Unit = {}, onGroupInfo: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {}, say: (String) -> Unit = {},
     /** Opens the full-screen search (Search.kt). */
     onSearch: () -> Unit = {},
 ) {
@@ -74,6 +74,10 @@ fun HomeScreen(
     val localTab = rememberSaveable { mutableStateOf(HomeTab.Chats) }
     var tab by (homeTab ?: localTab)
     val groupList by app.groups.list.collectAsState()
+    val groupLog by app.groupLog.collectAsState()
+    val groupCalls = remember(groupLog, groupList) {
+        GroupCallsUi(groupLog, groupList.filter { GroupText.active(it.myRole) }.associate { it.id to it.name }, onGroupInfo) { gid -> app.groupCallUi.call(gid, say) }
+    }
     val groupInvitations by app.groups.invitations.collectAsState()
     val groupBadge = GroupText.badge(groupList, groupInvitations)
     val requestsIn by app.groups.incoming.collectAsState()
@@ -124,7 +128,7 @@ fun HomeScreen(
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
         groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup, say, onChat) }, groupBadge = groupBadge,
         requestsBlock = { GroupRequestsBlock(app, onChat, say) },
-        onSearch = onSearch, history = history,
+        onSearch = onSearch, history = history, groupCalls = groupCalls,
         canCall = { did -> blocks.callGate(did, byDid.containsKey(did)) == CallGate.Ok && byDid.containsKey(did) },
         isBlocked = { did -> blocks.of(did).blockedByMe }, onGroup = onGroup, onNewGroup = onNewGroup, callLook = callPhase,
         waitingIn = waitingIn.filter { it.did !in hiddenRequests }, waitingOut = waitingOut,
@@ -171,6 +175,8 @@ fun HomeContent(
     onSearch: () -> Unit = {},
     /** The call log for the Calls tab (newest first). */
     history: List<CallRecord> = emptyList(),
+    /** Group calls for the Calls tab (HomeLists.kt). */
+    groupCalls: GroupCallsUi? = null,
     canCall: (String) -> Boolean = { true },
     isBlocked: (String) -> Boolean = { false },
     onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {},
@@ -201,7 +207,7 @@ fun HomeContent(
                             top = { Column { banner(); requestsBlock?.invoke() } }, empty = hero)
                         HomeTab.Groups -> groupsBody?.invoke()
                         HomeTab.Calls -> CallsTabBody(
-                            history, nameOf = { r -> byDid[r.peerDid]?.display() ?: r.peerName.ifBlank { "Unknown" } }, canCall = canCall, state = state,
+                            history, groupCalls = groupCalls, nameOf = { r -> byDid[r.peerDid]?.display() ?: r.peerName.ifBlank { "Unknown" } }, canCall = canCall, state = state,
                             onProfile = { did -> byDid[did]?.let(onContact) }, onCall = { did -> byDid[did]?.let(onCall) },
                             top = {
                                 Column {

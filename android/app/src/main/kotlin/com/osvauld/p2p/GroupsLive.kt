@@ -432,6 +432,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     val c = Tin.c
     val open by app.groups.open.collectAsState()
     val blocks by app.blocks.collectAsState()
+    val groupLog by app.groupLog.collectAsState()
     val exec = rememberRunner()
     LaunchedEffect(id) { withContext(Dispatchers.IO) { app.groups.open(id) } }
     DisposableEffect(id) { onDispose { app.groups.close(id) } }
@@ -454,7 +455,15 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     var replyTo by remember(id) { mutableStateOf<String?>(null) }
     var sending by remember { mutableStateOf(false) }
     val list = rememberLazyListState()
-    LaunchedEffect(o.messages.size) { if (o.messages.isNotEmpty()) list.scrollToItem(o.messages.size - 1 + if (o.older != null) 1 else 0) }
+    // The thread: posts and this group's call log (MessageRow `.callrec`) merged by time, oldest first.
+    val rows = remember(o.messages, groupLog, id) {
+        val calls = groupLog.filter { it.groupId == id }.map { ThreadRow.Call(it) }
+        (o.messages.mapIndexed { i, m -> ThreadRow.Post(i, m) } + calls).sortedBy { it.at }.let { all ->
+            // Calls go before a post of the same second; posts keep their own order.
+            all.sortedWith(compareBy<ThreadRow> { it.at }.thenBy { if (it is ThreadRow.Call) 0 else 1 }.thenBy { (it as? ThreadRow.Post)?.i ?: 0 })
+        }
+    }
+    LaunchedEffect(rows.size) { if (rows.isNotEmpty()) list.scrollToItem(rows.size - 1 + if (o.older != null) 1 else 0) }
     val waiting = GroupText.waitingForHost(d)
     // Unread posts when the group opened: where "n new messages" goes (the count is cleared as it opens).
     val unreadAtOpen = remember(id) { app.groups.list.value.firstOrNull { it.id == id }?.unread?.toInt() ?: 0 }
@@ -500,14 +509,19 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                         TinButton("Show earlier messages", { exec({ app.groups.older(); Result.success("") }) {} }, style = BtnStyle.Text, fill = false, height = 40.dp)
                     }
                 }
-                if (o.messages.isEmpty()) item { Column(Modifier.fillMaxWidth()) { SysLine("No messages yet") } }
-                itemsIndexed(o.messages, key = { _, m -> m.id }) { i, m ->
-                    val prev = o.messages.getOrNull(i - 1)
-                    val newDay = prev == null || !sameDay(prev.at.toLong(), m.at.toLong())
+                if (rows.isEmpty()) item { Column(Modifier.fillMaxWidth()) { SysLine("No messages yet") } }
+                itemsIndexed(rows, key = { _, r -> r.key }) { k, row ->
+                    val prevAt = rows.getOrNull(k - 1)?.at
+                    val newDay = prevAt == null || !sameDay(prevAt, row.at)
                     Column(Modifier.fillMaxWidth()) {
-                        if (newDay) PgDayPill(dayLabel(m.at.toLong(), nowMs), Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp))
-                        if (m.id == dividerId) PgUnreadDivider(unreadAtOpen)
-                        GroupItemLive(app, o.messages, i, m, me, d, blocks.blockedByMe(m.authorDid), onRemoval, onReply = { replyTo = m.id }, top = if (newDay) 0.dp else null)
+                        if (newDay) PgDayPill(dayLabel(row.at, nowMs), Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp))
+                        when (row) {
+                            is ThreadRow.Call -> GroupCallPill(row.r, me, GroupText.active(d.myRole)) { app.groupCallUi.call(d.id, say) }
+                            is ThreadRow.Post -> {
+                                if (row.m.id == dividerId) PgUnreadDivider(unreadAtOpen)
+                                GroupItemLive(app, o.messages, row.i, row.m, me, d, blocks.blockedByMe(row.m.authorDid), onRemoval, onReply = { replyTo = row.m.id }, top = if (newDay) 0.dp else null)
+                            }
+                        }
                     }
                 }
             }
@@ -533,6 +547,34 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                     }
                 }, onAttach = null)
             }
+        }
+    }
+}
+
+private sealed interface ThreadRow {
+    val at: Long
+    val key: String
+    data class Post(val i: Int, val m: GroupMessage) : ThreadRow { override val at get() = m.at.toLong(); override val key get() = m.id }
+    data class Call(val r: uniffi.p2pcore.GroupCallRecord) : ThreadRow { override val at get() = r.startedAt.toLong() * 1000; override val key get() = "call:" + r.callId }
+}
+
+/**
+ * MessageRow `.callrec` for a group call (32 tall pill, radius 16, surface, hairline): "Group call · 19 min · 4 people", or
+ * "Missed group call · 5 min" (calm, never red). On my side when I started it; tap = start or join a call in this group.
+ */
+@Composable
+private fun GroupCallPill(r: uniffi.p2pcore.GroupCallRecord, me: String, enabled: Boolean, onCall: () -> Unit) {
+    val c = Tin.c
+    val text = uniffi.p2pcore.groupCallLabel(r)
+    val time = java.time.Instant.ofEpochSecond(r.startedAt.toLong()).atZone(java.time.ZoneId.systemDefault()).toLocalTime().let { "%02d:%02d".format(it.hour, it.minute) }
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = if (!r.missed && r.startedBy == me) Arrangement.End else Arrangement.Start) {
+        Row(Modifier.heightIn(min = 32.dp).clip(RoundedCornerShape(16.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(16.dp))
+            .clickable(enabled = enabled, onClick = onCall).padding(horizontal = 12.dp)
+            .semantics(mergeDescendants = true) { contentDescription = "$text, $time. Start or join a call" },
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(Pg.Phone, null, Modifier.size(16.dp), tint = c.ink2)
+            Text(text, style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1)
+            Text(time, style = PgBodyText.copy(fontSize = 11.sp, lineHeight = 14.sp, fontFeatureSettings = "tnum"), color = c.ink2)
         }
     }
 }

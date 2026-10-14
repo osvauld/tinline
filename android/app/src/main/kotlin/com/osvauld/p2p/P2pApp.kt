@@ -72,6 +72,9 @@ class P2pApp : Application(), NodeEvents {
     private val _history = MutableStateFlow<List<CallRecord>>(emptyList())
     /** The call log, newest first. Re-read on every call end (the core writes it before `Ended` fires). */
     val history: StateFlow<List<CallRecord>> = _history
+    private val _groupLog = MutableStateFlow<List<uniffi.p2pcore.GroupCallRecord>>(emptyList())
+    /** Group calls this device was in or missed, newest first (the core's group call log; local to this device). */
+    val groupLog: StateFlow<List<uniffi.p2pcore.GroupCallRecord>> = _groupLog
     private val _blocks = MutableStateFlow(Blocks())
     /** Contact blocking (Blocking.kt): who we block, who blocks us. Re-read on every contacts/chats change. */
     val blocks: StateFlow<Blocks> = _blocks
@@ -132,6 +135,12 @@ class P2pApp : Application(), NodeEvents {
 
     fun refreshHistory() {
         try { _history.value = node.recentCalls(200u) } catch (e: Exception) { Log.w(TAG, "recentCalls: $e") }
+        refreshGroupLog()
+    }
+
+    /** Re-reads the group call log (the core writes a record before the `Ended` / `Left` event fires). */
+    fun refreshGroupLog() {
+        try { _groupLog.value = node.groupCallHistory(null) } catch (e: Exception) { Log.w(TAG, "groupCallHistory: $e") }
     }
 
     /** Re-reads availability and arms a timer for when a timed break ends (no polling). */
