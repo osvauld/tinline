@@ -79,6 +79,7 @@ pub fn blank(name: &str) -> Peer {
     let (tx, rx) = mpsc::channel();
     let (ltx, lrx) = mpsc::channel();
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
     Peer { node, rx, lrx, did: String::new(), dir }
 }
@@ -623,6 +624,33 @@ fn a_file_from_the_contact_reaches_the_other_device_through_ours_while_the_conta
     let out = dir.join("out.bin");
     b2.node.save_attachment(a.did.clone(), m.id.clone(), out.to_string_lossy().into()).unwrap();
     assert_eq!(std::fs::read(&out).unwrap(), bytes);
+}
+
+// chat/5 + self/4: a photo's size and colour preview arrive with the message (before any download), at the
+// contact and, relayed, at their other device; both verify the author's signature over them.
+#[test]
+fn a_photo_arrives_with_its_size_and_preview_at_every_device() {
+    let (a, b1, b2) = trio("c4p");
+    let dir = std::env::temp_dir().join(format!("p2pcore-c4p-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let src = dir.join("view.png");
+    let mut img = image::RgbImage::new(120, 160);
+    for (_, y, p) in img.enumerate_pixels_mut() {
+        *p = if y < 80 { image::Rgb([40, 90, 200]) } else { image::Rgb([30, 140, 60]) };
+    }
+    img.save(&src).unwrap();
+    let m = a.node.send_file(b1.did.clone(), src.to_string_lossy().into(), "image/png".into(), Some("the view".into())).unwrap();
+    let sent = m.attachment.clone().expect("attachment");
+    assert_eq!((sent.width, sent.height, sent.preview.len()), (120, 160, 36));
+    for (who, p) in [("b1", &b1), ("b2", &b2)] {
+        eventually(60, &format!("{who} has the photo with its size"), || {
+            all_msgs(p, &a.did).iter().any(|x| x.id == m.id && x.attachment.as_ref().is_some_and(|t| t.width == 120 && t.height == 160 && t.preview == sent.preview))
+        });
+    }
+    // Sky on top, grass below.
+    let px = |i: usize| &sent.preview[i * 3..i * 3 + 3];
+    assert!(px(0)[2] > 150 && px(11)[1] > 100, "{:?}", sent.preview);
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]

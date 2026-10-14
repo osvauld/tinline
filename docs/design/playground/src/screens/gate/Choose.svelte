@@ -8,12 +8,12 @@
   <div class="opts">
     <button type="button" class="opt press" onclick={() => gate.startLink()}>
       <span class="ic"><Icon name="qr" size={24} /></span>
-      <span class="tx"><b>Link from another device</b><small>Scan a QR code with a device that already has your account. Contacts and chats come along.</small></span>
+      <span class="tx"><b>Link my other device</b><small>Scan a code on a device that already has your account. Your contacts and chats come along.</small></span>
       <Icon name="chev" size={20} class="go" />
     </button>
     <button type="button" class="opt press" onclick={() => gate.startRestore()}>
       <span class="ic"><Icon name="key" size={24} /></span>
-      <span class="tx"><b>Restore from recovery phrase</b><small>Type your 24 words. This {gate.noun} starts with an empty contact list.</small></span>
+      <span class="tx"><b>Restore my account</b><small>Type your 24 recovery words. This {gate.noun} starts with an empty contact list.</small></span>
       <Icon name="chev" size={20} class="go" />
     </button>
   </div>
@@ -21,6 +21,8 @@
 
 <style>
   .opts { display: grid; gap: 12px; }
+  /* Touch: the choices sit at the bottom, in thumb reach, where Welcome's buttons were (24px from the edge, like a footer). */
+  :global([data-form='android']) .opts { margin-block-start: auto; padding-block-end: 8px; }
   .opt { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface); text-align: start; cursor: pointer; min-block-size: 76px; }
   .opt:hover { background: var(--surface-2); }
   .ic { display: grid; place-items: center; inline-size: 44px; block-size: 44px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); flex: none; }

@@ -52,14 +52,14 @@ fun AccountSheet(app: P2pApp, onDismiss: () -> Unit, onPick: (String) -> Unit, a
                     Text(a.name, style = TinType.bodyL.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = c.ink, maxLines = 1)
                     Hint(sub)
                 }
-                if (a.current) Icon(Icons.Rounded.Check, "Current account", tint = c.pr)
+                if (a.current) Icon(PgIcons.Check, "Current account", tint = c.pr)
             }
         }
         if (actions != null) {
             Spacer(Modifier.height(8.dp))
-            SheetRow(Icons.Rounded.Add, "Create a new account", null, true) { actions.onCreate() }
-            SheetRow(Icons.Rounded.Link, "Link an account from another device", null, true) { actions.onLink() }
-            SheetRow(Icons.Rounded.Key, "Restore with recovery phrase", null, true) { actions.onRestore() }
+            SheetRow(PgIcons.Plus, "Create a new account", null, true) { actions.onCreate() }
+            SheetRow(PgIcons.Link, "Link an account from another device", null, true) { actions.onLink() }
+            SheetRow(PgIcons.Key, "Restore with recovery phrase", null, true) { actions.onRestore() }
         }
         Hint("One account is online at a time. Calls to a locked account ring only on your other devices.", Modifier.padding(top = 12.dp))
     }

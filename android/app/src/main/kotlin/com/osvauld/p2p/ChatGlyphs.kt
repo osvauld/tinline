@@ -60,6 +60,7 @@ object Pg {
 object PgMotion {
     const val PRESS = 100; const val RELEASE = 140; const val SWITCH = 120; const val CROSSFADE = 120
     const val ENTER = 200; const val EXIT = 140; const val BUBBLE_IN = 160
+    const val OVERLAY_OPEN = 240; const val OVERLAY_CLOSE = 220; const val INDICATOR = 200; const val TAB_OUT = 90; const val TAB_IN = 210
     val Out = CubicBezierEasing(.2f, .8f, .2f, 1f)
     val In = CubicBezierEasing(.4f, 0f, 1f, 1f)
     val InOut = CubicBezierEasing(.4f, 0f, .2f, 1f)

@@ -50,6 +50,7 @@ fn peer(name: &str) -> Peer {
     let (tx, rx) = mpsc::channel();
     let tap = Arc::new(Tap(Mutex::new(tx)));
     let node = Node::new(dir.to_string_lossy().into(), tap.clone()).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.set_video_events(tap);
     node.create_identity(name.into(), PASS.into()).unwrap();
     online(&node);

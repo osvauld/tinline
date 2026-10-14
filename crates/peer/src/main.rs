@@ -196,6 +196,9 @@ fn run() -> Result<(), String> {
     let (tx, rx) = mpsc::channel();
     let events = Arc::new(Printer { tx: Mutex::new(tx), verbose: o.verbose });
     let node = Node::new(o.data.to_string_lossy().into(), events).map_err(|e| e.to_string())?;
+    // A headless test peer: contact hellos are welcomed at once, as before contact requests
+    // (the e2e scripts have nobody to press Accept).
+    node.auto_accept_contacts_for_test(true);
     let rest: Vec<&str> = o.rest.iter().map(String::as_str).collect();
     if rest.first() != Some(&"init") {
         match node.lock_state() {

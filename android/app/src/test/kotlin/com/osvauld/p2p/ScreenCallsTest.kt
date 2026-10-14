@@ -16,8 +16,18 @@ class ScreenCallsTest {
         assertFalse(connecting.startsWith("End-to-end encrypted."))
         val connected = callPrivacy(true, "Arjun")
         assertTrue(connected.startsWith("End-to-end encrypted."))
-        assertTrue(connected.contains("relay"))
-        assertFalse(connected.contains("straight to"))
+        // The relay is explained in the card's connection row, only when the call is relayed.
+        assertFalse(connected.contains("relay"))
+    }
+    @Test fun signalUsesRecentLossAndSharedThresholds() {
+        assertEquals(listOf(4, 3, 2, 1), listOf(qualityBars(42, .2), qualityBars(140, 1.4), qualityBars(280, 5.0), qualityBars(520, 14.0)))
+        assertEquals("Good", signalWord(qualityBars(140, 1.4)))
+        val l = RecentLoss()
+        l.push(0, 0); l.push(1000, 200)
+        var last = 0.0
+        for (i in 2..8) last = l.push(1000L * i, 200)
+        assertEquals(0.0, last, 0.0)
+        assertEquals(listOf("0", "0.2", "14"), listOf(lossText(0.0), lossText(.2), lossText(14.04)))
     }
     @Test fun liveMarkUsesFoundationCallPriority() {
         assertEquals(MarkState.Ringing, statusLook(CallPhase.Outgoing, conn = ConnState.Online).state)

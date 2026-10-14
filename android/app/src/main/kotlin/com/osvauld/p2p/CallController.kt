@@ -37,6 +37,8 @@ data class CallUi(
     /** On hold because another call (e.g. a phone call) took over; both directions are silent. */
     val held: Boolean = false,
     val stats: CallStats? = null,
+    /** Loss over the last few seconds ([RecentLoss]), for the signal bars. */
+    val lossPct: Double? = null,
     val activeSinceMs: Long? = null,
     /** Shown on the call screen when the mic cannot be used (denied permission or init failure). */
     val micProblem: String? = null,
@@ -78,6 +80,9 @@ class CallController(private val app: P2pApp) {
     @Volatile private var takeover: CallInfo? = null
     /** Whether the call screen is on top; if not, the waiting call also gets a notification. */
     @Volatile var callScreenShown = false
+
+    /** Debug screen gallery only: a made-up call to draw the strip with (never called by the app). */
+    fun showForGallery(u: CallUi?) { _ui.value = u }
     private var proximity: PowerManager.WakeLock? = null
 
     /** The current call's Telecom registration and audio; replaced per call. */
@@ -173,7 +178,7 @@ class CallController(private val app: P2pApp) {
                     if (!everActive && isMissedReason(reason, cur.info.incoming)) Notifications.missed(app, cur.info.peerName)
                     val s = cur.stats
                     val next = takeover; takeover = null
-                    val loss = s?.let { val t = (it.received + it.lost).toDouble(); if (t > 0) 100.0 * it.lost.toDouble() / t else 0.0 }
+                    val loss = cur.lossPct
                     // Our outgoing call yielded to their simultaneous call: no ended screen, theirs rings.
                     if (next == null && classifyEnd(reason) != EndKind.Superseded) _ended.value = EndedUi(
                         cur.info.peerName, cur.info.peerDid, reason, cur.info.incoming, everActive,
@@ -261,6 +266,7 @@ class CallController(private val app: P2pApp) {
     /** The quiet in-call "call waiting" beep, on the voice-call stream so it does not disturb the call audio. */
     private fun startWaitingTone() {
         waitingTone?.cancel()
+        if (AlertPrefs.quiet(app)) return   // Settings › Sounds › Quiet
         waitingTone = app.scope.launch {
             val tg = try { ToneGenerator(AudioManager.STREAM_VOICE_CALL, 35) } catch (e: Exception) { Log.w("Call", "tone: $e"); null }
             try {
@@ -371,19 +377,22 @@ class CallController(private val app: P2pApp) {
     private fun startStats() {
         statsJob?.cancel()
         statsJob = app.scope.launch {
+            val recent = RecentLoss()
             while (isActive) {
                 delay(1000)
                 val s = try { app.node.callStats() } catch (_: Exception) { null } ?: continue
                 testLog(statsLine(s))
                 if (app.video.info.value?.negotiated == true) testLog(app.video.statsLine(renderer))
-                _ui.update { it?.copy(stats = s) }
+                val loss = recent.push(s.received.toLong(), s.lost.toLong())
+                _ui.update { it?.copy(stats = s, lossPct = loss) }
             }
         }
     }
 
     private fun startRinging() {
         stopRinging()
-        try {
+        if (!AlertPrefs.calls(app)) return   // Settings › Notifications › Calls off: no ringing
+        if (!AlertPrefs.quiet(app)) try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
             ringtone = RingtoneManager.getRingtone(app, uri)?.apply {
                 audioAttributes = AudioAttributes.Builder()

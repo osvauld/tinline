@@ -105,7 +105,8 @@ and rules; read it first. *Drawer* is the Simulation section that drives the scr
 ### Sign-up and unlock (drawer: *Sign-up and unlock*)
 `screens/gate/*`. On Android it is a full-screen stepped flow; on desktop, a centred card with the
 same steps.
-- **Welcome** offers Create, "Link to a device" and "Restore from recovery phrase".
+- **Read `SIGNUP-HANDOFF.md` first** (2026-10-13 refinement: layout, keys, copy and the reasons for each).
+- **Welcome** offers "Create my account" and "I have an account" (then Link my other device / Restore my account).
 - **Confirmations are optional**: "Check my copy" for the phrase; the passphrase has show/hide and
   no confirm field.
 - **Lockout**: after 5 wrong passphrases, Unlock waits 30 s. This is a core gap.
@@ -126,6 +127,19 @@ same steps.
   - A call button never starts a 1:1 call while a group call is running.
 - **Modals** (`Layer.svelte`): a bottom sheet on Android; a popover or centred dialog on desktop.
 - **Send pluck** on the logo: silent, nothing under reduced motion.
+- **Photos** (decided 2026-10-14 in `?lab=photos`; `screens/chat/PhotoBody.svelte`, `lib/ui/photos.ts`):
+  - **Framed**: the bubble keeps a 3 px rim of its colour around the photo; the photo's corners are
+    the bubble's, 3 px in (at least 3). Every corner round, no tail; in a run the stacking-side
+    corners tighten like text bubbles.
+  - **True shape** from the size the core sends (chat/5), at most 248 x 330 (phone) / 300 x 340
+    (desktop), at least 120 wide; 4:3 for photos from older apps. Nothing moves when it arrives.
+  - Until it is here, the core's **4x3 colour preview** fills the box, scaled up smooth and
+    blurred. Not downloaded: "Photo · 3.2 MB" chip and Download. Sending: a 52 px ring with the
+    progress and a cancel cross over a slightly darkened photo. Mine waiting: "Sends when Arjun is
+    online" chip on the photo.
+  - The caption and the time sit under the photo, and the bubble is never wider than the photo.
+  - Why: a photo should read as the photo, not as a file; the rim keeps it part of the
+    conversation's rhythm; a known size means no jump.
 
 ### Search (drawer: *Search*; core API: `docs/search.md`, on dev since 0030b17)
 `screens/search/*`.
@@ -147,8 +161,8 @@ same steps.
 `lib/calls/*`.
 - **Call screen** (`CallScreen.svelte`): a cloud colour field behind everything, then the avatar
   (no ring), name, status and timer.
-  - **Top row**: the minimise chevron, the live logo in the centre, and an "About this call" info
-    button.
+  - **Top row**: minimise (Android: ← back; desktop: the chevron), the live logo in the centre,
+    and the signal bars that open "About this call". Android adds Message (see below).
   - **Android controls**: Mute · Camera · End · Flip · Speaker. Flip is dimmed when the camera is
     off.
   - **Desktop controls**: Mute · End · Camera.
@@ -165,8 +179,30 @@ same steps.
   - Android screens with their own header: Back stays.
   - Desktop: the sidebar's brand row.
   - It cross-fades in and out; nothing moves.
-- **Minimised call**: `CallStrip.svelte`. It is in the layout flow (the app moves down: you
+- **Minimised call**: `CallStrip.svelte`. It is in the layout flow (the app makes room: you
   caused it). Tapping it restores the call.
+  - Desktop: across the top of the list and chat columns, with End.
+  - Android (decided 2026-10-14 in the in-call lab, `?lab=incall`, middle phone;
+    `lib/calls/incall.svelte.ts`): at the **bottom**, under the tab bar or the composer, above the
+    system navigation inset. Why: when I come back to the app mid-call with the phone near my
+    face, the top edge is by the ear and the proximity sensor.
+  - Android strip has **no End**: in a chat it sits right under Send. Ending is on the call
+    screen and the notification.
+  - **While typing** (keyboard up) the Android strip stays but slims to a 26 dp line (name and
+    timer, smaller type) above the keyboard, and grows back when the keyboard goes. It stays
+    because I may be writing to someone else, where nothing else leads back to the call.
+    Open: 26 dp is under the 48 dp touch minimum; decide on device whether the tap area is the
+    line itself or extends into the composer gap.
+- **Messaging during a call (Android)**, same decision:
+  - The call screen's top row: ← back (was a chevron) on the left, the mark in the centre, and on
+    the right a **Message** button (chat icon) beside the signal bars.
+  - ← goes back to wherever I was (Android back; the call continues, the strip appears).
+  - Message minimises the call and opens the chat with the person I'm calling, from anywhere.
+  - In their chat the header's phone button turns green (accent-soft) and returns to the call,
+    as a group's does during its call.
+- **Calls tab**: tapping a call row calls them (the chat belongs to Chats). The avatar opens
+  their profile. Someone I can't call (blocked, messages only): the row opens their profile,
+  which says why.
 - **Call waiting**: `WaitingCard.svelte` plus `tests/waiting.flow.js`.
   - One more call can ring over an answered call. The options are Decline, or End & answer.
     There is no hold.
@@ -241,6 +277,10 @@ same steps.
   - Links in a profile open outside Tinline (`OpenLink.svelte`).
 - **Settings**: `screens/settings/*`: profile card, Notifications (with `PermBanner`, which animates
   its height), Sounds (Quiet plus the call sound set, with previews).
+- **Appearance** (added 2026-10-14; the sign-up switch was the only way to change it): a section
+  on the Settings landing, after the accounts, with three radios in the Sounds page's style:
+  "Match my phone/computer" (follows the system, the default), Light, Dark. It switches at once.
+  Stored as an optional choice: none = follow the system.
 
 ## 5. Core gaps the screens depend on (PLAN §7)
 

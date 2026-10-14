@@ -90,7 +90,7 @@ mod tests;
 
 pub use self::types::*;
 pub(crate) use self::api_contacts::*;
-use self::contacts::*;
+pub(crate) use self::contacts::*;
 pub(crate) use self::call::*;
 pub(crate) use self::devices::*;
 pub(crate) use self::lifecycle::*;
@@ -188,6 +188,8 @@ pub(crate) struct Inner {
     /// Group calls (G6), `crate::gcall::net`.
     pub(crate) gcall: crate::gcall::net::Service,
     pub(crate) block: crate::block::BlockRt,
+    /// Contact requests (`contact_req.rs`).
+    pub(crate) requests: crate::contact_req::ReqRt,
     /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
     pub(crate) group: crate::group::engine::GroupRt,
     /// Token delivery (P6, `caps.rs`).

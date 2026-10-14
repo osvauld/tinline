@@ -8,20 +8,22 @@
   import { call, fmtDuration } from './call.svelte';
   import { displayName } from '../model/store.svelte';
   import { stripIn, stripOut, STRIP_H } from './motion';
+  import { incall } from './incall.svelte';
+  import { prefs } from '../model/prefs.svelte';
 
-  const show = $derived(call.phase !== 'idle' && call.phase !== 'incoming' && call.view === 'strip' && !call.fading);
+  const show = $derived(call.phase !== 'idle' && call.phase !== 'incoming' && call.view === 'strip' && !call.fading && !incall.stripHidden);
   const name = $derived(call.peer ? displayName(call.peer) : '');
   const timed = $derived(call.phase === 'active' || call.phase === 'reconnecting');
 </script>
 
 <GroupCallStrip />
 {#if show}
-  <div class="strip" style:--h="{STRIP_H}px" in:stripIn out:stripOut data-callstrip>
+  <div class="strip" class:slim={incall.stripSlim} style:--h="{STRIP_H}px" in:stripIn out:stripOut data-callstrip>
     <button type="button" class="open press" aria-label="Return to call with {name}" onclick={() => call.restore()}>
       {#if vid.videoCall}<VIcon name="video" size={18} />{:else}<Icon name="phone" size={18} />{/if}<b class="nm" dir="auto">{name}</b>
       <span class="st">{#if call.phase === 'active'}<time class="t">{fmtDuration(call.elapsedS)}</time>{:else}{call.statusText}{/if}</span>
     </button>
-    <button type="button" class="end press" aria-label="End call" disabled={call.phase === 'ended'} onclick={() => call.hangup()}>End</button>
+    {#if (prefs.form === 'desktop' || incall.stripEnd) && !incall.stripSlim}<button type="button" class="end press" aria-label="End call" disabled={call.phase === 'ended'} onclick={() => call.hangup()}>End</button>{/if}
   </div>
 {/if}
 
@@ -34,4 +36,11 @@
   .end::after { content: ''; position: absolute; inset: -6px -2px; }
   .end:not(:disabled):active { transform: scale(.93); }
   .open:focus-visible, .end:focus-visible { outline: 2px solid var(--on-accent); outline-offset: -3px; }
+  /* In-call lab (`kbdslim`): while typing, a thin line above the keyboard: still there (I may be messaging someone
+     else), still a way back, but out of the way of the keys. */
+  .strip { transition: block-size var(--dur-stripIn) var(--ease-out); }
+  .strip.slim { block-size: 26px; }
+  .strip.slim .nm { font-size: var(--fs-sub); }
+  .strip.slim .st { font-size: var(--fs-meta); }
+  .strip.slim .open :global(svg) { inline-size: 14px; block-size: 14px; }
 </style>

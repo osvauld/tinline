@@ -29,6 +29,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -60,7 +63,7 @@ import kotlinx.coroutines.withContext
  * screens (Restored, Syncing) instead of one shared Done step.
  */
 
-private enum class Step { Welcome, Name, Pass, Phrase, Confirm, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd, LinkName, LinkQr, LinkPass, Syncing }
+private enum class Step { Welcome, Choose, Done, Name, Pass, Phrase, Confirm, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd, LinkName, LinkQr, LinkPass, Syncing }
 
 /** Older onboarding frame, still used by a few non-gate screens. Same furniture as the gate now. */
 @Composable
@@ -89,6 +92,8 @@ fun Lead(text: String, modifier: Modifier = Modifier, align: TextAlign = TextAli
 /** Position in the flow (gate.svelte.ts progressOf): create, restore and link each have their own order. */
 private fun progressOf(step: Step, restoring: Boolean, linking: Boolean, forgot: Boolean, adding: Boolean): Pair<Int, Int>? {
     if (forgot) return null
+    // Welcome and Choose are step 0 of the create count: the header and its empty line are already there.
+    if ((step == Step.Welcome || step == Step.Choose) && !adding) return 0 to 6
     val tail = if (adding) emptyList() else listOf(Step.Terms, Step.Perms)
     val order = when {
         linking -> listOf(Step.LinkName, Step.LinkQr, Step.LinkPass) + tail
@@ -100,7 +105,7 @@ private fun progressOf(step: Step, restoring: Boolean, linking: Boolean, forgot:
 }
 
 private val STEP_LABEL = mapOf(
-    Step.Name to "Your name", Step.Pass to "Passphrase", Step.Phrase to "Recovery phrase", Step.Device to "Device name", Step.Terms to "Terms",
+    Step.Name to "Your nickname", Step.Pass to "Passphrase", Step.Phrase to "Recovery phrase", Step.Device to "Device name", Step.Terms to "Terms",
     Step.Perms to "Permissions", Step.Restore to "Restore account", Step.LinkName to "Device name", Step.LinkQr to "Link to your account", Step.LinkPass to "Passphrase",
 )
 
@@ -114,7 +119,7 @@ private val STEP_LABEL = mapOf(
 @Composable
 fun OnboardingFlow(
     app: P2pApp, missing: List<Need>, onFix: (Need) -> Unit, forgot: Boolean = false,
-    onCancelForgot: () -> Unit = {}, onDone: () -> Unit,
+    onCancelForgot: () -> Unit = {}, onAddFirst: (() -> Unit)? = null, onDone: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -139,6 +144,8 @@ fun OnboardingFlow(
     var linkedPeer by remember { mutableStateOf<String?>(null) }
     var linkedName by remember { mutableStateOf("") }
     var label by rememberSaveable { mutableStateOf("Personal phone") }
+    // "Copy my words" was pressed: coming back from Check my copy keeps "I've saved them" (gate.phraseShown).
+    var phraseCopied by rememberSaveable { mutableStateOf(false) }
     // The identity appeared some other way (debug hook, a restored process): leave onboarding.
     val has by app.hasIdentity.collectAsState()
     LaunchedEffect(has, created) { if (!forgot && !adding && has && !created && !busy && step != Step.LinkQr) onDone() }
@@ -205,9 +212,12 @@ fun OnboardingFlow(
             when (s) {
                 Step.Welcome -> { head(null); WelcomeStep(adding = false,
                     onCreate = { restoring = false; linking = false; go(Step.Name) },
+                    onHave = { go(Step.Choose) }) }
+                Step.Choose -> { head { back(Step.Welcome) }; ChooseStep(
                     onLink = { restoring = false; linking = true; go(Step.LinkName) },
                     onRestore = { restoring = true; linking = false; go(Step.Restore) }) }
-                Step.LinkName -> { head { if (adding) cancelAdd() else back(Step.Welcome) }
+                Step.Done -> { head(null); DoneStep(name, onAdd = { (onAddFirst ?: onDone)() }, onNotNow = onDone) }
+                Step.LinkName -> { head { if (adding) cancelAdd() else back(Step.Choose) }
                     DeviceStep(label, { label = it; error = null }, false, null, onNext = { label = label.trim(); go(Step.LinkQr) }) }
                 Step.LinkQr -> LinkSession(app, newDevice = true, label = label.trim(), onClose = { back(Step.LinkName) }, onDone = { d ->
                     created = true; linkedPeer = d.peer.ifBlank { "your other device" }; linkedName = d.name; go(Step.LinkPass)
@@ -229,7 +239,7 @@ fun OnboardingFlow(
                     head(null)
                     SyncingStep(app.node.profile()?.name ?: linkedName, linkedPeer.orEmpty(), contacts.size, calls.size, onStart = { afterTerms() })
                 }
-                Step.Restore -> { head { if (forgot) onCancelForgot() else if (adding) cancelAdd() else back(Step.Welcome) }
+                Step.Restore -> { head { if (forgot) onCancelForgot() else if (adding) cancelAdd() else back(Step.Choose) }
                     RestoreStep(
                         error = error,
                         warning = if (forgot) "Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase."
@@ -243,7 +253,8 @@ fun OnboardingFlow(
                     PassStep(if (forgot) PassKind.Forgot else if (restoring) PassKind.Restore else PassKind.Create, pass, { pass = it; error = null }, busy, error,
                         onNext = { val p = pass; pass = ""; finishIdentity(p) },
                         onSkip = { pass = ""; finishIdentity("") }) }
-                Step.Phrase -> { head(null); PhraseStep(phrase.orEmpty(), onNext = { go(Step.Device) }, onCheck = { go(Step.Confirm) }) }
+                Step.Phrase -> { head(null); PhraseStep(phrase.orEmpty(), onNext = { go(Step.Device) }, onCheck = { go(Step.Confirm) },
+                    copiedAlready = phraseCopied, onCopied = { phraseCopied = true }) }
                 Step.Confirm -> { head { back(Step.Phrase) }; ConfirmStep(phrase.orEmpty(), onDone = { back(Step.Phrase) }) }
                 Step.Device -> { head(null); DeviceStep(label, { label = it; error = null }, busy, error, onNext = {
                     busy = true; error = null
@@ -256,7 +267,8 @@ fun OnboardingFlow(
                 }) }
                 Step.Restored -> { head(null); RestoredStep(app.node.profile()?.name ?: name, adding, onStart = { afterTerms() }) }
                 Step.Terms -> { head(null); TermsStep { LegalStore.accept(ctx); go(Step.Perms) } }
-                Step.Perms -> { head(null); PermsStep(missing, onFix, onDone) }
+                // A new account ends on Done ("Your line is open"); restore and link already had their own end screen.
+                Step.Perms -> { head(null); PermsStep(missing, onFix, onDone = { if (!restoring && !linking) go(Step.Done) else onDone() }) }
                 Step.SaveFailed -> { head(null); SaveFailedStep(saveError, busy,
                     onRetry = { persistThenContinue() }, onPassphrase = { pass = ""; error = null; go(Step.PassAdd) }) }
                 Step.PassAdd -> { head { back(Step.SaveFailed) }
@@ -291,37 +303,117 @@ fun OnboardingFlow(
 // ------------------------------------------------------------------ welcome (Welcome.svelte)
 
 @Composable
-private fun WelcomeStep(adding: Boolean, onCreate: () -> Unit, onLink: () -> Unit, onRestore: () -> Unit, onCancel: () -> Unit = {}) {
+private fun WelcomeStep(adding: Boolean, onCreate: () -> Unit, onHave: () -> Unit, onCancel: () -> Unit = {}) {
     val c = Tin.c
+    // Laid out like every step: title and lead top-start, the mark (slack: nobody on the line yet) filling the free space,
+    // the emergency note at the bottom, the two choices stacked full width with "Create my account" on top (thumb reach).
     GateStep(
-        title = if (adding) "Add an account" else "Call people directly.", center = true, bigTitle = true,
-        lead = if (adding) "Create a new account or bring one you already have. Your current account stays on this phone."
-        else "Tinline connects you for end-to-end encrypted calls. No phone number, no ads, no tracking.",
-        hero = { Box(Modifier.padding(top = 28.dp, bottom = 8.dp)) { TinMark(112.dp, live = true, description = "Tinline") } },
+        fill = true,
+        title = if (adding) "Add an account" else "A direct line to your people",
+        lead = if (adding) "Create a new account or bring one you already have.\nYour current account stays on this phone."
+        else "Tinline connects your phone straight to theirs.\nYou just need a nickname. Encrypted end to end.",
         foot = {
-            GBtn("Create account", onCreate)
-            GBtn("Link to a device", onLink, kind = GKind.Secondary)
-            GBtn("Restore from recovery phrase", onRestore, kind = GKind.Secondary)
+            GBtn("Create my account", onCreate)
+            GBtn("I have an account", onHave, kind = GKind.Secondary)
             if (adding) GBtn("Cancel", onCancel, kind = GKind.Text)
         },
     ) {
-        Text(boldLead("Not for emergency calls.", "Use your phone’s dialer to reach emergency services."), Modifier.widthIn(max = 300.dp),
-            style = PgType.sub, color = c.ink2, textAlign = TextAlign.Center)
+        Box(Modifier.fillMaxWidth().weight(1f).heightIn(min = 120.dp), contentAlignment = Alignment.Center) {
+            TinMark(120.dp, live = true, lineColor = true, description = "Tinline")
+        }
+        Text(buildAnnotatedString {
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold)); append("Not for emergency calls."); pop()
+            append("\nUse your phone’s dialer to reach emergency services.")
+        }, style = PgType.sub, color = c.ink2)
+    }
+}
+
+// ------------------------------------------------------------------ choose (Choose.svelte)
+
+@Composable
+private fun ChooseStep(onLink: () -> Unit, onRestore: () -> Unit) {
+    GateStep("Use your account here", fill = true, lead = "Your account is its recovery phrase, so you can bring it to this phone two ways.") {
+        // Touch: the choices sit at the bottom, in thumb reach, where Welcome's buttons were.
+        Spacer(Modifier.weight(1f))
+        Column(Modifier.padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ChooseOpt(PgIcons.Qr, "Link my other device", "Scan a code on a device that already has your account. Your contacts and chats come along.", onLink)
+            ChooseOpt(PgIcons.Key, "Restore my account", "Type your 24 recovery words. This phone starts with an empty contact list.", onRestore)
+        }
+    }
+}
+
+@Composable
+private fun ChooseOpt(icon: ImageVector, title: String, sub: String, onClick: () -> Unit) {
+    val c = Tin.c
+    val shape = SmoothCornerShape(14.dp)
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 76.dp).clip(shape).background(c.sf).border(1.dp, c.ln, shape)
+            .clickable(role = Role.Button, onClick = onClick).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        IconDisc(icon, 44.dp, 24.dp)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = PgType.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+            Text(sub, style = PgType.sub, color = c.ink2)
+        }
+        Icon(PgIcons.Chevr, null, Modifier.size(20.dp), tint = c.ink2)
+    }
+}
+
+// ------------------------------------------------------------------ done (Done.svelte)
+
+@Composable
+private fun DoneStep(name: String, onAdd: () -> Unit, onNotNow: () -> Unit) {
+    val first = name.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
+    // The line arrives slack and pulls tight 450 ms after the step arrives, in two tugs on the `line` cue's two notes; the cue
+    // plays on the first tug, and the line warms from faded gold to gold. Reduced motion: it settles taut, colour and cue still come.
+    var taut by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(450); taut = true }
+    GateStep(
+        title = if (first.isNotBlank()) "Your line is open, $first" else "Your line is open",
+        lead = "Scan their code or share yours, and you can call each other.",
+        center = true,
+        hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) {
+            TinMark(96.dp, state = if (taut) MarkState.Taut else MarkState.Slack, live = true, lineColor = true, spring = MarkSpring.Line,
+                onTug = { n -> if (n == 1) Cues.line() }, description = "Tinline")
+        } },
+        foot = {
+            GBtn("Add my first contact", onAdd)
+            GBtn("Not now", onNotNow, kind = GKind.Text)
+        },
+    ) {
+        // Two gentle "good to know" notes, said as tips at the happy moment, not as warnings.
+        Column(Modifier.widthIn(max = 420.dp).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            DoneTip(PgIcons.Devices, "Two devices are better than one", "Link another device when you can, so losing one never locks you out.")
+            DoneTip(PgIcons.Laptop, "Groups are hosted on a computer", "To start a group, add Tinline on a computer that can stay on.")
+        }
+    }
+}
+
+@Composable
+private fun DoneTip(icon: ImageVector, title: String, body: String) {
+    val c = Tin.c
+    Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
+        IconDisc(icon, 36.dp, 20.dp)
+        Column {
+            Text(title, style = PgType.body.copy(fontWeight = FontWeight.Bold), color = c.ink)
+            Text(body, style = PgType.sub19, color = c.ink2)
+        }
     }
 }
 
 /** Welcome on its own (kept for callers outside the flow). */
 @Composable
-fun WelcomeScreen(onStart: () -> Unit, onRestore: () -> Unit, onLink: () -> Unit = {}) = Page { GateHead(null, null); WelcomeStep(false, onStart, onLink, onRestore) }
+fun WelcomeScreen(onStart: () -> Unit, onRestore: () -> Unit, onLink: () -> Unit = {}) = Page { GateHead(null, 0 to 6); WelcomeStep(false, onStart, onRestore) }
 
 // ------------------------------------------------------------------ name (Name.svelte)
 
 @Composable
 internal fun NameStep(name: String, onChange: (String) -> Unit, onNext: () -> Unit) {
     val next = { if (name.isNotBlank()) onNext() }
-    GateStep("What should people call you?", lead = "Your name is shown to people you add.",
-        foot = { GBtn("Continue", next, enabled = name.isNotBlank()) }) {
-        GField(name, onChange, "Your name", hint = "You can change it any time in Settings.", focus = rememberAutofocus(),
+    GateStep("What should people call you?", lead = "Only the people you add will see it.",
+        foot = { GNextRow({ GNext("Continue", next, enabled = name.isNotBlank()) }) }) {
+        GField(name, onChange, "Your nickname", hint = "You can change it any time in Settings.", focus = rememberAutofocus(),
             keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done), onDone = next)
     }
 }
@@ -340,17 +432,40 @@ private enum class PassKind { Create, Restore, Forgot, Link, Save }
 
 @Composable
 private fun PassStep(kind: PassKind, pass: String, onPass: (String) -> Unit, busy: Boolean, error: String?, onNext: () -> Unit, onSkip: () -> Unit) {
+    val c = Tin.c
     val title = when (kind) { PassKind.Forgot -> "Choose a new passphrase"; PassKind.Link -> "Protect this phone"; else -> "Add a passphrase" }
     val cta = when (kind) { PassKind.Forgot, PassKind.Restore -> "Restore account"; PassKind.Link -> "Add passphrase"; PassKind.Save -> "Save account"; PassKind.Create -> "Continue" }
     val submit = { if (pass.isNotEmpty() && !busy) onNext() }
-    GateStep(title, lead = "Optional. Anyone with your phone could otherwise open your account.", foot = {
-        GBtn(if (busy) "Encrypting…" else cta, submit, enabled = pass.isNotEmpty(), busy = busy)
-        if (kind != PassKind.Save) GBtn("Skip for now", onSkip, kind = GKind.Text, enabled = !busy)
+    // Says what the lock gives you (tone pass 2026-10-13); the way back comes before anything that sounds final.
+    GateStep(title, lead = "Optional. A lock, so only you can open Tinline on this phone.", foot = {
+        val skip: (@Composable () -> Unit)? = if (kind != PassKind.Save) ({ GBtn("Skip for now", onSkip, kind = GKind.Text, enabled = !busy, fill = false) }) else null
+        if (kind == PassKind.Create) GNextRow({ GNext(if (busy) "Encrypting…" else cta, submit, enabled = pass.isNotEmpty(), busy = busy) }, skip)
+        else { GBtn(if (busy) "Encrypting…" else cta, submit, enabled = pass.isNotEmpty(), busy = busy); skip?.invoke() }
     }) {
-        GField(pass, onPass, "Passphrase", secret = true, enabled = !busy, focus = rememberAutofocus(), keyboard = KeyboardOptions(imeAction = ImeAction.Done), onDone = submit)
-        GNotice(boldLead("It can’t be recovered", "Encrypts your account on this phone, so nobody holding it can copy it. Your phone remembers it so calls still ring after a restart.", boldFirst = false)
-            .let { a -> buildAnnotatedString { append(a); append(", only replaced by restoring with your recovery phrase.") } }, icon = Icons.Rounded.Lock)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            GField(pass, onPass, "Passphrase", secret = true, enabled = !busy, focus = rememberAutofocus(), keyboard = KeyboardOptions(imeAction = ImeAction.Done), onDone = submit)
+            StrengthMeter(pass)
+        }
+        GNotice("Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one.", icon = PgIcons.Lock)
         if (error != null) GNotice(error, NKind.Error)
+    }
+}
+
+/** Pass.svelte: three 28 x 6 bars and one line; every line shares one cell (the tallest sets the height), so nothing below moves. */
+@Composable
+private fun StrengthMeter(pass: String) {
+    val c = Tin.c
+    val words = pass.trim().split(Regex("\\s+")).size
+    val s = when { pass.isEmpty() -> 0; pass.length >= 16 || words >= 4 -> 3; pass.length >= 8 -> 2; else -> 1 }
+    val says = listOf("Any length works. A few random words are easy to remember.", "Short. A few more words make it stronger.", "Fair", "Strong")
+    val col = when (s) { 1 -> c.danger; 2 -> c.thread; else -> c.accent }
+    Row(Modifier.fillMaxWidth().semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite }, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            for (i in 1..3) Box(Modifier.size(28.dp, 6.dp).clip(RoundedCornerShape(3.dp)).background(if (s >= i) col else c.ln))
+        }
+        Box(Modifier.weight(1f)) {
+            says.forEachIndexed { i, t -> Text(t, Modifier.graphicsLayer { alpha = if (i == s) 1f else 0f }, style = PgType.sub, color = c.ink2) }
+        }
     }
 }
 
@@ -358,24 +473,23 @@ private fun PassStep(kind: PassKind, pass: String, onPass: (String) -> Unit, bus
 @Composable
 fun NewPassphraseField(pass: String, onPass: (String) -> Unit, enabled: Boolean = true, onDone: () -> Unit = {}, label: String = "Passphrase", why: Boolean = true) {
     GField(pass, onPass, label, secret = true, enabled = enabled, keyboard = KeyboardOptions(imeAction = ImeAction.Done), onDone = { if (pass.isNotEmpty() && enabled) onDone() })
-    if (why) GNotice(boldLead("It can’t be recovered", "Encrypts your account on this phone, so nobody holding it can copy it. Your phone remembers it so calls still ring after a restart.", boldFirst = false)
-        .let { a -> buildAnnotatedString { append(a); append(", only replaced by restoring with your recovery phrase.") } }, icon = Icons.Rounded.Lock)
+    if (why) GNotice("Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one.", icon = PgIcons.Lock)
 }
 
 // ------------------------------------------------------------------ recovery phrase (Phrase.svelte, Confirm.svelte)
 
-/** Two columns, column-major (1-12 left, 13-24 right): cells 36 tall, r8, line border, number 20 wide, mono 15/20. */
+/** Two columns, column-major (1-12 left, 13-24 right): cells 32 tall, gap 4, r8, line border, number 20 wide, mono 15/20. */
 @Composable
 fun WordGrid(phrase: String, hidden: Boolean = false) {
     val c = Tin.c
     val words = phrase.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
     val half = (words.size + 1) / 2
-    Column(Modifier.padding(4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(Modifier.padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         for (r in 0 until half) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             for (col in 0..1) {
                 val i = r + col * half
                 if (i < words.size) Row(
-                    Modifier.weight(1f).heightIn(min = 36.dp).clip(SmoothCornerShape(8.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(8.dp)).padding(horizontal = 12.dp),
+                    Modifier.weight(1f).heightIn(min = 32.dp).clip(SmoothCornerShape(8.dp)).background(c.sf).border(1.dp, c.ln, SmoothCornerShape(8.dp)).padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text("${i + 1}", Modifier.width(20.dp), style = PgType.meta.copy(fontFeatureSettings = "tnum"), color = c.ink2, textAlign = TextAlign.End)
@@ -387,22 +501,24 @@ fun WordGrid(phrase: String, hidden: Boolean = false) {
 }
 
 @Composable
-internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit) {
+internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit, copiedAlready: Boolean = false, onCopied: () -> Unit = {}) {
     val ctx = LocalContext.current
-    var copied by remember { mutableStateOf(false) }
-    GateStep("Write down these 24 words",
-        lead = "They are your Tinline account. If you lose this phone, they bring it back. Anyone who has them can pretend to be you.",
+    // One primary slot, two moments: "Copy my words" first; once copied the same button says "I've saved them" (same size, so
+    // nothing moves). Calm, never alarming: no blur, no warning box; paper is a suggestion, not a rule.
+    var copied by remember { mutableStateOf(copiedAlready) }
+    GateStep("Here are your recovery words",
+        lead = "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great.",
         foot = {
-            GBtn("I’ve written them down", onNext)
-            GBtn("Check my copy", onCheck, kind = GKind.Text)
+            if (copied) {
+                GBtn("I’ve saved them", onNext)
+                GBtn("Check my copy", onCheck, kind = GKind.Text)
+            } else {
+                // flagged sensitive (EXTRA_IS_SENSITIVE), so Android 13+ keeps it out of the clipboard preview
+                GBtn("Copy my words", { copyToClipboard(ctx, "Recovery words", phrase); copied = true; onCopied() })
+                GBtn("I wrote them down", onNext, kind = GKind.Text)
+            }
         }) {
         WordGrid(phrase)
-        GNotice("Write them on paper, in order, and keep it somewhere safe. Nobody, not even Osvauld, can bring your account back without them.", NKind.Warn, Icons.Rounded.WarningAmber)
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            GBtn(if (copied) "Copied" else "Copy anyway", { copyToClipboard(ctx, "Recovery phrase", phrase); copied = true }, kind = GKind.Text, fill = false)
-            Text("Not recommended. Paste only into a trusted password manager; the clipboard holds your account key.", Modifier.padding(horizontal = 4.dp),
-                style = PgType.sub, color = Tin.c.ink2)
-        }
     }
 }
 
@@ -417,14 +533,14 @@ internal fun ConfirmStep(phrase: String, onDone: () -> Unit) {
     fun wrong(i: Int) = tried && answers[i].trim().lowercase() != words.getOrNull(CONFIRM_AT[i] - 1)
     val submit = { tried = true; if (CONFIRM_AT.indices.none { answers[it].trim().lowercase() != words.getOrNull(CONFIRM_AT[it] - 1) }) onDone() }
     val first = rememberAutofocus()
-    GateStep("Check my copy", lead = "Optional. Type the words you wrote down, to be sure the paper is right.", foot = {
+    GateStep("Check my copy", lead = "Optional. Type a few words from your saved copy, to be sure it’s right.", foot = {
         GBtn("Done", submit, enabled = answers.none { it.isBlank() })
         GBtn("Back to the words", onDone, kind = GKind.Text)
     }) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             CONFIRM_AT.forEachIndexed { i, p ->
                 GField(answers[i], { answers[i] = it; tried = false }, "Word $p", mono = true, reserveLines = 1f, focus = if (i == 0) first else null,
-                    error = if (wrong(i)) "That isn’t word $p. Check your written copy." else null,
+                    error = if (wrong(i)) "That isn’t word $p. Check your saved copy." else null,
                     keyboard = KeyboardOptions(imeAction = if (i == 2) ImeAction.Done else ImeAction.Next, autoCorrectEnabled = false))
             }
         }
@@ -437,7 +553,7 @@ internal fun ConfirmStep(phrase: String, onDone: () -> Unit) {
 private fun DeviceStep(label: String, onChange: (String) -> Unit, busy: Boolean, error: String?, onNext: () -> Unit) {
     val next = { if (label.isNotBlank() && !busy) onNext() }
     GateStep("Name this phone", lead = "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.",
-        foot = { GBtn("Continue", next, enabled = label.isNotBlank(), busy = busy) }) {
+        foot = { GNextRow({ GNext("Continue", next, enabled = label.isNotBlank(), busy = busy) }) }) {
         GField(label, onChange, "Device name", hint = "You can rename it later.", enabled = !busy, focus = rememberAutofocus(),
             keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done), onDone = next)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -480,7 +596,7 @@ private fun SyncingStep(name: String, peer: String, contacts: Int, calls: Int, o
         foot = { GBtn("Open Tinline", onStart) },
     ) {
         PfCard {
-            row { SyncRow(Icons.Rounded.People, "Contacts", if (contacts > 0) "$contacts" else "Waiting", contacts > 0) }
+            row { SyncRow(PgIcons.Users, "Contacts", if (contacts > 0) "$contacts" else "Waiting", contacts > 0) }
             row { SyncRow(Icons.Rounded.History, "Call history", if (calls > 0) "$calls" else "Waiting", calls > 0) }
         }
         ReservedLine(if (slow && contacts == 0 && calls == 0) "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
@@ -493,7 +609,7 @@ private fun SyncRow(icon: ImageVector, title: String, value: String, done: Boole
     val c = Tin.c
     PfAct(title, icon = icon, minHeight = 56.dp, trailing = {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (done) Icon(Icons.Rounded.Check, null, Modifier.size(18.dp), tint = c.accentInk)
+            if (done) Icon(PgIcons.Check, null, Modifier.size(18.dp), tint = c.accentInk)
             Text(value, Modifier.widthIn(min = 56.dp), style = PgType.sub.copy(fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum"),
                 color = if (done) c.accentInk else c.ink2, textAlign = TextAlign.End)
         }
@@ -510,7 +626,7 @@ fun SyncingScreen(name: String, peer: String, contacts: Int, calls: Int, onStart
 private fun SaveFailedStep(message: String, busy: Boolean, onRetry: () -> Unit, onPassphrase: () -> Unit) {
     GateStep("Couldn’t save your account", lead = "Tinline couldn’t store the key that opens your account on this phone, so your account has not been saved yet.",
         center = true, anchor = true,
-        hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(Icons.Rounded.WarningAmber, 72.dp, 32.dp, danger = true) } },
+        hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Warning, 72.dp, 32.dp, danger = true) } },
         foot = {
             GBtn(if (busy) "Trying…" else "Try again", onRetry, busy = busy)
             GBtn("Add a passphrase instead", onPassphrase, kind = GKind.Text, enabled = !busy)
@@ -525,30 +641,23 @@ private fun SaveFailedStep(message: String, busy: Boolean, onRetry: () -> Unit, 
 @Composable
 private fun TermsStep(onAgree: () -> Unit) {
     val c = Tin.c
-    var agreed by rememberSaveable { mutableStateOf(false) }
-    GateStep("Before you start", foot = { GBtn("Agree and continue", onAgree, enabled = agreed) }) {
+    // No checkbox: the line right above the button is the consent, and the button ("I agree", the arrow) is the agreement.
+    GateStep("Before you start", fill = true, foot = { GNextRow({ GNext("I agree", onAgree) }) }) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            TermPoint(Icons.Rounded.Shield, "No ads, no tracking.", "We don’t collect your contacts, calls or location.")
-            TermPoint(Icons.Rounded.Lock, "Calls are end-to-end encrypted.", "When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it.")
-            TermPoint(Icons.Rounded.Key, "You hold the keys.", "Lose your phone and your recovery phrase, and nobody, not even Osvauld, can get your account back.")
-            TermPoint(Icons.Rounded.WarningAmber, "Not for emergency calls.", "")
+            TermPoint(PgIcons.Shield, "Free of ads and tracking.", "Tinline doesn’t collect your contacts, calls or location.")
+            TermPoint(PgIcons.Lock, "Calls are end-to-end encrypted.", "When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it.")
+            TermPoint(PgIcons.Key, "Your account is yours.", "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe.")
+            TermPoint(PgIcons.Warning, "Not for emergency calls.", "")
         }
+        Spacer(Modifier.weight(1f))
         val link = SpanStyle(color = c.accentInk, textDecoration = TextDecoration.Underline)
-        Row(
-            Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Checkbox, interactionSource = remember { MutableInteractionSource() }, indication = null) { agreed = !agreed },
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(Modifier.padding(10.dp).size(24.dp), contentAlignment = Alignment.Center) {
-                Checkbox(agreed, null, colors = CheckboxDefaults.colors(checkedColor = c.accent, checkmarkColor = c.onAccent, uncheckedColor = c.ln2))
-            }
-            Text(buildAnnotatedString {
-                append("I agree to the ")
-                withLink(LinkAnnotation.Url(URL_TERMS, TextLinkStyles(link))) { append("Terms of Use") }
-                append(" and have read the ")
-                withLink(LinkAnnotation.Url(URL_PRIVACY, TextLinkStyles(link))) { append("Privacy Policy") }
-                append(".")
-            }, style = PgType.sub, color = c.ink)
-        }
+        Text(buildAnnotatedString {
+            append("By continuing, you agree to the ")
+            withLink(LinkAnnotation.Url(URL_TERMS, TextLinkStyles(link))) { append("Terms of Use") }
+            append(" and have read the ")
+            withLink(LinkAnnotation.Url(URL_PRIVACY, TextLinkStyles(link))) { append("Privacy Policy") }
+            append(".")
+        }, style = PgType.sub19, color = c.ink2)
     }
 }
 
@@ -573,10 +682,10 @@ fun TermsScreen(progress: Int?, onBack: (() -> Unit)?, onAgree: () -> Unit) = Pa
 @Composable
 private fun PermsStep(missing: List<Need>, onFix: (Need) -> Unit, onDone: () -> Unit) {
     val rows = listOf(
-        Triple(Need.Mic, Icons.Rounded.Mic, "Microphone" to "So they can hear you. Used only during a call."),
-        Triple(Need.Notifications, Icons.Rounded.Notifications, "Notifications" to "So you see incoming calls and messages."),
-        Triple(Need.FullScreen, Icons.Rounded.Phone, "Ring over lock screen" to "Shows incoming calls full screen, like the phone app."),
-        Triple(Need.Battery, Icons.Rounded.BatteryChargingFull, "Run in background" to "Android pauses idle apps to save battery. This keeps your line open, using a little battery."),
+        Triple(Need.Mic, PgIcons.Mic, "Microphone" to "So they can hear you. Used only during a call."),
+        Triple(Need.Notifications, PgIcons.Bell, "Notifications" to "So you see incoming calls and messages."),
+        Triple(Need.FullScreen, PgIcons.Phone, "Ring over lock screen" to "Shows incoming calls full screen, like the phone app."),
+        Triple(Need.Battery, PgIcons.Battery, "Run in background" to "Android pauses idle apps to save battery. This keeps your line open, using a little battery."),
     )
     val touched = rows.any { it.first !in missing }
     GateStep("So calls can reach you", lead = "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later.",
@@ -597,7 +706,7 @@ private fun PermRow(icon: ImageVector, title: String, why: String, granted: Bool
             Text(why, style = PgType.sub, color = c.ink2)
         }
         Box(Modifier.widthIn(min = 72.dp), contentAlignment = Alignment.Center) {
-            if (granted) Icon(Icons.Rounded.Check, "$title allowed", Modifier.size(22.dp), tint = c.accentInk)
+            if (granted) Icon(PgIcons.Check, "$title allowed", Modifier.size(22.dp), tint = c.accentInk)
             else PBtn("Allow", onAllow, variant = PVariant.Quiet, colorOverride = c.accentInk, minWidth = 72.dp, padH = 14.dp,
                 modifier = Modifier.border(1.dp, c.ln, RoundedCornerShape(50)).semantics { contentDescription = "Allow ${title.lowercase()}" })
         }
@@ -666,7 +775,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Restore account", style = PgType.h1, color = c.ink)
             Text("Type your 24 words in order, or paste them all into the first box. They stay on this phone.", style = PgType.lead, color = c.ink2)
-            GNotice(warning, NKind.Warn, Icons.Rounded.Info)
+            GNotice(warning, NKind.Warn, PgIcons.Info)
             Row(Modifier.fillMaxWidth().padding(top = 0.dp).offset(y = (-4).dp), verticalAlignment = Alignment.CenterVertically) {
                 GBtn("Paste from clipboard", {
                     val t = clipboardText(ctx)
@@ -741,4 +850,31 @@ private fun WordCell(
 fun RestoreScreen(onBack: () -> Unit, error: String?, busy: Boolean, warning: String, onSubmit: (String) -> Unit) {
     var err by remember(error) { mutableStateOf(error) }
     Page { GateHead(onBack, null); RestoreStep(err, warning, { err = it }, onSubmit) }
+}
+
+// ------------------------------------------------------------------ previews (debug gallery: `g-<step>`)
+
+/** One sign-up step with its header, synthetic data only (the debug gallery and screenshots). */
+@Composable
+internal fun GateStepPreview(which: String) {
+    val phrase = "abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual"
+    var name by remember { mutableStateOf("Maya Kurian") }
+    var pass by remember { mutableStateOf(if (which == "pass-typed") "blue kettle" else "") }
+    var label by remember { mutableStateOf("Personal phone") }
+    val none = {}
+    Page {
+        when (which) {
+            "welcome" -> { GateHead(null, 0 to 6); WelcomeStep(false, none, none) }
+            "choose" -> { GateHead(none, 0 to 6); ChooseStep(none, none) }
+            "name" -> { GateHead(none, 1 to 6); NameStep(name, { name = it }, none) }
+            "pass", "pass-typed" -> { GateHead(none, 2 to 6); PassStep(PassKind.Create, pass, { pass = it }, false, null, none, none) }
+            "phrase" -> { GateHead(null, 3 to 6); PhraseStep(phrase, none, onCheck = none) }
+            "phrase-copied" -> { GateHead(null, 3 to 6); PhraseStep(phrase, none, onCheck = none, copiedAlready = true) }
+            "confirm" -> { GateHead(none, null); ConfirmStep(phrase, none) }
+            "device" -> { GateHead(none, 4 to 6); DeviceStep(label, { label = it }, false, null, none) }
+            "terms" -> { GateHead(null, 5 to 6); TermsStep(none) }
+            "perms" -> { GateHead(null, 6 to 6); PermsStep(listOf(Need.Mic, Need.FullScreen, Need.Battery), {}, none) }
+            "done" -> { GateHead(null, null); DoneStep(name, none, none) }
+        }
+    }
 }

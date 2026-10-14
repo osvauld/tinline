@@ -43,6 +43,8 @@ pub(super) fn msg_name(m: &Msg) -> &'static str {
         Msg::DevicesTaken => "DevicesTaken",
         Msg::GroupLetter { .. } => "GroupLetter",
         Msg::GroupLetterTaken => "GroupLetterTaken",
+        Msg::ContactPending => "ContactPending",
+        Msg::WelcomeTaken => "WelcomeTaken",
         Msg::Video { .. } => "Video",
     }
 }

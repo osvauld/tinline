@@ -1,5 +1,11 @@
 package com.osvauld.p2p
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.WindowInsets
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -36,7 +42,21 @@ class GalleryActivity : ComponentActivity() {
         val which = intent.getStringExtra("screen") ?: "home"
         val app = P2pApp.get(this)
         val dark = intent.getBooleanExtra("dark", false)
-        setContent { TinlineTheme(dark) { Gallery(which, app, this) } }
+        // `<screen>+strip`: that screen with a minimised 1:1 call at the bottom (CallStrip.kt), laid out as MainActivity does.
+        // `<screen>+frame`: the same MainActivity frame with no call (the strip area must take no room then).
+        val strip = which.endsWith("+strip")
+        val frame = strip || which.endsWith("+frame")
+        val base = which.removeSuffix("+strip").removeSuffix("+frame")
+        if (strip) app.calls.showForGallery(CallUi(uniffi.p2pcore.CallInfo("gallery", FakeChatSource.did("arjun"), arjun.name, false), uniffi.p2pcore.CallState.Active,
+            activeSinceMs = System.currentTimeMillis() - 15_000))
+        setContent { TinlineTheme(dark) {
+            if (!frame && base != "gcall_strip") Gallery(base, app, this)
+            else androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+                val on = callStripOn(app)
+                Box(Modifier.weight(1f).fillMaxWidth().then(if (on) Modifier.consumeWindowInsets(WindowInsets.navigationBars.union(WindowInsets.ime)) else Modifier)) { Gallery(base, app, this@GalleryActivity) }
+                CallStrips(app)
+            }
+        } }
     }
 }
 
@@ -60,6 +80,34 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
     when (which) {
         "groups_live" -> Page { GroupsLiveTab(app, {}, none, none) }
         "welcome" -> WelcomeScreen(none, none)
+        // sign-up port (2026-10-13): the stepped gate, Add contact sheet and the first screen
+        "g-welcome", "g-choose", "g-name", "g-pass", "g-pass-typed", "g-phrase", "g-phrase-copied", "g-confirm", "g-device", "g-terms", "g-perms", "g-done" ->
+            GateStepPreview(which.removePrefix("g-"))
+        // the one empty state: a new account's Chats / Calls (hero), one contact (open), Add contact over Chats
+        "first-chats", "first-calls", "first-open", "first-add", "first-contacts" -> {
+            val people = if (which == "first-open") listOf(arjun) else emptyList()
+            val tab = when (which) { "first-calls" -> HomeTab.Calls; "first-contacts" -> HomeTab.Contacts; else -> HomeTab.Chats }
+            HomeContent(people, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null, tab = tab, chatRows = emptyList())
+            if (which == "first-add") AddContactSheet(app, onClose = none, onMessage = {}, onProfile = {})
+        }
+        // § 6f, both sides: the owner asked / joined, the joiner told they accepted, the joiner waiting, Contacts with requests.
+        "first-request", "first-request-joined", "first-accepted" -> {
+            val tara = uniffi.p2pcore.ContactRequest("did:key:z6MkTara", "Tara Iyer", 0UL, 0UL)
+            androidx.compose.runtime.DisposableEffect(which) {
+                app.incoming.value = IncomingSheet(tara.did, tara.name, joined = which != "first-request", theirs = which == "first-accepted")
+                onDispose { app.incoming.value = null }
+            }
+            HomeContent(emptyList(), true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null, tab = HomeTab.Chats, chatRows = emptyList())
+            AddContactSheet(app, onClose = none, onMessage = {}, onProfile = {})
+        }
+        "first-waiting", "first-contacts-requests" -> {
+            val tara = uniffi.p2pcore.ContactRequest("did:key:z6MkTara", "Tara Iyer", 0UL, 0UL)
+            val nikhil = uniffi.p2pcore.ContactRequest("did:key:z6MkNikhil", "Nikhil Das", 0UL, 0UL)
+            val inReq = if (which == "first-contacts-requests") listOf(tara) else emptyList()
+            val outReq = if (which == "first-contacts-requests") listOf(nikhil) else listOf(tara)
+            HomeContent(emptyList(), true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null,
+                tab = if (which == "first-waiting") HomeTab.Chats else HomeTab.Contacts, chatRows = emptyList(), waitingIn = inReq, waitingOut = outReq)
+        }
         "name" -> NameScreen("Maya", {}, none, 1, none)
         "pass" -> PassphraseStep("correct-horse-lamp-river", {}, false, null, 2, "Add a passphrase", "Continue", none, none, none)
         "key_lost" -> KeyLostContent("Maya", false, none, none)
@@ -94,7 +142,24 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
         "rename" -> RenameSheet("Arjun (work)", "Arjun", true, none) {}
         "incoming" -> IncomingContent("Arjun Oommen", arjun.did, none, none)
         "calling" -> InCallContent("Arjun Oommen", arjun.did, maya, false, false, 0, null, null, false, false, null, {}, {}, {}, {})
-        "incall" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 252, true, 4, true, false, null, {}, {}, {}, {})
+        "incall" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 252, true, 4, true, false, null, {}, {}, {}, {}, onMessage = {})
+        "group_chat", "group_chat_waiting" -> {
+            // The real group conversation over the seed's "Weekend hike" (FakeGroupApi), not the core.
+            remember { app.groupsForGallery(GroupsController(FakeGroupApi(app.currentDid() ?: "did:me", waiting = which.endsWith("waiting"))) { app.currentDid() }); app.groups.refresh() }
+            GroupChatLive(app, "hike", onBack = none, onInfo = none, onRemoval = none, say = {})
+        }
+        "gcall", "gcall_about", "gcall_strip" -> {
+            remember {
+                val me = app.currentDid() ?: "did:me"
+                app.groupCallUi.showForGallery(GcState(gid = "g", phase = GcPhase.Active, parts = listOf(me) + contacts.take(3).map { it.did },
+                    sinceMs = System.currentTimeMillis() - 252_000, host = contacts[0].did, about = which == "gcall_about", minimized = which == "gcall_strip"))
+            }
+            Box(Modifier.fillMaxSize()) { HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, recents, null, subLines = subs); GroupCallLayer(app) }
+        }
+        "incall_about" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 252, true, 4, false, false, null, {}, {}, {}, {}, rttMs = 42, lossPct = .2, startWithInfo = true)
+        "incall_relay_about" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 252, false, 3, false, false, null, {}, {}, {}, {}, rttMs = 140, lossPct = 1.4, startWithInfo = true)
+        "incall_weak_about" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 252, true, 1, false, false, null, {}, {}, {}, {}, rttMs = 520, lossPct = 14.0, startWithInfo = true)
+        "reconnecting_about" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 771, true, 3, false, false, null, {}, {}, {}, {}, reconnecting = true, startWithInfo = true)
         "incall_relayed" -> InCallContent("Arjun Oommen", arjun.did, maya, true, false, 767, false, 3, false, true, null, {}, {}, {}, {}, startWithSheet = true)
         "incall_bt" -> {
             val bt = AudioRoute(AudioRoute.Kind.Bluetooth, "Pixel Buds", "bt")
@@ -139,6 +204,7 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
         "pv", "pv_chats", "pv_hike", "pv_family", "pv_book", "pv_removal", "pv_newgroup", "pv_info", "pv_hosts", "pv_arjun", "pv_meera",
         "pv_sam", "pv_contact", "pv_blocked", "pv_address", "pv_requests" ->
             PreviewApp(PreviewBackend.get(maya), PRoute.parse(which.substringAfter("pv_", "chats")), onExit = { act.finish() }, onShowMyQr = none)
+        else -> if (which.startsWith("pf_")) ProfileGallery(which, act) else when (which) {
         "newchat" -> NewChatScreen(contacts, mapOf(contacts[0].did to "Last message 12:41", contacts[1].did to "Last message 11:20"), none, {}, none)
         else -> if (which.startsWith("conv") || which in setOf("attach", "files", "receive", "viewer")) {
             val files = which in setOf("files", "receive", "viewer")
@@ -161,8 +227,62 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
                 "viewer" -> ConvPreview(viewer = "outphoto")
                 else -> null
             }
-            ConversationScreen(fake, did, name, true, none, none, preview, addedAtSecs = System.currentTimeMillis() / 1000 - (if (which == "conv_new") 0 else 30 * 86400))
+            // A finished call yesterday evening, shown as a pill among the messages.
+            val yesterday = (System.currentTimeMillis() / 1000 - 86400).let { it - it % 86400 + 16 * 3600 }
+            val calls = if (which == "conv") listOf(uniffi.p2pcore.CallRecord("g-call", did, name, false, yesterday.toULong(), 742u, "hangup_local", true, false)) else emptyList()
+            ConversationScreen(fake, did, name, true, none, none, preview, addedAtSecs = System.currentTimeMillis() / 1000 - (if (which == "conv_new") 0 else 30 * 86400),
+                calls = calls, onVideo = none)
         } else HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null)
+        }
+    }
+}
+
+/** Playground-ported profile / settings pages on the fake profile adapter (`--es screen pf_me`, keys below). */
+@Composable
+private fun ProfileGallery(which: String, act: ComponentActivity) {
+    val none = {}
+    val fake = remember { FakeProfileStore(java.io.File(act.filesDir, "pg")).also { ProfileBackend.override = it } }
+    DisposableEffect(fake) {
+        onDispose { if (ProfileBackend.override === fake) ProfileBackend.override = null }
+    }
+    val now = System.currentTimeMillis()
+    remember(which) {
+        if (which.contains("busy")) fake.put(FakeProfileStore.ME, fake.fields().put("availability", org.json.JSONObject().put("available", false).put("until", (now + 3_600_000L) / 1000)))
+        if (which.contains("busyopen")) fake.put(FakeProfileStore.ME, fake.fields().put("availability", org.json.JSONObject().put("available", false)))
+        if (which in setOf("pf_me_pic", "pf_me_remove", "pf_me_pic_replace", "pf_settings_pic")) fake.put(FakeProfileStore.ME, fake.fields(), picture = "me")
+        if (which.contains("extra")) fake.put(FakeProfileStore.ME, fake.fields().put("website", "https://maya.example/")
+            .put("work", org.json.JSONObject().put("title", "Interior architect").put("studio", org.json.JSONObject().put("name", "Tin & Lime").put("city", "Kochi"))
+                .put("tools", org.json.JSONArray(listOf("Rhino", "Figma", "Pencil")))))
+        if (which.contains("offline")) fake.online.value = false
+        0
+    }
+    val pickBmp = remember { java.io.File(act.filesDir, "pg/pick.png").takeIf { it.exists() }?.let { android.graphics.BitmapFactory.decodeFile(it.path) } ?: sample("pick", 512, 640, 480) }
+    when (which.removeSuffix("_offline")) {
+        "pf_me", "pf_me_busy", "pf_me_busyopen", "pf_me_pic", "pf_me_extra" -> MyProfileScreen(fake, "Maya Kurian", none)
+        "pf_me_edit_status" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(editField = "status"))
+        "pf_me_edit_name" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(editField = "name"))
+        "pf_me_edit_about" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(editField = "about"))
+        "pf_me_add" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(addOpen = true))
+        "pf_me_add_custom" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(addOpen = true, addPick = ""))
+        "pf_me_add_website" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(addOpen = true, addPick = "website"))
+        "pf_me_picture" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(picked = Picked(pickBmp)))
+        "pf_me_pic_replace" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(picked = Picked(pickBmp)))
+        "pf_me_remove" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(removeAsk = true))
+        "pf_me_link" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(link = "https://arjun.example/notes"))
+        "pf_me_picerr" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(picError = "Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file."))
+        "pf_me_pending" -> MyProfileScreen(fake, "Maya Kurian", none, MyProfilePreview(pending = true))
+        "pf_settings", "pf_settings_busy", "pf_settings_pic" -> SettingsLanding(fake, "Maya Kurian", listOf(AccountRow(FakeProfileStore.ME, "Maya Kurian", true)), emptyList(),
+            none, none, {}, none, none, none, none, none)
+        "pf_settings_perm" -> SettingsLanding(fake, "Maya Kurian", listOf(AccountRow(FakeProfileStore.ME, "Maya Kurian", true)), permProblems(listOf(Need.Notifications)),
+            none, none, {}, none, none, none, none, none)
+        "pf_notifications" -> NotificationsPage(emptyList(), none) {}
+        "pf_notifications_off" -> NotificationsPage(listOf(Need.Notifications), none) {}
+        "pf_notifications_battery" -> NotificationsPage(listOf(Need.Battery), none) {}
+        "pf_sounds" -> SoundsPage(none)
+        "pf_privacy" -> PrivacyLanding(1, 1, true, none, none, none, none, none)
+        "pf_calls" -> CallsAllowedPage(listOf(CallsRow(FakeProfileStore.did("Arjun"), "Arjun Oommen", true), CallsRow(FakeProfileStore.did("Dev"), "Dev Patel", false),
+            CallsRow(FakeProfileStore.did("Meera"), "Meera Nair", true)), none) { _, _ -> }
+        else -> MyProfileScreen(fake, "Maya Kurian", none)
     }
 }
 

@@ -39,6 +39,7 @@ fn peer(tag: &str, phrase: Option<&str>) -> (Peer, String) {
     let dir = TempDir::new("devices", tag);
     let events = Arc::new(Count::default());
     let node = Node::new(dir.to_string_lossy().into(), events.clone()).unwrap();
+    node.auto_accept_contacts_for_test(true);
     let phrase = match phrase {
         Some(p) => {
             node.restore_identity(p.into(), tag.into(), PASS.into()).unwrap();

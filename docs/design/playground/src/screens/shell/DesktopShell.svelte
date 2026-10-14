@@ -7,6 +7,7 @@
   import Icon from '../../lib/ui/Icon.svelte';
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Mark from '../../lib/brand/Mark.svelte';
+  import EmptyLine from '../../lib/ui/EmptyLine.svelte';
   import TabPanel, { rememberScroll } from '../../lib/ui/TabPanel.svelte';
 
   // One highlight that glides between sidebar items instead of jumping.
@@ -74,7 +75,8 @@
       {@const S = SCREENS[d.name as keyof typeof SCREENS]}
       {#key d}<S.component {...S.props(d)} />{/key}
     {:else}
-      <div class="empty"><Mark size={56} /><b>Choose a chat</b><span>Messages stay on your devices.</span></div>
+      {#if !db.chats.length}<EmptyLine where="pane" />
+      {:else}<div class="empty"><Mark size={56} /><b>Choose a chat</b><span>Messages stay on your devices.</span></div>{/if}
     {/if}
   </section>
   <CallLayer />

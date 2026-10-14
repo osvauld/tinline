@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -20,6 +21,10 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
@@ -56,10 +61,30 @@ object TinFx {
 private object MarkDef {
     const val C = 7.5; const val B = 5.5; const val THETA = 30.6; const val MU = 0.62; const val L = 3.0; const val S0 = 3.5
     const val STROKE = 1.5; const val PHI0 = 12.0; const val T = 1.6; const val A = 0.5; const val PLUCK_A = 0.32; const val PLUCK_SWING = 150.0
-    const val F = 7.0; const val TAU = 0.11; const val HIT_OVER = 1.1; const val CONNECT_HZ = 3.0; const val END_ZETA = 1.6; const val END_MS = 260.0
+    const val F = 7.0; const val TAU = 0.11; const val CONNECT_HZ = 3.0; const val END_ZETA = 1.6; const val END_MS = 260.0
 }
 
 private fun rad(d: Double) = d * Math.PI / 180
+
+/** Offset of the `line` cue's second note (s): the two tugs land this far apart (Cues.kt LINE). */
+const val LINE_GAP_S = 0.12
+
+/**
+ * Per-use spring parameters of the one model (tinmark.js DEF and overrides, MARK-MATH.md "Connect", 2026-10-13). Defaults are
+ * the everyday pull: it arrives with speed ([hitOver]), the cans bounce back off the tight string ([recoil] = restitution), and an
+ * undamped [settleHz] pull carries them out again until a bounce is below [recoilMin]. [tugs] > 0 tugs exactly that many times.
+ */
+data class MarkSpring(
+    val hitOver: Double = 1.6, val recoil: Double = 0.5, val recoilMin: Double = 1.2, val settleHz: Double = 2.0,
+    val windup: Double = 0.0, val windupMs: Double = 180.0, val tugs: Int = 0,
+) {
+    companion object {
+        /** The old dead stop (recoil 0). */
+        val DeadStop = MarkSpring(hitOver = 1.1, recoil = 0.0)
+        /** springs.ts LINE_SPRING: two tugs on the rhythm of the `line` cue (sign-up Done, the first contact). */
+        val Line = MarkSpring(tugs = 2, recoil = 0.95, recoilMin = 0.0, settleHz = 1 / (2 * LINE_GAP_S))
+    }
+}
 
 private fun lenExact(w: Double, s0: Double): Double {
     val s = abs(s0); if (s < 1e-9) return w
@@ -129,8 +154,11 @@ private fun tierFor(px: Double): MarkTier {
 }
 
 /** The spring model (tinmark.js attach). Pure state: step() advances it, no clocks or UI in here. */
-internal class MarkModel(private val p: MarkTier) {
+internal class MarkModel(private val p: MarkTier, var spring: MarkSpring = MarkSpring()) {
     var d = 0.0; private var v = 0.0; var phi = 0.0; private var phv = 0.0
+    private var tugsNow = 0; private var v0 = 0.0; private var wind = 0.0
+    /** Every tug so far (the widget reports each new one); [tight]: the string went tight since the last slack. */
+    var tugCount = 0; var tight = false
     private var ring = false; private var ringPhase = 0.0
     private var taut = false; private var hit = false
     private var tw = -1.0; private var twA = 0.0
@@ -148,7 +176,7 @@ internal class MarkModel(private val p: MarkTier) {
     private val connectW = 2 * Math.PI * MarkDef.CONNECT_HZ
 
     val active: Boolean get() =
-        ring || tw >= 0 || (if (taut) d < p.dt else d >= 0.01) || abs(phi) > rad(0.2) || abs(phv) > rad(2.0)
+        ring || tw >= 0 || wind > 0 || (if (taut) d < p.dt || v != 0.0 else d >= 0.01) || abs(phi) > rad(0.2) || abs(phv) > rad(2.0)
 
     private fun sag(): Double =
         if (p.sagOnly) p.s0 + (p.sT - p.s0) * (if (p.dt > 0) min(1.0, d / p.dt) else 0.0)
@@ -162,11 +190,29 @@ internal class MarkModel(private val p: MarkTier) {
     val delta: Double get() = if (p.sagOnly) 0.0 else d
 
     fun step(h: Double) {
+        val sp = spring
         val z: Double; val w: Double; val tgt: Double
-        if (taut) { z = 1.0; w = connectW; tgt = p.dt * MarkDef.HIT_OVER } else { z = MarkDef.END_ZETA; w = endOmega; tgt = 0.0 }
+        when {
+            wind > 0 -> { wind -= h; z = 1.0; w = 2 * Math.PI / (sp.windupMs / 1000) * 1.2; tgt = -sp.windup }
+            taut && hit -> { z = 0.0; w = 2 * Math.PI * sp.settleHz; tgt = p.dt }   // the string pulls the recoiling cans back out
+            taut -> { z = 1.0; w = connectW; tgt = p.dt * sp.hitOver }
+            else -> { z = MarkDef.END_ZETA; w = endOmega; tgt = 0.0 }
+        }
         v += (-2 * z * w * v - w * w * (d - tgt)) * h; d += v * h
-        if (taut && d >= p.dt) { d = p.dt; v = 0.0; if (!hit) { hit = true; tw = 0.0; twA = 0.0 } }
-        if (d < 0) { d = 0.0; if (v < 0) v = 0.0 }
+        if (taut && d >= p.dt && v <= 0) d = p.dt   // resting at taut is not a tug (tinmark.js re-plucks here every frame)
+        else if (taut && d >= p.dt) {
+            // The string goes tight and tugs the cans back: velocity reflected (restitution [recoil]); each bounce re-plucks.
+            val vin = v; d = p.dt; tugsNow++
+            val last = sp.tugs > 0 && tugsNow >= sp.tugs
+            v = if (!last && sp.recoil > 0 && vin * sp.recoil >= sp.recoilMin) -vin * sp.recoil else 0.0
+            if (!hit) { hit = true; tw = 0.0; twA = 0.0 }
+            else if (sp.tugs > 0) { tw = 0.0; twA = MarkDef.A * 0.8 }
+            else if (vin > sp.recoilMin) { tw = 0.0; twA = min(MarkDef.A, MarkDef.A * vin / (if (v0 > 0) v0 else vin)) * 0.6 }
+            tugCount++; tight = true
+            if (v0 == 0.0) v0 = vin
+        }
+        if (d < -sp.windup) { d = -sp.windup; if (v < 0) v = 0.0 }
+        if (d < 0 && wind <= 0 && !taut) { d = 0.0; if (v < 0) v = 0.0 }
         if (ring) {
             ringPhase += 2 * Math.PI / swayT * h
             val tgtPhi = rad(swayAmp) * sin(ringPhase); val k = 1 - exp(-h / 0.05)
@@ -190,13 +236,21 @@ internal class MarkModel(private val p: MarkTier) {
     private fun finish() { if (!taut) { d = 0.0; v = 0.0 }; phi = 0.0; phv = 0.0; tw = -1.0 }
 
     /** Reduced motion: jump to the end pose. */
-    fun snap(toTaut: Boolean) { ring = false; taut = toTaut; d = if (toTaut) p.dt else 0.0; v = 0.0; phi = 0.0; phv = 0.0; tw = -1.0; hit = toTaut }
+    fun snap(toTaut: Boolean) {
+        val fresh = toTaut && !hit
+        ring = false; taut = toTaut; d = if (toTaut) p.dt else 0.0; v = 0.0; phi = 0.0; phv = 0.0; tw = -1.0; hit = toTaut; wind = 0.0; tight = toTaut
+        if (fresh) tugCount++
+    }
 
-    fun set(state: MarkState) { snap(state == MarkState.Taut) }
+    /** Mount pose: taut without counting a tug (a mark that mounts taut doesn't replay it). */
+    fun set(state: MarkState) { snap(state == MarkState.Taut); tugCount = 0 }
 
     fun ring(on: Boolean) { ring = on; if (on) { taut = false; hit = false } }
-    fun connect() { ring = false; taut = true; hit = hit && d >= p.dt }
-    fun end() { ring = false; taut = false; hit = false; tw = -1.0; if (abs(phi) < rad(1.0)) phv += rad(242.0) }
+    fun connect() {
+        ring = false; taut = true; hit = hit && d >= p.dt; v0 = 0.0; tugsNow = 0
+        wind = if (spring.windup > 0 && d < 0.01) spring.windupMs / 1000 else 0.0
+    }
+    fun end() { ring = false; taut = false; hit = false; tight = false; wind = 0.0; tw = -1.0; if (abs(phi) < rad(1.0)) phv += rad(242.0) }
     fun pluck() {
         if (taut && d >= p.dt - 1e-9) { if (tw < 0) { twA = MarkDef.PLUCK_A; tw = 0.0 } }
         else if (abs(phi) < rad(1.0) && abs(phv) < rad(20.0)) phv += rad(MarkDef.PLUCK_SWING)
@@ -240,26 +294,52 @@ fun TinMark(
     mouth: Color? = null, state: MarkState = MarkState.Slack, live: Boolean = false,
     /** Ringing sway: period (s) and amplitude (deg); lock the period to the cue that is playing. */
     sway: Sway? = null, dim: Boolean = false, description: String? = null,
+    /** Spring parameters for this use (Done's two tugs); calls keep the default. */
+    spring: MarkSpring = MarkSpring(),
+    /** Sign-up and first-screen marks: a slack line is faded gold (gold 55 % into --line) and warms to gold on the first tug. */
+    lineColor: Boolean = false,
+    /** Each tug of the string going tight (1, 2, …): sign-up Done plays the `line` cue on the first. */
+    onTug: ((Int) -> Unit)? = null,
+    // No glow (decided 2026-10-13): dark-mode depth is the rim only, sign-up included.
 ) {
     val ctx = LocalContext.current
     val density = androidx.compose.ui.platform.LocalDensity.current
     val tier = remember(size, density) { tierFor(with(density) { size.value.toDouble() }) }
-    val model = remember(tier) { MarkModel(tier) }
+    val model = remember(tier) { MarkModel(tier, spring) }
+    model.spring = spring
+    val told = remember(model) { intArrayOf(0) }
+    var tight by remember(model) { mutableStateOf(false) }
+    val warm by androidx.compose.animation.core.animateFloatAsState(if (tight) 1f else 0f,
+        androidx.compose.animation.core.tween(if (tight && !reducedMotion(ctx)) PgMotion.SWITCH else 0, easing = PgMotion.easeOut), label = "line")
     var frame by remember { mutableIntStateOf(0) }
     var kick by remember { mutableIntStateOf(0) }
     val reduced = reducedMotion(ctx)
     val hole = mouth ?: MarkColors.Mouth
-    val str = if (dim) Tin.c.ink2 else string
+    val slackStr = androidx.compose.ui.graphics.lerp(string, Tin.c.ln, 0.45f)
+    val str = when { dim -> Tin.c.ink2; lineColor -> androidx.compose.ui.graphics.lerp(slackStr, string, warm); else -> string }
+    // report tugs and the line's warmth after every model change
+    fun report() {
+        if (model.tugCount > told[0]) { val n = model.tugCount; told[0] = n; onTug?.invoke(n) }
+        tight = model.tight
+    }
     LaunchedEffect(model, sway) { if (sway != null) model.setSway(sway.period, sway.amp) }
 
     // state -> springs. The first composition sets the pose; later changes retarget mid-flight.
     val appliedBox = remember(model) { arrayOfNulls<MarkState>(1) }
     LaunchedEffect(model, state, live, reduced) {
-        if (!live || reduced) { model.snap(state == MarkState.Taut); frame++; return@LaunchedEffect }
+        if (!live || reduced) {
+            val first = appliedBox[0] == null
+            if (first) model.set(state) else model.snap(state == MarkState.Taut)
+            appliedBox[0] = state
+            if (first) told[0] = model.tugCount
+            report(); frame++; return@LaunchedEffect
+        }
         val prev = appliedBox[0]
         if (prev == null) {
             model.set(if (state == MarkState.Taut) MarkState.Taut else MarkState.Slack)
             if (state == MarkState.Ringing) model.ring(true)
+            told[0] = model.tugCount
+            tight = model.tight
         } else if (prev != state) when (state) {
             MarkState.Taut -> model.connect()
             MarkState.Ringing -> model.ring(true)
@@ -276,6 +356,7 @@ fun TinMark(
             while (true) {
                 val now = androidx.compose.runtime.withFrameNanos { it }
                 val more = model.advance((now - last) / 1e9); last = now
+                report()
                 frame++
                 if (!more) break
             }
@@ -283,9 +364,8 @@ fun TinMark(
     }
 
     val sem = if (description != null) Modifier.semantics { contentDescription = description } else Modifier
-    Canvas(modifier.size(size).then(if (dim) Modifier.alpha(0.45f) else Modifier).then(sem)) {
-        frame // observe
-        val k = this.size.width / tier.vbSize.toFloat()
+    fun DrawScope.paint(can: Color, hole: Color, str: Color, w: Float = this.size.width) {
+        val k = w / tier.vbSize.toFloat()
         val cx = tier.c - model.delta
         drawCan(tier, cx, k, can, hole, false)
         drawCan(tier, cx, k, can, hole, true)
@@ -296,6 +376,12 @@ fun TinMark(
             quadraticTo(X(12 + 2 * sg * sin(phi)), X(12 + 2 * sg * cos(phi)), X(x2), X(12.0))
         }
         drawPath(path, str, style = Stroke(tier.sw.toFloat() * k, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+    androidx.compose.foundation.layout.Box(modifier.size(size)) {
+        Canvas(Modifier.size(size).then(if (dim) Modifier.alpha(0.45f) else Modifier).then(sem)) {
+            frame // observe
+            paint(can, hole, str)
+        }
     }
 }
 
@@ -335,3 +421,6 @@ fun statusLook(call: CallPhase = CallPhase.None, gcall: GroupCallPhase = GroupCa
         ConnState.Online -> MarkLook(MarkState.Taut, label = "Connected to the network")
     }
 }
+
+/** A model at a rendered size (tests). */
+internal fun markModelFor(px: Double, spring: MarkSpring = MarkSpring()) = MarkModel(tierFor(px), spring)

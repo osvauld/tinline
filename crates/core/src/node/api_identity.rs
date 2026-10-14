@@ -40,6 +40,7 @@ impl Node {
             link: Default::default(),
             gcall: Default::default(),
             block: Default::default(),
+            requests: Default::default(),
             group: Default::default(),
             caps: Default::default(),
             devlist: Default::default(),
@@ -407,18 +408,20 @@ impl Node {
                 s.me = Some(Arc::new(Me::load(profile, me.epoch)?));
             }
             // The old ticket carries the old name (and `ticket()` checks it, for the locked case
-            // where the sealed state cannot be touched).
-            s.state.ticket = None;
+            // where the sealed state cannot be touched). Reusable codes: the old one still adds
+            // contacts until it expires (whoever holds it sees the old name).
+            retire_ticket(&mut s.state, true);
             s.me.is_some()
         };
         if unlocked { self.inner.persist() } else { Ok(()) }
     }
 
-    /// Drops the ticket we hand out: the old QR/text stops working at once and the next
-    /// `my_ticket` mints a fresh one. For "the ticket may have leaked".
+    /// Drops the ticket we hand out, and every older one still live: the old QR/text stops
+    /// working at once and the next `my_ticket` mints a fresh one ("New code"; "the ticket may
+    /// have leaked"). Requests that already arrived stay to be answered.
     pub fn reset_ticket(&self) -> Result<(), Error> {
         self.inner.me()?;
-        self.inner.shared.lock().state.ticket = None;
+        retire_ticket(&mut self.inner.shared.lock().state, false);
         self.inner.persist()
     }
 }

@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -77,6 +79,12 @@ class CallActivity : ComponentActivity() {
         P2pApp.get(this).calls.callScreenShown = true
         P2pApp.get(this).video.screenShown()
         Notifications.cancelWaiting(this)  // the banner is here now
+    }
+
+    /** Message: their chat in the app (it opens once past unlock), and the call screen steps aside to the strip. */
+    private fun openChat(did: String) {
+        startActivity(Intent(this, MainActivity::class.java).putExtra(ChatNotifier.EXTRA_PEER, did))
+        finish()
     }
 
     override fun onStop() {
@@ -132,7 +140,8 @@ class CallActivity : ComponentActivity() {
                     u != null -> {
                         val allowed by btAllowed
                         InCallScreen(u, meName, app, onCameraOn = cameraOn, onMinimise = { finish() },
-                            onAllowBtNames = if (allowed) null else ({ btLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT) }))
+                            onAllowBtNames = if (allowed) null else ({ btLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT) }),
+                            onMessage = { openChat(u.info.peerDid) })
                         val w by app.calls.waiting.collectAsState()
                         w?.let { WaitingBanner(it.peerName.ifBlank { "Unknown" }, it.peerDid, onDecline = { app.calls.declineWaiting() }, onEndAnswer = { app.calls.endAndAnswer() }) }
                     }
@@ -191,7 +200,7 @@ fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: 
     val who = name.ifBlank { "Unknown" }
     CallFocus(who, did, active = false, ringing = true, incoming = true) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(36.dp, Alignment.CenterHorizontally)) {
-            LabeledRound("Decline") { RoundBtn(CallGlyphs.Phone, "Decline", c.callButtonEnd, Color.White, onDecline, size = 64.dp, rotate = 135f) }
+            LabeledRound("Decline") { RoundBtn(CallGlyphs.End, "Decline", c.callButtonEnd, Color.White, onDecline, size = 64.dp) }
             LabeledRound("Answer") { RoundBtn(CallGlyphs.Phone, "Answer", c.callButtonAnswer, Color.White, onAnswer, size = 64.dp) }
         }
     }
@@ -202,15 +211,15 @@ fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: 
 private fun routeLabel(speaker: Boolean) = if (speaker) "Speaker" else "Phone"
 
 private fun routeIcon(k: AudioRoute.Kind): ImageVector = when (k) {
-    AudioRoute.Kind.Earpiece -> Icons.Rounded.PhoneInTalk
-    AudioRoute.Kind.Speaker -> Icons.Rounded.VolumeUp
+    AudioRoute.Kind.Earpiece -> PgIcons.Phone
+    AudioRoute.Kind.Speaker -> PgIcons.Vol
     AudioRoute.Kind.Bluetooth -> Icons.Rounded.Bluetooth
     AudioRoute.Kind.Wired -> Icons.Rounded.Headphones
-    AudioRoute.Kind.Other -> Icons.Rounded.VolumeUp
+    AudioRoute.Kind.Other -> PgIcons.Vol
 }
 
 /** The speaker slot's caption and icon: "Speaker" until a headset is connected, then the route in use. */
-private fun routeSlot(routes: RouteState?): Pair<String, ImageVector> {
+internal fun routeSlot(routes: RouteState?): Pair<String, ImageVector> {
     val cur = routes?.current
     return if (routes?.hasHeadset == true && cur != null && cur.kind != AudioRoute.Kind.Speaker)
         Routes.label(cur) to routeIcon(cur.kind)
@@ -235,12 +244,12 @@ fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer:
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.clip(SmoothCornerShape(22.dp)).background(c.callEnd).clickable(onClickLabel = "Decline", role = Role.Button, onClick = onDecline)
                     .height(44.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Rounded.CallEnd, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(PgIcons.Callend, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Text("Decline", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Row(Modifier.clip(SmoothCornerShape(22.dp)).background(c.callAccept).clickable(onClickLabel = "End and answer", role = Role.Button, onClick = onEndAnswer)
                     .height(44.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Rounded.Call, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(PgIcons.Phone, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Text("End & answer", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
@@ -251,13 +260,13 @@ fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer:
 
 @Composable
 fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit, onMinimise: () -> Unit,
-    onAllowBtNames: (() -> Unit)? = null) {
+    onAllowBtNames: (() -> Unit)? = null, onMessage: (() -> Unit)? = null) {
     val calls = app.calls
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(500); now = System.currentTimeMillis() } }
     val secs = ((now - (ui.activeSinceMs ?: now)) / 1000).coerceAtLeast(0)
     val s = ui.stats
-    val loss = s?.let { val t = (it.received + it.lost).toDouble(); if (t > 0) 100.0 * it.lost.toDouble() / t else 0.0 }
+    val loss = s?.let { ui.lossPct ?: 0.0 }
     val active = ui.state is CallState.Active
     val vi by app.video.info.collectAsState()
     val front by app.video.front.collectAsState()
@@ -273,7 +282,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 muted = ui.muted, speaker = ui.speaker, localCamera = v.localCamera, remoteCamera = v.remoteCamera,
                 problem = if (ui.held) HELD else ui.micProblem ?: videoProblem,
                 onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onCamera = onCamera,
-                onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
+                onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise, onMessage = onMessage,
                 remote = { m -> RemoteVideo(app, calls, m) },
                 selfView = { m -> SelfView(app, front, m) },
                 routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames,
@@ -285,8 +294,8 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         direct = s?.direct, bars = bars,
         muted = ui.muted, speaker = ui.speaker, micProblem = if (ui.held) HELD else ui.micProblem ?: videoProblem, reconnecting = s?.reconnecting == true,
         onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
-        onCamera = if (v != null) onCamera else null,
-        routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames,
+        onCamera = if (v != null) onCamera else null, rttMs = s?.rttMs?.toInt(), lossPct = loss,
+        routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames, onMessage = onMessage,
     )
 }
 
@@ -302,16 +311,22 @@ fun InCallContent(
     routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {},
     /** Set while Nearby devices is not allowed (Android 12+): the sheet offers it when a headset is unnamed. */
     onAllowBtNames: (() -> Unit)? = null,
+    /** The numbers About this call shows (round trip, recent loss). */
+    rttMs: Int? = null, lossPct: Double? = null, startWithInfo: Boolean = false,
+    onMessage: (() -> Unit)? = null,
 ) {
     var routeSheet by remember { mutableStateOf(startWithSheet) }
-    var info by remember { mutableStateOf(false) }
+    var info by remember { mutableStateOf(startWithInfo) }
     val (caption, icon) = routeSlot(routes)
-    CallFocus(name.ifBlank { "Unknown" }, did, active, ringing, secs, reconnecting, micProblem,
-        onMinimise = onMinimise, onInfo = { info = true }) {
-        CallControls(muted, speaker, camera = false, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
-            onCamera, onFlip = null, onEnd, caption, icon)
+    Box(Modifier.fillMaxSize()) {
+        CallFocus(name.ifBlank { "Unknown" }, did, active, ringing, secs, reconnecting, micProblem,
+            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage) {
+            CallControls(muted, speaker, camera = false, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
+                onCamera, onFlip = null, onEnd, caption, icon)
+        }
+        if (info) CallInfo(name, active, onDismiss = { info = false }, reconnecting = reconnecting, signal = bars ?: 0,
+            direct = direct, rttMs = rttMs, lossPct = lossPct)
     }
-    if (info) CallInfo(name, active, onDismiss = { info = false })
     if (routeSheet) AudioRouteSheet(speaker, routes, relayed = active && direct == false, onDismiss = { routeSheet = false },
         onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false },
         onRoute = { onRoute(it); routeSheet = false }, onAllowBtNames = onAllowBtNames)
@@ -329,8 +344,8 @@ private fun AudioRouteSheet(speaker: Boolean, routes: RouteState?, relayed: Bool
                 RouteOption(routeIcon(r.kind), Routes.label(r), r.key == routes.current?.key) { onRoute(r) }
             }
         } else {
-            RouteOption(Icons.Rounded.PhoneInTalk, "Phone", !speaker) { onPick(false) }
-            RouteOption(Icons.Rounded.VolumeUp, "Speaker", speaker) { onPick(true) }
+            RouteOption(PgIcons.Phone, "Phone", !speaker) { onPick(false) }
+            RouteOption(PgIcons.Vol, "Speaker", speaker) { onPick(true) }
         }
         if (onAllowBtNames != null && routes != null && Routes.unnamedBluetooth(routes)) {
             Hint("Allow nearby devices and Tinline can show your headset’s name and switch between headsets.",
@@ -351,7 +366,7 @@ private fun RouteOption(icon: ImageVector, label: String, on: Boolean, onClick: 
     ) {
         Icon(icon, null, tint = if (on) c.onPrc else c.ink, modifier = Modifier.padding(start = 8.dp))
         Text(label, Modifier.weight(1f), style = TinType.bodyL, color = if (on) c.onPrc else c.ink)
-        if (on) Icon(Icons.Rounded.Check, "Selected", tint = c.onPrc, modifier = Modifier.padding(end = 8.dp))
+        if (on) Icon(PgIcons.Check, "Selected", tint = c.onPrc, modifier = Modifier.padding(end = 8.dp))
     }
 }
 
@@ -370,6 +385,7 @@ fun VideoCallContent(
     onMute: () -> Unit, onSpeaker: () -> Unit, onCamera: () -> Unit, onFlip: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit,
     remote: @Composable (Modifier) -> Unit, selfView: @Composable (Modifier) -> Unit,
     routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {}, onAllowBtNames: (() -> Unit)? = null,
+    onMessage: (() -> Unit)? = null,
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
@@ -386,14 +402,21 @@ fun VideoCallContent(
             .statusBarsPadding().padding(bottom = 24.dp)) {
             Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 12.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                IconBtn(Icons.Rounded.KeyboardArrowDown, "Minimise", onMinimise, tint = Color.White)
+                IconBtn(PgIcons.Back, "Back. The call continues", onMinimise, tint = Color.White)
                 Column(Modifier.weight(1f)) {
                     Text(name, style = TinType.titleM, color = Color.White, maxLines = 1)
                     Text(if (reconnecting) "Reconnecting…" else clock(secs), style = TinType.mono.copy(fontSize = 14.sp), color = Color.White.copy(alpha = 0.8f))
                 }
-                IconBtn(Icons.Rounded.Info, "About this call", { info = true }, tint = Color.White)
+                if (onMessage != null) IconBtn(PgIcons.Chat, "Message. The call continues", onMessage, tint = Color.White)
+                Box(Modifier.size(44.dp).clip(CircleShape).clickable(role = Role.Button) { info = true }
+                    .semantics { contentDescription = if (bars != null && !reconnecting) "About this call. ${signalWord(bars)} signal, ${if (direct == true) "direct" else "relayed"}." else "About this call" },
+                    contentAlignment = Alignment.Center) {
+                    SignalBars(if (reconnecting) 0 else bars ?: 0, Color.White, wave = reconnecting)
+                }
             }
         }
+        if (info) CallInfo(name, active = true, onDismiss = { info = false }, reconnecting = reconnecting, signal = bars ?: 0,
+            direct = direct, video = true)
         // Self-view: our camera (the front one mirrored), top right under the bar.
         if (localCamera) Box(Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 72.dp, end = 12.dp)
             .size(width = 104.dp, height = 140.dp).clip(SmoothCornerShape(16.dp)).background(Color.Black)
@@ -411,7 +434,6 @@ fun VideoCallContent(
             }
         }
     }
-    if (info) CallInfo(name, active = true, onDismiss = { info = false })
     if (routeSheet) AudioRouteSheet(speaker, routes, relayed = direct == false, onDismiss = { routeSheet = false },
         onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false },
         onRoute = { onRoute(it); routeSheet = false }, onAllowBtNames = onAllowBtNames)
@@ -485,7 +507,7 @@ fun EndedContent(
                 Badge(clock(secs), BadgeKind.Mono)
                 if (direct == true) Badge("Direct", BadgeKind.Direct)
                 if (direct == false) Badge("Relayed", BadgeKind.Relayed)
-                if (bars != null) Badge("${qualityLabel(bars)} quality", BadgeKind.Neutral)
+                if (bars != null) Badge("${qualityLabel(bars)} signal", BadgeKind.Neutral)
             }
         }
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -527,7 +549,7 @@ fun MicNeededScreen(onOpenSettings: () -> Unit, onNotNow: () -> Unit) {
     Page {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
-            Box(Modifier.size(96.dp).clip(CircleShape).background(c.erc), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.MicOff, null, tint = c.er, modifier = Modifier.size(44.dp)) }
+            Box(Modifier.size(96.dp).clip(CircleShape).background(c.erc), contentAlignment = Alignment.Center) { Icon(PgIcons.Micoff, null, tint = c.er, modifier = Modifier.size(44.dp)) }
             H1("Tinline can’t use the microphone", Modifier.padding(top = 12.dp), align = TextAlign.Center)
             Lead("Without it, they won’t hear you. Tinline only listens during calls — never in the background.", align = TextAlign.Center)
         }

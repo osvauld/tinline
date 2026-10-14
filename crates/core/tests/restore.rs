@@ -31,7 +31,11 @@ impl Root {
     }
     fn node(&self) -> (Arc<Node>, mpsc::Receiver<(String, CallState)>) {
         let (tx, rx) = mpsc::channel();
-        (Node::new(self.0.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap(), rx)
+        {
+            let node = Node::new(self.0.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
+            node.auto_accept_contacts_for_test(true);
+            (node, rx)
+        }
     }
     fn acct(&self, did: &str) -> PathBuf {
         self.0.join("accounts").join(did.strip_prefix("did:key:").unwrap())

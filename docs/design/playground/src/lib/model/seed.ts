@@ -119,6 +119,10 @@ export function seedChats(): Chat[] {
       msg({ from: 'arjun', at: at(11, 20, 6), text: 'Booked the café near the station for lunch. Their coffee is excellent.' }),
       msg({ from: 'me', at: at(11, 25, 6), text: 'Perfect, I’ll bring the lease papers', delivery: 'delivered' }),
       msg({ from: 'arjun', at: at(17, 45, 4), text: 'The landlord wants the deposit by Friday.' }),
+      // Photos (chat/5 sizes): one with a caption, one not downloaded yet (its preview shows), one of mine.
+      msg({ from: 'arjun', at: at(17, 47, 4), text: 'The view from the balcony', file: { name: 'balcony.jpg', size: 2.1e6, kind: 'image', progress: 1, state: 'done', w: 4032, h: 3024 } }),
+      msg({ from: 'arjun', at: at(17, 48, 4), text: '', file: { name: 'kitchen.jpg', size: 3.2e6, kind: 'image', progress: 1, state: 'done', w: 3024, h: 4032, remote: true } }),
+      msg({ from: 'me', at: at(17, 52, 4), text: '', delivery: 'delivered', file: { name: 'sketch.png', size: 6.4e5, kind: 'image', progress: 1, state: 'done', w: 1080, h: 1080 } }),
       msg({ from: 'arjun', at: at(21, 12, 1), text: 'Did you get home ok?' }),
       msg({ from: 'me', at: at(21, 14, 1), text: 'Yes, train was on time for once', delivery: 'delivered' }),
       msg({ from: 'me', at: at(21, 15, 1), text: 'Thanks for dinner. That place was great', delivery: 'delivered' }),

@@ -61,7 +61,7 @@ fun TopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (onBack != null) IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
+        if (onBack != null) IconBtn(PgIcons.Back, "Back", onBack)
         else Spacer(Modifier.width(16.dp))
         Text(title.orEmpty(), Modifier.weight(1f), style = TinType.titleM.copy(fontSize = 20.sp, lineHeight = 26.sp), color = Tin.c.ink,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -172,7 +172,7 @@ fun TinField(
                     }
                 },
             )
-            if (password) IconBtn(if (shown) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+            if (password) IconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye,
                 if (shown) "Hide passphrase" else "Show passphrase", { shown = !shown }, tint = c.ink2)
             else trailing?.invoke()
         }
@@ -194,29 +194,17 @@ fun initialsOf(name: String): String {
     }
 }
 
-/** Initials on one of four tinted containers, picked by hashing the contact key (stable across devices). */
+/** The person avatar (lib/ui/Avatar.svelte via [PgAvatar]): [key] is the person's DID where there is one, so their picture shows. */
 @Composable
-fun Avatar(name: String, key: String, size: Dp, modifier: Modifier = Modifier, alpha: Float = 1f) {
-    val c = Tin.c
-    val (bg, fg) = when (hashOf(key) % 4) {
-        0 -> c.prc to c.onPrc
-        1 -> c.relayC to c.onRelayC
-        2 -> c.warn to c.onWarn
-        else -> c.pk to c.onPk
-    }
-    Box(modifier.size(size).clip(CircleShape).background(bg.copy(alpha = alpha)), contentAlignment = Alignment.Center) {
-        Text(initialsOf(name), color = fg, style = TinType.titleM.copy(fontSize = (size.value * 0.36f).sp, lineHeight = (size.value * 0.44f).sp,
-            fontWeight = if (size.value >= 60) FontWeight.Bold else FontWeight.SemiBold))
-    }
-}
+fun Avatar(name: String, key: String, size: Dp, modifier: Modifier = Modifier, alpha: Float = 1f) =
+    PgAvatar(name, hashOf(key) % 6, size, person = key, modifier = modifier, alpha = alpha)
 
-/** My own avatar is always the teal container. */
+/** My own avatar: hue 0 (the seed's account hue) and my picture. */
 @Composable
 fun SelfAvatar(name: String, size: Dp, modifier: Modifier = Modifier) {
-    val c = Tin.c
-    Box(modifier.size(size).clip(CircleShape).background(c.prc), contentAlignment = Alignment.Center) {
-        Text(initialsOf(name).take(1), color = c.onPrc, style = TinType.titleM.copy(fontSize = (size.value * 0.36f).sp, lineHeight = (size.value * 0.44f).sp, fontWeight = FontWeight.Bold))
-    }
+    val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as? P2pApp
+    val did = app?.let { ProfileBackend.of(it).self.collectAsState().value }
+    PgAvatar(name, 0, size, person = did, modifier = modifier)
 }
 
 /** Me - string - them, used on Adding / Added / Calling screens. */
@@ -339,7 +327,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier, trailing: (@Compos
 @Composable
 fun ListItem(
     title: String, onClick: (() -> Unit)? = null, sub: String? = null, icon: ImageVector? = null,
-    trailing: (@Composable () -> Unit)? = { Icon(Icons.Rounded.ChevronRight, null, tint = Tin.c.ink2) },
+    trailing: (@Composable () -> Unit)? = { Icon(PgIcons.Chevr, null, tint = Tin.c.ink2) },
     titleColor: Color = Tin.c.ink,
 ) {
     Row(

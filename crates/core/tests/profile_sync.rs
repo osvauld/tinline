@@ -20,6 +20,7 @@ impl Drop for Peer {
 fn peer(tag: &str) -> Peer {
     let dir = TempDir::new("profile-sync", tag);
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    node.auto_accept_contacts_for_test(true);
     let phrase = node.create_identity(tag.into(), "pass".into()).unwrap();
     let did = node.profile().unwrap().did;
     Peer {

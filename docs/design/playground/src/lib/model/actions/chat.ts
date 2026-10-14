@@ -67,8 +67,8 @@ export function retryMessage(c: Chat, m: Message) {
 }
 
 /* ---------- files (1:1 only) ---------- */
-export const SAMPLE_FILES: { name: string; size: number; kind: FileInfo['kind'] }[] = [
-  { name: 'holiday-coast.jpg', size: 2.4e6, kind: 'image' },
+export const SAMPLE_FILES: { name: string; size: number; kind: FileInfo['kind']; w?: number; h?: number }[] = [
+  { name: 'holiday-coast.jpg', size: 2.4e6, kind: 'image', w: 4000, h: 3000 },
   { name: 'flat-lease.pdf', size: 6.4e5, kind: 'doc' },
   { name: 'wedding-clip.mp4', size: 48e6, kind: 'video' },
 ];
@@ -121,6 +121,7 @@ export function receiveText(chatId: Id, from: Id, text: string): Message | null 
   if (!c) return null;
   const m = pushMessage(c, { from, text });
   if (nav.openChat !== c.id) c.unread++;
+  emitFx({ type: 'received' });
   return m;
 }
 
@@ -128,6 +129,7 @@ export function receiveFile(chatId: Id, from: Id, f: { name: string; size: numbe
   const c = chat(chatId);
   if (!c || !isDirect(c)) return null;
   const m = pushMessage(c, { from, text: '', file: { ...f, progress: 1, state: 'done' } });
+  emitFx({ type: 'received' });
   if (nav.openChat !== c.id) c.unread++;
   return m;
 }

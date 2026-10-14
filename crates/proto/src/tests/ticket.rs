@@ -189,6 +189,31 @@ fn replayed_nonce() {
     );
 }
 
+/// Reusable codes: the redeemed set holds (joiner, nonce); another joiner still redeems it.
+#[test]
+fn redeemed_per_joiner() {
+    let (a, b, c) = (peer(), peer(), peer());
+    let t = ticket(&a);
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (_, nb) = accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &none(), GTTL).unwrap();
+    let spent: HashSet<_> = [redeemed_key(&nb.did, &nb.redeemed_nonce)].into();
+    assert_eq!(accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &spent, GTTL).err(), Some(Error::Replayed));
+    let (again, _) = contact_hello(&b.id, b.dev, &t, "bob", T0 + 1, GTTL).unwrap();
+    assert_eq!(accept_contact_hello(&a.id, a.dev, &again, b.dev, T0 + 1, &spent, GTTL).err(), Some(Error::Replayed));
+    let (other, _) = contact_hello(&c.id, c.dev, &t, "carol", T0, GTTL).unwrap();
+    assert!(accept_contact_hello(&a.id, a.dev, &other, c.dev, T0, &spent, GTTL).is_ok());
+}
+
+/// The joiner's half survives a round trip through storage.
+#[test]
+fn pending_contact_serialises() {
+    let (a, b) = (peer(), peer());
+    let (_, pending) = contact_hello(&b.id, b.dev, &ticket(&a), "bob", T0, GTTL).unwrap();
+    let back: PendingContact = serde_json::from_str(&serde_json::to_string(&pending).unwrap()).unwrap();
+    assert_eq!(back, pending);
+    assert_eq!(hello_invite(&contact_hello(&b.id, b.dev, &ticket(&a), "bob", T0, GTTL).unwrap().0).unwrap().iss, a.id.did());
+}
+
 #[test]
 fn invite_issued_by_someone_else() {
     let (a, b, m) = (peer(), peer(), peer());

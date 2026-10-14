@@ -11,6 +11,9 @@
   import { statusLook } from '../../lib/brand/status.svelte';
   import CallStrip from '../../lib/calls/CallStrip.svelte';
   import CallLayer from '../../lib/calls/CallLayer.svelte';
+  import { call } from '../../lib/calls/call.svelte';
+  import { incall } from '../../lib/calls/incall.svelte';
+  import SimKeyboard from '../../lib/sim/SimKeyboard.svelte';
   import SystemLayer from '../../lib/calls/SystemLayer.svelte';
   import PeopleLayers from '../people/PeopleLayers.svelte';
   import SearchDock from '../search/SearchDock.svelte';
@@ -31,7 +34,7 @@
   <div class="gate" data-form-gate><GATE.component {...GATE.props(null)} /></div>
 {:else}
 <div class="phone">
-  <CallStrip />
+  {#if call.stripAt === 'top'}<CallStrip />{/if}
   <div class="vp">
   {#if top.name === 'home'}
     {@const L = TAB_LISTS[top.tab]}
@@ -66,6 +69,8 @@
     {/key}
   {/if}
   </div>
+  {#if call.stripAt === 'bottom'}<CallStrip />{/if}
+  {#if incall.simKbd && incall.kbdOpen}<SimKeyboard />{/if}
   <CallLayer />
   <SystemLayer />
   <PeopleLayers />

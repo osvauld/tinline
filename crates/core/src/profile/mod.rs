@@ -191,7 +191,7 @@ impl Inner {
                 let mut profile = me.profile.clone();
                 profile.name = name.into();
                 s.me = Some(Arc::new(Me::load(profile, me.epoch)?));
-                s.state.ticket = None;
+                crate::node::retire_ticket(&mut s.state, true);
             }
             if let Some(Disk::V2(d)) = s.disk.as_mut() {
                 let changed = d.name != name || d.profile_name_pending;

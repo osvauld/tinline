@@ -1,9 +1,13 @@
-/* The one synthesized sound set. Generator ported from refined/call-audio.js (same patterns,
-   frequencies and timings, which came from calls.html); driven ONLY by the fx bus, so each cue
-   fires on the same event as its visual.
+/* The one synthesized sound set (a MOCK: the apps generate the same sounds natively from these tables; see
+   SIGNUP-HANDOFF.md § Sounds). Generator ported from refined/call-audio.js; driven ONLY by the fx bus, so each
+   cue fires on the same event as its visual.
+   Character: Tinline is a thoughtful toy. Three instruments, all made in code, no sample files:
+   `sine` (the call chimes), `pluck` (the line: a soft plucked string, Karplus-Strong) and `tok` (the can:
+   a small struck tin, a few inharmonic partials). Each pluck/tok is a little different every time.
+   Sparse on purpose: a sound only where it tells you something (calls, the line opening, someone asking to
+   add you, a message arriving). Sending is a faint pluck; typing, steps and taps are silent.
    Rules: no AudioContext before a user gesture; Quiet mode (drawer) never makes one; a hidden
-   tab silences the current sound. The message-sent `pluck` exists but is not wired: "no sound on send"
-   (chat.md) stands until decided otherwise.
+   tab silences the current sound. One-shot cues (`cue()`) layer over a ringing call instead of stopping it.
    Palettes: `classic` is the set above. `slack` and `triad` are the two signature candidates from the
    sound-identity branch (docs/sound/ringtone-studio.html), same G-major note set; they replace only
    ring/back/connected. Proposed, undecided: the drawer lets you audition them in the real flows. */
@@ -11,7 +15,8 @@ import { onFx } from './bus';
 import { dur } from './motion';
 import { motion } from './reduced.svelte';
 
-type Note = [freq: number, at: number, dur: number, peak: number, attack: number];
+type Inst = 'sine' | 'pluck' | 'tok';
+type Note = [freq: number, at: number, dur: number, peak: number, attack: number, inst?: Inst];
 interface Pattern { label: string; period: number; notes: Note[] }
 
 export const PAT: Record<string, Pattern> = {
@@ -26,7 +31,12 @@ export const PAT: Record<string, Pattern> = {
   gstart: { label: 'Group call started', period: 0, notes: [[587, 0, .3, .3, .02], [784, .14, .5, .3, .02]] },
   gjoin: { label: 'Joined (group)', period: 0, notes: [[659, 0, .32, .3, .02]] },
   gleft: { label: 'Left (group)', period: 0, notes: [[494, 0, .36, .26, .02]] },
-  pluck: { label: 'Sent (not wired)', period: 0, notes: [[659, 0, .09, .5, .004]] },
+  // The toy set. sent: one faint high pluck. received: the can, tapped once. line: the line pulls tight in two
+  // tugs (Done, contact added), D5 then G5 with a soft G4 under the second. knock: someone asks to add you.
+  sent: { label: 'Message sent', period: 0, notes: [[1175, 0, .5, .18, .003, 'pluck']] },
+  received: { label: 'Message received', period: 0, notes: [[880, 0, .45, .32, .002, 'tok']] },
+  line: { label: 'Line open', period: 0, notes: [[587, 0, 1.4, .55, .003, 'pluck'], [784, .12, 1.8, .55, .003, 'pluck'], [392, .12, 1.6, .12, .06]] },
+  knock: { label: 'Asks to add you', period: 0, notes: [[640, 0, .35, .34, .002, 'tok'], [600, .17, .45, .3, .002, 'tok']] },
 };
 
 export type Palette = 'classic' | 'slack' | 'triad';
@@ -122,7 +132,35 @@ class Audio {
     cycle();
     return true;
   }
-  tone(s: Playing, [f, at, dur, peak, atk]: Note, t: number) {
+  /** A one-shot that layers over whatever is playing (a message arriving mid-ring doesn't cut the ring). */
+  cue(kind: string, gain = 1) {
+    if (!this.armed || this.quiet || !this.ensure()) return false;
+    const c = this.ctx!, g = c.createGain(), lp = c.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 5000;
+    g.gain.value = this.vol * 0.25 * gain;
+    lp.connect(g); g.connect(c.destination);
+    const s: Playing = { kind, g, lp, oscs: [], timers: [], stopped: false };
+    this.played.push(kind);
+    const p = this.pattern(kind), t = c.currentTime + 0.02;
+    for (const n of p.notes) this.tone(s, n, t);
+    const end = Math.max(...p.notes.map((n) => n[1] + n[2])) * 1000 + 200;
+    setTimeout(() => { try { g.disconnect(); lp.disconnect(); } catch { /* gone */ } }, end);
+    return true;
+  }
+  /** pluck / tok: rendered into a buffer at play time (cheap: well under a millisecond of work per note). */
+  voice(s: Playing, [f, at, dur, peak, atk, inst]: Note, t: number) {
+    const c = this.ctx!, t0 = t + at, human = Math.pow(2, (Math.random() - 0.5) * 8 / 1200);  // ±4 cents, never twice the same
+    const buf = inst === 'pluck' ? pluckBuf(c, f * human, dur) : tokBuf(c, f * human, dur);
+    const src = c.createBufferSource(), e = c.createGain();
+    src.buffer = buf;
+    e.gain.setValueAtTime(0, t0); e.gain.linearRampToValueAtTime(peak, t0 + atk);
+    src.connect(e); e.connect(s.lp);
+    src.onended = () => { try { e.disconnect(); } catch { /* gone */ } };
+    src.start(t0); s.oscs.push(src as unknown as OscillatorNode);
+  }
+  tone(s: Playing, n: Note, t: number) {
+    if (n[5] && n[5] !== 'sine') { this.voice(s, n, t); return; }
+    const [f, at, dur, peak, atk] = n;
     const c = this.ctx!, t0 = t + at;
     for (const [freq, amt] of [[f, 1], [f * 2, 0.18]]) {
       const o = c.createOscillator(), e = c.createGain();
@@ -159,6 +197,34 @@ class Audio {
   }
 }
 
+/* The line: Karplus-Strong. A burst of softened noise circulates in a delay one period long; averaging each pass
+   is the string losing its highs. `soft` low-passes the burst (a fingertip, not a pick). Delay = m + frac + 0.5. */
+function pluckBuf(c: BaseAudioContext, f: number, dur: number, soft = 0.45) {
+  const sr = c.sampleRate, n = Math.ceil(sr * dur), b = c.createBuffer(1, n, sr), y = b.getChannelData(0);
+  const N = sr / f - 0.5, m = Math.floor(N), g = N - m, decay = Math.pow(0.001, 1 / (f * dur));
+  let lp = 0;
+  for (let i = 0; i < Math.min(m + 2, n); i++) { lp += soft * (Math.random() * 2 - 1 - lp); y[i] = lp; }
+  for (let i = m + 2; i < n; i++)
+    y[i] = decay * 0.5 * ((1 - g) * (y[i - m] + y[i - m - 1]) + g * (y[i - m - 1] + y[i - m - 2]));
+  return norm(b, y);
+}
+/* The can: a few inharmonic partials of a small struck tin (higher ones die first) and a 4ms tap. */
+function tokBuf(c: BaseAudioContext, f: number, dur: number) {
+  const sr = c.sampleRate, n = Math.ceil(sr * dur), b = c.createBuffer(1, n, sr), y = b.getChannelData(0);
+  const P: [number, number, number][] = [[1, 1, 1], [1.51, .55, .55], [2.03, .35, .4], [2.47, .22, .28], [3.31, .12, .18]];
+  for (const [r, a, d] of P) { const w = 2 * Math.PI * f * r / sr, k = 1 / (sr * dur * d / 6.9), ph = Math.random() * 6.28;
+    for (let i = 0; i < n; i++) y[i] += a * Math.exp(-i * k) * Math.sin(w * i + ph); }
+  let lp = 0; const tap = Math.floor(sr * 0.004);
+  for (let i = 0; i < tap; i++) { lp += 0.3 * (Math.random() * 2 - 1 - lp); y[i] += 0.6 * lp * (1 - i / tap); }
+  return norm(b, y);
+}
+function norm(b: AudioBuffer, y: Float32Array) {
+  let mx = 0; for (let i = 0; i < y.length; i++) mx = Math.max(mx, Math.abs(y[i]));
+  if (mx > 0) for (let i = 0; i < y.length; i++) y[i] /= mx;
+  const fade = Math.min(256, y.length); for (let i = 0; i < fade; i++) y[y.length - 1 - i] *= i / fade;   // no click at the end
+  return b;
+}
+
 export const audio = new Audio();
 
 /** Wire the bus once at startup. Any pointer/key gesture arms audio (browsers need one). */
@@ -184,6 +250,10 @@ export function startAudio() {
       case 'reconnecting': audio.play('pulse'); break;
       case 'gcall': audio.play(e.cue === 'started' ? 'gstart' : e.cue === 'joined' ? 'gjoin' : 'gleft'); break;
       case 'join': audio.play('pulse', false, e.soft ? 0.4 : 1); break;
+      case 'sent': audio.cue('sent'); break;
+      case 'received': audio.cue('received'); break;
+      case 'line': audio.cue('line'); break;
+      case 'request': audio.cue('knock'); break;
     }
   });
 }

@@ -105,6 +105,14 @@ pub enum Msg {
         letter: String,
     },
     GroupLetterTaken,
+    /// The ticket owner's answer to a good `ContactHello` it holds as a request for its user
+    /// (instead of a `ContactWelcome`): the joiner shows "request sent". If the user accepts, the
+    /// owner dials the joiner's attested device and sends the `ContactWelcome` as the first
+    /// message of that connection, answered `WelcomeTaken` (or `Reject` if no request of the
+    /// joiner's matches). "Not now" sends nothing.
+    ContactPending,
+    /// A dialled-back `ContactWelcome` was checked against our pending request and stored.
+    WelcomeTaken,
     /// Mid-call, only once both sides offered video: the sender's camera turned on or off.
     /// Sent when the call goes active if the camera is on, then on every change.
     Video {

@@ -42,7 +42,7 @@ fun TickIcon(t: Tick, tint: Color, size: Dp = 15.dp) {
     val (icon, desc) = when (t) {
         Tick.One -> Icons.Rounded.Done to "Saved on your phone"
         Tick.Two -> Icons.Rounded.DoneAll to "On their phone"
-        Tick.Clock -> Icons.Rounded.Schedule to "Waiting until you are both online"
+        Tick.Clock -> PgIcons.Clock to "Waiting until you are both online"
     }
     Icon(icon, desc, tint = tint, modifier = Modifier.size(size))
 }
@@ -64,13 +64,17 @@ fun listTime(ms: Long, nowMs: Long): String = when (val d = daysAgo(ms, nowMs)) 
     else -> if (d < 0) msClock(ms) else dateOf(ms).format(DM)
 }
 
-/** Day pill in a conversation: "Today", "Yesterday", "Monday", "12 Sep". */
-fun dayLabel(ms: Long, nowMs: Long): String = when (val d = daysAgo(ms, nowMs)) {
+/** Day pill in a conversation (Conversation.svelte `dayLabel`): "Today", "Yesterday", else "Thursday 8 Oct" (with the year
+ *  when it isn't this year). */
+fun dayLabel(ms: Long, nowMs: Long): String = when (daysAgo(ms, nowMs)) {
     0L -> "Today"
     1L -> "Yesterday"
-    in 2..6 -> dateOf(ms).dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
-    else -> if (d < 0) "Today" else dateOf(ms).format(DM)
+    else -> if (daysAgo(ms, nowMs) < 0) "Today" else dateOf(ms).let { d ->
+        d.format(if (d.year == dateOf(nowMs).year) DAY_DM else DAY_DMY)
+    }
 }
+private val DAY_DM = DateTimeFormatter.ofPattern("EEEE d MMM", Locale.getDefault())
+private val DAY_DMY = DateTimeFormatter.ofPattern("EEEE d MMM yyyy", Locale.getDefault())
 
 fun sameDay(a: Long, b: Long): Boolean = dateOf(a) == dateOf(b)
 

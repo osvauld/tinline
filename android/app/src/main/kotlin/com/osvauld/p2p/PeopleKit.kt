@@ -36,9 +36,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -116,7 +119,7 @@ val W650 = FontWeight(650)
 
 object PgType {
     private fun t(size: Int, lh: Int, w: FontWeight = FontWeight.Normal, ls: TextUnit = TextUnit.Unspecified) =
-        TextStyle(fontFamily = PgFont, fontSize = size.sp, lineHeight = lh.sp, fontWeight = w, letterSpacing = ls)
+        TextStyle(fontFamily = PgFont, fontSize = size.sp, lineHeight = lh.sp, fontWeight = w, letterSpacing = ls, lineHeightStyle = CssLineHeight)
     /** gate h1 (StepShell): 26/32 700, -.01em. */
     val h1 = t(26, 32, FontWeight.Bold, (-0.01).em)
     /** Welcome / Done centred h1: 30/36. */
@@ -175,10 +178,11 @@ fun PgSpinner(size: Dp, color: Color, stroke: Dp = 2.dp) {
 
 /** lib/ui/IconButton: 44 round, icon 22, ink. */
 @Composable
-fun PgIconBtn(icon: ImageVector, label: String, onClick: () -> Unit, tint: Color = Tin.c.ink, size: Dp = 44.dp, iconSize: Dp = 22.dp, enabled: Boolean = true) {
+fun PgIconBtn(icon: ImageVector, label: String, onClick: () -> Unit, tint: Color = Tin.c.ink, size: Dp = 44.dp, iconSize: Dp = 22.dp, enabled: Boolean = true,
+              modifier: Modifier = Modifier) {
     val src = remember { MutableInteractionSource() }
     Box(
-        Modifier.size(size).press(src, enabled).clip(CircleShape)
+        modifier.size(size).press(src, enabled).clip(CircleShape)
             .clickable(src, androidx.compose.material3.ripple(), enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
@@ -262,7 +266,7 @@ fun PgSwitch(checked: Boolean, onChange: (Boolean) -> Unit, label: String, enabl
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     // 44 px touch target around the 26 px track.
     Box(
-        Modifier.size(48.dp, 44.dp).clickable(enabled = enabled, role = Role.Switch, indication = null, interactionSource = remember { MutableInteractionSource() }) { onChange(!checked) }
+        Modifier.size(44.dp, 44.dp).clickable(enabled = enabled, role = Role.Switch, indication = null, interactionSource = remember { MutableInteractionSource() }) { onChange(!checked) }
             .semantics { contentDescription = label; stateDescription = if (checked) "On" else "Off" },
         contentAlignment = Alignment.Center,
     ) {
@@ -376,7 +380,7 @@ fun GField(
                         }
                     },
                 )
-                if (secret) PgIconBtn(if (shown) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                if (secret) PgIconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye,
                     if (shown) "Hide ${label.lowercase()}" else "Show ${label.lowercase()}", { shown = !shown }, tint = c.ink2, iconSize = 20.dp)
             }
         }
@@ -425,7 +429,7 @@ fun PassField(value: String, onChange: (String) -> Unit, label: String = "Passph
                     }
                 },
             )
-            if (secret) PgIconBtn(if (shown) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (shown) "Hide passphrase" else "Show passphrase",
+            if (secret) PgIconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye, if (shown) "Hide passphrase" else "Show passphrase",
                 { shown = !shown }, tint = c.ink2, iconSize = 20.dp)
         }
         Text(error.ifEmpty { hint }, Modifier.fillMaxWidth().heightIn(min = (19 * msgLines).dp).semantics { if (bad) liveRegion = LiveRegionMode.Assertive },
@@ -447,7 +451,7 @@ fun GNotice(text: AnnotatedString, kind: NKind = NKind.Info, icon: ImageVector? 
             .semantics { if (kind == NKind.Error) liveRegion = LiveRegionMode.Assertive },
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top,
     ) {
-        Icon(icon ?: if (kind == NKind.Info) Icons.Rounded.Info else Icons.Rounded.WarningAmber, null, Modifier.padding(top = 1.dp).size(20.dp), tint = fg)
+        Icon(icon ?: if (kind == NKind.Info) PgIcons.Info else PgIcons.Warning, null, Modifier.padding(top = 1.dp).size(20.dp), tint = fg)
         Text(text, style = PgType.sub19, color = fg)
     }
 }
@@ -479,9 +483,19 @@ fun IconDisc(icon: ImageVector, size: Dp, iconSize: Dp, danger: Boolean = false)
 fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String = "") {
     val c = Tin.c
     val reduced = rememberReducedMotion()
-    if (onBack == null && progress == null) { Spacer(Modifier.height(24.dp)); return }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    // Light/dark right in sign-up (Gate.svelte): the first screens are where someone decides if this feels like theirs.
+    val theme: @Composable () -> Unit = {
+        PgIconBtn(if (c.dark) PgIcons.Sun else PgIcons.Moon, if (c.dark) "Switch to light" else "Switch to dark",
+            { Appearance.set(ctx, !c.dark) }, tint = c.ink2, iconSize = 20.dp, size = 40.dp, modifier = Modifier.offset(x = 10.dp))
+    }
+    // Android `.head.empty`: no back and no progress; only the theme switch, at the end.
+    if (onBack == null && progress == null) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(start = 8.dp, end = 20.dp), horizontalArrangement = Arrangement.End) { theme() }
+        return
+    }
     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = 8.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.width(44.dp)) { if (onBack != null) PgIconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack) }
+        Box(Modifier.width(44.dp)) { if (onBack != null) PgIconBtn(PgIcons.Back, "Back", onBack) }
         Spacer(Modifier.weight(1f))
         if (progress != null) Row(
             Modifier.semantics { contentDescription = "Setup progress, step ${progress.first} of ${progress.second}" + if (stepLabel.isNotEmpty()) ": $stepLabel" else "" },
@@ -493,8 +507,41 @@ fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String
                     Box(Modifier.size(14.dp, 6.dp).clip(RoundedCornerShape(3.dp)).background(col))
                 }
             }
-            Text("${progress.first} of ${progress.second}", Modifier.widthIn(min = 42.dp), style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+            // step 0 (Welcome, Choose): the count keeps its width, hidden, so "1 of 6" appears in place
+            Text("${progress.first} of ${progress.second}", Modifier.widthIn(min = 42.dp).graphicsLayer { alpha = if (progress.first == 0) 0f else 1f },
+                style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
         }
+        theme()
+    }
+}
+
+/**
+ * gate/Btn.svelte `next` on Android: Continue is a 56 round accent button with an arrow at the end of the footer; the label stays
+ * the accessible name, and busy swaps the arrow for a spinner so the size never changes. The arrow mirrors in RTL.
+ */
+@Composable
+fun GNext(label: String, onClick: () -> Unit, enabled: Boolean = true, busy: Boolean = false) {
+    val c = Tin.c
+    val src = remember { MutableInteractionSource() }
+    val on = enabled && !busy
+    val (bg, fg) = when { busy -> c.accent.copy(alpha = 0.85f) to c.onAccent; on -> c.accent to c.onAccent; else -> c.sf2 to c.ink2 }
+    Box(
+        Modifier.size(56.dp).press(src, on).clip(CircleShape).background(bg)
+            .clickable(src, androidx.compose.material3.ripple(color = fg), enabled = on, role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (busy) PgSpinner(20.dp, fg)
+        else Icon(PgIcons.Next, null, Modifier.size(24.dp), tint = fg)
+    }
+}
+
+/** The footer row when Continue is the round arrow: an optional secondary at the start, the arrow at the end. */
+@Composable
+fun GNextRow(next: @Composable () -> Unit, start: (@Composable () -> Unit)? = null) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        if (start != null) start() else Spacer(Modifier.width(1.dp))
+        next()
     }
 }
 
@@ -506,7 +553,10 @@ fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String
 @Composable
 fun GateStep(
     title: String, lead: String? = null, center: Boolean = false, anchor: Boolean = false, bigTitle: Boolean = false,
-    hero: (@Composable () -> Unit)? = null, foot: (@Composable ColumnScope.() -> Unit)? = null, body: @Composable ColumnScope.() -> Unit = {},
+    hero: (@Composable () -> Unit)? = null, foot: (@Composable ColumnScope.() -> Unit)? = null,
+    /** The body fills the height instead of scrolling (Welcome's mark, Choose's options and Terms' consent line sit at the bottom). */
+    fill: Boolean = false,
+    body: @Composable ColumnScope.() -> Unit = {},
 ) {
     val c = Tin.c
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -515,9 +565,9 @@ fun GateStep(
         val anchorTop = if (keyboardOpen) 0.dp else minOf(maxHeight * 0.14f, 96.dp)
         Column(Modifier.fillMaxSize()) {
             Column(
-                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                Modifier.weight(1f).fillMaxWidth().let { if (fill) it else it.verticalScroll(rememberScrollState()) }
                     .padding(start = 24.dp, end = 24.dp, top = if (center && anchor) 8.dp + anchorTop else 8.dp, bottom = 16.dp)
-                    .let { if (center && !anchor) it.fillMaxHeight() else it },
+                    .let { if ((center && !anchor) || fill) it.fillMaxHeight() else it },
                 verticalArrangement = if (center && !anchor) Arrangement.spacedBy(16.dp, Alignment.CenterVertically) else Arrangement.spacedBy(16.dp),
                 horizontalAlignment = if (center) Alignment.CenterHorizontally else Alignment.Start,
             ) {
@@ -561,7 +611,7 @@ fun PfBar(title: String, onBack: () -> Unit, actions: @Composable RowScope.() ->
     Column(Modifier.fillMaxWidth().background(c.sf)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            PgIconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
+            PgIconBtn(PgIcons.Back, "Back", onBack, modifier = Modifier.mirrorRtl())
             Text(title, Modifier.weight(1f).semantics { heading() }, style = PgType.barTitle, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             actions()
         }
@@ -594,17 +644,24 @@ fun PfSec(title: String? = null, first: Boolean = false, top: Dp? = null, conten
 }
 
 /** Collects a card's rows so the card can draw the hairline between them (.pf-card > * + *). */
-class PfRows { internal val rows = mutableListOf<@Composable () -> Unit>(); fun row(r: @Composable () -> Unit) { rows += r } }
+class PfRows {
+    internal val rows = mutableListOf<Pair<Boolean, @Composable () -> Unit>>()
+    /** A row with the hairline above it (`.pf-card > * + *`), e.g. a FieldRow. */
+    fun row(r: @Composable () -> Unit) { rows += true to r }
+    /** A `.pf-act` row: profile.css's later `.pf-act { border: 0 }` removes that hairline, so action rows run together. */
+    fun act(r: @Composable () -> Unit) { rows += false to r }
+}
 
 /** .pf-card: r14 surface with an inset hairline; rows separated by hairlines. */
 @Composable
 fun PfCard(modifier: Modifier = Modifier, build: PfRows.() -> Unit) {
     val c = Tin.c
     val rows = PfRows().apply(build).rows
-    val shape = SmoothCornerShape(14.dp)
+    // profile.css .pf-card is a CSS border-radius (circular), not a shape.ts path.
+    val shape = RoundedCornerShape(14.dp)
     Column(modifier.fillMaxWidth().clip(shape).background(c.sf).border(1.dp, c.hairline, shape)) {
-        rows.forEachIndexed { i, r ->
-            if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
+        rows.forEachIndexed { i, (sep, r) ->
+            if (i > 0 && sep) Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
             r()
         }
     }
@@ -620,14 +677,18 @@ fun PfNote(text: String, modifier: Modifier = Modifier, align: TextAlign = TextA
 fun PfAct(
     title: String, onClick: (() -> Unit)? = null, icon: ImageVector? = null, sub: String? = null, danger: Boolean = false, chevron: Boolean = false,
     enabled: Boolean = true, subColor: Color? = null, subBold: Boolean = false, minHeight: Dp = 60.dp, leading: (@Composable () -> Unit)? = null,
-    titleStyle: TextStyle = PgType.bodyB, gap: Dp = 14.dp, padV: Dp = 8.dp, subMaxLines: Int = Int.MAX_VALUE, trailing: (@Composable () -> Unit)? = null,
+    titleStyle: TextStyle = PgType.bodyB, gap: Dp = 14.dp, padV: Dp = 8.dp, subMaxLines: Int = Int.MAX_VALUE, padH: Dp = 16.dp,
+    shape: androidx.compose.ui.graphics.Shape? = null, role: Role = Role.Button, plain: Boolean = false, extraLines: (@Composable ColumnScope.() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val c = Tin.c
     val src = remember { MutableInteractionSource() }
     Row(
         Modifier.fillMaxWidth().heightIn(min = minHeight).graphicsLayer { alpha = if (enabled) 1f else 0.55f }
-            .let { if (onClick != null) it.clickable(src, androidx.compose.material3.ripple(), enabled = enabled, role = Role.Button, onClick = onClick) else it }
-            .padding(horizontal = 16.dp, vertical = padV),
+            .let { if (onClick != null && !plain) it.press(src, enabled) else it }
+            .let { if (shape != null) it.clip(shape) else it }
+            .let { if (onClick != null) it.clickable(src, if (plain) null else androidx.compose.material3.ripple(), enabled = enabled, role = role, onClick = onClick) else it }
+            .padding(horizontal = padH, vertical = padV),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap),
     ) {
         if (leading != null) leading()
@@ -636,9 +697,10 @@ fun PfAct(
             Text(title, style = titleStyle, color = if (danger) c.er else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (!sub.isNullOrEmpty()) Text(sub, style = PgType.sub.copy(fontWeight = if (subBold) FontWeight.SemiBold else FontWeight.Normal, fontFeatureSettings = "tnum"),
                 color = subColor ?: c.ink2, maxLines = subMaxLines, overflow = TextOverflow.Ellipsis)
+            extraLines?.invoke(this)
         }
         trailing?.invoke()
-        if (chevron) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, Modifier.size(18.dp), tint = c.ink2)
+        if (chevron) Icon(PgIcons.Chevr, null, Modifier.size(18.dp).mirrorRtl(), tint = c.ink2)
     }
 }
 
@@ -646,7 +708,7 @@ fun PfAct(
 @Composable
 fun PfStrip(text: String, icon: ImageVector, modifier: Modifier = Modifier, floating: Boolean = false) {
     val c = Tin.c
-    val shape = SmoothCornerShape(14.dp)
+    val shape = RoundedCornerShape(14.dp)
     Row(
         modifier.fillMaxWidth().then(if (floating) Modifier.depth(Depth.Pop, shape) else Modifier).clip(shape)
             .background(if (floating) c.sfRaised else c.sf2).then(if (floating) Modifier.border(1.dp, c.hairline, shape) else Modifier)
@@ -662,7 +724,7 @@ fun PfStrip(text: String, icon: ImageVector, modifier: Modifier = Modifier, floa
 @Composable
 fun PfErr(text: String, modifier: Modifier = Modifier) {
     val c = Tin.c
-    Text(text, modifier.fillMaxWidth().padding(top = 10.dp).clip(SmoothCornerShape(12.dp)).background(c.erc).padding(horizontal = 12.dp, vertical = 10.dp)
+    Text(text, modifier.fillMaxWidth().padding(top = 10.dp).clip(RoundedCornerShape(12.dp)).background(c.erc).padding(horizontal = 12.dp, vertical = 10.dp)
         .semantics { liveRegion = LiveRegionMode.Assertive }, style = PgType.sub19, color = c.er)
 }
 
@@ -682,17 +744,10 @@ fun ReservedLine(text: String, modifier: Modifier = Modifier, style: TextStyle =
  * A Layer dialog on Android: a bottom sheet (surface-raised, r24 top, sheet shadow), the 28 x 4 notch, the playground scrim,
  * content padded as .pf-dlg (20 20 16).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PeopleSheet(onDismiss: () -> Unit, pad: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
-    val c = Tin.c
-    ModalBottomSheet(
-        onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = c.sfRaised, contentColor = c.ink, shape = SmoothCornerShape(topStart = 24.dp, topEnd = 24.dp), scrimColor = PgScrim,
-        dragHandle = { Box(Modifier.padding(top = 8.dp, bottom = 2.dp).size(28.dp, 4.dp).clip(RoundedCornerShape(2.dp)).background(c.ln)) },
-        tonalElevation = 0.dp,
-    ) {
-        Column(Modifier.fillMaxWidth().widthIn(max = 520.dp).navigationBarsPadding().imePadding().let { if (pad) it.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp) else it }, content = content)
+fun PeopleSheet(onDismiss: () -> Unit, pad: Boolean = true, label: String = "", content: @Composable ColumnScope.() -> Unit) {
+    PgLayer(true, onDismiss, label) {
+        Column(Modifier.fillMaxWidth().let { if (pad) it.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp) else it }, content = content)
     }
 }
 

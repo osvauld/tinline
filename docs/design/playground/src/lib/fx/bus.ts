@@ -12,7 +12,10 @@ export type FxEvent =
   | { type: 'reconnecting' }
   | { type: 'gcall'; cue: 'started' | 'joined' | 'left' } // group call, others: a call started in a group / someone joined / left (soft, never a ring)
   | { type: 'join'; soft?: boolean }        // group roster change
-  | { type: 'sent' };                       // message sent (visual only unless a cue is decided)
+  | { type: 'sent' }                        // message sent: a faint pluck
+  | { type: 'received' }                    // a message arrived (in the app; the OS notification has its own copy)
+  | { type: 'line' }                        // the line opened: Done, a contact added (two tugs)
+  | { type: 'request' };                    // someone asks to add you (a knock)
 
 type Fn = (e: FxEvent) => void;
 const subs = new Set<Fn>();

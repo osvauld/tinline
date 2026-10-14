@@ -5,8 +5,8 @@
    Colours come from CSS vars: --tm-can, --tm-rim, --tm-mouth, --tm-str, --tm-ink (mono).
    Do not hand-edit geometry here; change parameters. */
 const DEF = { c: 7.5, b: 5.5, theta: 30.6, mu: 0.62, L: 3, s0: 3.5, ell: null, strokeW: 1.5,
-  phi0: 12, T: 1.6, A: 0.5, pluckA: 0.32, pluckSwing: 150, f: 7, tau: 0.11, noCap: false, lengthModel: 'exact', hitOver: 1.1,
-  connectHz: 3, endZeta: 1.6, endMs: 260 };
+  phi0: 12, T: 1.6, A: 0.5, pluckA: 0.32, pluckSwing: 150, f: 7, tau: 0.11, noCap: false, lengthModel: 'exact', hitOver: 1.6,
+  connectHz: 3, endZeta: 1.6, endMs: 260, recoil: 0.5, recoilMin: 1.2, settleHz: 2, windup: 0, windupMs: 180, tugs: 0 };
 const f3 = v => { const r = Math.round(v * 1000) / 1000; return String(r === 0 ? 0 : r); };
 const rad = d => d * Math.PI / 180;
 
@@ -107,7 +107,7 @@ function attach(svg, opts) {
   let forceReduced = opts.reduced == null ? null : !!opts.reduced;
   const refs = build(svg, P.mono);
   svg.setAttribute('viewBox', P.viewBox || svg.getAttribute('viewBox') || '0 0 24 24');
-  const ev = { hit: [], settled: [], frame: [] };
+  const ev = { hit: [], tug: [], settled: [], frame: [] };
   const emit = (n, a) => ev[n].forEach(fn => fn(a));
   // state
   const S = { D: 0, V: 0, phi: 0, phv: 0, ring: false, ringPhase: 0, target: 'slack', hit: false, tw: -1, rafId: 0, last: 0, running: false, t: 0, endSwingPending: false, wasMoving: false };
@@ -151,12 +151,31 @@ function attach(svg, opts) {
     const wc = omega();
     // delta spring
     let z, w, tgt;
-    if (S.target === 'taut') { z = 1; w = wc; tgt = P.DT * P.hitOver; }
+    if (S.wind > 0) { z = 1; w = 2 * Math.PI / (P.windupMs / 1000) * 1.2; tgt = -P.windup; S.wind -= h; }  // anticipation: the cans gather in before the pull
+    else if (S.target === 'taut' && S.hit) { z = 0; w = 2 * Math.PI * P.settleHz; tgt = P.DT; }   // after the tug: the string pulls the recoiling cans back out
+    else if (S.target === 'taut') { z = 1; w = wc; tgt = P.DT * P.hitOver; }
     else { z = P.endZeta; w = endOmega(); tgt = 0; }
     const a = -2 * z * w * S.V - w * w * (S.D - tgt);
     S.V += a * h; S.D += S.V * h;
-    if (S.target === 'taut' && S.D >= P.DT) { S.D = P.DT; S.V = 0; if (!S.hit) { S.hit = true; S.tw = 0; S.twA = 0; S.hitT = S.t; emit('hit', { t: clock.now(), tSim: S.t }); } }
-    if (S.D < 0) { S.D = 0; if (S.V < 0) S.V = 0; }
+    /* Resting taut (already hit, not moving outward) is not a new tug: without this, a string at rest counted a tug
+       every frame and re-plucked itself forever once the set tugs were used up. */
+    if (S.target === 'taut' && S.D >= P.DT && S.hit && S.V <= 0) { S.D = P.DT; }
+    else if (S.target === 'taut' && S.D >= P.DT) {
+      /* The string goes tight and tugs the cans back: they recoil (velocity reflected, `recoil` = restitution),
+         the spring carries them out again, and each smaller bounce re-plucks the string, until the bounce is
+         below `recoilMin` (grid units/s) and they rest at DT. recoil 0 = the old dead stop. */
+      const v = S.V; S.D = P.DT; S.tugs = (S.tugs || 0) + 1;
+      /* `tugs` > 0: a set number of tugs (Done: two, on the cue's two notes), each a full twang, then rest. */
+      const last = P.tugs > 0 && S.tugs >= P.tugs;
+      S.V = !last && v * P.recoil >= P.recoilMin ? -v * P.recoil : 0;
+      if (!S.hit) { S.hit = true; S.tw = 0; S.twA = 0; S.hitT = S.t; emit('hit', { t: clock.now(), tSim: S.t }); }
+      else if (P.tugs > 0) { S.tw = 0; S.twA = P.A * 0.8; }
+      else if (v > P.recoilMin) { S.tw = 0; S.twA = Math.min(P.A, P.A * v / (S.v0 || v)) * 0.6; }
+      if (v > 0) emit('tug', { n: S.tugs, t: clock.now() });
+      if (!S.v0) S.v0 = v;
+    }
+    if (S.D < -P.windup) { S.D = -P.windup; if (S.V < 0) S.V = 0; }
+    if (S.D < 0 && !(S.wind > 0) && S.target !== 'taut') { S.D = 0; if (S.V < 0) S.V = 0; }
     // phi
     if (S.ring) {
       S.ringPhase += 2 * Math.PI / P.T * h;
@@ -172,7 +191,8 @@ function attach(svg, opts) {
   function active() {
     if (S.ring) return true;
     if (S.tw >= 0) return true;
-    if (S.target === "taut" ? S.D < P.DT : S.D >= 0.01) return true;
+    if (S.wind > 0) return true;
+    if (S.target === "taut" ? S.D < P.DT || S.V !== 0 : S.D >= 0.01) return true;
     if (Math.abs(S.phi) > rad(0.2) || Math.abs(S.phv) > rad(2)) return true;
     return false;
   }
@@ -195,9 +215,9 @@ function attach(svg, opts) {
   function wake() { if (!S.rafId) { S.last = clock.now(); schedule(); } }
   function stop() { if (S.rafId) { clock.caf(S.rafId); S.rafId = 0; } S.running = false; }
   function snap(taut) { // reduced-motion jump
-    stop(); S.ring = false; S.target = taut ? 'taut' : 'slack'; S.D = taut ? P.DT : 0; S.V = 0; S.phi = 0; S.phv = 0; S.tw = -1;
+    stop(); S.ring = false; S.wind = 0; S.target = taut ? 'taut' : 'slack'; S.D = taut ? P.DT : 0; S.V = 0; S.phi = 0; S.phv = 0; S.tw = -1;
     paint(); const fresh = taut && !S.hit; if (taut) S.hit = true; else S.hit = false;
-    if (fresh) emit('hit', { t: clock.now(), tSim: S.t, reduced: true });
+    if (fresh) { emit('hit', { t: clock.now(), tSim: S.t, reduced: true }); emit('tug', { n: 1, t: clock.now(), reduced: true }); }
     emit('settled', { t: clock.now(), tSim: S.t, state: S.target, reduced: true });
   }
 
@@ -209,7 +229,8 @@ function attach(svg, opts) {
     },
     connect() {
       if (reduced()) { snap(true); return api; }
-      S.ring = false; S.target = 'taut'; S.hit = S.D >= P.DT && S.hit; wake(); return api;
+      S.ring = false; S.target = 'taut'; S.hit = S.D >= P.DT && S.hit; S.v0 = 0; S.tugs = 0;
+      S.wind = P.windup > 0 && S.D < 0.01 ? P.windupMs / 1000 : 0; wake(); return api;
     },
     end() {
       if (reduced()) { snap(false); return api; }

@@ -52,7 +52,7 @@ fun LinkedDevicesScreen(app: P2pApp, onBack: () -> Unit, onLink: () -> Unit, onD
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
             Hint("Calls ring on all of these. People you call never see these names.", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
             active.forEach { d -> DeviceRow(d, onClick = { onDetail(d.device) }) }
-            Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) { TinButton("Link a device", onLink, icon = Icons.Rounded.Add) }
+            Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) { TinButton("Link a device", onLink, icon = PgIcons.Plus) }
             if (removed.isNotEmpty()) {
                 SectionLabel("UNLINKED")
                 removed.forEach { d -> DeviceRow(d, onClick = { onDetail(d.device) }) }
@@ -73,7 +73,7 @@ private fun DeviceRow(d: LinkedDevice, onClick: () -> Unit) {
         seen != null -> "Synced ${agoText(seen.toLong())}"
         else -> "Not seen yet"
     }
-    ListItem(title, onClick = onClick, sub = sub, icon = if (d.thisDevice) Icons.Rounded.PhoneAndroid else Icons.Rounded.Devices,
+    ListItem(title, onClick = onClick, sub = sub, icon = if (d.thisDevice) PgIcons.Smartphone else PgIcons.Devices,
         titleColor = if (d.removed) Tin.c.ink2 else Tin.c.ink)
 }
 
@@ -121,12 +121,12 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
     Page {
         TopBar(if (d.thisDevice) "This phone" else d.label.ifBlank { "Device" }, onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-            ListItem("Name", onClick = if (d.removed) null else ({ renaming = true }), sub = d.label.ifBlank { "Unnamed" }, icon = Icons.Rounded.Edit, trailing = null)
-            ListItem("Last synced", sub = if (d.thisDevice) "This device" else d.lastSeen?.let { agoText(it.toLong()) } ?: "Not yet", icon = Icons.Rounded.Sync, trailing = null)
-            ListItem("Rings for calls", sub = if (d.removed) "No, it was unlinked" else "Yes, when it’s on", icon = Icons.Rounded.Call, trailing = null)
+            ListItem("Name", onClick = if (d.removed) null else ({ renaming = true }), sub = d.label.ifBlank { "Unnamed" }, icon = PgIcons.Edit, trailing = null)
+            ListItem("Last synced", sub = if (d.thisDevice) "This device" else d.lastSeen?.let { agoText(it.toLong()) } ?: "Not yet", icon = PgIcons.Retry, trailing = null)
+            ListItem("Rings for calls", sub = if (d.removed) "No, it was unlinked" else "Yes, when it’s on", icon = PgIcons.Phone, trailing = null)
             if (!d.removed) {
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!d.thisDevice) TinButton("Sync now", { app.node.networkChanged(); onMessage("Syncing with ${d.label.ifBlank { "the device" }}…") }, style = BtnStyle.Outlined, icon = Icons.Rounded.Sync)
+                    if (!d.thisDevice) TinButton("Sync now", { app.node.networkChanged(); onMessage("Syncing with ${d.label.ifBlank { "the device" }}…") }, style = BtnStyle.Outlined, icon = PgIcons.Retry)
                     TinButton(if (d.thisDevice) "Remove account from this phone" else "Unlink this device", { pass = ""; error = null; confirm = true }, style = BtnStyle.Danger, icon = Icons.Rounded.LinkOff)
                 }
             }
@@ -151,12 +151,12 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
             confirmEnabled = !busy && (!hasPass || pass.isNotEmpty())) {
             if (d.thisDevice) {
                 DialogText("This phone stops syncing and ringing, and your account, contacts, chats and call history are deleted from it.")
-                if (others == 0) InfoCard("This is the only device with your account. Without your recovery phrase nothing can bring it back.", icon = Icons.Rounded.Warning, kind = BannerKind.Error)
+                if (others == 0) InfoCard("This is the only device with your account. Without your recovery phrase nothing can bring it back.", icon = PgIcons.Warning, kind = BannerKind.Error)
                 else DialogText("Your other devices keep everything.")
             } else {
                 DialogText("It stops syncing and stops ringing for your calls. If it’s online, it removes your account from itself.")
                 InfoCard("Unlinking can’t lock it from here. Anyone who can unlock it can still use your account. The only full cut-off is a new account.",
-                    icon = Icons.Rounded.Warning, kind = BannerKind.Warn, bold = "Lost or stolen?")
+                    icon = PgIcons.Warning, kind = BannerKind.Warn, bold = "Lost or stolen?")
             }
             if (hasPass) TinField(pass, { pass = it; error = null }, "Your passphrase", mono = true, password = true, enabled = !busy,
                 state = if (error != null) FieldState.Error else FieldState.Normal, hint = error,

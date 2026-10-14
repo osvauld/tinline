@@ -143,7 +143,7 @@ pub(super) fn safety_number(mine: &str, theirs: &str) -> Result<String, Error> {
 
 /// The first word of `text` that looks like a contact card (`OSVC2:` or `osvc1.`), so a card
 /// pasted with a greeting around it still works.
-pub(super) fn find_card(text: &str) -> Option<String> {
+pub(crate) fn find_card(text: &str) -> Option<String> {
     text.split(|c: char| c.is_whitespace() || matches!(c, '<' | '>' | '"' | '\'' | '(' | ')'))
         .map(|w| w.trim_end_matches(['.', ',', ';', '!', '?']))
         .find(|w| {

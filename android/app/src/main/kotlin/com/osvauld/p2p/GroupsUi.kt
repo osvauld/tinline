@@ -84,24 +84,17 @@ fun GroupAvatar(tint: Int, size: Dp, dim: Boolean = false, radius: Dp = size / 2
     }
 }
 
-/**
- * Person avatar. Contacts get the board's tints (Arjun relay, Meera teal, Sam/Priya amber); people who are
- * only fellow group members (not contacts) are neutral grey, as on the boards.
- */
+/** Person avatar in group surfaces (GroupInfo / MemberSheet use the one Avatar with the person's hue and picture, contact or not). */
 @Composable
 fun PersonAvatar(name: String, did: String, size: Dp, contact: Boolean = true, isMe: Boolean = false) {
-    val c = Tin.c
-    val (bg, fg) = when {
-        isMe || !contact -> c.sf2 to c.ink2
-        did == FakeGroupsPrivacy.ARJUN -> c.relayC to c.onRelayC
-        did == FakeGroupsPrivacy.MEERA -> c.prc to c.onPrc
-        did == FakeGroupsPrivacy.SAM || did == FakeGroupsPrivacy.PRIYA -> c.warn to c.onWarn
-        else -> null to null
+    if (isMe) { SelfAvatar(name, size); return }
+    val hue = when (did) {
+        FakeGroupsPrivacy.ARJUN -> 1
+        FakeGroupsPrivacy.MEERA -> 0
+        FakeGroupsPrivacy.SAM, FakeGroupsPrivacy.PRIYA -> 3
+        else -> null
     }
-    if (bg == null || fg == null) { Avatar(name, did, size); return }
-    Box(Modifier.size(size).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
-        Text(if (isMe) "YO" else initialsOf(name), color = fg, style = TinType.titleM.copy(fontSize = (size.value * 0.36f).sp, lineHeight = (size.value * 0.44f).sp, fontWeight = FontWeight.Bold))
-    }
+    if (hue != null) PgAvatar(name, hue, size, person = did) else Avatar(name, did, size)
 }
 
 @Composable
@@ -181,7 +174,7 @@ fun ChatHeader(
 ) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back", onBack)
+        IconBtn(PgIcons.Back, "Back", onBack)
         Row(
             Modifier.weight(1f).heightIn(min = 48.dp).clip(SmoothCornerShape(12.dp))
                 .let { if (onTitle != null) it.clickable(role = Role.Button, onClickLabel = "Open details", onClick = onTitle) else it }
@@ -241,7 +234,7 @@ fun ColumnScope.SysLine(text: String, onClick: (() -> Unit)? = null) {
 fun Composer(draft: String, onDraft: (String) -> Unit, placeholder: String, onSend: () -> Unit, onAttach: (() -> Unit)? = null) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (onAttach != null) IconBtn(Icons.Rounded.AttachFile, "Attach", onAttach)
+        if (onAttach != null) IconBtn(PgIcons.Clip, "Attach", onAttach)
         BasicTextField(
             draft, onDraft, Modifier.weight(1f).heightIn(min = 48.dp).semantics { contentDescription = placeholder },
             textStyle = TinType.bodyL.copy(fontSize = 15.sp, color = c.ink), cursorBrush = SolidColor(c.pr),
@@ -256,7 +249,7 @@ fun Composer(draft: String, onDraft: (String) -> Unit, placeholder: String, onSe
         Box(Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank()) c.sf3 else c.pr)
             .clickable(enabled = draft.isNotBlank(), role = Role.Button, onClick = onSend).semantics { contentDescription = "Send" },
             contentAlignment = Alignment.Center) {
-            Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = if (draft.isBlank()) c.ink2 else c.onPr)
+            Icon(PgIcons.Next, null, tint = if (draft.isBlank()) c.ink2 else c.onPr)
         }
     }
 }

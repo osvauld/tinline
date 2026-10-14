@@ -64,7 +64,7 @@ fun CopyButton(text: String?, modifier: Modifier = Modifier, label: String = "Co
     TinButton(
         if (copied) "Copied" else label,
         { text?.let { copyToClipboard(ctx, "ticket", it); copied = true } },
-        modifier, style = style, icon = if (copied) Icons.Rounded.Check else Icons.Rounded.ContentCopy, enabled = text != null,
+        modifier, style = style, icon = if (copied) PgIcons.Check else PgIcons.Copy, enabled = text != null,
     )
 }
 
@@ -111,7 +111,7 @@ fun MyCodeBlock(app: P2pApp, meName: String, qr: Dp = 248.dp, showNewCode: Boole
         share?.let { Hint(it, color = c.er) }
         if (showNewCode) TinButton("New code", {
             scope.launch { withContext(Dispatchers.IO) { runCatching { app.node.resetTicket() } }; ticket = null; version++ }
-        }, style = BtnStyle.Text, icon = Icons.Rounded.Refresh)
+        }, style = BtnStyle.Text, icon = PgIcons.Retry)
     }
 }
 

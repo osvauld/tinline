@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -27,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.withStyle
 
 /** CallScreen.svelte's copy: never claim encryption while dialling or ringing. */
 internal fun callStatus(active: Boolean, ringing: Boolean, reconnecting: Boolean, secs: Long): String = when {
@@ -37,13 +37,16 @@ internal fun callStatus(active: Boolean, ringing: Boolean, reconnecting: Boolean
 }
 
 internal fun callPrivacy(active: Boolean, name: String): String = if (active)
-    "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on $name’s. When a relay helps connect you, it passes the call along but can’t listen."
+    "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on $name’s."
 else "Connecting to $name. Once the call is connected, it is end-to-end encrypted."
 
-/** Fixed, mirrored 44 dp action cells with the 28 dp live mark independently centered. */
+/** Fixed, mirrored 44 dp action cells with the 28 dp live mark independently centered. The end cell is the
+ *  signal (SignalBars, where the "i" was): tapping it opens About this call. */
 @Composable
 internal fun CallTop(active: Boolean, ringing: Boolean, onMinimise: (() -> Unit)?, onInfo: (() -> Unit)?,
-    reconnecting: Boolean = false, incoming: Boolean = false) {
+    reconnecting: Boolean = false, incoming: Boolean = false, signal: Int = 0, direct: Boolean? = null,
+    /** Message (decided 2026-10-14, the in-call lab): leave the call screen for their chat; the call continues. */
+    onMessage: (() -> Unit)? = null) {
     val phase = when {
         reconnecting -> CallPhase.Reconnecting
         active -> CallPhase.Active
@@ -53,12 +56,25 @@ internal fun CallTop(active: Boolean, ringing: Boolean, onMinimise: (() -> Unit)
     val look = statusLook(call = phase, conn = ConnState.Online)
     Box(Modifier.fillMaxWidth().height(48.dp)) {
         if (onMinimise != null) Box(Modifier.align(Alignment.CenterStart)) {
-            CallTopButton(CallGlyphs.Chev, "Minimize call", onMinimise)
+            // ← back, like every other screen: to where I was; the call goes on in the strip.
+            CallTopButton(PgIcons.Back, "Back. The call continues", onMinimise)
+        }
+        if (onMessage != null) Box(Modifier.align(Alignment.CenterEnd).padding(end = 44.dp)) {
+            CallTopButton(PgIcons.Chat, "Message. The call continues", onMessage)
         }
         TinMark(28.dp, live = true, state = look.state, sway = look.sway, description = look.label,
             modifier = Modifier.align(Alignment.Center))
         if (onInfo != null) Box(Modifier.align(Alignment.CenterEnd)) {
-            CallTopButton(CallGlyphs.Info, "About this call", onInfo)
+            val up = active && !reconnecting && signal > 0
+            val label = when {
+                active && reconnecting -> "About this call. Reconnecting."
+                up -> "About this call. ${signalWord(signal)} signal, ${if (direct == true) "direct" else "relayed"}."
+                else -> "About this call"
+            }
+            Box(Modifier.size(44.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onInfo)
+                .semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
+                SignalBars(if (up) signal else 0, Tin.c.ink, wave = active && reconnecting)
+            }
         }
     }
 }
@@ -84,7 +100,7 @@ internal fun CallControls(muted: Boolean, speaker: Boolean, camera: Boolean, onM
             if (muted) c.ink else fill, if (muted) c.bg else c.ink, onMute, selected = muted)
         CallControl("Camera", "Camera", if (camera) CallGlyphs.Video else CallGlyphs.VideoOff,
             if (camera) c.ink else fill, if (camera) c.bg else c.ink, onCamera ?: {}, enabled = onCamera != null, selected = camera)
-        CallControl("End call", "End", CallGlyphs.Phone, c.callButtonEnd, Color.White, onEnd)
+        CallControl("End call", "End", CallGlyphs.End, c.callButtonEnd, Color.White, onEnd)
         CallControl("Flip camera", "Flip", CallGlyphs.Flip, fill, c.ink, onFlip ?: {}, enabled = camera && onFlip != null)
         CallControl(if (routeCaption == "Speaker") "Speaker" else "Audio: $routeCaption", routeCaption, routeIcon, if (speaker) c.ink else fill,
             if (speaker) c.bg else c.ink, onSpeaker, selected = speaker)
@@ -102,7 +118,7 @@ private fun RowScope.CallControl(label: String, caption: String, icon: ImageVect
                     contentDescription = label
                     if (selected != null) toggleableState = ToggleableState(selected)
                 }, contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = fg, modifier = Modifier.size(26.dp).rotate(if (label == "End call") 135f else 0f))
+                Icon(icon, null, tint = fg, modifier = Modifier.size(26.dp))
             }
         }
         Text(caption, Modifier.padding(top = 8.dp).heightIn(min = 18.dp), style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp),
@@ -114,11 +130,12 @@ private fun RowScope.CallControl(label: String, caption: String, icon: ImageVect
 @Composable
 internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Boolean, secs: Long = 0,
     reconnecting: Boolean = false, problem: String? = null, incoming: Boolean = false,
-    onMinimise: (() -> Unit)? = null, onInfo: (() -> Unit)? = null, controls: @Composable () -> Unit) {
+    onMinimise: (() -> Unit)? = null, onInfo: (() -> Unit)? = null, signal: Int = 0, direct: Boolean? = null,
+    onMessage: (() -> Unit)? = null, controls: @Composable () -> Unit) {
     val c = Tin.c
     Column(Modifier.fillMaxSize().background(c.bg).systemBarsPadding().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 36.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
-        CallTop(active, ringing, onMinimise, onInfo, reconnecting, incoming)
+        CallTop(active, ringing, onMinimise, onInfo, reconnecting, incoming, signal, direct, onMessage)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Avatar(name, did, 112.dp)
@@ -130,7 +147,8 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
                     style = TinType.bodyL.copy(fontSize = if (active && !reconnecting) 20.sp else 17.sp, lineHeight = 30.sp,
                         fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum"), color = c.ink, maxLines = 1)
             }
-            Text(if (active && !reconnecting) "End-to-end encrypted" else " ", Modifier.padding(top = 10.dp).heightIn(min = 18.dp),
+            // The path, on the main screen: honest, and About this call explains it.
+            Text(if (active && !reconnecting) "End-to-end encrypted" + (direct?.let { if (it) " · Direct" else " · Relayed" } ?: "") else " ", Modifier.padding(top = 10.dp).heightIn(min = 18.dp),
                 style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = c.ink, maxLines = 1)
             // Keep a two-line error cell even when there is no microphone/video problem.
             Text(problem ?: " ", Modifier.padding(top = 8.dp).fillMaxWidth().heightIn(min = 38.dp),
@@ -141,11 +159,54 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
     }
 }
 
+/**
+ * CallScreen.svelte `.info`: a calm card over a 24 % scrim, 16 from the sides and 24 above the bottom, at most 420
+ * wide. Encryption first, then the connection row (bars + "Strong signal · Direct" and one line, in a block that
+ * reserves the title + four lines so the card never grows when the wording changes), then the numbers.
+ */
 @Composable
-internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit) {
-    TinSheet(onDismiss) {
-        Text("About this call", style = TinType.titleM, color = Tin.c.ink)
-        Text(callPrivacy(active, name), Modifier.padding(top = 10.dp, bottom = 16.dp), style = TinType.bodyM, color = Tin.c.ink2)
-        TinButton("Got it", onDismiss)
+internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit, reconnecting: Boolean = false,
+    signal: Int = 0, direct: Boolean? = null, rttMs: Int? = null, lossPct: Double? = null, video: Boolean = false) {
+    val c = Tin.c
+    val first = name.trim().substringBefore(' ')
+    // An overlay in the call screen's own window (not a dialog window), so the system bar insets apply.
+    androidx.activity.compose.BackHandler(onBack = onDismiss)
+    run {
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .24f))
+            .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDismiss)) {
+            Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 24.dp)
+                .widthIn(max = 420.dp).fillMaxWidth().depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp))
+                .background(c.sfRaised).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {})
+                .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)
+                .semantics { contentDescription = "About this call" }) {
+                val p = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 19.sp)
+                Text("About this call", style = TinType.titleM.copy(fontSize = 17.sp, lineHeight = 24.sp), color = c.ink)
+                if (active) {
+                    Text(androidx.compose.ui.text.buildAnnotatedString {
+                        withStyle(androidx.compose.ui.text.SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold)) { append("End-to-end encrypted.") }
+                        append(" ${if (video) "Your voice and picture are" else "Your voice is"} encrypted on this device and only decrypted on $name’s.")
+                    }, Modifier.padding(top = 10.dp), style = p, color = c.ink2)
+                    val up = !reconnecting && signal > 0
+                    Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SignalBars(if (up) signal else 0, c.ink, Modifier.padding(top = 1.dp), wave = reconnecting, size = 22.dp)
+                        Text(androidx.compose.ui.text.buildAnnotatedString {
+                            withStyle(androidx.compose.ui.text.SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold)) {
+                                append(if (reconnecting) "Reconnecting" else "${signalWord(signal)} signal · ${if (direct == true) "Direct" else "Relayed"}")
+                            }
+                            append("\n")
+                            append(when {
+                                reconnecting -> "The connection dropped for a moment. Tinline is finding a way back to $first."
+                                direct == true -> "Your call goes straight between your device and $first’s."
+                                else -> "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t ${if (video) "listen or watch" else "listen"}."
+                            })
+                            if (up && signal == 1) append(" The line is weak, so $first’s voice may break up.")
+                        }, Modifier.weight(1f).heightIn(min = 95.dp), style = p, color = c.ink2)
+                    }
+                    if (up && rttMs != null) Text("$rttMs ms round trip · ${lossText(lossPct ?: 0.0)}% lost",
+                        Modifier.padding(top = 6.dp, start = 34.dp), style = TinFs.meta, color = c.ink2)
+                } else Text(callPrivacy(false, name), Modifier.padding(top = 10.dp), style = p, color = c.ink2)
+                TinButton("Got it", onDismiss, Modifier.padding(top = 16.dp), height = 44.dp)
+            }
+        }
     }
 }

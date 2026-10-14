@@ -13,5 +13,6 @@ pub mod presence;
 pub mod store;
 pub mod wire;
 pub mod doc;
+pub mod photo;
 #[cfg(test)]
 mod doc_tests;

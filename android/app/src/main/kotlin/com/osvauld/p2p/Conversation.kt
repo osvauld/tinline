@@ -34,12 +34,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Constraints
@@ -86,6 +92,10 @@ class ConvPreview(
 private sealed interface ConvRow {
     data class Day(val label: String) : ConvRow
     data class Msg(val m: Message, val pos: BubblePos = BubblePos.Solo) : ConvRow
+    /** "n new messages": before the oldest of the messages that were unread when the chat opened. */
+    data class Unread(val n: Int) : ConvRow
+    /** A call with this person (MessageRow `.callrec`), on the caller's side. */
+    data class Call(val r: uniffi.p2pcore.CallRecord) : ConvRow
 }
 
 private fun List<Message>.sortedChat() = sortedWith(compareBy<Message>({ it.at }, { it.id }))
@@ -106,6 +116,10 @@ fun ConversationScreen(
     onInfo: (() -> Unit)? = null,
     /** Global-search integration: route passes the real hit, including its UTC day. */
     searchHit: uniffi.p2pcore.MessageHit? = null,
+    /** Calls with this person, shown in the conversation as pills. */
+    calls: List<uniffi.p2pcore.CallRecord> = emptyList(),
+    /** The header's video button: place the call and turn the camera on. */
+    onVideo: (() -> Unit)? = null,
 ) {
     val c = Tin.c
     val ctx = LocalContext.current
@@ -187,18 +201,34 @@ fun ConversationScreen(
     }
 
     val listState = rememberLazyListState()
-    val rows = remember(msgs.toList(), nowMs / 3_600_000) {
+    // The unread count when the chat opened (it is cleared right away): where "n new messages" goes.
+    val unreadAtOpen = remember(peerDid) { source.chats.value.firstOrNull { it.peerDid == peerDid }?.unread?.toInt() ?: 0 }
+    val dividerId = remember(peerDid, loaded) { if (unreadAtOpen > 0) msgs.filter { !it.outgoing }.takeLast(unreadAtOpen).firstOrNull()?.id else null }
+    val rows = remember(msgs.toList(), calls, nowMs / 3_600_000, dividerId) {
         buildList<ConvRow> {
             var last: Long? = null
+            val pending = calls.sortedBy { it.startedAt }.toMutableList()
+            fun flushCalls(upTo: Long) {
+                while (pending.isNotEmpty() && pending.first().startedAt.toLong() * 1000 <= upTo) {
+                    val r = pending.removeAt(0); val at = r.startedAt.toLong() * 1000
+                    if (last == null || !sameDay(last!!, at)) add(ConvRow.Day(dayLabel(at, System.currentTimeMillis())))
+                    add(ConvRow.Call(r)); last = at
+                }
+            }
             // Same sender, same day, within 5 minutes: one run (playground Conversation.svelte), so stack-facing corners go tight.
             fun joined(a: Message?, b: Message?) = a != null && b != null && a.outgoing == b.outgoing &&
                 sameDay(a.at.toLong(), b.at.toLong()) && kotlin.math.abs(b.at.toLong() - a.at.toLong()) <= 5 * 60_000
             msgs.forEachIndexed { i, m ->
                 val at = m.at.toLong()
+                val callBefore = pending.isNotEmpty() && pending.first().startedAt.toLong() * 1000 <= at
+                flushCalls(at)
                 if (last == null || !sameDay(last!!, at)) add(ConvRow.Day(dayLabel(at, System.currentTimeMillis())))
-                val a = joined(msgs.getOrNull(i - 1), m); val b = joined(m, msgs.getOrNull(i + 1))
+                if (m.id == dividerId) add(ConvRow.Unread(unreadAtOpen))
+                val callAfter = pending.isNotEmpty() && msgs.getOrNull(i + 1)?.let { pending.first().startedAt.toLong() * 1000 <= it.at.toLong() } == true
+                val a = !callBefore && m.id != dividerId && joined(msgs.getOrNull(i - 1), m); val b = !callAfter && joined(m, msgs.getOrNull(i + 1))
                 add(ConvRow.Msg(m, if (a && b) BubblePos.Mid else if (a) BubblePos.Last else if (b) BubblePos.First else BubblePos.Solo)); last = at
             }
+            flushCalls(Long.MAX_VALUE)
         }.reversed()
     }
     val currentRows = rememberUpdatedState(rows)
@@ -293,7 +323,7 @@ fun ConversationScreen(
                 result.onSuccess { m ->
                     upsert(m)
                     if (draft == originalDraft && editing == edit && replying == reply) savedDraft.sent()
-                    if (edit == null) TinFx.messageSent()
+                    if (edit == null) { TinFx.messageSent(); Cues.sent() }
                     listState.scrollToItem(0)
                 }.onFailure { toast(friendly(it)) }
             } finally { sending = false }
@@ -363,7 +393,7 @@ fun ConversationScreen(
         Page {
             Box(Modifier.fillMaxWidth().height(56.dp)) {
                 if (find.open) FindBar(find, {}, ::olderMatch, { if (find.hits.isNotEmpty()) find.cur = (find.cur - 1 + find.hits.size) % find.hits.size }, { find.close() })
-                else ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf, composerState, block?.callGate ?: CallGate.Ok, { find.show() }, onInfo)
+                else ConvHeader(name, peerDid, link, onBack, onCall, first, isSelf, composerState, block?.callGate ?: CallGate.Ok, { find.show() }, onInfo, online, onVideo)
             }
             Box(Modifier.weight(1f).fillMaxWidth().background(c.canvas)) {
             LazyColumn(
@@ -372,9 +402,11 @@ fun ConversationScreen(
             ) {
                 // Newest at the bottom (reversed list): the block note sits under the last message.
                 if (block != null && (block.view.blockedByMe || blockedMeAt != null)) item(key = "block") { BlockNote(name, block.view) }
-                items(rows, key = { r -> when (r) { is ConvRow.Day -> "d" + r.label + rows.indexOf(r); is ConvRow.Msg -> r.m.id } }) { r ->
+                items(rows, key = { r -> when (r) { is ConvRow.Day -> "d" + r.label + rows.indexOf(r); is ConvRow.Msg -> r.m.id; is ConvRow.Unread -> "unread"; is ConvRow.Call -> "call" + r.r.callId } }) { r ->
                     when (r) {
                         is ConvRow.Day -> PgDayPill(r.label, Modifier.padding(vertical = 10.dp))
+                        is ConvRow.Unread -> PgUnreadDivider(r.n)
+                        is ConvRow.Call -> CallPill(r.r, enabled = block?.callGate ?: CallGate.Ok == CallGate.Ok, onCall)
                         is ConvRow.Msg -> Bubble(
                             r.m, r.pos, name, link, online, nowMs, progress, requested, byId, source,
                             notDelivered = if (r.m.id in undelivered) BlockCopy.notDelivered(name) else null,
@@ -449,31 +481,72 @@ fun ConversationScreen(
     )
 }
 
+/** Conversation.svelte `.bar` (Android): back · the head (avatar 36, name 17/22, status 13/18 muted; tap = details)
+ *  · call · video · find · details, each a 44 round button; call and video dim (with the reason) when calling isn't possible. */
 @Composable
-private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean, blockState: ComposerState = ComposerState.Open, callGate: CallGate = CallGate.Ok, onFind: () -> Unit = {}, onInfo: (() -> Unit)? = null) {
+private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> Unit, onCall: () -> Unit, first: String, isSelf: Boolean, blockState: ComposerState = ComposerState.Open, callGate: CallGate = CallGate.Ok, onFind: () -> Unit = {}, onInfo: (() -> Unit)? = null, online: Boolean = true, onVideo: (() -> Unit)? = null) {
     val c = Tin.c
-    Row(Modifier.fillMaxWidth().height(56.dp).background(c.sf).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    Row(Modifier.fillMaxWidth().height(56.dp).background(c.sf).padding(horizontal = 6.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         PgIconBtn(Pg.Back, "Back to chats", onBack)
-        Avatar(name, peerDid, 36.dp)
-        Column(Modifier.weight(1f)) {
-            Text(name, style = TinType.bodyL.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (isSelf) Text(SELF_SUB, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
-            else if (blockState != ComposerState.Open) Text(
-                when (blockState) { ComposerState.BlockedByMe -> "Blocked"; ComposerState.BlockedMe -> "Blocked you"; else -> "Not in your contacts" },
-                style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = if (blockState == ComposerState.NotContact) c.ink2 else c.er,
-            )
-            else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Dot(if (link == Link.Connected || link == Link.Relayed) c.pr else c.ln2, 8.dp, hollow = link != Link.Connected && link != Link.Relayed)
-                Text(when (link) { Link.Connected -> "Connected · direct"; Link.Relayed -> "Connected · relayed"; else -> "Not connected" }, style = TinType.caption.copy(fontWeight = FontWeight.Normal), color = c.ink2)
+        val status = when {
+            isSelf -> SELF_SUB
+            blockState == ComposerState.BlockedByMe -> "Blocked"
+            blockState == ComposerState.BlockedMe -> "Blocked you"
+            blockState == ComposerState.NotContact -> "Not in your contacts"
+            !online -> "Waiting for connection"
+            else -> (if (link == Link.Connected || link == Link.Relayed) "Online" else "Offline") + if (callGate == CallGate.NotAllowed) " · messages only" else ""
+        }
+        val statusColor = if (blockState == ComposerState.BlockedByMe || blockState == ComposerState.BlockedMe) c.er else c.ink2
+        Row(Modifier.weight(1f).heightIn(min = 44.dp).clip(SmoothCornerShape(12.dp)).then(if (onInfo != null) Modifier.clickable(onClick = onInfo) else Modifier)
+            .padding(start = 6.dp, end = 10.dp, top = 4.dp, bottom = 4.dp)
+            .semantics(mergeDescendants = true) { contentDescription = "$name. $status. Chat details" },
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Avatar(name, peerDid, 36.dp)
+            Column(Modifier.weight(1f)) {
+                Text(name, style = PgBodyText.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(status, style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp), color = statusColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        // Crossed out while either side blocks; tapping says why.
         if (!isSelf) {
-            if (blockState == ComposerState.Open && callGate == CallGate.Ok) IconBtn(Icons.Rounded.Call, "Call $first", onCall, tint = c.pr)
-            else IconBtn(Icons.Rounded.PhoneDisabled, "Can’t call $first", onCall, tint = c.ink2)
+            val ok = blockState == ComposerState.Open && callGate == CallGate.Ok
+            // Dimmed buttons still answer a tap: the call path says why it can't call.
+            // My call with them is running (decided 2026-10-14): the phone turns green and returns to it, as a group's does.
+            val live = P2pApp.instanceOrNull()?.calls?.ui?.collectAsState()?.value?.takeIf {
+                it.info.peerDid == peerDid && !(it.info.incoming && it.state is uniffi.p2pcore.CallState.Ringing) && it.state !is uniffi.p2pcore.CallState.Ended }
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            if (live != null) Box(Modifier.size(44.dp).clip(CircleShape).background(c.accentSoft)) {
+                PgIconBtn(Pg.Phone, "Return to call", { ctx.startActivity(android.content.Intent(ctx, CallActivity::class.java)) }, tint = c.accentInk)
+            }
+            else Box(Modifier.alpha(if (ok) 1f else .45f)) { PgIconBtn(Pg.Phone, if (ok) "Call" else "Can’t call $first", onCall) }
+            if (onVideo != null) Box(Modifier.alpha(if (ok) 1f else .45f)) { PgIconBtn(Pg.Video, if (ok) "Video call" else "Can’t call $first", if (ok) onVideo else onCall) }
         }
         PgIconBtn(Pg.Search, "Find in this chat", onFind)
         if (onInfo != null) PgIconBtn(Pg.Info, "Chat details", onInfo)
+    }
+}
+
+/** MessageRow `.callrec`: a one-line pill (32 tall, radius 16, surface, hairline) on the caller's side; tap = call back. */
+@Composable
+private fun CallPill(r: uniffi.p2pcore.CallRecord, enabled: Boolean, onCall: () -> Unit) {
+    val c = Tin.c
+    val answered = r.durationSecs > 0u
+    val d = r.durationSecs.toLong()
+    val text = when {
+        answered -> "Voice call · ${d / 60}:${"%02d".format(d % 60)}"
+        r.incoming -> if (r.reason == "declined_local") "Declined voice call" else "Missed voice call"
+        else -> when (r.reason) { "no_answer" -> "No answer"; "declined" -> "Declined"; "cancelled", "hangup_local" -> "Cancelled call"; else -> "Call failed" }
+    }
+    val bad = !answered && r.incoming && r.reason != "declined_local"
+    val time = java.time.Instant.ofEpochSecond(r.startedAt.toLong()).atZone(java.time.ZoneId.systemDefault()).toLocalTime().let { "%02d:%02d".format(it.hour, it.minute) }
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = if (r.incoming) Arrangement.Start else Arrangement.End) {
+        Row(Modifier.heightIn(min = 32.dp).clip(RoundedCornerShape(16.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(16.dp))
+            .clickable(enabled = enabled, onClick = onCall).padding(horizontal = 12.dp)
+            .semantics(mergeDescendants = true) { contentDescription = "$text, $time. Call back" },
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(Pg.Phone, null, Modifier.size(16.dp), tint = if (bad) c.er else c.ink2)
+            Text(text, style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold), color = if (bad) c.er else c.ink, maxLines = 1)
+            Text(time, style = PgBodyText.copy(fontSize = 11.sp, lineHeight = 14.sp, fontFeatureSettings = "tnum"), color = c.ink2)
+        }
     }
 }
 
@@ -533,7 +606,7 @@ private fun Bubble(
     BoxWithConstraints(Modifier.fillMaxWidth().padding(top = gapAbove(pos)).then(swipe), contentAlignment = if (out) Alignment.CenterEnd else Alignment.CenterStart) {
         // Up to 82% of the screen (capped for tablets), so text is not wrapped into a narrow column.
         val bubbleMaxWidth = minOf(maxWidth * .78f, 560.dp)
-        if (drag > 0f) Icon(Icons.AutoMirrored.Rounded.Reply, "Reply", tint = c.pr,
+        if (drag > 0f) Icon(PgIcons.Reply, "Reply", tint = c.pr,
             modifier = Modifier.align(Alignment.CenterStart).size(24.dp))
         if (m.deleted) {
             Column(
@@ -568,7 +641,7 @@ private fun Bubble(
                 .clip(shape).background(bg).let { if (!out) it.border(1.dp, c.bubInLine, shape) else it }
                 .let { if (selected) it.border(3.dp, c.pr, shape) else it }
                 .combinedClickable(onClick = {}, onLongClick = onLong)
-                .padding(if (photo) PaddingValues(4.dp) else PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp)),
+                .padding(if (photo) PaddingValues(start = 3.dp, end = 3.dp, top = 3.dp, bottom = 6.dp) else PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp)),
         ) {
             m.replyTo?.let { rid ->
                 val q = byId[rid]
@@ -585,14 +658,14 @@ private fun Bubble(
             }
             if (a != null) when {
                 a.kind == AttachmentKind.VOICE -> VoiceBubble(m, a, a.state == TransferState.READY || out, out, source, onDownload)
-                photo -> PhotoBox(m, a, out, prog, link, source, onDownload, onCancel, onOpenPhoto, onBroken)
+                photo -> PhotoBox(m, a, out, pos, first, out && tick == Tick.Clock, prog, source, onDownload, onCancel, onOpenPhoto, onBroken)
                 else -> FileRow(a, out, prog, link, first, m.id in requested, onDownload, onCancel, onSaveFile, onOpenFile, onLong)
             }
             val at = msClock(m.at.toLong())
             val sendingPct = if (out && prog != null && prog.second > 0) (prog.first * 100 / prog.second).toInt() else null
             val label = when {
                 notDelivered != null -> "$notDelivered · $at"
-                sendingPct != null -> "Sending $sendingPct% · $at"
+                sendingPct != null && !photo -> "Sending $sendingPct% · $at"
                 tick == Tick.Clock -> "Waiting · $at"
                 m.editedAt != null -> "edited · $at"
                 else -> at
@@ -604,8 +677,11 @@ private fun Bubble(
                 val style = if (big) TinType.bodyL.copy(fontSize = 38.sp, lineHeight = 46.sp) else TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp)
                 CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, tick, metaColor)
             } else {
-                if (m.text.isNotBlank()) Text(Emoji.styled(m.text), style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
-                Meta(label, tick, metaColor, if (photo) 8.dp else 0.dp, if (photo) 4.dp else 0.dp)
+                // A photo's caption and time keep to the photo's width (the bubble is never wider than the photo).
+                val w = if (photo) Modifier.width(photoBox(a!!.width, a.height).first) else Modifier
+                if (m.text.isNotBlank()) Text(Emoji.styled(m.text), w.padding(horizontal = if (photo) 9.dp else 0.dp).padding(top = if (photo) 5.dp else 0.dp),
+                    style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
+                Box(w) { Meta(label, tick, metaColor, if (photo) 7.dp else 0.dp, 0.dp) }
             }
         }
     }
@@ -658,8 +734,29 @@ private fun Meta(text: String, tick: Tick?, color: Color, hPad: androidx.compose
     }
 }
 
+/** A photo's box in its bubble: the true shape from the size the core sends (chat/5), at most 248 x 330 dp, at least 120
+ *  wide; 4:3 when unknown (photos from older apps). */
+internal fun photoBox(w: UInt, h: UInt): Pair<androidx.compose.ui.unit.Dp, androidx.compose.ui.unit.Dp> {
+    val (pw, ph) = if (w > 0u && h > 0u) w.toFloat() to h.toFloat() else 4f to 3f
+    val s = minOf(248f / pw, 330f / ph)
+    return maxOf(120f, pw * s).dp to (ph * s).dp
+}
+
+/** The core's 4x3 colour preview as a tiny bitmap (drawn scaled up, smooth and blurred). */
+internal fun previewBitmap(p: ByteArray): androidx.compose.ui.graphics.ImageBitmap? {
+    if (p.size != 36) return null
+    val px = IntArray(12) { i -> (0xFF shl 24) or ((p[i * 3].toInt() and 0xFF) shl 16) or ((p[i * 3 + 1].toInt() and 0xFF) shl 8) or (p[i * 3 + 2].toInt() and 0xFF) }
+    return android.graphics.Bitmap.createBitmap(px, 4, 3, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
+}
+
+/**
+ * PhotoBody.svelte (Framed, decided 2026-10-14): the photo inside its bubble's 3 dp rim, its corners following the
+ * bubble's (so they tighten in a run). Until it is here the core's colour preview fills the box, soft; sending shows a
+ * ring with cancel, waiting a chip, not downloaded the size and Download. The time sits under it (the bubble's meta).
+ */
 @Composable
-private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: Link, source: ChatSource, onDownload: () -> Unit, onCancel: () -> Unit, onOpen: () -> Unit, onBroken: () -> Unit) {
+private fun PhotoBox(m: Message, a: Attachment, out: Boolean, pos: BubblePos, first: String, waiting: Boolean, prog: Pair<Long, Long>?, source: ChatSource,
+    onDownload: () -> Unit, onCancel: () -> Unit, onOpen: () -> Unit, onBroken: () -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
     val ready = a.state == TransferState.READY || out
@@ -668,21 +765,46 @@ private fun PhotoBox(m: Message, a: Attachment, out: Boolean, prog: Pair<Long, L
         // Ready but undecodable (odd GIF/WebP/HEIC): fall back to a file bubble with Open/Save.
         if (ready && value == null) onBroken()
     }
-    Box(Modifier.size(240.dp, 180.dp).clip(SmoothCornerShape(12.dp)).background(c.sf3).clickable(role = Role.Button) { if (ready && bmp != null) onOpen() else if (!ready && a.state == TransferState.DOWNLOADING) onCancel() else if (!ready) onDownload() }, contentAlignment = Alignment.Center) {
-        bmp?.let { Image(it, a.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-        val frac = prog?.let { if (it.second > 0) it.first.toFloat() / it.second else 0f }
-            ?: if (a.state == TransferState.DOWNLOADING && a.size > 0UL) a.transferred.toFloat() / a.size.toFloat() else null
-        when {
-            frac != null && !(ready && prog == null) -> Ring {
-                CircularProgressIndicator({ frac }, Modifier.size(56.dp), color = Color.White, trackColor = Color.White.copy(alpha = .25f), strokeWidth = 3.dp)
-                if (!ready) Icon(Icons.Rounded.Close, "Cancel download", tint = Color.White)
-            }
-            a.state == TransferState.REMOTE && !out -> Ring { Icon(Icons.Rounded.Download, "Download photo", tint = Color.White) }
-            a.state == TransferState.FAILED -> Ring { Icon(Icons.Rounded.Refresh, "Retry download", tint = Color.White) }
-            bmp == null && ready -> Icon(Icons.Rounded.Image, null, tint = c.ink2)
+    val pv = remember(a.hash) { previewBitmap(a.preview) }
+    val (w, h) = photoBox(a.width, a.height)
+    val frac = prog?.let { if (it.second > 0) it.first.toFloat() / it.second else 0f }
+        ?: if (a.state == TransferState.DOWNLOADING && a.size > 0UL) a.transferred.toFloat() / a.size.toFloat() else null
+    val busy = frac != null && !(ready && prog == null)
+    Box(Modifier.size(w, h).clip(bubbleShape(pos, out, 3.dp)).background(c.sf3)
+        .clickable(role = Role.Button) { if (ready && bmp != null) onOpen() else if (busy) onCancel() else if (!ready) onDownload() },
+        contentAlignment = Alignment.Center) {
+        pv?.let {
+            Image(it, null, Modifier.fillMaxSize().graphicsLayer { scaleX = 1.24f; scaleY = 1.24f }.blur(14.dp),
+                contentScale = ContentScale.FillBounds, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
         }
+        bmp?.let { Image(it, a.name, Modifier.fillMaxSize().alpha(if (a.state == TransferState.FAILED) .55f else 1f), contentScale = ContentScale.Crop) }
+        when {
+            busy -> {
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .18f)))
+                Ring {
+                    CircularProgressIndicator({ frac ?: 0f }, Modifier.size(48.dp), color = Color.White, trackColor = Color.White.copy(alpha = .28f), strokeWidth = 3.dp)
+                    Icon(PgIcons.X, if (out) "Cancel sending" else "Cancel download", Modifier.size(18.dp), tint = Color.White)
+                }
+            }
+            a.state == TransferState.REMOTE && !out -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                PhotoChip("Photo · ${sizeText(a.size.toLong())}")
+                Row(Modifier.clip(RoundedCornerShape(18.dp)).background(c.accent).clickable(role = Role.Button, onClick = onDownload).padding(horizontal = 16.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(PgIcons.Chev, null, Modifier.size(16.dp), tint = c.onAccent)
+                    Text("Download", style = TinType.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = c.onAccent)
+                }
+            }
+            a.state == TransferState.FAILED -> Ring { Icon(PgIcons.Retry, "Retry download", tint = Color.White) }
+            bmp == null && ready && pv == null -> Icon(PgIcons.Image, null, tint = c.ink2)
+        }
+        if (waiting && !busy) Box(Modifier.align(Alignment.BottomStart).padding(8.dp)) { PhotoChip("Sends when $first is online") }
     }
 }
+
+@Composable
+private fun PhotoChip(text: String) =
+    Text(text, Modifier.clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = .42f)).padding(horizontal = 8.dp, vertical = 2.dp),
+        style = TinType.caption.copy(fontSize = 11.sp, lineHeight = 15.sp, fontWeight = FontWeight.Normal), color = Color.White)
 
 @Composable
 private fun Ring(content: @Composable BoxScope.() -> Unit) =
@@ -715,7 +837,7 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.size(44.dp).clip(SmoothCornerShape(12.dp)).background(if (out) Color.White.copy(alpha = .55f) else c.sf2), contentAlignment = Alignment.Center) {
-            Icon(if (a.isVideo()) Icons.Rounded.Videocam else Icons.Rounded.Description, null, tint = c.pr)
+            Icon(if (a.isVideo()) PgIcons.Video else PgIcons.File, null, tint = c.pr)
         }
         Column(Modifier.weight(1f, fill = false)) {
             Text(a.name, style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold), color = if (out) c.onPrc else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -725,7 +847,7 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
             }
         }
         if (canDownload && a.state == TransferState.REMOTE) IconBtn(Icons.Rounded.Download, "Download ${a.name}", onDownload, tint = c.pr)
-        if (!ready && (a.state == TransferState.DOWNLOADING || asked)) IconBtn(Icons.Rounded.Close, "Cancel download of ${a.name}", onCancel, tint = c.ink2)
+        if (!ready && (a.state == TransferState.DOWNLOADING || asked)) IconBtn(PgIcons.X, "Cancel download of ${a.name}", onCancel, tint = c.ink2)
         if (ready && canOpen) IconBtn(Icons.Rounded.SaveAlt, "Save ${a.name} to phone", onSave, tint = if (out) c.onPrc else c.ink2)
     }
 }
@@ -743,11 +865,11 @@ private fun ActionsSheet(
             if (isSelf) "Saved $at · on your devices" else if (!m.outgoing) "Received $at" else if (m.delivery == DeliveryState.DELIVERED) "Sent $at · on $first’s phone" else "Sent $at · only on this phone so far",
             Modifier.padding(start = 8.dp, bottom = 8.dp),
         )
-        SheetAction(Icons.AutoMirrored.Rounded.Reply, "Reply", onClick = onReply)
-        if (m.text.isNotBlank()) SheetAction(Icons.Rounded.ContentCopy, "Copy text", onClick = onCopy)
+        SheetAction(PgIcons.Reply, "Reply", onClick = onReply)
+        if (m.text.isNotBlank()) SheetAction(PgIcons.Copy, "Copy text", onClick = onCopy)
         if (m.attachment?.let { it.state == TransferState.READY || m.outgoing } == true) SheetAction(Icons.Rounded.SaveAlt, "Save to phone", onClick = onSave)
-        if (m.outgoing && m.attachment == null) SheetAction(Icons.Rounded.Edit, "Edit", onClick = onEdit)
-        if (m.outgoing) SheetAction(Icons.Rounded.Delete, if (isSelf) "Delete on all your devices" else "Delete for both of you", color = c.er, onClick = onDelete)
+        if (m.outgoing && m.attachment == null) SheetAction(PgIcons.Edit, "Edit", onClick = onEdit)
+        if (m.outgoing) SheetAction(PgIcons.Trash, if (isSelf) "Delete on all your devices" else "Delete for both of you", color = c.er, onClick = onDelete)
         if (m.outgoing) Hint(if (isSelf) "Edits and deletes reach your other devices when they’re online." else "Edits and deletes reach $first’s phone the next time you’re both online.", Modifier.padding(start = 8.dp, top = 8.dp))
     }
 }
@@ -769,7 +891,7 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
     TinSheet(onDismiss) {
         Text(if (isSelf) "Save for yourself" else "Send to $first", Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf(Triple(Icons.Rounded.PhotoLibrary, "Photos & videos", onPhotos), Triple(Icons.Rounded.PhotoCamera, "Camera", onCamera), Triple(Icons.Rounded.InsertDriveFile, "File", onFile)).forEach { (icon, label, go) ->
+            listOf(Triple(Icons.Rounded.PhotoLibrary, "Photos & videos", onPhotos), Triple(PgIcons.Camera, "Camera", onCamera), Triple(PgIcons.File, "File", onFile)).forEach { (icon, label, go) ->
                 Column(Modifier.weight(1f).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button, onClick = go).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.size(60.dp).clip(SmoothCornerShape(18.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
                     Text(label, style = TinType.bodyM.copy(fontWeight = FontWeight.Medium), color = c.ink)
@@ -777,7 +899,7 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
             }
         }
         Row(Modifier.padding(start = 4.dp, top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-            Icon(Icons.Rounded.Lock, null, tint = c.ink2, modifier = Modifier.size(18.dp))
+            Icon(PgIcons.Lock, null, tint = c.ink2, modifier = Modifier.size(18.dp))
             Hint(if (isSelf) "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each." else "Files are end-to-end encrypted. Up to 2 GB each. Both of you need to be online while it transfers.")
         }
     }
@@ -795,7 +917,7 @@ private fun PhotoViewer(m: Message, name: String, source: ChatSource, onClose: (
     }
     Column(Modifier.fillMaxSize().background(Color.Black).systemBarsPadding()) {
         Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            IconBtn(Icons.Rounded.Close, "Close", onClose, tint = Color.White)
+            IconBtn(PgIcons.X, "Close", onClose, tint = Color.White)
             Column(Modifier.weight(1f)) {
                 Text(if (m.outgoing) "You" else name, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
                 Text(viewerWhen(m.at.toLong(), System.currentTimeMillis()), style = TinType.caption, color = Color(0xFFA6B2AD))
@@ -807,7 +929,7 @@ private fun PhotoViewer(m: Message, name: String, source: ChatSource, onClose: (
             bmp?.let { Image(it, m.attachment?.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
         }
         Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-            Icon(Icons.Rounded.Lock, null, tint = Color(0xFFA6B2AD), modifier = Modifier.size(18.dp))
+            Icon(PgIcons.Lock, null, tint = Color(0xFFA6B2AD), modifier = Modifier.size(18.dp))
             Text("Kept encrypted inside Tinline. “Save to phone” copies it to your gallery, where other apps can see it.", style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = Color(0xFFA6B2AD))
         }
     }

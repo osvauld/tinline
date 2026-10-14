@@ -15,7 +15,9 @@ use support::*;
 const TAG: &str = "p9";
 
 fn open(dir: &std::path::Path) -> Arc<Node> {
-    Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap()
+    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    node.auto_accept_contacts_for_test(true);
+    node
 }
 
 fn peer(name: &str) -> Peer {

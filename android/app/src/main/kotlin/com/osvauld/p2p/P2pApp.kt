@@ -18,6 +18,8 @@ import uniffi.p2pcore.CallInfo
 import uniffi.p2pcore.CallRecord
 import uniffi.p2pcore.CallState
 import uniffi.p2pcore.Contact
+import uniffi.p2pcore.ContactRequest
+import uniffi.p2pcore.ContactRequestEvents
 import uniffi.p2pcore.LockState
 import uniffi.p2pcore.Node
 import uniffi.p2pcore.NodeEvents
@@ -35,6 +37,8 @@ class P2pApp : Application(), NodeEvents {
         private set
     /** Group-call audio + service (GA-A1); the core's GroupCallEvents sink. */
     lateinit var groupCalls: GroupCallAudio
+    /** The group call screens' state (GroupCallUi.kt). */
+    lateinit var groupCallUi: GroupCallUi
         private set
     private lateinit var hostConditions: HostConditions
     lateinit var realChat: CoreChatSource
@@ -42,8 +46,12 @@ class P2pApp : Application(), NodeEvents {
     /** Group chat on the core (GroupsCore.kt): the Groups tab. */
     lateinit var groups: GroupsController
         private set
+    /** The debug gallery only: render the group screens over sample data instead of the core. */
+    fun groupsForGallery(g: GroupsController) { groups = g }
     /** Device linking: the state machine behind the Link a device screens, and the core's LinkEvents. */
     lateinit var links: LinkController
+        private set
+    lateinit var profiles: ProfilesController
         private set
     /** The chat backend: the node's, or the in-memory fake the debug gallery swaps in. */
     val chat: ChatSource get() = ChatBackend.current(this)
@@ -67,6 +75,22 @@ class P2pApp : Application(), NodeEvents {
     private val _blocks = MutableStateFlow(Blocks())
     /** Contact blocking (Blocking.kt): who we block, who blocks us. Re-read on every contacts/chats change. */
     val blocks: StateFlow<Blocks> = _blocks
+    private val _requestsIn = MutableStateFlow<List<ContactRequest>>(emptyList())
+    /** Requests made with my code, waiting for my answer (Contacts › "Waiting for you"). */
+    val requestsIn: StateFlow<List<ContactRequest>> = _requestsIn
+    private val _requestsOut = MutableStateFlow<List<ContactRequest>>(emptyList())
+    /** Requests I sent, waiting for theirs (Contacts › "Waiting for them", the empty state). */
+    val requestsOut: StateFlow<List<ContactRequest>> = _requestsOut
+    /**
+     * The Add contact sheet as the other side of a handshake (people.svelte.ts `pp.incoming`): someone used my code
+     * ("Contact request"), or accepted mine while the sheet was closed ("New contact"). MainActivity opens the sheet for it
+     * when nothing else is in front (never over a call or another screen), else drops it: the request waits in Contacts.
+     */
+    val incoming = MutableStateFlow<IncomingSheet?>(null)
+    /** The last request of mine they accepted: an open sheet on that person turns taut by itself. */
+    val accepted = MutableStateFlow<Contact?>(null)
+    /** The Add contact sheet is on screen (it sets this), so an acceptance doesn't open a second moment. */
+    @Volatile var addSheetOpen = false
     private val _availability = MutableStateFlow(Availability(true, null))
     val availability: StateFlow<Availability> = _availability
     @Volatile private var availJob: Job? = null
@@ -79,15 +103,20 @@ class P2pApp : Application(), NodeEvents {
         calls = CallController(this)
         video = CallVideo(this)
         node = newNode()
+        profiles = ProfilesController(this)
+        node.setProfileEvents(profiles)
         node.setVideoEvents(video)
         node.setVideoEnabled(videoEnabled)
         links = LinkController(this)
         node.setLinkEvents(links)
         groupCalls = GroupCallAudio(this)
         node.setGroupCallEvents(groupCalls)
+        groupCallUi = GroupCallUi(this)
+        node.setContactRequestEvents(requestEvents)
         hostConditions = HostConditions(this).also { it.start() }
         realChat = CoreChatSource(this).also { it.attach() }
         groups = GroupsController(NodeGroupApi { node }) { currentDid() }.also { it.attach(node) }
+        groups.onPost = { m -> GroupNotifier.post(this, m, groups.list.value.firstOrNull { it.id == m.groupId }?.name) }
         selectLastAccountIfNone()
         UnlockStore.migrateLegacy(this, currentDid())
         tryAutoUnlock()
@@ -117,6 +146,11 @@ class P2pApp : Application(), NodeEvents {
         }
     }
 
+    /** A contact's profile changed (their name may have): re-read the contact list only. */
+    fun refreshContacts() {
+        try { _contacts.value = node.contacts() } catch (e: Exception) { Log.w(TAG, "contacts: ${e.javaClass.simpleName}") }
+    }
+
     fun setAvailable(available: Boolean, until: Long? = null) {
         try { node.setAvailable(available, until?.toULong()) } catch (e: Exception) { Log.w(TAG, "setAvailable: $e") }
         refreshAvailability()
@@ -126,8 +160,10 @@ class P2pApp : Application(), NodeEvents {
         _lock.value = node.lockState()
         _hasIdentity.value = node.hasIdentity()
         _accountDid.value = currentDid()
+        profiles.select(_accountDid.value.takeIf { _lock.value == LockState.UNLOCKED })
         rememberName()
         _contacts.value = node.contacts()
+        refreshRequests()
         refreshBlocks()
         _status.value = node.status()
         scope.launch { groups.refresh() }
@@ -252,6 +288,7 @@ class P2pApp : Application(), NodeEvents {
         try {
             lifecycle.submit {
                 val from = currentDid()
+                profiles.invalidate()
                 node.beginNewAccount()
                 _adding.value = Adding(from, restore, link)
                 refresh()
@@ -285,6 +322,7 @@ class P2pApp : Application(), NodeEvents {
 
     private fun switchToNow(did: String, passphrase: String?) {
         val prev = currentDid()
+        profiles.invalidate()
         node.switchAccount(did)
         if (passphrase == null) { tryAutoUnlock(); return }
         try {
@@ -317,6 +355,7 @@ class P2pApp : Application(), NodeEvents {
         if (uniffi.p2pcore.didOfPhrase(phrase) != oldDid) {
             throw IllegalArgumentException("That recovery phrase belongs to a different identity")
         }
+        profiles.invalidate()
         node.beginNewAccount()
         try {
             node.restoreIdentity(phrase, name, passphrase)
@@ -354,6 +393,16 @@ class P2pApp : Application(), NodeEvents {
     /** Node start/stop and identity swaps run one at a time on this thread, never on the callers' locks. */
     private val lifecycle = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "p2p-lifecycle") }
 
+    /** Profile reads/writes serialize with identity swaps. Called only on a worker, never the UI or a core callback. */
+    fun <T> profileWork(ticket: ProfileSession.Ticket, work: (Node) -> T): T {
+        try {
+            return lifecycle.submit<T> {
+                check(profiles.session.accepts(ticket) && node.lockState() == LockState.UNLOCKED && currentDid() == ticket.did) { "Account changed" }
+                work(node)
+            }.get()
+        } catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
+    }
+
     /** Unlocks (if needed) and starts the node. Queued on the lifecycle thread; returns immediately. */
     fun startNode() {
         lifecycle.execute {
@@ -379,8 +428,42 @@ class P2pApp : Application(), NodeEvents {
         val known = _contacts.value.map { it.did }.toSet()
         list.filter { it.did !in known }.forEach { testLog("added name=${it.name} did=${it.did}") }
         _contacts.value = list
+        refreshRequests()
         refreshBlocks()
         refreshHistory()
+    }
+
+    fun refreshRequests() {
+        try { _requestsIn.value = node.contactRequests(); _requestsOut.value = node.sentContactRequests() }
+        catch (e: Exception) { Log.w(TAG, "requests: ${e.javaClass.simpleName}") }
+    }
+
+    /** Accept (the sheet or a Contacts card): they become a contact who may message and call. The `line` cue plays here. */
+    suspend fun acceptRequest(did: String): Boolean = kotlinx.coroutines.withContext(Dispatchers.IO) {
+        val ok = try { node.acceptContactRequest(did); true } catch (e: Exception) { Log.w(TAG, "acceptContactRequest: ${e.javaClass.simpleName}"); false }
+        refreshRequests()
+        if (ok) Cues.line()
+        ok
+    }
+
+    // ---- ContactRequestEvents (core threads) ----
+    private val requestEvents = object : ContactRequestEvents {
+        override fun onContactRequest(request: ContactRequest) {
+            testLog("request name=${request.name} did=${request.did}")
+            refreshRequests()
+            // Open: the knock, and the sheet opens by itself. Closed or locked away: a system notification.
+            if (AppVisible.resumed) { Cues.knock(); incoming.value = IncomingSheet(request.did, request.name, joined = false, theirs = false) }
+            else Notifications.request(this@P2pApp, request.did, request.name)
+        }
+        override fun onRequestAccepted(contact: Contact) {
+            testLog("accepted name=${contact.name} did=${contact.did}")
+            _contacts.value = node.contacts()
+            refreshRequests()
+            refreshBlocks()
+            if (AppVisible.resumed) Cues.line()
+            accepted.value = contact
+            if (!addSheetOpen) incoming.value = IncomingSheet(contact.did, contact.name, joined = true, theirs = true)
+        }
     }
 
     /** Re-reads block states for every contact and conversation, and the blocked list. Cheap core reads. */
@@ -406,9 +489,13 @@ class P2pApp : Application(), NodeEvents {
     }
 
     /** "Allow calls" (U13, P6): whether [did] may ring us. They keep messaging either way. */
-    fun allowCalls(did: String, allowed: Boolean) = scope.launch {
-        try { node.allowCalls(did, allowed) } catch (e: Exception) { Log.w(TAG, "allowCalls: $e") }
-        refreshBlocks()
+    fun allowCalls(did: String, allowed: Boolean) {
+        val ticket = profiles.session.ticket() ?: return
+        scope.launch {
+            try {
+                profileWork(ticket) { it.allowCalls(did, allowed); refreshBlocks() }
+            } catch (e: Exception) { Log.w(TAG, "allowCalls: $e") }
+        }
     }
 
     fun unblock(did: String) = scope.launch {
@@ -431,8 +518,17 @@ class P2pApp : Application(), NodeEvents {
         lateinit var instance: P2pApp
             private set
         fun get(ctx: Context): P2pApp = ctx.applicationContext as P2pApp
+        /** The app once created (Cues reads the Quiet setting through it). */
+        fun instanceOrNull(): P2pApp? = if (::instance.isInitialized) instance else null
     }
 }
+
+/** `pp.incoming`: whose line, and where the handshake is. `joined`: the line is open (taut), else asking (ringing).
+ *  `theirs`: they accepted the request I sent (chip "Accepted your request"). */
+data class IncomingSheet(val did: String, val name: String, val joined: Boolean, val theirs: Boolean)
+
+/** Whether an activity of ours is resumed (MainActivity sets it): cues play live, else the system notifies. */
+object AppVisible { @Volatile var resumed = false }
 
 fun testLog(msg: String) {
     if (BuildConfig.DEBUG) Log.i("P2PTEST", msg)

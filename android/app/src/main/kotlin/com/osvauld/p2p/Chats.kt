@@ -84,7 +84,7 @@ fun NewChatScreen(contacts: List<Contact>, lastMessage: Map<String, String>, onB
                         .clickable(role = Role.Button) { searching = true }.padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(Icons.Rounded.Search, null, tint = c.ink2)
+                    Icon(PgIcons.Search, null, tint = c.ink2)
                     Text("Search contacts", style = TinType.bodyL, color = c.ink2)
                 }
             }
@@ -93,7 +93,7 @@ fun NewChatScreen(contacts: List<Contact>, lastMessage: Map<String, String>, onB
                     Modifier.fillMaxWidth().heightIn(min = 68.dp).clickable(role = Role.Button, onClick = onAdd).padding(horizontal = 20.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Box(Modifier.size(48.dp).clip(CircleShape).background(c.pr), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.PersonAdd, null, tint = c.onPr) }
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(c.pr), contentAlignment = Alignment.Center) { Icon(PgIcons.Userplus, null, tint = c.onPr) }
                     Column(Modifier.weight(1f)) {
                         Text("Add a contact", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold, lineHeight = 22.sp), color = c.ink)
                         Text("Scan their code or paste their card", style = TinType.bodyM, color = c.ink2)

@@ -24,6 +24,9 @@ impl Inner {
             kind: if f.kind == "voice" { AttachmentKind::Voice } else { AttachmentKind::File },
             duration_ms: f.duration_ms,
             waveform: f.waveform.clone(),
+            width: f.width,
+            height: f.height,
+            preview: hex::decode(&f.preview).ok().filter(|p| p.len() == crate::chat::photo::PREVIEW_LEN).unwrap_or_default(),
             state,
             transferred,
         }

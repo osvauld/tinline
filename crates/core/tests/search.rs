@@ -19,6 +19,7 @@ impl Root {
     }
     fn node(&self) -> Arc<Node> {
         let n = Node::new(self.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+        n.auto_accept_contacts_for_test(true);
         n.set_link_events(Arc::new(NoLink));
         n
     }
@@ -312,6 +313,7 @@ fn tapped(name: &str) -> (Root, Arc<Node>, mpsc::Receiver<(bool, String)>) {
     let root = Root::new(name);
     let (tx, rx) = mpsc::channel();
     let node = Node::new(root.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.set_link_events(Arc::new(Tap(Mutex::new(tx))));
     (root, node, rx)
 }

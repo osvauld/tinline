@@ -56,8 +56,31 @@ class FakeChatSource(private val app: P2pApp? = null, files: Boolean = false) : 
         Message(id, peer, if (out) "did:key:me" else peer, out, at, if (deleted) "" else text, if (edited) at + 120_000UL else null, deleted, replyTo, att, if (out) delivery else DeliveryState.DELIVERED)
 
     private fun att(name: String, size: Long, mime: String, state: TransferState = TransferState.READY, transferred: Long = 0, kind: AttachmentKind = AttachmentKind.FILE,
-                    ms: Int = 0, wave: List<Int> = emptyList()) =
-        Attachment(UUID.randomUUID().toString().replace("-", ""), name, size.toULong(), mime, kind, ms.toUInt(), wave.map { it.toByte() }.toByteArray(), state, transferred.toULong())
+                    ms: Int = 0, wave: List<Int> = emptyList()): Attachment {
+        // Pictures carry their size and 4x3 colour preview, as the core sends them (chat/5).
+        val pic = mime.startsWith("image/")
+        return Attachment(UUID.randomUUID().toString().replace("-", ""), name, size.toULong(), mime, kind, ms.toUInt(), wave.map { it.toByte() }.toByteArray(),
+            if (pic) 960u else 0u, if (pic) 720u else 0u, if (pic) preview(fakePicture(name)) else ByteArray(0), state, transferred.toULong())
+    }
+
+    private fun preview(b: Bitmap): ByteArray {
+        val s = Bitmap.createScaledBitmap(b, 4, 3, true)
+        val px = IntArray(12).also { s.getPixels(it, 0, 4, 0, 0, 4, 3) }
+        return ByteArray(36) { i -> (px[i / 3] shr (16 - 8 * (i % 3)) and 0xFF).toByte() }
+    }
+
+    /** A made-up picture: sky, a sun and two hills, tinted by the file name. */
+    private fun fakePicture(name: String): Bitmap {
+        val bmp = Bitmap.createBitmap(960, 720, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        val hue = (name.hashCode() and 0xff) / 255f * 360f
+        p.color = android.graphics.Color.HSVToColor(floatArrayOf(hue, .25f, .95f)); c.drawRect(0f, 0f, 960f, 720f, p)
+        p.color = 0xFFF5C451.toInt(); c.drawCircle(740f, 170f, 80f, p)
+        p.color = android.graphics.Color.HSVToColor(floatArrayOf(hue, .55f, .55f)); c.drawCircle(280f, 900f, 480f, p)
+        p.color = android.graphics.Color.HSVToColor(floatArrayOf(hue, .6f, .4f)); c.drawCircle(820f, 980f, 520f, p)
+        return bmp
+    }
 
     private fun add(peer: String, m: Message) = msgs.getOrPut(peer) { mutableListOf() }.add(m)
 
@@ -228,16 +251,7 @@ class FakeChatSource(private val app: P2pApp? = null, files: Boolean = false) : 
         val a = find(peerDid, messageId).attachment ?: throw IllegalArgumentException("no attachment")
         val dest = File(destPath)
         if (a.mime.startsWith("image/")) {
-            // A made-up picture: sky, a sun and two hills, tinted by the file name.
-            val bmp = Bitmap.createBitmap(960, 720, Bitmap.Config.ARGB_8888)
-            val c = Canvas(bmp)
-            val p = Paint(Paint.ANTI_ALIAS_FLAG)
-            val hue = (a.name.hashCode() and 0xff) / 255f * 360f
-            p.color = android.graphics.Color.HSVToColor(floatArrayOf(hue, .25f, .95f)); c.drawRect(0f, 0f, 960f, 720f, p)
-            p.color = 0xFFF5C451.toInt(); c.drawCircle(740f, 170f, 80f, p)
-            p.color = android.graphics.Color.HSVToColor(floatArrayOf(hue, .55f, .55f)); c.drawCircle(280f, 900f, 480f, p)
-            p.color = android.graphics.Color.HSVToColor(floatArrayOf(hue, .6f, .4f)); c.drawCircle(820f, 980f, 520f, p)
-            dest.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 90, it) }
+            dest.outputStream().use { fakePicture(a.name).compress(Bitmap.CompressFormat.PNG, 90, it) }
         } else dest.writeText("fake attachment ${a.name}\n")
     }
 }

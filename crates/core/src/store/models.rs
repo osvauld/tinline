@@ -1,6 +1,6 @@
 //! The persisted models: profile, contacts, `State` and the call log record.
 
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 use zeroize::ZeroizeOnDrop;
@@ -219,9 +219,11 @@ pub struct State {
     /// The latest notice each DID sent us, verified on intake; a block there is "<name> blocked
     /// you". Kept after an unblock so an older notice replayed later is refused.
     pub notices: HashMap<String, HeldNotice>,
-    /// Invite nonces already spent; a ticket adds one contact.
+    /// Redeemed tickets: `proto::redeemed_key(joiner, nonce)` (a joiner adds once per ticket), or
+    /// a bare nonce from when a ticket added one contact (spent for everyone).
     pub redeemed: HashSet<String>,
-    /// The ticket we hand out until someone redeems it, so the QR stays stable across launches.
+    /// The ticket we hand out (reusable until it expires or is reset), so the QR stays stable
+    /// across launches.
     pub ticket: Option<String>,
     pub availability: AvailabilityState,
     /// Our own installs (task 34c: seeded with this device; linking fills it later).
@@ -241,6 +243,65 @@ pub struct State {
     /// invite nonce: only that DID may redeem one, and it gets message-only tokens (P6). Local:
     /// the ticket names this device's private endpoint.
     pub req_tickets: HashMap<String, ReqTicket>,
+    /// Reusable contact codes (2026-10-13): invite nonce -> `exp` of every ticket of ours that
+    /// still adds contacts. The one in `ticket` plus older ones replaced by a rename, a relay
+    /// change or the last day of life, which stay good until they expire. `reset_ticket` and a
+    /// block clear it. Local: a ticket names this device.
+    pub live_tickets: BTreeMap<String, u64>,
+    /// Contact requests made with our code, held for the user's Accept, by joiner DID (one per
+    /// DID; a later hello replaces the held one). Local and PROVISIONAL: the hello is addressed
+    /// to this device, so only it can answer. Kept until the code they used expires.
+    pub contact_requests: BTreeMap<String, HeldRequest>,
+    /// Requests we sent with someone's code that they hold for their user, by owner DID, until
+    /// their dialled-back `ContactWelcome` arrives. Local.
+    pub sent_requests: BTreeMap<String, SentRequest>,
+    /// Welcomes for accepted requests still to be delivered, by joiner DID (retried like
+    /// `notice_outbox`). Local: the device that accepted dials.
+    pub welcome_outbox: BTreeMap<String, WelcomeOut>,
+}
+
+/// See `State::contact_requests`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HeldRequest {
+    /// The joiner's `ContactHello`, checked when it arrived and checked again on Accept.
+    pub hello: proto::Msg,
+    /// The joiner's device (the connection's, equal to the attested one).
+    pub device: [u8; 32],
+    /// The joiner's relay hint from the hello, sanitised.
+    pub relay: Option<String>,
+    pub name: String,
+    /// Our ticket's nonce they used, and its `exp` (unix seconds): the request lasts as long.
+    pub nonce: String,
+    pub exp: u64,
+    /// When it first arrived (unix ms).
+    pub at: u64,
+}
+
+/// See `State::sent_requests`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SentRequest {
+    pub pending: proto::PendingContact,
+    /// Their ticket's relay (sanitised), stored with the contact once they accept.
+    pub relay: Option<String>,
+    /// Whether our hello gave them a call token (`policy_for`), so we let them call.
+    pub calls_allowed: bool,
+    /// Their ticket's `exp` (unix seconds).
+    pub exp: u64,
+    /// When we sent it (unix ms).
+    pub at: u64,
+    /// They answered `ContactPending`. False while dialling, or when the dial failed after the
+    /// hello may have reached them: kept (not listed) so a late Accept still lands.
+    pub delivered: bool,
+}
+
+/// See `State::welcome_outbox`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WelcomeOut {
+    pub welcome: proto::Msg,
+    pub device: [u8; 32],
+    pub relay: Option<String>,
+    /// Give up after this (unix seconds).
+    pub until: u64,
 }
 
 /// See `State::req_tickets`.

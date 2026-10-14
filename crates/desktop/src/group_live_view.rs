@@ -35,95 +35,100 @@ impl App {
         self.live.badge()
     }
 
+    /// GroupsList.svelte: the New group row, invitations, "Your groups · n" (rows as in Chats), then the folded
+    /// "Left or removed" section. Desktop keeps a Join row (paste an invite link) under New group: the playground
+    /// assumes links open the app, this build can't.
     pub(super) fn live_list(&self, t: Tok, q: &str) -> El<'_> {
-        let mut col = column![
-            row![
-                pill(t, Kind::Tonal, Some(Icon::Users), "New group", Some(l(Lm::NewGroup))),
-                pill(t, Kind::Quiet, Some(Icon::UserPlus), "Join", Some(l(Lm::JoinOpen))),
-            ]
-            .spacing(6)
-            .padding([8, 12]),
-        ]
-        .spacing(2);
+        use super::chat_view::Preview;
+        // .sec: 12px 650 uppercase, .06em, muted, 18 16 6; the count after a middle dot at 80 %.
+        let sec = |caption: &str, n: usize| -> El<'_> {
+            row![semi(caption.to_uppercase(), 12.0, t.ink2).line_height(lh(16.0)),
+                semi(format!("\u{b7}  {n}"), 12.0, ui::alpha(t.ink2, 0.8)).line_height(lh(16.0))].spacing(6).into()
+        };
+        let act = |icon: &'static str, title: &'static str, sub: &'static str, msg: Msg| -> El<'_> {
+            container(button(row![container(crate::pg_icons::pgi(icon, 22.0, t.accent_ink)).width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.accent_soft, 24.0)),
+                    column![semi(title, 15.0, t.ink).line_height(lh(21.0)), tx(sub, 13.0, t.ink2).line_height(lh(18.0))].spacing(2)]
+                    .spacing(12).align_y(Alignment::Center).height(48))
+                .padding(8).width(Fill).height(64).style(super::shell_view::wash(t, None, Some(t.surface2), 14.0)).on_press(msg)).padding([0, 8]).into()
+        };
+        let mut col = column![act("plus", "New group", "You\u{2019}ll be the owner", l(Lm::NewGroup)),
+            act("userplus", "Join a group", "Paste an invite link", l(Lm::JoinOpen))];
         let ready = self.live.ready;
-        // G3: invitations to us, with Join / Decline, above the groups.
+        // Invitations to you: cards (surface on desktop = --bg, hairline ring, radius --r-ctl, 14 padding).
         let pending: Vec<_> = self.live.pending_invitations().collect();
         if !pending.is_empty() {
-            col = col.push(container(label(t, &format!("Invitations \u{b7} {}", pending.len()))).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }));
+            col = col.push(container(sec("Invitations to you", pending.len())).padding(Padding { top: 18.0, right: 16.0, bottom: 6.0, left: 16.0 }));
             for i in pending {
                 let who = first_name(&self.live_name(&i.inviter_did, &i.inviter_name)).to_string();
                 let joining = self.live.joining.as_deref() == Some(i.id.as_str());
                 let busy = self.live.joining.is_some();
-                col = col.push(
-                    container(
-                        column![
-                            row![gav(t, &i.group_id, 36.0), column![semi(i.group_name.clone(), 14.0, t.ink), tx(format!("{who} invited you"), 12.0, t.ink2)].spacing(1).width(Fill)]
-                                .spacing(10)
-                                .align_y(Alignment::Center),
-                            row![
-                                btn(t, Kind::Primary, if joining { "Joining\u{2026}" } else { "Join" }, (!busy).then(|| l(Lm::AcceptInv(i.id.clone())))),
-                                btn(t, Kind::Quiet, "Decline", (!busy).then(|| l(Lm::DeclineInv(i.id.clone())))),
-                            ]
-                            .spacing(6),
-                        ]
-                        .spacing(8),
-                    )
-                    .padding(10)
-                    .width(Fill)
-                    .style(ui::card(t)),
-                );
+                let line = iced::widget::rich_text![
+                    iced::widget::span::<(), iced::Font>(who).font(ui::SANS_SEMI).color(t.ink),
+                    iced::widget::span::<(), iced::Font>(" invited you to ").color(t.ink),
+                    iced::widget::span::<(), iced::Font>(i.group_name.clone()).font(ui::SANS_SEMI).color(t.ink),
+                ].size(15).line_height(lh(20.0));
+                let card = column![
+                    row![self.profile_avatar(t, &i.inviter_name, &i.inviter_did, 40.0), line].spacing(12).align_y(Alignment::Center),
+                    row![Space::new().width(Fill),
+                        btn(t, Kind::Quiet, "Decline", (!busy).then(|| l(Lm::DeclineInv(i.id.clone())))),
+                        btn(t, Kind::Primary, if joining { "Joining\u{2026}" } else { "Accept" }, (!busy).then(|| l(Lm::AcceptInv(i.id.clone())))),
+                    ].spacing(8),
+                ].spacing(10);
+                let style = move |_: &iced::Theme| container::Style {
+                    background: Some(t.bg.into()),
+                    border: Border { color: t.line, width: 1.0, radius: 14.0.into() },
+                    ..Default::default()
+                };
+                col = col.push(container(container(card).padding(14).width(Fill).style(style)).padding([6, 8]));
             }
         }
-        col = col.push(
-            container(label(t, &format!("Groups \u{b7} {}", self.live.list.len()))).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }),
-        );
-        let mut any = false;
-        for s in &self.live.list {
-            if !q.is_empty() && !s.name.to_lowercase().contains(q) {
-                continue;
-            }
-            any = true;
-            let sel = self.live.open.as_deref() == Some(s.id.as_str());
-            let gone = !gl::active(s.my_role);
-            let fade = |c: Color| if gone { ui::alpha(c, 0.55) } else { c };
-            let (fg, dim) = if sel { (t.on_primary_c, t.on_primary_c) } else { (fade(t.ink), fade(t.ink2)) };
-            let unread = s.unread > 0 && !sel && !gone;
+        let shown = |s: &&p2pcore::GroupSummary| q.is_empty() || s.name.to_lowercase().contains(q);
+        let active: Vec<_> = self.live.list.iter().filter(|s| gl::active(s.my_role)).filter(shown).collect();
+        let gone: Vec<_> = self.live.list.iter().filter(|s| !gl::active(s.my_role)).filter(shown).collect();
+        col = col.push(container(sec("Your groups", active.len())).padding(Padding { top: 18.0, right: 16.0, bottom: 6.0, left: 16.0 }));
+        if active.is_empty() {
+            let msg = if !ready { "Unlock to see your groups." } else if q.is_empty() { "Groups you start or join show up here." } else { "No group matches." };
+            col = col.push(container(tx(msg, 13.0, t.ink2).line_height(lh(19.0))).padding([8, 20]));
+        }
+        let face = |dim: bool| -> El<'_> {
+            container(crate::pg_icons::pgi("users", 22.0, ui::alpha(t.accent_ink, if dim { 0.72 } else { 1.0 })))
+                .width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.surface2, 24.0)).into()
+        };
+        let mut rows = column![];
+        for s in active {
             let at = s.last.as_ref().map_or(0, |m| m.at);
-            let mut sub = row![].spacing(4).align_y(Alignment::Center);
-            if gl::active(s.my_role) && !s.hosted_here && !s.host_reachable {
-                sub = sub.push(ui::icon(Icon::Clock, 13.0, dim));
-            }
-            sub = sub.push(container(tx(gl::preview(s, &self.live.me), 13.0, dim).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true));
-            if unread {
-                sub = sub.push(container(semi(s.unread.to_string(), 12.0, t.on_primary)).padding([1, 7]).style(ui::plain(t.primary, 999.0)));
-            }
-            let name = if unread { bold(s.name.clone(), 15.0, fg) } else { semi(s.name.clone(), 15.0, fg) };
-            col = col.push(
-                button(
-                    row![
-                        gav(t, &s.id, 40.0),
-                        column![row![name, Space::new().width(Fill), tx(short_time(at), 12.0, dim)], sub].spacing(2).width(Fill),
-                    ]
-                    .spacing(12)
-                    .align_y(Alignment::Center),
-                )
-                .padding([8, 12])
-                .width(Fill)
-                .style(ui::row_style(t, sel))
-                .on_press(l(Lm::Open(s.id.clone()))),
-            );
+            let sel = self.live.open.as_deref() == Some(s.id.as_str());
+            let text = gl::preview(s, &self.live.me);
+            // GroupsList `.callpv`: a running call takes the preview line (accent ink).
+            let in_call = self.gcall.gid.as_deref() == Some(s.id.as_str()) && self.gcall.live();
+            let pv = if in_call { Preview::Plain("You\u{2019}re in the call".into(), Some(t.accent_ink)) }
+                else if self.gcall.live.contains_key(&s.id) { Preview::Plain("Call in progress".into(), Some(t.accent_ink)) }
+                else if !s.hosted_here && !s.host_reachable { Preview::Waiting(text) } else { Preview::Plain(text, None) };
+            rows = rows.push(self.pg_chat_row(t, sel, face(false), s.name.clone(), at, s.unread, false, pv, l(Lm::Open(s.id.clone()))));
         }
-        if !any {
-            let msg = if !ready {
-                "Unlock to see your groups."
-            } else if q.is_empty() {
-                "No groups yet. Make one, or join with an invite someone sent you."
-            } else {
-                "No group matches."
-            };
-            col = col.push(container(tx(msg, 13.0, t.ink2)).padding([4, 12]));
+        col = col.push(container(rows).padding([0, 8]));
+        if !gone.is_empty() {
+            let open = self.live.gone_open;
+            let chev = container(crate::pg_icons::pgi(if open { "chevup" } else { "chev" }, 18.0, t.ink2));
+            col = col.push(container(button(row![sec("Left or removed", gone.len()), Space::new().width(Fill), chev].align_y(Alignment::Center))
+                .padding([0, 16]).height(44).width(Fill).style(super::shell_view::wash(t, None, None, 0.0)).on_press(l(Lm::GoneFold)))
+                .padding(Padding { top: 6.0, ..Padding::ZERO }));
+            if open {
+                let mut rows = column![];
+                for s in gone {
+                    let sel = self.live.open.as_deref() == Some(s.id.as_str());
+                    let at = s.last.as_ref().map_or(0, |m| m.at);
+                    let what = if s.my_role == GroupRole::Removed { "Removed" } else { "You left" };
+                    let sub = if at > 0 { format!("{what} \u{b7} {}", day_only(at)) } else { what.to_string() };
+                    rows = rows.push(button(row![face(true), column![semi(s.name.clone(), 15.0, ui::alpha(t.ink, 0.72)).line_height(lh(21.0)),
+                            tx(sub, 13.0, t.ink2).line_height(lh(21.0))].spacing(2).width(Fill)].spacing(12).align_y(Alignment::Center).height(56))
+                        .padding(8).width(Fill).style(super::shell_view::wash(t, sel.then_some(t.accent_soft), (!sel).then_some(t.surface2), 14.0))
+                        .on_press(l(Lm::Open(s.id.clone()))));
+                }
+                col = col.push(container(rows).padding([0, 8]));
+            }
         }
-        col.into()
+        container(col).padding(Padding { bottom: 24.0, ..Padding::ZERO }).into()
     }
 
     // ---- the conversation ----
@@ -134,19 +139,32 @@ impl App {
         let gone = !gl::active(d.my_role);
         let sub_color = if d.my_role == GroupRole::Removed { t.error } else if self.live.waiting_for_host() { t.thread_text } else { t.ink2 };
         let on = !self.live.hide_info;
-        let head = row![
-            gav(t, &d.id, 36.0),
-            column![bold(d.name.clone(), 17.0, t.ink), tx(self.live.status_line(), 13.0, sub_color)].spacing(1).width(Fill),
-            button(container(ui::icon(Icon::Users, 20.0, if on { t.on_primary_c } else { t.ink2 })).center_x(36).center_y(36))
-                .padding(0)
-                .width(36)
-                .height(36)
-                .style(ui::button_style(t, if on { Kind::Tonal } else { Kind::Ghost }, 8.0))
-                .on_press(l(Lm::ToggleInfo)),
-        ]
-        .spacing(12)
-        .align_y(Alignment::Center);
-        let mut top = column![container(head).padding([10, 20]).width(Fill), rule(t)];
+        // Conversation.svelte `.bar` for a group: the head (36 group avatar, name 17/22, "9 members" 13/18), then
+        // the details button (here it shows or hides the members pane beside the chat).
+        let face = container(crate::pg_icons::pgi("users", 18.0, t.accent_ink)).width(36).height(36).center_x(36).center_y(36).style(ui::plain(t.surface2, 18.0));
+        let head_btn = button(row![face, column![semi(d.name.clone(), 17.0, t.ink).line_height(lh(22.0)).wrapping(iced::widget::text::Wrapping::None),
+                tx(self.live.status_line(), 13.0, sub_color).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)]].spacing(10).align_y(Alignment::Center))
+            .padding(Padding { top: 4.0, right: 10.0, bottom: 4.0, left: 6.0 }).height(44).width(Fill)
+            .style(super::shell_view::wash(t, None, Some(t.surface2), 12.0)).on_press(l(Lm::ToggleInfo));
+        let info = button(container(crate::pg_icons::pgi("info", 24.0, if on { t.accent_ink } else { t.ink })).center_x(44).center_y(44)).padding(0).width(44).height(44)
+            .style(super::shell_view::wash(t, on.then_some(t.accent_soft), Some(t.surface2), 22.0)).on_press(l(Lm::ToggleInfo));
+        // The call button: start a call, join the one running, or return to mine (live: accent-soft). Dimmed, with
+        // the reason as its tooltip, while the group has no call host and no call runs.
+        let gid = d.id.clone();
+        let running = self.gcall.live.contains_key(&gid) || (self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live());
+        let no_host = d.call_hosts.is_empty() && !running;
+        let tip = if self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live() { "Return to group call" } else if running { "Join group call" }
+            else if no_host { "No call host yet: an admin can appoint one in Group info" } else { "Start group call" };
+        let call_btn = button(container(crate::pg_icons::pgi("phone", 24.0, if running { t.accent_ink } else if no_host { ui::alpha(t.ink2, 0.45) } else { t.ink })).center_x(44).center_y(44))
+            .padding(0).width(44).height(44)
+            .style(super::shell_view::wash(t, running.then_some(t.accent_soft), (!no_host).then_some(t.surface2), 22.0))
+            .on_press_maybe((!gone && !no_host).then(|| Msg::GCall(crate::app::gcall::Gm::Call(gid.clone()))));
+        let call_btn = iced::widget::tooltip(call_btn, iced::widget::text(tip).size(13), iced::widget::tooltip::Position::Bottom);
+        let head = row![head_btn, call_btn, info].spacing(2).align_y(Alignment::Center);
+        let mut top = column![container(head).padding(8).height(60).width(Fill).style(ui::plain(t.surface, 0.0)), rule(t)];
+        if !gone && let Some(b) = self.gcall_banner(t, &d.id) {
+            top = top.push(b).push(rule(t));
+        }
         if self.notice.is_some() {
             top = top.push(container(self.notice_bar(t)).padding([8, 20]));
         }
@@ -178,37 +196,60 @@ impl App {
                 .padding([12, 20]),
             );
         }
-        if self.live.waiting_for_host() {
-            let body = if d.hosts.is_empty() {
-                "This group has no host yet. Your messages are saved here and send when a member\u{2019}s computer hosts it."
-            } else {
-                "No host is online. Your messages are saved here and send when one comes back."
+        // `.msgs`: 6 16 19 on the canvas; day chips; runs of one author stack (10 px between, 2 px inside).
+        let strip = self.live.waiting_for_host();
+        let body: El = iced::widget::responsive(move |size| {
+            // .bub max-width: min(78 %, 560) of the list's content box.
+            let max_bub = ((size.width - 32.0) * 0.78).min(560.0);
+            let mut list = column![].spacing(0).padding(Padding { top: 6.0 + if strip { 33.0 } else { 0.0 }, right: 16.0, bottom: 19.0, left: 16.0 });
+            if self.live.older.is_some() {
+                list = list.push(container(link_btn(t, "Show earlier messages", t.primary, l(Lm::Older))).center_x(Fill));
+            }
+            let join = |a: &GroupMessage, b: &GroupMessage| {
+                a.kind == GroupItemKind::Post
+                    && b.kind == GroupItemKind::Post
+                    && a.outgoing == b.outgoing
+                    && (a.outgoing || a.author_did == b.author_did)
+                    && !self.blocks.blocked_by_me(&b.author_did)
+                    && a.at.abs_diff(b.at) <= geom::GROUP_GAP_MS
+                    && super::groups_view::day(a.at) == super::groups_view::day(b.at)
             };
-            top = top.push(container(banner(t, "Waiting for a host", body, None, false)).padding([12, 20]));
-        }
+            let mut last_day = String::new();
+            // Before the oldest of the posts that were unread when the group was opened.
+            let n_unread = self.live.unread_at_open as usize;
+            let divider = if n_unread > 0 { self.live.msgs.iter().rev().filter(|m| !m.outgoing && m.kind == GroupItemKind::Post).nth(n_unread - 1).map(|m| m.id.clone()) } else { None };
+            for (i, m) in self.live.msgs.iter().enumerate() {
+                let dk = super::groups_view::day(m.at);
+                let new_day = dk != last_day;
+                if new_day {
+                    last_day = dk;
+                    let chip = container(semi(chip_day(m.at), 11.0, t.ink2).line_height(lh(16.0))).padding([3, 10]).style(move |_: &iced::Theme| container::Style {
+                        background: Some(t.surface.into()), border: iced::Border { color: t.hairline, width: 1.0, radius: 999.0.into() }, ..Default::default() });
+                    list = list.push(container(chip).center_x(Fill).padding([10, 0]));
+                }
+                let pos = geom::run_pos(&self.live.msgs, i, join);
+                let mut gap = if new_day { 0.0 } else if m.kind != GroupItemKind::Post { 6.0 } else { geom::gap_above(pos) };
+                if divider.as_deref() == Some(m.id.as_str()) {
+                    let rule_ = || container(Space::new()).height(1).width(Fill).style(ui::plain(ui::alpha(t.accent_ink, 0.35), 0.0));
+                    list = list.push(container(row![rule_(), bold(format!("{n_unread} new {}", if n_unread == 1 { "message" } else { "messages" }), 11.0, t.accent_ink), rule_()]
+                        .spacing(10).align_y(Alignment::Center)).padding(Padding { top: 12.0, bottom: 6.0, ..Default::default() }));
+                    gap = 4.0;
+                }
+                list = list.push(container(self.live_item(t, m, pos, max_bub)).padding(iced::Padding { top: gap, ..Default::default() }));
+            }
+            if self.live.msgs.is_empty() {
+                list = list.push(sys(t, "No messages yet"));
+            }
 
-        let mut list = column![].spacing(0).padding([16, 24]);
-        if self.live.older.is_some() {
-            list = list.push(container(link_btn(t, "Show earlier messages", t.primary, l(Lm::Older))).center_x(Fill));
-        }
-        // Runs of one author's posts stack: tight corners on the stacking side, 2 px apart.
-        let join = |a: &GroupMessage, b: &GroupMessage| {
-            a.kind == GroupItemKind::Post
-                && b.kind == GroupItemKind::Post
-                && a.outgoing == b.outgoing
-                && (a.outgoing || a.author_did == b.author_did)
-                && !self.blocks.blocked_by_me(&b.author_did)
-                && a.at.abs_diff(b.at) <= geom::GROUP_GAP_MS
-                && super::groups_view::day(a.at) == super::groups_view::day(b.at)
-        };
-        for (i, m) in self.live.msgs.iter().enumerate() {
-            let pos = geom::run_pos(&self.live.msgs, i, join);
-            list = list.push(container(self.live_item(t, m, pos)).padding(iced::Padding { top: geom::gap_above(pos), ..Default::default() }));
-        }
-        if self.live.msgs.is_empty() {
-            list = list.push(sys(t, "No messages yet"));
-        }
-        let msgs = container(scroll(t, list).anchor_bottom().width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0));
+            container(scroll(t, list).anchor_bottom().width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0)).into()
+        }).into();
+        // The strip over the top of the list (gold: waiting for a host). It overlays, so nothing moves.
+        let msgs: El = if strip {
+            let text = "Waiting for a host. No group host is online; your posts are saved and send when one is.";
+            let s_ = container(row![crate::pg_icons::pgi("clock", 16.0, t.warn_ink), tx(text, 13.0, t.warn_ink).line_height(lh(18.0))].spacing(8).align_y(Alignment::Center))
+                .padding([7, 16]).width(Fill).style(ui::plain(t.warn, 0.0));
+            iced::widget::stack![body, column![s_, container(Space::new()).height(1).width(Fill).style(ui::plain(t.hairline, 0.0))]].into()
+        } else { body };
 
         let bottom: El = match d.my_role {
             GroupRole::Removed => footer(
@@ -229,50 +270,52 @@ impl App {
             return Some(conv.into());
         }
         let _ = gone;
-        Some(row![conv, self.live_members(t)].into())
+        // GroupInfo.svelte on desktop: the info page takes the detail pane (back returns to the conversation).
+        Some(self.group_info_page(t))
     }
 
+    /// Composer.svelte for a group (no attach in groups): the reply chip, the field and the round send button.
     fn live_composer(&self, t: Tok) -> El<'_> {
         let mut c = column![].spacing(6);
         if let Some(id) = &self.live.reply {
             let (who, text_) = match self.live.by_id(id) {
-                Some(m) => (self.live_name(&m.author_did, &m.author_name), m.text.clone()),
+                Some(m) if m.outgoing => ("yourself".to_string(), m.text.clone()),
+                Some(m) => (first_name(&self.live_name(&m.author_did, &m.author_name)).to_string(), m.text.clone()),
                 None => ("a message".to_string(), String::new()),
             };
-            c = c.push(
-                row![
-                    ui::icon(Icon::Reply, 14.0, t.ink2),
-                    container(tx(format!("Replying to {who}: {text_}"), 12.0, t.ink2).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true),
-                    button(ui::icon(Icon::X, 14.0, t.ink2)).padding(4).style(ui::button_style(t, Kind::Ghost, 999.0)).on_press(l(Lm::Reply(None))),
-                ]
-                .spacing(6)
-                .align_y(Alignment::Center),
-            );
+            let bar = container(Space::new()).width(3).height(Fill).style(ui::plain(t.accent, 0.0));
+            let x = button(container(crate::pg_icons::pgi("x", 18.0, t.ink2)).center_x(44).center_y(44)).padding(0).width(44).height(44)
+                .style(super::shell_view::wash(t, None, Some(t.surface3), 22.0)).on_press(l(Lm::Reply(None)));
+            let body = column![semi(format!("Replying to {who}"), 13.0, t.accent_ink).line_height(lh(18.0)),
+                tx(crate::fit::ellipsize(&text_, ui::SANS, 13.0, 520.0), 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)].width(Fill);
+            c = c.push(container(row![bar, container(row![body, x].spacing(8).align_y(Alignment::Center)).padding(Padding { top: 0.0, right: 2.0, bottom: 0.0, left: 7.0 }).height(44)].height(44))
+                .width(Fill).clip(true).style(ui::plain(t.surface2, 12.0)));
         }
         let value = &self.live.input;
         let can = !value.trim().is_empty() && !self.live.sending;
-        c = c.push(
-            row![
-                text_input("Message the group", value)
-                    .id(COMPOSER)
-                    .on_input(|v| l(Lm::Input(v)))
-                    .on_submit(l(Lm::Send))
-                    .padding([11, 16])
-                    .size(14)
-                    .style(move |th, st| {
-                        let mut s = ui::input_style(t)(th, st);
-                        s.border.radius = 22.0.into();
-                        s
-                    }),
-                pill(t, Kind::Primary, Some(Icon::Send), "Send", can.then_some(l(Lm::Send))),
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center),
-        );
-        footer(t, c.into())
+        let field = text_input("Message", value)
+            .id(COMPOSER)
+            .on_input(|v| l(Lm::Input(v)))
+            .on_submit(l(Lm::Send))
+            .padding([11, 16])
+            .size(15)
+            .line_height(lh(22.0))
+            .style(move |_, st| {
+                let focused = matches!(st, iced::widget::text_input::Status::Focused { .. });
+                iced::widget::text_input::Style {
+                    background: t.surface.into(),
+                    border: iced::Border { color: if focused { t.accent } else { t.hairline }, width: 1.0, radius: 22.0.into() },
+                    icon: t.ink2, placeholder: t.ink2, value: t.ink, selection: ui::alpha(t.accent, 0.3),
+                }
+            });
+        let send = button(container(crate::pg_icons::pgi("send", 20.0, t.on_accent)).center_x(44).center_y(44)).padding(0).width(44).height(44)
+            .style(move |_: &iced::Theme, _| iced::widget::button::Style { background: Some(ui::alpha(t.accent, if can { 1.0 } else { 0.38 }).into()), border: iced::Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
+            .on_press_maybe(can.then_some(l(Lm::Send)));
+        c = c.push(row![container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
+        container(c).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
     }
 
-    fn live_item<'a>(&'a self, t: Tok, m: &'a GroupMessage, pos: geom::Pos) -> El<'a> {
+    fn live_item<'a>(&'a self, t: Tok, m: &'a GroupMessage, pos: geom::Pos, max_bub: f32) -> El<'a> {
         if m.kind == GroupItemKind::Removed && m.subject_did == self.live.me {
             return self.live_removal_card(t);
         }
@@ -280,63 +323,79 @@ impl App {
             return sys(t, &gl::sys_text(m, &self.live.me));
         }
         let quote = m.reply_to.as_ref().map(|id| match self.live.by_id(id) {
-            Some(r) => format!("{}: {}", first_name(&self.live_name(&r.author_did, &r.author_name)), r.text),
-            None => "Reply to an earlier message".to_string(),
+            Some(r) => (if r.outgoing { "You".to_string() } else { first_name(&self.live_name(&r.author_did, &r.author_name)).to_string() }, r.text.clone(), r.outgoing),
+            None => (String::new(), "Original message unavailable".to_string(), false),
         });
-        let reply_btn = button(ui::icon(Icon::Reply, 14.0, t.ink2))
-            .padding(4)
-            .style(ui::button_style(t, Kind::Ghost, 999.0))
-            .on_press_maybe(self.live.can_post().then(|| l(Lm::Reply(Some(m.id.clone())))));
-        if m.outgoing {
-            let dim = ui::alpha(t.on_primary_c, 0.75);
-            let mut meta = row![tx(hhmm(m.at), 11.0, dim)].spacing(4).align_y(Alignment::Center);
-            match m.delivery {
-                GroupDelivery::Delivered => meta = meta.push(ui::icon(Icon::Check, 14.0, dim)),
-                GroupDelivery::Waiting => meta = meta.push(ui::icon(Icon::Clock, 13.0, dim)).push(tx("Waiting for a host", 11.0, dim)),
-            }
-            let mut c = column![].spacing(4).align_x(Alignment::End);
-            if let Some(q) = quote {
-                c = c.push(container(tx(q, 12.0, t.on_primary_c)).padding([4, 8]).style(ui::plain(ui::alpha(t.on_primary_c, 0.1), 8.0)));
-            }
-            c = c.push(message_body(&m.text, t.on_primary_c)).push(meta);
-            let radii = geom::bubble_radii(pos, geom::Side::Right, geom::R_BUB, geom::R_BUB_TIGHT);
-            let b = shaped(container(c).padding([8, 12]).max_width(440), radii, t.primary_c);
-            return row![Space::new().width(Fill), reply_btn, b].spacing(4).align_y(Alignment::Center).into();
-        }
         let name = self.live_name(&m.author_did, &m.author_name);
-        if self.blocks.blocked_by_me(&m.author_did) {
+        if !m.outgoing && self.blocks.blocked_by_me(&m.author_did) {
             // A personal block never changes the group (U9 is the group's tool); the message is
             // folded, not hidden from the record.
             return row![
-                container(
-                    row![ui::icon(Icon::Ban, 14.0, t.ink2), tx(format!("Message from {name}, whom you blocked"), 13.0, t.ink2)]
-                        .spacing(6)
-                        .align_y(Alignment::Center)
-                )
-                .padding([6, 12])
-                .style(ui::outlined(t.bg, t.line, 16.0)),
+                container(row![ui::icon(Icon::Ban, 14.0, t.ink2), tx(format!("Message from {name}, whom you blocked"), 13.0, t.ink2)].spacing(6).align_y(Alignment::Center))
+                    .padding([6, 12]).style(ui::outlined(t.bg, t.line, 16.0)),
                 Space::new().width(Fill)
-            ]
-            .into();
+            ].into();
         }
-        let (_, color) = ui::avatar_colors(t, &m.author_did);
-        let who = if m.before_removal { format!("{} \u{b7} removed", first_name(&name)) } else { first_name(&name).to_string() };
-        let mut c = column![].spacing(2);
-        if !matches!(pos, geom::Pos::Mid | geom::Pos::Last) {
-            c = c.push(bold(who, 12.0, if m.before_removal { t.ink2 } else { color }));
+        let (fg, bg) = if m.outgoing { (t.on_primary_c, t.primary_c) } else { (t.ink, t.bub_in) };
+        let metac = if m.outgoing { t.bub_meta_out } else { t.bub_meta_in };
+        let inner = max_bub - 26.0;
+        let mut c = column![].spacing(0).width(Length::Shrink);
+        // MessageRow `.who`: the sender's first name in their hue, on the first of their run.
+        if !m.outgoing && !matches!(pos, geom::Pos::Mid | geom::Pos::Last) {
+            let (_, hue) = ui::avatar_colors(t, &m.author_did);
+            let who = if m.before_removal { format!("{} \u{b7} removed", first_name(&name)) } else { first_name(&name).to_string() };
+            c = c.push(container(bold(who, 13.0, if m.before_removal { t.ink2 } else { hue }).line_height(lh(18.0))).padding(Padding { bottom: 1.0, ..Padding::ZERO }));
         }
-        if let Some(q) = quote {
-            c = c.push(container(tx(q, 12.0, t.ink2)).padding([4, 8]).style(ui::plain(t.surface2, 8.0)));
+        if let Some((who, text_, mine)) = quote {
+            let mut q = column![].spacing(0);
+            if !who.is_empty() {
+                let (_, hue) = ui::avatar_colors(t, &m.author_did);
+                q = q.push(bold(who, 12.0, if mine { t.accent_ink } else { hue }).line_height(lh(18.0)));
+            }
+            q = q.push(tx(crate::fit::ellipsize(&text_, ui::SANS, 13.0, inner - 26.0), 13.0, t.ink2).line_height(lh(18.0)));
+            c = c.push(container(container(row![container(Space::new()).width(3).height(Fill).style(ui::plain(t.accent, 0.0)), container(q).padding(Padding { top: 5.0, right: 10.0, bottom: 6.0, left: 7.0 })].height(Length::Shrink))
+                .width(Length::Fixed(inner.min(320.0))).style(ui::plain(t.surface2, 12.0))).padding(Padding { top: 2.0, bottom: 6.0, ..Padding::ZERO }));
         }
-        c = c.push(message_body(&m.text, t.ink));
-        let mut meta = row![tx(hhmm(m.at), 11.0, t.ink2)].spacing(4);
+        let mut meta = row![tx(hhmm(m.at), 11.0, metac).line_height(lh(11.0))].spacing(3).align_y(Alignment::Center);
+        let mut meta_w = crate::fit::width(&hhmm(m.at), ui::SANS, 11.0);
+        if m.outgoing {
+            meta = meta.push(container(match m.delivery {
+                GroupDelivery::Delivered => crate::pg_icons::pgi("check", 12.0, metac),
+                GroupDelivery::Waiting => crate::pg_icons::pgi("clock", 11.0, metac),
+            }).width(13).height(11).center_x(13).center_y(11));
+            meta_w += 16.0;
+        }
+        let te = message_body(&m.text, fg);
+        let (lines, last) = live_wrap(&m.text, inner);
+        let fits = last + 10.0 + meta_w <= inner;
+        c = c.push(if fits && lines == 1 {
+            El::from(row![te, column![Space::new().height(10), meta].padding(Padding { left: 10.0, ..Padding::ZERO })])
+        } else if fits {
+            iced::widget::stack![container(te).width(inner), container(meta).align_right(Fill).align_bottom(Fill)].into()
+        } else {
+            column![te, container(meta).align_right(Fill)].width(Length::Shrink).into()
+        });
         if m.before_removal {
-            meta = meta.push(tx(format!("\u{b7} written before {} was removed", first_name(&name)), 11.0, t.ink2));
+            c = c.push(tx(format!("written before {} was removed", first_name(&name)), 11.0, t.ink2));
         }
-        c = c.push(meta);
-        let radii = geom::bubble_radii(pos, geom::Side::Left, geom::R_BUB, geom::R_BUB_TIGHT);
-        let b = shaped(container(c).padding([8, 12]).max_width(440), radii, t.bub_in).stroke(t.bub_in_line, 1.0);
-        row![avatar(t, &name, &m.author_did, 28.0), b, reply_btn, Space::new().width(Fill)].spacing(6).align_y(Alignment::Center).into()
+        let side = if m.outgoing { geom::Side::Right } else { geom::Side::Left };
+        let radii = geom::bubble_radii(pos, side, geom::R_BUB, geom::R_BUB_TIGHT);
+        let mut b = shaped(container(c).padding([8, 13]).max_width(max_bub), radii, bg);
+        if !m.outgoing { b = b.stroke(t.bub_in_line, 1.0); }
+        // The reply action: a 28 px button beside the bubble (its room kept, so nothing reflows).
+        let hot = self.live.hover.as_deref() == Some(m.id.as_str());
+        let reply_btn: El = if self.live.can_post() && hot {
+            button(container(crate::pg_icons::pgi("reply", 18.0, t.ink2)).center_x(28).center_y(28)).padding(0).width(28).height(28)
+                .style(super::shell_view::wash(t, None, Some(t.surface), 14.0)).on_press(l(Lm::Reply(Some(m.id.clone())))).into()
+        } else { Space::new().width(28).height(28).into() };
+        let line = if m.outgoing { row![Space::new().width(Fill), reply_btn, b] } else { row![b, reply_btn, Space::new().width(Fill)] }.spacing(4).align_y(Alignment::Center);
+        let mut col = column![line];
+        // MessageRow `.wait`: under my post while no host has it, gold, with a clock.
+        if m.outgoing && m.delivery == GroupDelivery::Waiting {
+            col = col.push(container(row![crate::pg_icons::pgi("clock", 12.0, t.gold_ink), semi("Waiting for a host", 12.0, t.gold_ink).line_height(lh(16.0))].spacing(4).align_y(Alignment::Center))
+                .align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO }));
+        }
+        mouse_area(col).on_enter(l(Lm::Hover(Some(m.id.clone())))).on_exit(l(Lm::Hover(None))).into()
     }
 
     /// In the removed person's chat: when, why and by whom, plainly.
@@ -365,6 +424,182 @@ impl App {
         .max_width(520)
         .style(ui::plain(t.error_c, 14.0))
         .into()
+    }
+
+    // ---- group info (GroupInfo.svelte) ----
+
+    /// The group info page: hero, invites (admins), hosts, call hosts, members, leave. What I can do depends on my role.
+    /// The core has no per-group mute, so "Mute notifications" isn't offered (SCREENS-PORT-STATUS.md).
+    fn group_info_page<'a>(&'a self, t: Tok) -> El<'a> {
+        let Some(d) = self.live.detail.as_ref() else { return Space::new().into() };
+        let admin = self.live.is_admin();
+        let active = gl::active(d.my_role);
+        let bar = container(row![
+            button(container(crate::pg_icons::pgi("back", 24.0, t.ink)).center_x(44).center_y(44)).padding(0).width(44).height(44)
+                .style(super::shell_view::wash(t, None, Some(t.surface2), 22.0)).on_press(l(Lm::ToggleInfo)),
+            semi(if d.my_role == GroupRole::Removed { "Removed" } else { "Group info" }, 17.0, t.ink),
+        ].spacing(4).align_y(Alignment::Center)).padding(Padding { top: 8.0, right: 12.0, bottom: 8.0, left: 8.0 }).height(60).width(Fill).style(ui::plain(t.surface, 0.0));
+        let h2 = |s: &str, n: Option<usize>| -> El<'a> {
+            let mut r = row![semi(s.to_uppercase(), 12.0, t.ink2).line_height(lh(16.0))].spacing(6);
+            if let Some(n) = n { r = r.push(semi(format!("\u{b7}  {n}"), 12.0, ui::alpha(t.ink2, 0.8)).line_height(lh(16.0))); }
+            container(r).padding(Padding { top: 0.0, right: 4.0, bottom: 8.0, left: 4.0 }).into()
+        };
+        let note = |s: String| -> El<'a> { container(tx(s, 13.0, t.ink2).line_height(lh(19.0))).padding(Padding { top: 10.0, right: 4.0, bottom: 0.0, left: 4.0 }).width(Fill).into() };
+        let sec = |c: iced::widget::Column<'a, Msg>| -> El<'a> { container(c).padding(Padding { top: 24.0, right: 16.0, bottom: 0.0, left: 16.0 }).width(Fill).into() };
+        let card = |rows: Vec<El<'a>>| -> El<'a> {
+            let mut c = column![].spacing(0);
+            for (i, r) in rows.into_iter().enumerate() {
+                if i > 0 { c = c.push(container(Space::new()).height(1).width(Fill).style(ui::plain(t.hairline, 0.0))); }
+                c = c.push(r);
+            }
+            container(c).width(Fill).clip(true).style(move |_: &Theme| container::Style { background: Some(t.surface.into()), border: iced::Border { color: t.hairline, width: 1.0, radius: 14.0.into() }, ..Default::default() }).into()
+        };
+        // .act: 60 tall, 8 16, 14 gap, a 20 muted icon, 600 15/20 title, 13/18 muted line.
+        let act = |icon: &'static str, title: String, sub: Option<String>, end: Option<&'static str>, on: Option<Msg>, danger: bool| -> El<'a> {
+            let ink = if danger { t.danger } else { t.ink };
+            let mut txt = column![semi(title, 15.0, ink).line_height(lh(20.0))].spacing(1).width(Fill);
+            if let Some(s) = sub { txt = txt.push(tx(s, 13.0, t.ink2).line_height(lh(18.0))); }
+            let mut r = row![crate::pg_icons::pgi(icon, 20.0, if danger { t.danger } else { t.ink2 }), txt].spacing(14).align_y(Alignment::Center).height(44);
+            if let Some(e) = end { r = r.push(crate::pg_icons::pgi(e, 18.0, t.ink2)); }
+            let off = on.is_none();
+            button(r).padding([8, 16]).width(Fill).style(super::shell_view::wash(t, None, (!off).then_some(t.surface2), 0.0)).on_press_maybe(on)
+                .into()
+        };
+        let status = |on: bool, text: String| -> El<'a> {
+            container(row![container(container(Space::new()).width(8).height(8).style(ui::plain(if on { t.accent } else { t.ink2 }, 4.0))).padding(Padding { top: 6.0, ..Padding::ZERO }),
+                tx(text, 13.0, if on { t.ink } else { t.warn_ink }).line_height(lh(19.0))].spacing(8))
+                .padding(Padding { top: 0.0, right: 4.0, bottom: 6.0, left: 4.0 }).into()
+        };
+        let mrow = |did: &str, name: String, sub: String, end: El<'a>| -> El<'a> {
+            row![self.profile_avatar(t, &name, did, 40.0), column![semi(name, 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None),
+                tx(sub, 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)].spacing(1).width(Fill), end]
+                .spacing(12).align_y(Alignment::Center).height(60).into()
+        };
+        let textbtn = |label_: &'static str, color: Color, m: Msg| -> El<'a> {
+            button(semi(label_, 15.0, color)).padding([10, 11]).style(super::shell_view::wash(t, None, Some(t.surface2), 22.0)).on_press(m).into()
+        };
+        let mut col = column![].spacing(0);
+        // .hero: avatar 72, name 22/28 650, "9 members · You are an admin".
+        let role_line = match d.my_role { GroupRole::Owner => "You are the owner", GroupRole::Admin => "You are an admin", GroupRole::Member => "You are a member", GroupRole::Removed => "", GroupRole::Left => "" };
+        let hero_sub = match d.my_role {
+            GroupRole::Left => "You left this group".to_string(),
+            GroupRole::Removed => "You\u{2019}re no longer a member".to_string(),
+            _ => format!("{} member{} \u{b7} {role_line}", d.members.len(), if d.members.len() == 1 { "" } else { "s" }),
+        };
+        col = col.push(container(column![
+            container(crate::pg_icons::pgi("users", 34.0, t.accent_ink)).width(72).height(72).center_x(72).center_y(72).style(ui::plain(t.surface2, 36.0)),
+            Space::new().height(12),
+            semi(d.name.clone(), 22.0, t.ink).line_height(lh(28.0)),
+            tx(hero_sub, 13.0, t.ink2).line_height(lh(19.0)),
+        ].spacing(2).align_x(Alignment::Center)).padding(Padding { top: 16.0, right: 20.0, bottom: 8.0, left: 20.0 }).center_x(Fill));
+        if d.my_role == GroupRole::Removed {
+            col = col.push(sec(column![act("info", "Why was I removed?".into(), None, Some("chevr"), Some(l(Lm::Removal)), false)]));
+        } else if d.my_role == GroupRole::Left {
+            col = col.push(container(tx("You can still read the posts on this device. To come back, someone in the group has to invite you again.", 13.0, t.ink2).line_height(lh(19.0))).padding([24, 20]));
+        } else {
+            // ---- invites (admins)
+            if admin {
+                let no_host = d.hosts.is_empty();
+                let mut c = column![h2("Invites", None), card(vec![
+                    act("userplus", "Invite contacts".into(), Some("A private invite to each person".into()), Some("chevr"), Some(l(Lm::AddMembers)), false),
+                    act("link", "Create invite link".into(), Some(if no_host { "Appoint a host first. A link names one host.".into() } else { "Valid for 7 days".into() }), Some("plus"), (!no_host).then_some(l(Lm::Invite)), false),
+                ])];
+                let sent: Vec<_> = self.live.sent.iter().filter(|i| !d.members.iter().any(|m| m.did == i.invitee_did)).collect();
+                for i in sent {
+                    let name = self.live_name(&i.invitee_did, &i.invitee_name);
+                    let (line, _) = gl::sent_invitation_line(i);
+                    c = c.push(mrow(&i.invitee_did, name, line.to_string(), Space::new().into()));
+                }
+                col = col.push(sec(c));
+            }
+            // ---- hosts
+            let up = d.am_host || d.hosts.iter().any(|h| h.online);
+            let host_line = if d.hosts.is_empty() { "This group has no host. Posts wait until a host is appointed.".to_string() }
+                else if up { format!("{} host{} online. Posts go through right away.", d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1), if d.hosts.len() == 1 { "" } else { "s" }) }
+                else { "No host is online. Your posts are saved and send when one is.".to_string() };
+            let mut c = column![h2("Hosts", None), status(up && !d.hosts.is_empty(), host_line)];
+            for h in &d.hosts {
+                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
+                let calls = d.call_hosts.iter().any(|x| x.did == h.did && x.device_id == h.device_id);
+                let sub = format!("{}{}", if h.online || h.is_me { "Online" } else { "Offline" }, if calls { " \u{b7} also hosts calls" } else { "" });
+                let end: El = if admin { textbtn("Remove", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
+                c = c.push(mrow(&h.did, name, sub, end));
+            }
+            for h in &d.host_requests {
+                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
+                let end: El = if admin { textbtn("Cancel", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
+                c = c.push(mrow(&h.did, name, "Waiting to accept".into(), end));
+            }
+            if admin {
+                for h in &d.host_offers {
+                    let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
+                    c = c.push(mrow(&h.did, name, "Offered to host".into(), textbtn("Appoint", t.accent_ink, l(Lm::Appoint(h.did.clone(), h.device_id.clone())))));
+                }
+            }
+            // Desktop: this computer can offer to host (a host stays on); the playground leaves this to an admin's menu.
+            let offered = d.host_offers.iter().any(|h| h.is_me);
+            c = c.push(container(card(vec![if d.am_host || offered {
+                act("server", if d.am_host { "Stop hosting on this computer".into() } else { "Withdraw the offer to host".into() }, None, None, Some(l(Lm::AskHost(false))), false)
+            } else {
+                act("server", "Host this group on this computer".into(), Some("A host stays on and passes posts on while others are offline".into()), None, Some(l(Lm::AskHost(true))), false)
+            }])).padding(Padding { top: 8.0, ..Padding::ZERO }));
+            c = c.push(note(format!("Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group.{}",
+                if admin { " Appoint a host from a member\u{2019}s menu; they have to accept. Removing a host changes the group\u{2019}s address within 2 days, so that device can no longer reach it." } else { "" })));
+            col = col.push(sec(c));
+            // ---- call hosts
+            let ready = d.call_hosts.len();
+            let ch_line = if ready == 0 { "This group has no call host. Nobody can start a call until an admin appoints one.".to_string() }
+                else { format!("{ready} call host{} ready. Calls start through {}.", if ready == 1 { "" } else { "s" }, if ready == 1 { "it" } else { "them" }) };
+            let mut c = column![h2("Call hosts", None), status(ready > 0, ch_line)];
+            for h in &d.call_hosts {
+                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
+                let end: El = if admin { textbtn("Remove", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
+                c = c.push(mrow(&h.did, name, if h.online || h.is_me { "Online".into() } else { "Offline".into() }, end));
+            }
+            for h in &d.call_host_requests {
+                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
+                c = c.push(mrow(&h.did, name, "Waiting to accept".into(), Space::new().into()));
+            }
+            c = c.push(note(format!("A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{}",
+                if admin { " Appoint one from a member\u{2019}s menu." } else { "" })));
+            col = col.push(sec(c));
+            // ---- members: owner, admins, then members; me first among equals. A row opens its actions.
+            let mut members: Vec<&p2pcore::GroupMember> = d.members.iter().collect();
+            members.sort_by_key(|m| (if m.is_owner { 0 } else if m.is_admin { 1 } else { 2 }, !m.is_me));
+            let mut c = column![h2("Members", Some(d.members.len()))];
+            for m in members {
+                let name = self.live_name(&m.did, &m.name);
+                let shown = if m.is_me { format!("{name} (you)") } else { name.clone() };
+                let mut sub = match &m.invited_by { Some(by) => format!("Invited by {}", first_name(&self.live_name(by, ""))), None => format!("Since {}", super::groups_view::day(m.joined_at * 1000)) };
+                if admin && m.flags > 0 && !m.is_owner { sub += &format!(" \u{b7} {} of {} flags", m.flags, gl::FLAGS_TO_REMOVE); }
+                if self.blocks.blocked_by_me(&m.did) { sub += " \u{b7} Blocked"; }
+                let mut marks = row![].spacing(4).align_y(Alignment::Center);
+                if m.is_owner { marks = marks.push(tag(t.primary_c, t.on_primary_c, "Owner")); } else if m.is_admin { marks = marks.push(tag(t.relay_c, t.on_relay_c, "Admin")); }
+                if m.is_host { marks = marks.push(container(crate::pg_icons::pgi("server", 14.0, t.warn_ink)).width(22).height(22).center_x(22).center_y(22).style(ui::plain(t.warn, 11.0))); }
+                let acts = self.live.actions(m);
+                let open = self.live.menu.as_deref() == Some(m.did.as_str());
+                let b = button(row![self.profile_avatar(t, &name, &m.did, 40.0), column![semi(shown, 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None),
+                        tx(sub, 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)].spacing(1).width(Fill), marks].spacing(12).align_y(Alignment::Center).height(48))
+                    .padding([6, 8]).width(Fill).style(super::shell_view::wash(t, open.then_some(t.surface2), Some(t.surface2), 14.0))
+                    .on_press_maybe((!acts.is_empty()).then(|| l(Lm::Menu(if open { None } else { Some(m.did.clone()) }))));
+                c = c.push(b);
+                if open {
+                    c = c.push(container(self.live_menu(t, m, acts)).padding([4, 12]));
+                }
+            }
+            col = col.push(sec(c));
+            // ---- leave
+            if active {
+                let leave = if d.my_role == GroupRole::Owner {
+                    act("leave", "Leave group".into(), Some("The owner can\u{2019}t leave yet".into()), None, None, false)
+                } else {
+                    act("leave", "Leave group".into(), None, None, Some(l(Lm::AskLeave)), true)
+                };
+                col = col.push(sec(column![card(vec![leave])]));
+            }
+        }
+        let body = scroll(t, container(container(col.padding(Padding { bottom: 32.0, ..Padding::ZERO })).max_width(640)).center_x(Fill)).height(Fill);
+        container(column![bar, rule(t), body].width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0)).into()
     }
 
     // ---- members pane ----
@@ -969,4 +1204,38 @@ impl App {
             .style(ui::plain(Color { r: 0.06, g: 0.08, b: 0.07, a: 0.42 }, 0.0));
         Some(opaque(mouse_area(layer).on_press(l(Lm::Dismiss))))
     }
+}
+
+/// groups.ts `dayOnly`: "Sep 29".
+fn day_only(ms: u64) -> String {
+    use chrono::{Local, TimeZone};
+    Local.timestamp_millis_opt(ms as i64).single().map(|d| d.format("%b %-d").to_string()).unwrap_or_default()
+}
+
+/// Conversation.svelte day chip: Today, Yesterday, else "Thursday 8 Oct".
+fn chip_day(ms: u64) -> String {
+    use chrono::{Datelike, Local, TimeZone};
+    let (Some(d), now) = (Local.timestamp_millis_opt(ms as i64).single(), Local::now()) else { return String::new() };
+    match (now.date_naive() - d.date_naive()).num_days() {
+        0 => "Today".into(),
+        1 => "Yesterday".into(),
+        _ if d.year() == now.year() => d.format("%A %-d %b").to_string(),
+        _ => d.format("%A %-d %b %Y").to_string(),
+    }
+}
+
+/// Greedy wrap at `max` px (15px body): line count and the last line's width (where the time goes).
+fn live_wrap(s: &str, max: f32) -> (usize, f32) {
+    use crate::fit::width;
+    let space = width(" ", ui::SANS, 15.0);
+    let (mut lines, mut cur) = (0usize, 0.0f32);
+    for para in s.split('\n') {
+        lines += 1;
+        cur = 0.0;
+        for w in para.split(' ') {
+            let ww = width(w, ui::SANS, 15.0);
+            if cur > 0.0 && cur + space + ww > max { lines += 1; cur = ww.min(max); } else { cur = if cur > 0.0 { cur + space + ww } else { ww.min(max) }; }
+        }
+    }
+    (lines.max(1), cur)
 }

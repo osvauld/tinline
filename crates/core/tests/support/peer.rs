@@ -69,6 +69,8 @@ impl Peer {
             Arc::new(Tap::new(tx, logs.clone())),
         )
         .unwrap();
+        // Tests that are not about contact requests: every good hello is welcomed at once.
+        node.auto_accept_contacts_for_test(true);
         node.set_link_events(Arc::new(if noisy_link {
             LTap::noisy(ltx)
         } else {

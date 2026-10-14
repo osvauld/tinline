@@ -38,7 +38,10 @@ impl Node {
         self.inner.status()
     }
 
-    /// Our contact ticket (`OSVC2:…`), stable until someone redeems it.
+    /// Our contact ticket (`OSVC2:…`). Reusable: any number of people can add us with it until
+    /// it expires (7 days) or `reset_ticket`; each addition is a request we accept or not.
+    /// Replaced (the old one stays good until it expires) on its last day, after a rename and
+    /// when our relay changes.
     pub fn my_ticket(&self) -> Result<String, Error> {
         let inner = self.inner.clone();
         self.block_on(async move { inner.ticket().await })?
@@ -196,6 +199,7 @@ impl Inner {
         self.chat_started();
         self.selfsync_started();
         self.notices_started();
+        self.welcomes_started();
         self.group_started();
         self.tokens_started();
         // After a restore (new device key) or a change made while we were offline: tell contacts.
@@ -316,6 +320,13 @@ impl Inner {
             {
                 return Ok(text.clone());
             }
+            // The one it replaces was handed out and stays good until it expires.
+            if s.state.ticket.as_deref().and_then(|t| ContactTicket::from_text(t).ok()).and_then(|t| t.verify(now).ok()).is_some_and(|c| {
+                c.iss == me.id.did() && c.device == proto::device_to_text(&me.device)
+            }) {
+                retire_ticket(&mut s.state, true);
+            }
+            s.state.live_tickets.retain(|_, exp| *exp > now);
             let ticket = proto::issue_contact_ticket(
                 &me.id,
                 me.device,
@@ -325,6 +336,9 @@ impl Inner {
                 TICKET_TTL,
             );
             let text = ticket.to_text();
+            if let Ok(c) = ticket.verify(now) {
+                s.state.live_tickets.insert(c.nonce, c.exp);
+            }
             s.state.ticket = Some(text.clone());
             text
         };

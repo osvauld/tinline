@@ -18,6 +18,8 @@ use crate::ui::{self, Icon, Kind, Tok};
 mod chat_view;
 #[path = "gate_view.rs"]
 mod gate_view;
+#[path = "signup_view.rs"]
+mod signup_view;
 #[path = "link_view.rs"]
 mod link_view;
 #[path = "groups_view.rs"]
@@ -26,12 +28,21 @@ mod groups_view;
 mod group_live_view;
 #[path = "shell_view.rs"]
 mod shell_view;
+#[path = "profile_view.rs"]
+mod profile_view;
 #[path = "call_screen.rs"]
 mod call_screen;
+#[path = "gcall_view.rs"]
+mod gcall_view;
 type El<'a> = Element<'a, Msg>;
 
 fn scroll<'a>(t: Tok, c: impl Into<El<'a>>) -> iced::widget::Scrollable<'a, Msg> {
     iced::widget::scrollable(c).style(ui::scroll_style(t))
+}
+
+/// An absolute CSS line height in px (iced's f32 conversion is relative to the font size).
+fn lh(px: f32) -> iced::widget::text::LineHeight {
+    iced::widget::text::LineHeight::Absolute(px.into())
 }
 
 fn tx<'a>(s: impl Into<String>, size: f32, color: Color) -> iced::widget::Text<'a> {
@@ -55,9 +66,10 @@ fn label<'a>(t: Tok, s: &str) -> iced::widget::Text<'a> {
     semi(s.to_uppercase(), 12.0, t.ink2).font(ui::SANS_SEMI)
 }
 
+/// Avatar.svelte initials: hue pair, 700 weight, round(size * .34) px, a circle (intentional, not smoothed).
 fn avatar<'a>(t: Tok, name: &str, key: &str, size: f32) -> El<'a> {
     let (bg, fg) = ui::avatar_colors(t, key);
-    container(semi(ui::initials(name), size * 0.38, fg))
+    container(bold(ui::initials(name), (size * 0.34).round(), fg).line_height(lh((size * 0.34).round() * 1.2)))
         .width(size)
         .height(size)
         .center_x(size)
@@ -98,10 +110,18 @@ fn icon_btn<'a>(t: Tok, i: Icon, on: Msg) -> El<'a> {
         .into()
 }
 
+/// Field.svelte look for the screens around sign-up: label 13/650 ink, a 48 input (radius 14, --line; focus:
+/// 2px --accent-ink).
 fn field<'a>(t: Tok, title: &str, input: text_input::TextInput<'a, Msg>) -> El<'a> {
-    column![semi(title.to_string(), 13.0, t.ink2), input.padding(11).size(15).style(ui::input_style(t))]
-        .spacing(6)
-        .into()
+    let input = input.padding(Padding { top: 14.0, right: 14.0, bottom: 14.0, left: 14.0 }).size(15).line_height(lh(20.0)).style(move |_, st| {
+        let focus = matches!(st, text_input::Status::Focused { .. });
+        text_input::Style {
+            background: t.surface.into(),
+            border: Border { color: if focus { t.accent_ink } else { t.line }, width: if focus { 2.0 } else { 1.0 }, radius: 14.0.into() },
+            icon: t.ink2, placeholder: ui::alpha(t.ink2, 0.8), value: t.ink, selection: ui::alpha(t.accent, 0.3),
+        }
+    });
+    column![semi(title.to_string(), 13.0, t.ink).line_height(lh(21.0)), input].spacing(6).into()
 }
 
 fn banner<'a>(t: Tok, title: &str, body: &str, action: Option<(&str, Msg)>, error: bool) -> El<'a> {
@@ -155,17 +175,10 @@ fn now_secs() -> u64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
-/// 0-4 bars from round-trip time and loss.
+/// 1-4 bars from round-trip time and loss, with the call screen's words (call_ui::strength).
 fn quality(rtt_ms: u32, loss_pct: f64) -> (u8, &'static str) {
-    if rtt_ms < 100 && loss_pct < 1.0 {
-        (4, "Excellent")
-    } else if rtt_ms < 200 && loss_pct < 3.0 {
-        (3, "Good")
-    } else if rtt_ms < 350 && loss_pct < 8.0 {
-        (2, "OK")
-    } else {
-        (1, "Poor")
-    }
+    let n = crate::call_ui::strength(rtt_ms, loss_pct);
+    (n, crate::call_ui::SIGNAL_WORD[n as usize])
 }
 
 /// Banner content: title, body, optional action, is-error.
@@ -178,21 +191,24 @@ impl App {
 
     pub(super) fn view(&self, _id: iced::window::Id) -> El<'_> {
         let t = self.t();
-        let body: El = if self.call.is_some() && !self.call_ui.minimized {
+        let body: El = if self.call.is_some() && !self.call_ui.minimized && self.incoming_card().is_none() {
             self.call_view(t)
+        } else if self.gcall.live() && !self.gcall.minimized {
+            self.gcall_view(t)
         } else if self.ended.is_some() {
-            row![self.sidebar(t), self.ended_view(t)].into()
+            container(self.ended_view(t)).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0)).into()
         } else {
             match self.screen {
-                Screen::Onboarding => self.onboarding_view(t),
+                Screen::Onboarding => self.signup_view(t),
                 Screen::Unlock => self.unlock_view(t),
                 Screen::SetPass => self.setpass_view(t),
                 Screen::NameDevice => self.name_device_view(t),
                 Screen::KeyFailed => self.key_failed_view(t),
                 Screen::Phrase => self.phrase_view(t),
                 Screen::Home => self.home_view(t),
-                Screen::AddContact => self.add_view(t),
-                Screen::Settings => self.settings_view(t),
+                // Add contact opens over Chats (a dialog), not as its own screen.
+                Screen::AddContact => self.home_view(t),
+                Screen::Settings => self.profile_shell(t),
                 Screen::Link => self.link_screen(t),
                 Screen::LinkSecure => self.link_secure_screen(t),
                 Screen::LinkSync => self.link_sync_screen(t),
@@ -200,10 +216,33 @@ impl App {
             }
         };
         let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
-        match self.viewer_overlay(t).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
+        match self.add_overlay(t).or_else(|| self.viewer_overlay(t)).or_else(|| self.delete_overlay(t)).or_else(|| self.new_chat_overlay(t)).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
             Some(o) => iced::widget::stack![base, o].into(),
             None => base.into(),
         }
+    }
+
+    /// The ringing incoming call that shows as the card (not opened to the full screen yet), if any.
+    fn incoming_card(&self) -> Option<&super::CallView> {
+        self.call.as_ref().filter(|c| c.info.incoming && !c.answered && c.state == CallState::Ringing && !self.call_ui.expanded)
+    }
+
+    /// RingHead.svelte (desktop): the sidebar's brand row turns into the caller, in place (same box, nothing moves):
+    /// avatar 28, name 13/16 650 over "Incoming call" 11/14 muted, then Decline and Answer as 28 px circles in 32 px
+    /// boxes. Tapping the caller opens the full incoming screen.
+    pub(super) fn ring_head(&self, t: Tok) -> Option<El<'_>> {
+        let c = self.incoming_card()?;
+        let name = c.info.peer_name.clone();
+        let who = button(row![self.profile_avatar(t, &name, &c.info.peer_did, 28.0),
+                column![semi(crate::fit::ellipsize(&name, ui::SANS_SEMI, 13.0, 88.0), 13.0, t.ink).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
+                    tx("Incoming call", 11.0, t.ink2).line_height(lh(14.0)).wrapping(iced::widget::text::Wrapping::None)]].spacing(8).align_y(Alignment::Center))
+            .padding(0).height(32).width(Fill).style(shell_view::wash(t, None, None, 14.0)).on_press(Msg::CallUi(crate::call_ui::Action::Restore));
+        let rb = |hang: bool, bg: Color, fg: Color, msg: Msg| -> El<'_> {
+            let icon: El = if hang { crate::ui::glyph(crate::pg_icons::STROKE, r#"<g transform="rotate(135 12 12)"><path d="M5 4h3.5l1.5 4.5-2.2 1.4a11 11 0 0 0 6.3 6.3l1.4-2.2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z"/></g>"#, 16.0, fg) } else { crate::pg_icons::pgi("phone", 16.0, fg) };
+            button(container(container(icon).center_x(28).center_y(28).style(ui::plain(bg, 14.0))).center_x(32).center_y(32))
+                .padding(0).width(32).height(32).style(|_: &Theme, _| button::Style::default()).on_press(msg).into()
+        };
+        Some(row![who, rb(true, t.danger_btn, t.on_danger_btn, Msg::Decline), rb(false, t.accent, t.on_accent, Msg::Answer)].align_y(Alignment::Center).height(32).into())
     }
 
     // ---- shared pieces ----
@@ -233,15 +272,33 @@ impl App {
         self.pass_field(t, title, &self.pass_in, Msg::PassIn, Some(submit))
     }
 
+    /// A full-width gate action (Btn.svelte desktop look): 48 tall, radius 14, 15/650. Primary is accent; the
+    /// others are text in --accent-ink (danger in --danger), with a --surface-2 wash on hover.
     fn wide<'a>(&self, label_: &str, kind: Kind, t: Tok, on: Option<Msg>) -> El<'a> {
+        let off = on.is_none();
         let fg = match kind {
-            Kind::Primary => t.on_primary,
-            _ => t.ink,
+            Kind::Primary if off => t.ink2,
+            Kind::Primary => t.on_accent,
+            Kind::Danger => t.danger,
+            _ if off => ui::alpha(t.accent_ink, 0.5),
+            _ => t.accent_ink,
         };
-        button(container(semi(label_.to_string(), 15.0, fg)).center_x(Fill))
-            .padding([13, 22])
+        let style = move |_: &Theme, st: button::Status| {
+            let hover = matches!(st, button::Status::Hovered | button::Status::Pressed) && !off;
+            let bg = match kind {
+                Kind::Primary if off => t.surface2,
+                Kind::Primary => t.accent,
+                _ if hover => t.surface2,
+                _ => Color::TRANSPARENT,
+            };
+            let border = if matches!(kind, Kind::Quiet) { if off { ui::alpha(t.line, 0.5) } else { t.line } } else { Color::TRANSPARENT };
+            button::Style { background: Some(bg.into()), text_color: fg, border: Border { color: border, width: if border.a > 0.0 { 1.0 } else { 0.0 }, radius: 14.0.into() }, ..Default::default() }
+        };
+        button(container(semi(label_.to_string(), 15.0, fg).line_height(lh(20.0))).center_x(Fill).center_y(48))
+            .padding(0)
+            .height(48)
             .width(Fill)
-            .style(ui::button_style(t, kind, 999.0))
+            .style(style)
             .on_press_maybe(on)
             .into()
     }
@@ -413,6 +470,10 @@ impl App {
     }
 
     /// "Use another account" buttons for the lock screens; empty when this is the only account.
+    pub(super) fn other_accounts_pub(&self, t: Tok) -> El<'_> {
+        self.other_accounts(t)
+    }
+
     fn other_accounts(&self, t: Tok) -> El<'_> {
         let mut c = column![].spacing(8);
         let others: Vec<_> = self.accounts.iter().filter(|a| !a.current).collect();
@@ -436,38 +497,12 @@ impl App {
         c.into()
     }
 
+    /// Unlock: the gate card (signup_view `unlock_card`); with no passphrase, the key-lost card.
     fn unlock_view(&self, t: Tok) -> El<'_> {
         if !self.has_pass {
             return self.key_lost_view(t);
         }
-        let name = self.profile_name.clone();
-        let mut col = column![
-            self.pass_field(t, "Passphrase", &self.pass_in, Msg::PassIn, Some(Msg::Unlock)),
-            container(tx(self.notice.clone().unwrap_or_default(), 13.0, t.error)).height(78).width(Fill).clip(true),
-        ]
-        .spacing(12);
-        col = col
-            .push(self.wide(
-                if self.busy { "Unlocking..." } else { "Unlock" },
-                Kind::Primary,
-                t,
-                (!self.busy).then_some(Msg::Unlock),
-            ))
-            .push(tx(
-                if self.busy { "Checking takes a second \u{2014} it\u{2019}s deliberately slow to stop guessing." } else { "" },
-                12.0,
-                t.ink2,
-            ))
-            .push(semi("Forgot it?", 14.0, t.ink))
-            .push(tx(
-                "Your recovery phrase can restore this account and set a new passphrase.",
-                13.0,
-                t.ink2,
-            ))
-            .push(self.wide("Restore with recovery phrase", Kind::Quiet, t, (!self.busy).then_some(Msg::GoRestore)))
-            .push(self.other_accounts(t));
-        let title = if name.is_empty() { "Welcome back".to_string() } else { format!("Welcome back, {name}") };
-        self.shell(t, &title, "Enter your passphrase to open Tinline. Calls can\u{2019}t reach you until you do.", col.into())
+        self.unlock_card(t)
     }
 
     fn setpass_view(&self, t: Tok) -> El<'_> {
@@ -700,60 +735,34 @@ impl App {
             _ => Net::Offline,
         };
         let l = status_look(call, net);
-        crate::mark::Look { state: l.state, sway: l.sway, dim: l.dim, pluck: self.mark_pluck }
+        crate::mark::Look { state: l.state, sway: l.sway, dim: l.dim, pluck: self.mark_pluck, ..Default::default() }
     }
 
-    fn list_pane(&self, t: Tok) -> El<'_> {
+    pub(super) fn list_pane(&self, t: Tok) -> El<'_> {
         let mut col = column![self.desktop_search_field(t)].spacing(0);
         if self.shell_search.active {
-            return container(column![col, self.shell_search_results(t)].height(Fill)).width(380).height(Fill).style(ui::sidebar(t)).into();
+            return self.sidebar_frame(t, col, self.shell_search_results(t));
         }
         let title = match self.chat.tab {
             super::chat::SideTab::Chats => "Chats", super::chat::SideTab::Groups => "Groups",
             super::chat::SideTab::Calls => "Calls", super::chat::SideTab::Contacts => "Contacts",
         };
-        col = col.push(container(bold(title, 24.0, t.ink)).padding([16, 20]));
-        // Retain supported add-contact entry instead of inventing a new-chat sheet in this milestone.
-        col = col.push(container(pill(t, Kind::Quiet, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd))).padding([4, 16]));
+        col = col.push(self.list_header(t, title));
         let q = String::new();
         if self.chat.tab == super::chat::SideTab::Chats {
+            col = col.push(self.chat_chips(t));
             return self.sidebar_frame(t, col, self.chat_list(t, &q));
+        }
+        if self.chat.tab == super::chat::SideTab::Contacts {
+            return self.sidebar_frame(t, col, self.contacts_list(t));
         }
         if self.chat.tab == super::chat::SideTab::Groups {
             return self.sidebar_frame(t, col, self.live_list(t, &q));
         }
         let calls_tab = self.chat.tab == super::chat::SideTab::Calls;
         let mut list = column![].spacing(2);
-        let known = |did: &str| self.contacts.iter().any(|c| c.did == did);
-        let recents: Vec<&CallRecord> = self
-            .recents
-            .iter()
-            .filter(|r| known(&r.peer_did))
-            .filter(|_| q.is_empty())
-            .take(if calls_tab { RECENTS as usize } else { 3 })
-            .collect();
-        if !recents.is_empty() {
-            list = list.push(container(label(t, "Recent")).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }));
-            for r in recents {
-                let name = self.name_of(&r.peer_did, &r.peer_name);
-                list = list.push(
-                    button(
-                        row![avatar(t, &name, &r.peer_did, 36.0), self.record_row(t, r, true)]
-                            .spacing(12)
-                            .align_y(Alignment::Center),
-                    )
-                    .padding([8, 12])
-                    .width(Fill)
-                    .style(ui::row_style(t, false))
-                    .on_press(Msg::Select(r.peer_did.clone())),
-                );
-            }
-        }
         if calls_tab {
-            if self.recents.is_empty() {
-                list = list.push(container(tx("Calls you make and get appear here.", 13.0, t.ink2)).padding([4, 12]));
-            }
-            return self.sidebar_frame(t, col, list.into());
+            return self.sidebar_frame(t, col, self.calls_list(t));
         }
         let shown: Vec<&p2pcore::Contact> = self
             .contacts
@@ -796,6 +805,65 @@ impl App {
             )).padding([4, 12]));
         }
         self.sidebar_frame(t, col, list.into())
+    }
+
+    /// CallsList.svelte: every call, newest first. Avatar = their profile, row = the chat, phone = call back
+    /// (dimmed with the reason as its tooltip when calling isn't possible). Rows 68 tall in 8px side margins.
+    fn calls_list(&self, t: Tok) -> El<'_> {
+        use shell_view::wash;
+        let known = |did: &str| self.contacts.iter().any(|c| c.did == did);
+        let mut list = column![];
+        let mut any = false;
+        for r in self.recents.iter().filter(|r| known(&r.peer_did)).take(RECENTS as usize) {
+            any = true;
+            let name = self.name_of(&r.peer_did, &r.peer_name);
+            let answered = r.duration_secs > 0;
+            let missed = r.incoming && r.missed;
+            let what = match (r.incoming, answered) {
+                (false, true) => "Outgoing",
+                (true, true) => "Incoming",
+                (true, false) => if missed { "Missed" } else { "Declined" },
+                (false, false) => match r.reason.as_str() {
+                    "no_answer" => "No answer",
+                    "declined" => "Declined",
+                    "cancelled" | "hangup_local" => "Cancelled",
+                    _ => "Couldn\u{2019}t connect",
+                },
+            };
+            let d = r.duration_secs;
+            let dur = if d >= 3600 { format!("{}:{:02}:{:02}", d / 3600, d % 3600 / 60, d % 60) } else { format!("{}:{:02}", d / 60, d % 60) };
+            let sub_c = if missed { t.error } else { t.ink2 };
+            let sub = row![crate::pg_icons::pgi(if r.incoming { "call-in" } else { "call-out" }, 15.0, sub_c),
+                tx(if answered { format!("{what} \u{b7} {dur}") } else { what.to_string() }, 13.0, sub_c).line_height(lh(21.0))].spacing(5).align_y(Alignment::Center);
+            let sel = self.sel.as_ref() == Some(&r.peer_did) && self.live.open.is_none();
+            let pf = button(self.profile_avatar(t, &name, &r.peer_did, 48.0)).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 8.0 })
+                .style(wash(t, None, None, 14.0)).on_press(Msg::ShellSearch(super::shell_search::Action::OpenPerson(r.peer_did.clone())));
+            let row_ = button(row![column![semi(name.clone(), 15.0, t.ink).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None), sub].spacing(2).width(Fill),
+                    tx(chat_view::list_time(r.started_at * 1000), 11.0, t.ink2)].spacing(12).align_y(Alignment::Center))
+                .padding(Padding { top: 8.0, right: 8.0, bottom: 8.0, left: 12.0 }).height(68).width(Fill)
+                .style(wash(t, None, None, 14.0));
+            use crate::blocks::CallGate;
+            let gate = self.blocks.call_gate(&r.peer_did, true);
+            let ok = matches!(gate, CallGate::Ok);
+            // The row calls them (decided 2026-10-14: the chat lives in Chats). In a call: back to it. Someone I can't
+            // call: their profile, which says why.
+            let press = if self.call.is_some() { Msg::CallUi(crate::call_ui::Action::Restore) }
+                else if ok { Msg::CallPressed(r.peer_did.clone()) }
+                else { Msg::ShellSearch(super::shell_search::Action::OpenPerson(r.peer_did.clone())) };
+            let row_ = row_.on_press(press.clone());
+            let why = match gate { CallGate::Ok => "Call".to_string(), CallGate::NotAllowed => "Messages only: calling needs their permission".into(), CallGate::Closed(_) => "Blocked".into() };
+            let back = button(container(crate::pg_icons::pgi("phone", 22.0, if ok { t.accent_ink } else { ui::alpha(t.ink2, 0.45) })).center_x(44).center_y(44))
+                .padding(0).width(44).height(44).style(wash(t, None, ok.then_some(t.surface2), 22.0))
+                .on_press(press.clone());
+            let back = iced::widget::tooltip(back, text(why).size(13), iced::widget::tooltip::Position::Left);
+            let item = button(row![pf, row_, back].spacing(2).align_y(Alignment::Center)).padding(0).width(Fill).on_press(press)
+                .style(wash(t, sel.then_some(t.accent_soft), Some(if sel { t.accent_soft } else { t.surface2 }), 14.0));
+            list = list.push(item);
+        }
+        if !any {
+            return self.empty_quiet(t, "Calls you make and receive show up here.");
+        }
+        container(list).padding([0, 8]).width(Fill).into()
     }
 
     /// The signed-in account at the top of the sidebar; opens the account switcher.
@@ -893,21 +961,20 @@ impl App {
         container(c).padding(12).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into()
     }
 
+    /// `.listpane`: 380px on --surface with a 1px hairline end edge (no gap to its neighbours).
     fn sidebar_frame<'a>(&'a self, t: Tok, col: iced::widget::Column<'a, Msg>, list: El<'a>) -> El<'a> {
-        container(
-            column![col, scroll(t, list).height(Fill)]
-                .spacing(0),
-        )
-        .padding(0)
+        row![
+            container(column![col, scroll(t, list).height(Fill)].spacing(0)).width(379).height(Fill).style(ui::plain(t.surface, 0.0)),
+            container(Space::new()).width(1).height(Fill).style(ui::plain(t.hairline, 0.0)),
+        ]
         .width(380)
         .height(Fill)
-        .style(ui::sidebar(t))
         .into()
     }
 
     fn home_view(&self, t: Tok) -> El<'_> {
         if self.sel.is_none() && self.live.open.is_none() && self.groups.open.is_none() && self.offer.is_none() && self.notice.is_none() && self.problem().is_none() {
-            return row![self.sidebar(t), self.call_strip_pane(t, self.shell_empty_detail(t))].into();
+            return self.framed(t, self.detail_empty(t));
         }
         let mut main = column![].spacing(16);
         if let Some((title, body, action, error)) = self.problem() {
@@ -917,80 +984,28 @@ impl App {
             main = main.push(self.notice_bar(t));
         }
         if let Some(pane) = self.live_pane(t) {
-            return row![self.sidebar(t), self.call_strip_pane(t, pane)].into();
+            return self.framed(t, pane);
         }
         if let Some(pane) = self.preview_pane(t) {
-            return row![self.sidebar(t), self.call_strip_pane(t, pane)].into();
+            return self.framed(t, pane);
         }
         if let Some(c) = self.selected().filter(|_| !self.chat.info) {
             let pane: El = match self.offer_bar(t) {
                 Some(o) => column![container(o).padding([12, 16]), self.conversation_view(t, c)].width(Fill).height(Fill).into(),
                 None => self.conversation_view(t, c),
             };
-            return row![self.sidebar(t), self.call_strip_pane(t, pane)].into();
+            return self.framed(t, pane);
         }
         if let Some(o) = self.offer_bar(t) {
             main = main.push(o);
         }
         main = main.push(match self.selected() {
             Some(c) => self.detail_view(t, c),
-            None => self.shell_empty_detail(t),
+            None => self.detail_empty(t),
         });
-        row![
-            self.sidebar(t),
-            self.call_strip_pane(t, scroll(t, container(main).padding(32).max_width(760).width(Fill)).width(Fill).height(Fill).into())
-        ]
-        .into()
+        self.framed(t, scroll(t, container(main).padding(32).max_width(760).width(Fill)).width(Fill).height(Fill).into())
     }
 
-
-    /// Our QR code and "Copy card": what a first-timer shows or sends.
-    fn my_code(&self, t: Tok, title: &str) -> El<'_> {
-        let qr: El = match &self.qr {
-            Some(q) => container(canvas(QrView(q)).width(Length::Fixed(200.0)).height(Length::Fixed(200.0)))
-                .padding(8)
-                .style(ui::plain(Color::WHITE, 12.0))
-                .into(),
-            None => container(tx("Preparing your code\u{2026}", 14.0, t.ink2)).width(216).height(216).center_x(216).center_y(216).into(),
-        };
-        column![
-            label(t, title),
-            qr,
-            tx("Works once. Share it with someone who should be able to call you.", 13.0, t.ink2),
-            if self.copied_at.is_some_and(|at| at.elapsed() < Duration::from_secs(2)) {
-                pill(t, Kind::Quiet, Some(Icon::Check), "Copied", self.ticket.as_ref().map(|_| Msg::CopyTicket))
-            } else {
-                pill(t, Kind::Quiet, Some(Icon::Copy), "Copy card", self.ticket.as_ref().map(|_| Msg::CopyTicket))
-            },
-        ]
-        .spacing(12)
-        .width(Fill)
-        .into()
-    }
-
-    /// The paste field for someone else's card; a card with text around it is fine.
-    fn their_card(&self, t: Tok, title: &str) -> El<'_> {
-        column![
-            label(t, title),
-            text_input("Paste their card (OSVC2:\u{2026})", &self.add_in)
-                .on_input(Msg::AddChanged)
-                .on_paste(Msg::AddChanged)
-                .on_submit(Msg::AddPressed)
-                .padding(12)
-                .size(14)
-                .font(ui::MONO)
-                .style(ui::input_style(t)),
-            pill(t, Kind::Primary, None, "Add contact", (!self.add_in.trim().is_empty()).then_some(Msg::AddPressed)),
-            tx(
-                "Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.",
-                13.0,
-                t.ink2
-            ),
-        ]
-        .spacing(12)
-        .width(Fill)
-        .into()
-    }
 
     /// "Add <name>?" for a card found on the clipboard.
     fn offer_bar(&self, t: Tok) -> Option<El<'_>> {
@@ -1015,37 +1030,6 @@ impl App {
         )
     }
 
-    /// Home with nothing selected: a quiet starting point. Your code lives in Add contact.
-    fn code_view(&self, t: Tok) -> El<'_> {
-        if self.contacts.is_empty() {
-            let both = row![
-                self.my_code(t, "Show this to them"),
-                container(Space::new()).width(1).height(Fill).style(ui::plain(t.line, 0.0)),
-                self.their_card(t, "Or paste theirs"),
-            ]
-            .spacing(28)
-            .height(Length::Shrink);
-            return column![
-                bold("Your line is ready", 28.0, t.ink),
-                tx(
-                    "Let them scan your code or send them your card, or paste theirs. You\u{2019}ll both need Tinline open for a moment \u{2014} side by side, or over a video call.",
-                    15.0,
-                    t.ink2
-                ),
-                container(both).padding(24).width(Fill).style(ui::card(t)),
-            ]
-            .spacing(14)
-            .into();
-        }
-        let hello = if self.profile_name.is_empty() { "Who do you want to call?".to_string() } else { format!("Hi {}", self.profile_name) };
-        column![
-            bold(hello, 28.0, t.ink),
-            tx("Pick someone on the left to call them, or press Ctrl K to search.", 15.0, t.ink2),
-            row![pill(t, Kind::Quiet, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd))].spacing(10),
-        ]
-        .spacing(14)
-        .into()
-    }
 
     fn detail_view<'a>(&'a self, t: Tok, c: &'a p2pcore::Contact) -> El<'a> {
         let name = Self::display(c);
@@ -1285,82 +1269,11 @@ impl App {
 
     // ---- add contact ----
 
-    /// Add contact: a card over the dimmed window, our code and their card side by side.
-    fn add_view(&self, t: Tok) -> El<'_> {
-        let head = row![
-            bold("Add a contact", 22.0, t.ink),
-            Space::new().width(Fill),
-            icon_btn(t, Icon::X, Msg::Back),
-        ]
-        .align_y(Alignment::Center);
-
-        let body: El = match &self.add_phase {
-            AddPhase::Connecting => column![
-                bold("Connecting\u{2026}", 20.0, t.ink),
-                tx("Exchanging keys directly between your computers. Keep Tinline open on both.", 14.0, t.ink2),
-            ]
-            .spacing(8)
-            .into(),
-            AddPhase::Added(c) => {
-                let shown = c.name.clone();
-                column![
-                    row![avatar(t, &shown, &c.did, 56.0), bold(format!("{shown} is added"), 22.0, t.ink)]
-                        .spacing(14)
-                        .align_y(Alignment::Center),
-                    tx(format!("You can now call each other. {shown}\u{2019}s computer shows the same thing."), 14.0, t.ink2),
-                    field(
-                        t,
-                        "Save as",
-                        text_input("Name", &self.add_alias).on_input(Msg::AddAlias).on_submit(Msg::SaveAlias)
-                    ),
-                    tx(format!("Only you see this name. They called themselves \u{201c}{shown}\u{201d}."), 13.0, t.ink2),
-                    pill(t, Kind::Primary, None, "Done", Some(Msg::SaveAlias)),
-                ]
-                .spacing(12)
-                .into()
-            }
-            AddPhase::Failed(e) => column![
-                bold("Couldn\u{2019}t add", 20.0, t.ink),
-                tx(
-                    "Both computers need Tinline open and online at the same time. Ask them to keep their code on screen, then try again.",
-                    14.0,
-                    t.ink2
-                ),
-                semi("Other reasons", 13.0, t.ink2),
-                tx("\u{b7} The code was already used \u{2014} ask for a new one.", 13.0, t.ink2),
-                tx("\u{b7} One of you is offline or on a network that blocks it.", 13.0, t.ink2),
-                mono(e.clone(), 12.0, t.ink2),
-                pill(t, Kind::Primary, None, "Try again", Some(Msg::OpenAdd)),
-            ]
-            .spacing(8)
-            .into(),
-            AddPhase::Idle => {
-                let mine = self.my_code(t, "They scan your code");
-                let theirs = self.their_card(t, "Or add theirs");
-                row![mine, container(Space::new()).width(1).height(Fill).style(ui::plain(t.line, 0.0)), theirs]
-                    .spacing(28)
-                    .height(Length::Shrink)
-                    .into()
-            }
-        };
-        let card = container(
-            column![head, body, tx("You both need Tinline open and online while adding.", 12.0, t.ink2)].spacing(18),
-        )
-        .padding(28)
-        .max_width(760)
-        .width(Fill)
-        .style(ui::card(t));
-        let dim = if t.dark { Color::from_rgb(0.04, 0.06, 0.05) } else { Color::from_rgb(0.86, 0.88, 0.86) };
-        container(scroll(t, container(card).padding(32).center_x(Fill).width(Fill)).height(Fill))
-            .width(Fill)
-            .height(Fill)
-            .style(ui::plain(dim, 0.0))
-            .into()
-    }
+    // Add contact is the dialog in signup_view.rs (AddContact.svelte).
 
     // ---- settings ----
 
-    fn settings_view(&self, t: Tok) -> El<'_> {
+    fn native_settings_view(&self, t: Tok) -> El<'_> {
         let opts = |v: &Vec<String>| {
             let mut o = vec![DEFAULT_LABEL.to_string()];
             o.extend(v.iter().cloned());
@@ -1580,7 +1493,7 @@ impl App {
         }
         let nav = container(nav).padding(16).width(240).height(Fill).style(ui::sidebar(t));
         let page: El = match self.settings_tab {
-            0 => profile,
+            0 | 11 => profile,
             1 => devices,
             2 => calls,
             3 => audio,
@@ -1591,12 +1504,9 @@ impl App {
             _ => column![about, quit].spacing(20).into(),
         };
         let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or("About");
-        let content = column![bold(title_, 24.0, t.ink), self.notice_bar(t), page].spacing(20);
-        row![
-            nav,
-            scroll(t, container(container(content).max_width(640).width(Fill)).padding(32).center_x(Fill).width(Fill)).height(Fill)
-        ]
-        .into()
+        let _ = (nav, title_); // Native-only content stays reachable without a second settings sidebar.
+        let content = column![self.notice_bar(t), page].spacing(20);
+        scroll(t, container(container(content).max_width(560).width(Fill)).padding(16).center_x(Fill).width(Fill)).height(Fill).into()
     }
 
     // ---- calls ----
@@ -1667,9 +1577,7 @@ impl App {
 
         let top: El = match (&c.state, &c.stats) {
             (CallState::Active, Some(st)) => {
-                let total = st.received + st.lost;
-                let loss = if total > 0 { st.lost as f64 * 100.0 / total as f64 } else { 0.0 };
-                let (n, word) = quality(st.rtt_ms, loss);
+                let (n, word) = quality(st.rtt_ms, self.call_ui.loss.pct());
                 row![
                     if st.direct {
                         badge(t.primary_c, t.on_primary_c, Some(Icon::Direct), "Direct")
@@ -1737,7 +1645,7 @@ impl App {
             .into()
         } else {
             column![
-                avatar(t, &c.info.peer_name, &c.info.peer_did, 128.0),
+                self.profile_avatar(t, &c.info.peer_name, &c.info.peer_did, 128.0),
                 bold(c.info.peer_name.clone(), 32.0, t.ink),
                 status,
                 note,
@@ -1830,7 +1738,7 @@ impl App {
         let main: El = match (&v.remote, v.remote_on()) {
             (Some(h), true) => image(h.clone()).content_fit(ContentFit::Contain).width(Fill).height(Fill).into(),
             (_, on) => column![
-                avatar(t, &peer.peer_name, &peer.peer_did, 112.0),
+                self.profile_avatar(t, &peer.peer_name, &peer.peer_did, 112.0),
                 tx(if on { "Video is starting\u{2026}" } else { "Camera off" }, 15.0, t.ink2),
             ]
             .spacing(14)
@@ -1850,12 +1758,12 @@ impl App {
     }
 
     /// "Arjun is calling" over the call: no hold, so the choice is to refuse or to swap.
-    fn waiting_banner<'a>(&self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
+    fn waiting_banner<'a>(&'a self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
         let name = if w.peer_name.is_empty() { "Unknown".to_string() } else { w.peer_name.clone() };
         ui::raised(
             container(
             row![
-                avatar(t, &name, &w.peer_did, 44.0),
+                self.profile_avatar(t, &name, &w.peer_did, 44.0),
                 column![
                     semi(format!("{name} is calling"), 16.0, t.ink),
                     tx("Your call continues until you choose. Decline tells them you\u{2019}re busy.", 13.0, t.ink2),
@@ -1876,42 +1784,27 @@ impl App {
         )
     }
 
+    /// CallScreen.svelte after the end: the same screen (mark, avatar, name), the reason where the status was and the
+    /// call's length under it, for a moment; then it goes (see `EndedHoldDone`). No buttons: the record is in the chat.
     fn ended_view(&self, t: Tok) -> El<'_> {
         let e = self.ended.as_ref().unwrap();
-        let unreachable = e.reason == "unreachable";
-        let mut mid = column![
-            avatar(t, &e.name, &e.did, 112.0),
-            tx(if unreachable { "Couldn\u{2019}t reach" } else { "Call ended" }, 16.0, t.ink2),
-            bold(e.text.clone(), 30.0, t.ink),
-        ]
-        .spacing(12)
-        .align_x(Alignment::Center);
-        if e.secs > 0 {
-            mid = mid.push(mono(format!("{:02}:{:02}", e.secs / 60, e.secs % 60), 20.0, t.ink2));
-            mid = mid.push(if e.direct {
-                badge(t.primary_c, t.on_primary_c, Some(Icon::Direct), "Direct")
-            } else {
-                badge(t.relay_c, t.on_relay_c, Some(Icon::Relayed), "Relayed \u{b7} encrypted")
-            });
-        }
-        if unreachable {
-            mid = mid.push(container(tx(
-                format!("{} may be offline, out of signal, or not taking calls right now. Tinline can\u{2019}t leave messages.", e.name),
-                14.0,
-                t.ink2,
-            )).max_width(440));
-        }
-        let bottom = column![
-            row![
-                pill(t, Kind::Primary, Some(Icon::Phone), if unreachable { "Try again" } else { "Call again" }, Some(Msg::CallAgain(e.did.clone()))),
-                pill(t, Kind::Quiet, None, "Close", Some(Msg::CloseEnded)),
-            ]
-            .spacing(12),
-            tx("Closes by itself after a few seconds.", 12.0, t.ink2),
-        ]
-        .spacing(10)
-        .align_x(Alignment::Center);
-        self.call_shell(t, Space::new().into(), mid.into(), bottom.into(), false)
+        iced::widget::responsive(move |size| {
+            let g = crate::call_ui::Geometry::new(size.height);
+            let head: El = container(container(ui::logo(28.0, t)).center_x(Fill)).height(48).padding([0, 20]).into();
+            let who: El = column![
+                self.profile_avatar(t, &e.name, &e.did, 128.0),
+                Space::new().height(22),
+                container(semi(e.name.clone(), 28.0, t.ink).wrapping(iced::widget::text::Wrapping::None)).height(34).width(Fill).center_x(Fill).clip(true),
+                Space::new().height(6),
+                container(semi(e.text.clone(), 17.0, t.ink)).height(30).center_x(Fill).center_y(30),
+                Space::new().height(10),
+                container(tx(if e.secs > 0 { format!("{:02}:{:02}", e.secs / 60, e.secs % 60) } else { String::new() }, 13.0, t.ink)).height(18).center_x(Fill),
+            ].align_x(Alignment::Center).width(Fill).into();
+            stack![Space::new().width(Fill).height(Fill),
+                container(head).padding(Padding { top: 8.0, ..Padding::ZERO }).width(Fill),
+                container(container(who).padding([0, 20])).padding(Padding { top: g.avatar_top.max(0.0), ..Padding::ZERO }).width(Fill)]
+                .width(Fill).height(Fill).into()
+        }).into()
     }
 }
 

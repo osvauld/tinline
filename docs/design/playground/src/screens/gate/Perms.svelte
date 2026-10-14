@@ -26,14 +26,14 @@
       <li>
         <span class="ic"><Icon name={r.icon} size={20} /></span>
         <span class="tx"><b>{r.title}{#if r.optional} <em>Optional</em>{/if}</b><small>{r.why}</small>
-          {#if st === 'denied'}<small class="den">Not allowed. You can turn it on in system settings.</small>{/if}</span>
+          {#if st === 'denied'}<small class="den">Off for now. You can turn it on in system settings.</small>{/if}</span>
         {#if st === 'granted'}<span class="ok" role="img" aria-label="{r.title} allowed"><Icon name="check" size={22} /></span>
         {:else}<button type="button" class="allow press" aria-label="Allow {r.title.toLowerCase()}" onclick={() => gate.allow(r.k)}>{st === 'denied' ? 'Retry' : 'Allow'}</button>{/if}
       </li>
     {/each}
   </ul>
   {#snippet foot()}
-    <Btn kind={touched ? 'primary' : 'secondary'} onclick={() => gate.go('done')}>{touched ? 'Continue' : 'Not now'}</Btn>
+    <Btn enter kind={touched ? 'primary' : 'secondary'} onclick={() => gate.go('done')}>{touched ? 'Continue' : 'Not now'}</Btn>
   {/snippet}
 </StepShell>
 
@@ -43,7 +43,7 @@
   .ic { display: grid; place-items: center; inline-size: 40px; block-size: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); flex: none; }
   .tx { display: grid; gap: 1px; flex: 1; min-inline-size: 0; }
   .tx small { color: var(--muted); font-size: var(--fs-sub); line-height: 18px; }
-  .tx .den { color: var(--danger); font-weight: 600; }
+  .tx .den { color: var(--muted); }
   em { font-style: normal; font-weight: 600; font-size: var(--fs-meta); color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 1px 6px; margin-inline-start: 4px; }
   .allow { min-inline-size: 72px; min-block-size: 44px; border-radius: 22px; border: 1px solid var(--line); background: transparent; color: var(--accent-ink); font-weight: 650; cursor: pointer; flex: none; }
   .allow:hover { background: var(--surface-2); }

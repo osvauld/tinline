@@ -1804,6 +1804,7 @@ name = "desktop"
 version = "0.1.32"
 dependencies = [
  "audio",
+ "bip39",
  "chrono",
  "cpal",
  "directories",

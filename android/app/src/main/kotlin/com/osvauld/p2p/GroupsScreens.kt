@@ -109,7 +109,7 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
         if (searching) SearchBar(query, { query = it }, onClose = { searching = false; query = "" }, hint = "Search chats")
         else Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Chats", Modifier.weight(1f).semantics { heading() }, style = TinType.h1, color = c.ink)
-            IconBtn(Icons.Rounded.Search, "Search", { searching = true })
+            IconBtn(PgIcons.Search, "Search", { searching = true })
             Box {
                 IconBtn(Icons.Rounded.MoreVert, "Preview controls", { simMenu = true })
                 SimulateMenu(src, nav, simMenu) { simMenu = false }
@@ -124,12 +124,12 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
                 items(rows, key = { (if (it.group) "g" else "p") + it.key }) { r -> ChatListRow(r, now) { nav.go(r.open) } }
             }
             Box(Modifier.align(Alignment.BottomEnd)) {
-                ShrinkFab(Icons.Rounded.Add, "New", fabWide) { newMenu = true }
+                ShrinkFab(PgIcons.Plus, "New", fabWide) { newMenu = true }
                 DropdownMenu(newMenu, { newMenu = false }, containerColor = c.sfRaised) {
                     DropdownMenuItem({ Text("New group", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.go(PRoute.NewGroup) },
                         leadingIcon = { Icon(Icons.Rounded.GroupAdd, null, tint = c.ink2) })
                     DropdownMenuItem({ Text("Add contact", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.addContact() },
-                        leadingIcon = { Icon(Icons.Rounded.QrCode, null, tint = c.ink2) })
+                        leadingIcon = { Icon(PgIcons.Qr, null, tint = c.ink2) })
                 }
             }
         }
@@ -220,7 +220,7 @@ fun PGroupChatScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
             avatar = { GroupAvatar(g.tint, 40.dp, dim = removal != null, radius = 12.dp) },
             onTitle = if (removal == null) ({ nav.go(PRoute.GroupInfo(id)) }) else null,
         ) {
-            if (removal == null) IconBtn(Icons.Rounded.Info, "Group info", { nav.go(PRoute.GroupInfo(id)) })
+            if (removal == null) IconBtn(PgIcons.Info, "Group info", { nav.go(PRoute.GroupInfo(id)) })
         }
         if (waiting) InfoCard(
             if (hostCount == 0) "This group has no host yet. Your messages are saved and will send when a member’s desktop hosts it."
@@ -286,7 +286,7 @@ private fun ColumnScope.CollapsedMessage(author: String, onShow: () -> Unit) {
             .clickable(role = Role.Button, onClickLabel = "Show message", onClick = onShow).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(Icons.Rounded.Block, null, tint = c.ink2, modifier = Modifier.size(18.dp))
+        Icon(PgIcons.Off, null, tint = c.ink2, modifier = Modifier.size(18.dp))
         Text("Message from ${first(author)}, who you blocked · Show", style = TinType.bodyM, color = c.ink2)
     }
 }
@@ -317,7 +317,7 @@ fun PNewGroupScreen(src: FakeGroupsPrivacy, nav: PNav) {
     var host by rememberSaveable { mutableStateOf<Boolean?>(null) } // true = my desktop, false = ask later
     PreviewPage {
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconBtn(Icons.Rounded.Close, "Close", nav.back)
+            IconBtn(PgIcons.X, "Close", nav.back)
             Text("New group", style = TinType.titleM.copy(fontSize = 20.sp), color = c.ink)
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -371,7 +371,7 @@ private fun HostChoice(text: String, on: Boolean, onClick: () -> Unit) {
             .clickable(role = Role.RadioButton, onClick = onClick).semantics { selected = on }.padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (on) Icon(Icons.Rounded.Check, null, tint = c.onWarn, modifier = Modifier.size(18.dp))
+        if (on) Icon(PgIcons.Check, null, tint = c.onWarn, modifier = Modifier.size(18.dp))
         Text(text, style = TinType.label, color = c.onWarn)
     }
 }
@@ -390,7 +390,7 @@ fun PGroupInfoScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
     val me = g.me
     PreviewPage {
         TopBar(null, nav.back) {
-            if (g.iAmAdmin) IconBtn(Icons.Rounded.Edit, "Edit group", { nav.say("Editing name, photo and who can invite isn’t in the preview") })
+            if (g.iAmAdmin) IconBtn(PgIcons.Edit, "Edit group", { nav.say("Editing name, photo and who can invite isn’t in the preview") })
         }
         LazyColumn(Modifier.weight(1f)) {
             item {
@@ -400,9 +400,9 @@ fun PGroupInfoScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
                     val role = when { me == null -> ""; GroupRole.Owner in me.roles -> " · you are the owner"; GroupRole.Admin in me.roles -> " · you are an admin"; else -> "" }
                     Text("${g.activeMembers.size} members$role", style = TinType.bodyM, color = c.ink2)
                     Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                        InfoAction(Icons.Rounded.PersonAdd, "Invite", c.pr) { nav.say("Inviting from here isn’t in the preview: use New group") }
-                        InfoAction(if (g.muted) Icons.Rounded.NotificationsOff else Icons.Rounded.Notifications, if (g.muted) "Unmute" else "Mute", c.pr) { src.setMuted(id, !g.muted) }
-                        InfoAction(Icons.AutoMirrored.Rounded.Logout, "Leave", c.er) { leaving = true }
+                        InfoAction(PgIcons.Userplus, "Invite", c.pr) { nav.say("Inviting from here isn’t in the preview: use New group") }
+                        InfoAction(if (g.muted) PgIcons.Mute else PgIcons.Bell, if (g.muted) "Unmute" else "Mute", c.pr) { src.setMuted(id, !g.muted) }
+                        InfoAction(PgIcons.Leave, "Leave", c.er) { leaving = true }
                     }
                 }
             }
@@ -437,7 +437,7 @@ fun PGroupInfoScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
         }
     }
     sheetFor?.let { did -> g.members.firstOrNull { it.did == did }?.let { m -> MemberSheet(src, nav, g, m) { sheetFor = null } } }
-    if (leaving) TinDialog("Leave ${g.name}?", { leaving = false }, "Leave", { leaving = false; src.leaveGroup(id); nav.replace(PRoute.Chats) }, destructive = true, icon = Icons.AutoMirrored.Rounded.Logout) {
+    if (leaving) TinDialog("Leave ${g.name}?", { leaving = false }, "Leave", { leaving = false; src.leaveGroup(id); nav.replace(PRoute.Chats) }, destructive = true, icon = PgIcons.Leave) {
         DialogText("You stop getting its messages. To come back, an admin has to invite you again.")
     }
 }
@@ -487,18 +487,18 @@ private fun MemberSheet(src: FakeGroupsPrivacy, nav: PNav, g: Group, m: GroupMem
                 Text(parts.joinToString(" · "), style = TinType.bodyM, color = c.ink2)
             }
         }
-        SheetItemFlush(Icons.AutoMirrored.Rounded.Chat, "Message privately", if (isContact) "Opens your chat with $fn" else "Sends $fn a chat request") {
+        SheetItemFlush(PgIcons.Chat, "Message privately", if (isContact) "Opens your chat with $fn" else "Sends $fn a chat request") {
             if (isContact) { onDismiss(); nav.go(PRoute.Dm(m.did)) } else asking = true
         }
         if (admin && !m.isAdmin) SheetItemFlush(Icons.Rounded.AdminPanelSettings, "Make admin") {
             src.makeAdmin(g.id, m.did).reason()?.let(nav.say); onDismiss()
         }
-        if (admin && g.hosts.none { it.ownerDid == m.did }) SheetItemFlush(Icons.Rounded.Computer, "Make host", "Only for one of $fn’s desktops") {
+        if (admin && g.hosts.none { it.ownerDid == m.did }) SheetItemFlush(PgIcons.Laptop, "Make host", "Only for one of $fn’s desktops") {
             src.askToHost(g.id, m.did).reason()?.let(nav.say) ?: nav.say("Asked $fn to host from a desktop"); onDismiss()
         }
-        if (isBlocked) SheetItemFlush(Icons.Rounded.Block, "Unblock $fn", "They can message you again") { src.unblock(m.did); onDismiss() }
-        else SheetItemFlush(Icons.Rounded.Block, "Block $fn", "Just for you. $fn stays in the group") { blocking = true }
-        if (admin) SheetItemFlush(Icons.Rounded.Flag, "Flag to remove", "${FakeGroupsPrivacy.FLAGS_TO_REMOVE} flags remove $fn from the group", c.er) { flagging = true }
+        if (isBlocked) SheetItemFlush(PgIcons.Off, "Unblock $fn", "They can message you again") { src.unblock(m.did); onDismiss() }
+        else SheetItemFlush(PgIcons.Off, "Block $fn", "Just for you. $fn stays in the group") { blocking = true }
+        if (admin) SheetItemFlush(PgIcons.Flag, "Flag to remove", "${FakeGroupsPrivacy.FLAGS_TO_REMOVE} flags remove $fn from the group", c.er) { flagging = true }
     }
     if (flagging) FlagDialog(m, onDismiss = { flagging = false; onDismiss() }) {
         val removedNow = m.flags.size + 1 >= FakeGroupsPrivacy.FLAGS_TO_REMOVE
@@ -532,7 +532,7 @@ fun FlagDialog(m: GroupMember, onDismiss: () -> Unit, onFlag: () -> Unit) {
     val fn = first(m.name)
     val n = m.flags.size + 1
     val total = FakeGroupsPrivacy.FLAGS_TO_REMOVE
-    TinDialog("Flag $fn for removal?", onDismiss, "Flag", onFlag, destructive = true, icon = Icons.Rounded.Flag) {
+    TinDialog("Flag $fn for removal?", onDismiss, "Flag", onFlag, destructive = true, icon = PgIcons.Flag) {
         FlagMeter(n.coerceAtMost(total), total)
         DialogText(
             if (n >= total) "Yours will be flag $total of $total. $fn is removed right away: new messages from $fn are refused and $fn is told about the removal."
@@ -574,7 +574,7 @@ fun PHostsScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
                     }
                 }
             } else Hint("No hosts yet.")
-            if (g.iAmAdmin) TinButton("Add a host", { adding = true }, style = BtnStyle.Outlined, icon = Icons.Rounded.Add)
+            if (g.iAmAdmin) TinButton("Add a host", { adding = true }, style = BtnStyle.Outlined, icon = PgIcons.Plus)
             InfoCard("changes every member’s group address within 2 days, so the removed desktop can’t reach the group again. Messages it already stored stay with it.",
                 kind = BannerKind.Warn, bold = "Removing a host")
             Hint("Two or more hosts keep the group working when one is off. Phones can’t host.")
@@ -583,7 +583,7 @@ fun PHostsScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
     removing?.let { h ->
         TinDialog("Remove ${h.label}?", { removing = null }, "Remove", {
             src.removeHost(id, h.id).reason()?.let(nav.say); removing = null
-        }, destructive = true, icon = Icons.Rounded.Computer) {
+        }, destructive = true, icon = PgIcons.Laptop) {
             DialogText("Every member’s group address changes within 2 days, so ${h.label} can’t reach the group again. Messages it already stored stay with it.")
         }
     }
@@ -595,7 +595,7 @@ fun PHostsScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
             Gap(h = 8.dp)
             if (candidates.isEmpty()) Hint("Every member already hosts.")
             candidates.forEach { m ->
-                SheetItemFlush(Icons.Rounded.Computer, "${first(m.name)}’s desktop", "Ask ${first(m.name)} to host") {
+                SheetItemFlush(PgIcons.Laptop, "${first(m.name)}’s desktop", "Ask ${first(m.name)} to host") {
                     src.askToHost(id, m.did).reason()?.let(nav.say) ?: nav.say("Asked ${first(m.name)} to host"); adding = false
                 }
             }
@@ -630,7 +630,7 @@ fun PRemovalDetailsScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(Icons.Rounded.VerifiedUser, null, tint = c.ink2, modifier = Modifier.size(22.dp))
+                Icon(PgIcons.Shield, null, tint = c.ink2, modifier = Modifier.size(22.dp))
                 Text("Each flag is signed by the admin who made it and was checked by your phone. Nobody else could have added them.", style = TinType.bodyM, color = c.ink2)
             }
             Text("What happens now", style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.ink, modifier = Modifier.padding(top = 6.dp).semantics { heading() })
@@ -658,14 +658,14 @@ fun RequestsRow(reqs: Requests, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(Modifier.size(40.dp).clip(CircleShape).background(if (new > 0) c.prc else c.sf2), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.PersonAddAlt, null, tint = if (new > 0) c.onPrc else c.ink2)
+            Icon(PgIcons.Userplus, null, tint = if (new > 0) c.onPrc else c.ink2)
         }
         Text(
             listOfNotNull("Chat requests", if (new > 0) "$new new" else null, if (sent > 0) "$sent sent" else null).joinToString(" · "),
             Modifier.weight(1f), style = TinType.bodyL.copy(fontWeight = if (new > 0) FontWeight.SemiBold else FontWeight.Normal), color = c.ink,
             maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
-        Icon(Icons.Rounded.ChevronRight, null, tint = c.ink2)
+        Icon(PgIcons.Chevr, null, tint = c.ink2)
     }
 }
 

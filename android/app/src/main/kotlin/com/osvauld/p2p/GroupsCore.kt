@@ -456,7 +456,11 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
 
     // ---- core events (core threads: never block) ----
 
+    /** Set by the app: a post arrived (notifications; called on a core thread). */
+    @Volatile var onPost: ((GroupMessage) -> Unit)? = null
+
     override fun onGroupMessage(message: GroupMessage) {
+        onPost?.invoke(message)
         synchronized(this) {
             _open.value?.let { o ->
                 if (o.id == message.groupId) {

@@ -159,6 +159,25 @@ pub struct FileRef {
     pub duration_ms: u32,
     #[serde(default)]
     pub waveform: Vec<u8>,
+    /// Pictures (`tinline/chat/5`): the size shown (EXIF orientation applied) and a 4x3 RGB colour grid, hex
+    /// ([`crate::chat::photo`]). 0x0 and empty for anything else, and for records written before /5.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub width: u32,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub height: u32,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub preview: String,
+}
+
+fn is_zero(v: &u32) -> bool {
+    *v == 0
+}
+
+impl FileRef {
+    /// The picture's size and preview are present (a /5 photo).
+    pub fn has_picture(&self) -> bool {
+        self.width != 0 || self.height != 0 || !self.preview.is_empty()
+    }
 }
 
 /// One version of a message, as its record reads.
@@ -240,6 +259,14 @@ pub fn msg_sig_input(doc: &str, m: &MsgRec, at: &WrittenAt) -> Vec<u8> {
             v.extend_from_slice(&f.duration_ms.to_be_bytes());
             v.extend_from_slice(&(f.waveform.len() as u32).to_be_bytes());
             v.extend_from_slice(&f.waveform);
+            // /5: the picture's size and preview are signed too. Only when present, so every record written
+            // before /5 (no picture fields) keeps exactly the input it was signed with.
+            if f.has_picture() {
+                v.push(2);
+                v.extend_from_slice(&f.width.to_be_bytes());
+                v.extend_from_slice(&f.height.to_be_bytes());
+                put_str(&mut v, &f.preview);
+            }
         }
     }
     v.extend_from_slice(&m.dev);
@@ -469,7 +496,13 @@ fn read_records(doc: &LoroDoc) -> Result<Records, Reject> {
                     || rec.id.is_empty()
                     || rec.id.len() > 64
                     || rec.reply_to.as_ref().is_some_and(|r| r.len() > 64)
-                    || rec.file.as_ref().is_some_and(|f| f.waveform.len() > 256 || f.name.len() > 300)
+                    || rec.file.as_ref().is_some_and(|f| {
+                        f.waveform.len() > 256
+                            || f.name.len() > 300
+                            || f.width > 100_000
+                            || f.height > 100_000
+                            || f.preview.len() > 2 * crate::chat::photo::PREVIEW_LEN
+                    })
                     || (rec.deleted && !rec.text.is_empty())
                 {
                     return Err(bad());

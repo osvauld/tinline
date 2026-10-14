@@ -174,8 +174,9 @@ class SmoothCornerShape(
 }
 
 /** Bubble outline for a message at [pos] in its run. [mine]: stack against the end edge, else the start edge (mirrors in RTL). */
-fun bubbleShape(pos: BubblePos, mine: Boolean): SmoothCornerShape {
-    val o = 18.dp; val t = 6.dp
+fun bubbleShape(pos: BubblePos, mine: Boolean, inset: androidx.compose.ui.unit.Dp = 0.dp): SmoothCornerShape {
+    // [inset]: the same outline [inset] in (a photo inside its 3 dp rim), each corner at least 3 dp.
+    val o = maxOf(18.dp - inset, 3.dp); val t = maxOf(6.dp - inset, 3.dp)
     val top = if (pos == BubblePos.Mid || pos == BubblePos.Last) t else o
     val bot = if (pos == BubblePos.Mid || pos == BubblePos.First) t else o
     return if (mine) SmoothCornerShape(o, top, bot, o) else SmoothCornerShape(top, o, o, bot)
