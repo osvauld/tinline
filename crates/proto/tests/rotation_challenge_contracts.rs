@@ -26,86 +26,19 @@ use std::collections::BTreeMap;
 
 use ed25519_dalek::{Signer, SigningKey};
 use identity::Identity;
-use serde::Serialize;
 use sha2::{Digest, Sha256};
 
-const PERMIT_DOMAIN: &[u8] = b"test-only/device-succession-permit/v1\0";
+#[path = "support/permit_history.rs"]
+mod permit_history;
+use permit_history::*;
+
 const NONCE_DOMAIN: &[u8] = b"test-only/rotation-possession/nonce/v1\0";
 const SESSION_DOMAIN: &[u8] = b"test-only/rotation-possession/session/v1\0";
-const PAGE: usize = 4;
 // Existing variant (a) fixture values (rotation_permit_network.rs:101,104). NOT product defaults.
 const CAPACITY: usize = 8;
 const TTL: u64 = 5;
 const VALIDITY: u64 = 100;
 
-type Id = [u8; 32];
-
-// ---------------------------------------------------------------------------------------
-// Copied from rotation_permit_model.rs @6b1aaef; coordinator consolidates later.
-// Changes: Debug/PartialEq/Eq derives; page logic is a pure function returning a candidate.
-// ---------------------------------------------------------------------------------------
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-struct Claims {
-    version: u8,
-    owner: String,
-    audience: String,
-    previous_id: Id,
-    replacement_id: Id,
-    endpoint: Id,
-    predecessor: Id,
-    generation: u64,
-    issued_at: u64,
-    expires_at: u64,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct Permit {
-    claims: Claims,
-    signature: [u8; 64],
-}
-
-impl Permit {
-    fn bytes(claims: &Claims) -> Vec<u8> {
-        [PERMIT_DOMAIN, &serde_json::to_vec(claims).unwrap()].concat()
-    }
-    fn issue(owner: &Identity, claims: Claims) -> Self {
-        let signature = owner.sign(&Self::bytes(&claims));
-        Self { claims, signature }
-    }
-    fn id(&self) -> Id {
-        Sha256::digest(Self::bytes(&self.claims)).into()
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct View {
-    owner: String,
-    audience: String,
-    anchor: Id,
-    head: Id,
-    current_id: Id,
-    endpoint: Id,
-    generation: u64,
-    expires_at: u64,
-}
-
-impl View {
-    fn initial(owner: &Identity, device_id: u8) -> Self {
-        // Stands for an already authenticated initial nomination.
-        let anchor = Sha256::digest([owner.did().as_bytes(), &[device_id]].concat()).into();
-        Self {
-            owner: owner.did().into(),
-            audience: "private".into(),
-            anchor,
-            head: anchor,
-            current_id: [device_id; 32],
-            endpoint: [0; 32],
-            generation: 0,
-            expires_at: 0,
-        }
-    }
-}
 
 fn verify_page(view: &View, permits: &[Permit], now: u64) -> Result<View, &'static str> {
     if permits.is_empty() || permits.len() > PAGE {
@@ -152,10 +85,6 @@ fn verify_page(view: &View, permits: &[Permit], now: u64) -> Result<View, &'stat
     }
     Ok(candidate)
 }
-
-// ---------------------------------------------------------------------------------------
-// End of copied fixture.
-// ---------------------------------------------------------------------------------------
 
 fn seed32(domain: &[u8], seed: u64) -> Id {
     Sha256::digest([domain, &seed.to_be_bytes()].concat()).into()
@@ -612,8 +541,8 @@ struct World {
 fn world(now: u64) -> World {
     let (alice, _) = identity::generate();
     let (bob, _) = identity::generate();
-    let va = View::initial(&alice, 1);
-    let vb = View::initial(&bob, 1);
+    let va = View::initial_private(&alice, 1);
+    let vb = View::initial_private(&bob, 1);
     let (pa, ka) = successor(&alice, &va, 101, now);
     let (pb, kb) = successor(&bob, &vb, 201, now);
     World {

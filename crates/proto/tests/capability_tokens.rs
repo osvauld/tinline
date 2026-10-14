@@ -33,6 +33,10 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use identity::Identity;
 use serde::{Deserialize, Serialize};
 
+#[path = "support/fixtures.rs"]
+mod fixtures;
+use fixtures::*;
+
 const CAP_DOMAIN: &[u8] = b"test-only/w2c-cap-token/v1\0";
 const NOTICE_DOMAIN: &[u8] = b"test-only/w2c-block-notice/v1\0";
 /// Copied from `crates/proto/src/lib.rs:26` (private there) to hand-sign proto grants.
@@ -47,22 +51,6 @@ const ALICE: u8 = 1;
 const CAROL: u8 = 3;
 const DAVE: u8 = 4;
 const MALLORY: u8 = 9;
-
-// ---- fixtures copied from rotation_device_list_push.rs @82d221f (originally
-// rotation_fork_revocation.rs @75ed838); coordinator consolidates later.
-
-/// Deterministic owner identity from fixed entropy (never a real profile). Cloning it models
-/// another holder of the SAME mnemonic (linked device or thief).
-fn owner(seed: u8) -> Identity {
-    let m = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
-    identity::recover(&m.to_string()).unwrap()
-}
-
-// ---- end of copied fixtures.
-
-fn did(seed: u8) -> String {
-    owner(seed).did().to_string()
-}
 
 // ---- tokens ------------------------------------------------------------------------------------
 
@@ -516,25 +504,6 @@ fn refused(i: &mut Install, presenter: &str, cred: &Cred, cap: &str, now: u64, w
     assert_eq!(i.st, before, "a refusal must not change state");
 }
 
-// Minimal base64url-no-pad encoder so a proto grant can be hand-signed with an arbitrary cap
-// (base64 is not an allowed test dependency, rule 3).
-fn b64url(bytes: &[u8]) -> String {
-    const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    let mut out = String::new();
-    for chunk in bytes.chunks(3) {
-        let b = [
-            chunk[0],
-            *chunk.get(1).unwrap_or(&0),
-            *chunk.get(2).unwrap_or(&0),
-        ];
-        let n = (b[0] as u32) << 16 | (b[1] as u32) << 8 | b[2] as u32;
-        for i in 0..chunk.len() + 1 {
-            out.push(A[(n >> (18 - 6 * i) & 63) as usize] as char);
-        }
-    }
-    out
-}
-
 fn hand_signed_proto_grant(iss: &Identity, holder: &str, cap: &str) -> proto::SignedGrant {
     let g = proto::Grant {
         v: 1,
@@ -547,8 +516,8 @@ fn hand_signed_proto_grant(iss: &Identity, holder: &str, cap: &str) -> proto::Si
     };
     let payload = serde_json::to_vec(&g).unwrap();
     proto::SignedBlob {
-        signature: b64url(&iss.sign(&[PROTO_GRANT_DOMAIN, &payload].concat())),
-        payload: b64url(&payload),
+        signature: base64_encode(&iss.sign(&[PROTO_GRANT_DOMAIN, &payload].concat())),
+        payload: base64_encode(&payload),
     }
 }
 

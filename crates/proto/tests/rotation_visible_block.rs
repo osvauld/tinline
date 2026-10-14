@@ -39,10 +39,12 @@
 //! Fake `u64` ticks, deterministic fixture keys, in-memory only, real Ed25519 signatures.
 use std::collections::{BTreeMap, BTreeSet};
 
-use ed25519_dalek::SigningKey;
 use identity::Identity;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+
+#[path = "support/fixtures.rs"]
+mod fixtures;
+use fixtures::*;
 
 type Key = [u8; 32];
 
@@ -52,27 +54,6 @@ const NOTICE_DOMAIN: &[u8] = b"test-only/r1b-block-notice/v1\0";
 /// The one reason every refusal carries (section 8b Q1). Wording is open (8b Q3).
 const REASON_BLOCKED: &str = "blocked";
 
-// ---- fixtures copied from rotation_fork_revocation.rs @75ed838; coordinator consolidates later.
-
-fn fixture_seed(label: &[u8], seed: u8, generation: u64) -> Key {
-    Sha256::digest([label, &[seed], &generation.to_be_bytes()].concat()).into()
-}
-/// Deterministic fixture endpoint key. NOT a derivation scheme: receivers never compute it.
-fn fixture_key(seed: u8, generation: u64) -> SigningKey {
-    SigningKey::from_bytes(&fixture_seed(
-        b"test-only/fixture-endpoint\0",
-        seed,
-        generation,
-    ))
-}
-/// Deterministic owner identity from fixed entropy (never a real profile). Cloning it models
-/// another holder of the SAME mnemonic (linked device or thief).
-fn owner(seed: u8) -> Identity {
-    let m = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
-    identity::recover(&m.to_string()).unwrap()
-}
-
-// ---- end of copied fixtures.
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 enum Audience {
@@ -87,10 +68,6 @@ fn endpoint_key(device: u8, audience: Audience, seq: u64) -> Key {
 
 fn slot(audience: Audience, device: u8) -> String {
     format!("{audience:?}/{device}")
-}
-
-fn ser<T: Serialize>(t: &T) -> Vec<u8> {
-    serde_json::to_vec(t).unwrap()
 }
 
 /// Whether `key` appears in `bytes`, raw or in its JSON array spelling.
