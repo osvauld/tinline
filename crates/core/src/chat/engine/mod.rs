@@ -91,6 +91,15 @@ pub struct ChatCore {
     pub(crate) clock_wrong: std::sync::atomic::AtomicBool,
 }
 
+impl ChatCore {
+    /// Asks every session to close (each ends its own loop).
+    pub(crate) fn close_all_sessions(&self) {
+        for s in self.sessions.lock().values() {
+            let _ = s.tx.send(Cmd::Close);
+        }
+    }
+}
+
 pub enum Cmd {
     Push(String),
     Ack(String),

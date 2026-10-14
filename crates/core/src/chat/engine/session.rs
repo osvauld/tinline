@@ -112,9 +112,7 @@ impl Inner {
     pub(crate) async fn chat_close(self: &Arc<Self>) {
         let core = self.chat.lock().take();
         if let Some(core) = core {
-            for s in core.sessions.lock().values() {
-                let _ = s.tx.send(Cmd::Close);
-            }
+            core.close_all_sessions();
             if let Some(h) = core.hub.get() {
                 h.shutdown().await;
             }
@@ -128,9 +126,7 @@ impl Inner {
     /// blob store is left to its drop.
     pub(crate) fn chat_close_now(&self) {
         if let Some(core) = self.chat.lock().take() {
-            for s in core.sessions.lock().values() {
-                let _ = s.tx.send(Cmd::Close);
-            }
+            core.close_all_sessions();
             core.store.db.close();
         }
         self.search_close();
@@ -138,9 +134,7 @@ impl Inner {
 
     pub(crate) fn chat_sessions_close(self: &Arc<Self>) {
         if let Some(core) = self.chat.lock().clone() {
-            for s in core.sessions.lock().values() {
-                let _ = s.tx.send(Cmd::Close);
-            }
+            core.close_all_sessions();
         }
     }
 
