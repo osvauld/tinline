@@ -10,7 +10,7 @@ export interface AvatarArt { strokes: Stroke[]; strokeWidth: number; light: Colo
 const CTX = 'tinline/avatar/v1';
 const C = 50, R = 42, CIRCLE_SEGS = 48, ARC_SEGS = 24;
 export const SMALL_BELOW_PX = 40;
-const STROKE = 1.8, STROKE_SMALL = 2.6;
+const STROKE = 1.8, STROKE_SMALL = 3.4;
 
 type Path = [number, number][];
 type Piece = { layer: number; alpha: number; pts: Path; closed: boolean };

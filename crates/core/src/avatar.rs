@@ -15,7 +15,7 @@ const ARC_SEGS: usize = 24;
 /// Below this many logical pixels the app asks for the small variant.
 pub const SMALL_BELOW_PX: f32 = 40.0;
 const STROKE: f32 = 1.8;
-const STROKE_SMALL: f32 = 2.6;
+const STROKE_SMALL: f32 = 3.4;
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AvatarStroke {
