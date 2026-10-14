@@ -427,7 +427,7 @@ test :2088).
 
 ## 7. Test plan
 
-**Simulation tests.** These are group-sim style (proposed `crates/group-sim/src/group_call.rs`,
+**Simulation tests.** These are group-sim style (proposed `design-models:crates/group-sim/src/group_call.rs`,
 reusing `multi_host.rs` fixtures). Each refusal case asserts byte-identical state.
 
 | ID | Case | Expected |
@@ -521,7 +521,7 @@ reusing `multi_host.rs` fixtures). Each refusal case asserts byte-identical stat
 ## 9. Findings from the test-first pass (2026-10-10)
 
 Tests: `crates/audio/src/group_call_tests.rs` (GC-U01/U02, 29 audio tests pass, `1737dfc`) and
-`crates/group-sim/src/group_call.rs` (GC-S01..S17, 19 pass, 2 ignored, `0c5b56d`).
+`design-models:crates/group-sim/src/group_call.rs` (GC-S01..S17, 19 pass, 2 ignored, `0c5b56d`).
 
 **Built (GA-F1, `1737dfc`).** `Receiver::new_group()` / `set_active(bool)` / `is_idle()` with a
 200 ms no-datagram fallback (`SLOT_FALLBACK_MS`), faded spurt end and fade-in on resume; in the
@@ -576,7 +576,7 @@ needs a real encoder; GC-D09). On-device GC-D01..D09 wait for the call layer.
 Code: `crates/proto/src/gcall.rs` (wire), `crates/core/src/gcall/` (sans-IO `HostEngine`,
 `ClientEngine`, `CallBoard`, `Forwarder`; not wired into `node.rs` yet). Tests: `cargo test -p
 proto gcall`, `cargo test -p p2pcore --lib gcall` (GC-S01/03/05/06/06b/08/13/16/17 and G6-D2 on
-the real engines), `cargo test -p group-sim group_call` (model updated for G6-D2).
+the real engines), `cargo test -p group-sim (design-models branch) group_call` (model updated for G6-D2).
 
 - **§9.1 fixed without raising the limit.** `MAX_CONTROL` stays 4 KiB. A Roster entry carries
   `(slot, did, issued_ms, nonce, Join signature)`; the signed Join payload is rebuilt from the

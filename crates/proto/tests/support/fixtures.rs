@@ -3,9 +3,8 @@
 //! TEST-ONLY. Fixture keys come from fixed seeds so runs are reproducible; this is NOT a
 //! derivation scheme and receivers never compute them.
 //!
-//! `rotation_time_contracts` and `rotation_storage_contracts` keep their own `fixture_key`
-//! (different domain strings `c1-` / `c2-fixture-endpoint`, and storage is indexed by a counter),
-//! so their key bytes stay exactly as before.
+//! The rotation design models that kept their own `fixture_key` now live on the
+//! `design-models` branch (see `docs/archive/models.md`).
 #![allow(dead_code)]
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use ed25519_dalek::SigningKey;

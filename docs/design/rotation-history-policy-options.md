@@ -2,18 +2,18 @@
 
 Status: proposal — not approved. G-HISTORY is open; nothing here selects an option.
 
-Model: `crates/proto/tests/rotation_history_paging.rs` (12 tests, fake time, real Ed25519,
+Model: `design-models:crates/proto/tests/rotation_history_paging.rs` (12 tests, fake time, real Ed25519,
 deterministic fixture owners/keys). Not a production wire format, verifier API or storage design.
 
 ## 1. The failure this packet addresses (verified in source)
 
 - The direct-update queue signs the possession challenge with the key of the page's LAST
   record and verifies it against that record's endpoint:
-  `crates/proto/tests/support/rotation_permit_network.rs:90`, `:107`, `:112`, `:119`.
+  `design-models:crates/proto/tests/support/rotation_permit_network.rs:90`, `:107`, `:112`, `:119`.
 - When catch-up needs several pages, the last record of an early page names an endpoint whose
   key has already been retired. Binding possession per page therefore either fails for honest
   senders or (if old keys were kept) accepts a retired key.
-- `View::live` in `crates/proto/tests/rotation_permit_model.rs:107` already checks possession of
+- `View::live` in `design-models:crates/proto/tests/rotation_permit_model.rs:107` already checks possession of
   the view's current endpoint only; paging itself (`:72`) does not consult possession. B1 makes
   that separation explicit and testable.
 
@@ -84,7 +84,7 @@ as any permit signer, so a checkpoint is not weaker in *who* may sign, only in *
 
 ## 5. Group compatibility (verified against mirrored contract; contract NOT changed)
 
-`crates/group-sim/src/reachability.rs:24` requires "full verified ancestry since nominated root,
+`design-models:crates/group-sim/src/reachability.rs:24` requires "full verified ancestry since nominated root,
 with no omitted endpoint-bearing predecessors"; `HostDirectory::install` checks the first
 record's device ID against the nomination (`:49`, `:56`). The model mirrors this in
 `group_contract_accepts` (`rotation_history_paging.rs:1152`), adding the documented contiguity

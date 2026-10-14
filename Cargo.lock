@@ -2947,21 +2947,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "group-sim"
-version = "0.1.32"
-dependencies = [
- "aes-gcm",
- "blake3",
- "ed25519-dalek 2.2.0",
- "identity",
- "loro",
- "proto",
- "serde",
- "serde_json",
- "x25519-dalek",
-]
-
-[[package]]
 name = "gtk"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

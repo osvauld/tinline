@@ -157,9 +157,9 @@ What verifiers need after a rotation [infer]:
   re-set after importing a snapshot (`doc.rs:350`).
 - Account doc: `AccDoc::new/load(&me.device)` with doc name `"account"` (`accdoc.rs:137-149`),
   opened at `sync/engine.rs:97-101`.
-- Fixture mirror (test-only): `crates/group-sim/src/tests.rs:49-55`, `:75`, `:97` uses the same
+- Fixture mirror (test-only): `design-models:crates/group-sim/src/tests.rs:49-55`, `:75`, `:97` uses the same
   construction with a non-production domain. Group envelopes are signed by the same fixture key
-  (`group-sim/src/tests.rs:138`).
+  (`design-models:crates/group-sim/src/tests.rs:138`).
 
 ### 5.2 How receivers use it [src]
 - On a contact session, the receiver computes `signer_peer = peer_id(&sess.device, doc)`
@@ -323,7 +323,7 @@ established facts.
     keyed or ordered by device key (§6, R10). Is a per-session transient effect during overlap
     acceptable? Do two live endpoints of one device during overlap count as one session or two?
 13. **Group envelopes:** `group-sim` mirrors the chat coupling (author key = peer-ID source =
-    envelope signer, `group-sim/src/tests.rs:49-55`, `:75`, `:138`). The adapter must say which
+    envelope signer, `design-models:crates/group-sim/src/tests.rs:49-55`, `:75`, `:138`). The adapter must say which
     key signs group envelopes, and how old envelopes keep verifying after rotation, without
     changing group authority (contract item 4).
 14. **Restore as a test case:** restore already rotates the device key (§7). Should the

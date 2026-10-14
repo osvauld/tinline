@@ -8,8 +8,8 @@ The options below were written as proposals and pick nothing themselves. Each op
 revoked predecessors) belongs to rotation; see `docs/design/rotation-fork-revocation-options.md`.
 It is not repeated here.
 
-Model: `crates/group-sim/src/policy_candidates.rs` (23 tests). It is wired in through one
-`#[path]` `mod` line at `crates/group-sim/src/tests.rs:13-14`. It is test-only and is not a wire
+Model: `design-models:crates/group-sim/src/policy_candidates.rs` (23 tests). It is wired in through one
+`#[path]` `mod` line at `design-models:crates/group-sim/src/tests.rs:13-14`. It is test-only and is not a wire
 format, a production API or a storage design.
 
 ## 1. What the model is (verified in source/tests)
