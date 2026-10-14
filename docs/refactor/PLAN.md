@@ -201,3 +201,27 @@ Android (deps/android.md): targetSdk 36 meets the Play 2026-08-31 deadline. arm6
 3. JNA 5.19.1 (not 5.19.0). 4. CameraX 1.6.2 on a real phone (VideoIo.kt:49-53 strides/rotation). 5. Optional: replace the
    unmaintained zxing-android-embedded (Camera1) with a CameraX analyzer + zxing core.
 Each step: build, unit tests, release build `zipalign -P 16` check, emulator smoke (call, video, QR link).
+
+## Wave 1 (started 2026-10-14 on branch `refactor/main`, worktree `.claude/worktree/refactor`)
+Scope: Rust core/proto/group-sim/crypto + a new unwired `present` crate. **No desktop or Android edits in wave 1.** The UI port
+(design/screens, ds/*, ui-parity, signup-port) is active on those files. Desktop/Android splits and wiring `present`
+into both apps come after the port settles, coordinated with the port owners.
+Deferred to wave 2: dependency bumps (Cargo.lock churn; libaom touches the shared libaom cache other sessions build
+from), `testkit` crate (wave 1 uses per-crate support modules), cross-folder dedups, scripts/lib/e2e.py,
+archiving superseded group-sim models (user decision pending).
+
+| Agent branch | Owns | Task |
+|---|---|---|
+| rf/core-tests | crates/core/tests/** | shared `tests/support/mod.rs`; remove copied helpers; no test semantics change |
+| rf/proto | crates/proto/** | tests/support permit model + fixtures; split src/lib.rs (1.4k) by domain; inline tests → files |
+| rf/group-sim | crates/group-sim/** | tests out of model files into `<model>/tests.rs`; shared `common` kit; split files >600 |
+| rf/core-chat | crates/core/src/{chat,sync,search,profile}/** | inline tests → `x/tests.rs`; split chat/engine.rs, search/index.rs, sync/engine.rs |
+| rf/core-group | crates/core/src/{group,gcall}/** | same for group/engine, calls, state, gcall/net; board uses rank::tie_hash + split-after-redial test |
+| rf/core-node | crates/core/src/*.rs top level, src/video_call/, src/bin/ | split node.rs (3.8k) per audit 06; inline tests → files; voice/video_call/store |
+| rf/golden | NEW test files only in crates/{cryptography,identity,proto}/tests/golden_*.rs (+ core/tests/golden_wire.rs) | freeze golden vectors on current versions before any crypto/bincode/redb upgrade |
+| rf/present | NEW crates/present/** + workspace members line | pure fns + golden tables from audit 07 §A / 08 §1.2; record differing copies for user review |
+
+Rules: moves are behaviour-preserving. Per-crate `#[test]` count must not drop (baseline at 84bc7d4: core 458,
+proto 240, group-sim 183, cryptography 17, identity 18). Files ≤600 lines (target 400), unit tests in `foo/tests.rs`.
+All builds through `/home/abe/p2p_chat/scripts/buildlock.py`. Each agent commits on its own branch; the lead merges into
+`refactor/main`. Nothing goes to `dev` without the user.
