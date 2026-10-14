@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallState
@@ -272,6 +274,21 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
     val front by app.video.front.collectAsState()
     val videoProblem by app.video.problem.collectAsState()
     val v = vi?.takeIf { active && it.negotiated && it.callId == ui.info.callId }
+    val sendResolution by produceState<String?>(null, ui.info.callId, v?.localCamera) {
+        value = null
+        if (v?.localCamera != true) return@produceState
+        var initialFrames: ULong? = null
+        while (true) {
+            value = withContext(Dispatchers.IO) {
+                runCatching { app.node.videoStats()?.let {
+                    if (initialFrames == null) initialFrames = it.framesSent
+                    // Don't label cached dimensions from before this camera start as current HD.
+                    if (it.framesSent > (initialFrames ?: it.framesSent)) videoResolutionLabel(it.sendWidth.toInt(), it.sendHeight.toInt()) else null
+                } }.getOrNull()
+            }
+            delay(1000)
+        }
+    }
     val onCamera = { if (v?.localCamera == true) app.video.setCamera(false) else onCameraOn() }
     val name = ui.info.peerName.ifBlank { "Unknown" }
     val bars = if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null
@@ -281,6 +298,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 name = name, did = ui.info.peerDid, secs = secs, direct = s?.direct, bars = bars, reconnecting = s?.reconnecting == true,
                 muted = ui.muted, speaker = ui.speaker, localCamera = v.localCamera, remoteCamera = v.remoteCamera,
                 problem = if (ui.held) HELD else ui.micProblem ?: videoProblem,
+                videoQuality = if (v.localCamera) sendResolution?.let { "Sending $it" } ?: "Starting video…" else null,
                 onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onCamera = onCamera,
                 onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise, onMessage = onMessage,
                 remote = { m -> RemoteVideo(app, calls, m) },
@@ -386,6 +404,7 @@ fun VideoCallContent(
     remote: @Composable (Modifier) -> Unit, selfView: @Composable (Modifier) -> Unit,
     routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {}, onAllowBtNames: (() -> Unit)? = null,
     onMessage: (() -> Unit)? = null,
+    videoQuality: String? = null,
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
@@ -414,6 +433,7 @@ fun VideoCallContent(
                     SignalBars(if (reconnecting) 0 else bars ?: 0, Color.White, wave = reconnecting)
                 }
             }
+            videoQuality?.let { Text(it, Modifier.padding(start = 52.dp), style = TinType.mono.copy(fontSize = 12.sp), color = Color.White.copy(alpha = 0.8f)) }
         }
         if (info) CallInfo(name, active = true, onDismiss = { info = false }, reconnecting = reconnecting, signal = bars ?: 0,
             direct = direct, video = true)

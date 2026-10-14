@@ -13,6 +13,8 @@ pub enum Pix {
     Yuyv,
     /// Y plane, then interleaved UV at half height.
     Nv12,
+    /// JPEG-compressed frames from UVC cameras (often required for 720p30 over USB).
+    Mjpeg,
 }
 
 /// An RGBA picture for `image::Handle::from_rgba`.
@@ -27,7 +29,14 @@ const SELF_VIEW_WIDTH: usize = 320;
 
 /// A camera buffer -> tightly packed I420. `stride` = bytes per line of the first plane (0 =
 /// tight). Full-range input is squeezed to the limited range the encoder expects.
-pub fn to_i420(pix: Pix, buf: &[u8], stride: usize, w: usize, h: usize, range: Range) -> Result<I420, String> {
+pub fn to_i420(
+    pix: Pix,
+    buf: &[u8],
+    stride: usize,
+    w: usize,
+    h: usize,
+    range: Range,
+) -> Result<I420, String> {
     let mut out = match pix {
         Pix::Yuyv => convert::yuyv_to_i420(buf, if stride == 0 { 2 * w } else { stride }, w, h),
         Pix::Nv12 => {
@@ -36,12 +45,41 @@ pub fn to_i420(pix: Pix, buf: &[u8], stride: usize, w: usize, h: usize, range: R
             let (y, uv) = buf.split_at(split);
             convert::yuv420_to_i420(&Yuv420::nv12(y, stride, uv, stride, w, h, false), None)
         }
+        Pix::Mjpeg => return mjpeg_to_i420(buf, w, h),
     }
     .map_err(|e| e.to_string())?;
     if range == Range::Full {
         convert::full_to_limited(&mut out);
     }
     Ok(out)
+}
+
+/// Bounded JPEG decoding on the camera thread, never on the UI or codec thread.
+fn mjpeg_to_i420(buf: &[u8], w: usize, h: usize) -> Result<I420, String> {
+    if buf.len() > 8 * 1024 * 1024
+        || w == 0
+        || h == 0
+        || w > 1920
+        || h > 1080
+        || w % 2 != 0
+        || h % 2 != 0
+    {
+        return Err("unsupported MJPEG frame size".into());
+    }
+    let mut reader =
+        image::ImageReader::with_format(std::io::Cursor::new(buf), image::ImageFormat::Jpeg);
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(w as u32);
+    limits.max_image_height = Some(h as u32);
+    limits.max_alloc = Some(32 * 1024 * 1024);
+    reader.limits(limits);
+    let rgb = reader.decode().map_err(|e| e.to_string())?.into_rgb8();
+    if rgb.dimensions() != (w as u32, h as u32) {
+        return Err("MJPEG dimensions differ from negotiated camera mode".into());
+    }
+    // RGB conversion already produces limited-range BT.601; don't squeeze it twice.
+    convert::rgb_to_i420(rgb.as_raw(), w * 3, w, h, convert::RgbLayout::Rgb)
+        .map_err(|e| e.to_string())
 }
 
 /// Mirrored, downscaled RGBA of our own camera frame for the picture-in-picture.
@@ -56,7 +94,11 @@ pub fn self_view(pic: &I420) -> Rgba {
 }
 
 pub fn rgba(pic: &I420) -> Rgba {
-    Rgba { width: pic.width as u32, height: pic.height as u32, data: convert::to_rgba(pic) }
+    Rgba {
+        width: pic.width as u32,
+        height: pic.height as u32,
+        data: convert::to_rgba(pic),
+    }
 }
 
 /// One upright camera frame to the call; false = not sent (see `Node::push_video_frame`).
@@ -67,7 +109,11 @@ pub fn push(node: &Node, pic: I420) -> bool {
 /// The peer's newest decoded frame as RGBA, if there is a new one.
 pub fn pull(node: &Node) -> Option<Rgba> {
     let f = node.pull_video_frame()?;
-    let pic = I420 { width: f.width as usize, height: f.height as usize, data: f.data.into_inner() };
+    let pic = I420 {
+        width: f.width as usize,
+        height: f.height as usize,
+        data: f.data.into_inner(),
+    };
     (pic.data.len() == I420::len(pic.width, pic.height)).then(|| rgba(&pic))
 }
 
@@ -78,7 +124,13 @@ mod tests {
     /// A 4x2 YUYV picture: Y ramps, U/V differ per row so the row-pair average shows.
     fn yuyv(stride: usize) -> Vec<u8> {
         let mut b = vec![0xEE; stride * 2];
-        for (y, row) in [[10, 100, 20, 200, 30, 102, 40, 202], [50, 110, 60, 210, 70, 112, 80, 212]].iter().enumerate() {
+        for (y, row) in [
+            [10, 100, 20, 200, 30, 102, 40, 202],
+            [50, 110, 60, 210, 70, 112, 80, 212],
+        ]
+        .iter()
+        .enumerate()
+        {
             b[y * stride..y * stride + 8].copy_from_slice(row);
         }
         b
@@ -87,7 +139,15 @@ mod tests {
     #[test]
     fn yuyv_tight_and_padded() {
         for stride in [8, 16] {
-            let p = to_i420(Pix::Yuyv, &yuyv(stride), if stride == 8 { 0 } else { stride }, 4, 2, Range::Limited).unwrap();
+            let p = to_i420(
+                Pix::Yuyv,
+                &yuyv(stride),
+                if stride == 8 { 0 } else { stride },
+                4,
+                2,
+                Range::Limited,
+            )
+            .unwrap();
             assert_eq!((p.width, p.height), (4, 2));
             let (y, u, v) = p.planes();
             assert_eq!(y, [10, 20, 30, 40, 50, 60, 70, 80]);
@@ -104,7 +164,14 @@ mod tests {
         b[stride..stride + 4].copy_from_slice(&[5, 6, 7, 8]);
         b[stride * h..stride * h + 4].copy_from_slice(&[100, 200, 101, 201]);
         let p = to_i420(Pix::Nv12, &b, stride, w, h, Range::Limited).unwrap();
-        assert_eq!(p.planes(), (&[1, 2, 3, 4, 5, 6, 7, 8][..], &[100, 101][..], &[200, 201][..]));
+        assert_eq!(
+            p.planes(),
+            (
+                &[1, 2, 3, 4, 5, 6, 7, 8][..],
+                &[100, 101][..],
+                &[200, 201][..]
+            )
+        );
     }
 
     #[test]
@@ -119,6 +186,22 @@ mod tests {
     fn short_buffers_are_errors() {
         assert!(to_i420(Pix::Yuyv, &[0; 15], 0, 4, 2, Range::Limited).is_err());
         assert!(to_i420(Pix::Nv12, &[0; 10], 0, 4, 2, Range::Limited).is_err());
+    }
+
+    #[test]
+    fn mjpeg_decodes_and_checks_dimensions() {
+        let rgb = image::RgbImage::from_pixel(4, 2, image::Rgb([255, 255, 255]));
+        let mut jpeg = Vec::new();
+        image::codecs::jpeg::JpegEncoder::new(&mut jpeg)
+            .encode_image(&rgb)
+            .unwrap();
+        let p = to_i420(Pix::Mjpeg, &jpeg, 0, 4, 2, Range::Limited).unwrap();
+        assert_eq!((p.width, p.height), (4, 2));
+        assert!(p.planes().0.iter().all(|y| *y >= 230 && *y <= 235));
+        assert!(to_i420(Pix::Mjpeg, &jpeg, 0, 2, 2, Range::Limited).is_err());
+        assert!(to_i420(Pix::Mjpeg, &jpeg, 0, 6, 2, Range::Limited).is_err());
+        assert!(to_i420(Pix::Mjpeg, b"not jpeg", 0, 4, 2, Range::Limited).is_err());
+        assert!(to_i420(Pix::Mjpeg, &jpeg, 0, 4096, 2160, Range::Limited).is_err());
     }
 
     #[test]

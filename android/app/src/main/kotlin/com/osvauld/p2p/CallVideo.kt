@@ -115,7 +115,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
             if (!provider.hasCamera(cam)) cam = if (front) CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
             try {
                 actualCapture = "-"
-                val chosen = bindCapture(capturePreferences(BuildConfig.DEBUG, BuildConfig.VIDEO_HD_CAPTURE)) { requested ->
+                val chosen = bindCapture(capturePreferences(app.preferHdCapture)) { requested ->
                     val selector = ResolutionSelector.Builder()
                         .setAspectRatioStrategy(if (requested.wide) AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY
                             else AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)

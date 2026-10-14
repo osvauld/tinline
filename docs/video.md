@@ -3,6 +3,22 @@
 Status: design + simulation; wired into 1:1 calls in the core; Android UI (camera, render,
 call screen); desktop UI (camera + render).
 
+## Opt-in HD capture (Android and Linux desktop)
+
+Settings **Prefer HD** now requests 1280x720 capture with bounded SD fallback;
+Auto remains the default. The AV1 software encoder, rate/CPU ladder and peer
+limits are unchanged, so HD capture is not a guarantee of HD transmission. Both
+apps display actual **Sending** dimensions and label HD only at 1280x720 or its
+portrait equivalent. Android preference changes apply at the next camera bind.
+
+Linux desktop supports YUYV, NV12 and MJPEG (often needed for USB 720p30).
+**Find cameras → Refresh → Camera** selects a capture node for the next call;
+a missing selected camera never silently switches to another. Prefer HD applies
+at the next camera start. See [HD capture integration and validation](design/video-hd-hardware.md)
+for exact checks, local-call evidence and remaining limits. No GPU/hardware
+encoding has been added. Older spike measurements below describe their original
+capture settings, not the new opt-in preference.
+
 ## Decisions
 
 - **Codec: AV1.** Encoder = libaom in realtime mode (C, through `csrc/aom_rt.c`); decoder =

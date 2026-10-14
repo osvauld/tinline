@@ -1,15 +1,29 @@
 package com.osvauld.p2p
 
-/** Experiment only: requested sizes, NOT promises about CameraX's negotiated buffers. */
+/** Requested sizes, NOT promises about CameraX's negotiated buffers or encoded resolution. */
 internal enum class CapturePreference(val width: Int, val height: Int, val wide: Boolean) {
     SD(640, 480, false),
     HD(1280, 720, true),
 }
 
-/** Release and baseline debug builds retain existing capture preference. */
-internal fun capturePreferences(debug: Boolean, hdRequested: Boolean): List<CapturePreference> =
-    if (debug && hdRequested) listOf(CapturePreference.HD, CapturePreference.SD)
-    else listOf(CapturePreference.SD)
+/** Device-local choice. Auto preserves the existing SD capture/adaptation policy. */
+internal enum class VideoQualityPreference(val label: String) {
+    AUTO("Auto"), PREFER_HD("Prefer HD");
+
+    companion object {
+        fun fromStored(value: String?): VideoQualityPreference = entries.firstOrNull { it.name == value } ?: AUTO
+    }
+}
+
+internal fun capturePreferences(preferHd: Boolean): List<CapturePreference> =
+    if (preferHd) listOf(CapturePreference.HD, CapturePreference.SD) else listOf(CapturePreference.SD)
+
+/** Actual encoded/decoded dimensions, not a capture preference or a bitrate-based guess. */
+internal fun videoResolutionLabel(width: Int, height: Int): String? {
+    if (width <= 0 || height <= 0) return null
+    val hd = maxOf(width, height) >= 1280 && minOf(width, height) >= 720
+    return "${if (hd) "HD · " else ""}${width}×${height}"
+}
 
 /** Only unsupported-resolution/use-case failures retry; never hide permission/lifecycle errors. */
 internal fun bindCapture(preferences: List<CapturePreference>, bind: (CapturePreference) -> Unit): CapturePreference {
