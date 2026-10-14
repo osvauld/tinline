@@ -4,16 +4,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class VideoQualityTest {
-    @Test fun hdIsExplicitAndDebugOnly() {
-        assertEquals(listOf(CapturePreference.SD), capturePreferences(false, true))
-        assertEquals(listOf(CapturePreference.SD), capturePreferences(true, false))
-        assertEquals(listOf(CapturePreference.HD, CapturePreference.SD), capturePreferences(true, true))
+    @Test fun hdIsExplicitAndAutoKeepsBaseline() {
+        assertEquals(listOf(CapturePreference.SD), capturePreferences(false))
+        assertEquals(listOf(CapturePreference.HD, CapturePreference.SD), capturePreferences(true))
         assertEquals(1280, CapturePreference.HD.width)
         assertEquals(720, CapturePreference.HD.height)
     }
     @Test fun unsupportedHdFallsBackOnceToBaseline() {
         val attempted = mutableListOf<CapturePreference>()
-        val result = bindCapture(capturePreferences(true, true)) {
+        val result = bindCapture(capturePreferences(true)) {
             attempted += it
             if (it == CapturePreference.HD) throw IllegalArgumentException("unsupported")
         }
@@ -22,13 +21,13 @@ class VideoQualityTest {
     }
     @Test fun supportedHdDoesNotBindSd() {
         var attempts = 0
-        assertEquals(CapturePreference.HD, bindCapture(capturePreferences(true, true)) { attempts++ })
+        assertEquals(CapturePreference.HD, bindCapture(capturePreferences(true)) { attempts++ })
         assertEquals(1, attempts)
     }
     @Test fun permissionErrorIsNotHiddenByFallback() {
         var attempts = 0
         try {
-            bindCapture(capturePreferences(true, true)) { attempts++; throw SecurityException("camera denied") }
+            bindCapture(capturePreferences(true)) { attempts++; throw SecurityException("camera denied") }
             fail("must propagate camera denial")
         } catch (e: SecurityException) { assertEquals("camera denied", e.message) }
         assertEquals(1, attempts)
@@ -36,10 +35,25 @@ class VideoQualityTest {
     @Test fun failedFallbackDoesNotLoop() {
         var attempts = 0
         try {
-            bindCapture(capturePreferences(true, true)) { attempts++; throw IllegalArgumentException("no stream") }
+            bindCapture(capturePreferences(true)) { attempts++; throw IllegalArgumentException("no stream") }
             fail("must propagate final failure")
         } catch (e: IllegalArgumentException) { assertEquals("no stream", e.message) }
         assertEquals(2, attempts)
+    }
+    @Test fun storedPreferenceIsSafeAndStable() {
+        assertEquals(VideoQualityPreference.AUTO, VideoQualityPreference.fromStored(null))
+        assertEquals(VideoQualityPreference.AUTO, VideoQualityPreference.fromStored("invalid"))
+        assertEquals(VideoQualityPreference.AUTO, VideoQualityPreference.fromStored("AUTO"))
+        assertEquals(VideoQualityPreference.PREFER_HD, VideoQualityPreference.fromStored("PREFER_HD"))
+    }
+    @Test fun hdLabelUsesActualDimensionsAndHandlesPortrait() {
+        assertNull(videoResolutionLabel(0, 0))
+        assertNull(videoResolutionLabel(-1, 720))
+        assertEquals("HD · 1280×720", videoResolutionLabel(1280, 720))
+        assertEquals("HD · 720×1280", videoResolutionLabel(720, 1280))
+        assertEquals("640×480", videoResolutionLabel(640, 480))
+        assertEquals("960×540", videoResolutionLabel(960, 540))
+        assertEquals("240×180", videoResolutionLabel(240, 180))
     }
     private fun snap(call: String = "a", sent: ULong = 10uL, received: ULong = 8uL,
         decoded: ULong = 8uL, admitted: ULong = 1000uL, delivered: ULong = 800uL) =

@@ -1384,6 +1384,10 @@ impl App {
         }
         let profile = section(t, "Account", acct.into());
         let devices = self.linked_devices_page(t);
+        let mut camera_opts = opts(&self.video.devices);
+        if let Some(selected) = self.settings.camera_device.as_ref() {
+            if !camera_opts.contains(selected) { camera_opts.push(selected.clone()); }
+        }
         let calls = section(t,
             "Calls",
             column![
@@ -1396,6 +1400,21 @@ impl App {
                     "Video in calls",
                     "Your camera stays off until you turn it on in the call",
                     toggler(!self.settings.no_video).on_toggle(|on| Msg::Video(super::Vm::Enabled(on))).style(ui::toggle_style(t)).into(),
+                ),
+                line(t,
+                    "Prefer HD",
+                    "Aim for 720p; adapts to connection and device. Applies at next camera start",
+                    toggler(self.settings.prefer_hd).on_toggle(|on| Msg::Video(super::Vm::PreferHd(on))).style(ui::toggle_style(t)).into(),
+                ),
+                line(t,
+                    "Camera",
+                    "Selection applies from the next call",
+                    pick(camera_opts, sel(&self.settings.camera_device), |d| Msg::Video(super::Vm::SelectCamera(d))),
+                ),
+                line(t,
+                    "Find cameras",
+                    "List connected capture devices without starting video",
+                    pill(t, Kind::Quiet, None, "Refresh", Some(Msg::Video(super::Vm::ScanCameras))),
                 ),
             ]
             .spacing(12)
@@ -1784,6 +1803,10 @@ impl App {
             .into(),
         };
         let mut st = stack![container(main).center_x(Fill).center_y(Fill).style(ui::plain(t.surface2, 16.0))];
+        if v.local_on() {
+            let label = v.send_size.map_or_else(|| "Starting video…".to_string(), |(w, h)| crate::camera::sending_label(w, h));
+            st = st.push(container(tx(label, 13.0, t.ink)).padding(14));
+        }
         if let Some(h) = v.local.as_ref().filter(|_| v.local_on()) {
             st = st.push(
                 container(image(h.clone()).width(220).border_radius(10.0))

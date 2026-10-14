@@ -91,6 +91,11 @@ struct Settings {
     /// Calls are audio only (no video offered or taken).
     #[serde(default)]
     no_video: bool,
+    /// Device-local capture preference; applies at the next camera start.
+    #[serde(default)]
+    prefer_hd: bool,
+    #[serde(default)]
+    camera_device: Option<String>,
     /// Appearance: None follows the system; Some(dark) is an explicit choice (the sign-up switch).
     #[serde(default)]
     appearance: Option<bool>,

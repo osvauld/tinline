@@ -90,6 +90,13 @@ fun SettingsScreen(
             var video by remember { mutableStateOf(app.videoEnabled) }
             ListItem("Video in calls", sub = if (video) "You can turn your camera on in a call" else "Calls are voice only", icon = PgIcons.Video,
                 trailing = { TinSwitch(video, { on -> video = on; app.videoEnabled = on }, "Video in calls") })
+            var hd by remember { mutableStateOf(app.videoQualityPreference == VideoQualityPreference.PREFER_HD) }
+            ListItem("Prefer HD", sub = if (hd) "Aim for 720p; adapts to connection and device. Uses more battery. Next camera start"
+                else "Auto · adapts for smooth calls. HD off", icon = PgIcons.Video,
+                trailing = { TinSwitch(hd, { on ->
+                    hd = on
+                    app.videoQualityPreference = if (on) VideoQualityPreference.PREFER_HD else VideoQualityPreference.AUTO
+                }, "Prefer HD") })
             ListItem("Background & battery", onClick = onBattery, icon = PgIcons.Battery,
                 sub = if (bgOk) "All set — calls will ring" else "Needs attention")
             SectionLabel("SECURITY")

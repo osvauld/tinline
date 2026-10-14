@@ -71,6 +71,8 @@ class DebugReceiver : BroadcastReceiver() {
             "stats" -> app.calls.logStats()
             // Call video: state and counters (also logged every second during a video call).
             "video_stats" -> testLog(app.video.statsLine(app.calls.renderer))
+            // Explicit metadata inventory only: no codec creation, timing or benchmark.
+            "video_hardware" -> VideoHardware.inventory().forEach { testLog("video_hardware $it") }
             // Camera on/off as the button does (permission must already be granted); `on=0` = off.
             "camera" -> {
                 val on = i.getStringExtra("on") != "0"

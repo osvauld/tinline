@@ -1,5 +1,9 @@
 # Controlled 1:1 HD-capture candidate
 
+Historical validation of `74b5ea8`. The new user-selectable HD worktree candidate
+is described in [video-hd-hardware.md](video-hd-hardware.md); the test results below
+do **not** validate that newer candidate.
+
 This patch adds an experiment, not an accepted release-quality fix:
 
 - Debug opt-in `-PvideoHdCapture=true`: prefer 1280x720/16:9 CameraX capture,

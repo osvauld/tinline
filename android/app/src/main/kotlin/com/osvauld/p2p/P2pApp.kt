@@ -216,6 +216,15 @@ class P2pApp : Application(), NodeEvents {
         get() = callPrefs.getBoolean("video", true)
         set(on) { callPrefs.edit().putBoolean("video", on).apply(); node.setVideoEnabled(on) }
 
+    /** Device-local capture preference; changing it takes effect at the next camera bind. */
+    internal var videoQualityPreference: VideoQualityPreference
+        get() = VideoQualityPreference.fromStored(callPrefs.getString("video_quality", null))
+        set(value) { callPrefs.edit().putString("video_quality", value.name).apply() }
+
+    internal val preferHdCapture: Boolean
+        get() = if (callPrefs.contains("video_quality")) videoQualityPreference == VideoQualityPreference.PREFER_HD
+            else BuildConfig.DEBUG && BuildConfig.VIDEO_HD_CAPTURE
+
     fun currentDid(): String? = try { node.profile()?.did } catch (_: Exception) { null }
 
     /**
