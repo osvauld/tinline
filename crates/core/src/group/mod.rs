@@ -12,6 +12,7 @@ pub mod invitations;
 pub mod mail;
 pub mod own;
 pub mod record;
+mod relay;
 pub mod requests;
 pub mod shard;
 pub mod state;
