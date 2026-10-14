@@ -475,7 +475,7 @@ private fun LinkScanScreen(newDevice: Boolean, note: String?, nonce: Int, onBack
                     Modifier.align(Alignment.Center).padding(24.dp).clip(SmoothCornerShape(20.dp)).background(Color(0xE6101614)).padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(Icons.Rounded.ErrorOutline, null, tint = Color(0xFFF2B8B5), modifier = Modifier.size(32.dp))
+                    Icon(PgIcons.Warning, null, tint = Color(0xFFF2B8B5), modifier = Modifier.size(32.dp))
                     Text(note, style = PgType.body, color = Color.White, textAlign = TextAlign.Center)
                     PBtn("Scan again", onRetry, variant = PVariant.Primary)
                 }
@@ -497,7 +497,7 @@ fun UnlinkedScreen(name: String, onOk: () -> Unit, onLinkAgain: () -> Unit) {
         GateHead(null, null)
         GateStep("This phone was unlinked", center = true, anchor = true,
             lead = "${name.ifBlank { "Your account" }} was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected.",
-            hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(Icons.Rounded.LinkOff, 72.dp, 32.dp, danger = true) } },
+            hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Off, 72.dp, 32.dp, danger = true) } },
             foot = {
                 GBtn("OK", onOk)
                 GBtn("Link it again", onLinkAgain, kind = GKind.Text)

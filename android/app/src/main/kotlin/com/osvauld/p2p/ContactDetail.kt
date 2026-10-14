@@ -48,7 +48,8 @@ fun ContactScreen(
         TopBar(null, onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Avatar(shown, contact.did, 96.dp)
+                // Tap the photo to see it large.
+                ViewablePgAvatar(shown, 0, 96.dp, person = contact.did)
                 Text(shown, Modifier.padding(top = 6.dp), style = TinType.h1, color = c.ink, textAlign = TextAlign.Center)
                 if ((alias != null && alias != contact.name) || verified || block.blockedByMe || blockedMe) Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
@@ -64,7 +65,7 @@ fun ContactScreen(
                         Text("Verified", style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.onPrc)
                     }
                 }
-                TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = if (canCall) PgIcons.Phone else Icons.Rounded.PhoneDisabled, enabled = !closed)
+                TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = if (canCall) PgIcons.Phone else PgIcons.Callend, enabled = !closed)
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (onMessage != null) ActionChip(PgIcons.Chat, "Message", c.pr, onMessage)
                     ActionChip(PgIcons.Edit, "Rename", c.pr) { renaming = true }
@@ -108,7 +109,7 @@ private fun HistoryRow(r: RecentCall) {
     val c = Tin.c
     val red = r.kind == RecentCall.Kind.Missed || r.kind == RecentCall.Kind.Unreached
     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Icon(when (r.kind) { RecentCall.Kind.Incoming -> PgIcons.CallIn; RecentCall.Kind.Missed -> Icons.Rounded.CallMissed; else -> PgIcons.CallOut },
+        Icon(when (r.kind) { RecentCall.Kind.Incoming -> PgIcons.CallIn; RecentCall.Kind.Missed -> PgIcons.CallIn; else -> PgIcons.CallOut },
             null, tint = if (red) c.er else c.ink2, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
             Text(r.title.ifBlank { "Call" }, style = TinType.bodyL.copy(fontSize = 15.sp), color = if (red) c.er else c.ink)
@@ -171,7 +172,7 @@ fun VerifyScreen(
     }
     if (mismatch) TinDialog(
         "The numbers don’t match", { mismatch = false }, "Block $name", { mismatch = false; onBlock() }, dismiss = "Check again",
-        destructive = true, icon = Icons.Rounded.GppMaybe,
+        destructive = true, icon = PgIcons.Warning,
     ) {
         DialogText("Someone may be in the middle of your calls, or a digit was misread. Look once more, group by group.")
         DialogText("If they still differ, block $name and add each other again face to face.")

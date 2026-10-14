@@ -40,8 +40,8 @@ fun tickOf(m: Message, link: Link, online: Boolean, nowMs: Long): Tick = when {
 @Composable
 fun TickIcon(t: Tick, tint: Color, size: Dp = 15.dp) {
     val (icon, desc) = when (t) {
-        Tick.One -> Icons.Rounded.Done to "Saved on your phone"
-        Tick.Two -> Icons.Rounded.DoneAll to "On their phone"
+        Tick.One -> PgIcons.Check to "Saved on your phone"
+        Tick.Two -> PgIcons.Check to "On their phone"
         Tick.Clock -> PgIcons.Clock to "Waiting until you are both online"
     }
     Icon(icon, desc, tint = tint, modifier = Modifier.size(size))

@@ -127,7 +127,7 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
             if (!d.removed) {
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (!d.thisDevice) TinButton("Sync now", { app.node.networkChanged(); onMessage("Syncing with ${d.label.ifBlank { "the device" }}…") }, style = BtnStyle.Outlined, icon = PgIcons.Retry)
-                    TinButton(if (d.thisDevice) "Remove account from this phone" else "Unlink this device", { pass = ""; error = null; confirm = true }, style = BtnStyle.Danger, icon = Icons.Rounded.LinkOff)
+                    TinButton(if (d.thisDevice) "Remove account from this phone" else "Unlink this device", { pass = ""; error = null; confirm = true }, style = BtnStyle.Danger, icon = PgIcons.Off)
                 }
             }
         }
@@ -147,7 +147,7 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
     if (confirm) {
         val name = d.label.ifBlank { "this device" }
         TinDialog(if (d.thisDevice) "Remove your account from this phone?" else "Unlink $name?", { if (!busy) confirm = false },
-            if (busy) "Working…" else if (d.thisDevice) "Remove" else "Unlink", ::confirmed, destructive = true, icon = Icons.Rounded.LinkOff,
+            if (busy) "Working…" else if (d.thisDevice) "Remove" else "Unlink", ::confirmed, destructive = true, icon = PgIcons.Off,
             confirmEnabled = !busy && (!hasPass || pass.isNotEmpty())) {
             if (d.thisDevice) {
                 DialogText("This phone stops syncing and ringing, and your account, contacts, chats and call history are deleted from it.")

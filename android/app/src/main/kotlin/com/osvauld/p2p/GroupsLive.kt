@@ -897,15 +897,18 @@ private fun HostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (Str
 private fun CallHostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (String, String) -> String,
                              exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit) {
     val ready = d.callHosts.count { it.online || it.isMe }
-    val line = if (d.callHosts.isEmpty()) 0 else if (ready > 0) 1 else 2
+    // This phone is said in words, not listed as a row: "Stop hosting calls on this phone" below stands for it.
+    val onlyMe = d.amCallHost && d.callHosts.size == 1
+    val line = if (d.callHosts.isEmpty()) 0 else if (onlyMe) 3 else if (ready > 0) 1 else 2
     val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) "This device" else name(h.did, h.name) }
     InfoSec("Call hosts") {
         StatusLine(listOf(
             "This group has no call host. Nobody can start a call until an admin appoints one.",
             "${plural(ready.coerceAtLeast(1), "call host")} ready. Calls start through ${if (ready == 1) "it" else "them"}.",
             "No call host is available right now. A call can’t start until one is back.",
-        ), line, line == 1)
-        d.callHosts.forEach { h ->
+            "This phone carries the calls you start.",
+        ), line, line == 1 || line == 3)
+        d.callHosts.filter { !it.isMe }.forEach { h ->
             key("c" + h.did + h.deviceId) {
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)

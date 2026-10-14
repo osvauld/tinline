@@ -127,7 +127,7 @@ fun FileViewer(m: Message, plan: OpenPlan, source: ChatSource, onClose: () -> Un
             when (s) {
                 Loaded.Loading -> Text("Opening…", style = TinType.bodyM, color = Dim)
                 is Loaded.Error -> Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Icon(Icons.Rounded.ErrorOutline, null, tint = Dim)
+                    Icon(PgIcons.Warning, null, tint = Dim)
                     Text(s.msg, style = TinType.bodyL, color = Color.White)
                     Box(Modifier.clip(RoundedCornerShape(50)).background(Color.White).clickable(role = Role.Button, onClick = onSave).padding(horizontal = 24.dp, vertical = 12.dp)) {
                         Text("Save to phone", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.Black)

@@ -181,7 +181,7 @@ fun PDmScreen(src: FakeGroupsPrivacy, nav: PNav, did: String) {
             onTitle = { nav.go(PRoute.Contact(did)) },
         ) {
             val allowed = check == CallCheck.Allowed
-            IconBtn(if (allowed) PgIcons.Phone else Icons.Rounded.PhoneDisabled, if (allowed) "Call $fn" else "Call $fn, not available", {
+            IconBtn(if (allowed) PgIcons.Phone else PgIcons.Callend, if (allowed) "Call $fn" else "Call $fn, not available", {
                 when (check) {
                     CallCheck.Allowed -> nav.say("Calls aren’t connected in the preview")
                     CallCheck.TheyHaveNotAllowed -> callSheet = true
@@ -254,7 +254,7 @@ private fun ColumnScope.DmItemView(src: FakeGroupsPrivacy, nav: PNav, p: Person,
                 DmTick.NotDeliveredBlocked -> "Not delivered: $fn blocked you" to c.er
             }
             Bubble(item.text, true, tick = label, tickColor = color, greyed = item.tick == DmTick.NotDeliveredBlocked,
-                tickIcon = if (item.tick == DmTick.NotDeliveredBlocked) ({ Icon(Icons.Rounded.ErrorOutline, null, tint = c.er, modifier = Modifier.size(13.dp)) }) else null)
+                tickIcon = if (item.tick == DmTick.NotDeliveredBlocked) ({ Icon(PgIcons.Warning, null, tint = c.er, modifier = Modifier.size(13.dp)) }) else null)
         } else Bubble(item.text, false)
         is DmItem.Sys -> SysLine(if (iBlocked != null && item.text.startsWith("You blocked")) "${item.text} · ${whenFull(item.atMs)}" else item.text)
         is DmItem.Invite -> invites.firstOrNull { it.id == item.inviteId }?.let { InviteCard(src, nav, it) }
@@ -299,7 +299,7 @@ internal fun ColumnScope.InviteCard(src: FakeGroupsPrivacy, nav: PNav, inv: Grou
             when {
                 mine -> Hint("Waiting for them to join")
                 inv.state == InviteState.Joined -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Rounded.CheckCircle, null, tint = c.pr, modifier = Modifier.size(20.dp))
+                    Icon(PgIcons.Check, null, tint = c.pr, modifier = Modifier.size(20.dp))
                     Text("Joined", Modifier.weight(1f), style = TinType.label, color = c.pr)
                     inv.groupId?.let { gid -> TinButton("Open", { nav.go(PRoute.GroupChat(gid)) }, style = BtnStyle.Text, fill = false, height = 40.dp) }
                 }
@@ -340,9 +340,9 @@ fun BlockDialog(name: String, sharedGroups: List<String>, onDismiss: () -> Unit,
     val c = Tin.c
     val fn = first(name)
     TinDialog("Block $fn?", onDismiss, "Block", onBlock, destructive = true, icon = PgIcons.Off) {
-        BlockLine(Icons.Rounded.PhoneDisabled, "$fn can’t message or call you, on any of your devices.")
+        BlockLine(PgIcons.Callend, "$fn can’t message or call you, on any of your devices.")
         BlockLine(Icons.Rounded.Campaign, "$fn is told you blocked them.")
-        BlockLine(Icons.Rounded.WifiOff, "$fn won’t get your new address next time it changes, so $fn loses any way to reach this phone.")
+        BlockLine(PgIcons.Off, "$fn won’t get your new address next time it changes, so $fn loses any way to reach this phone.")
         if (sharedGroups.isNotEmpty()) BlockLine(PgIcons.Users, null, rich = {
             Text(androidx.compose.ui.text.buildAnnotatedString {
                 append("You both stay in ")
@@ -350,7 +350,7 @@ fun BlockDialog(name: String, sharedGroups: List<String>, onDismiss: () -> Unit,
                 append(". $fn’s group messages show collapsed for you.")
             }, style = TinType.bodyM.copy(fontSize = 15.sp, lineHeight = 22.sp), color = c.ink2)
         })
-        BlockLine(Icons.Rounded.History, "Your chat history stays on this phone.")
+        BlockLine(PgIcons.Clock, "Your chat history stays on this phone.")
     }
 }
 

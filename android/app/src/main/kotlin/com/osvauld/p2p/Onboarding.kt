@@ -606,7 +606,7 @@ private fun SyncingStep(name: String, peer: String, contacts: Int, calls: Int, o
     ) {
         PfCard {
             row { SyncRow(PgIcons.Users, "Contacts", if (contacts > 0) "$contacts" else "Waiting", contacts > 0) }
-            row { SyncRow(Icons.Rounded.History, "Call history", if (calls > 0) "$calls" else "Waiting", calls > 0) }
+            row { SyncRow(PgIcons.Clock, "Call history", if (calls > 0) "$calls" else "Waiting", calls > 0) }
         }
         ReservedLine(if (slow && contacts == 0 && calls == 0) "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
             else "Keep both devices online. Sync keeps going in the background.", style = PgType.sub19, color = c.ink2, align = TextAlign.Center, lines = 2)

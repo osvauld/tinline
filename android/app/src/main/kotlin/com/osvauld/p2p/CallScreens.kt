@@ -214,7 +214,7 @@ private fun routeIcon(k: AudioRoute.Kind): ImageVector = when (k) {
     AudioRoute.Kind.Earpiece -> PgIcons.Phone
     AudioRoute.Kind.Speaker -> PgIcons.Vol
     AudioRoute.Kind.Bluetooth -> Icons.Rounded.Bluetooth
-    AudioRoute.Kind.Wired -> Icons.Rounded.Headphones
+    AudioRoute.Kind.Wired -> PgIcons.Vol
     AudioRoute.Kind.Other -> PgIcons.Vol
 }
 

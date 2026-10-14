@@ -85,7 +85,7 @@ fun SettingsScreen(
             val devVer by app.links.devicesVersion.collectAsState()
             val devCount by produceState(1, devVer) { value = withContext(Dispatchers.IO) { runCatching { app.node.linkedDevices().count { !it.removed } }.getOrDefault(1) } }
             ListItem("Linked devices", onClick = onDevices, icon = PgIcons.Devices, sub = if (devCount <= 1) "This phone only" else "$devCount devices")
-            ListItem("Link a device", onClick = onLinkDevice, icon = Icons.Rounded.AddLink, sub = "Use your account on another phone or computer")
+            ListItem("Link a device", onClick = onLinkDevice, icon = PgIcons.Link, sub = "Use your account on another phone or computer")
             SectionLabel("CALLS")
             ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = PgIcons.Phone,
                 trailing = { TinSwitch(available, { on -> scope.launch(Dispatchers.IO) { app.setAvailable(on) } }, "Available for calls") })
@@ -145,7 +145,7 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
             SectionLabel("CHECKLIST")
             CheckRow(PgIcons.Battery, "Battery", if (Need.Battery in missing) "Optimised — Android may pause Tinline" else null, Need.Battery !in missing, "On") { onFix(Need.Battery) }
             CheckRow(PgIcons.Bell, "Notifications", null, Need.Notifications !in missing, "On") { onFix(Need.Notifications) }
-            CheckRow(Icons.Rounded.PhoneLocked, "Ring over lock screen", null, Need.FullScreen !in missing, "On") { onFix(Need.FullScreen) }
+            CheckRow(PgIcons.Lock, "Ring over lock screen", null, Need.FullScreen !in missing, "On") { onFix(Need.FullScreen) }
             CheckRow(PgIcons.Mic, "Microphone", null, Need.Mic !in missing, "Allowed") { onFix(Need.Mic) }
             Column(
                 Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(14.dp),
@@ -280,7 +280,7 @@ fun ChangePassphraseScreen(app: P2pApp, onBack: () -> Unit) {
 fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
-    val ext: @Composable () -> Unit = { Icon(Icons.Rounded.OpenInNew, null, tint = c.ink2) }
+    val ext: @Composable () -> Unit = { Icon(PgIcons.Forward, null, tint = c.ink2) }
     Page {
         TopBar("About", onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
@@ -293,7 +293,7 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
             }
             ListItem("Source code", { openUrl(ctx, URL_SOURCE) }, sub = "GPL-3.0", icon = Icons.Rounded.Code, trailing = ext)
             ListItem("Terms of Use", { openUrl(ctx, URL_TERMS) }, icon = PgIcons.File, trailing = ext)
-            ListItem("Privacy Policy", { openUrl(ctx, URL_PRIVACY) }, icon = Icons.Rounded.PrivacyTip, trailing = ext)
+            ListItem("Privacy Policy", { openUrl(ctx, URL_PRIVACY) }, icon = PgIcons.Shield, trailing = ext)
             ListItem("Open-source licences", onLicences, icon = Icons.Rounded.Gavel)
             ListItem("tinline.osvauld.com", { openUrl(ctx, URL_SITE) }, icon = Icons.Rounded.Language, trailing = ext)
             Hint("Not for emergency calls.", Modifier.padding(horizontal = 20.dp, vertical = 16.dp))

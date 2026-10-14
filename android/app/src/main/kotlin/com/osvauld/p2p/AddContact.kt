@@ -201,7 +201,7 @@ fun PasteCardScreen(app: P2pApp, text: String, onChange: (String) -> Unit, onBac
                     Text("Looks like a Tinline card", style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.onPrc)
                     Text(if (peek?.known == true) "Already a contact" else "Add ${peek?.name?.ifBlank { null } ?: "them"} · single use", style = TinType.bodyM, color = c.onPrc)
                 }
-                Icon(Icons.Rounded.CheckCircle, null, tint = c.onPrc)
+                Icon(PgIcons.Check, null, tint = c.onPrc)
             }
             Hint("Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.")
         }

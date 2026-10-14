@@ -140,12 +140,12 @@ fun HomeScreen(
 @Composable
 private fun TopBanner(online: Boolean, grace: Boolean, missing: List<Need>, onFix: (Need) -> Unit, available: Boolean, onTurnOn: () -> Unit) {
     when {
-        !online && !grace -> Banner(BannerKind.Error, Icons.Rounded.WifiOff, "You’re offline", "Your calls come through again once you’re back online.")
+        !online && !grace -> Banner(BannerKind.Error, PgIcons.Off, "You’re offline", "Your calls come through again once you’re back online.")
         Need.Mic in missing -> Banner(BannerKind.Error, PgIcons.Micoff, "Microphone is off", "People won’t hear you on calls.", "Allow") { onFix(Need.Mic) }
         Need.Notifications in missing -> Banner(BannerKind.Warn, PgIcons.Mute, "Calls won’t ring", "Notifications are off for Tinline.", "Turn on") { onFix(Need.Notifications) }
-        Need.Battery in missing -> Banner(BannerKind.Warn, Icons.Rounded.BatteryAlert, "Calls may be missed when idle", "Android is limiting Tinline in the background.", "Fix") { onFix(Need.Battery) }
-        Need.FullScreen in missing -> Banner(BannerKind.Warn, Icons.Rounded.PhoneLocked, "Calls won’t show on the lock screen", "Allow full-screen calls so Tinline rings like the phone app.", "Allow") { onFix(Need.FullScreen) }
-        !available -> Banner(BannerKind.Neutral, Icons.Rounded.PhoneDisabled, "You’re not available", "Calls won’t ring until you turn it back on.", "Turn on", onTurnOn)
+        Need.Battery in missing -> Banner(BannerKind.Warn, PgIcons.Battery, "Calls may be missed when idle", "Android is limiting Tinline in the background.", "Fix") { onFix(Need.Battery) }
+        Need.FullScreen in missing -> Banner(BannerKind.Warn, PgIcons.Lock, "Calls won’t show on the lock screen", "Allow full-screen calls so Tinline rings like the phone app.", "Allow") { onFix(Need.FullScreen) }
+        !available -> Banner(BannerKind.Neutral, PgIcons.Callend, "You’re not available", "Calls won’t ring until you turn it back on.", "Turn on", onTurnOn)
         // "Set a passphrase" slots in after this; it is a blocking screen today.
     }
 }
@@ -227,7 +227,7 @@ fun HomeContent(
 
 fun recentIcon(k: RecentCall.Kind): ImageVector = when (k) {
     RecentCall.Kind.Incoming -> PgIcons.CallIn
-    RecentCall.Kind.Missed -> Icons.Rounded.CallMissed
+    RecentCall.Kind.Missed -> PgIcons.CallIn
     else -> PgIcons.CallOut
 }
 

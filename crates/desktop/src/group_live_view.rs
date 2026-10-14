@@ -515,11 +515,13 @@ impl App {
             // ---- hosts
             let up = d.am_host || d.hosts.iter().any(|h| h.online);
             let host_line = if d.hosts.is_empty() { "This group has no host. Posts wait until a host is appointed.".to_string() }
-                else if up { format!("{} host{} online. Posts go through right away.", d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1), if d.hosts.len() == 1 { "" } else { "s" }) }
+                // This computer is said in words, not listed as a row: its "Stop hosting" button below stands for it.
+                else if d.am_host && d.hosts.len() == 1 { "This computer hosts the group. Posts go through right away.".to_string() }
+                else if up { format!("{} host{} online{}. Posts go through right away.", d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1), if d.hosts.len() == 1 { "" } else { "s" }, if d.am_host { ", this computer too" } else { "" }) }
                 else { "No host is online. Your posts are saved and send when one is.".to_string() };
             let mut c = column![h2("Hosts", None), status(up && !d.hosts.is_empty(), host_line)];
-            for h in &d.hosts {
-                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
+            for h in d.hosts.iter().filter(|h| !h.is_me) {
+                let name = self.live_name(&h.did, &h.name);
                 let calls = d.call_hosts.iter().any(|x| x.did == h.did && x.device_id == h.device_id);
                 let sub = format!("{}{}", if h.online || h.is_me { "Online" } else { "Offline" }, if calls { " \u{b7} also hosts calls" } else { "" });
                 let end: El = if admin { textbtn("Remove", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
@@ -549,10 +551,11 @@ impl App {
             // ---- call hosts
             let ready = d.call_hosts.len();
             let ch_line = if ready == 0 { "This group has no call host. Nobody can start a call until an admin appoints one.".to_string() }
+                else if d.am_call_host && d.call_hosts.len() == 1 { "This computer carries the calls.".to_string() }
                 else { format!("{ready} call host{} ready. Calls start through {}.", if ready == 1 { "" } else { "s" }, if ready == 1 { "it" } else { "them" }) };
             let mut c = column![h2("Call hosts", None), status(ready > 0, ch_line)];
-            for h in &d.call_hosts {
-                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
+            for h in d.call_hosts.iter().filter(|h| !h.is_me) {
+                let name = self.live_name(&h.did, &h.name);
                 // Removes the CALL host (was wired to the chat-host revoke).
                 let end: El = if admin { textbtn("Remove", t.ink, l(Lm::RevokeCall(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
                 c = c.push(mrow(&h.did, name, if h.online || h.is_me { "Online".into() } else { "Offline".into() }, end));

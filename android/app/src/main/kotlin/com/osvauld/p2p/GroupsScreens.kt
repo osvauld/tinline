@@ -127,7 +127,7 @@ fun PChatsScreen(src: FakeGroupsPrivacy, nav: PNav) {
                 ShrinkFab(PgIcons.Plus, "New", fabWide) { newMenu = true }
                 DropdownMenu(newMenu, { newMenu = false }, containerColor = c.sfRaised) {
                     DropdownMenuItem({ Text("New group", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.go(PRoute.NewGroup) },
-                        leadingIcon = { Icon(Icons.Rounded.GroupAdd, null, tint = c.ink2) })
+                        leadingIcon = { Icon(PgIcons.Userplus, null, tint = c.ink2) })
                     DropdownMenuItem({ Text("Add contact", style = TinType.bodyL, color = c.ink) }, { newMenu = false; nav.addContact() },
                         leadingIcon = { Icon(PgIcons.Qr, null, tint = c.ink2) })
                 }
@@ -226,7 +226,7 @@ fun PGroupChatScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
             if (hostCount == 0) "This group has no host yet. Your messages are saved and will send when a member’s desktop hosts it."
             else if (hostCount == 1) "The host desktop is offline. Your messages are saved and will send when it comes back."
             else "${if (hostCount == 2) "Both" else "All"} host desktops are offline. Your messages are saved and will send when one comes back.",
-            Modifier.padding(horizontal = 16.dp, vertical = 4.dp), icon = Icons.Rounded.CloudOff, kind = BannerKind.Warn,
+            Modifier.padding(horizontal = 16.dp, vertical = 4.dp), icon = PgIcons.Off, kind = BannerKind.Warn,
         )
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = list, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(g.items, key = { it.id }) { item ->
@@ -490,7 +490,7 @@ private fun MemberSheet(src: FakeGroupsPrivacy, nav: PNav, g: Group, m: GroupMem
         SheetItemFlush(PgIcons.Chat, "Message privately", if (isContact) "Opens your chat with $fn" else "Sends $fn a chat request") {
             if (isContact) { onDismiss(); nav.go(PRoute.Dm(m.did)) } else asking = true
         }
-        if (admin && !m.isAdmin) SheetItemFlush(Icons.Rounded.AdminPanelSettings, "Make admin") {
+        if (admin && !m.isAdmin) SheetItemFlush(PgIcons.Shield, "Make admin") {
             src.makeAdmin(g.id, m.did).reason()?.let(nav.say); onDismiss()
         }
         if (admin && g.hosts.none { it.ownerDid == m.did }) SheetItemFlush(PgIcons.Laptop, "Make host", "Only for one of $fn’s desktops") {

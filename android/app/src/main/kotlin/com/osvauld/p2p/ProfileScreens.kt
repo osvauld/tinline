@@ -144,7 +144,7 @@ fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Uni
         // hero
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 4.dp).semantics { contentDescription = "Picture" },
             horizontalAlignment = Alignment.CenterHorizontally) {
-            PgAvatar(name, 0, 112.dp, person = me)
+            ViewablePgAvatar(name, 0, 112.dp, person = me)
             Row(Modifier.padding(top = 18.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (hasPic) {
                     PBtn("Change photo", ::pick, icon = PgIcons.Camera, minWidth = 140.dp)

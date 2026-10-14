@@ -428,7 +428,7 @@ fun ConversationScreen(
                         Modifier.fillMaxWidth().padding(start = 0.dp, end = 0.dp, top = 8.dp, bottom = 8.dp).border(1.dp, c.ln2, SmoothCornerShape(14.dp)).padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(Icons.Rounded.History, null, tint = c.ink2)
+                        Icon(PgIcons.Clock, null, tint = c.ink2)
                         Column(Modifier.weight(1f)) {
                             Text("Older messages are on $first’s phone", style = TinType.bodyM.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = c.ink)
                             Text("This phone keeps them from when you started using it. Earlier days load when you’re both online.", Modifier.padding(top = 4.dp), style = TinType.bodyM, color = c.ink2)
@@ -891,7 +891,7 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
     TinSheet(onDismiss) {
         Text(if (isSelf) "Save for yourself" else "Send to $first", Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf(Triple(Icons.Rounded.PhotoLibrary, "Photos & videos", onPhotos), Triple(PgIcons.Camera, "Camera", onCamera), Triple(PgIcons.File, "File", onFile)).forEach { (icon, label, go) ->
+            listOf(Triple(PgIcons.Image, "Photos & videos", onPhotos), Triple(PgIcons.Camera, "Camera", onCamera), Triple(PgIcons.File, "File", onFile)).forEach { (icon, label, go) ->
                 Column(Modifier.weight(1f).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button, onClick = go).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.size(60.dp).clip(SmoothCornerShape(18.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
                     Text(label, style = TinType.bodyM.copy(fontWeight = FontWeight.Medium), color = c.ink)
