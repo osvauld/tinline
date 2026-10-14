@@ -7,6 +7,7 @@ pub mod accounts;
 mod block;
 mod caps;
 mod chat;
+mod contact_req;
 mod devlist;
 mod profile;
 pub use profile::{AccountProfile, ProfileEvents};
@@ -50,6 +51,7 @@ pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents
 pub use group::calls::{GroupCall, GroupCallConditions, GroupCallDeviceClass, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupCallHere, GroupCallThermal};
 pub use group::invitations::{GroupInvitation, GroupInvitationEvents, GroupInvitationState};
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
+pub use contact_req::{AddError, AddOutcome, CodePeek, ContactRequest, ContactRequestEvents, MyCode};
 pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameKind, SearchResults};
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};

@@ -949,3 +949,28 @@ fn the_contact_cannot_squat_an_unseen_sibling_writer_id() {
     assert_eq!(us.apply_remote(&c.snapshot(), &hist(1, 0)).unwrap(), Applied::default());
     assert_eq!(us.vv(), c.vv());
 }
+
+// KIND: invariant (chat/5: a photo's size and preview are part of the author proof)
+#[test]
+fn photo_size_and_preview_are_signed_and_older_records_keep_their_input() {
+    let file = FileRef {
+        hash: "h".into(), key: "k".into(), name: "p.jpg".into(), size: 10, mime: "image/jpeg".into(), kind: "file".into(),
+        duration_ms: 0, waveform: vec![], width: 0, height: 0, preview: String::new(),
+    };
+    let at = WrittenAt { peer: wid(0, 1), counter: 3, len: 4 };
+    // A record without picture fields signs exactly what it did before /5 (no trailing bytes after the waveform).
+    let old = MsgRec { file: Some(file.clone()), ..rec_of("m1", 0, 1, NOON, "") };
+    let input = msg_sig_input(&name(), &old, &at);
+    let tail = [&0u32.to_be_bytes()[..], &old.dev[..]].concat();
+    assert!(input.windows(tail.len()).any(|w| w == tail.as_slice()), "the waveform length is followed directly by the device id");
+    // With a size and preview, every one of them is covered.
+    let pic = FileRef { width: 4000, height: 3000, preview: "aa".repeat(36), ..file };
+    let rec = MsgRec { file: Some(pic.clone()), ..old.clone() };
+    let signed = MsgRec { did_sig: sign_msg(acct(0), &name(), &rec, &at), ..rec.clone() };
+    assert!(verify_msg(&name(), &signed, &at));
+    for f in [FileRef { width: 3000, ..pic.clone() }, FileRef { height: 4000, ..pic.clone() }, FileRef { preview: "ab".repeat(36), ..pic.clone() }] {
+        assert!(!verify_msg(&name(), &MsgRec { file: Some(f), ..signed.clone() }, &at));
+    }
+    // Stripping them is a change too.
+    assert!(!verify_msg(&name(), &MsgRec { file: Some(FileRef { width: 0, height: 0, preview: String::new(), ..pic }), ..signed }, &at));
+}

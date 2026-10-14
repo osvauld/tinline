@@ -159,8 +159,8 @@ impl Node {
             s.state.notice_outbox.insert(did.clone());
             // Takes back both their tokens (P6): an unblock does not revive them.
             Inner::revoke_all(&mut s.state, &did);
-            // A ticket they may have seen is of no further use.
-            s.state.ticket = None;
+            // A ticket they may have seen is of no further use (nor any older one still live).
+            crate::node::retire_ticket(&mut s.state, false);
             n
         };
         self.inner.block.signed.lock().insert(did.clone(), 1);

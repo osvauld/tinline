@@ -1417,6 +1417,9 @@ impl Inner {
             kind: if f.kind == "voice" { AttachmentKind::Voice } else { AttachmentKind::File },
             duration_ms: f.duration_ms,
             waveform: f.waveform.clone(),
+            width: f.width,
+            height: f.height,
+            preview: hex::decode(&f.preview).ok().filter(|p| p.len() == crate::chat::photo::PREVIEW_LEN).unwrap_or_default(),
             state,
             transferred,
         }
@@ -1970,6 +1973,13 @@ impl Inner {
         }
         let name: String = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "file".into());
         let name: String = proto::sanitize_name(&name).chars().take(200).collect();
+        // /5: a picture's size and colour preview travel with it (decoded off the async threads).
+        let pic = if voice.is_none() && mime.starts_with("image/") {
+            let (p, m) = (path.clone(), mime.clone());
+            tokio::task::spawn_blocking(move || crate::chat::photo::describe(&p, &m)).await.ok().flatten()
+        } else {
+            None
+        };
         let hub = self.chat_hub().await?;
         let key = crypt::new_key();
         let (hash, size) = hub.add_file(key, path, |_| {}).await?;
@@ -1989,6 +1999,9 @@ impl Inner {
             kind,
             duration_ms,
             waveform,
+            width: pic.as_ref().map_or(0, |p| p.0),
+            height: pic.as_ref().map_or(0, |p| p.1),
+            preview: pic.map(|p| hex::encode(p.2)).unwrap_or_default(),
         };
         self.chat_send_message(did, text.unwrap_or_default(), None, Some(file)).await
     }

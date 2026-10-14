@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
-pub const CHAT_ALPN: &[u8] = b"tinline/chat/4";
+pub const CHAT_ALPN: &[u8] = b"tinline/chat/5";
 /// A shard snapshot of a very busy day can be large; blobs carry the rest.
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 const SIG_DOMAIN: &[u8] = b"tinline-chat-batch-v1";

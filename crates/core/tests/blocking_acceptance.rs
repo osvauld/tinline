@@ -203,6 +203,7 @@ fn blank(name: &str) -> Peer {
     let (ltx, lrx) = mpsc::channel();
     let logs = Arc::new(Mutex::new(Vec::new()));
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx), logs.clone()))).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
     Peer { node, rx, lrx, logs, did: String::new(), dir }
 }

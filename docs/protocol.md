@@ -30,7 +30,8 @@ signing_pk[32] | device[32] | nonce[6] | exp[3] | flags[1] | name[n] | relay_ext
 ```
 
 - `exp`: minutes since 2026-01-01T00:00:00Z, u24 big endian (issuer rounds up).
-  `iat` is not carried (decodes as 0). `nonce` is 6 random bytes (single-use id).
+  `iat` is not carried (decodes as 0). `nonce` is 6 random bytes (the ticket's id; each joiner
+  DID redeems it once, see "Tickets in the core").
 - `flags`: high 3 bits relay code (0 none, 1..4 = `https://{use1,usw1,euc1,aps1}-1.relay.n0.iroh.link./`,
   7 custom: `relay_ext` = u8 length + URL); low 5 bits = name length, so names are capped
   at 31 bytes (truncated at a char boundary when issuing).
@@ -58,17 +59,65 @@ The visible fields are display-only; `verify` requires them to equal the signed 
    `binding = sign_B(bind || nonce || B.dev || A.dev)`.
 2. A: `accept_contact_hello` checks, in order:
    invite signed by claimed issuer and `iss == A`; unexpired; `invite.device == A.dev`;
-   nonce not in `redeemed_nonces`; attestation valid; `attestation.device == remote_device`;
+   attestation valid; `attestation.device == remote_device`; neither the nonce nor
+   `redeemed_key(joiner DID, nonce)` (`"<nonce>/<did>"`) in `redeemed_nonces`;
    binding verifies under B's DID for this nonce and these two devices; `grant_for_you`
    is a message token issued by B's DID to A and valid (and the call token, if any, a call
    token). A replies `ContactWelcome` (attestation, name, message token and optional call token
-   for B) and returns `NewContact` including `redeemed_nonce`, which the caller
-   must persist before/atomically with saving the contact.
+   for B) and returns `NewContact` including `redeemed_nonce`; the caller persists
+   `redeemed_key(B, nonce)` before/atomically with saving the contact. The core does not send
+   that Welcome at once for a ticket hello: it holds the hello as a request (below).
 3. B: `accept_contact_welcome`: attestation DID == ticket DID; attested device ==
    `remote_device` == ticket device; grant issued by ticket DID to B. B stores A with
    the ticket's signed name.
 
 Any failure: send `Reject { reason }` (reason is for logs, not trusted) and close.
+
+### Contact requests (2026-10-13; `crates/core/src/contact_req.rs`)
+
+Codes are reusable for a week, so nobody becomes a contact without the owner's yes.
+
+- **Held.** A good ticket hello (all checks of step 2, a live ticket, not blocked) is stored in
+  `State::contact_requests[joiner DID]` (the hello, the joiner's device and relay hint, the
+  ticket's nonce and `exp`, first arrival time) in one durable write, then answered
+  `ContactPending`. The app is told once per joiner (`ContactRequestEvents::on_contact_request`);
+  a repeated or replayed hello replaces the held one and stays one request. At most 64 wait
+  (PROVISIONAL); more are refused. A request lasts until the ticket it used expires; a later
+  reset of the ticket does not drop it (the user can still answer it).
+- **Welcomed at once** (as before): a group chat request ticket (`req_tickets`, already accepted,
+  message only), a DID that is already a contact (a re-add), and the test switch
+  `auto_accept_contacts_for_test`.
+- **Accept** (`accept_contact_request(did)`): step 2 runs again on the held hello at the current
+  time (so an expired ticket or a joiner redeemed since fails); the contact (message + call
+  tokens, `policy_for`), `redeemed_key`, the request's removal and the Welcome to deliver
+  (`State::welcome_outbox`) are one durable write. The accepting device then dials the joiner's
+  attested device (hint: the hello's relay) and sends `ContactWelcome` as the first message;
+  the joiner answers `WelcomeTaken`, or `Reject` (no matching request: delivery stops), or its
+  block notice. Untaken Welcomes are retried after 2, 5, 15, 30, 60, then every 300 s while
+  online, and at start, for 7 days.
+- **Not now** sends nothing. There is no decline message, so the joiner never learns the
+  request was seen.
+- **Joiner.** Before the hello leaves, `State::sent_requests[owner DID]` keeps the
+  `PendingContact` (serialisable), the ticket's relay and `exp`, and whether our hello gave
+  them a call token. `ContactPending` marks it delivered (`add_contact_by_code` returns
+  `Requested`); a Welcome on the same connection adds them at once (`Added`). A dial that never
+  connected restores what was held before; a reply timeout keeps it unlisted so a late Accept
+  still lands. A dialled-back `ContactWelcome` is taken only if a held request names the
+  connection's device and `accept_contact_welcome` passes against it (and we don't block them);
+  then the contact is stored, the request dropped, and `on_request_accepted` raised. Sent
+  requests are listed (`sent_contact_requests`) while delivered and unexpired, and kept 7 days
+  past `exp` for a late Welcome.
+- Requests, sent requests and the Welcome outbox are local to the device (not in the account
+  doc): the hello names this device. PROVISIONAL.
+- Wire: `ContactPending` and `WelcomeTaken` are new `Msg` kinds on `osvauld/p2p/1` (no ALPN
+  bump). An older joiner fails to decode `ContactPending` (its add fails; the owner still holds
+  the request, and an Accept's Welcome is refused by the old app, so only the owner keeps the
+  contact). An older owner welcomes at once as before.
+- Typed results for the apps: `peek_code` (`NotACode` / `Own` / `Expired{name, did}` /
+  `Found{card}`), `add_contact_by_code` (`AddOutcome::Added|Requested`, `AddError::NotACode |
+  OwnCode | Expired | Offline | Unreachable | Refused | Blocked | Failed`), `my_code`
+  (code + `expires_at`). `add_contact` (returns a contact) remains for tests and tools; a held
+  request is an error there.
 
 ## Call (B calls A)
 
@@ -244,7 +293,7 @@ reason. Failure tokens surfaced to the UI: `expired cancelled rejected bad_proof
 net locked busy bad_grant account_exists`. Locking E cancels its link. Env knob for tests:
 `P2P_LINK_TTL_SECS`.
 
-### Own-device sync (ALPN `tinline/self/3`, task 34d; `/1` refused since P9c, `/2` since P10, see "Protocol versions")
+### Own-device sync (ALPN `tinline/self/4`, task 34d; `/1` refused since P9c, `/2` since P10, `/3` since photo sizes, see "Protocol versions")
 
 Frames: u32 BE length + bincode of `SelfMsg` (16 MiB cap).
 
@@ -357,9 +406,16 @@ This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/t
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
-## Protocol versions (P9c, U18; P10; P6; account profiles)
+## Protocol versions (P9c, U18; P10; P6; account profiles; photo sizes)
 
-**Account profiles.** Current chat ALPN is `tinline/chat/4`; `/3` is also refused with code 426
+**Photo sizes (2026-10-14).** Current chat ALPN is `tinline/chat/5` and own-device sync is
+`tinline/self/4`. A picture's file record carries `width`, `height` (shown size, EXIF orientation
+applied) and `preview` (a 4x3 RGB colour grid, 36 bytes hex), and the author's DID signature covers
+them (`docs/chat.md` "Version 5"). A `/4` or `self/3` app would reject such a record, so both are
+refused with code 426: **update the app, no data wipe**. Records without a picture sign exactly as
+before.
+
+**Account profiles.** Chat ALPN `tinline/chat/4` added profiles; `/3` is also refused with code 426
 because its day-only parser cannot understand `profile`. This changes no chat content/disk format:
 upgrading `/3` clients requires an app update, **not a data wipe**. Own-device sync stays
 `tinline/self/3`; older implementations do not advertise the new profile documents. Historical
@@ -449,7 +505,8 @@ and close the session.
 | Ticket visible == signed fields | A tampered QR/text swapping name/device/relay |
 | Invite `iss == me`, `device == my_device` | Redeeming another owner's (or another phone's) invite here |
 | `exp` on invite and grants | Stale QRs; grants living forever |
-| Redeemed nonce set | Replaying a captured hello to add a second contact from one ticket |
+| Redeemed set per (joiner DID, nonce) | Replaying a captured hello (the same joiner redeeming the same ticket twice) |
+| Held request + user Accept | A leaked reusable code adding someone without the owner's yes |
 | Binding over nonce + both devices | Lifting a joiner's hello onto another invite or another device pair |
 | Grant `holder == attested DID` | A stolen grant presented by someone else |
 | Grant `iss == me` | Grants minted by third parties |
@@ -514,7 +571,7 @@ Scanning a blocked contact's ticket ourselves unblocks them first.
 Tokens carry a random 16-byte id and `accept_hello` takes a revoked-id set, but the core never
 writes to that set: tokens are taken back per DID with cut-offs (see "Tokens"); a block takes
 back both of the blocked contact's tokens.
-Tickets are single-use via the redeemed-nonce set and also expire.
+Tickets are redeemed once per joiner DID (the redeemed set) and expire.
 
 Not in P5: blocking does not rotate any endpoint (U5) and changes no group membership; there is
 no attempt counter yet ("tried to message you N times"); the call ALPN was not bumped for the new
@@ -522,14 +579,20 @@ messages (an older app fails to decode them, U18).
 
 ## Tickets in the core
 
-- Only the one ticket the node currently hands out can be redeemed (it remembers its nonce).
-  Redeeming it, `set_name`, `block` and `reset_ticket` all drop it; the next `my_ticket`
-  mints a fresh one. A leaked or old ticket is dead even if its nonce was never spent.
-- The inviter makes the new contact, the spent nonce and the dropped ticket durable in one
-  write (sealed account store) BEFORE it sends `ContactWelcome`; if that write fails it sends
-  `Reject`, nothing changed, and the same ticket can be tried again. The UI hears of the contact
-  after the commit.
-- Tickets live 7 days; one with less than a day left is replaced when asked for.
+- **Reusable codes (2026-10-13).** A ticket adds any number of joiners until it expires; each
+  joiner DID redeems it once (`redeemed_key`; a bare nonce from before still spends a ticket for
+  everyone). Every addition is a request the user accepts (see "Contact requests").
+- Live tickets (`State::live_tickets`, nonce -> `exp`, local): the one handed out now plus older
+  ones replaced by a rename (`set_name` or a synced profile name: the old one keeps the old
+  signed name), a relay change or the last day of life; they stay good until they expire.
+  `reset_ticket` ("New code") and `block` clear them all at once, so every code handed out so
+  far stops working; the next `my_ticket` mints a fresh one. Redeeming no longer drops it.
+- The inviter makes the new contact and the redeemed (joiner, nonce) durable in one write
+  (sealed account store) BEFORE it sends `ContactWelcome` (at once or after Accept); if that
+  write fails it sends `Reject` (or Accept fails), nothing changed, and the joiner can try again.
+  The UI hears of the contact after the commit.
+- Tickets live 7 days; one with less than a day left is replaced when asked for (`my_code`
+  gives the date).
 - The `relay` in a ticket or hello is dialled and stored, so it must be an `https://` URL of at
   most 200 characters that parses as a relay URL. A ticket whose relay fails this is refused;
   a bad relay hint in a hello is dropped.
@@ -609,8 +672,8 @@ quiet tone; the active call's audio is untouched. A third call is answered `Busy
   derives the public key. Losing it means re-adding contacts.
 - No device revocation list and no per-grant revocation (tokens are taken back per DID): a
   stolen unlocked phone is stopped only by the contact blocking us. Attestations never expire (`iat` is informational).
-- The ticket is a bearer secret until redeemed: whoever scans first wins. Show it
-  in person, keep `ttl` short.
+- The ticket is a bearer secret for its week: anyone holding it can ask to be added. Each
+  request needs the owner's Accept; New code (`reset_ticket`) cuts an old one off.
 - A ticket's visible `relay` hint is signed but not authenticated by anything else;
   a relay only sees ciphertext, but can deny service.
 - No clock-skew tolerance; `now >= exp` is expired. Callers choose the clock.

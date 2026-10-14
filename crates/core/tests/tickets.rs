@@ -32,6 +32,7 @@ fn peer(tag: &str, started: bool) -> Peer {
     let dir = std::env::temp_dir().join(format!("p2pcore-tickets-{tag}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    node.auto_accept_contacts_for_test(true);
     node.create_identity(tag.into(), PASS.into()).unwrap();
     if started {
         node.start().unwrap();
@@ -45,21 +46,23 @@ fn peer(tag: &str, started: bool) -> Peer {
 }
 
 #[test]
-fn reset_and_redeemed_tickets_are_dead() {
+fn reset_tickets_are_dead_and_live_ones_are_reusable() {
     let (a, b, c) = (peer("reset-a", true), peer("reset-b", true), peer("reset-c", true));
     let t1 = a.node.my_ticket().unwrap();
-    assert_eq!(a.node.my_ticket().unwrap(), t1, "stable until used");
+    assert_eq!(a.node.my_ticket().unwrap(), t1, "stable");
     a.node.reset_ticket().unwrap();
     let t2 = a.node.my_ticket().unwrap();
     assert_ne!(t1, t2);
-    // The reset ticket is unspent but no longer current.
+    // The reset ticket is unspent but no longer live.
     assert!(matches!(b.node.add_contact(t1.clone()), Err(Error::Rejected(_))));
     assert!(a.node.contacts().is_empty());
     b.node.add_contact(t2.clone()).unwrap();
-    // Redeemed: spent, and a fresh one is minted.
-    assert!(matches!(c.node.add_contact(t2), Err(Error::Rejected(_))));
-    assert_ne!(a.node.my_ticket().unwrap(), t1);
-    assert_eq!(a.node.contacts().len(), 1);
+    // Reusable (2026-10-13): a second joiner adds with the same ticket, which stays the same.
+    c.node.add_contact(t2.clone()).unwrap();
+    assert_eq!(a.node.my_ticket().unwrap(), t2);
+    assert_eq!(a.node.contacts().len(), 2);
+    // The same joiner can't redeem it twice.
+    assert!(matches!(b.node.add_contact(t2), Err(Error::Rejected(_))));
 }
 
 #[test]
@@ -92,8 +95,8 @@ fn ticket_with_unusable_relay_is_refused() {
     }
 }
 
-/// S6: the contact, the spent nonce and the dropped ticket are one durable write, made before
-/// the Welcome. If it fails, the joiner gets no Welcome and the ticket is still good.
+/// S6: the contact and the redeemed (joiner, nonce) are one durable write, made before the
+/// Welcome. If it fails, the joiner gets no Welcome and the ticket is still good.
 #[test]
 fn failed_write_sends_no_welcome_and_spends_nothing() {
     let (a, b) = (peer("s6-a", true), peer("s6-b", true));
@@ -107,14 +110,13 @@ fn failed_write_sends_no_welcome_and_spends_nothing() {
     // Retrying works, and what was written survives a restart.
     b.node.add_contact(t.clone()).unwrap();
     assert_eq!(a.node.contacts().len(), 1);
-    assert_ne!(a.node.my_ticket().unwrap(), t, "spent: a fresh one is minted");
+    assert_eq!(a.node.my_ticket().unwrap(), t, "reusable: still the same ticket");
     a.node.lock();
     a.node.unlock(PASS.into()).unwrap();
     a.node.start().unwrap();
     assert_eq!(a.node.contacts().len(), 1);
-    // The spent nonce is durable too: the same ticket cannot be replayed by a third node.
-    let c = peer("s6-c", true);
-    assert!(matches!(c.node.add_contact(t), Err(Error::Rejected(_))));
+    // The redeemed (joiner, nonce) is durable too: the same joiner cannot replay the ticket.
+    assert!(matches!(b.node.add_contact(t), Err(Error::Rejected(_))));
     assert_eq!(a.node.contacts().len(), 1);
 }
 
