@@ -175,7 +175,10 @@ pub fn link_proof(
     own_device: &[u8; 32],
 ) -> [u8; 32] {
     let k = link_key(secret, e_dev, n_dev);
-    mac(&k, &[role.label(), own_device]).finalize().into_bytes().into()
+    mac(&k, &[role.label(), own_device])
+        .finalize()
+        .into_bytes()
+        .into()
 }
 
 /// `remote_device` is the QUIC-authenticated key of the peer that claims `role`. Constant time.
@@ -279,10 +282,17 @@ pub enum LinkMsg {
         #[serde(default)]
         label: String,
     },
-    LinkGrant { sealed: String },
-    LinkDone { attestation: SignedAttestation, label: String },
+    LinkGrant {
+        sealed: String,
+    },
+    LinkDone {
+        attestation: SignedAttestation,
+        label: String,
+    },
     Unlinked,
-    Reject { reason: String },
+    Reject {
+        reason: String,
+    },
 }
 
 pub fn encode_link_frame(msg: &LinkMsg) -> Vec<u8> {
@@ -323,7 +333,14 @@ pub fn accept_link_hello(
     if *role != expect_role {
         return Err(Error::UnexpectedMessage);
     }
-    verify_link_proof(secret, e_dev, n_dev, expect_role, remote_device, &dec(proof)?)
+    verify_link_proof(
+        secret,
+        e_dev,
+        n_dev,
+        expect_role,
+        remote_device,
+        &dec(proof)?,
+    )
 }
 
 pub fn seal_link_grant_body(
