@@ -7,5 +7,4 @@ pub mod hot;
 pub mod index;
 pub mod seg;
 pub mod text;
-pub mod bench;
 pub mod find;

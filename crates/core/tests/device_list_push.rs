@@ -112,6 +112,8 @@ fn unlinking_a_device_reaches_the_contact_without_a_call() {
     let b2 = register_sibling(&b, "unl-b2");
     eventually(30, "A learns B2", || a.dials(&b).contains(&b2));
     b.node.unlink_device(b2.clone(), Some(PASS.into())).unwrap();
+    let mine = proto::verify_device_list(&own_list(&b), &b.did).unwrap();
+    assert!(mine.devices.iter().all(|e| e.device != b2), "B's own list dropped B2");
     eventually(30, "A drops B2", || !a.dials(&b).contains(&b2));
     assert_eq!(a.dials(&b), vec![b.key()]);
 }

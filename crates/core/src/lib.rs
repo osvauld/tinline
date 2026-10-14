@@ -33,16 +33,13 @@ mod wire;
 
 pub use error::Error;
 
-/// Benchmark entry for the `search-bench` binary.
+/// Search internals the `search-bench` binary drives (it lives outside the lib so the
+/// benchmark code is not compiled into the app libraries). Not part of the uniffi API.
 #[doc(hidden)]
-pub fn search_bench(n: usize, dir: &std::path::Path) {
-    search::bench::run(n, dir)
-}
-
-/// Benchmark entry for `search-bench <n> <dir> live`: the send path with production timing.
-#[doc(hidden)]
-pub fn search_bench_live(n: usize, dir: &std::path::Path) {
-    search::bench::run_live(n, dir)
+pub mod search_bench_support {
+    pub use crate::search::index::{DocRow, Mark, Mode, PHASES, SearchIndex};
+    pub use crate::search::text;
+    pub use crate::chat::doc::{day_of, day_start};
 }
 
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
