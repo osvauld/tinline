@@ -123,6 +123,7 @@ fn unlinking_a_device_reaches_the_contact_without_a_call() {
 fn a_restored_device_is_reachable_by_the_contact() {
     let (a, mut b) = pair("rst");
     let (old, new) = b.restore_in_place();
+    online(&b.node);
     eventually(30, "A learns the restored key", || a.dials(&b) == vec![new.clone()]);
     assert!(!a.dials(&b).contains(&old));
     call_rings_on(&a, &b.did.clone(), &b);
