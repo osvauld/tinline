@@ -12,7 +12,7 @@ const MAX_PENDING: usize = 16;
 mod block_in_group;
 #[path = "chat_request.rs"]
 mod chat_request;
-#[path = "flags.rs"]
+#[path = "flags/mod.rs"]
 mod flags;
 #[path = "host_only.rs"]
 mod host_only;
