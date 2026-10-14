@@ -12,168 +12,39 @@
 //! Real iroh endpoints (needs network, like `restore.rs`, `fanout.rs`, `link.rs`). Waits are
 //! bounded polls. "Never arrives" claims are bounded too (stated per test) and, where the code
 //! leaves a trace, backed by the log line that explains why.
-//! Helpers are copied from `link.rs` / `restore.rs` (they are not in a shared module). Bugs 1 and
+//! The shared harness is in `support/`. Bugs 1 and
 //! 3 of decisions section 5 are fixed on `dev` (P1); their tests are invariants now.
 //! P9c (U18): every message version is signed by the author's DID key only (device keys sign no
 //! chat content), so a message written before a restore verifies on any device. There are no
 //! records signed by a device key any more (pre-P9c data is wiped), so the P1/P8 limitation for
 //! such records is gone.
 
-use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, DeliveryState, LinkEvents, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::DeliveryState;
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::eventually_200ms as eventually;
+use support::wait::now_secs as now;
+use support::*;
 
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    #[allow(dead_code)]
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>, Arc<Mutex<Vec<String>>>);
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, line: String) {
-        self.1.lock().unwrap().push(line);
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum LEv {
-    Code(String),
-    Done(String),
-    Other,
-}
-
-struct LTap(Mutex<mpsc::Sender<LEv>>);
-impl LinkEvents for LTap {
-    fn on_link_code(&self, code: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Code(code));
-    }
-    fn on_link_done(&self, did: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Done(did));
-    }
-    fn on_link_failed(&self, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_devices_changed(&self) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_history_changed(&self) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_unlinked(&self, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    lrx: mpsc::Receiver<LEv>,
-    logs: Arc<Mutex<Vec<String>>>,
-    did: String,
-    phrase: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+const TAG: &str = "rotk1";
 
 impl Peer {
-    fn logged(&self, needle: &str) -> bool {
-        self.logs.lock().unwrap().iter().any(|l| l.contains(needle))
-    }
-
     /// Whether this node refused any chat batch, history snapshot or own-device batch.
     fn refused_chat(&self) -> bool {
         ["rejected chat batch", "rejected history", "rejected own-device batch"].iter().any(|n| self.logged(n))
     }
 }
 
-type Opened = (Arc<Node>, mpsc::Receiver<Ev>, mpsc::Receiver<LEv>, Arc<Mutex<Vec<String>>>);
-
-fn open(dir: &std::path::Path) -> Opened {
-    let (tx, rx) = mpsc::channel();
-    let (ltx, lrx) = mpsc::channel();
-    let logs = Arc::new(Mutex::new(Vec::new()));
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx), logs.clone()))).unwrap();
-    node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
-    (node, rx, lrx, logs)
-}
-
-fn blank(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-rotk1-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (node, rx, lrx, logs) = open(&dir);
-    Peer { node, rx, lrx, logs, did: String::new(), phrase: String::new(), dir }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
 /// A committed identity; started (`online`) or not.
 fn peer(name: &str, started: bool) -> Peer {
-    let mut p = blank(name);
-    p.phrase = p.node.create_identity(name.into(), PASS.into()).unwrap();
-    if started {
-        online(&p.node);
-    }
-    p.did = p.node.profile().unwrap().did;
-    p
+    Peer::committed_with(TAG, name, started, true)
 }
 
-/// The forgotten-passphrase restore of `restore.rs` (`contacts_history_and_chats_survive_…`):
-/// stop, drop the node, open the same data directory (locked) and restore over it with the
-/// phrase and the same name. Left NOT started. Asserts the DID is kept and the device key is not.
-fn restore_in_place(p: &mut Peer) -> (String, String) {
-    let name = p.node.profile().unwrap().name;
-    let old_dev = p.node.device_key_for_test().unwrap();
-    p.node.stop();
-    let (node, rx, lrx, logs) = open(&p.dir);
-    let old = std::mem::replace(&mut p.node, node);
-    drop(old);
-    p.rx = rx;
-    p.lrx = lrx;
-    p.logs = logs;
-    p.node.restore_identity(p.phrase.clone(), name, "pass two".into()).unwrap();
-    assert_eq!(p.node.profile().unwrap().did, p.did, "restore keeps the DID");
-    let new_dev = p.node.device_key_for_test().unwrap();
-    assert_ne!(new_dev, old_dev, "restore makes a fresh device key (restore.rs:104)");
-    (old_dev, new_dev)
-}
-
-fn wait_link(p: &Peer, what: &str, mut f: impl FnMut(&LEv) -> Option<String>) -> String {
-    let end = Instant::now() + Duration::from_secs(30);
-    loop {
-        match p.lrx.recv_timeout(end.saturating_duration_since(Instant::now())) {
-            Ok(ev) => {
-                if let Some(t) = f(&ev) {
-                    return t;
-                }
-            }
-            Err(_) => panic!("timed out waiting for {what}"),
-        }
-    }
+/// `e` (started) links a fresh install of its account.
+fn link_fresh(e: &Peer, name: &str) -> Peer {
+    e.link_fresh(TAG, name, LinkAs { wait_existing_done: true, ..LinkAs::default() })
 }
 
 /// Every call id `call_answered` placed in this process.
@@ -195,17 +66,6 @@ fn incoming_call(p: &Peer, id: &str, secs: u64) {
             Err(_) => panic!("timed out waiting for incoming call {id}"),
         }
     }
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
 }
 
 /// Waits until the address `p` publishes (the DNS record a caller's discovery reads) names the
@@ -232,53 +92,8 @@ fn published(p: &Peer) {
     });
 }
 
-/// `e` (started) links a fresh install of its account (copied from `link.rs` `link_fresh`).
-fn link_fresh(e: &Peer, name: &str) -> Peer {
-    let n = blank(name);
-    let qr = e.node.link_show_qr().unwrap();
-    n.node.link_new_scan(qr, "Pixel".into()).unwrap();
-    let code = |ev: &LEv| match ev {
-        LEv::Code(c) => Some(c.clone()),
-        _ => None,
-    };
-    assert_eq!(wait_link(e, "E code", code), wait_link(&n, "N code", code));
-    e.node.link_approve(Some(PASS.into())).unwrap();
-    let did = wait_link(&n, "N done", |ev| match ev {
-        LEv::Done(d) => Some(d.clone()),
-        _ => None,
-    });
-    wait_link(e, "E done", |ev| matches!(ev, LEv::Done(..)).then(String::new));
-    n.node.set_passphrase(None, "n-pass".into()).unwrap();
-    online(&n.node);
-    let mut n = n;
-    n.did = did;
-    n
-}
-
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
-}
-
-fn has(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id)
-}
-
-fn ticks(p: &Peer, did: &str, id: &str) -> DeliveryState {
-    all_msgs(p, did).into_iter().find(|m| m.id == id).expect("message held").delivery
-}
-
 fn verified(p: &Peer, did: &str) -> bool {
     p.node.contacts().into_iter().find(|c| c.did == did).expect("contact").verified
-}
-
-fn now() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
 }
 
 /// `caller` calls `callee`, the callee answers, the caller hangs up. The answer carries the
@@ -328,7 +143,7 @@ fn chat_fixture(tag: &str, a_holds_list: bool, pending: bool, a_verifies_b: bool
         assert_eq!(ticks(&b, &a.did, &m2), DeliveryState::Pending, "A is offline");
         m2
     });
-    let (old_dev, new_dev) = restore_in_place(&mut b);
+    let (old_dev, new_dev) = b.restore_in_place();
     Chat { a, b, m1, m2, old_dev, new_dev }
 }
 
@@ -342,7 +157,7 @@ fn chat_fixture(tag: &str, a_holds_list: bool, pending: bool, a_verifies_b: bool
 fn o1_restore_reissues_the_ticket_for_the_new_device_key() {
     let mut b = peer("o1-b", true);
     let before = b.node.my_ticket().unwrap();
-    let (old_dev, new_dev) = restore_in_place(&mut b);
+    let (old_dev, new_dev) = b.restore_in_place();
 
     let after = b.node.my_ticket().unwrap();
     assert_ne!(after, before, "the pre-restore ticket is not handed out again");
@@ -481,7 +296,7 @@ fn sibling_fixture(tag: &str) -> Sib {
     eventually(60, "B holds r1", || has(&b, &a1.did, &r1));
     a1.node.stop();
 
-    let (_old_dev, new_dev) = restore_in_place(&mut b);
+    let (_old_dev, new_dev) = b.restore_in_place();
     online(&b.node);
     online(&a2.node);
     published(&a2);
@@ -598,7 +413,7 @@ fn o6_safety_numbers_do_not_change_on_restore() {
     let on_a = a.node.safety_number(b.did.clone()).unwrap();
     let on_b = b.node.safety_number(a.did.clone()).unwrap();
     assert_eq!(on_a, on_b);
-    restore_in_place(&mut b);
+    b.restore_in_place();
     assert_eq!(b.node.safety_number(a.did.clone()).unwrap(), on_b);
     assert_eq!(a.node.safety_number(b.did.clone()).unwrap(), on_a);
 }

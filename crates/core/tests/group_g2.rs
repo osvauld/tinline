@@ -1,196 +1,33 @@
 //! G2: group chat core, second slice, on real nodes over real iroh endpoints (needs network,
-//! like `group_core.rs`, whose helpers are copied here). Decisions: `rotation-open-decisions.md`
+//! like `group_core.rs`; the shared harness is in `support/`). Decisions: `rotation-open-decisions.md`
 //! §0 on `endpoint-rotation-blocking` (U3 chat requests through the host, U12 host rotation after
 //! a removal, U16 writer IDs) and P10 (writer counters never reused). Protocol: `docs/group-core.md`.
 //!
 //! Every test carries `// KIND: acceptance (G2 stage N)` and the decision it enforces.
 #![allow(dead_code)]
 
-use std::sync::{Arc, Mutex, mpsc};
-use std::time::{Duration, Instant};
+use std::sync::{Arc, mpsc};
+use std::time::Duration;
 
-use p2pcore::{CallInfo, CallState, GroupDelivery, GroupItemKind, GroupMessage, GroupRole, LinkEvents, Node, NodeEvents, NodeStatus};
+use p2pcore::{GroupDelivery, GroupItemKind, GroupRole, Node};
 
-const PASS: &str = "test-passphrase";
-const WAIT: u64 = 90;
+mod support;
+use support::fs::find_files;
+use support::group::*;
+use support::*;
 
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
-
-#[derive(Debug, Clone)]
-enum LEv {
-    Code(String),
-    Done(String),
-    Other,
-}
-
-struct LTap(Mutex<mpsc::Sender<LEv>>);
-impl LinkEvents for LTap {
-    fn on_link_code(&self, code: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Code(code));
-    }
-    fn on_link_done(&self, did: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Done(did));
-    }
-    fn on_link_failed(&self, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_devices_changed(&self) {}
-    fn on_history_changed(&self) {}
-    fn on_unlinked(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    lrx: mpsc::Receiver<LEv>,
-    did: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
-fn blank(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-g2-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (ltx, lrx) = mpsc::channel();
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
-    node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
-    Peer { node, lrx, did: String::new(), dir }
-}
+const TAG: &str = "g2";
 
 fn peer(name: &str) -> Peer {
-    let mut p = blank(name);
-    p.node.create_identity(name.into(), PASS.into()).unwrap();
-    online(&p.node);
-    p.did = p.node.profile().unwrap().did;
-    p
+    Peer::new(TAG, name)
 }
 
 /// `e` links a fresh install (same DID); returns it committed and online.
 fn link_fresh(e: &Peer, name: &str) -> Peer {
-    let mut n = blank(name);
-    let qr = e.node.link_show_qr().unwrap();
-    n.node.link_new_scan(qr, "Desk".into()).unwrap();
-    let code = |p: &Peer| loop {
-        if let LEv::Code(c) = p.lrx.recv_timeout(Duration::from_secs(30)).expect("link code") {
-            break c;
-        }
-    };
-    assert_eq!(code(e), code(&n));
-    e.node.link_approve(Some(PASS.into())).unwrap();
-    let did = loop {
-        if let LEv::Done(d) = n.lrx.recv_timeout(Duration::from_secs(30)).expect("link done") {
-            break d;
-        }
-    };
-    n.node.set_passphrase(None, "n-pass".into()).unwrap();
-    online(&n.node);
-    n.did = did;
-    n
-}
-
-/// `group_join`, unwrapped. GL: the product rides out transient network failures itself (the
-/// fetch retries within its deadline, the join re-dials every 2 s while it waits), so the test-side
-/// retry GF added is gone: any error here is a real failure.
-fn join(p: &Peer, link: String) -> String {
-    p.node.group_join(link).unwrap_or_else(|e| panic!("join: {e:?}"))
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(250));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-fn all(p: &Peer, g: &str) -> Vec<GroupMessage> {
-    let mut out = Vec::new();
-    let mut before = None;
-    loop {
-        let page = p.node.group_messages(g.into(), before, 50).unwrap();
-        let mut ms = page.messages;
-        ms.reverse();
-        out.extend(ms);
-        match page.older {
-            Some(o) => before = Some(o),
-            None => break,
-        }
-    }
-    out.reverse();
-    out
-}
-
-fn posts(p: &Peer, g: &str) -> Vec<(String, String)> {
-    all(p, g).into_iter().filter(|m| m.kind == GroupItemKind::Post).map(|m| (m.author_did, m.text)).collect()
-}
-
-fn has_post(p: &Peer, g: &str, did: &str, text: &str) -> bool {
-    posts(p, g).iter().any(|(d, t)| d == did && t == text)
-}
-
-fn members(p: &Peer, g: &str) -> Vec<String> {
-    let mut m: Vec<String> = p.node.group_detail(g.into()).unwrap().members.into_iter().map(|m| m.did).collect();
-    m.sort();
-    m
-}
-
-fn sorted(mut v: Vec<String>) -> Vec<String> {
-    v.sort();
-    v
-}
-
-/// Owner `o` (first host) creates a group and each of `ms` joins with an invite from `o`.
-fn group_with(o: &Peer, ms: &[&Peer]) -> String {
-    let g = o.node.group_create("Weekend hike".into()).unwrap();
-    for m in ms {
-        let tok = o.node.group_invite(g.clone()).unwrap();
-        assert_eq!(join(&m, tok), g);
-    }
-    let want = sorted(std::iter::once(o.did.clone()).chain(ms.iter().map(|m| m.did.clone())).collect());
-    for p in std::iter::once(o).chain(ms.iter().copied()) {
-        eventually(WAIT, "everyone sees every member", || members(p, &g) == want);
-    }
-    g
+    e.link_fresh(TAG, name, LinkAs { label: "Desk", ..LinkAs::default() })
 }
 
 
-/// Every file named `name` under `dir`.
-fn find_files(dir: &std::path::Path, name: &str) -> Vec<std::path::PathBuf> {
-    let mut out = Vec::new();
-    let Ok(rd) = std::fs::read_dir(dir) else { return out };
-    for e in rd.flatten() {
-        let p = e.path();
-        if p.is_dir() {
-            out.extend(find_files(&p, name));
-        } else if p.file_name().is_some_and(|n| n == name) {
-            out.push(p);
-        }
-    }
-    out
-}
 
 /// Restarts `p`'s process (a new `Node` over the same directory); with `lose_groups`, the group
 /// store (`group.redb`) is gone when it comes back (lost, deleted, or a backup without it).
@@ -199,7 +36,7 @@ fn restart(p: &mut Peer, lose_groups: bool) {
     std::thread::sleep(Duration::from_secs(2));
     let node = Node::new(p.dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     let (ltx, lrx) = mpsc::channel();
-    node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
+    node.set_link_events(Arc::new(LTap::new(ltx)));
     p.lrx = lrx;
     let old = std::mem::replace(&mut p.node, node);
     drop(old);

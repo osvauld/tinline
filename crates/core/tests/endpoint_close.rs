@@ -11,74 +11,15 @@
 //! code abandons it every time. Own test binary: the variable is process-wide.
 //! Real iroh endpoints (needs network, like `calls.rs`).
 
-use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
+use p2pcore::CallState;
 
-const PASS: &str = "test-passphrase";
-
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>);
-
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    did: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+mod support;
+use support::*;
 
 fn peer(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-close-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (tx, rx) = mpsc::channel();
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
-    node.create_identity(name.into(), PASS.into()).unwrap();
-    node.start().unwrap();
-    let t = Instant::now();
-    while !node.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-    let did = node.profile().unwrap().did;
-    Peer { node, rx, did, dir }
-}
-
-fn expect<T>(p: &Peer, secs: u64, what: &str, mut f: impl FnMut(&Ev) -> Option<T>) -> T {
-    let end = Instant::now() + Duration::from_secs(secs);
-    loop {
-        match p.rx.recv_timeout(end.saturating_duration_since(Instant::now())) {
-            Ok(ev) => {
-                if let Some(t) = f(&ev) {
-                    return t;
-                }
-            }
-            Err(_) => panic!("timed out waiting for {what}"),
-        }
-    }
+    Peer::new("close", name)
 }
 
 #[derive(Debug, PartialEq)]

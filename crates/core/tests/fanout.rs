@@ -2,66 +2,21 @@
 //! wins, the other stops without a missed call. Real iroh endpoints, so these need network
 //! like calls.rs.
 
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
+use p2pcore::CallState;
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::*;
 
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>);
-
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    did: String,
-    phrase: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+const TAG: &str = "fanout";
 
 fn make_peer(name: &str, restore: Option<&str>) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-fanout-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (tx, rx) = mpsc::channel();
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
-    let phrase = match restore {
-        Some(p) => {
-            node.restore_identity(p.into(), name.into(), PASS.into()).unwrap();
-            p.to_string()
-        }
-        None => node.create_identity(name.into(), PASS.into()).unwrap(),
-    };
-    node.start().unwrap();
-    let t = Instant::now();
-    while !node.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
+    match restore {
+        Some(p) => Peer::restored(TAG, name, p),
+        None => Peer::new(TAG, name),
     }
-    let did = node.profile().unwrap().did;
-    Peer { node, rx, did, phrase, dir }
 }
 
 /// A, and B on two installs that know each other; A has both as devices of the contact B.
@@ -80,27 +35,7 @@ fn trio(tag: &str) -> (Peer, Peer, Peer) {
     (a, b1, b2)
 }
 
-fn expect<T>(p: &Peer, secs: u64, what: &str, mut f: impl FnMut(&Ev) -> Option<T>) -> T {
-    let end = Instant::now() + Duration::from_secs(secs);
-    loop {
-        let left = end.saturating_duration_since(Instant::now());
-        match p.rx.recv_timeout(left) {
-            Ok(ev) => {
-                if let Some(t) = f(&ev) {
-                    return t;
-                }
-            }
-            Err(_) => panic!("timed out waiting for {what}"),
-        }
-    }
-}
 
-fn ended(id: &str) -> impl FnMut(&Ev) -> Option<String> + '_ {
-    move |ev| match ev {
-        Ev::State(i, CallState::Ended { reason }) if i == id => Some(reason.clone()),
-        _ => None,
-    }
-}
 
 fn incoming(p: &Peer) -> String {
     expect(p, 40, "incoming", |e| match e {

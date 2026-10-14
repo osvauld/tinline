@@ -1,26 +1,16 @@
 //! Passphrase vault: real Argon2id parameters throughout.
 
-use std::path::PathBuf;
 use std::sync::Arc;
 
-use p2pcore::{CallInfo, CallState, Error, LockState, Node, NodeEvents, NodeStatus};
+use p2pcore::{Error, LockState, Node};
 
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
+mod support;
+use support::{Quiet, TempDir};
 
-struct Dir(PathBuf);
+struct Dir(TempDir);
 impl Dir {
     fn new(tag: &str) -> Dir {
-        let p = std::env::temp_dir().join(format!("p2pcore-vault-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&p);
-        std::fs::create_dir_all(&p).unwrap();
-        Dir(p)
+        Dir(TempDir::created("vault", tag))
     }
     fn node(&self) -> Arc<Node> {
         Node::new(self.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap()
@@ -28,11 +18,6 @@ impl Dir {
     fn profile_bytes(&self) -> Vec<u8> {
         let id = std::fs::read_to_string(self.0.join("current")).unwrap();
         std::fs::read(self.0.join("accounts").join(id.trim()).join("account.json")).unwrap()
-    }
-}
-impl Drop for Dir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }
 

@@ -1,54 +1,15 @@
 //! Two real nodes in one process, over iroh (needs network for relays/discovery): the call
 //! state machine's edge cases that the e2e scripts don't reach.
 
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-const PASS: &str = "test-passphrase";
+use p2pcore::CallState;
 
-use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
+mod support;
+use support::*;
 
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>);
-
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    did: String,
-    phrase: String,
-    _dir: tempdir::Dir,
-}
-
-mod tempdir {
-    pub struct Dir(pub std::path::PathBuf);
-    impl Drop for Dir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
-    pub fn new(tag: &str) -> Dir {
-        let p = std::env::temp_dir().join(format!("p2pcore-test-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&p);
-        Dir(p)
-    }
-}
+const TAG: &str = "test";
 
 fn peer(name: &str) -> Peer {
     make_peer(name, None)
@@ -56,55 +17,15 @@ fn peer(name: &str) -> Peer {
 
 /// With `phrase`: the same person on a new install (new device key).
 fn make_peer(name: &str, restore: Option<&str>) -> Peer {
-    let dir = tempdir::new(name);
-    let (tx, rx) = mpsc::channel();
-    let node = Node::new(dir.0.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
-    let phrase = match restore {
-        Some(p) => {
-            node.restore_identity(p.into(), name.into(), PASS.into()).unwrap();
-            p.to_string()
-        }
-        None => node.create_identity(name.into(), PASS.into()).unwrap(),
-    };
-    node.start().unwrap();
-    let t = Instant::now();
-    while !node.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
+    match restore {
+        Some(p) => Peer::restored(TAG, name, p),
+        None => Peer::new(TAG, name),
     }
-    let did = node.profile().unwrap().did;
-    Peer { node, rx, did, phrase, _dir: dir }
 }
 
 /// a and b, each a contact of the other.
 fn pair(tag: &str) -> (Peer, Peer) {
-    let a = peer(&format!("{tag}-a"));
-    let b = peer(&format!("{tag}-b"));
-    let ticket = a.node.my_ticket().unwrap();
-    b.node.add_contact(ticket).unwrap();
-    (a, b)
-}
-
-/// Next event matching `f`, failing the test after `secs`.
-fn expect<T>(p: &Peer, secs: u64, what: &str, mut f: impl FnMut(&Ev) -> Option<T>) -> T {
-    let end = Instant::now() + Duration::from_secs(secs);
-    loop {
-        let left = end.saturating_duration_since(Instant::now());
-        match p.rx.recv_timeout(left) {
-            Ok(ev) => {
-                if let Some(t) = f(&ev) {
-                    return t;
-                }
-            }
-            Err(_) => panic!("timed out waiting for {what}"),
-        }
-    }
-}
-
-fn ended(id: &str) -> impl FnMut(&Ev) -> Option<String> + '_ {
-    move |ev| match ev {
-        Ev::State(i, CallState::Ended { reason }) if i == id => Some(reason.clone()),
-        _ => None,
-    }
+    Peer::pair(TAG, tag)
 }
 
 #[test]

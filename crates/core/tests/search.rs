@@ -5,39 +5,17 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, mpsc};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use p2pcore::{CallInfo, CallState, Error, LinkEvents, MessageHit, Node, NodeEvents, NodeStatus, SearchConvKind, SearchNameKind};
+use p2pcore::{Error, LinkEvents, MessageHit, Node, SearchConvKind, SearchNameKind};
 
-const PASS: &str = "test-passphrase";
-const WAIT: u64 = 90;
+mod support;
+use support::*;
 
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
-
-struct NoLink;
-impl LinkEvents for NoLink {
-    fn on_link_code(&self, _: String, _: String) {}
-    fn on_link_done(&self, _: String, _: String) {}
-    fn on_link_failed(&self, _: String) {}
-    fn on_devices_changed(&self) {}
-    fn on_history_changed(&self) {}
-    fn on_unlinked(&self, _: String) {}
-}
-
-struct Root(PathBuf);
+struct Root(TempDir);
 impl Root {
     fn new(tag: &str) -> Root {
-        let p = std::env::temp_dir().join(format!("p2pcore-search-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&p);
-        std::fs::create_dir_all(&p).unwrap();
-        Root(p)
+        Root(TempDir::created("search", tag))
     }
     fn node(&self) -> Arc<Node> {
         let n = Node::new(self.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
@@ -46,11 +24,6 @@ impl Root {
     }
     fn acct(&self, did: &str) -> PathBuf {
         self.0.join("accounts").join(did.strip_prefix("did:key:").unwrap())
-    }
-}
-impl Drop for Root {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }
 
@@ -66,14 +39,6 @@ impl Drop for Peer {
     }
 }
 
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
 fn peer(name: &str) -> Peer {
     let root = Root::new(name);
     let node = root.node();
@@ -81,17 +46,6 @@ fn peer(name: &str) -> Peer {
     online(&node);
     let did = node.profile().unwrap().did;
     Peer { node, did, _root: root }
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(250));
-    }
-    panic!("timed out waiting for {what}");
 }
 
 /// The UTC day (`YYYY-MM-DD`) of a unix-millisecond time.

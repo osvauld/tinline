@@ -8,6 +8,9 @@ use std::time::{Duration, Instant};
 use p2pcore::{CallInfo, CallState, Error, Node, NodeEvents, NodeStatus};
 use storage::{Sealed, Store};
 
+mod support;
+use support::{TempDir, online};
+
 const PASS: &str = "correct horse battery";
 
 struct Tap(Mutex<mpsc::Sender<(String, CallState)>>);
@@ -21,13 +24,10 @@ impl NodeEvents for Tap {
     fn on_log(&self, _: String) {}
 }
 
-struct Root(PathBuf);
+struct Root(TempDir);
 impl Root {
     fn new(tag: &str) -> Root {
-        let p = std::env::temp_dir().join(format!("p2pcore-restore-{tag}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&p);
-        std::fs::create_dir_all(&p).unwrap();
-        Root(p)
+        Root(TempDir::created("restore", tag))
     }
     fn node(&self) -> (Arc<Node>, mpsc::Receiver<(String, CallState)>) {
         let (tx, rx) = mpsc::channel();
@@ -35,11 +35,6 @@ impl Root {
     }
     fn acct(&self, did: &str) -> PathBuf {
         self.0.join("accounts").join(did.strip_prefix("did:key:").unwrap())
-    }
-}
-impl Drop for Root {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }
 
@@ -61,14 +56,6 @@ fn downgrade(path: PathBuf, new_domain: &str, old_domain: &str, phrase: &str, de
         old.put(&k, &plain).unwrap();
     }
     db.delete("~keyver").unwrap();
-}
-
-fn wait_online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
 }
 
 /// Sets recognisable data in both stores without a network.
@@ -235,10 +222,10 @@ fn contacts_history_and_chats_survive_a_forgotten_passphrase() {
     let rb = Root::new("net-b");
     let (a, _arx) = ra.node();
     a.create_identity("alice".into(), PASS.into()).unwrap();
-    wait_online(&a);
+    online(&a);
     let (b, brx) = rb.node();
     let phrase = b.create_identity("bob".into(), PASS.into()).unwrap();
-    wait_online(&b);
+    online(&b);
     let adid = a.profile().unwrap().did;
     let bdid = b.profile().unwrap().did;
     b.add_contact(a.my_ticket().unwrap()).unwrap();

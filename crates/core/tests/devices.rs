@@ -1,14 +1,14 @@
 //! A second device of the same person (same phrase, another install) meeting a contact.
 //! Needs network, like calls.rs.
 
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
 use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::*;
 
 #[derive(Default)]
 struct Count {
@@ -31,18 +31,12 @@ struct Peer {
     node: Arc<Node>,
     events: Arc<Count>,
     did: String,
-    dir: PathBuf,
-}
-impl Drop for Peer {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
+    _dir: TempDir,
 }
 
 /// `phrase`: another install of an existing person; each gets its own data root and device key.
 fn peer(tag: &str, phrase: Option<&str>) -> (Peer, String) {
-    let dir = std::env::temp_dir().join(format!("p2pcore-devices-{tag}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
+    let dir = TempDir::new("devices", tag);
     let events = Arc::new(Count::default());
     let node = Node::new(dir.to_string_lossy().into(), events.clone()).unwrap();
     let phrase = match phrase {
@@ -52,13 +46,9 @@ fn peer(tag: &str, phrase: Option<&str>) -> (Peer, String) {
         }
         None => node.create_identity(tag.into(), PASS.into()).unwrap(),
     };
-    node.start().unwrap();
-    let t = Instant::now();
-    while !node.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
+    online(&node);
     let did = node.profile().unwrap().did;
-    (Peer { node, events, did, dir }, phrase)
+    (Peer { node, events, did, _dir: dir }, phrase)
 }
 
 fn wait(what: &str, mut f: impl FnMut() -> bool) {
@@ -105,8 +95,4 @@ fn unfamiliar_device_in_a_call_resets_verified_and_notifies() {
     a.node.lock();
     a.node.unlock(PASS.into()).unwrap();
     assert!(!a.node.contacts()[0].verified);
-}
-
-fn now_ms() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
 }
