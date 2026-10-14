@@ -4,6 +4,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -71,11 +73,23 @@ fun PlaceholderStrip() {
 /** Group avatar (playground Avatar `group`): a circle in surface-2 with the accent-ink people glyph at 46 %. [tint] and [radius] are
  * kept for older callers and ignored; [dim] (a group we left or were removed from) fades it to 72 %. */
 @Composable
-fun GroupAvatar(tint: Int, size: Dp, dim: Boolean = false, radius: Dp = size / 2) {
+fun GroupAvatar(tint: Int, size: Dp, dim: Boolean = false, radius: Dp = size / 2, gid: String? = null) {
     val c = Tin.c
+    val art = remember(gid, size) { FingerprintCache.ofGroup(gid, size.value) }
+    if (art != null) { GroupMandala(art, size, Modifier.alpha(if (dim) 0.72f else 1f)); return }
     Box(Modifier.size(size).alpha(if (dim) 0.72f else 1f).clip(CircleShape).background(c.sf2), contentAlignment = Alignment.Center) {
         Icon(GIcons.Users, null, tint = c.accentInk, modifier = Modifier.size(size * 0.46f))
     }
+}
+
+/** A group's mandala (from its group id) in a rounded square, corner radius 28 % of [size]; people are circles. */
+@Composable
+fun GroupMandala(art: FingerprintDrawing, size: Dp, modifier: Modifier = Modifier) {
+    val c = Tin.c
+    val (bg, fg) = if (c.dark) art.darkBg to art.darkFg else art.lightBg to art.lightFg
+    val gold = c.gold
+    Box(modifier.size(size).clip(androidx.compose.foundation.shape.RoundedCornerShape(size * 0.28f)).background(bg)
+        .drawBehind { drawFingerprint(art, fg, gold) })
 }
 
 /** Person avatar in group surfaces (GroupInfo / MemberSheet use the one Avatar with the person's hue and picture, contact or not). */

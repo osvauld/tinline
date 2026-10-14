@@ -58,16 +58,9 @@ pub(super) fn rule<'a>(t: Tok) -> El<'a> {
     container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)).into()
 }
 
-/// The group avatar: a rounded square, not a circle.
+/// The group avatar: the group id's mandala in a rounded square (people are circles).
 pub(super) fn gav<'a>(t: Tok, key: &str, size: f32) -> El<'a> {
-    let (bg, fg) = ui::avatar_colors(t, key);
-    container(ui::icon(Icon::Users, size * 0.5, fg))
-        .width(size)
-        .height(size)
-        .center_x(size)
-        .center_y(size)
-        .style(ui::plain(bg, size * 0.28))
-        .into()
+    ui::group_face(t, key, size)
 }
 
 pub(super) fn dot<'a>(c: Color) -> El<'a> {

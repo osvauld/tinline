@@ -139,7 +139,7 @@ private fun ChatListRow(r: ChatEntry, now: Long, onClick: () -> Unit) {
         Modifier.fillMaxWidth().heightIn(min = 72.dp).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 20.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        if (r.group) GroupAvatar(r.tint, 48.dp, dim = r.dim, radius = 16.dp) else PersonAvatar(r.name, r.key, 48.dp)
+        if (r.group) GroupAvatar(r.tint, 48.dp, dim = r.dim, radius = 16.dp, gid = r.key) else PersonAvatar(r.name, r.key, 48.dp)
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(r.name, Modifier.weight(1f), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = if (r.dim) c.ink2 else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -213,7 +213,7 @@ fun PGroupChatScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
                 else -> "${g.activeMembers.size} members · " + if (hostCount == 1) "hosted by 1 desktop" else "hosted by $hostCount desktops"
             },
             subColor = if (waiting) c.threadText else c.ink2,
-            avatar = { GroupAvatar(g.tint, 40.dp, dim = removal != null, radius = 12.dp) },
+            avatar = { GroupAvatar(g.tint, 40.dp, dim = removal != null, radius = 12.dp, gid = g.id) },
             onTitle = if (removal == null) ({ nav.go(PRoute.GroupInfo(id)) }) else null,
         ) {
             if (removal == null) IconBtn(PgIcons.Info, "Group info", { nav.go(PRoute.GroupInfo(id)) })
@@ -391,7 +391,7 @@ fun PGroupInfoScreen(src: FakeGroupsPrivacy, nav: PNav, id: String) {
         LazyColumn(Modifier.weight(1f)) {
             item {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    GroupAvatar(g.tint, 80.dp, radius = 24.dp)
+                    GroupAvatar(g.tint, 80.dp, radius = 24.dp, gid = g.id)
                     Text(g.name, style = TinType.h1.copy(fontSize = 26.sp), color = c.ink, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
                     val role = when { me == null -> ""; GroupRole.Owner in me.roles -> " · you are the owner"; GroupRole.Admin in me.roles -> " · you are an admin"; else -> "" }
                     Text("${g.activeMembers.size} members$role", style = TinType.bodyM, color = c.ink2)

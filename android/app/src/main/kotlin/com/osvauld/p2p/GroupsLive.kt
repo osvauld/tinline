@@ -268,7 +268,7 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
                         gone.forEach { s ->
                             key(s.id) {
                                 ListRow(onClick = { onOpen(s.id) }) {
-                                    GroupAvatar(0, 48.dp, dim = true)
+                                    GroupAvatar(0, 48.dp, dim = true, gid = s.id)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                         Text(s.name, Modifier.alpha(.72f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         val at = s.last?.at?.toLong()
@@ -336,7 +336,7 @@ private fun GroupRow(s: GroupSummary, me: String, now: Long, call: LiveCall?, on
     val waiting = !s.hostedHere && !s.hostReachable
     val hot = s.unread > 0u
     ListRow(onClick) {
-        GroupAvatar(0, 48.dp)
+        GroupAvatar(0, 48.dp, gid = s.id)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(s.name, Modifier.weight(1f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -634,7 +634,7 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
     InfoPage(if (d.myRole == CoreRole.REMOVED) "Removed" else "Group info", onBack) {
         item(key = "hero") {
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                GroupAvatar(0, 72.dp, dim = !GroupText.active(d.myRole))
+                GroupAvatar(0, 72.dp, dim = !GroupText.active(d.myRole), gid = d.id)
                 Text(d.name, Modifier.padding(top = 12.dp).semantics { heading() }, style = GType.hero, color = c.ink, textAlign = TextAlign.Center)
                 Text(
                     when (d.myRole) {
@@ -1319,7 +1319,7 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
                 CardBox(Modifier.fillMaxWidth(), radius = 20.dp) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            GroupAvatar(tintOf(p.groupId), 44.dp, radius = 14.dp)
+                            GroupAvatar(tintOf(p.groupId), 44.dp, radius = 14.dp, gid = p.groupId)
                             Text(p.name, style = TinType.titleM, color = c.ink)
                         }
                         Text(p.issuerDid?.let { "Invited by ${nameOf(app, it, "someone who isn’t in your contacts")}" } ?: "A link for your own account", style = TinType.bodyM, color = c.ink2)

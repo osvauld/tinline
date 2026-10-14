@@ -7,6 +7,7 @@
 use std::f64::consts::PI;
 
 const CTX: &str = "tinline/avatar/v1";
+const GROUP_CTX: &str = "tinline/avatar/v1/group";
 const C: f64 = 50.0;
 const R: f64 = 42.0;
 /// Segments used to sample a full circle; arcs use `ARC_SEGS`.
@@ -47,6 +48,11 @@ pub struct AvatarArt {
 pub fn fingerprint(did: &str) -> Option<[u8; 32]> {
     let pk = identity::public_key_from_did(did)?;
     Some(blake3::derive_key(CTX, &pk))
+}
+
+/// The 32-byte fingerprint of a group id (its own context, so a group never draws like a person).
+pub fn group_fingerprint(gid: &str) -> [u8; 32] {
+    blake3::derive_key(GROUP_CTX, gid.as_bytes())
 }
 
 /// The parameters the bytes select.
@@ -216,6 +222,13 @@ pub fn avatar_art(did: String, small: bool) -> Option<AvatarArt> {
     Some(art_from_fingerprint(&fingerprint(&did)?, small))
 }
 
+/// A group's avatar from its group id: same byte map and geometry as a person; the app draws it in a rounded square
+/// (radius 28% of the size) instead of a circle. Group ids are ordinary strings, so this never fails.
+#[uniffi::export]
+pub fn group_avatar_art(gid: String, small: bool) -> AvatarArt {
+    art_from_fingerprint(&group_fingerprint(&gid), small)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,6 +290,15 @@ mod tests {
     }
 
     #[test]
+    fn group_art_is_distinct_and_deterministic() {
+        let g = group_avatar_art("grp-alpha".into(), false);
+        assert_eq!(g, group_avatar_art("grp-alpha".into(), false));
+        assert_ne!(g, group_avatar_art("grp-beta".into(), false));
+        assert_ne!(group_fingerprint("x"), blake3::derive_key(CTX, b"x"));
+        assert!(!group_avatar_art("".into(), true).strokes.is_empty());
+    }
+
+    #[test]
     fn colours_are_opaque() {
         for h in [0.0, 90.0, 180.0, 359.0] {
             let (l, d) = colours(h);
@@ -297,6 +319,22 @@ mod tests {
                 let f = fingerprint(&d).unwrap();
                 let a = art_from_fingerprint(&f, small);
                 out += &format!("did {d} small {small} sw {}\n", a.stroke_width);
+                out += &format!("fp {}\n", f.iter().map(|x| format!("{x:02x}")).collect::<String>());
+                out += &format!("light {:08x} {:08x} dark {:08x} {:08x}\n", a.light.bg, a.light.fg, a.dark.bg, a.dark.fg);
+                for s in &a.strokes {
+                    out += &format!("s {} {} {}", s.closed as u8, s.gold as u8, s.alpha);
+                    for q in &s.points {
+                        out += &format!(" {q:.3}");
+                    }
+                    out += "\n";
+                }
+            }
+        }
+        for gid in ["g-0f3a9c", "family", "Weekend hike", "4b1d5e7a9c2f0813"] {
+            for small in [false, true] {
+                let f = group_fingerprint(gid);
+                let a = art_from_fingerprint(&f, small);
+                out += &format!("group {gid} small {small} sw {}\n", a.stroke_width);
                 out += &format!("fp {}\n", f.iter().map(|x| format!("{x:02x}")).collect::<String>());
                 out += &format!("light {:08x} {:08x} dark {:08x} {:08x}\n", a.light.bg, a.light.fg, a.dark.bg, a.dark.fg);
                 for s in &a.strokes {

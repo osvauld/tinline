@@ -286,8 +286,10 @@ fun FilterChip(label: String, on: Boolean, onClick: () -> Unit) {
 
 /** A group's avatar in lists: --surface-2 circle with the users glyph in --accent-ink (lib/ui/Avatar group). */
 @Composable
-fun ListGroupAvatar(size: Dp, alpha: Float = 1f) {
+fun ListGroupAvatar(size: Dp, alpha: Float = 1f, gid: String? = null) {
     val c = Tin.c
+    val art = androidx.compose.runtime.remember(gid, size) { FingerprintCache.ofGroup(gid, size.value) }
+    if (art != null) { GroupMandala(art, size, Modifier.alpha(alpha)); return }
     Box(Modifier.size(size).alpha(alpha).clip(CircleShape).background(c.sf2), contentAlignment = Alignment.Center) {
         Icon(PgIcons.Users, null, tint = c.accentInk, modifier = Modifier.size(size * 0.46f))
     }
