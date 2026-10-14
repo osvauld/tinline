@@ -79,7 +79,7 @@ fun ChatListRow(r: ChatRowUi, draft: String?, selected: Boolean = false, onClick
         Modifier.fillMaxWidth().heightIn(min = 72.dp).pressable(onClick, RowShape, rest = if (selected) c.accentSoft else androidx.compose.ui.graphics.Color.Transparent).padding(8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (r.group) ListGroupAvatar(48.dp) else Avatar(r.name, r.did, 48.dp)
+        if (r.group) ListGroupAvatar(48.dp, gid = r.did) else Avatar(r.name, r.did, 48.dp)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(r.name, Modifier.weight(1f), style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)

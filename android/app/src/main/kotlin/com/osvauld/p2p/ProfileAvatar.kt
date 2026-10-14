@@ -88,6 +88,16 @@ object FingerprintCache {
         return v as? FingerprintDrawing
     }
 
+    /** The drawing for a group id (its own fingerprint context; never a DID), or null when the native library is not loaded. */
+    fun ofGroup(gid: String?, sizeDp: Float): FingerprintDrawing? {
+        if (gid.isNullOrEmpty()) return null
+        val small = sizeDp < SMALL_BELOW_DP
+        val v = cache.getOrPut((if (small) "gs" else "gl") + gid) {
+            runCatching { build(uniffi.p2pcore.groupAvatarArt(gid, small)) }.getOrNull() ?: none
+        }
+        return v as? FingerprintDrawing
+    }
+
     private fun build(a: uniffi.p2pcore.AvatarArt): FingerprintDrawing {
         val strokes = a.strokes.map { s ->
             val p = Path()
