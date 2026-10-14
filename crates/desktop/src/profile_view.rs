@@ -251,9 +251,9 @@ impl App {
         if let Some(h) = cached.and_then(|c| c.photo.as_ref()) {
             return image(h.clone()).width(size).height(size).content_fit(ContentFit::Fill).filter_method(iced::widget::image::FilterMethod::Linear).into();
         }
-        let base = avatar(t, name, if key == "me" { "me" } else { did }, size);
+        let base = ui::fingerprint_face(t, did, size).unwrap_or_else(|| avatar(t, name, if key == "me" { "me" } else { did }, size));
         if cached.is_some_and(|c| c.awaiting) {
-            let (_, ink) = ui::avatar_colors(t, if key == "me" { "me" } else { did });
+            let ink = ui::fingerprint_ink(t, did).unwrap_or_else(|| ui::avatar_colors(t, if key == "me" { "me" } else { did }).1);
             let ring = move |_: &iced::Theme| iced::widget::container::Style {
                 border: Border { color: ui::alpha(ink, 0.45 * 0.5), width: (size * 0.34 * 0.03).max(1.5), radius: (size / 2.0).into() },
                 ..Default::default()

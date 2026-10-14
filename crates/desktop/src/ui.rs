@@ -821,3 +821,83 @@ pub fn scroll_style(t: Tok) -> impl Fn(&Theme, scrollable::Status) -> scrollable
         s
     }
 }
+
+/// Fingerprint avatar art (crates/core avatar.rs), cached per DID and size class: blake3 and the
+/// trigonometry run once, not on every view.
+fn fingerprint_art(did: &str, size: f32) -> Option<std::sync::Arc<p2pcore::avatar::AvatarArt>> {
+    type Cache = Mutex<HashMap<(String, bool), Option<std::sync::Arc<p2pcore::avatar::AvatarArt>>>>;
+    static CACHE: OnceLock<Cache> = OnceLock::new();
+    let small = size < p2pcore::avatar::SMALL_BELOW_PX;
+    let mut m = CACHE.get_or_init(Default::default).lock().unwrap();
+    m.entry((did.to_string(), small)).or_insert_with(|| p2pcore::avatar::avatar_art(did.to_string(), small).map(std::sync::Arc::new)).clone()
+}
+
+fn argb(c: u32) -> Color {
+    rgb(c & 0xFF_FFFF)
+}
+
+/// The mandala's own foreground for `did` in this theme, None for a key that is not a DID.
+pub fn fingerprint_ink(t: Tok, did: &str) -> Option<Color> {
+    let a = fingerprint_art(did, 100.0)?;
+    Some(argb(if t.dark { a.dark.fg } else { a.light.fg }))
+}
+
+/// The gold layer: the playground's --gold token (tokens.css), light / dark.
+fn avatar_gold(dark: bool) -> u32 {
+    if dark { 0xE8B04A } else { 0xC98A1E }
+}
+
+/// A person's default avatar: the fingerprint mandala on its calm disc (docs/design/FINGERPRINT-AVATARS.md).
+/// The strokes are rasterised once per DID, size and theme. None when `did` is not a DID.
+pub fn fingerprint_face<'a, M: 'a>(t: Tok, did: &str, size: f32) -> Option<Element<'a, M>> {
+    let ar = fingerprint_art(did, size)?;
+    let c = if t.dark { ar.dark } else { ar.light };
+    let (fg, gold) = (c.fg & 0xFF_FFFF, avatar_gold(t.dark));
+    let handle = raster(
+        hash_of((did, size < p2pcore::avatar::SMALL_BELOW_PX, t.dark)),
+        || fingerprint_svg(&ar, fg, gold),
+        device_px(size),
+        None,
+    );
+    Some(container(art(handle, size)).width(size).height(size).style(plain(argb(c.bg), size / 2.0)).into())
+}
+
+fn fingerprint_svg(ar: &p2pcore::avatar::AvatarArt, fg: u32, gold: u32) -> String {
+    let mut svg = format!(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke-width="{}" stroke-linecap="round" stroke-linejoin="round">"#,
+        ar.stroke_width
+    );
+    for s in &ar.strokes {
+        let mut d = String::new();
+        for (i, p) in s.points.chunks(2).enumerate() {
+            d += &format!("{}{:.2},{:.2}", if i == 0 { "M" } else { "L" }, p[0], p[1]);
+        }
+        if s.closed {
+            d.push('Z');
+        }
+        svg += &format!(r##"<path d="{d}" stroke="#{:06x}" stroke-opacity="{}"/>"##, if s.gold { gold } else { fg }, s.alpha);
+    }
+    svg + "</svg>"
+}
+
+#[cfg(test)]
+mod fingerprint_tests {
+    use super::*;
+
+    /// The markup the avatar rasterises parses, and draws something inside the box, for several keys and both sizes.
+    #[test]
+    fn fingerprint_svg_renders() {
+        // Synthetic DIDs (the golden file's).
+        for (seed, did) in ["z6Mkeb6dsrBTX95vPgLiZAcgRr6XJthFm1czoqFEx34DQtRo", "z6Mkef1w29eU7SP9XmbDzTwbiisHZ3uTS5JpNEuu1R6pADkW", "z6MkenrXJkaVJ2ybox6Es4bSJUQp3NKrnCgTV4FD8BC1etPv", "z6MkeXBLjYiSvqnhFb6D7sHm8yKm4jV45wwBFRaatf1cfZ76", "z6MkezcQjeyX4vsHEDqmAxaCB6j6mqxToPjvAHFBJKKottN3", "z6MkfLCtTAJa2RMQvg6JMTCndUauze1UAiB1xKaTbDYodYya"].iter().enumerate() {
+            let did = format!("did:key:{did}");
+            for small in [false, true] {
+                let ar = p2pcore::avatar::avatar_art(did.clone(), small).unwrap();
+                let tree = usvg::Tree::from_str(&fingerprint_svg(&ar, 0x1E5B33, 0xC98A1E), &usvg::Options::default()).expect("parses");
+                let mut pm = resvg::tiny_skia::Pixmap::new(96, 96).unwrap();
+                resvg::render(&tree, resvg::tiny_skia::Transform::from_scale(0.96, 0.96), &mut pm.as_mut());
+                assert!(pm.pixels().iter().filter(|p| p.alpha() > 0).count() > 100, "{seed} {small}");
+            }
+        }
+        assert!(fingerprint_art("me", 40.0).is_none());
+    }
+}
