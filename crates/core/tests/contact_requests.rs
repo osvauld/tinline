@@ -123,7 +123,7 @@ fn a_hello_is_a_request_until_accepted() {
     assert!(matches!(tara.node.accept_contact_request(maya.did.clone()), Err(p2pcore::Error::NotFound)));
 }
 
-/// 0: one code, two joiners, both succeed; the same joiner can't redeem it twice; a repeated
+/// 0: one code, two joiners, both succeed; the same joiner may use it again until it expires; a repeated
 /// hello while waiting stays one request (one event).
 #[test]
 fn a_code_adds_several_people_once_each() {
@@ -142,8 +142,9 @@ fn a_code_adds_several_people_once_each() {
     eventually(40, "both have Tara", || has(&maya, &tara.did) && has(&ravi, &tara.did));
     assert_eq!(tara.node.contacts().len(), 2);
 
-    // The same joiner and code again: refused (replay), even though Maya is a contact now.
-    assert!(matches!(maya.node.add_contact_by_code(code), Err(AddError::Refused)));
+    // The same joiner and code again (her other device, say): good until the code expires, and as
+    // she is a contact already it adds no one new.
+    assert!(maya.node.add_contact_by_code(code).is_ok());
     assert_eq!(tara.node.contacts().len(), 2);
 }
 

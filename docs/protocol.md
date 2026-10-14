@@ -30,8 +30,8 @@ signing_pk[32] | device[32] | nonce[6] | exp[3] | flags[1] | name[n] | relay_ext
 ```
 
 - `exp`: minutes since 2026-01-01T00:00:00Z, u24 big endian (issuer rounds up).
-  `iat` is not carried (decodes as 0). `nonce` is 6 random bytes (the ticket's id; each joiner
-  DID redeems it once, see "Tickets in the core").
+  `iat` is not carried (decodes as 0). `nonce` is 6 random bytes (the ticket's id; good for anyone,
+  any number of times, until it expires or is reset, see "Tickets in the core").
 - `flags`: high 3 bits relay code (0 none, 1..4 = `https://{use1,usw1,euc1,aps1}-1.relay.n0.iroh.link./`,
   7 custom: `relay_ext` = u8 length + URL); low 5 bits = name length, so names are capped
   at 31 bytes (truncated at a char boundary when issuing).
@@ -571,7 +571,7 @@ Scanning a blocked contact's ticket ourselves unblocks them first.
 Tokens carry a random 16-byte id and `accept_hello` takes a revoked-id set, but the core never
 writes to that set: tokens are taken back per DID with cut-offs (see "Tokens"); a block takes
 back both of the blocked contact's tokens.
-Tickets are redeemed once per joiner DID (the redeemed set) and expire.
+Shared tickets are good until they expire or are reset; one-time request tickets are dropped when used.
 
 Not in P5: blocking does not rotate any endpoint (U5) and changes no group membership; there is
 no attempt counter yet ("tried to message you N times"); the call ALPN was not bumped for the new
@@ -579,9 +579,11 @@ messages (an older app fails to decode them, U18).
 
 ## Tickets in the core
 
-- **Reusable codes (2026-10-13).** A ticket adds any number of joiners until it expires; each
-  joiner DID redeems it once (`redeemed_key`; a bare nonce from before still spends a ticket for
-  everyone). Every addition is a request the user accepts (see "Contact requests").
+- **Reusable codes (2026-10-13; 2026-10-14: no per-joiner limit).** A ticket adds any number of
+  joiners, and the same joiner any number of times (their other devices; a re-add lifts a block),
+  until it expires or is reset. The (joiner, nonce) entries (`redeemed_key`) are kept as a record
+  only; a bare nonce from before still spends a ticket for everyone. One-time tickets
+  (accepting a group chat request) are dropped when used. Every addition is a request the user accepts (see "Contact requests").
 - Live tickets (`State::live_tickets`, nonce -> `exp`, local): the one handed out now plus older
   ones replaced by a rename (`set_name` or a synced profile name: the old one keeps the old
   signed name), a relay change or the last day of life; they stay good until they expire.

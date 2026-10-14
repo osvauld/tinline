@@ -276,7 +276,7 @@ impl Inner {
             return Err(Error::Rejected(crate::BLOCKED.into()));
         }
         // Checked again: the code may have expired since, or another device of ours added them.
-        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, &req.hello, req.device, now, &next.redeemed, crate::node::GRANT_TTL, |d| {
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, &req.hello, req.device, now, &crate::node::spent_nonces(&next), crate::node::GRANT_TTL, |d| {
             crate::caps::policy_for(&next, d, crate::caps::ContactOrigin::Ticket)
         })?;
         if new.did != did {

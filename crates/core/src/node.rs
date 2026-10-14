@@ -2366,7 +2366,7 @@ impl Inner {
             (s.state.clone(), s.committed.then(|| s.acct.as_ref().and_then(|a| a.backing.clone())).flatten())
         };
         let now = now();
-        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now, &next.redeemed, GRANT_TTL, |did| {
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now, &spent_nonces(&next), GRANT_TTL, |did| {
             // A DID we accepted a group chat request from gets message-only tokens (U3, P6).
             let origin = if next.req_tickets.values().any(|t| t.did == did && t.exp >= now) {
                 crate::caps::ContactOrigin::GroupRequest
@@ -3730,6 +3730,15 @@ pub(crate) fn retire_ticket(st: &mut State, keep: bool) {
         st.live_tickets.clear();
     }
     st.ticket = None;
+}
+
+/// The redeemed entries that refuse a hello. A shared code is good until it expires or is reset,
+/// for anyone and any number of times (decided 2026-10-14): the same person's other devices add
+/// us with it, and a re-add lifts a block. The (joiner, nonce) entries stay a record only; a bare
+/// nonce (single-use tickets from before) still spends its ticket, and one-time request tickets
+/// are dropped when used.
+pub(crate) fn spent_nonces(st: &State) -> std::collections::HashSet<String> {
+    st.redeemed.iter().filter(|k| !k.contains('/')).cloned().collect()
 }
 
 /// Whether our ticket with this nonce still adds contacts: the current one, or an older one

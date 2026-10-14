@@ -61,8 +61,9 @@ fn reset_tickets_are_dead_and_live_ones_are_reusable() {
     c.node.add_contact(t2.clone()).unwrap();
     assert_eq!(a.node.my_ticket().unwrap(), t2);
     assert_eq!(a.node.contacts().len(), 2);
-    // The same joiner can't redeem it twice.
-    assert!(matches!(b.node.add_contact(t2), Err(Error::Rejected(_))));
+    // The same joiner may use it again (2026-10-14: good until it expires or is reset); no one new.
+    b.node.add_contact(t2).unwrap();
+    assert_eq!(a.node.contacts().len(), 2);
 }
 
 #[test]
@@ -115,8 +116,8 @@ fn failed_write_sends_no_welcome_and_spends_nothing() {
     a.node.unlock(PASS.into()).unwrap();
     a.node.start().unwrap();
     assert_eq!(a.node.contacts().len(), 1);
-    // The redeemed (joiner, nonce) is durable too: the same joiner cannot replay the ticket.
-    assert!(matches!(b.node.add_contact(t), Err(Error::Rejected(_))));
+    // The contact is durable: the same joiner coming again (2026-10-14: allowed) adds no one new.
+    b.node.add_contact(t).unwrap();
     assert_eq!(a.node.contacts().len(), 1);
 }
 
