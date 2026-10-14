@@ -78,7 +78,7 @@ fun QrCameraBox(modifier: androidx.compose.ui.Modifier, caption: String, torch: 
             androidx.compose.material3.Text(caption, androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.BottomCenter).padding(bottom = 24.dp),
                 style = TinType.bodyL.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = ComposeColor.White)
         } else androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(32.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
-            androidx.compose.material3.Icon(androidx.compose.material.icons.PgIcons.Camoff, null, tint = ComposeColor.White, modifier = androidx.compose.ui.Modifier.size(48.dp))
+            androidx.compose.material3.Icon(PgIcons.Camoff, null, tint = ComposeColor.White, modifier = androidx.compose.ui.Modifier.size(48.dp))
             androidx.compose.material3.Text("Tinline needs the camera to read the code.", style = TinType.bodyL, color = ComposeColor.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             TinButton("Allow camera", { ask.launch(Manifest.permission.CAMERA) }, fill = false)
         }
