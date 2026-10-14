@@ -3,10 +3,9 @@
 use identity::Identity;
 use proto::gcall::{self as w, GroupCallMsg, Roster, RosterEntry};
 
-fn identity(seed: u8) -> Identity {
-    let phrase = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
-    identity::recover(&phrase.to_string()).unwrap()
-}
+#[path = "support/fixtures.rs"]
+mod fixtures;
+use fixtures::owner as identity;
 
 fn roster(n: usize) -> (Identity, Roster) {
     let host = identity(200);

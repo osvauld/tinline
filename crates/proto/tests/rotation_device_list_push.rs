@@ -33,39 +33,16 @@ use ed25519_dalek::{Signer as _, SigningKey};
 use identity::Identity;
 use proto::{SignedBlob, newer, sign_device_list, verify_device_list};
 use serde::Serialize;
-use sha2::{Digest, Sha256};
+
+#[path = "support/fixtures.rs"]
+mod fixtures;
+use fixtures::*;
 
 type Key = [u8; 32];
 
 const BLOCK_DOMAIN: &[u8] = b"test-only/w2d-block-notice/v1\0";
 const CONTENT_DOMAIN: &[u8] = b"test-only/w2d-content/v1\0";
 
-// ---- fixtures copied from rotation_silent_block.rs @0924939 (originally
-// rotation_fork_revocation.rs @75ed838); coordinator consolidates later.
-
-fn fixture_seed(label: &[u8], seed: u8, generation: u64) -> Key {
-    Sha256::digest([label, &[seed], &generation.to_be_bytes()].concat()).into()
-}
-/// Deterministic fixture endpoint key. NOT a derivation scheme: receivers never compute it.
-fn fixture_key(seed: u8, generation: u64) -> SigningKey {
-    SigningKey::from_bytes(&fixture_seed(
-        b"test-only/fixture-endpoint\0",
-        seed,
-        generation,
-    ))
-}
-/// Deterministic owner identity from fixed entropy (never a real profile). Cloning it models
-/// another holder of the SAME mnemonic (linked device or thief).
-fn owner(seed: u8) -> Identity {
-    let m = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
-    identity::recover(&m.to_string()).unwrap()
-}
-
-// ---- end of copied fixtures.
-
-fn ser<T: Serialize>(t: &T) -> Vec<u8> {
-    serde_json::to_vec(t).unwrap()
-}
 
 fn pk(k: &SigningKey) -> Key {
     k.verifying_key().to_bytes()
@@ -74,10 +51,6 @@ fn pk(k: &SigningKey) -> Key {
 /// Device `slot` at key generation `generation` (a restore or rotation bumps the generation).
 fn dev(slot: u8, generation: u64) -> SigningKey {
     fixture_key(slot, generation)
-}
-
-fn did(seed: u8) -> String {
-    owner(seed).did().to_string()
 }
 
 const BOB: u8 = 2;
@@ -656,33 +629,6 @@ fn stale_replayed_forged_tampered_and_wrong_did_lists_leave_the_view_unchanged()
         assert_eq!(alice.snap(), before, "{what}: unchanged");
     }
     assert_eq!(alice.held, Some(cur));
-}
-
-// Minimal URL-safe no-pad base64 so the model can tamper with payloads without new deps.
-const B64: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-fn base64_encode(bytes: &[u8]) -> String {
-    let mut out = String::new();
-    for chunk in bytes.chunks(3) {
-        let n = chunk.iter().fold(0u32, |a, b| (a << 8) | *b as u32) << (8 * (3 - chunk.len()));
-        for i in 0..=chunk.len() {
-            out.push(B64[((n >> (18 - 6 * i)) & 63) as usize] as char);
-        }
-    }
-    out
-}
-fn base64_decode(text: &str) -> Vec<u8> {
-    let vals: Vec<u32> = text
-        .bytes()
-        .map(|c| B64.iter().position(|x| *x == c).unwrap() as u32)
-        .collect();
-    let mut out = Vec::new();
-    for chunk in vals.chunks(4) {
-        let n = chunk.iter().fold(0u32, |a, b| (a << 6) | b) << (6 * (4 - chunk.len()));
-        for i in 0..chunk.len() - 1 {
-            out.push((n >> (16 - 8 * i)) as u8);
-        }
-    }
-    out
 }
 
 // ---- 4. restore (K1 stall) --------------------------------------------------------------------

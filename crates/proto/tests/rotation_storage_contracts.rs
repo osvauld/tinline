@@ -14,140 +14,16 @@
 //! Fake time: one `u64` tick counter used both as scheduler time and signed wall time
 //! (clock divergence is C1's subject, `rotation_time_contracts.rs`). Owner signatures and
 //! announcement possession proofs are real Ed25519. Every numeric value is a fixture.
-use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use ed25519_dalek::{Signer, SigningKey};
 use identity::Identity;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
-// ---------------------------------------------------------------------------
-// Copied from rotation_time_contracts.rs @f3cf3ed (itself copied from
-// rotation_permit_model.rs @01ee106); coordinator consolidates later.
-// Changes: `View::live` omitted (unused here). `Serialize` on `View` as in C1.
-// ---------------------------------------------------------------------------
-const DOMAIN: &[u8] = b"test-only/device-succession-permit/v1\0";
-const PAGE: usize = 4;
-
-#[derive(Clone, Debug, Serialize)]
-struct Claims {
-    version: u8,
-    owner: String,
-    audience: String,
-    previous_id: [u8; 32],
-    replacement_id: [u8; 32],
-    endpoint: [u8; 32],
-    predecessor: [u8; 32],
-    generation: u64,
-    issued_at: u64,
-    expires_at: u64,
-}
-
-#[derive(Clone)]
-struct Permit {
-    claims: Claims,
-    signature: [u8; 64],
-}
-
-impl Permit {
-    fn bytes(claims: &Claims) -> Vec<u8> {
-        [DOMAIN, &serde_json::to_vec(claims).unwrap()].concat()
-    }
-    fn issue(owner: &Identity, claims: Claims) -> Self {
-        let signature = owner.sign(&Self::bytes(&claims));
-        Self { claims, signature }
-    }
-    fn id(&self) -> [u8; 32] {
-        Sha256::digest(Self::bytes(&self.claims)).into()
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-struct View {
-    owner: String,
-    audience: String,
-    anchor: [u8; 32],
-    head: [u8; 32],
-    current_id: [u8; 32],
-    endpoint: [u8; 32],
-    generation: u64,
-    expires_at: u64,
-}
-
-impl View {
-    fn initial(owner: &Identity, device_id: u8) -> Self {
-        let anchor = Sha256::digest([owner.did().as_bytes(), &[device_id]].concat()).into();
-        Self {
-            owner: owner.did().into(),
-            audience: "private".into(),
-            anchor,
-            head: anchor,
-            current_id: [device_id; 32],
-            endpoint: [0; 32],
-            generation: 0,
-            expires_at: 0,
-        }
-    }
-
-    fn page(
-        &mut self,
-        permits: &[Permit],
-        now: u64,
-        revoked: &HashSet<[u8; 32]>,
-    ) -> Result<(), &'static str> {
-        if permits.is_empty() || permits.len() > PAGE {
-            return Err("page_limit");
-        }
-        let mut candidate = self.clone();
-        for permit in permits {
-            let c = &permit.claims;
-            let key = identity::public_key_from_did(&candidate.owner).unwrap();
-            if c.owner != candidate.owner
-                || !identity::verify(&key, &Permit::bytes(c), &permit.signature)
-            {
-                return Err("owner_signature");
-            }
-            if c.version != 1 || c.audience != candidate.audience {
-                return Err("scope");
-            }
-            if c.issued_at >= c.expires_at || c.issued_at > now {
-                return Err("validity");
-            }
-            if revoked.contains(&candidate.anchor)
-                || revoked.contains(&candidate.head)
-                || revoked.contains(&permit.id())
-            {
-                return Err("revoked");
-            }
-            if c.generation == candidate.generation {
-                if permit.id() == candidate.head {
-                    continue;
-                }
-                return Err("fork");
-            }
-            if c.generation < candidate.generation {
-                return Err("stale");
-            }
-            if candidate.generation.checked_add(1) != Some(c.generation) {
-                return Err("gap");
-            }
-            if c.predecessor != candidate.head || c.previous_id != candidate.current_id {
-                return Err("predecessor");
-            }
-            if c.replacement_id == c.previous_id {
-                return Err("unchanged_id");
-            }
-            candidate.head = permit.id();
-            candidate.current_id = c.replacement_id;
-            candidate.endpoint = c.endpoint;
-            candidate.generation = c.generation;
-            candidate.expires_at = c.expires_at;
-        }
-        *self = candidate;
-        Ok(())
-    }
-}
-// ------------------------------- end of copy -------------------------------
+#[path = "support/permit_base.rs"]
+mod permit_base;
+use permit_base::*;
 
 /// Byte-level comparison of durable state needs permits to serialize; the copied fixture
 /// has a `[u8; 64]` signature, so serialize it as a byte vector here (copy left untouched).
@@ -176,10 +52,6 @@ const VALIDITY: u64 = 15;
 const DEVICE: u8 = 1;
 const PEERS: [&str; 3] = ["bob", "carol", "dave"];
 const BLOCKED: &str = "carol";
-
-fn no_revocations() -> HashSet<[u8; 32]> {
-    HashSet::new()
-}
 
 fn successor(owner: &Identity, view: &View, key: &SigningKey, now: u64) -> Permit {
     let endpoint = key.verifying_key().to_bytes();

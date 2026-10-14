@@ -5,113 +5,13 @@ use std::collections::HashSet;
 
 use ed25519_dalek::{Signer, SigningKey};
 use identity::Identity;
-use serde::Serialize;
-use sha2::{Digest, Sha256};
 
-const DOMAIN: &[u8] = b"test-only/device-succession-permit/v1\0";
-const PAGE: usize = 4;
+#[path = "support/permit_base.rs"]
+mod permit_base;
+use permit_base::*;
 
 #[path = "support/rotation_permit_network.rs"]
 mod network;
-
-#[derive(Clone, Debug, Serialize)]
-struct Claims {
-    version: u8,
-    owner: String,
-    audience: String,
-    previous_id: [u8; 32],
-    replacement_id: [u8; 32],
-    endpoint: [u8; 32],
-    predecessor: [u8; 32],
-    generation: u64,
-    issued_at: u64,
-    expires_at: u64,
-}
-
-#[derive(Clone)]
-struct Permit {
-    claims: Claims,
-    signature: [u8; 64],
-}
-
-impl Permit {
-    fn bytes(claims: &Claims) -> Vec<u8> {
-        [DOMAIN, &serde_json::to_vec(claims).unwrap()].concat()
-    }
-    fn issue(owner: &Identity, claims: Claims) -> Self {
-        let signature = owner.sign(&Self::bytes(&claims));
-        Self { claims, signature }
-    }
-    fn id(&self) -> [u8; 32] {
-        // Like courier: ID names signed payload, not signature representation.
-        Sha256::digest(Self::bytes(&self.claims)).into()
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct View {
-    owner: String,
-    audience: String,
-    // Anchor is a nominated historical record, NOT a permanent current device ID.
-    anchor: [u8; 32],
-    head: [u8; 32],
-    current_id: [u8; 32],
-    endpoint: [u8; 32],
-    generation: u64,
-    expires_at: u64,
-}
-
-impl View {
-    fn initial(owner: &Identity, device_id: u8) -> Self {
-        // These anchors stand for already authenticated initial nominations.
-        let anchor = Sha256::digest([owner.did().as_bytes(), &[device_id]].concat()).into();
-        Self { owner: owner.did().into(), audience: "private".into(), anchor, head: anchor,
-            current_id: [device_id; 32], endpoint: [0; 32], generation: 0, expires_at: 0 }
-    }
-
-    fn page(&mut self, permits: &[Permit], now: u64, revoked: &HashSet<[u8; 32]>) -> Result<(), &'static str> {
-        if permits.is_empty() || permits.len() > PAGE { return Err("page_limit"); }
-        let mut candidate = self.clone();
-        for permit in permits {
-            let c = &permit.claims;
-            let key = identity::public_key_from_did(&candidate.owner).unwrap();
-            if c.owner != candidate.owner || !identity::verify(&key, &Permit::bytes(c), &permit.signature) {
-                return Err("owner_signature");
-            }
-            if c.version != 1 || c.audience != candidate.audience { return Err("scope"); }
-            if c.issued_at >= c.expires_at || c.issued_at > now { return Err("validity"); }
-            if revoked.contains(&candidate.anchor) || revoked.contains(&candidate.head) || revoked.contains(&permit.id()) {
-                return Err("revoked");
-            }
-            if c.generation == candidate.generation {
-                if permit.id() == candidate.head { continue; }
-                return Err("fork");
-            }
-            if c.generation < candidate.generation { return Err("stale"); }
-            if candidate.generation.checked_add(1) != Some(c.generation) { return Err("gap"); }
-            if c.predecessor != candidate.head || c.previous_id != candidate.current_id {
-                return Err("predecessor");
-            }
-            if c.replacement_id == c.previous_id { return Err("unchanged_id"); }
-            candidate.head = permit.id();
-            candidate.current_id = c.replacement_id;
-            candidate.endpoint = c.endpoint;
-            candidate.generation = c.generation;
-            candidate.expires_at = c.expires_at;
-        }
-        // Atomic model transition. Expired history advances knowledge, NOT live permission.
-        *self = candidate;
-        Ok(())
-    }
-
-    fn live(&self, now: u64, revoked: &HashSet<[u8; 32]>, challenge: &[u8], proof: &[u8; 64]) -> bool {
-        // Simplified possession fixture. Production must bind a fresh challenge to the
-        // connection/context (or use iroh's authenticated transport), not accept arbitrary bytes.
-        self.generation > 0 && now < self.expires_at
-            && !revoked.contains(&self.anchor) && !revoked.contains(&self.head)
-            && identity::verify(&self.endpoint, challenge, proof)
-    }
-}
 
 fn next(owner: &Identity, previous: &View, id: u8, issued_at: u64, expires_at: u64) -> (Permit, SigningKey) {
     let key = SigningKey::from_bytes(&proto::new_device_secret());
