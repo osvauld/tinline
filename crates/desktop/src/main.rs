@@ -26,7 +26,8 @@ mod emoji;
 mod audio;
 mod cues;
 mod flow;
-/// Placeholder data for the groups & privacy preview screens.
+/// Placeholder data for the groups & privacy preview screens (tests and design screenshots only).
+#[cfg(any(test, feature = "test-hooks"))]
 mod groups_fake;
 mod hostcond;
 mod keystore;

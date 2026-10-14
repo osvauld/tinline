@@ -19,7 +19,7 @@ fun SettingsRoute(
     app: P2pApp, missing: List<Need>, onBack: () -> Unit, onMe: () -> Unit, onSwitchPick: (String) -> Unit,
     onCreateAccount: () -> Unit, onRestoreAccount: () -> Unit, onLinkAccount: () -> Unit,
     onDevices: () -> Unit, onPrivacy: () -> Unit, onNotifications: () -> Unit, onSounds: () -> Unit,
-    onAbout: () -> Unit, onDiagnostics: () -> Unit, onPreview: (String) -> Unit,
+    onAbout: () -> Unit, onDiagnostics: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val store = remember(app) { ProfileBackend.of(app) }
@@ -31,7 +31,6 @@ fun SettingsRoute(
     }
     val fallback = profileFallbackName(app, acct)
     var adding by remember { mutableStateOf(false) }
-    val previewOn by PreviewFlags.enabled(ctx).collectAsState()
     SettingsLanding(store, fallback, list, permProblems(missing), onBack, onMe, onSwitchPick, { adding = true },
         onDevices, onPrivacy, onNotifications, onSounds) {
         // Not in the playground: the app's About (licences must stay reachable), the video offer, and debug-only tools.
@@ -43,14 +42,6 @@ fun SettingsRoute(
                     trailing = { PgSwitch(video, { video = it; app.videoEnabled = it }, "Video in calls") }) }
                 act { PfAct("About Tinline", onClick = onAbout, icon = PgIcons.Info, chevron = true, sub = "Version, licences, terms, privacy") }
                 if (BuildConfig.DEBUG) act { PfAct("Diagnostics", onClick = onDiagnostics, chevron = true, sub = "Test tone and core version (debug builds)") }
-                if (PreviewFlags.available) act {
-                    PfAct(PreviewFlags.LABEL, plain = true, onClick = { PreviewFlags.set(ctx, previewOn != true) }, sub = "Debug builds only. Screens for features the core doesn’t have yet",
-                        trailing = { PgSwitch(previewOn == true, { PreviewFlags.set(ctx, it) }, PreviewFlags.LABEL) })
-                }
-                if (previewOn == true) {
-                    act { PfAct("People, requests & blocking (preview)", onClick = { onPreview("chats") }, chevron = true) }
-                    act { PfAct("Address changes (preview)", onClick = { onPreview("address") }, chevron = true) }
-                }
             }
         }
     }
