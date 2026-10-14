@@ -1,0 +1,12 @@
+[package]
+name = "present"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Shared, pure UI logic (names, avatars, call words, time words, emoji, link and block copy) exported through UniFFI"
+
+[lib]
+name = "present"
+
+[dependencies]
+uniffi = { version = "0.29" }
