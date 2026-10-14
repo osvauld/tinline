@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/group-sim", "crates/gcall-bench", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons"]
+members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/group-sim", "crates/gcall-bench", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons", "crates/present"]
 
 [workspace.package]
 version = "0.1.32"
