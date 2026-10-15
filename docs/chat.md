@@ -465,8 +465,9 @@ Full design, limits and validation: [message receipt runtime slice](design/messa
   the session continues. `/5` peers are refused with 426: **update the app, no wipe**.
 - Projection: `chat_message_receipts` / `chat_day_receipts` (levels `Unconfirmed`,
   `Delivered`, `Read` with inspectable proofs). `Message.delivery` keeps its meaning and is
-  never upgraded by receipts. App displays are not built yet
-  ([UI handoff](design/message-receipt-ui-handoff.md)).
+  never upgraded by receipts. Both apps draw the mark from the core's `ReceiptTick`
+  (clock, check = signed delivered, double check = signed read) and show signer/device
+  provenance in the message menu ([UI](design/message-receipt-ui-handoff.md)).
 - Not yet: receipts across our own devices, group message receipts, a user setting to
   disable read receipts (open product question).
 

@@ -1,13 +1,36 @@
-# Signed message receipts: desktop/Android UI handoff (not implemented)
+# Signed message receipts: desktop/Android status display
 
-Status: **handoff only**. The core contract below exists in `feature/receipt-runtime`
-(not merged). The receipt-runtime lane did NOT edit app UI because the files are actively
-owned elsewhere at the time of writing (uncommitted edits in other worktrees):
-`crates/desktop/src/chat_view.rs` (ds-chat, chat-media-ui, parity-desktop),
-`crates/desktop/src/chat.rs` (ds-chat, parity-desktop), `android/.../Conversation.kt`
-(ds-chat, wave2, chat-media-ui), `ChatUi.kt` / `Chats.kt` (ds-shell). Whoever owns those
-files should implement this after the core branch is merged. Until both app displays
-exist and are demonstrated, signed receipts are not "shipped" (roadmap product gate).
+Status: **built in `feature/receipt-runtime` (2026-10-15), not merged**. Desktop (iced) and
+Android (Compose) draw the 1:1 bubble mark from the core's `ReceiptTick` and show signed
+provenance in the message menu / action sheet. Group receipts are not built.
+
+## What was built
+
+- Core decides the mark: `MessageReceiptStatus.tick: ReceiptTick { None, OnlyHere, Waiting,
+  Delivered, Read }`. `Delivered`/`Read` come only from committed recipient-signed
+  statements for the exact shown version; the legacy transport ack can at most move
+  `OnlyHere` to `Waiting`. Both apps only map tick -> glyph (Rust-first).
+- Marks: clock = `OnlyHere`/`Waiting` (never looks delivered), check = signed Delivered,
+  new `read` glyph (a second check beside the first, tin-icons `read`, Android
+  `Pg.TickRead`) = signed Read, brighter tint. The 13 x 11 slot is always reserved
+  (Android `MetaTick.Blank` while loading), so no layout shift.
+- Provenance: desktop message menu header ("Read on bob’s device" / "On bob’s device" /
+  "Waiting for bob’s device to confirm" / "Only on this computer so far"), then "Signed by
+  bob" and one line per signing device ("Device dbebb7e4 · delivered, read"). Android
+  action sheet: the same headline in the "Sent hh:mm · ..." hint plus one line per proof.
+- Loading: per day page `chat_day_receipts`; single message re-read on send, edit/delete,
+  `on_message_changed` (raised when signed receipts commit) and `on_delivery_changed`.
+  `chat_list_receipts` exists for list rows; neither app's list draws a delivered mark today,
+  so it is unused by the UIs.
+- Desktop test hook `P2P_MENU_FIRST=1` opens the oldest loaded message's menu for screenshots.
+- No read-receipt off switch (open product decision).
+
+Files: `crates/desktop/src/{chat.rs, chat_view.rs, chat_fake.rs}`, `crates/tin-icons`
+(+ generated), `android/.../{ChatSource.kt, ChatUi.kt, ChatParts.kt, ChatGlyphs.kt,
+PgIcons.kt, Chats.kt, Conversation.kt}`. The desktop fake chat never reports Delivered/Read
+(it has no signatures): at most Waiting.
+
+The sections below are the original handoff contract (kept for reference).
 
 ## Core contract (additive; nothing existing changed shape)
 
