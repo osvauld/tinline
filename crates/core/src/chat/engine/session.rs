@@ -7,10 +7,10 @@ impl Inner {
 
     /// Opens the sealed chat store; called whenever the data key becomes available.
     pub(crate) fn chat_open(self: &Arc<Self>) {
-        let (dek, phrase, did) = {
+        let (phrase, did) = {
             let s = self.shared.lock();
             match (s.dek.as_ref(), s.me.as_ref()) {
-                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.id.did().to_string()),
+                (Some(_), Some(me)) => (zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.id.did().to_string()),
                 _ => return,
             }
         };
@@ -34,15 +34,11 @@ impl Inner {
             tracing::warn!("chat store: device id: {e}");
             return;
         }
-        // Keyed by the recovery phrase; a store from before that is re-keyed here (rekey.rs).
-        // The node before a restart may still hold the file for a moment: `open_waiting`.
-        let sealed = match crate::store::open_waiting(&path).and_then(|db| {
-            crate::rekey::open(
-                db,
-                crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase),
-                Some(crate::rekey::old_key(crate::rekey::Which::Chat, &dek)),
-            )
-        }) {
+        // Keyed by the recovery phrase (rekey.rs). The node before a restart may still hold the
+        // file for a moment: `open_waiting`.
+        let sealed = match crate::store::open_waiting(&path)
+            .and_then(|db| crate::rekey::open(db, crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase)))
+        {
             Ok(d) => d,
             Err(e) => {
                 tracing::warn!("chat store: {e}");
@@ -259,7 +255,7 @@ impl Inner {
 
     pub(super) fn auth_msg(&self, me: &Me, grant: proto::SignedGrant) -> ChatMsg {
         let relay = self.endpoint().ok().and_then(|ep| relay_of(&ep));
-        match proto::call_hello(&me.id, me.attestation.clone(), grant, "chat".into()) {
+        match proto::call_hello(me.attestation.clone(), grant, "chat".into()) {
             Msg::CallHello { attestation, grant, .. } => ChatMsg::Auth { attestation, grant, relay },
             _ => unreachable!(),
         }
@@ -273,7 +269,7 @@ impl Inner {
         let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None, video: None };
         let s = self.shared.lock();
         let contacts = &s.state.contacts;
-        let who = proto::accept_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| contacts.iter().any(|c| c.did == did))?;
+        let who = proto::accept_hello(&me.id, &msg, remote, crate::node::now_ms(), |did| contacts.iter().any(|c| c.did == did))?;
         Ok((who.did, relay_hint(relay), who.grant))
     }
 

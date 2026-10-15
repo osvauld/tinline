@@ -21,7 +21,6 @@ use zeroize::Zeroize;
 
 use crate::accounts::{self, AccountDirs};
 use crate::store::{self, Backing, CallRecord, ContactDevice, Disk, History, OwnDevice, Profile, ProfileV2, State, Store, StoredContact};
-use crate::rekey;
 use crate::vault::{self, Dek, Secrets};
 use crate::wire::Ctrl;
 use crate::Error;
@@ -29,8 +28,8 @@ use crate::Error;
 /// Short, because a ticket is a bearer secret until someone redeems it.
 const TICKET_TTL: u64 = 7 * 24 * 3600;
 /// Long, because renewal happens on every answered call; this only bites a contact who never
-/// calls back.
-pub(crate) const GRANT_TTL: u64 = 365 * 24 * 3600;
+/// calls back. Unix ms, like every issued statement.
+pub(crate) const GRANT_TTL: u64 = 365 * 24 * 3600 * 1000;
 const DIAL_TIMEOUT: Duration = Duration::from_secs(30);
 /// All devices of one contact together; each device alone gets at most `DIAL_TIMEOUT`.
 const DIAL_TOTAL: Duration = Duration::from_secs(45);

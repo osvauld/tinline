@@ -154,7 +154,7 @@ pub struct GroupInvitePeek {
     pub owner_did: String,
     /// `None` for a token for one's own other devices.
     pub issuer_did: Option<String>,
-    /// Unix seconds.
+    /// Unix ms.
     pub expires: Option<u64>,
     pub host_count: u32,
 }

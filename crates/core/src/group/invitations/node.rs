@@ -47,11 +47,11 @@ impl Node {
             let existing = core.store.invs()?;
             let mut out = Vec::new();
             for (did, name) in dids.iter().zip(names) {
-                let pending = existing.iter().find(|r| r.outgoing && &r.invitee == did && r.group == group_id && r.state == GroupInvitationState::Pending && r.expires >= now());
+                let pending = existing.iter().find(|r| r.outgoing && &r.invitee == did && r.group == group_id && r.state == GroupInvitationState::Pending && r.expires >= now_ms());
                 let row = match pending {
                     Some(r) => r.clone(),
                     None => {
-                        let invite = issue_invite(&core.account, &group_id, now() + INVITE_TTL);
+                        let invite = issue_invite(&core.account, &group_id, now_ms(), INVITE_TTL);
                         let t = inner.group_token(&core, &group_id, Some(invite))?;
                         let row = InvRow {
                             id: hex::encode(cryptography::rng::bytes::<16>()),
@@ -64,7 +64,7 @@ impl Node {
                             outgoing: true,
                             state: GroupInvitationState::Pending,
                             at: now_ms(),
-                            expires: now() + INVITE_TTL,
+                            expires: now_ms() + INVITE_TTL,
                             token: cryptography::codec::to_bytes(&t).expect("token serialises"),
                             delivered: false,
                             owe: true,

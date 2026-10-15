@@ -1,7 +1,8 @@
 # osvauld p2p call protocol (v1)
 
-Implemented by `crates/proto`. Pure functions: callers supply `now` (unix secs),
-redeemed-nonce / revoked-grant sets, and the contact list, and persist results.
+Implemented by `crates/proto`. Pure functions: callers supply `now` (unix ms for issued
+statements, seconds for tickets), an `IssuanceStore` (what the issuer remembers: spent nonces,
+cut-offs) and the contact list, and persist results.
 ALPN: `osvauld/p2p/1` (P6: separate message and call tokens; `osvauld/p2p/0` is refused with
 close code 426 like the other superseded versions).
 
@@ -112,7 +113,7 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
 1. B opens a connection to A's device and sends `CallHello { call_id, attestation, grant }`
    where `grant` is the call token A issued B (or, if B holds none, its message token).
 2. A: `accept_hello`: attestation valid and `device == remote_device`; token issued by A to
-   the attested DID, unexpired, id not revoked; DID is a contact. Then: blocked -> `Notice`;
+   the attested DID, redeemed (`proto::issued`); DID is a contact. Then: blocked -> `Notice`;
    token taken back by a block (cut-off) -> `Reject { "not accepted" }`; not a call token,
    calls not allowed for B, or a call token at/below B's call cut-off ->
    `Reject { "calls not allowed" }` (never rings; B's call ends `calls not allowed` and B drops
@@ -122,19 +123,23 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
 
 ## Tokens (P6; decisions U13, U15)
 
-A `Grant` is a single-capability token: `{v: 2, id, iss, holder, cap: "message" | "call", iat,
-exp}` (domain `grant/v1`). A legacy `v: 1` grant with `cap: "call"` (before P6) counts as message
-+ call. Chat (`tinline/chat/4`) `Auth` presents the message token; calls present the call token.
-Only the issuer verifies its own tokens, so taking one back is local and per DID:
-`State.cut_offs[did] = {message, call}` (unix seconds); a token with `iat <= cut-off` is refused
-(`proto::verify_token`). Cut-offs only rise and sync between own devices (max per field).
+Every statement a DID hands out (tokens, group invites, picture deletion permits) is an
+`Issued<C> {iss, sub: Did(holder) | Anyone, iat_ms, exp_ms, nonce[16], claim}` signed in the one
+envelope (`proto::issued`). `Signed<Issued<C>>::redeem` is the one admission check: signature,
+issuer, subject, `iat_ms <= now + ISSUE_SKEW_MS` (5 min), `now < exp_ms`, `iat_ms` above the
+store's cut-off, nonce not spent; the store (`IssuanceStore`) stays where its data lives.
+A `Grant` is `Issued<Cap>` with `Cap::Message | Cap::Call` and `sub = Did(holder)` (domain
+`grant/v1`). Chat (`tinline/chat/4`) `Auth` presents the message token; calls present the call
+token. Only the issuer verifies its own tokens, so taking one back is local and per DID:
+`State.cut_offs[did] = {message, call}` (unix ms); a token with `iat_ms <= cut-off` is refused
+(`core::store::TokenCutOffs`). Cut-offs only rise and sync between own devices (max per field).
 
 - Ticket/QR contacts get message + call; contacts from a group chat request message only
   (`ContactOrigin::GroupRequest`; the group code passes it to `Inner::add_contact_from`). A
   contact that already exists keeps its call permission when it re-adds.
 - `allow_calls(did, true)` sends a fresh call token (`Tokens { grants }`, answered
   `TokensTaken`, retried from the device that queued it). `allow_calls(did, false)` raises the
-  call cut-off: every call token of that DID, legacy ones included, stops ringing; chat goes on.
+  call cut-off: every call token of that DID stops ringing; chat goes on.
   `calls_allowed(did)`: we let them call; `can_call(did)`: we hold an unexpired call token.
 - A block raises both cut-offs. Unblocking does not lower them: after the unblock the other side
   re-adds us (their entry was deleted, U20) and the re-add carries tokens issued above the
@@ -312,7 +317,7 @@ sealed in `account.redb` under `sync/account`, with maps:
 | `cutoffs/<did>` | our token cut-offs for `<did>` (JSON) | max per field |
 | `sent/<did>` | our latest signed block/unblock notice to `<did>` (`Signed<BlockNotice>`, base64url) | verified on read; highest `at` wins; `<did>` is blocked iff that notice is a block (see "Blocking") |
 | `notices/<did>` | `{notice, name, blocked, at}`: the latest notice `<did>` signed to us | verified on read (`to` = our DID, `from` = `<did>`); highest `at` wins; a block deletes the contact entry for `<did>` if `added_at*1000 <= at` (deletion request) |
-| `redeemed/<nonce>`, `revoked/<id>` | `"1"` | union, never shrink |
+| `redeemed/<nonce>/<joiner>` | `"1"` (a record) | union, never shrink |
 | `calls/<call_id>` | CallRecord JSON | written by builds before the calls doc; no longer read |
 
 The call log is a second doc, `calls` (peer id as above with `"calls"`), sealed under `sync/calls`,
@@ -509,7 +514,7 @@ and close the session.
 | Binding over nonce + both devices | Lifting a joiner's hello onto another invite or another device pair |
 | Grant `holder == attested DID` | A stolen grant presented by someone else |
 | Grant `iss == me` | Grants minted by third parties |
-| Revoked set | Cutting off a contact or a leaked grant |
+| Per-DID cut-offs (`IssuanceStore::cut_off_ms`) | Cutting off a contact or a leaked grant |
 | Contact check | A valid grant of someone who is no longer a contact |
 | Block check (signed notice) | A blocked contact's valid grant; a forged, misaddressed or replayed notice (refused, nothing changes) |
 
@@ -567,9 +572,8 @@ takes it even though it no longer has us as a contact (it holds our block) and c
 you"; messaging resumes only after they add us again (ticket/QR), since their entry was deleted.
 Scanning a blocked contact's ticket ourselves unblocks them first.
 
-Tokens carry a random 16-byte id and `accept_hello` takes a revoked-id set, but the core never
-writes to that set: tokens are taken back per DID with cut-offs (see "Tokens"); a block takes
-back both of the blocked contact's tokens.
+Tokens are taken back per DID with cut-offs (see "Tokens"), never by id; a block takes back
+both of the blocked contact's tokens.
 Shared tickets are good until they expire or are reset; one-time request tickets are dropped when used.
 
 Not in P5: blocking does not rotate any endpoint (U5) and changes no group membership; there is
@@ -581,8 +585,9 @@ messages (an older app fails to decode them, U18).
 - **Reusable codes (2026-10-13; 2026-10-14: no per-joiner limit).** A ticket adds any number of
   joiners, and the same joiner any number of times (their other devices; a re-add lifts a block),
   until it expires or is reset. The (joiner, nonce) entries (`redeemed_key`) are kept as a record
-  only; a bare nonce from before still spends a ticket for everyone. One-time tickets
-  (accepting a group chat request) are dropped when used. Every addition is a request the user accepts (see "Contact requests").
+  only. One-time tickets (accepting a group chat request) redeem once, for their DID only, and
+  are dropped when used. Which nonces still add a joiner is `core::store::Tickets`
+  (`IssuanceStore::spent`), checked inside `accept_contact_hello_with`. Every addition is a request the user accepts (see "Contact requests").
 - Live tickets (`State::live_tickets`, nonce -> `exp`, local): the one handed out now plus older
   ones replaced by a rename (`set_name` or a synced profile name: the old one keeps the old
   signed name), a relay change or the last day of life; they stay good until they expire.
@@ -677,7 +682,8 @@ quiet tone; the active call's audio is untouched. A third call is answered `Busy
   request needs the owner's Accept; New code (`reset_ticket`) cuts an old one off.
 - A ticket's visible `relay` hint is signed but not authenticated by anything else;
   a relay only sees ciphertext, but can deny service.
-- No clock-skew tolerance; `now >= exp` is expired. Callers choose the clock.
+- Issued statements tolerate a 5 minute issuer clock lead (`ISSUE_SKEW_MS`); `now >= exp` is
+  expired. Callers choose the clock.
 - Contact names are self-reported and not unique; show the DID fingerprint on confirm.
 - No forward secrecy or media encryption here: media rides the QUIC connection.
 - The joiner's grant check on Welcome ignores revocation (fresh grants only).

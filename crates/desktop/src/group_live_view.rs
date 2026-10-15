@@ -1092,7 +1092,7 @@ impl App {
                         ]
                         .spacing(6);
                         if let Some(exp) = p.expires {
-                            info = info.push(tx(format!("Invite valid until {}", when(exp.saturating_mul(1000))), 13.0, t.ink2));
+                            info = info.push(tx(format!("Invite valid until {}", when(exp)), 13.0, t.ink2));
                         }
                         c = c.push(container(info).padding(12).width(Fill).style(ui::plain(t.surface2, 12.0))).push(para(
                             "Joining connects this computer to the group\u{2019}s hosts. Members see your name; only hosts learn how to reach this computer. It can take up to a minute."

@@ -55,7 +55,8 @@ pub fn verify_block_notice(blob: &SignedBlockNotice, expected_to: &str) -> Resul
 }
 
 /// For tests only: a notice that claims to come from `claimed_from` but is signed by `signer`
-/// (a forgery unless `signer` is that DID).
+/// (a forgery unless `signer` is that DID). Not in release builds.
+#[cfg(any(test, feature = "test-support"))]
 #[doc(hidden)]
 pub fn forge_block_notice_for_test(
     signer: &Identity,

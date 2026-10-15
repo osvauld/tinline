@@ -21,7 +21,7 @@ fn concurrent_old_picture_consent_does_not_prevent_profile_convergence() {
     .unwrap();
     b.request_deletion(
         &hash,
-        &proto::profile::sign_picture_deletion(&owner, &hash).unwrap(),
+        &proto::profile::sign_picture_deletion(&owner, &hash, 1_000).unwrap(),
     )
     .unwrap();
     validate(&a, owner.did()).unwrap();
@@ -70,7 +70,7 @@ fn deletion_validation_binds_owner_and_defers_current_picture_cleanup() {
     staged
         .request_deletion(
             &hash,
-            &proto::profile::sign_picture_deletion(&a, &hash).unwrap(),
+            &proto::profile::sign_picture_deletion(&a, &hash, 1_000).unwrap(),
         )
         .unwrap();
     validate(&staged, a.did()).unwrap();
@@ -105,7 +105,7 @@ fn deletion_only_removes_the_signing_owners_namespace_even_for_shared_hashes() {
     let doc = ProfileDoc::new(&[1; 32]);
     doc.request_deletion(
         &hash,
-        &proto::profile::sign_picture_deletion(&a, &hash).unwrap(),
+        &proto::profile::sign_picture_deletion(&a, &hash, 1_000).unwrap(),
     )
     .unwrap();
     validate(&doc, a.did()).unwrap();

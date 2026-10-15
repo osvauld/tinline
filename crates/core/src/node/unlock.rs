@@ -8,7 +8,6 @@ impl Node {
         let s = self.inner.shared.lock();
         match &s.disk {
             None => Err(Error::NoIdentity),
-            Some(Disk::Legacy(_)) => Ok(None),
             Some(Disk::V2(_)) if s.me.is_some() => Ok(None),
             Some(Disk::V2(p)) => Ok(Some(p.vault.clone())),
         }
@@ -32,8 +31,8 @@ impl Node {
         if me.id.did() != did {
             return Err(Error::Io("vault does not match profile".into()));
         }
-        // The sealed state is read (and a first-time import from JSON done) outside `shared`.
-        let (db, loaded) = store::load_sealed(&store, &secrets.mnemonic, Some(&dek))?;
+        // The sealed state is read outside `shared`.
+        let (db, loaded) = store::load_sealed(&store, &secrets.mnemonic)?;
         let mut me = me;
         let mut s = self.inner.shared.lock();
         if s.epoch != started {
@@ -72,7 +71,6 @@ impl Node {
                 None => {}
                 Some(Disk::V2(p)) if p.did == did && s.me.is_none() && s.committed => {}
                 Some(Disk::V2(p)) if p.did == did => return Err(Error::AccountExists(did)),
-                Some(Disk::Legacy(_)) if s.me.as_ref().is_some_and(|m| m.id.did() == did) => return Err(Error::AccountExists(did)),
                 Some(_) => return Err(Error::HaveIdentity),
             }
         }
@@ -85,18 +83,13 @@ impl Node {
             let store = Store::open(self.inner.accounts.dir(&id)?)?;
             let old_device = match store.profile()? {
                 Some(Disk::V2(p)) => Some(p.device_public),
-                Some(Disk::Legacy(_)) => return Err(Error::AccountExists(did)),
                 None => None,
             };
-            // The data opens with the phrase alone. A store from before the identity-derived
-            // keys that was never unlocked since cannot be read without the lost data key; it is
-            // set aside when the restore is written, and the account starts empty.
-            if !rekey::file_needs_migration(&store.dir().join("account.redb"))? {
-                let (_db, loaded) = store::load_sealed(&store, &me.profile.mnemonic, None)?;
-                state = loaded.state;
-                calls = loaded.calls;
-                label = loaded.device_label;
-            }
+            // The data opens with the phrase alone.
+            let (_db, loaded) = store::load_sealed(&store, &me.profile.mnemonic)?;
+            state = loaded.state;
+            calls = loaded.calls;
+            label = loaded.device_label;
             // This install's previous device key died with the old vault.
             if let Some(old) = old_device {
                 for e in state.registry.iter_mut().filter(|e| e.device == old && old != me.device) {
@@ -122,9 +115,9 @@ impl Node {
         // Without a passphrase nothing is written until the platform has saved the key.
         let acct = if durable {
             Some(if existing {
-                self.inner.restore_account_files(&id, &disk, &me.profile.mnemonic, &dek, &state, &calls, label.as_deref())?
+                self.inner.restore_account_files(&id, &disk, &me.profile.mnemonic, &state, &calls, label.as_deref())?
             } else {
-                self.inner.create_account_files(&id, &disk, &me.profile.mnemonic, &dek, &state, &calls, label.as_deref())?
+                self.inner.create_account_files(&id, &disk, &me.profile.mnemonic, &state, &calls, label.as_deref())?
             })
         } else {
             None

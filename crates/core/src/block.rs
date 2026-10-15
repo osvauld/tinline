@@ -249,7 +249,8 @@ impl Node {
     }
 
     /// For tests: a block notice to `to` that claims to come from `claimed_from` but is signed
-    /// by this node's DID key, as wire JSON.
+    /// by this node's DID key, as wire JSON. Not in release builds.
+    #[cfg(any(test, feature = "dev-tools"))]
     #[doc(hidden)]
     pub fn forge_block_notice_for_test(&self, claimed_from: String, to: String) -> Result<String, Error> {
         let me = self.inner.me()?;

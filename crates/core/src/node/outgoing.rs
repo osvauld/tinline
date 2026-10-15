@@ -327,7 +327,6 @@ impl Inner {
                     // Our call token from them; without one, the message token (they answer "calls
                     // not allowed" instead of a generic refusal).
                     let mut hello = proto::call_hello(
-                        &me.id,
                         me.attestation.clone(),
                         contact.call_grant_from_them.clone().unwrap_or_else(|| contact.grant_from_them.clone()),
                         call.info.call_id.clone(),

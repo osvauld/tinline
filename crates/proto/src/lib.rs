@@ -9,9 +9,11 @@
 //! Like courier, `now`, nonce/grant-id sets and the contact list are inputs: the caller
 //! loads them before calling and persists the results (`NewContact::redeemed_nonce`) after.
 
+pub mod issued;
 pub mod profile;
 pub mod signed;
 
+pub use issued::{Expect, ISSUE_SKEW_MS, IssuanceStore, Issued, IssuedClaim, Subject, Unrecorded};
 pub use signed::{SecretKey, SignKey, Signable, Signed, Signer, SignerId};
 
 use std::collections::HashSet;
@@ -32,10 +34,6 @@ pub const SELF_ALPN: &[u8] = b"tinline/self/5";
 const TICKET_PREFIX_V2: &str = "OSVC2:";
 pub const CAP_MESSAGE: &str = "message";
 pub const CAP_CALL: &str = "call";
-/// Tokens (`Grant`) we issue now carry exactly one capability. Version 1 grants are the legacy
-/// single `call` grant, which counts as message + call (U13 migration).
-const GRANT_VERSION: u8 = 2;
-const LEGACY_GRANT_VERSION: u8 = 1;
 pub const MAX_FRAME: usize = 64 * 1024;
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -44,6 +42,8 @@ pub enum Error {
     BadSignature,
     #[error("expired")]
     Expired,
+    #[error("issued in the future")]
+    NotYetValid,
     #[error("issuer is not who was expected")]
     WrongIssuer,
     #[error("holder is not who was expected")]

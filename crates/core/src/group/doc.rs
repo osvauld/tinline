@@ -304,6 +304,7 @@ impl GroupDoc {
 
     /// Test hook (`synth`): imports `update` unchecked, to merge batches written by several
     /// member docs into one before it goes through `apply_remote`.
+    #[cfg(any(test, feature = "dev-tools"))]
     #[doc(hidden)]
     pub(crate) fn import_for_test(&self, update: &[u8]) {
         self.doc.import(update).expect("import");

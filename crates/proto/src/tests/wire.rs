@@ -5,7 +5,7 @@ use super::*;
 #[test]
 fn frame_roundtrip_all_variants() {
     let a = peer();
-    let g = issue_grant(&a.id, a.id.did(), T0, GTTL);
+    let g = issue_grant(&a.id, a.id.did(), M0, GTTL);
     let msgs = [
         Msg::Ringing,
         Msg::Busy,
@@ -84,9 +84,9 @@ fn peer_names_are_sanitized_on_receipt() {
     let (a, b) = (peer(), peer());
     let t = ticket(&a);
     let evil = format!("bob\u{202E}\u{7}{}", "x".repeat(100));
-    let (hello, pending) = contact_hello(&b.id, b.dev, &t, &evil, T0 + 1, GTTL).unwrap();
+    let (hello, pending) = contact_hello(&b.id, b.dev, &t, &evil, M0 + 1, GTTL).unwrap();
     let (_, a_view) =
-        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0 + 2, &none(), GTTL).unwrap();
+        accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0 + 2, &Unrecorded, GTTL).unwrap();
     assert_eq!(a_view.name.chars().count(), MAX_NAME_CHARS);
     assert!(a_view.name.starts_with("bobxxx"));
     assert!(!a_view.name.contains('\u{202E}') && !a_view.name.contains('\u{7}'));
@@ -101,7 +101,7 @@ fn peer_names_are_sanitized_on_receipt() {
 #[test]
 fn old_format_messages_still_parse() {
     let a = peer();
-    let g = issue_grant(&a.id, a.id.did(), T0, GTTL);
+    let g = issue_grant(&a.id, a.id.did(), M0, GTTL);
     let att = attest(&a.id, a.dev, T0);
     let hello = serde_json::json!({"t":"call_hello","call_id":"c","attestation":att,"grant":g});
     match serde_json::from_value::<Msg>(hello).unwrap() {
@@ -118,7 +118,7 @@ fn old_format_messages_still_parse() {
         }
     );
     // And without the new fields set, we emit exactly the old wire shape.
-    let m = call_hello(&a.id, att, g, "c".into());
+    let m = call_hello(att, g, "c".into());
     assert!(!serde_json::to_string(&m).unwrap().contains("devices"));
     assert!(!serde_json::to_string(&m).unwrap().contains("video"));
 }
@@ -145,9 +145,8 @@ fn call_hello_with_max_device_list_fits_frame() {
         .collect();
     let list = sign_device_list(&a.id, &devs, u64::MAX);
     let mut m = call_hello(
-        &a.id,
         attest(&a.id, a.dev, T0),
-        issue_grant(&a.id, a.id.did(), T0, GTTL),
+        issue_grant(&a.id, a.id.did(), M0, GTTL),
         "x".repeat(64),
     );
     if let Msg::CallHello { devices, relay, .. } = &mut m {
@@ -177,7 +176,7 @@ fn every_signable_passes_the_envelope_table() {
     };
 
     check(&attest(x, a.dev, T0).peek().unwrap(), x, y);
-    check(&issue_grant(x, y.did(), T0, GTTL).peek().unwrap(), x, y);
+    check(&issue_grant(x, y.did(), M0, GTTL).peek().unwrap(), x, y);
     // A ticket is signed by the raw account key it carries.
     check(&ticket(&a).invite.peek().unwrap(), x, y);
     check(

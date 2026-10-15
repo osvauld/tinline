@@ -31,6 +31,8 @@ mod signed_map;
 mod search;
 mod store;
 mod sync;
+/// Synthetic peers, contacts and groups for tests and benches; not in release builds.
+#[cfg(any(test, feature = "dev-tools"))]
 pub mod synth;
 mod version;
 #[cfg(test)]

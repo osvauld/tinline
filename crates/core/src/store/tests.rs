@@ -17,17 +17,13 @@ fn files_are_private_and_old_ones_are_fixed() {
     fs::set_permissions(&dir, fs::Permissions::from_mode(0o755)).unwrap();
     fs::write(dir.join("state.json"), b"{}").unwrap();
     fs::set_permissions(dir.join("state.json"), fs::Permissions::from_mode(0o644)).unwrap();
-    let store = Store::open(&dir).unwrap();
+    Store::open(&dir).unwrap();
     assert_eq!(mode(&dir), 0o700);
-    assert_eq!(mode(&dir.join("state.json")), 0o600);
-    store.save_state(&State::default()).unwrap();
     assert_eq!(mode(&dir.join("state.json")), 0o600);
     let top = tmp("fresh");
     let fresh = top.join("a");
-    let store = Store::open(&fresh).unwrap();
-    store.save_state(&State::default()).unwrap();
+    Store::open(&fresh).unwrap();
     assert_eq!(mode(&fresh), 0o700);
-    assert_eq!(mode(&fresh.join("state.json")), 0o600);
     let _ = fs::remove_dir_all(&dir);
     let _ = fs::remove_dir_all(&top);
 }
@@ -72,7 +68,8 @@ fn stale_temp_files_are_removed_on_open() {
 fn history_is_capped_newest_first_and_private() {
     let dir = tmp("calls");
     let store = Store::open(&dir).unwrap();
-    let h = History::new(store.calls().unwrap(), Some(Backing::Json(store.clone())));
+    let db = open_sealed(store.dir(), "calls phrase").unwrap();
+    let h = History::new(Vec::new(), Some(Backing::Sealed(db.clone())));
     let rec = |i: usize, did: &str| CallRecord {
         call_id: i.to_string(),
         peer_did: did.into(),
@@ -88,7 +85,8 @@ fn history_is_capped_newest_first_and_private() {
         h.push(rec(i, if i % 2 == 0 { "a" } else { "b" }));
     }
     h.save().unwrap();
-    let back = History::new(store.calls().unwrap(), None);
+    let saved: Vec<CallRecord> = serde_json::from_slice(&db.get(CALLS_KEY).unwrap().unwrap()).unwrap();
+    let back = History::new(saved, None);
     assert_eq!(back.list(None, 10_000).len(), MAX_HISTORY);
     assert_eq!(back.list(None, 1)[0].call_id, (MAX_HISTORY + 4).to_string());
     assert!(back.list(Some("a"), 10_000).iter().all(|r| r.peer_did == "a"));
@@ -97,26 +95,10 @@ fn history_is_capped_newest_first_and_private() {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mode = fs::metadata(dir.join("calls.json")).unwrap().permissions().mode() & 0o777;
+        let mode = fs::metadata(dir.join("account.redb")).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o600);
     }
-    fs::write(dir.join("calls.json"), b"{ nope").unwrap();
-    assert!(store.calls().unwrap().is_empty());
-    assert!(dir.join("calls.json.corrupt").exists());
-    let _ = fs::remove_dir_all(&dir);
-}
-
-#[test]
-fn only_a_parse_error_quarantines_state() {
-    let dir = tmp("corrupt");
-    let store = Store::open(&dir).unwrap();
-    fs::write(dir.join("state.json"), b"{ not json").unwrap();
-    assert!(store.state().unwrap().contacts.is_empty());
-    assert!(dir.join("state.json.corrupt").exists());
-    // Something that cannot be read as a file is an IO error, and is left alone.
-    fs::create_dir(dir.join("state.json")).unwrap();
-    assert!(matches!(store.state(), Err(Error::Io(_))));
-    assert!(dir.join("state.json").is_dir());
+    drop(db);
     let _ = fs::remove_dir_all(&dir);
 }
 
@@ -159,24 +141,4 @@ fn old_contact_records_load_with_the_relay_on_the_first_device() {
             .devices
             .is_empty()
     );
-}
-
-// KIND: invariant (P6, U13 migration)
-// A record from before separate tokens holds one legacy `call` grant: it loads with that
-// grant in both slots (message and call) and calls allowed; a record with a version-2
-// message token gets no call slot from it.
-#[test]
-fn a_legacy_call_grant_migrates_to_message_and_call() {
-    let (them, _) = identity::generate();
-    let legacy = proto::issue_legacy_grant_for_test(&them, "did:key:me", 1, 100);
-    let rec = |g: &proto::SignedGrant| serde_json::json!({"did":"d","name":"n","devices":[],"grant_from_them":g,"added_at":1});
-    let c: StoredContact = serde_json::from_value(rec(&legacy)).unwrap();
-    assert_eq!(c.call_grant_from_them.as_ref(), Some(&legacy));
-    assert!(c.calls_allowed);
-    let msg = proto::issue_token(&them, "did:key:me", proto::Cap::Message, 1, 100);
-    let c: StoredContact = serde_json::from_value(rec(&msg)).unwrap();
-    assert!(c.call_grant_from_them.is_none());
-    // The new shape round-trips.
-    let again: StoredContact = serde_json::from_slice(&serde_json::to_vec(&c).unwrap()).unwrap();
-    assert!(again.call_grant_from_them.is_none() && again.calls_allowed);
 }

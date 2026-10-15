@@ -50,9 +50,11 @@ impl<'a> Ctx<'a> {
         let Body::Join { invite, .. } = &e.rec.body else {
             return None;
         };
+        // A join in the doc stays valid after its invite expires: only signature, group and the
+        // issuer's admin role as of the join count here (`redeem_invite` is for admission).
         let inv = invite.open().ok()?;
-        (inv.group == self.group && self.admin_as_of(&inv.issuer, Some(&e.rec.seen)))
-            .then_some(inv.issuer)
+        (inv.claim.group == self.group && self.admin_as_of(&inv.iss, Some(&e.rec.seen)))
+            .then_some(inv.iss)
     }
 }
 

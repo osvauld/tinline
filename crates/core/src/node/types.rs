@@ -41,14 +41,12 @@ pub struct AccountSummary {
 }
 
 /// Whether the identity's secrets are available. `Locked` needs `unlock` (or
-/// `unlock_with_key`); `NeedsPassphrase` is a pre-vault install that works but must be
-/// converted with `set_passphrase(None, ..)`.
+/// `unlock_with_key`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 pub enum LockState {
     NoIdentity,
     Locked,
     Unlocked,
-    NeedsPassphrase,
 }
 
 #[derive(Debug, Clone, uniffi::Record)]

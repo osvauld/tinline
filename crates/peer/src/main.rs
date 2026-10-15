@@ -203,9 +203,6 @@ fn run() -> Result<(), String> {
     if rest.first() != Some(&"init") {
         match node.lock_state() {
             LockState::Locked => node.unlock(o.passphrase.clone()).map_err(|e| e.to_string())?,
-            LockState::NeedsPassphrase => {
-                node.set_passphrase(None, o.passphrase.clone()).map_err(|e| e.to_string())?
-            }
             LockState::NoIdentity | LockState::Unlocked => {}
         }
     }

@@ -152,35 +152,6 @@ fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Bo
     }
 }
 
-/** Legacy installs: usable already, but the identity should be sealed, with a passphrase if the user wants one. */
-@Composable
-fun SetPassphraseScreen(app: P2pApp) {
-    val scope = rememberCoroutineScope()
-    var pass by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    fun seal(p: String) {
-        busy = true; error = null
-        scope.launch {
-            val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(null, p) } }
-            busy = false
-            r.onFailure { error = friendly(it) }
-            r.onSuccess { pass = ""; app.identityReady() }
-        }
-    }
-    Page {
-        GateHead(null, null)
-        GateStep("Add a passphrase", lead = "Your recovery phrase is currently stored unprotected on this phone. Encrypt it now, with a passphrase if you like. Calls keep working while you do this.",
-            foot = {
-                GBtn(if (busy) "Encrypting…" else "Set passphrase", { seal(pass) }, enabled = pass.isNotEmpty(), busy = busy)
-                GBtn("Skip for now", { seal("") }, kind = GKind.Text, enabled = !busy)
-            }) {
-            NewPassphraseField(pass, { pass = it; error = null }, !busy, onDone = { seal(pass) }, why = false)
-            error?.let { GNotice(it, NKind.Error) }
-        }
-    }
-}
-
 /** "Welcome back, Maya ⌄": the nickname opens "Open as" (the identities on this phone). Same type as the title, a quiet
  *  chevron, a 48 dp target. */
 @OptIn(ExperimentalLayoutApi::class)

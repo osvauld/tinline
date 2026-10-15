@@ -24,7 +24,7 @@ use super::store::*;
 use super::wire::*;
 use super::own::{ACK_MARK, READ_MARK};
 use crate::Error;
-use crate::node::{Inner, Me, addr_for, now, relay_hint, relay_of};
+use crate::node::{Inner, Me, addr_for, relay_hint, relay_of};
 
 mod blobs;
 mod history;
@@ -33,6 +33,7 @@ mod read;
 pub(crate) mod receipts;
 mod session;
 mod sync;
+#[cfg(any(test, feature = "dev-tools"))]
 mod synth;
 #[cfg(test)]
 mod tests;

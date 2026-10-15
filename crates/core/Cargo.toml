@@ -22,11 +22,13 @@ path = "src/bin/year-bench.rs"
 required-features = ["bench"]
 
 [features]
-# Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
-bench = []
 # Debug-only entry points (`video_bench`: codec benchmark that opens a caller-supplied file).
 # Android debug builds pass it (android/app/build.gradle.kts); release builds must not.
-dev-tools = ["video/sim"]
+# `proto/test-support`: `Node::forge_block_notice_for_test` calls proto's forge.
+dev-tools = ["video/sim", "proto/test-support"]
+# Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
+# They drive the synthetic peers, so they need `dev-tools`.
+bench = ["dev-tools"]
 
 [dependencies]
 proto.workspace = true
@@ -62,6 +64,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 # tests/video_calls.rs feeds a synthetic camera (`video::Pattern`).
 video = { path = "../video", default-features = false, features = ["net", "sim"] }
 proto = { workspace = true, features = ["test-support"] }
+# Integration tests use the synthetic peers and test signers (`dev-tools`).
+p2pcore = { path = ".", features = ["dev-tools"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

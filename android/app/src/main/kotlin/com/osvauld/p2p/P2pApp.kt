@@ -128,7 +128,6 @@ class P2pApp : Application(), NodeEvents {
             }
         }
         selectLastAccountIfNone()
-        UnlockStore.migrateLegacy(this, currentDid())
         tryAutoUnlock()
         refresh()
         // Kept chats of people who are no longer contacts (their block deleted our entry) come only from the chat list.

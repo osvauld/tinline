@@ -36,7 +36,10 @@ impl Inner {
             (s.state.clone(), s.committed.then(|| s.acct.as_ref().and_then(|a| a.backing.clone())).flatten())
         };
         let now = now();
-        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now, &spent_nonces(&next), GRANT_TTL, |did| {
+        // Which ticket nonces may still add this joiner (live tickets, one-time request tickets)
+        // is the `Tickets` store's call.
+        let tickets = crate::store::Tickets { st: &next, now };
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now * 1000, &tickets, GRANT_TTL, |did| {
             // A DID we accepted a group chat request from gets message-only tokens (U3, P6).
             let origin = if next.req_tickets.values().any(|t| t.did == did && t.exp >= now) {
                 crate::caps::ContactOrigin::GroupRequest
@@ -48,11 +51,6 @@ impl Inner {
         .map_err(|e| HelloError::Refused(e.to_string()))?;
         let by_request = next.req_tickets.get(&new.redeemed_nonce).is_some_and(|t| t.did == new.did && t.exp >= now);
         let calls_allowed = matches!(&welcome, Msg::ContactWelcome { call_grant_for_you: Some(_), .. });
-        // Only a ticket we still hand out can be redeemed: the current one, or an older one that
-        // was replaced but not reset (reusable codes). A reset one is dead though unspent.
-        if !by_request && !ticket_live(&next, &new.redeemed_nonce, now) {
-            return Err(HelloError::Refused("not a live ticket".into()));
-        }
         if let Some(notice) = self.refusal_for(&new.did) {
             return Err(HelloError::Blocked(notice));
         }

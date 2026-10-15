@@ -132,43 +132,6 @@ fn set_name_while_locked_keeps_vault() {
 }
 
 #[test]
-fn legacy_profile_migrates() {
-    let dir = Dir::new("legacy");
-    let (_, m) = identity::generate();
-    let phrase = m.to_string();
-    let legacy = serde_json::json!({
-        "mnemonic": phrase,
-        "name": "old",
-        "device_secret": vec![7u8; 32],
-    });
-    std::fs::write(dir.0.join("profile.json"), serde_json::to_vec_pretty(&legacy).unwrap()).unwrap();
-
-    let n = dir.node();
-    assert_eq!(n.lock_state(), LockState::NeedsPassphrase);
-    let did = n.profile().unwrap().did; // usable: loaded unlocked
-    assert!(n.unlock_key().is_none());
-    assert!(matches!(n.recovery_phrase(PASS.into()), Err(Error::Locked)));
-    assert!(matches!(n.set_passphrase(Some("x".repeat(9)), PASS.into()), Err(Error::Protocol(_))));
-    n.start().unwrap();
-    n.stop();
-
-    n.set_passphrase(None, PASS.into()).unwrap();
-    assert_eq!(n.lock_state(), LockState::Unlocked);
-    assert!(n.unlock_key().is_some());
-    let raw = String::from_utf8(dir.profile_bytes()).unwrap();
-    assert!(!raw.contains("mnemonic"));
-    assert_no_phrase(&raw, &phrase);
-    assert_eq!(n.recovery_phrase(PASS.into()).unwrap(), phrase);
-
-    drop(n);
-    let n = dir.node();
-    assert_eq!(n.lock_state(), LockState::Locked);
-    n.unlock(PASS.into()).unwrap();
-    assert_eq!(n.profile().unwrap().did, did);
-    assert_eq!(n.profile().unwrap().name, "old");
-}
-
-#[test]
 fn no_passphrase_then_add_one() {
     let dir = Dir::new("nopass");
     let n = dir.node();

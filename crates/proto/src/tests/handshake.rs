@@ -20,21 +20,9 @@ fn add_contact_happy_path() {
     assert_eq!(b_view.did, a.id.did());
     assert_eq!(b_view.name, "alice");
     // Each holds a grant issued by the other.
-    verify_grant(
-        &a_view.grant_from_them,
-        b.id.did(),
-        a.id.did(),
-        T0 + 5,
-        &none(),
-    )
+    verify_grant(&a_view.grant_from_them, b.id.did(), a.id.did(), M0 + 5)
     .unwrap();
-    verify_grant(
-        &b_view.grant_from_them,
-        a.id.did(),
-        b.id.did(),
-        T0 + 5,
-        &none(),
-    )
+    verify_grant(&b_view.grant_from_them, a.id.did(), b.id.did(), M0 + 5)
     .unwrap();
     let _ = (&a.secret, &b.secret);
 }
@@ -49,19 +37,18 @@ fn call_happy_path_and_multi_device() {
         .clone()
         .expect("ticket contacts get a call token");
     let msg = call_hello(
-        &b.id,
         attest(&b.id, b.dev, T0 + 10),
         call_token.clone(),
         "c1".into(),
     );
     let known = |d: &str| d == a_view.did;
-    let c = accept_call_hello(&a.id, &msg, b.dev, T0 + 10, &none(), known).unwrap();
+    let c = accept_call_hello(&a.id, &msg, b.dev, M0 + 10, known).unwrap();
     assert_eq!((c.did.as_str(), c.device), (b.id.did(), b.dev));
 
     // Bob's second phone, same DID, own attestation: allowed.
     let dev2 = cryptography::signature::public_key(&new_device_secret());
-    let msg2 = call_hello(&b.id, attest(&b.id, dev2, T0 + 11), call_token, "c2".into());
-    let c2 = accept_call_hello(&a.id, &msg2, dev2, T0 + 11, &none(), known).unwrap();
+    let msg2 = call_hello(attest(&b.id, dev2, T0 + 11), call_token, "c2".into());
+    let c2 = accept_call_hello(&a.id, &msg2, dev2, M0 + 11, known).unwrap();
     assert_eq!(c2.device, dev2);
 }
 
@@ -69,10 +56,10 @@ fn call_happy_path_and_multi_device() {
 fn attestation_device_not_remote_device() {
     let (a, b, m) = (peer(), peer(), peer());
     let t = ticket(&a);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     // A relay/MITM forwards Bob's hello over its own connection.
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &hello, m.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &hello, m.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::DeviceMismatch)
     );
 }
@@ -81,22 +68,22 @@ fn attestation_device_not_remote_device() {
 fn welcome_device_mismatches() {
     let (a, b, m) = (peer(), peer(), peer());
     let t = ticket(&a);
-    let (hello, pending) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, pending) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     let (welcome, _) =
-        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &none(), GTTL).unwrap();
+        accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0, &Unrecorded, GTTL).unwrap();
     assert_eq!(
-        accept_contact_welcome(&b.id, &pending, &welcome, m.dev, T0).err(),
+        accept_contact_welcome(&b.id, &pending, &welcome, m.dev, M0).err(),
         Some(Error::DeviceMismatch)
     );
     // Mallory answers with her own attestation + grant instead of Alice's.
     let (_, m_welcome, ..) = {
         let t2 = ticket(&m);
-        let (h2, _) = contact_hello(&b.id, b.dev, &t2, "bob", T0, GTTL).unwrap();
-        let (w, nc) = accept_contact_hello(&m.id, m.dev, &h2, b.dev, T0, &none(), GTTL).unwrap();
+        let (h2, _) = contact_hello(&b.id, b.dev, &t2, "bob", M0, GTTL).unwrap();
+        let (w, nc) = accept_contact_hello(&m.id, m.dev, &h2, b.dev, M0, &Unrecorded, GTTL).unwrap();
         (0, w, nc)
     };
     assert_eq!(
-        accept_contact_welcome(&b.id, &pending, &m_welcome, m.dev, T0).err(),
+        accept_contact_welcome(&b.id, &pending, &m_welcome, m.dev, M0).err(),
         Some(Error::WrongIssuer)
     );
 }
@@ -105,9 +92,9 @@ fn welcome_device_mismatches() {
 fn welcome_grant_wrong_holder_or_issuer() {
     let (a, b, m) = (peer(), peer(), peer());
     let t = ticket(&a);
-    let (hello, pending) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, pending) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     let (welcome, _) =
-        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &none(), GTTL).unwrap();
+        accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0, &Unrecorded, GTTL).unwrap();
     let Msg::ContactWelcome {
         attestation, name, ..
     } = welcome
@@ -117,21 +104,21 @@ fn welcome_grant_wrong_holder_or_issuer() {
     let bad = Msg::ContactWelcome {
         attestation: attestation.clone(),
         name: name.clone(),
-        grant_for_you: issue_grant(&a.id, m.id.did(), T0, GTTL),
+        grant_for_you: issue_grant(&a.id, m.id.did(), M0, GTTL),
         call_grant_for_you: None,
     };
     assert_eq!(
-        accept_contact_welcome(&b.id, &pending, &bad, a.dev, T0).err(),
+        accept_contact_welcome(&b.id, &pending, &bad, a.dev, M0).err(),
         Some(Error::WrongHolder)
     );
     let bad = Msg::ContactWelcome {
         attestation,
         name,
-        grant_for_you: issue_grant(&m.id, b.id.did(), T0, GTTL),
+        grant_for_you: issue_grant(&m.id, b.id.did(), M0, GTTL),
         call_grant_for_you: None,
     };
     assert_eq!(
-        accept_contact_welcome(&b.id, &pending, &bad, a.dev, T0).err(),
+        accept_contact_welcome(&b.id, &pending, &bad, a.dev, M0).err(),
         Some(Error::WrongIssuer)
     );
 }
@@ -140,7 +127,7 @@ fn welcome_grant_wrong_holder_or_issuer() {
 fn binding_for_different_device_or_invite() {
     let (a, b) = (peer(), peer());
     let t = ticket(&a);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     let (att, name, invite, _, grant) = hello_parts(&hello);
 
     // Binding made for some other joiner device.
@@ -158,13 +145,13 @@ fn binding_for_different_device_or_invite() {
         call_grant_for_you: None,
     };
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &bad, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &bad, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::BadSignature)
     );
 
     // Binding for a different invite's nonce.
     let t2 = ticket(&a);
-    let (h2, _) = contact_hello(&b.id, b.dev, &t2, "bob", T0, GTTL).unwrap();
+    let (h2, _) = contact_hello(&b.id, b.dev, &t2, "bob", M0, GTTL).unwrap();
     let (_, _, _, binding2, _) = hello_parts(&h2);
     let bad = Msg::ContactHello {
         relay: None,
@@ -176,7 +163,7 @@ fn binding_for_different_device_or_invite() {
         call_grant_for_you: None,
     };
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &bad, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &bad, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::BadSignature)
     );
 }
@@ -185,7 +172,7 @@ fn binding_for_different_device_or_invite() {
 fn binding_signed_by_wrong_key() {
     let (a, b, m) = (peer(), peer(), peer());
     let t = ticket(&a);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     let (att, name, invite, _, grant) = hello_parts(&hello);
     let claim = open_invite(&invite).unwrap();
     let nonce = dec(&claim.nonce).unwrap();
@@ -200,7 +187,7 @@ fn binding_signed_by_wrong_key() {
         call_grant_for_you: None,
     };
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &bad, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &bad, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::BadSignature)
     );
 }
@@ -209,7 +196,7 @@ fn binding_signed_by_wrong_key() {
 fn hello_grant_wrong_holder_and_expired() {
     let (a, b, m) = (peer(), peer(), peer());
     let t = ticket(&a);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     let (att, name, invite, binding, _) = hello_parts(&hello);
     let mk = |g: SignedGrant| Msg::ContactHello {
         relay: None,
@@ -220,49 +207,39 @@ fn hello_grant_wrong_holder_and_expired() {
         grant_for_you: g,
         call_grant_for_you: None,
     };
-    let wrong_holder = mk(issue_grant(&b.id, m.id.did(), T0, GTTL));
+    let wrong_holder = mk(issue_grant(&b.id, m.id.did(), M0, GTTL));
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &wrong_holder, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &wrong_holder, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::WrongHolder)
     );
-    let wrong_issuer = mk(issue_grant(&m.id, a.id.did(), T0, GTTL));
+    let wrong_issuer = mk(issue_grant(&m.id, a.id.did(), M0, GTTL));
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &wrong_issuer, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &wrong_issuer, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::WrongIssuer)
     );
-    let expired = mk(issue_grant(&b.id, a.id.did(), T0 - 100, 10));
+    let expired = mk(issue_grant(&b.id, a.id.did(), M0 - 100, 10));
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &expired, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &expired, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::Expired)
     );
 }
 
 #[test]
-fn grant_expired_and_revoked_on_call() {
+fn grant_expired_on_call() {
     let (a, b) = (peer(), peer());
     let (a_view, b_view) = add_contact(&a, &b);
     let known = |d: &str| d == a_view.did;
     let msg = call_hello(
-        &b.id,
         attest(&b.id, b.dev, T0),
         b_view.grant_from_them.clone(),
         "c".into(),
     );
 
     assert_eq!(
-        accept_hello(&a.id, &msg, b.dev, T0 + 2 + GTTL, &none(), known).err(),
+        accept_hello(&a.id, &msg, b.dev, M0 + 2 + GTTL, known).err(),
         Some(Error::Expired)
     );
-    let gid = verify_grant(&b_view.grant_from_them, a.id.did(), b.id.did(), T0, &none())
-        .unwrap()
-        .id;
-    let revoked: HashSet<_> = [gid.clone()].into();
-    assert_eq!(
-        accept_hello(&a.id, &msg, b.dev, T0 + 5, &revoked, known).err(),
-        Some(Error::Revoked)
-    );
-    let ok = accept_hello(&a.id, &msg, b.dev, T0 + 5, &none(), known).unwrap();
-    assert_eq!(ok.grant_id, gid);
+    accept_hello(&a.id, &msg, b.dev, M0 + 5, known).unwrap();
 }
 
 #[test]
@@ -270,13 +247,12 @@ fn non_contact_caller() {
     let (a, b) = (peer(), peer());
     let (_, b_view) = add_contact(&a, &b);
     let msg = call_hello(
-        &b.id,
         attest(&b.id, b.dev, T0),
         b_view.grant_from_them,
         "c".into(),
     );
     assert_eq!(
-        accept_call_hello(&a.id, &msg, b.dev, T0 + 5, &none(), |_| false).err(),
+        accept_call_hello(&a.id, &msg, b.dev, M0 + 5, |_| false).err(),
         Some(Error::NotContact)
     );
 }
@@ -287,24 +263,22 @@ fn stolen_grant_with_other_did_attestation() {
     let (_, b_view) = add_contact(&a, &b);
     // Mallory is a contact too, and presents Bob's grant with her own attestation + device.
     let msg = call_hello(
-        &m.id,
         attest(&m.id, m.dev, T0),
         b_view.grant_from_them.clone(),
         "c".into(),
     );
     assert_eq!(
-        accept_call_hello(&a.id, &msg, m.dev, T0 + 5, &none(), |_| true).err(),
+        accept_call_hello(&a.id, &msg, m.dev, M0 + 5, |_| true).err(),
         Some(Error::WrongHolder)
     );
     // Or presents Bob's attestation from his phone's connection she doesn't hold.
     let msg = call_hello(
-        &m.id,
         attest(&b.id, b.dev, T0),
         b_view.grant_from_them,
         "c".into(),
     );
     assert_eq!(
-        accept_call_hello(&a.id, &msg, m.dev, T0 + 5, &none(), |_| true).err(),
+        accept_call_hello(&a.id, &msg, m.dev, M0 + 5, |_| true).err(),
         Some(Error::DeviceMismatch)
     );
 }
@@ -312,10 +286,10 @@ fn stolen_grant_with_other_did_attestation() {
 #[test]
 fn grant_issued_by_third_party_rejected_on_call() {
     let (a, b, m) = (peer(), peer(), peer());
-    let g = issue_grant(&m.id, b.id.did(), T0, GTTL);
-    let msg = call_hello(&b.id, attest(&b.id, b.dev, T0), g, "c".into());
+    let g = issue_grant(&m.id, b.id.did(), M0, GTTL);
+    let msg = call_hello(attest(&b.id, b.dev, T0), g, "c".into());
     assert_eq!(
-        accept_call_hello(&a.id, &msg, b.dev, T0, &none(), |_| true).err(),
+        accept_call_hello(&a.id, &msg, b.dev, M0, |_| true).err(),
         Some(Error::WrongIssuer)
     );
 }
@@ -337,10 +311,10 @@ fn attestation_forgery_and_domain_separation() {
     let forged = Signed::<Attestation>::from_parts(body, sig);
     assert_eq!(verify_attestation(&forged), Err(Error::BadSignature));
     // A grant envelope can't be replayed as an attestation (domains differ), nor the reverse.
-    let g = issue_grant(&a.id, b.id.did(), T0, GTTL);
+    let g = issue_grant(&a.id, b.id.did(), M0, GTTL);
     assert!(verify_attestation(&retype(&g)).is_err());
     let at = attest(&a.id, a.dev, T0);
-    assert!(verify_grant(&retype(&at), a.id.did(), b.id.did(), T0, &none()).is_err());
+    assert!(verify_grant(&retype(&at), a.id.did(), b.id.did(), M0).is_err());
 }
 
 #[test]
@@ -348,7 +322,7 @@ fn cannot_add_self() {
     let a = peer();
     let t = ticket(&a);
     assert_eq!(
-        contact_hello(&a.id, a.dev, &t, "me", T0, GTTL).err(),
+        contact_hello(&a.id, a.dev, &t, "me", M0, GTTL).err(),
         Some(Error::SelfContact)
     );
 }
@@ -357,11 +331,11 @@ fn cannot_add_self() {
 fn wrong_message_kinds() {
     let (a, b) = (peer(), peer());
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &Msg::Hangup, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &Msg::Hangup, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::UnexpectedMessage)
     );
     assert_eq!(
-        accept_call_hello(&a.id, &Msg::Ringing, b.dev, T0, &none(), |_| true).err(),
+        accept_call_hello(&a.id, &Msg::Ringing, b.dev, M0, |_| true).err(),
         Some(Error::UnexpectedMessage)
     );
 }
@@ -396,19 +370,18 @@ fn call_grant_and_self_sync_do_not_cross() {
     let (a, b) = (peer(), peer());
     let none = HashSet::new();
     // A call grant is not an attestation, so it cannot open own-device sync.
-    let g = issue_grant(&a.id, b.id.did(), T0, GTTL);
+    let g = issue_grant(&a.id, b.id.did(), M0, GTTL);
     assert!(accept_self_hello(&retype(&g), a.id.did(), b.dev, &none).is_err());
     // A self attestation alone (no grant from us) does not get a call accepted: here A's
     // second device calls A's first with a grant from a stranger, and also as a non-contact.
     let d2 = dev();
     let hello = call_hello(
-        &a.id,
         attest(&a.id, d2, T0),
-        issue_grant(&b.id, a.id.did(), T0, GTTL),
+        issue_grant(&b.id, a.id.did(), M0, GTTL),
         "c".into(),
     );
     assert_eq!(
-        accept_call_hello(&a.id, &hello, d2, T0 + 1, &self::none(), |_| true),
+        accept_call_hello(&a.id, &hello, d2, M0 + 1, |_| true),
         Err(Error::WrongIssuer)
     );
 }

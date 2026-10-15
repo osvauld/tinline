@@ -84,10 +84,10 @@ pub(crate) fn random_id() -> String {
 /// Whether `new` is a good grant from `issuer` to `holder` and expires after `old` (any
 /// capability; the token slots use `caps::outlives`).
 #[cfg(test)]
-pub(crate) fn grant_outlives(old: &proto::SignedGrant, new: &proto::SignedGrant, issuer: &str, holder: &str, now: u64) -> bool {
-    let none = std::collections::HashSet::new();
-    let Ok(new) = proto::verify_grant(new, issuer, holder, now, &none) else { return false };
+pub(crate) fn grant_outlives(old: &proto::SignedGrant, new: &proto::SignedGrant, issuer: &str, holder: &str, now_ms: u64) -> bool {
+    let e = proto::Expect { iss: Some(issuer), holder, now_ms };
+    let Ok(new) = new.redeem(&e, &proto::Unrecorded) else { return false };
     // An old grant that no longer verifies (expired) is beaten by any valid new one.
-    let old_exp = proto::verify_grant(old, issuer, holder, now, &none).map_or(0, |g| g.exp);
-    new.exp > old_exp
+    let old_exp = old.redeem(&e, &proto::Unrecorded).map_or(0, |g| g.exp_ms);
+    new.exp_ms > old_exp
 }

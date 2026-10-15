@@ -290,7 +290,6 @@ private fun Root(app: P2pApp) {
         lock == LockState.LOCKED ->
             if (forgot) OnboardingFlow(app, missing, fix, forgot = true, onCancelForgot = { forgot = false }) { forgot = false; missing = Perms.missing(ctx) }
             else key(acct) { UnlockScreen(app) { forgot = true } }
-        lock == LockState.NEEDS_PASSPHRASE -> SetPassphraseScreen(app)
         !termsOk -> TermsScreen(progress = null, onBack = null) { LegalStore.accept(ctx); termsOk = true }
         else -> {
             BackHandler(stack.size > 1) { pop() }

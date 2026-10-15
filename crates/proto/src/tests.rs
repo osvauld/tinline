@@ -1,8 +1,12 @@
 use super::*;
 
+/// Unix seconds (tickets, links); tokens and hellos count in ms from `M0`.
 const T0: u64 = 1_800_000_000;
+const M0: u64 = T0 * 1000;
+/// Ticket lifetime, seconds.
 const TTL: u64 = 600;
-const GTTL: u64 = 86_400;
+/// Token lifetime, ms.
+const GTTL: u64 = 86_400_000;
 
 struct Peer {
     id: Identity,
@@ -20,8 +24,21 @@ fn peer() -> Peer {
     }
 }
 
-fn none() -> HashSet<String> {
-    HashSet::new()
+/// An issuer's spent set of `redeemed_key(joiner, nonce)` entries.
+struct Spent(HashSet<String>);
+
+impl IssuanceStore for Spent {
+    fn spent(&self, _: &str, nonce: &[u8], holder: &str) -> bool {
+        self.0.contains(&redeemed_key(holder, &enc(nonce)))
+    }
+    fn cut_off_ms(&self, _: &str, _: domains::Domain) -> u64 {
+        0
+    }
+}
+
+/// A token checked by its holder: signature, issuer, holder, window.
+fn verify_grant(g: &SignedGrant, iss: &str, holder: &str, now_ms: u64) -> Result<Grant> {
+    g.redeem(&Expect { iss: Some(iss), holder, now_ms }, &Unrecorded)
 }
 
 fn ticket(a: &Peer) -> ContactTicket {
@@ -31,10 +48,10 @@ fn ticket(a: &Peer) -> ContactTicket {
 /// Full add-contact: returns (alice's view of bob, bob's view of alice).
 fn add_contact(a: &Peer, b: &Peer) -> (NewContact, NewContact) {
     let t = ticket(a);
-    let (hello, pending) = contact_hello(&b.id, b.dev, &t, "bob", T0 + 1, GTTL).unwrap();
+    let (hello, pending) = contact_hello(&b.id, b.dev, &t, "bob", M0 + 1, GTTL).unwrap();
     let (welcome, a_view) =
-        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0 + 2, &none(), GTTL).unwrap();
-    let b_view = accept_contact_welcome(&b.id, &pending, &welcome, a.dev, T0 + 3).unwrap();
+        accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0 + 2, &Unrecorded, GTTL).unwrap();
+    let b_view = accept_contact_welcome(&b.id, &pending, &welcome, a.dev, M0 + 3).unwrap();
     (a_view, b_view)
 }
 

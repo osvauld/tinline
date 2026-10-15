@@ -26,7 +26,8 @@
 //! decided behaviour (each says what it asserted before). Today: ticket contacts exchange a
 //! `message` and a `call` token (version 2, one cap each); chat checks the message token, calls
 //! the call token; a contact without call permission is answered "calls not allowed"; tokens are
-//! taken back per DID with cut-offs (block: both; "disallow calls": call), never by id.
+//! taken back per DID with cut-offs (block: both; "disallow calls": call), never by id (the
+//! unused id set `State.revoked` was deleted, 2026-10-15).
 //!
 //! Every test carries one label:
 //! - `KIND: limitation`: asserts today's outcome where it differs from U13; the comment names the
@@ -40,7 +41,6 @@
 //! the grant bytes can be inspected and swapped; it never writes into a node's state. Waits are
 //! bounded. No production code is changed; the shared harness is in `support/`.
 
-use std::collections::HashSet;
 use std::time::{Duration, Instant};
 
 use identity::Identity;
@@ -52,11 +52,11 @@ use serde::{Deserialize, Serialize};
 
 mod support;
 use support::eventually_200ms as eventually;
-use support::wait::now_secs as now;
+use support::wait::now_ms as now;
 use support::*;
 
 /// `GRANT_TTL` (`crates/core/src/node.rs:33`), private there.
-const GRANT_TTL: u64 = 365 * 24 * 3600;
+const GRANT_TTL: u64 = 365 * 24 * 3600 * 1000;
 /// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 7 since postcard.
 const CHAT_ALPN: &[u8] = b"tinline/chat/7";
 const WAIT: Duration = Duration::from_secs(30);
@@ -190,7 +190,7 @@ impl Raw {
     }
 
     fn attestation(&self) -> proto::SignedAttestation {
-        proto::attest(&self.id, self.device, now())
+        proto::attest(&self.id, self.device, now() / 1000)
     }
 
     /// Redeems `ticket` like `Node::add_contact` does (`node.rs:1952`), through `proto`.
@@ -252,7 +252,7 @@ impl Raw {
                 .expect("dial");
             let (mut send, mut recv) = conn.open_bi().await.unwrap();
             let hello =
-                proto::call_hello(&self.id, self.attestation(), grant.clone(), call_id.into());
+                proto::call_hello(self.attestation(), grant.clone(), call_id.into());
             send.write_all(&proto::encode_frame(&hello)).await.unwrap();
             let mut buf = Vec::new();
             let first = tokio::time::timeout(WAIT, recv_msg(&mut recv, &mut buf))
@@ -343,7 +343,7 @@ impl Drop for Raw {
 }
 
 fn verify_from(node: &Peer, holder: &str, g: &proto::SignedGrant) -> proto::Grant {
-    proto::verify_grant(g, &node.did, holder, now(), &HashSet::new()).expect("grant verifies")
+    g.redeem(&proto::Expect { iss: Some(&node.did), holder, now_ms: now() }, &proto::Unrecorded).expect("grant verifies")
 }
 
 fn is_reject(m: &Option<Msg>) -> bool {
@@ -363,11 +363,11 @@ fn ticket_contact_holds_message_and_call_tokens_with_a_one_year_ttl() {
     let added = raw.add(&a.node.my_ticket().unwrap());
     let m = verify_from(&a, &raw.did(), &added.from_node);
     let c = verify_from(&a, &raw.did(), added.call_from_node.as_ref().expect("a call token"));
-    assert_eq!((m.cap.as_str(), c.cap.as_str()), ("message", "call"));
-    assert_ne!(m.id, c.id);
+    assert_eq!((m.claim, c.claim), (proto::Cap::Message, proto::Cap::Call));
+    assert_ne!(m.nonce, c.nonce);
     for g in [&m, &c] {
-        assert_eq!(g.exp - g.iat, GRANT_TTL);
-        assert_eq!((g.iss.as_str(), g.holder.as_str()), (a.did.as_str(), raw.did().as_str()));
+        assert_eq!(g.exp_ms - g.iat_ms, GRANT_TTL);
+        assert_eq!((g.iss.as_str(), g.holder()), (a.did.as_str(), Some(raw.did().as_str())));
     }
     assert!(a.node.contacts().iter().any(|c| c.did == raw.did()));
     assert!(a.node.calls_allowed(raw.did()));
@@ -462,10 +462,10 @@ fn answering_renews_the_callers_grant_declining_does_not() {
         panic!("expected Accept with a renewed grant, got {accept:?}")
     };
     let new = verify_from(&a, &raw.did(), &g);
-    assert_eq!(new.cap, "call");
-    assert_ne!(new.id, old.id, "a renewal is a new grant id");
-    assert!(new.iat >= t_answer && new.iat >= old.iat);
-    assert_eq!(new.exp - new.iat, GRANT_TTL);
+    assert_eq!(new.claim, proto::Cap::Call);
+    assert_ne!(new.nonce, old.nonce, "a renewal is a new grant");
+    assert!(new.iat_ms >= t_answer && new.iat_ms >= old.iat_ms);
+    assert_eq!(new.exp_ms - new.iat_ms, GRANT_TTL);
     raw.hang_up(call);
 
     let (mut call, first) = raw.call(&added.addr, &call_token, "renewcall2");
@@ -507,75 +507,36 @@ fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
 
 // KIND: invariant (P6 decided section 14 Q2: per-DID cut-off, not ids; was
 // `no_code_path_writes_the_grant_revocation_set`, a limitation)
-// Tokens are taken back per DID (`State::cut_offs`), so the id set `State.revoked` is still
-// never written by production code (every renewal mints a new id; revoking by id would leak).
-// It is still read on both admission paths and merged between own installs. (Source scan of
-// every non-test file under `crates/core/src`, walked at run time so split modules stay covered.)
+// Tokens are taken back per DID (`State::cut_offs`); there is no id set to revoke by (every
+// renewal mints a new token, so ids would leak). Source scan of every non-test file under
+// `crates/core/src`, walked at run time so split modules stay covered.
 #[test]
 fn tokens_are_taken_back_per_did_never_by_id() {
-    fn walk(dir: &std::path::Path, root: &std::path::Path, out: &mut Vec<(String, String)>) {
+    fn walk(dir: &std::path::Path, out: &mut Vec<(String, String)>) {
         for e in std::fs::read_dir(dir).unwrap().flatten() {
             let p = e.path();
             let name = p.file_name().unwrap().to_string_lossy().into_owned();
             if p.is_dir() {
                 if name != "tests" {
-                    walk(&p, root, out);
+                    walk(&p, out);
                 }
             } else if name.ends_with(".rs") && name != "tests.rs" && !name.ends_with("_tests.rs") {
-                let rel = p.strip_prefix(root).unwrap().to_string_lossy().replace('\\', "/");
-                out.push((rel, std::fs::read_to_string(&p).unwrap()));
+                out.push((p.display().to_string(), std::fs::read_to_string(&p).unwrap()));
             }
         }
     }
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut files = Vec::new();
-    walk(&root, &root, &mut files);
+    walk(&root, &mut files);
     assert!(files.len() > 50, "source scan found only {} files", files.len());
-    let mut uses = Vec::new();
-    for (name, text) in &files {
-        for line in text.lines().map(str::trim) {
-            if line.contains("revoked") && !line.starts_with("//") {
-                uses.push((name.as_str(), line));
-            }
-        }
-    }
-    let writes: Vec<_> = uses
+    let ids: Vec<_> = files
         .iter()
-        .filter(|(_, l)| {
-            [
-                "revoked.insert",
-                "revoked.extend",
-                "revoked.remove",
-                "revoked.retain",
-                "revoked =",
-            ]
-            .iter()
-            .any(|w| l.contains(w))
-        })
+        .flat_map(|(f, t)| t.lines().filter(|l| !l.trim().starts_with("//") && l.contains(".revoked")).map(move |l| (f, l)))
         .collect();
-    assert!(
-        writes.is_empty(),
-        "something revokes tokens by id now: {writes:?}"
-    );
+    assert!(ids.is_empty(), "something keeps a revoked-id set: {ids:?}");
     // The cut-offs are what a block and "disallow calls" raise.
     let caps = include_str!("../src/caps.rs");
-    assert!(caps.contains("cut.call = cut.call.max(now())") && caps.contains("cut.message = cut.message.max(t)"));
-    // The one mutable borrow is the account-doc merge from sibling installs.
-    let muts: Vec<_> = uses
-        .iter()
-        .filter(|(_, l)| l.contains("&mut st.revoked"))
-        .collect();
-    assert_eq!(muts.len(), 1, "{muts:?}");
-    assert_eq!(muts[0].0, "sync/accdoc.rs");
-    // Read on both admission paths.
-    assert!(
-        uses.iter()
-            .any(|(f, l)| f.starts_with("node/") && l.contains("&s.state.revoked"))
-    );
-    assert!(
-        uses.iter()
-            .any(|(f, l)| f.starts_with("chat/engine") && l.contains("&s.state.revoked"))
-    );
+    assert!(caps.contains("cut.call = cut.call.max(now_ms())") && caps.contains("cut.message = cut.message.max(t)"));
 }
 
 // KIND: invariant (flipped by P6; was `only_global_availability_separates_calls_from_messages`,

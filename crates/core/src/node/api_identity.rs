@@ -13,9 +13,7 @@ impl Node {
             .enable_all()
             .build()?;
         let accounts = AccountDirs::open(data_dir)?;
-        accounts.migrate()?;
         let mut shared = Shared::new();
-        // A legacy profile keeps working (calls keep ringing) until it is converted.
         if let Some(id) = accounts.current() {
             shared.install(load_account(&accounts, &id)?)?;
         }
@@ -130,7 +128,7 @@ impl Node {
     }
 
     /// Names this installation ("Personal phone"), 1-64 characters, no control characters.
-    /// Sealed with the account: needs the node unlocked, and a vault (not a legacy profile).
+    /// Sealed with the account: needs the node unlocked.
     pub fn set_device_label(&self, label: String) -> Result<(), Error> {
         let label = label.trim().to_string();
         if label.is_empty() || label.chars().count() > 64 || label.chars().any(char::is_control) {
@@ -139,11 +137,8 @@ impl Node {
         let me = self.inner.me()?;
         let db = {
             let s = self.inner.shared.lock();
-            match s.acct.as_ref().and_then(|a| a.backing.clone()) {
-                Some(Backing::Sealed(db)) => Some(db),
-                Some(Backing::Json(_)) => return Err(Error::Protocol("convert the profile with set_passphrase first".into())),
-                None => None, // not committed yet: kept in memory, written by the commit
-            }
+            // None: not committed yet, kept in memory and written by the commit.
+            s.acct.as_ref().and_then(|a| a.backing.clone()).map(|Backing::Sealed(db)| db)
         };
         if let Some(db) = db {
             store::save_label(&db, &label)?;
@@ -175,14 +170,13 @@ impl Node {
         let s = self.inner.shared.lock();
         match (&s.disk, &s.me) {
             (None, _) => LockState::NoIdentity,
-            (Some(Disk::Legacy(_)), _) => LockState::NeedsPassphrase,
             (Some(Disk::V2(_)), Some(_)) => LockState::Unlocked,
             (Some(Disk::V2(_)), None) => LockState::Locked,
         }
     }
 
     /// Whether a passphrase wraps the vault's data key. False for a vault the platform alone
-    /// opens (see `unlock_key`) and for a legacy profile.
+    /// opens (see `unlock_key`).
     pub fn has_passphrase(&self) -> bool {
         matches!(&self.inner.shared.lock().disk, Some(Disk::V2(p)) if p.vault.has_passphrase())
     }
@@ -250,64 +244,19 @@ impl Node {
     }
 
     /// The vault's data key while unlocked via a vault, for the platform to remember (wrapped
-    /// by its own hardware key). `None` when locked or on a legacy profile. Stays valid across
+    /// by its own hardware key). `None` when locked. Stays valid across
     /// `set_passphrase`.
     pub fn unlock_key(&self) -> Option<Vec<u8>> {
         self.inner.shared.lock().dek.as_ref().map(|d| d.to_vec())
     }
 
-    /// Sets or changes the passphrase (any non-empty one). With `old = None` it converts a
-    /// legacy profile (state `NeedsPassphrase`; an empty `new` seals it without a passphrase)
-    /// and the clear-text secrets leave profile.json; on a vault without a passphrase it adds
+    /// Sets or changes the passphrase (any non-empty one). On a vault without a passphrase it adds
     /// one (the node must be unlocked); otherwise `old` is required and verified. The data key
     /// is kept, so a remembered `unlock_key` stays valid. Slow: runs Argon2id once or twice.
     pub fn set_passphrase(&self, old: Option<String>, new: String) -> Result<(), Error> {
         let _life = self.lifecycle()?;
         let snapshot = self.inner.shared.lock().disk.clone();
         match snapshot.ok_or(Error::NoIdentity)? {
-            Disk::Legacy(p) => {
-                if old.is_some() {
-                    return Err(Error::Protocol("this identity has no passphrase yet".into()));
-                }
-                let new = Some(new).filter(|n| !n.is_empty());
-                let id = identity::recover(&p.mnemonic).map_err(|_| Error::BadPhrase)?;
-                let secrets = Secrets { mnemonic: p.mnemonic.clone(), device_secret: p.device_secret };
-                let device_public = cryptography::signature::public_key(&p.device_secret);
-                let (vault, dek) = self.kdf(move || vault::seal(&secrets, new.as_deref()))??;
-                let mut s = self.inner.shared.lock();
-                // The name may have changed (set_name) while the KDF ran.
-                let name = match s.me.as_ref() {
-                    Some(me) => me.profile.name.clone(),
-                    None => p.name.clone(),
-                };
-                let disk = Disk::V2(ProfileV2 {
-                    version: 2,
-                    name,
-                    did: id.did().to_string(),
-                    device_public,
-                    vault,
-                    device_id: Some(crate::store::new_device_id()),
-                    profile_name_pending: false,
-                    profile_inherited: false,
-                });
-                let store = s.acct.as_ref().ok_or(Error::NoIdentity)?.store.clone();
-                // The vault first: if we die before the state is sealed, the JSON is still
-                // there and the next unlock imports it.
-                store.save_profile(&disk)?;
-                let db = store::seal_into(&store, &p.mnemonic, &dek, &s.state, &s.history.snapshot(), None)?;
-                store.remove_legacy_leftovers();
-                let backing = Backing::Sealed(db);
-                s.history.attach(backing.clone());
-                if let Some(a) = s.acct.as_mut() {
-                    a.backing = Some(backing);
-                }
-                s.disk = Some(disk);
-                s.dek = Some(dek);
-                drop(s);
-                self.inner.chat_open();
-        self.inner.acc_open();
-                Ok(())
-            }
             Disk::V2(p) => {
                 vault::check_passphrase(&new)?;
                 let vault = p.vault;
@@ -344,7 +293,7 @@ impl Node {
     }
 
     /// The recovery phrase, re-derived from the vault: `WrongPassphrase` unless `passphrase`
-    /// is right, and `Locked` on a legacy profile (convert it with `set_passphrase` first).
+    /// is right.
     /// Works while locked. Slow: runs Argon2id. With no passphrase set, `passphrase` is
     /// ignored and the node must be unlocked: the platform asks for device authentication
     /// before calling this.
@@ -353,7 +302,6 @@ impl Node {
             let s = self.inner.shared.lock();
             match &s.disk {
                 None => return Err(Error::NoIdentity),
-                Some(Disk::Legacy(_)) => return Err(Error::Locked),
                 Some(Disk::V2(p)) if !p.vault.has_passphrase() => {
                     return s.me.as_ref().map(|me| me.profile.mnemonic.clone()).ok_or(Error::Locked);
                 }
@@ -365,7 +313,7 @@ impl Node {
     }
 
     /// Stops the endpoint and forgets the secrets in memory; the node is `Locked` until
-    /// `unlock`. No-op without a vault (no identity, or a legacy profile).
+    /// `unlock`. No-op without an identity.
     pub fn lock(&self) {
         if !matches!(self.inner.shared.lock().disk, Some(Disk::V2(_))) {
             return;
@@ -394,10 +342,9 @@ impl Node {
         let unlocked = {
             let mut s = self.inner.shared.lock();
             let mut disk = s.disk.clone().ok_or(Error::NoIdentity)?;
-            match &mut disk {
-                Disk::V2(p) => { p.name = name.clone(); p.profile_name_pending = true; }
-                Disk::Legacy(p) => p.name = name.clone(),
-            }
+            let Disk::V2(p) = &mut disk;
+            p.name = name.clone();
+            p.profile_name_pending = true;
             if s.committed {
                 s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
             }

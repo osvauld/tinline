@@ -35,7 +35,7 @@ use super::store::{DirEntry, GroupMeta, GroupStore};
 use super::wire::*;
 use crate::Error;
 use crate::chat::doc::{DAY_MS, day_of, writer_id};
-use crate::node::{Inner, addr_for, now, now_ms, relay_of};
+use crate::node::{Inner, addr_for, now_ms, relay_of};
 use crate::wire::DIAL_TIMEOUT;
 
 mod accepting;
@@ -49,6 +49,7 @@ mod lifecycle;
 mod replication;
 mod rotation;
 mod sessions;
+#[cfg(any(test, feature = "dev-tools"))]
 mod synth;
 #[cfg(test)]
 pub(crate) fn receipt_cores_for_test(
@@ -75,7 +76,7 @@ const TICK: Duration = Duration::from_secs(2);
 const MAX_HELLO_DAYS: usize = 64;
 const COMPACT_EVERY: Duration = Duration::from_secs(3600);
 const BACKOFF: [u64; 6] = [1, 2, 5, 15, 30, 60];
-pub const INVITE_TTL: u64 = 7 * 24 * 3600;
+pub const INVITE_TTL: u64 = 7 * 24 * 3600 * 1000;
 
 /// Test knobs and the open runtime.
 #[derive(Default)]

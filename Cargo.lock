@@ -5701,6 +5701,7 @@ dependencies = [
  "libc",
  "loro",
  "n0-future",
+ "p2pcore",
  "paranoid-android",
  "parking_lot",
  "proto",

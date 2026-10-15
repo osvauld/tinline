@@ -30,8 +30,7 @@ impl Inner {
                 &me.id,
                 &hello,
                 remote,
-                now(),
-                &s.state.revoked,
+                now_ms(),
                 |did| contacts.iter().any(|c| c.did == did),
             )
         };

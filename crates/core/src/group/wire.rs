@@ -75,7 +75,7 @@ pub enum GroupMsg {
     /// group, its name and owner; the hosts' DID-signed addresses, this host's among them).
     Fetched { token: InviteToken },
     /// G3, member -> host inside a session: keep `invite` (ours, signed by us as an admin; `None`
-    /// for a device code, which admits only our own DID) under `code` until `expires` (unix s).
+    /// for a device code, which admits only our own DID) under `code` until `expires` (unix ms).
     Code { code: [u8; 12], invite: Option<SignedInvite>, expires: u64 },
     /// G3, member -> host inside a session: forget `code` (its issuer or an admin).
     RevokeCode { code: [u8; 12] },

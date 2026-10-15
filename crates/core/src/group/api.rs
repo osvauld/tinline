@@ -16,7 +16,7 @@ use super::state::{Item, ItemKind};
 use super::store::GroupMeta;
 use crate::Error;
 use crate::chat::doc::day_of;
-use crate::node::{Inner, Node, now};
+use crate::node::{Inner, Node, now_ms};
 
 mod hooks;
 mod hosts;
@@ -378,7 +378,7 @@ impl Node {
             inner.group_admin_check(&core, &group_id)?;
             inner.group_ensure(&core).await?;
             inner.group_relay_ready().await;
-            let invite = issue_invite(&core.account, &group_id, now() + INVITE_TTL);
+            let invite = issue_invite(&core.account, &group_id, now_ms(), INVITE_TTL);
             inner.group_issue_code(&core, &group_id, Some(invite)).await
         })?
     }
@@ -406,15 +406,15 @@ impl Node {
             .ok()?
             .ok()?;
         let inv = t.invite.as_ref().and_then(|i| i.open().ok());
-        if t.invite.is_some() && inv.as_ref().is_none_or(|i| i.group != t.group) {
+        if t.invite.is_some() && inv.as_ref().is_none_or(|i| i.claim.group != t.group) {
             return None;
         }
         Some(GroupInvitePeek {
             group_id: t.group.clone(),
             name: t.name.clone(),
             owner_did: t.owner.clone(),
-            issuer_did: inv.as_ref().map(|i| i.issuer.clone()),
-            expires: inv.map(|i| i.expires),
+            issuer_did: inv.as_ref().map(|i| i.iss.clone()),
+            expires: inv.map(|i| i.exp_ms),
             host_count: t
                 .hosts
                 .iter()
@@ -523,10 +523,7 @@ impl Inner {
             return Err(Error::Rejected("invalid group id".into()));
         }
         if let Some(inv) = &t.invite
-            && inv
-                .open()
-                .ok()
-                .is_none_or(|i| i.group != gid || i.expires < now())
+            && redeem_invite(inv, &gid, &core.did, now_ms(), &proto::Unrecorded).is_none()
         {
             return Err(Error::Rejected("invite expired or invalid".into()));
         }
