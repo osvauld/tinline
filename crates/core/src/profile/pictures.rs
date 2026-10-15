@@ -58,7 +58,11 @@ fn normalize(bytes: &[u8], received: bool) -> Result<Vec<u8>, Error> {
     }
     Ok(out)
 }
+fn content_hash(plain: &[u8]) -> String {
+    hex::encode(cryptography::hash::content(cryptography::domains::PICTURE_CONTENT, plain))
+}
 fn decrypt(p: &Picture, cipher: &[u8]) -> Result<Vec<u8>, Error> {
+    // `p.hash` is the iroh blob hash: plain BLAKE3 of the ciphertext (content addressing).
     if cipher.len() as u64 != p.size || blake3::hash(cipher).to_hex().as_str() != p.hash {
         return Err(bad("ciphertext hash/size"));
     }
@@ -67,7 +71,7 @@ fn decrypt(p: &Picture, cipher: &[u8]) -> Result<Vec<u8>, Error> {
         .try_into()
         .map_err(|_| bad("key"))?;
     let plain = crypt::decrypt_bytes(&key, cipher).map_err(bad)?;
-    if blake3::hash(&plain).to_hex().as_str() != p.content_hash {
+    if content_hash(&plain) != p.content_hash {
         return Err(bad("content hash"));
     }
     normalize(&plain, true)
@@ -78,7 +82,7 @@ impl Inner {
         let plain = tokio::task::spawn_blocking(move || normalize(&bytes, false))
             .await
             .map_err(bad)??;
-        let content_hash = blake3::hash(&plain).to_hex().to_string();
+        let content_hash = content_hash(&plain);
         if self.profile_doc(me.id.did())?.is_some_and(|d| {
             picture(&d.fields().unwrap_or_default())
                 .ok()

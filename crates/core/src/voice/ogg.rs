@@ -192,5 +192,9 @@ pub(super) fn read_ogg(data: &[u8]) -> Result<Ogg, Error> {
     if !eos {
         return Err(bad_ogg("missing end of stream (truncated file)"));
     }
+    // OpusHead, OpusTags and at least one audio packet; callers index the first two.
+    if packets.len() < 3 {
+        return Err(bad_ogg("no audio"));
+    }
     Ok(Ogg { packets, granule: last_granule })
 }

@@ -37,9 +37,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use proto::SignedBlob;
 use proto::gcall::MAX_BACKUPS;
-use proto::gcall_status::{CallHostStatus, DeviceClass, NetworkKind, PowerState, ThermalLevel, open_status};
+use proto::gcall_status::SignedStatus;
+use proto::gcall_status::{CallHostStatus, DeviceClass, NetworkKind, PowerState, ThermalLevel};
 
 use super::policy::BATTERY_ADVERTISE_PCT;
 use super::{ANSWER_TIMEOUT_MS, CallAuthority, HostRef, Refusal};
@@ -68,8 +68,13 @@ pub struct RankCtx<'a> {
 }
 
 /// One admission check, for the collector (cache only what passes) and for [`rank`].
-pub fn admit(auth: &(impl CallAuthority + ?Sized), gid: &str, blob: &SignedBlob, now_ms: u64) -> Result<CallHostStatus, Refusal> {
-    let s = open_status(blob)?;
+pub fn admit(
+    auth: &(impl CallAuthority + ?Sized),
+    gid: &str,
+    blob: &SignedStatus,
+    now_ms: u64,
+) -> Result<CallHostStatus, Refusal> {
+    let s = blob.open()?;
     if s.gid != gid {
         return Err(Refusal::WrongGroup);
     }
@@ -151,8 +156,15 @@ pub fn rank_admitted(statuses: &[CallHostStatus], ctx: &RankCtx) -> Vec<HostRef>
 }
 
 /// §2.3 ranking of collected status blobs; refused blobs are skipped.
-pub fn rank(auth: &(impl CallAuthority + ?Sized), statuses: &[SignedBlob], ctx: &RankCtx) -> Vec<HostRef> {
-    let ok: Vec<CallHostStatus> = statuses.iter().filter_map(|b| admit(auth, ctx.gid, b, ctx.now_ms).ok()).collect();
+pub fn rank(
+    auth: &(impl CallAuthority + ?Sized),
+    statuses: &[SignedStatus],
+    ctx: &RankCtx,
+) -> Vec<HostRef> {
+    let ok: Vec<CallHostStatus> = statuses
+        .iter()
+        .filter_map(|b| admit(auth, ctx.gid, b, ctx.now_ms).ok())
+        .collect();
     rank_admitted(&ok, ctx)
 }
 
@@ -174,7 +186,11 @@ pub fn pick_from(ranking: &[HostRef], skip: &BTreeSet<HostRef>) -> Option<Pick> 
 
 /// [`rank`] then [`pick_from`] with nothing skipped.
 #[cfg(test)]
-pub fn pick(auth: &(impl CallAuthority + ?Sized), statuses: &[SignedBlob], ctx: &RankCtx) -> Option<Pick> {
+pub fn pick(
+    auth: &(impl CallAuthority + ?Sized),
+    statuses: &[SignedStatus],
+    ctx: &RankCtx,
+) -> Option<Pick> {
     pick_from(&rank(auth, statuses, ctx), &BTreeSet::new())
 }
 

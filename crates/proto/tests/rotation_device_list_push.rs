@@ -4,7 +4,7 @@
 //! The push-to-contacts outbox / block-notice / fork-resolution model that used to live here
 //! moved to the `design-models` branch on 2026-10-14; see `docs/archive/models.md`.
 use ed25519_dalek::SigningKey;
-use proto::{SignedBlob, newer, sign_device_list, verify_device_list};
+use proto::{SignedDeviceList, newer, sign_device_list, verify_device_list};
 
 #[path = "support/fixtures.rs"]
 mod fixtures;
@@ -21,13 +21,10 @@ fn dev(slot: u8, generation: u64) -> SigningKey {
     fixture_key(slot, generation)
 }
 
-fn rewrite(blob: &SignedBlob, edit: impl FnOnce(&mut serde_json::Value)) -> SignedBlob {
-    let mut v: serde_json::Value = serde_json::from_slice(&base64_decode(&blob.payload)).unwrap();
-    edit(&mut v);
-    SignedBlob {
-        payload: base64_encode(&serde_json::to_vec(&v).unwrap()),
-        signature: blob.signature.clone(),
-    }
+fn rewrite(blob: &SignedDeviceList, edit: impl FnOnce(&mut proto::DeviceList)) -> SignedDeviceList {
+    let mut l = blob.peek().unwrap();
+    edit(&mut l);
+    proto::Signed::from_parts(cryptography::codec::to_bytes(&l).unwrap(), *blob.sig())
 }
 
 // Forged (Mallory signs a payload claiming Bob's DID), tampered (seq bumped under Bob's real
@@ -40,11 +37,17 @@ fn forged_tampered_and_wrong_did_lists_are_refused() {
     assert_eq!(verify_device_list(&good, bob.did()).unwrap().seq, 20);
 
     let theirs = sign_device_list(&mallory, &[(pk(&dev(9, 0)), None)], 999);
-    let forged = rewrite(&theirs, |v| v["did"] = serde_json::Value::String(did(BOB)));
-    assert_eq!(verify_device_list(&forged, bob.did()), Err(proto::Error::BadSignature));
+    let forged = rewrite(&theirs, |l| l.did = did(BOB));
+    assert_eq!(
+        verify_device_list(&forged, bob.did()),
+        Err(proto::Error::BadSignature)
+    );
 
-    let tampered = rewrite(&good, |v| v["seq"] = serde_json::json!(5000));
-    assert_eq!(verify_device_list(&tampered, bob.did()), Err(proto::Error::BadSignature));
+    let tampered = rewrite(&good, |l| l.seq = 5000);
+    assert_eq!(
+        verify_device_list(&tampered, bob.did()),
+        Err(proto::Error::BadSignature)
+    );
 
     assert_eq!(verify_device_list(&theirs, bob.did()), Err(proto::Error::WrongIssuer));
 }

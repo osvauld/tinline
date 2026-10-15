@@ -10,7 +10,7 @@ pub enum Msg {
     ContactHello {
         attestation: SignedAttestation,
         name: String,
-        invite: SignedBlob,
+        invite: Signed<Ticket>,
         binding: String,
         /// The message token the joiner gives the ticket owner.
         grant_for_you: SignedGrant,
@@ -45,7 +45,7 @@ pub enum Msg {
         relay: Option<String>,
         /// The caller's signed `DeviceList` (see `sign_device_list`); absent from old peers.
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        devices: Option<SignedBlob>,
+        devices: Option<SignedDeviceList>,
         /// The caller can do video in this call; absent = audio only.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         video: Option<VideoOffer>,
@@ -56,7 +56,7 @@ pub enum Msg {
         renewed_grant: Option<SignedGrant>,
         /// The callee's signed `DeviceList`, sent when the caller's copy is older.
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        devices: Option<SignedBlob>,
+        devices: Option<SignedDeviceList>,
         /// Video for this call: only when the hello offered it and the callee takes it. Both
         /// present = both sides run the video streams (`docs/video.md`); else audio only.
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -75,7 +75,7 @@ pub enum Msg {
     /// a connection to deliver it (answered `NoticeTaken`), and as the answer to every attempt of
     /// a DID we block (call hello, contact hello, and mid-call when the block happens then).
     Notice {
-        notice: SignedBlob,
+        notice: SignedBlockNotice,
     },
     /// The notice arrived and was checked; the sender stops retrying.
     NoticeTaken,
@@ -91,14 +91,14 @@ pub enum Msg {
     /// `MAX_LIST_SEQ_AHEAD_MS` of its clock. Answered `DevicesTaken` either way (the sender stops
     /// retrying), or with the receiver's block notice.
     Devices {
-        list: SignedBlob,
+        list: SignedDeviceList,
     },
     DevicesTaken,
     /// A group invitation or the answer to one, between two contacts over the private channel
     /// (G3). Authenticated like `CallHello`: the sender's attestation (= the connection's device)
     /// and a token the receiver issued to it; the receiver requires a message token (P6) and
     /// answers its block notice to a DID it blocks. `letter` is opaque here (the core's
-    /// base64url bincode `group::invitations::Letter`). Answered `GroupLetterTaken`.
+    /// base64url postcard `group::invitations::Letter`). Answered `GroupLetterTaken`.
     GroupLetter {
         attestation: SignedAttestation,
         grant: SignedGrant,

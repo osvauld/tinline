@@ -6,14 +6,13 @@ use crate::{
     chat::doc::writer_id,
     gcall::CallAuthority,
     receipts::{
-        evidence::{Evidence, MAX_PROTOCOL_EVIDENCE_BYTES},
+        evidence::Evidence,
         participation::{JoinProofs, ParticipationView, prepare_join, verify_joined_entry},
     },
 };
 use proto::gcall as w;
 const PENDING: &str = "receipt-runtime/group-joins/v1/pending/";
 const DONE: &str = "receipt-runtime/group-joins/v1/done/";
-const DOMAIN: &[u8] = b"tinline-call-joined-transition-v1\0";
 /// Provisional bounds, not permission to drop an unrecorded event.
 pub(crate) const MAX_PENDING_JOINS: usize = 64;
 pub(crate) const MAX_JOIN_INTENT_BYTES: usize = 64 * 1024;
@@ -70,7 +69,7 @@ fn valid_id(id: &str) -> bool {
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 fn encode<T: Serialize>(value: &T, limit: usize) -> Result<Vec<u8>, ReceiptError> {
-    let bytes = bincode::serialize(value).map_err(|_| ReceiptError::Encoding)?;
+    let bytes = cryptography::codec::to_bytes(value).map_err(|_| ReceiptError::Encoding)?;
     if bytes.len() > limit {
         return Err(ReceiptError::Bounds);
     }
@@ -83,16 +82,7 @@ fn decode<T: serde::de::DeserializeOwned + Serialize>(
     if bytes.len() > limit {
         return Err(ReceiptError::Bounds);
     }
-    let value: T = bincode::DefaultOptions::new()
-        .with_fixint_encoding()
-        .with_limit(limit as u64)
-        .reject_trailing_bytes()
-        .deserialize(bytes)
-        .map_err(|_| ReceiptError::Encoding)?;
-    if encode(&value, limit)? != bytes {
-        return Err(ReceiptError::Encoding);
-    }
-    Ok(value)
+    cryptography::codec::from_bytes_canonical(bytes, limit).map_err(|_| ReceiptError::Encoding)
 }
 fn context_matches(context: &JoinContext, claim: &Receipt) -> Result<(), ReceiptError> {
     if context.issuer != claim.recipient || context.device != claim.device {
@@ -106,17 +96,23 @@ fn proofs(evidence: &[Evidence]) -> Result<JoinProofs, ReceiptError> {
         return Err(ReceiptError::Bounds);
     }
     for e in evidence {
-        let blob = e.blob()?;
-        let slot = if w::open_start(&blob).is_ok() {
-            &mut start
-        } else if w::open_join(&blob).is_ok() {
-            &mut join
-        } else if w::open_roster(&blob).is_ok() {
-            &mut roster
+        // Each statement type has its own domain, so exactly one of these opens.
+        let dup = if let Ok(b) = e.blob::<w::CallStart>()
+            && b.open().is_ok()
+        {
+            start.replace(b).is_some()
+        } else if let Ok(b) = e.blob::<w::Join>()
+            && b.open().is_ok()
+        {
+            join.replace(b).is_some()
+        } else if let Ok(b) = e.blob::<w::Roster>()
+            && b.open().is_ok()
+        {
+            roster.replace(b).is_some()
         } else {
             return Err(policy("unsupported joined intent original"));
         };
-        if slot.replace(blob).is_some() {
+        if dup {
             return Err(policy("duplicate joined intent original"));
         }
     }
@@ -128,28 +124,25 @@ fn proofs(evidence: &[Evidence]) -> Result<JoinProofs, ReceiptError> {
 }
 fn transition_id(claim: &Receipt, p: &JoinProofs) -> Result<String, ReceiptError> {
     let join = Evidence::from_blob(&p.expected_join)?;
-    let mut h = blake3::Hasher::new();
-    h.update(DOMAIN);
-    h.update(&(claim.recipient.len() as u64).to_be_bytes());
-    h.update(claim.recipient.as_bytes());
-    h.update(&claim.device);
-    h.update(&join.id);
-    Ok(h.finalize().to_hex().to_string())
+    Ok(cryptography::hash::hasher(cryptography::domains::CALL_JOINED)
+        .part(claim.recipient.as_bytes())
+        .part(&claim.device)
+        .part(&join.id)
+        .hex())
 }
 impl Intent {
     fn open(&self, id: &str) -> Result<(Receipt, Vec<Evidence>, JoinProofs), ReceiptError> {
         if self.version != 1 || !valid_id(id) {
             return Err(ReceiptError::Bounds);
         }
-        let claim = SignedReceipt::open(&self.signed, &self.scope)?;
+        let claim = open_receipt(&self.signed, &self.scope)?;
         context_matches(&self.context, &claim)?;
         if self.originals.len() != 3 {
             return Err(ReceiptError::Bounds);
         }
         let mut originals = Vec::new();
         for bytes in &self.originals {
-            let blob: proto::SignedBlob = decode(bytes, MAX_PROTOCOL_EVIDENCE_BYTES)?;
-            originals.push(Evidence::from_blob(&blob)?);
+            originals.push(Evidence::from_bytes(bytes.clone())?);
         }
         let p = proofs(&originals)?;
         let entry = doc::Entry {
@@ -247,7 +240,7 @@ impl JoinController {
             version: 1,
             context,
             scope: claim.scope.clone(),
-            signed: claim.sign_claim(account)?.to_bytes()?,
+            signed: claim.sign_claim(account)?.to_bytes(),
             originals: originals.into_iter().map(|e| e.bytes).collect(),
         };
         let bytes = encode(&intent, MAX_JOIN_INTENT_BYTES)?;

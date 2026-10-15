@@ -272,7 +272,7 @@ impl Node {
                 let new = Some(new).filter(|n| !n.is_empty());
                 let id = identity::recover(&p.mnemonic).map_err(|_| Error::BadPhrase)?;
                 let secrets = Secrets { mnemonic: p.mnemonic.clone(), device_secret: p.device_secret };
-                let device_public = proto::device_public(&p.device_secret);
+                let device_public = cryptography::signature::public_key(&p.device_secret);
                 let (vault, dek) = self.kdf(move || vault::seal(&secrets, new.as_deref()))??;
                 let mut s = self.inner.shared.lock();
                 // The name may have changed (set_name) while the KDF ran.

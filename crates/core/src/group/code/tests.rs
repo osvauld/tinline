@@ -31,3 +31,19 @@ fn links_are_short_and_round_trip() {
     assert!(ShortCode::parse("tinline://g/").is_none());
     assert!(ShortCode::parse("tinline://g/0OIl").is_none());
 }
+
+// KIND: unit (hardening G-01/G-17) — hostile text never panics: a multi-byte char straddling the
+// link prefix, and ids too short (or not hex) to slice.
+#[test]
+fn hostile_links_and_ids_do_not_panic() {
+    for t in ["tinline://gé", "tinline://é", "TINLINE://G/ü", "ééééééé", "tinline://g", ""] {
+        assert!(ShortCode::parse(t).is_none(), "{t}");
+    }
+    assert_eq!(crate::group::short("abc"), "abc");
+    assert_eq!(crate::group::short("é"), "é");
+    assert_eq!(crate::group::short("0123456789"), "01234567");
+    assert!(!crate::group::valid_gid("abc"));
+    assert!(!crate::group::valid_gid(&"é".repeat(32)));
+    assert!(!crate::group::valid_gid(&"A".repeat(64)));
+    assert!(crate::group::valid_gid(&"0a".repeat(32)));
+}

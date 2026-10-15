@@ -89,7 +89,7 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
         let client = endpoint(SecretKey::from_bytes(&client_secret)).await;
         let remote = *client.id().as_bytes();
         registry(&node, remote);
-        let token = bincode::serialize(&InviteToken {
+        let token = cryptography::codec::to_bytes(&InviteToken {
             group: gid.clone(),
             name: "hint only".into(),
             owner: me.id.did().into(),
@@ -252,7 +252,7 @@ async fn produced(negotiated: bool) {
                 assert!(
                     groups
                         .iter()
-                        .any(|g| bincode::deserialize::<InviteToken>(g).unwrap().group == gid)
+                        .any(|g| cryptography::codec::from_bytes::<InviteToken>(g, usize::MAX).unwrap().group == gid)
                 );
                 saw_tokens = true;
             }
@@ -326,9 +326,9 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, false);
         assert_eq!(gid, target_gid);
         *node.inner.group.core.lock() = Some(target.clone());
-        let remote = proto::device_public(&proto::new_device_secret());
+        let remote = cryptography::signature::public_key(&proto::new_device_secret());
         registry(&node, remote);
-        let token = bincode::serialize(&InviteToken {
+        let token = cryptography::codec::to_bytes(&InviteToken {
             group: gid.clone(),
             name: "hint only".into(),
             owner: me.id.did().into(),

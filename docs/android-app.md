@@ -155,7 +155,7 @@ Exported receiver `DebugReceiver` in `src/debug/AndroidManifest.xml`, action
 | cmd | extras | logs |
 |---|---|---|
 | `create` | `name` | `P2PTEST created did=…` |
-| `ticket` | | `P2PTEST ticket=osvc1.…` |
+| `ticket` | | `P2PTEST ticket=OSVC2:…` |
 | `add` | `ticket` | `P2PTEST added name=… did=…` or `P2PTEST error=…` |
 | `contacts` | | one `P2PTEST contact name=… did=…` each |
 | `call` | `who` (name or did) | call states |

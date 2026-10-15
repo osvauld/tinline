@@ -46,7 +46,7 @@ async fn session(
 ) -> Observed {
     let me = node.inner.me().unwrap();
     let name = format!("group/{gid}/{day}");
-    let token = bincode::serialize(&InviteToken {
+    let token = cryptography::codec::to_bytes(&InviteToken {
         group: gid.into(),
         name: "synthetic fault scope".into(),
         owner: me.id.did().into(),

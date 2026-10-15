@@ -1,4 +1,4 @@
-//! u32-BE-length + bincode frames on one bidirectional QUIC stream, for `tinline/self/3`.
+//! u32-BE-length + postcard (`cryptography::codec`) frames on one bidirectional QUIC stream, for `tinline/self/5`.
 
 use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -29,7 +29,7 @@ impl FrameReader {
                     return Err(Error::Protocol("frame too large".into()));
                 }
                 if self.buf.len() >= 4 + len {
-                    let msg = bincode::deserialize(&self.buf[4..4 + len]).map_err(|_| Error::Protocol("frame does not decode".into()))?;
+                    let msg = cryptography::codec::from_bytes(&self.buf[4..4 + len], MAX_FRAME).map_err(|_| Error::Protocol("frame does not decode".into()))?;
                     self.buf.drain(..4 + len);
                     return Ok(Some(msg));
                 }
@@ -45,7 +45,7 @@ impl FrameReader {
 
 impl FrameWriter {
     pub async fn send<T: Serialize>(&mut self, msg: &T) -> Result<(), Error> {
-        let body = bincode::serialize(msg).map_err(|e| Error::Protocol(e.to_string()))?;
+        let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
         if body.len() > MAX_FRAME {
             return Err(Error::Protocol("frame too large".into()));
         }
@@ -78,7 +78,7 @@ pub enum SelfMsg {
     /// What the contact confirmed holding, `(doc, VersionVector::encode)`: a device that is not
     /// talking to the contact itself still shows two ticks (a max-register per doc, merged).
     Acks { acks: Vec<(String, Vec<u8>)> },
-    /// The groups this account is in, as seen by the sender (G2): per group a bincode
+    /// The groups this account is in, as seen by the sender (G2): per group a `codec`-encoded
     /// `group::record::InviteToken` without invite (group, name, owner, DID-signed host
     /// addresses). The receiver adds groups it lacks and dials their hosts (`group/own.rs`).
     Groups { groups: Vec<Vec<u8>> },

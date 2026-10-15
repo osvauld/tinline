@@ -7,7 +7,7 @@ pub(crate) enum Cmd {
     Decline,
     Hangup,
     /// We blocked the peer: tell them with the notice and end the call (`"blocked"`).
-    Block(proto::SignedBlob),
+    Block(proto::SignedBlockNotice),
 }
 
 pub(crate) struct Call {
@@ -82,7 +82,7 @@ pub(super) enum LegEvent {
     /// The device answered; the connection and control stream are handed over.
     Accepted {
         renewed_grant: Option<proto::SignedGrant>,
-        devices: Option<proto::SignedBlob>,
+        devices: Option<proto::SignedDeviceList>,
         video: Option<proto::VideoOffer>,
         conn: Connection,
         ctrl: Box<Ctrl>,
@@ -92,7 +92,7 @@ pub(super) enum LegEvent {
     /// It rang and the callee's ring timed out (it sent `Hangup`).
     GaveUp,
     /// The device answered with a notice (they block us, if it verifies).
-    Blocked(proto::SignedBlob),
+    Blocked(proto::SignedBlockNotice),
     /// `Reject { CALLS_NOT_ALLOWED }`: they let us message them but not call (P6).
     CallsNotAllowed,
     /// Could not connect, refused (`Reject`: not a contact there, blocked, unavailable), or the

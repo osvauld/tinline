@@ -198,7 +198,7 @@ impl SearchIndex {
         for (k, v) in puts {
             ops.push(self.db.put_op(k, v)?);
         }
-        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises"))?);
+        ops.push(self.db.put_op("m", &cryptography::codec::to_bytes(&man).expect("serialises"))?);
         let tw = Instant::now();
         self.db.apply(&ops)?;
         self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);

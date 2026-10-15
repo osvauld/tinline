@@ -1,5 +1,12 @@
 use super::*;
 
+/// An envelope signed without the sign-time shape check: what a hostile peer can send.
+fn raw<T: Signable>(v: &T, id: &Identity) -> Signed<T> {
+    let body = cryptography::codec::to_bytes(v).unwrap();
+    let sig = id.sign(&cryptography::sign::input(T::DOMAIN, &[&body]));
+    Signed::from_parts(body, sig)
+}
+
 fn ident(seed: u8) -> Identity {
     let m = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
     identity::recover(&m.to_string()).unwrap()
@@ -19,7 +26,6 @@ fn host_ref(id: &Identity) -> HostRef {
 
 fn start(id: &Identity, cid: &str) -> CallStart {
     CallStart {
-        v: GCALL_VERSION,
         gid: gid(),
         call_id: cid.into(),
         host_gen: 1,
@@ -37,12 +43,11 @@ fn roster(host: &Identity, cid: &str, n: usize) -> Roster {
     let entries = (0..n)
         .map(|k| {
             let id = ident(40 + k as u8);
-            let (j, b) = sign_join(&id, &gid(), cid, 1, 1_800_000_000_000 + k as u64);
+            let (j, b) = sign_join(&id, &gid(), cid, 1, 1_800_000_000_000 + k as u64).unwrap();
             RosterEntry::new(k as u8, &j, &b)
         })
         .collect();
     Roster {
-        v: GCALL_VERSION,
         gid: gid(),
         call_id: cid.into(),
         host_gen: 1,
@@ -64,19 +69,18 @@ fn gcall_signed_messages_round_trip_through_frames() {
     let h = ident(1);
     let m = ident(2);
     let cid = new_call_id();
-    let s = sign_start(&h, start(&h, &cid));
+    let s = Signed::sign(&start(&h, &cid), &h).unwrap();
     let GroupCallMsg::Start { start: s2 } = frame(&GroupCallMsg::Start { start: s.clone() }) else {
         panic!()
     };
-    assert_eq!(open_start(&s2).unwrap(), start(&h, &cid));
-    let (j, jb) = sign_join(&m, &gid(), &cid, 1, 5);
-    assert_eq!(open_join(&jb).unwrap(), j);
+    assert_eq!(s2.open().unwrap(), start(&h, &cid));
+    let (j, jb) = sign_join(&m, &gid(), &cid, 1, 5).unwrap();
+    assert_eq!(jb.open().unwrap(), j);
     let r = roster(&h, &cid, 3);
-    assert_eq!(open_roster(&sign_roster(&h, r.clone())).unwrap(), r);
-    let l = open_leave(&sign_leave(&m, &gid(), &cid, 1, 6)).unwrap();
+    assert_eq!(Signed::sign(&r, &h).unwrap().open().unwrap(), r);
+    let l = sign_leave(&m, &gid(), &cid, 1, 6).unwrap().open().unwrap();
     assert_eq!((l.did.as_str(), l.issued_ms), (m.did(), 6));
     let e = End {
-        v: GCALL_VERSION,
         gid: gid(),
         call_id: cid.clone(),
         host_gen: 1,
@@ -84,7 +88,7 @@ fn gcall_signed_messages_round_trip_through_frames() {
         reason: EndReason::HostLeaving,
         next_host: Some(host_ref(&ident(90))),
     };
-    assert_eq!(open_end(&sign_end(&h, e.clone())).unwrap(), e);
+    assert_eq!(Signed::sign(&e, &h).unwrap().open().unwrap(), e);
     for msg in [
         GroupCallMsg::Join {
             join: jb.clone(),
@@ -92,7 +96,7 @@ fn gcall_signed_messages_round_trip_through_frames() {
         },
         GroupCallMsg::Join {
             join: jb,
-            note: Some(s),
+            note: Some(sign_note(&m, &[1; 32], &[2; 32], 5)),
         },
         GroupCallMsg::Heartbeat { epoch: 7 },
         GroupCallMsg::Active {
@@ -109,52 +113,73 @@ fn gcall_forged_tampered_and_cross_kind_blobs_are_refused() {
     let h = ident(1);
     let m = ident(2);
     let cid = new_call_id();
-    // Signed by someone other than the claimed host.
-    let forged = sign_blob(&m, GCALL_DOMAIN, &Claim::Start(start(&h, &cid)));
-    assert_eq!(open_start(&forged), Err(Error::BadSignature));
-    // Tampered payload.
-    let mut s = start(&h, &cid);
-    let good = sign_start(&h, s.clone());
-    s.k = 9;
-    let tampered = SignedBlob {
-        payload: enc(serde_json::to_vec(&Claim::Start(s)).unwrap()),
-        signature: good.signature,
-    };
-    assert_eq!(open_start(&tampered), Err(Error::BadSignature));
-    // A Join is not a Leave even though the fields overlap; a 1:1 grant is not a Join.
-    let (_, jb) = sign_join(&m, &gid(), &cid, 1, 5);
-    assert_eq!(open_leave(&jb), Err(Error::UnexpectedMessage));
-    let other_domain = sign_blob(
-        &m,
-        b"osvauld/p2p/grant/v1\0",
-        &Claim::Join(open_join(&jb).unwrap()),
+    // Signed by someone other than the claimed host: refused at sign time, and a raw envelope
+    // carrying the stranger's signature does not open.
+    assert_eq!(
+        Signed::sign(&start(&h, &cid), &m).err(),
+        Some(Error::WrongIssuer)
     );
-    assert_eq!(open_join(&other_domain), Err(Error::BadSignature));
-    // Shape bounds.
+    assert_eq!(
+        raw(&start(&h, &cid), &m).open().err(),
+        Some(Error::BadSignature)
+    );
+    // Tampered body.
+    let mut s = start(&h, &cid);
+    let good = Signed::sign(&s, &h).unwrap();
+    s.k = 9;
+    let tampered =
+        Signed::<CallStart>::from_parts(cryptography::codec::to_bytes(&s).unwrap(), *good.sig());
+    assert_eq!(tampered.open(), Err(Error::BadSignature));
+    // A Join is not a Leave even though the fields overlap (own domains); a 1:1 grant is not a Join.
+    let (_, jb) = sign_join(&m, &gid(), &cid, 1, 5).unwrap();
+    // The same Leave body signed under Join's domain is not a Leave.
+    let leave = Leave {
+        gid: gid(),
+        call_id: cid.clone(),
+        host_gen: 1,
+        did: m.did().into(),
+        issued_ms: 5,
+    };
+    let body = cryptography::codec::to_bytes(&leave).unwrap();
+    let sig = m.sign(&cryptography::sign::input(Join::DOMAIN, &[&body]));
+    assert_eq!(
+        Signed::<Leave>::from_parts(body, sig).open(),
+        Err(Error::BadSignature)
+    );
+    // And a Join's bytes read as a Leave do not decode (different fields, own domain).
+    assert!(retype::<Join, Leave>(&jb).open().is_err());
+    let grant = issue_grant(&m, h.did(), 1, 100);
+    assert!(retype::<Grant, Join>(&grant).open().is_err());
+    // Shape bounds, at sign time and in a raw envelope.
     let mut bad = start(&h, &cid);
     bad.backups.push(host_ref(&ident(92)));
-    assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
+    assert_eq!(Signed::sign(&bad, &h).err(), Some(Error::Decode));
+    assert_eq!(raw(&bad, &h).open().err(), Some(Error::Decode));
     let mut bad = start(&h, &cid);
     bad.k = 0;
-    assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
+    assert_eq!(raw(&bad, &h).open().err(), Some(Error::Decode));
     // Q2: K may name every participant (each hears the other eleven), never more.
     let mut all = start(&h, &cid);
     all.k = MAX_PARTICIPANTS as u8;
-    assert_eq!(open_start(&sign_start(&h, all.clone())), Ok(all));
+    assert_eq!(Signed::sign(&all, &h).unwrap().open(), Ok(all));
     let mut bad = start(&h, &cid);
     bad.k = MAX_PARTICIPANTS as u8 + 1;
-    assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
+    assert_eq!(raw(&bad, &h).open().err(), Some(Error::Decode));
     let mut bad = start(&h, &cid);
     bad.call_id = "short".into();
-    assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::Decode));
+    assert_eq!(raw(&bad, &h).open().err(), Some(Error::Decode));
+    // Size bound.
     let mut bad = start(&h, &cid);
-    bad.v = 2;
-    assert_eq!(open_start(&sign_start(&h, bad)), Err(Error::UnknownVersion));
+    bad.meta_frontier = "m".repeat(MAX_CONTROL);
+    assert_eq!(raw(&bad, &h).open().err(), Some(Error::TooLarge));
+}
+
+fn retype<T: Signable, U: Signable>(s: &Signed<T>) -> Signed<U> {
+    Signed::from_bytes(&s.to_bytes()).unwrap()
 }
 
 fn request(starter: &Identity, host: &Identity, cid: &str) -> HostRequest {
     HostRequest {
-        v: GCALL_VERSION,
         gid: gid(),
         call_id: cid.into(),
         starter_did: starter.did().into(),
@@ -173,15 +198,13 @@ fn gcall_host_request_refusal_and_note_verify_and_are_bounded() {
     let h = ident(2);
     let cid = new_call_id();
     let r = request(&a, &h, &cid);
-    let rb = sign_host_request(&a, r.clone());
-    assert_eq!(open_host_request(&rb).unwrap(), r);
-    // Not by the starter; not another kind.
-    assert_eq!(
-        open_host_request(&sign_blob(&h, GCALL_DOMAIN, &Claim::HostRequest(r.clone()))),
-        Err(Error::BadSignature)
-    );
-    assert_eq!(open_start(&rb), Err(Error::UnexpectedMessage));
-    assert_eq!(open_host_refusal(&rb), Err(Error::UnexpectedMessage));
+    let rb = Signed::sign(&r, &a).unwrap();
+    assert_eq!(rb.open().unwrap(), r);
+    // Not by the starter; not another kind (each type has its own domain).
+    assert_eq!(Signed::sign(&r, &h).err(), Some(Error::WrongIssuer));
+    assert_eq!(raw(&r, &h).open().err(), Some(Error::BadSignature));
+    assert!(retype::<HostRequest, CallStart>(&rb).open().is_err());
+    assert!(retype::<HostRequest, HostRefusal>(&rb).open().is_err());
     for bad in [
         HostRequest {
             backups: vec![host_ref(&ident(90)); 3],
@@ -207,73 +230,66 @@ fn gcall_host_request_refusal_and_note_verify_and_are_bounded() {
             ..r.clone()
         },
     ] {
-        assert_eq!(
-            open_host_request(&sign_host_request(&a, bad)),
-            Err(Error::Decode)
-        );
+        assert_eq!(Signed::sign(&bad, &a).err(), Some(Error::Decode));
+        assert_eq!(raw(&bad, &a).open().err(), Some(Error::Decode));
     }
     let f = HostRefusal {
-        v: GCALL_VERSION,
         gid: gid(),
         call_id: cid.clone(),
         starter_did: a.did().into(),
         host: host_ref(&h),
         reason: "busy".into(),
     };
-    let fb = sign_host_refusal(&h, f.clone());
-    assert_eq!(open_host_refusal(&fb).unwrap(), f);
-    assert_eq!(
-        open_host_refusal(&sign_blob(&a, GCALL_DOMAIN, &Claim::HostRefusal(f.clone()))),
-        Err(Error::BadSignature)
-    );
+    let fb = Signed::sign(&f, &h).unwrap();
+    assert_eq!(fb.open().unwrap(), f);
+    assert_eq!(Signed::sign(&f, &a).err(), Some(Error::WrongIssuer));
+    assert_eq!(raw(&f, &a).open().err(), Some(Error::BadSignature));
     let long = HostRefusal {
         reason: "r".repeat(MAX_TEXT + 1),
         ..f
     };
-    assert_eq!(
-        open_host_refusal(&sign_host_refusal(&h, long)),
-        Err(Error::Decode)
-    );
+    assert_eq!(Signed::sign(&long, &h).err(), Some(Error::Decode));
+    assert_eq!(raw(&long, &h).open().err(), Some(Error::Decode));
     let nb = sign_note(&a, &[7; 32], &[9; 32], 5);
-    let n = open_note(&nb).unwrap();
+    let n = nb.open().unwrap();
     assert_eq!(
-        (n.did.as_str(), n.dev_bytes(), n.endpoint_bytes()),
-        (a.did(), Some([7; 32]), Some([9; 32]))
+        (n.did.as_str(), n.dev, n.endpoint),
+        (a.did(), [7; 32], [9; 32])
     );
-    assert_eq!(open_join(&nb), Err(Error::UnexpectedMessage));
-    let short = GroupNote {
-        endpoint: enc([1u8; 31]),
-        ..n
-    };
-    assert_eq!(
-        open_note(&sign_blob(&a, GCALL_DOMAIN, &Claim::Note(short))),
-        Err(Error::Decode)
-    );
+    assert!(retype::<GroupNote, Join>(&nb).open().is_err());
 }
 
 #[test]
 fn gcall_roster_entries_are_bound_to_the_rosters_call_and_generation() {
     let h = ident(1);
     let cid = new_call_id();
-    // An entry whose Join was for another call (or generation) fails.
+    // An entry whose Join was for another call (or generation) fails, at sign and at open.
     let mut r = roster(&h, &cid, 2);
-    let (j, b) = sign_join(&ident(60), &gid(), &new_call_id(), 1, 1);
+    let (j, b) = sign_join(&ident(60), &gid(), &new_call_id(), 1, 1).unwrap();
     r.entries.push(RosterEntry::new(5, &j, &b));
-    assert_eq!(open_roster(&sign_roster(&h, r)), Err(Error::BadSignature));
+    assert_eq!(Signed::sign(&r, &h).err(), Some(Error::BadSignature));
+    assert_eq!(raw(&r, &h).open().err(), Some(Error::BadSignature));
     let mut r = roster(&h, &cid, 2);
     r.host_gen = 2;
-    assert_eq!(open_roster(&sign_roster(&h, r)), Err(Error::BadSignature));
+    assert_eq!(raw(&r, &h).open().err(), Some(Error::BadSignature));
+    // A signature that is not 64 bytes.
+    let mut r = roster(&h, &cid, 2);
+    r.entries[0].sig.pop();
+    assert_eq!(raw(&r, &h).open().err(), Some(Error::Decode));
     // Duplicate slot, duplicate DID, too many entries.
     let mut r = roster(&h, &cid, 2);
     r.entries[1].slot = r.entries[0].slot;
-    assert_eq!(open_roster(&sign_roster(&h, r)), Err(Error::Decode));
+    assert_eq!(raw(&r, &h).open().err(), Some(Error::Decode));
     let mut r = roster(&h, &cid, 2);
     let mut dup = r.entries[0].clone();
     dup.slot = 9;
     r.entries.push(dup);
-    assert_eq!(open_roster(&sign_roster(&h, r)), Err(Error::Decode));
+    assert_eq!(raw(&r, &h).open().err(), Some(Error::Decode));
     let r = roster(&h, &cid, MAX_PARTICIPANTS + 1);
-    assert_eq!(open_roster(&sign_roster(&h, r)), Err(Error::Decode));
+    assert!(matches!(
+        raw(&r, &h).open().err(),
+        Some(Error::Decode | Error::TooLarge)
+    ));
 }
 
 // §9 finding 1: a 12-entry Roster (64-char gid, max epoch and slot values) fits.
@@ -281,24 +297,20 @@ fn gcall_roster_entries_are_bound_to_the_rosters_call_and_generation() {
 fn gcall_roster_of_12_fits_the_control_limit() {
     let h = ident(1);
     let cid = new_call_id();
-    let blob = sign_roster(&h, roster(&h, &cid, MAX_PARTICIPANTS));
+    let blob = Signed::sign(&roster(&h, &cid, MAX_PARTICIPANTS), &h).unwrap();
     let bytes = encode_control(&GroupCallMsg::Roster {
         roster: blob.clone(),
     })
     .unwrap();
-    println!(
-        "12-entry Roster frame: {} B of {MAX_CONTROL}",
-        bytes.len() - 4
-    );
     assert!(bytes.len() - 4 <= MAX_CONTROL);
     let (msg, _) = decode_control(&bytes).unwrap().unwrap();
     let GroupCallMsg::Roster { roster: back } = msg else {
         panic!()
     };
-    assert_eq!(open_roster(&back).unwrap().entries.len(), MAX_PARTICIPANTS);
+    assert_eq!(back.open().unwrap().entries.len(), MAX_PARTICIPANTS);
     // A CallStart with two backups is far below the limit as well.
     let s = encode_control(&GroupCallMsg::Start {
-        start: sign_start(&h, start(&h, &cid)),
+        start: Signed::sign(&start(&h, &cid), &h).unwrap(),
     })
     .unwrap();
     assert!(s.len() < MAX_CONTROL / 2, "{}", s.len());

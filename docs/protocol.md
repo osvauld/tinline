@@ -11,41 +11,29 @@ close code 426 like the other superseded versions).
 - **Device key**: random per-install ed25519 key. Its public half is the iroh
   `EndpointId`. The QUIC/TLS handshake proves the peer holds it; the transport passes that
   as `remote_device` into every check below. Text form: base64url (no pad).
-- **Attestation** `{v, did, device, iat}`, signed by the DID: "this device is mine".
+- **Attestation** `{did, device, iat}`, signed by the DID: "this device is mine".
   Several devices per DID are fine; each has its own attestation.
 
-All signed things are `SignedBlob { payload: b64url(json), signature: b64url }`,
-signature over `DOMAIN || payload`. Domains: `osvauld/p2p/{attest,invite,grant,bind}/v1\0` plus `invite/v2\0` for compact invites.
-The verifying key is always recovered from the DID named inside the payload; callers then
-compare that DID to the one they expected.
+All signed things are `proto::Signed<T>`: a canonical postcard body plus an Ed25519 signature over
+`cryptography::sign::input(T::DOMAIN, [body])` (u64 BE length-framed domain and parts; every domain,
+one per statement type, is in `cryptography::domains`). Bytes are `body || sig[64]`; in JSON frames
+one base64url string. Opening refuses non-canonical or oversized bodies and verifies strictly
+against the signer the body names (a DID, or a raw key for tickets); callers then compare that
+signer to the one they expected (`open_from`).
 
 ## Contact ticket (QR)
 
-Text (v2, issued today): `OSVC2:` + RFC 4648 base32, uppercase, no padding, so the QR uses
-alphanumeric mode (~260 chars vs ~800 for v1). Decoding is case-insensitive and trims
-whitespace. Binary body:
+Text: `OSVC2:` + RFC 4648 base32 (uppercase, no padding, so the QR uses alphanumeric mode, about
+240 chars) of a `Signed<Ticket>`. Decoding is case-insensitive and trims whitespace.
+`Ticket { pk[32], device[32], nonce[6], exp_min: u32, name, relay: None | Known(u8) | Custom(url) }`
+under domain `osvauld/p2p/invite/v2\0`, signed by the DID key `pk` it carries.
 
-```
-signing_pk[32] | device[32] | nonce[6] | exp[3] | flags[1] | name[n] | relay_ext | sig[64]
-```
-
-- `exp`: minutes since 2026-01-01T00:00:00Z, u24 big endian (issuer rounds up).
-  `iat` is not carried (decodes as 0). `nonce` is 6 random bytes (the ticket's id; good for anyone,
-  any number of times, until it expires or is reset, see "Tickets in the core").
-- `flags`: high 3 bits relay code (0 none, 1..4 = `https://{use1,usw1,euc1,aps1}-1.relay.n0.iroh.link./`,
-  7 custom: `relay_ext` = u8 length + URL); low 5 bits = name length, so names are capped
-  at 31 bytes (truncated at a char boundary when issuing).
-- `sig`: Ed25519 by the DID key over `osvauld/p2p/invite/v2\0 || 0x02 || body-before-sig`.
-- The DID is `did_from_public_key(signing_pk)`; nothing is displayed that is not signed.
-
-Inside `ContactTicket`/`ContactHello.invite` the v2 invite is a `SignedBlob` whose payload is
-`b64url(0x02 || body-before-sig)` and signature `b64url(sig)`; `open_invite` picks v1 (JSON,
-payload starts with `{`) or v2 (first byte 0x02). The claim handed to the handshake has the
-same shape either way (`InviteClaim.v` = 1 or 2).
-
-Text (v1, still accepted): `osvc1.` + b64url(json). Fields: `{v:1, did, name, device, relay, invite}`.
-`invite` is a signed `InviteClaim {v, iss, nonce(16B), iat, exp, device, name, relay}`.
-A v1 ticket parsed from text re-serialises as v1 (it cannot be re-signed).
+- `exp_min`: minutes since 2026-01-01T00:00:00Z (issuer rounds up). `nonce` is the ticket's id;
+  good for anyone, any number of times, until it expires or is reset (see "Tickets in the core").
+- `Known(i)`: `https://{use1,usw1,euc1,aps1}-1.relay.n0.iroh.link./`. Names are capped at 31 bytes
+  (truncated at a char boundary when issuing).
+- The DID is `did_from_public_key(pk)`; nothing is displayed that is not signed. There is no other
+  ticket version (`osvc1.` is refused).
 
 The visible fields are display-only; `verify` requires them to equal the signed ones
 (mismatch is an error) and the claim to be unexpired.
@@ -170,10 +158,10 @@ Design: `docs/design/device-linking.md`. Implemented in `crates/proto` (`DeviceL
 
 ### DeviceList
 
-`DeviceList { v: 1, did, seq, devices: [{ device, relay? }] }`, a `SignedBlob` under domain
+`DeviceList { did, seq, devices: [{ device, relay? }] }`, a `Signed<DeviceList>` under domain
 `osvauld/p2p/devices/v1\0`, signed by the DID. `seq` is unix ms chosen by the signer.
 `verify_device_list(blob, expected_did)`: signature by the DID in the payload, DID equals the
-expected one, 1..=8 devices, no duplicates, version 1. A relay hint failing the syntactic
+expected one, 1..=8 devices, no duplicates. A relay hint failing the syntactic
 check (`https://`, at most 200 chars, no whitespace or control characters; the core also parses
 it as a relay URL) is dropped and the device kept, like a bad hint in a hello.
 `newer(a, b)`: higher `seq` wins; on equal `seq` the lexicographically larger signature wins,
@@ -255,13 +243,13 @@ the low 5 bits must be zero. Trailing bytes are refused. Not signed: a bearer se
 
 ### Link handshake (ALPN `tinline/link/1`)
 
-E = existing device, N = new one; either may display. `T = "tinline/link/v1" || e_dev || n_dev ||
-secret`, `K = HKDF-SHA256(ikm = secret, info = T)`.
+E = existing device, N = new one; either may display. `T = sign::input(LINK_TRANSCRIPT, [e_dev,
+n_dev, secret])`, `K = kdf::derive("tinline/link/v1 key", T)` (BLAKE3; `crates/proto/src/link.rs`).
 
-- `LinkHello { role: scanner|displayer, proof }`, `proof = HMAC-SHA256(K, role || own_device)`
+- `LinkHello { role: scanner|displayer, proof }`, `proof = hash::keyed(K, LINK_PROOF, [role, own_device])`
   (compared in constant time against the QUIC-authenticated remote device).
-- Confirmation code: first 20 bits of `HMAC(K, "confirm")` mod 1,000,000, shown `482 913`.
-- `LinkGrant { sealed }`: `b64url(nonce(12) || AES-256-GCM)` under `HKDF(K, "grant")`, AAD =
+- Confirmation code: first 20 bits of `hash::keyed(K, LINK_CONFIRM, [])` mod 1,000,000, shown `482 913`.
+- `LinkGrant { sealed }`: `b64url(aead::seal)` (nonce(12) || AES-256-GCM) under `kdf::derive("tinline/link/v1 grant", K)`, AAD =
   `T`; plaintext JSON `LinkGrantBody { mnemonic, account_name, registry: [{attestation, label,
   removed}] }`.
 - `LinkDone { attestation, label }`: `accept_link_done` requires a valid attestation, DID ==
@@ -293,9 +281,9 @@ reason. Failure tokens surfaced to the UI: `expired cancelled rejected bad_proof
 net locked busy bad_grant account_exists`. Locking E cancels its link. Env knob for tests:
 `P2P_LINK_TTL_SECS`.
 
-### Own-device sync (ALPN `tinline/self/4`, task 34d; `/1` refused since P9c, `/2` since P10, `/3` since photo sizes, see "Protocol versions")
+### Own-device sync (ALPN `tinline/self/5`, task 34d; `/1` refused since P9c, `/2` since P10, `/3` since photo sizes, `/4` since postcard, see "Protocol versions")
 
-Frames: u32 BE length + bincode of `SelfMsg` (16 MiB cap).
+Frames: u32 BE length + postcard (`cryptography::codec`) of `SelfMsg` (16 MiB cap).
 
 - `Auth { attestation, relay, unlink }`: dialer first, acceptor answers. The acceptor runs
   `accept_self_hello` against its registry's tombstones. An unknown device with a valid attestation
@@ -322,7 +310,7 @@ sealed in `account.redb` under `sync/account`, with maps:
 | `devices/<device>` | `{att, label, removed, relay}` | field LWW; `removed` is sticky (OR) |
 | `contacts/<did>` | `{rec, alias, verified, calls}`; `rec` = name, devices, device_list, grant, call_grant, added_at | alias/verified/calls LWW; `rec`: name LWW, newer signed device list wins (S4 reset applies), each token slot: the one that outlives (a later re-add without a call token clears it), max added_at |
 | `cutoffs/<did>` | our token cut-offs for `<did>` (JSON) | max per field |
-| `sent/<did>` | our latest signed block/unblock notice to `<did>` (SignedBlob JSON) | verified on read; highest `at` wins; `<did>` is blocked iff that notice is a block (see "Blocking") |
+| `sent/<did>` | our latest signed block/unblock notice to `<did>` (`Signed<BlockNotice>`, base64url) | verified on read; highest `at` wins; `<did>` is blocked iff that notice is a block (see "Blocking") |
 | `notices/<did>` | `{notice, name, blocked, at}`: the latest notice `<did>` signed to us | verified on read (`to` = our DID, `from` = `<did>`); highest `at` wins; a block deletes the contact entry for `<did>` if `added_at*1000 <= at` (deletion request) |
 | `redeemed/<nonce>`, `revoked/<id>` | `"1"` | union, never shrink |
 | `calls/<call_id>` | CallRecord JSON | written by builds before the calls doc; no longer read |
@@ -358,8 +346,8 @@ Contacts exchange only our own `profile` via the reserved name in `tinline/chat/
 admission. This is not a new channel or a chat-message signature-history scheme. Profile pictures
 reuse encrypted BlobHub transfer with contact/current-picture and own-device/cache serving checks.
 
-Replacement/removal automatically signs a `SignedBlob` previous-picture deletion request by the owner DID over domain
-`"tinline-profile-picture-deletion-v1\\0"` and JSON `{v:1, owner, picture_hash,
+Replacement/removal automatically signs a `Signed<PictureDeletionPermit>` previous-picture deletion request by the owner DID over domain
+`"tinline-profile-picture-deletion-v1\\0"` and `{owner, picture_hash,
 scope:"cached-profile-picture", consent:true}`. Verification binds owner, hash, purpose and consent;
 only that owner's old cached-picture claim is dropped, never the current picture or chat media.
 This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/test status:
@@ -406,7 +394,12 @@ This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/t
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
-## Protocol versions (P9c, U18; P10; P6; account profiles; photo sizes; receipts)
+## Protocol versions (P9c, U18; P10; P6; account profiles; photo sizes; receipts; postcard)
+
+**Postcard (2026-10-15, pre-release, no back-compat).** Every binary frame, signed body and stored row
+moved from bincode 1 to postcard 1 (`cryptography::codec`): chat `tinline/chat/7`, own-device sync
+`tinline/self/5`, group `tinline/group/3`. `chat/6` and `self/4` are refused with code 426: **update the
+app and wipe its data**.
 
 **Signed receipts (2026-10-15, `feature/receipt-runtime`, not merged).** Chat ALPN
 `tinline/chat/6` adds `ChatMsg::{ReceiptHello, Receipts, ReceiptAck}` (`docs/chat.md` section
@@ -533,7 +526,7 @@ chat history and the call history, and is visible to the blocked person.
 BlockNotice { v: 1, from: <blocker DID>, to: <blocked DID>, blocked: bool, at: <unix ms> }
 ```
 
-as a `SignedBlob` (base64url payload + signature, like grants). `blocked: false` is an unblock.
+as a `Signed<BlockNotice>` (like grants). `blocked: false` is an unblock.
 `at` is strictly increasing per (from, to). `verify_block_notice(blob, me)` checks the signature
 under the DID named in `from` and `to == me`; the receiver then keeps it only if its `at` is above
 the notice it holds from that DID (a replayed or older notice changes nothing; an unblock from

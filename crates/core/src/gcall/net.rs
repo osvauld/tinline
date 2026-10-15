@@ -42,8 +42,8 @@ use identity::Identity;
 use iroh::endpoint::{Accepting, Connection, ConnectionError, RecvStream, SendStream};
 use iroh::EndpointAddr;
 use parking_lot::Mutex;
-use proto::SignedBlob;
 use proto::gcall::{self as w, CallStart, GCALL_ALPN, GroupCallMsg};
+use proto::gcall::{SignedEnd, SignedNote, SignedStart};
 use tokio::sync::mpsc;
 
 use super::*;

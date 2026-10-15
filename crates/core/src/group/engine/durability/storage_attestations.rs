@@ -1,6 +1,9 @@
 //! Real native docs, signed hosting records and sealed persistence, not wire tests.
 use super::*;
-use crate::group::attestation::{AttestationError as AE, SignedStorageAttestation};
+use crate::group::attestation::{
+    AttestationError as AE, SignedStorageAttestation, open_attestation,
+};
+use proto::Signed;
 
 pub(super) fn host_fixture() -> (Fixture, GroupCore) {
     host_fixture_for(Fixture::new())
@@ -9,7 +12,6 @@ pub(super) fn host_fixture_for(mut f: Fixture) -> (Fixture, GroupCore) {
     let account = identity::generate().0;
     let dev = [7; 32];
     let permit = Record {
-        v: 1,
         group: f.gid.clone(),
         author: f.author.did().into(),
         dev: f.dev,
@@ -29,15 +31,17 @@ pub(super) fn host_fixture_for(mut f: Fixture) -> (Fixture, GroupCore) {
         &[],
     )
     .unwrap();
-    let invite = Invite {
-        group: f.gid.clone(),
-        issuer: f.author.did().into(),
-        expires: 1000,
-        nonce: [8; 16],
-    }
-    .sign(&f.author);
+    let invite = Signed::sign(
+        &Invite {
+            group: f.gid.clone(),
+            issuer: f.author.did().into(),
+            expires: 1000,
+            nonce: [8; 16],
+        },
+        &f.author,
+    )
+    .unwrap();
     let join = Record {
-        v: 1,
         group: f.gid.clone(),
         author: account.did().into(),
         dev,
@@ -84,7 +88,6 @@ pub(super) fn host_fixture_for(mut f: Fixture) -> (Fixture, GroupCore) {
 }
 pub(super) fn update_role(f: &mut Fixture, core: &GroupCore, active: bool) {
     let rec = Record {
-        v: 1,
         group: f.gid.clone(),
         author: f.author.did().into(),
         dev: f.dev,
@@ -118,8 +121,7 @@ fn independent_host_attests_persisted_originals_and_two_own_replicas_verify_unch
     let proof = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     let via_laptop = proof.clone(); // relay opaque original bytes, not a laptop re-signing
     let checked = laptop
         .verify_storage_attestation(&via_laptop, &f.gid, &day())
@@ -139,8 +141,7 @@ fn independent_host_attests_persisted_originals_and_two_own_replicas_verify_unch
     assert_eq!(
         host.issue_storage_attestation(&f.gid, &day())
             .unwrap()
-            .to_bytes()
-            .unwrap(),
+            .to_bytes(),
         proof
     );
     // Verification is deliberately not integration: no Ack index/debt mutation.
@@ -161,8 +162,7 @@ fn independent_host_attests_persisted_originals_and_two_own_replicas_verify_unch
     let meta = host
         .issue_storage_attestation(&f.gid, &DocId::Meta)
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     assert!(
         phone
             .verify_storage_attestation(&meta, &f.gid, &DocId::Meta)
@@ -192,8 +192,7 @@ fn failed_append_never_attests_unpersisted_operation_or_a_planned_frontier() {
     let before = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     let next = GroupDoc::load_in(
         &f.gid,
         day(),
@@ -203,7 +202,6 @@ fn failed_append_never_attests_unpersisted_operation_or_a_planned_frontier() {
     )
     .unwrap();
     let record = Record {
-        v: 1,
         group: f.gid.clone(),
         author: f.author.did().into(),
         dev: f.dev,
@@ -223,8 +221,7 @@ fn failed_append_never_attests_unpersisted_operation_or_a_planned_frontier() {
     assert_eq!(
         host.issue_storage_attestation(&f.gid, &day())
             .unwrap()
-            .to_bytes()
-            .unwrap(),
+            .to_bytes(),
         before
     );
     host.apply(&f.gid, &day(), &after, |_, _, _| Ok(()))
@@ -232,8 +229,7 @@ fn failed_append_never_attests_unpersisted_operation_or_a_planned_frontier() {
     let advanced = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     assert_ne!(advanced, before);
 }
 
@@ -271,8 +267,7 @@ fn missing_metadata_defers_and_current_revocation_overrides_signed_old_context()
     let proof = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     let phone = forwarding_proofs::sibling(&f, [4; 32]);
     assert!(
         phone
@@ -296,7 +291,7 @@ fn missing_metadata_defers_and_current_revocation_overrides_signed_old_context()
     import_meta(&f, &phone);
     import_meta(&f, &host);
     // Cryptographic claim remains genuine; new acceptance/issuance lacks authority.
-    assert!(SignedStorageAttestation::open(&proof, &f.gid, &day()).is_ok());
+    assert!(open_attestation(&proof, &f.gid, &day()).is_ok());
     assert_eq!(
         phone.verify_storage_attestation(&proof, &f.gid, &day()),
         Err(AE::Authority)
@@ -314,21 +309,14 @@ fn member_signature_is_valid_crypto_but_not_host_authority() {
     let original = host
         .issue_storage_attestation(&f.gid, &DocId::Meta)
         .unwrap()
-        .to_bytes()
-        .unwrap();
-    let mut claim = SignedStorageAttestation::open(&original, &f.gid, &DocId::Meta).unwrap();
+        .to_bytes();
+    let mut claim = open_attestation(&original, &f.gid, &DocId::Meta).unwrap();
     claim.host = phone.did.clone();
     claim.host_dev = phone.dev;
-    let body = bincode::serialize(&claim).unwrap();
-    let mut input = b"tinline-group-storage-attestation-v1\0".to_vec();
-    crate::group::record::put_bytes_pub(&mut input, &body);
-    let bytes = SignedStorageAttestation {
-        sig: phone.account.sign(&input).to_vec(),
-        body,
-    }
-    .to_bytes()
-    .unwrap();
-    assert!(SignedStorageAttestation::open(&bytes, &f.gid, &DocId::Meta).is_ok());
+    let body = cryptography::codec::to_bytes(&claim).unwrap();
+    let input = cryptography::sign::input(cryptography::domains::STORAGE_ATTESTATION, &[&body]);
+    let bytes = SignedStorageAttestation::from_parts(body, phone.account.sign(&input)).to_bytes();
+    assert!(open_attestation(&bytes, &f.gid, &DocId::Meta).is_ok());
     assert_eq!(
         phone.verify_storage_attestation(&bytes, &f.gid, &DocId::Meta),
         Err(AE::Authority)
@@ -342,11 +330,9 @@ fn removed_host_cannot_mint_or_have_new_statement_accepted() {
     let bytes = host
         .issue_storage_attestation(&f.gid, &DocId::Meta)
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     for at in 10..13 {
         let flag = Record {
-            v: 1,
             group: f.gid.clone(),
             author: f.author.did().into(),
             dev: f.dev,
@@ -401,8 +387,7 @@ fn missing_host_context_requires_catchup_not_optimistic_acceptance() {
     let bytes = host
         .issue_storage_attestation(&f.gid, &DocId::Meta)
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     assert_eq!(
         old.verify_storage_attestation(&bytes, &f.gid, &DocId::Meta),
         Err(AE::PendingMetadata)
@@ -424,7 +409,6 @@ fn failed_metadata_append_keeps_authority_at_actual_persisted_state() {
         Err(AE::Authority)
     );
     let regrant = Record {
-        v: 1,
         group: f.gid.clone(),
         author: f.author.did().into(),
         dev: f.dev,

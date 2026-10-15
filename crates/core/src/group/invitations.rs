@@ -100,7 +100,7 @@ pub(crate) struct InvRow {
     pub state: GroupInvitationState,
     pub at: u64,
     pub expires: u64,
-    /// bincode `InviteToken` (with the signed invite).
+    /// `codec` bytes of an `InviteToken` (with the signed invite).
     pub token: Vec<u8>,
     #[serde(default)]
     pub delivered: bool,
@@ -116,7 +116,7 @@ pub(crate) enum Letter {
 }
 
 fn letter_text(l: &Letter) -> String {
-    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bincode::serialize(l).expect("letter serialises"))
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(cryptography::codec::to_bytes(l).expect("letter serialises"))
 }
 
 fn letter_of(t: &str) -> Option<Letter> {
@@ -124,7 +124,7 @@ fn letter_of(t: &str) -> Option<Letter> {
         return None;
     }
     let b = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(t).ok()?;
-    bincode::deserialize(&b).ok()
+    cryptography::codec::from_bytes_canonical(&b, MAX_LETTER).ok()
 }
 
 fn id_bytes(id: &str) -> Option<[u8; 16]> {
@@ -432,10 +432,15 @@ impl Inner {
                 if core.store.inv(&id).ok().flatten().is_some() {
                     return;
                 }
-                let Ok(t) = bincode::deserialize::<InviteToken>(&token) else { return };
-                let Some(inv) = t.invite.as_ref().and_then(|i| i.open()) else { return };
+                let Ok(t) = cryptography::codec::from_bytes::<InviteToken>(&token, MAX_TOKEN)
+                else {
+                    return;
+                };
+                let Some(inv) = t.invite.as_ref().and_then(|i| i.open().ok()) else {
+                    return;
+                };
                 // The sender signed it, for this group, and it has not run out.
-                if inv.issuer != from || inv.group != t.group || inv.expires < now() || t.group.len() != 64 || t.name.len() > MAX_NAME {
+                if inv.issuer != from || inv.group != t.group || inv.expires < now() || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
                     self.log(format!("a group invitation from {from} does not check out"));
                     return;
                 }
@@ -509,8 +514,17 @@ impl Inner {
             match core.store.inv(&r.id).ok().flatten() {
                 None => {
                     // An incoming one must still carry an invite its inviter signed.
-                    let ok = bincode::deserialize::<InviteToken>(&r.token).ok().and_then(|t| t.invite.as_ref().and_then(|i| i.open()).map(|i| (i, t.group)))
-                        .is_some_and(|(i, g)| i.issuer == r.inviter && i.group == g && g == r.group);
+                    let ok = cryptography::codec::from_bytes::<InviteToken>(&r.token, MAX_TOKEN)
+                        .ok()
+                        .and_then(|t| {
+                            t.invite
+                                .as_ref()
+                                .and_then(|i| i.open().ok())
+                                .map(|i| (i, t.group))
+                        })
+                        .is_some_and(|(i, g)| {
+                            i.issuer == r.inviter && i.group == g && g == r.group
+                        });
                     if ok {
                         self.inv_save(&core, &r);
                     }

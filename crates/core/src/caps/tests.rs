@@ -19,7 +19,7 @@ fn contact(did: &str, grant: SignedGrant, calls_allowed: bool) -> StoredContact 
 }
 
 fn claims(g: &SignedGrant) -> proto::Grant {
-    proto::peek_grant(g).unwrap()
+    g.peek().unwrap()
 }
 
 // KIND: invariant (P6, U13/U15)

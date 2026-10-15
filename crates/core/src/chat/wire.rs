@@ -1,4 +1,4 @@
-//! Frames of `tinline/chat/3`: u32 BE length + bincode of `ChatMsg`, on one bidirectional QUIC
+//! Frames of `tinline/chat/7`: u32 BE length + postcard (`cryptography::codec`) of `ChatMsg`, on one bidirectional QUIC
 //! stream opened by the dialer. Both sides send `Auth` first, then everything is symmetric.
 //! Version 3 (P10: one version per writer in each record; P6: `Auth` presents a message token,
 //! separate from the call token) carries the strict DID-signed chat docs; `tinline/chat/1` (apps
@@ -9,10 +9,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
-pub const CHAT_ALPN: &[u8] = b"tinline/chat/6";
+pub const CHAT_ALPN: &[u8] = b"tinline/chat/7";
 /// A shard snapshot of a very busy day can be large; blobs carry the rest.
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
-const SIG_DOMAIN: &[u8] = b"tinline-chat-batch-v1";
 
 /// One day we can offer history for.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -45,7 +44,9 @@ pub enum ChatMsg {
     HistoryResp { days: Vec<HistDay> },
     /// Instead of `Auth`, from a contact that blocks us: its DID-signed block notice
     /// (`proto::sign_block_notice`); the connection ends after it.
-    Notice { notice: proto::SignedBlob },
+    Notice {
+        notice: proto::SignedBlockNotice,
+    },
     /// chat/6: recipient-signed delivered/read receipt exchange (`docs/chat.md` "Receipts").
     /// The receipt-ledger version vector we hold per day of this conversation.
     ReceiptHello { days: Vec<(String, Vec<u8>)> },
@@ -56,23 +57,30 @@ pub enum ChatMsg {
     ReceiptAck { day: String, vv: Vec<u8> },
 }
 
-fn sig_input(doc: &str, update: &[u8]) -> Vec<u8> {
-    let mut v = Vec::with_capacity(SIG_DOMAIN.len() + 4 + doc.len() + update.len());
-    v.extend_from_slice(SIG_DOMAIN);
-    v.extend_from_slice(&(doc.len() as u32).to_be_bytes());
-    v.extend_from_slice(doc.as_bytes());
-    v.extend_from_slice(update);
-    v
-}
+use cryptography::domains::CHAT_BATCH;
+use proto::signed::{SecretKey, Signer, sign_detached, verify_detached};
 
-/// The author's attested device key signs every update batch.
+/// The author's attested device key signs every update batch (detached, over `[doc, update]`).
 pub fn sign_batch(device_secret: &[u8; 32], doc: &str, update: &[u8]) -> Vec<u8> {
-    cryptography::signature::sign(device_secret, &sig_input(doc, update)).to_vec()
+    sign_detached(
+        &SecretKey(device_secret),
+        CHAT_BATCH,
+        &[doc.as_bytes(), update],
+    )
+    .to_vec()
 }
 
 pub fn verify_batch(device: &[u8; 32], doc: &str, update: &[u8], sig: &[u8]) -> bool {
-    let Ok(sig) = <[u8; 64]>::try_from(sig) else { return false };
-    cryptography::signature::verify(device, &sig_input(doc, update), &sig)
+    let Ok(sig) = <[u8; 64]>::try_from(sig) else {
+        return false;
+    };
+    verify_detached(
+        Signer::Key(device),
+        CHAT_BATCH,
+        &[doc.as_bytes(), update],
+        &sig,
+    )
+    .is_ok()
 }
 
 pub struct ChatWriter(pub SendStream);
@@ -96,7 +104,7 @@ impl ChatReader {
                     return Err(Error::Protocol("chat frame too large".into()));
                 }
                 if self.buf.len() >= 4 + len {
-                    let msg = bincode::deserialize(&self.buf[4..4 + len])
+                    let msg = cryptography::codec::from_bytes(&self.buf[4..4 + len], MAX_FRAME)
                         .map_err(|_| Error::Protocol("chat frame does not decode".into()))?;
                     self.buf.drain(..4 + len);
                     return Ok(Some(msg));
@@ -113,7 +121,7 @@ impl ChatReader {
 
 impl ChatWriter {
     pub async fn send(&mut self, msg: &ChatMsg) -> Result<(), Error> {
-        let body = bincode::serialize(msg).map_err(|e| Error::Protocol(e.to_string()))?;
+        let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
         if body.len() > MAX_FRAME {
             return Err(Error::Protocol("chat frame too large".into()));
         }

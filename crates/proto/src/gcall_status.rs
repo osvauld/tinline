@@ -3,15 +3,14 @@
 //! lives at most [`STATUS_TTL_MS`]; the candidate re-sends it every [`STATUS_REFRESH_MS`] while
 //! eligible and at once when its conditions change.
 //!
-//! Signed by `host_ref.holder_did` in the shared group-call domain `tinline/gcall/v1\0`, with
-//! its own kind tag `"t": "host_status"` inside the signed payload, so a status can never be
-//! opened as a call-control message (`Join`, `Leave`, ...) or the reverse.
+//! Signed by `host_ref.holder_did` under its own domain, so a status can never be opened as a
+//! call-control message (`Join`, `Leave`, ...) or the reverse.
 //!
 //! Pure: this module checks the signature, version, shape, size, group and freshness. The
 //! `host_call` permit behind `host_ref` and the ranking are `p2pcore::gcall::rank`'s job. All
 //! fields are advisory (§2.2 [A]): a lying host only gets itself worse quality.
 
-use super::gcall::{GCALL_DOMAIN, GCALL_VERSION, HostRef, MAX_PARTICIPANTS, text_ok};
+use super::gcall::{HostRef, MAX_PARTICIPANTS, text_ok};
 use super::*;
 
 /// §2.2: a status lives at most this long; a longer `ttl_ms` is refused.
@@ -21,7 +20,7 @@ pub const STATUS_REFRESH_MS: u64 = 30_000;
 /// A status issued up to this far in the receiver's future still counts (device clocks
 /// differ); it still expires at `issued_ms + ttl_ms`.
 pub const MAX_CLOCK_SKEW_MS: u64 = 5_000;
-/// Largest signed status payload, in bytes before base64. A real one is about 400 B.
+/// Largest signed status body. A real one is about 150 B.
 pub const MAX_STATUS: usize = 1024;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -73,7 +72,6 @@ pub enum ThermalLevel {
 /// Signed by `host_ref.holder_did`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CallHostStatus {
-    pub v: u8,
     pub gid: String,
     /// The advertising device (U4 revised: no transport key).
     pub host_ref: HostRef,
@@ -108,59 +106,38 @@ impl CallHostStatus {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "t", rename_all = "snake_case")]
-enum StatusClaim {
-    HostStatus(CallHostStatus),
-}
+pub type SignedStatus = Signed<CallHostStatus>;
 
-fn shape_ok(s: &CallHostStatus) -> bool {
-    let pct_ok = match s.power {
-        PowerState::Mains => true,
-        PowerState::Charging(p) | PowerState::Battery(p) => p <= 100,
-    };
-    text_ok(&s.gid)
-        && text_ok(&s.host_ref.holder_did)
-        && text_ok(&s.host_ref.permit_digest)
-        && pct_ok
-        && s.load <= 100
-        && s.max_participants >= 2
-        && s.max_participants as usize <= MAX_PARTICIPANTS
-        && (1..=STATUS_TTL_MS).contains(&s.ttl_ms)
-}
-
-/// `status.host_ref.holder_did` must be `id`'s DID.
-pub fn sign_status(id: &Identity, status: CallHostStatus) -> SignedBlob {
-    debug_assert_eq!(
-        id.did(),
-        status.host_ref.holder_did,
-        "a status is signed by its host's holder"
-    );
-    sign_blob(id, GCALL_DOMAIN, &StatusClaim::HostStatus(status))
-}
-
-/// Size, signature (by `host_ref.holder_did`), kind, version and shape. Not the group, the
-/// clock or the permit; see [`open_status_for`].
-pub fn open_status(blob: &SignedBlob) -> Result<CallHostStatus> {
-    if blob.payload.len() > MAX_STATUS.div_ceil(3) * 4 {
-        return Err(Error::FrameTooLarge);
+/// Signature (by `host_ref.holder_did`) and shape. Not the group, the clock or the permit; see
+/// [`open_status_for`].
+impl Signable for CallHostStatus {
+    const DOMAIN: cryptography::domains::Domain = cryptography::domains::GCALL_STATUS;
+    const MAX_BODY: usize = MAX_STATUS;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.host_ref.holder_did)
     }
-    let StatusClaim::HostStatus(s) = open_blob(blob, GCALL_DOMAIN, |c: &StatusClaim| match c {
-        StatusClaim::HostStatus(s) => s.host_ref.holder_did.as_str(),
-    })?;
-    if s.v != GCALL_VERSION {
-        return Err(Error::UnknownVersion);
+    fn check(&self) -> Result<()> {
+        let s = self;
+        let pct_ok = match s.power {
+            PowerState::Mains => true,
+            PowerState::Charging(p) | PowerState::Battery(p) => p <= 100,
+        };
+        let ok = text_ok(&s.gid)
+            && text_ok(&s.host_ref.holder_did)
+            && text_ok(&s.host_ref.permit_digest)
+            && pct_ok
+            && s.load <= 100
+            && s.max_participants >= 2
+            && s.max_participants as usize <= MAX_PARTICIPANTS
+            && (1..=STATUS_TTL_MS).contains(&s.ttl_ms);
+        if ok { Ok(()) } else { Err(Error::Decode) }
     }
-    if !shape_ok(&s) {
-        return Err(Error::Decode);
-    }
-    Ok(s)
 }
 
-/// [`open_status`], plus: for group `gid` (else `UnexpectedMessage`) and alive at `now_ms`
+/// `blob.open()`, plus: for group `gid` (else `UnexpectedMessage`) and alive at `now_ms`
 /// (else `Expired`).
-pub fn open_status_for(blob: &SignedBlob, gid: &str, now_ms: u64) -> Result<CallHostStatus> {
-    let s = open_status(blob)?;
+pub fn open_status_for(blob: &SignedStatus, gid: &str, now_ms: u64) -> Result<CallHostStatus> {
+    let s = blob.open()?;
     if s.gid != gid {
         return Err(Error::UnexpectedMessage);
     }

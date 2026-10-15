@@ -376,7 +376,7 @@ impl GroupStore {
         if self.db.get(&k).map_err(io)?.is_some() {
             return Ok(false);
         }
-        self.db.put(&k, &bincode::serialize(&(expires, mail.to_vec())).expect("serialises")).map_err(io)?;
+        self.db.put(&k, &cryptography::codec::to_bytes(&(expires, mail.to_vec())).expect("serialises")).map_err(io)?;
         Ok(true)
     }
 
@@ -389,7 +389,7 @@ impl GroupStore {
         let mut out = Vec::new();
         let mut dead = Vec::new();
         for (k, v) in self.db.scan(&p).map_err(io)? {
-            let Ok((exp, b)) = bincode::deserialize::<(u64, Vec<u8>)>(&v) else { continue };
+            let Ok((exp, b)) = cryptography::codec::from_bytes::<(u64, Vec<u8>)>(&v, crate::store::MAX_ROW) else { continue };
             if exp < now_ms {
                 dead.push(Op::Delete(k));
                 continue;

@@ -119,8 +119,8 @@ fn tags_pkt() -> Vec<u8> {
 }
 
 fn silence_pkt() -> Vec<u8> {
-    let mut e = Encoder::new().unwrap();
-    e.encode(&[0; FRAME]).unwrap()
+    let mut e = Encoder::new(&CODEC).unwrap();
+    encode_packet(&mut e, &[0; FRAME]).unwrap()
 }
 
 /// head, tags, then `n` single-packet audio pages (last is EOS), all valid.
@@ -239,7 +239,9 @@ fn framing_violations_rejected() {
     // No audio at all.
     let mut f = pg(0x02, 0, s, 0, std::slice::from_ref(&h));
     f.extend(pg(0x04, 0, s, 1, std::slice::from_ref(&t)));
-    rejects(&f);
+    rejects_ogg(&f);
+    // A single BOS|EOS page holding only OpusHead (used to panic in open).
+    rejects_ogg(&pg(0x06, 0, s, 0, std::slice::from_ref(&h)));
 }
 
 /// A page with explicit lacing, correct CRC.
@@ -406,3 +408,37 @@ fn file_is_valid_ogg_opus() {
         assert!(d.stderr.is_empty(), "{}", String::from_utf8_lossy(&d.stderr));
     }
 }
+
+fn fnv(bytes: &[u8]) -> u64 {
+    let mut h = 0xcbf2_9ce4_8422_2325u64;
+    for &b in bytes {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x0100_0000_01b3);
+    }
+    h
+}
+
+/// Byte-identical regression for the voice-message encoder/decoder settings (hashes recorded
+/// before the move onto `audio::codec`).
+#[test]
+fn voice_file_and_decode_golden() {
+    let p = tmp("golden.opus");
+    let mut s = 12345u64;
+    let pcm: Vec<i16> = (0..16 * 1500)
+        .map(|i| {
+            s ^= s << 13;
+            s ^= s >> 7;
+            s ^= s << 17;
+            let t = i as f64 / 16_000.0;
+            (7000.0 * (std::f64::consts::TAU * 300.0 * t).sin() + ((s >> 40) as i64 % 600 - 300) as f64) as i16
+        })
+        .collect();
+    let info = record(&p, &pcm);
+    let file = fs::read(&p).unwrap();
+    let dec: Vec<u8> = read_all(&p).iter().flat_map(|s| s.to_le_bytes()).collect();
+    assert_eq!(info.duration_ms, 1500);
+    assert_eq!((fnv(&file), fnv(&dec)), (GOLDEN_FILE, GOLDEN_DECODE), "file {:#x} decode {:#x}", fnv(&file), fnv(&dec));
+}
+
+const GOLDEN_FILE: u64 = 0x4665e0135bf1101e;
+const GOLDEN_DECODE: u64 = 0xc4330d6733b83f46;

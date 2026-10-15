@@ -43,7 +43,6 @@ pub struct SynthGroup {
     /// What went through `apply` already, per doc.
     pub(crate) sent: VersionVector,
     pub(crate) day_sent: HashMap<String, VersionVector>,
-    pub(crate) owner_did: String,
 }
 
 /// A remote member's writing doc (see `Node::synth_remote_open_for_test`).
@@ -85,7 +84,7 @@ impl Node {
     #[doc(hidden)]
     pub fn synth_contact_for_test(&self, did: String, name: String) -> Result<(), Error> {
         let (pid, pdev) = peer(&did).ok_or(Error::NotFound)?;
-        let pubdev = proto::device_public(&pdev);
+        let pubdev = cryptography::signature::public_key(&pdev);
         let inner = self.inner.clone();
         self.block_on(async move {
             let me = inner.me()?;

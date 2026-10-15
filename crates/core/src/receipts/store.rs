@@ -88,7 +88,7 @@ impl ReceiptStore {
             let saved = self.db.get(&format!("{p}state")).map_err(io)?;
             let rows = self.db.scan(&format!("{p}u/")).map_err(io)?;
             let state: StoredState = saved
-                .map(|b| bincode::deserialize(&b).map_err(io))
+                .map(|b| cryptography::codec::from_bytes(&b, crate::store::MAX_ROW).map_err(io))
                 .transpose()?
                 .unwrap_or(StoredState {
                     seq: 0,
@@ -114,7 +114,7 @@ impl ReceiptStore {
                     .get(&format!("{p}index/{}", e.id))
                     .map_err(io)?
                     .ok_or_else(|| io("receipt index missing"))?;
-                let pos: Position = bincode::deserialize(&raw).map_err(io)?;
+                let pos: Position = cryptography::codec::from_bytes(&raw, crate::store::MAX_ROW).map_err(io)?;
                 if pos
                     != (Position {
                         peer: e.peer,
@@ -236,7 +236,7 @@ impl Ledger {
         }
         let mut sidecars = BTreeMap::new();
         for e in supplied {
-            e.blob()?;
+            e.check()?;
             if sidecars.insert(e.id, e.clone()).is_some() {
                 return Err(ReceiptError::Bounds);
             }
@@ -363,7 +363,7 @@ impl Ledger {
         }
         let mut ids = Vec::new();
         for e in evidence {
-            e.blob()?;
+            e.check()?;
             ids.push(e.id);
         }
         ids.sort_unstable();
@@ -413,7 +413,7 @@ impl Ledger {
         bytes
             .map(|bytes| {
                 let e = super::evidence::Evidence { id: *id, bytes };
-                e.blob()?;
+                e.check()?;
                 Ok(e)
             })
             .transpose()
@@ -454,7 +454,7 @@ impl Ledger {
                 .db
                 .put_op(
                     &format!("{}state", self.prefix),
-                    &bincode::serialize(&state).map_err(io)?,
+                    &cryptography::codec::to_bytes(&state).map_err(io)?,
                 )
                 .map_err(io)?,
         ];
@@ -468,7 +468,7 @@ impl Ledger {
                     .db
                     .put_op(
                         &format!("{}index/{}", self.prefix, e.id),
-                        &bincode::serialize(&pos).map_err(io)?,
+                        &cryptography::codec::to_bytes(&pos).map_err(io)?,
                     )
                     .map_err(io)?,
             );

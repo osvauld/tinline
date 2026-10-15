@@ -111,7 +111,7 @@ impl Inner {
             self.group_mail_intake(core, gid, &bytes, None);
             return;
         }
-        let Some(m) = sm.open() else { return };
+        let Some(m) = sm.open().ok() else { return };
         if let Err(e) = core
             .store
             .put_out(gid, &crate::group::mail::id_hex(&m.id), &bytes)
@@ -139,10 +139,10 @@ impl Inner {
         from: Option<&Arc<Sess>>,
     ) {
         use crate::group::mail::*;
-        let Some(sm) = SignedMail::from_bytes(bytes) else {
+        let Some(sm) = SignedMail::from_bytes(bytes).ok() else {
             return;
         };
-        let Some(m) = sm.open() else { return };
+        let Ok(m) = sm.open() else { return };
         if m.group != gid {
             return;
         }

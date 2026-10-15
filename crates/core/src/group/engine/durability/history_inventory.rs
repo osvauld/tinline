@@ -8,7 +8,6 @@ fn seed(f: &Fixture, ordinal: i64) -> String {
     let which = DocId::Day(day.clone());
     let doc = GroupDoc::new_in(&f.gid, which.clone(), writer_id(f.author.did(), &f.dev));
     let record = Record {
-        v: 1,
         group: f.gid.clone(),
         author: f.author.did().into(),
         dev: f.dev,

@@ -15,12 +15,34 @@ fn gcall_s03_stale_end_callstart_and_roster_after_redial_are_ignored() {
     s.advance(4_000);
     assert_eq!(s.hosts[&BOB].call_start().host_gen, 2);
     let h1 = s.d[H1].id.clone();
-    let end = w::sign_end(&h1, w::End { v: 1, gid: gid(), call_id: cid.clone(), host_gen: 1, host_did: s.did(H1), reason: EndReason::Ended, next_host: None });
+    let end = Signed::sign(
+        &w::End {
+            gid: gid(),
+            call_id: cid.clone(),
+            host_gen: 1,
+            host_did: s.did(H1),
+            reason: EndReason::Ended,
+            next_host: None,
+        },
+        &h1,
+    )
+    .unwrap();
     let mut fresh = s.d[H1].board.start(&cid).cloned().unwrap();
     fresh.host_gen = 1;
     fresh.host_ref = s.href(H1);
-    let fresh = w::sign_start(&h1, fresh);
-    let roster = w::sign_roster(&h1, w::Roster { v: 1, gid: gid(), call_id: cid.clone(), host_gen: 1, host_did: s.did(H1), epoch: 99, entries: vec![] });
+    let fresh = Signed::sign(&fresh, &h1).unwrap();
+    let roster = Signed::sign(
+        &w::Roster {
+            gid: gid(),
+            call_id: cid.clone(),
+            host_gen: 1,
+            host_did: s.did(H1),
+            epoch: 99,
+            entries: vec![],
+        },
+        &h1,
+    )
+    .unwrap();
     for i in [OLGA, A1, BOB, CAROL, HP] {
         let before = s.d[i].board.clone();
         assert_eq!(s.d[i].board.accept_end(&end, &s.auth), Err(Refusal::StaleGen), "end at {i}");
@@ -127,11 +149,19 @@ fn gcall_client_refuses_rogue_roster_and_redials_when_the_host_permit_is_revoked
         s.join(m).unwrap();
     }
     let h1 = s.d[H1].id.clone();
-    let (j, b) = w::sign_join(&s.d[MALLORY].id.clone(), &gid(), &cid, 1, s.now);
-    let rogue = w::sign_roster(
+    let (j, b) = w::sign_join(&s.d[MALLORY].id.clone(), &gid(), &cid, 1, s.now).unwrap();
+    let rogue = Signed::sign(
+        &w::Roster {
+            gid: gid(),
+            call_id: cid.clone(),
+            host_gen: 1,
+            host_did: s.did(H1),
+            epoch: 999,
+            entries: vec![w::RosterEntry::new(9, &j, &b)],
+        },
         &h1,
-        w::Roster { v: 1, gid: gid(), call_id: cid.clone(), host_gen: 1, host_did: s.did(H1), epoch: 999, entries: vec![w::RosterEntry::new(9, &j, &b)] },
-    );
+    )
+    .unwrap();
     let c = s.clients.get_mut(&A1).unwrap();
     assert_eq!(c.on_control(GroupCallMsg::Roster { roster: rogue }, s.now, &s.auth), Err(Refusal::NotMember));
     s.auth.permits.remove(&s.href(H1).permit_digest);

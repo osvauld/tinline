@@ -3,14 +3,14 @@
 
 use std::collections::BTreeMap;
 
-use proto::SignedBlob;
-use proto::gcall::{self as w, CallStart, EndReason, HostRef};
+use proto::gcall::{CallStart, EndReason, HostRef};
+use proto::gcall::{SignedEnd, SignedStart};
 
 use super::*;
 
-/// §3.1 glare: the lower `BLAKE3(call_id)` wins.
+/// §3.1 glare: the lower `hash::content(GCALL_BOARD, call_id)` wins.
 pub fn call_hash(call_id: &str) -> [u8; 32] {
-    *blake3::hash(call_id.as_bytes()).as_bytes()
+    cryptography::hash::content(cryptography::domains::GCALL_BOARD, call_id.as_bytes())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,8 +31,12 @@ impl CallBoard {
 
     /// A relayed (or directly received) CallStart: §3.2 items 1–3, generation, split and
     /// glare. A refusal leaves the board unchanged.
-    pub fn accept_start(&mut self, blob: &SignedBlob, auth: &dyn CallAuthority) -> Result<(), Refusal> {
-        let s = w::open_start(blob)?;
+    pub fn accept_start(
+        &mut self,
+        blob: &SignedStart,
+        auth: &dyn CallAuthority,
+    ) -> Result<(), Refusal> {
+        let s = blob.open()?;
         if s.gid != self.gid {
             return Err(Refusal::WrongGroup);
         }
@@ -74,8 +78,12 @@ impl CallBoard {
 
     /// A relayed `End{ended}` removes the call from the board. Other reasons only concern
     /// participants and are ignored here.
-    pub fn accept_end(&mut self, blob: &SignedBlob, auth: &dyn CallAuthority) -> Result<(), Refusal> {
-        let e = w::open_end(blob)?;
+    pub fn accept_end(
+        &mut self,
+        blob: &SignedEnd,
+        auth: &dyn CallAuthority,
+    ) -> Result<(), Refusal> {
+        let e = blob.open()?;
         if e.gid != self.gid {
             return Err(Refusal::WrongGroup);
         }

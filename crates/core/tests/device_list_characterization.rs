@@ -32,7 +32,6 @@ use std::time::{Duration, Instant};
 use p2pcore::{CallState, DeliveryState};
 
 mod support;
-use support::codec::{decode, encode};
 use support::eventually_200ms as eventually;
 use support::*;
 
@@ -76,13 +75,16 @@ fn register_sibling(p: &Peer, name: &str) -> String {
 }
 
 fn own_list(p: &Peer) -> proto::DeviceList {
-    let blob: proto::SignedBlob =
+    let blob: proto::SignedDeviceList =
         serde_json::from_str(&p.node.own_device_list_for_test().unwrap()).unwrap();
     proto::verify_device_list(&blob, &p.did).unwrap()
 }
 
 fn list_devices(l: &proto::DeviceList) -> Vec<String> {
-    l.devices.iter().map(|e| e.device.clone()).collect()
+    l.devices
+        .iter()
+        .map(|e| proto::device_to_text(&e.device))
+        .collect()
 }
 
 fn ended(p: &Peer, id: &str, secs: u64) -> String {
@@ -194,7 +196,7 @@ fn restore_push_and_did_signed_chat_clear_the_pending_message_stall() {
     std::thread::sleep(Duration::from_secs(1));
     let (old_dev, new_dev) = b.restore_in_place();
     let pushed = b.node.own_device_list_for_test().unwrap();
-    let l: proto::SignedBlob = serde_json::from_str(&pushed).unwrap();
+    let l: proto::SignedDeviceList = serde_json::from_str(&pushed).unwrap();
     assert_eq!(
         list_devices(&proto::verify_device_list(&l, &b.did).unwrap()),
         vec![new_dev.clone()]
@@ -271,20 +273,20 @@ fn merge_refuses_stale_replayed_forged_tampered_and_wrong_did_lists() {
     let stale = proto::sign_device_list(&bid, &[(k(&mine), None)], t);
     let forged = {
         let m = proto::sign_device_list(&mal, &[(k(&x), None)], t + 5000);
-        let mut v: serde_json::Value = serde_json::from_slice(&decode(&m.payload)).unwrap();
-        v["did"] = b.did.clone().into();
-        proto::SignedBlob {
-            payload: encode(&serde_json::to_vec(&v).unwrap()),
-            signature: m.signature,
-        }
+        let mut claim = m.peek().unwrap();
+        claim.did = b.did.clone();
+        proto::SignedDeviceList::from_parts(
+            cryptography::codec::to_bytes(&claim).unwrap(),
+            *m.sig(),
+        )
     };
     let tampered = {
-        let mut v: serde_json::Value = serde_json::from_slice(&decode(&good.payload)).unwrap();
-        v["seq"] = serde_json::json!(t + 9000);
-        proto::SignedBlob {
-            payload: encode(&serde_json::to_vec(&v).unwrap()),
-            signature: good.signature.clone(),
-        }
+        let mut claim = good.peek().unwrap();
+        claim.seq = t + 9000;
+        proto::SignedDeviceList::from_parts(
+            cryptography::codec::to_bytes(&claim).unwrap(),
+            *good.sig(),
+        )
     };
     let wrong_did = proto::sign_device_list(&mal, &[(k(&x), None)], t + 5000);
     for (what, blob) in [

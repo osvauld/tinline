@@ -109,7 +109,7 @@ fn default_picture_actions_automatically_request_old_copy_deletion() {
         1,
         "replacement automatically signs the old-hash request"
     );
-    let blob: proto::SignedBlob = serde_json::from_str(&permits[0]).unwrap();
+    let blob: proto::profile::SignedPictureDeletion = serde_json::from_str(&permits[0]).unwrap();
     assert_eq!(
         proto::profile::verify_picture_deletion(&blob, &p.did)
             .unwrap()
@@ -143,7 +143,7 @@ fn default_picture_actions_automatically_request_old_copy_deletion() {
     let hashes: Vec<_> = permits
         .iter()
         .map(|raw| {
-            let blob: proto::SignedBlob = serde_json::from_str(raw).unwrap();
+            let blob: proto::profile::SignedPictureDeletion = serde_json::from_str(raw).unwrap();
             proto::profile::verify_picture_deletion(&blob, &p.did)
                 .unwrap()
                 .picture_hash
@@ -396,7 +396,7 @@ fn linked_devices_merge_profile_fields_and_sync_availability_and_picture() {
         .picture_deletion_permits(b.did.clone())
         .unwrap()
         .remove(0);
-    let blob: proto::SignedBlob = serde_json::from_str(&raw).unwrap();
+    let blob: proto::profile::SignedPictureDeletion = serde_json::from_str(&raw).unwrap();
     assert_eq!(
         proto::profile::verify_picture_deletion(&blob, &a.did)
             .unwrap()
@@ -475,7 +475,7 @@ fn deletion_is_automatic_owner_signed_and_reaches_offline_contacts() {
             .unwrap()
             .is_empty()
     });
-    let blob: proto::SignedBlob =
+    let blob: proto::profile::SignedPictureDeletion =
         serde_json::from_str(&b.node.picture_deletion_permits(a.did.clone()).unwrap()[0]).unwrap();
     let permit = proto::profile::verify_picture_deletion(&blob, &a.did).unwrap();
     assert_eq!(permit.picture_hash, old);
@@ -516,7 +516,7 @@ fn deletion_is_automatic_owner_signed_and_reaches_offline_contacts() {
         .unwrap()
         .iter()
         .map(|raw| {
-            let blob: proto::SignedBlob = serde_json::from_str(raw).unwrap();
+            let blob: proto::profile::SignedPictureDeletion = serde_json::from_str(raw).unwrap();
             proto::profile::verify_picture_deletion(&blob, &a.did)
                 .unwrap()
                 .picture_hash

@@ -37,7 +37,7 @@ impl Inner {
                 // Chat hosts only (a call-only host refuses joiners); refresh our own address.
                 let _ = self.group_my_addr(&core, &gid);
                 let hosts = core.chat_host_addrs(&gid);
-                bincode::serialize(&InviteToken { group: gid, name, owner, invite: None, hosts }).expect("token serialises")
+                cryptography::codec::to_bytes(&InviteToken { group: gid, name, owner, invite: None, hosts }).expect("token serialises")
             })
             .collect();
         out.sort();
@@ -50,8 +50,8 @@ impl Inner {
         let Ok(core) = self.group_core() else { return };
         let mut added = false;
         for b in tokens.iter().take(MAX_OWN_GROUPS) {
-            let Ok(t) = bincode::deserialize::<InviteToken>(b) else { continue };
-            if t.invite.is_some() || t.group.len() != 64 {
+            let Ok(t) = cryptography::codec::from_bytes::<InviteToken>(b, super::record::MAX_TOKEN) else { continue };
+            if t.invite.is_some() || !super::valid_gid(&t.group) {
                 continue;
             }
             let gid = t.group.clone();
@@ -62,7 +62,11 @@ impl Inner {
                 }
                 continue;
             }
-            let hosts: Vec<&SignedHostAddr> = t.hosts.iter().filter(|h| h.open().is_some_and(|a| a.group == gid)).collect();
+            let hosts: Vec<&SignedHostAddr> = t
+                .hosts
+                .iter()
+                .filter(|h| h.open().ok().is_some_and(|a| a.group == gid))
+                .collect();
             if hosts.is_empty() && !contents {
                 continue;
             }
@@ -76,11 +80,11 @@ impl Inner {
                 continue;
             }
             for h in hosts {
-                if let Some(a) = h.open() {
+                if let Some(a) = h.open().ok() {
                     let _ = core.store.put_host(&gid, &a.did, &a.dev, h);
                 }
             }
-            self.log(format!("group {}: learned from an own device", &gid[..8]));
+            self.log(format!("group {}: learned from an own device", super::short(&gid)));
             added = true;
         }
         if added {

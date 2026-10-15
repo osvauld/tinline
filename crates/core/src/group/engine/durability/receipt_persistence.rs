@@ -14,8 +14,7 @@ fn receipt_original_index_and_day_debt_commit_atomically_and_retry() {
     let bytes = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     for metadata_failure in [false, true] {
         if metadata_failure {
             phone.store.fail_next_meta_write_for_test();
@@ -97,8 +96,7 @@ fn partial_proof_never_clears_newer_day_debt() {
     let bytes = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     let source = GroupDoc::load_in(
         &f.gid,
         day(),
@@ -108,7 +106,6 @@ fn partial_proof_never_clears_newer_day_debt() {
     )
     .unwrap();
     let rec = Record {
-        v: 1,
         group: f.gid.clone(),
         author: f.author.did().into(),
         dev: f.dev,
@@ -138,8 +135,7 @@ fn partial_proof_never_clears_newer_day_debt() {
     let full = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     phone
         .accept_storage_attestation(&full, &f.gid, &day())
         .unwrap();
@@ -170,8 +166,7 @@ fn first_acceptance_checks_revocation_but_known_original_remains_historical() {
     let bytes = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     phone
         .accept_storage_attestation(&bytes, &f.gid, &day())
         .unwrap();
@@ -231,8 +226,7 @@ fn metadata_debt_clears_only_after_original_receipt_transaction_and_legacy_acks_
     let bytes = host
         .issue_storage_attestation(&f.gid, &DocId::Meta)
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     phone.store.fail_next_append_for_test();
     assert!(
         phone

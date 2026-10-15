@@ -1,28 +1,6 @@
-//! Contact tickets: v1 and v2 text forms, tampering, expiry, replay.
+//! Contact tickets: the `OSVC2:` text form, tampering, expiry, replay.
 
 use super::*;
-
-/// A v1 ticket as the previous release issued it (JSON invite).
-fn ticket_v1(a: &Peer) -> ContactTicket {
-    let claim = InviteClaim {
-        v: 1,
-        iss: a.id.did().to_string(),
-        nonce: random16(),
-        iat: T0,
-        exp: T0 + TTL,
-        device: enc(a.dev),
-        name: "alice".into(),
-        relay: Some("https://relay".into()),
-    };
-    ContactTicket {
-        v: 1,
-        did: claim.iss.clone(),
-        name: claim.name.clone(),
-        device: claim.device.clone(),
-        relay: claim.relay.clone(),
-        invite: sign_blob(&a.id, INVITE_DOMAIN, &claim),
-    }
-}
 
 #[test]
 fn ticket_text_roundtrip_and_prefix() {
@@ -42,17 +20,17 @@ fn ticket_text_roundtrip_and_prefix() {
         ContactTicket::from_text(&text.replace("OSVC2:", "osvc3:")),
         Err(Error::UnknownVersion)
     );
-    // v1 text still accepted, and keeps working end to end.
-    let (b, v1) = (peer(), ticket_v1(&a));
-    let v1_text = v1.to_text();
-    assert!(v1_text.starts_with("osvc1."));
-    let v1_back = ContactTicket::from_text(&v1_text).unwrap();
-    assert_eq!(v1_back, v1);
-    v1_back.verify(T0 + 1).unwrap();
-    let (hello, pending) = contact_hello(&b.id, b.dev, &v1_back, "bob", T0 + 1, GTTL).unwrap();
+    // The whole flow works from the text form.
+    let b = peer();
+    let (hello, pending) = contact_hello(&b.id, b.dev, &back, "bob", T0 + 1, GTTL).unwrap();
     let (welcome, _) =
         accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0 + 2, &none(), GTTL).unwrap();
     accept_contact_welcome(&b.id, &pending, &welcome, a.dev, T0 + 3).unwrap();
+    // The retired JSON form is no longer a ticket.
+    assert_eq!(
+        ContactTicket::from_text("osvc1.abcd"),
+        Err(Error::UnknownVersion)
+    );
 }
 
 #[test]
@@ -62,9 +40,7 @@ fn v2_typical_length() {
     let t = issue_contact_ticket(&a.id, a.dev, "Alexandria Montgome", relay, T0, 7 * 86_400);
     assert_eq!(t.name.len(), 19);
     let text = t.to_text();
-    println!("v2 typical ticket length: {} ({text})", text.len());
-    assert!(text.len() <= 260, "{}", text.len());
-    println!("v1 ticket length: {}", ticket_v1(&a).to_text().len());
+    assert!(text.len() <= 265, "{}", text.len());
     assert_eq!(ContactTicket::from_text(&text).unwrap(), t);
 }
 
@@ -120,9 +96,9 @@ fn v2_visible_fields_must_match_and_blob_tamper() {
     let mut x = t.clone();
     x.invite = ticket(&m).invite;
     assert_eq!(x.verify(T0), Err(Error::TicketMismatch));
-    // Signature from another key over the same payload.
-    let mut x = t;
-    x.invite.signature = ticket(&m).invite.signature;
+    // Signature from another key over the same body.
+    let mut x = t.clone();
+    x.invite = Signed::from_parts(t.invite.body().to_vec(), *ticket(&m).invite.sig());
     assert_eq!(x.verify(T0), Err(Error::BadSignature));
 }
 
@@ -135,7 +111,7 @@ fn tampered_visible_ticket_fields() {
     x.name = "mallory".into();
     assert_eq!(x.verify(T0), Err(Error::TicketMismatch));
     let mut x = t.clone();
-    x.device = enc(m.dev);
+    x.device = m.dev;
     assert_eq!(x.verify(T0), Err(Error::TicketMismatch));
     let mut x = t.clone();
     x.relay = Some("https://evil".into());
@@ -150,13 +126,31 @@ fn tampered_visible_ticket_fields() {
 }
 
 #[test]
-fn tampered_invite_payload_fails_signature() {
+fn tampered_invite_body_fails_signature() {
     let a = peer();
-    let mut t = ticket_v1(&a);
-    let mut claim: InviteClaim = serde_json::from_slice(&dec(&t.invite.payload).unwrap()).unwrap();
-    claim.exp += 1_000_000;
-    t.invite.payload = enc(serde_json::to_vec(&claim).unwrap());
+    let mut t = ticket(&a);
+    let mut body = t.invite.peek().unwrap();
+    body.exp_min += 1_000_000;
+    t.invite = Signed::from_parts(
+        cryptography::codec::to_bytes(&body).unwrap(),
+        *t.invite.sig(),
+    );
     assert_eq!(t.verify(T0), Err(Error::BadSignature));
+}
+
+/// A body whose signer is not who the ticket claims cannot be opened under the carried key.
+#[test]
+fn ticket_signed_by_another_key_is_refused() {
+    let (a, m) = (peer(), peer());
+    let mut body = ticket(&a).invite.peek().unwrap();
+    body.pk = m.id.signing_public_key();
+    let raw = cryptography::codec::to_bytes(&body).unwrap();
+    let sig =
+        a.id.sign(&cryptography::sign::input(Ticket::DOMAIN, &[&raw]));
+    assert_eq!(
+        Signed::<Ticket>::from_parts(raw, sig).open().err(),
+        Some(Error::BadSignature)
+    );
 }
 
 #[test]
@@ -231,7 +225,7 @@ fn invite_device_must_be_ours() {
     let (a, b) = (peer(), peer());
     let t = ticket(&a);
     let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
-    let other_dev = device_public(&new_device_secret());
+    let other_dev = cryptography::signature::public_key(&new_device_secret());
     assert_eq!(
         accept_contact_hello(&a.id, other_dev, &hello, b.dev, T0, &none(), GTTL).err(),
         Some(Error::DeviceMismatch)

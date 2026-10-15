@@ -14,7 +14,6 @@ use std::time::{Duration, Instant};
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use storage::{Op, Sealed, Store};
-use zeroize::Zeroizing;
 
 use super::find::{Filter, Verdict};
 use super::hot::Hot;
@@ -138,7 +137,7 @@ fn parse_day(day: &str) -> Option<(u32, u32)> {
 }
 
 /// The keyed hashes of the index (doc, term, conversation, day), all under `index_key`.
-pub struct Keyer(Zeroizing<[u8; 32]>);
+pub struct Keyer(cryptography::Secret32);
 
 impl Keyer {
     fn hash(&self, domain: &[u8], parts: &[&[u8]]) -> u64 {
@@ -238,7 +237,7 @@ impl SearchIndex {
     fn with_store(store: Store, phrase: &str, path: Option<&Path>) -> Result<Self, Error> {
         let mut me = Self {
             db: Sealed::new(store, phrase_key(STORE_DOMAIN, phrase)),
-            keyer: Keyer(Zeroizing::new(phrase_key(INDEX_DOMAIN, phrase))),
+            keyer: Keyer(phrase_key(INDEX_DOMAIN, phrase)),
             hot: Mutex::new(Hot::default()),
             view: RwLock::new(Arc::new(View::default())),
             maint: Mutex::new(Memo::default()),
@@ -249,7 +248,7 @@ impl SearchIndex {
             closed: std::sync::atomic::AtomicBool::new(false),
         };
         let current = matches!(me.db.get("v"), Ok(Some(v)) if v == VERSION.to_be_bytes());
-        let man = if current { me.db.get("m").ok().flatten().and_then(|b| bincode::deserialize::<Manifest>(&b).ok()) } else { None };
+        let man = if current { me.db.get("m").ok().flatten().and_then(|b| cryptography::codec::from_bytes::<Manifest>(&b, crate::store::MAX_ROW).ok()) } else { None };
         match man {
             Some(m) => *me.view.write() = Arc::new(View::new(m)),
             None => {
@@ -496,7 +495,7 @@ impl SearchIndex {
             ops.push(Op::DeletePrefix(format!("z/{:08x}/", g.id)));
         }
         man.segs.retain(|g| !g.days.is_empty());
-        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises"))?);
+        ops.push(self.db.put_op("m", &cryptography::codec::to_bytes(&man).expect("serialises"))?);
         self.db.apply(&ops)?;
         self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         *self.view.write() = Arc::new(View::new(man));

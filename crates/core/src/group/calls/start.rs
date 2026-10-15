@@ -21,7 +21,7 @@ impl Inner {
         let members = core.groups.lock().get(gid).map_or(0, |l| l.state.members.len());
         let expected = members.clamp(2, MAX_PARTICIPANTS) as u8;
         let call_id = w::new_call_id();
-        let blobs: Vec<SignedBlob> = {
+        let blobs: Vec<SignedStatus> = {
             let st = self.group.calls.st.lock();
             if st.pending.is_some() {
                 return Err(Error::Busy);
@@ -91,7 +91,6 @@ impl Inner {
                 }
             }
             let req = HostRequest {
-                v: GCALL_VERSION,
                 gid: gid.to_string(),
                 call_id: call_id.to_string(),
                 starter_did: core.did.clone(),
@@ -100,8 +99,9 @@ impl Inner {
                 expected,
                 issued_ms: now_ms(),
             };
-            let blob = w::sign_host_request(&core.account, req);
-            let sig = blob.signature.clone();
+            let blob =
+                Signed::sign(&req, &core.account).map_err(|e| Error::Protocol(e.to_string()))?;
+            let sig = *blob.sig();
             let route = Route::Device(pick.host.holder_did.clone(), pick.host.device_slot);
             self.calls_originate(core, gid, &sig, GroupMsg::CallHostRequest { request: blob }, route);
             return Ok(());
@@ -141,11 +141,37 @@ impl Inner {
             if !due {
                 continue;
             }
-            let blob = gs::sign_status(&core.account, CallHostStatus { issued_ms: now, ..status.clone() });
-            self.group.calls.st.lock().published.insert(gid.clone(), (status.clone(), blob.clone(), now));
-            self.calls_keep_status(&gid, blob.clone(), CallHostStatus { issued_ms: now, ..status });
-            let sig = blob.signature.clone();
-            self.calls_originate(core, &gid, &sig, GroupMsg::CallHostStatus { status: blob }, Route::All);
+            let Ok(blob) = Signed::sign(
+                &CallHostStatus {
+                    issued_ms: now,
+                    ..status.clone()
+                },
+                &core.account,
+            ) else {
+                continue;
+            };
+            self.group
+                .calls
+                .st
+                .lock()
+                .published
+                .insert(gid.clone(), (status.clone(), blob.clone(), now));
+            self.calls_keep_status(
+                &gid,
+                blob.clone(),
+                CallHostStatus {
+                    issued_ms: now,
+                    ..status
+                },
+            );
+            let sig = *blob.sig();
+            self.calls_originate(
+                core,
+                &gid,
+                &sig,
+                GroupMsg::CallHostStatus { status: blob },
+                Route::All,
+            );
         }
         // The starter's pick: the asked candidate did not answer in time.
         let step = {
@@ -200,7 +226,7 @@ impl Inner {
         };
         let all = (sess.hosting && !peer_host && member && we_host) || (peer_host && we_host);
         let now = now_ms();
-        let (statuses, calls): (Vec<SignedBlob>, Vec<(SignedBlob, CallStart)>) = {
+        let (statuses, calls): (Vec<SignedStatus>, Vec<(SignedStart, CallStart)>) = {
             let st = self.group.calls.st.lock();
             let statuses = if all {
                 st.statuses.get(&sess.gid).map(|m| m.values().filter(|(_, s)| s.is_fresh(now)).map(|(b, _)| b.clone()).collect()).unwrap_or_default()
@@ -216,7 +242,7 @@ impl Inner {
             };
             (statuses, calls)
         };
-        let ends: Vec<SignedBlob> = if all || peer_host {
+        let ends: Vec<SignedEnd> = if all || peer_host {
             let st = self.group.calls.st.lock();
             st.ends.values().filter(|(g, _, _, until)| *g == sess.gid && *until > now).map(|(_, _, b, _)| b.clone()).collect()
         } else {

@@ -43,6 +43,16 @@ pub struct Grant {
     pub exp: u64,
 }
 
+impl Signable for Grant {
+    const DOMAIN: cryptography::domains::Domain = cryptography::domains::GRANT;
+    const MAX_BODY: usize = 512;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.iss)
+    }
+}
+
+pub type SignedGrant = Signed<Grant>;
+
 impl Grant {
     /// A legacy (version 1) `call` grant from before separate tokens.
     pub fn is_legacy(&self) -> bool {
@@ -75,7 +85,7 @@ pub fn issue_token(id: &Identity, holder_did: &str, cap: Cap, iat: u64, ttl: u64
         iat,
         exp: iat.saturating_add(ttl),
     };
-    sign_blob(id, GRANT_DOMAIN, &claim)
+    Signed::sign(&claim, id).expect("own grant signs")
 }
 
 /// A call token (`issue_token` with `Cap::Call`); kept for the call paths and tests.
@@ -100,13 +110,7 @@ pub fn issue_legacy_grant_for_test(
         iat: now,
         exp: now.saturating_add(ttl),
     };
-    sign_blob(id, GRANT_DOMAIN, &claim)
-}
-
-/// The claims of a token without checking anything (for bookkeeping such as picking which slot a
-/// stored token goes in; never for admission).
-pub fn peek_grant(g: &SignedGrant) -> Option<Grant> {
-    serde_json::from_slice(&dec(&g.payload).ok()?).ok()
+    Signed::sign(&claim, id).expect("own grant signs")
 }
 
 /// Checks a token of any capability: signed by the DID it names as issuer, issuer and holder as
@@ -119,7 +123,7 @@ pub fn verify_grant(
     now: u64,
     revoked: &HashSet<String>,
 ) -> Result<Grant> {
-    let grant: Grant = open_blob(g, GRANT_DOMAIN, |c: &Grant| &c.iss)?;
+    let grant = g.open()?;
     match grant.v {
         GRANT_VERSION if Cap::parse(&grant.cap).is_some() => {}
         LEGACY_GRANT_VERSION if grant.cap == CAP_CALL => {}

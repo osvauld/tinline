@@ -15,7 +15,7 @@ fn peer() -> Peer {
     let secret = new_device_secret();
     Peer {
         id,
-        dev: device_public(&secret),
+        dev: cryptography::signature::public_key(&secret),
         secret,
     }
 }
@@ -38,7 +38,15 @@ fn add_contact(a: &Peer, b: &Peer) -> (NewContact, NewContact) {
     (a_view, b_view)
 }
 
-fn hello_parts(m: &Msg) -> (SignedAttestation, String, SignedBlob, String, SignedGrant) {
+fn hello_parts(
+    m: &Msg,
+) -> (
+    SignedAttestation,
+    String,
+    Signed<Ticket>,
+    String,
+    SignedGrant,
+) {
     match m.clone() {
         Msg::ContactHello {
             relay: None,
@@ -53,8 +61,13 @@ fn hello_parts(m: &Msg) -> (SignedAttestation, String, SignedBlob, String, Signe
     }
 }
 
+/// The same bytes read as another statement type: what a cross-type replay looks like.
+fn retype<T: Signable, U: Signable>(s: &Signed<T>) -> Signed<U> {
+    Signed::from_bytes(&s.to_bytes()).unwrap()
+}
+
 fn dev() -> [u8; 32] {
-    device_public(&new_device_secret())
+    cryptography::signature::public_key(&new_device_secret())
 }
 
 mod devlist;

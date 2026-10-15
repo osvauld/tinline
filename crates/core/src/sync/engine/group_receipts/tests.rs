@@ -38,10 +38,7 @@ fn all_three_exact_markers_required_and_old_discriminants_stay_stable() {
             13,
         ),
     ] {
-        assert_eq!(
-            &bincode::serialize(&message).unwrap()[..4],
-            &tag.to_le_bytes()
-        );
+        assert_eq!(u32::from(cryptography::codec::to_bytes(&message).unwrap()[0]), tag);
     }
 }
 #[test]

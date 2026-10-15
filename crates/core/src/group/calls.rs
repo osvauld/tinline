@@ -31,9 +31,14 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Weak};
 
 use parking_lot::Mutex;
-use proto::SignedBlob;
-use proto::gcall::{self as w, CallStart, GCALL_VERSION, HostRefusal, HostRequest, MAX_BACKUPS, MAX_PARTICIPANTS};
-use proto::gcall_status::{self as gs, CallHostStatus, DeviceClass, NetworkKind, PowerState, STATUS_REFRESH_MS, STATUS_TTL_MS, ThermalLevel};
+use proto::Signed;
+use proto::gcall::{self as w, CallStart, HostRefusal, HostRequest, MAX_BACKUPS, MAX_PARTICIPANTS};
+use proto::gcall::{SignedEnd, SignedStart};
+use proto::gcall_status::SignedStatus;
+use proto::gcall_status::{
+    self as gs, CallHostStatus, DeviceClass, NetworkKind, PowerState, STATUS_REFRESH_MS,
+    STATUS_TTL_MS, ThermalLevel,
+};
 
 use super::calldir::{GroupCallDir, resolve};
 use super::engine::{GroupCore, Out, Sess};
@@ -81,19 +86,19 @@ pub(crate) struct GroupCalls {
 #[derive(Default)]
 struct CallsSt {
     /// gid → (holder DID, device slot) → latest admitted status.
-    statuses: HashMap<String, BTreeMap<(String, u64), (SignedBlob, CallHostStatus)>>,
+    statuses: HashMap<String, BTreeMap<(String, u64), (SignedStatus, CallHostStatus)>>,
     /// gid → call id → highest generation's CallStart.
-    calls: HashMap<String, BTreeMap<String, (SignedBlob, CallStart)>>,
+    calls: HashMap<String, BTreeMap<String, (SignedStart, CallStart)>>,
     ended: HashSet<String>,
     /// call id → (gid, host DID, the signed End, forget after): every End{ended} seen, also for a
     /// call we never heard of (its CallStart may still arrive from a member that missed the End,
     /// and is then dropped). Sent on to a member that connects later, so nobody keeps a call alive.
-    ends: HashMap<String, (String, String, SignedBlob, u64)>,
+    ends: HashMap<String, (String, String, SignedEnd, u64)>,
     /// Relay dedupe: signature → forget after (unix ms).
-    seen: HashMap<String, u64>,
+    seen: HashMap<[u8; 64], u64>,
     pending: Option<Pending>,
     /// gid → (our last status with `issued_ms` 0, its signed blob, when).
-    published: HashMap<String, (CallHostStatus, SignedBlob, u64)>,
+    published: HashMap<String, (CallHostStatus, SignedStatus, u64)>,
     /// A call hosted here has had nobody in it since.
     empty_since: Option<u64>,
 }
@@ -117,7 +122,7 @@ impl GcallEvents for Sink {
 }
 
 fn short(gid: &str) -> &str {
-    &gid[..8.min(gid.len())]
+    super::short(gid)
 }
 
 impl Inner {
@@ -163,7 +168,7 @@ impl Inner {
     }
 
     /// True the first time `sig` is seen (relay dedupe).
-    fn calls_first_sight(&self, sig: &str, until: u64) -> bool {
+    fn calls_first_sight(&self, sig: &[u8; 64], until: u64) -> bool {
         let mut st = self.group.calls.st.lock();
         if st.seen.contains_key(sig) {
             return false;
@@ -175,7 +180,7 @@ impl Inner {
                 st.seen.clear();
             }
         }
-        st.seen.insert(sig.to_string(), until);
+        st.seen.insert(*sig, until);
         true
     }
 
@@ -189,7 +194,14 @@ impl Inner {
         }
     }
 
-    fn calls_originate(&self, core: &GroupCore, gid: &str, sig: &str, msg: GroupMsg, route: Route) {
+    fn calls_originate(
+        &self,
+        core: &GroupCore,
+        gid: &str,
+        sig: &[u8; 64],
+        msg: GroupMsg,
+        route: Route,
+    ) {
         self.calls_first_sight(sig, now_ms() + CALL_KEEP_MS);
         self.calls_send(core, gid, &msg, &route, None);
     }
@@ -206,7 +218,11 @@ impl Inner {
             .hosts(gid)
             .unwrap_or_default()
             .into_iter()
-            .filter(|a| a.open().is_some_and(|a| devs.contains(&(a.did.clone(), a.dev))))
+            .filter(|a| {
+                a.open()
+                    .ok()
+                    .is_some_and(|a| devs.contains(&(a.did.clone(), a.dev)))
+            })
             .collect();
         if devs.contains(&(core.did.clone(), core.dev))
             && let Some(mine) = self.group_my_addr(core, gid)
@@ -225,14 +241,27 @@ impl Inner {
         let core = self.group.core.lock().clone();
         let gid_of = |call_id: &str| self.call_gid(call_id).unwrap_or_default();
         let (kind, gid, call_id, participants, detail) = match &ev {
-            GcallEvent::HostingStarted { call_id, host_gen, start } => {
-                let gid = w::open_start(start).map(|s| s.gid).unwrap_or_default();
+            GcallEvent::HostingStarted {
+                call_id,
+                host_gen,
+                start,
+            } => {
+                let gid = start.open().map(|s| s.gid).unwrap_or_default();
                 self.group.calls.st.lock().empty_since = None;
-                if let (Some(core), Ok(s)) = (core.as_ref(), w::open_start(start)) {
+                if let (Some(core), Ok(s)) = (core.as_ref(), start.open()) {
                     let hosts = self.call_addrs(core, &s.gid, &s);
                     self.group_call_started(&s.gid, start.clone(), s.clone());
-                    let sig = start.signature.clone();
-                    self.calls_originate(core, &s.gid, &sig, GroupMsg::CallStart { start: start.clone(), hosts }, Route::All);
+                    let sig = *start.sig();
+                    self.calls_originate(
+                        core,
+                        &s.gid,
+                        &sig,
+                        GroupMsg::CallStart {
+                            start: start.clone(),
+                            hosts,
+                        },
+                        Route::All,
+                    );
                 }
                 (GroupCallEventKind::HostingStarted, gid, call_id.clone(), vec![], format!("generation {host_gen}"))
             }
@@ -242,8 +271,14 @@ impl Inner {
                     && let (Some(core), Some(end)) = (core.as_ref(), end.as_ref())
                 {
                     self.group_call_ended(&gid, call_id, end);
-                    let sig = end.signature.clone();
-                    self.calls_originate(core, &gid, &sig, GroupMsg::CallEnd { end: end.clone() }, Route::All);
+                    let sig = *end.sig();
+                    self.calls_originate(
+                        core,
+                        &gid,
+                        &sig,
+                        GroupMsg::CallEnd { end: end.clone() },
+                        Route::All,
+                    );
                 }
                 (GroupCallEventKind::HostingEnded, gid, call_id.clone(), vec![], format!("{reason:?}"))
             }

@@ -136,7 +136,10 @@ impl ShortCode {
     /// A link (`tinline://g/...`, any case of the scheme, a trailing `/` tolerated) or the bare code.
     pub fn parse(text: &str) -> Option<Self> {
         let t = text.trim();
-        let body = if t.len() >= LINK_PREFIX.len() && t[..LINK_PREFIX.len()].eq_ignore_ascii_case(LINK_PREFIX) { &t[LINK_PREFIX.len()..] } else { t };
+        let body = match (t.get(..LINK_PREFIX.len()), t.get(LINK_PREFIX.len()..)) {
+            (Some(p), Some(rest)) if p.eq_ignore_ascii_case(LINK_PREFIX) => rest,
+            _ => t,
+        };
         let body = body.trim_end_matches('/');
         if body.is_empty() || body.len() > 512 {
             return None;
@@ -156,7 +159,7 @@ impl ShortCode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CodeRow {
     pub gid: String,
-    /// bincode `SignedInvite`; `None` for a device code.
+    /// `codec` bytes of a `SignedInvite`; `None` for a device code.
     pub invite: Option<Vec<u8>>,
     /// Unix seconds.
     pub expires: u64,
@@ -262,12 +265,19 @@ impl GroupStore {
 /// Checks a fetched token against the code it was fetched with: the dialled endpoint is one of
 /// the group's signed host addresses, and the invite (if any) is signed, for this group, unexpired.
 pub(crate) fn check_fetched(t: &InviteToken, sc: &ShortCode) -> Result<(), Error> {
-    let names_host = t.hosts.iter().any(|h| h.open().is_some_and(|a| a.group == t.group && a.endpoint == sc.endpoint));
-    if !names_host || t.group.len() != 64 || t.name.len() > MAX_NAME {
+    let names_host = t.hosts.iter().any(|h| {
+        h.open()
+            .ok()
+            .is_some_and(|a| a.group == t.group && a.endpoint == sc.endpoint)
+    });
+    if !names_host || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
         return Err(Error::Protocol("the host's answer does not match the invite link".into()));
     }
     if let Some(inv) = &t.invite
-        && inv.open().is_none_or(|i| i.group != t.group || i.expires < now())
+        && inv
+            .open()
+            .ok()
+            .is_none_or(|i| i.group != t.group || i.expires < now())
     {
         return Err(Error::Rejected("invite expired or invalid".into()));
     }
@@ -279,18 +289,21 @@ impl Inner {
     /// host `gid`, else a host we have a session with. Returns the link.
     pub(crate) async fn group_issue_code(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, invite: Option<SignedInvite>) -> Result<String, Error> {
         let code: [u8; CODE_LEN] = cryptography::rng::bytes();
-        let expires = invite.as_ref().and_then(|i| i.open()).map_or(now() + INVITE_TTL, |i| i.expires);
+        let expires = invite
+            .as_ref()
+            .and_then(|i| i.open().ok())
+            .map_or(now() + INVITE_TTL, |i| i.expires);
         // Only a CHAT host keeps codes (`group_fetch_answer` checks `is_host`); `group_my_addr`
         // is also Some for a device that only hosts calls (GA-I1), which registers at a host.
         let chat_host = core.am_host(gid);
         if chat_host
             && let Some(mine) = self.group_my_addr(core, gid)
-            && let Some(a) = mine.open()
+            && let Some(a) = mine.open().ok()
         {
             if core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
                 return Err(Error::Rejected("too many open invites for this group; revoke some".into()));
             }
-            let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), expires, by: core.did.clone() };
+            let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: core.did.clone() };
             core.store.put_code(&code, &row)?;
             core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did: core.did.clone(), host_dev: hex::encode(core.dev), expires })?;
             return Ok(ShortCode { endpoint: a.endpoint, relay: a.relay, code }.to_link());
@@ -318,7 +331,7 @@ impl Inner {
             .store
             .hosts(gid)?
             .into_iter()
-            .filter_map(|s| s.open())
+            .filter_map(|s| s.open().ok())
             .find(|a| a.did == host_did && a.dev == host_dev)
             .ok_or_else(|| Error::Rejected("the host's address is unknown".into()))?;
         core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did, host_dev: hex::encode(host_dev), expires })?;
@@ -392,7 +405,7 @@ impl Inner {
         }
         let _ = self.group_my_addr(core, &row.gid);
         let invite = match &row.invite {
-            Some(b) => Some(bincode::deserialize::<SignedInvite>(b).map_err(|_| UNKNOWN_CODE.to_string())?),
+            Some(b) => Some(cryptography::codec::from_bytes::<SignedInvite>(b, crate::store::MAX_ROW).map_err(|_| UNKNOWN_CODE.to_string())?),
             None => None,
         };
         Ok(InviteToken { group: row.gid.clone(), name, owner, invite, hosts: core.chat_host_addrs(&row.gid) })
@@ -441,8 +454,15 @@ impl Inner {
                     return ack(code, false, "not a member");
                 }
                 let expires = match &invite {
-                    Some(i) => match i.open() {
-                        Some(inv) if inv.group == gid && inv.issuer == did && admin && inv.expires >= now() => inv.expires,
+                    Some(i) => match i.open().ok() {
+                        Some(inv)
+                            if inv.group == gid
+                                && inv.issuer == did
+                                && admin
+                                && inv.expires >= now() =>
+                        {
+                            inv.expires
+                        }
                         _ => return ack(code, false, "only admins can invite"),
                     },
                     None => expires.min(now() + INVITE_TTL),
@@ -457,7 +477,7 @@ impl Inner {
                 if core.store.code(&code).ok().flatten().is_some() {
                     return ack(code, false, "code in use");
                 }
-                let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), expires, by: did.to_string() };
+                let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: did.to_string() };
                 match core.store.put_code(&code, &row) {
                     Ok(()) => ack(code, true, ""),
                     Err(e) => ack(code, false, &e.to_string()),

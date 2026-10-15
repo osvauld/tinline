@@ -1,5 +1,5 @@
-//! Chunked AEAD for blobs: one fresh random AES-256-GCM key per blob, the plaintext cut into
-//! 64 KiB chunks so a 2 GB file streams (and can be read from any chunk).
+//! Chunked AEAD for blobs (`cryptography::aead::stream`): one fresh random AES-256-GCM key per
+//! blob, the plaintext cut into 64 KiB chunks so a 2 GB file streams (and can be read from any chunk).
 //!
 //! Layout of the ciphertext (no header; the key and the plaintext size travel in the message):
 //!
@@ -16,29 +16,20 @@
 
 use std::io::{self, Read, Write};
 
-use aes_gcm::aead::{Aead, KeyInit, Payload};
-use aes_gcm::{Aes256Gcm, Nonce};
+use cryptography::aead::stream::{Stream, TAG};
 
 pub const CHUNK: usize = 64 * 1024;
-const TAG: usize = 16;
 /// Largest file we accept, in bytes.
 pub const MAX_FILE: u64 = 2 * 1024 * 1024 * 1024;
 
+/// A blob key. Plain bytes on purpose: it travels inside the (signed, sealed) message.
 pub fn new_key() -> [u8; 32] {
-    let mut k = [0u8; 32];
-    cryptography::rng::fill(&mut k);
-    k
+    cryptography::rng::bytes()
 }
 
 /// Ciphertext length for `plain` bytes of plaintext.
 pub fn cipher_len(plain: u64) -> u64 {
     plain + TAG as u64 * plain.div_ceil(CHUNK as u64).max(1)
-}
-
-fn nonce(index: u64) -> [u8; 12] {
-    let mut n = [0u8; 12];
-    n[4..].copy_from_slice(&index.to_be_bytes());
-    n
 }
 
 fn bad(msg: &str) -> io::Error {
@@ -66,18 +57,15 @@ pub fn encrypt_stream(
     mut w: impl Write,
     mut progress: impl FnMut(u64),
 ) -> io::Result<u64> {
-    let cipher = Aes256Gcm::new_from_slice(key).map_err(|_| bad("key"))?;
+    let mut stream = Stream::new(key);
     let mut cur = vec![0u8; CHUNK];
     let mut next = vec![0u8; CHUNK];
     let mut cur_n = fill(&mut r, &mut cur)?;
     let mut total = 0u64;
-    let mut index = 0u64;
     loop {
         let next_n = if cur_n == CHUNK { fill(&mut r, &mut next)? } else { 0 };
         let last = next_n == 0;
-        let ct = cipher
-            .encrypt(&Nonce::from(nonce(index)), Payload { msg: &cur[..cur_n], aad: &[last as u8] })
-            .map_err(|_| bad("encrypt"))?;
+        let ct = stream.seal_next(&cur[..cur_n], last).map_err(|_| bad("encrypt"))?;
         w.write_all(&ct)?;
         total += cur_n as u64;
         if total > MAX_FILE {
@@ -89,7 +77,6 @@ pub fn encrypt_stream(
         }
         std::mem::swap(&mut cur, &mut next);
         cur_n = next_n;
-        index += 1;
     }
     w.flush()?;
     Ok(total)
@@ -104,7 +91,7 @@ pub fn decrypt_stream(
     mut w: impl Write,
     mut progress: impl FnMut(u64),
 ) -> io::Result<u64> {
-    let cipher = Aes256Gcm::new_from_slice(key).map_err(|_| bad("key"))?;
+    let mut stream = Stream::new(key);
     let size = CHUNK + TAG;
     let mut cur = vec![0u8; size];
     let mut next = vec![0u8; size];
@@ -113,13 +100,10 @@ pub fn decrypt_stream(
         return Err(bad("blob too short"));
     }
     let mut total = 0u64;
-    let mut index = 0u64;
     loop {
         let next_n = if cur_n == size { fill(&mut r, &mut next)? } else { 0 };
         let last = next_n == 0;
-        let pt = cipher
-            .decrypt(&Nonce::from(nonce(index)), Payload { msg: &cur[..cur_n], aad: &[last as u8] })
-            .map_err(|_| bad("blob does not authenticate"))?;
+        let pt = stream.open_next(&cur[..cur_n], last).map_err(|_| bad("blob does not authenticate"))?;
         w.write_all(&pt)?;
         total += pt.len() as u64;
         progress(total);
@@ -131,7 +115,6 @@ pub fn decrypt_stream(
         }
         std::mem::swap(&mut cur, &mut next);
         cur_n = next_n;
-        index += 1;
     }
     w.flush()?;
     Ok(total)

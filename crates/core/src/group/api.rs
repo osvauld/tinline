@@ -378,7 +378,7 @@ impl Node {
             inner.group_admin_check(&core, &group_id)?;
             inner.group_ensure(&core).await?;
             inner.group_relay_ready().await;
-            let invite = Invite { group: group_id.clone(), issuer: core.did.clone(), expires: now() + INVITE_TTL, nonce: cryptography::rng::bytes() }.sign(&core.account);
+            let invite = issue_invite(&core.account, &group_id, now() + INVITE_TTL);
             inner.group_issue_code(&core, &group_id, Some(invite)).await
         })?
     }
@@ -401,8 +401,11 @@ impl Node {
     pub fn group_peek_invite(&self, token: String) -> Option<GroupInvitePeek> {
         let sc = super::code::ShortCode::parse(&token)?;
         let inner = self.inner.clone();
-        let t = self.block_on(async move { inner.group_fetch(&sc).await }).ok()?.ok()?;
-        let inv = t.invite.as_ref().and_then(|i| i.open());
+        let t = self
+            .block_on(async move { inner.group_fetch(&sc).await })
+            .ok()?
+            .ok()?;
+        let inv = t.invite.as_ref().and_then(|i| i.open().ok());
         if t.invite.is_some() && inv.as_ref().is_none_or(|i| i.group != t.group) {
             return None;
         }
@@ -412,7 +415,11 @@ impl Node {
             owner_did: t.owner.clone(),
             issuer_did: inv.as_ref().map(|i| i.issuer.clone()),
             expires: inv.map(|i| i.expires),
-            host_count: t.hosts.iter().filter(|h| h.open().is_some_and(|a| a.group == t.group)).count() as u32,
+            host_count: t
+                .hosts
+                .iter()
+                .filter(|h| h.open().ok().is_some_and(|a| a.group == t.group))
+                .count() as u32,
         })
     }
 
@@ -512,8 +519,14 @@ impl Inner {
         let inner = self;
         let core = inner.group_core()?;
         let gid = t.group.clone();
+        if !super::valid_gid(&gid) {
+            return Err(Error::Rejected("invalid group id".into()));
+        }
         if let Some(inv) = &t.invite
-            && inv.open().is_none_or(|i| i.group != gid || i.expires < now())
+            && inv
+                .open()
+                .ok()
+                .is_none_or(|i| i.group != gid || i.expires < now())
         {
             return Err(Error::Rejected("invite expired or invalid".into()));
         }
@@ -522,13 +535,13 @@ impl Inner {
             Some(true) => return Ok(gid),
             Some(false) => {}
             None => {
-                let meta = GroupMeta { joining: t.invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), ..Default::default() };
+                let meta = GroupMeta { joining: t.invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), ..Default::default() };
                 core.groups.lock().insert(gid.clone(), super::engine::Live::empty(&gid, core.wid, meta.clone()));
                 core.store.put_meta(&gid, &meta)?;
             }
         }
         for h in &t.hosts {
-            if let Some(a) = h.open()
+            if let Some(a) = h.open().ok()
                 && a.group == gid
             {
                 core.store.put_host(&gid, &a.did, &a.dev, h)?;

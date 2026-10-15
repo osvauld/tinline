@@ -17,6 +17,7 @@ use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::src::lib as d;
 
 pub mod aom;
+#[cfg(any(test, feature = "sim"))]
 pub mod bench;
 pub mod convert;
 pub mod cpu;
@@ -27,7 +28,9 @@ pub use rav1e_enc::Encoder;
 pub mod media;
 #[cfg(feature = "net")]
 pub mod net;
+#[cfg(any(test, feature = "sim"))]
 pub mod sim;
+#[cfg(any(test, feature = "sim"))]
 pub mod y4m;
 
 /// Anything that turns camera frames into AV1 packets.
@@ -249,6 +252,7 @@ impl Drop for Decoder {
     }
 }
 
+#[cfg(any(test, feature = "sim"))]
 /// PSNR of the luma planes, for tests and benchmarks.
 pub fn psnr_y(a: &I420, b: &I420) -> f64 {
     let (ya, _, _) = a.planes();
@@ -258,6 +262,7 @@ pub fn psnr_y(a: &I420, b: &I420) -> f64 {
     if mse == 0.0 { 99.0 } else { 10.0 * (255.0 * 255.0 / mse).log10() }
 }
 
+#[cfg(any(test, feature = "sim"))]
 /// Synthetic "camera" for tests and benchmarks: a textured background panning slowly, a
 /// moving face-sized blob, and sensor-like noise, so the encoder sees realistic motion and
 /// detail rather than flat colour.
@@ -268,6 +273,7 @@ pub struct Pattern {
     seed: u32,
 }
 
+#[cfg(any(test, feature = "sim"))]
 impl Pattern {
     pub fn new(width: usize, height: usize) -> Self {
         Self { width, height, t: 0, seed: 0x9e37_79b9 }

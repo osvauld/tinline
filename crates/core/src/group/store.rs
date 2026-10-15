@@ -11,7 +11,7 @@
 //! shard/{gid}/{day}/snap        bytes      Loro snapshot of that day doc (a closed day: all there is)
 //! shard/{gid}/{day}/u/{seq}     bytes      validated update batches since the snapshot
 //! days/{gid}/{day}              empty      index of the days we hold (paging, history lists)
-//! hosts/{gid}/{did}/{dev}       bytes      bincode SignedHostAddr: where a host is (U7: hosts only)
+//! hosts/{gid}/{did}/{dev}       bytes      codec SignedHostAddr: where a host is (U7: hosts only)
 //! dir/{gid}/{did}/{dev}         DirEntry   host side only: a member device's group endpoint
 //! ack/{gid}/{did}/{dev}         bytes      the meta version vector that host acknowledged holding
 //! ackd/{gid}/{day}/{did}/{dev}  bytes      the same for one day doc (delivery state of our posts)
@@ -73,7 +73,7 @@ pub(crate) fn io(e: StorageError) -> Error {
 }
 
 /// The store key, from the recovery phrase (see `rekey::phrase_key`).
-pub fn key_from_phrase(phrase: &str) -> [u8; 32] {
+pub fn key_from_phrase(phrase: &str) -> cryptography::Secret32 {
     crate::rekey::phrase_key(STORE_DOMAIN, phrase)
 }
 
@@ -81,7 +81,7 @@ pub fn key_from_phrase(phrase: &str) -> [u8; 32] {
 pub struct GroupMeta {
     pub next_seq: u64,
     pub n_updates: u64,
-    /// We are joining with this invite (bincode `SignedInvite`) and have not written our join yet.
+    /// We are joining with this invite (`codec` bytes of a `SignedInvite`) and have not written our join yet.
     #[serde(default)]
     pub joining: Option<Vec<u8>>,
     /// The signed records a host showed us to prove we were removed (U9 visible notice).
@@ -319,11 +319,11 @@ impl GroupStore {
     }
 
     pub fn hosts(&self, gid: &str) -> Result<Vec<SignedHostAddr>, Error> {
-        Ok(self.db.scan(&format!("hosts/{gid}/")).map_err(io)?.into_iter().filter_map(|(_, v)| bincode::deserialize(&v).ok()).collect())
+        Ok(self.db.scan(&format!("hosts/{gid}/")).map_err(io)?.into_iter().filter_map(|(_, v)| cryptography::codec::from_bytes(&v, crate::store::MAX_ROW).ok()).collect())
     }
 
     pub fn put_host(&self, gid: &str, did: &str, dev: &[u8; 32], a: &SignedHostAddr) -> Result<(), Error> {
-        self.db.put(&format!("hosts/{gid}/{did}/{}", hex::encode(dev)), &bincode::serialize(a).expect("serialises")).map_err(io)
+        self.db.put(&format!("hosts/{gid}/{did}/{}", hex::encode(dev)), &cryptography::codec::to_bytes(a).expect("serialises")).map_err(io)
     }
 
     pub fn dir(&self, gid: &str) -> Result<Vec<(String, DirEntry)>, Error> {

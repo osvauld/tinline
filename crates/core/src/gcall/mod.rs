@@ -40,7 +40,7 @@ pub use proto::gcall::{EndReason, HostRef};
 pub use select::Forwarder;
 
 /// Opus frame length.
-pub const FRAME_MS: u64 = 20;
+pub const FRAME_MS: u64 = audio::FRAME_MS;
 /// §5: host heartbeat period, and how many may be missed before the host counts as lost.
 pub const HEARTBEAT_MS: u64 = 1_000;
 pub const HEARTBEAT_MISSES: u64 = 3;
@@ -76,7 +76,13 @@ pub trait CallAuthority {
     fn host_permit_ok(&self, gid: &str, host: &HostRef) -> bool;
     /// The connecting endpoint is `did`'s current group endpoint (H's directory, or the
     /// DID-signed group `note` the Join carried, G2), and that device is not unlinked.
-    fn endpoint_ok(&self, gid: &str, did: &str, note: Option<&proto::SignedBlob>, endpoint: &[u8; 32]) -> bool;
+    fn endpoint_ok(
+        &self,
+        gid: &str,
+        did: &str,
+        note: Option<&proto::gcall::SignedNote>,
+        endpoint: &[u8; 32],
+    ) -> bool;
 }
 
 /// Why a control message or a Join was refused. A refusal never changes engine state, except
@@ -136,7 +142,15 @@ impl CallAuthority for StaticAuthority {
     fn host_permit_ok(&self, gid: &str, host: &HostRef) -> bool {
         self.permits.contains(&host.permit_digest) && self.is_member(gid, &host.holder_did)
     }
-    fn endpoint_ok(&self, _gid: &str, did: &str, _note: Option<&proto::SignedBlob>, endpoint: &[u8; 32]) -> bool {
-        self.endpoints.get(did).is_some_and(|e| e.contains(endpoint))
+    fn endpoint_ok(
+        &self,
+        _gid: &str,
+        did: &str,
+        _note: Option<&proto::gcall::SignedNote>,
+        endpoint: &[u8; 32],
+    ) -> bool {
+        self.endpoints
+            .get(did)
+            .is_some_and(|e| e.contains(endpoint))
     }
 }

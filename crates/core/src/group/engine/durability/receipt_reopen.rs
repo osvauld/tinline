@@ -26,13 +26,11 @@ fn original_receipts_projections_and_only_covered_debt_survive_reopen_and_retry(
     let bytes = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     let meta_bytes = host
         .issue_storage_attestation(&f.gid, &DocId::Meta)
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     core.store.fail_next_meta_write_for_test();
     assert!(
         core.accept_storage_attestation(&bytes, &f.gid, &day())

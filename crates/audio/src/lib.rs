@@ -7,15 +7,16 @@
 //! Wire format: `[seq: u32 BE][level: u8][opus payload]`, 48 kHz mono, 20 ms frames.
 //! `level` is the RFC 6464 audio level in -dBov (0 loudest .. 127 silence).
 
-use std::ptr;
+pub mod codec;
 
-use opusic_sys as sys;
+use codec::{CodecConfig, Decoder, Dred, Encoder};
 
 pub const RATE: u32 = 48_000;
 pub const FRAME: usize = 960;
 pub const HEADER: usize = 5;
 
-const FRAME_MS: u64 = 20;
+/// Frame length in ms (also the `frame_ms` of [`CALL_CODEC`]).
+pub const FRAME_MS: u64 = 20;
 /// Largest datagram payload we encode/accept.
 const MAX_PACKET: usize = 1500;
 /// Ring size of the jitter buffer in frames (1.28 s).
@@ -55,8 +56,35 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-fn check(code: i32) -> Result<i32> {
-    if code < 0 { Err(Error::Opus(code)) } else { Ok(code) }
+/// Call-path codec settings: 48 kHz mono, 20 ms frames, FEC + DRED. `bitrate` is replaced by
+/// the caller of [`Sender::new`]; the decoder runs deep PLC on (5) with OSCE (6+) off. OSCE is
+/// tuned for 6-12 kbps speech; at our 48 kbps it buys little and reshapes other signals (a
+/// 770 Hz tone came out at -6 dB, others +-16%). At 5 tones are flat within 1% and FEC/DRED
+/// recovery is unchanged (`cargo run -p audio --example level` shows the levels).
+pub const CALL_CODEC: CodecConfig = CodecConfig {
+    sample_rate: RATE,
+    channels: 1,
+    frame_ms: FRAME_MS as u32,
+    bitrate: 32_000,
+    fec: true,
+    dred: DRED_UNITS,
+    complexity: 6,
+    decoder_complexity: Some(5),
+};
+
+/// Decode a packet (`data` empty => PLC, `fec` => the frame *before* this packet) into a full
+/// frame, zero-filling whatever the decoder did not write.
+fn dec_frame(dec: &mut Decoder, data: &[u8], out: &mut [i16; FRAME], fec: bool) -> Result<()> {
+    let n = dec.decode(data, out, fec)?;
+    out[n.min(FRAME)..].fill(0);
+    Ok(())
+}
+
+/// DRED-synthesise the frame ending `offset` samples before the parsed packet, zero-filled.
+fn dred_frame(dred: &mut Dred, dec: &mut Decoder, offset: i32, out: &mut [i16; FRAME]) -> Result<()> {
+    let n = dred.decode(dec, offset, out)?;
+    out[n.min(FRAME)..].fill(0);
+    Ok(())
 }
 
 /// RFC 6464 level of a frame: `-dBov` of its RMS, clamped to 0..=127 (127 = silence).
@@ -86,6 +114,8 @@ pub fn rms(samples: &[i16]) -> f32 {
 /// past its end; silent slots leave the result unchanged. Pure; no state between frames.
 pub use mixing::{mix, mix_sums};
 mod mixing;
+#[cfg(test)]
+mod golden_tests;
 
 /// Sine generator for tests / self-test.
 pub struct Tone {
@@ -141,168 +171,6 @@ pub fn estimate_frequency(samples: &[i16]) -> Option<f32> {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Thin RAII wrappers over libopus (via opusic-sys). All unsafe lives here.
-// ---------------------------------------------------------------------------------------------
-
-struct Encoder(*mut sys::OpusEncoder);
-// SAFETY: a libopus encoder has no thread affinity; we only ever use it through &mut.
-unsafe impl Send for Encoder {}
-
-impl Encoder {
-    fn new() -> Result<Self> {
-        let mut err = 0;
-        // SAFETY: plain constructor call, `err` is a valid out pointer.
-        let p = unsafe { sys::opus_encoder_create(RATE as i32, 1, sys::OPUS_APPLICATION_VOIP, &mut err) };
-        check(err)?;
-        if p.is_null() { Err(Error::Alloc) } else { Ok(Encoder(p)) }
-    }
-
-    fn ctl(&mut self, request: i32, value: i32) -> Result<()> {
-        // SAFETY: self.0 is a live encoder; all requests used here take one opus_int32.
-        check(unsafe { sys::opus_encoder_ctl(self.0, request, value) }).map(|_| ())
-    }
-
-    /// Clear the coding state (settings are kept), so the next packet decodes cleanly on a
-    /// freshly reset decoder.
-    fn reset(&mut self) {
-        // SAFETY: live encoder; OPUS_RESET_STATE takes no argument.
-        unsafe { sys::opus_encoder_ctl(self.0, sys::OPUS_RESET_STATE) };
-    }
-}
-
-impl Drop for Encoder {
-    fn drop(&mut self) {
-        // SAFETY: pointer came from opus_encoder_create and is destroyed once.
-        unsafe { sys::opus_encoder_destroy(self.0) }
-    }
-}
-
-struct Decoder(*mut sys::OpusDecoder);
-// SAFETY: see Encoder.
-unsafe impl Send for Decoder {}
-
-impl Decoder {
-    fn new() -> Result<Self> {
-        let mut err = 0;
-        // SAFETY: plain constructor call.
-        let p = unsafe { sys::opus_decoder_create(RATE as i32, 1, &mut err) };
-        check(err)?;
-        if p.is_null() {
-            return Err(Error::Alloc);
-        }
-        let mut d = Decoder(p);
-        // 5 = deep PLC on, OSCE speech enhancement (6+) off. OSCE is tuned for 6-12 kbps
-        // speech; at our 48 kbps it buys little and reshapes other signals (a 770 Hz tone came
-        // out at -6 dB, others +-16%). At 5 tones are flat within 1% and FEC/DRED recovery is
-        // unchanged (`cargo run -p audio --example level` shows the levels).
-        // SAFETY: live decoder, one int argument.
-        check(unsafe { sys::opus_decoder_ctl(d.0, sys::OPUS_SET_COMPLEXITY_REQUEST, 5i32) })?;
-        d.reset();
-        Ok(d)
-    }
-
-    fn reset(&mut self) {
-        // SAFETY: live decoder; OPUS_RESET_STATE takes no argument.
-        unsafe { sys::opus_decoder_ctl(self.0, sys::OPUS_RESET_STATE) };
-    }
-
-    /// Decode a packet (`data` empty => PLC, `fec` => recover the frame *before* this packet).
-    fn decode(&mut self, data: &[u8], out: &mut [i16; FRAME], fec: bool) -> Result<()> {
-        let (p, len) = if data.is_empty() { (ptr::null(), 0) } else { (data.as_ptr(), data.len() as i32) };
-        // SAFETY: `out` holds FRAME samples; `data` is valid for `len` bytes (or null/0 for PLC).
-        let n = check(unsafe { sys::opus_decode(self.0, p, len, out.as_mut_ptr(), FRAME as i32, fec as i32) })?;
-        out[(n as usize).min(FRAME)..].fill(0);
-        Ok(())
-    }
-}
-
-impl Drop for Decoder {
-    fn drop(&mut self) {
-        // SAFETY: created by opus_decoder_create, destroyed once.
-        unsafe { sys::opus_decoder_destroy(self.0) }
-    }
-}
-
-/// DRED parser state + parsed redundancy of one packet.
-struct Dred {
-    dec: *mut sys::OpusDREDDecoder,
-    state: *mut sys::OpusDRED,
-    /// Sequence number whose payload is currently parsed into `state`, and how many samples
-    /// of history it covers.
-    parsed: Option<(u32, i32)>,
-}
-// SAFETY: see Encoder.
-unsafe impl Send for Dred {}
-
-impl Dred {
-    fn new() -> Result<Self> {
-        let mut err = 0;
-        // SAFETY: constructors with valid out pointers; null checked below.
-        let dec = unsafe { sys::opus_dred_decoder_create(&mut err) };
-        check(err)?;
-        let state = unsafe { sys::opus_dred_alloc(&mut err) };
-        if dec.is_null() || state.is_null() {
-            // SAFETY: free whichever half was allocated.
-            unsafe {
-                if !dec.is_null() {
-                    sys::opus_dred_decoder_destroy(dec);
-                }
-                if !state.is_null() {
-                    sys::opus_dred_free(state);
-                }
-            }
-            return Err(Error::Alloc);
-        }
-        check(err)?;
-        Ok(Dred { dec, state, parsed: None })
-    }
-
-    /// Samples of history (before the packet's own audio) that `payload` carries, 0 if none.
-    fn available(&mut self, seq: u32, payload: &[u8]) -> i32 {
-        if let Some((s, n)) = self.parsed
-            && s == seq {
-                return n;
-            }
-        let mut end = 0;
-        // SAFETY: dec/state are live; payload valid for its length.
-        let n = unsafe {
-            sys::opus_dred_parse(
-                self.dec,
-                self.state,
-                payload.as_ptr(),
-                payload.len() as i32,
-                RATE as i32 / 2,
-                RATE as i32,
-                &mut end,
-                0,
-            )
-        };
-        let n = n.max(0);
-        self.parsed = Some((seq, n));
-        n
-    }
-
-    /// Synthesise the frame that ends `offset` samples before the start of the parsed packet.
-    fn decode(&mut self, dec: &mut Decoder, offset: i32, out: &mut [i16; FRAME]) -> Result<()> {
-        // SAFETY: decoder and DRED state are live; `out` holds FRAME samples.
-        let n = unsafe { sys::opus_decoder_dred_decode(dec.0, self.state, offset, out.as_mut_ptr(), FRAME as i32) };
-        check(n)?;
-        out[(n as usize).min(FRAME)..].fill(0);
-        Ok(())
-    }
-}
-
-impl Drop for Dred {
-    fn drop(&mut self) {
-        // SAFETY: both allocated in `new`, freed once.
-        unsafe {
-            sys::opus_dred_decoder_destroy(self.dec);
-            sys::opus_dred_free(self.state);
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------------------------
 // Sender
 // ---------------------------------------------------------------------------------------------
 
@@ -328,18 +196,7 @@ pub enum GroupFrame {
 impl Sender {
     /// `bitrate_bps` ~ 32_000 is a good default for voice.
     pub fn new(bitrate_bps: i32) -> Result<Self> {
-        let mut enc = Encoder::new()?;
-        enc.ctl(sys::OPUS_SET_BITRATE_REQUEST, bitrate_bps)?;
-        enc.ctl(sys::OPUS_SET_VBR_REQUEST, 1)?;
-        enc.ctl(sys::OPUS_SET_COMPLEXITY_REQUEST, 6)?;
-        enc.ctl(sys::OPUS_SET_SIGNAL_REQUEST, sys::OPUS_SIGNAL_VOICE)?;
-        enc.ctl(sys::OPUS_SET_INBAND_FEC_REQUEST, 1)?;
-        // libopus sizes DRED from this knob (at 32 kbps, 10% yields no DRED at all, 20% ~6 ms,
-        // 30% ~300 ms), so we advertise 30% even though real loss is typically lower. Costs
-        // ~10 bytes/packet.
-        enc.ctl(sys::OPUS_SET_PACKET_LOSS_PERC_REQUEST, 30)?;
-        enc.ctl(sys::OPUS_SET_DTX_REQUEST, 0)?;
-        enc.ctl(sys::OPUS_SET_DRED_DURATION_REQUEST, DRED_UNITS)?;
+        let enc = Encoder::new(&CodecConfig { bitrate: bitrate_bps, ..CALL_CODEC })?;
         Ok(Sender { enc, seq: 0, scratch: Box::new([0; MAX_PACKET]), quiet_ms: 0, gated: false })
     }
 
@@ -372,11 +229,7 @@ impl Sender {
 
     /// Encode one frame into a full datagram.
     pub fn encode(&mut self, pcm: &[i16; FRAME]) -> Result<Vec<u8>> {
-        let cap = (MAX_PACKET - HEADER) as i32;
-        // SAFETY: pcm has FRAME samples; scratch has MAX_PACKET bytes >= HEADER + cap.
-        let n = check(unsafe {
-            sys::opus_encode(self.enc.0, pcm.as_ptr(), FRAME as i32, self.scratch.as_mut_ptr().add(HEADER), cap)
-        })? as usize;
+        let n = self.enc.encode(pcm, &mut self.scratch[HEADER..])?;
         self.scratch[..4].copy_from_slice(&self.seq.to_be_bytes());
         self.scratch[4] = level(pcm);
         self.seq = self.seq.wrapping_add(1);
@@ -479,8 +332,8 @@ impl Receiver {
             .map(|_| Slot { seq: 0, used: false, len: 0, level: 127, data: Box::new([0; MAX_PACKET]) })
             .collect();
         Ok(Receiver {
-            dec: Decoder::new()?,
-            dred: Dred::new()?,
+            dec: Decoder::new(&CALL_CODEC)?,
+            dred: Dred::new(&CALL_CODEC)?,
             slots,
             started: false,
             playing: false,
@@ -552,7 +405,7 @@ impl Receiver {
     fn end_spurt(&mut self, out: &mut [i16; FRAME]) {
         out.fill(0);
         if self.playing && self.plc_run < MAX_CONCEAL {
-            if self.dec.decode(&[], out, false).is_ok() {
+            if dec_frame(&mut self.dec, &[], out, false).is_ok() {
                 fade(out, false);
             } else {
                 out.fill(0);
@@ -779,11 +632,11 @@ impl Receiver {
             let (len, lvl) = (slot.len, slot.level);
             let mut ok = {
                 let data = &self.slots[seq as usize % SLOTS].data[..len];
-                self.dec.decode(data, out, false).is_ok()
+                dec_frame(&mut self.dec, data, out, false).is_ok()
             };
             self.stats.last_level = lvl;
             if !ok {
-                ok = self.dec.decode(&[], out, false).is_ok();
+                ok = dec_frame(&mut self.dec, &[], out, false).is_ok();
                 self.stats.concealed += 1;
             } else {
                 self.plc_run = 0;
@@ -797,7 +650,7 @@ impl Receiver {
                 if let Some(s2) = self.slot(n) {
                     let len2 = s2.len;
                     let data = &self.slots[n as usize % SLOTS].data[..len2];
-                    if self.dec.decode(data, &mut self.tmp, false).is_ok() {
+                    if dec_frame(&mut self.dec, data, &mut self.tmp, false).is_ok() {
                         for (i, (o, b)) in out.iter_mut().zip(self.tmp.iter()).enumerate() {
                             let w = i as f32 / FRAME as f32;
                             *o = (*o as f32 * (1.0 - w) + *b as f32 * w) as i16;
@@ -831,7 +684,7 @@ impl Receiver {
         self.stats.concealed += 1;
         if self.plc_run < MAX_CONCEAL {
             self.plc_run += 1;
-            if self.dec.decode(&[], out, false).is_err() {
+            if dec_frame(&mut self.dec, &[], out, false).is_err() {
                 out.fill(0);
             }
         } else {
@@ -851,7 +704,7 @@ impl Receiver {
         if let Some(s) = self.slot(next) {
             let len = s.len;
             let data = &self.slots[next as usize % SLOTS].data[..len];
-            if self.dec.decode(data, out, true).is_ok() {
+            if dec_frame(&mut self.dec, data, out, true).is_ok() {
                 self.stats.recovered_fec += 1;
                 self.plc_run = 0;
                 return;
@@ -866,7 +719,7 @@ impl Receiver {
             let len = s.len;
             let offset = n.wrapping_sub(seq) as i32 * FRAME as i32;
             let data = &self.slots[n as usize % SLOTS].data[..len];
-            if self.dred.available(n, data) >= offset && self.dred.decode(&mut self.dec, offset, out).is_ok() {
+            if self.dred.available(n, data) >= offset && dred_frame(&mut self.dred, &mut self.dec, offset, out).is_ok() {
                 self.stats.recovered_dred += 1;
                 self.plc_run = 0;
                 return;
@@ -876,7 +729,7 @@ impl Receiver {
         self.stats.concealed += 1;
         if self.plc_run < MAX_CONCEAL {
             self.plc_run += 1;
-            if self.dec.decode(&[], out, false).is_ok() {
+            if dec_frame(&mut self.dec, &[], out, false).is_ok() {
                 return;
             }
         } else if self.plc_run == MAX_CONCEAL {

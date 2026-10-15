@@ -44,20 +44,33 @@ fn forged_tampered_or_misaddressed_block_notices_are_refused() {
         Err(Error::WrongHolder)
     );
     // A payload edit (block -> unblock, or a later `at`) breaks the signature.
-    let mut tampered = genuine.clone();
-    let mut claim: BlockNotice = serde_json::from_slice(&dec(&tampered.payload).unwrap()).unwrap();
+    let mut claim = genuine.peek().unwrap();
     claim.at += 1;
-    tampered.payload = enc(serde_json::to_vec(&claim).unwrap());
+    let tampered = Signed::from_parts(
+        cryptography::codec::to_bytes(&claim).unwrap(),
+        *genuine.sig(),
+    );
     assert_eq!(
         verify_block_notice(&tampered, b.id.did()),
         Err(Error::BadSignature)
     );
     // Another signed object of A's (a grant for B) is not a notice: own signing domain.
     let grant = issue_grant(&a.id, b.id.did(), T0, GTTL);
-    assert!(verify_block_notice(&grant, b.id.did()).is_err());
+    assert!(verify_block_notice(&retype(&grant), b.id.did()).is_err());
     // A notice to oneself is meaningless.
-    let selfie = sign_block_notice(&a.id, a.id.did(), true, 5);
-    assert!(verify_block_notice(&selfie, a.id.did()).is_err());
+    // The shape check refuses it at sign time and, in a raw envelope, at open time.
+    let selfie = BlockNotice {
+        from: a.id.did().into(),
+        to: a.id.did().into(),
+        blocked: true,
+        at: 5,
+    };
+    assert_eq!(Signed::sign(&selfie, &a.id).err(), Some(Error::SelfContact));
+    let body = cryptography::codec::to_bytes(&selfie).unwrap();
+    let sig =
+        a.id.sign(&cryptography::sign::input(BlockNotice::DOMAIN, &[&body]));
+    let raw = Signed::<BlockNotice>::from_parts(body, sig);
+    assert!(verify_block_notice(&raw, a.id.did()).is_err());
 }
 
 // ---- P6: separate message and call tokens (U13, U15) ---------------------------------------
@@ -201,5 +214,5 @@ fn tokens_message_round_trips() {
     };
     let (back, _) = decode_frame(&encode_frame(&m)).unwrap().unwrap();
     assert_eq!(back, m);
-    assert_eq!(peek_grant(&g).unwrap().cap, CAP_MESSAGE);
+    assert_eq!(g.peek().unwrap().cap, CAP_MESSAGE);
 }

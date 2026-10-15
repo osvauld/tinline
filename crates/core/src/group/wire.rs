@@ -1,4 +1,4 @@
-//! Frames of `tinline/group/2` on the group endpoint (U2): u32 BE length + bincode of `GroupMsg`
+//! Frames of `tinline/group/3` on the group endpoint (U2): u32 BE length + postcard (`cryptography::codec`) of `GroupMsg`
 //! on one bidirectional stream opened by the dialer. Dialers are members (or hosts acting as
 //! members towards another host); the acceptor is always a host (U7).
 //!
@@ -24,7 +24,7 @@ use super::doc::DocId;
 use super::record::{EndpointAuth, InviteToken, SignedHostAddr, SignedInvite};
 use crate::Error;
 
-pub const GROUP_ALPN: &[u8] = b"tinline/group/2";
+pub const GROUP_ALPN: &[u8] = b"tinline/group/3";
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 /// `Hello` and `Welcome` list the day docs of this many recent days (as 1:1 chat does).
 pub const HELLO_DAYS: i64 = 7;
@@ -87,16 +87,27 @@ pub enum GroupMsg {
     // §9.3) and to other hosts, the addressed ones towards their one recipient. Every device
     // drops a blob it has seen (signature), so host-to-host relay ends.
     /// A call-host candidate's signed conditions (`proto::gcall_status`), every 30 s.
-    CallHostStatus { status: proto::SignedBlob },
+    CallHostStatus {
+        status: proto::gcall_status::SignedStatus,
+    },
     /// A call began (or a backup took it over): the host's signed CallStart and the
     /// DID-signed group addresses of it and its backups (G1: what members dial).
-    CallStart { start: proto::SignedBlob, hosts: Vec<SignedHostAddr> },
+    CallStart {
+        start: proto::gcall::SignedStart,
+        hosts: Vec<SignedHostAddr>,
+    },
     /// The call ended (`End{ended}`, signed by its host).
-    CallEnd { end: proto::SignedBlob },
+    CallEnd {
+        end: proto::gcall::SignedEnd,
+    },
     /// Starter -> one call-host candidate (`proto::gcall::HostRequest`).
-    CallHostRequest { request: proto::SignedBlob },
+    CallHostRequest {
+        request: proto::gcall::SignedHostRequest,
+    },
     /// Candidate -> starter: declined (`proto::gcall::HostRefusal`). Accepting is a CallStart.
-    CallHostRefusal { refusal: proto::SignedBlob },
+    CallHostRefusal {
+        refusal: proto::gcall::SignedHostRefusal,
+    },
 }
 
 pub struct Writer(pub SendStream);
@@ -120,7 +131,7 @@ impl Reader {
                     return Err(Error::Protocol("group frame too large".into()));
                 }
                 if self.buf.len() >= 4 + len {
-                    let msg = bincode::deserialize(&self.buf[4..4 + len]).map_err(|_| Error::Protocol("group frame does not decode".into()))?;
+                    let msg = cryptography::codec::from_bytes(&self.buf[4..4 + len], MAX_FRAME).map_err(|_| Error::Protocol("group frame does not decode".into()))?;
                     self.buf.drain(..4 + len);
                     return Ok(Some(msg));
                 }
@@ -136,7 +147,7 @@ impl Reader {
 
 impl Writer {
     pub async fn send(&mut self, msg: &GroupMsg) -> Result<(), Error> {
-        let body = bincode::serialize(msg).map_err(|e| Error::Protocol(e.to_string()))?;
+        let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
         if body.len() > MAX_FRAME {
             return Err(Error::Protocol("group frame too large".into()));
         }

@@ -19,7 +19,7 @@ fn renewed_grant_must_be_valid_and_later() {
     assert!(!ok(&proto::issue_grant(&them, other.did(), T0 + 500, 1000)));
     // Bad signature: a longer-lived payload under another grant's signature.
     let long = proto::issue_grant(&them, me.did(), T0 + 500, 100_000);
-    let forged = proto::SignedGrant { payload: long.payload.clone(), signature: newer.signature.clone() };
+    let forged = proto::SignedGrant::from_parts(long.body().to_vec(), *newer.sig());
     assert!(!ok(&forged));
     // An expired stored grant is beaten by any valid one.
     assert!(grant_outlives(&old, &newer, them.did(), me.did(), T0 + 1200));
@@ -43,7 +43,7 @@ fn safety_numbers_match_on_both_sides_and_differ_between_pairs() {
 #[test]
 fn only_the_current_ticket_has_a_nonce() {
     let (id, _) = identity::generate();
-    let dev = proto::device_public(&proto::new_device_secret());
+    let dev = cryptography::signature::public_key(&proto::new_device_secret());
     let mut st = State::default();
     assert_eq!(current_nonce(&st, T0), None);
     let t = proto::issue_contact_ticket(&id, dev, "x", None, T0, 600);
@@ -75,7 +75,7 @@ mod find_card_tests {
         assert_eq!(find_card(card).as_deref(), Some(card));
         assert_eq!(find_card(&format!("Add me on Tinline:\n{card}.")).as_deref(), Some(card));
         assert_eq!(find_card(&format!("\"{card}\" thanks")).as_deref(), Some(card));
-        assert_eq!(find_card(&format!("osvc2:{}", &card[6..])).as_deref(), Some(&*format!("osvc2:{}", &card[6..])));
+        assert_eq!(find_card(&format!("osvc2:{}", card.get(6..).unwrap())).as_deref(), Some(&*format!("osvc2:{}", card.get(6..).unwrap())));
         assert_eq!(find_card("hello there"), None);
         assert_eq!(find_card("OSVC2:short"), None);
     }}

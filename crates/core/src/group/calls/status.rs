@@ -34,7 +34,6 @@ pub(super) fn power_of(c: &Cond) -> PowerState {
 pub(super) fn own_status(gid: &str, host_ref: HostRef, fed: Option<Cond>, busy: bool) -> Option<CallHostStatus> {
     let cond = fed?;
     Some(CallHostStatus {
-        v: GCALL_VERSION,
         gid: gid.to_string(),
         host_ref,
         class: status_class(cond.class),

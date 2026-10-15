@@ -2,6 +2,7 @@ use super::super::doc::{DocId, GroupDoc};
 use super::super::record::*;
 use super::*;
 use crate::chat::doc::writer_id;
+use proto::Signed;
 
 /// One device of one account, writing into its own replica: the meta doc and the day doc
 /// of 1970-01-01 (where its posts go; the clock stays in that day).
@@ -26,8 +27,19 @@ impl Dev {
     /// A post goes into the day doc, every other record into meta; `seen` is the meta vv.
     fn write(&mut self, body: Body) -> (Entry, Vec<u8>) {
         self.clock += 10;
-        let rec = Record { v: 1, group: self.doc.group.clone(), author: self.did(), dev: self.dev, at: self.clock, seen: self.doc.seen(), body };
-        let doc = if matches!(rec.body, Body::Post { .. }) { &self.posts } else { &self.doc };
+        let rec = Record {
+            group: self.doc.group.clone(),
+            author: self.did(),
+            dev: self.dev,
+            at: self.clock,
+            seen: self.doc.seen(),
+            body,
+        };
+        let doc = if matches!(rec.body, Body::Post { .. }) {
+            &self.posts
+        } else {
+            &self.doc
+        };
         doc.write(&self.id, &rec).unwrap()
     }
     /// A meta update.
@@ -52,7 +64,16 @@ impl Dev {
         self.judged().iter().filter(|(_, v)| *v == Vis::Visible).filter_map(|(e, _)| post_item(e, &st)).collect()
     }
     fn invite(&self, group: &str) -> SignedInvite {
-        Invite { group: group.into(), issuer: self.did(), expires: u64::MAX, nonce: [3; 16] }.sign(&self.id)
+        Signed::sign(
+            &Invite {
+                group: group.into(),
+                issuer: self.did(),
+                expires: u64::MAX,
+                nonce: [3; 16],
+            },
+            &self.id,
+        )
+        .unwrap()
     }
 }
 

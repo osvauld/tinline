@@ -57,8 +57,8 @@ use support::*;
 
 /// `GRANT_TTL` (`crates/core/src/node.rs:33`), private there.
 const GRANT_TTL: u64 = 365 * 24 * 3600;
-/// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 3 since P6.
-const CHAT_ALPN: &[u8] = b"tinline/chat/6";
+/// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 7 since postcard.
+const CHAT_ALPN: &[u8] = b"tinline/chat/7";
 const WAIT: Duration = Duration::from_secs(30);
 const TAG: &str = "w2c";
 
@@ -114,7 +114,7 @@ fn delivery(p: &Peer, did: &str, id: &str) -> DeliveryState {
 }
 
 /// The chat `Auth` frame, mirrored: variant 0 of `ChatMsg` (`crates/core/src/chat/wire.rs:30`),
-/// bincode, u32 BE length prefix. Only the first frame of a session is read, which is `Auth`.
+/// postcard (`cryptography::codec`), u32 BE length prefix. Only the first frame of a session is read, which is `Auth`.
 #[derive(Debug, Serialize, Deserialize)]
 enum ChatAuth {
     Auth {
@@ -174,7 +174,7 @@ impl Raw {
             .unwrap();
         let (id, _) = identity::generate();
         let secret = proto::new_device_secret();
-        let device = proto::device_public(&secret);
+        let device = cryptography::signature::public_key(&secret);
         let ep = rt.block_on(async {
             Endpoint::builder(presets::N0)
                 .secret_key(SecretKey::from_bytes(&secret))
@@ -202,7 +202,7 @@ impl Raw {
             unreachable!()
         };
         let to_node = grant_for_you.clone();
-        let device = proto::device_from_text(&ticket.device).unwrap();
+        let device = ticket.device;
         let mut addr = EndpointAddr::new(PublicKey::from_bytes(&device).unwrap());
         if let Some(url) = ticket
             .relay
@@ -304,7 +304,7 @@ impl Raw {
                 grant: grant.clone(),
                 relay: None,
             };
-            let body = bincode::serialize(&auth).unwrap();
+            let body = cryptography::codec::to_bytes(&auth).unwrap();
             let mut frame = (body.len() as u32).to_be_bytes().to_vec();
             frame.extend_from_slice(&body);
             send.write_all(&frame).await.unwrap();
@@ -317,7 +317,7 @@ impl Raw {
                         if buf.len() >= 4 + len {
                             let ChatAuth::Auth {
                                 attestation, grant, ..
-                            } = bincode::deserialize(&buf[4..4 + len]).ok()?;
+                            } = cryptography::codec::from_bytes(&buf[4..4 + len], 1 << 24).ok()?;
                             return Some((attestation, grant));
                         }
                     }

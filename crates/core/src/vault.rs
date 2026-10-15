@@ -10,15 +10,15 @@
 //! `sealed`, and the DEK lives solely in the platform's keystore (or the desktop's keyring).
 
 use base64::{Engine, engine::general_purpose::STANDARD};
-use cryptography::{aead, kdf};
+use cryptography::{Secret32, aead, kdf};
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 use crate::Error;
 
-pub const ARGON2_M: u32 = 65536; // KiB
-pub const ARGON2_T: u32 = 3;
-pub const ARGON2_P: u32 = 4;
+/// AEAD associated data: a wrapped DEK and sealed secrets can never be swapped for each other.
+const AAD_WRAPPED_DEK: &[u8] = b"tinline/vault/wrapped-dek/v1";
+const AAD_SECRETS: &[u8] = b"tinline/vault/secrets/v1";
 
 pub type Dek = Zeroizing<[u8; 32]>;
 
@@ -75,25 +75,17 @@ pub fn check_passphrase(pass: &str) -> Result<(), Error> {
     Ok(())
 }
 
-fn kek(pass: &str, salt: &[u8], m: u32, t: u32, p: u32) -> Result<Zeroizing<[u8; 32]>, Error> {
-    // A tampered profile.json must not make us allocate gigabytes, nor downgrade the KDF to
-    // something fast: only a band around our own parameters is accepted.
-    if !(65536..=262144).contains(&m)
-        || !(3..=10).contains(&t)
-        || !(1..=8).contains(&p)
-        || !(16..=64).contains(&salt.len())
-    {
-        return Err(Error::Io("vault parameters out of range".into()));
-    }
-    let k = kdf::argon2id(pass.as_bytes(), salt, m, t, p).map_err(|e| Error::Io(e.to_string()))?;
-    Ok(Zeroizing::new(k))
+/// The KEK. `kdf::passphrase_key` refuses parameters outside a band around `kdf::VAULT`, so a
+/// tampered profile.json can neither make us allocate gigabytes nor downgrade the KDF.
+fn kek(pass: &str, salt: &[u8], params: kdf::ArgonParams) -> Result<Secret32, Error> {
+    kdf::passphrase_key(pass.as_bytes(), salt, params).map_err(|e| Error::Io(format!("vault: {e}")))
 }
 
 fn wrap(dek: &Dek, pass: &str) -> Result<(Vec<u8>, Vec<u8>), Error> {
     let mut salt = vec![0u8; 16];
     cryptography::rng::fill(&mut salt);
-    let k = kek(pass, &salt, ARGON2_M, ARGON2_T, ARGON2_P)?;
-    let wrapped = aead::encrypt(&k, &dek[..]).map_err(|e| Error::Io(e.to_string()))?;
+    let k = kek(pass, &salt, kdf::VAULT)?;
+    let wrapped = aead::seal(&k, AAD_WRAPPED_DEK, &dek[..]).map_err(|e| Error::Io(e.to_string()))?;
     Ok((salt, wrapped))
 }
 
@@ -102,7 +94,7 @@ pub fn seal(secrets: &Secrets, pass: Option<&str>) -> Result<(Vault, Dek), Error
     let mut dek = Zeroizing::new([0u8; 32]);
     cryptography::rng::fill(&mut dek[..]);
     let mut plain = serde_json::to_vec(secrets)?;
-    let sealed = aead::encrypt(&dek, &plain).map_err(|e| Error::Io(e.to_string()));
+    let sealed = aead::seal(&dek, AAD_SECRETS, &plain).map_err(|e| Error::Io(e.to_string()));
     plain.zeroize();
     let sealed = sealed?;
     let vault = match pass {
@@ -115,7 +107,7 @@ pub fn seal(secrets: &Secrets, pass: Option<&str>) -> Result<(Vault, Dek), Error
 /// The same DEK and passphrase slot, sealing other secrets (e.g. a new device secret). Fast.
 pub fn reseal(v: &Vault, dek: &Dek, secrets: &Secrets) -> Result<Vault, Error> {
     let mut plain = serde_json::to_vec(secrets)?;
-    let sealed = aead::encrypt(dek, &plain).map_err(|e| Error::Io(e.to_string()));
+    let sealed = aead::seal(dek, AAD_SECRETS, &plain).map_err(|e| Error::Io(e.to_string()));
     plain.zeroize();
     Ok(Vault { sealed: sealed?, ..v.clone() })
 }
@@ -125,8 +117,8 @@ pub fn open(v: &Vault, pass: &str) -> Result<(Secrets, Dek), Error> {
     if !v.has_passphrase() {
         return Err(Error::Protocol("no passphrase is set".into()));
     }
-    let k = kek(pass, &v.salt, v.m, v.t, v.p)?;
-    let mut raw = aead::decrypt(&k, &v.wrapped_dek).map_err(|_| Error::WrongPassphrase)?;
+    let k = kek(pass, &v.salt, kdf::ArgonParams { m: v.m, t: v.t, p: v.p })?;
+    let mut raw = aead::open(&k, AAD_WRAPPED_DEK, &v.wrapped_dek).map_err(|_| Error::WrongPassphrase)?;
     let dek = <[u8; 32]>::try_from(raw.as_slice()).map(Zeroizing::new);
     raw.zeroize();
     let dek = dek.map_err(|_| Error::WrongPassphrase)?;
@@ -137,7 +129,7 @@ pub fn open(v: &Vault, pass: &str) -> Result<(Secrets, Dek), Error> {
 /// Opens with a remembered DEK; fast.
 pub fn open_with_key(v: &Vault, key: &[u8]) -> Result<Secrets, Error> {
     let key = <[u8; 32]>::try_from(key).map(Zeroizing::new).map_err(|_| Error::WrongPassphrase)?;
-    let mut plain = aead::decrypt(&key, &v.sealed).map_err(|_| Error::WrongPassphrase)?;
+    let mut plain = aead::open(&key, AAD_SECRETS, &v.sealed).map_err(|_| Error::WrongPassphrase)?;
     let secrets = serde_json::from_slice(&plain);
     plain.zeroize();
     Ok(secrets?)
@@ -150,7 +142,8 @@ pub fn rewrap(v: &Vault, dek: &Dek, new_pass: &str) -> Result<Vault, Error> {
 
 fn rewrap_sealed(sealed: Vec<u8>, dek: &Dek, pass: &str) -> Result<Vault, Error> {
     let (salt, wrapped_dek) = wrap(dek, pass)?;
-    Ok(Vault { salt, m: ARGON2_M, t: ARGON2_T, p: ARGON2_P, wrapped_dek, sealed })
+    let kdf::ArgonParams { m, t, p } = kdf::VAULT;
+    Ok(Vault { salt, m, t, p, wrapped_dek, sealed })
 }
 
 #[cfg(test)]
@@ -183,9 +176,9 @@ mod tests {
             (65536, 3, 4, 8),
             (65536, 3, 4, 65),
         ] {
-            assert!(kek("pass", &vec![7u8; s], m, t, p).is_err(), "{m} {t} {p} {s}");
+            assert!(kek("pass", &vec![7u8; s], kdf::ArgonParams { m, t, p }).is_err(), "{m} {t} {p} {s}");
         }
-        assert!(kek("pass", &[7u8; 16], 65536, 3, 4).is_ok());
-        assert!(kek("pass", &[7u8; 64], 65536, 10, 8).is_ok());
+        assert!(kek("pass", &[7u8; 16], kdf::ArgonParams { m: 65536, t: 3, p: 4 }).is_ok());
+        assert!(kek("pass", &[7u8; 64], kdf::ArgonParams { m: 65536, t: 10, p: 8 }).is_ok());
     }
 }

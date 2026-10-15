@@ -38,7 +38,7 @@ fn group_content_admission_requires_current_epoch_and_nonremoved_own_device() {
     node.create_identity("synthetic admission".into(), String::new())
         .unwrap();
     let me = node.inner.me().unwrap();
-    let remote = proto::device_public(&proto::new_device_secret());
+    let remote = cryptography::signature::public_key(&proto::new_device_secret());
     assert!(matches!(
         node.inner.own_group_admit(me.epoch, &remote),
         Err(Error::Rejected(_))

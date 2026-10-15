@@ -30,7 +30,7 @@ impl Node {
         if att.did != me.id.did() {
             return Err(Error::Protocol("not our account".into()));
         }
-        let device = att.device_key().map_err(|e| Error::Protocol(e.to_string()))?;
+        let device = att.device;
         {
             let mut s = self.inner.shared.lock();
             if s.epoch != me.epoch {
@@ -54,8 +54,12 @@ impl Node {
     /// in a hello; whether it was taken.
     #[doc(hidden)]
     pub fn offer_device_list_for_test(&self, did: String, list_json: String) -> bool {
-        let Ok(me) = self.inner.me() else { return false };
-        let Ok(blob) = serde_json::from_str::<proto::SignedBlob>(&list_json) else { return false };
+        let Ok(me) = self.inner.me() else {
+            return false;
+        };
+        let Ok(blob) = serde_json::from_str::<proto::SignedDeviceList>(&list_json) else {
+            return false;
+        };
         let taken = self.inner.accept_device_list(me.epoch, &did, &blob);
         let _ = self.inner.persist_for(Some(me.epoch));
         taken
@@ -116,7 +120,7 @@ impl Node {
         let device_secret = proto::new_device_secret();
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
         let vault = vault::reseal(&cur.vault, &dek, &secrets)?;
-        let disk = Disk::V2(ProfileV2 { device_public: proto::device_public(&device_secret), vault, ..cur });
+        let disk = Disk::V2(ProfileV2 { device_public: cryptography::signature::public_key(&device_secret), vault, ..cur });
         s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)
     }
 }

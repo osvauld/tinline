@@ -23,7 +23,7 @@ ceiling now derives exact codec overhead instead of adding padding.
 
 ## Signed statement (prototype, not a deployed wire contract)
 
-`group/attestation.rs` uses canonical fixed-integer bincode, dedicated signature
+`group/attestation.rs` uses canonical postcard (`codec::from_bytes_canonical`), dedicated signature
 domain `tinline-group-storage-attestation-v1\0`, and a length-delimited body.
 The DID-key Ed25519 signature binds:
 

@@ -37,7 +37,7 @@ pub const DOC_NAME: &str = "account";
 struct CRec {
     name: String,
     devices: Vec<ContactDevice>,
-    device_list: Option<proto::SignedBlob>,
+    device_list: Option<proto::SignedDeviceList>,
     grant: proto::SignedGrant,
     #[serde(default)]
     call_grant: Option<proto::SignedGrant>,
@@ -102,8 +102,10 @@ fn has_key(m: &LoroMap, k: &str) -> bool {
     m.get(k).is_some()
 }
 
-fn list_seq(did: &str, blob: &Option<proto::SignedBlob>) -> u64 {
-    blob.as_ref().and_then(|b| proto::verify_device_list(b, did).ok()).map_or(0, |l| l.seq)
+fn list_seq(did: &str, blob: &Option<proto::SignedDeviceList>) -> u64 {
+    blob.as_ref()
+        .and_then(|b| proto::verify_device_list(b, did).ok())
+        .map_or(0, |l| l.seq)
 }
 
 impl AccDoc {
@@ -199,10 +201,19 @@ impl AccDoc {
         // -- registry
         let before = serde_json::to_string(&st.registry).unwrap_or_default();
         for (dev_text, m) in sect("devices") {
-            let Ok(device) = proto::device_from_text(&dev_text) else { continue };
-            let Some(att) = field(m, "att").and_then(text).and_then(|t| serde_json::from_str::<proto::SignedAttestation>(&t).ok()) else { continue };
-            let Ok(a) = proto::verify_attestation(&att) else { continue };
-            if a.did != ctx.my_did || a.device_key().ok() != Some(device) {
+            let Ok(device) = proto::device_from_text(&dev_text) else {
+                continue;
+            };
+            let Some(att) = field(m, "att")
+                .and_then(text)
+                .and_then(|t| serde_json::from_str::<proto::SignedAttestation>(&t).ok())
+            else {
+                continue;
+            };
+            let Ok(a) = proto::verify_attestation(&att) else {
+                continue;
+            };
+            if a.did != ctx.my_did || a.device != device {
                 continue;
             }
             let label = field(m, "label").and_then(text).unwrap_or_default();
@@ -247,11 +258,27 @@ impl AccDoc {
         let before = snap(st);
         // Notices first (every one verified here too, U10): they decide who is blocked and which
         // contact entries a deletion request removed.
-        let at_of = |b: &proto::SignedBlob, to: &str| proto::verify_block_notice(b, to).ok().filter(|n| n.from == ctx.my_did).map(|n| n.at);
+        let at_of = |b: &proto::SignedBlockNotice, to: &str| {
+            proto::verify_block_notice(b, to)
+                .ok()
+                .filter(|n| n.from == ctx.my_did)
+                .map(|n| n.at)
+        };
         for (did, v) in sect("sent") {
-            let Some(blob) = text(v).and_then(|t| serde_json::from_str::<proto::SignedBlob>(&t).ok()) else { continue };
-            let Some(at) = at_of(&blob, &did) else { continue };
-            if st.sent_notices.get(&did).and_then(|b| at_of(b, &did)).is_none_or(|mine| at > mine) {
+            let Some(blob) =
+                text(v).and_then(|t| serde_json::from_str::<proto::SignedBlockNotice>(&t).ok())
+            else {
+                continue;
+            };
+            let Some(at) = at_of(&blob, &did) else {
+                continue;
+            };
+            if st
+                .sent_notices
+                .get(&did)
+                .and_then(|b| at_of(b, &did))
+                .is_none_or(|mine| at > mine)
+            {
                 st.sent_notices.insert(did, blob);
             }
         }

@@ -79,7 +79,7 @@ fn history_needs_both_exact_empty_capability_markers() {
     ]));
 }
 #[test]
-fn extension_keeps_existing_bincode_message_discriminants() {
+fn extension_keeps_existing_message_discriminants() {
     let cases = [
         (SelfMsg::Hello { docs: vec![] }, 1_u32),
         (
@@ -103,9 +103,9 @@ fn extension_keeps_existing_bincode_message_discriminants() {
         ),
     ];
     for (message, tag) in cases {
-        let encoded = bincode::serialize(&message).unwrap();
-        assert_eq!(&encoded[..4], &tag.to_le_bytes());
-        let _: SelfMsg = bincode::deserialize(&encoded).unwrap();
+        let encoded = cryptography::codec::to_bytes(&message).unwrap();
+        assert_eq!(u32::from(encoded[0]), tag);
+        let _: SelfMsg = cryptography::codec::from_bytes(&encoded, usize::MAX).unwrap();
     }
 }
 
@@ -203,7 +203,6 @@ async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_bound
                 doc.write(
                     &ma.id,
                     &Record {
-                        v: 1,
                         group: gid.clone(),
                         author: ma.id.did().into(),
                         dev,

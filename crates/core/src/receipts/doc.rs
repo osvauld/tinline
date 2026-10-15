@@ -41,8 +41,8 @@ impl ReceiptDoc {
         account: &identity::Identity,
         admit: impl FnOnce(&[Entry]) -> Result<(), String>,
     ) -> Result<Option<(Entry, Vec<u8>)>, ReceiptError> {
-        let bytes = claim.sign_claim(account)?.to_bytes()?;
-        let claim = SignedReceipt::open(&bytes, &self.scope)?;
+        let bytes = claim.sign_claim(account)?.to_bytes();
+        let claim = open_receipt(&bytes, &self.scope)?;
         if writer_id(&claim.recipient, &claim.device) != self.doc.peer_id() {
             return Err(ReceiptError::Writer);
         }
@@ -202,7 +202,7 @@ impl ReceiptDoc {
                 if receipt_id(bytes) != key {
                     return Err(ReceiptError::Key);
                 }
-                let receipt = SignedReceipt::open(bytes, &self.scope)?;
+                let receipt = open_receipt(bytes, &self.scope)?;
                 if writer_id(&receipt.recipient, &receipt.device) != peer {
                     return Err(ReceiptError::Writer);
                 }

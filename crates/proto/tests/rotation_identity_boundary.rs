@@ -12,7 +12,7 @@ fn successive_endpoints_prove_the_same_account_without_relinking() {
         let proof = attest(&owner, endpoint, u64::from(generation));
         let accepted = accept_self_hello(&proof, owner.did(), endpoint, &HashSet::new()).unwrap();
         assert_eq!(accepted.did, owner.did());
-        assert_eq!(accepted.device_key().unwrap(), endpoint);
+        assert_eq!(accepted.device, endpoint);
     }
     // This acceptance does NOT enforce succession or retire earlier endpoints.
 }

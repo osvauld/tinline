@@ -82,9 +82,9 @@ impl Inner {
             }
             _ => return Err(Error::Protocol("expected hello".into())),
         };
-        if !auth.verify(&remote) {
+        let Some(auth) = verify_endpoint(&auth, &remote) else {
             return Err(Error::Protocol("endpoint proof does not verify".into()));
-        }
+        };
         enum Verdict {
             Refuse(&'static str),
             Removed(Vec<Vec<u8>>, Vec<u8>, Option<Vec<u8>>),
@@ -110,9 +110,12 @@ impl Inner {
                     Verdict::Welcome { joining: false }
                 }
                 Some(live) => {
-                    let ok = invite.as_ref().and_then(|i| i.open()).is_some_and(|i| {
-                        i.group == group && i.expires >= now() && live.state.is_admin(&i.issuer)
-                    });
+                    let ok = invite
+                        .as_ref()
+                        .and_then(|i| i.open().ok())
+                        .is_some_and(|i| {
+                            i.group == group && i.expires >= now() && live.state.is_admin(&i.issuer)
+                        });
                     if ok {
                         Verdict::Welcome { joining: true }
                     } else {
@@ -156,7 +159,7 @@ impl Inner {
                 // A host (or call host) that rotated shows its new address in its Hello: pass it
                 // on to everyone else at once (records first, then the addresses).
                 core.merge_hosts_from(&group, &hosts, None);
-                let mine = EndpointAuth::new(
+                let mine = endpoint_auth(
                     &core.account,
                     core.dev,
                     *core

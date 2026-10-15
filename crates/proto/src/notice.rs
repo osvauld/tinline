@@ -10,7 +10,6 @@ use super::*;
 /// deletes its contact entry for `from` and keeps the chat history read-only.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BlockNotice {
-    pub v: u8,
     pub from: String,
     pub to: String,
     pub blocked: bool,
@@ -19,27 +18,38 @@ pub struct BlockNotice {
     pub at: u64,
 }
 
-pub fn sign_block_notice(id: &Identity, to: &str, blocked: bool, at: u64) -> SignedBlob {
+impl Signable for BlockNotice {
+    const DOMAIN: domains::Domain = domains::BLOCK;
+    const MAX_BODY: usize = 256;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.from)
+    }
+    fn check(&self) -> Result<()> {
+        if self.from == self.to {
+            return Err(Error::SelfContact);
+        }
+        Ok(())
+    }
+}
+
+pub type SignedBlockNotice = Signed<BlockNotice>;
+
+pub fn sign_block_notice(id: &Identity, to: &str, blocked: bool, at: u64) -> SignedBlockNotice {
     let claim = BlockNotice {
-        v: VERSION,
         from: id.did().to_string(),
         to: to.to_string(),
         blocked,
         at,
     };
-    sign_blob(id, BLOCK_DOMAIN, &claim)
+    Signed::sign(&claim, id).expect("own notice signs")
 }
 
 /// Checks the signature under the DID the notice names as `from`, and that it is addressed to
 /// `expected_to`. Whether it is newer than one already held is the caller's check.
-pub fn verify_block_notice(blob: &SignedBlob, expected_to: &str) -> Result<BlockNotice> {
-    let n: BlockNotice = open_blob(blob, BLOCK_DOMAIN, |c: &BlockNotice| &c.from)?;
-    check_version(n.v)?;
+pub fn verify_block_notice(blob: &SignedBlockNotice, expected_to: &str) -> Result<BlockNotice> {
+    let n = blob.open()?;
     if n.to != expected_to {
         return Err(Error::WrongHolder);
-    }
-    if n.from == n.to {
-        return Err(Error::SelfContact);
     }
     Ok(n)
 }
@@ -53,13 +63,14 @@ pub fn forge_block_notice_for_test(
     to: &str,
     blocked: bool,
     at: u64,
-) -> SignedBlob {
+) -> SignedBlockNotice {
     let claim = BlockNotice {
-        v: VERSION,
         from: claimed_from.to_string(),
         to: to.to_string(),
         blocked,
         at,
     };
-    sign_blob(signer, BLOCK_DOMAIN, &claim)
+    let body = cryptography::codec::to_bytes(&claim).expect("notice encodes");
+    let sig = signed::sign_detached(signer, domains::BLOCK, &[&body]);
+    Signed::from_parts(body, sig)
 }

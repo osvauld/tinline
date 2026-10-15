@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use parking_lot::Mutex;
-use proto::{BlockNotice as Claim, Msg, SignedBlob};
+use proto::{BlockNotice as Claim, Msg, SignedBlockNotice as SignedBlob};
 
 use crate::node::{Inner, Node, addr_for, now_ms};
 use crate::store::{HeldNotice, State};
@@ -97,6 +97,22 @@ pub(crate) fn admit(me: &str, blob: &SignedBlob, held: Option<&HeldNotice>) -> R
         Some(h) if claim.at <= h.at => Err(Refusal::Stale),
         None if !claim.blocked => Err(Refusal::NothingToLift),
         _ => Ok(claim),
+    }
+}
+
+/// Most notices kept from DIDs that are not contacts (F01: anyone can mint DIDs and send one).
+pub(crate) const MAX_STRANGER_NOTICES: usize = 256;
+
+/// Bounds `notices` from non-contacts to `MAX_STRANGER_NOTICES`, dropping the oldest by `at`.
+/// A contact's notice is never dropped.
+pub(crate) fn cap_notices(st: &mut State) {
+    let contact = |d: &str| st.contacts.iter().any(|c| c.did == d);
+    let mut strangers: Vec<(u64, String)> =
+        st.notices.iter().filter(|(d, _)| !contact(d)).map(|(d, h)| (h.at, d.clone())).collect();
+    let Some(excess) = strangers.len().checked_sub(MAX_STRANGER_NOTICES).filter(|&n| n > 0) else { return };
+    strangers.sort_unstable();
+    for (_, d) in strangers.into_iter().take(excess) {
+        st.notices.remove(&d);
     }
 }
 
@@ -302,6 +318,7 @@ impl Inner {
             if claim.blocked {
                 apply_block_deletion_request(&mut s.state, &claim.from, claim.at);
             }
+            cap_notices(&mut s.state);
             claim
         };
         self.log(format!("{} {} us", claim.from, if claim.blocked { "blocked" } else { "unblocked" }));
@@ -467,5 +484,34 @@ mod tests {
         // Re-added after the notice was signed: kept.
         let mut st = State { contacts: vec![contact(a.did(), 61)], ..Default::default() };
         assert!(!apply_block_deletion_request(&mut st, a.did(), 60_000));
+    }
+
+    #[test]
+    fn stranger_notices_are_capped_oldest_first_and_contacts_kept() {
+        let (a, _) = identity::generate();
+        let blob = proto::sign_block_notice(&a, "did:me", true, 1);
+        let h = |at: u64| HeldNotice { notice: blob.clone(), name: String::new(), blocked: true, at };
+        let mut st = State::default();
+        st.contacts.push(StoredContact {
+            did: "did:friend".into(),
+            name: "f".into(),
+            devices: vec![],
+            device_list: None,
+            grant_from_them: proto::issue_grant(&a, "did:me", 1, 10),
+            call_grant_from_them: None,
+            calls_allowed: true,
+            added_at: 0,
+            alias: None,
+            verified: true,
+        });
+        st.notices.insert("did:friend".into(), h(0)); // oldest of all, but a contact
+        for i in 0..MAX_STRANGER_NOTICES as u64 + 10 {
+            st.notices.insert(format!("did:x{i}"), h(i + 1));
+            cap_notices(&mut st);
+        }
+        assert_eq!(st.notices.len(), MAX_STRANGER_NOTICES + 1);
+        assert!(st.notices.contains_key("did:friend"));
+        assert!((0..10).all(|i| !st.notices.contains_key(&format!("did:x{i}"))));
+        assert!(st.notices.contains_key(&format!("did:x{}", MAX_STRANGER_NOTICES + 9)));
     }
 }

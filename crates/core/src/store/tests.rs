@@ -122,11 +122,20 @@ fn only_a_parse_error_quarantines_state() {
 
 #[test]
 fn old_contact_records_load_with_the_relay_on_the_first_device() {
+    let (them, _) = identity::generate();
+    let grant = serde_json::to_value(proto::issue_token(
+        &them,
+        "did:key:me",
+        proto::Cap::Message,
+        1,
+        100,
+    ))
+    .unwrap();
     let old = serde_json::json!({
         "did": "did:key:zX", "name": "N",
         "devices": [vec![1u8; 32], vec![2u8; 32]],
         "relay": "https://r.example/",
-        "grant_from_them": {"payload": "p", "signature": "s"},
+        "grant_from_them": grant,
         "added_at": 5
     });
     let c: StoredContact = serde_json::from_value(old.clone()).unwrap();
@@ -134,7 +143,7 @@ fn old_contact_records_load_with_the_relay_on_the_first_device() {
     assert_eq!((c.devices[0].device, c.devices[0].relay.as_deref()), ([1u8; 32], Some("https://r.example/")));
     assert_eq!((c.devices[1].device, c.devices[1].relay.clone()), ([2u8; 32], None));
     assert!(c.device_list.is_none() && !c.verified && c.alias.is_none());
-    // Before P6: calls allowed by default; "p" is no grant at all, so nothing to migrate.
+    // Before P6: calls allowed by default; a message token carries no call slot, so nothing to migrate.
     assert!(c.calls_allowed && c.call_grant_from_them.is_none());
     // Round trip in the new shape, and as part of a whole old State.
     let again: StoredContact = serde_json::from_slice(&serde_json::to_vec(&c).unwrap()).unwrap();
@@ -143,8 +152,13 @@ fn old_contact_records_load_with_the_relay_on_the_first_device() {
     assert_eq!(st.contacts[0].devices.len(), 2);
     assert!(st.registry.is_empty() && st.own_list.is_none());
     // No relay, and a contact with no devices at all, still load.
-    let bare = serde_json::json!({"did":"d","name":"n","devices":[],"relay":null,"grant_from_them":{"payload":"p","signature":"s"},"added_at":1});
-    assert!(serde_json::from_value::<StoredContact>(bare).unwrap().devices.is_empty());
+    let bare = serde_json::json!({"did":"d","name":"n","devices":[],"relay":null,"grant_from_them":grant,"added_at":1});
+    assert!(
+        serde_json::from_value::<StoredContact>(bare)
+            .unwrap()
+            .devices
+            .is_empty()
+    );
 }
 
 // KIND: invariant (P6, U13 migration)

@@ -10,7 +10,6 @@ pub(super) fn post(f: &Fixture, doc: &GroupDoc, dev: [u8; 32], text: &str) -> (E
     doc.write(
         &f.author,
         &Record {
-            v: 1,
             group: f.gid.clone(),
             author: f.author.did().into(),
             dev,

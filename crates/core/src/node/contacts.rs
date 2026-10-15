@@ -80,8 +80,11 @@ impl Inner {
             prior
         };
         self.persist_async(me.epoch).await?;
-        let addr = addr_for(&proto::device_from_text(&claim.device)?, relay.as_deref())?;
-        self.log(format!("adding contact {}: dialing {}", claim.name, addr.id));
+        let addr = addr_for(&claim.device, relay.as_deref())?;
+        self.log(format!(
+            "adding contact {}: dialing {}",
+            claim.name, addr.id
+        ));
         // Not reached: they never saw this hello, so what we held before stands.
         let undo = |this: &Arc<Self>| {
             let mut s = this.shared.lock();

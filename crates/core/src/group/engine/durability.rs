@@ -23,8 +23,7 @@ pub(super) fn receipt_cores_for_test(
     let bytes = host
         .issue_storage_attestation(&f.gid, &day())
         .unwrap()
-        .to_bytes()
-        .unwrap();
+        .to_bytes();
     let mut source = forwarding_proofs::sibling(&f, [4; 32]);
     let mut target = forwarding_proofs::sibling(&f, [5; 32]);
     source.epoch = source_epoch;
@@ -61,7 +60,6 @@ pub(super) fn own_content_core_for_test(
             writer_id(account.did(), &f.dev),
         );
         let record = Record {
-            v: 1,
             group: f.gid.clone(),
             author: account.did().into(),
             dev: f.dev,
@@ -130,7 +128,6 @@ impl Fixture {
         let gid = group_id(author.did(), &nonce);
         let meta = GroupDoc::new(&gid, writer_id(author.did(), &dev));
         let record = Record {
-            v: 1,
             group: gid.clone(),
             author: author.did().into(),
             dev,
@@ -164,7 +161,6 @@ impl Fixture {
 
     fn meta_update(&self) -> Vec<u8> {
         let record = Record {
-            v: 1,
             group: self.gid.clone(),
             author: self.author.did().into(),
             dev: self.dev,
@@ -178,7 +174,6 @@ impl Fixture {
     fn post_update(&self) -> Vec<u8> {
         let doc = GroupDoc::new_in(&self.gid, day(), writer_id(self.author.did(), &self.dev));
         let record = Record {
-            v: 1,
             group: self.gid.clone(),
             author: self.author.did().into(),
             dev: self.dev,
@@ -215,7 +210,6 @@ fn duplicate_meta_record_with_new_operation_range_is_persisted_before_ack() {
     // This is NOT a claim that writer forks are safe or a new fork policy.
     let branch = GroupDoc::new(&f.gid, f.meta.peer());
     let prefix = Record {
-        v: 1,
         group: f.gid.clone(),
         author: f.author.did().into(),
         dev: f.dev,

@@ -189,7 +189,7 @@ Order (each its own change; golden/compat tests land BEFORE the bump):
 5. Desktop: drop gtk via tray-icon 0.26 `ksni` backend (gtk3 unmaintained RUSTSEC-2024-0413; gtk 0.19 conflicts) — test KDE+GNOME.
    resvg/usvg 0.48 (pixel baselines), rtrb 0.4 (read changelog), jni 0.22 (video_jni.rs 2 fns).
    **keyring 4: WAIT** — all our features removed, unverified that 3.6 entries stay readable; needs cross-version test on 3 OSes.
-6. **bincode: stay on 1.3.3.** 3.0.0 is a tombstone (4 KB, compile_error); 2.x changes the encoding of signed/wire/persisted
+6. **bincode: superseded 2026-10-15 by postcard (`cryptography::codec`); was: stay on 1.3.3.** 3.0.0 is a tombstone (4 KB, compile_error); 2.x changes the encoding of signed/wire/persisted
    bytes. Moving off is a separate protocol project (RUSTSEC-2025-0141 is informational "unmaintained").
 No live security advisories against our current Rust versions except that informational bincode one.
 

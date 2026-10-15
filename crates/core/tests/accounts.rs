@@ -103,8 +103,8 @@ fn fixture(my_did: &str) -> Fixture {
         "TICKETMARK".into(),
         "Called Marker".into(),
         other.did().strip_prefix("did:key:").unwrap().to_string(),
-        grant_v["payload"].as_str().unwrap().to_string(),
-        grant_v["signature"].as_str().unwrap().to_string(),
+        // A grant is one base64url string (`Signed<T>` in JSON).
+        grant_v.as_str().unwrap().to_string(),
     ];
     Fixture { state, calls, markers }
 }

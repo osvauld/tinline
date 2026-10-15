@@ -198,7 +198,7 @@ fn peek_says_why() {
     assert_eq!(tara.node.peek_code("hello there".into()), CodePeek::NotACode);
     assert_eq!(tara.node.peek_code(tara.node.my_ticket().unwrap()), CodePeek::Own);
     let (other, _) = identity::generate();
-    let dev = proto::device_public(&proto::new_device_secret());
+    let dev = cryptography::signature::public_key(&proto::new_device_secret());
     let gone = proto::issue_contact_ticket(&other, dev, "Old Code", None, now() - 7200, 3600).to_text();
     match tara.node.peek_code(format!("here: {gone}")) {
         CodePeek::Expired { name, did, .. } => assert_eq!((name.as_str(), did.as_str()), ("Old Code", other.did())),

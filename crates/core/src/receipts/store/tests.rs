@@ -51,14 +51,15 @@ fn commit_failure_keeps_live_and_disk_empty_then_retry_commits_original_and_poin
     let entry = &result.entries[0];
     assert_eq!(
         ledger.raw(&entry.id).unwrap(),
-        c.sign_claim(&a).unwrap().to_bytes().unwrap()
+        c.sign_claim(&a).unwrap().to_bytes()
     );
-    let pointer: Position = bincode::deserialize(
+    let pointer: Position = cryptography::codec::from_bytes(
         &store
             .db
             .get(&format!("{}index/{}", ledger.prefix, entry.id))
             .unwrap()
             .unwrap(),
+        usize::MAX,
     )
     .unwrap();
     assert_eq!(
@@ -143,7 +144,7 @@ fn real_sealed_reopen_restores_typed_call_observations_and_message_read_holes() 
     let reads = reopened.open(message.scope.clone(), peer, ok).unwrap();
     assert_eq!(
         recovered.raw(&call_entry.id).unwrap(),
-        c.sign_claim(&a).unwrap().to_bytes().unwrap()
+        c.sign_claim(&a).unwrap().to_bytes()
     );
     assert_eq!(recovered.entries().unwrap()[0].receipt.call, c.call);
     assert_eq!(
@@ -168,7 +169,7 @@ fn already_known_receipt_under_new_native_counter_persists_vv_without_duplicate_
     // as in the existing group durability fixture. NOT a writer-fork safety claim.
     let mut prefix_claim = c.clone();
     prefix_claim.kind = Kind::Read;
-    let prefix_bytes = prefix_claim.sign_claim(&a).unwrap().to_bytes().unwrap();
+    let prefix_bytes = prefix_claim.sign_claim(&a).unwrap().to_bytes();
     raw.get_map("receipts")
         .insert(
             &receipt_id(&prefix_bytes),
@@ -219,7 +220,7 @@ fn persisted_frontier_or_sequence_inconsistency_is_not_empty_history() {
     };
     store
         .db
-        .put(&format!("{p}state"), &bincode::serialize(&bad).unwrap())
+        .put(&format!("{p}state"), &cryptography::codec::to_bytes(&bad).unwrap())
         .unwrap();
     assert!(store.open(c.scope.clone(), 9, ok).is_err());
     store.db.delete(&format!("{p}u/{:020}", 1)).unwrap();

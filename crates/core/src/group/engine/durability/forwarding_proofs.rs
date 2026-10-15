@@ -76,14 +76,17 @@ fn own_replica_forwarding_cannot_strip_or_substitute_author_signature() {
     original_doc.import_for_test(&original);
     let entry = original_doc.entries().unwrap().pop().unwrap();
     let raw = original_doc.raw_value(&entry.id).unwrap();
-    let mut signed: SignedRecord = bincode::deserialize(&raw).unwrap();
-    let mut record: Record = bincode::deserialize(&signed.body).unwrap();
+    let signed = SignedRecord::from_bytes(&raw).unwrap();
+    let mut record: Record = signed.peek().unwrap();
     record.body = Body::Post {
         text: "substituted by forwarder".into(),
         reply_to: None,
     };
-    signed.body = bincode::serialize(&record).unwrap();
-    let forged = signed.to_bytes();
+    let forged = SignedRecord::from_parts(
+        cryptography::codec::to_bytes(&record).unwrap(),
+        *signed.sig(),
+    )
+    .to_bytes();
     let forgery = GroupDoc::new_in(&f.gid, day(), entry.peer);
     let update = forgery.raw_insert(&record_id(&forged), forged);
     let result = mobile.apply(&f.gid, &day(), &update, |_, _, _| Ok(()));

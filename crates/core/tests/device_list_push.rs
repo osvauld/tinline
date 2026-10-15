@@ -18,7 +18,6 @@
 use std::time::Duration;
 
 mod support;
-use support::codec::{decode, encode};
 use support::eventually_200ms as eventually;
 use support::*;
 
@@ -74,7 +73,7 @@ fn call_rings_on(from: &Peer, to_did: &str, ringer: &Peer) {
     eventually(20, "call over", || from.node.current_call().is_none() && ringer.node.current_call().is_none());
 }
 
-fn own_list(p: &Peer) -> proto::SignedBlob {
+fn own_list(p: &Peer) -> proto::SignedDeviceList {
     serde_json::from_str(&p.node.own_device_list_for_test().unwrap()).unwrap()
 }
 
@@ -113,7 +112,12 @@ fn unlinking_a_device_reaches_the_contact_without_a_call() {
     eventually(30, "A learns B2", || a.dials(&b).contains(&b2));
     b.node.unlink_device(b2.clone(), Some(PASS.into())).unwrap();
     let mine = proto::verify_device_list(&own_list(&b), &b.did).unwrap();
-    assert!(mine.devices.iter().all(|e| e.device != b2), "B's own list dropped B2");
+    assert!(
+        mine.devices
+            .iter()
+            .all(|e| proto::device_to_text(&e.device) != b2),
+        "B's own list dropped B2"
+    );
     eventually(30, "A drops B2", || !a.dials(&b).contains(&b2));
     assert_eq!(a.dials(&b), vec![b.key()]);
 }
@@ -191,9 +195,12 @@ fn stale_replayed_forged_and_far_future_pushes_are_refused() {
     let stale = proto::sign_device_list(&bid, &[(k(&mine), None)], t);
     let forged = {
         let m = proto::sign_device_list(&mal, &[(k(&x), None)], t + 5000);
-        let mut v: serde_json::Value = serde_json::from_slice(&decode(&m.payload)).unwrap();
-        v["did"] = b.did.clone().into();
-        proto::SignedBlob { payload: encode(&serde_json::to_vec(&v).unwrap()), signature: m.signature }
+        let mut claim = m.peek().unwrap();
+        claim.did = b.did.clone();
+        proto::SignedDeviceList::from_parts(
+            cryptography::codec::to_bytes(&claim).unwrap(),
+            *m.sig(),
+        )
     };
     let wrong_did = proto::sign_device_list(&mal, &[(k(&x), None)], t + 5000);
     let far_future = proto::sign_device_list(&bid, &[(k(&x), None)], t + 2 * 24 * 3600 * 1000);

@@ -5,8 +5,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use identity::Identity;
-use proto::SignedBlob;
 use proto::gcall::{self as w, CallStart, EndReason, GroupCallMsg, HostRef};
+use proto::gcall::{SignedEnd, SignedNote, SignedRoster, SignedStart};
 
 use super::host::frame;
 use super::*;
@@ -59,7 +59,7 @@ pub enum ClientAction {
 
 pub struct ClientEngine {
     id: Identity,
-    note: Option<SignedBlob>,
+    note: Option<SignedNote>,
     start: CallStart,
     host: HostRef,
     expected_gen: u32,
@@ -85,7 +85,13 @@ pub struct ClientEngine {
 impl ClientEngine {
     /// Join the call in `start` (already accepted by the `CallBoard`). `note` is this
     /// device's DID-signed group endpoint note (G2). `now`: Unix ms (Join `issued_ms`).
-    pub fn new(id: Identity, start: CallStart, note: Option<SignedBlob>, now: u64, auth: &dyn CallAuthority) -> Result<(Self, Vec<ClientAction>), Refusal> {
+    pub fn new(
+        id: Identity,
+        start: CallStart,
+        note: Option<SignedNote>,
+        now: u64,
+        auth: &dyn CallAuthority,
+    ) -> Result<(Self, Vec<ClientAction>), Refusal> {
         if !auth.host_permit_ok(&start.gid, &start.host_ref) {
             return Err(Refusal::PermitInvalid);
         }
@@ -194,8 +200,12 @@ impl ClientEngine {
     }
 
     // The CallStart of the generation we dialed, sent by the host after our Join.
-    fn on_start(&mut self, blob: &SignedBlob, auth: &dyn CallAuthority) -> Result<Vec<ClientAction>, Refusal> {
-        let s = w::open_start(blob)?;
+    fn on_start(
+        &mut self,
+        blob: &SignedStart,
+        auth: &dyn CallAuthority,
+    ) -> Result<Vec<ClientAction>, Refusal> {
+        let s = blob.open()?;
         if s.gid != self.start.gid {
             return Err(Refusal::WrongGroup);
         }
@@ -237,8 +247,13 @@ impl ClientEngine {
         Ok(())
     }
 
-    fn on_roster(&mut self, blob: &SignedBlob, _now: u64, auth: &dyn CallAuthority) -> Result<Vec<ClientAction>, Refusal> {
-        let r = w::open_roster(blob)?;
+    fn on_roster(
+        &mut self,
+        blob: &SignedRoster,
+        _now: u64,
+        auth: &dyn CallAuthority,
+    ) -> Result<Vec<ClientAction>, Refusal> {
+        let r = blob.open()?;
         self.check_host_msg(&r.gid, &r.call_id, r.host_gen, &r.host_did, auth)?;
         if r.epoch <= self.epoch {
             return Err(Refusal::Stale);
@@ -285,8 +300,13 @@ impl ClientEngine {
         Ok(vec![])
     }
 
-    fn on_end(&mut self, blob: &SignedBlob, now: u64, auth: &dyn CallAuthority) -> Result<Vec<ClientAction>, Refusal> {
-        let e = w::open_end(blob)?;
+    fn on_end(
+        &mut self,
+        blob: &SignedEnd,
+        now: u64,
+        auth: &dyn CallAuthority,
+    ) -> Result<Vec<ClientAction>, Refusal> {
+        let e = blob.open()?;
         if e.host_gen > self.expected_gen {
             return Err(Refusal::Unknown);
         }
@@ -357,7 +377,14 @@ impl ClientEngine {
         if matches!(self.state, ClientState::Ended(_)) {
             return vec![];
         }
-        let l = w::sign_leave(&self.id, &self.start.gid, &self.start.call_id, self.expected_gen, now);
+        let l = w::sign_leave(
+            &self.id,
+            &self.start.gid,
+            &self.start.call_id,
+            self.expected_gen,
+            now,
+        )
+        .expect("a verified call's ids sign");
         self.state = ClientState::Ended(ClientEnd::Left);
         vec![ClientAction::Control(frame(&GroupCallMsg::Leave { leave: l })), ClientAction::Ended(ClientEnd::Left)]
     }
@@ -394,8 +421,18 @@ impl ClientEngine {
     }
 
     fn join_frame(&mut self, now: u64) -> ClientAction {
-        let (_, join) = w::sign_join(&self.id, &self.start.gid, &self.start.call_id, self.expected_gen, now);
-        ClientAction::Control(frame(&GroupCallMsg::Join { join, note: self.note.clone() }))
+        let (_, join) = w::sign_join(
+            &self.id,
+            &self.start.gid,
+            &self.start.call_id,
+            self.expected_gen,
+            now,
+        )
+        .expect("a verified call's ids sign");
+        ClientAction::Control(frame(&GroupCallMsg::Join {
+            join,
+            note: self.note.clone(),
+        }))
     }
 
     /// A downstream datagram `[0x02][slot][audio]`. Slots not in the Roster are dropped (§6).

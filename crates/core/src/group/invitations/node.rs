@@ -51,7 +51,7 @@ impl Node {
                 let row = match pending {
                     Some(r) => r.clone(),
                     None => {
-                        let invite = Invite { group: group_id.clone(), issuer: core.did.clone(), expires: now() + INVITE_TTL, nonce: cryptography::rng::bytes() }.sign(&core.account);
+                        let invite = issue_invite(&core.account, &group_id, now() + INVITE_TTL);
                         let t = inner.group_token(&core, &group_id, Some(invite))?;
                         let row = InvRow {
                             id: hex::encode(cryptography::rng::bytes::<16>()),
@@ -65,7 +65,7 @@ impl Node {
                             state: GroupInvitationState::Pending,
                             at: now_ms(),
                             expires: now() + INVITE_TTL,
-                            token: bincode::serialize(&t).expect("token serialises"),
+                            token: cryptography::codec::to_bytes(&t).expect("token serialises"),
                             delivered: false,
                             owe: true,
                         };
@@ -108,7 +108,7 @@ impl Node {
                 GroupInvitationState::Expired => return Err(Error::Rejected("this invitation has expired".into())),
                 _ => return Err(Error::Rejected("already answered".into())),
             }
-            let t: InviteToken = bincode::deserialize(&r.token).map_err(|_| Error::Protocol("bad invitation".into()))?;
+            let t: InviteToken = cryptography::codec::from_bytes(&r.token, crate::group::record::MAX_TOKEN).map_err(|_| Error::Protocol("bad invitation".into()))?;
             inner.group_join_token(t).await?;
             r.state = GroupInvitationState::Joined;
             r.owe = false;
@@ -142,9 +142,29 @@ impl Node {
 impl Node {
     /// The group endpoint ids of the hosts the token of invitation `id` names.
     pub fn group_invitation_hosts_for_test(&self, id: String) -> Vec<String> {
-        let Ok(core) = self.inner.group_core() else { return vec![] };
-        let row = core.store.invs().unwrap_or_default().into_iter().find(|r| r.id == id);
-        let Some(t) = row.and_then(|r| bincode::deserialize::<InviteToken>(&r.token).ok()) else { return vec![] };
-        t.hosts.iter().filter_map(|h| h.open()).filter_map(|a| iroh::PublicKey::from_bytes(&a.endpoint).ok()).map(|k| k.to_string()).collect()
+        let Ok(core) = self.inner.group_core() else {
+            return vec![];
+        };
+        let row = core
+            .store
+            .invs()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|r| r.id == id);
+        let Some(t) = row.and_then(|r| {
+            cryptography::codec::from_bytes::<InviteToken>(
+                &r.token,
+                crate::group::record::MAX_TOKEN,
+            )
+            .ok()
+        }) else {
+            return vec![];
+        };
+        t.hosts
+            .iter()
+            .filter_map(|h| h.open().ok())
+            .filter_map(|a| iroh::PublicKey::from_bytes(&a.endpoint).ok())
+            .map(|k| k.to_string())
+            .collect()
     }
 }
