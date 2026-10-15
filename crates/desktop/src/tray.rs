@@ -72,7 +72,7 @@ fn tray_png(state: State, dark: bool) -> &'static [u8] {
 /// Decodes a PNG to straight RGBA.
 fn decode(png_bytes: &[u8]) -> Option<(Vec<u8>, u32, u32)> {
     let mut reader = png::Decoder::new(std::io::Cursor::new(png_bytes)).read_info().ok()?;
-    let mut buf = vec![0; reader.output_buffer_size()];
+    let mut buf = vec![0; reader.output_buffer_size()?];
     let info = reader.next_frame(&mut buf).ok()?;
     buf.truncate(info.buffer_size());
     let rgba = match info.color_type {
