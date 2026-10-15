@@ -52,8 +52,15 @@ export const gateSim = $state({
   maxTries: 5,              // DECIDED 2026-10-12: 5 wrong passphrases lock Unlock for 30 s (the core never locks out today; a core follow-up)
   lockSeconds: 30,
   kdfMs: 700,               // how long "Encrypting…/Unlocking…" takes (simulated Argon2)
-  remembered: true,         // the phone remembers the passphrase (Android Keystore)
+  remembered: true,         // this device remembers the passphrase (Android Keystore / desktop keyring)
+  keyring: true,            // desktop: a system keyring answers (Secret Service). None = Tinline keeps asking (its own Argon2id lock)
 });
+/** Can this device remember the passphrase? The phone always (Keystore); a computer only with a keyring. */
+export const canRemember = () => prefs.form === 'android' || gateSim.keyring;
+/** Copy for the remember switch, one place for Unlock and Settings. */
+export const rememberCopy = () => prefs.form === 'android'
+  ? { label: 'Remember on this phone', sub: 'Skips the passphrase when Tinline restarts, using the phone’s secure key store.' }
+  : { label: 'Remember on this computer', sub: 'Skips the passphrase when Tinline starts, using this computer’s keyring.' };
 
 class Gate {
   step = $state<Step>('welcome');
@@ -279,7 +286,7 @@ class Gate {
     await this.sleep(gateSim.kdfMs);
     this.busy = false;
     if (pass === gateSim.passphrase) {
-      gateSim.remembered = this.isAndroid ? this.remember : false;
+      gateSim.remembered = canRemember() ? this.remember : false;
       this.tries = 0;
       db.account.gate = 'ready';
       this.enter('onboarding');

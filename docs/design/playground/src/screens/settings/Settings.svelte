@@ -7,6 +7,9 @@
   import IconButton from '../../lib/ui/IconButton.svelte';
   import Notifications from './Notifications.svelte';
   import Sounds from './Sounds.svelte';
+  import CallsVideo from './CallsVideo.svelte';
+  import Storage from './Storage.svelte';
+  import About from './About.svelte';
   import PermBanner from './PermBanner.svelte';
   import { problems } from './perms';
   import { db } from '../../lib/model/store.svelte';
@@ -36,14 +39,18 @@
     { icon: 'shield', label: 'Privacy', go: () => nav.push({ name: 'privacy' }) },
     { icon: 'bell', label: 'Notifications', go: () => nav.push({ name: 'settings', section: 'notifications' }) },
     { icon: 'vol', label: 'Sounds', go: () => nav.push({ name: 'settings', section: 'sounds' }) },
+    { icon: 'video', label: 'Video', go: () => nav.push({ name: 'settings', section: 'video' }) },
+    { icon: 'save', label: 'Storage', go: () => nav.push({ name: 'settings', section: 'storage' }) },
+    { icon: 'info', label: 'About Tinline', go: () => nav.push({ name: 'settings', section: 'about' }) },
   ];
-  const title = $derived(section ? section[0].toUpperCase() + section.slice(1) : 'Settings');
+  const TITLES: Record<string, string> = { notifications: 'Notifications', sounds: 'Sounds', video: 'Video', storage: 'Storage', about: 'About Tinline' };
+  const title = $derived(section ? TITLES[section] ?? section : 'Settings');
 </script>
 
 <div class="pf" data-settings>
   <header class="pf-bar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /><b>{title}</b></header>
   {#if section}
-    {#if section === 'notifications'}<Notifications />{:else if section === 'sounds'}<Sounds />{/if}
+    {#if section === 'notifications'}<Notifications />{:else if section === 'sounds'}<Sounds />{:else if section === 'video'}<CallsVideo />{:else if section === 'storage'}<Storage />{:else if section === 'about'}<About />{/if}
   {:else}
   <div class="pf-scroll">
   <div class="pf-col">

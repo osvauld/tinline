@@ -5,7 +5,7 @@
   import Btn from './Btn.svelte';
   import Field from './Field.svelte';
   import StepShell from './StepShell.svelte';
-  import { gate, switchAccount } from '../../lib/model/actions/gate.svelte';
+  import { gate, switchAccount, canRemember, rememberCopy } from '../../lib/model/actions/gate.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   let pass = $state('');
   // Identities have one nickname: the whole of it. With other identities here it is the switcher (lab A, 2026-10-14).
@@ -27,8 +27,9 @@
       {#snippet extra()}{#if lock > 0}<p class="lock" role="status">Too many tries. You can try again in {mmss}.</p>{/if}{/snippet}
     </Field>
   </div>
-  {#if gate.isAndroid}
-    <label class="rem"><span>Remember on this phone<small>Skips the passphrase when Tinline restarts, using the phone’s secure key store.</small></span><Switch label="Remember on this phone" bind:checked={gate.remember} /></label>
+  {#if canRemember()}
+    {@const rc = rememberCopy()}
+    <label class="rem"><span>{rc.label}<small>{rc.sub}</small></span><Switch label={rc.label} bind:checked={gate.remember} /></label>
   {/if}
   {#snippet foot()}
     <Btn type="submit" enter busy={gate.busy} disabled={!pass || lock > 0}>{gate.busy ? 'Unlocking…' : 'Unlock'}</Btn>
