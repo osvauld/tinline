@@ -5686,7 +5686,6 @@ dependencies = [
 name = "p2pcore"
 version = "0.1.32"
 dependencies = [
- "aes-gcm 0.11.1",
  "audio",
  "base64 0.23.1",
  "blake3",
@@ -6251,12 +6250,9 @@ dependencies = [
 name = "proto"
 version = "0.1.32"
 dependencies = [
- "aes-gcm 0.11.1",
  "base64 0.23.1",
  "cryptography",
  "ed25519-dalek",
- "hkdf",
- "hmac",
  "identity",
  "serde",
  "serde_json",

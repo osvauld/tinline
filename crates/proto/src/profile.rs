@@ -3,7 +3,7 @@
 use crate::{Error, Result, SignedBlob, VERSION, check_version, open_blob, sign_blob};
 use identity::Identity;
 use serde::{Deserialize, Serialize};
-const DOMAIN: &[u8] = b"tinline-profile-picture-deletion-v1\0";
+const DOMAIN: cryptography::domains::Domain = cryptography::domains::PICTURE_DELETION;
 pub const PICTURE_DELETE_SCOPE: &str = "cached-profile-picture";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

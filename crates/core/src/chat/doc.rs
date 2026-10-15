@@ -48,8 +48,6 @@ pub fn doc_name(pair: &str, day: &str) -> String {
     format!("dm/{pair}/{day}")
 }
 
-const WRITER_ID_DOMAIN: &[u8] = b"tinline-writer-id-v1";
-
 /// The record key a writer's version of a message lives under: `v:` and its writer ID as 16
 /// lowercase hex digits. Only that writer ever writes it.
 pub fn version_key(writer: u64) -> String {
@@ -73,17 +71,11 @@ fn rank(m: &MsgRec, writer: u64) -> (bool, Option<i64>, u64) {
 }
 
 /// The writer ID (U16) of the account `did` on the install whose device ID is `device`: the
-/// first 64 bits (little-endian) of BLAKE3 over a domain, the length-prefixed DID and the device
-/// ID. The app writes every chat doc with it as the Loro peer id, and every receiver recomputes
+/// first 64 bits (little-endian) of `hash::hasher(WRITER_ID)` over the DID and the device ID. The app writes every chat doc with it as the Loro peer id, and every receiver recomputes
 /// it from the author and the `dev` of each version. It depends on no device or transport key.
 /// `u64::MAX` is not a valid Loro peer id; that one output maps to `u64::MAX - 1`.
 pub fn writer_id(did: &str, device: &[u8; 32]) -> u64 {
-    let mut h = blake3::Hasher::new();
-    h.update(WRITER_ID_DOMAIN);
-    h.update(&(did.len() as u32).to_be_bytes());
-    h.update(did.as_bytes());
-    h.update(device);
-    let id = u64::from_le_bytes(h.finalize().as_bytes()[..8].try_into().unwrap());
+    let id = cryptography::hash::hasher(cryptography::domains::WRITER_ID).part(did.as_bytes()).part(device).u64();
     if id == u64::MAX { u64::MAX - 1 } else { id }
 }
 

@@ -39,14 +39,14 @@ OSVL1: base32( v | device[32] | link_secret[16] | exp[3] | relay_code/ext )
 
 ## 2. Handshake (`tinline/link/1`)
 
-Let `T = "tinline/link/v1" || E.device || N.device || link_secret` and
-`K = HKDF(link_secret, T)`.
+Let `T = (E.device, N.device, link_secret)` framed by `cryptography::sign::input` and
+`K = BLAKE3-derive_key(T)` (exact labels in `docs/protocol.md` "Link handshake").
 
-1. Scanner → displayer: `LinkHello { role, proof = HMAC(K, "scanner" || own device) }`.
-2. Displayer → scanner: `LinkHello { role, proof = HMAC(K, "displayer" || own device) }`.
+1. Scanner → displayer: `LinkHello { role, proof = MAC(K, "scanner", own device) }` (keyed BLAKE3).
+2. Displayer → scanner: `LinkHello { role, proof = MAC(K, "displayer", own device) }`.
    Both check the proof against the QUIC-authenticated remote device key. A wrong secret gets the
    generic `Reject` and burns the QR (one attempt per QR; the displayer closes the listener).
-3. Both screens show a **6-digit confirmation code** = first 20 bits of `HMAC(K, "confirm")`, and
+3. Both screens show a **6-digit confirmation code** = first 20 bits of `MAC(K, confirm)`, and
    E shows N's chosen device label. The user confirms on E (the code catches a photographed QR
    being raced by a third device).
 4. **E requires local authorization**: the passphrase, or device authentication on Android when no

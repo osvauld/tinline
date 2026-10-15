@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub(crate) const PROOFS_PER_PAGE: usize = 1; // provisional transfer/work budget
 
 pub(crate) fn digest(bytes: &[u8]) -> String {
-    blake3::hash(bytes).to_hex().to_string()
+    hex::encode(cryptography::hash::content(cryptography::domains::ATTESTATION_DIGEST, bytes))
 }
 pub(crate) fn valid_digest(id: &str) -> bool {
     id.len() == 64

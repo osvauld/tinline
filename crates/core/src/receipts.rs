@@ -3,9 +3,9 @@
 //! A signature is a claim, not a disk/read audit. Host/cache proofs are separate.
 use crate::{
     chat::doc::{day_of, day_start},
-    group::record::{put_bytes_pub, verify_did_pub},
+    group::record::{sig_input, verify_did},
 };
-use cryptography::codec;
+use cryptography::{codec, domains, hash};
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod api;
@@ -14,9 +14,6 @@ pub(crate) mod doc;
 pub(crate) mod evidence;
 pub(crate) mod participation;
 pub(crate) mod store;
-const DOMAIN: &[u8] = b"tinline-recipient-receipt-v1\0";
-const MESSAGE_DOMAIN: &[u8] = b"tinline-receipt-original-message-v1\0";
-const RECEIPT_ID_DOMAIN: &[u8] = b"tinline-recipient-receipt-id-v1\0";
 // Provisional budgets indexed in docs/design/sync-receipt-limits.md.
 pub(crate) const MAX_MESSAGES: usize = 256;
 pub(crate) const MAX_CONTEXT_WRITERS: usize = 1024;
@@ -103,23 +100,13 @@ pub(crate) enum ReceiptError {
 /// or a random record ID. Callers must validate/canonicalize those bytes first.
 /// The real DM/group extraction adapters are not implemented by this helper.
 pub(crate) fn message_digest(original: &[u8]) -> [u8; 32] {
-    let mut h = blake3::Hasher::new();
-    h.update(MESSAGE_DOMAIN);
-    h.update(&(original.len() as u64).to_be_bytes());
-    h.update(original);
-    *h.finalize().as_bytes()
+    hash::content(domains::RECEIPT_MESSAGE, original)
 }
 pub(crate) fn receipt_id(original: &[u8]) -> String {
-    let mut h = blake3::Hasher::new();
-    h.update(RECEIPT_ID_DOMAIN);
-    h.update(&(original.len() as u64).to_be_bytes());
-    h.update(original);
-    h.finalize().to_hex().to_string()
+    hash::hasher(domains::RECEIPT_ID).part(original).hex()
 }
 fn sign_input(body: &[u8]) -> Vec<u8> {
-    let mut b = DOMAIN.to_vec();
-    put_bytes_pub(&mut b, body);
-    b
+    sig_input(domains::RECEIPT, body)
 }
 impl Receipt {
     fn check(&self) -> Result<(), ReceiptError> {
@@ -198,7 +185,7 @@ impl SignedReceipt {
         if &claim.scope != scope {
             return Err(ReceiptError::Scope);
         }
-        if !verify_did_pub(&claim.recipient, &sign_input(&signed.body), &signed.sig) {
+        if !verify_did(&claim.recipient, &sign_input(&signed.body), &signed.sig) {
             return Err(ReceiptError::Signature);
         }
         Ok(claim)

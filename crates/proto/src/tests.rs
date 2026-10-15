@@ -15,7 +15,7 @@ fn peer() -> Peer {
     let secret = new_device_secret();
     Peer {
         id,
-        dev: device_public(&secret),
+        dev: cryptography::signature::public_key(&secret),
         secret,
     }
 }
@@ -54,7 +54,7 @@ fn hello_parts(m: &Msg) -> (SignedAttestation, String, SignedBlob, String, Signe
 }
 
 fn dev() -> [u8; 32] {
-    device_public(&new_device_secret())
+    cryptography::signature::public_key(&new_device_secret())
 }
 
 mod devlist;

@@ -1,6 +1,5 @@
 //! Exact original signed group-call protocol evidence; no endpoint notes/media.
 use super::*;
-const DOMAIN: &[u8] = b"tinline-receipt-protocol-evidence-v1\0";
 const SIG_TEXT_BYTES: usize = (SIGNATURE_BYTES * 8).div_ceil(6); // unpadded base64url
 pub(crate) const MAX_PROTOCOL_EVIDENCE_BYTES: usize =
     2 * proto::gcall::MAX_CONTROL + 2 * codec::LEN_PREFIX_MAX + SIG_TEXT_BYTES;
@@ -10,11 +9,7 @@ pub(crate) struct Evidence {
     pub bytes: Vec<u8>,
 }
 fn hash(bytes: &[u8]) -> [u8; 32] {
-    let mut h = blake3::Hasher::new();
-    h.update(DOMAIN);
-    h.update(&(bytes.len() as u64).to_be_bytes());
-    h.update(bytes);
-    *h.finalize().as_bytes()
+    cryptography::hash::content(cryptography::domains::RECEIPT_EVIDENCE, bytes)
 }
 impl Evidence {
     /// Canonical envelope/size only; the caller must open the actual protocol

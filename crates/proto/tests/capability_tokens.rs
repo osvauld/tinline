@@ -12,7 +12,6 @@ use identity::Identity;
 mod fixtures;
 use fixtures::*;
 
-const PROTO_GRANT_DOMAIN: &[u8] = b"osvauld/p2p/grant/v1\0";
 const TTL: u64 = 365 * 24 * 3600;
 const T0: u64 = 1_000_000;
 const ALICE: u8 = 1;
@@ -30,7 +29,7 @@ fn hand_signed_proto_grant(iss: &Identity, holder: &str, cap: &str) -> proto::Si
     };
     let payload = serde_json::to_vec(&g).unwrap();
     proto::SignedBlob {
-        signature: base64_encode(&iss.sign(&[PROTO_GRANT_DOMAIN, &payload].concat())),
+        signature: base64_encode(&iss.sign(&cryptography::sign::input(cryptography::domains::GRANT, &[&payload]))),
         payload: base64_encode(&payload),
     }
 }

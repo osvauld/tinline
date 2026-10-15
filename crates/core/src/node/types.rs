@@ -124,7 +124,7 @@ pub struct CallStats {
 impl Me {
     pub(crate) fn load(profile: Profile, epoch: u64) -> Result<Self, Error> {
         let id = identity::recover(&profile.mnemonic).map_err(|_| Error::BadPhrase)?;
-        let device = proto::device_public(&profile.device_secret);
+        let device = cryptography::signature::public_key(&profile.device_secret);
         let attestation = proto::attest(&id, device, now());
         Ok(Self { epoch, profile, id, device, attestation })
     }

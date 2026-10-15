@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bip39::Mnemonic;
 use cryptography::{CryptoError, ecies, signature};
-use zeroize::ZeroizeOnDrop;
+use zeroize::{ZeroizeOnDrop, Zeroizing};
 
 use crate::did;
 
@@ -34,15 +34,15 @@ pub struct Identity {
 
 impl Identity {
     pub(crate) fn generate() -> (Self, Mnemonic) {
-        let mut entropy = [0u8; 32];
-        cryptography::rng::fill(&mut entropy);
-        let mnemonic = Mnemonic::from_entropy(&entropy).expect("32 bytes is valid entropy");
+        let entropy = cryptography::Secret32::random();
+        let mnemonic = Mnemonic::from_entropy(entropy.expose()).expect("32 bytes is valid entropy");
         let identity = Self::from_mnemonic(&mnemonic);
         (identity, mnemonic)
     }
 
     pub(crate) fn from_mnemonic(mnemonic: &Mnemonic) -> Self {
-        Self::from_seed(&mnemonic.to_seed(""))
+        // The BIP39 seed is the root of every key: wiped once the three keys are derived.
+        Self::from_seed(&Zeroizing::new(mnemonic.to_seed("")))
     }
 
     pub(crate) fn from_seed(seed: &[u8; 64]) -> Self {

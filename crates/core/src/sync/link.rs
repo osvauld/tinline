@@ -166,7 +166,7 @@ impl Inner {
     pub(crate) fn link_new_show_qr(self: &Arc<Self>, label: String, secret: [u8; 32], ep: Endpoint) -> Result<String, Error> {
         self.require_no_account()?;
         let (id, _tx, rx) = self.reserve_link()?;
-        let device = proto::device_public(&secret);
+        let device = cryptography::signature::public_key(&secret);
         let qr = pl::new_link_qr(device, relay_within(&ep, QR_RELAY_WAIT), now(), ttl_secs());
         let text = qr.to_text();
         let run = LinkRun { id, is_e: false, scanner: false, qr, my_device: device, label: proto::sanitize_name(&label), rx, fresh: Some((secret, ep.clone())), epoch: 0 };
@@ -192,7 +192,7 @@ impl Inner {
             return Err(Error::Protocol("that code has expired".into()));
         }
         let (id, _tx, rx) = self.reserve_link()?;
-        let device = proto::device_public(&secret);
+        let device = cryptography::signature::public_key(&secret);
         let run = LinkRun { id, is_e: false, scanner: true, qr, my_device: device, label: proto::sanitize_name(&label), rx, fresh: Some((secret, ep.clone())), epoch: 0 };
         self.spawn_scan(ep, run);
         Ok(())

@@ -10,14 +10,12 @@
 //! a `Join`), host addresses (`SignedHostAddr`) and the per-connection endpoint proof
 //! (`EndpointAuth`). Those carry group endpoints and travel only member <-> host (U7).
 
-use cryptography::codec;
+use cryptography::{codec, domains, hash, sign};
 use serde::{Deserialize, Serialize};
 
-pub const GROUP_ID_DOMAIN: &[u8] = b"tinline-group-id-v1";
-const RECORD_DOMAIN: &[u8] = b"tinline-group-record-v1";
-const INVITE_DOMAIN: &[u8] = b"tinline-group-invite-v1";
-const HOST_ADDR_DOMAIN: &[u8] = b"tinline-group-host-addr-v1";
-const AUTH_DOMAIN: &[u8] = b"tinline-group-endpoint-v1";
+const RECORD_DOMAIN: domains::Domain = domains::GROUP_RECORD;
+const INVITE_DOMAIN: domains::Domain = domains::GROUP_INVITE;
+const HOST_ADDR_DOMAIN: domains::Domain = domains::GROUP_HOST_ADDR;
 
 /// Largest stored record (a post's text is capped well below).
 pub const MAX_RECORD: usize = 64 * 1024;
@@ -30,14 +28,9 @@ pub const MAX_NAME: usize = 100;
 /// A `seen` frontier with more writers than this is refused (bounds a record's size).
 pub const MAX_SEEN: usize = 1024;
 
-/// A group's id: hex BLAKE3 over a domain, the owner's DID and the genesis nonce.
+/// A group's id: hex `hash::hasher(GROUP_ID)` over the owner's DID and the genesis nonce.
 pub fn group_id(owner: &str, nonce: &[u8; 16]) -> String {
-    let mut h = blake3::Hasher::new();
-    h.update(GROUP_ID_DOMAIN);
-    h.update(&(owner.len() as u32).to_be_bytes());
-    h.update(owner.as_bytes());
-    h.update(nonce);
-    h.finalize().to_hex().to_string()
+    hash::hasher(domains::GROUP_ID).part(owner.as_bytes()).part(nonce).hex()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -109,26 +102,13 @@ pub enum RecordError {
     BadSignature,
 }
 
-fn put_bytes(v: &mut Vec<u8>, b: &[u8]) {
-    v.extend_from_slice(&(b.len() as u32).to_be_bytes());
-    v.extend_from_slice(b);
+/// What a DID signs for a body under `domain` (`cryptography::sign::input`).
+pub(crate) fn sig_input(domain: domains::Domain, body: &[u8]) -> Vec<u8> {
+    sign::input(domain, &[body])
 }
 
-fn sig_input(domain: &[u8], body: &[u8]) -> Vec<u8> {
-    let mut v = domain.to_vec();
-    put_bytes(&mut v, body);
-    v
-}
-
-pub(crate) fn put_bytes_pub(v: &mut Vec<u8>, b: &[u8]) {
-    put_bytes(v, b)
-}
-
-pub(crate) fn verify_did_pub(did: &str, msg: &[u8], sig: &[u8]) -> bool {
-    verify_did(did, msg, sig)
-}
-
-fn verify_did(did: &str, msg: &[u8], sig: &[u8]) -> bool {
+/// `sig` is a valid signature of `msg` by the key of `did`.
+pub(crate) fn verify_did(did: &str, msg: &[u8], sig: &[u8]) -> bool {
     let Some(key) = identity::public_key_from_did(did) else { return false };
     let Ok(sig) = <[u8; 64]>::try_from(sig) else { return false };
     identity::verify(&key, msg, &sig)
@@ -202,7 +182,7 @@ impl SignedRecord {
 
 /// The id of stored record bytes.
 pub fn record_id(bytes: &[u8]) -> String {
-    hex::encode(&blake3::hash(bytes).as_bytes()[..16])
+    hex::encode(&hash::content(domains::GROUP_RECORD_ID, bytes)[..16])
 }
 
 // ---- invites ---------------------------------------------------------------------------------
@@ -290,11 +270,7 @@ pub struct EndpointAuth {
 }
 
 fn auth_input(did: &str, dev: &[u8; 32], endpoint: &[u8; 32]) -> Vec<u8> {
-    let mut v = AUTH_DOMAIN.to_vec();
-    put_bytes(&mut v, did.as_bytes());
-    v.extend_from_slice(dev);
-    v.extend_from_slice(endpoint);
-    v
+    sign::input(domains::GROUP_ENDPOINT, &[did.as_bytes(), dev, endpoint])
 }
 
 impl EndpointAuth {

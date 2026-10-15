@@ -13,7 +13,6 @@ use crate::{
 use proto::gcall as w;
 const PENDING: &str = "receipt-runtime/group-joins/v1/pending/";
 const DONE: &str = "receipt-runtime/group-joins/v1/done/";
-const DOMAIN: &[u8] = b"tinline-call-joined-transition-v1\0";
 /// Provisional bounds, not permission to drop an unrecorded event.
 pub(crate) const MAX_PENDING_JOINS: usize = 64;
 pub(crate) const MAX_JOIN_INTENT_BYTES: usize = 64 * 1024;
@@ -119,13 +118,11 @@ fn proofs(evidence: &[Evidence]) -> Result<JoinProofs, ReceiptError> {
 }
 fn transition_id(claim: &Receipt, p: &JoinProofs) -> Result<String, ReceiptError> {
     let join = Evidence::from_blob(&p.expected_join)?;
-    let mut h = blake3::Hasher::new();
-    h.update(DOMAIN);
-    h.update(&(claim.recipient.len() as u64).to_be_bytes());
-    h.update(claim.recipient.as_bytes());
-    h.update(&claim.device);
-    h.update(&join.id);
-    Ok(h.finalize().to_hex().to_string())
+    Ok(cryptography::hash::hasher(cryptography::domains::CALL_JOINED)
+        .part(claim.recipient.as_bytes())
+        .part(&claim.device)
+        .part(&join.id)
+        .hex())
 }
 impl Intent {
     fn open(&self, id: &str) -> Result<(Receipt, Vec<Evidence>, JoinProofs), ReceiptError> {

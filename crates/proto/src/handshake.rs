@@ -74,7 +74,7 @@ pub(crate) fn binding_message(
     joiner_device: &[u8; 32],
     owner_device: &[u8; 32],
 ) -> Result<Vec<u8>> {
-    Ok([BIND_DOMAIN, &dec(nonce)?, joiner_device, owner_device].concat())
+    Ok(sign::input(BIND_DOMAIN, &[&dec(nonce)?, joiner_device, owner_device]))
 }
 
 /// `contact_hello_with` for a ticket contact (message + call).

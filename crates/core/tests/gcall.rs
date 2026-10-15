@@ -355,7 +355,8 @@ fn glare_two_hosts() {
     }
     let id = |s: &proto::SignedBlob| proto::gcall::open_start(s).unwrap().call_id;
     let (ia, ib) = (id(&a), id(&b));
-    let a_wins = blake3::hash(ia.as_bytes()).as_bytes() < blake3::hash(ib.as_bytes()).as_bytes();
+    let glare = |id: &str| cryptography::hash::content(cryptography::domains::GCALL_BOARD, id.as_bytes());
+    let a_wins = glare(&ia) < glare(&ib);
     let (win, lose, wid) = if a_wins { (0, 1, ia) } else { (1, 0, ib) };
     let wh = m[win].href.clone();
     let settled = |ms: &[&mut M]| {

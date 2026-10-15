@@ -15,8 +15,6 @@ use std::collections::BTreeMap;
 const INTENTS: &str = "receipt-runtime/messages/v1/q/";
 /// Scopes holding statements WE issued that a counterparty has not acknowledged.
 const OUTBOX: &str = "receipt-runtime/messages/v1/out/";
-const DM_VERSION_DOMAIN: &[u8] = b"tinline-receipt-dm-version-v1\0";
-const GROUP_VERSION_DOMAIN: &[u8] = b"tinline-receipt-group-record-v1\0";
 /// Provisional: digests per intent row (split, never truncated).
 pub(crate) const MAX_INTENT_DIGESTS: usize = 1024;
 /// Provisional: intent rows handled per `pump` call; more stay queued.
@@ -32,21 +30,19 @@ pub(crate) const MAX_INTENT_BYTES: usize = 64 * 1024;
 /// version was stored (`chat::doc::apply_remote`/local write). An edit or delete
 /// is a new signed version and therefore a new digest: receipts never carry over.
 pub(crate) fn dm_version(doc: &str, rec: &MsgRec) -> [u8; 32] {
-    let mut b = DM_VERSION_DOMAIN.to_vec();
-    put_bytes_pub(&mut b, doc.as_bytes());
-    put_bytes_pub(&mut b, rec.id.as_bytes());
-    put_bytes_pub(&mut b, rec.author.as_bytes());
-    b.extend_from_slice(&rec.dev);
-    put_bytes_pub(&mut b, &rec.did_sig);
-    message_digest(&b)
+    cryptography::hash::hasher(cryptography::domains::RECEIPT_DM_VERSION)
+        .part(doc.as_bytes())
+        .part(rec.id.as_bytes())
+        .part(rec.author.as_bytes())
+        .part(&rec.dev)
+        .part(&rec.did_sig)
+        .finish()
 }
 
 /// Canonical identity of one stored, verified group record: its exact original
 /// signed bytes (group records are immutable; there are no edits).
 pub(crate) fn group_version(signed_record: &[u8]) -> [u8; 32] {
-    let mut b = GROUP_VERSION_DOMAIN.to_vec();
-    put_bytes_pub(&mut b, signed_record);
-    message_digest(&b)
+    cryptography::hash::content(cryptography::domains::RECEIPT_GROUP_VERSION, signed_record)
 }
 
 fn outbox_key(scope: &Scope) -> Result<String, ReceiptError> {

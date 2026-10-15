@@ -73,7 +73,7 @@ pub(crate) fn io(e: StorageError) -> Error {
 }
 
 /// The store key, from the recovery phrase (see `rekey::phrase_key`).
-pub fn key_from_phrase(phrase: &str) -> [u8; 32] {
+pub fn key_from_phrase(phrase: &str) -> cryptography::Secret32 {
     crate::rekey::phrase_key(STORE_DOMAIN, phrase)
 }
 

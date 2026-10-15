@@ -16,12 +16,11 @@
 //! On `Accept` the requester adds the recipient from the ticket (`ContactOrigin::GroupRequest`:
 //! message token only); the chat then runs directly between private endpoints, without the host.
 
-use cryptography::codec;
+use cryptography::{codec, domains};
 use serde::{Deserialize, Serialize};
 
-use super::record::{put_bytes_pub as put_bytes, verify_did_pub as verify_did};
+use super::record::verify_did;
 
-const MAIL_DOMAIN: &[u8] = b"tinline-group-mail-v1";
 /// Largest sealed body (a contact ticket and a name fit easily).
 pub const MAX_SEALED: usize = 8 * 1024;
 /// How long hosts keep undelivered mail and recipients remember mail ids (PROVISIONAL).
@@ -65,9 +64,7 @@ struct Sealed {
 }
 
 fn sig_input(body: &[u8]) -> Vec<u8> {
-    let mut v = MAIL_DOMAIN.to_vec();
-    put_bytes(&mut v, body);
-    v
+    super::record::sig_input(domains::GROUP_MAIL, body)
 }
 
 impl SignedMail {

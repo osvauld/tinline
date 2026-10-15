@@ -19,7 +19,7 @@ use super::*;
 
 /// ALPN of the per-call connection to the call host (§1.1).
 pub const GCALL_ALPN: &[u8] = b"tinline/gcall/1";
-pub(crate) const GCALL_DOMAIN: &[u8] = b"tinline/gcall/v1\0";
+pub(crate) const GCALL_DOMAIN: cryptography::domains::Domain = cryptography::domains::GCALL;
 pub const GCALL_VERSION: u8 = 1;
 
 /// Largest control frame body (§6).
@@ -374,7 +374,7 @@ fn verify_entry(r: &Roster, e: &RosterEntry) -> Result<()> {
     let payload = serde_json::to_vec(&Claim::Join(entry_join(r, e))).expect("claims serialize");
     let sig: [u8; 64] = dec(&e.sig)?.try_into().map_err(|_| Error::Decode)?;
     let public = public_key_from_did(&e.did).ok_or(Error::Decode)?;
-    if !verify(&public, &[GCALL_DOMAIN, &payload].concat(), &sig) {
+    if !verify(&public, &cryptography::sign::input(GCALL_DOMAIN, &[&payload]), &sig) {
         return Err(Error::BadSignature);
     }
     Ok(())

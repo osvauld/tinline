@@ -67,7 +67,7 @@ fn blocked_contact_cannot_come_back_through_our_ticket() {
 fn ticket_with_unusable_relay_is_refused() {
     let a = peer("relay-a", false);
     let (other, _) = identity::generate();
-    let dev = proto::device_public(&proto::new_device_secret());
+    let dev = cryptography::signature::public_key(&proto::new_device_secret());
     for relay in ["http://10.0.0.1/", "ftp://relay.example/", "https://not a url"] {
         let t = proto::issue_contact_ticket(&other, dev, "evil", Some(relay.into()), now(), 600);
         match a.node.add_contact(t.to_text()) {

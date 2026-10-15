@@ -113,11 +113,7 @@ fn host_record_and_raw_signature_domains_cannot_be_interpreted_as_recipient_proo
     let a = identity::generate().0;
     let c = sample(&a, Kind::Read, false);
     let body = cryptography::codec::to_bytes(&c).unwrap();
-    for input in [body.clone(), {
-        let mut v = b"tinline-group-storage-attestation-v1\0".to_vec();
-        put_bytes_pub(&mut v, &body);
-        v
-    }] {
+    for input in [body.clone(), cryptography::sign::input(cryptography::domains::STORAGE_ATTESTATION, &[&body])] {
         let bytes = SignedReceipt {
             body: body.clone(),
             sig: a.sign(&input).to_vec(),

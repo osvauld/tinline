@@ -248,7 +248,7 @@ How the control messages fit together:
   same `call_id`. Every peer rejects control for a `call_id` whose `host_gen` is lower than
   the highest it has seen. This prevents stale takeover (`docs/group-chat.md` §9).
 - **Glare** (two `CallStart`s for one group at the same time). The lower
-  `BLAKE3(call_id)` wins. The losing host sends `End{superseded, next_host: winner}` and its
+  `cryptography::hash::content(GCALL_BOARD, call_id)` wins. The losing host sends `End{superseded, next_host: winner}` and its
   participants redial. This mirrors 1:1 glare (`docs/protocol.md:143`). One live call per
   group. [P]
 

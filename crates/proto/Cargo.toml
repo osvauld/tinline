@@ -11,8 +11,8 @@ serde_json.workspace = true
 thiserror.workspace = true
 base64.workspace = true
 cryptography.workspace = true
-sha2.workspace = true
+
+[dev-dependencies]
+# Test fixtures only (deterministic device keys); production code goes through `cryptography`.
 ed25519-dalek.workspace = true
-aes-gcm.workspace = true
-hkdf.workspace = true
-hmac.workspace = true
+sha2.workspace = true

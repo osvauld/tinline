@@ -14,7 +14,7 @@ pub mod profile;
 use std::collections::HashSet;
 
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
-use ed25519_dalek::SigningKey;
+use cryptography::{domains, sign};
 use identity::{Identity, public_key_from_did, verify};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -26,13 +26,13 @@ pub const ALPN: &[u8] = b"osvauld/p2p/1";
 /// token cut-offs); versions 2 and 1 are refused by the app.
 pub const SELF_ALPN: &[u8] = b"tinline/self/5";
 
-const ATTEST_DOMAIN: &[u8] = b"osvauld/p2p/attest/v1\0";
-const INVITE_DOMAIN: &[u8] = b"osvauld/p2p/invite/v1\0";
-const GRANT_DOMAIN: &[u8] = b"osvauld/p2p/grant/v1\0";
-const INVITE_V2_DOMAIN: &[u8] = b"osvauld/p2p/invite/v2\0";
-const BIND_DOMAIN: &[u8] = b"osvauld/p2p/bind/v1\0";
-const DEVICES_DOMAIN: &[u8] = b"osvauld/p2p/devices/v1\0";
-const BLOCK_DOMAIN: &[u8] = b"osvauld/p2p/block/v1\0";
+const ATTEST_DOMAIN: domains::Domain = domains::ATTEST;
+const INVITE_DOMAIN: domains::Domain = domains::INVITE;
+const GRANT_DOMAIN: domains::Domain = domains::GRANT;
+const INVITE_V2_DOMAIN: domains::Domain = domains::INVITE_V2;
+const BIND_DOMAIN: domains::Domain = domains::BIND;
+const DEVICES_DOMAIN: domains::Domain = domains::DEVICES;
+const BLOCK_DOMAIN: domains::Domain = domains::BLOCK;
 
 const VERSION: u8 = 1;
 const TICKET_PREFIX: &str = "osvc1.";
@@ -112,10 +112,6 @@ pub fn new_device_secret() -> [u8; 32] {
     s
 }
 
-pub fn device_public(secret: &[u8; 32]) -> [u8; 32] {
-    SigningKey::from_bytes(secret).verifying_key().to_bytes()
-}
-
 pub fn device_to_text(device: &[u8; 32]) -> String {
     enc(device)
 }
@@ -157,10 +153,10 @@ pub struct SignedBlob {
 pub type SignedAttestation = SignedBlob;
 pub type SignedGrant = SignedBlob;
 
-fn sign_blob<T: Serialize>(id: &Identity, domain: &[u8], claim: &T) -> SignedBlob {
+fn sign_blob<T: Serialize>(id: &Identity, domain: domains::Domain, claim: &T) -> SignedBlob {
     let payload = serde_json::to_vec(claim).expect("claims serialize");
     SignedBlob {
-        signature: enc(id.sign(&[domain, &payload].concat())),
+        signature: enc(id.sign(&sign::input(domain, &[&payload]))),
         payload: enc(payload),
     }
 }
@@ -170,7 +166,7 @@ fn sign_blob<T: Serialize>(id: &Identity, domain: &[u8], claim: &T) -> SignedBlo
 /// expected.
 fn open_blob<T: DeserializeOwned>(
     blob: &SignedBlob,
-    domain: &[u8],
+    domain: domains::Domain,
     issuer_of: impl Fn(&T) -> &str,
 ) -> Result<T> {
     let payload = dec(&blob.payload)?;
@@ -179,7 +175,7 @@ fn open_blob<T: DeserializeOwned>(
         .map_err(|_| Error::Decode)?;
     let claim: T = serde_json::from_slice(&payload).map_err(|_| Error::Decode)?;
     let public = public_key_from_did(issuer_of(&claim)).ok_or(Error::Decode)?;
-    if !verify(&public, &[domain, &payload].concat(), &sig) {
+    if !verify(&public, &sign::input(domain, &[&payload]), &sig) {
         return Err(Error::BadSignature);
     }
     Ok(claim)

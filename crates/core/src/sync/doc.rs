@@ -36,13 +36,11 @@ pub(super) fn text(v: &LoroValue) -> Option<String> {
 }
 
 /// The Loro peer id of `device` for the own-device doc `name`. (Chat docs do not use this: they
-/// are written under writer IDs, `chat::doc::writer_id`.)
+/// are written under writer IDs, `chat::doc::writer_id`.) `u64::MAX` is not a valid Loro peer
+/// id; that one output maps to `u64::MAX - 1`.
 fn peer_id(device: &[u8; 32], name: &str) -> u64 {
-    let mut h = blake3::Hasher::new();
-    h.update(b"tinline-loro-peer-v1");
-    h.update(device);
-    h.update(name.as_bytes());
-    u64::from_le_bytes(h.finalize().as_bytes()[..8].try_into().unwrap())
+    let id = cryptography::hash::hasher(cryptography::domains::LORO_PEER).part(device).part(name.as_bytes()).u64();
+    if id == u64::MAX { u64::MAX - 1 } else { id }
 }
 
 impl Doc {

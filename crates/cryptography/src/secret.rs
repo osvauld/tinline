@@ -2,6 +2,7 @@
 
 use zeroize::Zeroizing;
 
+#[derive(Clone)]
 pub struct Secret32(Zeroizing<[u8; 32]>);
 
 impl Secret32 {
@@ -18,6 +19,12 @@ impl Secret32 {
 
     pub fn expose(&self) -> &[u8; 32] {
         &self.0
+    }
+}
+
+impl From<[u8; 32]> for Secret32 {
+    fn from(bytes: [u8; 32]) -> Self {
+        Self::new(bytes)
     }
 }
 

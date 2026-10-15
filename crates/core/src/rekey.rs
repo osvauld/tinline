@@ -14,6 +14,7 @@
 //! cost is that the whole store passes through memory once (chat history of several MB; fine).
 
 use storage::{Op, Sealed, Store};
+use cryptography::Secret32;
 use zeroize::Zeroizing;
 
 use crate::Error;
@@ -40,12 +41,12 @@ fn norm_phrase(phrase: &str) -> Zeroizing<String> {
 
 /// A store key: BLAKE3 derive-key of the normalised phrase under `domain`. The one derivation
 /// behind every phrase-keyed store (account, chat, group, search); see the golden test.
-pub(crate) fn phrase_key(domain: &str, phrase: &str) -> [u8; 32] {
-    blake3::derive_key(domain, norm_phrase(phrase).as_bytes())
+pub(crate) fn phrase_key(domain: &str, phrase: &str) -> Secret32 {
+    cryptography::kdf::derive(domain, norm_phrase(phrase).as_bytes())
 }
 
 /// The new key of a store, from the recovery phrase.
-pub fn key_from_phrase(which: Which, phrase: &str) -> [u8; 32] {
+pub fn key_from_phrase(which: Which, phrase: &str) -> Secret32 {
     phrase_key(
         match which {
             Which::Account => ACCOUNT_DOMAIN_V2,
@@ -56,8 +57,8 @@ pub fn key_from_phrase(which: Which, phrase: &str) -> [u8; 32] {
 }
 
 /// The pre-34f key, from the vault's data key.
-pub fn old_key(which: Which, dek: &[u8; 32]) -> [u8; 32] {
-    blake3::derive_key(
+pub fn old_key(which: Which, dek: &[u8; 32]) -> Secret32 {
+    cryptography::kdf::derive(
         match which {
             Which::Account => ACCOUNT_DOMAIN_V1,
             Which::Chat => CHAT_DOMAIN_V1,
@@ -87,7 +88,8 @@ fn plan(store: &Store, old: &Sealed, new: &Sealed) -> Result<Vec<Op>, Error> {
 
 /// Opens a store under the phrase key, migrating first when it still has the old one. With
 /// `old = None` an old-keyed store is an error (`Io`), never touched.
-pub fn open(store: Store, new_key: [u8; 32], old: Option<[u8; 32]>) -> Result<Sealed, Error> {
+pub fn open(store: Store, new_key: impl Into<Secret32>, old: Option<Secret32>) -> Result<Sealed, Error> {
+    let new_key = new_key.into();
     match store.get(KEYVER)?.as_deref() {
         Some(v) if v == V2 => return Ok(Sealed::new(store, new_key)),
         Some(_) => return Err(Error::Io("store written by a newer version".into())),
@@ -100,7 +102,7 @@ pub fn open(store: Store, new_key: [u8; 32], old: Option<[u8; 32]>) -> Result<Se
     let Some(old_key) = old else {
         return Err(Error::Io("store is sealed under the previous key".into()));
     };
-    let ops = plan(&store, &Sealed::new(store.clone(), old_key), &Sealed::new(store.clone(), new_key))?;
+    let ops = plan(&store, &Sealed::new(store.clone(), old_key), &Sealed::new(store.clone(), new_key.clone()))?;
     store.apply(&ops)?;
     Ok(Sealed::new(store, new_key))
 }
@@ -141,7 +143,7 @@ mod tests {
     #[test]
     fn phrase_keys_are_byte_identical() {
         let phrase = " Alpha  beta\tGAMMA\n";
-        let hex = |k: [u8; 32]| k.iter().map(|b| format!("{b:02x}")).collect::<String>();
+        let hex = |k: Secret32| k.iter().map(|b| format!("{b:02x}")).collect::<String>();
         assert_eq!(hex(key_from_phrase(Which::Account, phrase)), "aaede98680b9849ea1cc82ade454ce6a6a160007faf952812676085851f8474a");
         assert_eq!(hex(key_from_phrase(Which::Chat, phrase)), "ff534a58745f63af85c6170d22180e758d0a057add803ebfc4c1113838aef9fd");
         assert_eq!(hex(crate::group::store::key_from_phrase(phrase)), "ecbbddb539af581bebf460ddd0c12c59b7cbd3e48d5b81db4d40d5ceb4938bcc");
@@ -163,22 +165,22 @@ mod tests {
         let dek = [7u8; 32];
         let store = old_store(&[("a/1", b"one"), ("b", b"two")], &dek);
         let new = key_from_phrase(Which::Chat, "Word  other");
-        assert_eq!(new, key_from_phrase(Which::Chat, "word other"));
+        assert_eq!(new.expose(), key_from_phrase(Which::Chat, "word other").expose());
         assert!(needs_migration(&store).unwrap());
-        assert!(open(store.clone(), new, None).is_err(), "no old key: untouched");
+        assert!(open(store.clone(), new.clone(), None).is_err(), "no old key: untouched");
         assert!(needs_migration(&store).unwrap());
         // Wrong old key: nothing changes.
-        assert!(open(store.clone(), new, Some([1; 32])).is_err());
+        assert!(open(store.clone(), new.clone(), Some([1; 32].into())).is_err());
         assert!(needs_migration(&store).unwrap());
         // "Interrupted": a plan that was computed but never applied leaves the old file.
-        let _ = plan(&store, &Sealed::new(store.clone(), old_key(Which::Chat, &dek)), &Sealed::new(store.clone(), new)).unwrap();
+        let _ = plan(&store, &Sealed::new(store.clone(), old_key(Which::Chat, &dek)), &Sealed::new(store.clone(), new.clone())).unwrap();
         assert!(needs_migration(&store).unwrap());
-        let sealed = open(store.clone(), new, Some(old_key(Which::Chat, &dek))).unwrap();
+        let sealed = open(store.clone(), new.clone(), Some(old_key(Which::Chat, &dek))).unwrap();
         assert_eq!(sealed.get("a/1").unwrap().unwrap(), b"one");
         assert_eq!(sealed.get("b").unwrap().unwrap(), b"two");
         assert!(!needs_migration(&store).unwrap());
         // Done: opens without the old key; the old key no longer opens anything.
-        let again = open(store.clone(), new, None).unwrap();
+        let again = open(store.clone(), new.clone(), None).unwrap();
         assert_eq!(again.get("b").unwrap().unwrap(), b"two");
         assert!(Sealed::new(store, old_key(Which::Chat, &dek)).get("b").is_err());
     }
@@ -187,7 +189,7 @@ mod tests {
     fn a_fresh_store_is_marked_and_a_corrupt_row_blocks_migration() {
         let s = Store::open_in_memory().unwrap();
         let k = key_from_phrase(Which::Account, "x y");
-        open(s.clone(), k, None).unwrap().put("state", b"s").unwrap();
+        open(s.clone(), k.clone(), None).unwrap().put("state", b"s").unwrap();
         assert!(!needs_migration(&s).unwrap());
 
         let dek = [3u8; 32];

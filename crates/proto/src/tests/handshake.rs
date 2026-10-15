@@ -5,7 +5,7 @@ use super::*;
 #[test]
 fn device_key_derivation() {
     let s = new_device_secret();
-    let p = device_public(&s);
+    let p = cryptography::signature::public_key(&s);
     assert_eq!(device_from_text(&device_to_text(&p)).unwrap(), p);
     assert_ne!(new_device_secret(), s);
 }
@@ -59,7 +59,7 @@ fn call_happy_path_and_multi_device() {
     assert_eq!((c.did.as_str(), c.device), (b.id.did(), b.dev));
 
     // Bob's second phone, same DID, own attestation: allowed.
-    let dev2 = device_public(&new_device_secret());
+    let dev2 = cryptography::signature::public_key(&new_device_secret());
     let msg2 = call_hello(&b.id, attest(&b.id, dev2, T0 + 11), call_token, "c2".into());
     let c2 = accept_call_hello(&a.id, &msg2, dev2, T0 + 11, &none(), known).unwrap();
     assert_eq!(c2.device, dev2);
@@ -145,7 +145,7 @@ fn binding_for_different_device_or_invite() {
 
     // Binding made for some other joiner device.
     let claim = open_invite(&invite).unwrap();
-    let other = device_public(&new_device_secret());
+    let other = cryptography::signature::public_key(&new_device_secret());
     let sig =
         b.id.sign(&binding_message(&claim.nonce, &other, &a.dev).unwrap());
     let bad = Msg::ContactHello {

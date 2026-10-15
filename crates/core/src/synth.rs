@@ -85,7 +85,7 @@ impl Node {
     #[doc(hidden)]
     pub fn synth_contact_for_test(&self, did: String, name: String) -> Result<(), Error> {
         let (pid, pdev) = peer(&did).ok_or(Error::NotFound)?;
-        let pubdev = proto::device_public(&pdev);
+        let pubdev = cryptography::signature::public_key(&pdev);
         let inner = self.inner.clone();
         self.block_on(async move {
             let me = inner.me()?;

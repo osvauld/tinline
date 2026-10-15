@@ -2,11 +2,7 @@
 //! exchange, the sealed grant, and the messages of the separate `tinline/link/1` protocol.
 //! Pure like the rest of proto; the mnemonic travels inside `LinkGrantBody`.
 
-use aes_gcm::aead::{Aead, KeyInit, Payload};
-use aes_gcm::{Aes256Gcm, Nonce};
-use hkdf::Hkdf;
-use hmac::{Hmac, Mac};
-use sha2::Sha256;
+use cryptography::{Secret32, aead, hash, kdf};
 
 use super::*;
 
@@ -14,8 +10,9 @@ pub const LINK_ALPN: &[u8] = b"tinline/link/1";
 const LINK_PREFIX: &str = "OSVL1:";
 const LINK_VERSION: u8 = 1;
 pub const LINK_TTL_SECS: u64 = 300;
-const T_PREFIX: &[u8] = b"tinline/link/v1";
-const NONCE_LEN: usize = 12;
+/// BLAKE3 `derive_key` contexts of the link key K and the grant key.
+const K_CONTEXT: &str = "tinline/link/v1 key";
+const GRANT_CONTEXT: &str = "tinline/link/v1 grant";
 
 // ---- QR ----------------------------------------------------------------------------
 
@@ -143,30 +140,18 @@ impl LinkRole {
     }
 }
 
-/// `T = "tinline/link/v1" || E.device || N.device || secret`.
+/// `T = sign::input(LINK_TRANSCRIPT, [E.device, N.device, secret])`.
 fn transcript(secret: &[u8; 16], e_dev: &[u8; 32], n_dev: &[u8; 32]) -> Vec<u8> {
-    [T_PREFIX, e_dev, n_dev, secret].concat()
+    cryptography::sign::input(domains::LINK_TRANSCRIPT, &[e_dev, n_dev, secret])
 }
 
-/// `K = HKDF-SHA256(ikm = secret, info = T)`.
-fn link_key(secret: &[u8; 16], e_dev: &[u8; 32], n_dev: &[u8; 32]) -> [u8; 32] {
-    let mut k = [0u8; 32];
-    Hkdf::<Sha256>::new(None, secret)
-        .expand(&transcript(secret, e_dev, n_dev), &mut k)
-        .expect("32 bytes is a valid HKDF output");
-    k
+/// `K = BLAKE3-derive_key("tinline/link/v1 key", T)` (T holds the secret).
+fn link_key(secret: &[u8; 16], e_dev: &[u8; 32], n_dev: &[u8; 32]) -> Secret32 {
+    kdf::derive(K_CONTEXT, &transcript(secret, e_dev, n_dev))
 }
 
-fn mac(key: &[u8; 32], parts: &[&[u8]]) -> Hmac<Sha256> {
-    let mut m = <Hmac<Sha256> as KeyInit>::new_from_slice(key).expect("HMAC takes any key length");
-    for p in parts {
-        m.update(p);
-    }
-    m
-}
-
-/// `HMAC(K, role || own_device)`: proves knowledge of the QR secret, bound to the device the
-/// peer sees on the QUIC connection.
+/// `keyed-BLAKE3(K, LINK_PROOF, [role, own_device])`: proves knowledge of the QR secret, bound
+/// to the device the peer sees on the QUIC connection.
 pub fn link_proof(
     secret: &[u8; 16],
     e_dev: &[u8; 32],
@@ -174,11 +159,7 @@ pub fn link_proof(
     role: LinkRole,
     own_device: &[u8; 32],
 ) -> [u8; 32] {
-    let k = link_key(secret, e_dev, n_dev);
-    mac(&k, &[role.label(), own_device])
-        .finalize()
-        .into_bytes()
-        .into()
+    hash::keyed(&link_key(secret, e_dev, n_dev), domains::LINK_PROOF, &[role.label(), own_device])
 }
 
 /// `remote_device` is the QUIC-authenticated key of the peer that claims `role`. Constant time.
@@ -191,31 +172,27 @@ pub fn verify_link_proof(
     proof: &[u8],
 ) -> Result<()> {
     let k = link_key(secret, e_dev, n_dev);
-    mac(&k, &[role.label(), remote_device])
-        .verify_slice(proof)
-        .map_err(|_| Error::BadSignature)
+    if hash::keyed_verify(&k, domains::LINK_PROOF, &[role.label(), remote_device], proof) {
+        Ok(())
+    } else {
+        Err(Error::BadSignature)
+    }
 }
 
-/// Six digits shown on both screens, e.g. `"482 913"`: 20 bits of `HMAC(K, "confirm")`.
+/// Six digits shown on both screens, e.g. `"482 913"`: 20 bits of `keyed-BLAKE3(K, LINK_CONFIRM)`.
 pub fn confirm_code(secret: &[u8; 16], e_dev: &[u8; 32], n_dev: &[u8; 32]) -> String {
-    let k = link_key(secret, e_dev, n_dev);
-    let h = mac(&k, &[b"confirm"]).finalize().into_bytes();
+    let h = hash::keyed(&link_key(secret, e_dev, n_dev), domains::LINK_CONFIRM, &[]);
     let n = ((h[0] as u32) << 12 | (h[1] as u32) << 4 | (h[2] as u32) >> 4) % 1_000_000;
     format!("{:03} {:03}", n / 1000, n % 1000)
 }
 
 // ---- sealed grant ------------------------------------------------------------------
 
-fn grant_cipher(secret: &[u8; 16], e: &[u8; 32], n: &[u8; 32]) -> Aes256Gcm {
-    let k = link_key(secret, e, n);
-    let mut gk = [0u8; 32];
-    Hkdf::<Sha256>::new(None, &k)
-        .expand(b"grant", &mut gk)
-        .expect("32 bytes is a valid HKDF output");
-    Aes256Gcm::new_from_slice(&gk).expect("32-byte key")
+fn grant_key(secret: &[u8; 16], e: &[u8; 32], n: &[u8; 32]) -> Secret32 {
+    kdf::derive(GRANT_CONTEXT, link_key(secret, e, n).expose())
 }
 
-/// AES-256-GCM under a key derived from K ("grant"), AAD = T. Output is
+/// `aead::seal` under a key derived from K, AAD = T. Output is
 /// `b64url(nonce(12) || ciphertext || tag)`.
 pub fn seal_link_grant(
     secret: &[u8; 16],
@@ -223,18 +200,8 @@ pub fn seal_link_grant(
     n_dev: &[u8; 32],
     plaintext: &[u8],
 ) -> String {
-    let nonce: [u8; NONCE_LEN] = cryptography::rng::bytes();
     let aad = transcript(secret, e_dev, n_dev);
-    let ct = grant_cipher(secret, e_dev, n_dev)
-        .encrypt(
-            &Nonce::from(nonce),
-            Payload {
-                msg: plaintext,
-                aad: &aad,
-            },
-        )
-        .expect("AES-GCM encrypt");
-    enc([&nonce[..], &ct].concat())
+    enc(aead::seal(&grant_key(secret, e_dev, n_dev), &aad, plaintext).expect("AES-GCM encrypt"))
 }
 
 pub fn open_link_grant(
@@ -244,14 +211,11 @@ pub fn open_link_grant(
     sealed: &str,
 ) -> Result<Vec<u8>> {
     let data = dec(sealed)?;
-    if data.len() < NONCE_LEN {
-        return Err(Error::Decode);
-    }
-    let (nonce, ct) = data.split_at(NONCE_LEN);
     let aad = transcript(secret, e_dev, n_dev);
-    grant_cipher(secret, e_dev, n_dev)
-        .decrypt(&Nonce::try_from(nonce).map_err(|_| Error::Decode)?, Payload { msg: ct, aad: &aad })
-        .map_err(|_| Error::BadSignature)
+    aead::open(&grant_key(secret, e_dev, n_dev), &aad, &data).map_err(|e| match e {
+        cryptography::CryptoError::CiphertextTooShort => Error::Decode,
+        _ => Error::BadSignature,
+    })
 }
 
 // ---- messages (ALPN tinline/link/1) -------------------------------------------------

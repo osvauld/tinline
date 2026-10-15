@@ -24,6 +24,7 @@ pub const GROUP_RECORD: Domain = b"tinline-group-record-v1";
 pub const GROUP_INVITE: Domain = b"tinline-group-invite-v1";
 pub const GROUP_HOST_ADDR: Domain = b"tinline-group-host-addr-v1";
 pub const GROUP_MAIL: Domain = b"tinline-group-mail-v1";
+pub const GROUP_ENDPOINT: Domain = b"tinline-group-endpoint-v1";
 pub const STORAGE_ATTESTATION: Domain = b"tinline-group-storage-attestation-v1\0";
 pub const RECEIPT: Domain = b"tinline-recipient-receipt-v1\0";
 
@@ -66,6 +67,7 @@ pub const ALL: &[Domain] = &[
     GROUP_INVITE,
     GROUP_HOST_ADDR,
     GROUP_MAIL,
+    GROUP_ENDPOINT,
     STORAGE_ATTESTATION,
     RECEIPT,
     GROUP_ID,

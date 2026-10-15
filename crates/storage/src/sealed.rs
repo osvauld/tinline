@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use cryptography::Secret32;
 use zeroize::Zeroizing;
 
 use crate::{Op, StorageError, Store};
@@ -12,12 +13,12 @@ use crate::{Op, StorageError, Store};
 #[derive(Clone)]
 pub struct Sealed {
     store: Store,
-    key: Arc<Zeroizing<[u8; 32]>>,
+    key: Arc<Secret32>,
 }
 
 impl Sealed {
-    pub fn new(store: Store, key: [u8; 32]) -> Self {
-        Self { store, key: Arc::new(Zeroizing::new(key)) }
+    pub fn new(store: Store, key: impl Into<Secret32>) -> Self {
+        Self { store, key: Arc::new(key.into()) }
     }
 
     pub fn raw(&self) -> &Store {
@@ -34,12 +35,12 @@ impl Sealed {
         plain.extend_from_slice(&(path.len() as u16).to_be_bytes());
         plain.extend_from_slice(path.as_bytes());
         plain.extend_from_slice(value);
-        cryptography::aead::encrypt(&self.key, &plain).map_err(|_| StorageError::Unseal(path.into()))
+        cryptography::aead::seal(&self.key, &[], &plain).map_err(|_| StorageError::Unseal(path.into()))
     }
 
     pub fn unseal(&self, path: &str, sealed: &[u8]) -> Result<Vec<u8>, StorageError> {
         let bad = || StorageError::Unseal(path.to_string());
-        let plain = Zeroizing::new(cryptography::aead::decrypt(&self.key, sealed).map_err(|_| bad())?);
+        let plain = Zeroizing::new(cryptography::aead::open(&self.key, &[], sealed).map_err(|_| bad())?);
         let n = u16::from_be_bytes(plain.get(..2).ok_or_else(bad)?.try_into().unwrap()) as usize;
         if plain.get(2..2 + n) != Some(path.as_bytes()) {
             return Err(bad());

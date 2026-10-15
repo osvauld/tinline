@@ -326,7 +326,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             crate::group::engine::own_content_core_for_test(me.id.clone(), me.epoch, false);
         assert_eq!(gid, target_gid);
         *node.inner.group.core.lock() = Some(target.clone());
-        let remote = proto::device_public(&proto::new_device_secret());
+        let remote = cryptography::signature::public_key(&proto::new_device_secret());
         registry(&node, remote);
         let token = cryptography::codec::to_bytes(&InviteToken {
             group: gid.clone(),

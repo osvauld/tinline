@@ -15,7 +15,7 @@ close code 426 like the other superseded versions).
   Several devices per DID are fine; each has its own attestation.
 
 All signed things are `SignedBlob { payload: b64url(json), signature: b64url }`,
-signature over `DOMAIN || payload`. Domains: `osvauld/p2p/{attest,invite,grant,bind}/v1\0` plus `invite/v2\0` for compact invites.
+signature over `cryptography::sign::input(DOMAIN, [payload])` (u64 BE length-framed domain and parts; every domain is in `cryptography::domains`). Domains: `osvauld/p2p/{attest,invite,grant,bind}/v1\0` plus `invite/v2\0` for compact invites.
 The verifying key is always recovered from the DID named inside the payload; callers then
 compare that DID to the one they expected.
 
@@ -255,13 +255,13 @@ the low 5 bits must be zero. Trailing bytes are refused. Not signed: a bearer se
 
 ### Link handshake (ALPN `tinline/link/1`)
 
-E = existing device, N = new one; either may display. `T = "tinline/link/v1" || e_dev || n_dev ||
-secret`, `K = HKDF-SHA256(ikm = secret, info = T)`.
+E = existing device, N = new one; either may display. `T = sign::input(LINK_TRANSCRIPT, [e_dev,
+n_dev, secret])`, `K = kdf::derive("tinline/link/v1 key", T)` (BLAKE3; `crates/proto/src/link.rs`).
 
-- `LinkHello { role: scanner|displayer, proof }`, `proof = HMAC-SHA256(K, role || own_device)`
+- `LinkHello { role: scanner|displayer, proof }`, `proof = hash::keyed(K, LINK_PROOF, [role, own_device])`
   (compared in constant time against the QUIC-authenticated remote device).
-- Confirmation code: first 20 bits of `HMAC(K, "confirm")` mod 1,000,000, shown `482 913`.
-- `LinkGrant { sealed }`: `b64url(nonce(12) || AES-256-GCM)` under `HKDF(K, "grant")`, AAD =
+- Confirmation code: first 20 bits of `hash::keyed(K, LINK_CONFIRM, [])` mod 1,000,000, shown `482 913`.
+- `LinkGrant { sealed }`: `b64url(aead::seal)` (nonce(12) || AES-256-GCM) under `kdf::derive("tinline/link/v1 grant", K)`, AAD =
   `T`; plaintext JSON `LinkGrantBody { mnemonic, account_name, registry: [{attestation, label,
   removed}] }`.
 - `LinkDone { attestation, label }`: `accept_link_done` requires a valid attestation, DID ==

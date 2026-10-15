@@ -199,7 +199,10 @@ impl BlobHub {
 
     fn protected_tag(owner: Option<&str>, hash: &Hash) -> String {
         match owner {
-            Some(owner) => format!("profile/{}/{hash}", blake3::hash(owner.as_bytes()).to_hex()),
+            Some(owner) => format!(
+                "profile/{}/{hash}",
+                hex::encode(cryptography::hash::content(cryptography::domains::PROTECTED_BLOB, owner.as_bytes()))
+            ),
             None => tag_of(hash),
         }
     }

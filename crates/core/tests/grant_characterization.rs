@@ -174,7 +174,7 @@ impl Raw {
             .unwrap();
         let (id, _) = identity::generate();
         let secret = proto::new_device_secret();
-        let device = proto::device_public(&secret);
+        let device = cryptography::signature::public_key(&secret);
         let ep = rt.block_on(async {
             Endpoint::builder(presets::N0)
                 .secret_key(SecretKey::from_bytes(&secret))

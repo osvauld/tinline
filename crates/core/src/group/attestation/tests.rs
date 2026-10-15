@@ -82,8 +82,7 @@ fn wrong_key_raw_signature_and_record_domain_are_not_storage_receipts() {
     let c = claim(&account);
     let body = cryptography::codec::to_bytes(&c).unwrap();
     assert_eq!(c.sign(&other), Err(AttestationError::Signature));
-    let mut record_input = b"tinline-group-record-v1".to_vec();
-    put_bytes_pub(&mut record_input, &body);
+    let record_input = cryptography::sign::input(cryptography::domains::GROUP_RECORD, &[&body]);
     for signature in [
         account.sign(&body),
         other.sign(&sig_input(&body)),

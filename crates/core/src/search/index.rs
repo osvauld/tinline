@@ -14,7 +14,6 @@ use std::time::{Duration, Instant};
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use storage::{Op, Sealed, Store};
-use zeroize::Zeroizing;
 
 use super::find::{Filter, Verdict};
 use super::hot::Hot;
@@ -138,7 +137,7 @@ fn parse_day(day: &str) -> Option<(u32, u32)> {
 }
 
 /// The keyed hashes of the index (doc, term, conversation, day), all under `index_key`.
-pub struct Keyer(Zeroizing<[u8; 32]>);
+pub struct Keyer(cryptography::Secret32);
 
 impl Keyer {
     fn hash(&self, domain: &[u8], parts: &[&[u8]]) -> u64 {
@@ -238,7 +237,7 @@ impl SearchIndex {
     fn with_store(store: Store, phrase: &str, path: Option<&Path>) -> Result<Self, Error> {
         let mut me = Self {
             db: Sealed::new(store, phrase_key(STORE_DOMAIN, phrase)),
-            keyer: Keyer(Zeroizing::new(phrase_key(INDEX_DOMAIN, phrase))),
+            keyer: Keyer(phrase_key(INDEX_DOMAIN, phrase)),
             hot: Mutex::new(Hot::default()),
             view: RwLock::new(Arc::new(View::default())),
             maint: Mutex::new(Memo::default()),

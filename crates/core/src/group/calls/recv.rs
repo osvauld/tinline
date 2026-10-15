@@ -208,6 +208,6 @@ impl Inner {
 
     pub(super) fn calls_frontier(&self, core: &GroupCore, gid: &str) -> String {
         let vv = core.groups.lock().get(gid).map(|l| l.doc.vv().encode()).unwrap_or_default();
-        hex::encode(&blake3::hash(&vv).as_bytes()[..16])
+        hex::encode(&cryptography::hash::content(cryptography::domains::GROUP_CALLS_FRONTIER, &vv)[..16])
     }
 }

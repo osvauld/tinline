@@ -1,18 +1,17 @@
 //! Prototype portable host storage statements. No wire negotiation, forwarding,
 //! Ack-store updates, debt clearing, UI status or readiness certificate yet.
 //! Signatures attest a host's claim; they cannot audit a dishonest host's disk.
-use cryptography::codec;
+use cryptography::{codec, domains};
 use loro::VersionVector;
 use serde::{Deserialize, Serialize};
 
 use super::{
     doc::{DocId, GroupDoc},
     engine::GroupCore,
-    record::{put_bytes_pub, verify_did_pub},
+    record::verify_did,
     state::{GroupState, derive_meta},
 };
 
-const DOMAIN: &[u8] = b"tinline-group-storage-attestation-v1\0";
 // Provisional payload budget; tuning is separate from schema/algorithm widths.
 const MAX_BODY: usize = 128 * 1024;
 const SIGNATURE_BYTES: usize = 64; // Ed25519
@@ -65,9 +64,7 @@ fn scope_ok(group: &str, doc: &DocId) -> bool {
     super::valid_gid(group) && doc.is_valid()
 }
 fn sig_input(body: &[u8]) -> Vec<u8> {
-    let mut input = DOMAIN.to_vec();
-    put_bytes_pub(&mut input, body);
-    input
+    super::record::sig_input(domains::STORAGE_ATTESTATION, body)
 }
 fn frontier_ok(frontier: &[(u64, i32)]) -> bool {
     !frontier.is_empty()
@@ -159,7 +156,7 @@ impl SignedStorageAttestation {
         if claim.group != group || &claim.doc != doc {
             return Err(AttestationError::Scope);
         }
-        if !verify_did_pub(&claim.host, &sig_input(&signed.body), &signed.sig) {
+        if !verify_did(&claim.host, &sig_input(&signed.body), &signed.sig) {
             return Err(AttestationError::Signature);
         }
         Ok(claim)

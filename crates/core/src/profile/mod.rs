@@ -43,7 +43,7 @@ fn sealed(s: &Shared) -> Result<storage::Sealed, Error> {
 pub(crate) fn picture_marker(did: &str, hash: &str) -> String {
     format!(
         "profile/pictures/{}/{hash}",
-        blake3::hash(did.as_bytes()).to_hex()
+        hex::encode(cryptography::hash::content(cryptography::domains::PICTURE_MARKER, did.as_bytes()))
     )
 }
 fn project_availability(

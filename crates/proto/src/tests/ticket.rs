@@ -231,7 +231,7 @@ fn invite_device_must_be_ours() {
     let (a, b) = (peer(), peer());
     let t = ticket(&a);
     let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
-    let other_dev = device_public(&new_device_secret());
+    let other_dev = cryptography::signature::public_key(&new_device_secret());
     assert_eq!(
         accept_contact_hello(&a.id, other_dev, &hello, b.dev, T0, &none(), GTTL).err(),
         Some(Error::DeviceMismatch)

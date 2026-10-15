@@ -12,7 +12,6 @@ use crate::Error;
 pub const CHAT_ALPN: &[u8] = b"tinline/chat/7";
 /// A shard snapshot of a very busy day can be large; blobs carry the rest.
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
-const SIG_DOMAIN: &[u8] = b"tinline-chat-batch-v1";
 
 /// One day we can offer history for.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -57,12 +56,7 @@ pub enum ChatMsg {
 }
 
 fn sig_input(doc: &str, update: &[u8]) -> Vec<u8> {
-    let mut v = Vec::with_capacity(SIG_DOMAIN.len() + 4 + doc.len() + update.len());
-    v.extend_from_slice(SIG_DOMAIN);
-    v.extend_from_slice(&(doc.len() as u32).to_be_bytes());
-    v.extend_from_slice(doc.as_bytes());
-    v.extend_from_slice(update);
-    v
+    cryptography::sign::input(cryptography::domains::CHAT_BATCH, &[doc.as_bytes(), update])
 }
 
 /// The author's attested device key signs every update batch.

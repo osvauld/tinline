@@ -320,8 +320,7 @@ fn member_signature_is_valid_crypto_but_not_host_authority() {
     claim.host = phone.did.clone();
     claim.host_dev = phone.dev;
     let body = cryptography::codec::to_bytes(&claim).unwrap();
-    let mut input = b"tinline-group-storage-attestation-v1\0".to_vec();
-    crate::group::record::put_bytes_pub(&mut input, &body);
+    let input = cryptography::sign::input(cryptography::domains::STORAGE_ATTESTATION, &[&body]);
     let bytes = SignedStorageAttestation {
         sig: phone.account.sign(&input).to_vec(),
         body,

@@ -43,7 +43,7 @@ fn safety_numbers_match_on_both_sides_and_differ_between_pairs() {
 #[test]
 fn only_the_current_ticket_has_a_nonce() {
     let (id, _) = identity::generate();
-    let dev = proto::device_public(&proto::new_device_secret());
+    let dev = cryptography::signature::public_key(&proto::new_device_secret());
     let mut st = State::default();
     assert_eq!(current_nonce(&st, T0), None);
     let t = proto::issue_contact_ticket(&id, dev, "x", None, T0, 600);

@@ -45,7 +45,7 @@ pub(crate) fn open_invite(blob: &SignedBlob) -> Result<InviteClaim> {
 // - exp: minutes since 2026-01-01T00:00:00Z, u24 big endian (rounded up when issuing).
 // - flags: high 3 bits relay code (0 none, 1..=4 known n0 relays, 7 custom with a trailing
 //   u8 length + URL), low 5 bits name length in bytes (so names are capped at 31 bytes).
-// - sig: Ed25519 by the DID key over `INVITE_V2_DOMAIN || 0x02 || everything before sig`.
+// - sig: Ed25519 by the DID key over `sign::input(INVITE_V2, [0x02 || everything before sig])`.
 // The issuer DID is `did_from_public_key(signing_pk)`; `iat` is not carried (decodes as 0).
 // Inside `SignedBlob` the payload is `b64url(0x02 || body-before-sig)`; a v1 payload is JSON
 // and starts with `{`, so the first byte tells the versions apart.
@@ -168,7 +168,7 @@ pub(crate) fn open_invite_v2(blob: &SignedBlob) -> Result<InviteClaim> {
     if body.len + 1 != payload.len() {
         return Err(Error::Decode);
     }
-    if !verify(&body.pk, &[INVITE_V2_DOMAIN, &payload].concat(), &sig) {
+    if !verify(&body.pk, &sign::input(INVITE_V2_DOMAIN, &[&payload]), &sig) {
         return Err(Error::BadSignature);
     }
     Ok(InviteClaim {
@@ -300,7 +300,7 @@ pub fn issue_contact_ticket(
         payload.push(r.len() as u8);
         payload.extend(r.as_bytes());
     }
-    let sig = id.sign(&[INVITE_V2_DOMAIN, &payload].concat());
+    let sig = id.sign(&sign::input(INVITE_V2_DOMAIN, &[&payload]));
     ContactTicket {
         v: 2,
         did: id.did().to_string(),

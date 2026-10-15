@@ -3,12 +3,12 @@ use super::*;
 #[test]
 fn batch_signatures_bind_doc_and_update() {
     let secret = proto::new_device_secret();
-    let public = proto::device_public(&secret);
+    let public = cryptography::signature::public_key(&secret);
     let sig = sign_batch(&secret, "dm/p/2026-10-07", b"update");
     assert!(verify_batch(&public, "dm/p/2026-10-07", b"update", &sig));
     assert!(!verify_batch(&public, "dm/p/2026-10-08", b"update", &sig));
     assert!(!verify_batch(&public, "dm/p/2026-10-07", b"updatf", &sig));
-    let other = proto::device_public(&proto::new_device_secret());
+    let other = cryptography::signature::public_key(&proto::new_device_secret());
     assert!(!verify_batch(&other, "dm/p/2026-10-07", b"update", &sig));
     assert!(!verify_batch(&public, "x", b"update", &sig[..10]));
 }
