@@ -90,10 +90,8 @@ impl App {
             let msg = if !ready { "Unlock to see your groups." } else if q.is_empty() { "Groups you start or join show up here." } else { "No group matches." };
             col = col.push(container(tx(msg, 13.0, t.ink2).line_height(lh(19.0))).padding([8, 20]));
         }
-        let face = |dim: bool| -> El<'_> {
-            container(crate::pg_icons::pgi("users", 22.0, ui::alpha(t.accent_ink, if dim { 0.72 } else { 1.0 })))
-                .width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.surface2, 24.0)).into()
-        };
+        // The group's own mandala (the left-or-removed rows rely on their dimmed text; the art is not faded).
+        let face = |gid: &str| -> El<'_> { gav(t, gid, 48.0) };
         let mut rows = column![];
         for s in active {
             let at = s.last.as_ref().map_or(0, |m| m.at);
@@ -104,7 +102,7 @@ impl App {
             let pv = if in_call { Preview::Plain("You\u{2019}re in the call".into(), Some(t.accent_ink)) }
                 else if self.gcall.live.contains_key(&s.id) { Preview::Plain("Call in progress".into(), Some(t.accent_ink)) }
                 else if !s.hosted_here && !s.host_reachable { Preview::Waiting(text) } else { Preview::Plain(text, None) };
-            rows = rows.push(self.pg_chat_row(t, sel, face(false), s.name.clone(), at, s.unread, false, pv, l(Lm::Open(s.id.clone()))));
+            rows = rows.push(self.pg_chat_row(t, sel, face(&s.id), s.name.clone(), at, s.unread, false, pv, l(Lm::Open(s.id.clone()))));
         }
         col = col.push(container(rows).padding([0, 8]));
         if !gone.is_empty() {
@@ -120,7 +118,7 @@ impl App {
                     let at = s.last.as_ref().map_or(0, |m| m.at);
                     let what = if s.my_role == GroupRole::Removed { "Removed" } else { "You left" };
                     let sub = if at > 0 { format!("{what} \u{b7} {}", day_only(at)) } else { what.to_string() };
-                    rows = rows.push(button(row![face(true), column![semi(s.name.clone(), 15.0, ui::alpha(t.ink, 0.72)).line_height(lh(21.0)),
+                    rows = rows.push(button(row![face(&s.id), column![semi(s.name.clone(), 15.0, ui::alpha(t.ink, 0.72)).line_height(lh(21.0)),
                             tx(sub, 13.0, t.ink2).line_height(lh(21.0))].spacing(2).width(Fill)].spacing(12).align_y(Alignment::Center).height(56))
                         .padding(8).width(Fill).style(super::shell_view::wash(t, sel.then_some(t.accent_soft), (!sel).then_some(t.surface2), 14.0))
                         .on_press(l(Lm::Open(s.id.clone()))));
@@ -141,7 +139,7 @@ impl App {
         let on = !self.live.hide_info;
         // Conversation.svelte `.bar` for a group: the head (36 group avatar, name 17/22, "9 members" 13/18), then
         // the details button (here it shows or hides the members pane beside the chat).
-        let face = container(crate::pg_icons::pgi("users", 18.0, t.accent_ink)).width(36).height(36).center_x(36).center_y(36).style(ui::plain(t.surface2, 18.0));
+        let face = gav(t, self.live.open.as_deref().unwrap_or_default(), 36.0);
         let head_btn = button(row![face, column![semi(d.name.clone(), 17.0, t.ink).line_height(lh(22.0)).wrapping(iced::widget::text::Wrapping::None),
                 tx(self.live.status_line(), 13.0, sub_color).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)]].spacing(10).align_y(Alignment::Center))
             .padding(Padding { top: 4.0, right: 10.0, bottom: 4.0, left: 6.0 }).height(44).width(Fill)
@@ -539,7 +537,7 @@ impl App {
             _ => format!("{} member{} \u{b7} {role_line}", d.members.len(), if d.members.len() == 1 { "" } else { "s" }),
         };
         col = col.push(container(column![
-            container(crate::pg_icons::pgi("users", 34.0, t.accent_ink)).width(72).height(72).center_x(72).center_y(72).style(ui::plain(t.surface2, 36.0)),
+            gav(t, self.live.open.as_deref().unwrap_or_default(), 72.0),
             Space::new().height(12),
             semi(d.name.clone(), 22.0, t.ink).line_height(lh(28.0)),
             tx(hero_sub, 13.0, t.ink2).line_height(lh(19.0)),
