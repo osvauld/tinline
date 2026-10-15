@@ -50,7 +50,6 @@ object PgIcons {
     val X = t(TinIcons.X)
     val Plus = t(TinIcons.Plus)
     val Check = t(TinIcons.Check)
-    val Read = t(TinIcons.Read)
     val Search = t(TinIcons.Search)
     val Clip = t(TinIcons.Clip)
     val Info = t(TinIcons.Info)

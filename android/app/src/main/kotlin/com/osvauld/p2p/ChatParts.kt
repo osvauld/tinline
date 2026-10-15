@@ -72,25 +72,22 @@ private val MetaText = TextStyle(fontFamily = Figtree, fontSize = 11.sp, lineHei
 /** Spacing between rows (MessageRow.svelte `.m`): 10 dp above a run, 2 dp inside one. */
 fun gapAbove(pos: BubblePos): Dp = if (pos == BubblePos.Mid || pos == BubblePos.Last) 2.dp else 10.dp
 
-/** [Delivered]/[Read] only from the core's signed receipts; [Blank] keeps the slot while the status loads. */
-enum class MetaTick { None, Blank, Delivered, Read, Pending, Failed }
+/** My message's receipt mark ([ReceiptTicks.kt]): the state, the message it belongs to (it animates only when that
+ *  message's state changes) and what a screen reader hears. [reserve] with no [vis] keeps the slot while it loads. */
+class MetaReceipt(val vis: TickVis?, val key: String, val label: String, val reserve: Boolean = true)
 
 /** The inline time and status of a bubble: [edited] time [tick]. */
-class BubbleMeta(val time: String, val edited: Boolean = false, val tick: MetaTick = MetaTick.None, val tickDesc: String? = null)
+class BubbleMeta(val time: String, val edited: Boolean = false, val receipt: MetaReceipt? = null)
 
 @Composable
 fun PgMeta(meta: BubbleMeta, color: Color, modifier: Modifier = Modifier) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
         if (meta.edited) Text("edited", style = MetaText, color = color, maxLines = 1)
         Text(meta.time, style = MetaText, color = color, maxLines = 1)
-        // .tk keeps one 13 x 11 slot whatever the state, so a status change never narrows the bubble.
-        if (meta.tick != MetaTick.None) Box(Modifier.size(13.dp, 11.dp), contentAlignment = Alignment.Center) {
-            when (meta.tick) {
-                MetaTick.Delivered -> Icon(Pg.Tick, meta.tickDesc ?: "On their device", tint = color, modifier = Modifier.size(12.dp))
-                MetaTick.Read -> Icon(Pg.TickRead, meta.tickDesc ?: "Read on their device", tint = color, modifier = Modifier.size(12.dp))
-                MetaTick.Pending -> Icon(Pg.TickClock, meta.tickDesc ?: "Sending", tint = color, modifier = Modifier.size(11.dp))
-                MetaTick.Failed -> Icon(Pg.TickWarn, meta.tickDesc ?: "Not delivered", tint = Tin.c.er, modifier = Modifier.size(12.dp))
-                MetaTick.None, MetaTick.Blank -> {}
+        // The tick keeps one slot (two ticks wide) whatever the state, so a status change never narrows the bubble.
+        meta.receipt?.let { r ->
+            if (r.vis != null || r.reserve) Box(Modifier.size(tickSlotWidth(12.dp), 12.dp), contentAlignment = Alignment.Center) {
+                r.vis?.let { ReceiptTickGlyph(r.key, it, color, Tin.c.tickRead, Tin.c.tickBad, Tin.c.prc, r.label) }
             }
         }
     }

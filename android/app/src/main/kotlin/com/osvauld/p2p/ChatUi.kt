@@ -1,12 +1,5 @@
 package com.osvauld.p2p
 
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import uniffi.p2pcore.Attachment
 import uniffi.p2pcore.AttachmentKind
 import uniffi.p2pcore.DeliveryState
@@ -21,9 +14,9 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /**
- * Honest marks for a message we sent. [Two] and [Read] come only from the contact's signed receipts (core
- * `ReceiptTick`); [One] = sent or saved here, not confirmed yet (drawn as a clock: it must never look delivered);
- * [Clock] = it cannot go out now (waiting until you are both online).
+ * Honest status of a message we sent, for words and the chat list ("Waiting"). The bubble draws the receipt tick
+ * itself (ReceiptTicks.kt). [Two] and [Read] come only from the contact's signed receipts (core `ReceiptTick`);
+ * [One] = sent or saved here, not confirmed yet; [Clock] = it cannot go out now (waiting until you are both online).
  */
 enum class Tick { One, Two, Read, Clock }
 
@@ -40,16 +33,6 @@ fun tickOf(m: Message, receipt: ReceiptTick?, link: Link, online: Boolean, nowMs
     else -> Tick.One
 }
 
-@Composable
-fun TickIcon(t: Tick, tint: Color, size: Dp = 15.dp) {
-    val (icon, desc) = when (t) {
-        Tick.One -> PgIcons.Clock to "Waiting for their device to confirm"
-        Tick.Two -> PgIcons.Check to "On their device"
-        Tick.Read -> PgIcons.Read to "Read on their device"
-        Tick.Clock -> PgIcons.Clock to "Waiting until you are both online"
-    }
-    Icon(icon, desc, tint = tint, modifier = Modifier.size(size))
-}
 
 private val HM = DateTimeFormatter.ofPattern("HH:mm")
 private val DM = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())

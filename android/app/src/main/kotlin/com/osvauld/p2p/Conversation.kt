@@ -634,22 +634,7 @@ private fun Bubble(
         }
         val a = m.attachment
         if (a == null && notDelivered == null) {
-            val textTick = if (out) tickOf(m, receipt?.tick, link, online, nowMs) else null
-            val meta = BubbleMeta(msClock(m.at.toLong()), m.editedAt != null,
-                when {
-                    !out || receipt?.tick == ReceiptTick.NONE -> MetaTick.None
-                    receipt == null -> MetaTick.Blank
-                    textTick == Tick.Read -> MetaTick.Read
-                    textTick == Tick.Two -> MetaTick.Delivered
-                    else -> MetaTick.Pending
-                },
-                when (textTick) {
-                    Tick.Clock -> "Waiting until you are both online"
-                    Tick.One -> "Waiting for $first’s device to confirm"
-                    Tick.Two -> "On $first’s device"
-                    Tick.Read -> "Read on $first’s device"
-                    null -> null
-                })
+            val meta = BubbleMeta(msClock(m.at.toLong()), m.editedAt != null, receiptMark(m, receipt, false, first))
             PgTextBubble(
                 ChatFind.marked(Emoji.styled(m.text), findQuery, findCurrent, c.thread), pos, out, meta,
                 Modifier.widthIn(max = bubbleMaxWidth).combinedClickable(onClick = {}, onLongClick = onLong)
@@ -662,6 +647,7 @@ private fun Bubble(
         val photo = a != null && a.isImage() && !broken
         val prog = a?.let { progress[it.hash] }
         val tick = if (out && receipt != null && receipt.tick != ReceiptTick.NONE) tickOf(m, receipt.tick, link, online, nowMs) else null
+        val mark = receiptMark(m, receipt, notDelivered != null, first)
         val bg = if (out) c.prc else c.bubIn
         val fg = if (out) c.onPrc else c.ink
         Column(
@@ -703,13 +689,13 @@ private fun Bubble(
                 // Only a few emojis: big, like the other chat apps; emojis in text: a bit larger.
                 val big = Emoji.isBig(m.text)
                 val style = if (big) TinType.bodyL.copy(fontSize = 38.sp, lineHeight = 46.sp) else TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp)
-                CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, tick, metaColor)
+                CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, mark, metaColor)
             } else {
                 // A photo's caption and time keep to the photo's width (the bubble is never wider than the photo).
                 val w = if (photo) Modifier.width(photoBox(a.width, a.height).first) else Modifier
                 if (m.text.isNotBlank()) Text(Emoji.styled(m.text), w.padding(horizontal = if (photo) 9.dp else 0.dp).padding(top = if (photo) 5.dp else 0.dp),
                     style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
-                Box(w) { Meta(label, tick, metaColor, if (photo) 7.dp else 0.dp, 0.dp) }
+                Box(w) { Meta(label, mark, metaColor, if (photo) 7.dp else 0.dp, 0.dp) }
             }
         }
     }
@@ -718,16 +704,15 @@ private fun Bubble(
 /** Reserve the last line's trailing space for time/ticks, without squeezing the message.
  * RTL uses a separate metadata row until bidi-aware trailing placement is supported. */
 @Composable
-private fun CompactTextBubble(text: AnnotatedString, style: TextStyle, color: Color, label: String, tick: Tick?, metaColor: Color) {
+private fun CompactTextBubble(text: AnnotatedString, style: TextStyle, color: Color, label: String, mark: MetaReceipt?, metaColor: Color) {
     val measurer = rememberTextMeasurer()
     val metaStyle = TinType.caption.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
-    val tickColor = Tin.c.pr
     SubcomposeLayout { constraints ->
         val loose = constraints.copy(minWidth = 0, minHeight = 0)
         val meta = subcompose("meta") {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(label, style = metaStyle, color = metaColor)
-                if (tick != null) TickIcon(tick, if (tick == Tick.Two || tick == Tick.Read) tickColor else metaColor)
+                ReceiptMark(mark, metaColor)
             }
         }.single().measure(loose)
         val result = measurer.measure(text, style = style, constraints = loose)
@@ -749,16 +734,31 @@ private fun CompactTextBubble(text: AnnotatedString, style: TextStyle, color: Co
     }
 }
 
+/** My message's receipt mark for the bubble meta (ReceiptTicks.kt): the core's `ReceiptTick`, or not delivered. */
+private fun receiptMark(m: Message, receipt: MessageReceiptStatus?, notDelivered: Boolean, first: String): MetaReceipt? {
+    if (!m.outgoing || receipt?.tick == ReceiptTick.NONE) return null
+    val vis = tickVisOf(receipt?.tick, notDelivered)
+    return MetaReceipt(vis, m.id, vis?.let { tickLabel(it, first) } ?: "")
+}
+
+@Composable
+private fun ReceiptMark(mark: MetaReceipt?, metaColor: Color) {
+    if (mark == null || (mark.vis == null && !mark.reserve)) return
+    Box(Modifier.size(tickSlotWidth(12.dp), 12.dp), contentAlignment = Alignment.Center) {
+        mark.vis?.let { ReceiptTickGlyph(mark.key, it, metaColor, Tin.c.tickRead, Tin.c.tickBad, Tin.c.prc, mark.label) }
+    }
+}
+
 private fun Modifier.drawLeftBar(color: Color) = drawBehind { drawRect(color, size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height)) }
 
 @Composable
-private fun Meta(text: String, tick: Tick?, color: Color, hPad: androidx.compose.ui.unit.Dp?, bPad: androidx.compose.ui.unit.Dp = 0.dp) {
+private fun Meta(text: String, mark: MetaReceipt?, color: Color, hPad: androidx.compose.ui.unit.Dp?, bPad: androidx.compose.ui.unit.Dp = 0.dp) {
     Row(
         Modifier.fillMaxWidth().padding(top = 4.dp, start = hPad ?: 0.dp, end = hPad ?: 0.dp, bottom = bPad),
         horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text, style = TinType.caption.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal), color = color)
-        if (tick != null) TickIcon(tick, if (tick == Tick.Two || tick == Tick.Read) Tin.c.pr else color)
+        ReceiptMark(mark, color)
     }
 }
 
