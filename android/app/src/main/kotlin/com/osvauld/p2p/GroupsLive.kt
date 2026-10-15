@@ -474,9 +474,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
             Row(Modifier.weight(1f).heightIn(min = 44.dp).clip(SmoothCornerShape(12.dp)).clickable(onClick = onInfo).padding(start = 6.dp, end = 10.dp, top = 4.dp, bottom = 4.dp)
                 .semantics(mergeDescendants = true) { contentDescription = "${d.name}. ${GroupText.status(d)}. Group info" },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(36.dp).clip(CircleShape).background(c.sf2).alpha(if (GroupText.active(d.myRole)) 1f else .72f), contentAlignment = Alignment.Center) {
-                    Icon(PgIcons.Users, null, Modifier.size(18.dp), tint = c.accentInk)
-                }
+                GroupAvatar(0, 36.dp, dim = !GroupText.active(d.myRole), gid = d.id)
                 Column(Modifier.weight(1f)) {
                     Text(d.name, style = PgBodyText.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(GroupText.status(d), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp), color = if (d.myRole == CoreRole.REMOVED) c.er else c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)

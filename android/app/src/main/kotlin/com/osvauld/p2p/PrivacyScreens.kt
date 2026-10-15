@@ -283,7 +283,7 @@ internal fun ColumnScope.InviteCard(src: FakeGroupsPrivacy, nav: PNav, inv: Grou
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                GroupAvatar(0, 48.dp, radius = 16.dp)
+                GroupAvatar(0, 48.dp, radius = 16.dp, gid = inv.id)
                 Column {
                     Text(inv.groupName, style = TinType.bodyL.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold), color = c.ink)
                     Hint(if (mine) "Group invite you sent" else "Group invite from ${first(inv.inviterName)} · ${inv.memberCount} members")
