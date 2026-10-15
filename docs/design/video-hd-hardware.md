@@ -83,7 +83,7 @@ sources; no other agent processes or build outputs were removed. Current queued
 validation, with no camera access or benchmarks:
 
 ```sh
-AOM_DIR=/home/abe/build-cache/p2p_chat/libaom/install-v3.14.1-host AOM_STATIC_REQUIRED=1 \
+AOM_DIR=/home/abe/build-cache/p2p_chat/libaom/install-v3.15.2-host AOM_STATIC_REQUIRED=1 \
 python3 scripts/buildlock.py --who video-hd-desktop-usb-validate -- bash -c \
  'cargo test --offline --locked --release -p desktop --bin p2p-desktop camera:: && \
   cargo test --offline --locked --release -p desktop --bin p2p-desktop frames:: && \

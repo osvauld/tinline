@@ -28,7 +28,7 @@ No APK assembled/installed, real capture, account changes or data wipes.
 
 ```sh
 # From repository root. Use the repository's build lock for heavy commands.
-AOM_DIR=/home/abe/build-cache/p2p_chat/libaom/install-v3.14.1-host AOM_STATIC_REQUIRED=1 \
+AOM_DIR=/home/abe/build-cache/p2p_chat/libaom/install-v3.15.2-host AOM_STATIC_REQUIRED=1 \
 python3 scripts/buildlock.py --who video-quality-core -- \
  cargo test -p p2pcore --locked --offline --lib video_call:: -- --test-threads=1
 python3 scripts/buildlock.py --who video-quality-jvm -- \
@@ -54,7 +54,7 @@ warnings only. Exact integration commands used:
 
 ```sh
 python3 scripts/buildlock.py --who video-quality-dev-jvm -- python3 scripts/test_video_quality_candidate.py
-AOM_DIR=/home/abe/build-cache/p2p_chat/libaom/install-v3.14.1-host AOM_STATIC_REQUIRED=1 \
+AOM_DIR=/home/abe/build-cache/p2p_chat/libaom/install-v3.15.2-host AOM_STATIC_REQUIRED=1 \
 python3 scripts/buildlock.py --who video-quality-dev-core -- \
  cargo test -p p2pcore --locked --offline --lib video_call:: -- --test-threads=1
 (cd android && python3 ../scripts/buildlock.py --who video-quality-dev-android -- \

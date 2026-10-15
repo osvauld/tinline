@@ -122,7 +122,9 @@ val rustInputs = files(
 // Static libaom per ABI (video encoder), built by scripts/build_libaom.py; the video crate's
 // build.rs reads AOM_DIR_<target triple>.
 val aomRoot = findProperty("aomRoot") as String? ?: "${System.getProperty("user.home")}/build-cache/p2p_chat/libaom"
-val aomTag = "v3.14.1"
+// One pin: the version lives in scripts/build_libaom.py.
+val aomTag = "v" + Regex("""^VERSION = "([^"]+)"""", RegexOption.MULTILINE)
+    .find(File(repoRoot, "scripts/build_libaom.py").readText())!!.groupValues[1]
 val abiTriple = mapOf("arm64-v8a" to "aarch64-linux-android", "x86_64" to "x86_64-linux-android")
 val envMap = mapOf(
     "ANDROID_NDK_HOME" to ndkDir,

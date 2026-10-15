@@ -22,11 +22,11 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
-VERSION = "3.14.1"
+VERSION = "3.15.2"
 TAG = f"v{VERSION}"
-COMMIT = "03087864cf4bea6abb0d28f95cf7843511413d8f"
+COMMIT = "af3dc9aadc793c1b00edc003e3fc19a44fdeb574"
 URL = f"https://storage.googleapis.com/aom-releases/libaom-{VERSION}.tar.gz"
-SHA256 = "44bf90dbd23e734d50e70a8c41c285193922938bd0d3bc2ee56764d181d55ef5"
+SHA256 = "67bb54b245f33ed98600e08269e6139986e48114e14042474ddd8885801dfddc"
 ROOT = Path(os.environ.get("AOM_CACHE") or Path.home() / "build-cache" / "p2p_chat" / "libaom")
 ANDROID_ABI = {
     "aarch64-linux-android": ("arm64-v8a", "arm64"),

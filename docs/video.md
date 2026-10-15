@@ -48,16 +48,17 @@ capture settings, not the new opt-in preference.
 ## Shipping libaom
 
 - **Source pin: release tarball + SHA-256**, not git-at-commit. `scripts/build_libaom.py` fetches
-  `libaom-3.14.1.tar.gz` from `storage.googleapis.com/aom-releases` (the official release, also
+  `libaom-3.15.2.tar.gz` from `storage.googleapis.com/aom-releases` (the official release, also
   GPG-signed upstream) and checks its SHA-256 on every run before using the tree; a mismatch
   deletes the download and fails. Why: SHA-256 rather than git's SHA-1, no git needed, 6 MB
   instead of a clone, and a stamp ties the extracted tree to the hash. The tarball was checked
-  byte-identical to tag v3.14.1 = commit `03087864cf4b`. Vendoring the tree is ruled out (size).
-  Bumping: change `VERSION`/`SHA256`/`COMMIT` in the script and `aomTag` in
-  `android/app/build.gradle.kts`.
+  byte-identical to tag v3.15.2 = commit `af3dc9aadc79`. Vendoring the tree is ruled out (size).
+  Bumping: change `VERSION`/`SHA256`/`COMMIT` in the script (gradle reads `VERSION` from it).
+  3.15.2 (from 3.14.1) takes the 3.15.0 encoder security fixes (CVE-2026-56208..56211,
+  CVE-2026-13906, multithreaded-encode double free) and the 3.15.2 oss-fuzz fixes.
 - **Build**: `python3 scripts/build_libaom.py --target host|<android triple>` (cmake + Ninja +
   nasm; NDK for Android) builds a static realtime-only encoder under
-  `~/build-cache/p2p_chat/libaom/install-v3.14.1-<target>` and prints that prefix. Idempotent;
+  `~/build-cache/p2p_chat/libaom/install-v3.15.2-<target>` and prints that prefix. Idempotent;
   a rerun re-verifies and is a no-op build. A build dir configured from another source tree
   is wiped.
 - **Linking** (`crates/video/build.rs`): `AOM_DIR_<triple>` (dashes as underscores) or
