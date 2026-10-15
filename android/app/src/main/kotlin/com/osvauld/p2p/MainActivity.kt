@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onResume() { super.onResume(); AppVisible.resumed = true }
-    override fun onPause() { AppVisible.resumed = false; super.onPause() }
+    override fun onPause() { AppVisible.resumed = false; P2pApp.get(this).calls.appLeftFront(); super.onPause() }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)

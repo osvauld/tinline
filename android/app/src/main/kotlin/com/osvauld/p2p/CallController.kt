@@ -117,7 +117,9 @@ class CallController(private val app: P2pApp) {
         _ui.value = CallUi(call, CallState.Ringing)
         newSession(call)
         CoreService.ensureRunning(app)
-        Notifications.incoming(app, call)
+        // The app is open and unlocked: the home header (RingHead) is the incoming call, so the system heads-up stays away.
+        // It is posted the moment the app leaves the front while the phone is still ringing ([appLeftFront]).
+        if (!(AppVisible.resumed && app.lockState.value == uniffi.p2pcore.LockState.UNLOCKED)) Notifications.incoming(app, call)
         startRinging()
         ringTimeout?.cancel()
         ringTimeout = app.scope.launch {
@@ -387,8 +389,17 @@ class CallController(private val app: P2pApp) {
         }
     }
 
+    /** MainActivity paused (home, screen off, another app): a call still ringing gets its notification and full-screen intent now. */
+    fun appLeftFront() {
+        val c = _ui.value ?: return
+        if (ringing && c.info.incoming && c.state is CallState.Ringing && !callScreenShown) Notifications.incoming(app, c.info)
+    }
+
+    @Volatile private var ringing = false
+
     private fun startRinging() {
         stopRinging()
+        ringing = true
         if (!AlertPrefs.calls(app)) return   // Settings › Notifications › Calls off: no ringing
         if (!AlertPrefs.quiet(app)) ringtone = CallSounds.startRing(app)
         try {
@@ -412,6 +423,7 @@ class CallController(private val app: P2pApp) {
         else @Suppress("DEPRECATION") (app.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator)
 
     private fun stopRinging() {
+        ringing = false
         ringtone?.stop()
         ringtone = null
         try { vibrator().cancel() } catch (_: Exception) {}
