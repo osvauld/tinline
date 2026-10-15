@@ -205,15 +205,16 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
     }
 }
 
-/**
- * Sounds.svelte, Quiet only. The call-sound palettes and their previews are the playground's WebAudio synth (Proposed; SCREENS-HANDOFF
- * "not to port as-is"), so they are not offered here; the app rings with the system ringtone.
- */
+/** Sounds.svelte: Quiet, and the call sound set with previews (the core renders the same cues as the desktop). */
 @Composable
 fun SoundsPage(onBack: () -> Unit) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val prefs by AlertPrefs.flow(ctx).collectAsState()
     val quiet = prefs["quiet"] ?: false
+    var palette by remember { mutableStateOf(CallSounds.palette(ctx)) }
+    val sets = listOf(Triple("classic", "Classic chime", "A bright four-note chime."),
+        Triple("slack", "Slack \u2192 taut", "Two close notes beat like a loose string, then one pulls tight."),
+        Triple("triad", "Triad knock", "Three rising notes, like a knock."))
     PfPage("Sounds", onBack) {
         PfSec("Quiet", first = true) {
             PfCard {
@@ -222,6 +223,19 @@ fun SoundsPage(onBack: () -> Unit) {
                         trailing = { PgSwitch(quiet, { AlertPrefs.set(ctx, "quiet", it) }, "Quiet") })
                 }
             }
+        }
+        PfSec("Call sounds") {
+            PfCard {
+                sets.forEach { (k, label, sub) ->
+                    act { PfRadioRow(label, sub, palette == k, { palette = k; CallSounds.setPalette(ctx, k); CallSounds.preview(ctx, "ring") }, minHeight = 64.dp) }
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("ring" to "Ringtone", "connected" to "Connected", "ended" to "Call ended").forEach { (cue, label) ->
+                    PgChip(label, false, { CallSounds.preview(ctx, cue) }, icon = PgIcons.Vol)
+                }
+            }
+            PfNote(if (quiet) "Quiet is on, so previews are silent." else "Tap a sound to hear it. The choice applies to the next call.")
         }
     }
 }

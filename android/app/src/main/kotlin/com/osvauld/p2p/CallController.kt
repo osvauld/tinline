@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioManager
-import android.media.Ringtone
-import android.media.RingtoneManager
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.PowerManager
@@ -67,7 +65,7 @@ class CallController(private val app: P2pApp) {
     /** Set when a call ends (after [ui] goes null); cleared when the next call starts. */
     val ended: StateFlow<EndedUi?> = _ended
     private val audio by lazy { AudioEngine(app, { app.node }, ::micUnavailable) }
-    @Volatile private var ringtone: Ringtone? = null
+    @Volatile private var ringtone: CallSounds.Ring? = null
     @Volatile private var statsJob: Job? = null
     @Volatile private var ringTimeout: Job? = null
     @Volatile private var everActive = false
@@ -392,16 +390,7 @@ class CallController(private val app: P2pApp) {
     private fun startRinging() {
         stopRinging()
         if (!AlertPrefs.calls(app)) return   // Settings › Notifications › Calls off: no ringing
-        if (!AlertPrefs.quiet(app)) try {
-            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-            ringtone = RingtoneManager.getRingtone(app, uri)?.apply {
-                audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
-                isLooping = true
-                play()
-            }
-        } catch (e: Exception) { Log.w("Call", "ringtone: $e") }
+        if (!AlertPrefs.quiet(app)) ringtone = CallSounds.startRing(app)
         try {
             // Vibrate unless the phone is fully silent; the ringtone itself follows the ring volume.
             val mode = (app.getSystemService(Context.AUDIO_SERVICE) as AudioManager).ringerMode
@@ -423,7 +412,7 @@ class CallController(private val app: P2pApp) {
         else @Suppress("DEPRECATION") (app.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator)
 
     private fun stopRinging() {
-        try { ringtone?.stop() } catch (_: Exception) {}
+        ringtone?.stop()
         ringtone = null
         try { vibrator().cancel() } catch (_: Exception) {}
     }

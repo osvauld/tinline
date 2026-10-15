@@ -15,6 +15,7 @@ pub use profile::{AccountProfile, ProfileEvents};
 mod group;
 mod error;
 pub mod gcall;
+pub mod cues;
 mod licences;
 mod logging;
 mod node;
