@@ -26,6 +26,18 @@ pub(super) enum Phase {
     Failed,
 }
 
+/// How long the "started a call" banner stays before it settles (gcall.svelte.ts `GCALL_MS.bannerHold`).
+pub(super) const BANNER_HOLD: Duration = Duration::from_millis(9000);
+
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct Announce {
+    pub gid: String,
+    pub call_id: String,
+    pub by: String,
+    pub banner_on: bool,
+    pub dismissed: bool,
+}
+
 #[derive(Default)]
 pub(super) struct State {
     pub gid: Option<String>,
@@ -48,6 +60,9 @@ pub(super) struct State {
     /// Calls running in my groups, by group (from `group_calls`).
     pub live: HashMap<String, p2pcore::GroupCall>,
     ended_at: Option<Instant>,
+    /// GroupCallAnnounce.svelte: "Sam started a call in Weekend hike". A quiet banner that settles after
+    /// `BANNER_HOLD` (the call stays in the conversation and the Groups list). A group call does not ring.
+    pub announce: Option<Announce>,
     /// Screenshots: a fixed call length (a timer changing in the captured frame isn't drawn yet).
     pub frozen: Option<u64>,
 }
@@ -65,6 +80,9 @@ pub(super) enum Gm {
     About(bool),
     NoteOk,
     Ev(GroupCallEvent),
+    /// The banner's hold ran out (only for the call it was raised for).
+    Settle(String),
+    DismissAnnounce,
     /// The ended screen's hold ran out (only for the end it was started for).
     Close(Option<Instant>),
 }
@@ -120,6 +138,7 @@ impl App {
     pub(super) fn gcall_update(&mut self, m: Gm) -> Task<Msg> {
         match m {
             Gm::Call(gid) => {
+                if self.gcall.announce.as_ref().is_some_and(|a| a.gid == gid) { self.gcall.announce = None; }
                 if self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live() {
                     self.gcall.minimized = false;
                     return Task::none();
@@ -183,6 +202,12 @@ impl App {
                 }
             }
             Gm::Ev(e) => return self.gcall_event(e),
+            Gm::Settle(call_id) => {
+                if let Some(a) = self.gcall.announce.as_mut().filter(|a| a.call_id == call_id) { a.banner_on = false; }
+            }
+            Gm::DismissAnnounce => {
+                if let Some(a) = self.gcall.announce.as_mut() { a.dismissed = true; }
+            }
         }
         Task::none()
     }
@@ -194,9 +219,20 @@ impl App {
             self.group_log = self.node.group_call_history(None).unwrap_or_default();
         }
         match e.kind {
-            GroupCallEventKind::Announced => self.gcall_refresh_live(&e.group_id),
+            GroupCallEventKind::Announced => {
+                let fresh = !self.gcall.live.get(&e.group_id).is_some_and(|c| c.call_id == e.call_id);
+                self.gcall_refresh_live(&e.group_id);
+                // Someone else's call, in a group I'm not already on the line in: raise the banner.
+                let theirs = self.gcall.live.get(&e.group_id).is_some_and(|c| c.call_id == e.call_id && !c.joined && !self.is_me(&c.starter_did));
+                if fresh && theirs && !(self.gcall.live() && mine) {
+                    self.gcall.announce = Some(Announce { gid: e.group_id.clone(), call_id: e.call_id.clone(), by: e.detail.clone(), banner_on: true, dismissed: false });
+                    let id = e.call_id.clone();
+                    return Task::perform(tokio::time::sleep(BANNER_HOLD), move |_| Msg::GCall(Gm::Settle(id.clone())));
+                }
+            }
             GroupCallEventKind::Ended => {
                 self.gcall.live.remove(&e.group_id);
+                if self.gcall.announce.as_ref().is_some_and(|a| a.gid == e.group_id) { self.gcall.announce = None; }
                 if mine && self.gcall.call_id.as_deref() == Some(e.call_id.as_str()) {
                     return self.gcall_end(false, "Call ended".into(), 900);
                 }

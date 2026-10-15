@@ -9,7 +9,9 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
 import androidx.compose.runtime.*
+import uniffi.p2pcore.CallState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
@@ -271,6 +273,25 @@ private fun Root(app: P2pApp) {
             BackHandler(stack.size > 1) { pop() }
             val inCall by app.calls.ui.collectAsState()
             val top = stack.last()
+            // RingHead.svelte: a call ringing while the app is open turns the home header into the caller, in place. Over
+            // my own answered call (call minimised to the strip) a second caller does the same, with Decline / End & answer.
+            val waitingCall by app.calls.waiting.collectAsState()
+            LaunchedEffect(inCall, waitingCall) {
+                val u = inCall; val w = waitingCall
+                RingHead.ring.value = when {
+                    u != null && w != null && u.state is CallState.Active -> RingHead.Ring(
+                        w.peerDid, w.peerName.ifBlank { "Unknown" }, "Calling during your call", waiting = true,
+                        onOpen = { ctx.startActivity(Intent(ctx, CallActivity::class.java)) },
+                        onDecline = { app.calls.declineWaiting() }, onAnswer = { app.calls.endAndAnswer() })
+                    u != null && u.info.incoming && u.state is CallState.Ringing -> RingHead.Ring(
+                        u.info.peerDid, u.info.peerName.ifBlank { "Unknown" }, "Incoming call",
+                        onOpen = { ctx.startActivity(Intent(ctx, IncomingCallActivity::class.java)) },
+                        onDecline = { app.calls.decline() },
+                        onAnswer = { ctx.startActivity(Intent(ctx, CallActivity::class.java).putExtra(CallActivity.EXTRA_ANSWER, true)) })
+                    else -> null
+                }
+            }
+            DisposableEffect(Unit) { onDispose { RingHead.ring.value = null } }
             val onHomeOrAdd = top is Route.Home || top is Route.Add
             // Someone used my code, or accepted my request while the sheet was closed: the sheet opens by itself over
             // Home (my own open Add contact sheet turns into it), never over a call or another screen; else it's dropped
@@ -397,6 +418,12 @@ private fun Root(app: P2pApp) {
                 Route.MicNeeded -> MicNeededScreen(onOpenSettings = { Perms.openSettings(ctx, Perms.appDetails(ctx)) }, onNotNow = ::pop)
             }
         }
+    }
+    // MiniVideo: their picture floats over the app while a video call is minimised.
+    if (has && lock == LockState.UNLOCKED) MiniVideo(app, Modifier.align(androidx.compose.ui.Alignment.BottomEnd).padding(end = 12.dp, bottom = 92.dp))
+    // "Sam started a call in Weekend hike": over the app, only once it is open and unlocked.
+    if (has && lock == LockState.UNLOCKED && termsOk && !onboarding && adding == null && unlinkedName == null) {
+        GroupCallAnnounce(app, openGid = (stack.last() as? Route.Group)?.id) { stack.add(Route.Group(it)) }
     }
     androidx.compose.material3.SnackbarHost(snack, Modifier.align(androidx.compose.ui.Alignment.BottomCenter).navigationBarsPadding().padding(16.dp))
     }

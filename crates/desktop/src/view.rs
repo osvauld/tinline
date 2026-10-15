@@ -220,9 +220,14 @@ impl App {
             }
         };
         let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
-        match self.add_overlay(t).or_else(|| self.viewer_overlay(t)).or_else(|| self.delete_overlay(t)).or_else(|| self.new_chat_overlay(t)).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
+        let base: El = match self.add_overlay(t).or_else(|| self.viewer_overlay(t)).or_else(|| self.delete_overlay(t)).or_else(|| self.new_chat_overlay(t)).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
             Some(o) => iced::widget::stack![base, o].into(),
             None => base.into(),
+        };
+        // "Sam started a call in Weekend hike": a quiet banner over the app (not over a call screen).
+        match self.gcall_announce(t).filter(|_| matches!(self.screen, Screen::Home)) {
+            Some(a) => iced::widget::stack![base, a].into(),
+            None => base,
         }
     }
 
@@ -235,18 +240,22 @@ impl App {
     /// avatar 28, name 13/16 650 over "Incoming call" 11/14 muted, then Decline and Answer as 28 px circles in 32 px
     /// boxes. Tapping the caller opens the full incoming screen.
     pub(super) fn ring_head(&self, t: Tok) -> Option<El<'_>> {
+        if let Some(w) = self.ring_head_waiting(t) { return Some(w); }
         let c = self.incoming_card()?;
-        let name = c.info.peer_name.clone();
-        let who = button(row![self.profile_avatar(t, &name, &c.info.peer_did, 28.0),
-                column![semi(crate::fit::ellipsize(&name, ui::SANS_SEMI, 13.0, 88.0), 13.0, t.ink).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
-                    tx("Incoming call", 11.0, t.ink2).line_height(lh(14.0)).wrapping(iced::widget::text::Wrapping::None)]].spacing(8).align_y(Alignment::Center))
-            .padding(0).height(32).width(Fill).style(shell_view::wash(t, None, None, 14.0)).on_press(Msg::CallUi(crate::call_ui::Action::Restore));
+        Some(self.ring_row(t, &c.info.peer_name, &c.info.peer_did, "Incoming call", Msg::CallUi(crate::call_ui::Action::Restore), Msg::Decline, Msg::Answer))
+    }
+
+    fn ring_row(&self, t: Tok, name: &str, did: &str, sub: &str, open: Msg, decline: Msg, answer: Msg) -> El<'_> {
+        let who = button(row![self.profile_avatar(t, name, did, 28.0),
+                column![semi(crate::fit::ellipsize(name, ui::SANS_SEMI, 13.0, 88.0), 13.0, t.ink).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
+                    tx(sub.to_string(), 11.0, t.ink2).line_height(lh(14.0)).wrapping(iced::widget::text::Wrapping::None)]].spacing(8).align_y(Alignment::Center))
+            .padding(0).height(32).width(Fill).style(shell_view::wash(t, None, None, 14.0)).on_press(open);
         let rb = |hang: bool, bg: Color, fg: Color, msg: Msg| -> El<'_> {
             let icon: El = if hang { crate::ui::glyph(crate::pg_icons::STROKE, r#"<g transform="rotate(135 12 12)"><path d="M5 4h3.5l1.5 4.5-2.2 1.4a11 11 0 0 0 6.3 6.3l1.4-2.2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z"/></g>"#, 16.0, fg) } else { crate::pg_icons::pgi("phone", 16.0, fg) };
             button(container(container(icon).center_x(28).center_y(28).style(ui::plain(bg, 14.0))).center_x(32).center_y(32))
                 .padding(0).width(32).height(32).style(|_: &Theme, _| button::Style::default()).on_press(msg).into()
         };
-        Some(row![who, rb(true, t.danger_btn, t.on_danger_btn, Msg::Decline), rb(false, t.accent, t.on_accent, Msg::Answer)].align_y(Alignment::Center).height(32).into())
+        row![who, rb(true, t.danger_btn, t.on_danger_btn, decline), rb(false, t.accent, t.on_accent, answer)].align_y(Alignment::Center).height(32).into()
     }
 
     // ---- shared pieces ----
@@ -1786,31 +1795,44 @@ impl App {
         st.width(Fill).height(Fill).into()
     }
 
-    /// "Arjun is calling" over the call: no hold, so the choice is to refuse or to swap.
+    /// WaitingCard.svelte: someone else is calling during my call (core: Live::waiting). A calm card just above the
+    /// controls: avatar 40, "<name> is calling" over "during your call", Decline and End & answer as two equal 44 px
+    /// pills, and what End & answer does. No hold: End & answer ends this call.
     fn waiting_banner<'a>(&'a self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
         let name = if w.peer_name.is_empty() { "Unknown".to_string() } else { w.peer_name.clone() };
-        ui::raised(
-            container(
-            row![
-                self.profile_avatar(t, &name, &w.peer_did, 44.0),
-                column![
-                    semi(format!("{name} is calling"), 16.0, t.ink),
-                    tx("Your call continues until you choose. Decline tells them you\u{2019}re busy.", 13.0, t.ink2),
-                ]
-                .spacing(2)
-                .width(Fill),
-                pill(t, Kind::Danger, Some(Icon::PhoneOff), "Decline", Some(Msg::DeclineWaiting)),
-                pill(t, Kind::Accept, Some(Icon::Phone), "End & answer", Some(Msg::EndAnswer)),
-            ]
-            .spacing(12)
-            .align_y(Alignment::Center),
-            )
-            .padding(14)
-            .width(Fill),
-            t,
-            ui::Depth::Pop,
-            ui::pop_surface(t, 14.0),
-        )
+        let current = self.call.as_ref().map(|c| c.info.peer_name.split_whitespace().next().unwrap_or("").to_string()).unwrap_or_default();
+        let pill_style = |bg: Color, hover: Color, fg: Color| move |_: &Theme, st: button::Status| button::Style {
+            background: Some(if matches!(st, button::Status::Hovered | button::Status::Pressed) { hover } else { bg }.into()),
+            text_color: fg,
+            border: Border { radius: 22.0.into(), ..Default::default() },
+            ..Default::default()
+        };
+        let dec_bg = ui::mix(t.surface, t.ink, 0.09);
+        let dec = button(container(semi("Decline", 13.0, t.ink)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+            .style(pill_style(dec_bg, ui::mix(t.surface, t.ink, 0.15), t.ink)).on_press(Msg::DeclineWaiting);
+        let ans = button(container(semi("End & answer", 13.0, t.on_accent)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+            .style(pill_style(t.accent, ui::mix(t.accent, Color::WHITE, 0.08), t.on_accent)).on_press(Msg::EndAnswer);
+        let who = row![
+            self.profile_avatar(t, &name, &w.peer_did, 40.0),
+            column![
+                container(semi(format!("{name} is calling"), 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill),
+                tx("during your call", 13.0, t.ink2).line_height(lh(18.0)),
+            ].width(Fill),
+        ].spacing(12).align_y(Alignment::Center);
+        let hint = container(row![
+            tx("Ends your call with", 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
+            container(tx(current, 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true),
+        ].spacing(4)).center_x(Fill);
+        let card = container(column![who, row![dec, ans].spacing(8), hint].spacing(12))
+            .padding(Padding { top: 14.0, right: 14.0, bottom: 12.0, left: 14.0 }).width(Fill).max_width(360);
+        container(ui::raised(card, t, ui::Depth::Pop, ui::pop_surface(t, 22.0))).center_x(Fill).into()
+    }
+
+    /// RingHead.svelte (desktop), waiting form: while my call is minimised, the brand row turns into whoever is calling
+    /// during it ("Calling during your call"); Decline refuses, End & answer swaps. Same box as the incoming form.
+    pub(super) fn ring_head_waiting(&self, t: Tok) -> Option<El<'_>> {
+        let w = self.waiting.as_ref().filter(|_| self.call_ui.minimized)?;
+        Some(self.ring_row(t, &w.peer_name, &w.peer_did, "Calling during your call", Msg::CallUi(crate::call_ui::Action::Restore), Msg::DeclineWaiting, Msg::EndAnswer))
     }
 
     /// CallScreen.svelte after the end: the same screen (mark, avatar, name), the reason where the status was and the
