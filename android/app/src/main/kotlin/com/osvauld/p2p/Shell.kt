@@ -238,7 +238,9 @@ fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups
     val c = Tin.c
     Column(Modifier.fillMaxWidth().background(c.sf)) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
-        Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 6.dp, bottom = 10.dp)) {
+        // The pill sits 4 dp lower inside each tab (top 2 + 5 instead of 6 + 1), so the badge at -4 stays inside the tab:
+        // the tab's press clip used to cut its top off.
+        Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 2.dp, bottom = 10.dp)) {
             listOf(HomeTab.Chats to PgIcons.Chat, HomeTab.Groups to PgIcons.Users, HomeTab.Calls to PgIcons.Phone, HomeTab.Contacts to PgIcons.Contact)
                 .filter { showGroups || it.first != HomeTab.Groups }
                 .forEach { (t, icon) ->
@@ -251,7 +253,7 @@ fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups
                             .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = "$badge unread" },
                         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        Box(Modifier.padding(top = 1.dp).size(56.dp, 30.dp), contentAlignment = Alignment.Center) {
+                        Box(Modifier.padding(top = 5.dp).size(56.dp, 30.dp), contentAlignment = Alignment.Center) {
                             Box(Modifier.matchParentSize().graphicsLayer { scaleX = 0.3f + 0.7f * p; alpha = p }.clip(RoundedCornerShape(15.dp)).background(c.accentSoft))
                             Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
                             if (badge > 0) CountBadge(badge, Modifier.align(Alignment.TopEnd).offset(x = (-4).dp, y = (-4).dp))
@@ -273,7 +275,10 @@ fun CountBadge(n: Int, modifier: Modifier = Modifier, muted: Boolean = false) {
         .then(if (muted) Modifier.border(1.dp, c.ln, RoundedCornerShape(9.dp)) else Modifier.background(c.accent))
         .padding(horizontal = 5.dp)
     Box(m, contentAlignment = Alignment.Center) {
-        Text(if (n > 99) "99+" else "$n", style = TinFs.meta.copy(fontWeight = if (muted) FontWeight.SemiBold else FontWeight.Bold, lineHeight = 11.sp),
+        // Centred on the pill's middle, without the font's extra top padding (it sat low and looked off centre).
+        Text(if (n > 99) "99+" else "$n", style = TinFs.meta.copy(fontWeight = if (muted) FontWeight.SemiBold else FontWeight.Bold, lineHeight = 11.sp,
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both)),
             color = if (muted) c.ink2 else c.onAccent)
     }
 }
