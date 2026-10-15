@@ -86,6 +86,8 @@ pub fn rms(samples: &[i16]) -> f32 {
 /// past its end; silent slots leave the result unchanged. Pure; no state between frames.
 pub use mixing::{mix, mix_sums};
 mod mixing;
+#[cfg(test)]
+mod golden_tests;
 
 /// Sine generator for tests / self-test.
 pub struct Tone {
