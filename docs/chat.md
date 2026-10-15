@@ -60,7 +60,7 @@ messages/<id> = { id, author, at, reply_to?, file?,
 - Reactions (later): `reactions/<did>/<emoji>`, each DID writes only its own slot.
 
 ### Wire
-ALPN `tinline/chat/5` (photo sizes; `/1` to `/4` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
+ALPN `tinline/chat/6` (signed receipts; `/1` to `/5` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
 same proof as a call (attestation + grant, `proto`); the rest is framed like the call control
 stream.
 
@@ -80,8 +80,9 @@ online at the same time**. With the always-on service that is usually seconds; w
 - A local write goes to the outbox (it is already in the local doc). On every connection to
   that contact, `ChatHello` reconciles everything automatically. Retry with backoff while the
   app is in the foreground; the always-on service retries on network change.
-- Ticks: one = written on this device; two = the peer's `ChatAck` covers it; read (later) =
-  the peer's read cursor (`user/{did}` doc, own slot only) passes it.
+- Ticks: one = written on this device; two = the peer's `ChatAck` covers it (unsigned
+  transport ack, unchanged). Recipient-signed delivered/read receipts are separate
+  evidence (chat/6, section 9); the earlier "read cursor" idea was not built.
 - Notifications: the foreground service receives pushes and posts a messaging-style
   notification (`MessagingStyle`), quiet if the conversation is open.
 
@@ -191,7 +192,7 @@ What differs from or settles the text above.
 
 ### Code map
 `crypt.rs` chunked blob AEAD · `blobs.rs` iroh-blobs hub (store, gated serving, GC) ·
-`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/5` ·
+`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/6` ·
 `store.rs` sealed records · `engine.rs` sessions, sync, outbox, transfers, history ·
 `api.rs` the UniFFI surface. New crate `crates/storage` (redb + sealed records, copied from
 osvauld2 `storage` @ 90d22ec with the `vault` entry idea).
@@ -443,3 +444,29 @@ P5 only `remove_contact` deleted history; `chat_purge` was removed in P10). See 
 ### Known limits
 Read cursors are per conversation, not per message. (A batch relayed by an own device no longer
 depends on which devices of the contact this device knows: content is verified by DIDs.)
+
+## 9. Signed delivered/read receipts (`tinline/chat/6`, receipt-runtime branch)
+
+Full design, limits and validation: [message receipt runtime slice](design/message-receipt-runtime-slice.md).
+
+- A contact's device signs (account DID key) a `Delivered` statement for exactly the
+  versions it durably accepted from that contact, and a `Read` statement for exactly the
+  incoming, undeleted versions its own `mark_read` step covered. The statement names the
+  conversation pair, the shard day, the signer DID and install, and sorted version
+  digests (`dm_version`: doc, id, author, dev, author's verified `did_sig`). An edit is a
+  new version; nothing carries over. Read holes stay holes.
+- The obligation is written in the same transaction as the message rows / cursor move;
+  signing, ledger append and intent completion are one later transaction. No
+  confirmation exists before that commit.
+- **Version 6 wire.** After `Hello`: `ReceiptHello{days:[(day, receipt-ledger vv)]}`,
+  `Receipts{day, update}` (original native ledger ops the peer lacks; never re-signed),
+  `ReceiptAck{day, vv}`. Accepted only from the conversation's two DIDs, kinds
+  Delivered/Read only, for days we hold. A refused receipt frame is logged and dropped;
+  the session continues. `/5` peers are refused with 426: **update the app, no wipe**.
+- Projection: `chat_message_receipts` / `chat_day_receipts` (levels `Unconfirmed`,
+  `Delivered`, `Read` with inspectable proofs). `Message.delivery` keeps its meaning and is
+  never upgraded by receipts. App displays are not built yet
+  ([UI handoff](design/message-receipt-ui-handoff.md)).
+- Not yet: receipts across our own devices, group message receipts, a user setting to
+  disable read receipts (open product question).
+

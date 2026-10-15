@@ -148,6 +148,9 @@ impl Inner {
                 Ok(())
             }
             ChatMsg::Notice { .. } => Err(Error::Protocol("unexpected notice".into())),
+            ChatMsg::ReceiptHello { days } => self.chat_receipt_hello_in(core, sess, days, writer).await,
+            ChatMsg::Receipts { day, update } => self.chat_receipts_in(core, sess, &day, &update, writer).await,
+            ChatMsg::ReceiptAck { day, vv } => self.chat_receipt_ack_in(core, sess, &day, &vv, writer).await,
         }
     }
 
@@ -369,6 +372,7 @@ impl Inner {
         for h in added_files {
             self.chat_download(sess.did.clone(), h);
         }
+        self.chat_receipts_pump();
         Ok(())
     }
 
@@ -406,6 +410,11 @@ impl Inner {
         let flags: Vec<(&MsgRec, bool)> = touched.iter().map(|r| (*r, applied.added.contains(&r.id))).collect();
         let (cops, conv) = self.chat_conv_ops(core, me, did, pair, &flags)?;
         ops.extend(cops);
+        // Recipient delivered receipt obligation, atomic with the acceptance. An own-device
+        // relay is not this device's acceptance from the contact (that device issues).
+        if !all_remote {
+            ops.extend(Self::chat_delivered_intent(core, me, pair, day, &touched)?);
+        }
         self.chat_persist(core, pair, shard, update, ops, &touched)?;
         let owned: Vec<(MsgRec, bool)> = flags.iter().map(|(r, a)| ((*r).clone(), *a)).collect();
         Ok((owned, conv, files))

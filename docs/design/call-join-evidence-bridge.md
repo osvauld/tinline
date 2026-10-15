@@ -3,7 +3,9 @@
 Status: **tested core-client/protocol/storage bridge**, not installed into live
 Node callbacks, negotiated transport, UI or the call-log owner's backend.
 This advances [roadmap M0](receipt-runtime-roadmap.md); M1 remains gated on owner
-coordination and a real Node/controller integration test.
+coordination and a real Node/controller integration test. The subsequent
+[durable Joined controller](call-joined-controller.md) freezes retry identity and
+commits intent completion with receipts; it is also not installed into live hooks.
 
 ## Implementation
 
@@ -37,8 +39,10 @@ member entered the call. Caller-supplied observation time/context are not consen
 
 ## Concrete live-hook handoff (ownership agreement still required)
 
-The active `groups/call-log` owner controls `group/calls.rs`, `group/calllog.rs`,
-store integration and UI. No files in that owner's checkout were modified.
+The prior `groups/call-log` lane controls `group/calls.rs`, `group/calllog.rs`,
+store integration and UI. At controller inspection its checkout was clean and its
+tip was included in our merged baseline; no live-hook/DTO handoff agreement was
+recorded. No files in that owner's checkout were modified.
 There is no agreed generated DTO or allocated receipt wire contract.
 
 The current source loses originals on the route to UI-facing events:

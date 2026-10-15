@@ -58,7 +58,9 @@ impl Inner {
             }
         };
         self.search_open(&dir, &phrase);
+        let receipts = crate::receipts::store::messages::MessageReceipts::new(crate::receipts::store::ReceiptStore::new(store.db.clone()), &did, value);
         let core = Arc::new(ChatCore {
+            receipts,
             store,
             dir,
             hub: OnceCell::new(),
@@ -79,6 +81,8 @@ impl Inner {
         });
         *self.chat.lock() = Some(core);
         self.search_reconcile();
+        // Receipt intents left by a crash/failed commit before this start.
+        self.chat_receipts_pump();
     }
 
     /// Gives this install a new device ID (`ProfileV2::device_id`) and saves the profile.
@@ -193,7 +197,7 @@ impl Inner {
         for did in dids {
             let pair = pair_id(me.id.did(), &did);
             self.profile_download(did.clone());
-            if self.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || self.chat_wants(&core, &pair) {
+            if self.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || self.chat_wants(&core, &pair) || Self::chat_receipts_owed(&core, &pair) {
                 self.chat_kick(did);
             }
         }
@@ -404,6 +408,7 @@ impl Inner {
             dialer: if dialer { my_dev } else { remote },
             tx,
             peer_vv: Default::default(),
+            receipt_vv: Default::default(),
             hist: Default::default(),
             presence: crate::chat::presence::session_store(),
         });
@@ -480,6 +485,14 @@ impl Inner {
                 }
                 Err(e) => break 'run e.to_string(),
             }
+            match self.chat_receipt_hello(&core, &sess) {
+                Ok(h) => {
+                    if let Err(e) = writer.send(&h).await {
+                        break 'run e.to_string();
+                    }
+                }
+                Err(e) => tracing::warn!("chat receipts: hello: {e}"),
+            }
             self.chat_resume_downloads(&core, &sess.did);
             let mut heartbeat = tokio::time::interval(crate::chat::presence::HEARTBEAT);
             loop {
@@ -523,6 +536,9 @@ impl Inner {
                         }
                         Some(Cmd::Profile) => {
                             if let Err(e) = self.chat_profile_send(&sess, &mut writer).await { break 'run e.to_string(); }
+                        }
+                        Some(Cmd::Receipts(day)) => {
+                            if let Err(e) = self.chat_receipt_send(&core, &sess, &day, &mut writer).await { break 'run e.to_string(); }
                         }
                         Some(Cmd::Close) | None => break 'run "closed locally".into(),
                     },

@@ -188,7 +188,9 @@ impl Node {
         self.inner.presence_watch(&peer_did);
     }
 
-    /// Zeroes the local unread counter (read receipts are not sent).
+    /// Zeroes the local unread counter. Also signs a recipient read receipt for exactly the
+    /// incoming versions this step marks read (`chat_message_receipts`); sending it to the
+    /// contact is not wired yet (receipt exchange, roadmap M4).
     pub fn mark_read(&self, peer_did: String) -> Result<(), Error> {
         self.inner.chat_mark_read(&peer_did)
     }

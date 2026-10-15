@@ -30,6 +30,7 @@ mod blobs;
 mod history;
 mod local;
 mod read;
+pub(crate) mod receipts;
 mod session;
 mod sync;
 mod synth;
@@ -76,6 +77,8 @@ pub struct ChatCore {
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
     pub(crate) presence: crate::chat::presence::Presence,
+    /// Signed recipient delivered/read receipts over this store (M3).
+    pub(crate) receipts: Arc<crate::receipts::store::messages::MessageReceipts>,
     /// This install's device ID (U16; `ProfileV2::device_id`): what every version we write
     /// carries as `dev`.
     device_id: [u8; 32],
@@ -105,6 +108,8 @@ pub enum Cmd {
     Ack(String),
     History(String, u32),
     Profile,
+    /// Send the receipt-ledger ops of this day the contact device lacks (chat/6).
+    Receipts(String),
     Close,
 }
 
@@ -117,6 +122,9 @@ pub struct Session {
     dialer: [u8; 32],
     tx: mpsc::UnboundedSender<Cmd>,
     peer_vv: Mutex<HashMap<String, VersionVector>>,
+    /// Receipt-ledger version the contact device holds, per day (its `ReceiptHello`/`ReceiptAck`,
+    /// advanced optimistically by what we sent).
+    receipt_vv: Mutex<HashMap<String, VersionVector>>,
     hist: Mutex<Option<oneshot::Sender<Vec<HistDay>>>>,
     /// What this contact device last said about itself (presence).
     pub(crate) presence: loro::awareness::EphemeralStore,

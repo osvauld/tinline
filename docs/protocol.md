@@ -406,7 +406,13 @@ This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/t
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
-## Protocol versions (P9c, U18; P10; P6; account profiles; photo sizes)
+## Protocol versions (P9c, U18; P10; P6; account profiles; photo sizes; receipts)
+
+**Signed receipts (2026-10-15, `feature/receipt-runtime`, not merged).** Chat ALPN
+`tinline/chat/6` adds `ChatMsg::{ReceiptHello, Receipts, ReceiptAck}` (`docs/chat.md` section
+9). A `/5` app cannot decode them, so `/5` is refused with code 426: **update the app, no data
+wipe** (receipt ledgers are new rows; message formats are unchanged). Own-device sync is unchanged
+(`tinline/self/4`).
 
 **Photo sizes (2026-10-14).** Current chat ALPN is `tinline/chat/5` and own-device sync is
 `tinline/self/4`. A picture's file record carries `width`, `height` (shown size, EXIF orientation

@@ -67,6 +67,20 @@ pub(crate) fn persist_join(
     auth: &dyn CallAuthority,
     admit_local: impl FnOnce(&[super::doc::Entry]) -> Result<(), String>,
 ) -> Result<Committed, ReceiptError> {
+    let (claim, evidence) = prepare_join(account, device, observed_at_ms, metadata, proofs, auth)?;
+    ledger.write_with_evidence(&claim, account, &evidence, admit_local)
+}
+
+/// Freeze the exact body/originals before a durable controller queues a transition.
+/// Caller still supplies the actual transition witness and frozen local context.
+pub(super) fn prepare_join(
+    account: &identity::Identity,
+    device: [u8; 32],
+    observed_at_ms: u64,
+    metadata: Vec<(u64, i32)>,
+    proofs: &JoinProofs,
+    auth: &dyn CallAuthority,
+) -> Result<(Receipt, Vec<Evidence>), ReceiptError> {
     let (s, r) = opened(proofs, account.did())?;
     if !auth.host_permit_ok(&s.gid, &s.host_ref)
         || !auth.is_member(&s.gid, account.did())
@@ -103,7 +117,8 @@ pub(crate) fn persist_join(
             evidence: ids,
         }),
     };
-    ledger.write_with_evidence(&claim, account, &evidence, admit_local)
+    claim.check()?;
+    Ok((claim, evidence))
 }
 /// Proof-backed observations, NOT another call-log backend or an all-member
 /// roster/attendance/duration count. Consumes only locally accepted originals;
@@ -191,4 +206,4 @@ pub(crate) fn verify_joined_entry(
     })
 }
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

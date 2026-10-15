@@ -3,7 +3,8 @@
 Scope: the own-device group history / host-attestation work in
 `feature/sync-connection-audit`. Includes nearby existing content/transport bounds
 that constrain this work. **Not a complete inventory of every app/audio/video limit.**
-Refactor integration is pending; source paths below refer to this audit worktree.
+The audit source was integrated into `dev`; source paths below are repository-relative.
+New receipt runtime/controller work continues in `feature/receipt-runtime`.
 
 Code constants are the implementation source of truth. Update this reference in
 the same change whenever one changes. KiB = 1,024 bytes; MiB = 1,048,576 bytes.
@@ -83,6 +84,50 @@ position indexes atomically using an existing sealed backing. One factory owns
 that DB namespace, enforcing one live ledger per scope. Reopen scans retained
 history; no total byte quota, per-session evidence retention cap or rollover yet.
 See [call/ledger validation and boundaries](call-receipt-ledger-slice.md).
+
+## Local Joined intent controller (not installed into Node)
+
+Defined in [`receipts/store/joins.rs`](../../crates/core/src/receipts/store/joins.rs).
+See [ordering, ownership and validation](call-joined-controller.md).
+
+| Item | Value | Defining constant / classification and purpose |
+|---|---:|---|
+| Pending Joined intents per factory/backing namespace | 64 | `MAX_PENDING_JOINS`; provisional queued-work budget, not a limit on retained receipts, groups or call history. Full queues refuse capture; caller must retain the event. No eviction. |
+| Encoded pending intent | 64 KiB | `MAX_JOIN_INTENT_BYTES`; provisional actual serialized-row ceiling and bounded decoder limit, including frozen signed claim, three original envelopes, scope and source context. Not guessed transport padding or a negotiated frame limit. |
+| Encoded completion pointer | 1,024 bytes | `MAX_JOIN_DONE_BYTES`; provisional local codec ceiling, not proof/evidence retention. Pointers grow with completed observations. |
+| Original proof set | Exactly 3 envelopes | Shared participation rule: original start, exact outbound Join, original Roster. Existing `MAX_PROTOCOL_EVIDENCE_BYTES` still applies to each. |
+| Capacity probe | At most 65 keys | `MAX_PENDING_JOINS + 1`; bounded pending-key query, no retained completion/history scan. |
+| Pending selector | At most 1 key returned per call | `next_pending`, fixed algorithm for round-robin work selection; cursor advances before retry. No retry pacing/lifetime policy is selected. |
+| Transition digest | 32 bytes / 64 lowercase hex characters | Fixed prototype `DOMAIN = tinline-call-joined-transition-v1\\0`, length-prefixed issuer, scoped device and original expected-Join evidence digest. First frozen observation wins; a new expected Join has a distinct identity. |
+
+At the declared row ceilings, 64 pending encoded intents contain at most 4 MiB of
+plaintext row payloads, excluding keys, vault AEAD/database overhead and transient
+native reconstruction/serialization. The implementation reads one selected intent,
+not the entire payload queue. Sealed row reads decrypt before the controller's codec
+size check; corrupted oversized database values are not a constant-allocation claim.
+Completed pointers and signed evidence have no total-retention/rollover quota.
+Capture success is not recipient confirmation; only the atomic receipt completion
+can return a proof-backed projection. No Node retry task is installed by this slice.
+
+## Message receipt runtime (DM, M3/M4; branch only)
+
+Defined in [`receipts/store/messages.rs`](../../crates/core/src/receipts/store/messages.rs)
+and [`chat/engine/receipts.rs`](../../crates/core/src/chat/engine/receipts.rs). See
+[runtime slice](message-receipt-runtime-slice.md). All provisional.
+
+| Item | Value | Constant / behavior |
+|---|---:|---|
+| Versions per signed statement | 256 | existing `MAX_MESSAGES`; larger obligations become several statements |
+| Digests per intent row | 1,024 | `MAX_INTENT_DIGESTS`; split into more rows, never truncated |
+| Encoded intent row | 64 KiB | `MAX_INTENT_BYTES`; bounded decoder limit |
+| Intent rows per pump call | 64 | `MAX_INTENTS_PER_PUMP`; remainder stays queued for the next trigger |
+| Idle ledgers kept open | 32 | `MAX_OPEN_LEDGERS`; a cache, not retention |
+| Read versions per mark-read step | 4,096 newest | `MAX_READ_VERSIONS`; older ones get no read statement (hole) |
+| Read scan window | days of (old cursor - 1 d, new cursor + 1 d] | closed (snapshot-blob) days skipped |
+| `ReceiptHello` days | 64 | `MAX_RECEIPT_DAYS`; recent hello days + unacknowledged outbox days |
+| Receipt frame native budget | 256 KiB / 64 ops / 4,096 writers | `RECEIPT_BATCH`; under chat `MAX_FRAME` 16 MiB |
+| Frames per send pass per day | 16 | `RECEIPT_FRAMES_PER_SEND`; rest on the next session hello or new issuance |
+| Receipt ledgers / outbox marks | no quota | kept by decision until M7 shard signing |
 
 ## Receipt transfer / storage
 

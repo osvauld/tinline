@@ -21,8 +21,47 @@ install on a phone, erase data, or select open security/product policies.
   Earlier admission-interrupted attempts did not count as passes.
 - This bridge is **not connected to Node/live calls**. A signed matching roster
   alone does not establish this local device's actual lifecycle transition.
-- Refactor integration remains deferred. Do not confuse isolated-worktree tests
-  with integration against current `dev` or the newer refactor tree.
+- The prior receipt/sync work was integrated and user-authorized for merge into
+  `dev` at `385a1d649984bfc30b68cfe514499a89a2dbbe08`. That integration does not
+  connect recipient receipts to live issuance, transport, or app status displays.
+
+## Product completion requirement — real app receipt displays
+
+**Required work, not an optional UI follow-up:** signed delivery/read receipts
+must drive user-visible status in the shipped desktop and Android applications.
+Codec, ledger, model, or transport tests alone do not complete this feature.
+
+Current gap: DM ticks use peer version-vector acknowledgments; group Delivered
+uses host acknowledgments/local hosting. Read cursors clear our own unread state
+and sync between our devices; they are not recipient-signed read confirmations.
+The new signed recipient ledger is not yet the source of these app projections.
+
+Completion requires M3 runtime issuance and M4 authenticated replication **plus**:
+
+- Wire durable, verified recipient evidence into the existing core status API and
+  both app views, after agreeing DTO/binding and UI file ownership. Do not create
+  a parallel demo-only status backend or retrospectively certify legacy ticks.
+- Distinguish pending, host-stored, recipient-delivered, and recipient-read
+  meanings. Exact presentation is a UI contract to agree; host storage must never
+  masquerade as recipient delivery/read. Missing evidence stays unconfirmed.
+- Scope each displayed confirmation to the exact message version and recipient;
+  preserve read holes. One admitted recipient device suffices for account delivery;
+  local mark-read or another device's cursor is not a remote recipient read claim.
+- Make provenance inspectable from the message status/detail view: original signer,
+  claimed coverage/version, and evidence kind. Distinguish legacy/local status from
+  verified recipient evidence; a signature does not prove human attention.
+- Validate the actual app path: persist message -> issue signed receipt -> exchange
+  original evidence -> durably verify -> core event/projection -> visible status.
+  Cover DM and group messaging, edits, linked devices, offline catch-up, duplicate
+  replay, restart, bad/missing proofs, and storage failure. No stronger indicator
+  may appear before the relevant evidence transaction commits.
+- Record runnable integration tests and app-level demonstrations, not only models
+  or screenshots backed by fake data. Desktop and Android app validation are
+  separate deliverables; physical-device installation/testing still requires
+  explicit authorization and the device lock.
+
+This is a cross-M3/M4 product gate. Do not label signed delivery/read support
+shipped, or its UI complete, until the real receipt-backed app path is demonstrated.
 
 ## Ownership / first handoff
 
@@ -35,8 +74,10 @@ Read-only inspection found active `groups/call-log` work in
 - Our lane: shared receipt codec/doc/store, bounded replication, supporting proof
   verification, evidence-backed projections and targeted tests/documentation.
 - Do not build a second competing live call-log backend, edit their files, or
-  allocate DTO/generated-binding names unilaterally. Existing changes in our
-  older `group/store.rs` etc. still need an explicit integration reconciliation.
+  allocate DTO/generated-binding names unilaterally. The older source/store
+  changes have been reconciled in the merged integration; that is not a live-hook
+  or generated-API agreement. At Joined-controller inspection the old call-log
+  checkout was clean and its tip was an ancestor of our merged baseline.
 - Ownership agreement and live-hook installation **have not happened yet**.
   The owner needs a handoff for the exact original accepted start, this device's
   current outbound Join and accepted host Roster, plus the confirmed local
@@ -77,9 +118,20 @@ After ownership agreement:
 5. Reconcile the owner's existing local call-log view with receipt-derived
    provenance; agree the API rather than duplicate the history engine.
 
+Storage/controller prerequisite now implemented in
+[`receipts/store/joins.rs`](../../crates/core/src/receipts/store/joins.rs):
+[durable Joined controller](call-joined-controller.md). One factory shares its
+controller; it freezes the first signed observation/originals, bounds pending
+intents, rotates retries, and commits receipt/evidence/completion atomically.
+Explicit source/device admission still runs on duplicates; old epochs are not
+automatically rebound. Live event capture, retry scheduling and history/UI hooks
+remain uninstalled. Latest expanded owned regression: **160 passed, 0 failed,
+0 ignored, 216 filtered out**, including 15 new controller cases; 271.38 seconds.
+Exact commands and limitations are recorded in that slice, not a live M1 pass.
+
 Gate: actual lifecycle -> admission -> durable originals/receipt -> view in a
 core integration test, including failed persistence and retry. Synthetic protocol
-claims or ClientEngine-only tests do not satisfy this gate.
+claims, controller/storage or ClientEngine-only tests do not satisfy this gate.
 
 ### M2 — Full lifecycle, direct calls and recovery
 
@@ -112,8 +164,50 @@ from clean reopen and need explicit scope/measurement.
 - Reuse the shared ledger/bounded native exporter, with conversation-specific
   policy rather than a second message receipt transport/database stack.
 
+- Connect the post-commit evidence projection to the existing core/app status
+  contract; add message-status provenance inspection without treating host Acks
+  or local unread cursors as recipient evidence.
+
+**M3 progress (1:1 only, 2026-10-15, branch `feature/receipt-runtime`, not merged).**
+[Runtime slice](message-receipt-runtime-slice.md): the chat engine records exact delivered
+intents in the transaction that accepts contact batches/history snapshots, and exact read
+intents in the `mark_read` cursor transaction; `MessageReceipts::pump` signs/commits them
+with intent completion atomically; `chat_message_receipts` / `chat_day_receipts`
+(additive UniFFI) project committed evidence per exact version (`dm_version`). Own-device
+cursor moves and legacy ticks issue/project nothing. Group message receipts: **not
+started** (needs a group-store transaction seam and member admission). App displays: **not
+built**; [UI handoff](message-receipt-ui-handoff.md) because the UI files are owned by
+active lanes. Validation (queued, `CARGO_BUILD_JOBS=2`, `--who receipt-runtime-m3`):
+
+```sh
+cargo test --offline --locked -p p2pcore --lib -- receipts::store::messages:: version:: --test-threads=1
+```
+**11 passed** (7 new controller cases with real DID-signed chat versions and sealed redb:
+reopen, injected commit failure/retry, duplicate obligation, >256 split, one-device
+account coverage, exact read holes, foreign issuer/session/call refusal, atomic outbox).
+
+```sh
+cargo test --offline --locked -p p2pcore --lib -- receipts:: chat:: version:: group::attestation:: \
+  group::doc:: group::engine::durability:: sync::engine::group_contents:: \
+  sync::engine::group_history:: --test-threads=1
+```
+**208 passed, 0 failed, 0 ignored, 175 filtered out**, 193.5 s, warning-free.
+
+```sh
+cargo test --offline --locked -p p2pcore --test readd --test grant_characterization \
+  --test message_receipts -- --test-threads=1
+```
+All passed (readd 4, grant_characterization 7, message_receipts 2). `message_receipts`
+runs two real nodes over iroh (network-dependent): recipient issues Delivered after
+acceptance, the sender verifies it over chat/6 with a byte-identical receipt id, sender
+mark-read does not count, recipient mark-read yields Read at the sender, an edit is a new
+version that is re-delivered but not read; restart keeps the same statements. This is
+the core path only, NOT a desktop/Android display demonstration.
+
 Gate: source adapters and actual read-event tests, persistence failure/replay,
 version substitution, one-device semantics and no receipt-of-receipt loops.
+Product completion additionally requires the real desktop/Android receipt displays
+and app-level acceptance path specified above; M4 supplies remote proof exchange.
 
 ### M4 — Negotiated recipient/call receipt replication
 
@@ -139,9 +233,18 @@ This is not wire negotiation or Node integration; bounded transport remains unfi
 - Exercise direct participants and authorized own-device replicas; public hosts
   do not gain private-call/DM access. Group dissemination follows chosen visibility.
 
+**M4 progress (1:1 only).** `tinline/chat/6` adds `ReceiptHello`/`Receipts`/`ReceiptAck`
+(original native ops, bounded frames, outbox marks completed by acks; import admits only
+the conversation's two DIDs, Delivered/Read kinds, days we hold). **Wire bump needs the
+user's OK before merge** (`/5` peers get 426, update without wipe). Not covered yet:
+explicit loss/duplicate-frame and revoked/blocked-session wire tests, own-device receipt
+replication, group exchange via hosts.
+
 Gate: authenticated exchange with loss/retry/duplicates, obsolete response,
 revoked device, missing proof, commit failure, reconnect/reopen and legacy peer;
-all relays preserve the original issuer's evidence byte-for-byte.
+all relays preserve the original issuer's evidence byte-for-byte. Then exercise
+that exchange through the real app status displays under the product completion
+requirement above. A passing wire test alone does not establish shipped receipts.
 
 ### M5 — External host receipts and scoped relay routing
 
@@ -186,13 +289,26 @@ operational packaging checks. Physical-device checks need explicit authorization
 Gate: selected finalization/retention/replica policy and audit/recovery/rollover
 acceptance tests. No root-only erasure or receipt deletion is currently authorized.
 
-## Decisions that cannot be guessed
+## Product decisions (user, 2026-10-15)
 
-- Recipient device/contact/member first acceptance, removal/regrant/epoch and
-  delayed evidence rules; current host-attestation rules do not settle these.
-- Call/read evidence visibility and participant-confirmation dissemination.
-- Incomplete/missed semantics and historical authorization preservation.
-- Required durable replicas, retention grace, shard finalization/revisions.
+- **Delivery:** a receipt from any one admitted device of the recipient account
+  counts as delivered for that account.
+- **Removal:** receipts are never removed. Evidence signed while a device/member
+  was admitted stays valid after later device removal or member removal; removal
+  only stops new receipts from being accepted.
+- **Visibility:** group members can see each other's read receipts and call
+  receipts (participation) for that group.
+- **Missed call:** a call that was rung but not picked up (no Joined) is missed.
+- **Retention:** keep all receipt copies stored for now. Cleanup comes later via
+  recipient-signed shard confirmations once shards exist (M7 and
+  [message receipt auditability](message-receipt-auditability.md)), not by
+  deleting individual message receipts.
+
+## Decisions still open
+
+- Delayed evidence: whether a receipt signed by a since-removed device that only
+  arrives after its removal is accepted (needs a signed-while-admitted rule).
+- How many durable replicas are required; shard finalization/revision authority.
 - Scoped freshness thresholds and upstream-outage/bypass behavior.
 
 Record alternatives and tests at the relevant milestone; continue independent
@@ -209,7 +325,9 @@ symbolic budgets and physical-device measurements separately labeled.
 
 M0 progress: joined bridge validation/reopen complete for the documented eight
 cases; concrete [owner hook handoff](call-join-evidence-bridge.md) recorded. Owner
-agreement, semantic transition/retry identity and live M1 wiring remain unfinished.
+agreement and live M1 wiring remain unfinished. The owned durable controller now
+provides expected-Join-based transition identity and frozen retry state; its live
+source lease, scheduling and history notification contract still need integration.
 Do not treat handoff documentation as an agreement with the other session.
 
 The user authorized continuing through these milestones without repeated approval

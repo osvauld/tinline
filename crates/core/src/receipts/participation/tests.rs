@@ -47,7 +47,7 @@ fn replica(p: &JoinProofs, peer: u64) -> (std::sync::Arc<store::ReceiptStore>, L
         .unwrap();
     (db, l)
 }
-fn fixture() -> (identity::Identity, JoinProofs) {
+pub(crate) fn fixture() -> (identity::Identity, JoinProofs) {
     let host = identity::generate().0;
     let local = identity::generate().0;
     let auth = Authority { allowed: true };
