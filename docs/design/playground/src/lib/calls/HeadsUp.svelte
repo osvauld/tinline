@@ -8,7 +8,7 @@
   import { gcall } from './gcall.svelte';
   import { vid } from './video/video.svelte';
   import { system } from './system.svelte';
-  import { displayName, person, chat } from '../model/store.svelte';
+  import { db, displayName, person, chat } from '../model/store.svelte';
   import { headsUpIn, headsUpOut } from './motion';
 
   /* Call waiting: someone else calls during my call. Same card, with the two actions the core allows. */
@@ -20,6 +20,7 @@
   /* A group call started (no ring): the same card, quiet, with Join. It settles into the shade after a few seconds. */
   const gs = $derived(system.gStarted && system.gStarted.bannerOn && system.background && !system.locked && !show ? system.gStarted : null);
   const gname = $derived.by(() => { const c = gs ? chat(gs.gid) : undefined; return c?.kind === 'group' ? c.name : ''; });
+  const forName = $derived(db.others.length ? (!waiting && call.toName) || db.account.name : '');
 </script>
 
 {#if gs}
@@ -27,7 +28,7 @@
     <button type="button" class="open" aria-label="Open {gname}" onclick={() => system.openGroup(gs.gid)}>
       <Avatar name={gname} group size={44} />
       <span class="tx">
-        <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline · now</span>
+        <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline{forName ? ` · ${forName}` : ''} · now</span>
         <b dir="auto">{gname}</b>
         <small>{displayName(gs.by)} started a call</small>
       </span>
@@ -43,7 +44,7 @@
     <button type="button" class="open" aria-label="Open call from {name}" onclick={() => system.openCall()}>
       <Avatar {name} {hue} person={id ?? undefined} size={44} />
       <span class="tx">
-        <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline · now</span>
+        <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline{forName ? ` · ${forName}` : ''} · now</span>
         <b dir="auto">{name}</b>
         <small>{waiting ? 'Voice call · during your call' : vid.intent ? 'Incoming video call' : 'Incoming voice call'}</small>
       </span>

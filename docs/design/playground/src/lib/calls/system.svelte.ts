@@ -6,7 +6,8 @@
 import { call, onRecord } from './call.svelte';
 import { gcall } from './gcall.svelte';
 import { clock } from '../model/clock.svelte';
-import { chat, db } from '../model/store.svelte';
+import { chat, db, ownerOf } from '../model/store.svelte';
+import { switchTo } from '../model/actions/names.svelte';
 import { prefs } from '../model/prefs.svelte';
 import { nav } from '../nav/router.svelte';
 
@@ -59,11 +60,13 @@ class System {
 
   dismiss(id: number) { this.notifications = this.notifications.filter((n) => n.id !== id); }
   clearAll() { this.notifications = []; }
+  /** A notice for another of my names opens that name first. */
+  #openOwner(peer: string) { const o = ownerOf(peer); if (o) switchTo(db.others.indexOf(o)); }
   openMissed(n: Notice) {
-    this.dismiss(n.id); this.foreground();
+    this.dismiss(n.id); this.foreground(); this.#openOwner(n.peer);
     if (chat(n.peer)) nav.open({ name: 'conversation', chat: n.peer });
   }
-  callBack(n: Notice) { this.dismiss(n.id); this.foreground(); call.place(n.peer); }
+  callBack(n: Notice) { this.dismiss(n.id); this.foreground(); this.#openOwner(n.peer); call.place(n.peer); }
 
   /** A call record was written. A missed incoming call while the app is out of sight becomes a notification;
       later misses from the same person fold into it (Proposed, not decided). */

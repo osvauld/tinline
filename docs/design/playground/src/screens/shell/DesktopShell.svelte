@@ -5,8 +5,8 @@
   import { TAB_LISTS, SCREENS, GATE } from '../registry';
   import { TABS, TAB_ICON } from './TabIcon';
   import Icon from '../../lib/ui/Icon.svelte';
-  import Avatar from '../../lib/ui/Avatar.svelte';
   import Mark from '../../lib/brand/Mark.svelte';
+  import SideNames from '../names/SideNames.svelte';
   import EmptyLine from '../../lib/ui/EmptyLine.svelte';
   import TabPanel, { rememberScroll } from '../../lib/ui/TabPanel.svelte';
 
@@ -52,10 +52,7 @@
         </button>
       {/each}
     </nav>
-    <button type="button" class="me press" onclick={() => nav.open({ name: 'settings' })}>
-      <Avatar name={db.account.name} hue={db.account.hue} person="me" size={36} />
-      <span><b>{db.account.name.split(' ')[0]}</b><small>Your account</small></span>
-    </button>
+    <SideNames />
   </aside>
   <section class="listpane">
     {#if ui.position === 'top'}<DesktopField active={activeOpt} />{/if}
@@ -104,8 +101,6 @@
   .nav:hover { background: var(--surface-2); }
   .nav[aria-current='page'] { color: var(--accent-ink); }
   .nav[aria-current='page']:hover { background: transparent; }
-  .me { margin-top: auto; display: flex; gap: 10px; align-items: center; border: 0; background: transparent; padding: 8px; border-radius: var(--r-ctl); cursor: pointer; text-align: start; }
-  .me span { display: grid; } .me small { color: var(--muted); font-size: var(--fs-sub); }
   .listpane { display: flex; flex-direction: column; min-width: 0; background: var(--surface); border-inline-end: 1px solid var(--hairline); }
   .listpane header { padding: 16px 20px 4px; } h1 { font-size: 24px; margin: 0; }
   .scroll { flex: 1; overflow: auto; }

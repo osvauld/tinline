@@ -13,7 +13,7 @@
   import WaitingCard from './WaitingCard.svelte';
   import { call, fmtDuration } from './call.svelte';
   import { overlayIn, overlayOut } from './motion';
-  import { displayName, person, firstName } from '../model/store.svelte';
+  import { db, displayName, person, firstName } from '../model/store.svelte';
   import { prefs } from '../model/prefs.svelte';
   import { dur } from '../fx/motion';
   import { motion } from '../fx/reduced.svelte';
@@ -33,6 +33,7 @@
   const phase = $derived(call.phase);
   const live = $derived(phase === 'outgoing' || phase === 'connecting' || phase === 'active' || phase === 'reconnecting');
   /* Second line: the encryption note once live; while reconnecting or after the end, the call's length. */
+  const toOther = $derived(phase === 'incoming' && call.to ? db.others.find((o) => o.id === call.to) ?? null : null);
   const sub = $derived(phase === 'active' ? `End-to-end encrypted · ${link.path === 'direct' ? 'Direct' : 'Relayed'}` : (phase === 'reconnecting' || phase === 'ended') && call.elapsedS > 0 ? fmtDuration(call.elapsedS) : '');
   const connected = $derived(phase === 'active' || phase === 'reconnecting' || (phase === 'ended' && call.elapsedS > 0));
   const android = $derived(prefs.form === 'android');
@@ -123,7 +124,9 @@
         </span>
         <span class="timer" class:on={connected && !call.statusText} aria-hidden={!connected}>{fmtDuration(call.elapsedS)}</span>
       </div>
-      <p class="e2e" class:on={!!sub}>{sub || ' '}</p>
+      <!-- A call to another of my names says which one, in the line kept for "End-to-end encrypted" (nothing moves). -->
+      {#if toOther}<p class="e2e on to" data-call-to><Avatar name={toOther.name} hue={toOther.hue} person={toOther.id} size={18} /><span>To {toOther.name}</span></p>
+      {:else}<p class="e2e" class:on={!!sub}>{sub || ' '}</p>{/if}
       </div>
     </div>
 
@@ -234,6 +237,7 @@
   .timer.on { opacity: 1; }
   .e2e { margin: 10px 0 0; min-block-size: 18px; font-size: var(--fs-sub); line-height: 18px; opacity: 0; transition: opacity var(--dur-crossfade) var(--ease-out); }
   .e2e.on { opacity: 1; }
+  .to { display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; }
 
   .controls { display: flex; justify-content: center; align-items: flex-start; gap: 36px; }
   .controls.two { gap: 56px; }

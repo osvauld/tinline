@@ -16,6 +16,7 @@
   import SimKeyboard from '../../lib/sim/SimKeyboard.svelte';
   import SystemLayer from '../../lib/calls/SystemLayer.svelte';
   import PeopleLayers from '../people/PeopleLayers.svelte';
+  import NameSwitcher from '../names/NameSwitcher.svelte';
   import SearchDock from '../search/SearchDock.svelte';
   import { ui } from '../search/state.svelte';
   const look = $derived(statusLook());
@@ -43,6 +44,7 @@
       <span class="acts">
         {#if !dock}<IconButton icon="search" label="Search" onclick={() => ui.openScreen()} />{/if}
         <IconButton icon="gear" label="Settings" onclick={() => nav.push({ name: 'settings' })} />
+        <NameSwitcher />
       </span>
     </header>
     <TabPanel key={top.tab}>
@@ -84,7 +86,7 @@
   .vp { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .appbar { display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 4px 8px 0 12px; }
   .brand { display: inline-flex; align-items: center; gap: 8px; font-size: 19px; }
-  .acts { display: flex; }
+  .acts { display: flex; align-items: center; }
   .title { font-size: 28px; line-height: 34px; margin: 4px 16px 8px; }
   .body { flex: 1; min-height: 0; overflow: auto; }
   .screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }

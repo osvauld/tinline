@@ -5,11 +5,15 @@
      the user picks a set. */
   import { ICONS } from './icons';
   import { OWN } from '../../screens/lab/tinline-icons';
+  import { TIN, tinTier } from './tin-icons.gen';
   let { name, size = 22, label, class: cls = '' }: { name: string; size?: number; label?: string; class?: string } = $props();
   const mode = new URLSearchParams(location.search).get('icons');
   const body = $derived(mode !== 'cur' && OWN[name]
     ? OWN[name].parts().map(([d, c]) => `<path${c ? ` class="${c}"` : ''} d="${d}"/>`).join('')
+    : mode !== 'cur' && TIN[name] && !ICONS[name] ? tinBody(TIN[name][tinTier(size)])
     : (ICONS[name] ?? ''));
+  /* Glyphs only the generated set has (the 16 added with the app ports: more, globe, paste, …), as the apps draw them. */
+  function tinBody(g: { body: string; string: string }) { return g.body + g.string; }
 </script>
 
 <svg

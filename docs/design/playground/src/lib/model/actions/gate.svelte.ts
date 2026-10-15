@@ -3,6 +3,7 @@
    Mirrors the real onboarding order (Onboarding.kt / Unlock.kt on dev) except where noted in the sim notes.
    Not a `.ts` file: it holds runes, so it must be `.svelte.ts`. */
 import { db } from '../store.svelte';
+import { addOpenedName } from './names.svelte';
 import { clock } from '../clock.svelte';
 import { prefs } from '../prefs.svelte';
 import { WORDS } from '../../../screens/gate/wordlist';
@@ -231,12 +232,8 @@ class Gate {
   /** End of every flow. */
   finish() {
     if (this.adding && this.name.trim()) {
-      /* Restore on a device that already has an account ADDS a second one (decided 2026-10-12): the current account is
-         parked, the new one is selected. Only the selected account is online. */
-      db.parked.push({ name: db.account.name, hue: db.account.hue, profile: db.account.profile });
-      db.account.name = this.name.trim();
-      db.account.hue = (db.account.hue + 2) % 6;
-      db.account.profile = undefined;
+      /* Adding a name on a device that already has one (decided 2026-10-12; 2026-10-14: the others stay online). */
+      addOpenedName(this.name.trim());
       db.account.gate = 'ready';
       this.enter('onboarding');
       return;
@@ -302,14 +299,7 @@ class Gate {
   }
 }
 
-/** Select another account on this install; the one that was selected goes offline. */
-export function switchAccount(i: number) {
-  const o = db.parked[i];
-  if (!o) return;
-  const cur = { name: db.account.name, hue: db.account.hue, profile: db.account.profile };
-  db.account.name = o.name; db.account.hue = o.hue; db.account.profile = o.profile;
-  db.parked[i] = cur;
-}
+export { switchAccount } from './names.svelte';
 
 export function flowOf(s: Step): Flow {
   if (s === 'linkName' || s === 'link' || s === 'linkPass') return 'link';
