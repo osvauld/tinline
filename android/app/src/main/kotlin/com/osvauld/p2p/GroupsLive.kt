@@ -145,15 +145,11 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
     val done: (Result<String>) -> Unit = { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) }
     LaunchedEffect(Unit) { withContext(Dispatchers.IO) { app.groups.refresh() } }
     // Group calls running in my groups, re-read when the core says something about calls changed.
-    var calls by remember { mutableStateOf<Map<String, LiveCall>>(emptyMap()) }
-    val callTick by app.groupCalls.here.collectAsState()
-    LaunchedEffect(active.map { it.id }, callTick) {
-        calls = withContext(Dispatchers.IO) {
-            active.mapNotNull { s ->
-                runCatching { app.node.groupCalls(s.id) }.getOrNull()?.firstOrNull()?.let { s.id to LiveCall(it.joined) }
-            }.toMap()
-        }
-    }
+    // The call UI keeps this current: Announced, Joined, Left and Ended all re-read or drop the group's call, so a
+    // call that ended never leaves a Join pill behind.
+    val gcs by app.groupCallUi.state.collectAsState()
+    LaunchedEffect(active.map { it.id }) { withContext(Dispatchers.IO) { active.forEach { app.groupCallUi.refreshLive(it.id) } } }
+    val calls: Map<String, LiveCall> = gcs.live.mapValues { LiveCall(it.value.joined) }.filterKeys { k -> active.any { it.id == k } }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
         item(key = "new") {
             TopRow(GIcons.Plus, "New group", "You’ll be the owner") { creating = true }

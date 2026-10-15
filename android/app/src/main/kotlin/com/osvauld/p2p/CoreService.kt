@@ -43,11 +43,13 @@ class CoreService : Service() {
             ACTION_DECLINE -> app.calls.decline()
             // The ongoing notification's hang-up: the 1:1 call, else the group call (GA-A1).
             ACTION_HANGUP -> if (app.calls.ui.value == null && app.groupCalls.active) app.groupCalls.leave() else app.calls.hangup()
+            ACTION_GCALL_NOT_NOW -> app.groupCallUi.notNow()
+            ACTION_GCALL_MUTE -> app.groupCallUi.toggleMute()
             ACTION_DECLINE_WAITING -> app.calls.declineWaiting()
             ACTION_END_ANSWER -> app.calls.endAndAnswer()
             ACTION_IN_CALL -> inCall = intent.getStringExtra("name") ?: "Call"
             // A 1:1 call ending never drops the call mode of a group call still going on.
-            ACTION_IDLE -> inCall = if (app.groupCalls.active) GroupCallAudio.NAME else null
+            ACTION_IDLE -> inCall = if (app.groupCalls.active) app.groupCalls.callName() else null
         }
         enterForeground()
         updateLocks()
@@ -109,6 +111,8 @@ class CoreService : Service() {
         const val ACTION_HANGUP = "com.osvauld.p2p.HANGUP"
         const val ACTION_DECLINE_WAITING = "com.osvauld.p2p.DECLINE_WAITING"
         const val ACTION_END_ANSWER = "com.osvauld.p2p.END_ANSWER"
+        const val ACTION_GCALL_NOT_NOW = "com.osvauld.p2p.GCALL_NOT_NOW"
+        const val ACTION_GCALL_MUTE = "com.osvauld.p2p.GCALL_MUTE"
         const val ACTION_IN_CALL = "com.osvauld.p2p.IN_CALL"
         const val ACTION_IDLE = "com.osvauld.p2p.IDLE"
         @Volatile var running: CoreService? = null
