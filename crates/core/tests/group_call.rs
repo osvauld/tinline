@@ -424,3 +424,42 @@ fn an_account_switch_leaves_the_call_and_a_locked_call_host_hands_over() {
     assert!(b.node.group_call_here().is_some_and(|h| h.in_call && h.call_id == call));
     eprintln!("total {:?}", t0.elapsed());
 }
+
+// KIND: acceptance — a call ends when the last participant leaves: the host (c, also a
+// participant) signs the End, every member (also one that never joined) hears `Ended` for the
+// group, `group_calls` is empty everywhere, and the leavers' own `Left` carries the group id
+// (the apps drop the call's Join / banner on it).
+#[test]
+fn both_participants_hang_up_and_every_member_sees_the_call_end() {
+    let t0 = Instant::now();
+    let mut o = peer("e-o", 0);
+    let mut a = peer("e-a", 1);
+    let mut b = peer("e-b", 2);
+    let mut c = peer("e-c", 3);
+    let g = group_with(&o, &[&a, &b, &c]);
+    call_hosts(&o, &c, &a, &g);
+    let call = start_call(&a, &g, &[&o, &c]);
+    for p in [&o, &b, &c] {
+        eventually(WAIT, "the CallStart reaches every member", || knows_call(p, &g, &call));
+    }
+    c.node.group_call_join(g.clone(), call.clone()).unwrap();
+    let cd = c.did.clone();
+    assert!(drive(&mut [&mut o, &mut a, &mut b, &mut c], 20_000, false, |ps| joined(ps[1], 1, &cd, 2) && joined(ps[3], 1, &cd, 2)), "a and c are in the call");
+    eprintln!("joined after {:?}", t0.elapsed());
+
+    a.node.group_call_leave();
+    c.node.group_call_leave();
+    for (n, p) in [("o", &o), ("a", &a), ("b", &b), ("c", &c)] {
+        eventually(WAIT, &format!("{n}: group_calls is empty"), || p.node.group_calls(g.clone()).unwrap().is_empty());
+    }
+    std::thread::sleep(Duration::from_secs(1));
+    for (n, p) in [("o", &mut o), ("b", &mut b), ("a", &mut a), ("c", &mut c)] {
+        let ev = p.events();
+        assert!(ev.iter().any(|e| e.kind == GroupCallEventKind::Ended && e.call_id == call && e.group_id == g), "{n} hears Ended for the group: {ev:?}");
+    }
+    for (n, p) in [("a", &mut a), ("c", &mut c)] {
+        let ev = p.events();
+        assert!(ev.iter().filter(|e| e.call_id == call).all(|e| e.group_id == g), "{n}: every event of the call names the group: {ev:?}");
+    }
+    assert!(a.node.group_call_here().is_none() && c.node.group_call_here().is_none());
+}
