@@ -310,6 +310,16 @@ acceptance tests. No root-only erasure or receipt deletion is currently authoriz
   recipient-signed shard confirmations once shards exist (M7 and
   [message receipt auditability](message-receipt-auditability.md)), not by
   deleting individual message receipts.
+- **Group receipts, first version (2026-10-15):** one signed receipt per message
+  per member is acceptable ("messy is fine"). Optimize later — see TODO below.
+- **Order of work:** every group-receipt step is built with deterministic tests and
+  simulations first, then validated on real nodes/apps.
+
+## TODO (deferred by user)
+
+- Group receipts: batch delivered/read confirmations (one signature per member per
+  sync or range instead of per message), then shard-level confirmations (M7).
+  Measure receipt traffic/storage in the simulation before choosing the batching.
 
 ## Decisions still open
 
