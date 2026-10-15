@@ -138,7 +138,8 @@ private fun RowScope.CallControl(label: String, caption: String, icon: ImageVect
 internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Boolean, secs: Long = 0,
     reconnecting: Boolean = false, problem: String? = null, incoming: Boolean = false,
     onMinimise: (() -> Unit)? = null, onInfo: (() -> Unit)? = null, signal: Int = 0, direct: Boolean? = null,
-    onMessage: (() -> Unit)? = null, waiting: Boolean = false, muted: Boolean = false, controls: @Composable () -> Unit) {
+    onMessage: (() -> Unit)? = null, waiting: Boolean = false, muted: Boolean = false,
+    waitingCard: (@Composable (Modifier) -> Unit)? = null, controls: @Composable () -> Unit) {
     val c = Tin.c
     val density = androidx.compose.ui.platform.LocalDensity.current.density
     var root by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
@@ -185,6 +186,11 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
                 }
             }
             Box(Modifier.onGloballyPositioned { ctrl = it.boundsInRoot() }) { controls() }
+        }
+        // WaitingCard: its bottom edge 22 dp above the controls, growing upward, so the avatar and name never move.
+        if (waitingCard != null) {
+            val above = if (ctrl.isEmpty || root.isEmpty) 150f else (root.bottom - ctrl.top) / density + 22f
+            waitingCard(Modifier.align(Alignment.BottomCenter).padding(start = 20.dp, end = 20.dp, bottom = above.dp))
         }
     }
 }

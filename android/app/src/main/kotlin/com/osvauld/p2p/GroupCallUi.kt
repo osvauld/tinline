@@ -2,6 +2,12 @@ package com.osvauld.p2p
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,7 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +55,12 @@ import uniffi.p2pcore.GroupCallEventKind
  */
 enum class GcPhase { Idle, Starting, Connecting, Active, Reconnecting, Ended, Failed }
 
+/** GroupCallAnnounce.svelte: "Sam started a call in Weekend hike". A quiet banner that settles after [BANNER_HOLD_MS]. */
+data class GcAnnounce(val gid: String, val callId: String, val by: String, val bannerOn: Boolean = true, val dismissed: Boolean = false)
+
+/** gcall.svelte.ts `GCALL_MS.bannerHold`. */
+const val BANNER_HOLD_MS = 9000L
+
 data class GcState(
     val gid: String? = null,
     val callId: String? = null,
@@ -65,6 +79,7 @@ data class GcState(
     /** Calls running in my groups. */
     val live: Map<String, GroupCall> = emptyMap(),
     val endedAt: Long = 0,
+    val announce: GcAnnounce? = null,
 ) {
     val active get() = phase != GcPhase.Idle
     val connected get() = phase == GcPhase.Active || phase == GcPhase.Reconnecting
@@ -94,6 +109,7 @@ class GroupCallUi(private val app: P2pApp) {
     /** The group header's call button: start a call, join the running one, or return to mine. */
     fun call(gid: String, onError: (String) -> Unit) {
         val cur = _s.value
+        _s.update { s -> if (s.announce?.gid == gid) s.copy(announce = null) else s }
         if (cur.gid == gid && cur.active) { _s.update { it.copy(minimized = false) }; return }
         if (cur.active || app.calls.ui.value != null) { onError("You’re already in a call."); return }
         app.scope.launch(Dispatchers.IO) {
@@ -124,6 +140,7 @@ class GroupCallUi(private val app: P2pApp) {
 
     fun minimize() = _s.update { if (it.phase in listOf(GcPhase.Starting, GcPhase.Connecting, GcPhase.Active, GcPhase.Reconnecting)) it.copy(minimized = true, about = false) else it }
     fun restore() = _s.update { it.copy(minimized = false) }
+    fun dismissAnnounce() = _s.update { s -> s.copy(announce = s.announce?.copy(dismissed = true)) }
     fun about(on: Boolean) = _s.update { it.copy(about = on) }
     fun noteOk() = _s.update { it.copy(note = null) }
 
@@ -142,9 +159,19 @@ class GroupCallUi(private val app: P2pApp) {
         if (e.kind == GroupCallEventKind.ENDED || e.kind == GroupCallEventKind.LEFT) app.scope.launch(Dispatchers.IO) { app.refreshGroupLog() }
         try {
             when (e.kind) {
-                GroupCallEventKind.ANNOUNCED -> app.scope.launch(Dispatchers.IO) { refreshLive(e.groupId) }
+                GroupCallEventKind.ANNOUNCED -> app.scope.launch(Dispatchers.IO) {
+                    val fresh = _s.value.live[e.groupId]?.callId != e.callId
+                    refreshLive(e.groupId)
+                    val c = _s.value.live[e.groupId]
+                    // Someone else's call, in a group I'm not on the line in: raise the banner (it does not ring).
+                    if (fresh && c != null && c.callId == e.callId && !c.joined && c.starterDid != app.currentDid() && !_s.value.active) {
+                        _s.update { it.copy(announce = GcAnnounce(e.groupId, e.callId, e.detail.ifBlank { c.starterDid })) }
+                        delay(BANNER_HOLD_MS)
+                        _s.update { st -> if (st.announce?.callId == e.callId) st.copy(announce = st.announce.copy(bannerOn = false)) else st }
+                    }
+                }
                 GroupCallEventKind.ENDED -> {
-                    _s.update { it.copy(live = it.live - e.groupId) }
+                    _s.update { it.copy(live = it.live - e.groupId, announce = if (it.announce?.gid == e.groupId) null else it.announce) }
                     if (mine && s.callId == e.callId) end(false, "Call ended", 900)
                 }
                 GroupCallEventKind.START_FAILED -> if (mine) end(true, startFailure(e.detail), 2600)
@@ -348,6 +375,53 @@ fun OngoingCallBanner(app: P2pApp, gid: String, onError: (String) -> Unit) {
         Box(Modifier.widthIn(min = 72.dp).heightIn(min = 36.dp).clip(shape).then(if (mine) Modifier.border(1.5.dp, c.accentInk, shape) else Modifier.background(c.accent))
             .clickable { if (mine) app.groupCallUi.restore() else app.groupCallUi.call(gid, onError) }.padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
             Text(if (mine) "Open" else "Join", style = PgBodyText.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold), color = if (mine) c.accentInk else c.onAccent)
+        }
+    }
+}
+
+/**
+ * GroupCallAnnounce.svelte (phone): a quiet card under the status bar, 8 dp from the sides: the starter's avatar, the
+ * group's name over "<name> started a call", a dismiss X and Join. Slides 20 dp down in (200 ms), 12 dp up out (140 ms).
+ * Shown while the call still runs, the banner has not settled or been dismissed, I hold no line, and that group is
+ * not the one open. The core has no group mute yet, so a muted group cannot be left quiet (gap).
+ */
+@Composable
+fun GroupCallAnnounce(app: P2pApp, openGid: String?, onOpen: (String) -> Unit) {
+    val s by app.groupCallUi.state.collectAsState()
+    val calls by app.calls.ui.collectAsState()
+    val groups by app.groups.list.collectAsState()
+    val a = s.announce
+    val show = a != null && a.bannerOn && !a.dismissed && s.live.containsKey(a.gid) && !s.active && calls == null && openGid != a.gid
+    var last by remember { mutableStateOf(a) }
+    if (a != null) last = a
+    val px = with(androidx.compose.ui.platform.LocalDensity.current) { 1.dp.toPx() }
+    Box(Modifier.fillMaxSize().statusBarsPadding().padding(start = 8.dp, end = 8.dp, top = 8.dp), contentAlignment = Alignment.TopCenter) {
+        AnimatedVisibility(show,
+            enter = fadeIn(tween(200, easing = Motion.EaseOut)) + slideInVertically(tween(200, easing = Motion.EaseOut)) { -(20 * px).toInt() },
+            exit = fadeOut(tween(140, easing = Motion.CubicIn)) + slideOutVertically(tween(140, easing = Motion.CubicIn)) { -(12 * px).toInt() }) {
+            val l = last ?: return@AnimatedVisibility
+            val c = Tin.c
+            val group = groups.firstOrNull { it.id == l.gid }?.name ?: "Group"
+            val by = gcName(app, l.by)
+            Row(Modifier.fillMaxWidth().depth(Depth.Pop, SmoothCornerShape(20.dp)).clip(SmoothCornerShape(20.dp)).background(c.sfRaised)
+                .border(1.dp, c.ln, SmoothCornerShape(20.dp)).padding(start = 8.dp, end = 10.dp, top = 8.dp, bottom = 8.dp)
+                .semantics { contentDescription = "$by started a call in $group"; liveRegion = LiveRegionMode.Polite },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(Modifier.weight(1f).heightIn(min = 48.dp).pressable({ app.groupCallUi.dismissAnnounce(); onOpen(l.gid) }, RoundedCornerShape(14.dp))
+                    .semantics { contentDescription = "Open $group" }.padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Avatar(by, l.by, 44.dp)
+                    Column(Modifier.weight(1f)) {
+                        Text(group, style = TinFs.body.copy(fontWeight = FontWeight(650), lineHeight = 20.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("$by started a call", style = TinFs.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                PgIconButton(PgIcons.X, "Dismiss", { app.groupCallUi.dismissAnnounce() }, tint = c.ink2, size = 36.dp, iconSize = 18.dp)
+                Box(Modifier.height(44.dp).pressable({ app.groupCallUi.call(l.gid) {} }, SmoothCornerShape(22.dp), wash = c.callButtonAnswer, rest = c.callButtonAnswer)
+                    .padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+                    Text("Join", style = TinFs.sub.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                }
+            }
         }
     }
 }

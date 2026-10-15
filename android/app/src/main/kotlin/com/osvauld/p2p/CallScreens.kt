@@ -7,6 +7,12 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,11 +35,15 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -42,6 +52,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import uniffi.p2pcore.CallInfo
 import uniffi.p2pcore.CallState
 
 private fun ComponentActivity.showOverLock() {
@@ -140,8 +151,6 @@ class CallActivity : ComponentActivity() {
                         InCallScreen(u, meName, app, onCameraOn = cameraOn, onMinimise = { finish() },
                             onAllowBtNames = if (allowed) null else ({ btLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT) }),
                             onMessage = { openChat(u.info.peerDid) })
-                        val w by app.calls.waiting.collectAsState()
-                        w?.let { WaitingBanner(it.peerName.ifBlank { "Unknown" }, it.peerDid, onDecline = { app.calls.declineWaiting() }, onEndAnswer = { app.calls.endAndAnswer() }) }
                     }
                     showEnded && e != null -> EndedRoute(e, meName, onClose = { finish() }, onAgain = {
                         app.scope.launch { app.calls.place(e.peerDid) }
@@ -226,33 +235,53 @@ internal fun routeSlot(routes: RouteState?): Pair<String, ImageVector> {
 
 private const val HELD = "On hold while your other call is on"
 
-/** One caller waiting over the answered call; no hold. Existing controller callbacks decide admission. */
+/**
+ * WaitingCard.svelte: someone else is calling during my call (core: Live::waiting). A calm card just above the controls:
+ * avatar 40, "<name> is calling" over "during your call", Decline and End & answer as two equal 44 dp pills, and what
+ * End & answer does. No hold: End & answer ends this call. It settles in 12 dp from above (200 ms) and leaves up 8 dp (140 ms).
+ */
 @Composable
-fun WaitingBanner(name: String, did: String, onDecline: () -> Unit, onEndAnswer: () -> Unit) {
-    val c = Tin.c
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.28f)).statusBarsPadding().padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
-        Column(Modifier.fillMaxWidth().depth(Depth.Pop, SmoothCornerShape(20.dp)).clip(SmoothCornerShape(20.dp)).background(c.sfRaised).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+fun WaitingCard(w: CallInfo?, currentName: String, onDecline: () -> Unit, onEndAnswer: () -> Unit, modifier: Modifier = Modifier) {
+    // The last caller stays drawn while the card leaves.
+    var last by remember { mutableStateOf(w) }
+    if (w != null) last = w
+    val px = with(androidx.compose.ui.platform.LocalDensity.current) { 1.dp.toPx() }
+    AnimatedVisibility(w != null, modifier,
+        enter = fadeIn(tween(200, easing = Motion.EaseOut)) + slideInVertically(tween(200, easing = Motion.EaseOut)) { -(12 * px).toInt() },
+        exit = fadeOut(tween(140, easing = Motion.CubicIn)) + slideOutVertically(tween(140, easing = Motion.CubicIn)) { -(8 * px).toInt() }) {
+        val l = last ?: return@AnimatedVisibility
+        val c = Tin.c
+        val who = l.peerName.ifBlank { "Unknown" }
+        val first = currentName.trim().substringBefore(' ')
+        Column(Modifier.widthIn(max = 360.dp).fillMaxWidth().depth(Depth.Pop, SmoothCornerShape(22.dp)).clip(SmoothCornerShape(22.dp))
+            .background(c.sfRaised).border(1.dp, c.ln, SmoothCornerShape(22.dp))
+            .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 12.dp)
+            .semantics { contentDescription = "$who is calling during your call"; liveRegion = LiveRegionMode.Polite },
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Avatar(who, l.peerDid, 40.dp)
                 Column(Modifier.weight(1f)) {
-                    Text("$name is calling", style = TinType.h1.copy(fontSize = 16.sp, lineHeight = 22.sp), color = c.ink)
-                    Text("Your call continues until you choose.", style = TinType.bodyM, color = c.ink2)
+                    Text("$who is calling", style = TinFs.body.copy(fontWeight = FontWeight(650), lineHeight = 20.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("during your call", style = TinFs.sub, color = c.ink2)
                 }
-                Avatar(name, did, 44.dp)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.clip(SmoothCornerShape(22.dp)).background(c.callEnd).clickable(onClickLabel = "Decline", role = Role.Button, onClick = onDecline)
-                    .height(44.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(PgIcons.Callend, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Text("Decline", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                }
-                Row(Modifier.clip(SmoothCornerShape(22.dp)).background(c.callAccept).clickable(onClickLabel = "End and answer", role = Role.Button, onClick = onEndAnswer)
-                    .height(44.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(PgIcons.Phone, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Text("End & answer", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                }
+                WaitingPill("Decline", androidx.compose.ui.graphics.lerp(c.sf, c.ink, 0.09f), androidx.compose.ui.graphics.lerp(c.sf, c.ink, 0.15f), c.ink, "Decline", onDecline, Modifier.weight(1f))
+                WaitingPill("End & answer", c.callButtonAnswer, c.callButtonAnswer, Color.White, "End and answer", onEndAnswer, Modifier.weight(1f))
             }
-            Text("End & answer ends your current call. There is no hold.", style = TinType.bodyM.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
+                Text("Ends your call with", style = TinFs.meta.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1)
+                Text(first, Modifier.weight(1f, fill = false), style = TinFs.meta.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
+    }
+}
+
+@Composable
+private fun WaitingPill(label: String, rest: Color, wash: Color, fg: Color, desc: String, onClick: () -> Unit, modifier: Modifier) {
+    Box(modifier.height(44.dp).pressable(onClick, SmoothCornerShape(22.dp), wash = wash, rest = rest).semantics { contentDescription = desc },
+        contentAlignment = Alignment.Center) {
+        Text(label, style = TinFs.sub.copy(fontWeight = FontWeight.Bold), color = fg, maxLines = 1)
     }
 }
 
@@ -285,6 +314,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 remote = { m -> RemoteVideo(app, calls, m) },
                 selfView = { m -> SelfView(app, front, m) },
                 routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames,
+                waitingCard = { m -> WaitingCard(waiting, name, onDecline = { calls.declineWaiting() }, onEndAnswer = { calls.endAndAnswer() }, modifier = m) },
             )
         }
     } else InCallContent(
@@ -296,6 +326,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         onCamera = if (v != null) onCamera else null, rttMs = s?.rttMs?.toInt(), lossPct = loss,
         routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames, onMessage = onMessage,
         waiting = waiting != null,
+        waitingCard = { m -> WaitingCard(waiting, name, onDecline = { calls.declineWaiting() }, onEndAnswer = { calls.endAndAnswer() }, modifier = m) },
     )
 }
 
@@ -316,13 +347,15 @@ fun InCallContent(
     onMessage: (() -> Unit)? = null,
     /** A second caller is waiting over this call (the field shows its waiting state). */
     waiting: Boolean = false,
+    /** The call-waiting card, placed just above the controls (it grows upward; nothing else moves). */
+    waitingCard: (@Composable (Modifier) -> Unit)? = null,
 ) {
     var routeSheet by remember { mutableStateOf(startWithSheet) }
     var info by remember { mutableStateOf(startWithInfo) }
     val (caption, icon) = routeSlot(routes)
     Box(Modifier.fillMaxSize()) {
         CallFocus(name.ifBlank { "Unknown" }, did, active, ringing, secs, reconnecting, micProblem,
-            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage, waiting = waiting, muted = muted) {
+            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage, waiting = waiting, muted = muted, waitingCard = waitingCard) {
             CallControls(muted, speaker, camera = false, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
                 onCamera, onFlip = null, onEnd, caption, icon)
         }
@@ -388,6 +421,7 @@ fun VideoCallContent(
     remote: @Composable (Modifier) -> Unit, selfView: @Composable (Modifier) -> Unit,
     routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {}, onAllowBtNames: (() -> Unit)? = null,
     onMessage: (() -> Unit)? = null,
+    waitingCard: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
@@ -424,7 +458,8 @@ fun VideoCallContent(
             .size(width = 104.dp, height = 140.dp).clip(SmoothCornerShape(16.dp)).background(Color.Black)
             .border(1.dp, Color.White.copy(alpha = 0.25f), SmoothCornerShape(16.dp))) { selfView(Modifier.fillMaxSize()) }
         // Bottom: problem line and controls.
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+        var barH by remember { mutableStateOf(0) }
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().onSizeChanged { barH = it.height }
             .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
             .navigationBarsPadding().padding(top = 32.dp, bottom = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -435,6 +470,9 @@ fun VideoCallContent(
                     onCamera, onFlip, onEnd, caption, icon)
             }
         }
+        // WaitingCard: 22 dp above the controls bar, growing upward.
+        waitingCard?.invoke(Modifier.align(Alignment.BottomCenter).padding(start = 20.dp, end = 20.dp,
+            bottom = with(androidx.compose.ui.platform.LocalDensity.current) { barH.toDp() } + 22.dp))
     }
     if (routeSheet) AudioRouteSheet(speaker, routes, relayed = direct == false, onDismiss = { routeSheet = false },
         onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false },
@@ -443,7 +481,7 @@ fun VideoCallContent(
 
 /** The peer's decoded frames, pulled on the display clock by a [RemoteRenderer] while shown. */
 @Composable
-private fun RemoteVideo(app: P2pApp, calls: CallController, modifier: Modifier) {
+internal fun RemoteVideo(app: P2pApp, calls: CallController, modifier: Modifier) {
     var frame by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var n by remember { mutableLongStateOf(0L) }
     DisposableEffect(Unit) {
