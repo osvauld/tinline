@@ -23,7 +23,9 @@ required-features = ["bench"]
 
 [features]
 # Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
-bench = []
+# They drive the synthetic peers, so they need `dev-tools` (defined with refactor/media's
+# `video/sim`; it must also enable `proto/test-support` for `Node::forge_block_notice_for_test`).
+bench = ["dev-tools"]
 
 [dependencies]
 proto.workspace = true
@@ -64,4 +66,6 @@ paranoid-android = "0.2"
 jni = { version = "0.21", default-features = false }
 
 [dev-dependencies]
+# Integration tests use the synthetic peers and test signers (`dev-tools`).
+p2pcore = { path = ".", features = ["dev-tools"] }
 proto = { workspace = true, features = ["test-support"] }

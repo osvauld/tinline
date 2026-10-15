@@ -399,6 +399,7 @@ impl Inner {
     }
 
     /// For the year-scale measurements: both reconcile parts now, timed.
+    #[cfg(any(test, feature = "dev-tools"))]
     pub(crate) async fn search_reconcile_now(self: &Arc<Self>) -> Result<(std::time::Duration, std::time::Duration), Error> {
         let ix = self.search_ix().ok_or(Error::Locked)?;
         let t = std::time::Instant::now();

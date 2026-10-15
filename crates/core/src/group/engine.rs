@@ -49,6 +49,7 @@ mod lifecycle;
 mod replication;
 mod rotation;
 mod sessions;
+#[cfg(any(test, feature = "dev-tools"))]
 mod synth;
 #[cfg(test)]
 pub(crate) fn receipt_cores_for_test(

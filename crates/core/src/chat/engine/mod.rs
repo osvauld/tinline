@@ -33,6 +33,7 @@ mod read;
 pub(crate) mod receipts;
 mod session;
 mod sync;
+#[cfg(any(test, feature = "dev-tools"))]
 mod synth;
 #[cfg(test)]
 mod tests;

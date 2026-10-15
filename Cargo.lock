@@ -5702,6 +5702,7 @@ dependencies = [
  "loro",
  "n0-future",
  "opusic-sys",
+ "p2pcore",
  "paranoid-android",
  "parking_lot",
  "proto",

@@ -137,10 +137,8 @@ impl Node {
         let me = self.inner.me()?;
         let db = {
             let s = self.inner.shared.lock();
-            match s.acct.as_ref().and_then(|a| a.backing.clone()) {
-                Some(Backing::Sealed(db)) => Some(db),
-                None => None, // not committed yet: kept in memory, written by the commit
-            }
+            // None: not committed yet, kept in memory and written by the commit.
+            s.acct.as_ref().and_then(|a| a.backing.clone()).map(|Backing::Sealed(db)| db)
         };
         if let Some(db) = db {
             store::save_label(&db, &label)?;
