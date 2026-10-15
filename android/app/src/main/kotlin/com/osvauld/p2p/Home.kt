@@ -76,7 +76,8 @@ fun HomeScreen(
         GroupCallsUi(groupLog, groupList.filter { GroupText.active(it.myRole) }.associate { it.id to it.name }, onGroupInfo) { gid -> app.groupCallUi.call(gid, say) }
     }
     val groupInvitations by app.groups.invitations.collectAsState()
-    val groupBadge = GroupText.badge(groupList, groupInvitations)
+    // Groups counts invitations waiting for me; unread group posts already count on Chats (as the playground / desktop).
+    val groupBadge = GroupText.pendingInvitations(groupInvitations).size
     val requestsIn by app.groups.incoming.collectAsState()
     val waitingIn by app.requestsIn.collectAsState()
     val waitingOut by app.requestsOut.collectAsState()
