@@ -327,8 +327,12 @@ impl VoiceDecoder {
         let Ogg { mut packets, granule } = read_ogg(&data)?;
         drop(data);
         let bad = |m: &str| Error::Audio(format!("not a valid Ogg Opus voice message: {m}"));
-        let head = packets.remove(0);
-        let tags = packets.remove(0);
+        if packets.len() < 3 {
+            return Err(bad("no audio")); // head, tags and one audio packet
+        }
+        let mut hdr = packets.drain(..2);
+        let (head, tags) = (hdr.next().unwrap_or_default(), hdr.next().unwrap_or_default());
+        drop(hdr);
         if !tags.starts_with(b"OpusTags") {
             return Err(bad("missing OpusTags"));
         }

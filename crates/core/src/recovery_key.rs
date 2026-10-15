@@ -60,7 +60,7 @@ pub fn recovery_phrase_from_input(input: String) -> Result<String, Error> {
         return Ok(words.to_string());
     }
     // Base58 is case-sensitive: only the prefix may differ in case. Spaces or line breaks from copying are dropped.
-    let raw: String = t[PREFIX.len()..].chars().filter(|c| !c.is_whitespace()).collect();
+    let raw: String = t.get(PREFIX.len()..).ok_or(Error::BadPhrase)?.chars().filter(|c| !c.is_whitespace()).collect();
     let body = Zeroizing::new(bs58::decode(raw).into_vec().map_err(|_| Error::BadPhrase)?);
     if body.len() != 1 + 32 + 4 || body[0] != VERSION {
         return Err(Error::BadPhrase);
@@ -112,7 +112,7 @@ mod tests {
     fn a_wrong_or_missing_character_is_caught() {
         let k = recovery_key_from_phrase(phrase()).unwrap();
         let alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-        let body: Vec<char> = k[PREFIX.len()..].chars().collect();
+        let body: Vec<char> = k.get(PREFIX.len()..).unwrap().chars().collect();
         let mut caught = 0;
         let mut tried = 0;
         for i in 0..body.len() {
@@ -134,7 +134,7 @@ mod tests {
         let p = phrase();
         let k = recovery_key_from_phrase(p.clone()).unwrap();
         let (head, tail) = k.split_at(30);
-        assert_eq!(recovery_phrase_from_input(format!("  TLKEY-{}\n{} ", &head[PREFIX.len()..], tail)).unwrap(), p);
+        assert_eq!(recovery_phrase_from_input(format!("  TLKEY-{}\n{} ", head.get(PREFIX.len()..).unwrap(), tail)).unwrap(), p);
         assert!(is_recovery_key(" tlkey-abc".into()) && !is_recovery_key("abandon ability".into()));
         for bad in ["", "tlkey-", "tlkey-0OIl", "hello world", "tlkey-3mJr7AoUXx2Wqd"] {
             assert!(recovery_phrase_from_input(bad.into()).is_err(), "{bad:?}");

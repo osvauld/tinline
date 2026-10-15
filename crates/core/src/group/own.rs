@@ -51,7 +51,7 @@ impl Inner {
         let mut added = false;
         for b in tokens.iter().take(MAX_OWN_GROUPS) {
             let Ok(t) = bincode::deserialize::<InviteToken>(b) else { continue };
-            if t.invite.is_some() || t.group.len() != 64 {
+            if t.invite.is_some() || !super::valid_gid(&t.group) {
                 continue;
             }
             let gid = t.group.clone();
@@ -80,7 +80,7 @@ impl Inner {
                     let _ = core.store.put_host(&gid, &a.did, &a.dev, h);
                 }
             }
-            self.log(format!("group {}: learned from an own device", &gid[..8]));
+            self.log(format!("group {}: learned from an own device", super::short(&gid)));
             added = true;
         }
         if added {

@@ -22,3 +22,13 @@ pub mod shard;
 pub mod state;
 pub mod store;
 pub mod wire;
+
+/// A group id: 64 lowercase hex characters (checked wherever one arrives from a peer or a link).
+pub(crate) fn valid_gid(gid: &str) -> bool {
+    gid.len() == 64 && gid.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+
+/// The first 8 characters of an id, for logs; never panics on odd input.
+pub(crate) fn short(id: &str) -> &str {
+    id.get(..8).unwrap_or(id)
+}

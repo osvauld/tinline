@@ -136,7 +136,10 @@ impl ShortCode {
     /// A link (`tinline://g/...`, any case of the scheme, a trailing `/` tolerated) or the bare code.
     pub fn parse(text: &str) -> Option<Self> {
         let t = text.trim();
-        let body = if t.len() >= LINK_PREFIX.len() && t[..LINK_PREFIX.len()].eq_ignore_ascii_case(LINK_PREFIX) { &t[LINK_PREFIX.len()..] } else { t };
+        let body = match (t.get(..LINK_PREFIX.len()), t.get(LINK_PREFIX.len()..)) {
+            (Some(p), Some(rest)) if p.eq_ignore_ascii_case(LINK_PREFIX) => rest,
+            _ => t,
+        };
         let body = body.trim_end_matches('/');
         if body.is_empty() || body.len() > 512 {
             return None;
@@ -263,7 +266,7 @@ impl GroupStore {
 /// the group's signed host addresses, and the invite (if any) is signed, for this group, unexpired.
 pub(crate) fn check_fetched(t: &InviteToken, sc: &ShortCode) -> Result<(), Error> {
     let names_host = t.hosts.iter().any(|h| h.open().is_some_and(|a| a.group == t.group && a.endpoint == sc.endpoint));
-    if !names_host || t.group.len() != 64 || t.name.len() > MAX_NAME {
+    if !names_host || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
         return Err(Error::Protocol("the host's answer does not match the invite link".into()));
     }
     if let Some(inv) = &t.invite

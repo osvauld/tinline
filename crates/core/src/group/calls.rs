@@ -117,7 +117,7 @@ impl GcallEvents for Sink {
 }
 
 fn short(gid: &str) -> &str {
-    &gid[..8.min(gid.len())]
+    super::short(gid)
 }
 
 impl Inner {

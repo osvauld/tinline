@@ -239,7 +239,9 @@ fn framing_violations_rejected() {
     // No audio at all.
     let mut f = pg(0x02, 0, s, 0, std::slice::from_ref(&h));
     f.extend(pg(0x04, 0, s, 1, std::slice::from_ref(&t)));
-    rejects(&f);
+    rejects_ogg(&f);
+    // A single BOS|EOS page holding only OpusHead (used to panic in open).
+    rejects_ogg(&pg(0x06, 0, s, 0, std::slice::from_ref(&h)));
 }
 
 /// A page with explicit lacing, correct CRC.

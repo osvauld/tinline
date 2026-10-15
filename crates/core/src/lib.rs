@@ -1,6 +1,8 @@
 //! The phone's (and desktop's) whole P2P side behind one UniFFI object: identity, contacts,
 //! the iroh endpoint, the call protocol and the codec. Platforms bring UI and audio devices.
 
+#![deny(clippy::string_slice)]
+
 uniffi::setup_scaffolding!();
 
 pub mod accounts;

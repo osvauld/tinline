@@ -435,7 +435,7 @@ impl Inner {
                 let Ok(t) = bincode::deserialize::<InviteToken>(&token) else { return };
                 let Some(inv) = t.invite.as_ref().and_then(|i| i.open()) else { return };
                 // The sender signed it, for this group, and it has not run out.
-                if inv.issuer != from || inv.group != t.group || inv.expires < now() || t.group.len() != 64 || t.name.len() > MAX_NAME {
+                if inv.issuer != from || inv.group != t.group || inv.expires < now() || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
                     self.log(format!("a group invitation from {from} does not check out"));
                     return;
                 }

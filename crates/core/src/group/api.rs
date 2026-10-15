@@ -512,6 +512,9 @@ impl Inner {
         let inner = self;
         let core = inner.group_core()?;
         let gid = t.group.clone();
+        if !super::valid_gid(&gid) {
+            return Err(Error::Rejected("invalid group id".into()));
+        }
         if let Some(inv) = &t.invite
             && inv.open().is_none_or(|i| i.group != gid || i.expires < now())
         {

@@ -63,11 +63,7 @@ pub(crate) enum AttestationError {
 }
 
 fn scope_ok(group: &str, doc: &DocId) -> bool {
-    group.len() == 64
-        && group
-            .bytes()
-            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-        && doc.is_valid()
+    super::valid_gid(group) && doc.is_valid()
 }
 fn sig_input(body: &[u8]) -> Vec<u8> {
     let mut input = DOMAIN.to_vec();

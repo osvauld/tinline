@@ -35,7 +35,7 @@ impl Inner {
         core.sessions.lock().insert(id, sess.clone());
         self.log(format!(
             "group {} session with {} ({})",
-            &gid[..8.min(gid.len())],
+            crate::group::short(&gid),
             &peer.did,
             if hosting { "we host" } else { "they host" }
         ));
@@ -137,7 +137,7 @@ impl Inner {
                         Err(e) => {
                             self.log(format!(
                                 "group {}: refused an update from {}: {e}",
-                                &sess.gid[..8.min(sess.gid.len())],
+                                crate::group::short(&sess.gid),
                                 sess.did
                             ));
                             let _ = sess.tx.send(Out::Msg(GroupMsg::Refused {

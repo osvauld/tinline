@@ -220,7 +220,7 @@ impl Inner {
             .remove(&(gid.to_string(), host_key(&auth.did, &auth.dev)));
         self.log(format!(
             "group {}: host {} moved",
-            &gid[..8.min(gid.len())],
+            crate::group::short(&gid),
             auth.did
         ));
         core.kick.notify_waiters();

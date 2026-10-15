@@ -130,9 +130,9 @@ pub fn day_start(day: &str) -> Option<i64> {
     if b.len() != 10 || b[4] != b'-' || b[7] != b'-' {
         return None;
     }
-    let y: i64 = day[..4].parse().ok()?;
-    let m: i64 = day[5..7].parse().ok()?;
-    let d: i64 = day[8..].parse().ok()?;
+    let y: i64 = day.get(..4)?.parse().ok()?;
+    let m: i64 = day.get(5..7)?.parse().ok()?;
+    let d: i64 = day.get(8..)?.parse().ok()?;
     if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
         return None;
     }

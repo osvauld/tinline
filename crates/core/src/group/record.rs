@@ -203,7 +203,7 @@ impl SignedRecord {
 
 /// The id of stored record bytes.
 pub fn record_id(bytes: &[u8]) -> String {
-    blake3::hash(bytes).to_hex()[..32].to_string()
+    hex::encode(&blake3::hash(bytes).as_bytes()[..16])
 }
 
 // ---- invites ---------------------------------------------------------------------------------
