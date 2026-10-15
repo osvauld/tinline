@@ -13,7 +13,6 @@
 
 use identity::{Identity, recover};
 use proto::*;
-use std::collections::HashSet;
 
 const PHRASE_A: &str =
     "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -43,6 +42,11 @@ const GID: &str = "grp-golden";
 // 16 bytes 0x01.. in base64url.
 const CALL_ID: &str = "AQIDBAUGBwgJCgsMDQ4PEA";
 const T0: u64 = 1_800_000_000;
+
+/// An issued statement with a fixed nonce (the real `issue` draws a random one).
+fn issued<C: IssuedClaim>(by: &Identity, sub: Subject, claim: C) -> Issued<C> {
+    Issued { iss: by.did().into(), sub, iat_ms: T0 * 1000, exp_ms: T0 * 1000 + 3_600_000, nonce: [5; 16], claim }
+}
 
 fn host(i: &Identity) -> gcall::HostRef {
     gcall::HostRef {
@@ -174,7 +178,16 @@ fn blobs() -> Vec<(&'static str, Vec<u8>)> {
         ),
         (
             "picture_deletion",
-            profile::sign_picture_deletion(&a, &"ab".repeat(32))
+            Signed::sign(&issued(&a, Subject::Anyone, profile::PictureDeletion {
+                picture_hash: "ab".repeat(32),
+                scope: profile::PICTURE_DELETE_SCOPE.into(),
+            }), &a)
+            .unwrap()
+            .to_bytes(),
+        ),
+        (
+            "grant",
+            Signed::sign(&issued(&a, Subject::Did(b.did().into()), Cap::Call), &a)
                 .unwrap()
                 .to_bytes(),
         ),
@@ -429,7 +442,7 @@ fn dump() {
         println!("    (\"{n}\", \"{t}\"),");
     }
     println!("];");
-    let g = issue_token(&a(), b().did(), Cap::Message, T0, 3600);
+    let g = issue_token(&a(), b().did(), Cap::Message, T0 * 1000, 3_600_000);
     println!("const RANDOM_TOKEN: &str = \"{}\";", hex(&g.to_bytes()));
     println!(
         "const RANDOM_TICKET: &str = \"{}\";",
@@ -517,6 +530,8 @@ fn captured_blobs_open() {
     let st = gcall_status::open_status_for(&captured("gcall_status"), GID, T0 * 1000 + 1).unwrap();
     assert_eq!(st.load, 10);
     profile::verify_picture_deletion(&captured("picture_deletion"), a.did()).unwrap();
+    let g = captured::<Grant>("grant").redeem(&Expect { iss: Some(a.did()), holder: b.did(), now_ms: T0 * 1000 }, &Unrecorded).unwrap();
+    assert_eq!(g.claim, Cap::Call);
     // A signature from another envelope is refused.
     let other = captured::<Attestation>("attestation");
     let list = captured::<DeviceList>("device_list");
@@ -573,41 +588,11 @@ fn link_text_proofs_and_code() {
 fn captured_random_items_verify() {
     let (a, b) = (a(), b());
     let tok = Signed::<Grant>::from_bytes(&unhex(RANDOM_TOKEN)).unwrap();
-    let g = verify_token(
-        &tok,
-        a.did(),
-        b.did(),
-        Cap::Message,
-        0,
-        T0 + 10,
-        &HashSet::new(),
-    )
-    .unwrap();
-    assert_eq!((g.iat, g.exp), (T0, T0 + 3600));
-    assert_eq!(
-        verify_token(
-            &tok,
-            a.did(),
-            b.did(),
-            Cap::Call,
-            0,
-            T0 + 10,
-            &HashSet::new()
-        ),
-        Err(Error::BadCapability)
-    );
-    assert_eq!(
-        verify_token(
-            &tok,
-            a.did(),
-            b.did(),
-            Cap::Message,
-            0,
-            T0 + 3600,
-            &HashSet::new()
-        ),
-        Err(Error::Expired)
-    );
+    let (m0, none) = (T0 * 1000, &Unrecorded);
+    let g = verify_token(&tok, a.did(), b.did(), Cap::Message, m0 + 10, none).unwrap();
+    assert_eq!((g.iat_ms, g.exp_ms), (m0, m0 + 3_600_000));
+    assert_eq!(verify_token(&tok, a.did(), b.did(), Cap::Call, m0 + 10, none), Err(Error::BadCapability));
+    assert_eq!(verify_token(&tok, a.did(), b.did(), Cap::Message, m0 + 3_600_000, none), Err(Error::Expired));
 
     let ticket = ContactTicket::from_text(RANDOM_TICKET).unwrap();
     let claim = ticket.verify(T0 + 1).unwrap();

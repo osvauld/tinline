@@ -245,7 +245,8 @@ sync, direct invitations).
   anyone (`group_guess_codes_for_test`).
 - `group_revoke_invite(link)`: the issuer (or an admin) makes the host forget the code
   (`RevokeCode{code}`), locally if we are that host. An invite someone already fetched stays valid
-  until it expires: it is a bearer grant (PROVISIONAL).
+  until it expires: it is a bearer grant (D17): `Issued<GroupJoin>` with `sub = Anyone`, redeemed
+  through `redeem_invite` (`proto::issued`; expiries in unix ms).
 - As before, a link reveals ONE host's group endpoint to whoever holds it (and anyone who fetches
   with it learns all active hosts' endpoints, as the old token carried them). A link names one
   host: if that host is offline (or rotated its endpoint, U12), the link does not work; ask for a
@@ -309,7 +310,7 @@ G3: `set_group_invitation_events(GroupInvitationEvents{on_group_invitation})`,
 `group_invitations_outgoing(group_id)`, `group_invitation_accept(id)` (joins, blocks),
 `group_invitation_decline(id)`, `group_revoke_invite(link)`; `GroupInvitation{id, group_id,
 group_name, inviter_did, inviter_name, invitee_did, invitee_name, outgoing, state:
-GroupInvitationState{Pending, Joined, Declined, Expired, Blocked}, at (ms), expires (s),
+GroupInvitationState{Pending, Joined, Declined, Expired, Blocked}, at (ms), expires (ms),
 delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
 
 ## PROVISIONAL (coordinator) choices

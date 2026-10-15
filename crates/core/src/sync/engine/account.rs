@@ -7,7 +7,7 @@ impl Inner {
         Ctx {
             my_did: me.id.did(),
             me_device: me.device,
-            now: now(),
+            now_ms: crate::node::now_ms(),
         }
     }
 

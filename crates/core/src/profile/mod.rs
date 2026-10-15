@@ -578,7 +578,7 @@ impl Node {
             if let Some(old) = old {
                 p.request_deletion(
                     &old.hash,
-                    &proto::profile::sign_picture_deletion(&me.id, &old.hash)?,
+                    &proto::profile::sign_picture_deletion(&me.id, &old.hash, crate::node::now_ms())?,
                 )?;
             }
             Ok(())
@@ -594,7 +594,7 @@ impl Node {
             }
             p.request_deletion(
                 &hash,
-                &proto::profile::sign_picture_deletion(&me.id, &hash)?,
+                &proto::profile::sign_picture_deletion(&me.id, &hash, crate::node::now_ms())?,
             )
         })
     }

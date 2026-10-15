@@ -155,7 +155,7 @@ impl Inner {
     /// Mail addressed to us arrived (from a host, or handed over by our own host side).
     pub(crate) fn group_mail_for_me(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, sm: &SignedMail) {
         let Some((m, letter)) = mail::open_for(&core.account, gid, sm) else { return };
-        if !core.store.first_seen(&mail::id_hex(&m.id)).unwrap_or(false) {
+        if proto::IssuanceStore::spent(&core.store, &m.from, &m.id, &core.did) || core.store.mark_seen(&m.id).is_err() {
             return;
         }
         let member = core.groups.lock().get(gid).is_some_and(|l| l.state.is_member(&m.from));
@@ -404,16 +404,22 @@ impl GroupStore {
         Ok(out)
     }
 
-    /// Recipient side: true the first time `id` is seen.
-    pub fn first_seen(&self, id: &str) -> Result<bool, Error> {
-        let k = format!("seen/{id}");
-        if self.db.get(&k).map_err(io)?.is_some() {
-            return Ok(false);
-        }
-        self.db.put(&k, &[1]).map_err(io)?;
-        Ok(true)
+    /// Recipient side: remembers mail `id` as seen (`IssuanceStore::spent` answers for it).
+    pub fn mark_seen(&self, id: &[u8; 16]) -> Result<(), Error> {
+        self.db.put(&format!("seen/{}", mail::id_hex(id)), &[1]).map_err(io)
+    }
+}
+
+/// The group DB as an issuer's memory: a nonce is spent once seen (mail ids). Group invites are
+/// bearer until they expire (D17): their nonces are never marked, and nothing is cut off.
+impl proto::IssuanceStore for GroupStore {
+    fn spent(&self, _: &str, nonce: &[u8], _: &str) -> bool {
+        self.db.get(&format!("seen/{}", hex::encode(nonce))).ok().flatten().is_some()
     }
 
+    fn cut_off_ms(&self, _: &str, _: cryptography::domains::Domain) -> u64 {
+        0
+    }
 }
 
 /// Test hooks (not for apps).

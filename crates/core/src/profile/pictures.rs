@@ -120,7 +120,7 @@ impl Inner {
                 if let Some(old) = old {
                     p.request_deletion(
                         &old.hash,
-                        &proto::profile::sign_picture_deletion(&me.id, &old.hash)?,
+                        &proto::profile::sign_picture_deletion(&me.id, &old.hash, crate::node::now_ms())?,
                     )?;
                 }
                 Ok(())

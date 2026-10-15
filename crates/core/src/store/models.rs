@@ -157,15 +157,7 @@ impl From<RawContact> for StoredContact {
             name: r.name,
             devices,
             device_list: r.device_list,
-            // U13 migration: a legacy `call` grant also lets us call (records from before P6
-            // have no call slot and default to `calls_allowed`).
-            call_grant_from_them: r.call_grant_from_them.or_else(|| {
-                r.grant_from_them
-                    .peek()
-                    .ok()
-                    .filter(|g| g.is_legacy())
-                    .map(|_| r.grant_from_them.clone())
-            }),
+            call_grant_from_them: r.call_grant_from_them,
             grant_from_them: r.grant_from_them,
             calls_allowed: r.calls_allowed,
             added_at: r.added_at,
@@ -205,7 +197,7 @@ pub struct State {
     /// Ids of grants we issued and then took back. Not written today: tokens are taken back per
     /// DID with `cut_offs` (every renewal mints a new id, so ids would leak).
     pub revoked: HashSet<String>,
-    /// Per holder DID: tokens we issued at or before these times (unix seconds) are refused
+    /// Per holder DID: tokens we issued at or before these times (unix ms) are refused
     /// (P6, U13). A block raises both, "disallow calls" the call one. Only ever raised; synced
     /// to own devices (max wins). Unblocking does not lower it: the contact needs fresh tokens.
     pub cut_offs: HashMap<String, CutOffs>,

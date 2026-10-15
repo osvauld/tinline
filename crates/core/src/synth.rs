@@ -91,10 +91,9 @@ impl Node {
             let now = crate::node::now();
             let ticket = proto::issue_contact_ticket(&pid, pubdev, &name, None, now, 3600);
             let policy = crate::caps::policy_for(&inner.shared.lock().state, &did, crate::ContactOrigin::Ticket);
-            let (hello, pending) = proto::contact_hello_with(&me.id, me.device, &ticket, &me.profile.name, now, crate::node::GRANT_TTL, policy)?;
-            let none = std::collections::HashSet::new();
-            let (welcome, _) = proto::accept_contact_hello_with(&pid, pubdev, &hello, me.device, now, &none, crate::node::GRANT_TTL, |_| policy)?;
-            let new = proto::accept_contact_welcome(&me.id, &pending, &welcome, pubdev, now)?;
+            let (hello, pending) = proto::contact_hello_with(&me.id, me.device, &ticket, &me.profile.name, now * 1000, crate::node::GRANT_TTL, policy)?;
+            let (welcome, _) = proto::accept_contact_hello_with(&pid, pubdev, &hello, me.device, now * 1000, &proto::Unrecorded, crate::node::GRANT_TTL, |_| policy)?;
+            let new = proto::accept_contact_welcome(&me.id, &pending, &welcome, pubdev, now * 1000)?;
             inner.save_contact(me.epoch, new, None, true, true).await?;
             Ok(())
         })?

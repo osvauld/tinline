@@ -77,13 +77,15 @@ fn malformed_records_are_refused() {
 fn invites_host_addrs_and_auth_verify() {
     let a = acct();
     let b = acct();
-    let inv = issue_invite(&a, "g", 10);
-    assert_eq!(inv.open().unwrap().issuer, a.did());
+    let inv = issue_invite(&a, "g", 1, 10);
+    assert_eq!(inv.open().unwrap().iss, a.did());
     let theirs = Invite {
-        group: "g".into(),
-        issuer: b.did().into(),
-        expires: 10,
+        iss: b.did().into(),
+        sub: proto::Subject::Anyone,
+        iat_ms: 1,
+        exp_ms: 10,
         nonce: [1; 16],
+        claim: GroupJoin { group: "g".into() },
     };
     assert!(
         Signed::sign(&theirs, &a).is_err(),
@@ -171,10 +173,12 @@ fn core_signables_pass_the_envelope_conformance_table() {
     );
     check(
         &Invite {
-            group: "g".into(),
-            issuer: a.did().into(),
-            expires: 10,
+            iss: a.did().into(),
+            sub: proto::Subject::Anyone,
+            iat_ms: 1,
+            exp_ms: 10,
             nonce: [1; 16],
+            claim: GroupJoin { group: "g".into() },
         },
         &a,
         &stranger,

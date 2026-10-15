@@ -228,7 +228,7 @@ impl GroupApi for Fake {
             name: "Hike club".into(),
             owner_did: "did:key:own".into(),
             issuer_did: Some("did:key:own".into()),
-            expires: Some(7 * 86400),
+            expires: Some(7 * 86_400_000),
             host_count: 1,
         })
     }
@@ -419,7 +419,7 @@ fn inv(id: &str, gid: &str, outgoing: bool, other: &str, state: GroupInvitationS
         outgoing,
         state,
         at: 1,
-        expires: 7 * 86400,
+        expires: 7 * 86_400_000,
         delivered: true,
     }
 }

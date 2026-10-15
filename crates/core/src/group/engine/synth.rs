@@ -73,7 +73,7 @@ impl Inner {
         let core = self.group_core()?;
         let (acct, dev) = crate::synth::peer(did).ok_or(Error::NotFound)?;
         let doc = GroupDoc::new(&g.gid, writer_id(did, &dev));
-        let invite = issue_invite(&core.account, &g.gid, now() + 10 * 365 * 86_400);
+        let invite = issue_invite(&core.account, &g.gid, crate::node::now_ms(), super::INVITE_TTL);
         g.members.push(SMember {
             did: did.to_string(),
             acct,

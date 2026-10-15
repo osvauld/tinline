@@ -273,7 +273,7 @@ impl Inner {
             return Err(Error::Rejected(crate::BLOCKED.into()));
         }
         // Checked again: the code may have expired since, or another device of ours added them.
-        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, &req.hello, req.device, now, &crate::node::spent_nonces(&next), crate::node::GRANT_TTL, |d| {
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, &req.hello, req.device, now * 1000, &proto::Unrecorded, crate::node::GRANT_TTL, |d| {
             crate::caps::policy_for(&next, d, crate::caps::ContactOrigin::Ticket)
         })?;
         if new.did != did {
@@ -314,7 +314,7 @@ impl Inner {
                 .map(|(d, r)| (d.clone(), r.clone()))
         };
         let taken = match found {
-            Some((did, req)) if self.refusal_for(&did).is_none() => match proto::accept_contact_welcome(&me.id, &req.pending, &msg, remote, now) {
+            Some((did, req)) if self.refusal_for(&did).is_none() => match proto::accept_contact_welcome(&me.id, &req.pending, &msg, remote, now * 1000) {
                 Ok(new) => {
                     let stored = stored_contact(&new, req.relay.clone(), req.calls_allowed);
                     let contact = Contact::from(&stored);

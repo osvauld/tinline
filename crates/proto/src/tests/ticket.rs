@@ -22,10 +22,10 @@ fn ticket_text_roundtrip_and_prefix() {
     );
     // The whole flow works from the text form.
     let b = peer();
-    let (hello, pending) = contact_hello(&b.id, b.dev, &back, "bob", T0 + 1, GTTL).unwrap();
+    let (hello, pending) = contact_hello(&b.id, b.dev, &back, "bob", M0 + 1, GTTL).unwrap();
     let (welcome, _) =
-        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0 + 2, &none(), GTTL).unwrap();
-    accept_contact_welcome(&b.id, &pending, &welcome, a.dev, T0 + 3).unwrap();
+        accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0 + 2, &Unrecorded, GTTL).unwrap();
+    accept_contact_welcome(&b.id, &pending, &welcome, a.dev, M0 + 3).unwrap();
     // The retired JSON form is no longer a ticket.
     assert_eq!(
         ContactTicket::from_text("osvc1.abcd"),
@@ -159,53 +159,41 @@ fn expired_ticket() {
     let t = ticket(&a);
     assert_eq!(t.verify(T0 + TTL), Err(Error::Expired));
     assert_eq!(
-        contact_hello(&b.id, b.dev, &t, "bob", T0 + TTL + 1, GTTL).err(),
+        contact_hello(&b.id, b.dev, &t, "bob", M0 + (TTL + 1) * 1000, GTTL).err(),
         Some(Error::Expired)
     );
     // Owner side re-checks too: joiner can't pre-date its clock.
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0 + TTL + 1, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0 + (TTL + 1) * 1000, &Unrecorded, GTTL).err(),
         Some(Error::Expired)
     );
 }
 
-#[test]
-fn replayed_nonce() {
-    let (a, b) = (peer(), peer());
-    let t = ticket(&a);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
-    let (_, nc) = accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &none(), GTTL).unwrap();
-    let spent: HashSet<_> = [nc.redeemed_nonce].into();
-    assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &spent, GTTL).err(),
-        Some(Error::Replayed)
-    );
-}
-
-/// Reusable codes: the redeemed set holds (joiner, nonce); another joiner still redeems it.
+/// The issuer's store decides who may still redeem a ticket: here (joiner, nonce) is spent for
+/// one joiner, and another joiner still redeems it.
 #[test]
 fn redeemed_per_joiner() {
     let (a, b, c) = (peer(), peer(), peer());
     let t = ticket(&a);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
-    let (_, nb) = accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &none(), GTTL).unwrap();
-    let spent: HashSet<_> = [redeemed_key(&nb.did, &nb.redeemed_nonce)].into();
-    assert_eq!(accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &spent, GTTL).err(), Some(Error::Replayed));
-    let (again, _) = contact_hello(&b.id, b.dev, &t, "bob", T0 + 1, GTTL).unwrap();
-    assert_eq!(accept_contact_hello(&a.id, a.dev, &again, b.dev, T0 + 1, &spent, GTTL).err(), Some(Error::Replayed));
-    let (other, _) = contact_hello(&c.id, c.dev, &t, "carol", T0, GTTL).unwrap();
-    assert!(accept_contact_hello(&a.id, a.dev, &other, c.dev, T0, &spent, GTTL).is_ok());
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
+    let (_, nb) = accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0, &Unrecorded, GTTL).unwrap();
+    let spent = Spent([redeemed_key(&nb.did, &nb.redeemed_nonce)].into());
+    assert_eq!(accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0, &spent, GTTL).err(), Some(Error::Replayed));
+    let (again, _) = contact_hello(&b.id, b.dev, &t, "bob", M0 + 1, GTTL).unwrap();
+    assert_eq!(accept_contact_hello(&a.id, a.dev, &again, b.dev, M0 + 1, &spent, GTTL).err(), Some(Error::Replayed));
+    let (other, _) = contact_hello(&c.id, c.dev, &t, "carol", M0, GTTL).unwrap();
+    assert!(accept_contact_hello(&a.id, a.dev, &other, c.dev, M0, &spent, GTTL).is_ok());
 }
 
 /// The joiner's half survives a round trip through storage.
 #[test]
 fn pending_contact_serialises() {
     let (a, b) = (peer(), peer());
-    let (_, pending) = contact_hello(&b.id, b.dev, &ticket(&a), "bob", T0, GTTL).unwrap();
+    let (_, pending) = contact_hello(&b.id, b.dev, &ticket(&a), "bob", M0, GTTL).unwrap();
     let back: PendingContact = serde_json::from_str(&serde_json::to_string(&pending).unwrap()).unwrap();
     assert_eq!(back, pending);
-    assert_eq!(hello_invite(&contact_hello(&b.id, b.dev, &ticket(&a), "bob", T0, GTTL).unwrap().0).unwrap().iss, a.id.did());
+    assert_eq!(hello_invite(&contact_hello(&b.id, b.dev, &ticket(&a), "bob", M0, GTTL).unwrap().0).unwrap().iss, a.id.did());
 }
 
 #[test]
@@ -213,9 +201,9 @@ fn invite_issued_by_someone_else() {
     let (a, b, m) = (peer(), peer(), peer());
     // Mallory's ticket redeemed at Alice.
     let t = ticket(&m);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &hello, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &hello, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::WrongIssuer)
     );
 }
@@ -224,10 +212,10 @@ fn invite_issued_by_someone_else() {
 fn invite_device_must_be_ours() {
     let (a, b) = (peer(), peer());
     let t = ticket(&a);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0, GTTL).unwrap();
     let other_dev = cryptography::signature::public_key(&new_device_secret());
     assert_eq!(
-        accept_contact_hello(&a.id, other_dev, &hello, b.dev, T0, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, other_dev, &hello, b.dev, M0, &Unrecorded, GTTL).err(),
         Some(Error::DeviceMismatch)
     );
 }

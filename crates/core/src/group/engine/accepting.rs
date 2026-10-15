@@ -112,10 +112,8 @@ impl Inner {
                 Some(live) => {
                     let ok = invite
                         .as_ref()
-                        .and_then(|i| i.open().ok())
-                        .is_some_and(|i| {
-                            i.group == group && i.expires >= now() && live.state.is_admin(&i.issuer)
-                        });
+                        .and_then(|i| redeem_invite(i, &group, &auth.did, now_ms(), &core.store))
+                        .is_some_and(|i| live.state.is_admin(&i.iss));
                     if ok {
                         Verdict::Welcome { joining: true }
                     } else {

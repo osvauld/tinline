@@ -75,7 +75,8 @@ pub struct Changes {
 pub struct Ctx<'a> {
     pub my_did: &'a str,
     pub me_device: [u8; 32],
-    pub now: u64,
+    /// Unix ms.
+    pub now_ms: u64,
 }
 
 
@@ -345,13 +346,13 @@ impl AccDoc {
                         }
                         c.devices.truncate(proto::MAX_LIST_DEVICES);
                     }
-                    if crate::caps::outlives(Some(&c.grant_from_them), &rec.grant, proto::Cap::Message, &did, ctx.my_did, ctx.now) {
+                    if crate::caps::outlives(Some(&c.grant_from_them), &rec.grant, proto::Cap::Message, &did, ctx.my_did, ctx.now_ms) {
                         c.grant_from_them = rec.grant;
                     }
                     // A re-add elsewhere may have replaced the call token with none: the doc's
                     // slot wins when it is newer, else the later-expiring token.
                     if let Some(g) = rec.call_grant {
-                        if crate::caps::outlives(c.call_grant_from_them.as_ref(), &g, proto::Cap::Call, &did, ctx.my_did, ctx.now) {
+                        if crate::caps::outlives(c.call_grant_from_them.as_ref(), &g, proto::Cap::Call, &did, ctx.my_did, ctx.now_ms) {
                             c.call_grant_from_them = Some(g);
                         }
                     } else if readded_elsewhere {

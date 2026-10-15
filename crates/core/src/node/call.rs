@@ -229,7 +229,7 @@ impl Inner {
                 return;
             }
             match s.state.contacts.iter_mut().find(|c| c.did == did) {
-                Some(c) if crate::caps::outlives(c.call_grant_from_them.as_ref(), &grant, proto::Cap::Call, did, me.id.did(), now()) => {
+                Some(c) if crate::caps::outlives(c.call_grant_from_them.as_ref(), &grant, proto::Cap::Call, did, me.id.did(), now_ms()) => {
                     c.call_grant_from_them = Some(grant);
                     true
                 }

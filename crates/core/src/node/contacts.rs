@@ -51,7 +51,7 @@ impl Inner {
             me.device,
             &ticket,
             &me.profile.name,
-            now(),
+            now_ms(),
             GRANT_TTL,
             policy,
         )?;
@@ -138,7 +138,7 @@ impl Inner {
                 self.log(format!("contact request to {} delivered", claim.name));
                 return Ok(AddOutcome::Requested { did: claim.iss.clone(), name: pending.name.clone() });
             }
-            other => proto::accept_contact_welcome(&me.id, &pending, &other, remote, now())?,
+            other => proto::accept_contact_welcome(&me.id, &pending, &other, remote, now_ms())?,
         };
         ctrl.finish();
         conn.close(0u32.into(), b"added");
@@ -235,15 +235,6 @@ pub(crate) fn retire_ticket(st: &mut State, keep: bool) {
         st.live_tickets.clear();
     }
     st.ticket = None;
-}
-
-/// The redeemed entries that refuse a hello. A shared code is good until it expires or is reset,
-/// for anyone and any number of times (decided 2026-10-14): the same person's other devices add
-/// us with it, and a re-add lifts a block. The (joiner, nonce) entries stay a record only; a bare
-/// nonce (single-use tickets from before) still spends its ticket, and one-time request tickets
-/// are dropped when used.
-pub(crate) fn spent_nonces(st: &State) -> std::collections::HashSet<String> {
-    st.redeemed.iter().filter(|k| !k.contains('/')).cloned().collect()
 }
 
 /// Whether our ticket with this nonce still adds contacts: the current one, or an older one

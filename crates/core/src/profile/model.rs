@@ -90,7 +90,7 @@ pub fn validate(doc: &ProfileDoc, owner: &str) -> Result<(), Error> {
     picture(&fields)?;
     for (hash, permit) in doc.deletions()? {
         let p = proto::profile::verify_picture_deletion(&permit, owner)?;
-        if p.picture_hash != hash {
+        if p.claim.picture_hash != hash {
             return Err(bad("invalid picture deletion target"));
         }
     }

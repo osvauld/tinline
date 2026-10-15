@@ -171,7 +171,7 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
                                     Avatar(who, inv.inviterDid, 40.dp)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                                         Text(bold(firstName(who), " invited you to ", inv.groupName), style = GType.body, color = c.ink)
-                                        Text("Valid until ${dayOnly(inv.expires.toLong() * 1000)}", style = GType.sub, color = c.ink2)
+                                        Text("Valid until ${dayOnly(inv.expires.toLong())}", style = GType.sub, color = c.ink2)
                                     }
                                 }
                                 GActs(top = 0.dp) {
@@ -1360,7 +1360,7 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
                         }
                         Text(p.issuerDid?.let { "Invited by ${nameOf(app, it, "someone who isn’t in your contacts")}" } ?: "A link for your own account", style = TinType.bodyM, color = c.ink2)
                         Text("Owner: ${nameOf(app, p.ownerDid, "someone who isn’t in your contacts")}", style = TinType.bodyM, color = c.ink2)
-                        p.expires?.let { Text("Valid until ${whenFull(it.toLong() * 1000)}", style = TinType.bodyM, color = c.ink2) }
+                        p.expires?.let { Text("Valid until ${whenFull(it.toLong())}", style = TinType.bodyM, color = c.ink2) }
                     }
                 }
                 Hint("Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone. It can take up to a minute.")

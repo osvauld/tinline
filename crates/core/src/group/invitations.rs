@@ -34,13 +34,13 @@ use super::engine::{GroupCore, INVITE_TTL};
 use super::record::*;
 use super::store::{GroupStore, io, json};
 use crate::Error;
-use crate::node::{Inner, Me, Node, addr_for, now, now_ms};
+use crate::node::{Inner, Me, Node, addr_for, now_ms};
 use crate::wire::{Ctrl, RETRY_SECS};
 
 /// Largest letter (a token with many hosts fits easily).
 const MAX_LETTER: usize = 64 * 1024;
 /// Rows are forgotten this long after their invite expired (PROVISIONAL (coordinator)).
-const KEEP_AFTER_EXPIRY: u64 = 7 * 24 * 3600;
+const KEEP_AFTER_EXPIRY: u64 = 7 * 24 * 3600 * 1000;
 /// Most rows sent to an own device at once.
 pub const MAX_OWN_INVITATIONS: usize = 512;
 /// The self/3 dirty mark for invitations.
@@ -73,7 +73,7 @@ pub struct GroupInvitation {
     pub state: GroupInvitationState,
     /// Unix ms.
     pub at: u64,
-    /// Unix seconds.
+    /// Unix ms.
     pub expires: u64,
     /// Outgoing: one of the invitee's devices took it (or someone answered).
     pub delivered: bool,
@@ -172,7 +172,7 @@ impl Inner {
                 r.state = GroupInvitationState::Joined;
                 r.owe = false;
                 let _ = core.store.put_inv(&r);
-            } else if r.expires < now() {
+            } else if r.expires < now_ms() {
                 r.state = GroupInvitationState::Expired;
             }
         }
@@ -223,7 +223,7 @@ impl Inner {
 
     pub(super) fn inv_list(self: &Arc<Self>, filter: impl Fn(&InvRow) -> bool) -> Result<Vec<GroupInvitation>, Error> {
         let core = self.group_core()?;
-        let t = now();
+        let t = now_ms();
         let mut rows = Vec::new();
         for r in core.store.invs()? {
             if r.expires + KEEP_AFTER_EXPIRY < t {
@@ -246,7 +246,7 @@ impl Inner {
         if !r.owe {
             return None;
         }
-        if r.outgoing && r.state == GroupInvitationState::Pending && r.expires >= now() {
+        if r.outgoing && r.state == GroupInvitationState::Pending && r.expires >= now_ms() {
             return Some(Letter::Invite { id, token: r.token.clone(), inviter_name: r.inviter_name.clone() });
         }
         if !r.outgoing && r.state == GroupInvitationState::Declined {
@@ -391,7 +391,7 @@ impl Inner {
         let verified = {
             let s = self.shared.lock();
             let contacts = &s.state.contacts;
-            proto::accept_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| contacts.iter().any(|c| c.did == did))
+            proto::accept_hello(&me.id, &msg, remote, now_ms(), |did| contacts.iter().any(|c| c.did == did))
         };
         let sender = match verified {
             Ok(c) => c,
@@ -436,11 +436,11 @@ impl Inner {
                 else {
                     return;
                 };
-                let Some(inv) = t.invite.as_ref().and_then(|i| i.open().ok()) else {
+                let Some(inv) = t.invite.as_ref().and_then(|i| redeem_invite(i, &t.group, &core.did, now_ms(), &proto::Unrecorded)) else {
                     return;
                 };
                 // The sender signed it, for this group, and it has not run out.
-                if inv.issuer != from || inv.group != t.group || inv.expires < now() || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
+                if inv.iss != from || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
                     self.log(format!("a group invitation from {from} does not check out"));
                     return;
                 }
@@ -457,7 +457,7 @@ impl Inner {
                     outgoing: false,
                     state: GroupInvitationState::Pending,
                     at: now_ms(),
-                    expires: inv.expires,
+                    expires: inv.exp_ms,
                     token,
                     delivered: true,
                     owe: false,
@@ -484,7 +484,7 @@ impl Inner {
     /// Our invitation rows for our other devices (without the outbox flag).
     pub(crate) fn group_own_invitations(self: &Arc<Self>) -> Vec<Vec<u8>> {
         let Ok(core) = self.group_core() else { return vec![] };
-        let t = now();
+        let t = now_ms();
         let mut rows: Vec<InvRow> = core.store.invs().unwrap_or_default().into_iter().filter(|r| r.expires + KEEP_AFTER_EXPIRY >= t).collect();
         rows.sort_by(|a, b| b.at.cmp(&a.at));
         rows.truncate(MAX_OWN_INVITATIONS);
@@ -523,7 +523,7 @@ impl Inner {
                                 .map(|i| (i, t.group))
                         })
                         .is_some_and(|(i, g)| {
-                            i.issuer == r.inviter && i.group == g && g == r.group
+                            i.iss == r.inviter && i.claim.group == g && g == r.group
                         });
                     if ok {
                         self.inv_save(&core, &r);

@@ -17,7 +17,9 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::Error;
 
+mod issuance;
 mod models;
+pub use self::issuance::*;
 pub use self::models::*;
 
 

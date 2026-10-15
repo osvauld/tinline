@@ -41,7 +41,7 @@ use super::record::*;
 use super::store::{GroupStore, io, json};
 use super::wire::*;
 use crate::Error;
-use crate::node::{Inner, Node, addr_for, now};
+use crate::node::{Inner, Node, addr_for, now, now_ms};
 
 pub const LINK_PREFIX: &str = "tinline://g/";
 pub const CODE_LEN: usize = 12;
@@ -161,7 +161,7 @@ pub(crate) struct CodeRow {
     pub gid: String,
     /// `codec` bytes of a `SignedInvite`; `None` for a device code.
     pub invite: Option<Vec<u8>>,
-    /// Unix seconds.
+    /// Unix ms.
     pub expires: u64,
     /// Who registered it.
     pub by: String,
@@ -173,6 +173,7 @@ pub(crate) struct IssuedRow {
     pub gid: String,
     pub host_did: String,
     pub host_dev: String,
+    /// Unix ms.
     pub expires: u64,
 }
 
@@ -216,7 +217,7 @@ impl GroupStore {
     pub(crate) fn code(&self, code: &[u8; CODE_LEN]) -> Result<Option<CodeRow>, Error> {
         let k = format!("code/{}", hex::encode(code));
         let Some(r) = self.db.get(&k).map_err(io)?.and_then(|v| serde_json::from_slice::<CodeRow>(&v).ok()) else { return Ok(None) };
-        if r.expires < now() {
+        if r.expires < now_ms() {
             self.db.apply(&[Op::Delete(k)]).map_err(io)?;
             return Ok(None);
         }
@@ -229,7 +230,7 @@ impl GroupStore {
 
     /// Forgets every expired code (and issued row); returns how many codes `gid` still holds.
     pub(crate) fn prune_codes(&self, gid: Option<&str>) -> Result<usize, Error> {
-        let t = now();
+        let t = now_ms();
         let mut dead = Vec::new();
         let mut held = 0;
         for (k, v) in self.db.scan("code/").map_err(io)? {
@@ -264,7 +265,7 @@ impl GroupStore {
 
 /// Checks a fetched token against the code it was fetched with: the dialled endpoint is one of
 /// the group's signed host addresses, and the invite (if any) is signed, for this group, unexpired.
-pub(crate) fn check_fetched(t: &InviteToken, sc: &ShortCode) -> Result<(), Error> {
+pub(crate) fn check_fetched(t: &InviteToken, sc: &ShortCode, me: &str) -> Result<(), Error> {
     let names_host = t.hosts.iter().any(|h| {
         h.open()
             .ok()
@@ -274,10 +275,7 @@ pub(crate) fn check_fetched(t: &InviteToken, sc: &ShortCode) -> Result<(), Error
         return Err(Error::Protocol("the host's answer does not match the invite link".into()));
     }
     if let Some(inv) = &t.invite
-        && inv
-            .open()
-            .ok()
-            .is_none_or(|i| i.group != t.group || i.expires < now())
+        && redeem_invite(inv, &t.group, me, now_ms(), &proto::Unrecorded).is_none()
     {
         return Err(Error::Rejected("invite expired or invalid".into()));
     }
@@ -292,7 +290,7 @@ impl Inner {
         let expires = invite
             .as_ref()
             .and_then(|i| i.open().ok())
-            .map_or(now() + INVITE_TTL, |i| i.expires);
+            .map_or(now_ms() + INVITE_TTL, |i| i.exp_ms);
         // Only a CHAT host keeps codes (`group_fetch_answer` checks `is_host`); `group_my_addr`
         // is also Some for a device that only hosts calls (GA-I1), which registers at a host.
         let chat_host = core.am_host(gid);
@@ -382,7 +380,7 @@ impl Inner {
         conn.close(0u32.into(), b"bye");
         match reply {
             Some(GroupMsg::Fetched { token }) => {
-                check_fetched(&token, sc)?;
+                check_fetched(&token, sc, &core.did)?;
                 Ok(token)
             }
             Some(GroupMsg::Refused { reason }) => Err(Error::Rejected(reason.chars().take(200).collect())),
@@ -454,20 +452,13 @@ impl Inner {
                     return ack(code, false, "not a member");
                 }
                 let expires = match &invite {
-                    Some(i) => match i.open().ok() {
-                        Some(inv)
-                            if inv.group == gid
-                                && inv.issuer == did
-                                && admin
-                                && inv.expires >= now() =>
-                        {
-                            inv.expires
-                        }
+                    Some(i) => match redeem_invite(i, gid, did, now_ms(), &core.store) {
+                        Some(inv) if inv.iss == did && admin => inv.exp_ms,
                         _ => return ack(code, false, "only admins can invite"),
                     },
-                    None => expires.min(now() + INVITE_TTL),
+                    None => expires.min(now_ms() + INVITE_TTL),
                 };
-                if expires < now() {
+                if expires <= now_ms() {
                     return ack(code, false, "invite expired");
                 }
                 match core.store.prune_codes(Some(gid)) {

@@ -55,7 +55,7 @@ fn forged_tampered_or_misaddressed_block_notices_are_refused() {
         Err(Error::BadSignature)
     );
     // Another signed object of A's (a grant for B) is not a notice: own signing domain.
-    let grant = issue_grant(&a.id, b.id.did(), T0, GTTL);
+    let grant = issue_grant(&a.id, b.id.did(), M0, GTTL);
     assert!(verify_block_notice(&retype(&grant), b.id.did()).is_err());
     // A notice to oneself is meaningless.
     // The shape check refuses it at sign time and, in a raw envelope, at open time.
@@ -84,21 +84,17 @@ fn ticket_contacts_exchange_message_and_call_tokens() {
             &view.grant_from_them,
             iss.id.did(),
             holder.id.did(),
-            T0 + 5,
-            &none(),
-        )
+            M0 + 5)
         .unwrap();
-        assert_eq!((m.cap.as_str(), m.v), (CAP_MESSAGE, 2));
+        assert_eq!(m.claim, Cap::Message);
         let c = verify_grant(
             view.call_grant_from_them.as_ref().unwrap(),
             iss.id.did(),
             holder.id.did(),
-            T0 + 5,
-            &none(),
-        )
+            M0 + 5)
         .unwrap();
-        assert_eq!(c.cap, CAP_CALL);
-        assert_ne!(m.id, c.id, "two separate tokens");
+        assert_eq!(c.claim, Cap::Call);
+        assert_ne!(m.nonce, c.nonce, "two separate tokens");
     }
 }
 
@@ -111,18 +107,18 @@ fn message_only_policy_gives_no_call_token_either_way() {
         b.dev,
         &t,
         "bob",
-        T0 + 1,
+        M0 + 1,
         GTTL,
         TokenPolicy::MESSAGE_ONLY,
     )
     .unwrap();
     let (welcome, a_view) =
-        accept_contact_hello_with(&a.id, a.dev, &hello, b.dev, T0 + 2, &none(), GTTL, |did| {
+        accept_contact_hello_with(&a.id, a.dev, &hello, b.dev, M0 + 2, &Unrecorded, GTTL, |did| {
             assert_eq!(did, b.id.did());
             TokenPolicy::MESSAGE_ONLY
         })
         .unwrap();
-    let b_view = accept_contact_welcome(&b.id, &pending, &welcome, a.dev, T0 + 3).unwrap();
+    let b_view = accept_contact_welcome(&b.id, &pending, &welcome, a.dev, M0 + 3).unwrap();
     assert!(a_view.call_grant_from_them.is_none() && b_view.call_grant_from_them.is_none());
     // Bob's message token does not ring Alice, but `accept_hello` still says who he is (so the
     // node can answer "calls not allowed" instead of a generic refusal).
@@ -134,10 +130,10 @@ fn message_only_policy_gives_no_call_token_either_way() {
     );
     let known = |d: &str| d == b.id.did();
     assert_eq!(
-        accept_call_hello(&a.id, &hello, b.dev, T0 + 10, &none(), known).err(),
+        accept_call_hello(&a.id, &hello, b.dev, M0 + 10, known).err(),
         Some(Error::BadCapability)
     );
-    let who = accept_hello(&a.id, &hello, b.dev, T0 + 10, &none(), known).unwrap();
+    let who = accept_hello(&a.id, &hello, b.dev, M0 + 10, known).unwrap();
     assert_eq!(who.did, b.id.did());
     assert!(who.grant.allows(Cap::Message) && !who.grant.allows(Cap::Call));
 }
@@ -152,11 +148,11 @@ fn policy_issues_above_the_cut_off() {
         b.dev,
         &t,
         "bob",
-        T0 + 1,
+        M0 + 1,
         GTTL,
         TokenPolicy {
             call: true,
-            not_before: cut,
+            not_before_ms: cut,
         },
     )
     .unwrap();
@@ -169,9 +165,9 @@ fn policy_issues_above_the_cut_off() {
         panic!()
     };
     for g in [grant_for_you, call_grant_for_you.unwrap()] {
-        let g = verify_grant(&g, b.id.did(), a.id.did(), T0 + 1, &none()).unwrap();
-        assert!(g.iat > cut);
-        assert_eq!(g.exp - g.iat, GTTL);
+        let g = verify_grant(&g, b.id.did(), a.id.did(), M0 + 1).unwrap();
+        assert!(g.iat_ms > cut);
+        assert_eq!(g.exp_ms - g.iat_ms, GTTL);
     }
 }
 
@@ -179,7 +175,7 @@ fn policy_issues_above_the_cut_off() {
 fn a_call_token_in_the_message_slot_is_refused() {
     let (a, b) = (peer(), peer());
     let t = ticket(&a);
-    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0 + 1, GTTL).unwrap();
+    let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", M0 + 1, GTTL).unwrap();
     let Msg::ContactHello {
         attestation,
         name,
@@ -196,11 +192,11 @@ fn a_call_token_in_the_message_slot_is_refused() {
         name,
         invite,
         binding,
-        grant_for_you: issue_grant(&b.id, a.id.did(), T0, GTTL),
+        grant_for_you: issue_grant(&b.id, a.id.did(), M0, GTTL),
         call_grant_for_you: None,
     };
     assert_eq!(
-        accept_contact_hello(&a.id, a.dev, &swapped, b.dev, T0 + 2, &none(), GTTL).err(),
+        accept_contact_hello(&a.id, a.dev, &swapped, b.dev, M0 + 2, &Unrecorded, GTTL).err(),
         Some(Error::BadCapability)
     );
 }
@@ -208,11 +204,11 @@ fn a_call_token_in_the_message_slot_is_refused() {
 #[test]
 fn tokens_message_round_trips() {
     let a = peer();
-    let g = issue_token(&a.id, "did:key:x", Cap::Message, T0, GTTL);
+    let g = issue_token(&a.id, "did:key:x", Cap::Message, M0, GTTL);
     let m = Msg::Tokens {
         grants: vec![g.clone()],
     };
     let (back, _) = decode_frame(&encode_frame(&m)).unwrap().unwrap();
     assert_eq!(back, m);
-    assert_eq!(g.peek().unwrap().cap, CAP_MESSAGE);
+    assert_eq!(g.peek().unwrap().claim, Cap::Message);
 }

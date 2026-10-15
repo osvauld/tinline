@@ -142,23 +142,3 @@ fn old_contact_records_load_with_the_relay_on_the_first_device() {
             .is_empty()
     );
 }
-
-// KIND: invariant (P6, U13 migration)
-// A record from before separate tokens holds one legacy `call` grant: it loads with that
-// grant in both slots (message and call) and calls allowed; a record with a version-2
-// message token gets no call slot from it.
-#[test]
-fn a_legacy_call_grant_migrates_to_message_and_call() {
-    let (them, _) = identity::generate();
-    let legacy = proto::issue_legacy_grant_for_test(&them, "did:key:me", 1, 100);
-    let rec = |g: &proto::SignedGrant| serde_json::json!({"did":"d","name":"n","devices":[],"grant_from_them":g,"added_at":1});
-    let c: StoredContact = serde_json::from_value(rec(&legacy)).unwrap();
-    assert_eq!(c.call_grant_from_them.as_ref(), Some(&legacy));
-    assert!(c.calls_allowed);
-    let msg = proto::issue_token(&them, "did:key:me", proto::Cap::Message, 1, 100);
-    let c: StoredContact = serde_json::from_value(rec(&msg)).unwrap();
-    assert!(c.call_grant_from_them.is_none());
-    // The new shape round-trips.
-    let again: StoredContact = serde_json::from_slice(&serde_json::to_vec(&c).unwrap()).unwrap();
-    assert!(again.call_grant_from_them.is_none() && again.calls_allowed);
-}

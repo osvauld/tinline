@@ -113,6 +113,7 @@ fn default_picture_actions_automatically_request_old_copy_deletion() {
     assert_eq!(
         proto::profile::verify_picture_deletion(&blob, &p.did)
             .unwrap()
+            .claim
             .picture_hash,
         first
     );
@@ -146,6 +147,7 @@ fn default_picture_actions_automatically_request_old_copy_deletion() {
             let blob: proto::profile::SignedPictureDeletion = serde_json::from_str(raw).unwrap();
             proto::profile::verify_picture_deletion(&blob, &p.did)
                 .unwrap()
+                .claim
                 .picture_hash
         })
         .collect();
@@ -400,6 +402,7 @@ fn linked_devices_merge_profile_fields_and_sync_availability_and_picture() {
     assert_eq!(
         proto::profile::verify_picture_deletion(&blob, &a.did)
             .unwrap()
+            .claim
             .picture_hash,
         old
     );
@@ -478,8 +481,8 @@ fn deletion_is_automatic_owner_signed_and_reaches_offline_contacts() {
     let blob: proto::profile::SignedPictureDeletion =
         serde_json::from_str(&b.node.picture_deletion_permits(a.did.clone()).unwrap()[0]).unwrap();
     let permit = proto::profile::verify_picture_deletion(&blob, &a.did).unwrap();
-    assert_eq!(permit.picture_hash, old);
-    assert!(permit.consent);
+    assert_eq!(permit.claim.picture_hash, old);
+    assert_eq!(permit.sub, proto::Subject::Anyone);
     wait("old encrypted bytes reclaimed", || {
         !b.node.profile_blob_present_for_test(old.clone()).unwrap()
     });
@@ -519,6 +522,7 @@ fn deletion_is_automatic_owner_signed_and_reaches_offline_contacts() {
             let blob: proto::profile::SignedPictureDeletion = serde_json::from_str(raw).unwrap();
             proto::profile::verify_picture_deletion(&blob, &a.did)
                 .unwrap()
+                .claim
                 .picture_hash
         })
         .collect();

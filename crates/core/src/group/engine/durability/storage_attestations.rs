@@ -33,10 +33,12 @@ pub(super) fn host_fixture_for(mut f: Fixture) -> (Fixture, GroupCore) {
     .unwrap();
     let invite = Signed::sign(
         &Invite {
-            group: f.gid.clone(),
-            issuer: f.author.did().into(),
-            expires: 1000,
+            iss: f.author.did().into(),
+            sub: proto::Subject::Anyone,
+            iat_ms: 1,
+            exp_ms: 1000,
             nonce: [8; 16],
+            claim: GroupJoin { group: f.gid.clone() },
         },
         &f.author,
     )

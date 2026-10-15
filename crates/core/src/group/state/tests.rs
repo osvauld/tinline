@@ -66,10 +66,12 @@ impl Dev {
     fn invite(&self, group: &str) -> SignedInvite {
         Signed::sign(
             &Invite {
-                group: group.into(),
-                issuer: self.did(),
-                expires: u64::MAX,
+                iss: self.did(),
+                sub: proto::Subject::Anyone,
+                iat_ms: 1,
+                exp_ms: 1 + crate::group::record::MAX_INVITE_TTL_MS,
                 nonce: [3; 16],
+                claim: GroupJoin { group: group.into() },
             },
             &self.id,
         )

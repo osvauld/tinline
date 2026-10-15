@@ -40,7 +40,6 @@
 //! the grant bytes can be inspected and swapped; it never writes into a node's state. Waits are
 //! bounded. No production code is changed; the shared harness is in `support/`.
 
-use std::collections::HashSet;
 use std::time::{Duration, Instant};
 
 use identity::Identity;
@@ -52,11 +51,11 @@ use serde::{Deserialize, Serialize};
 
 mod support;
 use support::eventually_200ms as eventually;
-use support::wait::now_secs as now;
+use support::wait::now_ms as now;
 use support::*;
 
 /// `GRANT_TTL` (`crates/core/src/node.rs:33`), private there.
-const GRANT_TTL: u64 = 365 * 24 * 3600;
+const GRANT_TTL: u64 = 365 * 24 * 3600 * 1000;
 /// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 7 since postcard.
 const CHAT_ALPN: &[u8] = b"tinline/chat/7";
 const WAIT: Duration = Duration::from_secs(30);
@@ -190,7 +189,7 @@ impl Raw {
     }
 
     fn attestation(&self) -> proto::SignedAttestation {
-        proto::attest(&self.id, self.device, now())
+        proto::attest(&self.id, self.device, now() / 1000)
     }
 
     /// Redeems `ticket` like `Node::add_contact` does (`node.rs:1952`), through `proto`.
@@ -343,7 +342,7 @@ impl Drop for Raw {
 }
 
 fn verify_from(node: &Peer, holder: &str, g: &proto::SignedGrant) -> proto::Grant {
-    proto::verify_grant(g, &node.did, holder, now(), &HashSet::new()).expect("grant verifies")
+    g.redeem(&proto::Expect { iss: Some(&node.did), holder, now_ms: now() }, &proto::Unrecorded).expect("grant verifies")
 }
 
 fn is_reject(m: &Option<Msg>) -> bool {
@@ -363,11 +362,11 @@ fn ticket_contact_holds_message_and_call_tokens_with_a_one_year_ttl() {
     let added = raw.add(&a.node.my_ticket().unwrap());
     let m = verify_from(&a, &raw.did(), &added.from_node);
     let c = verify_from(&a, &raw.did(), added.call_from_node.as_ref().expect("a call token"));
-    assert_eq!((m.cap.as_str(), c.cap.as_str()), ("message", "call"));
-    assert_ne!(m.id, c.id);
+    assert_eq!((m.claim, c.claim), (proto::Cap::Message, proto::Cap::Call));
+    assert_ne!(m.nonce, c.nonce);
     for g in [&m, &c] {
-        assert_eq!(g.exp - g.iat, GRANT_TTL);
-        assert_eq!((g.iss.as_str(), g.holder.as_str()), (a.did.as_str(), raw.did().as_str()));
+        assert_eq!(g.exp_ms - g.iat_ms, GRANT_TTL);
+        assert_eq!((g.iss.as_str(), g.holder()), (a.did.as_str(), Some(raw.did().as_str())));
     }
     assert!(a.node.contacts().iter().any(|c| c.did == raw.did()));
     assert!(a.node.calls_allowed(raw.did()));
@@ -462,10 +461,10 @@ fn answering_renews_the_callers_grant_declining_does_not() {
         panic!("expected Accept with a renewed grant, got {accept:?}")
     };
     let new = verify_from(&a, &raw.did(), &g);
-    assert_eq!(new.cap, "call");
-    assert_ne!(new.id, old.id, "a renewal is a new grant id");
-    assert!(new.iat >= t_answer && new.iat >= old.iat);
-    assert_eq!(new.exp - new.iat, GRANT_TTL);
+    assert_eq!(new.claim, proto::Cap::Call);
+    assert_ne!(new.nonce, old.nonce, "a renewal is a new grant");
+    assert!(new.iat_ms >= t_answer && new.iat_ms >= old.iat_ms);
+    assert_eq!(new.exp_ms - new.iat_ms, GRANT_TTL);
     raw.hang_up(call);
 
     let (mut call, first) = raw.call(&added.addr, &call_token, "renewcall2");
@@ -559,7 +558,7 @@ fn tokens_are_taken_back_per_did_never_by_id() {
     );
     // The cut-offs are what a block and "disallow calls" raise.
     let caps = include_str!("../src/caps.rs");
-    assert!(caps.contains("cut.call = cut.call.max(now())") && caps.contains("cut.message = cut.message.max(t)"));
+    assert!(caps.contains("cut.call = cut.call.max(now_ms())") && caps.contains("cut.message = cut.message.max(t)"));
     // The one mutable borrow is the account-doc merge from sibling installs.
     let muts: Vec<_> = uses
         .iter()
@@ -567,15 +566,8 @@ fn tokens_are_taken_back_per_did_never_by_id() {
         .collect();
     assert_eq!(muts.len(), 1, "{muts:?}");
     assert_eq!(muts[0].0, "sync/accdoc.rs");
-    // Read on both admission paths.
-    assert!(
-        uses.iter()
-            .any(|(f, l)| f.starts_with("node/") && l.contains("&s.state.revoked"))
-    );
-    assert!(
-        uses.iter()
-            .any(|(f, l)| f.starts_with("chat/engine") && l.contains("&s.state.revoked"))
-    );
+    // Not read on any admission path (`proto::accept_hello` takes no id set).
+    assert!(!uses.iter().any(|(_, l)| l.contains("&s.state.revoked")));
 }
 
 // KIND: invariant (flipped by P6; was `only_global_availability_separates_calls_from_messages`,

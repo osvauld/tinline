@@ -168,36 +168,37 @@ pub fn record_id(bytes: &[u8]) -> String {
 
 // ---- invites ---------------------------------------------------------------------------------
 
-/// "The holder may join `group`", signed by `issuer` (owner or admin at the time the join is
-/// written, checked by every device from the doc).
+/// "Whoever holds this may join `group`", issued by an owner or admin (checked by every device
+/// from the doc, as of the join). A bearer statement (`Subject::Anyone`) until it expires (D17):
+/// revoking a short code does not take back an invite already fetched.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Invite {
+pub struct GroupJoin {
     pub group: String,
-    pub issuer: String,
-    /// Unix seconds.
-    pub expires: u64,
-    pub nonce: [u8; 16],
 }
 
-impl Signable for Invite {
+impl proto::IssuedClaim for GroupJoin {
     const DOMAIN: domains::Domain = domains::GROUP_INVITE;
+    const MAX_TTL_MS: u64 = MAX_INVITE_TTL_MS;
     const MAX_BODY: usize = MAX_SMALL_BODY;
-    fn signer(&self) -> Signer<'_> {
-        Signer::Did(&self.issuer)
-    }
 }
 
+/// Longest an invite may live (`INVITE_TTL` is a week).
+pub const MAX_INVITE_TTL_MS: u64 = 30 * 24 * 3600 * 1000;
+
+pub type Invite = proto::Issued<GroupJoin>;
 pub type SignedInvite = Signed<Invite>;
 
-/// A fresh invite to `group`, issued by `account` and valid until `expires` (unix seconds).
-pub fn issue_invite(account: &identity::Identity, group: &str, expires: u64) -> SignedInvite {
-    let inv = Invite {
-        group: group.to_string(),
-        issuer: account.did().to_string(),
-        expires,
-        nonce: cryptography::rng::bytes(),
-    };
-    Signed::sign(&inv, account).expect("own invite signs")
+/// A fresh invite to `group` from `account`, valid `ttl_ms` from `now_ms`.
+pub fn issue_invite(account: &identity::Identity, group: &str, now_ms: u64, ttl_ms: u64) -> SignedInvite {
+    proto::issued::issue(account, proto::Subject::Anyone, now_ms, ttl_ms, GroupJoin { group: group.to_string() })
+        .expect("own invite signs")
+}
+
+/// An invite `holder` redeems at `now_ms` (bearer: anyone may; `store` says what is spent), for
+/// `group`. Whether its issuer is an admin is the caller's check, from the doc.
+pub fn redeem_invite(invite: &SignedInvite, group: &str, holder: &str, now_ms: u64, store: &dyn proto::IssuanceStore) -> Option<Invite> {
+    let inv = invite.redeem(&proto::Expect { iss: None, holder, now_ms }, store).ok()?;
+    (inv.claim.group == group && inv.sub == proto::Subject::Anyone).then_some(inv)
 }
 
 // ---- host addresses (outside the doc) -----------------------------------------------------------

@@ -15,7 +15,6 @@
 //!   a chat session finds it within `RENEW_WINDOW` of expiry (PROVISIONAL (coordinator)).
 //! - Tokens sent outside the contact exchange and the call answer travel as `Msg::Tokens` from the
 //!   device that queued them (`State::token_outbox`), retried until taken.
-//! - Legacy (pre-P6) `call` grants count as message + call (U13 migration).
 //!
 //! Own devices share cut-offs and the per-contact `calls_allowed` through the account doc; a
 //! sibling that has not synced yet still honours a token taken back elsewhere (sync window,
@@ -25,19 +24,19 @@ use std::collections::{BTreeSet, HashSet};
 use std::sync::Arc;
 
 use parking_lot::Mutex;
-use proto::{Cap, Msg, SignedGrant};
+use proto::{Cap, Expect, Msg, SignedGrant, Unrecorded};
 
 use crate::Error;
-use crate::node::{GRANT_TTL, Inner, Me, Node, addr_for, now};
-use crate::store::State;
+use crate::node::{GRANT_TTL, Inner, Me, Node, addr_for, now_ms};
+use crate::store::{State, TokenCutOffs};
 use crate::wire::{Ctrl, RETRY_SECS};
 
 /// What a contact that may not call us is told (`Reject` reason) and how its call ends.
 pub const CALLS_NOT_ALLOWED: &str = proto::CALLS_NOT_ALLOWED;
 
 /// PROVISIONAL (coordinator): a chat session renews the peer's message token when it expires
-/// within this many seconds.
-pub(crate) const RENEW_WINDOW: u64 = 30 * 24 * 3600;
+/// within this many ms.
+pub(crate) const RENEW_WINDOW: u64 = 30 * 24 * 3600 * 1000;
 
 /// How a contact came to us, which decides the tokens we give it (U13 defaults).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -57,11 +56,12 @@ pub(crate) enum Denied {
     CallsNotAllowed,
 }
 
-/// The admission rule, pure. `grant` is a token we issued to `did` (already verified).
-pub(crate) fn check(st: &State, did: &str, grant: &proto::Grant, cap: Cap) -> Result<(), Denied> {
-    let cut = st.cut_offs.get(did).copied().unwrap_or_default();
+/// The admission rule, pure. `grant` is a token we issued to `did`, already redeemed without
+/// our store (`proto::accept_hello`); here it is admitted again under our cut-offs at `now_ms`.
+pub(crate) fn check(st: &State, did: &str, grant: &proto::Grant, cap: Cap, now_ms: u64) -> Result<(), Denied> {
+    let e = Expect { iss: None, holder: did, now_ms };
     // A block takes back every token of that DID, whatever it carries.
-    if grant.iat <= cut.message {
+    if grant.admit(&e, &TokenCutOffs { st, cap: Cap::Message }).is_err() {
         return Err(Denied::Refused);
     }
     match cap {
@@ -69,12 +69,16 @@ pub(crate) fn check(st: &State, did: &str, grant: &proto::Grant, cap: Cap) -> Re
         Cap::Message => Err(Denied::Refused),
         Cap::Call => {
             let allowed = st.contacts.iter().any(|c| c.did == did && c.calls_allowed);
-            if allowed && grant.allows(Cap::Call) && grant.iat > cut.call { Ok(()) } else { Err(Denied::CallsNotAllowed) }
+            if allowed && grant.allows(Cap::Call) && grant.admit(&e, &TokenCutOffs { st, cap: Cap::Call }).is_ok() {
+                Ok(())
+            } else {
+                Err(Denied::CallsNotAllowed)
+            }
         }
     }
 }
 
-/// Fresh tokens for `did` go above its cut-offs (both: a block raised both).
+/// Fresh tokens for `did` go above its cut-offs (both: a block raised both), unix ms.
 pub(crate) fn not_before(st: &State, did: &str) -> u64 {
     st.cut_offs.get(did).map_or(0, |c| c.message.max(c.call))
 }
@@ -87,16 +91,15 @@ pub(crate) fn policy_for(st: &State, did: &str, origin: ContactOrigin) -> proto:
         Some(c) => c.calls_allowed,
         None => origin == ContactOrigin::Ticket,
     };
-    proto::TokenPolicy { call, not_before: not_before(st, did) }
+    proto::TokenPolicy { call, not_before_ms: not_before(st, did) }
 }
 
 /// Whether `new` (from `issuer` to `holder`, carrying `cap`) should replace `old` in that slot:
 /// valid now and expiring later than `old` (an `old` that no longer verifies loses).
-pub(crate) fn outlives(old: Option<&SignedGrant>, new: &SignedGrant, cap: Cap, issuer: &str, holder: &str, now: u64) -> bool {
-    let none = HashSet::new();
-    let Ok(new) = proto::verify_token(new, issuer, holder, cap, 0, now, &none) else { return false };
-    let old_exp = old.and_then(|o| proto::verify_token(o, issuer, holder, cap, 0, now, &none).ok()).map_or(0, |g| g.exp);
-    new.exp > old_exp
+pub(crate) fn outlives(old: Option<&SignedGrant>, new: &SignedGrant, cap: Cap, issuer: &str, holder: &str, now_ms: u64) -> bool {
+    let Ok(new) = proto::verify_token(new, issuer, holder, cap, now_ms, &Unrecorded) else { return false };
+    let old_exp = old.and_then(|o| proto::verify_token(o, issuer, holder, cap, now_ms, &Unrecorded).ok()).map_or(0, |g| g.exp_ms);
+    new.exp_ms > old_exp
 }
 
 /// Runtime state that is not persisted.
@@ -128,7 +131,7 @@ impl Node {
                 deliver
             } else {
                 let cut = st.cut_offs.entry(did.clone()).or_default();
-                cut.call = cut.call.max(now());
+                cut.call = cut.call.max(now_ms());
                 if let Some(q) = st.token_outbox.get_mut(&did) {
                     q.remove(proto::CAP_CALL);
                 }
@@ -160,7 +163,7 @@ impl Node {
             return false;
         }
         s.state.contacts.iter().find(|c| c.did == did).and_then(|c| c.call_grant_from_them.as_ref()).is_some_and(|g| {
-            proto::verify_token(g, &did, me.id.did(), Cap::Call, 0, now(), &HashSet::new()).is_ok()
+            proto::verify_token(g, &did, me.id.did(), Cap::Call, now_ms(), &Unrecorded).is_ok()
         })
     }
 }
@@ -175,12 +178,12 @@ impl Node {
         self.block_on(inner.add_contact_from(ticket, origin))?
     }
 
-    /// For tests: ids of the (message, call) tokens we hold from `did`.
+    /// For tests: ids (hex nonces) of the (message, call) tokens we hold from `did`.
     #[doc(hidden)]
     pub fn held_token_ids_for_test(&self, did: String) -> (Option<String>, Option<String>) {
         let s = self.inner.shared.lock();
         let c = s.state.contacts.iter().find(|c| c.did == did);
-        let id = |g: Option<&SignedGrant>| g.and_then(|g| g.peek().ok()).map(|g| g.id);
+        let id = |g: Option<&SignedGrant>| g.and_then(|g| g.peek().ok()).map(|g| hex::encode(g.nonce));
         (
             id(c.map(|c| &c.grant_from_them)),
             id(c.and_then(|c| c.call_grant_from_them.as_ref())),
@@ -192,18 +195,18 @@ impl Inner {
     /// A fresh token of ours for `did`, above its cut-offs.
     pub(crate) fn fresh_token(&self, me: &Me, did: &str, cap: Cap) -> SignedGrant {
         let nb = not_before(&self.shared.lock().state, did);
-        proto::issue_token(&me.id, did, cap, now().max(nb.saturating_add(1)), GRANT_TTL)
+        proto::issue_token(&me.id, did, cap, now_ms().max(nb.saturating_add(1)), GRANT_TTL)
     }
 
     /// The admission rule against the current state (see `check`).
     pub(crate) fn token_check(&self, did: &str, grant: &proto::Grant, cap: Cap) -> Result<(), Denied> {
-        check(&self.shared.lock().state, did, grant, cap)
+        check(&self.shared.lock().state, did, grant, cap, now_ms())
     }
 
     /// A chat session with `did` showed us `grant` (a message token of ours): renew it when it
     /// expires soon.
     pub(crate) fn renew_message_if_due(self: &Arc<Self>, did: &str, grant: &proto::Grant) {
-        if grant.exp.saturating_sub(now()) >= RENEW_WINDOW {
+        if grant.exp_ms.saturating_sub(now_ms()) >= RENEW_WINDOW {
             return;
         }
         let Ok(me) = self.me() else { return };
@@ -221,7 +224,7 @@ impl Inner {
     /// A block takes back every token of `did` (both cut-offs to now) and drops what we still
     /// meant to send them. Called with the state lock held.
     pub(crate) fn revoke_all(st: &mut State, did: &str) {
-        let t = now();
+        let t = now_ms();
         let cut = st.cut_offs.entry(did.to_string()).or_default();
         cut.message = cut.message.max(t);
         cut.call = cut.call.max(t);
@@ -253,7 +256,7 @@ impl Inner {
     pub(crate) async fn tokens_incoming(self: &Arc<Self>, mut ctrl: Ctrl, grants: Vec<SignedGrant>) -> Result<(), Error> {
         let me = self.me()?;
         let my_did = me.id.did().to_string();
-        let t = now();
+        let t = now_ms();
         let mut changed = false;
         {
             let mut s = self.shared.lock();
@@ -261,15 +264,13 @@ impl Inner {
                 return Err(Error::Locked);
             }
             for g in grants.iter().take(8) {
-                let Ok(claim) = g.peek() else { continue };
-                let Ok(v) = proto::verify_grant(g, &claim.iss, &my_did, t, &HashSet::new()) else {
+                let Ok(v) = g.redeem(&Expect { iss: None, holder: &my_did, now_ms: t }, &Unrecorded) else {
                     continue;
                 };
                 let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == v.iss) else {
                     continue;
                 };
                 if v.allows(Cap::Message)
-                    && !v.is_legacy()
                     && outlives(
                         Some(&c.grant_from_them),
                         g,
@@ -282,7 +283,7 @@ impl Inner {
                     c.grant_from_them = g.clone();
                     changed = true;
                 }
-                if v.allows(Cap::Call) && !v.is_legacy() && outlives(c.call_grant_from_them.as_ref(), g, Cap::Call, &v.iss, &my_did, t) {
+                if v.allows(Cap::Call) && outlives(c.call_grant_from_them.as_ref(), g, Cap::Call, &v.iss, &my_did, t) {
                     c.call_grant_from_them = Some(g.clone());
                     changed = true;
                 }

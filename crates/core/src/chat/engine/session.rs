@@ -269,7 +269,7 @@ impl Inner {
         let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None, video: None };
         let s = self.shared.lock();
         let contacts = &s.state.contacts;
-        let who = proto::accept_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| contacts.iter().any(|c| c.did == did))?;
+        let who = proto::accept_hello(&me.id, &msg, remote, crate::node::now_ms(), |did| contacts.iter().any(|c| c.did == did))?;
         Ok((who.did, relay_hint(relay), who.grant))
     }
 
