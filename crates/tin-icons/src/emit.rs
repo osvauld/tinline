@@ -208,8 +208,72 @@ pub fn outputs() -> Vec<(&'static str, String)> {
     vec![
         ("generated/tin_icons.rs", rust()),
         ("generated/TinIcons.kt", kotlin()),
+        ("generated/tin_ticks.rs", ticks_rust()),
+        ("generated/TinTicks.kt", ticks_kotlin()),
         ("generated/tin-icons.ts", ts()),
         ("generated/contact-sheet.svg", contact_sheet()),
         (PLAYGROUND_TS, ts()),
     ]
+}
+
+// ---- receipt ticks (crate::ticks) ------------------------------------------------------------------------------
+
+fn f3(v: f64) -> String {
+    let r = (v * 1000.0).round() / 1000.0 + 0.0;
+    let t = format!("{r}");
+    if t.contains('.') { t } else { format!("{t}.0") }
+}
+
+struct TickData {
+    tick: Vec<crate::ticks::Pt>,
+    slack: Vec<crate::ticks::Pt>,
+    pull: Vec<f64>,
+    pluck: Vec<f64>,
+    p: crate::ticks::TickP,
+}
+
+fn tick_data() -> TickData {
+    use crate::ticks::*;
+    let p = CRISP;
+    let tick = tick_pts(&p);
+    let slack = slack_pts(&tick);
+    TickData { tick, slack, pull: pull_curve(), pluck: pluck_curve(), p }
+}
+
+const TICKS_DOC: &str = "Receipt ticks as the mark's string (crates/tin-icons/src/ticks.rs; lab/ticks preset \"crisp\", string variant). \
+Every state is the same N-point polyline: draw `lerp(SLACK, TICK, k)`; the second string is the same points shifted by `DX`, \
+drawn over a halo of width `SW + 2 * GAP` in the bubble colour. PULL/PLUCK are the mark's spring sampled at FRAME_HZ (one-shot).";
+
+/// Rust for iced.
+pub fn ticks_rust() -> String {
+    let d = tick_data();
+    let pts = |v: &[crate::ticks::Pt]| v.iter().map(|p| format!("[{}, {}]", f3(p[0]), f3(p[1]))).collect::<Vec<_>>().join(", ");
+    let ks = |v: &[f64]| v.iter().map(|k| f3(*k)).collect::<Vec<_>>().join(", ");
+    format!(
+        "// {HEADER}\n//! {TICKS_DOC}\n\n\
+pub const N: usize = {n};\npub const SW: f32 = {sw};\npub const DX: f32 = {dx};\npub const GAP: f32 = {gap};\n\
+pub const VB_X: f32 = {vbx};\npub const VB_W: f32 = {vbw};\npub const VB_H: f32 = 24.0;\npub const FRAME_HZ: f32 = {hz};\n\
+pub const TICK: [[f32; 2]; N] = [{tick}];\npub const SLACK: [[f32; 2]; N] = [{slack}];\n\
+pub const PULL: &[f32] = &[{pull}];\npub const PLUCK: &[f32] = &[{pluck}];\n",
+        n = crate::ticks::N, sw = f3(d.p.sw), dx = f3(d.p.dx), gap = f3(d.p.gap), vbx = f3(crate::ticks::VB_X),
+        vbw = f3(crate::ticks::vb_w(&d.p)), hz = f3(crate::ticks::FRAME_HZ), tick = pts(&d.tick), slack = pts(&d.slack),
+        pull = ks(&d.pull), pluck = ks(&d.pluck)
+    )
+}
+
+/// Kotlin for Compose: x, y pairs flattened.
+pub fn ticks_kotlin() -> String {
+    let d = tick_data();
+    let pts = |v: &[crate::ticks::Pt]| v.iter().map(|p| format!("{}f, {}f", f3(p[0]), f3(p[1]))).collect::<Vec<_>>().join(", ");
+    let ks = |v: &[f64]| v.iter().map(|k| format!("{}f", f3(*k))).collect::<Vec<_>>().join(", ");
+    format!(
+        "// {HEADER}\npackage com.osvauld.p2p\n\n/** {TICKS_DOC} */\nobject TinTicks {{\n\
+    const val N = {n}\n    const val SW = {sw}f\n    const val DX = {dx}f\n    const val GAP = {gap}f\n\
+    const val VB_X = {vbx}f\n    const val VB_W = {vbw}f\n    const val VB_H = 24f\n    const val FRAME_HZ = {hz}f\n\
+    /** x0, y0, x1, y1, ... */\n    val TICK = floatArrayOf({tick})\n    val SLACK = floatArrayOf({slack})\n\
+    val PULL = floatArrayOf({pull})\n    val PLUCK = floatArrayOf({pluck})\n}}\n",
+        n = crate::ticks::N, sw = f3(d.p.sw), dx = f3(d.p.dx), gap = f3(d.p.gap), vbx = f3(crate::ticks::VB_X),
+        vbw = f3(crate::ticks::vb_w(&d.p)), hz = f3(crate::ticks::FRAME_HZ), tick = pts(&d.tick), slack = pts(&d.slack),
+        pull = ks(&d.pull), pluck = ks(&d.pluck)
+    )
 }

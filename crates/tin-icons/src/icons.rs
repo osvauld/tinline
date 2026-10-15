@@ -190,7 +190,6 @@ pub fn all(t: Tier) -> Vec<Icon> {
         i("x", Kept, "", vec![line("M6 6l12 12M18 6L6 18")]),
         i("plus", Kept, "", vec![line("M12 5v14M5 12h14")]),
         i("check", Kept, "", vec![line("M5 12.5l4.5 4.5L19 7")]),
-        i("read", Kept, "Read: their device signed that it was read. A second check beside the first.", vec![line("M1.5 12.5l4.5 4.5L15.5 7M9 15.5l2 2L22.5 7")]),
         i("search", Kept, "", vec![line(circle(11.0, 11.0, 7.0)), line("M20 20l-4-4")]),
         i("clip", Kept, "", vec![line("M21 11l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8")]),
         i("info", Kept, "", vec![line(circle(12.0, 12.0, 9.0)), line("M12 11v6M12 7.5v.01")]),
