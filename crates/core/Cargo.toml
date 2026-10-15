@@ -28,7 +28,7 @@ bench = []
 [dependencies]
 proto.workspace = true
 audio.workspace = true
-video = { path = "../video", default-features = false, features = ["net"] }
+video = { path = "../video", default-features = false, features = ["net", "sim"] }
 identity.workspace = true
 cryptography.workspace = true
 zeroize.workspace = true

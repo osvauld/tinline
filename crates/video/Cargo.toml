@@ -11,6 +11,10 @@ rav1e = ["dep:rav1e"]
 # iroh transport (crate::net); same dependency versions as crates/core.
 net = ["dep:iroh", "dep:tokio", "dep:bytes"]
 
+# Simulated link, y4m reader, codec bench, synthetic `Pattern` camera and `psnr_y`: dev/test
+# tooling, kept out of release libraries (unit tests always have it).
+sim = []
+
 [dependencies]
 thiserror.workspace = true
 libc = "0.2"
