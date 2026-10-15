@@ -22,6 +22,8 @@ pub(super) enum Vm {
     /// The "video in calls" setting.
     Enabled(bool),
     PreferHd(bool),
+    /// The in-call HD chip: this call only, not saved.
+    ToggleHd,
     ScanCameras,
     Cameras(Vec<camera::Info>),
     SelectCamera(String),
@@ -43,6 +45,11 @@ pub(super) struct VideoUi {
     pub send_size: Option<(u32, u32)>,
     pub devices: Vec<camera::Info>,
     initial_sent: u64,
+    /// The HD chip's choice for this call (None = follow Settings).
+    pub hd_call: Option<bool>,
+    /// The chip's short line and when it was said (shown 2.6 s in the picture label).
+    pub hd_note: Option<(&'static str, Instant)>,
+    was_paused: bool,
     stats_tick: u32,
 }
 
@@ -67,10 +74,22 @@ impl VideoUi {
         self.info.as_ref().is_some_and(|i| i.remote_camera)
     }
 
+    /// Sharper video is on for this call (the chip's choice, else Settings).
+    pub fn hd_on(&self, prefer_hd_setting: bool) -> bool {
+        self.hd_call.unwrap_or(prefer_hd_setting)
+    }
+
+    /// The chip's line while it is fresh.
+    pub fn hd_line(&self) -> Option<&'static str> {
+        self.hd_note.filter(|(_, at)| at.elapsed() < HD_NOTE).map(|(l, _)| l)
+    }
+
     pub fn has_camera(&self) -> bool {
         matches!(self.source, Some(Some(_)))
     }
 }
+
+const HD_NOTE: std::time::Duration = std::time::Duration::from_millis(2600);
 
 /// Test hook P2P_AUTO_CALL: placed once per run.
 static AUTO_CALLED: AtomicBool = AtomicBool::new(false);
@@ -109,6 +128,20 @@ impl App {
                 self.settings.camera_device = (device != super::DEFAULT_LABEL).then_some(device);
                 self.save_settings();
                 // Camera selection applies next call; don't interrupt an active capture.
+            }
+            Vm::ToggleHd => {
+                let on = !self.video.hd_on(self.settings.prefer_hd);
+                self.video.hd_call = Some(on);
+                let paused = camera::hd_paused(on, self.video.send_size);
+                self.video.was_paused = paused;
+                self.video.hd_note = Some((camera::hd_line(on, paused), Instant::now()));
+                if self.video.local_on() {
+                    // Applies at once: stop the capture and start it again at the new size. The last self-view
+                    // picture stays until the new camera's first frame; the label reads "Starting video…".
+                    self.video.camera = None;
+                    self.video.send_size = None;
+                    self.sync_camera();
+                }
             }
             Vm::PreferHd(on) => {
                 self.settings.prefer_hd = on;
@@ -166,11 +199,7 @@ impl App {
         self.video.stats_tick = 0;
         self.video.camera = Some(Camera::start_with_quality(
             src,
-            if self.settings.prefer_hd {
-                camera::Quality::PreferHd
-            } else {
-                camera::Quality::Auto
-            },
+            camera::quality_for(self.settings.prefer_hd, self.video.hd_call),
             move |r| match r {
                 Ok(_o) => {
                     crate::tlog!("CAMERA {} {}x{}", _o.format, _o.width, _o.height);
@@ -188,7 +217,7 @@ impl App {
     }
 
     fn video_tick(&mut self) {
-        if self.video.local_on() {
+        if self.video.local_on() && !self.demo {
             if self.video.stats_tick == 0 {
                 self.video.send_size = self.node.video_stats().and_then(|s| {
                     (s.frames_sent > self.video.initial_sent
@@ -198,6 +227,12 @@ impl App {
                 });
             }
             self.video.stats_tick = (self.video.stats_tick + 1) % 30;
+            // The ladder stepping below HD while HD is on: say so once.
+            let paused = camera::hd_paused(self.video.hd_on(self.settings.prefer_hd), self.video.send_size);
+            if paused && !self.video.was_paused {
+                self.video.hd_note = Some((camera::hd_line(true, true), Instant::now()));
+            }
+            self.video.was_paused = paused;
         }
         let t = Instant::now();
         if let Some(r) = frames::pull(&self.node) {

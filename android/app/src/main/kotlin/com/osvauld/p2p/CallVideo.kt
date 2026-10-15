@@ -34,6 +34,19 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     /** Shown on the call screen, e.g. when the camera permission was refused. */
     private val _problem = MutableStateFlow<String?>(null)
     val problem: StateFlow<String?> = _problem
+    /** The HD chip's choice for this call (null = follow Settings). Never written to Settings. */
+    private val _hdCall = MutableStateFlow<Boolean?>(null)
+    val hdCall: StateFlow<Boolean?> = _hdCall
+    fun hdOn(): Boolean = effectivePreferHd(app.preferHdCapture, _hdCall.value)
+    /** The chip's short line; [HdNote.id] changes with every new line so the screen can time it out. */
+    data class HdNote(val id: Int, val text: String)
+    private val _hdNote = MutableStateFlow<HdNote?>(null)
+    val hdNote: StateFlow<HdNote?> = _hdNote
+    private var noteId = 0
+    fun say(text: String) { _hdNote.value = HdNote(++noteId, text) }
+    fun noteShown(id: Int) { if (_hdNote.value?.id == id) _hdNote.value = null }
+    /** Applies at once: the call screen rebinds the camera when [hdCall] changes. */
+    fun setHd(on: Boolean, paused: Boolean) { _hdCall.value = on; say(hdLine(on, paused && on)) }
     val io = VideoIo { app.node }
     /** The camera was on when the call screen went away; it comes back on with the screen. */
     @Volatile private var paused = false
@@ -73,7 +86,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
 
     /** The call ended. */
     fun reset() {
-        _info.value = null; _problem.value = null; paused = false; _front.value = true
+        _info.value = null; _problem.value = null; paused = false; _front.value = true; _hdCall.value = null; _hdNote.value = null
         rates.reset(); capturePreference = "-"; actualCapture = "-"
     }
 
@@ -115,7 +128,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
             if (!provider.hasCamera(cam)) cam = if (front) CameraSelector.DEFAULT_BACK_CAMERA else CameraSelector.DEFAULT_FRONT_CAMERA
             try {
                 actualCapture = "-"
-                val chosen = bindCapture(capturePreferences(app.preferHdCapture)) { requested ->
+                val chosen = bindCapture(capturePreferences(hdOn())) { requested ->
                     val selector = ResolutionSelector.Builder()
                         .setAspectRatioStrategy(if (requested.wide) AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY
                             else AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)

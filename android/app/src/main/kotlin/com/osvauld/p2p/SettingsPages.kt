@@ -247,7 +247,7 @@ fun PfRadioRow(title: String, sub: String?, on: Boolean, onClick: () -> Unit, mi
 
 /**
  * CallsVideo.svelte (Android form): "Sharper video" only; the phone picks its own cameras (Flip in a call). The preference is
- * [VideoQualityPreference]; it applies when the camera next starts.
+ * [VideoQualityPreference]; each video call starts this way (the HD chip in a call changes only that call).
  */
 @Composable
 internal fun VideoSettingsPage(quality: VideoQualityPreference, onQuality: (VideoQualityPreference) -> Unit, onBack: () -> Unit) {
@@ -262,7 +262,7 @@ internal fun VideoSettingsPage(quality: VideoQualityPreference, onQuality: (Vide
                         trailing = { PgSwitch(hd, set, "Sharper video") })
                 }
             }
-            PfNote("Changes apply the next time your camera starts.")
+            PfNote("Every video call starts this way. During a call, tap HD to change it for that call.")
         }
     }
 }

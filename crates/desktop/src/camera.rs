@@ -28,6 +28,31 @@ impl Quality {
     }
 }
 
+/// The capture quality for a camera start: this call's HD chip choice wins over Settings > Video "Sharper video";
+/// the setting itself is never changed by it.
+pub fn quality_for(prefer_hd_setting: bool, call_choice: Option<bool>) -> Quality {
+    if call_choice.unwrap_or(prefer_hd_setting) { Quality::PreferHd } else { Quality::Auto }
+}
+
+/// Shortest side of the picture the sender aims for with sharper video on a computer (720p).
+pub const HD_TARGET_SHORT: u32 = 720;
+
+/// Sharper video is on but the encoder is currently sending below the HD size: the sender's own ladder
+/// stepped down (weak link, busy CPU or a lower cap on the peer's side; the core does not say which).
+/// `None` (no frame sent yet since the camera started) is not paused.
+pub fn hd_paused(hd_on: bool, sent: Option<(u32, u32)>) -> bool {
+    hd_on && sent.is_some_and(|(w, h)| w.min(h) < HD_TARGET_SHORT)
+}
+
+/// The short line the HD chip puts in the picture label for 2.6 s.
+pub fn hd_line(on: bool, paused: bool) -> &'static str {
+    match (on, paused) {
+        (false, _) => "Sharper video off",
+        (true, true) => "HD paused \u{b7} weak connection",
+        (true, false) => "Sharper video on",
+    }
+}
+
 pub fn sending_label(w: u32, h: u32) -> String {
     let hd = w.max(h) >= 1280 && w.min(h) >= 720;
     format!("Sending {}{w}×{h}", if hd { "HD · " } else { "" })
@@ -42,6 +67,24 @@ mod tests {
         assert_eq!(Quality::default(), Quality::Auto);
         assert_eq!(Quality::Auto.sizes(), &[(640, 480)]);
         assert_eq!(Quality::PreferHd.sizes(), &[(1280, 720), (640, 480)]);
+    }
+
+    #[test]
+    fn call_choice_overrides_setting_only_for_the_start() {
+        assert_eq!(quality_for(false, None), Quality::Auto);
+        assert_eq!(quality_for(true, None), Quality::PreferHd);
+        assert_eq!(quality_for(false, Some(true)), Quality::PreferHd);
+        assert_eq!(quality_for(true, Some(false)), Quality::Auto);
+    }
+
+    #[test]
+    fn hd_paused_follows_actual_send_size() {
+        assert!(!hd_paused(true, None));
+        assert!(!hd_paused(true, Some((1280, 720))));
+        assert!(hd_paused(true, Some((960, 540))));
+        assert!(hd_paused(true, Some((540, 960))));
+        assert!(!hd_paused(false, Some((320, 180))));
+        assert_eq!(hd_line(true, true), "HD paused \u{b7} weak connection");
     }
 
     #[test]

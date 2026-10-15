@@ -18,6 +18,26 @@ internal enum class VideoQualityPreference(val label: String) {
 internal fun capturePreferences(preferHd: Boolean): List<CapturePreference> =
     if (preferHd) listOf(CapturePreference.HD, CapturePreference.SD) else listOf(CapturePreference.SD)
 
+/** This call's HD chip choice wins over Settings > Video "Sharper video" (which the chip never changes). */
+internal fun effectivePreferHd(setting: Boolean, callChoice: Boolean?): Boolean = callChoice ?: setting
+
+/** Shortest side of the picture the phone aims for with sharper video (540p). */
+internal const val HD_TARGET_SHORT_PHONE = 540
+
+/**
+ * Sharper video is on but the encoder is sending below the HD size: the sender's own ladder stepped down (weak link,
+ * a throttled phone or a lower cap on the peer's side; the core does not say which). No frame sent yet is not paused.
+ */
+internal fun hdPaused(hdOn: Boolean, sendWidth: Int, sendHeight: Int): Boolean =
+    hdOn && sendWidth > 0 && sendHeight > 0 && minOf(sendWidth, sendHeight) < HD_TARGET_SHORT_PHONE
+
+/** The HD chip's short line (shown for 2.6 s in the line under the header). */
+internal fun hdLine(on: Boolean, paused: Boolean): String = when {
+    !on -> "Sharper video off"
+    paused -> "HD paused \u00b7 weak connection"
+    else -> "Sharper video on"
+}
+
 /** Actual encoded/decoded dimensions, not a capture preference or a bitrate-based guess. */
 internal fun videoResolutionLabel(width: Int, height: Int): String? {
     if (width <= 0 || height <= 0) return null

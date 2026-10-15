@@ -803,20 +803,20 @@ impl App {
         self.pf_scroll(t, c.into(), 40.0)
     }
 
-    /// Settings > Video (CallsVideo.svelte): "Sharper video", then the computer's cameras. Both apply the next time the camera starts.
+    /// Settings > Video (CallsVideo.svelte): "Sharper video" (each call starts this way; the HD chip changes one call), then the computer's cameras.
     fn video_page(&self, t: Tok) -> El<'_> {
         let hd = self.settings.prefer_hd;
         let sub = if hd { "Up to 720p when the connection allows. Uses more data and battery." } else { "Adjusts by itself for smooth calls." };
         let quality: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("video"), "Sharper video".into(), Some((sub.into(), t.ink2, false)),
             Some(pg_switch(t, hd, Msg::Video(super::super::Vm::PreferHd(!hd)))), None, false, r))];
-        let note = "Changes apply the next time your camera starts.";
+        let note = "A new camera is used the next time your camera starts.";
         // The saved choice may be unplugged right now; it stays listed (selected) until the person picks another.
         let mut cams: Vec<crate::camera::Info> = self.video.devices.clone();
         if let Some(saved) = self.settings.camera_device.as_ref().filter(|s| !cams.iter().any(|c| &c.path == *s)) {
             cams.push(crate::camera::Info { path: saved.clone(), label: saved.clone(), usb: false });
         }
         let chosen = self.settings.camera_device.clone().or_else(|| cams.first().map(|c| c.path.clone()));
-        let mut c = column![pf_sec(16.0, column![pf_h2(t, "Video quality"), pf_card(t, quality)].into())];
+        let mut c = column![pf_sec(16.0, column![pf_h2(t, "Video quality"), pf_card(t, quality), pf_note(t, "Every video call starts this way. During a call, tap HD to change it for that call.")].into())];
         let rows: Vec<RowFn> = cams.into_iter().map(|cam| -> RowFn<'_> {
             let on = chosen.as_deref() == Some(cam.path.as_str());
             Box::new(move |r| pf_radio(t, cam.label, cam.usb.then(|| "USB".to_string()), on, Msg::Video(super::super::Vm::SelectCamera(cam.path)), 56.0, r))
