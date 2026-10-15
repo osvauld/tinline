@@ -7,7 +7,7 @@
 //!
 //! Every test carries `// KIND: acceptance` and the decision it enforces.
 
-use p2pcore::{ReceiptLevel, ReceiptProofKind};
+use p2pcore::{ReceiptLevel, ReceiptProofKind, ReceiptTick};
 
 mod support;
 use support::eventually_200ms as eventually;
@@ -20,6 +20,22 @@ fn level(p: &Peer, did: &str, id: &str) -> Option<ReceiptLevel> {
         .chat_message_receipts(did.to_string(), id.to_string())
         .ok()
         .and_then(|s| s.recipients.first().map(|r| r.level))
+}
+
+fn tick(p: &Peer, did: &str, id: &str) -> ReceiptTick {
+    p.node
+        .chat_message_receipts(did.to_string(), id.to_string())
+        .unwrap()
+        .tick
+}
+
+fn list_tick(p: &Peer, did: &str) -> Option<ReceiptTick> {
+    p.node
+        .chat_list_receipts()
+        .unwrap()
+        .into_iter()
+        .find(|r| r.peer_did == did)
+        .map(|r| r.status.tick)
 }
 
 fn version(p: &Peer, did: &str, id: &str) -> String {
@@ -39,7 +55,17 @@ fn signed_delivered_then_read_reach_the_sender_for_the_exact_version() {
         .send_text(b.did.clone(), "hello".into(), None)
         .unwrap()
         .id;
+    // Before any signed statement the mark is never Delivered/Read, whatever the transport ack says.
+    assert!(matches!(
+        tick(&a, &b.did, &id),
+        ReceiptTick::OnlyHere | ReceiptTick::Waiting | ReceiptTick::Delivered
+    ));
     eventually(90, "b holds a's message", || holds(&b, &a.did, &id));
+    assert_eq!(
+        tick(&b, &a.did, &id),
+        ReceiptTick::None,
+        "incoming messages carry no mark"
+    );
 
     // Recipient: its own delivered statement is committed and projected.
     eventually(30, "b signed delivered", || {
@@ -71,6 +97,8 @@ fn signed_delivered_then_read_reach_the_sender_for_the_exact_version() {
         "both sides name the same signed version"
     );
     assert_eq!(theirs.recipients[0].did, b.did);
+    assert_eq!(theirs.tick, ReceiptTick::Delivered);
+    assert_eq!(list_tick(&a, &b.did), Some(ReceiptTick::Delivered));
     assert_eq!(
         theirs.recipients[0].proofs[0].receipt_id, mine.recipients[0].proofs[0].receipt_id,
         "relayed byte-identical"
@@ -89,6 +117,8 @@ fn signed_delivered_then_read_reach_the_sender_for_the_exact_version() {
     eventually(60, "a sees b's signed read", || {
         level(&a, &b.did, &id) == Some(ReceiptLevel::Read)
     });
+    assert_eq!(tick(&a, &b.did, &id), ReceiptTick::Read);
+    assert_eq!(list_tick(&a, &b.did), Some(ReceiptTick::Read));
     let kinds: Vec<_> = a
         .node
         .chat_message_receipts(b.did.clone(), id.clone())
@@ -117,6 +147,7 @@ fn signed_delivered_then_read_reach_the_sender_for_the_exact_version() {
         Some(ReceiptLevel::Delivered),
         "the earlier read does not cover the edit"
     );
+    assert_eq!(tick(&a, &b.did, &id), ReceiptTick::Delivered);
 }
 
 // KIND: acceptance (receipts are never removed; durable across restart; no duplicate statements)
