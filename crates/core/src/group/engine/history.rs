@@ -14,7 +14,29 @@ use crate::group::shard::CLOSE_AFTER_DAYS;
 const BACKFILL_PAUSE_MS: u64 = 200;
 const INVENTORY_WAIT: Duration = Duration::from_secs(30);
 
+#[cfg(test)]
+pub(super) fn export_day_for_durability_test(core: &GroupCore, gid: &str, day: &str, theirs: &VersionVector) -> Option<Vec<u8>> {
+    core.day_update_since(gid, day, theirs)
+}
+
 impl GroupCore {
+    /// Called only after the admitted host's meta Ack has been stored. The same
+    /// lock as import prevents an old Ack from clearing a newer borrowed frontier.
+    fn clear_own_meta_owed(&self, gid: &str, theirs: &VersionVector) -> Result<bool, Error> {
+        let mut groups = self.groups.lock();
+        let Some(live) = groups.get_mut(gid) else { return Ok(false) };
+        if live.meta.own_owed_meta.is_empty() { return Ok(false); }
+        let owed = decode_vv(&live.meta.own_owed_meta)?;
+        if !matches!(theirs.partial_cmp(&owed), Some(std::cmp::Ordering::Equal | std::cmp::Ordering::Greater)) {
+            return Ok(false);
+        }
+        let mut meta = live.meta.clone();
+        meta.own_owed_meta.clear();
+        self.store.put_meta(gid, &meta)?;
+        live.meta = meta;
+        Ok(true)
+    }
+
     /// Whether this session's peer may be given the days: a member we host (not removed, an
     /// accepted member, not a joiner), or a host we dialled.
     fn days_allowed(&self, sess: &Sess) -> bool {
@@ -33,21 +55,36 @@ impl GroupCore {
 }
 
 impl Inner {
+    #[cfg(test)]
+    pub(crate) fn group_ack_for_durability_test(&self, core: &GroupCore, gid: &str, did: &str, dev: &[u8; 32], doc: &DocId, vv: &[u8]) {
+        self.group_acked(core, gid, did, dev, doc, vv);
+    }
+
     /// Records that `host` acknowledged holding `vv` of `doc`: delivery state of our posts, and
     /// whether we still owe the day to a host.
     pub(super) fn group_acked(&self, core: &GroupCore, gid: &str, did: &str, dev: &[u8; 32], doc: &DocId, vv: &[u8]) {
         let DocId::Day(day) = doc else {
-            let _ = core.store.put_ack(gid, did, dev, vv);
+            let Ok(theirs) = decode_vv(vv) else { return };
+            if core.store.put_ack(gid, did, dev, vv).is_ok() {
+                let _ = core.clear_own_meta_owed(gid, &theirs);
+            }
             return;
         };
-        let _ = core.store.put_ack_day(gid, day, did, dev, vv);
-        let theirs = decode_vv(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0);
+        if core.store.put_ack_day(gid, day, did, dev, vv).is_err() { return; }
+        let Ok(theirs) = decode_vv(vv) else { return };
         let mut groups = core.groups.lock();
         let Some(live) = groups.get_mut(gid) else { return };
-        let mine = core.doc_vv_of(live, gid, doc).get(&core.wid).copied().unwrap_or(0);
-        if live.meta.owed_days.contains(day) && theirs >= mine {
-            live.meta.owed_days.remove(day);
-            let _ = core.store.put_meta(gid, &live.meta);
+        // The obligation can include a phone's original writer, not core.wid.
+        // Read the persisted frontier under the same group lock as append so a
+        // concurrent new write cannot be cleared by an older acknowledgement.
+        let Ok(Some(shard)) = core.store.shard_meta(gid, day) else { return };
+        let Ok(held) = decode_vv(&shard.vv) else { return };
+        let covered = matches!(theirs.partial_cmp(&held), Some(std::cmp::Ordering::Equal | std::cmp::Ordering::Greater));
+        if live.meta.owed_days.contains(day) && covered {
+            let mut meta = live.meta.clone();
+            meta.owed_days.remove(day);
+            // An IO failure must leave the in-memory obligation intact too.
+            if core.store.put_meta(gid, &meta).is_ok() { live.meta = meta; }
         }
     }
 

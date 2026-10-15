@@ -18,6 +18,11 @@ use crate::node::{Inner, Me, addr_for, now, relay_of};
 use crate::store::{Backing, OwnDevice};
 use crate::Error;
 use crate::chat::own::{ACK_MARK, GROUPS_MARK, MAX_OWN_DOCS, READ_MARK, parse_doc};
+use crate::group::own::contents as group_documents;
+
+mod group_contents;
+mod group_history;
+mod group_receipts;
 
 const DOC_KEY: &str = "sync/account";
 const CALLS_KEY: &str = "sync/calls";
@@ -45,6 +50,10 @@ struct PeerChat {
     read: HashMap<String, i64>,
     acks: HashMap<String, VersionVector>,
     hello: bool,
+    /// Only negotiated on the authenticated own-device connection, not membership.
+    group_contents: bool,
+    history: group_history::History,
+    receipts: group_receipts::Receipts,
     /// The group list last sent (G2), to send only changes.
     groups: Option<Vec<Vec<u8>>>,
     /// The invitation rows last sent (G3).
@@ -494,7 +503,10 @@ impl Inner {
         let mut docs = vec![(DOC_NAME.to_string(), acc.vv().encode()), (CALLS_DOC.to_string(), calls.vv().encode())];
         if let Some(p) = &profile { docs.push((PROFILE_DOC.into(), p.vv().encode())); }
         if let Some(c) = &cache { docs.push((PROFILE_CACHE_DOC.into(), c.vv().encode())); }
-        docs.extend(self.chat_own_docs());
+        docs.extend(self.own_content_catalog());
+        docs.push((group_documents::CAPABILITY.into(), VersionVector::default().encode()));
+        docs.push((group_history::CAPABILITY.into(), VersionVector::default().encode()));
+        docs.push((group_receipts::CAPABILITY.into(), VersionVector::default().encode()));
         writer.send(&SelfMsg::Hello { docs }).await?;
         // What the peer is known to hold; nothing is sent until its Hello says.
         let mut sent: Option<VersionVector> = None;
@@ -513,6 +525,17 @@ impl Inner {
                             if docs.len() > MAX_OWN_DOCS + 4 {
                                 return Err(Error::Protocol("too many docs".into()));
                             }
+                            peer.group_contents = group_contents::supported(&docs);
+                            let enabled = group_history::supported(&docs);
+                            if peer.hello && enabled != peer.history.enabled {
+                                return Err(Error::Protocol("own history renegotiation".into()));
+                            }
+                            peer.history.enabled = enabled;
+                            let receipts = group_receipts::supported(&docs);
+                            if peer.hello && receipts != peer.receipts.enabled {
+                                return Err(Error::Protocol("own receipts renegotiation".into()));
+                            }
+                            peer.receipts.enabled = receipts;
                             for (name, vv) in docs {
                                 let Some(vv) = Self::peer_vv_of(&vv) else { continue };
                                 if name == DOC_NAME {
@@ -524,8 +547,10 @@ impl Inner {
                                     sent_profile = Some(vv);
                                 } else if name == PROFILE_CACHE_DOC {
                                     sent_cache = Some(vv);
-                                } else if parse_doc(&name).is_some() {
-                                    peer.docs.insert(name, vv);
+                                } else if parse_doc(&name).is_some()
+                                    || (peer.group_contents && group_documents::parse_doc(&name).is_some())
+                                {
+                                    group_contents::remember(&mut peer, name, vv);
                                 }
                             }
                             peer.hello = true;
@@ -568,6 +593,23 @@ impl Inner {
                                 }
                                 let sent_doc = if doc == PROFILE_DOC { &mut sent_profile } else { &mut sent_cache };
                                 if let (Some(s), Some(v)) = (sent_doc.as_mut(), Self::peer_vv_of(&vv)) { s.merge(&v); }
+                            } else if group_documents::parse_doc(&doc).is_some() {
+                                if !peer.group_contents {
+                                    return Err(Error::Protocol("group contents were not negotiated".into()));
+                                }
+                                if !update.is_empty() {
+                                    // Error ends the session so transient persistence failures
+                                    // are retried; never ack a rejected or unpersisted import.
+                                    let accepted = self.group_own_content_apply(epoch, &remote, &doc, &update)?;
+                                    let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
+                                    writer.send(&SelfMsg::Sync { doc: doc.clone(), vv: accepted, update: Vec::new(), sig }).await?;
+                                }
+                                if let Some(theirs) = Self::peer_vv_of(&vv) {
+                                    group_contents::remember(&mut peer, doc.clone(), theirs);
+                                }
+                                if peer.hello {
+                                    self.push_group_doc(me, &remote, &doc, &mut peer, writer).await?;
+                                }
                             } else if parse_doc(&doc).is_some() {
                                 // A rejected or unusable batch is dropped, the session goes on.
                                 if !update.is_empty()
@@ -576,7 +618,7 @@ impl Inner {
                                     tracing::debug!("own-device chat batch for {doc}: {e}");
                                 }
                                 if let Some(theirs) = Self::peer_vv_of(&vv) {
-                                    peer.docs.entry(doc.clone()).and_modify(|v| v.merge(&theirs)).or_insert(theirs);
+                                    group_contents::remember(&mut peer, doc.clone(), theirs);
                                 }
                                 if peer.hello {
                                     self.push_chat_doc(me, &doc, &mut peer, writer).await?;
@@ -609,7 +651,10 @@ impl Inner {
                             if groups.len() > crate::group::own::MAX_OWN_GROUPS {
                                 return Err(Error::Protocol("too many groups".into()));
                             }
-                            self.group_own_apply(&groups);
+                            self.own_group_admit(epoch, &remote)?;
+                            self.group_own_apply(&groups, peer.group_contents);
+                            if peer.history.enabled { peer.history.offer(&self, &groups); }
+                            if peer.receipts.enabled { peer.receipts.offer(&self, &groups); }
                         }
                         SelfMsg::Invitations { rows } => {
                             if rows.len() > crate::group::invitations::MAX_OWN_INVITATIONS {
@@ -621,6 +666,13 @@ impl Inner {
                             self.clone().remove_self_account(epoch).await;
                             return Ok(());
                         }
+                        message @ (SelfMsg::GroupHistoryGet { .. } | SelfMsg::GroupHistoryPage { .. }
+                            | SelfMsg::GroupWant { .. } | SelfMsg::GroupBatch { .. } | SelfMsg::GroupHistoryChanged { .. }) => {
+                            group_history::handle(&self, me, &remote, &mut peer, message, writer).await?;
+                        }
+                        message @ (SelfMsg::GroupReceiptGet { .. } | SelfMsg::GroupReceiptPage { .. }) => {
+                            group_receipts::handle(&self, me, &remote, &mut peer, message, writer).await?;
+                        }
                         SelfMsg::Auth { .. } => return Err(Error::Protocol("unexpected auth".into())),
                     }
                     self.push_changes(me, DOC_NAME, &acc, &mut sent, writer).await?;
@@ -628,9 +680,17 @@ impl Inner {
                     if let Some(p) = &profile { self.push_changes(me, PROFILE_DOC, p, &mut sent_profile, writer).await?; }
                     if let Some(c) = &cache { self.push_changes(me, PROFILE_CACHE_DOC, c, &mut sent_cache, writer).await?; }
                     if full {
-                        self.push_all_chat(me, &mut peer, writer).await?;
+                        self.push_all_chat(me, &remote, &mut peer, writer).await?;
                         self.chat_resume_all();
                     }
+                    peer.history.pump(&self, me, &remote, writer).await?;
+                    peer.receipts.pump(&self, me, &remote, writer).await?;
+                }
+                _ = tokio::time::sleep(peer.receipts.delay()), if peer.receipts.enabled => {
+                    peer.receipts.pump(&self, me, &remote, writer).await?;
+                }
+                _ = tokio::time::sleep(peer.history.delay()), if peer.history.enabled => {
+                    peer.history.pump(&self, me, &remote, writer).await?;
                 }
                 _ = changes.changed() => {
                     if self.shared.lock().epoch != epoch {
@@ -651,20 +711,44 @@ impl Inner {
                                 self.push_invitations(&mut peer, writer).await?;
                             } else if name == ACK_MARK {
                                 self.push_acks(&mut peer, writer).await?;
+                            } else if let Some((gid, _)) = group_documents::parse_doc(&name) {
+                                peer.receipts.refresh(&gid);
+                                if peer.group_contents {
+                                    self.push_group_doc(me, &remote, &name, &mut peer, writer).await?;
+                                }
                             } else {
                                 self.push_chat_doc(me, &name, &mut peer, writer).await?;
                             }
                         }
                     }
+                    peer.history.pump(&self, me, &remote, writer).await?;
+                    peer.receipts.pump(&self, me, &remote, writer).await?;
                 }
             }
         }
     }
 
-    /// Everything the peer lacks of the chat shards (newest days first), then the read cursors.
-    async fn push_all_chat(self: &Arc<Self>, me: &Arc<Me>, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
-        for (name, _) in self.chat_own_docs() {
-            self.push_chat_doc(me, &name, peer, writer).await?;
+    fn own_content_catalog(self: &Arc<Self>) -> Vec<(String, Vec<u8>)> {
+        group_contents::catalog(self.chat_own_docs(), self.group_own_content_docs(MAX_OWN_DOCS))
+    }
+
+    /// DM shards plus negotiated group meta/recent days, then read cursors.
+    async fn push_all_chat(self: &Arc<Self>, me: &Arc<Me>, remote: &[u8; 32], peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        if peer.group_contents {
+            // Bootstrap group tokens precede contents on this ordered stream.
+            self.push_groups(peer, writer).await?;
+            for (name, _) in self.own_content_catalog() {
+                if group_documents::parse_doc(&name).is_some() {
+                    self.push_group_doc(me, remote, &name, peer, writer).await?;
+                } else {
+                    self.push_chat_doc(me, &name, peer, writer).await?;
+                }
+            }
+        } else {
+            // Preserve the complete legacy DM slice, despite group names in Hello.
+            for (name, _) in self.chat_own_docs() {
+                self.push_chat_doc(me, &name, peer, writer).await?;
+            }
         }
         self.push_read(peer, writer).await?;
         self.push_acks(peer, writer).await?;
@@ -705,7 +789,37 @@ impl Inner {
             let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
             writer.send(&SelfMsg::Sync { doc: name.to_string(), vv: vv.clone(), update, sig }).await?;
             if let Some(v) = Self::peer_vv_of(&vv) {
-                peer.docs.insert(name.to_string(), v);
+                group_contents::remember(peer, name.to_string(), v);
+            }
+        }
+        Ok(())
+    }
+
+    async fn push_group_doc(self: &Arc<Self>, me: &Arc<Me>, remote: &[u8; 32], name: &str, peer: &mut PeerChat, writer: &mut FrameWriter) -> Result<(), Error> {
+        if !peer.group_contents { return Ok(()); }
+        if peer.history.enabled {
+            self.own_group_admit(me.epoch, remote)?;
+            if let Some((group, _)) = group_documents::parse_doc(name) {
+                writer.send(&SelfMsg::GroupHistoryChanged { group }).await?;
+            }
+            return Ok(());
+        }
+        let theirs = peer.docs.get(name).cloned().unwrap_or_default();
+        let out = match self.group_own_content_export(me.epoch, remote, name, &theirs) {
+            Ok(out) => out,
+            Err(Error::Protocol(reason)) => {
+                // Oversized history needs range batching. Keep records and pending
+                // state; don't stall account/other-doc sync or fake a receipt.
+                tracing::debug!("deferred own group export {name}: {reason}");
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        };
+        if let Some((update, vv)) = out {
+            let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
+            writer.send(&SelfMsg::Sync { doc: name.into(), vv: vv.clone(), update, sig }).await?;
+            if let Some(v) = Self::peer_vv_of(&vv) {
+                group_contents::remember(peer, name.into(), v);
             }
         }
         Ok(())

@@ -34,6 +34,17 @@ use crate::node::{Inner, addr_for, now, now_ms, relay_of};
 
 mod history;
 mod synth;
+#[cfg(test)]
+mod durability;
+#[cfg(test)]
+pub(crate) fn receipt_cores_for_test(account: identity::Identity, source_epoch: u64, target_epoch: u64) -> (Arc<GroupCore>, Arc<GroupCore>, String, Vec<u8>) {
+    durability::receipt_cores_for_test(account, source_epoch, target_epoch)
+}
+
+#[cfg(test)]
+pub(crate) fn own_content_core_for_test(account: identity::Identity, epoch: u64, populated: bool) -> (Arc<GroupCore>, String, String) {
+    durability::own_content_core_for_test(account, epoch, populated)
+}
 
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
 const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
@@ -127,6 +138,16 @@ impl Live {
 
     fn rederive(&mut self, gid: &str) {
         self.state = derive_meta(gid, &self.entries, &self.doc.vv());
+    }
+
+    fn restore_meta(&mut self, gid: &str, doc: GroupDoc, meta: GroupMeta, entries: usize) {
+        self.doc = doc;
+        self.meta = meta;
+        self.entries.truncate(entries);
+        self.rederive(gid);
+        // Cached posts may have been rejudged against unpersisted meta. Reload
+        // their accepted originals against the restored state on the next use.
+        self.shards = Shards::default();
     }
 }
 
@@ -351,17 +372,24 @@ impl GroupCore {
     }
 
     fn write_meta(&self, live: &mut Live, gid: &str, rec: Record) -> Result<(Entry, Changed), Error> {
+        let previous_doc = live.doc.checkpoint();
+        let previous_meta = live.meta.clone();
+        let previous_entries = live.entries.len();
         let (entry, update) = live.doc.write(&self.account, &rec).map_err(|e| Error::Protocol(e.to_string()))?;
         let before: HashSet<String> = live.state.items.iter().map(|i| i.id.clone()).collect();
         live.entries.push(entry.clone());
         live.rederive(gid);
         let doc = &live.doc;
-        self.store.append_meta(gid, &mut live.meta, &update, || doc.snapshot())?;
+        if let Err(e) = self.store.append_meta(gid, &mut live.meta, &update, || doc.snapshot()) {
+            live.restore_meta(gid, previous_doc, previous_meta, previous_entries);
+            return Err(e);
+        }
         let new_items = live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned().collect();
         Ok((entry, Changed { gid: gid.to_string(), doc: DocId::Meta, doc_vv: live.doc.vv().encode(), new_items, posts: Vec::new(), history: false }))
     }
 
     fn write_post(&self, live: &mut Live, gid: &str, rec: Record) -> Result<(Entry, Changed), Error> {
+        let previous_meta = live.meta.clone();
         let day = day_of(rec.at);
         let Live { state, shards, meta, .. } = live;
         let shard = shards.get(&self.store, gid, self.wid, &day, state)?;
@@ -380,7 +408,11 @@ impl GroupCore {
         }
         let vv = shard.doc.vv().encode();
         let doc = &shard.doc;
-        self.store.append_shard(gid, &day, &mut shard.meta, vv.clone(), &update, || doc.snapshot(), Some(meta))?;
+        if let Err(e) = self.store.append_shard(gid, &day, &mut shard.meta, vv.clone(), &update, || doc.snapshot(), Some(meta)) {
+            *meta = previous_meta;
+            shards.remove(&day);
+            return Err(e);
+        }
         let posts = vec![PostDiff { day: day.clone(), put: shown.clone(), prev, vv: vv.clone() }];
         Ok((entry, Changed { gid: gid.to_string(), doc: DocId::Day(day), doc_vv: vv, new_items: shown, posts, history: false }))
     }
@@ -389,23 +421,36 @@ impl GroupCore {
     /// with the group's current state and meta entries and the batch's new entries before
     /// anything is imported.
     pub(crate) fn apply(&self, gid: &str, doc: &DocId, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+        self.apply_ingress(gid, doc, update, false, admit)
+    }
+
+    pub(crate) fn apply_own_contents(&self, gid: &str, doc: &DocId, update: &[u8]) -> Result<Option<Changed>, Reject> {
+        self.apply_ingress(gid, doc, update, true, |_, _, _| Ok(()))
+    }
+
+    fn apply_ingress(&self, gid: &str, doc: &DocId, update: &[u8], own_forward: bool, admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
         if !doc.is_valid() {
             return Err(Reject::WrongDoc);
         }
         let mut groups = self.groups.lock();
         let Some(live) = groups.get_mut(gid) else { return Err(Reject::Policy("unknown group".into())) };
         match doc {
-            DocId::Meta => self.apply_meta(live, gid, update, admit),
-            DocId::Day(day) => self.apply_day(live, gid, day, update, admit),
+            DocId::Meta => self.apply_meta(live, gid, update, own_forward, admit),
+            DocId::Day(day) => self.apply_day(live, gid, day, update, own_forward, admit),
         }
     }
 
-    fn apply_meta(&self, live: &mut Live, gid: &str, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+    fn apply_meta(&self, live: &mut Live, gid: &str, update: &[u8], own_forward: bool, admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+        let previous_doc = live.doc.checkpoint();
+        let previous_meta = live.meta.clone();
+        let previous_entries = live.entries.len();
         let fresh = {
             let Live { doc, entries, state, .. } = &mut *live;
             doc.apply_remote(update, |fresh| admit(state, entries, fresh))?
         };
-        if fresh.is_empty() {
+        // A known record ID can still arrive in a newly accepted op range.
+        // Persist that VV before acknowledging it, even without a new item.
+        if fresh.is_empty() && live.doc.vv() == previous_doc.vv() {
             return Ok(None);
         }
         let before: HashSet<String> = live.state.items.iter().map(|i| i.id.clone()).collect();
@@ -413,9 +458,15 @@ impl GroupCore {
         live.rederive(gid);
         // Posts that were waiting for meta records may show now.
         let (posts, mut new_items) = self.rejudge_pending(live, gid);
+        if own_forward {
+            // Borrowed writers don't appear under our core.wid. Persist the
+            // validated frontier with the ops before issuing a cache receipt.
+            live.meta.own_owed_meta = live.doc.vv().encode();
+        }
         let doc = &live.doc;
         if let Err(e) = self.store.append_meta(gid, &mut live.meta, update, || doc.snapshot()) {
-            tracing::warn!("group store: {e}");
+            live.restore_meta(gid, previous_doc, previous_meta, previous_entries);
+            return Err(Reject::Persistence(e.to_string()));
         }
         new_items.extend(live.state.items.iter().filter(|i| !before.contains(&i.id)).cloned());
         Ok(Some(Changed { gid: gid.to_string(), doc: DocId::Meta, doc_vv: live.doc.vv().encode(), new_items, posts, history: false }))
@@ -447,7 +498,8 @@ impl GroupCore {
         (diffs, shown)
     }
 
-    fn apply_day(&self, live: &mut Live, gid: &str, day: &str, update: &[u8], admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+    fn apply_day(&self, live: &mut Live, gid: &str, day: &str, update: &[u8], own_forward: bool, admit: impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String>) -> Result<Option<Changed>, Reject> {
+        let previous_meta = live.meta.clone();
         let Live { entries, state, shards, meta, .. } = live;
         let shard = shards.get(&self.store, gid, self.wid, day, state).map_err(|e| Reject::Policy(e.to_string()))?;
         let prev_vv = shard.doc.vv();
@@ -465,6 +517,11 @@ impl GroupCore {
         let fresh: Vec<Entry> = fresh.into_iter().filter(|e| !shard.has(e)).collect();
         if shard.doc.vv() == prev_vv {
             return Ok(None);
+        }
+        if own_forward && fresh.iter().any(|e| e.rec.author == self.did) {
+            // An own-device phone write keeps its original writer, not ours.
+            // Persist the upstream obligation atomically with its day ops/VV.
+            meta.owed_days.insert(day.to_string());
         }
         let mut shown = Vec::new();
         for e in fresh {
@@ -484,7 +541,11 @@ impl GroupCore {
         let vv = shard.doc.vv().encode();
         let doc = &shard.doc;
         if let Err(e) = self.store.append_shard(gid, day, &mut shard.meta, vv.clone(), update, || doc.snapshot(), Some(meta)) {
-            tracing::warn!("group store: {e}");
+            *meta = previous_meta;
+            // Never acknowledge or retain a day VV that exists only in memory.
+            // The next access reloads the last accepted rows from the store.
+            shards.remove(day);
+            return Err(Reject::Persistence(e.to_string()));
         }
         let posts = vec![PostDiff { day: day.to_string(), put: shown.clone(), prev, vv: vv.clone() }];
         Ok(Some(Changed { gid: gid.to_string(), doc: DocId::Day(day.to_string()), doc_vv: vv, new_items: shown, posts, history: false }))
@@ -985,6 +1046,7 @@ impl Inner {
         core.kick.notify_waiters();
         // Our other devices learn the group list (stage 2; deduplicated per session).
         self.selfsync_dirty(crate::chat::own::GROUPS_MARK);
+        self.selfsync_dirty(&super::own::contents::doc_name(&gid, &changed.doc));
         self.group_publish_key(core, &gid);
         // G3: invitees that became members read Joined.
         self.group_invitations_changed(core, &gid);
@@ -1416,11 +1478,11 @@ impl Inner {
 
     /// Whether some op of ours is not yet acknowledged by any host.
     fn group_owes(&self, core: &GroupCore, gid: &str) -> bool {
-        let (mine, owed_days) = core.groups.lock().get(gid).map(|l| (l.doc.vv().get(&core.wid).copied().unwrap_or(0), !l.meta.owed_days.is_empty())).unwrap_or((0, false));
-        if mine == 0 && !owed_days {
+        let (mine, forwarded) = core.groups.lock().get(gid).map(|l| (l.doc.vv().get(&core.wid).copied().unwrap_or(0), !l.meta.owed_days.is_empty() || !l.meta.own_owed_meta.is_empty())).unwrap_or((0, false));
+        if mine == 0 && !forwarded {
             return false;
         }
-        owed_days || !core.store.acks(gid).unwrap_or_default().iter().any(|(_, vv)| decode_vv(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) >= mine)
+        forwarded || !core.store.acks(gid).unwrap_or_default().iter().any(|(_, vv)| decode_vv(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) >= mine)
     }
 
     async fn group_dial(self: Arc<Self>, core: Arc<GroupCore>, gid: String, host: HostAddr) -> Result<(), Error> {
@@ -1616,6 +1678,11 @@ impl Inner {
                                 c.history = doc.day().is_some_and(|d| !recent_days(now_ms() as i64, HELLO_DAYS).iter().any(|r| r == d));
                                 self.group_after(core, c, Some(sess.id));
                             }
+                        }
+                        Err(Reject::Persistence(reason)) => {
+                            // Retryable storage failure, not a membership refusal.
+                            // group_run closes this session; no Ack or fan-out.
+                            return Err(Error::Io(reason));
                         }
                         Err(e) => {
                             self.log(format!("group {}: refused an update from {}: {e}", &sess.gid[..8.min(sess.gid.len())], sess.did));

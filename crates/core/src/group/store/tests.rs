@@ -27,7 +27,11 @@ fn the_doc_is_sealed_at_rest_and_reloads() {
     assert_eq!(back.entries().unwrap().len(), 70);
     assert_eq!(s.groups().unwrap().len(), 1);
     // Another phrase cannot read it.
-    let other = GroupStore { db: Sealed::new(s.db.raw().clone(), key_from_phrase("gamma")) };
+    let other = GroupStore {
+        db: Sealed::new(s.db.raw().clone(), key_from_phrase("gamma")),
+        fail_next_append: Default::default(),
+        fail_next_meta_write: Default::default(),
+    };
     assert!(other.meta_rows("g").is_err());
 }
 

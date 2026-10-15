@@ -3,6 +3,9 @@
 
 mod access;
 pub mod api;
+// Prototype crypto/persisted-state adapter; transport integration follows separately.
+#[allow(dead_code)]
+pub(crate) mod attestation;
 pub mod calldir;
 pub mod calllog;
 pub mod calls;
