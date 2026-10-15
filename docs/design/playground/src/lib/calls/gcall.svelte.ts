@@ -19,7 +19,10 @@
      answers: "Call ended — host lost" with Rejoin. A rotation due: End{host_rotating}, redial the same host.
    - 1:1 and group calls exclude each other: a 1:1 call arriving during a group call is turned away Busy (left as a
      missed call); placing or joining one while on the other is InCall.
-   - No ringing: a started call is a quiet notice ("Sam started a call · Join"), and a soft cue. */
+   - Ringing (decided 2026-10-15): when someone else starts a call in my group and I am on no line, it RINGS like an
+     incoming call (same ring cue) for up to 30 s, with Join / Not now. The ring stops when I join, tap Not now, the call
+     ends, or 30 s pass; then the quiet "Call in progress" banner / pill stays. Muted groups and blocked starters never ring
+     (they get the quiet notice). In a call, or on a 1:1 call, a started call is only the quiet notice and a soft cue. */
 import { emitFx } from '../fx/bus';
 import { dur } from '../fx/motion';
 import { db, person, chat, pushMessage, firstName, displayName, isGroup } from '../model/store.svelte';
@@ -39,6 +42,7 @@ export const GCALL_MS = {
   redialPlanned: 1200, // End{host_leaving}: redial at once
   redialCrash: 3000,   // 3 missed 1 s heartbeats
   redialRotate: 1400,
+  ring: 30000,         // a started group call rings this long (then the quiet banner stays)
   bannerHold: 9000,    // Proposed: how long the "started a call" banner / heads-up stays before it settles into the notification
   toast: 3200,
   endedHold: 900,
@@ -101,7 +105,7 @@ class GroupCall {
   forced = $state<Record<Id, boolean>>({});
   toast = $state<{ id: number; text: string } | null>(null);
   /** A quiet "started a call" notice for a call I am not in (banner, heads-up, then the notification). */
-  announce = $state<{ gid: Id; callId: string; by: Id; bannerOn: boolean; dismissed: boolean } | null>(null);
+  announce = $state<{ gid: Id; callId: string; by: Id; bannerOn: boolean; dismissed: boolean; ringing: boolean } | null>(null);
   /** A note for the host's own user (me hosting): battery low, limited, on mobile data. */
   hostNote = $state('');
   /** The roster as it was when my part ended, so the ended screen keeps its people (dimmed) instead of emptying. */
@@ -117,6 +121,7 @@ class GroupCall {
   #cand: Record<Id, number> = {};
   #uid = 0;
   #bannerTimer = 0;
+  #ringTimer = 0;
   #toastTimer = 0;
 
   constructor() {
@@ -282,7 +287,7 @@ class GroupCall {
     this.#begin(gid, lc.callId);
     this.startedByMe = false;
     this.phase = 'connecting'; this.view = 'full';
-    if (this.announce?.gid === gid) this.announce = null;
+    this.#dropAnnounce(gid);
     this.#later(GCALL_MS.connect, () => {
       if (this.phase !== 'connecting') return;
       if (!this.live[gid]) { this.#finish('failed', 'cancelled'); return; }
@@ -314,7 +319,16 @@ class GroupCall {
   restore() { if (this.phase !== 'idle') this.view = 'full'; }
   /** Leave the ended / failed screen now. */
   dismiss() { if (this.phase === 'ended' || this.phase === 'failed') this.fading = true; this.#later(dur('callEnd'), () => this.#reset()); }
-  dismissAnnounce() { if (this.announce) this.announce.dismissed = true; }
+  dismissAnnounce() { this.stopRing(); if (this.announce) this.announce.dismissed = true; }
+  /** The ring ends (joined, Not now, call over, 30 s): the quiet banner / pill stays. */
+  stopRing() {
+    window.clearTimeout(this.#ringTimer);
+    const a = this.announce;
+    if (a?.ringing) { a.ringing = false; emitFx({ type: 'incoming', on: false }); }
+  }
+  /** "Not now": silence the ring and hand the card back to the quiet notice. */
+  notNow() { this.stopRing(); if (this.announce) { this.announce.dismissed = true; } }
+  #dropAnnounce(gid: Id) { if (this.announce?.gid === gid) { this.stopRing(); this.announce = null; } }
   muteHostNote() { this.hostNote = ''; }
 
   /* ---------- the simulated other side ---------- */
@@ -329,10 +343,22 @@ class GroupCall {
     this.live[gid] = { callId, by, startedAt: performance.now(), hostId, parts: [by], gen: 0, limited: false, everJoinedByMe: false };
     this.#note(gid, by);
     if (!this.holdsLine || this.groupId !== gid) {
-      this.announce = { gid, callId, by, bannerOn: true, dismissed: false };
+      this.stopRing();
+      const rings = !g.muted && !person(by)?.blocked && !this.holdsLine && !call.active && db.account.gate === 'ready';
+      this.announce = { gid, callId, by, bannerOn: true, dismissed: false, ringing: rings };
       window.clearTimeout(this.#bannerTimer);
-      this.#bannerTimer = window.setTimeout(() => { if (this.announce?.callId === callId) this.announce.bannerOn = false; }, GCALL_MS.bannerHold);
-      if (!g.muted && !this.holdsLine) emitFx({ type: 'gcall', cue: 'started' });
+      if (rings) {
+        // Rings like an incoming call; when the ring ends the banner settles after its usual hold.
+        emitFx({ type: 'incoming', on: true });
+        this.#ringTimer = window.setTimeout(() => {
+          if (this.announce?.callId !== callId) return;
+          this.stopRing();
+          this.#bannerTimer = window.setTimeout(() => { if (this.announce?.callId === callId) this.announce.bannerOn = false; }, GCALL_MS.bannerHold);
+        }, GCALL_MS.ring);
+      } else {
+        this.#bannerTimer = window.setTimeout(() => { if (this.announce?.callId === callId) this.announce.bannerOn = false; }, GCALL_MS.bannerHold);
+        if (!g.muted && !this.holdsLine) emitFx({ type: 'gcall', cue: 'started' });
+      }
     }
     return true;
   }
@@ -467,7 +493,7 @@ class GroupCall {
     const lc = this.live[gid];
     if (!lc) return;
     delete this.live[gid];
-    if (this.announce?.gid === gid) this.announce = null;
+    this.#dropAnnounce(gid);
     const g = chat(gid);
     if (g && !quiet && !lc.everJoinedByMe) {
       // A call that happened without me: a call record too (the thread and the Calls tab), calm, not red.

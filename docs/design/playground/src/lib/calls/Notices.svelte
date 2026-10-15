@@ -5,7 +5,7 @@
   import { call, fmtDuration } from './call.svelte';
   import { gcall } from './gcall.svelte';
   import { system } from './system.svelte';
-  import { displayName, chat } from '../model/store.svelte';
+  import { displayName, firstName, chat } from '../model/store.svelte';
   import { hhmm } from '../model/clock.svelte';
   import { headsUpIn as noticeIn, headsUpOut as noticeOut } from './motion';
   import { socialText } from './socialText';
@@ -20,10 +20,10 @@
     {@const gn = gcall.group?.name ?? (chat(a.gid)?.kind === 'group' ? (chat(a.gid) as { name: string }).name : '')}
     {@const n = gcall.liveFor(a.gid)?.parts.length ?? 0}
     <div in:noticeIn out:noticeOut data-notice="gstarted">
-      <Notice title={gn} text="{displayName(a.by)} started a call · {n} joined" group={gn} onopen={() => system.openGroup(a.gid)}>
+      <Notice title={gn} text={a.ringing ? `${firstName(a.by)} is calling the group` : `${displayName(a.by)} started a call · ${n} joined`} group={gn} onopen={() => system.openGroup(a.gid)}>
         {#snippet actions()}
           <button type="button" class="act" onclick={() => system.joinFromNotice(a.gid)}>Join</button>
-          <button type="button" class="act" onclick={() => { gcall.dismissAnnounce(); }}>Dismiss</button>
+          <button type="button" class="act" onclick={() => { a.ringing ? gcall.notNow() : gcall.dismissAnnounce(); }}>{a.ringing ? 'Not now' : 'Dismiss'}</button>
         {/snippet}
       </Notice>
     </div>

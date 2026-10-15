@@ -10,7 +10,7 @@
   import { call, fmtDuration } from './call.svelte';
   import { gcall } from './gcall.svelte';
   import { system } from './system.svelte';
-  import { displayName, person, chat } from '../model/store.svelte';
+  import { displayName, firstName, person, chat } from '../model/store.svelte';
   import { clock, hhmm } from '../model/clock.svelte';
   import { toastIn, toastOut } from './motion';
   import { dur } from '../fx/motion';
@@ -77,11 +77,11 @@
       <span class="tx">
         <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline</span>
         <b dir="auto">{gname}</b>
-        <small>{displayName(gs.by)} started a call</small>
+        <small>{gs.ringing ? `${firstName(gs.by)} is calling the group` : `${displayName(gs.by)} started a call`}</small>
       </span>
     </button>
     <div class="acts">
-      <button type="button" class="b quiet press" onclick={() => gcall.dismissAnnounce()}>Dismiss</button>
+      <button type="button" class="b quiet press" onclick={() => (gs.ringing ? gcall.notNow() : gcall.dismissAnnounce())}>{gs.ringing ? 'Not now' : 'Dismiss'}</button>
       <button type="button" class="b ans press" onclick={() => system.joinFromNotice(gs.gid)}>Join</button>
     </div>
   </div>
