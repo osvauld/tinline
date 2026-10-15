@@ -9,4 +9,4 @@ description = "Shared, pure UI logic (names, avatars, call words, time words, em
 name = "present"
 
 [dependencies]
-uniffi = { version = "0.29" }
+uniffi = { version = "0.32" }

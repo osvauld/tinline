@@ -27,7 +27,7 @@ pub struct AccountProfile {
     pub picture_hash: Option<String>,
     pub picture_ready: bool,
 }
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait ProfileEvents: Send + Sync {
     fn on_profile_changed(&self, did: String);
 }

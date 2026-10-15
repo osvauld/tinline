@@ -80,7 +80,7 @@ pub struct GroupInvitation {
 }
 
 /// Registered with `Node::set_group_invitation_events`. Called on core threads: do not block.
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait GroupInvitationEvents: Send + Sync {
     /// An invitation appeared or changed state (either direction).
     fn on_group_invitation(&self, invitation: GroupInvitation);

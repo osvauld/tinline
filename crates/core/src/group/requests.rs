@@ -87,7 +87,7 @@ pub struct GroupChatRequest {
 }
 
 /// Registered with `Node::set_group_request_events`. Called on core threads: do not block.
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait GroupRequestEvents: Send + Sync {
     /// A request appeared or changed state.
     fn on_chat_request(&self, request: GroupChatRequest);

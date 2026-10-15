@@ -40,7 +40,7 @@ pub struct GroupCallEvent {
 }
 
 /// Registered with `Node::set_group_call_events`. Called on core threads: do not block.
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait GroupCallEvents: Send + Sync {
     fn on_group_call(&self, event: GroupCallEvent);
 }

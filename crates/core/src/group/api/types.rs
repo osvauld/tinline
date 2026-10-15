@@ -160,7 +160,7 @@ pub struct GroupInvitePeek {
 }
 
 /// Registered with `Node::set_group_events`. Called on core threads: do not block.
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait GroupEvents: Send + Sync {
     /// A message or system line appeared.
     fn on_group_message(&self, message: GroupMessage);

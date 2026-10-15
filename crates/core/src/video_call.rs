@@ -106,7 +106,7 @@ impl VideoStats {
 
 /// Video state changes of the current call (`negotiated` is known when the call goes active;
 /// camera on/off on either side). Frames are pulled, not pushed: see `pull_video_frame`.
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait VideoEvents: Send + Sync {
     fn on_video_state(&self, info: VideoInfo);
 }

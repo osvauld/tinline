@@ -9,7 +9,7 @@ use crate::Error;
 
 /// Callbacks of the linking flow and of own-device sync. Set with `Node::set_link_events`; calls
 /// arrive on a core thread, so do not block in them.
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait LinkEvents: Send + Sync {
     /// Both devices are connected and proved they know the QR. Show `code` (6 digits, "482 913")
     /// on both screens and `peer_label` (the other device's name); E asks the user to compare and

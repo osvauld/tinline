@@ -119,7 +119,7 @@ impl From<Error> for AddError {
 }
 
 /// Registered with `Node::set_contact_request_events`. Called on core threads: do not block.
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait ContactRequestEvents: Send + Sync {
     /// Someone used our code: "Maya wants to add you as a contact". Once per joiner (a repeated
     /// hello is the same request).

@@ -4,7 +4,7 @@ use super::*;
 
 /// `on_call_state` with `Ended` is also the moment the call history has changed: the UI should
 /// re-read `recent_calls` / `calls_with` then (there is no separate history callback).
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait NodeEvents: Send + Sync {
     fn on_status(&self, status: NodeStatus);
     fn on_contacts_changed(&self);

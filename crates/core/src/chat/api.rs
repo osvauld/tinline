@@ -116,7 +116,7 @@ pub struct DayPage {
 
 /// Registered with `Node::set_chat_events`; separate from `NodeEvents`. Called on core threads:
 /// do not block, and do not call blocking `Node` methods from inside.
-#[uniffi::export(with_foreign)]
+#[uniffi::export(rust, foreign)]
 pub trait ChatEvents: Send + Sync {
     /// A message appeared (sent here, or arrived).
     fn on_message_added(&self, message: Message);
