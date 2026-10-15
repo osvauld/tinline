@@ -1,13 +1,9 @@
-//! Identity: BIP39 mnemonic -> three derived keypairs (signing, encryption, device),
-//! a self-authenticating DID, and a passphrase-sealed keystore.
-//!
-//! I/O-free: `seal` produces a `Keystore` (serialize with `to_bytes`), `unlock`
-//! consumes one. Where those bytes live — file, db, memory — is the caller's choice.
+//! Identity: BIP39 mnemonic -> three derived keypairs (signing, encryption, device) and a
+//! self-authenticating DID. Passphrase sealing of the account lives in `p2pcore::vault`.
 
 mod did;
 mod error;
 mod identity;
-mod keystore;
 mod signer;
 
 use cryptography::{ecies, signature};
@@ -17,7 +13,6 @@ pub use cryptography::CryptoError;
 pub use did::{did_from_public_key, public_key_from_did};
 pub use error::IdentityError;
 pub use identity::Identity;
-pub use keystore::{Keystore, seal, unlock};
 pub use signer::Signer;
 
 pub fn generate() -> (Identity, Mnemonic) {

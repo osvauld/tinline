@@ -9,6 +9,4 @@ cryptography = { path = "../cryptography" }
 bip39.workspace = true
 bs58 = "0.5"
 zeroize = { workspace = true }
-serde = { workspace = true }
-bincode = "1"
 thiserror = { workspace = true }

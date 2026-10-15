@@ -98,18 +98,6 @@ impl Identity {
     pub fn decrypt_sealed(&self, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
         ecies::open(&self.inner.encryption_secret, data)
     }
-
-    pub(crate) fn signing_secret(&self) -> &[u8; 32] {
-        &self.inner.signing_secret
-    }
-
-    pub(crate) fn encryption_secret(&self) -> &[u8; 32] {
-        &self.inner.encryption_secret
-    }
-
-    pub(crate) fn device_secret(&self) -> &[u8; 32] {
-        &self.inner.device_secret
-    }
 }
 
 #[cfg(test)]
