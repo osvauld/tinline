@@ -80,7 +80,12 @@ impl App {
             let on = self.chat.tab == tab;
             let color = if on { t.accent_ink } else { t.ink2 };
             // DesktopShell `unread`: every chat's unread, 1:1 and group (no mute in the core yet).
-            let badge = if tab == SideTab::Chats { self.chat.unread_total() + self.live.list.iter().filter(|g| crate::app::group_live::active(g.my_role)).map(|g| g.unread).sum::<u32>() + self.live.pending_in().count() as u32 } else { 0 };
+            // Groups (DesktopShell): invitations waiting for me, so an invite shows on the tab the moment it arrives.
+            let badge = match tab {
+                SideTab::Chats => self.chat.unread_total() + self.live.list.iter().filter(|g| crate::app::group_live::active(g.my_role)).map(|g| g.unread).sum::<u32>() + self.live.pending_in().count() as u32,
+                SideTab::Groups => self.live.pending_invitations().count() as u32,
+                _ => 0,
+            };
             let mut caption = row![pgi(icon, 20.0, color), semi(label, 15.0, color).line_height(lh(21.0)).width(Fill)].spacing(12).height(44).align_y(Alignment::Center);
             if badge > 0 {
                 caption = caption.push(t_badge(t, badge, false));
