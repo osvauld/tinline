@@ -1,6 +1,6 @@
 # Frequency-aware audio motion — simulation status
 
-> The `cargo --example` tools named below (audio_motion_demo) were removed on 2026-10-15; recover them with `git show archive/examples-2026-10-15:<path>`. The measured numbers stay valid as a record.
+> The `cargo --example` tools named below (audio_motion_demo) and `tools/audio-motion-sim/` were removed on 2026-10-15; recover them with `git show archive/examples-2026-10-15:<path>`. The measured numbers stay valid as a record.
 
 Worktree/owner: `bench/group-audio-capacity`, coordinating audio simulation session.
 Owned additions: `tools/audio-motion-sim/`, benchmark `spectral.rs`, `feature_trace.rs`,
