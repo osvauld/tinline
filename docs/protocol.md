@@ -317,7 +317,7 @@ sealed in `account.redb` under `sync/account`, with maps:
 | `cutoffs/<did>` | our token cut-offs for `<did>` (JSON) | max per field |
 | `sent/<did>` | our latest signed block/unblock notice to `<did>` (`Signed<BlockNotice>`, base64url) | verified on read; highest `at` wins; `<did>` is blocked iff that notice is a block (see "Blocking") |
 | `notices/<did>` | `{notice, name, blocked, at}`: the latest notice `<did>` signed to us | verified on read (`to` = our DID, `from` = `<did>`); highest `at` wins; a block deletes the contact entry for `<did>` if `added_at*1000 <= at` (deletion request) |
-| `redeemed/<nonce>`, `revoked/<id>` | `"1"` | union, never shrink |
+| `redeemed/<nonce>/<joiner>` | `"1"` (a record) | union, never shrink |
 | `calls/<call_id>` | CallRecord JSON | written by builds before the calls doc; no longer read |
 
 The call log is a second doc, `calls` (peer id as above with `"calls"`), sealed under `sync/calls`,
@@ -514,7 +514,7 @@ and close the session.
 | Binding over nonce + both devices | Lifting a joiner's hello onto another invite or another device pair |
 | Grant `holder == attested DID` | A stolen grant presented by someone else |
 | Grant `iss == me` | Grants minted by third parties |
-| Revoked set | Cutting off a contact or a leaked grant |
+| Per-DID cut-offs (`IssuanceStore::cut_off_ms`) | Cutting off a contact or a leaked grant |
 | Contact check | A valid grant of someone who is no longer a contact |
 | Block check (signed notice) | A blocked contact's valid grant; a forged, misaddressed or replayed notice (refused, nothing changes) |
 

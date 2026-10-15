@@ -77,7 +77,7 @@ pub struct StoredContact {
     /// decides which devices we dial.
     pub device_list: Option<proto::SignedDeviceList>,
     /// Their message token for us (U13): opens chat with them. Replaced by a renewal that
-    /// outlives it. A legacy (pre-P6) `call` grant counts as message + call.
+    /// outlives it.
     pub grant_from_them: proto::SignedGrant,
     /// Their call token for us, if they let us call (`None`: we can only message them).
     /// Replaced by a renewal that outlives it; dropped when they answer "calls not allowed".
@@ -194,9 +194,6 @@ pub struct AvailabilityState {
 #[serde(default)]
 pub struct State {
     pub contacts: Vec<StoredContact>,
-    /// Ids of grants we issued and then took back. Not written today: tokens are taken back per
-    /// DID with `cut_offs` (every renewal mints a new id, so ids would leak).
-    pub revoked: HashSet<String>,
     /// Per holder DID: tokens we issued at or before these times (unix ms) are refused
     /// (P6, U13). A block raises both, "disallow calls" the call one. Only ever raised; synced
     /// to own devices (max wins). Unblocking does not lower it: the contact needs fresh tokens.
@@ -215,8 +212,8 @@ pub struct State {
     /// The latest notice each DID sent us, verified on intake; a block there is "<name> blocked
     /// you". Kept after an unblock so an older notice replayed later is refused.
     pub notices: HashMap<String, HeldNotice>,
-    /// Redeemed tickets: `proto::redeemed_key(joiner, nonce)` (a joiner adds once per ticket), or
-    /// a bare nonce from when a ticket added one contact (spent for everyone).
+    /// Redeemed tickets, a record only: `proto::redeemed_key(joiner, nonce)`. Whether a ticket
+    /// still adds someone is `store::Tickets`.
     pub redeemed: HashSet<String>,
     /// The ticket we hand out (reusable until it expires or is reset), so the QR stays stable
     /// across launches.

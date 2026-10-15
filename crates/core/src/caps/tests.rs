@@ -2,7 +2,7 @@ use super::*;
 use crate::store::{ContactDevice, CutOffs, StoredContact};
 
 /// Unix ms.
-const T0: u64 = 1_800_000_000_000;
+const T0: u64 = 1_700_000_000_000;
 const DAY: u64 = 24 * 3600 * 1000;
 
 fn contact(did: &str, grant: SignedGrant, calls_allowed: bool) -> StoredContact {
@@ -79,7 +79,8 @@ fn cut_offs_take_tokens_back_per_did() {
     assert!(st.cut_offs[d].message >= t && st.cut_offs[d].call >= t);
     let pre_block = claims(&proto::issue_token(&me, d, Cap::Message, t, DAY));
     assert_eq!(check(&st, d, &pre_block, Cap::Message, t + 1), Err(Denied::Refused));
-    assert_eq!(check(&st, d, &fresh, Cap::Call, t + 1), Err(Denied::Refused));
+    let fresh_now = claims(&proto::issue_token(&me, d, Cap::Call, t, DAY));
+    assert_eq!(check(&st, d, &fresh_now, Cap::Call, t + 1), Err(Denied::Refused));
     // Unblock does not lower the cut-off; the re-add mints above it.
     let nb = not_before(&st, d);
     let readd = claims(&proto::issue_token(&me, d, Cap::Message, t.max(nb + 1), DAY));

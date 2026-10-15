@@ -12,10 +12,8 @@ pub struct Caller {
     pub grant: Grant,
 }
 
-/// `_me` is unused today (the attestation and grant are already signed); kept so the call
-/// site mirrors `accept_call_hello` and a future per-call signature needs no API break.
+/// A call (or chat `Auth`) hello: the attestation and the token are already signed.
 pub fn call_hello(
-    _me: &Identity,
     my_device_attestation: SignedAttestation,
     grant_from_them: SignedGrant,
     call_id: String,

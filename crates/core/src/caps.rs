@@ -6,7 +6,7 @@
 //! - Ticket/QR contacts get message + call; group chat-request contacts message only
 //!   (`ContactOrigin`).
 //! - "Allow calls" (`allow_calls(did, true)`) sends a fresh call token; "disallow calls" raises the
-//!   call cut-off, so every call token of that DID, legacy ones included, stops ringing; the
+//!   call cut-off, so every call token of that DID stops ringing; the
 //!   contact keeps messaging. A call without a usable token is answered `CALLS_NOT_ALLOWED`
 //!   (never rings, never "blocked").
 //! - A block raises both cut-offs. Unblocking does not lower them: the other side re-adds us

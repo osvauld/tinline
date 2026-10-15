@@ -123,7 +123,6 @@ fn message_only_policy_gives_no_call_token_either_way() {
     // Bob's message token does not ring Alice, but `accept_hello` still says who he is (so the
     // node can answer "calls not allowed" instead of a generic refusal).
     let hello = call_hello(
-        &b.id,
         attest(&b.id, b.dev, T0 + 10),
         b_view.grant_from_them.clone(),
         "c1".into(),

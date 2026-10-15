@@ -37,7 +37,6 @@ fn call_happy_path_and_multi_device() {
         .clone()
         .expect("ticket contacts get a call token");
     let msg = call_hello(
-        &b.id,
         attest(&b.id, b.dev, T0 + 10),
         call_token.clone(),
         "c1".into(),
@@ -48,7 +47,7 @@ fn call_happy_path_and_multi_device() {
 
     // Bob's second phone, same DID, own attestation: allowed.
     let dev2 = cryptography::signature::public_key(&new_device_secret());
-    let msg2 = call_hello(&b.id, attest(&b.id, dev2, T0 + 11), call_token, "c2".into());
+    let msg2 = call_hello(attest(&b.id, dev2, T0 + 11), call_token, "c2".into());
     let c2 = accept_call_hello(&a.id, &msg2, dev2, M0 + 11, known).unwrap();
     assert_eq!(c2.device, dev2);
 }
@@ -231,7 +230,6 @@ fn grant_expired_on_call() {
     let (a_view, b_view) = add_contact(&a, &b);
     let known = |d: &str| d == a_view.did;
     let msg = call_hello(
-        &b.id,
         attest(&b.id, b.dev, T0),
         b_view.grant_from_them.clone(),
         "c".into(),
@@ -249,7 +247,6 @@ fn non_contact_caller() {
     let (a, b) = (peer(), peer());
     let (_, b_view) = add_contact(&a, &b);
     let msg = call_hello(
-        &b.id,
         attest(&b.id, b.dev, T0),
         b_view.grant_from_them,
         "c".into(),
@@ -266,7 +263,6 @@ fn stolen_grant_with_other_did_attestation() {
     let (_, b_view) = add_contact(&a, &b);
     // Mallory is a contact too, and presents Bob's grant with her own attestation + device.
     let msg = call_hello(
-        &m.id,
         attest(&m.id, m.dev, T0),
         b_view.grant_from_them.clone(),
         "c".into(),
@@ -277,7 +273,6 @@ fn stolen_grant_with_other_did_attestation() {
     );
     // Or presents Bob's attestation from his phone's connection she doesn't hold.
     let msg = call_hello(
-        &m.id,
         attest(&b.id, b.dev, T0),
         b_view.grant_from_them,
         "c".into(),
@@ -292,7 +287,7 @@ fn stolen_grant_with_other_did_attestation() {
 fn grant_issued_by_third_party_rejected_on_call() {
     let (a, b, m) = (peer(), peer(), peer());
     let g = issue_grant(&m.id, b.id.did(), M0, GTTL);
-    let msg = call_hello(&b.id, attest(&b.id, b.dev, T0), g, "c".into());
+    let msg = call_hello(attest(&b.id, b.dev, T0), g, "c".into());
     assert_eq!(
         accept_call_hello(&a.id, &msg, b.dev, M0, |_| true).err(),
         Some(Error::WrongIssuer)
@@ -381,7 +376,6 @@ fn call_grant_and_self_sync_do_not_cross() {
     // second device calls A's first with a grant from a stranger, and also as a non-contact.
     let d2 = dev();
     let hello = call_hello(
-        &a.id,
         attest(&a.id, d2, T0),
         issue_grant(&b.id, a.id.did(), M0, GTTL),
         "c".into(),

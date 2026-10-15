@@ -118,7 +118,7 @@ fn old_format_messages_still_parse() {
         }
     );
     // And without the new fields set, we emit exactly the old wire shape.
-    let m = call_hello(&a.id, att, g, "c".into());
+    let m = call_hello(att, g, "c".into());
     assert!(!serde_json::to_string(&m).unwrap().contains("devices"));
     assert!(!serde_json::to_string(&m).unwrap().contains("video"));
 }
@@ -145,7 +145,6 @@ fn call_hello_with_max_device_list_fits_frame() {
         .collect();
     let list = sign_device_list(&a.id, &devs, u64::MAX);
     let mut m = call_hello(
-        &a.id,
         attest(&a.id, a.dev, T0),
         issue_grant(&a.id, a.id.did(), M0, GTTL),
         "x".repeat(64),

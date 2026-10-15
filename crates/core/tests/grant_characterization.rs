@@ -26,7 +26,8 @@
 //! decided behaviour (each says what it asserted before). Today: ticket contacts exchange a
 //! `message` and a `call` token (version 2, one cap each); chat checks the message token, calls
 //! the call token; a contact without call permission is answered "calls not allowed"; tokens are
-//! taken back per DID with cut-offs (block: both; "disallow calls": call), never by id.
+//! taken back per DID with cut-offs (block: both; "disallow calls": call), never by id (the
+//! unused id set `State.revoked` was deleted, 2026-10-15).
 //!
 //! Every test carries one label:
 //! - `KIND: limitation`: asserts today's outcome where it differs from U13; the comment names the
@@ -251,7 +252,7 @@ impl Raw {
                 .expect("dial");
             let (mut send, mut recv) = conn.open_bi().await.unwrap();
             let hello =
-                proto::call_hello(&self.id, self.attestation(), grant.clone(), call_id.into());
+                proto::call_hello(self.attestation(), grant.clone(), call_id.into());
             send.write_all(&proto::encode_frame(&hello)).await.unwrap();
             let mut buf = Vec::new();
             let first = tokio::time::timeout(WAIT, recv_msg(&mut recv, &mut buf))
@@ -506,68 +507,36 @@ fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
 
 // KIND: invariant (P6 decided section 14 Q2: per-DID cut-off, not ids; was
 // `no_code_path_writes_the_grant_revocation_set`, a limitation)
-// Tokens are taken back per DID (`State::cut_offs`), so the id set `State.revoked` is still
-// never written by production code (every renewal mints a new id; revoking by id would leak).
-// It is still read on both admission paths and merged between own installs. (Source scan of
-// every non-test file under `crates/core/src`, walked at run time so split modules stay covered.)
+// Tokens are taken back per DID (`State::cut_offs`); there is no id set to revoke by (every
+// renewal mints a new token, so ids would leak). Source scan of every non-test file under
+// `crates/core/src`, walked at run time so split modules stay covered.
 #[test]
 fn tokens_are_taken_back_per_did_never_by_id() {
-    fn walk(dir: &std::path::Path, root: &std::path::Path, out: &mut Vec<(String, String)>) {
+    fn walk(dir: &std::path::Path, out: &mut Vec<(String, String)>) {
         for e in std::fs::read_dir(dir).unwrap().flatten() {
             let p = e.path();
             let name = p.file_name().unwrap().to_string_lossy().into_owned();
             if p.is_dir() {
                 if name != "tests" {
-                    walk(&p, root, out);
+                    walk(&p, out);
                 }
             } else if name.ends_with(".rs") && name != "tests.rs" && !name.ends_with("_tests.rs") {
-                let rel = p.strip_prefix(root).unwrap().to_string_lossy().replace('\\', "/");
-                out.push((rel, std::fs::read_to_string(&p).unwrap()));
+                out.push((p.display().to_string(), std::fs::read_to_string(&p).unwrap()));
             }
         }
     }
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut files = Vec::new();
-    walk(&root, &root, &mut files);
+    walk(&root, &mut files);
     assert!(files.len() > 50, "source scan found only {} files", files.len());
-    let mut uses = Vec::new();
-    for (name, text) in &files {
-        for line in text.lines().map(str::trim) {
-            if line.contains("revoked") && !line.starts_with("//") {
-                uses.push((name.as_str(), line));
-            }
-        }
-    }
-    let writes: Vec<_> = uses
+    let ids: Vec<_> = files
         .iter()
-        .filter(|(_, l)| {
-            [
-                "revoked.insert",
-                "revoked.extend",
-                "revoked.remove",
-                "revoked.retain",
-                "revoked =",
-            ]
-            .iter()
-            .any(|w| l.contains(w))
-        })
+        .flat_map(|(f, t)| t.lines().filter(|l| !l.trim().starts_with("//") && l.contains(".revoked")).map(move |l| (f, l)))
         .collect();
-    assert!(
-        writes.is_empty(),
-        "something revokes tokens by id now: {writes:?}"
-    );
+    assert!(ids.is_empty(), "something keeps a revoked-id set: {ids:?}");
     // The cut-offs are what a block and "disallow calls" raise.
     let caps = include_str!("../src/caps.rs");
     assert!(caps.contains("cut.call = cut.call.max(now_ms())") && caps.contains("cut.message = cut.message.max(t)"));
-    // The one mutable borrow is the account-doc merge from sibling installs.
-    let muts: Vec<_> = uses
-        .iter()
-        .filter(|(_, l)| l.contains("&mut st.revoked"))
-        .collect();
-    assert_eq!(muts.len(), 1, "{muts:?}");
-    assert_eq!(muts[0].0, "sync/accdoc.rs");
-    // Not read on any admission path (`proto::accept_hello` takes no id set).
-    assert!(!uses.iter().any(|(_, l)| l.contains("&s.state.revoked")));
 }
 
 // KIND: invariant (flipped by P6; was `only_global_availability_separates_calls_from_messages`,

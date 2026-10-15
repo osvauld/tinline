@@ -8,8 +8,7 @@
 //! cutoffs/<did>          our token cut-offs for <did> (JSON `CutOffs`; per field, max wins)
 //! sent/<did>             our latest signed block/unblock notice to <did> (JSON; newest `at` wins)
 //! notices/<did>          the latest notice <did> signed to us + their name (JSON; newest wins)
-//! redeemed/<key>         "1"   <nonce>/<joiner did> (or a bare nonce from single-use days); set, never shrinks
-//! revoked/<grant id>     "1"                              set, never shrinks
+//! redeemed/<key>         "1"   <nonce>/<joiner did>; set, never shrinks
 //! calls/<call_id>        (written by older builds, no longer read: see `callsdoc.rs`)
 //! ```
 //!
@@ -179,12 +178,10 @@ impl AccDoc {
             set_str(&held, did, &serde_json::to_string(h).map_err(io)?)?;
         }
 
-        for (name, set) in [("redeemed", &st.redeemed), ("revoked", &st.revoked)] {
-            let m = self.doc.get_map(name);
-            for k in set {
-                if !has_key(&m, k) {
-                    m.insert(k, "1").map_err(io)?;
-                }
+        let redeemed = self.doc.get_map("redeemed");
+        for k in &st.redeemed {
+            if !has_key(&redeemed, k) {
+                redeemed.insert(k, "1").map_err(io)?;
             }
         }
 
@@ -381,10 +378,8 @@ impl AccDoc {
                 st.cut_offs.entry(did).or_default().merge(&c);
             }
         }
-        for (name, set) in [("redeemed", &mut st.redeemed), ("revoked", &mut st.revoked)] {
-            for (k, _) in sect(name) {
-                set.insert(k);
-            }
+        for (k, _) in sect("redeemed") {
+            st.redeemed.insert(k);
         }
         ch.contacts = snap(st) != before || !ch.removed.is_empty();
 
