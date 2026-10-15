@@ -164,9 +164,8 @@ fn parse_key(k: &str) -> Result<[u8; 32], Error> {
 }
 
 fn random_msg_id() -> String {
-    use rand::RngCore;
     let mut b = [0u8; 16];
-    rand::rngs::OsRng.fill_bytes(&mut b);
+    cryptography::rng::fill(&mut b);
     hex::encode(b)
 }
 

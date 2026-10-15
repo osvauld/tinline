@@ -94,7 +94,7 @@ pub trait GroupRequestEvents: Send + Sync {
 }
 
 fn new_req_id() -> String {
-    hex::encode(rand::random::<[u8; 16]>())
+    hex::encode(cryptography::rng::bytes::<16>())
 }
 
 fn req_bytes(id: &str) -> Option<[u8; 16]> {

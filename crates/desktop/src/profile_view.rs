@@ -1294,7 +1294,7 @@ impl App {
                 };
                 let stage = mouse_area(stage).on_press(m(Action::DragStart)).on_move(|p| m(Action::DragAt(p))).on_release(m(Action::DragEnd)).interaction(iced::mouse::Interaction::Grab);
                 let rect = |px: f32| -> El<'_> { crate::ui::glyph(crate::pg_icons::STROKE, r#"<rect x="3" y="4" width="18" height="16" rx="3"/>"#, px, t.ink2) };
-                let zoom = row![rect(16.0), slider(1.0..=4.0, crop.zoom, |z| m(Action::Zoom(z))).step(0.01).width(Fill), rect(22.0)].spacing(10).align_y(Alignment::Center).width(260).height(44);
+                let zoom = row![rect(16.0), slider(1.0..=4.0, crop.zoom, |z| m(Action::Zoom(z))).step(0.01_f32).width(Fill), rect(22.0)].spacing(10).align_y(Alignment::Center).width(260).height(44);
                 let mut sizes = row![].spacing(14).align_y(Alignment::End);
                 for (i, px) in [72.0f32, 48.0, 40.0].into_iter().enumerate() {
                     sizes = sizes.push(match &self.profiles.preview {

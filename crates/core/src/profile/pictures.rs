@@ -7,7 +7,6 @@ use super::{
 use crate::{chat::crypt, node::addr_for};
 use image::{ImageFormat, ImageReader};
 use iroh_blobs::Hash;
-use rand::RngCore;
 use std::io::Cursor;
 use std::sync::Arc;
 use std::time::Duration;
@@ -89,7 +88,7 @@ impl Inner {
             return Ok(());
         }
         let mut key = [0; 32];
-        rand::rngs::OsRng.fill_bytes(&mut key);
+        cryptography::rng::fill(&mut key);
         let hub = self.chat_hub().await?;
         if self.me()?.epoch != me.epoch {
             return Err(Error::Locked);

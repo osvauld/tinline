@@ -232,7 +232,6 @@ pub fn group_avatar_art(gid: String, small: bool) -> AvatarArt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::RngCore;
 
     fn did(seed: u8) -> String {
         identity::did_from_public_key(&[seed; 32])
@@ -248,10 +247,8 @@ mod tests {
 
     #[test]
     fn ranges_and_geometry_for_random_keys() {
-        let mut rng = rand::thread_rng();
         for _ in 0..10_000 {
-            let mut b = [0u8; 32];
-            rng.fill_bytes(&mut b);
+            let b: [u8; 32] = cryptography::rng::bytes();
             let p = params(&b);
             assert!((5..=16).contains(&p.n));
             assert!(p.k >= 2 && p.k <= (p.n - 1) / 2, "n={} k={}", p.n, p.k);
@@ -275,10 +272,8 @@ mod tests {
 
     #[test]
     fn small_differs_only_by_ring_and_stroke() {
-        let mut rng = rand::thread_rng();
         for _ in 0..500 {
-            let mut b = [0u8; 32];
-            rng.fill_bytes(&mut b);
+            let b: [u8; 32] = cryptography::rng::bytes();
             let (big, small) = (art_from_fingerprint(&b, false), art_from_fingerprint(&b, true));
             assert_eq!(big.light, small.light);
             assert!(small.stroke_width > big.stroke_width);

@@ -1,4 +1,3 @@
-use rand::rngs::OsRng;
 use x25519_dalek::{PublicKey, StaticSecret};
 use zeroize::Zeroize;
 
@@ -22,7 +21,7 @@ pub fn ecdh(our_secret: &[u8; 32], their_public: &[u8; 32]) -> [u8; 32] {
 /// ECIES seal to a recipient's X25519 public key.
 /// Output is `ephemeral_public(32) || aead(nonce | ciphertext | tag)`.
 pub fn seal(recipient_public: &[u8; 32], plaintext: &[u8]) -> Result<Vec<u8>, CryptoError> {
-    let ephemeral = StaticSecret::random_from_rng(OsRng);
+    let ephemeral = StaticSecret::from(crate::rng::bytes());
     let ephemeral_public = PublicKey::from(&ephemeral);
 
     let mut shared = ephemeral

@@ -1,10 +1,9 @@
-use rand::rngs::OsRng;
 use x25519_dalek::{PublicKey, StaticSecret};
 
 use super::{open, public_key, seal};
 
 fn keypair() -> ([u8; 32], [u8; 32]) {
-    let secret = StaticSecret::random_from_rng(OsRng);
+    let secret = StaticSecret::from(crate::rng::bytes::<32>());
     let public = PublicKey::from(&secret);
     (secret.to_bytes(), public.to_bytes())
 }

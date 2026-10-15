@@ -11,7 +11,6 @@
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use cryptography::{aead, kdf};
-use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
@@ -92,7 +91,7 @@ fn kek(pass: &str, salt: &[u8], m: u32, t: u32, p: u32) -> Result<Zeroizing<[u8;
 
 fn wrap(dek: &Dek, pass: &str) -> Result<(Vec<u8>, Vec<u8>), Error> {
     let mut salt = vec![0u8; 16];
-    rand::rngs::OsRng.fill_bytes(&mut salt);
+    cryptography::rng::fill(&mut salt);
     let k = kek(pass, &salt, ARGON2_M, ARGON2_T, ARGON2_P)?;
     let wrapped = aead::encrypt(&k, &dek[..]).map_err(|e| Error::Io(e.to_string()))?;
     Ok((salt, wrapped))
@@ -101,7 +100,7 @@ fn wrap(dek: &Dek, pass: &str) -> Result<(Vec<u8>, Vec<u8>), Error> {
 /// Seals `secrets` under a fresh DEK, wrapped by `pass` if given. Slow with a passphrase (one Argon2id).
 pub fn seal(secrets: &Secrets, pass: Option<&str>) -> Result<(Vault, Dek), Error> {
     let mut dek = Zeroizing::new([0u8; 32]);
-    rand::rngs::OsRng.fill_bytes(&mut dek[..]);
+    cryptography::rng::fill(&mut dek[..]);
     let mut plain = serde_json::to_vec(secrets)?;
     let sealed = aead::encrypt(&dek, &plain).map_err(|e| Error::Io(e.to_string()));
     plain.zeroize();

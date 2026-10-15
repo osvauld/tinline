@@ -76,9 +76,8 @@ pub(crate) fn now() -> u64 {
 }
 
 pub(crate) fn random_id() -> String {
-    use rand::RngCore;
     let mut b = [0u8; 8];
-    rand::rngs::OsRng.fill_bytes(&mut b);
+    cryptography::rng::fill(&mut b);
     b.iter().map(|x| format!("{x:02x}")).collect()
 }
 

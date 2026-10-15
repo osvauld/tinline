@@ -51,10 +51,10 @@ impl Node {
                 let row = match pending {
                     Some(r) => r.clone(),
                     None => {
-                        let invite = Invite { group: group_id.clone(), issuer: core.did.clone(), expires: now() + INVITE_TTL, nonce: rand::random() }.sign(&core.account);
+                        let invite = Invite { group: group_id.clone(), issuer: core.did.clone(), expires: now() + INVITE_TTL, nonce: cryptography::rng::bytes() }.sign(&core.account);
                         let t = inner.group_token(&core, &group_id, Some(invite))?;
                         let row = InvRow {
-                            id: hex::encode(rand::random::<[u8; 16]>()),
+                            id: hex::encode(cryptography::rng::bytes::<16>()),
                             group: group_id.clone(),
                             group_name: t.name.clone(),
                             inviter: core.did.clone(),

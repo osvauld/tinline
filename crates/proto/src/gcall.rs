@@ -239,7 +239,7 @@ pub fn new_call_id() -> String {
 }
 
 pub fn new_nonce() -> u64 {
-    rand::rngs::OsRng.next_u64()
+    cryptography::rng::u64()
 }
 
 fn sign_claim(id: &Identity, claim: &Claim) -> SignedBlob {

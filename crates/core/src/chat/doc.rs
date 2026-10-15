@@ -89,9 +89,8 @@ pub fn writer_id(did: &str, device: &[u8; 32]) -> u64 {
 
 /// A fresh random device ID: generated once per account per install, never derived.
 pub fn new_device_value() -> [u8; 32] {
-    use rand::RngCore;
     let mut v = [0u8; 32];
-    rand::rngs::OsRng.fill_bytes(&mut v);
+    cryptography::rng::fill(&mut v);
     v
 }
 

@@ -280,7 +280,7 @@ pub fn issue_contact_ticket(
         .div_ceil(60)
         .min(0xFF_FFFF);
     let mut nonce = [0u8; V2_NONCE_LEN];
-    rand::rngs::OsRng.fill_bytes(&mut nonce);
+    cryptography::rng::fill(&mut nonce);
     let code = match &relay {
         None => 0,
         Some(r) => KNOWN_RELAYS

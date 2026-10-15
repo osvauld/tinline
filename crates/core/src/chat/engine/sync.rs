@@ -230,7 +230,7 @@ impl Inner {
             meta.n_updates += 1;
         }
         extra.push(core.store.put_meta_op(pair, day, &meta)?);
-        if core.fail_writes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
+        if core.fail_writes.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
             return Err(Error::Io("test: chat write failed".into()));
         }
         core.store.db.apply(&extra)?;

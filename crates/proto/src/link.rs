@@ -32,7 +32,7 @@ pub struct LinkQr {
 /// Fresh random secret, expiring `ttl_secs` after `now` (use `LINK_TTL_SECS`).
 pub fn new_link_qr(device: [u8; 32], relay: Option<String>, now: u64, ttl_secs: u64) -> LinkQr {
     let mut secret = [0u8; 16];
-    rand::rngs::OsRng.fill_bytes(&mut secret);
+    cryptography::rng::fill(&mut secret);
     let exp_min = now
         .saturating_add(ttl_secs)
         .saturating_sub(V2_EPOCH)
@@ -158,7 +158,7 @@ fn link_key(secret: &[u8; 16], e_dev: &[u8; 32], n_dev: &[u8; 32]) -> [u8; 32] {
 }
 
 fn mac(key: &[u8; 32], parts: &[&[u8]]) -> Hmac<Sha256> {
-    let mut m = <Hmac<Sha256> as Mac>::new_from_slice(key).expect("HMAC takes any key length");
+    let mut m = <Hmac<Sha256> as KeyInit>::new_from_slice(key).expect("HMAC takes any key length");
     for p in parts {
         m.update(p);
     }
@@ -223,12 +223,11 @@ pub fn seal_link_grant(
     n_dev: &[u8; 32],
     plaintext: &[u8],
 ) -> String {
-    let mut nonce = [0u8; NONCE_LEN];
-    rand::rngs::OsRng.fill_bytes(&mut nonce);
+    let nonce: [u8; NONCE_LEN] = cryptography::rng::bytes();
     let aad = transcript(secret, e_dev, n_dev);
     let ct = grant_cipher(secret, e_dev, n_dev)
         .encrypt(
-            Nonce::from_slice(&nonce),
+            &Nonce::from(nonce),
             Payload {
                 msg: plaintext,
                 aad: &aad,
@@ -251,7 +250,7 @@ pub fn open_link_grant(
     let (nonce, ct) = data.split_at(NONCE_LEN);
     let aad = transcript(secret, e_dev, n_dev);
     grant_cipher(secret, e_dev, n_dev)
-        .decrypt(Nonce::from_slice(nonce), Payload { msg: ct, aad: &aad })
+        .decrypt(&Nonce::try_from(nonce).map_err(|_| Error::Decode)?, Payload { msg: ct, aad: &aad })
         .map_err(|_| Error::BadSignature)
 }
 

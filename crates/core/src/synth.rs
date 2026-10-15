@@ -107,8 +107,8 @@ impl Node {
     pub fn synth_dm_for_test(&self, with: String, author: String, text: String, at: i64, file: Option<(String, u64)>) -> Result<String, Error> {
         let inner = self.inner.clone();
         let file = file.map(|(name, size)| FileRef {
-            hash: hex::encode(rand::random::<[u8; 32]>()),
-            key: hex::encode(rand::random::<[u8; 32]>()),
+            hash: hex::encode(cryptography::rng::bytes::<32>()),
+            key: hex::encode(cryptography::rng::bytes::<32>()),
             name,
             size,
             mime: "image/jpeg".into(),

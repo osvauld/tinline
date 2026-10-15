@@ -1,11 +1,8 @@
 use super::{decrypt, encrypt};
 use crate::error::CryptoError;
-use rand::{RngCore, rngs::OsRng};
 
 fn generate_key() -> [u8; 32] {
-    let mut key = [0u8; 32];
-    OsRng.fill_bytes(&mut key);
-    key
+    crate::rng::bytes()
 }
 
 #[test]

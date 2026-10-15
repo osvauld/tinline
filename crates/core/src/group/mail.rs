@@ -101,7 +101,7 @@ pub fn seal(account: &identity::Identity, group: &str, to: &str, to_key: &[u8; 3
     let inner = Sealed { group: group.to_string(), from: account.did().to_string(), to: to.to_string(), letter };
     let plain = bincode::serialize(&inner).expect("letter serialises");
     let sealed = identity::encrypt_for(to_key, &plain).map_err(|e| crate::Error::Protocol(e.to_string()))?;
-    let mail = Mail { group: group.to_string(), from: account.did().to_string(), to: to.to_string(), id: rand::random(), at, sealed };
+    let mail = Mail { group: group.to_string(), from: account.did().to_string(), to: to.to_string(), id: cryptography::rng::bytes(), at, sealed };
     let body = bincode::serialize(&mail).expect("mail serialises");
     let sig = account.sign(&sig_input(&body)).to_vec();
     Ok(SignedMail { body, sig })

@@ -5,6 +5,7 @@ pub mod aead;
 pub mod ecies;
 pub mod error;
 pub mod kdf;
+pub mod rng;
 pub mod signature;
 
 pub use error::CryptoError;

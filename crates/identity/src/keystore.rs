@@ -1,6 +1,4 @@
 use cryptography::{aead, kdf};
-use rand::RngCore;
-use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
@@ -51,7 +49,7 @@ impl Keystore {
 
 pub fn seal(identity: &Identity, passphrase: &str) -> Result<Keystore, IdentityError> {
     let mut salt = [0u8; 16];
-    OsRng.fill_bytes(&mut salt);
+    cryptography::rng::fill(&mut salt);
     let mut kek = kdf::argon2id(passphrase.as_bytes(), &salt, ARGON2_M, ARGON2_T, ARGON2_P)?;
     let result = seal_with(identity, &kek, salt);
     kek.zeroize();

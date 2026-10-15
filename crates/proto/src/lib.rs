@@ -16,7 +16,6 @@ use std::collections::HashSet;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use ed25519_dalek::SigningKey;
 use identity::{Identity, public_key_from_did, verify};
-use rand::RngCore;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 /// Calls, contact exchange and notices. Version 1 (P6): separate `message` and `call` tokens;
@@ -100,7 +99,7 @@ fn dec32(text: &str) -> Result<[u8; 32]> {
 
 fn random16() -> String {
     let mut b = [0u8; 16];
-    rand::rngs::OsRng.fill_bytes(&mut b);
+    cryptography::rng::fill(&mut b);
     enc(b)
 }
 
@@ -109,7 +108,7 @@ fn random16() -> String {
 /// Device key text form is `enc(32 bytes)`; the secret's storage is the caller's job.
 pub fn new_device_secret() -> [u8; 32] {
     let mut s = [0u8; 32];
-    rand::rngs::OsRng.fill_bytes(&mut s);
+    cryptography::rng::fill(&mut s);
     s
 }
 

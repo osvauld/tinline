@@ -61,7 +61,7 @@ fn project_availability(
 }
 fn check_write(i: &Inner) -> Result<(), Error> {
     if i.fail_writes
-        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1))
+        .try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1))
         .is_ok()
     {
         return Err(Error::Io("injected write failure".into()));

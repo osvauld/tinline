@@ -2,8 +2,6 @@ use std::sync::Arc;
 
 use bip39::Mnemonic;
 use cryptography::{CryptoError, ecies, signature};
-use rand::RngCore;
-use rand::rngs::OsRng;
 use zeroize::ZeroizeOnDrop;
 
 use crate::did;
@@ -37,7 +35,7 @@ pub struct Identity {
 impl Identity {
     pub(crate) fn generate() -> (Self, Mnemonic) {
         let mut entropy = [0u8; 32];
-        OsRng.fill_bytes(&mut entropy);
+        cryptography::rng::fill(&mut entropy);
         let mnemonic = Mnemonic::from_entropy(&entropy).expect("32 bytes is valid entropy");
         let identity = Self::from_mnemonic(&mnemonic);
         (identity, mnemonic)

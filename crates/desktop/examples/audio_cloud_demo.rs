@@ -599,7 +599,7 @@ impl Demo {
             row![button("200 Hz").on_press(Msg::Source(Source::Low)),button("4 kHz").on_press(Msg::Source(Source::High)),button("Mix").on_press(Msg::Source(Source::Mix))].spacing(6),
             button(if self.mic.is_some(){"Stop microphone"}else{"Start microphone"}).width(Length::Fill).on_press(Msg::Mic),
             text(format!("Mic sensitivity {:.1}×",self.sensitivity)).size(13),
-            slider(0.5..=3.0,self.sensitivity,Msg::Sensitivity).step(0.1),
+            slider(0.5..=3.0,self.sensitivity,Msg::Sensitivity).step(0.1_f32),
             container(text(&self.note).size(12)).height(84),
             states,
             text("Experimental speech mapping; call cues / live brand animation are not wired yet.\nStop, Pause, input switch, mute, call end or window close releases capture.\nNo GPU/battery performance claim.").size(12),

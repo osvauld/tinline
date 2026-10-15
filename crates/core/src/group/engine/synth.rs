@@ -27,7 +27,7 @@ impl Inner {
     pub(crate) fn synth_group_new(self: &Arc<Self>, name: &str) -> Result<SynthGroup, Error> {
         let core = self.group_core()?;
         let me = self.me()?;
-        let nonce: [u8; 16] = rand::random();
+        let nonce: [u8; 16] = cryptography::rng::bytes();
         let gid = group_id(&core.did, &nonce);
         {
             core.groups.lock().insert(gid.clone(), Live::empty(&gid, core.wid, GroupMeta::default()));
@@ -60,7 +60,7 @@ impl Inner {
         let core = self.group_core()?;
         let (acct, dev) = crate::synth::peer(did).ok_or(Error::NotFound)?;
         let doc = GroupDoc::new(&g.gid, writer_id(did, &dev));
-        let invite = Invite { group: g.gid.clone(), issuer: g.owner_did.clone(), expires: now() + 10 * 365 * 86_400, nonce: rand::random() }.sign(&core.account);
+        let invite = Invite { group: g.gid.clone(), issuer: g.owner_did.clone(), expires: now() + 10 * 365 * 86_400, nonce: cryptography::rng::bytes() }.sign(&core.account);
         g.members.push(SMember { did: did.to_string(), acct, dev, doc, days: Default::default() });
         let idx = g.members.len() - 1;
         self.synth_group_write(g, idx, at, Body::Join { invite, name: name.to_string() })?;

@@ -11,7 +11,7 @@ path = "src/main.rs"
 [dependencies]
 p2pcore = { path = "../core" }
 # The BIP39 English word list for the restore grid (checks and suggestions); identity already uses it.
-bip39 = "2"
+bip39.workspace = true
 # Frame conversion (camera formats -> I420, I420 -> RGBA); p2pcore already links it.
 video = { path = "../video", default-features = false }
 audio.workspace = true

@@ -265,7 +265,7 @@ impl Inner {
     /// Test switch: this hook write is to be skipped.
     fn search_skipped(&self) -> bool {
         use std::sync::atomic::Ordering;
-        self.search_skip.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok()
+        self.search_skip.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok()
     }
 
     fn search_log(e: Error) {

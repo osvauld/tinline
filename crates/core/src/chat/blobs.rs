@@ -113,9 +113,8 @@ impl BlobHub {
     }
 
     fn tmp(&self, what: &str) -> PathBuf {
-        use rand::RngCore;
         let mut b = [0u8; 8];
-        rand::rngs::OsRng.fill_bytes(&mut b);
+        cryptography::rng::fill(&mut b);
         self.dir.join("tmp").join(format!("{what}-{}", hex::encode(b)))
     }
 

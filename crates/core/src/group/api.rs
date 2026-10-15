@@ -353,7 +353,7 @@ impl Node {
         self.block_on(async move {
             let core = inner.group_core()?;
             inner.group_ensure(&core).await?;
-            let nonce: [u8; 16] = rand::random();
+            let nonce: [u8; 16] = cryptography::rng::bytes();
             let gid = group_id(&core.did, &nonce);
             {
                 core.groups.lock().insert(gid.clone(), super::engine::Live::empty(&gid, core.wid, GroupMeta::default()));
@@ -378,7 +378,7 @@ impl Node {
             inner.group_admin_check(&core, &group_id)?;
             inner.group_ensure(&core).await?;
             inner.group_relay_ready().await;
-            let invite = Invite { group: group_id.clone(), issuer: core.did.clone(), expires: now() + INVITE_TTL, nonce: rand::random() }.sign(&core.account);
+            let invite = Invite { group: group_id.clone(), issuer: core.did.clone(), expires: now() + INVITE_TTL, nonce: cryptography::rng::bytes() }.sign(&core.account);
             inner.group_issue_code(&core, &group_id, Some(invite)).await
         })?
     }

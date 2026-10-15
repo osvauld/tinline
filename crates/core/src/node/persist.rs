@@ -122,7 +122,7 @@ impl Inner {
     }
 
     pub(crate) fn write_state(&self, backing: &Backing, state: &State) -> Result<(), Error> {
-        if self.fail_writes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
+        if self.fail_writes.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
             return Err(Error::Io("injected write failure".into()));
         }
         backing.save_state(state)

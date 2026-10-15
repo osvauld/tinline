@@ -294,7 +294,7 @@ fn snapshot(root: &Path) -> Vec<(PathBuf, String)> {
     let mut v: Vec<_> = files(root)
         .into_iter()
         .map(|p| {
-            let h = format!("{:x}", sha2::Sha256::digest(std::fs::read(&p).unwrap()));
+            let h = hex::encode(sha2::Sha256::digest(std::fs::read(&p).unwrap()));
             (p, h)
         })
         .collect();

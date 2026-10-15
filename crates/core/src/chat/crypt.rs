@@ -18,7 +18,6 @@ use std::io::{self, Read, Write};
 
 use aes_gcm::aead::{Aead, KeyInit, Payload};
 use aes_gcm::{Aes256Gcm, Nonce};
-use rand::RngCore;
 
 pub const CHUNK: usize = 64 * 1024;
 const TAG: usize = 16;
@@ -27,7 +26,7 @@ pub const MAX_FILE: u64 = 2 * 1024 * 1024 * 1024;
 
 pub fn new_key() -> [u8; 32] {
     let mut k = [0u8; 32];
-    rand::rngs::OsRng.fill_bytes(&mut k);
+    cryptography::rng::fill(&mut k);
     k
 }
 
@@ -77,7 +76,7 @@ pub fn encrypt_stream(
         let next_n = if cur_n == CHUNK { fill(&mut r, &mut next)? } else { 0 };
         let last = next_n == 0;
         let ct = cipher
-            .encrypt(Nonce::from_slice(&nonce(index)), Payload { msg: &cur[..cur_n], aad: &[last as u8] })
+            .encrypt(&Nonce::from(nonce(index)), Payload { msg: &cur[..cur_n], aad: &[last as u8] })
             .map_err(|_| bad("encrypt"))?;
         w.write_all(&ct)?;
         total += cur_n as u64;
@@ -119,7 +118,7 @@ pub fn decrypt_stream(
         let next_n = if cur_n == size { fill(&mut r, &mut next)? } else { 0 };
         let last = next_n == 0;
         let pt = cipher
-            .decrypt(Nonce::from_slice(&nonce(index)), Payload { msg: &cur[..cur_n], aad: &[last as u8] })
+            .decrypt(&Nonce::from(nonce(index)), Payload { msg: &cur[..cur_n], aad: &[last as u8] })
             .map_err(|_| bad("blob does not authenticate"))?;
         w.write_all(&pt)?;
         total += pt.len() as u64;

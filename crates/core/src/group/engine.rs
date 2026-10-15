@@ -96,7 +96,7 @@ pub(crate) struct GroupRt {
 
 /// Takes one injected failure from a test knob, if any is left.
 pub(crate) fn injected(n: &std::sync::atomic::AtomicU32) -> bool {
-    n.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |v| v.checked_sub(1)).is_ok()
+    n.try_update(Ordering::SeqCst, Ordering::SeqCst, |v| v.checked_sub(1)).is_ok()
 }
 
 /// U12: hosts rotate their group endpoint this long after a removal or a host revocation.

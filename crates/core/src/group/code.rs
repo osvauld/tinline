@@ -278,7 +278,7 @@ impl Inner {
     /// Makes a code for `invite` (`None`: a device code) and has a host keep it: ourselves if we
     /// host `gid`, else a host we have a session with. Returns the link.
     pub(crate) async fn group_issue_code(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, invite: Option<SignedInvite>) -> Result<String, Error> {
-        let code: [u8; CODE_LEN] = rand::random();
+        let code: [u8; CODE_LEN] = cryptography::rng::bytes();
         let expires = invite.as_ref().and_then(|i| i.open()).map_or(now() + INVITE_TTL, |i| i.expires);
         // Only a CHAT host keeps codes (`group_fetch_answer` checks `is_host`); `group_my_addr`
         // is also Some for a device that only hosts calls (GA-I1), which registers at a host.
@@ -564,7 +564,7 @@ impl Node {
             let Ok((send, recv)) = conn.open_bi().await else { return out };
             let (mut w, mut r) = (Writer(send), Reader::new(recv));
             for _ in 0..n {
-                if w.send(&GroupMsg::Fetch { code: rand::random() }).await.is_err() {
+                if w.send(&GroupMsg::Fetch { code: cryptography::rng::bytes() }).await.is_err() {
                     break;
                 }
                 match tokio::time::timeout(FETCH_TIMEOUT, r.recv()).await {
