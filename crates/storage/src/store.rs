@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
-use redb::{Database, ReadableTable, TableDefinition};
+use redb::{Database, ReadableDatabase, ReadableTable, TableDefinition};
 
 use crate::error::StorageError;
 

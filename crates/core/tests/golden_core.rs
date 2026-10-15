@@ -1,5 +1,5 @@
-//! Golden tests for `p2pcore` persisted formats, frozen BEFORE the dependency upgrades (rand 0.10, argon2 0.6,
-//! aes-gcm 0.11, sha2 0.11, redb 2 -> 4, bip39 3, maybe bincode). Must pass UNCHANGED afterwards.
+//! Golden tests for `p2pcore` persisted formats, regenerated on 2026-10-15 for redb 4 (no back-compat before release); the crypto upgrades
+//! (argon2 0.6, aes-gcm 0.11, sha2 0.11, dalek 3, bip39 3) passed on the old fixture unchanged.
 //!
 //! The vault (`profile.json`), the store keys (`group/store.rs` / `rekey.rs` `key_from_phrase`, BLAKE3
 //! `derive_key` over the lower-cased single-spaced phrase) and the sealed redb files are private modules, so
