@@ -1772,18 +1772,40 @@ impl App {
         };
         let mut st = stack![container(main).center_x(Fill).center_y(Fill).style(ui::plain(t.surface2, 16.0))];
         if v.local_on() {
-            let label = v.send_size.map_or_else(|| "Starting video…".to_string(), |(w, h)| crate::camera::sending_label(w, h));
+            // The chip's short line borrows the picture label for 2.6 s; the label's box does not change.
+            let label = v.hd_line().map(str::to_string).unwrap_or_else(|| {
+                v.send_size.map_or_else(|| "Starting video\u{2026}".to_string(), |(w, h)| crate::camera::sending_label(w, h))
+            });
             st = st.push(container(tx(label, 13.0, t.ink)).padding(14));
-        }
-        if let Some(h) = v.local.as_ref().filter(|_| v.local_on()) {
-            st = st.push(
-                container(image(h.clone()).width(220).border_radius(10.0))
-                    .align_right(Fill)
-                    .align_bottom(Fill)
-                    .padding(14),
-            );
+            // My picture, with the HD chip on its top-start corner (it is about what I send).
+            let hd = v.hd_on(self.settings.prefer_hd);
+            let paused = crate::camera::hd_paused(hd, v.send_size);
+            let tile: El = match v.local.as_ref() {
+                Some(h) => image(h.clone()).width(220).border_radius(10.0).into(),
+                None => container(Space::new()).width(220).height(124).style(ui::plain(t.surface2, 10.0)).into(),
+            };
+            let tile = stack![tile, self.hd_chip(t, hd, paused)];
+            st = st.push(container(tile).align_right(Fill).align_bottom(Fill).padding(14));
         }
         st.width(Fill).height(Fill).into()
+    }
+
+    /// The HD chip (playground HdChip.svelte): "HD", 24 px tall, radius 7, 1.5 px outline. Off = outline, on = filled
+    /// (white over video), paused = on but dimmed to 55%. The 48 px square around it is the touch target.
+    fn hd_chip<'a>(&'a self, t: Tok, on: bool, paused: bool) -> El<'a> {
+        let _ = t;
+        let a = if paused { 0.55 } else { 1.0 };
+        let (fg, fill) = if on { (Color::from_rgb(0.07, 0.07, 0.07), Color::WHITE) } else { (Color::WHITE, Color::TRANSPARENT) };
+        let (fg, fill) = (ui::alpha(fg, a), ui::alpha(fill, if on { a } else { 0.0 }));
+        let pill = container(bold("HD", 12.0, fg)).center_y(24).padding([0, 7]).style(move |_: &Theme| container::Style {
+            background: Some(fill.into()),
+            border: Border { color: ui::alpha(if on { Color::WHITE } else { fg }, a), width: 1.5, radius: 7.0.into() },
+            ..Default::default()
+        });
+        let label = if paused { "Sharper video on, paused while the connection is weak" } else if on { "Sharper video on, up to 720p" } else { "Sharper video off" };
+        let b = button(container(pill).center_x(48).center_y(48)).padding(0).width(48).height(48)
+            .style(|_: &Theme, _| button::Style::default()).on_press(Msg::Video(super::Vm::ToggleHd));
+        iced::widget::tooltip(b, label, iced::widget::tooltip::Position::Top).into()
     }
 
     /// WaitingCard.svelte: someone else is calling during my call (core: Live::waiting). A calm card just above the

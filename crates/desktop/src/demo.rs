@@ -275,6 +275,23 @@ impl App {
                     stats: Some(stats(direct, 252, if name == "incall-weak-about" { 520 } else if direct { 38 } else { 140 }, name.starts_with("reconnecting"))),
                 });
             }
+            "incall-video" | "incall-video-hd" | "incall-video-hd-paused" | "incall-video-hd-note" => {
+                // A video call with both cameras on and synthetic pictures; the HD chip's three looks and its line.
+                let pic = |w: u32, h: u32, k: u8| {
+                    let mut d = Vec::with_capacity((w * h * 4) as usize);
+                    for y in 0..h { for x in 0..w { d.extend_from_slice(&[(40 + x * 90 / w) as u8 + k, (70 + y * 80 / h) as u8, 150, 255]); } }
+                    iced::widget::image::Handle::from_rgba(w, h, d)
+                };
+                self.call = Some(CallView { info: info(true), state: CallState::Active, answered: true, stats: Some(stats(true, 252, 38, false)) });
+                self.video.info = Some(p2pcore::VideoInfo { call_id: info(true).call_id, negotiated: true, local_camera: true, remote_camera: true });
+                self.video.remote = Some(pic(640, 360, 0));
+                self.video.local = Some(pic(320, 180, 30));
+                self.settings.prefer_hd = name != "incall-video";
+                self.video.send_size = Some(if name == "incall-video-hd-paused" { (960, 540) } else if self.settings.prefer_hd { (1280, 720) } else { (640, 480) });
+                if name == "incall-video-hd-note" {
+                    self.video.hd_note = Some(("Sharper video on", Instant::now() + Duration::from_secs(3600)));
+                }
+            }
             "ended" | "unreachable" => {
                 let unreachable = name == "unreachable";
                 let who = if unreachable { "Lena (work)" } else { "Arjun Oommen" };
