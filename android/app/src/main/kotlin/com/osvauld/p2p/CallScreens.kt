@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -302,7 +303,8 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
     val front by app.video.front.collectAsState()
     val videoProblem by app.video.problem.collectAsState()
     val v = vi?.takeIf { active && it.negotiated && it.callId == ui.info.callId }
-    val sendResolution by produceState<String?>(null, ui.info.callId, v?.localCamera) {
+    val hdCall by app.video.hdCall.collectAsState()
+    val sendSize by produceState<Pair<Int, Int>?>(null, ui.info.callId, v?.localCamera, hdCall) {
         value = null
         if (v?.localCamera != true) return@produceState
         var initialFrames: ULong? = null
@@ -311,12 +313,20 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 runCatching { app.node.videoStats()?.let {
                     if (initialFrames == null) initialFrames = it.framesSent
                     // Don't label cached dimensions from before this camera start as current HD.
-                    if (it.framesSent > (initialFrames ?: it.framesSent)) videoResolutionLabel(it.sendWidth.toInt(), it.sendHeight.toInt()) else null
+                    if (it.framesSent > (initialFrames ?: it.framesSent)) it.sendWidth.toInt() to it.sendHeight.toInt() else null
                 } }.getOrNull()
             }
             delay(1000)
         }
     }
+    val sendResolution = sendSize?.let { videoResolutionLabel(it.first, it.second) }
+    val hdOn = effectivePreferHd(app.preferHdCapture, hdCall)
+    val hdIsPaused = hdPaused(hdOn, sendSize?.first ?: 0, sendSize?.second ?: 0)
+    // The ladder stepping below HD while HD is on: say so once, when it happens.
+    var wasPaused by remember { mutableStateOf(false) }
+    LaunchedEffect(hdIsPaused) { if (hdIsPaused && !wasPaused) app.video.say(hdLine(true, true)); wasPaused = hdIsPaused }
+    val hdNote by app.video.hdNote.collectAsState()
+    LaunchedEffect(hdNote?.id) { hdNote?.id?.let { id -> delay(2600); app.video.noteShown(id) } }
     val onCamera = { if (v?.localCamera == true) app.video.setCamera(false) else onCameraOn() }
     val name = ui.info.peerName.ifBlank { "Unknown" }
     val bars = if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null
@@ -326,7 +336,8 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 name = name, did = ui.info.peerDid, secs = secs, direct = s?.direct, bars = bars, reconnecting = s?.reconnecting == true,
                 muted = ui.muted, speaker = ui.speaker, localCamera = v.localCamera, remoteCamera = v.remoteCamera,
                 problem = if (ui.held) HELD else ui.micProblem ?: videoProblem,
-                videoQuality = if (v.localCamera) sendResolution?.let { "Sending $it" } ?: "Starting video…" else null,
+                videoQuality = if (v.localCamera) hdNote?.text ?: sendResolution?.let { "Sending $it" } ?: "Starting video…" else null,
+                hd = hdOn, hdPaused = hdIsPaused, onHd = { app.video.setHd(!hdOn, hdIsPaused) },
                 onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onCamera = onCamera,
                 onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise, onMessage = onMessage,
                 remote = { m -> RemoteVideo(app, calls, m) },
@@ -440,7 +451,7 @@ fun VideoCallContent(
     routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {}, onAllowBtNames: (() -> Unit)? = null,
     onMessage: (() -> Unit)? = null,
     waitingCard: (@Composable (Modifier) -> Unit)? = null,
-    videoQuality: String? = null,
+    videoQuality: String? = null, hd: Boolean = false, hdPaused: Boolean = false, onHd: () -> Unit = {},
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
@@ -476,7 +487,10 @@ fun VideoCallContent(
         // Self-view: our camera (the front one mirrored), top right under the bar.
         if (localCamera) Box(Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 72.dp, end = 12.dp)
             .size(width = 104.dp, height = 140.dp).clip(SmoothCornerShape(16.dp)).background(Color.Black)
-            .border(1.dp, Color.White.copy(alpha = 0.25f), SmoothCornerShape(16.dp))) { selfView(Modifier.fillMaxSize()) }
+            .border(1.dp, Color.White.copy(alpha = 0.25f), SmoothCornerShape(16.dp))) {
+            selfView(Modifier.fillMaxSize())
+            HdChip(hd, hdPaused, onHd, Modifier.align(Alignment.TopStart))
+        }
         // Bottom: problem line and controls.
         var barH by remember { mutableStateOf(0) }
         Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().onSizeChanged { barH = it.height }
@@ -524,9 +538,30 @@ internal fun RemoteVideo(app: P2pApp, calls: CallController, modifier: Modifier)
     }
 }
 
+/**
+ * The HD chip (playground HdChip.svelte): "HD", 24 dp tall, radius 7, 1.5 dp outline. Off = outline, on = filled (white over
+ * video), paused = on but dimmed to 55% while the sender is below the HD size. The 48 dp square is the touch target.
+ */
+@Composable
+internal fun HdChip(on: Boolean, paused: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val label = if (paused) "Sharper video on, paused while the connection is weak" else if (on) "Sharper video on, up to 540p" else "Sharper video off"
+    val a = if (paused) 0.55f else 1f
+    Box(modifier.size(48.dp).clickable(role = Role.Switch, onClick = onClick)
+        .semantics { contentDescription = label; stateDescription = if (on) "On" else "Off" }, contentAlignment = Alignment.Center) {
+        val shape = RoundedCornerShape(7.dp)
+        Box(Modifier.height(24.dp).widthIn(min = 36.dp).clip(shape)
+            .background(if (on) Color.White.copy(alpha = a) else Color.Transparent)
+            .border(1.5.dp, Color.White.copy(alpha = a), shape).padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
+            Text("HD", style = TinType.mono.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
+                color = if (on) Color(0xFF111111).copy(alpha = a) else Color.White.copy(alpha = a))
+        }
+    }
+}
+
 /** Our camera: CameraX preview (mirrored for the front camera) plus the analysis feed to the core. */
 @Composable
 private fun SelfView(app: P2pApp, front: Boolean, modifier: Modifier) {
+    val hdChoice by app.video.hdCall.collectAsState()
     val ctx = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val view = remember {
@@ -535,7 +570,8 @@ private fun SelfView(app: P2pApp, front: Boolean, modifier: Modifier) {
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
     }
-    DisposableEffect(front, owner) {
+    // A new HD choice restarts the capture at once (the picture warms up for a moment).
+    DisposableEffect(front, owner, hdChoice) {
         app.video.startCamera(owner, view.surfaceProvider, front)
         onDispose { app.video.stopCamera() }
     }

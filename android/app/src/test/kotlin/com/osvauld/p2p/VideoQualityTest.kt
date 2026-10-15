@@ -4,6 +4,21 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class VideoQualityTest {
+    @Test fun callChoiceBeatsSettingOnlyForThatCall() {
+        assertEquals(false, effectivePreferHd(false, null))
+        assertEquals(true, effectivePreferHd(true, null))
+        assertEquals(true, effectivePreferHd(false, true))
+        assertEquals(false, effectivePreferHd(true, false))
+    }
+    @Test fun hdPausedFollowsActualSendSize() {
+        assertFalse(hdPaused(true, 0, 0))
+        assertFalse(hdPaused(true, 960, 540))
+        assertTrue(hdPaused(true, 640, 360))
+        assertTrue(hdPaused(true, 360, 640))
+        assertFalse(hdPaused(false, 320, 180))
+        assertEquals("HD paused \u00b7 weak connection", hdLine(true, true))
+        assertEquals("Sharper video off", hdLine(false, true))
+    }
     @Test fun hdIsExplicitAndAutoKeepsBaseline() {
         assertEquals(listOf(CapturePreference.SD), capturePreferences(false))
         assertEquals(listOf(CapturePreference.HD, CapturePreference.SD), capturePreferences(true))
