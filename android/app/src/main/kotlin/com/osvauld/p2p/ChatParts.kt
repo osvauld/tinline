@@ -72,7 +72,8 @@ private val MetaText = TextStyle(fontFamily = Figtree, fontSize = 11.sp, lineHei
 /** Spacing between rows (MessageRow.svelte `.m`): 10 dp above a run, 2 dp inside one. */
 fun gapAbove(pos: BubblePos): Dp = if (pos == BubblePos.Mid || pos == BubblePos.Last) 2.dp else 10.dp
 
-enum class MetaTick { None, Delivered, Pending, Failed }
+/** [Delivered]/[Read] only from the core's signed receipts; [Blank] keeps the slot while the status loads. */
+enum class MetaTick { None, Blank, Delivered, Read, Pending, Failed }
 
 /** The inline time and status of a bubble: [edited] time [tick]. */
 class BubbleMeta(val time: String, val edited: Boolean = false, val tick: MetaTick = MetaTick.None, val tickDesc: String? = null)
@@ -85,10 +86,11 @@ fun PgMeta(meta: BubbleMeta, color: Color, modifier: Modifier = Modifier) {
         // .tk keeps one 13 x 11 slot whatever the state, so a status change never narrows the bubble.
         if (meta.tick != MetaTick.None) Box(Modifier.size(13.dp, 11.dp), contentAlignment = Alignment.Center) {
             when (meta.tick) {
-                MetaTick.Delivered -> Icon(Pg.Tick, meta.tickDesc ?: "Delivered", tint = color, modifier = Modifier.size(12.dp))
+                MetaTick.Delivered -> Icon(Pg.Tick, meta.tickDesc ?: "On their device", tint = color, modifier = Modifier.size(12.dp))
+                MetaTick.Read -> Icon(Pg.TickRead, meta.tickDesc ?: "Read on their device", tint = color, modifier = Modifier.size(12.dp))
                 MetaTick.Pending -> Icon(Pg.TickClock, meta.tickDesc ?: "Sending", tint = color, modifier = Modifier.size(11.dp))
                 MetaTick.Failed -> Icon(Pg.TickWarn, meta.tickDesc ?: "Not delivered", tint = Tin.c.er, modifier = Modifier.size(12.dp))
-                MetaTick.None -> {}
+                MetaTick.None, MetaTick.Blank -> {}
             }
         }
     }

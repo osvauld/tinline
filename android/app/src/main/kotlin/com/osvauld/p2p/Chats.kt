@@ -49,7 +49,8 @@ fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link
             ch.peerDid, name,
             status ?: if (waiting) "Waiting to send — ${firstName(name)} isn’t reachable yet" else ch.preview,
             listTime(at, nowMs), ch.lastOutgoing,
-            when { waiting -> Tick.Clock; ch.lastDelivery == uniffi.p2pcore.DeliveryState.DELIVERED -> Tick.Two; else -> Tick.One },
+            // The list only draws the clock; delivered/read marks come from signed receipts in the conversation.
+            if (waiting) Tick.Clock else Tick.One,
             ch.unread.toInt(),
             alert = status != null, atMs = at,
         )
