@@ -16,7 +16,7 @@ pub const FRAME: usize = 960;
 pub const HEADER: usize = 5;
 
 /// Frame length in ms (also the `frame_ms` of [`CALL_CODEC`]).
-const FRAME_MS: u64 = 20;
+pub const FRAME_MS: u64 = 20;
 /// Largest datagram payload we encode/accept.
 const MAX_PACKET: usize = 1500;
 /// Ring size of the jitter buffer in frames (1.28 s).

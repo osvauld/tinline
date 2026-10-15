@@ -40,7 +40,7 @@ pub use proto::gcall::{EndReason, HostRef};
 pub use select::Forwarder;
 
 /// Opus frame length.
-pub const FRAME_MS: u64 = 20;
+pub const FRAME_MS: u64 = audio::FRAME_MS;
 /// §5: host heartbeat period, and how many may be missed before the host counts as lost.
 pub const HEARTBEAT_MS: u64 = 1_000;
 pub const HEARTBEAT_MISSES: u64 = 3;
