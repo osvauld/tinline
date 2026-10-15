@@ -16,6 +16,7 @@
   import { dur } from '../fx/motion';
   import { vid } from './video/video.svelte';
   import { motion } from '../fx/reduced.svelte';
+  import { socialText } from './socialText';
 
   const name = $derived(call.peer ? displayName(call.peer) : '');
   const hue = $derived((call.peer && person(call.peer)?.hue) || 0);
@@ -32,6 +33,8 @@
   const gs = $derived(system.background && system.gStarted && system.gStarted.bannerOn ? system.gStarted : null);
   const gname = $derived.by(() => { const c = gs ? chat(gs.gid) : undefined; return c?.kind === 'group' ? c.name : ''; });
   const gmini = $derived(system.background && system.gOngoing);
+  /* People (requests, acceptances, invitations): the newest as a toast while the window is away, one at a time. */
+  const st = $derived(system.background && system.social.length ? system.social[system.social.length - 1] : null);
   const gtext = $derived(system.gOngoingActive ? fmtDuration(gcall.elapsedS) : gcall.statusText);
 </script>
 
@@ -82,6 +85,26 @@
       <button type="button" class="b ans press" onclick={() => system.joinFromNotice(gs.gid)}>Join</button>
     </div>
   </div>
+{/if}
+
+{#if st && !toast && !gs}
+  {@const t = socialText(st)}
+  {#key st.id}
+  <div class="toast" role="status" aria-label="{t.title}: {t.text}" data-os="toast-{st.kind}" in:toastIn out:toastOut>
+    <button type="button" class="open" aria-label="Open: {t.title}" onclick={() => system.openSocial(st)}>
+      {#if st.kind === 'invite'}<Avatar name={st.groupName} group size={44} />{:else}<Avatar name={st.name} hue={person(st.who)?.hue ?? 0} person={st.who} size={44} />{/if}
+      <span class="tx">
+        <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline</span>
+        <b dir="auto">{t.title}</b>
+        <small>{t.text}</small>
+      </span>
+    </button>
+    <div class="acts">
+      <button type="button" class="b quiet press" onclick={() => system.dismissSocial(st.id)}>Dismiss</button>
+      <button type="button" class="b ans press" onclick={() => system.openSocial(st)}>{t.act}</button>
+    </div>
+  </div>
+  {/key}
 {/if}
 
 {#if gmini}

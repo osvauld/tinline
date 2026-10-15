@@ -1,3 +1,4 @@
+import { emitSocial } from '../social';
 /* Group actions. Rules from the real core are enforced HERE, not only hidden in the UI:
    - posts are text + reply only (chat.ts: canAttach/canEdit/canDelete are direct-only);
    - only the OWNER makes or unmakes admins; owner and admins invite, appoint hosts and flag;
@@ -225,6 +226,7 @@ export function cancelLink(g: Group, code: string) { g.links = (g.links ?? []).f
 export function receiveInvitation(by: Id, groupName: string) {
   const id = newId('inv');
   gx.invitations.push({ id, by, groupName, at: clock.now, expiresAt: clock.now + INVITE_MS, hostName: firstName(by) });
+  emitSocial({ kind: 'invite', by, byName: firstName(by), groupName, inv: id });
   return id;
 }
 export function acceptInvitation(id: Id): string | null {

@@ -8,6 +8,7 @@
   import { displayName, chat } from '../model/store.svelte';
   import { hhmm } from '../model/clock.svelte';
   import { headsUpIn as noticeIn, headsUpOut as noticeOut } from './motion';
+  import { socialText } from './socialText';
 
   const name = $derived(call.peer ? displayName(call.peer) : '');
   const text = $derived(system.ongoingActive ? fmtDuration(call.elapsedS) : call.statusText);
@@ -60,6 +61,17 @@
       </Notice>
     </div>
   {/if}
+  <!-- People: the same words on Android and in the desktop toast (Notices: what arrived while I was away). -->
+  {#each system.social as n (n.id)}
+    {@const t = socialText(n)}
+    <div in:noticeIn out:noticeOut data-notice={n.kind}>
+      <Notice title={t.title} text={t.text} when={hhmm(n.at)} person={n.kind === 'invite' ? undefined : n.who} group={n.kind === 'invite' ? n.groupName : undefined} onopen={() => system.openSocial(n)}>
+        {#snippet actions()}
+          <button type="button" class="act" onclick={() => system.openSocial(n)}>{t.act}</button>
+        {/snippet}
+      </Notice>
+    </div>
+  {/each}
   {#each system.notifications as n (n.id)}
     {@const who = displayName(n.peer)}
     <div in:noticeIn out:noticeOut data-notice="missed">

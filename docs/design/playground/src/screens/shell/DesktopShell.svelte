@@ -26,6 +26,7 @@
   import DesktopField from '../search/DesktopField.svelte';
   import SearchResults from '../search/SearchResults.svelte';
   import { ui } from '../search/state.svelte';
+  import { gx } from '../../lib/model/actions/groups.svelte';
   let activeOpt = $state('');
   const look = $derived(statusLook());
 
@@ -48,7 +49,7 @@
       {#each TABS as t (t)}
         <button type="button" class="nav press" aria-current={nav.tab === t ? 'page' : undefined} onclick={() => { ui.clear(); nav.setTab(t); }}>
           <Icon name={TAB_ICON[t]} size={20} /><span>{TAB_LISTS[t].title}</span>
-          {#if t === 'chats' && unread}<span class="t-badge">{unread}</span>{/if}
+          {#if t === 'chats' && unread}<span class="t-badge">{unread}</span>{:else if t === 'groups' && gx.invitations.length}<span class="t-badge" aria-label="{gx.invitations.length} invitations">{gx.invitations.length}</span>{/if}
         </button>
       {/each}
     </nav>
