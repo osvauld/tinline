@@ -148,17 +148,18 @@ impl App {
             .style(super::shell_view::wash(t, None, Some(t.surface2), 12.0)).on_press(l(Lm::ToggleInfo));
         let info = button(container(crate::pg_icons::pgi("info", 24.0, if on { t.accent_ink } else { t.ink })).center_x(44).center_y(44)).padding(0).width(44).height(44)
             .style(super::shell_view::wash(t, on.then_some(t.accent_soft), Some(t.surface2), 22.0)).on_press(l(Lm::ToggleInfo));
-        // The call button: start a call, join the one running, or return to mine (live: accent-soft). Dimmed, with
-        // the reason as its tooltip, while the group has no call host and no call runs.
+        // The call button: start a call, join the one running, or return to mine (live: accent-soft). It stays
+        // in place while the group has no call host: pressing it then explains, calmly, what a call needs.
         let gid = d.id.clone();
         let running = self.gcall.live.contains_key(&gid) || (self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live());
         let no_host = d.call_hosts.is_empty() && !running;
         let tip = if self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live() { "Return to group call" } else if running { "Join group call" }
-            else if no_host { "No call host yet: an admin can appoint one in Group info" } else { "Start group call" };
-        let call_btn = button(container(crate::pg_icons::pgi("phone", 24.0, if running { t.accent_ink } else if no_host { ui::alpha(t.ink2, 0.45) } else { t.ink })).center_x(44).center_y(44))
+            else if no_host { "Group call (needs a call host)" } else { "Start group call" };
+        let press = if no_host { l(Lm::CallNeedsHost(!self.live.call_needs_host)) } else { Msg::GCall(crate::app::gcall::Gm::Call(gid.clone())) };
+        let call_btn = button(container(crate::pg_icons::pgi("phone", 24.0, if running { t.accent_ink } else { t.ink })).center_x(44).center_y(44))
             .padding(0).width(44).height(44)
-            .style(super::shell_view::wash(t, running.then_some(t.accent_soft), (!no_host).then_some(t.surface2), 22.0))
-            .on_press_maybe((!gone && !no_host).then(|| Msg::GCall(crate::app::gcall::Gm::Call(gid.clone()))));
+            .style(super::shell_view::wash(t, (running || (no_host && self.live.call_needs_host)).then_some(t.accent_soft), Some(t.surface2), 22.0))
+            .on_press_maybe((!gone).then_some(press));
         let call_btn = iced::widget::tooltip(call_btn, iced::widget::text(tip).size(13), iced::widget::tooltip::Position::Bottom);
         let head = row![head_btn, call_btn, info].spacing(2).align_y(Alignment::Center);
         let mut top = column![container(head).padding(8).height(60).width(Fill).style(ui::plain(t.surface, 0.0)), rule(t)];
@@ -167,6 +168,24 @@ impl App {
         }
         if self.notice.is_some() {
             top = top.push(container(self.notice_bar(t)).padding([8, 20]));
+        }
+        if self.live.call_needs_host && d.call_hosts.is_empty() && !gone {
+            let admin = self.live.is_admin();
+            let mut acts = row![].spacing(8);
+            if admin {
+                acts = acts.push(btn(t, Kind::Primary, "Host calls on this computer", Some(l(Lm::CallsHere(true)))));
+            }
+            acts = acts.push(btn(t, Kind::Ghost, "Not now", Some(l(Lm::CallNeedsHost(false)))));
+            top = top.push(
+                container(
+                    column![
+                        bold("A call needs a call host", 15.0, t.ink),
+                        tx(if admin { "A call host is a member\u{2019}s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info." }
+                            else { "A call host is a member\u{2019}s computer or phone that carries the call. An admin can appoint one in Group info." }, 13.0, t.ink2),
+                        acts,
+                    ].spacing(6),
+                ).padding([12, 20]).width(Fill).style(ui::plain(t.surface2, 0.0)),
+            ).push(rule(t));
         }
         if let Some(by) = self.live.host_asked() {
             top = top.push(

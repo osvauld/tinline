@@ -36,6 +36,8 @@ pub(super) struct Announce {
     pub by: String,
     pub banner_on: bool,
     pub dismissed: bool,
+    /// Rings like an incoming call (up to `group_call_ring_ms`): Join / Not now. Then the quiet banner stays.
+    pub ringing: bool,
 }
 
 #[derive(Default)]
@@ -61,7 +63,8 @@ pub(super) struct State {
     pub live: HashMap<String, p2pcore::GroupCall>,
     ended_at: Option<Instant>,
     /// GroupCallAnnounce.svelte: "Sam started a call in Weekend hike". A quiet banner that settles after
-    /// `BANNER_HOLD` (the call stays in the conversation and the Groups list). A group call does not ring.
+    /// `BANNER_HOLD` (the call stays in the conversation and the Groups list). A group call someone else starts rings
+    /// first (`Announce::ringing`) when I am on no line.
     pub announce: Option<Announce>,
     /// Screenshots: a fixed call length (a timer changing in the captured frame isn't drawn yet).
     pub frozen: Option<u64>,
@@ -83,6 +86,10 @@ pub(super) enum Gm {
     /// The banner's hold ran out (only for the call it was raised for).
     Settle(String),
     DismissAnnounce,
+    /// "Not now" on the ringing card: the ring stops, the quiet banner stays.
+    NotNow,
+    /// The ring time ran out (only for the call it was raised for).
+    RingEnd(String),
     /// The ended screen's hold ran out (only for the end it was started for).
     Close(Option<Instant>),
 }
@@ -123,6 +130,14 @@ impl App {
         }
     }
 
+    /// The ring ends (joined, Not now, ended, the ring time): the quiet banner / pill stays.
+    fn gcall_stop_ring(&mut self) {
+        if let Some(a) = self.gcall.announce.as_mut().filter(|a| a.ringing) {
+            a.ringing = false;
+            self.ctl.stop_ring();
+        }
+    }
+
     fn gcall_end(&mut self, failed: bool, reason: String, hold: u64) -> Task<Msg> {
         self.gcall.phase = if failed { Phase::Failed } else { Phase::Ended };
         self.gcall.reason = reason;
@@ -138,7 +153,7 @@ impl App {
     pub(super) fn gcall_update(&mut self, m: Gm) -> Task<Msg> {
         match m {
             Gm::Call(gid) => {
-                if self.gcall.announce.as_ref().is_some_and(|a| a.gid == gid) { self.gcall.announce = None; }
+                if self.gcall.announce.as_ref().is_some_and(|a| a.gid == gid) { self.gcall_stop_ring(); self.gcall.announce = None; }
                 if self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live() {
                     self.gcall.minimized = false;
                     return Task::none();
@@ -205,8 +220,12 @@ impl App {
             Gm::Settle(call_id) => {
                 if let Some(a) = self.gcall.announce.as_mut().filter(|a| a.call_id == call_id) { a.banner_on = false; }
             }
-            Gm::DismissAnnounce => {
+            Gm::DismissAnnounce | Gm::NotNow => {
+                self.gcall_stop_ring();
                 if let Some(a) = self.gcall.announce.as_mut() { a.dismissed = true; }
+            }
+            Gm::RingEnd(call_id) => {
+                if self.gcall.announce.as_ref().is_some_and(|a| a.call_id == call_id) { self.gcall_stop_ring(); }
             }
         }
         Task::none()
@@ -218,6 +237,10 @@ impl App {
         if !self.demo && matches!(e.kind, GroupCallEventKind::Ended | GroupCallEventKind::Left) {
             self.group_log = self.node.group_call_history(None).unwrap_or_default();
         }
+        // My own leaving (or the end) may leave the call running for others, or over for everyone: re-read, so Join never lingers.
+        if e.kind == GroupCallEventKind::Left && !e.group_id.is_empty() {
+            self.gcall_refresh_live(&e.group_id);
+        }
         match e.kind {
             GroupCallEventKind::Announced => {
                 let fresh = !self.gcall.live.get(&e.group_id).is_some_and(|c| c.call_id == e.call_id);
@@ -225,14 +248,29 @@ impl App {
                 // Someone else's call, in a group I'm not already on the line in: raise the banner.
                 let theirs = self.gcall.live.get(&e.group_id).is_some_and(|c| c.call_id == e.call_id && !c.joined && !self.is_me(&c.starter_did));
                 if fresh && theirs && !(self.gcall.live() && mine) {
-                    self.gcall.announce = Some(Announce { gid: e.group_id.clone(), call_id: e.call_id.clone(), by: e.detail.clone(), banner_on: true, dismissed: false });
+                    // It rings when the core agrees (not blocked, no group call here), no 1:1 call is on, and Calls alerts are on.
+                    let rings = self.call.is_none() && !self.gcall.live() && crate::audio::RING_CALLS.load(std::sync::atomic::Ordering::Relaxed)
+                        && self.node.group_call_rings(e.group_id.clone(), e.call_id.clone());
+                    self.gcall_stop_ring();
+                    self.gcall.announce = Some(Announce { gid: e.group_id.clone(), call_id: e.call_id.clone(), by: e.detail.clone(), banner_on: true, dismissed: false, ringing: rings });
                     let id = e.call_id.clone();
-                    return Task::perform(tokio::time::sleep(BANNER_HOLD), move |_| Msg::GCall(Gm::Settle(id.clone())));
+                    let ring_ms = if rings { self.node.group_call_ring_ms() } else { 0 };
+                    let mut tasks = vec![Task::perform(tokio::time::sleep(BANNER_HOLD + Duration::from_millis(ring_ms)), { let id = id.clone(); move |_| Msg::GCall(Gm::Settle(id.clone())) })];
+                    if rings {
+                        self.ctl.ring_group();
+                        let who = self.gcall_name(&e.detail);
+                        let group = self.live.list.iter().find(|s| s.id == e.group_id).map(|s| s.name.clone()).unwrap_or_else(|| "Group".into());
+                        if !self.focused {
+                            super::notify(&group, &format!("{} is calling the group", who.split_whitespace().next().unwrap_or(&who)), super::Target::Show);
+                        }
+                        tasks.push(Task::perform(tokio::time::sleep(Duration::from_millis(ring_ms)), move |_| Msg::GCall(Gm::RingEnd(id.clone()))));
+                    }
+                    return Task::batch(tasks);
                 }
             }
             GroupCallEventKind::Ended => {
                 self.gcall.live.remove(&e.group_id);
-                if self.gcall.announce.as_ref().is_some_and(|a| a.gid == e.group_id) { self.gcall.announce = None; }
+                if self.gcall.announce.as_ref().is_some_and(|a| a.gid == e.group_id) { self.gcall_stop_ring(); self.gcall.announce = None; }
                 if mine && self.gcall.call_id.as_deref() == Some(e.call_id.as_str()) {
                     return self.gcall_end(false, "Call ended".into(), 900);
                 }
