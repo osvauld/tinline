@@ -10,7 +10,7 @@ fn gm(m: Gm) -> Msg {
 
 impl App {
     /// A person in a group call: "You", their name in the group, a contact's name, else "Someone".
-    pub(super) fn gcall_name(&self, did: &str) -> String {
+    pub(crate) fn gcall_name(&self, did: &str) -> String {
         if self.is_me(did) {
             return "You".into();
         }
@@ -209,19 +209,24 @@ impl App {
     /// that group is not the one open. (The core has no group mute yet, so a muted group cannot be left quiet.)
     pub(super) fn gcall_announce(&self, t: Tok) -> Option<El<'_>> {
         let a = self.gcall.announce.as_ref().filter(|a| a.banner_on && !a.dismissed)?;
-        if !self.gcall.live.contains_key(&a.gid) || self.gcall.live() || self.call.is_some() || self.live.open.as_deref() == Some(a.gid.as_str()) {
+        if !self.gcall.live.contains_key(&a.gid) || self.gcall.live() || self.call.is_some() || (self.live.open.as_deref() == Some(a.gid.as_str()) && !a.ringing) {
             return None;
         }
         let group = self.live.list.iter().find(|s| s.id == a.gid).map(|s| s.name.clone())?;
         let by = self.gcall_name(&a.by);
         let open = button(row![self.profile_avatar(t, &by, &a.by, 44.0),
                 column![container(semi(group.clone(), 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill),
-                    container(tx(format!("{by} started a call"), 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill)].width(Fill)]
+                    container(tx(if a.ringing { format!("{} is calling the group", by.split_whitespace().next().unwrap_or(&by)) } else { format!("{by} started a call") }, 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill)].width(Fill)]
                 .spacing(12).align_y(Alignment::Center))
             .padding([0, 4]).height(48).width(Fill).style(shell_view::wash(t, None, None, 14.0))
             .on_press(Msg::Live(crate::app::group_live::Lm::Open(a.gid.clone())));
-        let x = button(container(crate::pg_icons::pgi("x", 18.0, t.ink2)).center_x(36).center_y(36)).padding(0).width(36).height(36)
-            .style(shell_view::wash(t, None, Some(t.surface2), 18.0)).on_press(gm(Gm::DismissAnnounce));
+        let x: El<'_> = if a.ringing {
+            button(container(bold("Not now", 13.0, t.ink)).center_x(Fill).center_y(44)).padding([0, 14]).height(44)
+                .style(shell_view::wash(t, Some(t.surface2), Some(t.surface3), 22.0)).on_press(gm(Gm::NotNow)).into()
+        } else {
+            button(container(crate::pg_icons::pgi("x", 18.0, t.ink2)).center_x(36).center_y(36)).padding(0).width(36).height(36)
+                .style(shell_view::wash(t, None, Some(t.surface2), 18.0)).on_press(gm(Gm::DismissAnnounce)).into()
+        };
         let join = button(container(bold("Join", 13.0, t.on_accent)).center_x(Fill).center_y(44)).padding([0, 20]).height(44)
             .style(move |_: &Theme, _| button::Style { background: Some(t.accent.into()), border: Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
             .on_press(gm(Gm::Call(a.gid.clone())));

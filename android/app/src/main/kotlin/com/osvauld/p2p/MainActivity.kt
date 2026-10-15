@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
         intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
         if (intent?.getBooleanExtra(Notifications.EXTRA_GROUPS, false) == true) OpenChat.groupsTab.value = true
+        groupCallFrom(intent)
         if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent); requestFrom(intent) }
         Appearance.load(this)
         setContent {
@@ -71,12 +72,20 @@ class MainActivity : ComponentActivity() {
         app.requestsIn.value.firstOrNull { it.did == did }?.let { app.incoming.value = IncomingSheet(it.did, it.name, joined = false, theirs = false) }
     }
 
+    /** The group-call notification: Join takes the ringing call; a tap on the ongoing one returns to its screen. */
+    private fun groupCallFrom(intent: android.content.Intent?) {
+        val app = P2pApp.get(this)
+        intent?.getStringExtra(Notifications.EXTRA_GCALL_JOIN)?.let { intent.removeExtra(Notifications.EXTRA_GCALL_JOIN); app.groupCallUi.call(it) {} }
+        if (intent?.getBooleanExtra(Notifications.EXTRA_GCALL_OPEN, false) == true) { intent.removeExtra(Notifications.EXTRA_GCALL_OPEN); app.groupCallUi.restore() }
+    }
+
     override fun onResume() { super.onResume(); AppVisible.resumed = true }
-    override fun onPause() { AppVisible.resumed = false; P2pApp.get(this).calls.appLeftFront(); super.onPause() }
+    override fun onPause() { AppVisible.resumed = false; P2pApp.get(this).calls.appLeftFront(); P2pApp.get(this).groupCallUi.appLeftFront(); super.onPause() }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         requestFrom(intent)
+        groupCallFrom(intent)
         intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
         if (intent.getBooleanExtra(Notifications.EXTRA_GROUPS, false)) OpenChat.groupsTab.value = true
         CardInbox.take(intent)

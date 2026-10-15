@@ -16,7 +16,7 @@ async function open(b, form, hash, dark = false) {
   await wait(p, 500);
   await ev(p, () => {
     window.__gc.chatter = false;
-    const m = window.__gcms; m.ask = 150; m.refuse = 100; m.connect = 150; m.redialCrash = 400; m.redialPlanned = 250; m.redialRotate = 250; m.bannerHold = 1500;
+    const m = window.__gcms; m.ask = 150; m.refuse = 100; m.connect = 150; m.redialCrash = 400; m.redialPlanned = 250; m.redialRotate = 250; m.bannerHold = 1500; m.ring = 8000;
     window.__pg.CALL_MS.connect = 150;
   });
   return p;
@@ -163,7 +163,17 @@ const recs = (p, id) => ev(p, (id) => window.__pg.db.chats.find((c) => c.id === 
     await ev(p, () => window.__gc.remoteStart('hike', 'sam'));
     ok('started: Call started by Sam is in the thread', await ev(p, () => window.__pg.db.chats.find((c) => c.id === 'hike').messages.some((m) => m.system && /Call started by Sam/.test(m.text))));
     ok('started: the conversation banner shows, 1 joined', /Call in progress/.test(await p.locator('[data-gbanner]').innerText()) && /1 joined/.test(await p.locator('[data-gbanner]').innerText()));
-    ok('started: no ringing (no incoming call phase)', (await ev(p, () => window.__pg.call.phase)) === 'idle' && !(await ev(p, () => window.__pg.fxLog.some(({ e }) => e.type === 'incoming'))));
+    ok('started: a group call rings (ring cue on, 1:1 phase stays idle)', (await ev(p, () => window.__pg.call.phase)) === 'idle' && (await ev(p, () => window.__gc.announce?.ringing === true && window.__pg.fxLog.some(({ e }) => e.type === 'incoming' && e.on))));
+    ok('ring: the card says Sam is calling the group, Join / Not now', /Sam is calling the group/.test(await p.locator('[data-gcall-announce]').innerText().catch(() => '')) && (await p.locator('[data-gcall-announce]').getByRole('button', { name: 'Not now' }).count()) === 1);
+    await p.locator('[data-gcall-announce]').getByRole('button', { name: 'Not now' }).click();
+    ok('ring: Not now stops the ring; the quiet banner stays', (await ev(p, () => window.__gc.announce?.ringing === false && window.__pg.fxLog.filter(({ e }) => e.type === 'incoming').at(-1).e.on === false)) && /Call in progress/.test(await p.locator('[data-gbanner]').innerText()));
+    await ev(p, () => window.__gc.remoteLeave('hike', 'sam'));
+    await ev(p, () => { window.__pg.db.chats.find((c) => c.id === 'hike').muted = true; });
+    await ev(p, () => window.__gc.remoteStart('hike', 'sam'));
+    ok('ring: a muted group does not ring', (await ev(p, () => window.__gc.announce?.ringing)) === false);
+    await ev(p, () => { window.__gc.remoteLeave('hike', 'sam'); window.__pg.db.chats.find((c) => c.id === 'hike').muted = false; });
+    await ev(p, () => { window.__gcms.ring = 800; window.__gc.remoteStart('hike', 'sam'); });
+    ok('ring: ends by itself after the ring time', await until(p, () => window.__gc.announce?.ringing === false, null, 3000));
     await ev(p, () => { window.__gc.conds.arjun.class = 'phone'; window.__gc.conds.arjun.power = 'mains'; });
     for (const id of ['meera', 'priya', 'leo', 'kavya', 'dev', 'nisha', 'amma']) await ev(p, (id) => { const g = window.__pg.db.chats.find((c) => c.id === 'hike'); if (!g.members.some((m) => m.id === id)) g.members.push({ id, role: 'member', host: false, callHost: false, callHostPaused: false, since: 0 }); window.__gc.remoteJoin('hike', id); }, id);
     ok('cap: a phone host stops at 8 people', (await ev(p, () => window.__gc.liveFor('hike').parts.length)) === 8 && (await ev(p, () => window.__gc.remoteJoin('hike', 'sana'))) === false);

@@ -23,11 +23,15 @@ object Notifications {
     const val EXTRA_REQUEST = "contact_request"
     /** Open Home on the Groups tab (a group invitation). */
     const val EXTRA_GROUPS = "open_groups"
+    /** Join this group's running call (the ringing notification's Join). */
+    const val EXTRA_GCALL_JOIN = "gcall_join"
+    const val EXTRA_GCALL_OPEN = "gcall_open"
     const val ID_SERVICE = 1
     const val ID_INCOMING = 2
     const val ID_MISSED = 3
     const val ID_LOCKED = 4
     const val ID_WAITING = 5
+    const val ID_GROUP_RING = 6
 
     private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -93,6 +97,9 @@ object Notifications {
 
     /** The always-on foreground notification; text reflects call state, availability and connectivity. */
     fun service(c: Context, inCall: String?): Notification {
+        // A group call (no 1:1 call): its name as the title, the timer, Mute and Leave.
+        val app = P2pApp.instance
+        val groupCall = inCall != null && app.calls.ui.value == null && app.groupCalls.active
         val b = Notification.Builder(c, if (inCall != null) CH_ONGOING else CH_SERVICE)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setOngoing(true)
@@ -101,7 +108,8 @@ object Notifications {
             .setContentTitle(inCall ?: idleTitle())
             .setContentText(if (inCall != null) "Tap to return to the call" else idleText())
             .setContentIntent(
-                if (inCall != null) activity(c, CallActivity::class.java, 10)
+                if (groupCall) activity(c, MainActivity::class.java, 13) { it.putExtra(EXTRA_GCALL_OPEN, true) }
+                else if (inCall != null) activity(c, CallActivity::class.java, 10)
                 else activity(c, MainActivity::class.java, 11))
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
         if (inCall != null) {
@@ -115,7 +123,14 @@ object Notifications {
             } else {
                 b.addAction(Notification.Action.Builder(
                     Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel),
-                    "End call", hangup).build())
+                    if (groupCall) "Leave" else "End call", hangup).build())
+            }
+            if (groupCall) {
+                val g = app.groupCallUi.state.value
+                g.sinceMs?.takeIf { g.connected }?.let { b.setWhen(it).setShowWhen(true).setUsesChronometer(true) }
+                b.addAction(Notification.Action.Builder(
+                    Icon.createWithResource(c, android.R.drawable.ic_lock_silent_mode),
+                    if (g.muted) "Unmute" else "Mute", service(c, CoreService.ACTION_GCALL_MUTE, 14)).build())
             }
             call?.activeSinceMs?.let { since ->
                 b.setWhen(since).setShowWhen(true).setUsesChronometer(true)
@@ -149,6 +164,30 @@ object Notifications {
         }
         try { nm(c).notify(ID_INCOMING, b.build()) } catch (e: SecurityException) { }
     }
+
+    /**
+     * A group call someone else started rings (up to 30 s): the group's name over "<First name> is calling the group",
+     * Join / Not now, on the calls channel (heads-up, no full-screen). Posted only while the app is not in front.
+     */
+    fun groupRing(c: Context, gid: String, group: String, by: String, ringMs: Long) {
+        if (!AlertPrefs.calls(c)) return
+        val b = Notification.Builder(c, CH_CALLS)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setCategory(Notification.CATEGORY_CALL)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setContentTitle(group)
+            .setContentText("$by is calling the group")
+            .setContentIntent(activity(c, MainActivity::class.java, 60) { it.putExtra(EXTRA_GROUPS, true) })
+            .setTimeoutAfter(ringMs)
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), "Join",
+                activity(c, MainActivity::class.java, 61) { it.putExtra(EXTRA_GCALL_JOIN, gid) }).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), "Not now",
+                service(c, CoreService.ACTION_GCALL_NOT_NOW, 62)).build())
+        try { nm(c).notify(ID_GROUP_RING, b.build()) } catch (e: SecurityException) { }
+    }
+
+    fun cancelGroupRing(c: Context) = nm(c).cancel(ID_GROUP_RING)
 
     fun cancelIncoming(c: Context) = nm(c).cancel(ID_INCOMING)
 

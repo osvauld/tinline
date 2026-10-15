@@ -8,7 +8,7 @@
   import { gcall } from './gcall.svelte';
   import { vid } from './video/video.svelte';
   import { system } from './system.svelte';
-  import { db, displayName, person, chat } from '../model/store.svelte';
+  import { db, displayName, firstName, person, chat } from '../model/store.svelte';
   import { headsUpIn, headsUpOut } from './motion';
 
   /* Call waiting: someone else calls during my call. Same card, with the two actions the core allows. */
@@ -17,7 +17,7 @@
   const id = $derived(waiting ? waiting.peer : call.peer);
   const name = $derived(id ? displayName(id) : '');
   const hue = $derived((id && person(id)?.hue) || 0);
-  /* A group call started (no ring): the same card, quiet, with Join. It settles into the shade after a few seconds. */
+  /* A group call started: rings like an incoming call (Join / Not now) for up to 30 s, then settles quiet into the shade. */
   const gs = $derived(system.gStarted && system.gStarted.bannerOn && system.background && !system.locked && !show ? system.gStarted : null);
   const gname = $derived.by(() => { const c = gs ? chat(gs.gid) : undefined; return c?.kind === 'group' ? c.name : ''; });
   const forName = $derived(db.others.length ? (!waiting && call.toName) || db.account.name : '');
@@ -30,11 +30,11 @@
       <span class="tx">
         <span class="hd"><span class="ico" aria-hidden="true"><Mark size={13} mono /></span>Tinline{forName ? ` · ${forName}` : ''} · now</span>
         <b dir="auto">{gname}</b>
-        <small>{displayName(gs.by)} started a call</small>
+        <small>{gs.ringing ? `${firstName(gs.by)} is calling the group` : `${displayName(gs.by)} started a call`}</small>
       </span>
     </button>
     <div class="acts one">
-      <button type="button" class="b dec quiet press" onclick={() => gcall.dismissAnnounce()}>Dismiss</button>
+      <button type="button" class="b dec quiet press" onclick={() => (gs.ringing ? gcall.notNow() : gcall.dismissAnnounce())}>{gs.ringing ? 'Not now' : 'Dismiss'}</button>
       <button type="button" class="b ans press" onclick={() => system.joinFromNotice(gs.gid)}>Join</button>
     </div>
   </div>

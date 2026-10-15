@@ -51,6 +51,9 @@ pub const IDLE_END_MS: u64 = 20_000;
 pub const REQUEST_MAX_AGE_MS: u64 = 60_000;
 /// Calls are offered to (re)connecting members this long after they started.
 pub const CALL_KEEP_MS: u64 = 4 * 3600 * 1000;
+/// A group call someone else starts rings (like an incoming call) for at most this long; the
+/// announcement itself stays (a quiet "Join").
+pub const GROUP_CALL_RING_MS: u64 = 30_000;
 /// Seen-blob memory bound (relay dedupe).
 const SEEN_MAX: usize = 4096;
 /// A signed blob larger than this is not relayed (statuses are ~0.6 KiB, CallStarts ~1.5 KiB).
@@ -198,6 +201,10 @@ struct CallsSt {
     /// gid → call id → highest generation's CallStart.
     calls: HashMap<String, BTreeMap<String, (SignedBlob, CallStart)>>,
     ended: HashSet<String>,
+    /// call id → (gid, host DID, the signed End, forget after): every End{ended} seen, also for a
+    /// call we never heard of (its CallStart may still arrive from a member that missed the End,
+    /// and is then dropped). Sent on to a member that connects later, so nobody keeps a call alive.
+    ends: HashMap<String, (String, String, SignedBlob, u64)>,
     /// Relay dedupe: signature → forget after (unix ms).
     seen: HashMap<String, u64>,
     pending: Option<Pending>,
@@ -472,7 +479,8 @@ impl Inner {
                 }
                 let Ok(e) = w::open_end(&end) else { return };
                 let known = self.group.calls.st.lock().calls.get(gid).and_then(|c| c.get(&e.call_id)).is_some_and(|(_, s)| s.host_ref.holder_did == e.host_did);
-                if e.gid != gid || e.reason != EndReason::Ended || !known || !signer_ok(&e.host_did) || !self.calls_first_sight(&end.signature, now + CALL_KEEP_MS) {
+                let unknown = !known && !self.group.calls.st.lock().calls.get(gid).is_some_and(|c| c.contains_key(&e.call_id)) && dir.is_member(gid, &e.host_did);
+                if e.gid != gid || e.reason != EndReason::Ended || !(known || unknown) || !signer_ok(&e.host_did) || !self.calls_first_sight(&end.signature, now + CALL_KEEP_MS) {
                     return;
                 }
                 self.group_call_ended(gid, &e.call_id, &end);
@@ -530,7 +538,7 @@ impl Inner {
     fn group_call_started(self: &Arc<Self>, gid: &str, blob: SignedBlob, s: CallStart) {
         let new_call = {
             let mut st = self.group.calls.st.lock();
-            if st.ended.contains(&s.call_id) {
+            if st.ended.contains(&s.call_id) || st.ends.get(&s.call_id).is_some_and(|(_, host, _, _)| *host == s.host_ref.holder_did) {
                 return;
             }
             let calls = st.calls.entry(gid.to_string()).or_default();
@@ -570,6 +578,12 @@ impl Inner {
         let _ = self.gcall_observe_end(end);
         let had = {
             let mut st = self.group.calls.st.lock();
+            if let Ok(e) = w::open_end(end) {
+                if st.ends.len() >= SEEN_MAX {
+                    st.ends.clear();
+                }
+                st.ends.insert(call_id.to_string(), (gid.to_string(), e.host_did, end.clone(), now_ms() + CALL_KEEP_MS));
+            }
             st.ended.insert(call_id.to_string());
             st.calls.get_mut(gid).and_then(|c| c.remove(call_id)).is_some()
         };
@@ -811,6 +825,7 @@ impl Inner {
             c.retain(|_, (_, s)| s.started_ms + CALL_KEEP_MS > now);
         }
         st.seen.retain(|_, t| *t > now);
+        st.ends.retain(|_, (_, _, _, t)| *t > now);
     }
 
     /// A new session: a member we host gets the fresh statuses and live calls; another host
@@ -840,6 +855,15 @@ impl Inner {
             };
             (statuses, calls)
         };
+        let ends: Vec<SignedBlob> = if all || peer_host {
+            let st = self.group.calls.st.lock();
+            st.ends.values().filter(|(g, _, _, until)| *g == sess.gid && *until > now).map(|(_, _, b, _)| b.clone()).collect()
+        } else {
+            vec![]
+        };
+        for end in ends {
+            let _ = sess.tx.send(Out::Msg(GroupMsg::CallEnd { end }));
+        }
         for status in statuses {
             let _ = sess.tx.send(Out::Msg(GroupMsg::CallHostStatus { status }));
         }
@@ -992,6 +1016,27 @@ impl Node {
     /// Mutes this device's microphone in the group call.
     pub fn group_call_set_muted(&self, muted: bool) {
         self.inner.gcall_set_mic_muted(muted)
+    }
+
+    /// How long a started group call rings, in ms (apps ring up to this long from the moment
+    /// they hear the `Announced` event, and stop earlier on join, "Not now" or `Ended`).
+    pub fn group_call_ring_ms(&self) -> u64 {
+        GROUP_CALL_RING_MS
+    }
+
+    /// Whether the announced call `call_id` of the group should ring this device: it is known
+    /// and still running, somebody else started it, that DID is not blocked by me or blocking
+    /// me, and this device is on no group call. The apps add what only they know: a 1:1 call in
+    /// progress, and a muted group where the app has a per-group mute.
+    pub fn group_call_rings(&self, group_id: String, call_id: String) -> bool {
+        let Ok(core) = self.inner.group_core() else { return false };
+        let starter = self.inner.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(_, s)| s.starter_did.clone());
+        let Some(starter) = starter else { return false };
+        if starter == core.did || self.inner.gcall.busy() {
+            return false;
+        }
+        let s = self.inner.shared.lock();
+        !s.state.blocked.contains(&starter) && !crate::block::blocked_me(&s.state, &starter)
     }
 
     /// The calls going on in the group, as this device knows them.

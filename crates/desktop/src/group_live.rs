@@ -398,6 +398,8 @@ pub(super) enum Lm {
     RevokeCall(String, String),
     /// This computer: start (true) or stop (false) carrying the open group's calls.
     CallsHere(bool),
+    /// The call button in a group with no call host (true), or its explanation closed (false).
+    CallNeedsHost(bool),
     Confirm,
     Dismiss,
     Created(Result<String, String>),
@@ -446,6 +448,8 @@ pub(super) struct GroupsLive {
     pub reply: Option<String>,
     /// The members pane beside the chat (on by default).
     pub hide_info: bool,
+    /// The call button was pressed in a group with no call host: a calm explanation shows under the header.
+    pub call_needs_host: bool,
     /// GroupsList "Left or removed" fold (closed by default).
     pub gone_open: bool,
     /// Unread posts when the open group was opened (the "n new messages" divider).
@@ -871,7 +875,9 @@ impl GroupsLive {
                     out.job = Some(Job::RevokeCall { gid, did, dev });
                 }
             }
+            Lm::CallNeedsHost(on) => self.call_needs_host = on,
             Lm::CallsHere(on) => {
+                self.call_needs_host = false;
                 if let (Some(gid), Some(d)) = (self.open.clone(), self.detail.as_ref()) {
                     // Asked already (an admin appointed this device): just accept. Stopping: just decline.
                     // Otherwise (an admin, nobody asked): appoint this computer and accept, in one go.
@@ -1027,6 +1033,7 @@ impl GroupsLive {
     }
 
     pub fn close(&mut self) {
+        self.call_needs_host = false;
         self.open = None;
         self.detail = None;
         self.msgs.clear();
