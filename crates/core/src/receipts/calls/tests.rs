@@ -56,7 +56,7 @@ fn all_typed_session_observation_fields_are_signature_bound() {
             }
         }
         let bytes = SignedReceipt {
-            body: bincode::serialize(&c).unwrap(),
+            body: cryptography::codec::to_bytes(&c).unwrap(),
             sig: signed.sig.clone(),
         }
         .to_bytes()

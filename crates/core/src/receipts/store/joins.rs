@@ -70,7 +70,7 @@ fn valid_id(id: &str) -> bool {
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 fn encode<T: Serialize>(value: &T, limit: usize) -> Result<Vec<u8>, ReceiptError> {
-    let bytes = bincode::serialize(value).map_err(|_| ReceiptError::Encoding)?;
+    let bytes = cryptography::codec::to_bytes(value).map_err(|_| ReceiptError::Encoding)?;
     if bytes.len() > limit {
         return Err(ReceiptError::Bounds);
     }
@@ -83,16 +83,7 @@ fn decode<T: serde::de::DeserializeOwned + Serialize>(
     if bytes.len() > limit {
         return Err(ReceiptError::Bounds);
     }
-    let value: T = bincode::DefaultOptions::new()
-        .with_fixint_encoding()
-        .with_limit(limit as u64)
-        .reject_trailing_bytes()
-        .deserialize(bytes)
-        .map_err(|_| ReceiptError::Encoding)?;
-    if encode(&value, limit)? != bytes {
-        return Err(ReceiptError::Encoding);
-    }
-    Ok(value)
+    cryptography::codec::from_bytes_canonical(bytes, limit).map_err(|_| ReceiptError::Encoding)
 }
 fn context_matches(context: &JoinContext, claim: &Receipt) -> Result<(), ReceiptError> {
     if context.issuer != claim.recipient || context.device != claim.device {

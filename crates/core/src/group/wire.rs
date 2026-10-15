@@ -1,4 +1,4 @@
-//! Frames of `tinline/group/2` on the group endpoint (U2): u32 BE length + bincode of `GroupMsg`
+//! Frames of `tinline/group/3` on the group endpoint (U2): u32 BE length + postcard (`cryptography::codec`) of `GroupMsg`
 //! on one bidirectional stream opened by the dialer. Dialers are members (or hosts acting as
 //! members towards another host); the acceptor is always a host (U7).
 //!
@@ -24,7 +24,7 @@ use super::doc::DocId;
 use super::record::{EndpointAuth, InviteToken, SignedHostAddr, SignedInvite};
 use crate::Error;
 
-pub const GROUP_ALPN: &[u8] = b"tinline/group/2";
+pub const GROUP_ALPN: &[u8] = b"tinline/group/3";
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 /// `Hello` and `Welcome` list the day docs of this many recent days (as 1:1 chat does).
 pub const HELLO_DAYS: i64 = 7;
@@ -120,7 +120,7 @@ impl Reader {
                     return Err(Error::Protocol("group frame too large".into()));
                 }
                 if self.buf.len() >= 4 + len {
-                    let msg = bincode::deserialize(&self.buf[4..4 + len]).map_err(|_| Error::Protocol("group frame does not decode".into()))?;
+                    let msg = cryptography::codec::from_bytes(&self.buf[4..4 + len], MAX_FRAME).map_err(|_| Error::Protocol("group frame does not decode".into()))?;
                     self.buf.drain(..4 + len);
                     return Ok(Some(msg));
                 }
@@ -136,7 +136,7 @@ impl Reader {
 
 impl Writer {
     pub async fn send(&mut self, msg: &GroupMsg) -> Result<(), Error> {
-        let body = bincode::serialize(msg).map_err(|e| Error::Protocol(e.to_string()))?;
+        let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
         if body.len() > MAX_FRAME {
             return Err(Error::Protocol("group frame too large".into()));
         }

@@ -695,15 +695,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "597bb81c80a54b6a4381b23faba8d7774b144c94cbd1d6fe3f1329bd776554ab"
 
 [[package]]
-name = "bincode"
-version = "1.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "bindgen"
 version = "0.72.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3307,11 +3298,9 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 name = "identity"
 version = "0.1.32"
 dependencies = [
- "bincode",
  "bip39",
  "bs58",
  "cryptography",
- "serde",
  "thiserror 2.0.21",
  "zeroize",
 ]
@@ -5699,7 +5688,6 @@ dependencies = [
  "aes-gcm 0.11.1",
  "audio",
  "base64 0.23.1",
- "bincode",
  "blake3",
  "bs58",
  "bytes",

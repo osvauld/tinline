@@ -3,7 +3,7 @@ use super::*;
 const DOMAIN: &[u8] = b"tinline-receipt-protocol-evidence-v1\0";
 const SIG_TEXT_BYTES: usize = (SIGNATURE_BYTES * 8).div_ceil(6); // unpadded base64url
 pub(crate) const MAX_PROTOCOL_EVIDENCE_BYTES: usize =
-    2 * proto::gcall::MAX_CONTROL + 2 * VEC_LENGTH_BYTES + SIG_TEXT_BYTES;
+    2 * proto::gcall::MAX_CONTROL + 2 * codec::LEN_PREFIX_MAX + SIG_TEXT_BYTES;
 #[derive(Debug, Clone)]
 pub(crate) struct Evidence {
     pub id: [u8; 32],
@@ -25,7 +25,7 @@ impl Evidence {
         {
             return Err(ReceiptError::Bounds);
         }
-        let bytes = bincode::serialize(blob).map_err(|_| ReceiptError::Encoding)?;
+        let bytes = codec::to_bytes(blob).map_err(|_| ReceiptError::Encoding)?;
         Ok(Self {
             id: hash(&bytes),
             bytes,
@@ -35,15 +35,9 @@ impl Evidence {
         if self.bytes.len() > MAX_PROTOCOL_EVIDENCE_BYTES || hash(&self.bytes) != self.id {
             return Err(ReceiptError::Bounds);
         }
-        let blob: proto::SignedBlob = bincode::DefaultOptions::new()
-            .with_fixint_encoding()
-            .with_limit(MAX_PROTOCOL_EVIDENCE_BYTES as u64)
-            .reject_trailing_bytes()
-            .deserialize(&self.bytes)
+        let blob: proto::SignedBlob = codec::from_bytes_canonical(&self.bytes, MAX_PROTOCOL_EVIDENCE_BYTES)
             .map_err(|_| ReceiptError::Encoding)?;
-        if Self::from_blob(&blob)?.bytes != self.bytes {
-            return Err(ReceiptError::Encoding);
-        }
+        Self::from_blob(&blob)?; // the same bounds as on the way in
         Ok(blob)
     }
 }

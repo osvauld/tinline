@@ -44,7 +44,7 @@ pub(super) fn supported(docs: &[(String, Vec<u8>)]) -> bool {
 impl Receipts {
     pub fn offer(&mut self, inner: &Arc<Inner>, tokens: &[Vec<u8>]) {
         for bytes in tokens.iter().take(crate::group::own::MAX_OWN_GROUPS) {
-            let Ok(token) = bincode::deserialize::<InviteToken>(bytes) else {
+            let Ok(token) = cryptography::codec::from_bytes::<InviteToken>(bytes, crate::group::record::MAX_TOKEN) else {
                 continue;
             };
             if token.invite.is_none()

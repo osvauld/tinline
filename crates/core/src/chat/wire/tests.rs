@@ -16,7 +16,7 @@ fn batch_signatures_bind_doc_and_update() {
 #[test]
 fn frames_encode() {
     let m = ChatMsg::Hello { shards: vec![("2026-10-07".into(), vec![1, 2, 3])] };
-    let b = bincode::serialize(&m).unwrap();
-    let back: ChatMsg = bincode::deserialize(&b).unwrap();
+    let b = cryptography::codec::to_bytes(&m).unwrap();
+    let back: ChatMsg = cryptography::codec::from_bytes(&b, usize::MAX).unwrap();
     assert!(matches!(back, ChatMsg::Hello { shards } if shards[0].1 == vec![1, 2, 3]));
 }

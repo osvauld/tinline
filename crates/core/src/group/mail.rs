@@ -16,6 +16,7 @@
 //! On `Accept` the requester adds the recipient from the ticket (`ContactOrigin::GroupRequest`:
 //! message token only); the chat then runs directly between private endpoints, without the host.
 
+use cryptography::codec;
 use serde::{Deserialize, Serialize};
 
 use super::record::{put_bytes_pub as put_bytes, verify_did_pub as verify_did};
@@ -71,21 +72,17 @@ fn sig_input(body: &[u8]) -> Vec<u8> {
 
 impl SignedMail {
     pub fn to_bytes(&self) -> Vec<u8> {
-        bincode::serialize(self).expect("mail serialises")
+        codec::to_bytes(self).expect("mail serialises")
     }
 
     pub fn from_bytes(b: &[u8]) -> Option<Self> {
-        if b.len() > MAX_SEALED + 2048 {
-            return None;
-        }
-        let s: SignedMail = bincode::deserialize(b).ok()?;
-        (s.to_bytes() == b).then_some(s)
+        codec::from_bytes_canonical(b, MAX_SEALED + 2048).ok()
     }
 
     /// The envelope, if its sender's DID signed it and it is well formed.
     pub fn open(&self) -> Option<Mail> {
-        let m: Mail = bincode::deserialize(&self.body).ok()?;
-        if bincode::serialize(&m).ok()? != self.body || m.sealed.len() > MAX_SEALED || m.from.len() > 200 || m.to.len() > 200 || m.from == m.to {
+        let m: Mail = codec::from_bytes_canonical(&self.body, MAX_SEALED + 1024).ok()?;
+        if m.sealed.len() > MAX_SEALED || m.from.len() > 200 || m.to.len() > 200 || m.from == m.to {
             return None;
         }
         verify_did(&m.from, &sig_input(&self.body), &self.sig).then_some(m)
@@ -99,10 +96,10 @@ pub fn id_hex(id: &[u8; 16]) -> String {
 /// Seals `letter` from `account` to `to` (whose encryption key is `to_key`) for `group`.
 pub fn seal(account: &identity::Identity, group: &str, to: &str, to_key: &[u8; 32], letter: Letter, at: u64) -> Result<SignedMail, crate::Error> {
     let inner = Sealed { group: group.to_string(), from: account.did().to_string(), to: to.to_string(), letter };
-    let plain = bincode::serialize(&inner).expect("letter serialises");
+    let plain = codec::to_bytes(&inner).expect("letter serialises");
     let sealed = identity::encrypt_for(to_key, &plain).map_err(|e| crate::Error::Protocol(e.to_string()))?;
     let mail = Mail { group: group.to_string(), from: account.did().to_string(), to: to.to_string(), id: cryptography::rng::bytes(), at, sealed };
-    let body = bincode::serialize(&mail).expect("mail serialises");
+    let body = codec::to_bytes(&mail).expect("mail serialises");
     let sig = account.sign(&sig_input(&body)).to_vec();
     Ok(SignedMail { body, sig })
 }
@@ -115,7 +112,7 @@ pub fn open_for(account: &identity::Identity, group: &str, s: &SignedMail) -> Op
         return None;
     }
     let plain = account.decrypt_sealed(&m.sealed).ok()?;
-    let inner: Sealed = bincode::deserialize(&plain).ok()?;
+    let inner: Sealed = codec::from_bytes(&plain, MAX_SEALED).ok()?;
     (inner.group == m.group && inner.from == m.from && inner.to == m.to).then_some((m, inner.letter))
 }
 

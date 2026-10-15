@@ -24,7 +24,7 @@ pub const ALPN: &[u8] = b"osvauld/p2p/1";
 /// Own-device sync (docs/design/device-linking.md §4); only devices of the same DID. Version 3
 /// (P10 per-writer chat versions; P6: the account doc carries call tokens, call permissions and
 /// token cut-offs); versions 2 and 1 are refused by the app.
-pub const SELF_ALPN: &[u8] = b"tinline/self/4";
+pub const SELF_ALPN: &[u8] = b"tinline/self/5";
 
 const ATTEST_DOMAIN: &[u8] = b"osvauld/p2p/attest/v1\0";
 const INVITE_DOMAIN: &[u8] = b"osvauld/p2p/invite/v1\0";

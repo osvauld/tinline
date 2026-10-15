@@ -79,7 +79,7 @@ async fn session(
         };
         writer
             .send(&SelfMsg::Groups {
-                groups: vec![bincode::serialize(&token).unwrap()],
+                groups: vec![cryptography::codec::to_bytes(&token).unwrap()],
             })
             .await
             .unwrap();

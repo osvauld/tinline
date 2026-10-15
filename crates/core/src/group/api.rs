@@ -525,7 +525,7 @@ impl Inner {
             Some(true) => return Ok(gid),
             Some(false) => {}
             None => {
-                let meta = GroupMeta { joining: t.invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), ..Default::default() };
+                let meta = GroupMeta { joining: t.invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), ..Default::default() };
                 core.groups.lock().insert(gid.clone(), super::engine::Live::empty(&gid, core.wid, meta.clone()));
                 core.store.put_meta(&gid, &meta)?;
             }

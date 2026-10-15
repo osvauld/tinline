@@ -98,7 +98,7 @@ pub enum Msg {
     /// (G3). Authenticated like `CallHello`: the sender's attestation (= the connection's device)
     /// and a token the receiver issued to it; the receiver requires a message token (P6) and
     /// answers its block notice to a DID it blocks. `letter` is opaque here (the core's
-    /// base64url bincode `group::invitations::Letter`). Answered `GroupLetterTaken`.
+    /// base64url postcard `group::invitations::Letter`). Answered `GroupLetterTaken`.
     GroupLetter {
         attestation: SignedAttestation,
         grant: SignedGrant,

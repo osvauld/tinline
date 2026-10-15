@@ -1,4 +1,4 @@
-//! The group runtime: the group endpoint (U2, `tinline/group/2`), host and member sessions,
+//! The group runtime: the group endpoint (U2, `tinline/group/3`), host and member sessions,
 //! live relay, catch-up, day-doc sync and removal enforcement. Everything hangs off
 //! `Inner::group` (`GroupRt`).
 //!

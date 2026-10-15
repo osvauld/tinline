@@ -249,7 +249,7 @@ impl SearchIndex {
             closed: std::sync::atomic::AtomicBool::new(false),
         };
         let current = matches!(me.db.get("v"), Ok(Some(v)) if v == VERSION.to_be_bytes());
-        let man = if current { me.db.get("m").ok().flatten().and_then(|b| bincode::deserialize::<Manifest>(&b).ok()) } else { None };
+        let man = if current { me.db.get("m").ok().flatten().and_then(|b| cryptography::codec::from_bytes::<Manifest>(&b, crate::store::MAX_ROW).ok()) } else { None };
         match man {
             Some(m) => *me.view.write() = Arc::new(View::new(m)),
             None => {
@@ -496,7 +496,7 @@ impl SearchIndex {
             ops.push(Op::DeletePrefix(format!("z/{:08x}/", g.id)));
         }
         man.segs.retain(|g| !g.days.is_empty());
-        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises"))?);
+        ops.push(self.db.put_op("m", &cryptography::codec::to_bytes(&man).expect("serialises"))?);
         self.db.apply(&ops)?;
         self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         *self.view.write() = Arc::new(View::new(man));

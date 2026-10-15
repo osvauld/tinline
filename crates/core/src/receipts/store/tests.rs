@@ -53,12 +53,13 @@ fn commit_failure_keeps_live_and_disk_empty_then_retry_commits_original_and_poin
         ledger.raw(&entry.id).unwrap(),
         c.sign_claim(&a).unwrap().to_bytes().unwrap()
     );
-    let pointer: Position = bincode::deserialize(
+    let pointer: Position = cryptography::codec::from_bytes(
         &store
             .db
             .get(&format!("{}index/{}", ledger.prefix, entry.id))
             .unwrap()
             .unwrap(),
+        usize::MAX,
     )
     .unwrap();
     assert_eq!(
@@ -219,7 +220,7 @@ fn persisted_frontier_or_sequence_inconsistency_is_not_empty_history() {
     };
     store
         .db
-        .put(&format!("{p}state"), &bincode::serialize(&bad).unwrap())
+        .put(&format!("{p}state"), &cryptography::codec::to_bytes(&bad).unwrap())
         .unwrap();
     assert!(store.open(c.scope.clone(), 9, ok).is_err());
     store.db.delete(&format!("{p}u/{:020}", 1)).unwrap();

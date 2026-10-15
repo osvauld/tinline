@@ -49,7 +49,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             reader.recv::<SelfMsg>().await.unwrap(),
             Some(SelfMsg::Hello { .. })
         ));
-        let token = bincode::serialize(&InviteToken {
+        let token = cryptography::codec::to_bytes(&InviteToken {
             group: gid.clone(),
             name: "hint".into(),
             owner: me.id.did().into(),

@@ -17,7 +17,7 @@ impl GroupStore {
         self.db
             .get(&format!("proof/{gid}/{digest}"))
             .map_err(io)?
-            .map(|row| bincode::deserialize(&row).map_err(|e| Error::Io(e.to_string())))
+            .map(|row| cryptography::codec::from_bytes(&row, crate::store::MAX_ROW).map_err(|e| Error::Io(e.to_string())))
             .transpose()
     }
     pub(crate) fn storage_attestation_page(
@@ -75,7 +75,7 @@ impl GroupStore {
                 "injected receipt metadata transaction failure".into(),
             ));
         }
-        let proof = bincode::serialize(row).map_err(|e| Error::Io(e.to_string()))?;
+        let proof = cryptography::codec::to_bytes(row).map_err(|e| Error::Io(e.to_string()))?;
         let ops = [
             self.db
                 .put_op(&format!("proof/{gid}/{digest}"), &proof)

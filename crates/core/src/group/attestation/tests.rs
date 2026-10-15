@@ -14,7 +14,7 @@ fn claim(account: &identity::Identity) -> StorageAttestation {
     }
 }
 fn unchecked_bytes(claim: &StorageAttestation, account: &identity::Identity) -> Vec<u8> {
-    let body = bincode::serialize(claim).unwrap();
+    let body = cryptography::codec::to_bytes(claim).unwrap();
     SignedStorageAttestation {
         sig: account.sign(&sig_input(&body)).to_vec(),
         body,
@@ -55,7 +55,7 @@ fn canonical_receipt_roundtrip_and_all_signed_fields_are_bound() {
     variants.push(changed);
     for changed in variants {
         let tampered = SignedStorageAttestation {
-            body: bincode::serialize(&changed).unwrap(),
+            body: cryptography::codec::to_bytes(&changed).unwrap(),
             sig: proof.sig.clone(),
         }
         .to_bytes()
@@ -80,7 +80,7 @@ fn wrong_key_raw_signature_and_record_domain_are_not_storage_receipts() {
     let account = identity::generate().0;
     let other = identity::generate().0;
     let c = claim(&account);
-    let body = bincode::serialize(&c).unwrap();
+    let body = cryptography::codec::to_bytes(&c).unwrap();
     assert_eq!(c.sign(&other), Err(AttestationError::Signature));
     let mut record_input = b"tinline-group-record-v1".to_vec();
     put_bytes_pub(&mut record_input, &body);

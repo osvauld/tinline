@@ -17,7 +17,7 @@ fn mail_is_sealed_to_the_recipient_and_bound_to_its_envelope() {
     // The host re-wraps the sealed body in its own envelope: refused by the recipient.
     let mut forged = env.clone();
     forged.from = host.did().into();
-    let body = bincode::serialize(&forged).unwrap();
+    let body = cryptography::codec::to_bytes(&forged).unwrap();
     let fm = SignedMail { sig: host.sign(&sig_input(&body)).to_vec(), body };
     assert!(fm.open().is_some());
     assert!(open_for(&a, "g", &fm).is_none());

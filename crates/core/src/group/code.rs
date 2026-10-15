@@ -159,7 +159,7 @@ impl ShortCode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CodeRow {
     pub gid: String,
-    /// bincode `SignedInvite`; `None` for a device code.
+    /// `codec` bytes of a `SignedInvite`; `None` for a device code.
     pub invite: Option<Vec<u8>>,
     /// Unix seconds.
     pub expires: u64,
@@ -293,7 +293,7 @@ impl Inner {
             if core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
                 return Err(Error::Rejected("too many open invites for this group; revoke some".into()));
             }
-            let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), expires, by: core.did.clone() };
+            let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: core.did.clone() };
             core.store.put_code(&code, &row)?;
             core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did: core.did.clone(), host_dev: hex::encode(core.dev), expires })?;
             return Ok(ShortCode { endpoint: a.endpoint, relay: a.relay, code }.to_link());
@@ -395,7 +395,7 @@ impl Inner {
         }
         let _ = self.group_my_addr(core, &row.gid);
         let invite = match &row.invite {
-            Some(b) => Some(bincode::deserialize::<SignedInvite>(b).map_err(|_| UNKNOWN_CODE.to_string())?),
+            Some(b) => Some(cryptography::codec::from_bytes::<SignedInvite>(b, crate::store::MAX_ROW).map_err(|_| UNKNOWN_CODE.to_string())?),
             None => None,
         };
         Ok(InviteToken { group: row.gid.clone(), name, owner, invite, hosts: core.chat_host_addrs(&row.gid) })
@@ -460,7 +460,7 @@ impl Inner {
                 if core.store.code(&code).ok().flatten().is_some() {
                     return ack(code, false, "code in use");
                 }
-                let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| bincode::serialize(i).expect("serialises")), expires, by: did.to_string() };
+                let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: did.to_string() };
                 match core.store.put_code(&code, &row) {
                     Ok(()) => ack(code, true, ""),
                     Err(e) => ack(code, false, &e.to_string()),

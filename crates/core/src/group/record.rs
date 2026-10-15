@@ -10,6 +10,7 @@
 //! a `Join`), host addresses (`SignedHostAddr`) and the per-connection endpoint proof
 //! (`EndpointAuth`). Those carry group endpoints and travel only member <-> host (U7).
 
+use cryptography::codec;
 use serde::{Deserialize, Serialize};
 
 pub const GROUP_ID_DOMAIN: &[u8] = b"tinline-group-id-v1";
@@ -20,6 +21,10 @@ const AUTH_DOMAIN: &[u8] = b"tinline-group-endpoint-v1";
 
 /// Largest stored record (a post's text is capped well below).
 pub const MAX_RECORD: usize = 64 * 1024;
+/// Most bytes of a signed invite or host address body (both are a few hundred bytes).
+const MAX_SMALL_BODY: usize = 1024;
+/// Most bytes of an encoded `InviteToken` (an invite plus a handful of host addresses).
+pub(crate) const MAX_TOKEN: usize = 64 * 1024;
 pub const MAX_TEXT: usize = 20_000;
 pub const MAX_NAME: usize = 100;
 /// A `seen` frontier with more writers than this is refused (bounds a record's size).
@@ -87,7 +92,7 @@ pub struct Record {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignedRecord {
-    /// bincode of `Record`.
+    /// `codec` bytes of `Record`.
     pub body: Vec<u8>,
     pub sig: Vec<u8>,
 }
@@ -151,7 +156,7 @@ impl Record {
     /// Signs as `account` (whose DID must be `self.author`).
     pub fn sign(&self, account: &identity::Identity) -> SignedRecord {
         debug_assert_eq!(account.did(), self.author);
-        let body = bincode::serialize(self).expect("record serialises");
+        let body = codec::to_bytes(self).expect("record serialises");
         let sig = account.sign(&sig_input(RECORD_DOMAIN, &body)).to_vec();
         SignedRecord { body, sig }
     }
@@ -159,7 +164,7 @@ impl Record {
 
 impl SignedRecord {
     pub fn to_bytes(&self) -> Vec<u8> {
-        bincode::serialize(self).expect("record serialises")
+        codec::to_bytes(self).expect("record serialises")
     }
 
     /// Decodes stored bytes and verifies them: shape, group, and the author's DID signature.
@@ -167,16 +172,10 @@ impl SignedRecord {
         if bytes.len() > MAX_RECORD {
             return Err(RecordError::Malformed);
         }
-        let s: SignedRecord = bincode::deserialize(bytes).map_err(|_| RecordError::Undecodable)?;
-        // Canonical: the stored bytes are exactly what re-encoding gives (no trailing junk, so
-        // two byte strings never carry one record under two ids).
-        if s.to_bytes() != bytes {
-            return Err(RecordError::Undecodable);
-        }
-        let rec: Record = bincode::deserialize(&s.body).map_err(|_| RecordError::Undecodable)?;
-        if bincode::serialize(&rec).ok().as_deref() != Some(s.body.as_slice()) {
-            return Err(RecordError::Undecodable);
-        }
+        // Canonical: the stored bytes are exactly what re-encoding gives (no trailing junk or
+        // overlong integers, so two byte strings never carry one record under two ids).
+        let s: SignedRecord = codec::from_bytes_canonical(bytes, MAX_RECORD).map_err(|_| RecordError::Undecodable)?;
+        let rec: Record = codec::from_bytes_canonical(&s.body, MAX_RECORD).map_err(|_| RecordError::Undecodable)?;
         rec.check_shape()?;
         if rec.group != group {
             return Err(RecordError::WrongGroup);
@@ -192,8 +191,8 @@ impl SignedRecord {
     /// Decodes bytes our own store holds (verified on the way in): no signature, shape or
     /// canonical-encoding check, only that it decodes and is for this group.
     pub fn decode_trusted(bytes: &[u8], group: &str) -> Result<Record, RecordError> {
-        let s: SignedRecord = bincode::deserialize(bytes).map_err(|_| RecordError::Undecodable)?;
-        let rec: Record = bincode::deserialize(&s.body).map_err(|_| RecordError::Undecodable)?;
+        let s: SignedRecord = codec::from_bytes(bytes, crate::store::MAX_ROW).map_err(|_| RecordError::Undecodable)?;
+        let rec: Record = codec::from_bytes(&s.body, crate::store::MAX_ROW).map_err(|_| RecordError::Undecodable)?;
         if rec.group != group {
             return Err(RecordError::WrongGroup);
         }
@@ -227,7 +226,7 @@ pub struct SignedInvite {
 
 impl Invite {
     pub fn sign(&self, account: &identity::Identity) -> SignedInvite {
-        let body = bincode::serialize(self).expect("invite serialises");
+        let body = codec::to_bytes(self).expect("invite serialises");
         SignedInvite { sig: account.sign(&sig_input(INVITE_DOMAIN, &body)).to_vec(), body }
     }
 }
@@ -235,8 +234,8 @@ impl Invite {
 impl SignedInvite {
     /// The invite, if its issuer's DID signed it. Expiry and the issuer's role are the caller's.
     pub fn open(&self) -> Option<Invite> {
-        let inv: Invite = bincode::deserialize(&self.body).ok()?;
-        (bincode::serialize(&inv).ok()? == self.body && verify_did(&inv.issuer, &sig_input(INVITE_DOMAIN, &self.body), &self.sig)).then_some(inv)
+        let inv: Invite = codec::from_bytes_canonical(&self.body, MAX_SMALL_BODY).ok()?;
+        (verify_did(&inv.issuer, &sig_input(INVITE_DOMAIN, &self.body), &self.sig)).then_some(inv)
     }
 }
 
@@ -262,18 +261,18 @@ pub struct SignedHostAddr {
 
 impl HostAddr {
     pub fn sign(&self, account: &identity::Identity) -> SignedHostAddr {
-        let body = bincode::serialize(self).expect("host addr serialises");
+        let body = codec::to_bytes(self).expect("host addr serialises");
         SignedHostAddr { sig: account.sign(&sig_input(HOST_ADDR_DOMAIN, &body)).to_vec(), body }
     }
 }
 
 impl SignedHostAddr {
     pub fn open(&self) -> Option<HostAddr> {
-        let a: HostAddr = bincode::deserialize(&self.body).ok()?;
+        let a: HostAddr = codec::from_bytes_canonical(&self.body, MAX_SMALL_BODY).ok()?;
         if a.relay.as_ref().is_some_and(|r| r.len() > 300) {
             return None;
         }
-        (bincode::serialize(&a).ok()? == self.body && verify_did(&a.did, &sig_input(HOST_ADDR_DOMAIN, &self.body), &self.sig)).then_some(a)
+        (verify_did(&a.did, &sig_input(HOST_ADDR_DOMAIN, &self.body), &self.sig)).then_some(a)
     }
 }
 
@@ -315,7 +314,7 @@ impl EndpointAuth {
 /// The full invite: the signed grant (absent in a token for one's own other devices, which join as
 /// the same DID) plus what to show and where the hosts are. G3: never shared as text any more (the
 /// old `tlgroup1:` form is gone, U18): a host keeps it behind a short code (`code.rs`), a direct
-/// invitation carries it over the private channel, own devices get it over self/3 (bincode).
+/// invitation carries it over the private channel, own devices get it over self/5 (postcard).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InviteToken {
     pub group: String,

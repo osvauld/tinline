@@ -37,7 +37,7 @@ impl Inner {
                 // Chat hosts only (a call-only host refuses joiners); refresh our own address.
                 let _ = self.group_my_addr(&core, &gid);
                 let hosts = core.chat_host_addrs(&gid);
-                bincode::serialize(&InviteToken { group: gid, name, owner, invite: None, hosts }).expect("token serialises")
+                cryptography::codec::to_bytes(&InviteToken { group: gid, name, owner, invite: None, hosts }).expect("token serialises")
             })
             .collect();
         out.sort();
@@ -50,7 +50,7 @@ impl Inner {
         let Ok(core) = self.group_core() else { return };
         let mut added = false;
         for b in tokens.iter().take(MAX_OWN_GROUPS) {
-            let Ok(t) = bincode::deserialize::<InviteToken>(b) else { continue };
+            let Ok(t) = cryptography::codec::from_bytes::<InviteToken>(b, super::record::MAX_TOKEN) else { continue };
             if t.invite.is_some() || !super::valid_gid(&t.group) {
                 continue;
             }

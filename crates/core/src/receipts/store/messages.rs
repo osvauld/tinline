@@ -172,7 +172,7 @@ impl MessageReceipts {
                 scope: scope.clone(),
                 messages: chunk.to_vec(),
             };
-            let bytes = bincode::serialize(&row).map_err(|_| ReceiptError::Encoding)?;
+            let bytes = cryptography::codec::to_bytes(&row).map_err(|_| ReceiptError::Encoding)?;
             if bytes.len() > MAX_INTENT_BYTES {
                 return Err(ReceiptError::Bounds);
             }
@@ -256,12 +256,8 @@ impl MessageReceipts {
         if raw.len() > MAX_INTENT_BYTES {
             return Err(io("receipt intent too large"));
         }
-        let intent: Intent = bincode::DefaultOptions::new()
-            .with_fixint_encoding()
-            .with_limit(MAX_INTENT_BYTES as u64)
-            .reject_trailing_bytes()
-            .deserialize(&raw)
-            .map_err(|_| ReceiptError::Encoding)?;
+        let intent: Intent =
+            cryptography::codec::from_bytes(&raw, MAX_INTENT_BYTES).map_err(|_| ReceiptError::Encoding)?;
         if intent.version != 1 || intent.kind == Kind::Call {
             return Err(ReceiptError::Bounds);
         }

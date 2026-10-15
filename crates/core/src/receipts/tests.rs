@@ -48,7 +48,7 @@ fn valid_shaped_mutations_of_every_claim_field_break_the_signature() {
             _ => changed.scope.conversation = Conversation::Group("b".repeat(64)),
         }
         let forged = SignedReceipt {
-            body: bincode::serialize(&changed).unwrap(),
+            body: cryptography::codec::to_bytes(&changed).unwrap(),
             sig: s.sig.clone(),
         }
         .to_bytes()
@@ -112,7 +112,7 @@ fn byte_bounds_trailing_data_and_adversarial_lengths_fail_closed() {
 fn host_record_and_raw_signature_domains_cannot_be_interpreted_as_recipient_proof() {
     let a = identity::generate().0;
     let c = sample(&a, Kind::Read, false);
-    let body = bincode::serialize(&c).unwrap();
+    let body = cryptography::codec::to_bytes(&c).unwrap();
     for input in [body.clone(), {
         let mut v = b"tinline-group-storage-attestation-v1\0".to_vec();
         put_bytes_pub(&mut v, &body);

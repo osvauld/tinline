@@ -176,7 +176,7 @@ impl Inner {
                 .meta
                 .joining
                 .as_ref()
-                .and_then(|b| bincode::deserialize::<SignedInvite>(b).ok());
+                .and_then(|b| cryptography::codec::from_bytes::<SignedInvite>(b, crate::store::MAX_ROW).ok());
             (live.doc.vv(), invite)
         };
         let auth = EndpointAuth::new(&core.account, core.dev, *ep.id().as_bytes());
@@ -315,7 +315,7 @@ impl Inner {
                 return;
             };
             let _ = core.store.put_meta(gid, &live.meta);
-            match bincode::deserialize::<SignedInvite>(&b) {
+            match cryptography::codec::from_bytes::<SignedInvite>(&b, crate::store::MAX_ROW) {
                 Ok(i) => i,
                 Err(_) => return,
             }

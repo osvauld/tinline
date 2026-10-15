@@ -1,4 +1,4 @@
-//! Frames of `tinline/chat/3`: u32 BE length + bincode of `ChatMsg`, on one bidirectional QUIC
+//! Frames of `tinline/chat/7`: u32 BE length + postcard (`cryptography::codec`) of `ChatMsg`, on one bidirectional QUIC
 //! stream opened by the dialer. Both sides send `Auth` first, then everything is symmetric.
 //! Version 3 (P10: one version per writer in each record; P6: `Auth` presents a message token,
 //! separate from the call token) carries the strict DID-signed chat docs; `tinline/chat/1` (apps
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
-pub const CHAT_ALPN: &[u8] = b"tinline/chat/6";
+pub const CHAT_ALPN: &[u8] = b"tinline/chat/7";
 /// A shard snapshot of a very busy day can be large; blobs carry the rest.
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 const SIG_DOMAIN: &[u8] = b"tinline-chat-batch-v1";
@@ -96,7 +96,7 @@ impl ChatReader {
                     return Err(Error::Protocol("chat frame too large".into()));
                 }
                 if self.buf.len() >= 4 + len {
-                    let msg = bincode::deserialize(&self.buf[4..4 + len])
+                    let msg = cryptography::codec::from_bytes(&self.buf[4..4 + len], MAX_FRAME)
                         .map_err(|_| Error::Protocol("chat frame does not decode".into()))?;
                     self.buf.drain(..4 + len);
                     return Ok(Some(msg));
@@ -113,7 +113,7 @@ impl ChatReader {
 
 impl ChatWriter {
     pub async fn send(&mut self, msg: &ChatMsg) -> Result<(), Error> {
-        let body = bincode::serialize(msg).map_err(|e| Error::Protocol(e.to_string()))?;
+        let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
         if body.len() > MAX_FRAME {
             return Err(Error::Protocol("chat frame too large".into()));
         }

@@ -30,7 +30,7 @@ fn records_verify_and_tampering_is_refused() {
     let b = acct();
     let mut forged = rec(&a, "g", Body::Post { text: "as b".into(), reply_to: None });
     forged.author = b.did().into();
-    let body = bincode::serialize(&forged).unwrap();
+    let body = cryptography::codec::to_bytes(&forged).unwrap();
     let sig = a.sign(&sig_input(RECORD_DOMAIN, &body)).to_vec();
     let bytes = SignedRecord { body, sig }.to_bytes();
     assert_eq!(SignedRecord::open(&bytes, "g"), Err(RecordError::BadSignature));
@@ -80,7 +80,7 @@ fn invites_host_addrs_and_auth_verify() {
     assert!(!t.verify(&[9; 32]));
 
     let tok = InviteToken { group: "g".into(), name: "n".into(), owner: a.did().into(), invite: Some(inv), hosts: vec![ha] };
-    assert_eq!(bincode::deserialize::<InviteToken>(&bincode::serialize(&tok).unwrap()).unwrap(), tok);
+    assert_eq!(cryptography::codec::from_bytes::<InviteToken>(&cryptography::codec::to_bytes(&tok).unwrap(), usize::MAX).unwrap(), tok);
 }
 
 #[test]

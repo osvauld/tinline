@@ -1,7 +1,7 @@
 //! Prototype portable host storage statements. No wire negotiation, forwarding,
 //! Ack-store updates, debt clearing, UI status or readiness certificate yet.
 //! Signatures attest a host's claim; they cannot audit a dishonest host's disk.
-use bincode::Options;
+use cryptography::codec;
 use loro::VersionVector;
 use serde::{Deserialize, Serialize};
 
@@ -16,8 +16,7 @@ const DOMAIN: &[u8] = b"tinline-group-storage-attestation-v1\0";
 // Provisional payload budget; tuning is separate from schema/algorithm widths.
 const MAX_BODY: usize = 128 * 1024;
 const SIGNATURE_BYTES: usize = 64; // Ed25519
-const BINCODE_VEC_LENGTH_BYTES: usize = 8; // fixed-integer bincode Vec length
-pub(crate) const MAX_SIGNED: usize = MAX_BODY + 2 * BINCODE_VEC_LENGTH_BYTES + SIGNATURE_BYTES;
+pub(crate) const MAX_SIGNED: usize = MAX_BODY + 2 * codec::LEN_PREFIX_MAX + SIGNATURE_BYTES;
 const MAX_WRITERS: usize = 4096;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -123,7 +122,7 @@ impl StorageAttestation {
         if self.host != account.did() {
             return Err(AttestationError::Signature);
         }
-        let body = bincode::serialize(self).map_err(|_| AttestationError::Encoding)?;
+        let body = codec::to_bytes(self).map_err(|_| AttestationError::Encoding)?;
         if body.len() > MAX_BODY {
             return Err(AttestationError::Bounds);
         }
@@ -139,7 +138,7 @@ impl SignedStorageAttestation {
         if self.body.len() > MAX_BODY || self.sig.len() != SIGNATURE_BYTES {
             return Err(AttestationError::Bounds);
         }
-        bincode::serialize(self).map_err(|_| AttestationError::Encoding)
+        codec::to_bytes(self).map_err(|_| AttestationError::Encoding)
     }
     /// Signature/scope check ONLY. Hosting authority is checked separately below.
     pub(crate) fn open(
@@ -150,24 +149,12 @@ impl SignedStorageAttestation {
         if bytes.len() > MAX_SIGNED {
             return Err(AttestationError::Bounds);
         }
-        let signed: Self = bincode::DefaultOptions::new()
-            .with_fixint_encoding()
-            .with_limit(MAX_SIGNED as u64)
-            .reject_trailing_bytes()
-            .deserialize(bytes)
-            .map_err(|_| AttestationError::Encoding)?;
-        if signed.to_bytes()?.as_slice() != bytes {
-            return Err(AttestationError::Encoding);
+        let signed: Self = codec::from_bytes_canonical(bytes, MAX_SIGNED).map_err(|_| AttestationError::Encoding)?;
+        if signed.body.len() > MAX_BODY || signed.sig.len() != SIGNATURE_BYTES {
+            return Err(AttestationError::Bounds);
         }
-        let claim: StorageAttestation = bincode::DefaultOptions::new()
-            .with_fixint_encoding()
-            .with_limit(MAX_BODY as u64)
-            .reject_trailing_bytes()
-            .deserialize(&signed.body)
-            .map_err(|_| AttestationError::Encoding)?;
-        if bincode::serialize(&claim).map_err(|_| AttestationError::Encoding)? != signed.body {
-            return Err(AttestationError::Encoding);
-        }
+        let claim: StorageAttestation =
+            codec::from_bytes_canonical(&signed.body, MAX_BODY).map_err(|_| AttestationError::Encoding)?;
         claim.check()?;
         if claim.group != group || &claim.doc != doc {
             return Err(AttestationError::Scope);

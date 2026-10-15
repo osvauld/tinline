@@ -5,7 +5,7 @@ use crate::{
     chat::doc::{day_of, day_start},
     group::record::{put_bytes_pub, verify_did_pub},
 };
-use bincode::Options;
+use cryptography::codec;
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod api;
@@ -22,8 +22,7 @@ pub(crate) const MAX_MESSAGES: usize = 256;
 pub(crate) const MAX_CONTEXT_WRITERS: usize = 1024;
 pub(crate) const MAX_BODY: usize = 32 * 1024;
 const SIGNATURE_BYTES: usize = 64;
-const VEC_LENGTH_BYTES: usize = 8;
-pub(crate) const MAX_SIGNED: usize = MAX_BODY + 2 * VEC_LENGTH_BYTES + SIGNATURE_BYTES;
+pub(crate) const MAX_SIGNED: usize = MAX_BODY + 2 * codec::LEN_PREFIX_MAX + SIGNATURE_BYTES;
 pub(crate) const MAX_UPDATE_BYTES: usize = crate::group::doc::batching::MAX_EXPORT_BYTES;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -167,7 +166,7 @@ impl Receipt {
         if account.did() != self.recipient {
             return Err(ReceiptError::Signature);
         }
-        let body = bincode::serialize(self).map_err(|_| ReceiptError::Encoding)?;
+        let body = codec::to_bytes(self).map_err(|_| ReceiptError::Encoding)?;
         if body.len() > MAX_BODY {
             return Err(ReceiptError::Bounds);
         }
@@ -182,7 +181,7 @@ impl SignedReceipt {
         if self.body.len() > MAX_BODY || self.sig.len() != SIGNATURE_BYTES {
             return Err(ReceiptError::Bounds);
         }
-        bincode::serialize(self).map_err(|_| ReceiptError::Encoding)
+        codec::to_bytes(self).map_err(|_| ReceiptError::Encoding)
     }
     /// Cryptographic check only. Membership/device/contact/content coverage are
     /// caller policy; a valid signature alone must not advance delivery/read UI.
@@ -190,24 +189,11 @@ impl SignedReceipt {
         if bytes.len() > MAX_SIGNED {
             return Err(ReceiptError::Bounds);
         }
-        let signed: Self = bincode::DefaultOptions::new()
-            .with_fixint_encoding()
-            .with_limit(MAX_SIGNED as u64)
-            .reject_trailing_bytes()
-            .deserialize(bytes)
-            .map_err(|_| ReceiptError::Encoding)?;
-        if signed.to_bytes()?.as_slice() != bytes {
-            return Err(ReceiptError::Encoding);
+        let signed: Self = codec::from_bytes_canonical(bytes, MAX_SIGNED).map_err(|_| ReceiptError::Encoding)?;
+        if signed.body.len() > MAX_BODY || signed.sig.len() != SIGNATURE_BYTES {
+            return Err(ReceiptError::Bounds);
         }
-        let claim: Receipt = bincode::DefaultOptions::new()
-            .with_fixint_encoding()
-            .with_limit(MAX_BODY as u64)
-            .reject_trailing_bytes()
-            .deserialize(&signed.body)
-            .map_err(|_| ReceiptError::Encoding)?;
-        if bincode::serialize(&claim).map_err(|_| ReceiptError::Encoding)? != signed.body {
-            return Err(ReceiptError::Encoding);
-        }
+        let claim: Receipt = codec::from_bytes_canonical(&signed.body, MAX_BODY).map_err(|_| ReceiptError::Encoding)?;
         claim.check()?;
         if &claim.scope != scope {
             return Err(ReceiptError::Scope);
