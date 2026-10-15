@@ -85,10 +85,33 @@ fun StorageRoute(app: P2pApp, onBack: () -> Unit) {
 }
 
 @Composable
-fun MyProfileRoute(app: P2pApp, onBack: () -> Unit) {
+fun MyProfileRoute(app: P2pApp, onBack: () -> Unit, onEdit: () -> Unit, onShare: () -> Unit, onRecovery: () -> Unit) {
     val acct by app.accountDid.collectAsState()
-    val fallback = profileFallbackName(app, acct)
-    MyProfileScreen(remember(app) { ProfileBackend.of(app) }, fallback, onBack)
+    key(acct) {
+        AccountProfileScreen(remember(app) { ProfileBackend.of(app) }, profileFallbackName(app, acct), onBack, onEdit, onShare, onRecovery)
+    }
+}
+
+@Composable
+fun EditMyProfileRoute(app: P2pApp, onBack: () -> Unit) {
+    val acct by app.accountDid.collectAsState()
+    key(acct) { MyProfileScreen(remember(app) { ProfileBackend.of(app) }, profileFallbackName(app, acct), onBack, title = "Edit profile") }
+}
+
+@Composable
+fun MyContactCodeRoute(app: P2pApp, onBack: () -> Unit) {
+    val acct by app.accountDid.collectAsState()
+    val status by app.status.collectAsState()
+    key(acct) {
+        var retry by remember { mutableIntStateOf(0) }
+        val loaded by produceState<Pair<String?, Boolean>>(null to false, status?.online, retry) {
+            value = null to false
+            val ticket = app.profiles.session.ticket() ?: return@produceState
+            val result = withContext(Dispatchers.IO) { runCatching { app.profileWork(ticket) { it.myCode().code } }.getOrNull() }
+            if (app.profiles.session.accepts(ticket)) value = result to (result == null)
+        }
+        MyContactCodeScreen(remember(app) { ProfileBackend.of(app) }, profileFallbackName(app, acct), loaded.first, loaded.second, onBack, { retry++ })
+    }
 }
 
 @Composable

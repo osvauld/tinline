@@ -275,6 +275,9 @@ private fun ProfileGallery(which: String, act: ComponentActivity) {
             none, none, {}, none, none, none, none, none)
         "pf_settings_perm" -> SettingsLanding(fake, "Maya Kurian", listOf(AccountRow(FakeProfileStore.ME, "Maya Kurian", true)), permProblems(listOf(Need.Notifications)),
             none, none, {}, none, none, none, none, none)
+        "pf_account" -> AccountProfileScreen(fake, "Maya Kurian", none, none, none, none)
+        "pf_code" -> MyContactCodeScreen(fake, "Maya Kurian", "tinline-gallery-code-0000", false, none, none)
+        "pf_code_failed" -> MyContactCodeScreen(fake, "Maya Kurian", null, true, none, none)
         "pf_notifications" -> NotificationsPage(emptyList(), none) {}
         "pf_notifications_off" -> NotificationsPage(listOf(Need.Notifications), none) {}
         "pf_notifications_battery" -> NotificationsPage(listOf(Need.Battery), none) {}

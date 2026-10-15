@@ -335,7 +335,7 @@ fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: 
                 act { PfAct("Who can call me", onClick = onCalls, icon = PgIcons.Phone, chevron = true,
                     sub = if (msgOnly > 0) "$msgOnly ${if (msgOnly == 1) "contact is" else "contacts are"} messages only" else "All contacts can call") }
                 // Native: without a passphrase the phrase is behind the phone's screen lock instead.
-                act { PfAct("Recovery phrase", onClick = onPhrase, icon = PgIcons.Key, chevron = true, sub = if (hasPassphrase) "Needs your passphrase" else "Needs your screen lock") }
+                act { PfAct("Account recovery", onClick = onPhrase, icon = PgIcons.Key, chevron = true, sub = if (hasPassphrase) "Needs your passphrase" else "Needs your screen lock") }
                 act { PfAct("Passphrase", onClick = onPassphrase, icon = PgIcons.Lock, chevron = true, sub = "Protects Tinline on this device") }
             }
             PfNote("Your contacts see your name, picture and profile. Tinline doesn’t hide who you talk to, and every device linked to your account can read your chats.")

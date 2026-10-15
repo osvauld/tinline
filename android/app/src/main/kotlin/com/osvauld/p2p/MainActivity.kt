@@ -131,6 +131,8 @@ private sealed interface Route {
     data object Search : Route
     /** Playground-ported settings/profile pages (SettingsRoutes.kt). */
     data object Me : Route
+    data object EditMe : Route
+    data object MyCode : Route
     data object Notifications : Route
     data object Sounds : Route
     data object Video : Route
@@ -412,7 +414,9 @@ private fun Root(app: P2pApp) {
                     onDevices = { stack.add(Route.Devices) }, onPrivacy = { stack.add(Route.Privacy) }, onNotifications = { stack.add(Route.Notifications) },
                     onSounds = { stack.add(Route.Sounds) }, onVideo = { stack.add(Route.Video) }, onStorage = { stack.add(Route.Storage) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
                 )
-                Route.Me -> MyProfileRoute(app, onBack = ::pop)
+                Route.Me -> MyProfileRoute(app, onBack = ::pop, onEdit = { stack.add(Route.EditMe) }, onShare = { stack.add(Route.MyCode) }, onRecovery = { stack.add(Route.PhraseGate) })
+                Route.EditMe -> EditMyProfileRoute(app, onBack = ::pop)
+                Route.MyCode -> MyContactCodeRoute(app, onBack = ::pop)
                 Route.Notifications -> NotificationsPage(missing, onBack = ::pop, fix = fix)
                 Route.Sounds -> SoundsPage(onBack = ::pop)
                 Route.Video -> VideoSettingsRoute(app, onBack = ::pop)
@@ -428,7 +432,10 @@ private fun Root(app: P2pApp) {
                 Route.Battery -> BatteryScreen(missing, onBack = ::pop, onFix = fix)
                 Route.Passphrase -> ChangePassphraseScreen(app, onBack = ::pop)
                 Route.PhraseGate -> PhraseGateScreen(app, onBack = ::pop, onPhrase = { p -> pop(); stack.add(Route.PhraseShown(p)) })
-                is Route.PhraseShown -> PhraseShownScreen(r.phrase, onHide = ::pop)
+                is Route.PhraseShown -> PhraseShownScreen(r.phrase, onHide = ::pop, onRelock = {
+                    // Back to the gate (replacing this screen) so the words leave memory and the next look needs the check again.
+                    if (stack.lastOrNull() is Route.PhraseShown) { pop(); stack.add(Route.PhraseGate) }
+                })
                 Route.About -> AboutScreen(onBack = ::pop, onLicences = { stack.add(Route.Licences) })
                 Route.Licences -> LicencesScreen(::pop)
                 Route.Diagnostics -> DiagnosticsScreen(app, ::pop)
