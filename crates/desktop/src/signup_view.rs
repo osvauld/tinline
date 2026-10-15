@@ -901,10 +901,10 @@ impl App {
             (container(face).width(Fill).center_x(Fill).into(), buttons(btns))
         } else if self.add_ui.tab == AddTab::Qr {
             let qr: El = match &self.qr {
-                Some(q) => container(canvas(QrView(q)).width(Length::Fixed(160.0)).height(Length::Fixed(160.0))).padding(8).style(ui::plain(Color::WHITE, 12.0)).into(),
-                None => container(tx("Preparing your code\u{2026}", 13.0, t.ink2)).width(176).height(176).center_x(176).center_y(176).style(ui::plain(t.surface2, 12.0)).into(),
+                Some(q) => container(canvas(QrView(q)).width(Length::Fixed(260.0)).height(Length::Fixed(260.0))).padding(10).style(ui::plain(Color::WHITE, 12.0)).into(),
+                None => container(tx("Preparing your code\u{2026}", 13.0, t.ink2)).width(280).height(280).center_x(280).center_y(280).style(ui::plain(t.surface2, 12.0)).into(),
             };
-            let mine = column![container(qr).width(196).height(196).center_x(196).center_y(196), why("Let them scan this with Tinline.".into(), true)].spacing(10).align_x(Alignment::Center);
+            let mine = column![container(qr).width(296).height(296).center_x(296).center_y(296), why("Let them scan this with Tinline.".into(), true)].spacing(10).align_x(Alignment::Center);
             (container(mine).width(Fill).center_x(Fill).into(), row![Space::new().width(Fill), quiet_btn("Close".into(), Some(close.clone()))].into())
         } else {
             let copied = self.copied_at.is_some_and(|at| at.elapsed() < Duration::from_millis(1600));

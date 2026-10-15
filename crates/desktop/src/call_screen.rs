@@ -78,8 +78,8 @@ impl App {
             };
             let controls = container(controls).center_x(Fill);
             let mut layers = stack![Space::new().width(Fill).height(Fill)];
-            // Explicit test-hooks preview only. No texture is chosen for production, no synth audio is played.
-            if self.demo && let Some(texture) = crate::call_field::texture() {
+            // The call field (CloudField.svelte): the Fog cloud behind the call, as on Android. No synth audio is played.
+            if let Some(texture) = crate::call_field::texture() {
                 use crate::call_field::{State, Want};
                 let state = if self.waiting.is_some() { State::Waiting } else if incoming { State::Incoming }
                     else if reconnecting { State::Reconnecting } else if active { State::Active }

@@ -1909,16 +1909,16 @@ impl canvas::Program<Msg> for QrView<'_> {
         frame.fill_rectangle(Point::ORIGIN, bounds.size(), Color::WHITE);
         let quiet = 1usize;
         let total = self.0.n + 2 * quiet;
-        let cell = (bounds.width.min(bounds.height) / total as f32).floor().max(1.0);
-        let off = (bounds.width.min(bounds.height) - cell * total as f32) / 2.0;
+        // The code fills its box: cells are fractional, and each edge is rounded to a whole pixel so neighbours meet with
+        // no seams. (Flooring the cell size left a dense link ticket at ~2/3 of the box.)
+        let side = bounds.width.min(bounds.height);
+        let cell = side / total as f32;
+        let edge = |i: usize| (i as f32 * cell).round();
         for y in 0..self.0.n {
             for x in 0..self.0.n {
                 if self.0.dark[y * self.0.n + x] {
-                    frame.fill_rectangle(
-                        Point::new(off + (x + quiet) as f32 * cell, off + (y + quiet) as f32 * cell),
-                        Size::new(cell, cell),
-                        Color::BLACK,
-                    );
+                    let (x0, y0) = (edge(x + quiet), edge(y + quiet));
+                    frame.fill_rectangle(Point::new(x0, y0), Size::new(edge(x + quiet + 1) - x0, edge(y + quiet + 1) - y0), Color::BLACK);
                 }
             }
         }

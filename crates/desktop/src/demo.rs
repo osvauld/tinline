@@ -137,6 +137,7 @@ impl App {
                 self.detail_calls = self.recents.iter().filter(|r| r.peer_did == arjun).cloned().collect();
             }
             "add" => self.screen = Screen::AddContact,
+            "add-qr" => { self.screen = Screen::AddContact; self.add_ui.tab = signup::AddTab::Qr; }
             "add-paste" => {
                 self.screen = Screen::AddContact;
                 self.add_in = "OSVC2:eyJuIjoiQXJqdW4iLCJrIjoiejZNa3ZWUXFwYkxzTW1ZbkVSN3pkTXNUdnJENHMi".into();
