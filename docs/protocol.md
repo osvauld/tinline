@@ -293,9 +293,9 @@ reason. Failure tokens surfaced to the UI: `expired cancelled rejected bad_proof
 net locked busy bad_grant account_exists`. Locking E cancels its link. Env knob for tests:
 `P2P_LINK_TTL_SECS`.
 
-### Own-device sync (ALPN `tinline/self/4`, task 34d; `/1` refused since P9c, `/2` since P10, `/3` since photo sizes, see "Protocol versions")
+### Own-device sync (ALPN `tinline/self/5`, task 34d; `/1` refused since P9c, `/2` since P10, `/3` since photo sizes, `/4` since postcard, see "Protocol versions")
 
-Frames: u32 BE length + bincode of `SelfMsg` (16 MiB cap).
+Frames: u32 BE length + postcard (`cryptography::codec`) of `SelfMsg` (16 MiB cap).
 
 - `Auth { attestation, relay, unlink }`: dialer first, acceptor answers. The acceptor runs
   `accept_self_hello` against its registry's tombstones. An unknown device with a valid attestation
@@ -406,7 +406,12 @@ This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/t
 | `LinkDone` attestation DID and device checks | A device attaching itself under another DID or another connection |
 | Self-sync: DID, device, tombstone checks | A contact, a stranger, a removed device, or a relayed hello entering own-device sync |
 
-## Protocol versions (P9c, U18; P10; P6; account profiles; photo sizes; receipts)
+## Protocol versions (P9c, U18; P10; P6; account profiles; photo sizes; receipts; postcard)
+
+**Postcard (2026-10-15, pre-release, no back-compat).** Every binary frame, signed body and stored row
+moved from bincode 1 to postcard 1 (`cryptography::codec`): chat `tinline/chat/7`, own-device sync
+`tinline/self/5`, group `tinline/group/3`. `chat/6` and `self/4` are refused with code 426: **update the
+app and wipe its data**.
 
 **Signed receipts (2026-10-15, `feature/receipt-runtime`, not merged).** Chat ALPN
 `tinline/chat/6` adds `ChatMsg::{ReceiptHello, Receipts, ReceiptAck}` (`docs/chat.md` section

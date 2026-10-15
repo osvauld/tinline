@@ -28,7 +28,7 @@ All constants below live in [`group/attestation.rs`](../../crates/core/src/group
 |---|---:|---|
 | Statement version | 1 | Fixed prototype schema, not a deployed host wire version |
 | `SIGNATURE_BYTES` | 64 bytes | Fixed Ed25519 signature width |
-| `BINCODE_VEC_LENGTH_BYTES` | 8 bytes | Fixed-integer bincode Vec length prefix |
+| `codec::LEN_PREFIX_MAX` | 10 bytes | Longest postcard varint length prefix (was bincode's fixed 8) |
 | `MAX_BODY` | 128 KiB | Provisional signed-body allocation/decoding budget |
 | `MAX_SIGNED` | `MAX_BODY + 2 × 8 + 64` = 131,152 bytes | Derived EXACT envelope ceiling: body Vec and signature Vec; no padding guess |
 | `MAX_WRITERS` | 4,096 per frontier | Provisional serialization/verification budget; applies separately to stored and metadata frontiers |
@@ -52,7 +52,7 @@ expanded owned regression pass; see [validation](shared-recipient-receipt-slice.
 | Message/receipt digest | 32 bytes | same | BLAKE3 with distinct domains and length prefixes; actual original DM/group version extraction still pending |
 | `MAX_CONTEXT_WRITERS` | 1,024 | same | Provisional group metadata-context budget; direct claims require empty context |
 | `MAX_BODY` | 32 KiB | same | Provisional encoded claim ceiling |
-| `SIGNATURE_BYTES` / `VEC_LENGTH_BYTES` | 64 / 8 bytes | same | Ed25519 / fixed-integer bincode widths |
+| `SIGNATURE_BYTES` / `codec::LEN_PREFIX_MAX` | 64 / 10 bytes | same | Ed25519 / longest postcard length prefix |
 | `MAX_SIGNED` | 32 KiB + 80 = 32,848 bytes | same | Derived exact signed envelope ceiling |
 | `MAX_UPDATE_BYTES` | exporter `MAX_EXPORT_BYTES` = 12 MiB | same | Shared native import ceiling; not total document retention |
 | Export call budgets | caller-selected under existing exporter ceilings | `receipts/doc.rs` -> `group/doc/batching.rs` | Reuses whole-operation planner; no constant-resource promise |
@@ -197,7 +197,7 @@ history-dependent data and may temporarily exceed a candidate's output budget.
 | Capability slots | 3 | `sync/engine/group_contents.rs::catalog` | Reserve contents/history/receipt markers; data catalog uses `MAX_OWN_DOCS - 3` |
 | Hello entries | at most `MAX_OWN_DOCS + 4` | `sync/engine.rs` | Existing legacy-compatible outer bound |
 | `MAX_OWN_GROUPS` | 512 | `group/own.rs` | Existing own-token message and tracked-scope budget; NOT a newly imposed membership limit |
-| `MAX_FRAME` | 16 MiB | `sync/frames.rs`; `group/wire.rs` | Existing bincode frame-body ceiling, excluding u32 frame-length prefix |
+| `MAX_FRAME` | 16 MiB | `sync/frames.rs`; `group/wire.rs` | Existing postcard frame-body ceiling, excluding u32 frame-length prefix |
 | `HELLO_DAYS` | 7 recent days | `group/wire.rs` | Existing initial inventory window, NOT a retention limit |
 | `DAYS_PAGE` | 64 days | same | Existing direct-host day inventory budget |
 | `MAX_SHARDS_CACHED` | 12 days/group | `group/shard.rs` | Existing LRU cache budget, NOT disk retention |

@@ -125,7 +125,7 @@ Phone budgets: unlock < 1 s, page < 50 ms, send < 30 ms; phone = desktop x 4 to 
 1. **Group store open: 9.4 s desktop, 38 to 56 s phone (budget 1 s), +709 MB RSS. FAIL.**
    `Inner::group_core` (`group/engine.rs` ~l.555) loads and verifies every group in full at open.
    Per-function (100k + 30k + 3x2k = 136k records, one run): `GroupDoc::entries` -> `ops_between`
-   -> **`SignedRecord::open` (ed25519 verify + bincode of every record): 6.0 to 7.3 s, ~45 to
+   -> **`SignedRecord::open` (ed25519 verify + bincode of every record; postcard since 2026-10-15): 6.0 to 7.3 s, ~45 to
    60 us per record, ~75% of the open**; `GroupDoc::load` (Loro import of snapshot + updates) 0.4 to
    0.9 s; `store.doc_rows` (scan + AES-GCM unseal) 0.25 to 0.4 s; `state::derive` 0.15 to 0.4 s.
    Memory is ~5.2 KB per post: the Loro doc, `Live.entries` (a decoded `Record` per post, with

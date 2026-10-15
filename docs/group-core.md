@@ -62,7 +62,7 @@ the user was away; each is listed at the end.
 
 - **Two endpoints (U2).** Each device runs a second iroh endpoint for groups (key in the group
   store, one per account per install, independent of the private endpoint), ALPN
-  `tinline/group/2` (`wire::GROUP_ALPN`). It is bound when the node starts and the account has a
+  `tinline/group/3` (`wire::GROUP_ALPN`; /3 = postcard frames). It is bound when the node starts and the account has a
   group, or on create/join, and closed with the private endpoint (stop, lock, account switch).
 - **Only hosts know member endpoints (U7).** Members dial only hosts. Hosts accept, keep a
   directory `did/dev → member group endpoint`, and dial other hosts like members do. Host
@@ -142,7 +142,7 @@ device that hosted under its old device ID no longer hosts (an admin appoints th
 
 Our linked devices tell each other the groups the account is in over the existing own-device
 session (`tinline/self/3`, new frame `SelfMsg::Groups{groups}`, no protocol bump: self/3 is
-unreleased). Each entry is a bincode `InviteToken` without invite (group, name, owner, the
+unreleased). Each entry is a postcard (`codec`) `InviteToken` without invite (group, name, owner, the
 active hosts' DID-signed addresses), i.e. what `group_device_token` carries. A device that lacks
 a group adds it (`GroupMeta::from_own`) and dials its hosts; hosts admit it because the DID is a
 member; contents come from the hosts and are verified like any other (U7, U10). Sent at session
@@ -225,7 +225,7 @@ its block notice (P5). Letters: `Invite{id, token, inviter_name}`, `Answer{id, j
 too): `0x01 ‖ host group endpoint (32) ‖ code (12 random bytes, 96 bits) ‖ relay hint` where the
 hint is an index into the four n0 relays (2 bytes), a short n0 relay name, or a full URL. With an
 n0 relay a link is 47 bytes = **76–77 characters** (was several hundred with `tlgroup1:`). The old
-`tlgroup1:` text form is gone (U18); `InviteToken` stays as the internal/bincode form (own-device
+`tlgroup1:` text form is gone (U18); `InviteToken` stays as the internal/postcard form (own-device
 sync, direct invitations).
 
 - A host keeps `code/{code}` → `{group, signed invite or none, expires, by}`. If the issuer hosts

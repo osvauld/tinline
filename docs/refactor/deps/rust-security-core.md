@@ -8,7 +8,7 @@ checked RustSec advisory-db per crate (GitHub API `crates/<name>/`).
 
 | Dep | Verdict | Effort | Biggest risk |
 |---|---|---|---|
-| bincode 1.3.3 -> "3.0.0" | **DO NOT take 3.0.0: it is a tombstone (compile_error!, no code).** 1.3.3 stays (RUSTSEC-2025-0141, INFO unmaintained). Optional later: bincode 2.0.1 `config::legacy()`+serde, or wincode (bincode-compatible) | M-L if migrated | wire + signed bytes + disk rows |
+| bincode 1.3.3 -> "3.0.0" | **Removed 2026-10-15: replaced by postcard 1 (`cryptography::codec`).** Was: **DO NOT take 3.0.0: it is a tombstone (compile_error!, no code).** 1.3.3 stays (RUSTSEC-2025-0141, INFO unmaintained). Optional later: bincode 2.0.1 `config::legacy()`+serde, or wincode (bincode-compatible) | M-L if migrated | wire + signed bytes + disk rows |
 | redb 2.6.4 -> 4.4.0 | Upgrade WITH migration shim + golden test on real v2 file | M-L | Every existing user DB is file-format **v2**; redb >=3 refuses to open it (`UpgradeRequired(2)`) |
 | uniffi 0.29.5 -> 0.32.2 | Upgrade, own PR, Kotlin compile + device smoke | M | Hand-written `FfiConverter for Bytes` (video_call.rs:97) uses internals; `with_foreign` deprecated |
 | rand 0.8.8 -> 0.10.3 | Upgrade (forced by dalek 3 / x25519 3 / bip39 path), after wrapping RNG in one helper | S-M | API renames (OsRng->SysRng, RngCore->Rng/TryRng) ~26 sites |

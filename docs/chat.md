@@ -60,7 +60,7 @@ messages/<id> = { id, author, at, reply_to?, file?,
 - Reactions (later): `reactions/<did>/<emoji>`, each DID writes only its own slot.
 
 ### Wire
-ALPN `tinline/chat/6` (signed receipts; `/1` to `/5` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
+ALPN `tinline/chat/7` (postcard frames; `/1` to `/6` are refused, see "Wire" below) on the same iroh endpoint as calls. The connection opens with the
 same proof as a call (attestation + grant, `proto`); the rest is framed like the call control
 stream.
 
@@ -192,7 +192,7 @@ What differs from or settles the text above.
 
 ### Code map
 `crypt.rs` chunked blob AEAD · `blobs.rs` iroh-blobs hub (store, gated serving, GC) ·
-`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/6` ·
+`doc.rs` Loro day shard + batch validation · `wire.rs` frames of `tinline/chat/7` ·
 `store.rs` sealed records · `engine.rs` sessions, sync, outbox, transfers, history ·
 `api.rs` the UniFFI surface. New crate `crates/storage` (redb + sealed records, copied from
 osvauld2 `storage` @ 90d22ec with the `vault` entry idea).
@@ -211,7 +211,7 @@ UTC `YYYY-MM-DD`. A voice message is a file message with `kind = Voice`, `durati
 ~64 byte waveform; the blob is whatever file the app recorded (Ogg Opus 16 kHz mono).
 
 ### Wire (`tinline/chat/4`)
-One bidirectional stream, opened by the dialer; frames are u32 BE length + bincode (cap 16 MiB).
+One bidirectional stream, opened by the dialer; frames are u32 BE length + postcard via `cryptography::codec` (cap 16 MiB).
 `Auth{attestation, grant, relay}` both ways first: the same proof as a call (a call hello with
 id "chat" is built and checked by `proto::accept_call_hello`; `proto` is unchanged).
 Then `Hello{shards:[(day, vv)]}` (last 7 days + days with unacknowledged ops; also acts as an

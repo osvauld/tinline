@@ -9,7 +9,7 @@ rechecks. No direct-route suppression, route manager or attachment transport.
 Both `cap/group-contents/v1` and `cap/group-history/v1` must appear with empty VVs
 in the authenticated self/3 Hello. The second marker alone does not negotiate.
 Two catalog slots are reserved beneath the existing `MAX_OWN_DOCS + 4` Hello
-ceiling. Existing bincode message discriminants are preserved: the new variants
+ceiling. Existing message discriminants (bincode then, postcard varint tags now) are preserved: the new variants
 are appended and never sent to peers without history negotiation. Content-only
 peers retain the existing whole-diff/recent-document path; peers without either
 marker retain legacy DM/group-token behavior. Midstream history renegotiation is
