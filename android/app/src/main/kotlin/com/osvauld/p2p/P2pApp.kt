@@ -546,7 +546,11 @@ class P2pApp : Application(), NodeEvents {
 data class IncomingSheet(val did: String, val name: String, val joined: Boolean, val theirs: Boolean)
 
 /** Whether an activity of ours is resumed (MainActivity sets it): cues play live, else the system notifies. */
-object AppVisible { @Volatile var resumed = false }
+object AppVisible {
+    @Volatile var resumed = false
+    /** The home app bar is on screen, so a ringing call shows there (RingHead). Only the top route is composed. */
+    @Volatile var ringHeadUp = false
+}
 
 fun testLog(msg: String) {
     if (BuildConfig.DEBUG) Log.i("P2PTEST", msg)

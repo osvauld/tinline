@@ -115,6 +115,13 @@ object HomeScroll {
 fun HomeAppBar(look: MarkLook, showSearch: Boolean, onSearch: () -> Unit, onSettings: () -> Unit) {
     val c = Tin.c
     val ring by RingHead.ring.collectAsState()
+    // While this bar is on screen it carries a ringing call, so CallController keeps the system heads-up away. Leaving Home
+    // mid-ring posts the notification, so the call is never left without a way to answer it.
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    DisposableEffect(Unit) {
+        AppVisible.ringHeadUp = true
+        onDispose { AppVisible.ringHeadUp = false; P2pApp.get(ctx).calls.appLeftFront() }
+    }
     Box(Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
         val a by animateFloatAsState(if (ring == null) 1f else 0f, tween(Motion.CROSSFADE), label = "brand")
         Row(

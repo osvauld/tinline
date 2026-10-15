@@ -117,9 +117,10 @@ class CallController(private val app: P2pApp) {
         _ui.value = CallUi(call, CallState.Ringing)
         newSession(call)
         CoreService.ensureRunning(app)
-        // The app is open and unlocked: the home header (RingHead) is the incoming call, so the system heads-up stays away.
+        // The app is open and unlocked on Home: the home header (RingHead) is the incoming call, so the system heads-up stays
+        // away. On any other screen there is no RingHead, so the notification is posted as usual.
         // It is posted the moment the app leaves the front while the phone is still ringing ([appLeftFront]).
-        if (!(AppVisible.resumed && app.lockState.value == uniffi.p2pcore.LockState.UNLOCKED)) Notifications.incoming(app, call)
+        if (!(AppVisible.resumed && AppVisible.ringHeadUp && app.lockState.value == uniffi.p2pcore.LockState.UNLOCKED)) Notifications.incoming(app, call)
         startRinging()
         ringTimeout?.cancel()
         ringTimeout = app.scope.launch {
@@ -389,7 +390,8 @@ class CallController(private val app: P2pApp) {
         }
     }
 
-    /** MainActivity paused (home, screen off, another app): a call still ringing gets its notification and full-screen intent now. */
+    /** MainActivity paused (home, screen off, another app) or Home's app bar left the screen: a call still ringing gets its
+     *  notification and full-screen intent now. */
     fun appLeftFront() {
         val c = _ui.value ?: return
         if (ringing && c.info.incoming && c.state is CallState.Ringing && !callScreenShown) Notifications.incoming(app, c.info)
