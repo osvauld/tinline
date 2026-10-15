@@ -74,7 +74,7 @@ private sealed interface ProfileLayer {
 }
 
 @Composable
-fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Unit, preview: MyProfilePreview? = null) {
+fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Unit, preview: MyProfilePreview? = null, title: String = "My profile") {
     val c = Tin.c
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -128,7 +128,7 @@ fun MyProfileScreen(store: ProfileStore, fallbackName: String, onBack: () -> Uni
     }
     fun drop(key: String): suspend () -> String? = { setField(store, fields, key, null, ::op) }
 
-    PfPage("My profile", onBack, bottomPad = 96.dp, overlay = {
+    PfPage(title, onBack, bottomPad = 96.dp, overlay = {
         // Floating, not in the page flow: these appear on their own and must not move the page.
         Box(Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, bottom = 16.dp), contentAlignment = Alignment.BottomCenter) {
             val ms = if (rememberReducedMotion()) 0 else PgMotion.CROSSFADE
