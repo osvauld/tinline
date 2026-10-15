@@ -152,10 +152,22 @@ impl Inner {
         if let Some(mut conv) = core.store.conv(&pair)?
             && (conv.unread > 0 || conv.read_upto < conv.last_in)
         {
+            let from = conv.read_upto;
             conv.unread = 0;
             conv.read_upto = conv.read_upto.max(conv.last_in);
-            core.store.db.apply(&[core.store.conv_op(&pair, &conv)?]).map_err(io)?;
+            // Signed read receipt obligation for exactly what this step marks read, atomic
+            // with the cursor. If it cannot be computed the read stays local (unconfirmed).
+            let mut ops = match Self::chat_read_intent(&core, &me, &pair, from, conv.read_upto) {
+                Ok(o) => o,
+                Err(e) => {
+                    tracing::warn!("chat receipts: read intent: {e}");
+                    vec![]
+                }
+            };
+            ops.push(core.store.conv_op(&pair, &conv)?);
+            core.store.db.apply(&ops).map_err(io)?;
             self.selfsync_dirty(READ_MARK);
+            self.chat_receipts_pump();
             if let (Some(ev), Some(c)) = (self.ev(), self.chat_api_chat(&core, &me, &conv)) {
                 ev.on_chat_changed(c);
             }

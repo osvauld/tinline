@@ -168,6 +168,42 @@ from clean reopen and need explicit scope/measurement.
   contract; add message-status provenance inspection without treating host Acks
   or local unread cursors as recipient evidence.
 
+**M3 progress (1:1 only, 2026-10-15, branch `feature/receipt-runtime`, not merged).**
+[Runtime slice](message-receipt-runtime-slice.md): the chat engine records exact delivered
+intents in the transaction that accepts contact batches/history snapshots, and exact read
+intents in the `mark_read` cursor transaction; `MessageReceipts::pump` signs/commits them
+with intent completion atomically; `chat_message_receipts` / `chat_day_receipts`
+(additive UniFFI) project committed evidence per exact version (`dm_version`). Own-device
+cursor moves and legacy ticks issue/project nothing. Group message receipts: **not
+started** (needs a group-store transaction seam and member admission). App displays: **not
+built**; [UI handoff](message-receipt-ui-handoff.md) because the UI files are owned by
+active lanes. Validation (queued, `CARGO_BUILD_JOBS=2`, `--who receipt-runtime-m3`):
+
+```sh
+cargo test --offline --locked -p p2pcore --lib -- receipts::store::messages:: version:: --test-threads=1
+```
+**11 passed** (7 new controller cases with real DID-signed chat versions and sealed redb:
+reopen, injected commit failure/retry, duplicate obligation, >256 split, one-device
+account coverage, exact read holes, foreign issuer/session/call refusal, atomic outbox).
+
+```sh
+cargo test --offline --locked -p p2pcore --lib -- receipts:: chat:: version:: group::attestation:: \
+  group::doc:: group::engine::durability:: sync::engine::group_contents:: \
+  sync::engine::group_history:: --test-threads=1
+```
+**208 passed, 0 failed, 0 ignored, 175 filtered out**, 193.5 s, warning-free.
+
+```sh
+cargo test --offline --locked -p p2pcore --test readd --test grant_characterization \
+  --test message_receipts -- --test-threads=1
+```
+All passed (readd 4, grant_characterization 7, message_receipts 2). `message_receipts`
+runs two real nodes over iroh (network-dependent): recipient issues Delivered after
+acceptance, the sender verifies it over chat/6 with a byte-identical receipt id, sender
+mark-read does not count, recipient mark-read yields Read at the sender, an edit is a new
+version that is re-delivered but not read; restart keeps the same statements. This is
+the core path only, NOT a desktop/Android display demonstration.
+
 Gate: source adapters and actual read-event tests, persistence failure/replay,
 version substitution, one-device semantics and no receipt-of-receipt loops.
 Product completion additionally requires the real desktop/Android receipt displays
@@ -196,6 +232,13 @@ This is not wire negotiation or Node integration; bounded transport remains unfi
   accepted historical originals according to the explicit selected policy.
 - Exercise direct participants and authorized own-device replicas; public hosts
   do not gain private-call/DM access. Group dissemination follows chosen visibility.
+
+**M4 progress (1:1 only).** `tinline/chat/6` adds `ReceiptHello`/`Receipts`/`ReceiptAck`
+(original native ops, bounded frames, outbox marks completed by acks; import admits only
+the conversation's two DIDs, Delivered/Read kinds, days we hold). **Wire bump needs the
+user's OK before merge** (`/5` peers get 426, update without wipe). Not covered yet:
+explicit loss/duplicate-frame and revoked/blocked-session wire tests, own-device receipt
+replication, group exchange via hosts.
 
 Gate: authenticated exchange with loss/retry/duplicates, obsolete response,
 revoked device, missing proof, commit failure, reconnect/reopen and legacy peer;

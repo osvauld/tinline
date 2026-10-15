@@ -21,7 +21,8 @@ mod logging;
 mod node;
 mod recovery_key;
 mod rekey;
-// Shared recipient primitives are intentionally not connected to runtime yet.
+// Message receipts are wired into DM runtime issuance/projection (M3); call
+// and transport primitives remain partly unconnected, hence the allowance.
 #[allow(dead_code)]
 mod receipts;
 mod signed_map;
@@ -60,6 +61,7 @@ pub use group::invitations::{GroupInvitation, GroupInvitationEvents, GroupInvita
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
 pub use contact_req::{AddError, AddOutcome, CodePeek, ContactRequest, ContactRequestEvents, MyCode};
 pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameKind, SearchResults};
+pub use receipts::api::{MessageReceiptStatus, ReceiptLevel, ReceiptProof, ReceiptProofKind, RecipientReceipts};
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, PictureDownload, StorageUsage, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};

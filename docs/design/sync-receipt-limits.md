@@ -109,6 +109,26 @@ Completed pointers and signed evidence have no total-retention/rollover quota.
 Capture success is not recipient confirmation; only the atomic receipt completion
 can return a proof-backed projection. No Node retry task is installed by this slice.
 
+## Message receipt runtime (DM, M3/M4; branch only)
+
+Defined in [`receipts/store/messages.rs`](../../crates/core/src/receipts/store/messages.rs)
+and [`chat/engine/receipts.rs`](../../crates/core/src/chat/engine/receipts.rs). See
+[runtime slice](message-receipt-runtime-slice.md). All provisional.
+
+| Item | Value | Constant / behavior |
+|---|---:|---|
+| Versions per signed statement | 256 | existing `MAX_MESSAGES`; larger obligations become several statements |
+| Digests per intent row | 1,024 | `MAX_INTENT_DIGESTS`; split into more rows, never truncated |
+| Encoded intent row | 64 KiB | `MAX_INTENT_BYTES`; bounded decoder limit |
+| Intent rows per pump call | 64 | `MAX_INTENTS_PER_PUMP`; remainder stays queued for the next trigger |
+| Idle ledgers kept open | 32 | `MAX_OPEN_LEDGERS`; a cache, not retention |
+| Read versions per mark-read step | 4,096 newest | `MAX_READ_VERSIONS`; older ones get no read statement (hole) |
+| Read scan window | days of (old cursor - 1 d, new cursor + 1 d] | closed (snapshot-blob) days skipped |
+| `ReceiptHello` days | 64 | `MAX_RECEIPT_DAYS`; recent hello days + unacknowledged outbox days |
+| Receipt frame native budget | 256 KiB / 64 ops / 4,096 writers | `RECEIPT_BATCH`; under chat `MAX_FRAME` 16 MiB |
+| Frames per send pass per day | 16 | `RECEIPT_FRAMES_PER_SEND`; rest on the next session hello or new issuance |
+| Receipt ledgers / outbox marks | no quota | kept by decision until M7 shard signing |
+
 ## Receipt transfer / storage
 
 | Item | Value | Defining location | Kind / behavior |

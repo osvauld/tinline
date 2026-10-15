@@ -8,6 +8,7 @@ use crate::{
 use bincode::Options;
 use serde::{Deserialize, Serialize};
 
+pub(crate) mod api;
 pub(crate) mod calls;
 pub(crate) mod doc;
 pub(crate) mod evidence;

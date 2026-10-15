@@ -143,10 +143,11 @@ impl Inner {
         let recs: Vec<(&MsgRec, bool)> = msgs.values().map(|r| (r, false)).collect();
         let (cops, _) = self.chat_conv_ops(core, me, &sess.did, pair, &recs)?;
         ops.extend(cops);
+        let all: Vec<&MsgRec> = msgs.values().collect();
+        ops.extend(Self::chat_delivered_intent(core, me, pair, day, &all)?);
         let prev = core.store.shard_meta(pair, day)?.map(|m| m.vv).unwrap_or_default();
         core.store.db.apply(&ops).map_err(io)?;
         self.selfsync_dirty(&doc_name(pair, day));
-        let all: Vec<&MsgRec> = msgs.values().collect();
         self.search_dm(&sess.did, pair, day, &all, Some(prev), meta.vv);
         Ok(true)
     }
@@ -195,7 +196,10 @@ impl Inner {
             .map_err(|e| Error::Io(e.to_string()))?;
         let _ = hub.release(&hash).await;
         let shards = self.chat_shard(core, pair, &d.day).await?;
-        self.chat_apply_history(shards, core, me, sess, pair, &d.day, &snap)
+        let added = self.chat_apply_history(shards, core, me, sess, pair, &d.day, &snap)?;
+        // After the shard lock is released: sign what that import made durable.
+        self.chat_receipts_pump();
+        Ok(added)
     }
 
     /// Days at least `CLOSE_AFTER_DAYS` old become one encrypted snapshot blob each.

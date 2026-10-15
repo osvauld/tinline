@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
-pub const CHAT_ALPN: &[u8] = b"tinline/chat/5";
+pub const CHAT_ALPN: &[u8] = b"tinline/chat/6";
 /// A shard snapshot of a very busy day can be large; blobs carry the rest.
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 const SIG_DOMAIN: &[u8] = b"tinline-chat-batch-v1";
@@ -46,6 +46,14 @@ pub enum ChatMsg {
     /// Instead of `Auth`, from a contact that blocks us: its DID-signed block notice
     /// (`proto::sign_block_notice`); the connection ends after it.
     Notice { notice: proto::SignedBlob },
+    /// chat/6: recipient-signed delivered/read receipt exchange (`docs/chat.md` "Receipts").
+    /// The receipt-ledger version vector we hold per day of this conversation.
+    ReceiptHello { days: Vec<(String, Vec<u8>)> },
+    /// Native receipt-ledger ops of one day the peer lacks: original DID-signed statements,
+    /// never re-signed by a relay. Admitted only from this conversation's two DIDs.
+    Receipts { day: String, update: Vec<u8> },
+    /// "I now hold this receipt-ledger version of `day`".
+    ReceiptAck { day: String, vv: Vec<u8> },
 }
 
 fn sig_input(doc: &str, update: &[u8]) -> Vec<u8> {
