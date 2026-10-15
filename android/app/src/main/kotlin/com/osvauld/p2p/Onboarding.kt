@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -60,7 +62,14 @@ import kotlinx.coroutines.withContext
  * screens (Restored, Syncing) instead of one shared Done step.
  */
 
-private enum class Step { Welcome, Choose, Done, Name, Pass, Phrase, Confirm, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd, LinkName, LinkQr, LinkPass, Syncing }
+private enum class Step {
+    Welcome, Choose, Done, Name, Pass, Phrase, Confirm, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd, LinkName, LinkQr, LinkPass, Syncing;
+
+    val hasTextInput: Boolean get() = when (this) {
+        Name, Pass, Confirm, Device, Restore, PassAdd, LinkName, LinkPass -> true
+        else -> false
+    }
+}
 
 /** Older onboarding frame, still used by a few non-gate screens. Same furniture as the gate now. */
 @Composable
@@ -202,6 +211,17 @@ fun OnboardingFlow(
         }
     }
 
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(step) {
+        // Reading steps release focus as their entrance begins. Between forms, leave the old editor alive
+        // until the incoming field takes focus so Android can transfer its input connection without hiding IME.
+        if (!step.hasTextInput) {
+            focusManager.clearFocus(force = true)
+            keyboard?.hide()
+        }
+    }
+
     val prog = progressOf(step, restoring, linking, forgot, adding)
     GateStage(step, dir) { s ->
         Column(Modifier.fillMaxSize()) {
@@ -213,7 +233,7 @@ fun OnboardingFlow(
                 Step.Choose -> { head { back(Step.Welcome) }; ChooseStep(
                     onLink = { restoring = false; linking = true; go(Step.LinkName) },
                     onRestore = { restoring = true; linking = false; go(Step.Restore) }) }
-                Step.Done -> { head(null); DoneStep(name, onAdd = { (onAddFirst ?: onDone)() }, onNotNow = onDone) }
+                Step.Done -> { head(null); DoneStep(name, onAdd = { (onAddFirst ?: onDone)() }, onNotNow = onDone, person = app.currentDid()) }
                 Step.LinkName -> { head { if (adding) cancelAdd() else back(Step.Choose) }
                     DeviceStep(label, { label = it; error = null }, false, null, onNext = { label = label.trim(); go(Step.LinkQr) }) }
                 Step.LinkQr -> LinkSession(app, newDevice = true, label = label.trim(), onClose = { back(Step.LinkName) }, onDone = { d ->
@@ -251,7 +271,7 @@ fun OnboardingFlow(
                         onNext = { val p = pass; pass = ""; finishIdentity(p) },
                         onSkip = { pass = ""; finishIdentity("") }) }
                 Step.Phrase -> { head(null); PhraseStep(phrase.orEmpty(), onNext = { go(Step.Device) }, onCheck = { go(Step.Confirm) },
-                    copiedAlready = phraseCopied, onCopied = { phraseCopied = true }) }
+                    copiedAlready = phraseCopied, onCopied = { phraseCopied = true }, person = app.currentDid()) }
                 Step.Confirm -> { head { back(Step.Phrase) }; ConfirmStep(phrase.orEmpty(), onDone = { back(Step.Phrase) }) }
                 Step.Device -> { head(null); DeviceStep(label, { label = it; error = null }, busy, error, onNext = {
                     busy = true; error = null
@@ -360,18 +380,23 @@ private fun ChooseOpt(icon: ImageVector, title: String, sub: String, onClick: ()
 // ------------------------------------------------------------------ done (Done.svelte)
 
 @Composable
-private fun DoneStep(name: String, onAdd: () -> Unit, onNotNow: () -> Unit) {
+private fun DoneStep(name: String, onAdd: () -> Unit, onNotNow: () -> Unit, person: String? = null) {
     val first = name.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
     // The line arrives slack and pulls tight 450 ms after the step arrives, in two tugs on the `line` cue's two notes; the cue
     // plays on the first tug, and the line warms from faded gold to gold. Reduced motion: it settles taut, colour and cue still come.
     var taut by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { kotlinx.coroutines.delay(450); taut = true }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(450)
+        taut = true
+        if (person != null) Cues.line()
+    }
     GateStep(
         title = if (first.isNotBlank()) "Your line is open, $first" else "Your line is open",
         lead = "Scan their code or share yours, and you can call each other.",
         center = true,
         hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) {
-            TinMark(96.dp, state = if (taut) MarkState.Taut else MarkState.Slack, live = true, lineColor = true, spring = MarkSpring.Line,
+            if (person != null) ViewablePgAvatar(name, 0, 96.dp, person)
+            else TinMark(96.dp, state = if (taut) MarkState.Taut else MarkState.Slack, live = true, lineColor = true, spring = MarkSpring.Line,
                 onTug = { n -> if (n == 1) Cues.line() }, description = "Tinline")
         } },
         foot = {
@@ -411,16 +436,29 @@ internal fun NameStep(name: String, onChange: (String) -> Unit, onNext: () -> Un
     GateStep("What should people call you?", lead = "Only the people you add will see it.",
         foot = { GNextRow({ GNext("Continue", next, enabled = name.isNotBlank()) }) }) {
         GField(name, onChange, "Your nickname", hint = "You can change it any time in Settings.", focus = rememberAutofocus(),
-            keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done), onDone = next)
+            // ASCII text requests the same number-row layout as the passphrase without masking the nickname.
+            keyboard = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Ascii, imeAction = ImeAction.Done), onDone = next)
     }
 }
 
-/** StepShell focuses the first field on arrival ([data-autofocus]). */
+/** Focus on the first laid-out frame, during the entrance rather than after it. */
 @Composable
 fun rememberAutofocus(): androidx.compose.ui.focus.FocusRequester {
     val f = remember { androidx.compose.ui.focus.FocusRequester() }
-    LaunchedEffect(Unit) { kotlinx.coroutines.delay(PgMotion.ENTER.toLong()); runCatching { f.requestFocus() } }
+    GateAutofocus(f)
     return f
+}
+
+@Composable
+private fun GateAutofocus(focus: androidx.compose.ui.focus.FocusRequester) {
+    val active = LocalGatePaneActive.current
+    LaunchedEffect(focus, active) {
+        if (active) {
+            // Wait for attachment/layout, not a fixed animation duration. Outgoing panes cannot reclaim focus.
+            withFrameNanos { }
+            runCatching { focus.requestFocus() }
+        }
+    }
 }
 
 // ------------------------------------------------------------------ passphrase (Pass.svelte)
@@ -498,7 +536,7 @@ fun WordGrid(phrase: String, hidden: Boolean = false) {
 }
 
 @Composable
-internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit, copiedAlready: Boolean = false, onCopied: () -> Unit = {}) {
+internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit, copiedAlready: Boolean = false, onCopied: () -> Unit = {}, person: String? = null) {
     val ctx = LocalContext.current
     // One primary slot, two moments: "Copy my words" first; once copied the same button says "I've saved them" (same size, so
     // nothing moves). Calm, never alarming: no blur, no warning box; paper is a suggestion, not a rule.
@@ -523,6 +561,11 @@ internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit,
                 GBtn(if (asKey) "I saved it elsewhere" else "I wrote them down", onNext, kind = GKind.Text)
             }
         }) {
+        if (person != null) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                ViewablePgAvatar("Your account", 0, 80.dp, person)
+            }
+        }
         WordsKeySeg(asKey) { asKey = it }
         if (asKey) KeyCard(key) else WordGrid(phrase)
     }
@@ -743,7 +786,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
     // A pasted recovery key (one line, `tlkey-…`) replaces the boxes ("" = typing words).
     var recKey by remember { mutableStateOf("") }
     val focus = remember { List(24) { androidx.compose.ui.focus.FocusRequester() } }
-    LaunchedEffect(Unit) { kotlinx.coroutines.delay(PgMotion.ENTER.toLong()); runCatching { focus[0].requestFocus() } }
+    GateAutofocus(focus[0])
 
     fun suggest(p: String, n: Int) = if (p.isEmpty()) emptyList() else list.asSequence().filter { it.startsWith(p) }.take(n).toList()
     fun bad(i: Int): Boolean { val v = words[i]; if (v.isEmpty() || v in set) return false; return seen[i] || tried || suggest(v, 1).isEmpty() }

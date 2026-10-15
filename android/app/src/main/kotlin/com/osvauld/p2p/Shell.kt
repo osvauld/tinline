@@ -1,16 +1,10 @@
 package com.osvauld.p2p
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,7 +24,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -48,7 +41,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 /*
  * The Android shell from the playground (screens/shell/AndroidShell.svelte): the 56 dp app bar with the live mark,
- * the tab panel that fades through, the search dock above the tab bar, and the 4-tab bar whose indicator grows out
+ * the tab panel's chosen quiet crossfade, the search dock above the tab bar, and the 4-tab bar whose indicator grows out
  * from the icon. Values are measured from the playground (getComputedStyle) and named after tokens.css / motion.ts.
  */
 
@@ -183,19 +176,16 @@ fun PgIconButton(icon: ImageVector, label: String, onClick: () -> Unit, tint: Co
 
 // ---------------------------------------------------------------- tab panel
 
-/** TabPanel: switching tabs fades through (old out 90 ms, then new in 210 ms with a .98 -> 1 settle from the top); nothing reflows. */
+/** Chosen in the main-tab lab: simultaneous 120 ms fades, no delay, scale, travel or size spring.
+ * Header/dock/tab bar remain outside the transition; HomeScroll keeps each list's position. */
 @Composable
 fun TabPanel(tab: HomeTab, modifier: Modifier = Modifier, content: @Composable (HomeTab) -> Unit) {
-    AnimatedContent(
+    val reduced = rememberReducedMotion()
+    Crossfade(
         tab, modifier,
-        transitionSpec = {
-            (fadeIn(tween(Motion.TAB_IN, Motion.TAB_OUT, Motion.CubicOut)) +
-                scaleIn(tween(Motion.TAB_IN, Motion.TAB_OUT, Motion.CubicOut), initialScale = 0.98f, transformOrigin = TransformOrigin(0.5f, 0f)))
-                .togetherWith(fadeOut(tween(Motion.TAB_OUT, easing = Motion.CubicIn)))
-                .using(SizeTransform(clip = false))
-        },
-        contentAlignment = Alignment.TopCenter, label = "tab",
-    ) { t -> content(t) }
+        animationSpec = tween(if (reduced) 0 else Motion.CROSSFADE, easing = Motion.CubicOut),
+        label = "tab",
+    ) { t -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) { content(t) } }
 }
 
 /** `.title`: 28/34 bold, margin 4 16 8. */
