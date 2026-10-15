@@ -149,6 +149,15 @@ impl ReceiptStore {
         self.db.apply(ops).map_err(io)
     }
 
+    /// The backing sealed namespace, for store-owned controllers' sidecar rows.
+    pub(crate) fn db(&self) -> &Sealed {
+        &self.db
+    }
+    /// Sidecar-only transaction (same injected-failure hook as receipt commits).
+    pub(crate) fn apply(&self, ops: &[storage::Op]) -> Result<(), ReceiptError> {
+        self.apply_ops(ops)
+    }
+
     #[cfg(test)]
     pub(crate) fn fail_next_commit(&self) {
         self.fail_commit
@@ -169,16 +178,31 @@ impl Ledger {
         account: &identity::Identity,
         admit: impl FnOnce(&[Entry]) -> Result<(), String>,
     ) -> Result<Committed, ReceiptError> {
+        self.write_with_ops(claim, account, admit, vec![])
+    }
+    /// `write` plus caller-owned sidecar ops (e.g. completing a durable issuance
+    /// intent) in the SAME transaction. An identical already-stored claim still
+    /// applies `extra` alone, so a retried intent completes without re-signing.
+    pub(crate) fn write_with_ops(
+        &self,
+        claim: &Receipt,
+        account: &identity::Identity,
+        admit: impl FnOnce(&[Entry]) -> Result<(), String>,
+        extra: Vec<storage::Op>,
+    ) -> Result<Committed, ReceiptError> {
         let mut live = self.state.lock();
         let mut candidate = live.doc.checkpoint()?;
         let Some((entry, update)) = candidate.write(claim, account, admit)? else {
+            if !extra.is_empty() {
+                self.store.apply_ops(&extra)?;
+            }
             return Ok(Committed {
                 entries: vec![],
                 update: None,
                 frontier: live.doc.vv(),
             });
         };
-        self.commit(&mut live, candidate, update, vec![entry], &[])
+        self.commit_with_ops(&mut live, candidate, update, vec![entry], &[], extra)
     }
     pub(crate) fn apply_remote(
         &self,
@@ -492,5 +516,6 @@ impl Ledger {
 }
 pub(crate) mod bundles;
 pub(crate) mod joins;
+pub(crate) mod messages;
 #[cfg(test)]
 mod tests;
