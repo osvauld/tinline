@@ -289,6 +289,21 @@ pub fn cue(kind: &str) -> Option<Vec<f32>> {
     Some(render(&notes, &mut Rng::seeded()))
 }
 
+/// The toy set (`sent`, `received`, `line`, `knock`) for the apps that cannot call the Rust API directly (Android): one shot,
+/// 5 kHz low-pass as in `cue()`, at `gain` (1.0 = the desktop level). Different on every call. `None` for any other name.
+#[uniffi::export]
+pub fn toy_cue_pcm(cue_name: String, gain: f64) -> Option<CuePcm> {
+    let notes: Vec<Note> = match cue_name.as_str() {
+        "line" => LINE.to_vec(),
+        "knock" => KNOCK.to_vec(),
+        "sent" | "received" => classic(&cue_name)?.1,
+        _ => return None,
+    };
+    let f = render_with(&notes, &mut Rng::seeded(), 5000.0, gain);
+    let samples = f.iter().map(|v| (v.clamp(-1.0, 1.0) * 32767.0) as i16).collect();
+    Some(CuePcm { samples, rate: RATE, looped: false })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -342,6 +357,26 @@ mod tests {
         let c = call_cue_pcm("nope".into(), "connected".into(), 1.0).unwrap();
         assert!(!c.looped, "an unknown palette is classic");
         assert!(call_cue_pcm("classic".into(), "nope".into(), 1.0).is_none());
+    }
+
+    #[test]
+    fn received_is_one_soft_tin_tap_and_the_toy_set_exports_as_pcm() {
+        let r = toy_cue_pcm("received".into(), 1.0).unwrap();
+        assert!(!r.looped && r.rate == 48_000);
+        let secs = r.samples.len() as f64 / RATE as f64;
+        assert!(secs > 0.45 && secs < 0.6, "one tap of 0.45 s, got {secs}");
+        let peak = r.samples.iter().map(|v| v.unsigned_abs()).max().unwrap();
+        assert!(peak > 500 && peak < 12_000, "audible but calm, got {peak}");
+        // the tap is at the start: the first 30 ms carry more energy than the last 30 ms
+        let e = |a: &[i16]| a.iter().map(|v| (*v as f64).powi(2)).sum::<f64>();
+        let n = (RATE as usize) * 30 / 1000;
+        assert!(e(&r.samples[..n]) > 10.0 * e(&r.samples[r.samples.len() - n..]));
+        let loud = toy_cue_pcm("received".into(), 4.0).unwrap();
+        assert!(loud.samples.iter().map(|v| v.unsigned_abs()).max().unwrap() > peak);
+        for k in ["sent", "line", "knock"] {
+            assert!(toy_cue_pcm(k.into(), 1.0).is_some(), "{k}");
+        }
+        assert!(toy_cue_pcm("ring".into(), 1.0).is_none());
     }
 
     #[test]

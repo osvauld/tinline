@@ -82,7 +82,7 @@ object ChatNotifier {
             .addRemoteInput(RemoteInput.Builder(KEY_REPLY).setLabel("Message").build())
             .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).setShowsUserInterface(false).build()
         val n = NotificationCompat.Builder(c, Notifications.CH_MESSAGES)
-            .setSilent(AlertPrefs.quiet(c))
+            .setSilent(AlertPrefs.quiet(c) || AppVisible.resumed)   // in front, the app plays the `received` cue itself
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setColor(0xFF0B6B5B.toInt())
             .setStyle(style)
@@ -139,7 +139,9 @@ object GroupNotifier {
     private fun id(gid: String) = 3000 + (gid.hashCode() and 0xffff)
 
     fun post(app: P2pApp, m: uniffi.p2pcore.GroupMessage, groupName: String?) {
-        if (m.outgoing || m.kind != uniffi.p2pcore.GroupItemKind.POST || OpenChat.group == m.groupId) return
+        if (m.outgoing || m.kind != uniffi.p2pcore.GroupItemKind.POST) return
+        Cues.incoming(app, true, m.authorDid)   // in the app: the `received` tone (the notification below is then silent)
+        if (OpenChat.group == m.groupId) return
         if (!AlertPrefs.groups(app)) return
         if (app.blocks.value.blockedByMe(m.authorDid)) return
         val who = m.authorName.trim().substringBefore(' ').ifBlank { "Someone" }
@@ -150,7 +152,7 @@ object GroupNotifier {
         val open = PendingIntent.getActivity(app, id(m.groupId), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(app, Notifications.CH_GROUPS)
-            .setSilent(AlertPrefs.quiet(app))
+            .setSilent(AlertPrefs.quiet(app) || AppVisible.resumed)   // in front, the app plays the `received` cue itself
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setColor(0xFF0B6B5B.toInt())
             .setStyle(style)
