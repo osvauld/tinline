@@ -323,12 +323,15 @@ fun PgComposer(
 @Composable
 fun PgSendButton(editing: Boolean, empty: Boolean, onSend: () -> Unit) {
     val c = Tin.c
-    Box(
-        Modifier.size(44.dp).alpha(if (empty) .38f else 1f).clip(CircleShape).background(c.accentFill)
-            .let { if (empty) it.semantics { contentDescription = if (editing) "Save edit" else "Send" } else it.pgPress(onSend, if (editing) "Save edit" else "Send") },
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(if (editing) Pg.Check else Pg.Send, null, tint = c.onAccentFill, modifier = Modifier.size(20.dp).padding(end = if (editing) 0.dp else 2.dp))
+    // The same 48 dp slot as the mic button it replaces, so the composer row keeps its height on the first letter.
+    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(44.dp).alpha(if (empty) .38f else 1f).clip(CircleShape).background(c.accentFill)
+                .let { if (empty) it.semantics { contentDescription = if (editing) "Save edit" else "Send" } else it.pgPress(onSend, if (editing) "Save edit" else "Send") },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(if (editing) Pg.Check else Pg.Send, null, tint = c.onAccentFill, modifier = Modifier.size(20.dp).padding(end = if (editing) 0.dp else 2.dp))
+        }
     }
 }
 
