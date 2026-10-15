@@ -3,7 +3,7 @@
 
 use chrono::{DateTime, Datelike, Local, TimeZone};
 use iced::widget::{button, column, container, mouse_area, progress_bar, row, text, text_editor, Space};
-use p2pcore::{AttachmentKind, Contact, DeliveryState, Message as ChatMsg, TransferState};
+use p2pcore::{AttachmentKind, Contact, DeliveryState, Message as ChatMsg, ReceiptProofKind, ReceiptTick, TransferState};
 
 use crate::voice::{self, VoiceView};
 use super::*;
@@ -569,9 +569,13 @@ impl App {
         meta = meta.push(tx(hhmm(m.at), 11.0, metac).line_height(lh(11.0)));
         meta_w += width(&hhmm(m.at), ui::SANS, 11.0);
         if m.outgoing && !m.deleted {
-            let tick: El = match m.delivery {
-                DeliveryState::Delivered => crate::pg_icons::pgi("check", 12.0, metac),
-                DeliveryState::Pending => crate::pg_icons::pgi("clock", 11.0, metac),
+            // The core decides the mark (`ReceiptTick`): check / read only from the contact's signed
+            // receipts, a clock until then. The slot is always reserved, so a mark arriving never moves text.
+            let tick: El = match self.chat.receipts.get(&m.id).map(|r| r.tick) {
+                Some(ReceiptTick::Read) => crate::pg_icons::pgi("read", 12.0, fg),
+                Some(ReceiptTick::Delivered) => crate::pg_icons::pgi("check", 12.0, metac),
+                Some(ReceiptTick::Waiting | ReceiptTick::OnlyHere) => crate::pg_icons::pgi("clock", 11.0, metac),
+                Some(ReceiptTick::None) | None => Space::new().width(12).height(11).into(),
             };
             meta = meta.push(container(tick).width(13).height(11).center_x(13).center_y(11));
             meta_w += 16.0;
@@ -682,7 +686,16 @@ impl App {
                 .style(super::shell_view::wash(t, None, Some(t.surface2), 0.0))
                 .on_press(msg)
         };
-        let mut c = column![item("reply", "Reply", false, Msg::Chat(Cm::Reply(m.id.clone())))];
+        let mut c = column![];
+        if let Some(lines) = self.receipt_lines(m) {
+            let mut info = column![].spacing(2);
+            for (i, l) in lines.into_iter().enumerate() {
+                info = info.push(tx(l, if i == 0 { 13.0 } else { 12.0 }, if i == 0 { t.ink } else { t.ink2 }).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None));
+            }
+            c = c.push(container(info).padding(Padding { top: 6.0, right: 14.0, bottom: 8.0, left: 14.0 }).width(Fill));
+            c = c.push(container(Space::new().height(1)).width(Fill).style(ui::plain(t.hairline, 0.0)));
+        }
+        c = c.push(item("reply", "Reply", false, Msg::Chat(Cm::Reply(m.id.clone()))));
         if !m.text.is_empty() {
             c = c.push(item("copy", "Copy", false, Msg::Chat(Cm::Copy(preview_of(m)))));
         }
@@ -693,6 +706,46 @@ impl App {
             c = c.push(item("trash", "Delete", true, Msg::Chat(Cm::Delete(m.id.clone()))));
         }
         ui::raised(container(c).padding([6, 0]).width(220), t, ui::Depth::Pop, ui::pop_surface(t, 14.0))
+    }
+
+    /// My message's status for its menu: a headline, then one line per signed statement (who signed,
+    /// which of their devices, what it says). Only the core's verified receipts count; a statement is a
+    /// device's signed claim, so the copy says "on their device", never "they saw it".
+    fn receipt_lines(&self, m: &ChatMsg) -> Option<Vec<String>> {
+        if !m.outgoing || m.deleted || self.is_me(&m.peer_did) {
+            return None;
+        }
+        let st = self.chat.receipts.get(&m.id)?;
+        let first = crate::blocks::first_name(&self.chat_name(&m.peer_did)).to_string();
+        let head = match st.tick {
+            ReceiptTick::Read => format!("Read on {first}\u{2019}s device"),
+            ReceiptTick::Delivered => format!("On {first}\u{2019}s device"),
+            ReceiptTick::Waiting => format!("Waiting for {first}\u{2019}s device to confirm"),
+            ReceiptTick::OnlyHere => "Only on this computer so far".to_string(),
+            ReceiptTick::None => return None,
+        };
+        let mut out = vec![head];
+        for r in &st.recipients {
+            if r.proofs.is_empty() {
+                continue;
+            }
+            out.push(format!("Signed by {}", crate::blocks::first_name(&self.chat_name(&r.did))));
+            // One line per signing device: which of their devices said what.
+            let mut devices: Vec<(String, Vec<&str>)> = Vec::new();
+            for p in &r.proofs {
+                let dev: String = p.signer_device.chars().take(8).collect();
+                let what = match p.kind { ReceiptProofKind::Delivered => "delivered", ReceiptProofKind::Read => "read" };
+                match devices.iter_mut().find(|(d, _)| *d == dev) {
+                    Some((_, w)) if !w.contains(&what) => w.push(what),
+                    Some(_) => {}
+                    None => devices.push((dev, vec![what])),
+                }
+            }
+            for (dev, what) in devices {
+                out.push(format!("Device {dev} \u{b7} {}", what.join(", ")));
+            }
+        }
+        Some(out)
     }
 
     fn attachment_view<'a>(&'a self, t: Tok, m: &'a ChatMsg, a: &'a p2pcore::Attachment, fg: Color, dim: Color) -> El<'a> {

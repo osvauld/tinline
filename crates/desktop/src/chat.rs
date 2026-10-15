@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use iced::widget::text_editor;
 use iced::{clipboard, Task};
-use p2pcore::{Attachment, AttachmentKind, Chat, Contact, DayPage, Error, Message as ChatMsg, Node, TransferState};
+use p2pcore::{Attachment, AttachmentKind, Chat, Contact, DayPage, Error, Message as ChatMsg, MessageReceiptStatus, Node, TransferState};
 
 use crate::app::Target;
 use crate::media::{self, Class, Pixels};
@@ -65,6 +65,13 @@ impl Source {
     pub fn chat_day(&self, peer: String, day: Option<String>) -> Result<DayPage, Error> {
         route!(self.chat_day(peer, day))
     }
+    /// Recipient-signed status (core `ReceiptTick` + proofs) of one message.
+    pub fn chat_message_receipts(&self, peer: String, id: String) -> Result<MessageReceiptStatus, Error> {
+        route!(self.chat_message_receipts(peer, id))
+    }
+    pub fn chat_day_receipts(&self, peer: String, day: String) -> Result<Vec<MessageReceiptStatus>, Error> {
+        route!(self.chat_day_receipts(peer, day))
+    }
     pub fn fetch_older_history(&self, peer: String, before: String) -> Result<u32, Error> {
         route!(self.fetch_older_history(peer, before))
     }
@@ -116,6 +123,9 @@ pub(super) struct ChatState {
     pub peer: Option<String>,
     /// Oldest first.
     pub msgs: Vec<ChatMsg>,
+    /// The core's receipt status per loaded message id (the bubble mark and its provenance).
+    /// Missing = not read from the core yet: the mark's slot stays empty, never "delivered".
+    pub receipts: HashMap<String, MessageReceiptStatus>,
     /// The next older day we hold, if any.
     pub older: Option<String>,
     pub loading: bool,
@@ -192,6 +202,7 @@ impl Default for ChatState {
             chats: Vec::new(),
             peer: None,
             msgs: Vec::new(),
+            receipts: HashMap::new(),
             older: None,
             loading: false,
             fetching: false,
@@ -230,6 +241,8 @@ pub(super) enum Cm {
     Chats(Result<Vec<Chat>, String>),
     /// peer, whether the page goes in front of what is loaded
     Day(String, bool, Result<DayPage, String>),
+    /// Receipt statuses read from the core for messages of this peer.
+    Receipts(String, Result<Vec<MessageReceiptStatus>, String>),
     Edit(text_editor::Action),
     Send,
     Submitted(String, compose_state::Submission, Result<ChatMsg, String>),
@@ -543,6 +556,23 @@ impl App {
         blocking(move || src.chat_day(p, day).map_err(s), move |r| Msg::Chat(Cm::Day(peer.clone(), prepend, r)))
     }
 
+    fn load_day_receipts(&self, peer: String, day: String) -> Task<Msg> {
+        if day.is_empty() || !self.chat_io() {
+            return Task::none();
+        }
+        let (src, p) = (self.src(), peer.clone());
+        blocking(move || src.chat_day_receipts(p, day).map_err(s), move |r| Msg::Chat(Cm::Receipts(peer.clone(), r)))
+    }
+
+    /// Re-reads one message's receipt status (after it was sent, edited, changed or ticked).
+    pub(super) fn load_receipt(&self, peer: &str, id: &str) -> Task<Msg> {
+        if self.chat.peer.as_deref() != Some(peer) || !self.chat_io() {
+            return Task::none();
+        }
+        let (src, p, i, peer) = (self.src(), peer.to_string(), id.to_string(), peer.to_string());
+        blocking(move || src.chat_message_receipts(p, i).map(|r| vec![r]).map_err(s), move |r| Msg::Chat(Cm::Receipts(peer.clone(), r)))
+    }
+
     pub(crate) fn mark_read(&mut self, peer: &str) -> Task<Msg> {
         if let Some(c) = self.chat.chats.iter_mut().find(|c| c.peer_did == peer) {
             if c.unread == 0 {
@@ -570,6 +600,7 @@ impl App {
         self.chat.input = text_editor::Content::with_text(&draft.text);
         self.chat.reply = draft.reply;
         self.chat.msgs.clear();
+        self.chat.receipts.clear();
         self.chat.older = None;
         self.chat.no_more = false;
         self.chat.fetching = false;
@@ -648,6 +679,7 @@ impl App {
                 self.chat.loading = false;
                 self.chat.fetching = false;
                 let page = r.unwrap_or(DayPage { day: String::new(), messages: Vec::new(), older_day: None });
+                let receipts = self.load_day_receipts(peer.clone(), page.day.clone());
                 self.chat.older = page.older_day;
                 if prepend {
                     let mut merged = page.messages;
@@ -665,6 +697,21 @@ impl App {
                     self.chat.msgs.sort_by(|a, b| (a.at, &a.id).cmp(&(b.at, &b.id)));
                 }
                 self.refresh_undelivered();
+                return receipts;
+            }
+            Cm::Receipts(peer, r) => {
+                if self.chat.peer.as_deref() == Some(peer.as_str())
+                    && let Ok(list) = r
+                {
+                    for st in list {
+                        self.chat.receipts.insert(st.message_id.clone(), st);
+                    }
+                    // Test-hooks: `P2P_MENU_FIRST=1` opens my oldest loaded message's menu (status + provenance screenshots).
+                    #[cfg(feature = "test-hooks")]
+                    if crate::test_env("P2P_MENU_FIRST").is_some() && self.chat.menu.is_none() {
+                        self.chat.menu = self.chat.msgs.iter().find(|m| m.outgoing && self.chat.receipts.contains_key(&m.id)).map(|m| m.id.clone());
+                    }
+                }
             }
             Cm::Edit(a) => self.chat.input.perform(a),
             Cm::Send => {
@@ -696,14 +743,16 @@ impl App {
                 let current = self.chat.peer.as_deref() == Some(peer.as_str());
                 match result {
                     Ok(message) => {
+                        let mut receipt = Task::none();
                         if current {
                             if submission.editing.is_some() && self.chat.editing.is_none() {
                                 let draft = self.chat.compose_memory.finish_edit();
                                 if self.chat.input.text().is_empty() { self.chat.input = text_editor::Content::with_text(&draft); }
                             }
+                            receipt = self.load_receipt(&peer, &message.id);
                             self.chat.upsert(message);
                         }
-                        return self.refresh_chats();
+                        return Task::batch([receipt, self.refresh_chats()]);
                     }
                     Err(error) => {
                         // Never overwrite something typed while IO was in flight.
@@ -719,7 +768,11 @@ impl App {
                 }
             }
             Cm::Done(r) => match r {
-                Ok(m) => self.chat.upsert(m),
+                Ok(m) => {
+                    let receipt = self.load_receipt(&m.peer_did.clone(), &m.id.clone());
+                    self.chat.upsert(m);
+                    return receipt;
+                }
                 Err(e) => self.notice = Some(format!("Could not send: {e}")),
             },
             Cm::Hover(h) => self.chat.hover = h,
@@ -1102,15 +1155,22 @@ impl App {
                 if incoming && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed) && !self.blocks.blocked_by_me(&peer) {
                     self.play_received();
                 }
+                let receipt = if open && !incoming { self.load_receipt(&peer, &m.id) } else { Task::none() };
                 self.chat.upsert(m);
                 if open && !incoming {
                     self.refresh_undelivered();
                 }
                 if incoming && attended {
-                    return self.mark_read(&peer);
+                    return Task::batch([receipt, self.mark_read(&peer)]);
                 }
+                return receipt;
             }
-            ChatEv::Changed(m) => self.chat.upsert(m),
+            // Also raised when the contact's signed receipts for the shown version were committed.
+            ChatEv::Changed(m) => {
+                let receipt = if m.outgoing { self.load_receipt(&m.peer_did, &m.id) } else { Task::none() };
+                self.chat.upsert(m);
+                return receipt;
+            }
             ChatEv::Presence(peer, on) => {
                 if on {
                     self.chat.online.insert(peer);
@@ -1125,6 +1185,8 @@ impl App {
                 {
                     m.delivery = d;
                     self.refresh_undelivered();
+                    // Only the "still only here" part of the mark can change with this.
+                    return self.load_receipt(&peer, &id);
                 }
             }
             ChatEv::Progress { hash, done, total, outgoing } => {

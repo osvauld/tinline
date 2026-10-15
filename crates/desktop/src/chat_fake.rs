@@ -7,7 +7,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use p2pcore::{
-    Attachment, AttachmentKind, Chat, Contact, DayPage, DeliveryState, Error, Message, TransferState,
+    Attachment, AttachmentKind, Chat, Contact, DayPage, DeliveryState, Error, Message, MessageReceiptStatus,
+    ReceiptTick, TransferState,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -23,6 +24,19 @@ fn now() -> u64 {
 
 fn utc_day(ms: u64) -> String {
     chrono::DateTime::from_timestamp_millis(ms as i64).map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default()
+}
+
+/// The fake has no signatures: its messages are at most "waiting to confirm", never
+/// recipient Delivered/Read (those only ever come from the core's verified ledger).
+fn fake_receipt(m: &Message) -> MessageReceiptStatus {
+    let tick = if !m.outgoing || m.deleted {
+        ReceiptTick::None
+    } else if m.delivery == DeliveryState::Pending {
+        ReceiptTick::OnlyHere
+    } else {
+        ReceiptTick::Waiting
+    };
+    MessageReceiptStatus { message_id: m.id.clone(), version: String::new(), tick, recipients: Vec::new() }
 }
 
 fn nope(what: &str) -> Error {
@@ -288,6 +302,14 @@ impl Fake {
         }
         out.sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
         Ok(out)
+    }
+
+    pub fn chat_message_receipts(&self, peer: String, id: String) -> Result<MessageReceiptStatus, Error> {
+        self.with(&peer, |st, p| st.msgs[p].iter().find(|m| m.id == id).map(fake_receipt).ok_or_else(|| nope("no such message")))
+    }
+
+    pub fn chat_day_receipts(&self, peer: String, day: String) -> Result<Vec<MessageReceiptStatus>, Error> {
+        self.with(&peer, |st, p| Ok(st.msgs[p].iter().filter(|m| utc_day(m.at) == day).map(fake_receipt).collect()))
     }
 
     pub fn chat_day(&self, peer: String, day: Option<String>) -> Result<DayPage, Error> {
