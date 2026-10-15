@@ -1,5 +1,5 @@
-//! System tray icon with Show / Quit. Linux: StatusNotifier via libappindicator, GTK on its own
-//! thread and main loop. Windows: a Win32 message loop on the tray thread. Other systems: no tray.
+//! System tray icon with Show / Quit. Linux: StatusNotifierItem over D-Bus (tray-icon's ksni backend, no GTK;
+//! ksni runs its own D-Bus thread). Windows: a Win32 message loop on the tray thread. Other systems: no tray.
 
 use std::sync::Mutex;
 #[cfg(any(target_os = "linux", windows))]
@@ -97,7 +97,7 @@ fn icon(state: State, dark: bool) -> Icon {
     Icon::from_rgba(px, w, h).expect("icon")
 }
 
-/// How long to wait for the tray thread to report; a stuck GTK/shell is treated as "no tray".
+/// How long to wait for the tray thread to report; a stuck D-Bus/shell is treated as "no tray".
 #[cfg(any(target_os = "linux", windows))]
 const START_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -131,7 +131,7 @@ fn build(send: impl Fn(TrayCmd) + Send + Sync + 'static) -> Result<(MenuItem, Tr
 
 /// Pushes a changed status text into the menu line and tooltip.
 #[cfg(any(target_os = "linux", windows))]
-fn refresh(status: &MenuItem, tray: &TrayIcon, shown: &mut String, look: &mut Option<(State, bool)>) {
+fn refresh(status: &MenuItem, tray: &mut TrayIcon, shown: &mut String, look: &mut Option<(State, bool)>) {
     let want = STATUS.lock().unwrap().clone();
     if let Some(w) = want.filter(|w| w != shown) {
         status.set_text(&w);
@@ -150,11 +150,6 @@ fn refresh(status: &MenuItem, tray: &TrayIcon, shown: &mut String, look: &mut Op
 pub fn spawn(send: impl Fn(TrayCmd) + Send + Sync + 'static) -> bool {
     let (ok_tx, ok_rx) = std::sync::mpsc::channel();
     let spawned = std::thread::Builder::new().name("tray".into()).spawn(move || {
-        #[cfg(target_os = "linux")]
-        if gtk::init().is_err() {
-            let _ = ok_tx.send(false);
-            return;
-        }
         let (status, tray) = match build(send) {
             Ok(t) => t,
             Err(e) => {
@@ -167,15 +162,16 @@ pub fn spawn(send: impl Fn(TrayCmd) + Send + Sync + 'static) -> bool {
         let (mut shown, mut look) = (String::new(), None);
         #[cfg(target_os = "linux")]
         {
-            // GTK objects stay on this thread; poll the shared status text from its main loop.
-            gtk::glib::timeout_add_local(Duration::from_millis(500), move || {
-                refresh(&status, &tray, &mut shown, &mut look);
-                gtk::glib::ControlFlow::Continue
-            });
-            gtk::main();
+            // ksni serves the tray on its own D-Bus thread; this thread only polls the shared status text.
+            let mut tray = tray;
+            loop {
+                std::thread::sleep(Duration::from_millis(500));
+                refresh(&status, &mut tray, &mut shown, &mut look);
+            }
         }
         #[cfg(windows)]
         {
+            let mut tray = tray;
             use std::ptr::null_mut;
             use windows_sys::Win32::UI::WindowsAndMessaging::{
                 DispatchMessageW, MsgWaitForMultipleObjects, PeekMessageW, TranslateMessage, MSG,
@@ -191,7 +187,7 @@ pub fn spawn(send: impl Fn(TrayCmd) + Send + Sync + 'static) -> bool {
                         DispatchMessageW(&msg);
                     }
                 }
-                refresh(&status, &tray, &mut shown, &mut look);
+                refresh(&status, &mut tray, &mut shown, &mut look);
             }
         }
     });

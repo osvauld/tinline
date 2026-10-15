@@ -35,15 +35,34 @@ pub trait Store: Send + Sync {
 /// The OS keyring (Secret Service, Keychain, Credential Manager).
 pub struct Keyring;
 
+impl Keyring {
+    /// Installs this OS's credential store as keyring-core's default; `None` when there is none.
+    fn open() -> Option<Self> {
+        #[cfg(target_os = "linux")]
+        let store = zbus_secret_service_keyring_store::Store::new();
+        #[cfg(target_os = "macos")]
+        let store = apple_native_keyring_store::keychain::Store::new();
+        #[cfg(windows)]
+        let store = windows_native_keyring_store::Store::new();
+        #[cfg(any(target_os = "linux", target_os = "macos", windows))]
+        {
+            keyring_core::set_default_store(store.inspect_err(|e| eprintln!("keystore: no OS keyring: {e}")).ok()?);
+            Some(Keyring)
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
+        None
+    }
+}
+
 impl Store for Keyring {
     fn set(&self, user: &str, value: &str) -> Result<(), String> {
-        keyring::Entry::new(SERVICE, user).and_then(|e| e.set_password(value)).map_err(|e| e.to_string())
+        keyring_core::Entry::new(SERVICE, user).and_then(|e| e.set_password(value)).map_err(|e| e.to_string())
     }
     fn get(&self, user: &str) -> Option<String> {
-        keyring::Entry::new(SERVICE, user).and_then(|e| e.get_password()).ok()
+        keyring_core::Entry::new(SERVICE, user).and_then(|e| e.get_password()).ok()
     }
     fn delete(&self, user: &str) {
-        if let Ok(e) = keyring::Entry::new(SERVICE, user) {
+        if let Ok(e) = keyring_core::Entry::new(SERVICE, user) {
             let _ = e.delete_credential();
         }
     }
@@ -92,7 +111,10 @@ pub fn system() -> &'static dyn Store {
     static S: OnceLock<Box<dyn Store>> = OnceLock::new();
     S.get_or_init(|| match crate::test_env("P2P_KEYRING").as_deref() {
         Some("none") => Box::new(Unavailable),
-        _ => Box::new(Keyring),
+        _ => match Keyring::open() {
+            Some(k) => Box::new(k),
+            None => Box::new(Unavailable),
+        },
     })
     .as_ref()
 }
