@@ -21,6 +21,8 @@ object OpenChat {
     @Volatile var group: String? = null
     /** A tap on a message notification asks the UI to open this conversation. */
     val request = MutableStateFlow<String?>(null)
+    /** A tap on a group invitation notification asks Home to show the Groups tab. */
+    val groupsTab = MutableStateFlow(false)
 }
 
 /** One MessagingStyle notification per conversation, with an inline reply. Hooked to `on_message_added`. */
@@ -158,6 +160,24 @@ object GroupNotifier {
             .setOnlyAlertOnce(true)
             .build()
         try { nm(app).notify(id(m.groupId), n) } catch (_: SecurityException) { }
+    }
+
+    /** "Book club · Priya invited you to the group". A tap opens the Groups tab, where the invitation waits. */
+    fun invitation(app: P2pApp, i: uniffi.p2pcore.GroupInvitation) {
+        val by = i.inviterName.trim().substringBefore(' ').ifBlank { "Someone" }
+        val open = PendingIntent.getActivity(app, 5000 + (i.id.hashCode() and 0xfff),
+            Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra(Notifications.EXTRA_GROUPS, true),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val n = NotificationCompat.Builder(app, Notifications.CH_GROUPS)
+            .setSilent(AlertPrefs.quiet(app))
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setColor(0xFF0B6B5B.toInt())
+            .setContentTitle(i.groupName.ifBlank { "A group" })
+            .setContentText("$by invited you to the group")
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        try { nm(app).notify(4000 + (i.id.hashCode() and 0xffff), n) } catch (_: SecurityException) { }
     }
 
     fun cancel(c: Context, gid: String) {

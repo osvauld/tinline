@@ -21,6 +21,8 @@ object Notifications {
     const val CH_REQUESTS = "requests"
     const val CH_GROUPS = "groups"
     const val EXTRA_REQUEST = "contact_request"
+    /** Open Home on the Groups tab (a group invitation). */
+    const val EXTRA_GROUPS = "open_groups"
     const val ID_SERVICE = 1
     const val ID_INCOMING = 2
     const val ID_MISSED = 3
@@ -189,9 +191,22 @@ object Notifications {
             .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setContentTitle("Contact request")
-            .setContentText("${name.ifBlank { "Someone" }} wants to add you as a contact")
+            .setContentText("${name.ifBlank { "Someone" }} would like to add you")
             .setAutoCancel(true)
             .setContentIntent(activity(c, MainActivity::class.java, 40 + (did.hashCode() and 0xfff)) { it.putExtra(EXTRA_REQUEST, did) })
+            .build()
+        try { nm(c).notify(2000 + (did.hashCode() and 0xffff), n) } catch (e: SecurityException) { }
+    }
+
+    /** They accepted my request while Tinline was out of sight: the line is open. A tap opens our chat. */
+    fun accepted(c: Context, did: String, name: String) {
+        val n = androidx.core.app.NotificationCompat.Builder(c, CH_REQUESTS)
+            .setSilent(AlertPrefs.quiet(c))
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setContentTitle(name.ifBlank { "Your contact" })
+            .setContentText("Accepted your request. Your line is open.")
+            .setAutoCancel(true)
+            .setContentIntent(activity(c, MainActivity::class.java, 60 + (did.hashCode() and 0xfff)) { it.putExtra(ChatNotifier.EXTRA_PEER, did) })
             .build()
         try { nm(c).notify(2000 + (did.hashCode() and 0xffff), n) } catch (e: SecurityException) { }
     }

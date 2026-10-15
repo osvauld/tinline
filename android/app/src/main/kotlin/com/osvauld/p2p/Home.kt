@@ -224,7 +224,7 @@ fun HomeContent(
             }
         }
         if (dock) SearchDock(if (tab == HomeTab.Groups) "New group" else "New chat", onSearch, if (tab == HomeTab.Groups) onNewGroup else onNewChat)
-        TinTabBar(tab, onTab, chatBadge, showGroups = groupsBody != null)
+        TinTabBar(tab, onTab, chatBadge, showGroups = groupsBody != null, groupBadge = groupBadge)
     }
 }
 

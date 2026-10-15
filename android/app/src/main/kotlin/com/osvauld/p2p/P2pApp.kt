@@ -120,6 +120,13 @@ class P2pApp : Application(), NodeEvents {
         realChat = CoreChatSource(this).also { it.attach() }
         groups = GroupsController(NodeGroupApi { node }) { currentDid() }.also { it.attach(node) }
         groups.onPost = { m -> GroupNotifier.post(this, m, groups.list.value.firstOrNull { it.id == m.groupId }?.name) }
+        // Someone invited me (playground Notices "invite"): out of sight a notification; in front one knock, and the
+        // Groups tab shows its count. Follows Notifications › Groups.
+        groups.onInvitation = { i ->
+            if (!i.outgoing && i.state == uniffi.p2pcore.GroupInvitationState.PENDING && AlertPrefs.groups(this)) {
+                if (AppVisible.resumed) Cues.knock() else GroupNotifier.invitation(this, i)
+            }
+        }
         selectLastAccountIfNone()
         UnlockStore.migrateLegacy(this, currentDid())
         tryAutoUnlock()
@@ -475,6 +482,7 @@ class P2pApp : Application(), NodeEvents {
         }
         override fun onRequestAccepted(contact: Contact) {
             testLog("accepted name=${contact.name} did=${contact.did}")
+            if (!AppVisible.resumed) Notifications.accepted(this@P2pApp, contact.did, contact.name)
             _contacts.value = node.contacts()
             refreshRequests()
             refreshBlocks()

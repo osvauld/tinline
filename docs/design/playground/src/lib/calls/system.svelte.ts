@@ -75,6 +75,7 @@ class System {
     this.social = this.social.filter((x) => x.id !== n.id);
     this.foreground();
     if (n.kind === 'invite') nav.setTab('groups');
+    else if (n.kind === 'accepted' && chat(n.who)) nav.open({ name: 'conversation', chat: n.who });   // the line is open: our chat
     else nav.open({ name: 'contact', person: n.who });
   }
   dismissSocial(id: number) { this.social = this.social.filter((x) => x.id !== id); }

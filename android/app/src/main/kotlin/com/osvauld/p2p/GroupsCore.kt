@@ -406,7 +406,10 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun declineInvitation(invitationId: String): Result<String> = runCatching { api.invitationDecline(invitationId) }
         .map { "Declined. ${firstName(it.inviterName.ifBlank { "They" })} sees that you declined." }.also { synchronized(this) { reloadInvitations() } }.mapError()
 
-    override fun onGroupInvitation(invitation: GroupInvitation) { synchronized(this) { reloadInvitations() } }
+    /** Set by the app: an invitation arrived or changed (notifications; called on a core thread). */
+    @Volatile var onInvitation: ((GroupInvitation) -> Unit)? = null
+
+    override fun onGroupInvitation(invitation: GroupInvitation) { synchronized(this) { reloadInvitations() }; onInvitation?.invoke(invitation) }
 
     fun flag(id: String, did: String) = act("Flag recorded. It is signed by you and the member can see it.") { api.flag(id, did) }
     fun setAdmin(id: String, did: String, admin: Boolean) = act(if (admin) "Made admin." else "No longer an admin.") { api.setAdmin(id, did, admin) }

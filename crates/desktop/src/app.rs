@@ -2623,8 +2623,10 @@ impl App {
                             let who = m.author_name.split_whitespace().next().unwrap_or(&m.author_name).to_string();
                             notify(&group, &format!("{who}: {}", m.text), Target::Show);
                         }
-                        crate::GroupEv::Invitation(i) if !attended && !i.outgoing && i.state == p2pcore::GroupInvitationState::Pending => {
-                            notify("Tinline", &format!("{} invited you to {}", i.inviter_name.split_whitespace().next().unwrap_or(&i.inviter_name), i.group_name), Target::Show);
+                        // Away: "Book club · Priya invited you to the group". In front: one knock; the Groups tab counts it.
+                        crate::GroupEv::Invitation(i) if !i.outgoing && i.state == p2pcore::GroupInvitationState::Pending => {
+                            if attended { self.play_cue(crate::cues::knock()); }
+                            else { notify(&i.group_name, &format!("{} invited you to the group", i.inviter_name.split_whitespace().next().unwrap_or(&i.inviter_name)), Target::Show); }
                         }
                         _ => {}
                     }

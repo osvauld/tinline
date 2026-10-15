@@ -643,7 +643,10 @@ impl App {
     pub(super) fn contact_request(&mut self, r: p2pcore::ContactRequest) -> Task<Msg> {
         self.reload_contacts();
         self.play_cue(crate::cues::knock());
-        super::notify("Tinline", &format!("{} wants to add you as a contact", r.name), super::Target::Show);
+        // Away (window hidden or not focused): a desktop notification. In front the sheet below says it.
+        if !(self.win.is_some() && self.focused) {
+            super::notify("Contact request", &format!("{} would like to add you", r.name), super::Target::Show);
+        }
         if self.sheet_free() {
             self.screen = Screen::AddContact;
             self.add_ui.incoming = Some(Incoming { did: r.did, name: r.name, joined: false, theirs: false });
@@ -656,6 +659,9 @@ impl App {
     pub(super) fn request_accepted(&mut self, c: p2pcore::Contact) -> Task<Msg> {
         self.reload_contacts();
         self.play_line();
+        if !(self.win.is_some() && self.focused) {
+            super::notify(&c.name, "Accepted your request. Your line is open.", super::Target::Chat(c.did.clone()));
+        }
         if self.screen == Screen::AddContact {
             if self.add_ui.found.as_ref().is_some_and(|f| f.did == c.did) {
                 self.add_phase = super::AddPhase::Added(c);
@@ -679,7 +685,7 @@ impl App {
         if let Some(s) = samples { self.play_cue(s); }
     }
 
-    fn play_cue(&self, samples: Vec<f32>) {
+    pub(super) fn play_cue(&self, samples: Vec<f32>) {
         if self.demo && crate::test_env("P2P_SHOT").is_some() {
             return;
         }

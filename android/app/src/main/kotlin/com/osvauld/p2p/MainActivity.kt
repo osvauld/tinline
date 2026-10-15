@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
         intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
+        if (intent?.getBooleanExtra(Notifications.EXTRA_GROUPS, false) == true) OpenChat.groupsTab.value = true
         if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent); requestFrom(intent) }
         Appearance.load(this)
         setContent {
@@ -77,6 +78,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         requestFrom(intent)
         intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
+        if (intent.getBooleanExtra(Notifications.EXTRA_GROUPS, false)) OpenChat.groupsTab.value = true
         CardInbox.take(intent)
         GroupLinkInbox.take(intent)
     }
@@ -183,6 +185,16 @@ private fun Root(app: P2pApp) {
         if (has && lock == LockState.UNLOCKED && termsOk && !onboarding) {
             OpenChat.request.value = null
             if ((stack.last() as? Route.Chat)?.did != did) stack.add(Route.Chat(did))
+        }
+    }
+
+    // A tap on a group invitation: Home on the Groups tab, where the invitation waits.
+    val openGroups by OpenChat.groupsTab.collectAsState()
+    LaunchedEffect(openGroups, has, lock, termsOk) {
+        if (openGroups && has && lock == LockState.UNLOCKED && termsOk && !onboarding) {
+            OpenChat.groupsTab.value = false
+            while (stack.size > 1) stack.removeAt(stack.lastIndex)
+            homeTab.value = HomeTab.Groups
         }
     }
 
