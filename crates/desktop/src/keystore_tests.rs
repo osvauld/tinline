@@ -160,3 +160,89 @@ fn legacy_file_only_install_keeps_working_and_is_flagged() {
     sync(&Unavailable, &d, &node).unwrap();
     assert_eq!(location(&Unavailable, &d, &did), None);
 }
+
+#[test]
+fn remember_on_opens_a_passphrase_account_at_start_and_off_forgets_it() {
+    let d = dir("remember");
+    let st = Mem::default();
+    let node = open(&d);
+    node.create_identity("Ann".into(), "a long passphrase".into()).unwrap();
+    commit(&st, &d, &node).unwrap();
+    let did = current_did(&node).unwrap();
+    // Off by default: no entry, so a restart asks for the passphrase.
+    assert!(!remembered(&st, &d, &did));
+    drop(node);
+    let node = open(&d);
+    assert!(!auto_unlock(&st, &d, &node));
+    node.unlock("a long passphrase".into()).unwrap();
+
+    set_remember(&st, &d, &node, true).unwrap();
+    assert!(remembered(&st, &d, &did));
+    drop(node);
+    let node = open(&d);
+    assert_eq!(node.lock_state(), LockState::Locked);
+    assert!(auto_unlock(&st, &d, &node), "the opt-in entry opens it");
+    assert_eq!(node.lock_state(), LockState::Unlocked);
+
+    // Changing the passphrase keeps the same data key, and the entry keeps working.
+    node.set_passphrase(Some("a long passphrase".into()), "another long one".into()).unwrap();
+    sync(&st, &d, &node).unwrap();
+    assert!(remembered(&st, &d, &did));
+    drop(node);
+    let node = open(&d);
+    assert!(auto_unlock(&st, &d, &node));
+
+    // Off deletes the entry; the next start asks again.
+    set_remember(&st, &d, &node, false).unwrap();
+    assert!(!remembered(&st, &d, &did));
+    assert!(st.map.lock().unwrap().is_empty(), "nothing is left in the keyring");
+    drop(node);
+    let node = open(&d);
+    assert!(!auto_unlock(&st, &d, &node));
+    assert_eq!(node.lock_state(), LockState::Locked);
+}
+
+#[test]
+fn adding_a_passphrase_never_turns_remember_on_and_removing_the_account_drops_the_entry() {
+    let d = dir("remember-add");
+    let st = Mem::default();
+    let node = open(&d);
+    node.create_identity("Ann".into(), String::new()).unwrap();
+    commit(&st, &d, &node).unwrap();
+    let did = current_did(&node).unwrap();
+    assert!(load(&st, &d, &did).is_some());
+    node.set_passphrase(None, "a long passphrase".into()).unwrap();
+    sync(&st, &d, &node).unwrap();
+    assert!(load(&st, &d, &did).is_none(), "the automatic key is dropped");
+    assert!(!remembered(&st, &d, &did), "and remembering stays off until it is asked for");
+    drop(node);
+    let node = open(&d);
+    assert!(!auto_unlock(&st, &d, &node));
+
+    node.unlock("a long passphrase".into()).unwrap();
+    set_remember(&st, &d, &node, true).unwrap();
+    clear_all(&st, &d, &did);
+    assert!(!remembered(&st, &d, &did));
+}
+
+#[test]
+fn no_keyring_stores_nothing_when_remember_is_turned_on() {
+    let d = dir("remember-none");
+    let node = open(&d);
+    node.create_identity("Ann".into(), "a long passphrase".into()).unwrap();
+    commit(&Unavailable, &d, &node).unwrap();
+    let did = current_did(&node).unwrap();
+    assert!(set_remember(&Unavailable, &d, &node, true).is_err());
+    assert!(!remembered(&Unavailable, &d, &did));
+    let st = Mem::default();
+    st.fail.store(true, Ordering::SeqCst);
+    assert!(set_remember(&st, &d, &node, true).is_err());
+    assert!(st.map.lock().unwrap().is_empty());
+    let leftovers = std::fs::read_dir(&d).unwrap().filter_map(|e| e.ok()).filter(|e| e.file_name().to_string_lossy().starts_with("unlock")).count();
+    assert_eq!(leftovers, 0, "never a plaintext fallback");
+    // A passphrase-less account cannot be "remembered" through this switch.
+    let d2 = dir("remember-nopass");
+    let n2 = open(&d2);
+    n2.create_identity("Bo".into(), String::new()).unwrap();
+    assert!(set_remember(&Mem::default(), &d2, &n2, true).is_err());
+}

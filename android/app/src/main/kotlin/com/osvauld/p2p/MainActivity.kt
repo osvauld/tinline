@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onResume() { super.onResume(); AppVisible.resumed = true }
-    override fun onPause() { AppVisible.resumed = false; super.onPause() }
+    override fun onPause() { AppVisible.resumed = false; P2pApp.get(this).calls.appLeftFront(); super.onPause() }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
@@ -124,6 +124,8 @@ private sealed interface Route {
     data object Me : Route
     data object Notifications : Route
     data object Sounds : Route
+    data object Video : Route
+    data object Storage : Route
     data object Privacy : Route
     data object CallsAllowed : Route
 }
@@ -389,12 +391,14 @@ private fun Root(app: P2pApp) {
                     app, missing, onBack = ::pop, onMe = { stack.add(Route.Me) }, onSwitchPick = { stack.add(Route.SwitchConfirm(it)) },
                     onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) }, onLinkAccount = { addAccount(false, link = true) },
                     onDevices = { stack.add(Route.Devices) }, onPrivacy = { stack.add(Route.Privacy) }, onNotifications = { stack.add(Route.Notifications) },
-                    onSounds = { stack.add(Route.Sounds) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
+                    onSounds = { stack.add(Route.Sounds) }, onVideo = { stack.add(Route.Video) }, onStorage = { stack.add(Route.Storage) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
                     onPreview = { stack.add(Route.Preview(PRoute.parse(it))) },
                 )
                 Route.Me -> MyProfileRoute(app, onBack = ::pop)
                 Route.Notifications -> NotificationsPage(missing, onBack = ::pop, fix = fix)
                 Route.Sounds -> SoundsPage(onBack = ::pop)
+                Route.Video -> VideoSettingsRoute(app, onBack = ::pop)
+                Route.Storage -> StorageRoute(app, onBack = ::pop)
                 Route.Privacy -> PrivacyRoute(app, onBack = ::pop, onBlocked = { stack.add(Route.Blocked) }, onCalls = { stack.add(Route.CallsAllowed) },
                     onPhrase = { stack.add(Route.PhraseGate) }, onPassphrase = { stack.add(Route.Passphrase) })
                 Route.CallsAllowed -> CallsAllowedRoute(app, onBack = ::pop)

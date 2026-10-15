@@ -11,6 +11,19 @@ use crate::node::Node;
 use std::path::PathBuf;
 use crate::Error;
 
+pub use super::store::PictureDownload;
+
+/// Bytes held on this device for chats (Settings > Storage).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Record)]
+pub struct StorageUsage {
+    /// Complete attachments whose type is an image.
+    pub pictures: u64,
+    /// Every other complete attachment, voice messages included.
+    pub files: u64,
+    /// The chat file: messages, reactions, sync state.
+    pub messages: u64,
+}
+
 /// Honest ticks. For a message we sent: `Pending` = only on this phone (one tick), `Delivered`
 /// = the peer's device confirmed it holds it (two ticks). Messages we received are `Delivered`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -237,6 +250,30 @@ impl Node {
 
     pub fn auto_download_limit(&self) -> Result<u64, Error> {
         Ok(self.inner.chat_core()?.store.auto_download())
+    }
+
+    /// Settings > Storage "Download pictures" (default `Always`). The size limit above still applies.
+    pub fn picture_download(&self) -> Result<PictureDownload, Error> {
+        Ok(self.inner.chat_core()?.store.picture_download())
+    }
+
+    pub fn set_picture_download(&self, policy: PictureDownload) -> Result<(), Error> {
+        self.inner.chat_core()?.store.set_picture_download(policy)
+    }
+
+    /// Tells the core whether the connection is metered (mobile data), for `PictureDownload::Wifi`.
+    /// Process-wide; the app calls it when the network changes.
+    pub fn set_connection_metered(&self, metered: bool) {
+        super::store::set_metered(metered);
+    }
+
+    /// What Tinline keeps for chats on this device (Settings > Storage): complete attachments by kind, and the
+    /// chat file itself. Blocks (reads the chat records and one file size).
+    pub fn storage_usage(&self) -> Result<StorageUsage, Error> {
+        let core = self.inner.chat_core()?;
+        let (pictures, files) = core.store.blob_usage()?;
+        let messages = std::fs::metadata(core.dir.join("chat.redb")).map(|m| m.len()).unwrap_or(0);
+        Ok(StorageUsage { pictures, files, messages })
     }
 }
 

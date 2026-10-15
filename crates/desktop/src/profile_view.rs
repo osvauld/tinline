@@ -175,6 +175,29 @@ fn chevron<'a>(t: Tok) -> El<'a> {
     pgi("chevr", 18.0, t.ink2)
 }
 
+/// storage fmtBytes: GB with one decimal, MB and KB whole.
+pub(super) fn fmt_bytes(n: u64) -> String {
+    if n >= 1_000_000_000 { format!("{:.1} GB", n as f64 / 1e9) }
+    else if n >= 1_000_000 { format!("{} MB", (n as f64 / 1e6).round()) }
+    else if n >= 1000 { format!("{} KB", (n as f64 / 1e3).round()) }
+    else { format!("{n} B") }
+}
+
+/// Settings radio row (Sounds / Storage / Video): 22px ring with a 12px accent dot, title, optional muted line.
+pub(super) fn pf_radio<'a>(t: Tok, title: String, sub: Option<String>, on: bool, msg: Msg, height: f32, r: Radius) -> El<'a> {
+    let radio = container(container(Space::new()).width(if on { 12 } else { 0 }).height(if on { 12 } else { 0 }).style(ui::plain(t.accent, 6.0)))
+        .width(22).height(22).center_x(22).center_y(22)
+        .style(move |_: &iced::Theme| iced::widget::container::Style { border: Border { color: if on { t.accent } else { t.line }, width: 2.0, radius: 11.0.into() }, ..Default::default() });
+    let mut words = column![semi(title, 15.0, t.ink).line_height(lh(20.0))].spacing(1).width(Fill);
+    if let Some(s) = sub { words = words.push(tx(s, 13.0, t.ink2).line_height(lh(18.0))); }
+    button(row![radio, words].spacing(14).align_y(Alignment::Center).height(height - 16.0))
+        .padding([8, 16]).height(height).width(Fill)
+        .style(move |_, status| iced::widget::button::Style {
+            background: matches!(status, iced::widget::button::Status::Hovered | iced::widget::button::Status::Pressed).then_some(iced::Background::Color(t.surface2)),
+            border: Border { radius: r, ..Default::default() }, ..Default::default() })
+        .on_press(msg).into()
+}
+
 /// `.pf-err`: 10 12 padding, 12 radius, --danger-bg / --danger, 13/19.
 pub(super) fn pf_err<'a>(t: Tok, s: String) -> El<'a> {
     container(tx(s, 13.0, t.danger).line_height(lh(19.0))).padding([10, 12]).width(Fill).style(ui::plain(t.danger_bg, 12.0)).into()
@@ -287,6 +310,9 @@ impl App {
             Page::Settings => ("Settings", self.settings_landing(t)),
             Page::Notifications => ("Notifications", self.notifications_page(t)),
             Page::Sounds => ("Sounds", self.sounds_page(t)),
+            Page::Video => ("Video", self.video_page(t)),
+            Page::Storage => ("Storage", self.storage_page(t)),
+            Page::About => ("About Tinline", self.about_page(t)),
             Page::Me => ("My profile", self.my_profile(t)),
             Page::Person(did) => ("Profile", self.person_profile(t, did)),
             Page::Native(1) => ("Devices", self.devices_page(t)),
@@ -387,7 +413,8 @@ impl App {
             }));
         }
         accounts.push(Box::new(move |r| pf_act(t, Some("plus"), "Add another account".into(), None, Some(chevron(t)), Some(Msg::NewAccount(false)), false, r)));
-        let areas: Vec<RowFn> = [("devices", "Devices", Page::Native(1)), ("shield", "Privacy", Page::Native(7)), ("bell", "Notifications", Page::Notifications), ("vol", "Sounds", Page::Sounds)]
+        let areas: Vec<RowFn> = [("devices", "Devices", Page::Native(1)), ("shield", "Privacy", Page::Native(7)), ("bell", "Notifications", Page::Notifications), ("vol", "Sounds", Page::Sounds),
+        ("video", "Video", Page::Video), ("save", "Storage", Page::Storage), ("info", "About Tinline", Page::About)]
             .into_iter()
             .map(|(icon, label, page)| -> RowFn { Box::new(move |r| pf_act(t, Some(icon), label.into(), None, Some(chevron(t)), Some(m(Action::Open(page))), false, r)) })
             .collect();
@@ -420,7 +447,7 @@ impl App {
         ]
         .spacing(0);
         // Native-only, necessary on a computer: device audio, video admission, key storage. Not a playground area.
-        c = c.push(section(t, "This computer", vec![Box::new(move |r| pf_act(t, Some("sliders"), "Audio, video and storage".into(), Some(("Settings that belong to this computer only".into(), t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(0)))), false, r))], vec![]));
+        c = c.push(section(t, "This computer", vec![Box::new(move |r| pf_act(t, Some("sliders"), "Audio, security and hosting".into(), Some(("Settings that belong to this computer only".into(), t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(0)))), false, r))], vec![]));
         if self.notice.is_some() {
             c = c.push(container(self.notice_bar(t)).padding(16));
         }
@@ -644,8 +671,23 @@ impl App {
         let saved: El = if self.pv.done { row![pgi("check", 16.0, t.accent_ink), semi("Passphrase changed", 13.0, t.accent_ink)].spacing(6).align_y(Alignment::Center).into() } else { Space::new().height(22).into() };
         let ready = !self.busy && !self.pass_in.is_empty() && !self.pv.again.is_empty();
         f = f.push(row![container(saved).width(Fill), pg_btn(t, Btn::Primary, None, if self.has_pass { "Change passphrase" } else { "Add passphrase" }, ready.then_some(Msg::Privacy(crate::app::PvMsg::Change)))].align_y(Alignment::Center));
+        // Remember on this computer (ChangePass.svelte): the switch, or why there is none.
+        let remember: Option<El> = self.has_pass.then(|| {
+            let row_: RowFn = if self.remember_avail == Some(false) {
+                Box::new(move |r| pf_act(t, Some("key"), "Remember on this computer".into(),
+                    Some(("This computer has no keyring, so Tinline asks for your passphrase each time it starts.".into(), t.ink2, false)), None, None, false, r))
+            } else {
+                let on = self.remember;
+                Box::new(move |r| pf_act(t, Some("key"), "Remember on this computer".into(),
+                    Some(("Skips the passphrase when Tinline starts, using this computer\u{2019}s keyring.".into(), t.ink2, false)),
+                    Some(pg_switch(t, on, Msg::Remember(!on))), None, false, r))
+            };
+            pf_sec(16.0, pf_card(t, vec![row_]))
+        });
         let c = column![f, pf_note(t, "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can\u{2019}t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages.")];
-        self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0)
+        let mut page = column![].spacing(0);
+        if let Some(r) = remember { page = page.push(r); }
+        self.pf_scroll(t, page.push(pf_sec(if self.has_pass { 24.0 } else { 16.0 }, c.into())).into(), 40.0)
     }
 
     /// people/PassField.svelte: label 13 semibold, a 44 field (--r-ctl, --line, accent when focused) with the eye
@@ -757,6 +799,103 @@ impl App {
         let c = column![
             pf_sec(16.0, column![pf_h2(t, "Quiet"), pf_card(t, quiet_row)].into()),
             pf_sec(24.0, column![pf_h2(t, "Call sounds"), pf_card(t, radios), chips, pf_note(t, note)].into()),
+        ];
+        self.pf_scroll(t, c.into(), 40.0)
+    }
+
+    /// Settings > Video (CallsVideo.svelte): "Sharper video", then the computer's cameras. Both apply the next time the camera starts.
+    fn video_page(&self, t: Tok) -> El<'_> {
+        let hd = self.settings.prefer_hd;
+        let sub = if hd { "Up to 720p when the connection allows. Uses more data and battery." } else { "Adjusts by itself for smooth calls." };
+        let quality: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("video"), "Sharper video".into(), Some((sub.into(), t.ink2, false)),
+            Some(pg_switch(t, hd, Msg::Video(super::super::Vm::PreferHd(!hd)))), None, false, r))];
+        let note = "Changes apply the next time your camera starts.";
+        // The saved choice may be unplugged right now; it stays listed (selected) until the person picks another.
+        let mut cams: Vec<crate::camera::Info> = self.video.devices.clone();
+        if let Some(saved) = self.settings.camera_device.as_ref().filter(|s| !cams.iter().any(|c| &c.path == *s)) {
+            cams.push(crate::camera::Info { path: saved.clone(), label: saved.clone(), usb: false });
+        }
+        let chosen = self.settings.camera_device.clone().or_else(|| cams.first().map(|c| c.path.clone()));
+        let mut c = column![pf_sec(16.0, column![pf_h2(t, "Video quality"), pf_card(t, quality)].into())];
+        let rows: Vec<RowFn> = cams.into_iter().map(|cam| -> RowFn<'_> {
+            let on = chosen.as_deref() == Some(cam.path.as_str());
+            Box::new(move |r| pf_radio(t, cam.label, cam.usb.then(|| "USB".to_string()), on, Msg::Video(super::super::Vm::SelectCamera(cam.path)), 56.0, r))
+        }).collect();
+        if rows.is_empty() {
+            c = c.push(pf_sec(24.0, column![pf_h2(t, "Camera"), pf_note(t, "No camera found. Plug one in and open this page again."), pf_note(t, note)].into()));
+        } else {
+            c = c.push(pf_sec(24.0, column![pf_h2(t, "Camera"), pf_card(t, rows), pf_note(t, note)].into()));
+        }
+        self.pf_scroll(t, c.into(), 40.0)
+    }
+
+    /// Settings > Storage (Storage.svelte): what Tinline keeps here by kind, when pictures download, clearing the cache.
+    /// Sizes are measured (attachments by type, the chat file, the decrypted copies cache).
+    fn storage_page(&self, t: Tok) -> El<'_> {
+        use p2pcore::PictureDownload as Dl;
+        let info = self.profiles.storage;
+        let kinds: [(&str, u64, Color); 4] = match info {
+            Some(i) => [("Pictures", i.usage.pictures, t.accent), ("Files", i.usage.files, t.thread), ("Messages", i.usage.messages, t.ink2), ("Cache", i.cache, t.line)],
+            None => [("Pictures", 0, t.accent), ("Files", 0, t.thread), ("Messages", 0, t.ink2), ("Cache", 0, t.line)],
+        };
+        let total: u64 = kinds.iter().map(|k| k.1).sum();
+        // .bar: 10 high, 5 radius, 2 gap, a 3px floor per kind present.
+        let mut bar = row![].spacing(2).height(10);
+        for (_, n, c) in kinds.iter().filter(|k| k.1 > 0) {
+            bar = bar.push(container(Space::new()).width(Length::FillPortion(((*n as f64 / total as f64) * 1000.0).ceil().max(1.0) as u16)).height(10).style(ui::plain(*c, 0.0)));
+        }
+        let bar = container(bar).width(Fill).height(10).clip(true).style(ui::plain(t.surface2, 5.0));
+        let mut legend = column![].spacing(6);
+        for (label, n, c) in kinds {
+            legend = legend.push(row![container(Space::new()).width(10).height(10).style(ui::plain(c, 3.0)), tx(label, 13.0, t.ink).line_height(lh(18.0)),
+                Space::new().width(Fill), tx(fmt_bytes(n), 13.0, t.ink2).line_height(lh(18.0))].spacing(8).align_y(Alignment::Center));
+        }
+        let use_card: RowFn = Box::new(move |_| container(column![tx(fmt_bytes(total), 17.0, t.ink).line_height(lh(24.0)), bar, legend].spacing(12)).padding(16).width(Fill).into());
+        let cur = info.map(|i| i.download).unwrap_or_default();
+        // The core cannot see whether this computer is on Wi-Fi, so "On Wi-Fi" is a phone choice only.
+        let dl: Vec<RowFn> = [(Dl::Always, "Always", "On Wi-Fi and mobile data"), (Dl::Tap, "When I tap them", "Each shows a soft preview until then")]
+            .into_iter().map(|(d, name, sub)| -> RowFn<'_> { Box::new(move |r| pf_radio(t, name.into(), Some(sub.into()), cur == d, m(Action::SetDownload(d)), 56.0, r)) }).collect();
+        let cache = info.map(|i| i.cache).unwrap_or(0);
+        let cleared = self.profiles.cache_cleared;
+        let sub = if cache > 0 { format!("{} of pictures and files you\u{2019}ve opened. They\u{2019}re prepared again when you open them.", fmt_bytes(cache)) }
+            else if cleared { "Cleared".to_string() } else { "Nothing to clear".to_string() };
+        let clear: RowFn = Box::new(move |r| pf_act(t, Some("trash"), "Clear cache".into(), Some((sub, t.ink2, false)), None, (cache > 0).then(|| m(Action::ClearCache)), false, r));
+        let c = column![
+            pf_sec(16.0, column![pf_h2(t, "On this computer"), pf_card(t, vec![use_card])].into()),
+            pf_sec(24.0, column![pf_h2(t, "Download pictures"), pf_card(t, dl)].into()),
+            pf_sec(24.0, column![pf_card(t, vec![clear]), pf_note(t, "To free more space, remove pictures or files from their chat.")].into()),
+        ];
+        self.pf_scroll(t, c.into(), 40.0)
+    }
+
+    /// Settings > About Tinline (About.svelte): the mark, the version, who makes it, the open-source libraries, the source.
+    fn about_page(&self, t: Tok) -> El<'_> {
+        let open_ = self.profiles.licences_open;
+        let hero = container(column![
+            ui::logo(56.0, t),
+            container(bold("Tinline", 17.0, t.ink).line_height(lh(24.0))).padding(Padding { top: 8.0, ..Padding::ZERO }),
+            tx(format!("Version {}", env!("CARGO_PKG_VERSION")), 13.0, t.ink2).line_height(lh(18.0)),
+            tx("Made by Osvauld", 13.0, t.ink2).line_height(lh(18.0)),
+        ].spacing(4).align_x(Alignment::Center)).width(Fill).center_x(Fill).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 0.0 });
+        let mut libs = p2pcore::open_source_licences();
+        libs.extend([("Iced", "MIT"), ("WebRTC audio processing", "BSD-3-Clause")].map(|(n, l)| p2pcore::OpenSourceLicence { name: n.into(), licence: l.into() }));
+        let licences: RowFn = Box::new(move |r| pf_act(t, Some("licence"), "Open-source licences".into(), Some(("The libraries Tinline is built on".into(), t.ink2, false)),
+            Some(pgi(if open_ { "chevup" } else { "chev" }, 18.0, t.ink2)), Some(m(Action::ToggleLicences)), false, r));
+        let list: RowFn = Box::new(move |_| {
+            let mut c = column![].spacing(8);
+            for l in libs {
+                c = c.push(row![semi(l.name, 13.0, t.ink).line_height(lh(18.0)), Space::new().width(Fill), tx(l.licence, 13.0, t.ink2).line_height(lh(18.0))].spacing(12));
+            }
+            container(c).padding(Padding { top: 4.0, right: 16.0, bottom: 12.0, left: 50.0 }).width(Fill).into()
+        });
+        let source: RowFn = Box::new(move |r| pf_act(t, Some("code"), "Source code".into(), Some(("Tinline is open source".into(), t.ink2, false)),
+            Some(chevron(t)), Some(m(Action::OpenSource)), false, r));
+        let mut rows = vec![licences];
+        if open_ { rows.push(list); }
+        rows.push(source);
+        let c = column![
+            pf_sec(24.0, hero.into()),
+            pf_sec(24.0, column![pf_card(t, rows), pf_note(t, "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to.")].into()),
         ];
         self.pf_scroll(t, c.into(), 40.0)
     }
@@ -1082,11 +1221,12 @@ impl App {
 
     fn native_page(&self, t: Tok, tab: u8) -> El<'_> {
         if tab == 0 {
-            let rows: Vec<RowFn> = [("mic", "Audio devices", 3u8), ("phone", "Video & call admission", 2), ("lock", "Security", 4), ("server", "Hosting", 6), ("info", "About & licences", 5), ("trash", "Accounts stored on this computer", 11)]
+            let rows: Vec<RowFn> = [("mic", "Audio devices", 3u8), ("phone", "Calls & availability", 2), ("lock", "Security", 4), ("server", "Hosting", 6), ("trash", "Accounts stored on this computer", 11)]
                 .into_iter()
                 .map(|(icon, name, id)| -> RowFn { Box::new(move |r| pf_act(t, Some(icon), name.into(), None, Some(chevron(t)), Some(m(Action::Open(Page::Native(id)))), false, r)) })
                 .collect();
-            return self.pf_scroll(t, section(t, "This computer", rows, vec!["These stay on this computer. They aren\u{2019}t part of your account.".into()]), 40.0);
+            let quit = pf_sec(24.0, container(pg_btn(t, Btn::DangerQuiet, Some("leave"), "Quit Tinline", Some(Msg::Quit))).into());
+            return self.pf_scroll(t, column![section(t, "This computer", rows, vec!["These stay on this computer. They aren\u{2019}t part of your account.".into()]), quit].into(), 40.0);
         }
         self.native_settings_view(t)
     }

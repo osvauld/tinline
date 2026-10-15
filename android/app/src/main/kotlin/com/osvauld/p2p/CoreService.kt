@@ -25,7 +25,7 @@ class CoreService : Service() {
         override fun onLost(network: Network) { changed() }
         private fun changed() {
             val app = P2pApp.instance
-            app.scope.launch { try { app.node.networkChanged() } catch (_: Exception) {} }
+            app.scope.launch { try { app.node.setConnectionMetered(cm.isActiveNetworkMetered); app.node.networkChanged() } catch (_: Exception) {} }
         }
     }
 
@@ -34,6 +34,7 @@ class CoreService : Service() {
         cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         running = this
         try { cm.registerDefaultNetworkCallback(netCb) } catch (e: Exception) { Log.w(TAG, "netcb: $e") }
+        try { P2pApp.get(this).node.setConnectionMetered(cm.isActiveNetworkMetered) } catch (_: Exception) {}
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
