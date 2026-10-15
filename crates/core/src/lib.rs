@@ -89,6 +89,8 @@ pub fn did_of_phrase(phrase: String) -> Result<String, Error> {
 /// Video codec benchmark (libaom realtime encode + rav1d decode) run inside this process, so the
 /// numbers reflect how the OS schedules the app's threads. `y4m_path` = real footage, else a
 /// synthetic pattern. Debug builds trigger it via DebugReceiver `video_bench`.
+/// Only with the `dev-tools` feature.
+#[cfg(feature = "dev-tools")]
 #[uniffi::export]
 pub fn video_bench(y4m_path: Option<String>, frames: u32, threads: u32, pin_fast_cores: bool) -> Result<String, Error> {
     video::bench::run(y4m_path.as_deref(), frames as usize, threads as usize, 10, pin_fast_cores).map_err(Error::Protocol)
