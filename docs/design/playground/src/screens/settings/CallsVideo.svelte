@@ -1,5 +1,6 @@
 <script lang="ts">
-  /* Settings > Video (2026-10-15). The video ladder is automatic; "Sharper video" lets it climb to HD when the
+  /* Settings > Video (2026-10-15). The switch is the starting point for each video call; the HD chip on the call screen
+     changes it during a call (video/HdChip.svelte). The video ladder is automatic; "Sharper video" lets it climb to HD when the
      connection and the device allow (phone up to 540p, computer 720p). The computer picks a camera, USB ones included.
      A choice applies the next time the camera starts, and the page says so once. */
   import Switch from '../../lib/ui/Switch.svelte';
@@ -19,7 +20,7 @@
         <Switch label="Sharper video" bind:checked={device.hd} /></label>
     </div>
 
-    {#if android}<p class="pf-note">Changes apply the next time your camera starts.</p>{/if}
+    <p class="pf-note">Every video call starts this way. During a call, tap HD to change it for that call.</p>
   </section>
 
   {#if !android}
@@ -35,7 +36,7 @@
           </div>
         {/each}
       </div>
-      <p class="pf-note">Changes apply the next time your camera starts.</p>
+      <p class="pf-note">A new camera is used the next time your camera starts.</p>
     </section>
   {/if}
 </div>

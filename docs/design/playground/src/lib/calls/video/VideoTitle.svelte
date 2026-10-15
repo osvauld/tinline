@@ -4,13 +4,19 @@
   import { call, fmtDuration } from '../call.svelte';
   import { displayName } from '../../model/store.svelte';
   import { vid } from './video.svelte';
+  import { prefs } from '../../model/prefs.svelte';
+  import { incall } from '../incall.svelte';
+  /* Kept clear on both sides so the name stays centred: back (48) on the start; signal bars and Message on
+     the end (each 48). The name ellipsises instead of running under the chip. */
+  const ends = $derived(1 + (prefs.form === 'android' && incall.msg ? 1 : 0));
+  const inset = $derived(8 + 48 * ends);
 
   const name = $derived(call.peer ? displayName(call.peer) : '');
   const st = $derived(call.statusText);
   const timed = $derived((call.phase === 'active' || call.phase === 'reconnecting' || call.phase === 'ended') && call.elapsedS > 0 && !(call.phase === 'active' && st));
 </script>
 
-<div class="vt" class:on={vid.stageOn} aria-hidden={!vid.stageOn}>
+<div class="vt" class:on={vid.stageOn} aria-hidden={!vid.stageOn} style:inset-inline="{inset}px">
   <b class="n" dir="auto">{name}</b>
   <span class="l">
     <span class="a" class:v={!!st}>{st || ' '}</span>
