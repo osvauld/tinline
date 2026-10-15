@@ -10,6 +10,8 @@
    - The camera can be denied by the OS, or missing (desktop): a calm note, the call goes on.
    Everything is simulated: generated feeds. The real webcam is used only when the drawer enables it. */
 
+import { device } from '../../model/device.svelte';
+
 export type Corner = 'tl' | 'tr' | 'bl' | 'br';
 export type CamNotice = 'denied' | 'nocamera' | 'failed' | null;
 
@@ -23,6 +25,10 @@ class Vid {
   facing = $state<'front' | 'back'>('front');
   peerCam = $state(false);
   lowBw = $state(false);
+  /** Sharper video for this call (2026-10-15: the HD chip on the call screen). Starts from Settings > Video. */
+  hd = $state(false);
+  /** A short line under the chip after a tap or a pause ('' = none). */
+  hdNote = $state('');
   everVideo = $state(false);       // any camera was on during the call -> recorded as a video call
   corner = $state<Corner>('tr');
   chrome = $state(true);           // controls and title visible (they hide after a few idle seconds during video)
@@ -48,6 +54,7 @@ class Vid {
   /* ---- hooks from the call machine ---- */
   begin(video: boolean, wantCam = video) {
     this.reset();
+    this.hd = device.hd;
     this.intent = video; this.wantCam = wantCam;
   }
   /** Answering an incoming video call: with the camera off (default) or on. */
@@ -102,7 +109,28 @@ class Vid {
 
   /* ---- their side (drawer) ---- */
   setPeerCam(on: boolean) { this.peerCam = on; if (on) this.everVideo = true; this.poke(); }
-  setLowBw(on: boolean) { this.lowBw = on; }
+  setLowBw(on: boolean) {
+    const was = this.hdPaused;
+    this.lowBw = on;
+    if (!was && this.hdPaused) this.#hdSay('HD paused · weak connection');
+  }
+
+  /* ---- sharper video (HD chip) ---- */
+  /** On, but the connection can't carry it right now: the ladder stepped down by itself. */
+  get hdPaused() { return this.hd && this.lowBw; }
+  /** Applies at once: the camera restarts quietly (~0.7 s, the self-view shows it warming up). */
+  setHd(on: boolean) {
+    if (this.hd === on) return;
+    this.hd = on;
+    if (this.camOn) {
+      this.starting = true;
+      window.setTimeout(() => { this.starting = false; }, 700);
+    }
+    this.#hdSay(on ? (this.lowBw ? 'HD paused · weak connection' : 'Sharper video on') : 'Sharper video off');
+    this.poke();
+  }
+  #hdT = 0;
+  #hdSay(t: string) { this.hdNote = t; window.clearTimeout(this.#hdT); this.#hdT = window.setTimeout(() => (this.hdNote = ''), 2600); }
 
   /* ---- notices ---- */
   #show(n: Exclude<CamNotice, null>) {

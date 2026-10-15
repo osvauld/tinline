@@ -11,8 +11,10 @@
   const fn = $derived(call.peer ? firstName(call.peer) : '');
   const paused = $derived(vid.live && vid.peerCam && vid.lowBw);
   const off = $derived(vid.live && vid.videoCall && !vid.peerCam);
-  const showing = $derived(paused || off);
-  const kind = $derived(paused ? 'paused' : 'off');
+  /* The HD chip's short line ("Sharper video on", "HD paused · weak connection") borrows this pill for 2.6 s. */
+  const hd = $derived(vid.live && !!vid.hdNote);
+  const showing = $derived(hd || paused || off);
+  const kind = $derived(hd ? 'hd' : paused ? 'paused' : 'off');
 </script>
 
 <div class="slot" class:on={showing} role="status" aria-live="polite" data-chip={showing ? kind : ''}>
@@ -20,10 +22,12 @@
     <span class="ic">
       <span class="a" class:v={kind === 'paused'}><Icon name="clock" size={15} /></span>
       <span class="a" class:v={kind === 'off'}><VIcon name="videooff" size={15} /></span>
+      <span class="a" class:v={kind === 'hd'}><VIcon name="video" size={15} /></span>
     </span>
     <span class="tx">
       <span class="a" class:v={kind === 'paused'}>Video paused, audio continues</span>
       <span class="a" class:v={kind === 'off'}>{fn}’s camera is off</span>
+      <span class="a" class:v={kind === 'hd'}>{vid.hdNote}</span>
     </span>
   </span>
 </div>

@@ -4,6 +4,7 @@
   import { tick } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import Feed from './Feed.svelte';
+  import HdChip from './HdChip.svelte';
   import { vid, type Corner } from './video.svelte';
   import { person } from '../../model/store.svelte';
   import { prefs } from '../../model/prefs.svelte';
@@ -71,17 +72,19 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="pip {vid.corner}" class:android class:dragging={!!drag} bind:this={el} role="button" tabindex="0" data-selfview data-corner={vid.corner}
-  aria-label="Your camera. Drag to move it, or use the arrow keys"
+<div class="pip {vid.corner}" class:android class:dragging={!!drag} bind:this={el} data-selfview data-corner={vid.corner}
   style:translate={drag ? `${drag.dx}px ${drag.dy}px` : undefined}
-  onpointerdown={down} onpointermove={move} onpointerup={up} onpointercancel={up} onkeydown={key} transition:pop>
-  <div class="mir" class:flipx={vid.facing === 'front'}>
+  onpointerdown={down} onpointermove={move} onpointerup={up} onpointercancel={up} transition:pop>
+  <!-- The picture is the drag handle (and the keyboard target); the HD chip sits on its corner as its own button. -->
+  <div class="mir" class:flipx={vid.facing === 'front'} role="button" tabindex="0" aria-label="Your camera. Drag to move it, or use the arrow keys" onkeydown={key}>
     {#key vid.facing}
       <span class="lay" in:fade={{ duration: fadeMs }} out:fade={{ duration: fadeMs }}>
         <Feed kind={vid.facing === 'front' ? 'self' : 'back'} hue={me} stream={vid.stream} seed={2} w={android ? 270 : 320} h={android ? 360 : 240} />
       </span>
     {/key}
   </div>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <span class="hdc" onpointerdown={(e) => e.stopPropagation()}><HdChip /></span>
 </div>
 
 <style>
@@ -96,5 +99,7 @@
   .mir { position: absolute; inset: 0; display: grid; }
   .mir.flipx { transform: scaleX(-1); }
   .lay { grid-area: 1 / 1; display: block; position: relative; }
-  .pip:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .mir:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+  /* HD chip: top-start corner of my picture (what I send), above the picture. */
+  .hdc { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 1; }
 </style>
