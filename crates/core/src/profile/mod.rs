@@ -32,10 +32,6 @@ pub trait ProfileEvents: Send + Sync {
     fn on_profile_changed(&self, did: String);
 }
 /// Storage and sealing errors as `Error::Io`.
-fn io<E: std::fmt::Display>(e: E) -> Error {
-    Error::Io(e.to_string())
-}
-
 fn sealed(s: &Shared) -> Result<storage::Sealed, Error> {
     match s.acct.as_ref().and_then(|a| a.backing.clone()) {
         Some(Backing::Sealed(db)) => Ok(db),
@@ -86,8 +82,8 @@ fn metadata_ops(
     let current = picture(&doc.fields()?)?;
     if let Some(p) = &current {
         let marker = picture_marker(did, &p.hash);
-        if db.get(&marker).map_err(io)?.is_none() {
-            ops.push(db.put_op(&marker, b"pending").map_err(io)?);
+        if db.get(&marker)?.is_none() {
+            ops.push(db.put_op(&marker, b"pending")?);
         }
     }
     // Owner signatures are verified before reaching here. Namespaces prevent deleting another
@@ -114,8 +110,7 @@ impl Inner {
         }
         let db = sealed(&s)?;
         Ok(db
-            .list_prefixed("profile/pictures/")
-            .map_err(io)?
+            .list_prefixed("profile/pictures/")?
             .into_iter()
             .map(|key| key.replacen("profile/pictures/", "profile/", 1))
             .collect())
@@ -128,7 +123,7 @@ impl Inner {
             return Ok(());
         }
         let db = sealed(&s)?;
-        let snap = db.get(PROFILE_KEY).map_err(io)?;
+        let snap = db.get(PROFILE_KEY)?;
         let p = ProfileDoc::load(&me.device, snap.as_deref())?;
         let inherited = matches!(&s.disk, Some(Disk::V2(d)) if d.profile_inherited);
         let mut changed = false;
@@ -147,7 +142,7 @@ impl Inner {
             changed |= p.set("name", json!(me.profile.name))?;
         }
         validate(&p, me.id.did())?;
-        let cache = ProfileCache::load(&me.device, db.get(CACHE_KEY).map_err(io)?.as_deref())?;
+        let cache = ProfileCache::load(&me.device, db.get(CACHE_KEY)?.as_deref())?;
         let cached = cache.profiles(&me.device)?;
         let mut state = s.state.clone();
         project_availability(&mut state, &p.fields()?);
@@ -166,12 +161,11 @@ impl Inner {
                 ops.extend(metadata_ops(&db, &did, &p)?);
             }
         }
-        ops.push(db.put_op(PROFILE_KEY, &p.snapshot()).map_err(io)?);
+        ops.push(db.put_op(PROFILE_KEY, &p.snapshot())?);
         ops.push(
-            db.put_op("state", &serde_json::to_vec(&state)?)
-                .map_err(io)?,
+            db.put_op("state", &serde_json::to_vec(&state)?)?,
         );
-        db.apply(&ops).map_err(io)?;
+        db.apply(&ops)?;
         s.state = state;
         s.profile = Some(Arc::new(p));
         s.profile_cache = Some(Arc::new(cache));
@@ -261,17 +255,15 @@ impl Inner {
                     return Err(Error::Protocol("picture publication mismatch".into()));
                 }
                 ops.push(
-                    db.put_op(&picture_marker(me.id.did(), hash), b"ready")
-                        .map_err(io)?,
+                    db.put_op(&picture_marker(me.id.did(), hash), b"ready")?,
                 );
             }
-            ops.push(db.put_op(PROFILE_KEY, &candidate.snapshot()).map_err(io)?);
+            ops.push(db.put_op(PROFILE_KEY, &candidate.snapshot())?);
             ops.push(
-                db.put_op("state", &serde_json::to_vec(&state)?)
-                    .map_err(io)?,
+                db.put_op("state", &serde_json::to_vec(&state)?)?,
             );
             check_write(self)?;
-            db.apply(&ops).map_err(io)?;
+            db.apply(&ops)?;
             live.import(&candidate.snapshot())?;
             s.state = state;
             if let Err(e) = Self::profile_project(&mut s) {
@@ -370,8 +362,7 @@ impl Inner {
             let mut state = s.state.clone();
             state.profile_outbox.remove(did);
             sealed(&s)?
-                .put("state", &serde_json::to_vec(&state)?)
-                .map_err(io)?;
+                .put("state", &serde_json::to_vec(&state)?)?;
             s.state = state;
         }
         Ok(())
@@ -424,9 +415,9 @@ impl Inner {
                 }
                 let db = sealed(&s)?;
                 let mut ops = metadata_ops(&db, did, &p)?;
-                ops.push(db.put_op(CACHE_KEY, &staged.snapshot()).map_err(io)?);
+                ops.push(db.put_op(CACHE_KEY, &staged.snapshot())?);
                 check_write(self)?;
-                db.apply(&ops).map_err(io)?;
+                db.apply(&ops)?;
                 cache.import(&staged.snapshot())?;
                 if let Some(name) = p.fields()?.get("name").and_then(Value::as_str)
                     && let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == did)
@@ -484,9 +475,9 @@ impl Inner {
             if staged.snapshot().len() > MAX_CACHE {
                 return Err(Error::Protocol("profile cache bounds".into()));
             }
-            ops.push(db.put_op(CACHE_KEY, &staged.snapshot()).map_err(io)?);
+            ops.push(db.put_op(CACHE_KEY, &staged.snapshot())?);
             check_write(self)?;
-            db.apply(&ops).map_err(io)?;
+            db.apply(&ops)?;
             live.import(&staged.snapshot())?;
             if let Err(e) = Self::profile_project(&mut s) {
                 tracing::warn!("profile projection: {e}");

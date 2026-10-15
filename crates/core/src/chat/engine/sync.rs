@@ -233,7 +233,7 @@ impl Inner {
         if core.fail_writes.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
             return Err(Error::Io("test: chat write failed".into()));
         }
-        core.store.db.apply(&extra).map_err(io)?;
+        core.store.db.apply(&extra)?;
         self.selfsync_dirty(&doc_name(pair, day));
         self.search_dm(&did, pair, day, recs, Some(prev), meta.vv);
         Ok(())
@@ -426,7 +426,7 @@ impl Inner {
         let moved = |peer: u64, c: i32| before.get(&peer).copied().unwrap_or(0) < c && c <= acked.get(&peer).copied().unwrap_or(0);
         let owed = Self::chat_owes(core, &meta, &acked);
         let newly: Vec<String> = core.store.mos(pair, day)?.into_iter().filter(|(_, (p, c))| moved(*p, *c)).map(|(id, _)| id).collect();
-        core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, owed)?]).map_err(io)?;
+        core.store.db.apply(&[core.store.put_ack_op(pair, day, &acked.encode())?, core.store.out_op(pair, day, owed)?])?;
         self.selfsync_dirty(ACK_MARK);
         if let Some(ev) = self.ev() {
             for id in &newly {

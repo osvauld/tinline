@@ -7,7 +7,7 @@
 //! the pre-upgrade code (generator below) for the public BIP-39 test phrase; the test opens a COPY with
 //! `Node::new`, unlocks it with the passphrase, reads the phrase back out of the vault and reads the group
 //! that was sealed under the phrase-derived key. If any KDF/AEAD/redb byte moved, this fails.
-//! Not reachable without changing visibility: `search::index::norm_phrase`, direct `vault::seal/open`
+//! Not reachable without changing visibility (the search keys are pinned by `rekey::tests`): direct `vault::seal/open`
 //! vectors, `rekey::old_key`, and the invite/link codes inside core (the codes themselves are `proto`
 //! and are frozen in `crates/proto/tests/golden_wire.rs`).
 

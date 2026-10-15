@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
-use storage::{Op, Sealed, StorageError, Store};
+use storage::{Op, Sealed, Store};
 use zeroize::Zeroizing;
 
 use super::find::{Filter, Verdict};
@@ -21,6 +21,7 @@ use super::hot::Hot;
 use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key, z_key, b_key, bucket_find, bucket_of};
 use crate::Error;
 use crate::chat::doc::{DAY_MS, day_of, day_start};
+use crate::rekey::phrase_key;
 
 /// Bump when the tokenizer or the layout changes: the index is rebuilt from the chat and group
 /// stores. (1: per-message postings in the file. 2: hot tier + segments. 3: bucketed short
@@ -71,14 +72,6 @@ pub enum Mode {
     Cap,
     /// Every cold day now (open, tests).
     Force,
-}
-
-pub(crate) fn io(e: StorageError) -> Error {
-    Error::Io(e.to_string())
-}
-
-fn norm_phrase(phrase: &str) -> Zeroizing<String> {
-    Zeroizing::new(phrase.split_whitespace().map(str::to_lowercase).collect::<Vec<_>>().join(" "))
 }
 
 /// One indexed message.
@@ -243,10 +236,9 @@ impl SearchIndex {
     }
 
     fn with_store(store: Store, phrase: &str, path: Option<&Path>) -> Result<Self, Error> {
-        let p = norm_phrase(phrase);
         let mut me = Self {
-            db: Sealed::new(store, blake3::derive_key(STORE_DOMAIN, p.as_bytes())),
-            keyer: Keyer(Zeroizing::new(blake3::derive_key(INDEX_DOMAIN, p.as_bytes()))),
+            db: Sealed::new(store, phrase_key(STORE_DOMAIN, phrase)),
+            keyer: Keyer(Zeroizing::new(phrase_key(INDEX_DOMAIN, phrase))),
             hot: Mutex::new(Hot::default()),
             view: RwLock::new(Arc::new(View::default())),
             maint: Mutex::new(Memo::default()),
@@ -269,9 +261,9 @@ impl SearchIndex {
                     let _ = std::fs::remove_file(path);
                     let store = crate::store::open_waiting(path)?;
                     crate::store::set_private(path);
-                    me.db = Sealed::new(store, blake3::derive_key(STORE_DOMAIN, p.as_bytes()));
+                    me.db = Sealed::new(store, phrase_key(STORE_DOMAIN, phrase));
                 }
-                me.db.apply(&[Op::DeletePrefix(String::new()), me.db.put_op("v", &VERSION.to_be_bytes()).map_err(io)?]).map_err(io)?;
+                me.db.apply(&[Op::DeletePrefix(String::new()), me.db.put_op("v", &VERSION.to_be_bytes())?])?;
             }
         }
         Ok(me)
@@ -504,8 +496,8 @@ impl SearchIndex {
             ops.push(Op::DeletePrefix(format!("z/{:08x}/", g.id)));
         }
         man.segs.retain(|g| !g.days.is_empty());
-        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
-        self.db.apply(&ops).map_err(io)?;
+        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises"))?);
+        self.db.apply(&ops)?;
         self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         *self.view.write() = Arc::new(View::new(man));
         Ok(())

@@ -14,6 +14,7 @@
 //! cost is that the whole store passes through memory once (chat history of several MB; fine).
 
 use storage::{Op, Sealed, Store};
+use zeroize::Zeroizing;
 
 use crate::Error;
 
@@ -32,14 +33,26 @@ pub enum Which {
     Chat,
 }
 
-/// The new key of a store, from the recovery phrase (words lower-cased, single-spaced).
+/// The recovery phrase as every store key sees it: words lower-cased, single-spaced.
+fn norm_phrase(phrase: &str) -> Zeroizing<String> {
+    Zeroizing::new(phrase.split_whitespace().map(str::to_lowercase).collect::<Vec<_>>().join(" "))
+}
+
+/// A store key: BLAKE3 derive-key of the normalised phrase under `domain`. The one derivation
+/// behind every phrase-keyed store (account, chat, group, search); see the golden test.
+pub(crate) fn phrase_key(domain: &str, phrase: &str) -> [u8; 32] {
+    blake3::derive_key(domain, norm_phrase(phrase).as_bytes())
+}
+
+/// The new key of a store, from the recovery phrase.
 pub fn key_from_phrase(which: Which, phrase: &str) -> [u8; 32] {
-    let norm = phrase.split_whitespace().map(str::to_lowercase).collect::<Vec<_>>().join(" ");
-    let domain = match which {
-        Which::Account => ACCOUNT_DOMAIN_V2,
-        Which::Chat => CHAT_DOMAIN_V2,
-    };
-    blake3::derive_key(domain, norm.as_bytes())
+    phrase_key(
+        match which {
+            Which::Account => ACCOUNT_DOMAIN_V2,
+            Which::Chat => CHAT_DOMAIN_V2,
+        },
+        phrase,
+    )
 }
 
 /// The pre-34f key, from the vault's data key.
@@ -122,6 +135,19 @@ pub fn quarantine(path: &std::path::Path) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Store keys must never drift: these bytes open existing account/chat/group/search files.
+    /// Expected values come from the reference BLAKE3 (Python `blake3`), not from this code.
+    #[test]
+    fn phrase_keys_are_byte_identical() {
+        let phrase = " Alpha  beta\tGAMMA\n";
+        let hex = |k: [u8; 32]| k.iter().map(|b| format!("{b:02x}")).collect::<String>();
+        assert_eq!(hex(key_from_phrase(Which::Account, phrase)), "aaede98680b9849ea1cc82ade454ce6a6a160007faf952812676085851f8474a");
+        assert_eq!(hex(key_from_phrase(Which::Chat, phrase)), "ff534a58745f63af85c6170d22180e758d0a057add803ebfc4c1113838aef9fd");
+        assert_eq!(hex(crate::group::store::key_from_phrase(phrase)), "ecbbddb539af581bebf460ddd0c12c59b7cbd3e48d5b81db4d40d5ceb4938bcc");
+        assert_eq!(hex(phrase_key("tinline/search-store/v1", phrase)), "e4bd1ac222796ceafe8b72b613ce4a7f6082d9967c87216dce4def76ba90dd0e");
+        assert_eq!(hex(phrase_key("tinline/search-index/v1", phrase)), "6f9b78a5763af28178b56f8763228f8b80e740aa958ae2fff5f9c0f823c51356");
+    }
 
     fn old_store(rows: &[(&str, &[u8])], dek: &[u8; 32]) -> Store {
         let s = Store::open_in_memory().unwrap();

@@ -36,7 +36,7 @@ mod synth;
 #[cfg(test)]
 mod tests;
 
-const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
+use crate::wire::DIAL_TIMEOUT;
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
 const HELLO_DAYS: i64 = 7;
 const MAX_HELLO_SHARDS: usize = 64;

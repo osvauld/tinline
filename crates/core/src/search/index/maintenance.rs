@@ -25,7 +25,7 @@ impl SearchIndex {
         if self.is_closed() || !self.file_changed.swap(false, std::sync::atomic::Ordering::SeqCst) {
             return Ok(None);
         }
-        let Some(u) = self.db.raw().usage().map_err(io)? else { return Ok(None) };
+        let Some(u) = self.db.raw().usage()? else { return Ok(None) };
         if u.wasted() <= self.limits().compact_min_waste || u.wasted() * 3 <= u.file_bytes {
             return Ok(None);
         }
@@ -46,9 +46,9 @@ impl SearchIndex {
     }
 
     fn compact_locked(&self) -> Result<Option<(u64, u64)>, Error> {
-        let Some(before) = self.db.raw().usage().map_err(io)? else { return Ok(None) };
-        self.db.raw().compact().map_err(io)?;
-        let after = self.db.raw().usage().map_err(io)?.map_or(before.file_bytes, |u| u.file_bytes);
+        let Some(before) = self.db.raw().usage()? else { return Ok(None) };
+        self.db.raw().compact()?;
+        let after = self.db.raw().usage()?.map_or(before.file_bytes, |u| u.file_bytes);
         Ok(Some((before.file_bytes, after)))
     }
 
@@ -196,11 +196,11 @@ impl SearchIndex {
         let mut puts: Vec<(&str, &[u8])> = built.iter().flat_map(|b| b.puts.iter().map(|(k, v)| (k.as_str(), v.as_slice()))).collect();
         puts.sort_unstable_by_key(|(k, _)| *k);
         for (k, v) in puts {
-            ops.push(self.db.put_op(k, v).map_err(io)?);
+            ops.push(self.db.put_op(k, v)?);
         }
-        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises")).map_err(io)?);
+        ops.push(self.db.put_op("m", &bincode::serialize(&man).expect("serialises"))?);
         let tw = Instant::now();
-        self.db.apply(&ops).map_err(io)?;
+        self.db.apply(&ops)?;
         self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         let t = phase(3, tw).max(t);
         let nv = Arc::new(View::new(man));

@@ -154,7 +154,7 @@ impl Inner {
         {
             conv.unread = 0;
             conv.read_upto = conv.read_upto.max(conv.last_in);
-            core.store.db.apply(&[core.store.conv_op(&pair, &conv)?]).map_err(io)?;
+            core.store.db.apply(&[core.store.conv_op(&pair, &conv)?])?;
             self.selfsync_dirty(READ_MARK);
             if let (Some(ev), Some(c)) = (self.ev(), self.chat_api_chat(&core, &me, &conv)) {
                 ev.on_chat_changed(c);

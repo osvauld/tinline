@@ -347,7 +347,7 @@ impl Inner {
         }
         info.wanted = true;
         info.failed = false;
-        core.store.db.apply(&[core.store.put_blob_op(&hash, &info)?]).map_err(io)?;
+        core.store.db.apply(&[core.store.put_blob_op(&hash, &info)?])?;
         self.chat_download(did.to_string(), hash);
         self.chat_kick(did.to_string());
         Ok(())
@@ -370,7 +370,7 @@ impl Inner {
         }
         info.wanted = false;
         info.failed = false;
-        core.store.db.apply(&[core.store.put_blob_op(&hash, &info)?]).map_err(io)?;
+        core.store.db.apply(&[core.store.put_blob_op(&hash, &info)?])?;
         let h = parse_hash(&hash)?;
         self.chat_hub().await?.release(&h).await?;
         if let Some(ev) = self.ev() {

@@ -30,11 +30,7 @@ use proto::{Msg, SignedBlob};
 
 use crate::Error;
 use crate::node::{Inner, Node, addr_for};
-use crate::wire::Ctrl;
-
-const RETRY_SECS: [u64; 5] = [2, 5, 15, 30, 60];
-const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
-const REPLY_TIMEOUT: Duration = Duration::from_secs(10);
+use crate::wire::{Ctrl, RETRY_SECS};
 
 /// Runtime state that is not persisted.
 #[derive(Default)]
@@ -206,7 +202,7 @@ impl Inner {
                 if devices.is_empty() {
                     break;
                 }
-                tokio::time::sleep(Duration::from_secs(RETRY_SECS[round.min(RETRY_SECS.len() - 1)])).await;
+                tokio::time::sleep(crate::wire::retry_pause(&RETRY_SECS, round)).await;
                 round += 1;
             }
             this.devlist.delivering.lock().remove(&did);
@@ -221,16 +217,8 @@ impl Inner {
         relay: Option<&str>,
         list: &SignedBlob,
     ) -> Result<Outcome, Error> {
-        let addr = addr_for(&device, relay)?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(ep, addr, &crate::version::CALL))
-            .await
-            .map_err(|_| Error::Timeout)??;
-        let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
-        let mut ctrl = Ctrl::new(send, recv);
-        ctrl.send(&Msg::Devices { list: list.clone() }).await?;
-        let reply = tokio::time::timeout(REPLY_TIMEOUT, ctrl.recv()).await.map_err(|_| Error::Timeout)??;
-        ctrl.finish();
-        conn.close(0u32.into(), b"bye");
+        let conn = crate::wire::dial_call(ep, addr_for(&device, relay)?).await?;
+        let reply = crate::wire::exchange(conn, &Msg::Devices { list: list.clone() }).await?;
         match reply {
             Some(Msg::DevicesTaken) => Ok(Outcome::Taken),
             Some(Msg::Notice { notice }) if self.is_block_from(did, &notice) => {

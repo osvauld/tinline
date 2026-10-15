@@ -164,7 +164,7 @@ impl Inner {
                                 }
                             }
                             if !ops.is_empty() {
-                                core.store.db.apply(&ops).map_err(crate::chat::store::io)?;
+                                core.store.db.apply(&ops)?;
                             }
                         }
                         Some(committed)
@@ -223,7 +223,7 @@ impl Inner {
             conv.peer_did = did.clone();
             conv.read_upto = *cursor;
             conv.unread = self.chat_count_unread(&core, &me, pair, *cursor).await?;
-            core.store.db.apply(&[core.store.conv_op(pair, &conv)?]).map_err(super::store::io)?;
+            core.store.db.apply(&[core.store.conv_op(pair, &conv)?])?;
             moved = true;
             if let (Some(ev), Some(c)) = (self.ev(), self.chat_api_chat(&core, &me, &conv)) {
                 ev.on_chat_changed(c);

@@ -29,7 +29,7 @@ impl Inner {
         let mut ops = core.store.ref_ops(&hex_hash, pair)?;
         ops.push(core.store.put_snapcache_op(pair, day, &sref)?);
         let old = core.store.snapcache(pair, day)?;
-        core.store.db.apply(&ops).map_err(io)?;
+        core.store.db.apply(&ops)?;
         if let Some(o) = old
             && let Ok(h) = parse_hash(&o.hash)
         {
@@ -144,7 +144,7 @@ impl Inner {
         let (cops, _) = self.chat_conv_ops(core, me, &sess.did, pair, &recs)?;
         ops.extend(cops);
         let prev = core.store.shard_meta(pair, day)?.map(|m| m.vv).unwrap_or_default();
-        core.store.db.apply(&ops).map_err(io)?;
+        core.store.db.apply(&ops)?;
         self.selfsync_dirty(&doc_name(pair, day));
         let all: Vec<&MsgRec> = msgs.values().collect();
         self.search_dm(&sess.did, pair, day, &all, Some(prev), meta.vv);
@@ -230,7 +230,7 @@ impl Inner {
                 m.next_seq = 0;
                 m.closed = Some(ClosedRef { hash: hex_hash, key: hex::encode(key) });
                 ops.push(core.store.put_meta_op(&pair, &day, &m)?);
-                core.store.db.apply(&ops).map_err(io)?;
+                core.store.db.apply(&ops)?;
                 if let Some(old) = meta.closed
                     && let Ok(h) = parse_hash(&old.hash)
                 {

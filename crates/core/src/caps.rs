@@ -23,7 +23,6 @@
 
 use std::collections::{BTreeSet, HashSet};
 use std::sync::Arc;
-use std::time::Duration;
 
 use parking_lot::Mutex;
 use proto::{Cap, Msg, SignedGrant};
@@ -31,7 +30,7 @@ use proto::{Cap, Msg, SignedGrant};
 use crate::Error;
 use crate::node::{GRANT_TTL, Inner, Me, Node, addr_for, now};
 use crate::store::State;
-use crate::wire::Ctrl;
+use crate::wire::{Ctrl, RETRY_SECS};
 
 /// What a contact that may not call us is told (`Reject` reason) and how its call ends.
 pub const CALLS_NOT_ALLOWED: &str = proto::CALLS_NOT_ALLOWED;
@@ -39,10 +38,6 @@ pub const CALLS_NOT_ALLOWED: &str = proto::CALLS_NOT_ALLOWED;
 /// PROVISIONAL (coordinator): a chat session renews the peer's message token when it expires
 /// within this many seconds.
 pub(crate) const RENEW_WINDOW: u64 = 30 * 24 * 3600;
-
-const RETRY_SECS: [u64; 5] = [2, 5, 15, 30, 60];
-const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
-const REPLY_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// How a contact came to us, which decides the tokens we give it (U13 defaults).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -351,7 +346,7 @@ impl Inner {
                 if devices.is_empty() {
                     break;
                 }
-                tokio::time::sleep(Duration::from_secs(RETRY_SECS[round.min(RETRY_SECS.len() - 1)])).await;
+                tokio::time::sleep(crate::wire::retry_pause(&RETRY_SECS, round)).await;
                 round += 1;
             }
             this.caps.delivering.lock().remove(&did);
@@ -359,16 +354,8 @@ impl Inner {
     }
 
     async fn deliver_tokens(&self, ep: &iroh::Endpoint, device: [u8; 32], relay: Option<&str>, grants: &[SignedGrant]) -> Result<(), Error> {
-        let addr = addr_for(&device, relay)?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(ep, addr, &crate::version::CALL))
-            .await
-            .map_err(|_| Error::Timeout)??;
-        let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
-        let mut ctrl = Ctrl::new(send, recv);
-        ctrl.send(&Msg::Tokens { grants: grants.to_vec() }).await?;
-        let reply = tokio::time::timeout(REPLY_TIMEOUT, ctrl.recv()).await.map_err(|_| Error::Timeout)??;
-        ctrl.finish();
-        conn.close(0u32.into(), b"bye");
+        let conn = crate::wire::dial_call(ep, addr_for(&device, relay)?).await?;
+        let reply = crate::wire::exchange(conn, &Msg::Tokens { grants: grants.to_vec() }).await?;
         match reply {
             Some(Msg::TokensTaken) => Ok(()),
             other => Err(Error::Protocol(format!("tokens not taken: {other:?}"))),

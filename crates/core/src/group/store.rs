@@ -72,10 +72,9 @@ pub(crate) fn io(e: StorageError) -> Error {
     Error::Io(e.to_string())
 }
 
-/// The store key, from the recovery phrase (words lower-cased, single-spaced), like `rekey.rs`.
+/// The store key, from the recovery phrase (see `rekey::phrase_key`).
 pub fn key_from_phrase(phrase: &str) -> [u8; 32] {
-    let norm = phrase.split_whitespace().map(str::to_lowercase).collect::<Vec<_>>().join(" ");
-    blake3::derive_key(STORE_DOMAIN, norm.as_bytes())
+    crate::rekey::phrase_key(STORE_DOMAIN, phrase)
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

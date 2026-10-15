@@ -25,7 +25,6 @@
 //!   shows on the others. Only the device that made a row delivers its letter.
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use base64::Engine;
 use proto::{Msg, SignedGrant};
@@ -36,11 +35,8 @@ use super::record::*;
 use super::store::{GroupStore, io, json};
 use crate::Error;
 use crate::node::{Inner, Me, Node, addr_for, now, now_ms};
-use crate::wire::Ctrl;
+use crate::wire::{Ctrl, RETRY_SECS};
 
-const RETRY_SECS: [u64; 5] = [2, 5, 15, 30, 60];
-const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
-const REPLY_TIMEOUT: Duration = Duration::from_secs(10);
 /// Largest letter (a token with many hosts fits easily).
 const MAX_LETTER: usize = 64 * 1024;
 /// Rows are forgotten this long after their invite expired (PROVISIONAL (coordinator)).
@@ -345,7 +341,7 @@ impl Inner {
                 if devices.is_empty() {
                     break;
                 }
-                tokio::time::sleep(Duration::from_secs(RETRY_SECS[round.min(RETRY_SECS.len() - 1)])).await;
+                tokio::time::sleep(crate::wire::retry_pause(&RETRY_SECS, round)).await;
                 round += 1;
             }
             this.group.inv_delivering.lock().remove(&did);
@@ -363,14 +359,8 @@ impl Inner {
         grant: &SignedGrant,
         letter: &str,
     ) -> Result<Outcome, Error> {
-        let addr = addr_for(&device, relay)?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(ep, addr, &crate::version::CALL)).await.map_err(|_| Error::Timeout)??;
-        let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
-        let mut ctrl = Ctrl::new(send, recv);
-        ctrl.send(&Msg::GroupLetter { attestation: me.attestation.clone(), grant: grant.clone(), letter: letter.to_string() }).await?;
-        let reply = tokio::time::timeout(REPLY_TIMEOUT, ctrl.recv()).await.map_err(|_| Error::Timeout)??;
-        ctrl.finish();
-        conn.close(0u32.into(), b"bye");
+        let conn = crate::wire::dial_call(ep, addr_for(&device, relay)?).await?;
+        let reply = crate::wire::exchange(conn, &Msg::GroupLetter { attestation: me.attestation.clone(), grant: grant.clone(), letter: letter.to_string() }).await?;
         match reply {
             Some(Msg::GroupLetterTaken) => Ok(Outcome::Taken),
             Some(Msg::Notice { notice }) if self.is_block_from(did, &notice) => {

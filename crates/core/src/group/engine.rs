@@ -31,6 +31,7 @@ use super::wire::*;
 use crate::Error;
 use crate::chat::doc::{DAY_MS, day_of, writer_id};
 use crate::node::{Inner, addr_for, now, now_ms, relay_of};
+use crate::wire::DIAL_TIMEOUT;
 
 mod history;
 mod synth;
@@ -47,7 +48,6 @@ pub(crate) fn own_content_core_for_test(account: identity::Identity, epoch: u64,
 }
 
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
-const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
 /// How long a host waits for a removed member's pre-removal upload (U11).
 const REMOVED_UPLOAD_WAIT: Duration = Duration::from_secs(10);
 const TICK: Duration = Duration::from_secs(2);

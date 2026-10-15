@@ -15,7 +15,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
 
 use parking_lot::Mutex;
 use proto::{ContactTicket, Msg};
@@ -35,8 +34,6 @@ pub(crate) const WELCOME_GRACE: u64 = 7 * 24 * 3600;
 pub(crate) const PENDING: &str = "they hold it as a contact request";
 
 const RETRY_SECS: [u64; 6] = [2, 5, 15, 30, 60, 300];
-const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
-const REPLY_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// A contact request, either way: one made with our code (`contact_requests`, "Waiting for you")
 /// or one we made with theirs (`sent_contact_requests`, "Waiting for them").
@@ -390,7 +387,7 @@ impl Inner {
                     }
                     Err(e) => tracing::debug!("welcome to {did}: {e}"),
                 }
-                tokio::time::sleep(Duration::from_secs(RETRY_SECS[round.min(RETRY_SECS.len() - 1)])).await;
+                tokio::time::sleep(crate::wire::retry_pause(&RETRY_SECS, round)).await;
                 round += 1;
             }
             this.requests.delivering.lock().remove(&did);
@@ -410,16 +407,8 @@ impl Inner {
 
     /// `Ok(true)` taken, `Ok(false)` refused for good; `Err` try again later.
     async fn deliver_welcome(self: &Arc<Self>, ep: &iroh::Endpoint, did: &str, out: &WelcomeOut) -> Result<bool, Error> {
-        let addr = addr_for(&out.device, out.relay.as_deref())?;
-        let conn = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(ep, addr, &crate::version::CALL))
-            .await
-            .map_err(|_| Error::Timeout)??;
-        let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
-        let mut ctrl = Ctrl::new(send, recv);
-        ctrl.send(&out.welcome).await?;
-        let reply = tokio::time::timeout(REPLY_TIMEOUT, ctrl.recv()).await.map_err(|_| Error::Timeout)??;
-        ctrl.finish();
-        conn.close(0u32.into(), b"bye");
+        let conn = crate::wire::dial_call(ep, addr_for(&out.device, out.relay.as_deref())?).await?;
+        let reply = crate::wire::exchange(conn, &out.welcome).await?;
         match reply {
             Some(Msg::WelcomeTaken) => Ok(true),
             Some(Msg::Reject { .. }) => Ok(false),

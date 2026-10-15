@@ -17,13 +17,9 @@
 //! ```
 
 use serde::{Deserialize, Serialize};
-use storage::{Op, Sealed, StorageError};
+use storage::{Op, Sealed};
 
 use crate::Error;
-
-pub fn io(e: StorageError) -> Error {
-    Error::Io(e.to_string())
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ClosedRef {
@@ -151,7 +147,7 @@ impl ChatStore {
     }
 
     fn get_json<T: for<'de> Deserialize<'de>>(&self, path: &str) -> Result<Option<T>, Error> {
-        match self.db.get(path).map_err(io)? {
+        match self.db.get(path)? {
             Some(b) => Ok(Some(serde_json::from_slice(&b)?)),
             None => Ok(None),
         }
@@ -165,7 +161,7 @@ impl ChatStore {
 
     pub fn conv_op(&self, pair: &str, c: &ConvMeta) -> Result<Op, Error> {
         let path = format!("conv/{pair}");
-        self.db.put_op(&path, &json(c)).map_err(io)
+        self.db.put_op(&path, &json(c)).map_err(Error::from)
     }
 
     // ---- shards ----------------------------------------------------------------------------
@@ -179,8 +175,7 @@ impl ChatStore {
         let prefix = format!("shard/{pair}/");
         let mut days: Vec<String> = self
             .db
-            .list_prefixed(&prefix)
-            .map_err(io)?
+            .list_prefixed(&prefix)?
             .into_iter()
             .filter_map(|k| k.strip_prefix(&prefix)?.strip_suffix("/meta").map(str::to_string))
             .filter(|d| !d.contains('/'))
@@ -191,23 +186,23 @@ impl ChatStore {
 
     /// `(snapshot, updates)` rows of an open shard.
     pub fn shard_rows(&self, pair: &str, day: &str) -> Result<ShardRows, Error> {
-        let snap = self.db.get(&format!("shard/{pair}/{day}/snap")).map_err(io)?;
-        let ups = self.db.scan(&format!("shard/{pair}/{day}/u/")).map_err(io)?.into_iter().map(|(_, v)| v).collect();
+        let snap = self.db.get(&format!("shard/{pair}/{day}/snap"))?;
+        let ups = self.db.scan(&format!("shard/{pair}/{day}/u/"))?.into_iter().map(|(_, v)| v).collect();
         Ok((snap, ups))
     }
 
     pub fn put_meta_op(&self, pair: &str, day: &str, m: &ShardMeta) -> Result<Op, Error> {
-        self.db.put_op(&format!("shard/{pair}/{day}/meta"), &json(m)).map_err(io)
+        self.db.put_op(&format!("shard/{pair}/{day}/meta"), &json(m)).map_err(Error::from)
     }
 
     pub fn put_update_op(&self, pair: &str, day: &str, seq: u64, update: &[u8]) -> Result<Op, Error> {
-        self.db.put_op(&format!("shard/{pair}/{day}/u/{seq:010}"), update).map_err(io)
+        self.db.put_op(&format!("shard/{pair}/{day}/u/{seq:010}"), update).map_err(Error::from)
     }
 
     pub fn put_snap_ops(&self, pair: &str, day: &str, snap: &[u8]) -> Result<Vec<Op>, Error> {
         Ok(vec![
             Op::DeletePrefix(format!("shard/{pair}/{day}/u/")),
-            self.db.put_op(&format!("shard/{pair}/{day}/snap"), snap).map_err(io)?,
+            self.db.put_op(&format!("shard/{pair}/{day}/snap"), snap)?,
         ])
     }
 
@@ -221,15 +216,14 @@ impl ChatStore {
     // ---- acks, counters, outbox --------------------------------------------------------------
 
     pub fn ack(&self, pair: &str, day: &str) -> Result<Option<Vec<u8>>, Error> {
-        self.db.get(&format!("ack/{pair}/{day}")).map_err(io)
+        self.db.get(&format!("ack/{pair}/{day}")).map_err(Error::from)
     }
 
     /// Every `(pair, day, vv)` the contacts acknowledged.
     pub fn acks(&self) -> Result<Vec<(String, String, Vec<u8>)>, Error> {
         Ok(self
             .db
-            .scan("ack/")
-            .map_err(io)?
+            .scan("ack/")?
             .into_iter()
             .filter_map(|(k, v)| {
                 let (pair, day) = k.strip_prefix("ack/")?.split_once('/')?;
@@ -239,21 +233,20 @@ impl ChatStore {
     }
 
     pub fn put_ack_op(&self, pair: &str, day: &str, vv: &[u8]) -> Result<Op, Error> {
-        self.db.put_op(&format!("ack/{pair}/{day}"), vv).map_err(io)
+        self.db.put_op(&format!("ack/{pair}/{day}"), vv).map_err(Error::from)
     }
 
     /// Our messages (written here or on another of our devices): `(writer ID, op count)` that the
     /// contact must hold for two ticks.
     pub fn mo(&self, pair: &str, day: &str, id: &str) -> Result<Option<(u64, i32)>, Error> {
-        Ok(self.db.get(&format!("mo/{pair}/{day}/{id}")).map_err(io)?.and_then(|b| decode_mo(&b)))
+        Ok(self.db.get(&format!("mo/{pair}/{day}/{id}"))?.and_then(|b| decode_mo(&b)))
     }
 
     pub fn mos(&self, pair: &str, day: &str) -> Result<Vec<(String, (u64, i32))>, Error> {
         let prefix = format!("mo/{pair}/{day}/");
         Ok(self
             .db
-            .scan(&prefix)
-            .map_err(io)?
+            .scan(&prefix)?
             .into_iter()
             .filter_map(|(k, v)| Some((k.strip_prefix(&prefix)?.to_string(), decode_mo(&v)?)))
             .collect())
@@ -262,12 +255,12 @@ impl ChatStore {
     pub fn put_mo_op(&self, pair: &str, day: &str, id: &str, peer: u64, c: i32) -> Result<Op, Error> {
         let mut v = peer.to_be_bytes().to_vec();
         v.extend_from_slice(&c.to_be_bytes());
-        self.db.put_op(&format!("mo/{pair}/{day}/{id}"), &v).map_err(io)
+        self.db.put_op(&format!("mo/{pair}/{day}/{id}"), &v).map_err(Error::from)
     }
 
     pub fn out_op(&self, pair: &str, day: &str, pending: bool) -> Result<Op, Error> {
         let path = format!("out/{pair}/{day}");
-        if pending { self.db.put_op(&path, b"").map_err(io) } else { Ok(Op::Delete(path)) }
+        if pending { self.db.put_op(&path, b"").map_err(Error::from) } else { Ok(Op::Delete(path)) }
     }
 
     /// Days with ops the peer has not acknowledged.
@@ -275,8 +268,7 @@ impl ChatStore {
         let prefix = format!("out/{pair}/");
         Ok(self
             .db
-            .list_prefixed(&prefix)
-            .map_err(io)?
+            .list_prefixed(&prefix)?
             .into_iter()
             .filter_map(|k| k.strip_prefix(&prefix).map(str::to_string))
             .collect())
@@ -289,13 +281,13 @@ impl ChatStore {
     }
 
     pub fn put_blob_op(&self, hash: &str, b: &BlobInfo) -> Result<Op, Error> {
-        self.db.put_op(&format!("blob/{hash}"), &json(b)).map_err(io)
+        self.db.put_op(&format!("blob/{hash}"), &json(b)).map_err(Error::from)
     }
 
     pub fn ref_ops(&self, hash: &str, pair: &str) -> Result<Vec<Op>, Error> {
         Ok(vec![
-            self.db.put_op(&format!("ref/{hash}/{pair}"), b"").map_err(io)?,
-            self.db.put_op(&format!("pb/{pair}/{hash}"), b"").map_err(io)?,
+            self.db.put_op(&format!("ref/{hash}/{pair}"), b"")?,
+            self.db.put_op(&format!("pb/{pair}/{hash}"), b"")?,
         ])
     }
 
@@ -311,7 +303,7 @@ impl ChatStore {
     /// Every conversation row (`pair`, meta).
     pub fn convs(&self) -> Result<Vec<(String, ConvMeta)>, Error> {
         let mut out = Vec::new();
-        for (k, v) in self.db.scan("conv/").map_err(io)? {
+        for (k, v) in self.db.scan("conv/")? {
             if let (Some(pair), Ok(m)) = (k.strip_prefix("conv/"), serde_json::from_slice::<ConvMeta>(&v)) {
                 out.push((pair.to_string(), m));
             }
@@ -323,8 +315,7 @@ impl ChatStore {
     pub fn all_shards(&self, limit: usize) -> Result<Vec<(String, String, Vec<u8>)>, Error> {
         let mut keys: Vec<(String, String)> = self
             .db
-            .list_prefixed("shard/")
-            .map_err(io)?
+            .list_prefixed("shard/")?
             .into_iter()
             .filter_map(|k| {
                 let rest = k.strip_prefix("shard/")?.strip_suffix("/meta")?;
@@ -346,7 +337,7 @@ impl ChatStore {
     /// Blobs the user wants (or auto-download chose) that are not complete yet.
     pub fn wanted_blobs(&self) -> Result<Vec<(String, BlobInfo)>, Error> {
         let mut out = Vec::new();
-        for (k, v) in self.db.scan("blob/").map_err(io)? {
+        for (k, v) in self.db.scan("blob/")? {
             let b: BlobInfo = serde_json::from_slice(&v)?;
             if b.wanted && !b.ready {
                 out.push((k.trim_start_matches("blob/").to_string(), b));
@@ -359,8 +350,7 @@ impl ChatStore {
         let prefix = format!("pb/{pair}/");
         Ok(self
             .db
-            .list_prefixed(&prefix)
-            .map_err(io)?
+            .list_prefixed(&prefix)?
             .into_iter()
             .filter_map(|k| k.strip_prefix(&prefix).map(str::to_string))
             .collect())
@@ -371,7 +361,7 @@ impl ChatStore {
     }
 
     pub fn put_snapcache_op(&self, pair: &str, day: &str, s: &SnapRef) -> Result<Op, Error> {
-        self.db.put_op(&format!("snapcache/{pair}/{day}"), &json(s)).map_err(io)
+        self.db.put_op(&format!("snapcache/{pair}/{day}"), &json(s)).map_err(Error::from)
     }
 
     // ---- settings ----------------------------------------------------------------------------
@@ -386,7 +376,7 @@ impl ChatStore {
     }
 
     pub fn set_auto_download(&self, bytes: u64) -> Result<(), Error> {
-        self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(io)
+        self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(Error::from)
     }
 
     pub fn picture_download(&self) -> PictureDownload {
@@ -399,7 +389,7 @@ impl ChatStore {
 
     pub fn set_picture_download(&self, p: PictureDownload) -> Result<(), Error> {
         let b = match p { PictureDownload::Always => 0u8, PictureDownload::Wifi => 1, PictureDownload::Tap => 2 };
-        self.db.put("set/dl_policy", &[b]).map_err(io)
+        self.db.put("set/dl_policy", &[b]).map_err(Error::from)
     }
 
     /// The size limit in force right now: the stored limit, or 0 while the policy says wait.
@@ -414,7 +404,7 @@ impl ChatStore {
     /// Bytes of complete attachments held on this device: `(pictures, other files)`.
     pub fn blob_usage(&self) -> Result<(u64, u64), Error> {
         let (mut pictures, mut files) = (0u64, 0u64);
-        for (_, v) in self.db.scan("blob/").map_err(io)? {
+        for (_, v) in self.db.scan("blob/")? {
             let Ok(b) = serde_json::from_slice::<BlobInfo>(&v) else { continue };
             if !b.ready { continue; }
             if b.mime.starts_with("image/") { pictures += b.size } else { files += b.size }
@@ -426,10 +416,10 @@ impl ChatStore {
 impl ChatStore {
     /// Message id -> the day it lives in.
     pub fn mi(&self, pair: &str, id: &str) -> Result<Option<String>, Error> {
-        Ok(self.db.get(&format!("mi/{pair}/{id}")).map_err(io)?.and_then(|b| String::from_utf8(b).ok()))
+        Ok(self.db.get(&format!("mi/{pair}/{id}"))?.and_then(|b| String::from_utf8(b).ok()))
     }
 
     pub fn mi_op(&self, pair: &str, id: &str, day: &str) -> Result<Op, Error> {
-        self.db.put_op(&format!("mi/{pair}/{id}"), day.as_bytes()).map_err(io)
+        self.db.put_op(&format!("mi/{pair}/{id}"), day.as_bytes()).map_err(Error::from)
     }
 }

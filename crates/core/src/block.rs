@@ -16,23 +16,17 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
 
 use parking_lot::Mutex;
 use proto::{BlockNotice as Claim, Msg, SignedBlob};
 
 use crate::node::{Inner, Node, addr_for, now_ms};
 use crate::store::{HeldNotice, State};
-use crate::wire::Ctrl;
 use crate::Error;
+use crate::wire::{Ctrl, DIAL_TIMEOUT, RETRY_SECS};
 
 /// The one reason the blocked side sees, on the notice and on every refusal after it.
 pub const BLOCKED: &str = "blocked";
-
-/// Pause before each further delivery attempt of an untaken notice (seconds; the last repeats).
-const RETRY_SECS: [u64; 5] = [2, 5, 15, 30, 60];
-const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
-const REPLY_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// A verified block notice someone sent us, as the UI shows it ("<name> blocked you").
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
@@ -386,7 +380,7 @@ impl Inner {
                 if devices.is_empty() {
                     break;
                 }
-                tokio::time::sleep(Duration::from_secs(RETRY_SECS[round.min(RETRY_SECS.len() - 1)])).await;
+                tokio::time::sleep(crate::wire::retry_pause(&RETRY_SECS, round)).await;
                 round += 1;
             }
             this.block.delivering.lock().remove(&did);
@@ -399,12 +393,7 @@ impl Inner {
             .await
             .map_err(|_| Error::Timeout)?
             .map_err(Error::net)?;
-        let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
-        let mut ctrl = Ctrl::new(send, recv);
-        ctrl.send(&Msg::Notice { notice: notice.clone() }).await?;
-        let reply = tokio::time::timeout(REPLY_TIMEOUT, ctrl.recv()).await.map_err(|_| Error::Timeout)??;
-        ctrl.finish();
-        conn.close(0u32.into(), b"bye");
+        let reply = crate::wire::exchange(conn, &Msg::Notice { notice: notice.clone() }).await?;
         match reply {
             Some(Msg::NoticeTaken) => Ok(()),
             other => Err(Error::Protocol(format!("notice not taken: {other:?}"))),
