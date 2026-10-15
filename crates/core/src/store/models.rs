@@ -42,13 +42,13 @@ impl ProfileV2 {
     }
 }
 
+/// The account's `account.json`.
 #[derive(Clone)]
 pub enum Disk {
     V2(ProfileV2),
-    Legacy(Profile),
 }
 
-/// The old clear-text profile; also what an unlocked identity is loaded from.
+/// What an unlocked identity is loaded from (the vault's secrets plus the name).
 #[derive(Clone, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct Profile {
     pub mnemonic: String,

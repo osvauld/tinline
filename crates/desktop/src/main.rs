@@ -425,8 +425,6 @@ fn main() -> Result<(), String> {
     node.set_video_events(Arc::new(VideoBridge(tx.clone())));
     node.set_group_call_events(Arc::new(GroupCallBridge { tx: tx.clone(), audio: audio.clone() }));
     hostcond::spawn(&node);
-    // The single pre-accounts key entry belongs to the account core just migrated.
-    keystore::migrate_legacy(keystore::system(), &data, &node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
     keystore::auto_unlock(keystore::system(), &data, &node);
     let notice_tx = tx.clone();

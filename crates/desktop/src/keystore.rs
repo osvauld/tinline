@@ -15,7 +15,6 @@ use p2pcore::{LockState, Node};
 
 const SERVICE: &str = "com.osvauld.tinline";
 const LEGACY_USER: &str = "vault-key";
-const LEGACY_FILE: &str = "unlock.key";
 
 /// Where the key of an account is kept.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -123,10 +122,6 @@ fn canon(data: &Path) -> String {
     data.canonicalize().unwrap_or_else(|_| data.to_path_buf()).display().to_string()
 }
 
-fn legacy_user(data: &Path) -> String {
-    format!("{LEGACY_USER}:{}", canon(data))
-}
-
 /// One entry per data dir and account, so profiles, accounts and test peers never share a key.
 fn user(data: &Path, did: &str) -> String {
     format!("{LEGACY_USER}:{}:{did}", canon(data))
@@ -228,31 +223,6 @@ pub fn location(st: &dyn Store, data: &Path, did: &str) -> Option<Where> {
         Some(Where::Keyring)
     } else {
         None
-    }
-}
-
-/// One-time move of the single pre-accounts entry (keyring entry or `unlock.key`) to the account
-/// core migrated into `accounts/<id>/`, which is the current one on the first start. Only for an
-/// account without a passphrase; never overwrites an existing per-account key.
-pub fn migrate_legacy(st: &dyn Store, data: &Path, node: &Node) {
-    let Some(acct) = node.accounts().into_iter().find(|a| a.current) else { return };
-    if acct.has_passphrase {
-        return;
-    }
-    let did = acct.did;
-    if let Some(v) = st.get(&legacy_user(data))
-        && (st.get(&user(data, &did)).is_some() || st.set(&user(data, &did), &v).is_ok())
-    {
-        st.delete(&legacy_user(data));
-    }
-    let old = data.join(LEGACY_FILE);
-    if old.is_file() {
-        let new = file(data, &did);
-        if new.exists() || st.get(&user(data, &did)).is_some() {
-            let _ = std::fs::remove_file(&old);
-        } else {
-            let _ = std::fs::rename(&old, &new);
-        }
     }
 }
 

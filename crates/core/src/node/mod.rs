@@ -21,7 +21,6 @@ use zeroize::Zeroize;
 
 use crate::accounts::{self, AccountDirs};
 use crate::store::{self, Backing, CallRecord, ContactDevice, Disk, History, OwnDevice, Profile, ProfileV2, State, Store, StoredContact};
-use crate::rekey;
 use crate::vault::{self, Dek, Secrets};
 use crate::wire::Ctrl;
 use crate::Error;

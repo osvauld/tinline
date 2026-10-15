@@ -40,20 +40,11 @@ impl Shared {
         }
     }
 
-    /// Puts the account's files in place, locked; a legacy profile is unlocked and brings its
-    /// JSON state with it.
+    /// Puts the account's files in place, locked.
     pub(crate) fn install(&mut self, l: Loaded) -> Result<(), Error> {
         self.forget_session();
         self.epoch += 1;
-        let mut backing = None;
-        if let Disk::Legacy(p) = &l.disk {
-            self.state = l.store.state()?;
-            let b = Backing::Json(l.store.clone());
-            self.history = Arc::new(History::new(l.store.calls()?, Some(b.clone())));
-            self.me = Some(Arc::new(Me::load(p.clone(), self.epoch)?));
-            backing = Some(b);
-        }
-        self.acct = Some(Acct { id: l.id, store: l.store, backing });
+        self.acct = Some(Acct { id: l.id, store: l.store, backing: None });
         self.disk = Some(l.disk);
         self.committed = true;
         Ok(())
@@ -78,9 +69,8 @@ impl Shared {
             // GL: the file goes now, not when the last task holding a clone lets go (the next
             // unlock or the next node on this directory opens it at once). Writes still in
             // flight finish first; any later one fails instead of landing after the lock.
-            if let Backing::Sealed(db) = b {
-                db.close();
-            }
+            let Backing::Sealed(db) = b;
+            db.close();
         }
         if !self.committed {
             self.disk = None;
@@ -176,7 +166,6 @@ impl Inner {
         id: &str,
         disk: &Disk,
         phrase: &str,
-        dek: &Dek,
         state: &State,
         calls: &[CallRecord],
         label: Option<&str>,
@@ -185,7 +174,7 @@ impl Inner {
         let built = (|| {
             let store = Store::open(&dir)?;
             store.save_profile(disk)?;
-            let db = store::seal_into(&store, phrase, dek, state, calls, label)?;
+            let db = store::seal_into(&store, phrase, state, calls, label)?;
             self.accounts.select(id)?;
             Ok::<_, Error>(Acct { id: id.to_string(), store, backing: Some(Backing::Sealed(db)) })
         })();
@@ -196,29 +185,18 @@ impl Inner {
     }
 
     /// Restore over an account dir that is already there (its owner forgot the passphrase): the
-    /// sealed stores stay, `account.json` gets the new vault. A store that cannot be re-keyed
-    /// (it predates the identity-derived keys and the data key is gone) is renamed
-    /// `*.unreadable`, never deleted. Nothing of the old vault survives.
-    #[allow(clippy::too_many_arguments)]
+    /// sealed stores stay, `account.json` gets the new vault. Nothing of the old vault survives.
     pub(crate) fn restore_account_files(
         &self,
         id: &str,
         disk: &Disk,
         phrase: &str,
-        dek: &Dek,
         state: &State,
         calls: &[CallRecord],
         label: Option<&str>,
     ) -> Result<Acct, Error> {
-        let dir = self.accounts.dir(id)?;
-        let store = Store::open(&dir)?;
-        for name in ["account.redb", "chat.redb"] {
-            let path = dir.join(name);
-            if rekey::file_needs_migration(&path)? {
-                rekey::quarantine(&path)?;
-            }
-        }
-        let db = store::seal_into(&store, phrase, dek, state, calls, label)?;
+        let store = Store::open(self.accounts.dir(id)?)?;
+        let db = store::seal_into(&store, phrase, state, calls, label)?;
         store.save_profile(disk)?;
         self.accounts.select(id)?;
         Ok(Acct { id: id.to_string(), store, backing: Some(Backing::Sealed(db)) })
@@ -226,22 +204,23 @@ impl Inner {
 
     /// `commit_identity` with the gate held.
     pub(crate) fn commit_locked(self: &Arc<Self>) -> Result<(), Error> {
-        let (disk, dek, phrase, state, calls, label) = {
+        let (disk, phrase, state, calls, label) = {
             let s = self.shared.lock();
             let disk = s.disk.clone().ok_or(Error::NoIdentity)?;
             if s.committed {
                 return Ok(());
             }
             let phrase = zeroize::Zeroizing::new(s.me.as_ref().ok_or(Error::Locked)?.profile.mnemonic.clone());
-            (disk, s.dek.clone().ok_or(Error::Locked)?, phrase, s.state.clone(), s.history.snapshot(), s.device_label.clone())
+            s.dek.as_ref().ok_or(Error::Locked)?;
+            (disk, phrase, s.state.clone(), s.history.snapshot(), s.device_label.clone())
         };
-        let Disk::V2(p) = &disk else { return Err(Error::NoIdentity) };
+        let Disk::V2(p) = &disk;
         let id = accounts::id_of(&p.did)?;
         let acct = if self.accounts.exists(&id)? {
             // A restore over an existing account of this device.
-            self.restore_account_files(&id, &disk, &phrase, &dek, &state, &calls, label.as_deref())?
+            self.restore_account_files(&id, &disk, &phrase, &state, &calls, label.as_deref())?
         } else {
-            self.create_account_files(&id, &disk, &phrase, &dek, &state, &calls, label.as_deref())?
+            self.create_account_files(&id, &disk, &phrase, &state, &calls, label.as_deref())?
         };
         {
             let mut s = self.shared.lock();

@@ -7,10 +7,10 @@ impl Inner {
 
     /// Opens the sealed chat store; called whenever the data key becomes available.
     pub(crate) fn chat_open(self: &Arc<Self>) {
-        let (dek, phrase, did) = {
+        let (phrase, did) = {
             let s = self.shared.lock();
             match (s.dek.as_ref(), s.me.as_ref()) {
-                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.id.did().to_string()),
+                (Some(_), Some(me)) => (zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.id.did().to_string()),
                 _ => return,
             }
         };
@@ -34,15 +34,11 @@ impl Inner {
             tracing::warn!("chat store: device id: {e}");
             return;
         }
-        // Keyed by the recovery phrase; a store from before that is re-keyed here (rekey.rs).
-        // The node before a restart may still hold the file for a moment: `open_waiting`.
-        let sealed = match crate::store::open_waiting(&path).and_then(|db| {
-            crate::rekey::open(
-                db,
-                crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase),
-                Some(crate::rekey::old_key(crate::rekey::Which::Chat, &dek)),
-            )
-        }) {
+        // Keyed by the recovery phrase (rekey.rs). The node before a restart may still hold the
+        // file for a moment: `open_waiting`.
+        let sealed = match crate::store::open_waiting(&path)
+            .and_then(|db| crate::rekey::open(db, crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase)))
+        {
             Ok(d) => d,
             Err(e) => {
                 tracing::warn!("chat store: {e}");

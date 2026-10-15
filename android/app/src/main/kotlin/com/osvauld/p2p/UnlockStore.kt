@@ -24,7 +24,6 @@ import javax.crypto.spec.GCMParameterSpec
  */
 object UnlockStore {
     private const val ALIAS = "p2p_unlock_v1"
-    private const val LEGACY = "unlock.bin"
     private const val TAG = "UnlockStore"
 
     private fun dir(c: Context) = File(c.filesDir, "unlock")
@@ -32,20 +31,6 @@ object UnlockStore {
     private fun file(c: Context, did: String) = File(dir(c), name(did) + ".bin")
 
     fun exists(c: Context, did: String) = file(c, did).isFile
-
-    /**
-     * Upgrade from the single-key layout: the old unlock.bin belongs to the one account that existed,
-     * which the core has just migrated to be the current one. Idempotent; never overwrites a per-account blob.
-     */
-    @Synchronized
-    fun migrateLegacy(c: Context, currentDid: String?) {
-        val old = File(c.filesDir, LEGACY)
-        if (!old.isFile) return
-        if (currentDid == null) return // nothing to attach it to yet; keep it
-        val dst = file(c, currentDid)
-        dir(c).mkdirs()
-        if (dst.isFile) old.delete() else if (!old.renameTo(dst)) Log.w(TAG, "legacy key migration failed")
-    }
 
     private fun keyStore() = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 

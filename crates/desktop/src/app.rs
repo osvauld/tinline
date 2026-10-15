@@ -139,7 +139,6 @@ struct Setup {
 enum Screen {
     Onboarding,
     Unlock,
-    SetPass,
     /// Last onboarding step: name this computer.
     NameDevice,
     /// The key could not be saved; the identity is still only in memory.
@@ -446,10 +445,6 @@ enum Msg {
     Unlock,
     Unlocked(Result<(), String>),
     GoRestore,
-    SetPassSubmit,
-    PassSet(Result<(), String>),
-    SkipSetPass,
-    GoSetPass,
     ChangePassSubmit,
     PassChanged(Result<bool, String>),
     ToggleReveal,
@@ -876,7 +871,6 @@ impl App {
             screen: match lock {
                 LockState::NoIdentity => Screen::Onboarding,
                 LockState::Locked if test_unlock.is_none() => Screen::Unlock,
-                LockState::NeedsPassphrase => Screen::SetPass,
                 _ => Screen::Home,
             },
             name_in: String::new(),
@@ -1341,7 +1335,6 @@ impl App {
                 | Msg::Created(_)
                 | Msg::Restored(_)
                 | Msg::Unlocked(_)
-                | Msg::PassSet(_)
                 | Msg::PassChanged(_)
                 | Msg::Started(_)
                 | Msg::Switched(_)
@@ -1412,7 +1405,6 @@ impl App {
                 }
                 crate::tray::set_status(match self.lock {
                     LockState::Locked => "Locked",
-                    LockState::NeedsPassphrase => "Set a passphrase",
                     _ if !self.status.started => "Starting...",
                     _ if self.status.online && !self.avail.available => "Not available",
                     _ if self.status.online => "Available",
@@ -1781,48 +1773,6 @@ impl App {
                 if let Some(did) = self.return_to.take() {
                     self.switch_ask = Some(did);
                     return self.update(Msg::SwitchGo);
-                }
-            }
-            Msg::GoSetPass => {
-                self.notice = None;
-                self.pass_in.zeroize();
-                self.screen = Screen::SetPass;
-            }
-            Msg::SkipSetPass => {
-                self.notice = None;
-                self.pass_in.zeroize();
-                self.screen = Screen::Home;
-            }
-            Msg::SetPassSubmit => {
-                if self.busy {
-                    return Task::none();
-                }
-                if self.pass_in.is_empty() {
-                    self.notice = Some(friendly(Error::WeakPassphrase));
-                    return Task::none();
-                }
-                self.busy = true;
-                self.notice = Some("Securing your identity...".into());
-                let pass = take_secret(&mut self.pass_in);
-                let node = self.node.clone();
-                let data = INIT.get().unwrap().data.clone();
-                return blocking(
-                    move || {
-                        node.set_passphrase(None, pass).map_err(friendly)?;
-                        keystore::sync(keystore::system(), &data, &node)
-                    },
-                    Msg::PassSet,
-                );
-            }
-            Msg::PassSet(r) => {
-                self.busy = false;
-                match r {
-                    Ok(()) => {
-                        self.refresh_pass();
-                        self.screen = Screen::Home;
-                        self.notice = Some("Passphrase set. You will need it next time you open the app.".into());
-                    }
-                    Err(e) => self.notice = Some(e),
                 }
             }
             Msg::ToggleReveal => {

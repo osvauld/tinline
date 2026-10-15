@@ -19,16 +19,9 @@ them; contacts and calls read as empty while locked). Record paths (`state`, `ca
 hidden. Not sealed, on purpose: the account **name**, DID and device public key in `account.json`, because the lock
 screen and the account switcher need them while locked. Anyone who copies the files can read who the accounts are
 and how many there are; nothing about contacts or calls. Ciphertext-only files do not prove secure deletion of
-earlier plaintext (JSON files are zeroed before they are removed, which a copy-on-write filesystem or flash may defeat).
+earlier plaintext.
 
-Migration (`Node::new`): an old root with `profile.json` (v2 or legacy) is moved into
-`accounts/<id>.migrating/` with renames only (`chat.redb`, `blobs/`, `state.json`, `calls.json` and leftovers
-first, `profile.json` last as `account.json`), `current` is written, then the directory is renamed to its final
-name. Every step can be repeated after a crash; nothing is deleted, and an error (account already present,
-unparsable profile, a file in both places) returns before anything moves. `state.json` / `calls.json` stay JSON
-until the account is first unlocked; then both go into `account.redb` in one transaction and the JSON files (and
-`*.corrupt`, `*.tmp`) are removed. A legacy (pre-vault) profile has no data key, so its state stays JSON until
-`set_passphrase` seals it. A sealed record that fails to open is an error, never a silent reset to empty.
+No migration (pre-release): an older single-account root, a clear-text profile or JSON state is not read. A sealed record that fails to open is an error, never a silent reset to empty.
 
 Switching: `accounts()` lists them (clear data only), `switch_account(did)` stops the endpoint, forgets the secrets
 and state of the current one and selects another (then `unlock` / `unlock_with_key` as usual), `begin_new_account()`
@@ -51,13 +44,7 @@ DEK). Forgetting the passphrase (with no remembered key) therefore no longer los
 24 words reopen both files. The files are still protected by the passphrase, because the phrase itself only exists on disk
 inside the vault. iroh-blobs ciphertexts are keyed per blob and unchanged.
 
-A store written under the phrase key carries an unsealed marker row `~keyver` = `2`. `rekey::open` (used for both files):
-marker present: open; no rows and no marker: write the marker (fresh file); rows but no marker: the file is still v1.
-On the first unlock where both keys exist (the data key from the unlock, the phrase from the vault) it re-seals EVERY row
-(old key, then new key, same path binding) and the marker in ONE redb transaction. A crash leaves the old file or the
-new one, never a mix, and an interrupted run simply starts over from the old file; a row that fails to open aborts the
-whole migration and changes nothing. The cost is that the store passes through memory once. `chat_open` migrates
-`chat.redb` the same way (a failure there is logged and leaves chat unavailable, never a partial file).
+A store written under the phrase key carries an unsealed marker row `~keyver` = `2`; `rekey::open` opens a marked file, marks an empty one, and refuses one with rows but no marker (no migration from the v1 data-key stores, pre-release).
 
 ## Restore over an account that is already on the device
 
@@ -70,13 +57,11 @@ whole migration and changes nothing. The cost is that the store passes through m
 | the same account, locked (`Locked`) | yes | **restore in place** (the forgotten-passphrase path) |
 | the same account, unlocked | yes | `Error::AccountExists(did)`: switch to it, nothing was touched |
 | another account | any | `Error::HaveIdentity` |
-| a legacy (clear) profile of that DID | yes | `Error::AccountExists(did)` |
 
 Restore in place: `account.json` gets a vault with a fresh data key, the new passphrase (or none: then the S1 rule
 applies and `commit_identity` writes it) and a NEW device key (the old one lived only in the old vault; the old registry
 entry of this install is tombstoned and contacts learn the new device from the next DeviceList). `account.redb`,
-`chat.redb` and `blobs/` stay and open from the phrase. A v1-keyed file that was never unlocked since 34f cannot be
-re-keyed without the lost data key; it is renamed `*.unreadable` (kept, not deleted) and starts empty.
+`chat.redb` and `blobs/` stay and open from the phrase.
 `did_of_phrase(phrase)` (free UniFFI function) returns the DID so a platform can say "this phrase is the account
 <name> on this device" and offer to open it.
 
@@ -128,9 +113,7 @@ wrapped by hardware (Android Keystore) so the always-on service can `unlock_with
 the passphrase. If that key stops opening the vault, `unlock_with_key` returns `WrongPassphrase` and the
 platform must delete its copy.
 
-Legacy installs have the old shape (`{"mnemonic","name","device_secret"}`, no `version`). They load unlocked
-so calls keep working but report `LockState::NeedsPassphrase`; `set_passphrase(None, new)` seals them and
-atomically replaces `account.json` without the clear secrets, and the JSON state moves into `account.redb`.
+Legacy (pre-vault, clear-text) profiles are no longer read (pre-release, no migration).
 
 ## Threat model
 

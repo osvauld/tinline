@@ -112,32 +112,8 @@ fn keys_are_per_account() {
 }
 
 #[test]
-fn legacy_single_entry_moves_to_the_migrated_account() {
-    let d = dir("legacy");
-    let st = Mem::default();
-    let node = open(&d);
-    node.create_identity("Ann".into(), String::new()).unwrap();
-    commit(&st, &d, &node).unwrap();
-    let did = current_did(&node).unwrap();
-    let key = node.unlock_key().unwrap();
-    // Put things back the way the previous version left them.
-    clear(&st, &d, &did);
-    st.set(&legacy_user(&d), &hex(&key)).unwrap();
-    std::fs::write(d.join(LEGACY_FILE), hex(&key)).unwrap();
-    drop(node);
-
-    let node = open(&d);
-    migrate_legacy(&st, &d, &node);
-    assert!(st.get(&legacy_user(&d)).is_none());
-    assert!(st.get(&user(&d, &did)).is_some());
-    // The keyring copy won; the redundant file is gone.
-    assert!(!d.join(LEGACY_FILE).exists());
-    assert!(auto_unlock(&st, &d, &node));
-}
-
-#[test]
-fn legacy_file_only_install_keeps_working_and_is_flagged() {
-    let d = dir("legacyfile");
+fn file_only_install_keeps_working_and_is_flagged() {
+    let d = dir("fileonly");
     let st = Mem::default();
     let node = open(&d);
     node.create_identity("Ann".into(), String::new()).unwrap();
@@ -145,12 +121,10 @@ fn legacy_file_only_install_keeps_working_and_is_flagged() {
     let did = current_did(&node).unwrap();
     let key = node.unlock_key().unwrap();
     clear(&st, &d, &did);
-    std::fs::write(d.join(LEGACY_FILE), hex(&key)).unwrap();
+    std::fs::write(file(&d, &did), hex(&key)).unwrap();
     drop(node);
 
     let node = open(&d);
-    migrate_legacy(&Unavailable, &d, &node);
-    assert!(!d.join(LEGACY_FILE).exists());
     assert_eq!(location(&Unavailable, &d, &did), Some(Where::File));
     assert!(auto_unlock(&Unavailable, &d, &node));
     // Re-syncing an unlocked file-based account does not demand a keyring.

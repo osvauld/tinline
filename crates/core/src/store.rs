@@ -4,12 +4,10 @@
 //!
 //! `account.json` keeps the name, DID and device public key in the clear (so a lock screen and
 //! the account switcher can show them) and the mnemonic and device secret only inside the
-//! passphrase-sealed `vault` (see `vault.rs`, `docs/vault.md`). Installs from before the vault
-//! have the old clear-text shape; they load as `Disk::Legacy` until `set_passphrase` converts them.
+//! passphrase-sealed `vault` (see `vault.rs`, `docs/vault.md`).
 //!
 //! State, call history and the device label live in `account.redb`, sealed under a key derived
-//! from the vault's data key (`Backing::Sealed`), so they exist only while unlocked. A legacy
-//! profile has no data key and keeps `state.json` / `calls.json` (`Backing::Json`) until converted.
+//! from the recovery phrase (`Backing::Sealed`, see `rekey.rs`), so they exist only while unlocked.
 
 use std::collections::HashMap;
 use std::fs;
@@ -26,8 +24,6 @@ pub use self::models::*;
 /// Where state and the call log are written.
 #[derive(Clone)]
 pub enum Backing {
-    /// Pre-vault install: `state.json` / `calls.json` in the account dir.
-    Json(Store),
     /// `account.redb`, every value sealed under the account key.
     Sealed(storage::Sealed),
 }
@@ -79,32 +75,23 @@ pub fn open_waiting(path: &Path) -> Result<storage::Store, Error> {
     }
 }
 
-/// Opens (creating) the account's sealed store. It is keyed by the recovery `phrase` (see
-/// `rekey.rs`); `dek` lets a store from before that change be re-keyed on the way.
-pub fn open_sealed(dir: &Path, phrase: &str, dek: Option<&[u8; 32]>) -> Result<storage::Sealed, Error> {
+/// Opens (creating) the account's sealed store, keyed by the recovery `phrase` (`rekey.rs`).
+pub fn open_sealed(dir: &Path, phrase: &str) -> Result<storage::Sealed, Error> {
     let path = dir.join("account.redb");
     let db = open_waiting(&path)?;
     set_private(&path);
-    crate::rekey::open(
-        db,
-        crate::rekey::key_from_phrase(crate::rekey::Which::Account, phrase),
-        dek.map(|d| crate::rekey::old_key(crate::rekey::Which::Account, d)),
-    )
+    crate::rekey::open(db, crate::rekey::key_from_phrase(crate::rekey::Which::Account, phrase))
 }
 
 impl Backing {
     pub fn save_state(&self, s: &State) -> Result<(), Error> {
-        match self {
-            Backing::Json(store) => store.save_state(s),
-            Backing::Sealed(db) => db.put(STATE_KEY, &zeroizing_json(s)?).map_err(Error::from),
-        }
+        let Backing::Sealed(db) = self;
+        db.put(STATE_KEY, &zeroizing_json(s)?).map_err(Error::from)
     }
 
     pub fn save_calls(&self, calls: &[CallRecord]) -> Result<(), Error> {
-        match self {
-            Backing::Json(store) => store.save_calls(calls),
-            Backing::Sealed(db) => db.put(CALLS_KEY, &zeroizing_json(&calls)?).map_err(Error::from),
-        }
+        let Backing::Sealed(db) = self;
+        db.put(CALLS_KEY, &zeroizing_json(&calls)?).map_err(Error::from)
     }
 }
 
@@ -119,24 +106,10 @@ pub struct Loaded {
     pub device_label: Option<String>,
 }
 
-/// Opens the sealed store of the account in `store`'s dir. First unlock after a migration or
-/// a legacy conversion also imports `state.json` / `calls.json`: both land in one transaction,
-/// and only then are the JSON files (and their `.corrupt` / `.tmp` leftovers) scrubbed.
-/// Anything that fails leaves the JSON in place. A record that does not open is an error, never
-/// an empty state.
-pub fn load_sealed(store: &Store, phrase: &str, dek: Option<&[u8; 32]>) -> Result<(storage::Sealed, Loaded), Error> {
-    let db = open_sealed(store.dir(), phrase, dek)?;
-    let mut ops = Vec::new();
-    if db.get(STATE_KEY)?.is_none() && store.dir().join("state.json").exists() {
-        ops.push(db.put_op(STATE_KEY, &zeroizing_json(&store.state()?)?)?);
-    }
-    if db.get(CALLS_KEY)?.is_none() && store.dir().join("calls.json").exists() {
-        ops.push(db.put_op(CALLS_KEY, &zeroizing_json(&store.calls()?)?)?);
-    }
-    if !ops.is_empty() {
-        db.apply(&ops)?;
-    }
-    store.remove_json_state();
+/// Opens the sealed store of the account in `store`'s dir. A record that does not open is an
+/// error, never an empty state.
+pub fn load_sealed(store: &Store, phrase: &str) -> Result<(storage::Sealed, Loaded), Error> {
+    let db = open_sealed(store.dir(), phrase)?;
     let state = match db.get(STATE_KEY)? {
         Some(b) => serde_json::from_slice(&b)?,
         None => State::default(),
@@ -149,10 +122,9 @@ pub fn load_sealed(store: &Store, phrase: &str, dek: Option<&[u8; 32]>) -> Resul
     Ok((db, Loaded { state, calls, device_label }))
 }
 
-/// Seals the in-memory state and call log into a new store, e.g. when a legacy profile gets its
-/// data key, and scrubs the JSON they came from.
-pub fn seal_into(store: &Store, phrase: &str, dek: &[u8; 32], state: &State, calls: &[CallRecord], label: Option<&str>) -> Result<storage::Sealed, Error> {
-    let db = open_sealed(store.dir(), phrase, Some(dek))?;
+/// Seals the in-memory state and call log into the account's store (a new account, a restore).
+pub fn seal_into(store: &Store, phrase: &str, state: &State, calls: &[CallRecord], label: Option<&str>) -> Result<storage::Sealed, Error> {
+    let db = open_sealed(store.dir(), phrase)?;
     let mut ops = vec![
         db.put_op(STATE_KEY, &zeroizing_json(state)?)?,
         db.put_op(CALLS_KEY, &zeroizing_json(&calls)?)?,
@@ -161,7 +133,6 @@ pub fn seal_into(store: &Store, phrase: &str, dek: &[u8; 32], state: &State, cal
         ops.push(db.put_op(LABEL_KEY, l.as_bytes())?);
     }
     db.apply(&ops)?;
-    store.remove_json_state();
     Ok(db)
 }
 
@@ -278,113 +249,26 @@ impl Store {
         }
     }
 
-    /// The JSON state files and their leftovers, once their content is sealed. Overwritten with
-    /// zeros first (best effort: a copy-on-write filesystem or flash wear-levelling may keep old
-    /// blocks).
-    pub fn remove_json_state(&self) {
-        for name in ["state.json", "calls.json", "state.json.corrupt", "calls.json.corrupt", "state.tmp", "calls.tmp"] {
-            scrub_remove(&self.dir.join(name));
-        }
-    }
-
-    /// After the legacy clear-text profile was converted: nothing of it may linger.
-    pub fn remove_legacy_leftovers(&self) {
-        for name in ["profile.json.bak", "profile.bak", "profile.tmp"] {
-            scrub_remove(&self.dir.join(name));
-        }
-    }
-
     pub fn profile(&self) -> Result<Option<Disk>, Error> {
         read_profile(&self.dir)
     }
 
     pub fn save_profile(&self, p: &Disk) -> Result<(), Error> {
         let path = self.dir.join("account.json");
-        match p {
-            Disk::V2(p) => write(&path, p),
-            Disk::Legacy(p) => write(&path, p),
-        }
-    }
-
-    /// A state file that does not parse (power loss mid-write on a filesystem that reordered
-    /// it) must not brick the app: it is set aside as `state.json.corrupt` and we start from
-    /// empty state. Contacts are lost then, but the identity in `account.json` is not. An IO
-    /// error (permissions, a flaky disk) is returned instead: the file may be fine.
-    pub fn state(&self) -> Result<State, Error> {
-        let path = self.dir.join("state.json");
-        let bytes = match fs::read(&path) {
-            Ok(b) => b,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(State::default()),
-            Err(e) => return Err(e.into()),
-        };
-        match serde_json::from_slice(&bytes) {
-            Ok(s) => Ok(s),
-            Err(e) => {
-                tracing::warn!("state.json does not parse ({e}); starting empty");
-                let _ = fs::rename(&path, path.with_extension("json.corrupt"));
-                Ok(State::default())
-            }
-        }
-    }
-
-    pub fn save_state(&self, s: &State) -> Result<(), Error> {
-        write(&self.dir.join("state.json"), s)
-    }
-
-    /// The call log; one that does not parse is set aside like `state.json` and starts empty.
-    pub fn calls(&self) -> Result<Vec<CallRecord>, Error> {
-        let path = self.dir.join("calls.json");
-        let bytes = match fs::read(&path) {
-            Ok(b) => b,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
-            Err(e) => return Err(e.into()),
-        };
-        match serde_json::from_slice(&bytes) {
-            Ok(c) => Ok(c),
-            Err(e) => {
-                tracing::warn!("calls.json does not parse ({e}); starting empty");
-                let _ = fs::rename(&path, path.with_extension("json.corrupt"));
-                Ok(Vec::new())
-            }
-        }
-    }
-
-    pub fn save_calls(&self, calls: &[CallRecord]) -> Result<(), Error> {
-        write(&self.dir.join("calls.json"), &calls)
+        let Disk::V2(p) = p;
+        write(&path, p)
     }
 }
 
-/// The account dir's `account.json`, either shape.
+/// The account dir's `account.json`.
 pub fn read_profile(dir: &Path) -> Result<Option<Disk>, Error> {
-    read_disk(&dir.join("account.json"))
-}
-
-/// A profile file of either shape (`profile.json` of the single-account layout included).
-pub fn read_disk(path: &Path) -> Result<Option<Disk>, Error> {
-    let Some(v): Option<serde_json::Value> = read(path)? else {
+    let Some(p): Option<ProfileV2> = read(&dir.join("account.json"))? else {
         return Ok(None);
     };
-    if v.get("mnemonic").is_some() {
-        Ok(Some(Disk::Legacy(serde_json::from_value(v)?)))
-    } else {
-        let p: ProfileV2 = serde_json::from_value(v)?;
-        if p.version != 2 {
-            return Err(Error::Io(format!("unknown profile version {}", p.version)));
-        }
-        Ok(Some(Disk::V2(p)))
+    if p.version != 2 {
+        return Err(Error::Io(format!("unknown profile version {}", p.version)));
     }
-}
-
-fn scrub_remove(path: &Path) {
-    use std::io::Write;
-    if let Ok(meta) = fs::metadata(path)
-        && meta.is_file()
-        && let Ok(mut f) = fs::OpenOptions::new().write(true).open(path)
-    {
-        let _ = f.write_all(&vec![0u8; meta.len() as usize]);
-        let _ = f.sync_all();
-    }
-    let _ = fs::remove_file(path);
+    Ok(Some(Disk::V2(p)))
 }
 
 pub(crate) fn set_private(path: &Path) {

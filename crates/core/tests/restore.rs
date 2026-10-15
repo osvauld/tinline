@@ -1,12 +1,11 @@
 //! Task 34f: the sealed stores are keyed by the recovery phrase, so a forgotten passphrase loses
-//! nothing; stores keyed the old way (from the data key) are re-keyed on unlock.
+//! nothing.
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
 use p2pcore::{CallInfo, CallState, Error, Node, NodeEvents, NodeStatus};
-use storage::{Sealed, Store};
 
 mod support;
 use support::{TempDir, online};
@@ -40,26 +39,6 @@ impl Root {
     fn acct(&self, did: &str) -> PathBuf {
         self.0.join("accounts").join(did.strip_prefix("did:key:").unwrap())
     }
-}
-
-fn norm(phrase: &str) -> String {
-    phrase.split_whitespace().collect::<Vec<_>>().join(" ")
-}
-
-/// Rewrites a store as the version before 34f wrote it: keys from the data key, no marker.
-fn downgrade(path: PathBuf, new_domain: &str, old_domain: &str, phrase: &str, dek: &[u8]) {
-    let db = Store::open(&path).unwrap();
-    let new = Sealed::new(db.clone(), blake3::derive_key(new_domain, norm(phrase).as_bytes()));
-    let old = Sealed::new(db.clone(), blake3::derive_key(old_domain, dek));
-    let rows = db.scan("").unwrap();
-    for (k, _) in rows {
-        if k.starts_with('~') {
-            continue;
-        }
-        let plain = new.get(&k).unwrap().unwrap();
-        old.put(&k, &plain).unwrap();
-    }
-    db.delete("~keyver").unwrap();
 }
 
 /// Sets recognisable data in both stores without a network.
@@ -134,56 +113,6 @@ fn restore_without_passphrase_commits_over_the_existing_account() {
     n.unlock_with_key(key).unwrap();
     check_marks(&n);
     assert_eq!(n.profile().unwrap().did, did);
-}
-
-#[test]
-fn old_data_key_stores_are_rekeyed_on_unlock() {
-    let root = Root::new("migrate");
-    let (n, _rx) = root.node();
-    let phrase = n.create_identity("alice".into(), PASS.into()).unwrap();
-    let did = n.profile().unwrap().did;
-    mark(&n);
-    let dek = n.unlock_key().unwrap();
-    drop(n);
-
-    let dir = root.acct(&did);
-    downgrade(dir.join("account.redb"), "tinline/account-store/v2", "tinline/account-store/v1", &phrase, &dek);
-    downgrade(dir.join("chat.redb"), "tinline/chat-store/v2", "tinline chat store v1", &phrase, &dek);
-    // Really in the old shape now: the marker is gone.
-    assert!(Store::open(dir.join("account.redb")).unwrap().get("~keyver").unwrap().is_none());
-
-    let (n, _rx) = root.node();
-    n.unlock(PASS.into()).unwrap();
-    check_marks(&n);
-    drop(n);
-    for f in ["account.redb", "chat.redb"] {
-        assert_eq!(Store::open(dir.join(f)).unwrap().get("~keyver").unwrap().unwrap(), b"2");
-    }
-    // And from now on the phrase alone is enough (a restore reads it without the data key).
-    let (n, _rx) = root.node();
-    n.restore_identity(phrase, "alice".into(), "another".into()).unwrap();
-    check_marks(&n);
-}
-
-#[test]
-fn restore_over_a_never_migrated_store_sets_it_aside() {
-    let root = Root::new("aside");
-    let (n, _rx) = root.node();
-    let phrase = n.create_identity("alice".into(), PASS.into()).unwrap();
-    let did = n.profile().unwrap().did;
-    mark(&n);
-    let dek = n.unlock_key().unwrap();
-    drop(n);
-    let dir = root.acct(&did);
-    downgrade(dir.join("account.redb"), "tinline/account-store/v2", "tinline/account-store/v1", &phrase, &dek);
-    downgrade(dir.join("chat.redb"), "tinline/chat-store/v2", "tinline chat store v1", &phrase, &dek);
-
-    // The data key is lost with the passphrase: the old files cannot be read, so they are kept
-    // aside (not deleted) and the account is usable again, empty.
-    let (n, _rx) = root.node();
-    n.restore_identity(phrase, "alice".into(), "fresh".into()).unwrap();
-    assert!(n.availability().available && n.device_label().is_none());
-    assert!(dir.join("account.redb.unreadable").exists() && dir.join("chat.redb.unreadable").exists());
 }
 
 #[test]

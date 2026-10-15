@@ -197,7 +197,6 @@ impl App {
             match self.screen {
                 Screen::Onboarding => self.signup_view(t),
                 Screen::Unlock => self.unlock_view(t),
-                Screen::SetPass => self.setpass_view(t),
                 Screen::NameDevice => self.name_device_view(t),
                 Screen::KeyFailed => self.key_failed_view(t),
                 Screen::Phrase => self.phrase_view(t),
@@ -409,32 +408,6 @@ impl App {
         self.unlock_card(t)
     }
 
-    fn setpass_view(&self, t: Tok) -> El<'_> {
-        let col = column![
-            self.new_pass_field(t, "Passphrase", Msg::SetPassSubmit),
-            tx(
-                "Any length works. You will type it each time Tinline starts. It cannot be recovered; your recovery phrase can still restore your identity if you forget it.",
-                13.0,
-                t.ink2
-            ),
-            self.wide(
-                if self.busy { "Working..." } else { "Set passphrase" },
-                Kind::Primary,
-                t,
-                (!self.busy).then_some(Msg::SetPassSubmit)
-            ),
-            self.wide("Not now", Kind::Ghost, t, (!self.busy).then_some(Msg::SkipSetPass)),
-            self.notice_bar(t),
-        ]
-        .spacing(12);
-        self.shell(
-            t,
-            "Set a passphrase",
-            "Your recovery phrase and keys are stored on this computer without protection. Choose a passphrase to encrypt them.",
-            col.into(),
-        )
-    }
-
     fn phrase_view(&self, t: Tok) -> El<'_> {
         let phrase = self.new_phrase.as_ref().map(|p| p.to_string()).unwrap_or_default();
         let words: Vec<&str> = phrase.split_whitespace().collect();
@@ -491,14 +464,6 @@ impl App {
                 "You\u{2019}re not available",
                 "Calls won\u{2019}t ring until you turn it back on.",
                 Some(("Turn on", Msg::SetAvail(true, None))),
-                false,
-            ));
-        }
-        if self.lock == LockState::NeedsPassphrase {
-            return Some((
-                "Set a passphrase",
-                "Protects your account if someone gets your computer.",
-                Some(("Set", Msg::GoSetPass)),
                 false,
             ));
         }
@@ -1111,14 +1076,7 @@ impl App {
             .spacing(14)
             .into(),
         );
-        let security: El = if self.lock == LockState::NeedsPassphrase {
-            column![
-                tx("Your keys are not protected by a passphrase yet.", 14.0, t.error),
-                pill(t, Kind::Primary, Some(Icon::Lock), "Set a passphrase", Some(Msg::GoSetPass)),
-            ]
-            .spacing(10)
-            .into()
-        } else {
+        let security: El = {
             let mut c = column![].spacing(12);
             if let Some(p) = &self.revealed {
                 let words: Vec<&str> = p.split_whitespace().collect();

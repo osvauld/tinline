@@ -8,15 +8,14 @@
 //! ```
 //!
 //! `<id>` is the DID's multibase part. This module only deals with directories and the clear
-//! `account.json`; what is inside the sealed store is `store.rs`. It also moves a single-account
-//! install (`profile.json` & co. in the root) into this layout.
+//! `account.json`; what is inside the sealed store is `store.rs`.
 
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use crate::Error;
-use crate::store::{Disk, read_disk, read_profile};
+use crate::store::{Disk, read_profile};
 
 /// The DID's multibase part, as a directory name. Refuses anything that is not a DID, so a name
 /// can never reach outside `accounts/`.
@@ -44,33 +43,13 @@ pub struct Entry {
 }
 
 pub fn entry_of(id: &str, disk: &Disk) -> Result<Entry, Error> {
-    let (did, name, has_passphrase) = match disk {
-        Disk::V2(p) => (p.did.clone(), p.name.clone(), p.vault.has_passphrase()),
-        Disk::Legacy(p) => {
-            let id = identity::recover(&p.mnemonic).map_err(|_| Error::BadPhrase)?;
-            (id.did().to_string(), p.name.clone(), false)
-        }
-    };
+    let Disk::V2(p) = disk;
+    let (did, name, has_passphrase) = (p.did.clone(), p.name.clone(), p.vault.has_passphrase());
     if id_of(&did)? != id {
         return Err(Error::Io("account directory does not match its identity".into()));
     }
     Ok(Entry { id: id.to_string(), did, name, has_passphrase })
 }
-
-/// Files of the old single-account layout that move into the account dir. `profile.json` goes
-/// last (as `account.json`): while it is still in the root the move is not finished.
-const MOVED: [&str; 9] = [
-    "chat.redb",
-    "blobs",
-    "state.json",
-    "calls.json",
-    "state.json.corrupt",
-    "calls.json.corrupt",
-    "profile.json.bak",
-    "profile.bak",
-    "profile.tmp",
-];
-const MIGRATING: &str = ".migrating";
 
 pub struct AccountDirs {
     root: PathBuf,
@@ -164,75 +143,6 @@ impl AccountDirs {
         fs::remove_dir_all(dir)?;
         Ok(())
     }
-
-    /// Moves a single-account install into `accounts/<id>/`. Only renames, so nothing is ever
-    /// copied or deleted, and the sequence can be repeated after a crash at any point:
-    ///
-    /// 1. everything but the profile goes into `accounts/<id>.migrating/`;
-    /// 2. `profile.json` goes there last, as `account.json`;
-    /// 3. `current` is written, then the directory is renamed to its final name.
-    ///
-    /// Any error is returned with the remaining files exactly where they were.
-    pub fn migrate(&self) -> Result<(), Error> {
-        let old = self.root.join("profile.json");
-        if old.exists() {
-            let disk = read_profile_file(&old)?;
-            let id = id_of(&entry_did(&disk)?)?;
-            if self.dir(&id)?.exists() {
-                return Err(Error::Io(format!("account {id} already exists; the old files were left in place")));
-            }
-            let tmp = self.accounts().join(format!("{id}{MIGRATING}"));
-            // Everything is checked before the first rename, so an error moves nothing.
-            let movable: Vec<&str> = MOVED.into_iter().filter(|n| self.root.join(n).symlink_metadata().is_ok()).collect();
-            for name in &movable {
-                if tmp.join(name).symlink_metadata().is_ok() {
-                    return Err(Error::Io(format!("{name} exists in both the old and the new place")));
-                }
-            }
-            if tmp.join("account.json").exists() {
-                return Err(Error::Io("interrupted migration has an account.json already".into()));
-            }
-            fs::create_dir_all(&tmp)?;
-            private_dir(&tmp);
-            for name in movable {
-                fs::rename(self.root.join(name), tmp.join(name))?;
-            }
-            sync_dir(&self.root);
-            fs::rename(&old, tmp.join("account.json"))?;
-            sync_dir(&tmp);
-        }
-        for e in fs::read_dir(self.accounts())? {
-            let e = e?;
-            let name = e.file_name().to_string_lossy().to_string();
-            let Some(id) = name.strip_suffix(MIGRATING) else { continue };
-            if valid_id(id).is_err() || !e.path().join("account.json").exists() {
-                continue;
-            }
-            let fin = self.dir(id)?;
-            if fin.exists() {
-                return Err(Error::Io(format!("account {id} already exists; {name} was left in place")));
-            }
-            // The pointer first: a crash between the two steps resumes here, whereas a final
-            // dir without a pointer would look like an install with no account selected.
-            if self.current().is_none() {
-                self.select(id)?;
-            }
-            fs::rename(e.path(), &fin)?;
-            sync_dir(&self.accounts());
-        }
-        Ok(())
-    }
-}
-
-fn entry_did(disk: &Disk) -> Result<String, Error> {
-    Ok(match disk {
-        Disk::V2(p) => p.did.clone(),
-        Disk::Legacy(p) => identity::recover(&p.mnemonic).map_err(|_| Error::BadPhrase)?.did().to_string(),
-    })
-}
-
-fn read_profile_file(path: &Path) -> Result<Disk, Error> {
-    read_disk(path)?.ok_or(Error::NotFound)
 }
 
 fn private_dir(path: &Path) {
