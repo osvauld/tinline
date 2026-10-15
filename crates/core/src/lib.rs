@@ -21,6 +21,10 @@ mod logging;
 mod node;
 mod recovery_key;
 mod rekey;
+// Shared recipient primitives are intentionally not connected to runtime yet.
+#[allow(dead_code)]
+mod receipts;
+mod signed_map;
 mod search;
 mod store;
 mod sync;

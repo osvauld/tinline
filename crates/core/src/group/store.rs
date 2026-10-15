@@ -31,6 +31,9 @@ use storage::{Op, Sealed, StorageError, Store};
 use super::record::SignedHostAddr;
 use crate::Error;
 
+mod receipts;
+pub(crate) use receipts::StoredAttestation;
+
 const STORE_DOMAIN: &str = "tinline/group-store/v2";
 const UPDATES_BEFORE_SNAPSHOT: u64 = 64;
 
@@ -108,6 +111,11 @@ pub struct GroupMeta {
     /// Days with posts of ours that no host has acknowledged yet.
     #[serde(default)]
     pub owed_days: std::collections::BTreeSet<String>,
+    /// Validated metadata frontier received through an own-device contents link
+    /// that still needs storage at a host. Empty means no such obligation.
+    /// This is local bookkeeping, not a membership or destination receipt.
+    #[serde(default)]
+    pub own_owed_meta: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -122,6 +130,10 @@ pub struct DirEntry {
 #[derive(Clone)]
 pub struct GroupStore {
     pub(crate) db: Sealed,
+    #[cfg(test)]
+    fail_next_append: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    #[cfg(test)]
+    fail_next_meta_write: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 pub(crate) fn json<T: Serialize>(v: &T) -> Vec<u8> {
@@ -145,12 +157,40 @@ impl GroupStore {
                 }
             }
         };
-        Ok(Self { db: Sealed::new(store, key_from_phrase(phrase)) })
+        Ok(Self {
+            db: Sealed::new(store, key_from_phrase(phrase)),
+            #[cfg(test)]
+            fail_next_append: Default::default(),
+            #[cfg(test)]
+            fail_next_meta_write: Default::default(),
+        })
     }
 
     #[cfg(test)]
     pub fn in_memory(phrase: &str) -> Self {
-        Self { db: Sealed::new(Store::open_in_memory().unwrap(), key_from_phrase(phrase)) }
+        Self {
+            db: Sealed::new(Store::open_in_memory().unwrap(), key_from_phrase(phrase)),
+            fail_next_append: Default::default(),
+            fail_next_meta_write: Default::default(),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fail_next_meta_write_for_test(&self) {
+        self.fail_next_meta_write.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fail_next_append_for_test(&self) {
+        self.fail_next_append.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    fn apply_append(&self, ops: &[Op]) -> Result<(), Error> {
+        #[cfg(test)]
+        if self.fail_next_append.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            return Err(Error::Io("injected group append failure".into()));
+        }
+        self.db.apply(ops).map_err(io)
     }
 
     pub fn groups(&self) -> Result<Vec<(String, GroupMeta)>, Error> {
@@ -164,6 +204,10 @@ impl GroupStore {
     }
 
     pub fn put_meta(&self, gid: &str, m: &GroupMeta) -> Result<(), Error> {
+        #[cfg(test)]
+        if self.fail_next_meta_write.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            return Err(Error::Io("injected group metadata write failure".into()));
+        }
         self.db.put(&format!("grp/{gid}"), &json(m)).map_err(io)
     }
 
@@ -192,7 +236,7 @@ impl GroupStore {
             meta.n_updates += 1;
         }
         ops.push(self.db.put_op(&format!("grp/{gid}"), &json(meta)).map_err(io)?);
-        self.db.apply(&ops).map_err(io)
+        self.apply_append(&ops)
     }
 
     // ---- day docs ------------------------------------------------------------------------------
@@ -209,6 +253,14 @@ impl GroupStore {
     pub fn days(&self, gid: &str) -> Result<Vec<String>, Error> {
         let p = format!("days/{gid}/");
         Ok(self.db.list_prefixed(&p).map_err(io)?.into_iter().filter_map(|k| k.strip_prefix(&p).map(str::to_string)).collect())
+    }
+
+    /// One bounded day-index page, without materializing the complete archive.
+    pub(crate) fn days_after(&self, gid: &str, after: Option<&str>, limit: usize) -> Result<Vec<String>, Error> {
+        let prefix = format!("days/{gid}/");
+        let cursor = after.map(|day| format!("{prefix}{day}"));
+        Ok(self.db.keys_after(&prefix, cursor.as_deref(), limit).map_err(io)?
+            .into_iter().filter_map(|key| key.strip_prefix(&prefix).map(str::to_string)).collect())
     }
 
     /// Appends an accepted update of a day doc whose version vector is now `vv` (or, every so
@@ -236,7 +288,7 @@ impl GroupStore {
         if let Some(g) = group {
             ops.push(self.db.put_op(&format!("grp/{gid}"), &json(g)).map_err(io)?);
         }
-        self.db.apply(&ops).map_err(io)
+        self.apply_append(&ops)
     }
 
     /// Forgets every day doc of a group (test hook: a wiped host).
@@ -316,6 +368,7 @@ impl GroupStore {
                 Op::DeletePrefix(format!("hosts/{gid}/")),
                 Op::DeletePrefix(format!("dir/{gid}/")),
                 Op::DeletePrefix(format!("ack/{gid}/")),
+                Op::DeletePrefix(format!("proof/{gid}/")),
                 Op::DeletePrefix(format!("out/{gid}/")),
                 Op::DeletePrefix(format!("mail/{gid}/")),
                 Op::DeletePrefix(format!("clog/{gid}/")),

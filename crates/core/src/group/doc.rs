@@ -27,6 +27,8 @@ use serde::{Deserialize, Serialize};
 use super::record::{Body, Record, RecordError, SignedRecord, record_id};
 use crate::chat::doc::{DAY_MS, HOUR_MS, day_of, day_start, writer_id};
 
+pub(crate) mod batching;
+
 const ROOT: &str = "r";
 
 /// Which of a group's docs: the meta doc, or the posts of one UTC day (`YYYY-MM-DD`).
@@ -78,6 +80,8 @@ pub enum Reject {
     OutOfDay,
     #[error("refused by policy: {0}")]
     Policy(String),
+    #[error("group persistence failed: {0}")]
+    Persistence(String),
 }
 
 /// A verified record and where it sits in the oplog (its writer's peer id and op counter).
@@ -170,6 +174,15 @@ impl GroupDoc {
 
     pub fn snapshot(&self) -> Vec<u8> {
         self.doc.export(ExportMode::Snapshot).expect("snapshot export")
+    }
+
+    /// Independent rollback checkpoint for the small meta doc. Unlike cloning a
+    /// Loro handle, a fork does not advance when the original imports new ops.
+    /// Preserve this install's writer ID; the fork's generated ID must not escape.
+    pub(crate) fn checkpoint(&self) -> Self {
+        let doc = self.doc.fork();
+        doc.set_peer_id(self.peer()).expect("peer id");
+        Self { group: self.group.clone(), id: self.id.clone(), doc, tainted: self.tainted }
     }
 
     /// Every op beyond `theirs`; `None` if they hold all we do.
@@ -360,32 +373,22 @@ impl GroupDoc {
 /// Every op of `doc` between `from` and `to`, each checked to be a valid record insert for doc
 /// `id` (`verify`: including the key, the writer ID and the author's signature).
 fn ops_between(doc: &LoroDoc, from: &VersionVector, to: &VersionVector, group: &str, id: &DocId, verify: bool) -> Result<Vec<Entry>, Reject> {
-    let root = loro::ContainerID::new_root(ROOT, loro::ContainerType::Map);
-    let mut out = Vec::new();
-    for c in doc.export_json_updates_without_peer_compression(from, to).changes {
-        for op in c.ops {
-            if op.container != root {
-                return Err(Reject::Structure);
+    crate::signed_map::inserts(doc, from, to, ROOT, Reject::Structure, |key, bytes, peer, counter| {
+        let rec = if verify {
+            if record_id(bytes) != key {
+                return Err(Reject::WrongKey);
             }
-            let loro::JsonOpContent::Map(loro::JsonMapOp::Insert { key, value }) = &op.content else { return Err(Reject::Structure) };
-            let LoroValue::Binary(bytes) = value else { return Err(Reject::Structure) };
-            let rec = if verify {
-                if record_id(bytes) != *key {
-                    return Err(Reject::WrongKey);
-                }
-                let rec = SignedRecord::open(bytes, group).map_err(Reject::Record)?;
-                if writer_id(&rec.author, &rec.dev) != c.id.peer {
-                    return Err(Reject::ForeignPeer);
-                }
-                rec
-            } else {
-                SignedRecord::decode_trusted(bytes, group).map_err(Reject::Record)?
-            };
-            fits(id, &rec)?;
-            out.push(Entry { id: key.clone(), rec, peer: c.id.peer, counter: op.counter });
-        }
-    }
-    Ok(out)
+            let rec = SignedRecord::open(bytes, group).map_err(Reject::Record)?;
+            if writer_id(&rec.author, &rec.dev) != peer {
+                return Err(Reject::ForeignPeer);
+            }
+            rec
+        } else {
+            SignedRecord::decode_trusted(bytes, group).map_err(Reject::Record)?
+        };
+        fits(id, &rec)?;
+        Ok(Entry { id: key.to_string(), rec, peer, counter })
+    })
 }
 
 #[cfg(test)]

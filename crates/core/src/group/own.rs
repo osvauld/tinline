@@ -3,9 +3,12 @@
 //! (`SelfMsg::Groups`): per group the same thing a `group_device_token` carries (group id, name,
 //! owner, the active hosts' DID-signed addresses; no invite). A device that lacks a group adds it
 //! and dials its hosts like a sibling holding a device token would; the hosts admit it because
-//! the DID is a member. Group contents never travel over the own-device link: they come from the
-//! hosts (U7), verified record by record (U10). Hosts' addresses for groups a device already has
-//! are merged (newest signed address wins, active hosts only).
+//! the DID is a member. New peers may additionally negotiate `contents` on the own-device
+//! session: original verified group meta/recent-day records, not host authority or call grants.
+//! Legacy peers remain metadata-only. Direct host/history sync is unchanged. Hosts' addresses
+//! for groups a device already has are merged (newest signed address wins, active hosts only).
+
+pub(crate) mod contents;
 
 use std::sync::Arc;
 
@@ -43,7 +46,7 @@ impl Inner {
     }
 
     /// Groups one of our other devices is in: add the ones we lack, merge host addresses.
-    pub(crate) fn group_own_apply(self: &Arc<Self>, tokens: &[Vec<u8>]) {
+    pub(crate) fn group_own_apply(self: &Arc<Self>, tokens: &[Vec<u8>], contents: bool) {
         let Ok(core) = self.group_core() else { return };
         let mut added = false;
         for b in tokens.iter().take(MAX_OWN_GROUPS) {
@@ -60,9 +63,12 @@ impl Inner {
                 continue;
             }
             let hosts: Vec<&SignedHostAddr> = t.hosts.iter().filter(|h| h.open().is_some_and(|a| a.group == gid)).collect();
-            if hosts.is_empty() {
+            if hosts.is_empty() && !contents {
                 continue;
             }
+            // A negotiated own-device contents peer can supply the signed meta
+            // even without host hints. This creates only an empty local context;
+            // membership/hosting still come from validated original records.
             let meta = GroupMeta { from_own: true, ..Default::default() };
             core.groups.lock().insert(gid.clone(), Live::empty(&gid, core.wid, meta.clone()));
             if core.store.put_meta(&gid, &meta).is_err() {

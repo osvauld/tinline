@@ -86,4 +86,13 @@ pub enum SelfMsg {
     /// (`group::invitations::InvRow`). The receiver adds rows it lacks and takes an answer
     /// (Joined / Declined / ...) over Pending.
     Invitations { rows: Vec<Vec<u8>> },
+    // Appended discriminants; sent only after cap/group-history/v1 negotiation.
+    GroupHistoryGet { request: u64, group: String, after: Option<String> },
+    GroupHistoryPage { request: u64, group: String, after: Option<String>, days: Vec<(String, Vec<u8>)>, next: Option<String>, deferred: bool },
+    GroupWant { request: u64, doc: String, vv: Vec<u8> },
+    GroupBatch { request: u64, doc: String, vv: Vec<u8>, update: Vec<u8>, sig: Vec<u8>, more: bool, deferred: bool },
+    GroupHistoryChanged { group: String },
+    // Appended; only after cap/group-receipts/v1 (and both content/history markers).
+    GroupReceiptGet { request: u64, group: String, after: Option<String> },
+    GroupReceiptPage { request: u64, group: String, after: Option<String>, proofs: Vec<(String, Vec<u8>)>, next: Option<String> },
 }
