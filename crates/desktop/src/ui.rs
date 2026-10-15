@@ -204,6 +204,7 @@ pub fn alpha(c: Color, a: f32) -> Color {
 
 // ---- icons: Lucide, 24 grid, 1.75 stroke ----
 
+#[allow(dead_code, reason = "the full icon set; not every icon is used yet")]
 #[derive(Clone, Copy)]
 pub enum Icon {
     Phone,

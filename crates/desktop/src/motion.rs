@@ -5,6 +5,7 @@
 use std::time::Instant;
 
 /// Durations in ms (motion.ts `DUR`).
+#[allow(dead_code, reason = "the full motion.ts token table; not every token is wired yet")]
 pub mod dur {
     pub const PRESS: f32 = 100.0;
     pub const RELEASE: f32 = 140.0;
@@ -23,6 +24,7 @@ pub mod dur {
 }
 
 /// Easing curves (motion.ts `EASE`), plus Svelte's cubicOut/cubicIn used by the tab fade-through.
+#[allow(dead_code, reason = "the full motion.ts easing table")]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Ease {
     /// cubic-bezier(.2,.8,.2,1)
@@ -166,10 +168,10 @@ mod tests {
             assert!(e.apply(0.0).abs() < 1e-4);
             assert!((e.apply(1.0) - 1.0).abs() < 1e-4);
         }
-        // Reference values from Chromium's cubic-bezier(.2,.8,.2,1) at x = .25 / .5 (±.01).
-        assert!((Ease::Out.apply(0.5) - 0.906).abs() < 0.02, "{}", Ease::Out.apply(0.5));
-        assert!(Ease::In.apply(0.5) < 0.35);
-        assert!((Ease::InOut.apply(0.5) - 0.78).abs() < 0.03, "{}", Ease::InOut.apply(0.5));
+        // Exact curve values at x = .5 (bisection on the bezier): Out .9461, In .3248, InOut .7756.
+        assert!((Ease::Out.apply(0.5) - 0.9461).abs() < 1e-3, "{}", Ease::Out.apply(0.5));
+        assert!((Ease::In.apply(0.5) - 0.3248).abs() < 1e-3, "{}", Ease::In.apply(0.5));
+        assert!((Ease::InOut.apply(0.5) - 0.7756).abs() < 1e-3, "{}", Ease::InOut.apply(0.5));
     }
 
     #[test]

@@ -516,15 +516,17 @@ impl GroupsLive {
         *self = GroupsLive { me, my_device, ..Default::default() };
     }
 
-    pub fn summary(&self, gid: &str) -> Option<&GroupSummary> {
-        self.list.iter().find(|s| s.id == gid)
-    }
-
     pub fn role(&self) -> Option<GroupRole> {
         self.detail.as_ref().map(|d| d.my_role)
     }
 
+    #[cfg(test)]
+    pub fn summary(&self, gid: &str) -> Option<&GroupSummary> {
+        self.list.iter().find(|s| s.id == gid)
+    }
+
     /// The Groups tab's badge: unread posts in groups we are still in, plus invitations to answer.
+    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete (Groups tab badge)")]
     pub fn badge(&self) -> u32 {
         self.list.iter().filter(|s| active(s.my_role)).map(|s| s.unread).sum::<u32>() + self.pending_invitations().count() as u32
     }
@@ -1162,6 +1164,7 @@ pub(super) fn sent_line(r: &GroupChatRequest) -> (String, bool) {
 }
 
 /// The small line under one of our posts.
+#[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete (the waiting-for-a-host line under our posts)")]
 pub(super) fn delivery_word(m: &GroupMessage) -> Option<&'static str> {
     (m.outgoing && m.kind == GroupItemKind::Post && m.delivery == GroupDelivery::Waiting).then_some("Waiting for a host")
 }

@@ -89,6 +89,7 @@ pub fn colors(dark: bool) -> (Color, Color) {
 pub enum CallPhase {
     Incoming,
     Outgoing,
+    #[allow(dead_code, reason = "statusLook has a connecting look; the call engine has no separate connecting state yet")]
     Connecting,
     Active,
     Reconnecting,

@@ -31,10 +31,6 @@ impl App {
 
     // ---- the Groups tab ----
 
-    pub(super) fn live_badge(&self) -> u32 {
-        self.live.badge()
-    }
-
     /// GroupsList.svelte: the New group row, invitations, "Your groups · n" (rows as in Chats), then the folded
     /// "Left or removed" section. Desktop keeps a Join row (paste an invite link) under New group: the playground
     /// assumes links open the app, this build can't.
@@ -690,6 +686,7 @@ impl App {
 
     // ---- members pane ----
 
+    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete (members, hosts, host requests/offers panel)")]
     fn live_members(&self, t: Tok) -> El<'_> {
         let Some(d) = self.live.detail.as_ref() else { return Space::new().into() };
         let sec = |s: &str| container(label(t, s)).padding(Padding { top: 14.0, bottom: 6.0, left: 16.0, right: 16.0 });

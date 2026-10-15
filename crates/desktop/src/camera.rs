@@ -188,16 +188,6 @@ pub struct Opened {
 }
 
 impl Camera {
-    /// Starts capturing from `src`. `opened` runs once on the capture thread with the
-    /// negotiated format (or the error that stopped it); `frame` runs per frame.
-    pub fn start(
-        src: Source,
-        opened: impl FnOnce(Result<Opened, String>) + Send + 'static,
-        frame: impl FnMut(I420) + Send + 'static,
-    ) -> Camera {
-        Self::start_with_quality(src, Quality::Auto, opened, frame)
-    }
-
     pub fn start_with_quality(
         src: Source,
         quality: Quality,

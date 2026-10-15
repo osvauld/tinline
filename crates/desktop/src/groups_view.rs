@@ -43,6 +43,7 @@ pub(super) fn gav<'a>(t: Tok, key: &str, size: f32) -> El<'a> {
     ui::group_face(t, key, size)
 }
 
+/// A status dot (host rows).
 pub(super) fn dot<'a>(c: Color) -> El<'a> {
     container(Space::new()).width(8).height(8).style(ui::plain(c, 4.0)).into()
 }
@@ -70,7 +71,6 @@ pub(super) fn link_btn<'a>(t: Tok, s: &str, color: Color, on: Msg) -> El<'a> {
 pub(super) fn btn<'a>(t: Tok, kind: Kind, s: &str, on: Option<Msg>) -> El<'a> {
     pill(t, kind, None, s, on)
 }
-
 
 /// A footer in place of the composer.
 pub(super) fn footer<'a>(t: Tok, body: El<'a>) -> El<'a> {

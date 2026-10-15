@@ -306,9 +306,6 @@ pub fn normalise_link(raw: &str) -> Option<String> {
     let has_scheme = t.split_once(':').is_some_and(|(s, _)| !s.is_empty() && s.chars().next().is_some_and(|c| c.is_ascii_alphabetic()) && s.chars().all(|c| c.is_ascii_alphanumeric() || "+.-".contains(c)));
     safe_url(&if has_scheme { t.to_string() } else { format!("https://{t}") })
 }
-pub fn short_url(u: &str) -> String {
-    u.trim_start_matches("https://").trim_start_matches("http://").trim_end_matches('/').to_string()
-}
 
 fn has_control(s: &str, allow_newline: bool) -> bool {
     s.chars().any(|c| {
@@ -1034,7 +1031,6 @@ mod tests {
         for s in ["javascript:alert(1)", "https://a:b@host/", "file:///tmp/a", "https://", "https://x\\y", "https://a b", "ftp://x"] {
             assert!(normalise_link(s).is_none(), "{s}");
         }
-        assert_eq!(short_url("https://arjun.example/notes"), "arjun.example/notes");
     }
     #[test]
     fn profile_humanize_and_order_match_info_ts() {

@@ -7,15 +7,11 @@ use p2pcore::{AttachmentKind, Contact, DeliveryState, Message as ChatMsg, Transf
 
 use crate::voice::{self, VoiceView};
 use super::*;
-use crate::app::chat::{preview_of, Cm, SideTab, Thumb, ViewBody, COMPOSER_ID};
+use crate::app::chat::{preview_of, Cm, Thumb, ViewBody, COMPOSER_ID};
 use crate::blocks::Composer;
 use crate::media::{self, Class};
 use crate::geom;
 use crate::shaped::shaped;
-
-
-/// Width of the hover actions beside a bubble: three 28 px buttons, 2 px apart.
-const ACTIONS_W: f32 = 3.0 * 28.0 + 2.0 * 2.0;
 
 fn local(ms: u64) -> Option<DateTime<Local>> {
     Local.timestamp_millis_opt(ms as i64).single()
@@ -91,30 +87,6 @@ fn rule<'a>(t: Tok) -> El<'a> {
 }
 
 impl App {
-    /// Chats | Calls | Contacts, with the unread count on Chats.
-    pub(super) fn side_tabs(&self, t: Tok) -> El<'_> {
-        let tab = |label_: &'static str, which: SideTab, badge_: u32| {
-            let on = self.chat.tab == which;
-            let fg = if on { t.on_primary_c } else { t.ink2 };
-            let mut r = row![semi(label_, 14.0, fg)].spacing(6).align_y(Alignment::Center);
-            if badge_ > 0 {
-                r = r.push(count_badge(t, badge_));
-            }
-            button(container(r).center_x(Fill))
-                .padding([7, 4])
-                .width(Fill)
-                .style(ui::button_style(t, if on { Kind::Tonal } else { Kind::Ghost }, 999.0))
-                .on_press(Msg::Chat(Cm::Tab(which)))
-        };
-        let pending = self.live.pending_in().count() as u32;
-        let tabs = row![tab("Chats", SideTab::Chats, self.chat.unread_total() + pending), tab("Groups", SideTab::Groups, self.live_badge())].spacing(2);
-        container(tabs.push(tab("Calls", SideTab::Calls, 0)).push(tab("Contacts", SideTab::Contacts, 0)))
-        .padding(3)
-        .width(Fill)
-        .style(ui::plain(t.surface2, 999.0))
-        .into()
-    }
-
     /// ChatsList.svelte: 1:1 and group conversations together, most recent first, behind the
     /// All / Unread chips. Rows are 72px (8px padding, 48px avatar, 12px gap) inside 8px side margins.
     pub(super) fn chat_list(&self, t: Tok, q: &str) -> El<'_> {
@@ -212,26 +184,6 @@ impl App {
             .padding(8).width(Fill)
             .style(super::shell_view::wash(t, sel.then_some(t.accent_soft), (!sel).then_some(t.surface2), 14.0))
             .on_press(on).into()
-    }
-
-    /// One tick = only on this computer (a clock while we are offline); two = on theirs.
-    fn ticks(&self, t: Tok, d: DeliveryState, size: f32, color: Color) -> El<'static> {
-        match d {
-            DeliveryState::Delivered => ui::icon(Icon::CheckCheck, size, t.primary),
-            DeliveryState::Pending if self.status.online => ui::icon(Icon::Check, size, color),
-            DeliveryState::Pending => ui::icon(Icon::Clock, size - 1.0, color),
-        }
-    }
-
-    /// The contact's presence, not ours: "Connected" only while one of their devices is live.
-    fn conn_text(&self, did: &str) -> String {
-        if !self.status.started {
-            "Connecting\u{2026}".into()
-        } else if self.chat.online.contains(did) {
-            "Connected".into()
-        } else {
-            "Not connected \u{b7} messages wait until you\u{2019}re both online".into()
-        }
     }
 
     pub(super) fn conversation_view<'a>(&'a self, t: Tok, c: &'a Contact) -> El<'a> {
@@ -1076,29 +1028,6 @@ impl App {
         }
         container(col.push(line)).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
     }
-}
-
-/// The size a picture of `w` x `h` is shown at in a bubble: within 320 x 360, never enlarged.
-fn fit(w: f32, h: f32) -> (f32, f32) {
-    let k = (320.0 / w).min(360.0 / h).min(1.0);
-    ((w * k).max(60.0).round(), (h * k).max(40.0).round())
-}
-
-fn icon_btn_big<'a>(t: Tok, i: Icon, on: Msg) -> El<'a> {
-    button(container(ui::icon(i, 20.0, t.ink2)).center_x(44).center_y(44))
-        .padding(0)
-        .width(44)
-        .height(44)
-        .style(ui::button_style(t, Kind::Ghost, 999.0))
-        .on_press(on)
-        .into()
-}
-
-fn count_badge<'a>(t: Tok, n: u32) -> El<'a> {
-    container(semi(if n > 99 { "99+".to_string() } else { n.to_string() }, 12.0, t.on_primary))
-        .padding([1, 7])
-        .style(ui::plain(t.primary, 999.0))
-        .into()
 }
 
 /// Message text: only a few emojis show big, emojis inside text a little larger (`emoji.rs`).

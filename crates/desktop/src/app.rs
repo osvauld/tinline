@@ -210,10 +210,12 @@ impl Reach {
 
 /// A finished call, shown for a few seconds.
 struct EndedView {
+    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete (the ended card does not show why or direct/relayed)")]
     reason: String,
     did: String,
     name: String,
     text: String,
+    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
     direct: bool,
     secs: u32,
     at: Instant,
@@ -414,11 +416,9 @@ enum Msg {
     Finished(Result<(), SetupErr>),
     RetryKey,
     KeyFailPass,
-    AcctMenu,
     SwitchAsk(String),
     /// Switch without the sidebar confirmation (lock screens, where the choice is the click).
     SwitchNow(String),
-    SwitchCancel,
     SwitchGo,
     Switched(Result<bool, String>),
     /// Start a new account (`true`: restore from a phrase).
@@ -439,9 +439,7 @@ enum Msg {
     Remember(bool),
     RememberSet(Result<bool, String>),
     ToggleRestore,
-    TogglePhraseShow,
     Devices((Vec<String>, Vec<String>)),
-    PhraseChanged(String),
     Restore,
     /// Err carries (message, the account already exists here).
     Restored(Result<(), (String, bool)>),
@@ -463,8 +461,6 @@ enum Msg {
     PhraseSaved,
     Started(Result<(), String>),
     Ticket(Result<p2pcore::MyCode, String>),
-    CopyTicket,
-    AddChanged(String),
     AddPressed,
     Added(Result<p2pcore::AddOutcome, Reach>),
     /// Accept on a contact request answered (the DID, the new contact).
@@ -501,16 +497,19 @@ enum Msg {
     SearchIn(String),
     ShellSearch(shell_search::Action),
     Profile(profile_ui::Action),
-    ToggleAvail,
     SetAvail(bool, Option<u64>),
     OpenAdd,
     SettingsTab(u8),
     Key(iced::keyboard::Key, iced::keyboard::Modifiers),
+    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
     AddAlias(String),
+    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
     SaveAlias,
+    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
     CloseEnded,
     /// The ended call's hold ran out (only closes the ended view it was started for).
     EndedHoldDone(Option<Instant>),
+    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
     CallAgain(String),
     CopySafety,
     NameEdit(String),
@@ -1138,7 +1137,6 @@ impl App {
         self.pv.shown_at = None;
     }
 
-
     fn tone_hz(&self) -> Option<f32> {
         INIT.get().unwrap().env_tone.or(self.settings.tone.then_some(440.0))
     }
@@ -1624,8 +1622,6 @@ impl App {
                 self.restore = true;
                 return self.gate_restore();
             }
-            Msg::PhraseChanged(v) => self.phrase_in = Zeroizing::new(v),
-            Msg::TogglePhraseShow => self.show_phrase_in = !self.show_phrase_in,
             Msg::Restore => {
                 let name = self.name_in.trim().to_string();
                 if name.is_empty() || self.phrase_in.trim().is_empty() {
@@ -1952,13 +1948,6 @@ impl App {
                     return clipboard::write(text);
                 }
             }
-            Msg::CopyTicket => {
-                if let Some(t) = self.ticket.clone() {
-                    self.copied_at = Some(Instant::now());
-                    return clipboard::write(t);
-                }
-            }
-            Msg::AddChanged(v) => self.add_in = v,
             Msg::SettingsTab(n) => {
                 self.settings_tab = n;
                 self.dev_rename = None;
@@ -2324,7 +2313,6 @@ impl App {
             Msg::SearchIn(v) => return self.shell_search_query(v),
             Msg::ShellSearch(action) => return self.shell_search_update(action),
             Msg::Profile(action) => return self.profile_update(action),
-            Msg::ToggleAvail => self.avail_open = !self.avail_open,
             Msg::SetAvail(on, hours) => {
                 let until = hours.map(|h| {
                     std::time::SystemTime::now()
@@ -2447,13 +2435,6 @@ impl App {
                 self.ctl.devices.lock().unwrap().1 = self.settings.output.clone();
                 self.save_settings();
             }
-            Msg::AcctMenu => {
-                self.acct_menu = !self.acct_menu;
-                self.switch_ask = None;
-                if self.acct_menu {
-                    self.refresh_accounts();
-                }
-            }
             Msg::SwitchAsk(did) => {
                 if self.call.is_some() {
                     self.notice = Some(friendly(Error::InCall));
@@ -2466,7 +2447,6 @@ impl App {
                 self.switch_ask = Some(did);
                 return self.update(Msg::SwitchGo);
             }
-            Msg::SwitchCancel => self.switch_ask = None,
             Msg::SwitchGo => {
                 let Some(did) = self.switch_ask.take() else { return Task::none() };
                 if self.busy {

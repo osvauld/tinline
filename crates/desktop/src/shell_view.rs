@@ -44,10 +44,6 @@ pub(super) fn wash(t: Tok, fill: Option<Color>, hover: Option<Color>, radius: f3
 }
 
 impl App {
-    pub(super) fn sidebar(&self, t: Tok) -> El<'_> {
-        row![self.shell_navigation(t), self.list_pane(t)].height(Fill).into()
-    }
-
     /// Keeps the nav highlight gliding to the current tab (`.hl` transform, --dur-indicator, ease-out).
     pub(in crate::app) fn settle_motion(&mut self) {
         let index = TABS.iter().position(|(tab, ..)| *tab == self.chat.tab).unwrap_or(0) as f32;

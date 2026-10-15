@@ -39,8 +39,9 @@ fn main() {
     let (tx, rx) = mpsc::channel();
     let (otx, orx) = mpsc::channel();
     let t0 = Instant::now();
-    let cam = camera::Camera::start(
+    let cam = camera::Camera::start_with_quality(
         src,
+        camera::Quality::Auto,
         move |o| {
             let _ = otx.send(o);
         },

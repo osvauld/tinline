@@ -231,6 +231,7 @@ impl Voice {
 }
 
 // ---- state table -----------------------------------------------------------------------------------------------
+#[allow(dead_code, reason = "mirrors the playground state table")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
     Calm,
@@ -244,6 +245,7 @@ pub enum State {
     Failed,
 }
 impl State {
+    #[allow(dead_code, reason = "mirrors the playground state table")]
     pub fn from_name(s: &str) -> Option<State> {
         Some(match s {
             "calm" => State::Calm,
@@ -443,9 +445,6 @@ impl Field {
             self.theme = t;
             self.labs = labs(t);
         }
-    }
-    pub fn reduced(&self) -> bool {
-        self.reduced
     }
     pub fn set_reduced(&mut self, r: bool) {
         if r == self.reduced {

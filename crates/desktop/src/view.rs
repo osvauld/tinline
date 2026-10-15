@@ -4,10 +4,10 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use iced::widget::{
-    button, canvas, checkbox, column, container, image, pick_list, row, stack, text, text_input, toggler, Space,
+    button, canvas, column, container, image, pick_list, row, stack, text, text_input, toggler, Space,
 };
 use iced::{Alignment, Border, Color, ContentFit, Element, Fill, Length, Padding, Point, Rectangle, Renderer, Size, Theme};
-use p2pcore::{CallRecord, CallState, LockState};
+use p2pcore::{CallState, LockState};
 
 use super::{
     AddPhase, App, Detail, Msg, Qr, Screen, DEFAULT_LABEL, RECENTS, RENAME_ID, SEARCH_ID,
@@ -103,17 +103,6 @@ fn pill<'a>(t: Tok, kind: Kind, icon: Option<Icon>, text_: &str, on: Option<Msg>
         .padding([12, 22])
         .style(ui::button_style(t, kind, 999.0))
         .on_press_maybe(on)
-        .into()
-}
-
-/// A square icon-only button.
-fn icon_btn<'a>(t: Tok, i: Icon, on: Msg) -> El<'a> {
-    button(container(ui::icon(i, 20.0, t.ink2)).center_x(36).center_y(36))
-        .padding(0)
-        .width(36)
-        .height(36)
-        .style(ui::button_style(t, Kind::Ghost, 999.0))
-        .on_press(on)
         .into()
 }
 
@@ -324,105 +313,6 @@ impl App {
 
     // ---- before home ----
 
-    fn onboarding_view(&self, t: Tok) -> El<'_> {
-        let mut col = column![field(
-            t,
-            "Your name",
-            text_input("e.g. Maya", &self.name_in).on_input(Msg::NameChanged)
-        )]
-        .spacing(12);
-        if self.restore {
-            col = col
-                .push(field(
-                    t,
-                    "Recovery phrase (24 words)",
-                    text_input("word word word ...", &self.phrase_in)
-                        .secure(!self.show_phrase_in)
-                        .on_input(Msg::PhraseChanged),
-                ))
-                .push(checkbox(self.show_phrase_in).label("Show the words").on_toggle(|_| Msg::TogglePhraseShow));
-        }
-        let go = if self.restore { Msg::Restore } else { Msg::Create };
-        if self.keyring_ok {
-            col = col
-                .push(self.new_pass_field(t, "Passphrase (optional)", go))
-                .push(tx(
-                    "A passphrase encrypts your account on this computer, so nobody who copies its files can read it. Optional \u{2014} leave it empty to skip, and add one later in Settings. With one, you type it each time Tinline starts; it cannot be recovered, only replaced by restoring with your recovery phrase. Without one, Tinline opens straight to your contacts.",
-                    13.0,
-                    t.ink2,
-                ));
-        } else {
-            col = col
-                .push(self.new_pass_field(t, "Passphrase", go))
-                .push(tx(super::NO_KEYRING, 13.0, t.ink))
-                .push(tx(
-                    "You type it each time Tinline starts. It cannot be recovered, only replaced by restoring with your recovery phrase.",
-                    13.0,
-                    t.ink2,
-                ));
-        }
-        if self.exists_hint {
-            col = col.push(self.exists_panel(t));
-        }
-        if self.restore {
-            col = col
-                .push(self.wide("Restore", Kind::Primary, t, (!self.busy).then_some(Msg::Restore)))
-                .push(self.wide("Create a new identity instead", Kind::Ghost, t, Some(Msg::ToggleRestore)));
-        } else {
-            col = col
-                .push(self.wide("Create identity", Kind::Primary, t, (!self.busy).then_some(Msg::Create)))
-                .push(self.wide("Link to my phone", Kind::Quiet, t, (!self.busy).then_some(Msg::LinkStartNew)))
-                .push(self.wide("Restore from recovery phrase", Kind::Ghost, t, Some(Msg::ToggleRestore)));
-        }
-        if self.return_to.is_some() {
-            col = col.push(self.wide("Cancel", Kind::Quiet, t, (!self.busy).then_some(Msg::CancelNew)));
-        }
-        col = col.push(self.notice_bar(t));
-        self.shell(
-            t,
-            if self.return_to.is_some() { "Add an account" } else { "Welcome to Tinline" },
-            "A direct line between two people. No phone number, no ads, no tracking.",
-            col.into(),
-        )
-    }
-
-    /// Restore found that account here already: open it, or (deliberately) remove it and restore again.
-    fn exists_panel(&self, t: Tok) -> El<'_> {
-        let mut c = column![
-            semi("That account is already on this computer.", 14.0, t.ink),
-            tx("Open it instead. If you forgot its passphrase, remove it from this computer first (its contacts and chats here are deleted) and restore again.", 13.0, t.ink2),
-        ]
-        .spacing(8);
-        for a in &self.accounts {
-            if self.remove_ask.as_deref() == Some(a.did.as_str()) {
-                c = c.push(
-                    column![
-                        tx(format!("Remove {} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those.", a.name), 13.0, t.error),
-                        row![
-                            pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::RemoveGo(a.did.clone()))),
-                            pill(t, Kind::Ghost, None, "Keep", Some(Msg::RemoveCancel)),
-                        ]
-                        .spacing(8),
-                    ]
-                    .spacing(8),
-                );
-            } else {
-                c = c.push(
-                    row![
-                        avatar(t, &a.name, &a.did, 28.0),
-                        semi(a.name.clone(), 14.0, t.ink),
-                        Space::new().width(Fill),
-                        pill(t, Kind::Quiet, None, "Open", Some(Msg::SwitchNow(a.did.clone()))),
-                        pill(t, Kind::Ghost, Some(Icon::Trash), "Remove", Some(Msg::RemoveAsk(a.did.clone()))),
-                    ]
-                    .spacing(8)
-                    .align_y(Alignment::Center),
-                );
-            }
-        }
-        container(c).padding(14).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into()
-    }
-
     /// Last onboarding step. The key is saved and the account committed only when this is submitted.
     fn name_device_view(&self, t: Tok) -> El<'_> {
         let col = column![
@@ -486,11 +376,6 @@ impl App {
             "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again.",
             col.into(),
         )
-    }
-
-    /// "Use another account" buttons for the lock screens; empty when this is the only account.
-    pub(super) fn other_accounts_pub(&self, t: Tok) -> El<'_> {
-        self.other_accounts(t)
     }
 
     fn other_accounts(&self, t: Tok) -> El<'_> {
@@ -620,74 +505,6 @@ impl App {
         None
     }
 
-    /// "Available for calls  Change" at the foot of the sidebar; Change opens the availability panel.
-    fn avail_footer(&self, t: Tok) -> El<'_> {
-        let (txt, dot) = if !self.status.started {
-            ("Connecting\u{2026}", t.ink2)
-        } else if !self.status.online {
-            ("Offline", t.error)
-        } else if !self.avail.available {
-            ("Not available", t.thread)
-        } else {
-            ("Available for calls", t.primary)
-        };
-        let bar = row![
-            container(Space::new()).width(8).height(8).style(ui::plain(dot, 4.0)),
-            semi(txt, 14.0, t.ink),
-            Space::new().width(Fill),
-            button(semi("Change", 13.0, t.primary))
-                .padding([4, 10])
-                .style(ui::button_style(t, Kind::Ghost, 999.0))
-                .on_press(Msg::ToggleAvail),
-        ]
-        .spacing(8)
-        .align_y(Alignment::Center);
-        let mut c = column![].spacing(10);
-        if self.avail_open {
-            c = c.push(self.avail_panel(t));
-        }
-        c.push(container(bar).padding([4, 4])).into()
-    }
-
-    fn avail_panel(&self, t: Tok) -> El<'_> {
-        let opt = |s: &'static str, m: Msg| {
-            button(row![semi(s, 14.0, t.ink), Space::new().width(Fill), ui::icon(Icon::ChevronRight, 16.0, t.ink2)])
-                .padding([9, 12])
-                .width(Fill)
-                .style(ui::row_style(t, false))
-                .on_press(m)
-        };
-        let mut col = column![
-            row![
-                column![
-                    semi("Available for calls", 15.0, t.ink),
-                    tx("Your line stays open while Tinline runs.", 12.0, t.ink2)
-                ]
-                .spacing(2)
-                .width(Fill),
-                toggler(self.avail.available).on_toggle(|on| Msg::SetAvail(on, None)).style(ui::toggle_style(t)),
-            ]
-            .spacing(10)
-            .align_y(Alignment::Center),
-        ]
-        .spacing(10);
-        if self.avail.available {
-            col = col
-                .push(label(t, "Take a break"))
-                .push(opt("For 1 hour", Msg::SetAvail(false, Some(1))))
-                .push(opt("For 8 hours", Msg::SetAvail(false, Some(8))))
-                .push(opt("Until I turn it back on", Msg::SetAvail(false, None)))
-                .push(tx(
-                    "While you\u{2019}re away, people who call see \u{201c}Couldn\u{2019}t reach you\u{201d}. Nothing is queued and nobody is told why.",
-                    12.0,
-                    t.ink2,
-                ));
-        } else if let Some(u) = self.avail.until {
-            col = col.push(tx(format!("Back on in {}.", until_text(u)), 12.0, t.ink2));
-        }
-        container(col).padding(14).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into()
-    }
-
     fn contact_sub(&self, did: &str) -> String {
         if let Some(st) = self.blocks.status(did) {
             return st.to_string();
@@ -696,37 +513,6 @@ impl App {
             Some(r) => format!("Last call {}", ago(now_secs(), r.started_at)),
             None => "Not called yet".into(),
         }
-    }
-
-    fn record_row(&self, t: Tok, r: &CallRecord, with_name: bool) -> El<'_> {
-        let missed = r.missed;
-        let dim = if missed || r.reason == "unreachable" { t.error } else { t.ink2 };
-        let name = self.name_of(&r.peer_did, &r.peer_name);
-        let what = crate::reason::history(&r.reason, r.incoming, r.missed, r.duration_secs, &name);
-        let when = ago(now_secs(), r.started_at);
-        let mut left = column![].spacing(2);
-        if with_name {
-            left = left.push(semi(name, 15.0, if missed { t.error } else { t.ink }));
-            let short = if r.missed { "Missed".to_string() } else if r.duration_secs == 0 { what.clone() } else if r.incoming { "Incoming".into() } else { "Outgoing".into() };
-            left = left.push(tx(format!("{short} \u{b7} {when}"), 13.0, dim));
-        } else {
-            left = left.push(semi(what, 14.0, if missed { t.error } else { t.ink }));
-            left = left.push(tx(when, 12.0, t.ink2));
-        }
-        let mut r_ = row![
-            ui::icon(if r.incoming { Icon::Incoming } else { Icon::Outgoing }, 18.0, dim),
-            left.width(Fill)
-        ]
-        .spacing(12)
-        .align_y(Alignment::Center);
-        if r.duration_secs > 0 && !with_name {
-            r_ = r_.push(if r.direct {
-                badge(t.primary_c, t.on_primary_c, None, "Direct")
-            } else {
-                badge(t.relay_c, t.on_relay_c, None, "Relayed")
-            });
-        }
-        r_.into()
     }
 
     /// Our name for a person: the contact's alias or name when we still have them, else the
@@ -910,101 +696,6 @@ impl App {
         container(list).padding([0, 8]).width(Fill).into()
     }
 
-    /// The signed-in account at the top of the sidebar; opens the account switcher.
-    fn account_chip(&self, t: Tok) -> El<'_> {
-        let status = if self.status.started && self.status.online && self.avail.available {
-            "Available"
-        } else if self.status.started && !self.status.online {
-            "Offline"
-        } else if !self.avail.available {
-            "Not available"
-        } else {
-            "Connecting\u{2026}"
-        };
-        let chip = button(
-            row![
-                avatar(t, &self.profile_name, "me", 34.0),
-                column![semi(self.profile_name.clone(), 14.0, t.ink), tx(status, 12.0, t.ink2)].spacing(1).width(Fill),
-                ui::icon(Icon::ChevronRight, 16.0, t.ink2),
-            ]
-            .spacing(10)
-            .align_y(Alignment::Center),
-        )
-        .padding([6, 10])
-        .width(Fill)
-        .style(ui::row_style(t, self.acct_menu))
-        .on_press(Msg::AcctMenu);
-        if !self.acct_menu {
-            return chip.into();
-        }
-        column![chip, self.account_menu(t)].spacing(8).into()
-    }
-
-    fn account_menu(&self, t: Tok) -> El<'_> {
-        if let Some(did) = &self.switch_ask {
-            let target = self.accounts.iter().find(|a| &a.did == did).map(|a| a.name.clone()).unwrap_or_default();
-            let me = self.profile_name.clone();
-            let c = column![
-                bold(format!("Switch to {target}?"), 16.0, t.ink),
-                tx(
-                    format!("{me} goes offline on this computer. Calls to {me} will ring only on your other linked devices until you switch back."),
-                    13.0,
-                    t.ink2,
-                ),
-                tx("Switching isn\u{2019}t possible during a call.", 12.0, t.ink2),
-                row![
-                    pill(t, Kind::Primary, None, if self.busy { "Switching..." } else { "Switch" }, (!self.busy).then_some(Msg::SwitchGo)),
-                    pill(t, Kind::Ghost, None, "Cancel", Some(Msg::SwitchCancel)),
-                ]
-                .spacing(8),
-            ]
-            .spacing(10);
-            return container(c).padding(14).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into();
-        }
-        let mut c = column![label(t, "Accounts")].spacing(6);
-        for a in &self.accounts {
-            let sub = if a.current {
-                if self.lock == LockState::Locked { "Locked" } else { "Online on this computer" }
-            } else if a.has_passphrase {
-                "Locked \u{b7} switching needs its passphrase"
-            } else {
-                "Locked"
-            };
-            let right = if a.current { ui::icon(Icon::Check, 18.0, t.primary) } else { ui::icon(Icon::Lock, 16.0, t.ink2) };
-            c = c.push(
-                button(
-                    row![
-                        avatar(t, &a.name, &a.did, 32.0),
-                        column![semi(a.name.clone(), 14.0, t.ink), tx(sub, 12.0, t.ink2)].spacing(1).width(Fill),
-                        right,
-                    ]
-                    .spacing(10)
-                    .align_y(Alignment::Center),
-                )
-                .padding([6, 8])
-                .width(Fill)
-                .style(ui::row_style(t, a.current))
-                .on_press_maybe((!a.current).then(|| Msg::SwitchAsk(a.did.clone()))),
-            );
-        }
-        let action = |icon: Icon, text_: &'static str, on: Option<Msg>| -> El<'_> {
-            let fg = if on.is_some() { t.ink } else { t.ink2 };
-            button(row![ui::icon(icon, 18.0, fg), semi(text_, 14.0, fg)].spacing(10).align_y(Alignment::Center))
-                .padding([8, 8])
-                .width(Fill)
-                .style(ui::row_style(t, false))
-                .on_press_maybe(on)
-                .into()
-        };
-        c = c
-            .push(container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)))
-            .push(action(Icon::UserPlus, "Create a new account", Some(Msg::NewAccount(false))))
-            .push(action(Icon::ExternalLink, "Link an account from your phone", Some(Msg::NewLink)))
-            .push(action(Icon::Key, "Restore with recovery phrase", Some(Msg::NewAccount(true))))
-            .push(tx("One account is online at a time on this computer.", 12.0, t.ink2));
-        container(c).padding(12).width(Fill).style(ui::outlined(t.surface2, t.line, 12.0)).into()
-    }
-
     /// `.listpane`: 380px on --surface with a 1px hairline end edge (no gap to its neighbours).
     fn sidebar_frame<'a>(&'a self, t: Tok, col: iced::widget::Column<'a, Msg>, list: El<'a>) -> El<'a> {
         row![
@@ -1051,7 +742,6 @@ impl App {
         self.framed(t, scroll(t, container(main).padding(32).max_width(760).width(Fill)).width(Fill).height(Fill).into())
     }
 
-
     /// "Add <name>?" for a card found on the clipboard.
     fn offer_bar(&self, t: Tok) -> Option<El<'_>> {
         let o = self.offer.as_ref()?;
@@ -1074,7 +764,6 @@ impl App {
             .into(),
         )
     }
-
 
     fn detail_view<'a>(&'a self, t: Tok, c: &'a p2pcore::Contact) -> El<'a> {
         let name = Self::display(c);
@@ -1907,11 +1596,6 @@ fn utc_date(secs: u64) -> String {
     let _ = era;
     const M: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     format!("{day} {}", M[(month - 1) as usize])
-}
-
-fn until_text(until: u64) -> String {
-    let d = until.saturating_sub(now_secs());
-    if d >= 3600 { format!("{} h {} min", d / 3600, d / 60 % 60) } else { format!("{} min", (d / 60).max(1)) }
 }
 
 pub(super) fn qr_of(t: &str) -> Option<Qr> {
