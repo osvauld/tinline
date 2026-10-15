@@ -9,7 +9,7 @@
      excluded), ties go to the starter's own device. A candidate may refuse (paused, busy, or a phone asked by
      someone else: Q11 "a phone hosts only calls its own user starts"); the starter then asks the next one.
      Nobody left: StartFailed, "No call host available".
-   - The host forwards the K loudest speakers (K = 3 on a desktop, 2 on a phone, 1 when limited); the screen
+   - The host forwards the K loudest speakers (K = every speaker on a desktop, 4 on a phone, 2 on metered data, 1 when limited; Q2 2026-10-14); the screen
      highlights those (hysteresis: a newcomer replaces one only if clearly louder for 200 ms).
    - Phone host caps: 8 people on Wi-Fi, 4 on mobile data; a desktop 12 (the launch cap). Over the cap: refused.
    - Host conditions (§2.4): battery < 30 % / thermal moderate / mobile data: stop advertising (running call goes on);
@@ -169,7 +169,13 @@ class GroupCall {
     const c = this.cond(lc.hostId), cls = this.hostClass(lc.hostId);
     return cls === 'desktop' ? CAP.desktop : c.metered ? CAP.phoneMetered : CAP.phone;
   }
-  kFor(lc: LiveCall) { return lc.limited ? 1 : this.hostClass(lc.hostId) === 'desktop' ? 3 : 2; }
+  /** Q2 (decided 2026-10-14, core gcall/policy.rs): a desktop forwards every speaker (up to 12), a phone the 4 loudest,
+      a host on metered data the 2 loudest; a limited host 1. */
+  kFor(lc: LiveCall) {
+    if (lc.limited) return 1;
+    if (this.cond(lc.hostId).metered) return 2;
+    return this.hostClass(lc.hostId) === 'desktop' ? 12 : 4;
+  }
   /** Why a join cannot happen right now (null = fine). */
   joinBlock(gid: Id): 'none' | 'full' | 'limited' | 'inCall' | null {
     const lc = this.live[gid];

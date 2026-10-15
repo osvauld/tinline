@@ -103,7 +103,7 @@ const drawer = async (p, f) => { await p.getByRole('button', { name: 'Simulation
     await p.locator('[data-os=headsup]').getByRole('button', { name: 'Answer' }).click();
     ok('heads-up answer: connects and brings the in-call screen forward', await until(p, () => window.__pg.call.phase === 'active') && await until(p, () => !document.querySelector('[data-os=home]'), 1500) && (await n(p, '.callscreen')) === 1);
     await wait(p, 300);
-    await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 300);
+    await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 300);
     await pg(p, () => window.__sys.setBackground(true)); await wait(p, 300);
 
     /* ===== ongoing-call notification + chip + shade ===== */
@@ -136,14 +136,14 @@ const drawer = async (p, f) => { await p.getByRole('button', { name: 'Simulation
     await p.locator('[data-statusbar] .chip').click();
     await p.waitForSelector('.callscreen'); await wait(p, 300);
     ok('chip: returns to the in-app call screen', await until(p, () => !document.querySelector('[data-os=home]'), 3000) && (await phase(p)) === 'active');
-    await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 300);
+    await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 300);
     await drawer(p, async () => { await p.getByRole('switch', { name: 'Tinline in background' }).click(); });
     await drawer(p, async () => { await p.getByRole('button', { name: 'Pull down notifications' }).click(); });
     await p.waitForSelector('[data-notice=ongoing]'); await wait(p, 400);
     await p.locator('[data-notice=ongoing] .main').click();
     await p.waitForSelector('.callscreen'); await wait(p, 300);
     ok('shade: tapping the notification returns to the in-app call screen', await until(p, () => !document.querySelector('[data-os=shade], [data-os=home]'), 1500) && (await phase(p)) === 'active');
-    await p.getByRole('button', { name: 'Minimize call' }).click();
+    await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click();
     await drawer(p, async () => { await p.getByRole('switch', { name: 'Tinline in background' }).click(); });
     await drawer(p, async () => { await p.getByRole('button', { name: 'Pull down notifications' }).click(); });
     await p.waitForSelector('[data-notice=ongoing]'); await wait(p, 400);
@@ -248,7 +248,7 @@ const drawer = async (p, f) => { await p.getByRole('button', { name: 'Simulation
         ok('desktop toast click: restores the window to the in-app incoming screen', (await n(p, '[data-os=desktop]')) === 0 && (await n(p, '[data-os=toast]')) === 0 && /Incoming call/.test(await p.locator('.callscreen .status .msg').innerText()));
         await p.getByRole('button', { name: 'Answer' }).click();
         await until(p, () => window.__pg.call.phase === 'active'); await wait(p, 300);
-        await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 300);
+        await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 300);
         await drawer(p, async () => { await p.getByRole('switch', { name: 'Window minimised' }).click(); });
         await p.waitForSelector('[data-os=mini]'); await wait(p, 1500);
         t = await p.locator('[data-os=mini]').innerText();
@@ -259,7 +259,7 @@ const drawer = async (p, f) => { await p.getByRole('button', { name: 'Simulation
         await p.locator('[data-os=mini] .open').click();
         await p.waitForSelector('.callscreen'); await wait(p, 300);
         ok('desktop mini window: click restores the window to the call screen', await until(p, () => !document.querySelector('[data-os=desktop], [data-os=mini]'), 1500) && (await phase(p)) === 'active');
-        await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 300);
+        await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 300);
         await drawer(p, async () => { await p.getByRole('switch', { name: 'Window minimised' }).click(); });
         await p.waitForSelector('[data-os=mini]');
         await p.locator('[data-os=mini] [aria-label="Hang up"]').click();
@@ -269,7 +269,7 @@ const drawer = async (p, f) => { await p.getByRole('button', { name: 'Simulation
         ok('desktop toast decline: declined record, toast gone', (await recs(p, 'arjun'))[0]?.outcome === 'declined' && (await n(p, '[data-os=toast]')) === 0);
         await pg(p, () => window.__pg.call.place('arjun')); await pg(p, () => window.__pg.call.remote('answer'));
         await until(p, () => window.__pg.call.phase === 'active'); await wait(p, 1500);
-        await p.getByRole('button', { name: 'Minimize call' }).click().catch(() => {});
+        await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click().catch(() => {});
         await shot(p, `desktop-mini-${tn}`);
         await pg(p, () => window.__pg.call.hangup()); await idle(p);
       }

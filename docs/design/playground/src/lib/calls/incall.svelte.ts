@@ -41,6 +41,8 @@ class InCall {
   /** ← on the call screen (and Escape). */
   goBack() {
     call.minimize();
+    // Focus follows the call to its strip (otherwise it drops to the page when the call screen leaves).
+    setTimeout(() => document.querySelector<HTMLElement>('[data-callstrip] .open')?.focus(), 0);
     if (this.back === 'chat' && prefs.form === 'android') this.openTheirChat();
   }
   /** The Message button. */

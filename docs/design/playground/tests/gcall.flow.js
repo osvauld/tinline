@@ -56,8 +56,8 @@ const recs = (p, id) => ev(p, (id) => window.__pg.db.chats.find((c) => c.id === 
     await ev(p, () => { for (const id of ['sam', 'meera', 'priya', 'leo', 'kavya']) window.__gc.setSpeaking(id, true); });
     await wait(p, 900);
     const sp = await ev(p, () => window.__gc.loud.filter((x) => x !== 'me'));
-    ok('speaking: the host forwards at most K=3 (a computer host)', sp.length === 3, JSON.stringify(sp));
-    ok('speaking: exactly those tiles are lit', (await p.locator('[data-gcall] .tile.speaking').count()) === 3);
+    ok('speaking: a computer host forwards every speaker (Q2)', sp.length === 5, JSON.stringify(sp));
+    ok('speaking: exactly those tiles are lit', (await p.locator('[data-gcall] .tile.speaking').count()) === 5);
     ok('speaking: a speaking line names them', /speaking/.test(await p.locator('[data-gcall] .spk').innerText()));
     await ev(p, () => { for (const id of ['sam', 'meera', 'priya', 'leo', 'kavya']) window.__gc.setSpeaking(id, false); });
     ok('speaking: quiet again, nobody lit', await until(p, () => document.querySelectorAll('[data-gcall] .tile.speaking').length === 0, null, 4000));
@@ -77,7 +77,7 @@ const recs = (p, id) => ev(p, (id) => window.__pg.db.chats.find((c) => c.id === 
     ok('info: Escape closes it and the call stays', await until(p, () => !document.querySelector('[data-gcall] .info'), null, 4000) && (await gphase(p)) === 'active');
 
     /* ---- minimise and restore ---- */
-    await p.getByRole('button', { name: 'Minimize call' }).click();
+    await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click();
     await p.waitForSelector('[data-gstrip]');
     ok('minimise: the strip shows the group and a timer', /Weekend hike/.test(await p.locator('[data-gstrip]').innerText()) && !(await p.locator('[data-gcall]').count()));
     ok('minimise: the strip carries the call, so the join banner is gone', (await p.locator('[data-gbanner]').count()) === 0);
@@ -95,8 +95,8 @@ const recs = (p, id) => ev(p, (id) => window.__pg.db.chats.find((c) => c.id === 
     await p.locator('[data-gcall]').getByRole('button', { name: 'Leave call' }).click();
     ok('leave: screen goes', await until(p, () => !document.querySelector('[data-gcall]'), null, 3000));
     ok('leave: back to idle', await until(p, () => window.__gc.phase === 'idle', null, 3000));
-    const r = await recs(p, 'hike');
-    ok('record: one "Group call" record, from me', r.length === 1 && r[0].group === true && r[0].direction === 'out' && r[0].from === 'me', JSON.stringify(r));
+    const r = (await recs(p, 'hike')).filter((x) => x.from === 'me');   // the seed holds two earlier group calls from others
+    ok('record: one "Group call" record, from me', r.length === 1 && r[0].group === true && r[0].direction === 'out', JSON.stringify(r));
     ok('record: the pill reads "Group call · …"', /Group call · \d+ s|Group call · \d+ min/.test(await p.locator('.callrec .pill').first().innerText()));
     ok('call goes on without me (others still in)', await ev(p, () => !!window.__gc.liveFor('hike') && !window.__gc.liveFor('hike').parts.includes('me')));
     ok('banner: Join is offered again', (await p.locator('[data-gbanner] button', { hasText: 'Join' }).count()) === 1);

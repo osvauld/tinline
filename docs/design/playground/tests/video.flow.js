@@ -143,7 +143,7 @@ async function scenario(b, form, dark, assert) {
 
   /* --- minimise --- */
   await V(p, () => { window.__pgVid.hideMs = 60000; window.__pgVid.setPeerCam(true); }); await wait(p, 500);
-  await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 700);
+  await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 700);
   if (form === 'android') {
     T('android minimised: floating video tile plus the strip', (await p.locator('[data-minivideo]').count()) === 1 && (await p.locator('[data-callstrip]').count()) === 1);
     await shot(p, `${tag}-11-minimised`);
@@ -181,7 +181,7 @@ async function scenario(b, form, dark, assert) {
     let p = await open(b, 'android', 'chat/arjun'); pages.push(p);
     await V(p, () => window.__pg.call.receive('sana', true));
     await wait(p, 500);
-    ok('incoming video: banner says "Video call"', /Video call/.test(await p.locator('[data-incoming-alert]').innerText()));
+    ok('incoming video: banner says "video call"', /video call/i.test(await p.locator('[data-incoming-alert]').innerText()));
     await shot(p, 'android-light-13-incoming-banner');
     await p.locator('[data-incoming-alert] .open').click(); await wait(p, 500);
     ok('incoming video: call screen says "Incoming video call"', /Incoming video call/.test(await p.locator('.callscreen .status').innerText()));

@@ -178,7 +178,7 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
       const t = `${form} ${dark ? 'dark' : 'light'}`, s = `${form}-${dark ? 'dark' : 'light'}`;
       p = await mk(form, { dark });
       await active(p);
-      await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 600);
+      await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 600);
       await pg(p, () => window.__pg.call.receive('sana')); await p.waitForSelector('[data-incoming-alert]'); await wait(p, 600);
       const t1 = await p.locator('[data-incoming-alert]').innerText();
       ok(`${t} minimised: banner says who, during your call, Decline / End & answer; the strip stays`, /Sana Rao/.test(t1) && /during your call/.test(t1) && (await p.locator('[data-incoming-alert]').getByRole('button', { name: 'End and answer' }).count()) === 1 && (await n(p, '[data-callstrip]')) === 1 && await settled(p, '[data-waiting]', 0), t1);
@@ -186,7 +186,7 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
       await shot(p, `strip-banner-${s}`);
       await p.locator('[data-incoming-alert] .open').click(); await p.waitForSelector('.callscreen'); await wait(p, 500);
       ok(`${t} minimised: tapping the banner opens the call screen with the card`, await settled(p, '[data-waiting]', 1) && await settled(p, '[data-incoming-alert]', 0));
-      await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 500);
+      await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 500);
       await p.locator('[data-incoming-alert]').getByRole('button', { name: 'End and answer' }).click();
       ok(`${t} minimised: End & answer from the banner connects Sana`, await until(p, () => window.__pg.call.phase === 'active' && window.__pg.call.peer === 'sana') && await settled(p, '[data-incoming-alert]', 0));
       await pg(p, () => window.__pg.call.hangup()); await idle(p);
@@ -231,7 +231,8 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
     await pg(p, () => window.__pg.call.receive('sana')); await p.waitForSelector('[data-os=headsup]'); await wait(p, 500);
     await shot(p, 'headsup-waiting-android-dark');
     await p.locator('[data-os=headsup]').getByRole('button', { name: 'End & answer' }).click();
-    ok('heads-up: End & answer answers Sana and brings the in-call screen forward', await until(p, () => window.__pg.call.phase === 'active' && window.__pg.call.peer === 'sana') && (await n(p, '.callscreen')) === 1 && (await n(p, '[data-os=headsup]')) === 0);
+    // The heads-up fades out (its leave transition), so wait for it to be gone rather than reading it at once.
+    ok('heads-up: End & answer answers Sana and brings the in-call screen forward', await until(p, () => window.__pg.call.phase === 'active' && window.__pg.call.peer === 'sana' && document.querySelectorAll('.callscreen').length === 1 && !document.querySelector('[data-os=headsup]')));
     await pg(p, () => window.__pg.call.hangup()); await idle(p);
     await p.close();
 
@@ -246,7 +247,7 @@ const rect = (p, sel) => p.locator(sel).first().evaluate((e) => { const r = e.ge
       ok(`locked (${dark ? 'dark' : 'light'}): the in-call screen over the lock shows the same card`, (await n(p, '[data-waiting]')) === 1 && await pg(p, () => window.__sys.locked) && (await p.locator('[data-waiting]').evaluate((e) => !e.closest('[data-os]'))));
       await shot(p, `lock-incall-card-${dark ? 'dark' : 'light'}`);
       if (!dark) {
-        await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 600);
+        await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 600);
         ok('locked + minimised: the lock screen lists the waiting notification', (await n(p, '[data-os=lock] [data-notice=waiting]')) === 1);
         await shot(p, 'lock-waiting-notice-light');
       }
