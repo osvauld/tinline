@@ -75,7 +75,7 @@ fn dump_vectors() {
     p("X_PUB_B", &ecies::public_key(&seq(0x80)));
     p(
         "X_SHARED",
-        &ecies::ecdh(&seq(0x40), &ecies::public_key(&seq(0x80))),
+        ecies::ecdh(&seq(0x40), &ecies::public_key(&seq(0x80))).expose(),
     );
     p("AEAD_CT", &aead::encrypt(&KEY, PLAIN).unwrap());
     p(
@@ -141,8 +141,8 @@ fn x25519_vectors() {
     let (a, b) = (seq(0x40), seq(0x80));
     assert_eq!(hex(&ecies::public_key(&a)), X_PUB_A);
     assert_eq!(hex(&ecies::public_key(&b)), X_PUB_B);
-    assert_eq!(hex(&ecies::ecdh(&a, &arr32(X_PUB_B))), X_SHARED);
-    assert_eq!(hex(&ecies::ecdh(&b, &arr32(X_PUB_A))), X_SHARED);
+    assert_eq!(hex(ecies::ecdh(&a, &arr32(X_PUB_B)).expose()), X_SHARED);
+    assert_eq!(hex(ecies::ecdh(&b, &arr32(X_PUB_A)).expose()), X_SHARED);
 }
 
 #[test]

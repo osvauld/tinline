@@ -12,6 +12,7 @@ argon2.workspace = true
 ed25519-dalek.workspace = true
 x25519-dalek.workspace = true
 getrandom = "0.4"
+blake3 = "1"
 zeroize = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
