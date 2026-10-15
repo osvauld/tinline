@@ -76,10 +76,37 @@ impl Node {
         self.inner.gcall_set_mic_muted(muted)
     }
 
+    /// How long a started group call rings, in ms (apps ring up to this long from the moment
+    /// they hear the `Announced` event, and stop earlier on join, "Not now" or `Ended`).
+    pub fn group_call_ring_ms(&self) -> u64 {
+        GROUP_CALL_RING_MS
+    }
+
+    /// Whether the announced call `call_id` of the group should ring this device: it is known
+    /// and still running, somebody else started it, that DID is not blocked by me or blocking
+    /// me, and this device is on no group call. The apps add what only they know: a 1:1 call in
+    /// progress, and a muted group where the app has a per-group mute.
+    pub fn group_call_rings(&self, group_id: String, call_id: String) -> bool {
+        let Ok(core) = self.inner.group_core() else { return false };
+        let starter = self.inner.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(_, s)| s.starter_did.clone());
+        let Some(starter) = starter else { return false };
+        if starter == core.did || self.inner.gcall.busy() {
+            return false;
+        }
+        let s = self.inner.shared.lock();
+        !s.state.blocked.contains(&starter) && !crate::block::blocked_me(&s.state, &starter)
+    }
+
     /// The calls going on in the group, as this device knows them.
     pub fn group_calls(&self, group_id: String) -> Result<Vec<GroupCall>, Error> {
         let core = self.inner.group_core()?;
         Ok(self.inner.group_calls_list(&core, &group_id))
+    }
+
+    /// Group calls this device was in or missed, newest first; `None` lists every group (the
+    /// Calls tab), `Some` one group (its thread). Local to this device.
+    pub fn group_call_history(&self, group_id: Option<String>) -> Result<Vec<crate::group::calllog::GroupCallRecord>, Error> {
+        self.inner.group_core()?.store.clog_list(group_id.as_deref())
     }
 
     /// Test hook: the DIDs whose fresh `CallHostStatus` this device holds for the group.

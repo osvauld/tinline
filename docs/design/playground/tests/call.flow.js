@@ -270,7 +270,7 @@ async function contrast(p) {
     await until(p, () => window.__pg.call.phase === 'active', 6000);
     // minimize
     const minRun = p.evaluate(() => window.__samp.run(5200));
-    await p.getByRole('button', { name: 'Minimize call' }).click();
+    await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click();
     s = await minRun;
     const fade = s.filter((x) => x.op !== null && x.op < 1);
     ok('minimize: overlay fades and moves up through intermediate values', distinct(s.filter((x) => x.op !== null), 'op') >= 6 && Math.min(...s.filter((x) => x.op !== null).map((x) => x.ty)) < -8 && maxStep(s, 'op') <= .5, `distinct ${distinct(s, 'op')}`);
@@ -278,9 +278,10 @@ async function contrast(p) {
     const firstStrip = s.findIndex((x) => x.h > 0), firstFade = s.findIndex((x) => x.op !== null && x.op < .99);
     ok('minimize: strip starts after the overlay starts leaving', firstStrip > firstFade && firstFade >= 0, `${firstStrip} vs ${firstFade}`);
     await wait(p, 200);
-    ok('focus returned to the Call button after minimizing', await pg(p, () => document.activeElement?.getAttribute('aria-label') === 'Call'));
-    ok('strip: name, timer and End', await (async () => { const t = await p.locator('[data-callstrip]').innerText(); return /Arjun/.test(t) && /\d\d:\d\d/.test(t) && /End/.test(t); })());
-    ok('strip: sits above the app bar (in flow, pushes the conversation down)', await pg(p, () => { const st = document.querySelector('[data-callstrip]').getBoundingClientRect(), h = document.querySelector('.conv .bar').getBoundingClientRect(); return st.bottom <= h.top + 1; }));
+    ok('focus lands on the strip after minimizing', await pg(p, () => !!document.activeElement?.closest('[data-callstrip]')));
+    // Android strip (picked 2026-10-14, "the middle one"): name and timer, no End (it sits at the bottom, under the chat).
+    ok('strip: name and timer', await (async () => { const t = await p.locator('[data-callstrip]').innerText(); return /Arjun/.test(t) && /\d\d:\d\d/.test(t); })());
+    ok('strip: sits at the bottom, under the conversation (away from the ear)', await pg(p, () => { const st = document.querySelector('[data-callstrip]').getBoundingClientRect(), h = document.querySelector('.conv .bar').getBoundingClientRect(); return st.top > h.bottom; }));
     await shot(p, 'strip-chat-android-light');
     await pg(p, () => window.__pg.setTimeScale(1));
     // leave the conversation: the call stays
@@ -311,7 +312,7 @@ async function contrast(p) {
     p = await mk('desktop', 'chat/arjun');
     await startFromChat(p);
     await pg(p, () => window.__pg.call.remote('answer')); await until(p, () => window.__pg.call.phase === 'active');
-    await p.getByRole('button', { name: 'Minimize call' }).click(); await wait(p, 600);
+    await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click(); await wait(p, 600);
     ok('desktop strip: top of the list/detail area, left edge at the list pane', await pg(p, () => { const st = document.querySelector('[data-callstrip]').getBoundingClientRect(), lp = document.querySelector('.listpane').getBoundingClientRect(); return Math.abs(st.left - lp.left) < 2 && st.bottom <= lp.top + 1; }));
     await shot(p, 'strip-desktop-light');
     await p.locator('[data-callstrip] .end').click(); await idle(p);
@@ -361,15 +362,17 @@ async function contrast(p) {
     })(), JSON.stringify(await p.locator('ul.list li').allInnerTexts()));
     ok('calls tab: missed row is danger-coloured (and says Missed)', await p.evaluate(() => { const s = [...document.querySelectorAll('ul.list .sub')].find((e) => /Missed/.test(e.textContent)); return !!s && getComputedStyle(s).color === getComputedStyle(document.documentElement).getPropertyValue('--danger') || getComputedStyle(s).color !== getComputedStyle(document.querySelector('ul.list .sub:not(.bad)')).color; }));
     await shot(p, 'calls-tab-android-light');
-    await p.getByRole('button', { name: 'Call Arjun Oommen back' }).first().click();
+    await p.getByRole('button', { name: /^Arjun Oommen, .*\. Call$/ }).first().click();
     ok('calls tab: call-back starts a call', await until(p, () => window.__pg.call.phase === 'outgoing' && window.__pg.call.peer === 'arjun'));
     await pg(p, () => window.__pg.call.hangup()); await idle(p);
     ok('calls tab: updates live (4 rows after the call-back, newest first = cancelled)', await (async () => { await wait(p, 200); const rows = await p.locator('ul.list li').allInnerTexts(); return rows.length === 4 && /Cancelled/.test(rows[0]); })());
-    await p.locator('ul.list .row').nth(1).click(); await wait(p, 500);
-    ok('calls tab: tapping a row opens the chat', await p.locator('.conv').count() === 1);
+    // Calls tab (2026-10-14): the row calls; the avatar opens their profile ("chats is a different thing").
+    await p.locator('ul.list .pf').nth(1).click(); await wait(p, 500);
+    ok('calls tab: the avatar opens their profile', /#\/contact\//.test(p.url()));
     await pg(p, () => { const c = window.__pg.db.chats.find((c) => c.id === 'dev'); c.messages.push({ id: 'zz1', from: 'dev', at: Date.now() + 9e8, text: '', call: { kind: 'voice', outcome: 'missed', durationS: 0, direction: 'in' } }); });
     await pg(p, () => { location.hash = '#/calls'; }); await wait(p, 500);
-    ok('calls tab: call-back for message-only dev is aria-disabled', (await p.getByRole('button', { name: 'Call Dev Patel back' }).getAttribute('aria-disabled')) === 'true');
+    await p.getByRole('button', { name: /^Dev Patel, .*Messages only/ }).first().click(); await wait(p, 400);
+    ok('calls tab: message-only dev never calls; the row opens his profile', (await phase(p)) === 'idle' && /#\/contact\/dev/.test(p.url()));
     await p.close();
 
     /* ===== field continuity across phase changes ===== */
@@ -414,7 +417,7 @@ async function contrast(p) {
     ok('reduced: open is opacity only (no translate, no scale) and ends at opacity 1', ro.every((x) => Math.abs(x.ty) < .01 && Math.abs(x.sc - 1) < .001) && ro[ro.length - 1].op === 1);
     await pg(p, () => window.__pg.call.remote('answer')); await until(p, () => window.__pg.call.phase === 'active');
     const rMin = p.evaluate(() => window.__samp.run(1000));
-    await p.getByRole('button', { name: 'Minimize call' }).click();
+    await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click();
     s = await rMin;
     ok('reduced: minimize has no translate and no height growth animation (opacity only)', s.filter((x) => x.op !== null).every((x) => Math.abs(x.ty) < .01) && distinct(s, 'h', 0) <= 3, `h distinct ${distinct(s, 'h', 0)}`);
     await p.locator('[data-callstrip] .end').click(); await idle(p);

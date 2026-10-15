@@ -11,6 +11,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -82,6 +84,16 @@ object FingerprintCache {
         val small = sizeDp < SMALL_BELOW_DP
         val v = cache.getOrPut((if (small) "s" else "l") + did) {
             runCatching { uniffi.p2pcore.avatarArt(did, small)?.let(::build) }.getOrNull() ?: none
+        }
+        return v as? FingerprintDrawing
+    }
+
+    /** The drawing for a group id (its own fingerprint context; never a DID), or null when the native library is not loaded. */
+    fun ofGroup(gid: String?, sizeDp: Float): FingerprintDrawing? {
+        if (gid.isNullOrEmpty()) return null
+        val small = sizeDp < SMALL_BELOW_DP
+        val v = cache.getOrPut((if (small) "gs" else "gl") + gid) {
+            runCatching { build(uniffi.p2pcore.groupAvatarArt(gid, small)) }.getOrNull() ?: none
         }
         return v as? FingerprintDrawing
     }
@@ -171,6 +183,37 @@ fun PgAvatar(name: String, hue: Int, size: Dp, person: String? = null, modifier:
             LaunchedEffect(image) { a.animateTo(1f, tween(PgMotion.CROSSFADE, easing = PgMotion.easeOut)) }
             Image(image, null, Modifier.fillMaxSize().graphicsLayer { this.alpha = a.value }, contentScale = ContentScale.Crop)
             Box(Modifier.fillMaxSize().border(1.dp, if (c.dark) Color.White.copy(alpha = .12f) else Color.Black.copy(alpha = .1f), CircleShape))
+        }
+    }
+}
+
+/** A person's avatar that opens their photo full screen when tapped (only when a photo is ready; the mandala or initials
+ *  don't open anything). Used on the contact page and my own profile. */
+@Composable
+fun ViewablePgAvatar(name: String, hue: Int, size: Dp, person: String?, modifier: Modifier = Modifier) {
+    val view = rememberProfileView(person)
+    var open by remember { mutableStateOf(false) }
+    val image = view?.image
+    val tap = if (image != null) Modifier.clip(CircleShape).clickable(onClickLabel = "View photo", role = androidx.compose.ui.semantics.Role.Image) { open = true } else Modifier
+    PgAvatar(name, hue, size, person = person, modifier = modifier.then(tap))
+    if (open && image != null) ProfilePhotoViewer(name, image) { open = false }
+}
+
+/** The photo, full screen on black, fit to the screen; the name at the top; tap anywhere, the close button or Back to go. */
+@Composable
+fun ProfilePhotoViewer(name: String, image: androidx.compose.ui.graphics.ImageBitmap, onClose: () -> Unit) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClickLabel = "Close", onClick = onClose)) {
+            Image(image, "$name’s photo", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 12.dp), verticalAlignment = Alignment.Top,
+            ) {
+                Text(name, Modifier.weight(1f).padding(start = 12.dp, top = 12.dp), color = Color.White, maxLines = 1,
+                    style = TextStyle(fontFamily = Figtree, fontSize = 17.sp, fontWeight = FontWeight.SemiBold))
+                Box(Modifier.size(48.dp).clip(CircleShape).clickable(onClickLabel = "Close", onClick = onClose), contentAlignment = Alignment.Center) {
+                    androidx.compose.material3.Icon(Pg.X, "Close", tint = Color.White, modifier = Modifier.size(24.dp))
+                }
+            }
         }
     }
 }

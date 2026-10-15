@@ -7,6 +7,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -95,5 +100,35 @@ private fun StripRow(icon: ImageVector, name: String, status: String, slim: Bool
         Text(name, Modifier.weight(1f), style = PgBodyText.copy(fontSize = if (slim) 13.sp else 15.sp, fontWeight = FontWeight.SemiBold),
             color = c.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(status, style = PgBodyText.copy(fontSize = if (slim) 11.sp else 13.sp, fontFeatureSettings = "tnum"), color = c.onAccent, maxLines = 1)
+    }
+}
+
+/**
+ * MiniVideo.svelte: the call is minimised during video, so a small floating tile of their picture sits over the app, in
+ * addition to the strip: 92 dp wide, 3:4, radius 16, a 1.5 dp light ring, 12 dp from the end and 92 dp above the bottom
+ * of the content (the strip is below it). Tap it to return to the call. It pops in (.9 to 1, with a fade).
+ *
+ * My own picture is not offered when theirs is off (the playground does): the camera stops with the call screen on the
+ * phone ("no capture in the background"), so there is no picture of mine to show here.
+ */
+@Composable
+fun MiniVideo(app: P2pApp, modifier: Modifier = Modifier) {
+    val ctx = LocalContext.current
+    val u by app.calls.ui.collectAsState()
+    val vi by app.video.info.collectAsState()
+    val live = u?.takeIf { it.state is CallState.Active && it.info.callId == vi?.callId }
+    val theirs = vi?.let { it.negotiated && it.remoteCamera } == true
+    val show = live != null && theirs
+    val name = live?.info?.peerName?.ifBlank { "Unknown" } ?: ""
+    val frozen = live?.stats?.reconnecting == true
+    AnimatedVisibility(show, modifier, enter = fadeIn(tween(200, easing = Motion.EaseOut)) + scaleIn(tween(200, easing = Motion.EaseOut), initialScale = 0.9f),
+        exit = fadeOut(tween(140, easing = Motion.CubicIn)) + scaleOut(tween(140, easing = Motion.CubicIn), targetScale = 0.9f)) {
+        val shape = SmoothCornerShape(16.dp)
+        Box(Modifier.width(92.dp).aspectRatio(3f / 4f).depth(Depth.Pop, shape).clip(shape).background(Color(0xFF15171C))
+            .border(1.5.dp, Color.White.copy(alpha = 0.38f), shape)
+            .clickable(onClickLabel = "Return to video call with $name", role = Role.Button) { ctx.startActivity(Intent(ctx, CallActivity::class.java)) }) {
+            RemoteVideo(app, app.calls, Modifier.fillMaxSize())
+            if (frozen) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)))
+        }
     }
 }

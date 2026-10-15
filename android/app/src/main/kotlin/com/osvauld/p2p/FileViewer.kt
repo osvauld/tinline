@@ -13,8 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -120,14 +118,14 @@ fun FileViewer(m: Message, plan: OpenPlan, source: ChatSource, onClose: () -> Un
                 val sub = if (s is Loaded.Pdf) "Page $page of ${s.doc.pageCount}" else viewerWhen(m.at.toLong(), System.currentTimeMillis())
                 Text(sub, style = TinType.caption, color = Dim)
             }
-            IconBtn(Icons.Rounded.Share, "Share", onShare, tint = Color.White)
-            IconBtn(Icons.Rounded.SaveAlt, "Save to phone", onSave, tint = Color.White)
+            IconBtn(PgIcons.Share, "Share", onShare, tint = Color.White)
+            IconBtn(PgIcons.Save, "Save to phone", onSave, tint = Color.White)
         }
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             when (s) {
                 Loaded.Loading -> Text("Opening…", style = TinType.bodyM, color = Dim)
                 is Loaded.Error -> Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Icon(Icons.Rounded.ErrorOutline, null, tint = Dim)
+                    Icon(PgIcons.Warning, null, tint = Dim)
                     Text(s.msg, style = TinType.bodyL, color = Color.White)
                     Box(Modifier.clip(RoundedCornerShape(50)).background(Color.White).clickable(role = Role.Button, onClick = onSave).padding(horizontal = 24.dp, vertical = 12.dp)) {
                         Text("Save to phone", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.Black)

@@ -4,7 +4,8 @@
   import Btn from '../groups/Btn.svelte';
   import PassField from '../people/PassField.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
-  import { gateSim } from '../../lib/model/actions/gate.svelte';
+  import { gateSim, canRemember, rememberCopy } from '../../lib/model/actions/gate.svelte';
+  import Switch from '../../lib/ui/Switch.svelte';
 
   let cur = $state(''), next = $state(''), again = $state('');
   let errs = $state({ cur: '', next: '', again: '' });
@@ -26,7 +27,18 @@
 
 <div class="pf-scroll" data-passphrase-page>
 <div class="pf-col">
-  <section class="pf-sec first">
+  <!-- Remember (2026-10-15): the same switch as Unlock. A computer without a keyring says why it keeps asking. -->
+  <section class="pf-sec first" data-remember>
+    <div class="pf-card">
+      {#if canRemember()}
+        {@const rc = rememberCopy()}
+        <label class="pf-act sw"><Icon name="key" size={20} /><span class="t"><b>{rc.label}</b><small>{rc.sub}</small></span><Switch label={rc.label} bind:checked={gateSim.remembered} /></label>
+      {:else}
+        <div class="pf-act sw"><Icon name="key" size={20} /><span class="t"><b>Remember on this computer</b><small>This computer has no keyring, so Tinline asks for your passphrase each time it starts.</small></span></div>
+      {/if}
+    </div>
+  </section>
+  <section class="pf-sec">
     <form class="f" onsubmit={(e) => { e.preventDefault(); save(); }}>
       {#if gateSim.hasPassphrase}<PassField id="pc-cur" bind:value={cur} error={errs.cur} label="Current passphrase" oninput={clear} />{/if}
       <PassField id="pc-new" bind:value={next} error={errs.next} label="New passphrase" hint="At least 8 characters" oninput={clear} />
@@ -42,6 +54,7 @@
 </div>
 
 <style>
+  .sw { cursor: default; }
   .first { margin-block-start: 16px; }
   .f { display: grid; gap: 6px; }
   .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block-start: 4px; }

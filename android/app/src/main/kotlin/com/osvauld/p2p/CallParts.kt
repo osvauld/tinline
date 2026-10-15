@@ -13,6 +13,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import kotlin.math.min
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -126,36 +129,69 @@ private fun RowScope.CallControl(label: String, caption: String, icon: ImageVect
     }
 }
 
-/** Voice focus geometry; no background texture is chosen until Fog/Clouds is decided and measured. */
+/**
+ * Voice focus geometry on the call's colour field (Fog, as on the playground and desktop): the field state is
+ * mapped as call_screen.rs does (incoming, outgoing while dialling, connecting while ringing, active, waiting,
+ * reconnecting), anchored at the avatar, with calm patches behind the name/status block and the controls in dark mode.
+ */
 @Composable
 internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Boolean, secs: Long = 0,
     reconnecting: Boolean = false, problem: String? = null, incoming: Boolean = false,
     onMinimise: (() -> Unit)? = null, onInfo: (() -> Unit)? = null, signal: Int = 0, direct: Boolean? = null,
-    onMessage: (() -> Unit)? = null, controls: @Composable () -> Unit) {
+    onMessage: (() -> Unit)? = null, waiting: Boolean = false, muted: Boolean = false,
+    waitingCard: (@Composable (Modifier) -> Unit)? = null, controls: @Composable () -> Unit) {
     val c = Tin.c
-    Column(Modifier.fillMaxSize().background(c.bg).systemBarsPadding().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 36.dp),
-        horizontalAlignment = Alignment.CenterHorizontally) {
-        CallTop(active, ringing, onMinimise, onInfo, reconnecting, incoming, signal, direct, onMessage)
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Avatar(name, did, 112.dp)
-            Text(name, Modifier.padding(top = 22.dp).fillMaxWidth().heightIn(min = 34.dp),
-                style = TinType.h1.copy(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold),
-                color = c.ink, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Box(Modifier.padding(top = 6.dp).heightIn(min = 30.dp), contentAlignment = Alignment.Center) {
-                Text(if (incoming) "Tinline voice call" else callStatus(active, ringing, reconnecting, secs),
-                    style = TinType.bodyL.copy(fontSize = if (active && !reconnecting) 20.sp else 17.sp, lineHeight = 30.sp,
-                        fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum"), color = c.ink, maxLines = 1)
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    var root by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    var avatar by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    var text by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    var ctrl by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    val fieldState = when {
+        incoming -> CallFieldState.Incoming
+        active && waiting -> CallFieldState.Waiting
+        active && reconnecting -> CallFieldState.Reconnecting
+        active -> CallFieldState.Active
+        ringing -> CallFieldState.Connecting
+        else -> CallFieldState.Outgoing
+    }
+    fun centre(r: androidx.compose.ui.geometry.Rect) = androidx.compose.ui.geometry.Offset((r.center.x - root.left) / density, (r.center.y - root.top) / density)
+    val calm = if (text.isEmpty || ctrl.isEmpty) emptyList() else listOf(
+        centre(text).let { FieldCalm(it.x, it.y, min(text.width / density, 420f) / 2f, text.height / density / 2f) },
+        centre(ctrl).let { FieldCalm(it.x, it.y, min(ctrl.width / density, 340f) / 2f, ctrl.height / density / 2f) },
+    )
+    Box(Modifier.fillMaxSize().background(c.bg).onGloballyPositioned { root = it.boundsInRoot() }) {
+        if (!root.isEmpty) CallFieldBackground(fieldState, muted, if (avatar.isEmpty) androidx.compose.ui.geometry.Offset(root.width / density / 2f, root.height / density * .3f) else centre(avatar), calm)
+        Column(Modifier.fillMaxSize().systemBarsPadding().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 36.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            CallTop(active, ringing, onMinimise, onInfo, reconnecting, incoming, signal, direct, onMessage)
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Box(Modifier.onGloballyPositioned { avatar = it.boundsInRoot() }) { Avatar(name, did, 112.dp) }
+                Column(Modifier.fillMaxWidth().onGloballyPositioned { text = it.boundsInRoot() }, horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(name, Modifier.padding(top = 22.dp).fillMaxWidth().heightIn(min = 34.dp),
+                        style = TinType.h1.copy(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold),
+                        color = c.ink, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Box(Modifier.padding(top = 6.dp).heightIn(min = 30.dp), contentAlignment = Alignment.Center) {
+                        Text(if (incoming) "Tinline voice call" else callStatus(active, ringing, reconnecting, secs),
+                            style = TinType.bodyL.copy(fontSize = if (active && !reconnecting) 20.sp else 17.sp, lineHeight = 30.sp,
+                                fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum"), color = c.ink, maxLines = 1)
+                    }
+                    // The path, on the main screen: honest, and About this call explains it.
+                    Text(if (active && !reconnecting) "End-to-end encrypted" + (direct?.let { if (it) " · Direct" else " · Relayed" } ?: "") else " ", Modifier.padding(top = 10.dp).heightIn(min = 18.dp),
+                        style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = c.ink, maxLines = 1)
+                    // Keep a two-line error cell even when there is no microphone/video problem.
+                    Text(problem ?: " ", Modifier.padding(top = 8.dp).fillMaxWidth().heightIn(min = 38.dp),
+                        style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 19.sp), color = c.er, maxLines = 2,
+                        overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+                }
             }
-            // The path, on the main screen: honest, and About this call explains it.
-            Text(if (active && !reconnecting) "End-to-end encrypted" + (direct?.let { if (it) " · Direct" else " · Relayed" } ?: "") else " ", Modifier.padding(top = 10.dp).heightIn(min = 18.dp),
-                style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = c.ink, maxLines = 1)
-            // Keep a two-line error cell even when there is no microphone/video problem.
-            Text(problem ?: " ", Modifier.padding(top = 8.dp).fillMaxWidth().heightIn(min = 38.dp),
-                style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 19.sp), color = c.er, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+            Box(Modifier.onGloballyPositioned { ctrl = it.boundsInRoot() }) { controls() }
         }
-        controls()
+        // WaitingCard: its bottom edge 22 dp above the controls, growing upward, so the avatar and name never move.
+        if (waitingCard != null) {
+            val above = if (ctrl.isEmpty || root.isEmpty) 150f else (root.bottom - ctrl.top) / density + 22f
+            waitingCard(Modifier.align(Alignment.BottomCenter).padding(start = 20.dp, end = 20.dp, bottom = above.dp))
+        }
     }
 }
 

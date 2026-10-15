@@ -7,6 +7,9 @@
   import IconButton from '../../lib/ui/IconButton.svelte';
   import Notifications from './Notifications.svelte';
   import Sounds from './Sounds.svelte';
+  import CallsVideo from './CallsVideo.svelte';
+  import Storage from './Storage.svelte';
+  import About from './About.svelte';
   import PermBanner from './PermBanner.svelte';
   import { problems } from './perms';
   import { db } from '../../lib/model/store.svelte';
@@ -15,7 +18,8 @@
   import { effectiveAvailability } from '../../lib/model/actions/profile';
   import { profileOf } from '../../lib/model/actions/profile.svelte';
   import { untilLabel } from '../profile/info';
-  import { gate, switchAccount } from '../../lib/model/actions/gate.svelte';
+  import { gate } from '../../lib/model/actions/gate.svelte';
+  import Names from './Names.svelte';
   import { prefs } from '../../lib/model/prefs.svelte';
 
   let { section }: { section?: string } = $props();
@@ -35,14 +39,18 @@
     { icon: 'shield', label: 'Privacy', go: () => nav.push({ name: 'privacy' }) },
     { icon: 'bell', label: 'Notifications', go: () => nav.push({ name: 'settings', section: 'notifications' }) },
     { icon: 'vol', label: 'Sounds', go: () => nav.push({ name: 'settings', section: 'sounds' }) },
+    { icon: 'video', label: 'Video', go: () => nav.push({ name: 'settings', section: 'video' }) },
+    { icon: 'save', label: 'Storage', go: () => nav.push({ name: 'settings', section: 'storage' }) },
+    { icon: 'info', label: 'About Tinline', go: () => nav.push({ name: 'settings', section: 'about' }) },
   ];
-  const title = $derived(section ? section[0].toUpperCase() + section.slice(1) : 'Settings');
+  const TITLES: Record<string, string> = { notifications: 'Notifications', sounds: 'Sounds', video: 'Video', storage: 'Storage', about: 'About Tinline' };
+  const title = $derived(section ? TITLES[section] ?? section : 'Settings');
 </script>
 
 <div class="pf" data-settings>
   <header class="pf-bar"><IconButton icon="back" label="Back" onclick={() => nav.back()} /><b>{title}</b></header>
   {#if section}
-    {#if section === 'notifications'}<Notifications />{:else if section === 'sounds'}<Sounds />{/if}
+    {#if section === 'notifications'}<Notifications />{:else if section === 'sounds'}<Sounds />{:else if section === 'video'}<CallsVideo />{:else if section === 'storage'}<Storage />{:else if section === 'about'}<About />{/if}
   {:else}
   <div class="pf-scroll">
   <div class="pf-col">
@@ -60,23 +68,7 @@
       </div>
     </section>
 
-    <section class="pf-sec" aria-label="Accounts on this device" data-accounts>
-      <div class="pf-card">
-        <div class="pf-act acc" aria-current="true">
-          <Avatar name={db.account.name} hue={db.account.hue} person="me" size={36} />
-          <span class="t"><b>{db.account.name}</b><small class="on">Selected · online</small></span>
-          <Icon name="check" size={18} />
-        </div>
-        {#each db.parked as a, i (a.name + i)}
-          <button type="button" class="pf-act press acc" onclick={() => switchAccount(i)} aria-label={`Switch to ${a.name}`}>
-            <Avatar name={a.name} hue={a.hue} size={36} />
-            <span class="t"><b>{a.name}</b><small>Paused · tap to switch</small></span>
-          </button>
-        {/each}
-        <button type="button" class="pf-act press" onclick={() => gate.beginAdd()}><Icon name="plus" size={20} /><span class="t"><b>Add another account</b></span><Icon name="chevr" size={18} class="chev" /></button>
-      </div>
-      <p class="accnote">Only the selected account is online on this {gate.noun}. Switching pauses the other one: it receives no calls until you select it again.</p>
-    </section>
+    <Names />
 
     <section class="pf-sec" aria-labelledby="ap-h">
       <h2 id="ap-h">Appearance</h2>
@@ -118,8 +110,5 @@
   .me .t b { font-size: var(--fs-title); line-height: 24px; }
   .avl { font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
   .avl.busy { color: var(--warn-ink); }
-  .acc { min-block-size: 60px; }
-  .acc .on { color: var(--accent-ink); font-weight: 600; }
-  .accnote { margin: 8px 16px 0; color: var(--muted); font-size: var(--fs-sub); line-height: 18px; }
   [data-settings-banners]:empty { display: none; }
 </style>

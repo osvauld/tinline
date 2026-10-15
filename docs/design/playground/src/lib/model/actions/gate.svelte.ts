@@ -3,6 +3,7 @@
    Mirrors the real onboarding order (Onboarding.kt / Unlock.kt on dev) except where noted in the sim notes.
    Not a `.ts` file: it holds runes, so it must be `.svelte.ts`. */
 import { db } from '../store.svelte';
+import { addOpenedName } from './names.svelte';
 import { clock } from '../clock.svelte';
 import { prefs } from '../prefs.svelte';
 import { WORDS } from '../../../screens/gate/wordlist';
@@ -51,8 +52,15 @@ export const gateSim = $state({
   maxTries: 5,              // DECIDED 2026-10-12: 5 wrong passphrases lock Unlock for 30 s (the core never locks out today; a core follow-up)
   lockSeconds: 30,
   kdfMs: 700,               // how long "Encrypting…/Unlocking…" takes (simulated Argon2)
-  remembered: true,         // the phone remembers the passphrase (Android Keystore)
+  remembered: true,         // this device remembers the passphrase (Android Keystore / desktop keyring)
+  keyring: true,            // desktop: a system keyring answers (Secret Service). None = Tinline keeps asking (its own Argon2id lock)
 });
+/** Can this device remember the passphrase? The phone always (Keystore); a computer only with a keyring. */
+export const canRemember = () => prefs.form === 'android' || gateSim.keyring;
+/** Copy for the remember switch, one place for Unlock and Settings. */
+export const rememberCopy = () => prefs.form === 'android'
+  ? { label: 'Remember on this phone', sub: 'Skips the passphrase when Tinline restarts, using the phone’s secure key store.' }
+  : { label: 'Remember on this computer', sub: 'Skips the passphrase when Tinline starts, using this computer’s keyring.' };
 
 class Gate {
   step = $state<Step>('welcome');
@@ -231,12 +239,8 @@ class Gate {
   /** End of every flow. */
   finish() {
     if (this.adding && this.name.trim()) {
-      /* Restore on a device that already has an account ADDS a second one (decided 2026-10-12): the current account is
-         parked, the new one is selected. Only the selected account is online. */
-      db.parked.push({ name: db.account.name, hue: db.account.hue, profile: db.account.profile });
-      db.account.name = this.name.trim();
-      db.account.hue = (db.account.hue + 2) % 6;
-      db.account.profile = undefined;
+      /* Adding a name on a device that already has one (decided 2026-10-12; 2026-10-14: the others stay online). */
+      addOpenedName(this.name.trim());
       db.account.gate = 'ready';
       this.enter('onboarding');
       return;
@@ -282,7 +286,7 @@ class Gate {
     await this.sleep(gateSim.kdfMs);
     this.busy = false;
     if (pass === gateSim.passphrase) {
-      gateSim.remembered = this.isAndroid ? this.remember : false;
+      gateSim.remembered = canRemember() ? this.remember : false;
       this.tries = 0;
       db.account.gate = 'ready';
       this.enter('onboarding');
@@ -302,14 +306,7 @@ class Gate {
   }
 }
 
-/** Select another account on this install; the one that was selected goes offline. */
-export function switchAccount(i: number) {
-  const o = db.parked[i];
-  if (!o) return;
-  const cur = { name: db.account.name, hue: db.account.hue, profile: db.account.profile };
-  db.account.name = o.name; db.account.hue = o.hue; db.account.profile = o.profile;
-  db.parked[i] = cur;
-}
+export { switchAccount } from './names.svelte';
 
 export function flowOf(s: Step): Flow {
   if (s === 'linkName' || s === 'link' || s === 'linkPass') return 'link';

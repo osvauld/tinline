@@ -6,9 +6,13 @@
 import { call, onRecord } from './call.svelte';
 import { gcall } from './gcall.svelte';
 import { clock } from '../model/clock.svelte';
-import { chat, db } from '../model/store.svelte';
+import { chat, db, ownerOf } from '../model/store.svelte';
+import { switchTo } from '../model/actions/names.svelte';
 import { prefs } from '../model/prefs.svelte';
 import { nav } from '../nav/router.svelte';
+import { onSocial, type Social } from '../model/social';
+import { emitFx } from '../fx/bus';
+import { pp } from '../model/actions/people.svelte';
 
 export interface Notice { id: number; kind: 'missed'; peer: string; count: number; at: number }
 
@@ -57,13 +61,33 @@ class System {
   openGroup(gid: string) { this.foreground(); if (chat(gid)) nav.open({ name: 'conversation', chat: gid }); }
   joinFromNotice(gid: string) { this.foreground(); gcall.join(gid); }
 
+  /** Contact requests, accepted requests and group invitations that arrived while Tinline was out of sight. */
+  social = $state<(Social & { id: number; at: number })[]>([]);
+  /** Out of sight: an OS notification. In front: no notification (requests and acceptances open their sheet; an
+      invitation knocks once and the Groups tab shows its dot). Groups follow Notifications › Groups. */
+  onSocial(e: Social) {
+    if (db.account.gate !== 'ready') return;
+    if (e.kind === 'invite' && !pp.notif.groups) return;
+    if (this.away) this.social.push({ ...e, id: ++uid, at: clock.now });
+    else if (e.kind === 'invite') emitFx({ type: 'request' });
+  }
+  openSocial(n: Social & { id: number }) {
+    this.social = this.social.filter((x) => x.id !== n.id);
+    this.foreground();
+    if (n.kind === 'invite') nav.setTab('groups');
+    else if (n.kind === 'accepted' && chat(n.who)) nav.open({ name: 'conversation', chat: n.who });   // the line is open: our chat
+    else nav.open({ name: 'contact', person: n.who });
+  }
+  dismissSocial(id: number) { this.social = this.social.filter((x) => x.id !== id); }
   dismiss(id: number) { this.notifications = this.notifications.filter((n) => n.id !== id); }
-  clearAll() { this.notifications = []; }
+  clearAll() { this.notifications = []; this.social = []; }
+  /** A notice for another of my names opens that name first. */
+  #openOwner(peer: string) { const o = ownerOf(peer); if (o) switchTo(db.others.indexOf(o)); }
   openMissed(n: Notice) {
-    this.dismiss(n.id); this.foreground();
+    this.dismiss(n.id); this.foreground(); this.#openOwner(n.peer);
     if (chat(n.peer)) nav.open({ name: 'conversation', chat: n.peer });
   }
-  callBack(n: Notice) { this.dismiss(n.id); this.foreground(); call.place(n.peer); }
+  callBack(n: Notice) { this.dismiss(n.id); this.foreground(); this.#openOwner(n.peer); call.place(n.peer); }
 
   /** A call record was written. A missed incoming call while the app is out of sight becomes a notification;
       later misses from the same person fold into it (Proposed, not decided). */
@@ -77,5 +101,10 @@ class System {
 
 export const system = new System();
 onRecord.add((id, dir, outcome) => system.record(id, dir, outcome));
+onSocial.add((e) => system.onSocial(e));
 
 if (typeof window !== 'undefined') (window as any).__sys = system;
+/** Test hook (captures): make people events arrive. Not used by the app. */
+import { receiveInvitation } from '../model/actions/groups';
+import { incomingRequest } from '../model/actions/people.svelte';
+if (typeof window !== 'undefined') (window as any).__soc = { invite: (by: string, g: string) => receiveInvitation(by, g), request: () => incomingRequest() };

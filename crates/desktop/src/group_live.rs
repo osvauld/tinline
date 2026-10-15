@@ -45,6 +45,16 @@ pub trait GroupApi {
     fn group_appoint_host(&self, id: String, did: String, device_id: String) -> Result<(), Error>;
     fn group_revoke_host(&self, id: String, did: String, device_id: String) -> Result<(), Error>;
     fn group_accept_host(&self, id: String, accept: bool) -> Result<(), Error>;
+    // Call hosts (GA-I1, U21): a separate capability from chat hosting. Defaults for test fakes.
+    fn group_appoint_call_host(&self, _id: String, _did: String, _device_id: String) -> Result<(), Error> {
+        Ok(())
+    }
+    fn group_revoke_call_host(&self, _id: String, _did: String, _device_id: String) -> Result<(), Error> {
+        Ok(())
+    }
+    fn group_accept_call_host(&self, _id: String, _accept: bool) -> Result<(), Error> {
+        Ok(())
+    }
     fn group_device_id(&self) -> Result<String, Error>;
     // Chat requests through the group's hosts (G2, U3).
     fn group_chat_request(&self, id: String, did: String) -> Result<GroupChatRequest, Error>;
@@ -104,6 +114,15 @@ impl GroupApi for Node {
     }
     fn group_revoke_host(&self, id: String, did: String, device_id: String) -> Result<(), Error> {
         Node::group_revoke_host(self, id, did, device_id)
+    }
+    fn group_appoint_call_host(&self, id: String, did: String, device_id: String) -> Result<(), Error> {
+        Node::group_appoint_call_host(self, id, did, device_id)
+    }
+    fn group_revoke_call_host(&self, id: String, did: String, device_id: String) -> Result<(), Error> {
+        Node::group_revoke_call_host(self, id, did, device_id)
+    }
+    fn group_accept_call_host(&self, id: String, accept: bool) -> Result<(), Error> {
+        Node::group_accept_call_host(self, id, accept)
     }
     fn group_accept_host(&self, id: String, accept: bool) -> Result<(), Error> {
         Node::group_accept_host(self, id, accept)
@@ -252,6 +271,11 @@ pub(super) enum Job {
     Appoint { gid: String, did: String, dev: String },
     Revoke { gid: String, did: String, dev: String },
     AcceptHost { gid: String, accept: bool },
+    AppointCall { gid: String, did: String, dev: String },
+    RevokeCall { gid: String, did: String, dev: String },
+    AcceptCall { gid: String, accept: bool },
+    /// An admin makes this computer a call host: appoint my own device, then accept here.
+    HostCallsHere { gid: String, did: String },
     Request { gid: String, did: String },
     AcceptReq(String),
     DeclineReq(String),
@@ -285,6 +309,19 @@ impl Job {
                 "Appointed. The device hosts once it agrees (Host from this device).".into(),
             ),
             Job::Revoke { gid, did: who, dev } => did(api.group_revoke_host(gid, who, dev), "That device no longer hosts the group.".into()),
+            Job::AppointCall { gid, did: who, dev } => did(
+                api.group_appoint_call_host(gid, who, dev),
+                "Asked. The device carries calls once it accepts.".into(),
+            ),
+            Job::RevokeCall { gid, did: who, dev } => did(api.group_revoke_call_host(gid, who, dev), "That device no longer carries this group\u{2019}s calls.".into()),
+            Job::AcceptCall { gid, accept } => did(
+                api.group_accept_call_host(gid, accept),
+                if accept { "This computer carries this group\u{2019}s calls now.".into() } else { "This computer stopped carrying this group\u{2019}s calls.".into() },
+            ),
+            Job::HostCallsHere { gid, did: me } => {
+                let r = api.group_device_id().and_then(|dev| api.group_appoint_call_host(gid.clone(), me, dev)).and_then(|_| api.group_accept_call_host(gid, true));
+                did(r, "This computer carries this group\u{2019}s calls now.".into())
+            }
             Job::Request { gid, did: who } => Lm::Requested(api.group_chat_request(gid, who).map_err(gerr)),
             Job::AcceptReq(id) => Lm::Answered(api.group_chat_accept(id).map_err(gerr)),
             Job::DeclineReq(id) => Lm::Answered(api.group_chat_decline(id).map_err(gerr)),
@@ -316,6 +353,8 @@ pub(super) enum Lm {
     Open(String),
     Close,
     ToggleInfo,
+    /// Open the group with its info page showing (the Calls tab avatar).
+    OpenInfo(String),
     /// The member whose menu is open.
     Menu(Option<String>),
     Input(String),
@@ -355,6 +394,12 @@ pub(super) enum Lm {
     Removal,
     Appoint(String, String),
     Revoke(String, String),
+    AppointCall(String, String),
+    RevokeCall(String, String),
+    /// This computer: start (true) or stop (false) carrying the open group's calls.
+    CallsHere(bool),
+    /// The call button in a group with no call host (true), or its explanation closed (false).
+    CallNeedsHost(bool),
     Confirm,
     Dismiss,
     Created(Result<String, String>),
@@ -403,6 +448,8 @@ pub(super) struct GroupsLive {
     pub reply: Option<String>,
     /// The members pane beside the chat (on by default).
     pub hide_info: bool,
+    /// The call button was pressed in a group with no call host: a calm explanation shows under the header.
+    pub call_needs_host: bool,
     /// GroupsList "Left or removed" fold (closed by default).
     pub gone_open: bool,
     /// Unread posts when the open group was opened (the "n new messages" divider).
@@ -444,6 +491,10 @@ pub(super) enum Action {
     Appoint(String),
     /// Stop this device of theirs hosting.
     Revoke(String),
+    /// Ask this device of theirs to carry group calls.
+    AppointCall(String),
+    /// Stop this device of theirs carrying calls.
+    RevokeCall(String),
     Flag,
 }
 
@@ -523,6 +574,8 @@ impl GroupsLive {
                 } else {
                     out.push(Action::Appoint(dev.clone()));
                 }
+                let calls = d.call_hosts.iter().chain(d.call_host_requests.iter()).any(|h| h.did == m.did && &h.device_id == dev);
+                out.push(if calls { Action::RevokeCall(dev.clone()) } else { Action::AppointCall(dev.clone()) });
             }
             if !m.is_owner {
                 out.push(Action::Flag);
@@ -609,6 +662,10 @@ impl GroupsLive {
             }
             Lm::Close => self.close(),
             Lm::ToggleInfo => self.hide_info = !self.hide_info,
+            Lm::OpenInfo(gid) => {
+                out = self.step(api, Lm::Open(gid));
+                self.hide_info = false;
+            }
             Lm::Menu(did) => self.menu = if self.menu == did { None } else { did },
             Lm::Input(v) => self.input = v,
             Lm::Reply(id) => self.reply = id,
@@ -806,6 +863,32 @@ impl GroupsLive {
                     out.job = Some(Job::Revoke { gid, did, dev });
                 }
             }
+            Lm::AppointCall(did, dev) => {
+                self.menu = None;
+                if let Some(gid) = self.open.clone() {
+                    out.job = Some(Job::AppointCall { gid, did, dev });
+                }
+            }
+            Lm::RevokeCall(did, dev) => {
+                self.menu = None;
+                if let Some(gid) = self.open.clone() {
+                    out.job = Some(Job::RevokeCall { gid, did, dev });
+                }
+            }
+            Lm::CallNeedsHost(on) => self.call_needs_host = on,
+            Lm::CallsHere(on) => {
+                self.call_needs_host = false;
+                if let (Some(gid), Some(d)) = (self.open.clone(), self.detail.as_ref()) {
+                    // Asked already (an admin appointed this device): just accept. Stopping: just decline.
+                    // Otherwise (an admin, nobody asked): appoint this computer and accept, in one go.
+                    out.job = Some(if !on || d.call_host_requested_here || d.am_call_host {
+                        Job::AcceptCall { gid, accept: on }
+                    } else {
+                        let me = d.members.iter().find(|m| m.is_me).map(|m| m.did.clone()).unwrap_or_default();
+                        Job::HostCallsHere { gid, did: me }
+                    });
+                }
+            }
             Lm::Dismiss if self.qr_full => self.qr_full = false,
             Lm::Dismiss => {
                 if !self.busy {
@@ -950,6 +1033,7 @@ impl GroupsLive {
     }
 
     pub fn close(&mut self) {
+        self.call_needs_host = false;
         self.open = None;
         self.detail = None;
         self.msgs.clear();

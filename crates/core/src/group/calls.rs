@@ -52,6 +52,9 @@ pub const IDLE_END_MS: u64 = 20_000;
 pub const REQUEST_MAX_AGE_MS: u64 = 60_000;
 /// Calls are offered to (re)connecting members this long after they started.
 pub const CALL_KEEP_MS: u64 = 4 * 3600 * 1000;
+/// A group call someone else starts rings (like an incoming call) for at most this long; the
+/// announcement itself stays (a quiet "Join").
+pub const GROUP_CALL_RING_MS: u64 = 30_000;
 /// Seen-blob memory bound (relay dedupe).
 const SEEN_MAX: usize = 4096;
 /// A signed blob larger than this is not relayed (statuses are ~0.6 KiB, CallStarts ~1.5 KiB).
@@ -71,6 +74,8 @@ pub(crate) struct GroupCalls {
     pub(crate) paused: Mutex<HashSet<String>>,
     pub(crate) events: Mutex<Option<Arc<dyn GroupCallEvents>>>,
     st: Mutex<CallsSt>,
+    /// What the call log is tracking now (calllog.rs).
+    pub(crate) log: Mutex<super::calllog::CallLog>,
 }
 
 #[derive(Default)]
@@ -80,6 +85,10 @@ struct CallsSt {
     /// gid → call id → highest generation's CallStart.
     calls: HashMap<String, BTreeMap<String, (SignedBlob, CallStart)>>,
     ended: HashSet<String>,
+    /// call id → (gid, host DID, the signed End, forget after): every End{ended} seen, also for a
+    /// call we never heard of (its CallStart may still arrive from a member that missed the End,
+    /// and is then dropped). Sent on to a member that connects later, so nobody keeps a call alive.
+    ends: HashMap<String, (String, String, SignedBlob, u64)>,
     /// Relay dedupe: signature → forget after (unix ms).
     seen: HashMap<String, u64>,
     pending: Option<Pending>,
@@ -127,9 +136,25 @@ impl Inner {
     }
 
     fn calls_emit(&self, kind: GroupCallEventKind, gid: &str, call_id: &str, participants: Vec<String>, detail: String) {
+        self.calls_record(kind, gid, call_id, &participants, &detail);
         let Some(ev) = self.group.calls.events.lock().clone() else { return };
         let e = GroupCallEvent { kind, group_id: gid.into(), call_id: call_id.into(), participants, detail };
         self.handle.spawn_blocking(move || ev.on_group_call(e));
+    }
+
+    /// Feeds the call log (calllog.rs) and stores what a finished session leaves.
+    fn calls_record(&self, kind: GroupCallEventKind, gid: &str, call_id: &str, participants: &[String], detail: &str) {
+        if gid.is_empty() {
+            return;
+        }
+        // try_lock: never wait on the call table from inside an emit.
+        let known = self.group.calls.st.try_lock().and_then(|st| st.calls.get(gid)?.get(call_id).map(|(_, s)| (s.started_ms, s.starter_did.clone())));
+        let done = self.group.calls.log.lock().apply(kind, gid, call_id, participants, detail, now_ms(), known);
+        if let (Some(f), Some(core)) = (done, self.group.core.lock().clone())
+            && let Err(e) = core.store.clog_record(&f)
+        {
+            tracing::warn!("group call log: {e}");
+        }
     }
 
     fn call_gid(&self, call_id: &str) -> Option<String> {

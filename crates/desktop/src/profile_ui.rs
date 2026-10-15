@@ -26,12 +26,28 @@ pub const LIMIT_TEXT: usize = 4096;
 /// Cropper.svelte VIEW: the stage is 264 css px square.
 pub const VIEW: f32 = 264.0;
 
+/// Where the open-source code lives (the same address as Android's About).
+pub const SOURCE_URL: &str = "https://github.com/osvauld/tinline";
+
+/// One measurement for Settings > Storage.
+#[derive(Debug, Clone, Copy)]
+pub struct StorageInfo {
+    pub usage: p2pcore::StorageUsage,
+    /// Decrypted copies made for viewing (the cache).
+    pub cache: u64,
+    pub download: p2pcore::PictureDownload,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Page {
     Settings,
     /// Settings > Notifications / Sounds (the `section` of the settings route).
     Notifications,
     Sounds,
+    /// Settings > Video / Storage / About Tinline.
+    Video,
+    Storage,
+    About,
     Me,
     Person(String),
     /// Native-only pages kept reachable from "This computer" (audio, video, security, ...).
@@ -55,6 +71,14 @@ pub const BUSY_CHOICES: [(&str, &str); 5] = [("30m", "30 minutes"), ("1h", "1 ho
 pub enum Action {
     Open(Page),
     Back,
+    StorageLoaded(Option<StorageInfo>),
+    SetDownload(p2pcore::PictureDownload),
+    ClearCache,
+    CacheCleared,
+    /// About Tinline: expand or fold the licence list.
+    ToggleLicences,
+    /// About Tinline: open the source code page in the browser.
+    OpenSource,
     // FieldRow
     Edit(String),
     Input(String),
@@ -177,6 +201,12 @@ pub enum Layer {
 #[derive(Default)]
 pub struct State {
     pub page: Option<Page>,
+    /// Settings > Storage: what the last measurement found (None until it arrives).
+    pub storage: Option<StorageInfo>,
+    /// "Clear cache" was pressed since the page opened.
+    pub cache_cleared: bool,
+    /// About Tinline: the open-source licence list is expanded.
+    pub licences_open: bool,
     pub history: Vec<Page>,
     pub cache: HashMap<String, Cached>,
     generations: HashMap<String, u64>,
@@ -531,6 +561,15 @@ impl App {
         Task::none()
     }
 
+    /// Reads the sizes off the main thread (the chat records are scanned).
+    fn measure_storage(&self) -> Task<Msg> {
+        let node = self.node.clone();
+        blocking(move || {
+            let usage = node.storage_usage().ok()?;
+            Some(StorageInfo { usage, cache: crate::media::cache_bytes(), download: node.picture_download().unwrap_or_default() })
+        }, |i| Msg::Profile(Action::StorageLoaded(i)))
+    }
+
     pub(super) fn profile_update(&mut self, action: Action) -> Task<Msg> {
         if self.busy && matches!(action, Action::Save | Action::Remove(_) | Action::Available | Action::Busy(_) | Action::AddSave | Action::UsePhoto | Action::ConfirmRemovePhoto | Action::ConfirmBlock) {
             self.notice = Some("Wait for the current account operation to finish.".into());
@@ -551,7 +590,35 @@ impl App {
                     self.settings_tab = tab;
                     self.refresh_linked();
                 }
+                // The camera list is read when the Video page opens (no "Find cameras" button).
+                if page == Page::Native(24) && self.remember_avail.is_none() {
+                    return Task::batch([self.refresh_profiles(), self.probe_remember()]);
+                }
+                if page == Page::Storage {
+                    self.profiles.cache_cleared = false;
+                    return Task::batch([self.refresh_profiles(), self.measure_storage()]);
+                }
+                if page == Page::Video {
+                    return Task::batch([self.refresh_profiles(), self.video_update(super::Vm::ScanCameras)]);
+                }
                 return self.refresh_profiles();
+            }
+            Action::StorageLoaded(info) => self.profiles.storage = info,
+            Action::SetDownload(p) => {
+                if let Some(i) = self.profiles.storage.as_mut() { i.download = p; }
+                let node = self.node.clone();
+                return blocking(move || node.set_picture_download(p).map_err(s), Msg::Done);
+            }
+            Action::ClearCache => {
+                return blocking(|| { crate::media::wipe_now(); }, |_| Msg::Profile(Action::CacheCleared));
+            }
+            Action::CacheCleared => {
+                self.profiles.cache_cleared = true;
+                if let Some(i) = self.profiles.storage.as_mut() { i.cache = 0; }
+            }
+            Action::ToggleLicences => self.profiles.licences_open = !self.profiles.licences_open,
+            Action::OpenSource => {
+                return blocking(move || open::that_detached(SOURCE_URL).map_err(s), Msg::Done);
             }
             Action::Back => {
                 self.profiles.edit = None;

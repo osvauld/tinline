@@ -1,3 +1,4 @@
+import { emitSocial } from '../social';
 /* People, devices and settings (PLAN step 8). The state the Contacts tab, Devices, Privacy and Settings share, plus the
    rules they follow. The people and devices themselves stay in the store (db.people, db.devices); this module holds only
    what is not app data: open dialogs, OS permission state, notification switches, the link-a-device flow. Screens read it;
@@ -148,6 +149,7 @@ export function accepted(f: { id: string; name: string; hue: number }, inCall = 
   if (!pp.sent.some((x) => x.id === f.id) || person(f.id)?.contact) return;
   pp.sent = pp.sent.filter((x) => x.id !== f.id);
   addPerson(f, 'code');
+  emitSocial({ kind: 'accepted', who: f.id, name: f.name });
   // If my Add contact sheet is on them, it turns taut by itself. Otherwise (closed, or open on someone else / the
   // other tab) the moment takes the sheet. Never over a call or another dialog.
   if (inCall || (pp.dialog === 'addContact' && pp.facing === f.id) || (pp.dialog && pp.dialog !== 'addContact')) return;
@@ -181,6 +183,7 @@ export function incomingRequest(d: { id: string; name: string; hue: number } = D
   if (person(d.id)?.contact) return false;
   if (!pp.requests.some((r) => r.who === d.id)) pp.requests.push({ id: newId('rq'), who: d.id, name: d.name, hue: d.hue, at: clock.now });
   emitFx({ type: 'request' });
+  emitSocial({ kind: 'request', who: d.id, name: d.name });
   // The sheet opens over what I'm doing (my own Add contact sheet turns into it); never over a call or another dialog.
   if (open && (pp.dialog === null || pp.dialog === 'addContact')) {
     pp.incoming = { id: d.id, name: d.name, hue: d.hue, phase: 'asking', kind: 'request' }; pp.dialog = 'addContact';

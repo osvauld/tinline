@@ -250,7 +250,7 @@ impl Inner {
         if core.store.blob(&f.hash)?.is_some() {
             return Ok((ops, None));
         }
-        let wanted = !incoming || (f.size <= core.store.auto_download() && f.size <= crypt::MAX_FILE);
+        let wanted = !incoming || (f.size <= core.store.effective_auto_download() && f.size <= crypt::MAX_FILE);
         let info = BlobInfo {
             key: f.key.clone(),
             name: f.name.clone(),

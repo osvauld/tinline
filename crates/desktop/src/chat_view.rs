@@ -153,7 +153,7 @@ impl App {
             let sel = self.live.open.as_deref() == Some(s.id.as_str());
             let text = super::super::group_live::preview(s, &self.live.me);
             let pv = if s.last.as_ref().is_some_and(|m| m.outgoing && m.delivery == p2pcore::GroupDelivery::Waiting) { Preview::Waiting(text) } else { Preview::Plain(text, None) };
-            let face = container(crate::pg_icons::pgi("users", 22.0, t.accent_ink)).width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.surface2, 24.0)).into();
+            let face = ui::group_face(t, &s.id, 48.0);
             items.push((at, self.pg_chat_row(t, sel, face, s.name.clone(), at, s.unread, false, pv, Msg::Live(super::super::group_live::Lm::Open(s.id.clone())))));
         }
         #[cfg(any(test, feature = "test-hooks"))]

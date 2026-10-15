@@ -4,18 +4,21 @@
   import type { Snippet } from 'svelte';
   import Mark from '../brand/Mark.svelte';
   import Avatar from '../ui/Avatar.svelte';
-  import { displayName, person as getPerson } from '../model/store.svelte';
+  import { db, displayName, person as getPerson, ownerOf } from '../model/store.svelte';
 
   /* `person`: the caller. Their picture (or initials) sits at the card's end, like an OS large icon. */
   let { title, text, when = '', tabular = false, label, onopen, actions, person, group }:
     { title: string; text: string; when?: string; tabular?: boolean; label?: string; onopen?: () => void; actions?: Snippet; person?: string; group?: string } = $props();
+  /* With more than one name on this device every notification says whose it is (the OS sub-text slot), the way a mail
+     app names the account. Group notices name the open one (group calls ring only the open name in this playground). */
+  const forName = $derived(db.others.length ? (person && ownerOf(person)?.name) || db.account.name : '');
 </script>
 
 <article class="notice" class:withlg={!!person || !!group} aria-label={label ?? title}>
   <button type="button" class="main" onclick={() => onopen?.()} disabled={!onopen}>
     <span class="hd">
       <span class="ico" aria-hidden="true"><Mark size={13} mono /></span>
-      <span class="app">Tinline</span>{#if when}<span class="sep" aria-hidden="true">·</span><time>{when}</time>{/if}
+      <span class="app">Tinline</span>{#if forName}<span class="sep" aria-hidden="true">·</span><span class="for" data-notice-for>{forName}</span>{/if}{#if when}<span class="sep" aria-hidden="true">·</span><time>{when}</time>{/if}
     </span>
     <b class="t" dir="auto">{title}</b>
     <span class="x" class:tab={tabular}>{text}</span>

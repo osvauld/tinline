@@ -91,6 +91,9 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
         worker.execute { session?.select(route) }
     }
 
+    /** The group call's name for the ongoing notification: the group's, else "Group call". */
+    fun callName(): String = _here.value?.let { groupName(it.groupId) } ?: NAME
+
     private fun groupName(groupId: String): String =
         try { app.node.groups().firstOrNull { it.id == groupId }?.name } catch (e: Exception) { null }?.ifBlank { null } ?: NAME
 
@@ -134,7 +137,7 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
         } else endSession()
         if (h != null) {
             prepared = false
-            if (was == null) CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL, NAME)
+            if (was == null) CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL, groupName(h.groupId))
         } else if (was != null || (prepared && settles)) {
             prepared = false
             // A 1:1 call (if any) owns the service state; the two never run at the same time.

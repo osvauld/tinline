@@ -11,11 +11,13 @@ import GroupCallSim from './GroupCallSim.svelte';
 import ProfileSim from './ProfileSim.svelte';
 import SearchSim from './SearchSim.svelte';
 import PeopleSim from './PeopleSim.svelte';
+import NamesSim from './NamesSim.svelte';
 
 export const simSections: { title: string; component: Component }[] = [
   { title: 'Environment', component: CoreSim },
   { title: 'Chat', component: ChatSim },
   { title: 'Sign-up and unlock', component: GateSim },
+  { title: 'Names on this device', component: NamesSim },
   { title: 'Calls', component: CallsSim },
   { title: 'Video calls', component: VideoSim },
   { title: 'Groups', component: GroupsSim },

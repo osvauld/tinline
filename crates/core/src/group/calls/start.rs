@@ -186,6 +186,7 @@ impl Inner {
             c.retain(|_, (_, s)| s.started_ms + CALL_KEEP_MS > now);
         }
         st.seen.retain(|_, t| *t > now);
+        st.ends.retain(|_, (_, _, _, t)| *t > now);
     }
 
     /// A new session: a member we host gets the fresh statuses and live calls; another host
@@ -215,6 +216,15 @@ impl Inner {
             };
             (statuses, calls)
         };
+        let ends: Vec<SignedBlob> = if all || peer_host {
+            let st = self.group.calls.st.lock();
+            st.ends.values().filter(|(g, _, _, until)| *g == sess.gid && *until > now).map(|(_, _, b, _)| b.clone()).collect()
+        } else {
+            vec![]
+        };
+        for end in ends {
+            let _ = sess.tx.send(Out::Msg(GroupMsg::CallEnd { end }));
+        }
         for status in statuses {
             let _ = sess.tx.send(Out::Msg(GroupMsg::CallHostStatus { status }));
         }

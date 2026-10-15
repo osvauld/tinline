@@ -79,7 +79,7 @@ fun ChatListRow(r: ChatRowUi, draft: String?, selected: Boolean = false, onClick
         Modifier.fillMaxWidth().heightIn(min = 72.dp).pressable(onClick, RowShape, rest = if (selected) c.accentSoft else androidx.compose.ui.graphics.Color.Transparent).padding(8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (r.group) ListGroupAvatar(48.dp) else Avatar(r.name, r.did, 48.dp)
+        if (r.group) ListGroupAvatar(48.dp, gid = r.did) else Avatar(r.name, r.did, 48.dp)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(r.name, Modifier.weight(1f), style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -126,10 +126,26 @@ fun fmtShort(secs: Long): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
 }
 
+/**
+ * Group calls on the Calls tab (CallsList.svelte, 2026-10-14): [log] is the core's group call log, [names] the groups I am
+ * still in (a group I left has no row). The avatar opens the group's info, the row starts or joins a call there.
+ */
+class GroupCallsUi(
+    val log: List<uniffi.p2pcore.GroupCallRecord>, val names: Map<String, String>,
+    val onInfo: (String) -> Unit, val onCall: (String) -> Unit,
+)
+
+private sealed interface CallEntry {
+    val at: Long
+    data class One(val r: CallRecord) : CallEntry { override val at get() = r.startedAt.toLong() }
+    data class Group(val r: uniffi.p2pcore.GroupCallRecord, val name: String) : CallEntry { override val at get() = r.startedAt.toLong() }
+}
+
 /** Calls tab: every call record, newest first. The avatar opens their profile, the row opens the chat, the phone calls back. */
 @Composable
 fun CallsTabBody(
     history: List<CallRecord>, nameOf: (CallRecord) -> String, canCall: (String) -> Boolean, state: LazyListState,
+    groupCalls: GroupCallsUi? = null,
     onProfile: (String) -> Unit, onCall: (String) -> Unit,
     top: @Composable () -> Unit = {}, header: @Composable () -> Unit = {},
     /** The first screen's hero while nobody is added yet; otherwise the quiet line. */
@@ -137,11 +153,17 @@ fun CallsTabBody(
 ) {
     val c = Tin.c
     val now = System.currentTimeMillis()
+    val entries = remember(history, groupCalls) {
+        (history.map { CallEntry.One(it) } + (groupCalls?.let { g -> g.log.mapNotNull { r -> g.names[r.groupId]?.let { CallEntry.Group(r, it) } } } ?: emptyList()))
+            .sortedByDescending { it.at }
+    }
     LazyColumn(Modifier.fillMaxSize(), state = state, contentPadding = PaddingValues(bottom = 8.dp)) {
         item(key = "_title") { header() }
         item(key = "_top") { top() }
-        if (history.isEmpty()) item(key = "_empty") { empty?.invoke() ?: EmptyQuietLine(EmptyQuiet.CALLS) }
-        items(history, key = { it.callId + ":" + it.startedAt }) { r ->
+        if (entries.isEmpty()) item(key = "_empty") { empty?.invoke() ?: EmptyQuietLine(EmptyQuiet.CALLS) }
+        items(entries, key = { e -> when (e) { is CallEntry.One -> e.r.callId + ":" + e.r.startedAt; is CallEntry.Group -> "g:" + e.r.groupId + ":" + e.r.callId } }) { e ->
+            if (e is CallEntry.Group) { GroupCallRow(e.r, e.name, now, groupCalls!!); return@items }
+            val r = (e as CallEntry.One).r
             val name = nameOf(r)
             val bad = r.missed
             val callable = canCall(r.peerDid)
@@ -174,6 +196,37 @@ fun CallsTabBody(
                         Icon(PgIcons.Phone, null, Modifier.size(22.dp).alpha(if (callable) 1f else .45f), tint = if (callable) c.accentInk else c.ink2)
                     }
                 }
+            }
+        }
+    }
+}
+
+/** A group call in the Calls tab: group avatar (opens its info), name, people icon + "Group call · 12 min · 3 people" (calm), time, phone. */
+@Composable
+private fun GroupCallRow(r: uniffi.p2pcore.GroupCallRecord, name: String, now: Long, g: GroupCallsUi) {
+    val c = Tin.c
+    val what = uniffi.p2pcore.groupCallLabel(r)
+    val stamp = listTime(r.startedAt.toLong() * 1000, now)
+    Row(Modifier.padding(horizontal = 8.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        Box(Modifier.pressable({ g.onInfo(r.groupId) }, RowShape).semantics { contentDescription = "$name, group info" }.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
+            GroupAvatar(0, 48.dp, gid = r.groupId)
+        }
+        Row(
+            Modifier.weight(1f).heightIn(min = 68.dp).pressable({ g.onCall(r.groupId) }, RowShape)
+                .semantics(mergeDescendants = true) { contentDescription = "$name, $what, $stamp. Start or join a call" }
+                .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(name, style = TinFs.body.copy(fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Icon(PgIcons.Users, null, tint = c.ink2, modifier = Modifier.size(15.dp))
+                    Text(what, style = TinFs.sub.copy(lineHeight = 21.sp, fontFeatureSettings = "tnum"), color = c.ink2, maxLines = 1)
+                }
+            }
+            Text(stamp, style = TinFs.meta, color = c.ink2)
+            Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                Icon(PgIcons.Phone, null, Modifier.size(22.dp), tint = c.accentInk)
             }
         }
     }

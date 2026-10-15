@@ -99,3 +99,31 @@ fn gcall_s17_same_did_on_two_devices_newer_join_replaces_older() {
     assert!(s.ended(A2, ClientEnd::AnsweredElsewhere));
     assert_eq!(s.roster(H1).len(), 2);
 }
+
+// The last one out ends the call: an empty call must not stay announced (2026-10-14, a member's
+// "End" only left a call hosted elsewhere, and it never went away).
+#[test]
+fn gcall_last_participant_leaving_ends_the_call() {
+    let (mut s, _) = base();
+    s.join(OLGA).unwrap();
+    s.join(BOB).unwrap();
+    let acts = s.clients.get_mut(&OLGA).unwrap().leave(s.now);
+    s.client_actions(OLGA, acts);
+    s.pump();
+    assert!(s.hosts.contains_key(&H1) && s.roster(H1).len() == 1, "one left, the call goes on");
+    let acts = s.clients.get_mut(&BOB).unwrap().leave(s.now);
+    s.client_actions(BOB, acts);
+    s.pump();
+    assert!(s.host_ended.iter().any(|(h, r, _)| *h == H1 && *r == EndReason::Ended), "the last one out ends it");
+}
+
+#[test]
+fn gcall_last_participant_dropping_ends_the_call() {
+    let (mut s, _) = base();
+    s.join(OLGA).unwrap();
+    let (_, conn) = s.route[&OLGA];
+    let acts = s.hosts.get_mut(&H1).unwrap().disconnected(conn);
+    s.host_actions(H1, acts);
+    s.pump();
+    assert!(s.host_ended.iter().any(|(h, r, _)| *h == H1 && *r == EndReason::Ended), "nobody left: ended");
+}

@@ -55,19 +55,21 @@
   <div class="row"><span>Wrong tries so far</span><span>{gate.tries}</span></div>
   <div class="btns"><button type="button" onclick={() => { gate.lockedUntil = 0; gate.tries = 0; }}>Clear lockout</button></div>
   <div class="row"><span>Simulated Argon2 time (ms)</span><input type="number" min="0" max="5000" step="100" aria-label="Key derivation time" bind:value={gateSim.kdfMs} /></div>
-  <p class="note">Remembered on this phone: <code>{String(gateSim.remembered)}</code></p>
+  <p class="note">Remembered on this device: <code>{String(gateSim.remembered)}</code></p>
+  <label class="note"><input type="checkbox" bind:checked={gateSim.keyring} /> Desktop has a keyring (Secret Service). Off = Tinline keeps asking (its own Argon2id lock).</label>
 
   <h4>Decided / proposed / undecided (not app copy)</h4>
   <ul class="notes">
     <li><b>Decided 2026-10-12:</b> after 5 wrong passphrases, Unlock waits 30 s (N={gateSim.maxTries}, wait {gateSim.lockSeconds}s here are drawer-adjustable for testing). Core gap: the core never locks out today (only slow Argon2), so the lockout is new core work.</li>
     <li><b>Decided 2026-10-12:</b> the welcome screen (desktop and Android) offers Create, "Link to a device" and "Restore from recovery phrase". The old "I already have an account" chooser step is no longer on the path.</li>
     <li><b>Proposed:</b> an explicit "Remember on this phone" switch on Unlock (Android). Real app remembers via the Keystore without asking.</li>
+    <li><b>Proposed 2026-10-15:</b> desktop "Remember on this computer" uses the system keyring (Secret Service); with no keyring the switch is not offered and Settings says why. Also in Privacy &gt; Passphrase.</li>
     <li><b>Decided 2026-10-12:</b> confirmations optional (phrase check is an optional action; passphrase has show/hide, no confirm field).</li>
     <li><b>Proposed:</b> passphrase strength bars. Real has one field and a "why" line.</li>
     <li><b>Proposed:</b> blurred phrase until revealed; real shows the words at once (screenshots blocked on Android). Copy kept but discouraged.</li>
     <li><b>Proposed:</b> permissions step also lists Camera (optional) and has "Not now"; real skip is "Skip for now".</li>
     <li><b>Proposed:</b> restore/link end on one shared "Done" step instead of the real Restored / Syncing screens.</li>
-    <li><b>Decided 2026-10-12:</b> restoring on a device that already has an account ADDS a second account (does not replace). Settings &gt; Add another account runs the sign-up flow; success reads "Added &lt;name&gt; to this device"; Settings lists both with a switcher. Only the selected account is online per install. Core gap: core restore adding an account to an install that has one (multi-account) is a core follow-up (PLAN section 7). Simulated minimally here: the second account has no chats or contacts of its own, and restoring the SAME account that is already here (real: "Already on this phone") is not drawn.</li>
+    <li><b>Decided 2026-10-12:</b> restoring on a device that already has an account ADDS a second account (does not replace). Settings &gt; Add another account runs the sign-up flow; success reads "Added &lt;name&gt; to this device"; Settings lists both with a switcher. Several names are online at once per install (2026-10-14; Settings > Names on this device). Core gap: core restore adding an account to an install that has one (multi-account) is a core follow-up (PLAN section 7). Simulated minimally here: the second account has no chats or contacts of its own, and restoring the SAME account that is already here (real: "Already on this phone") is not drawn.</li>
     <li><b>Undecided:</b> a QR the NEW device shows is the decided model; the existing-device scan/approve screens belong to Devices (step 8).</li>
     <li>Terms/Privacy links are placeholders. The 6-digit code and QR are fake.</li>
   </ul>

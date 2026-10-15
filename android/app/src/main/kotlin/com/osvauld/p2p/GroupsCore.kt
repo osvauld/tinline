@@ -406,7 +406,10 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun declineInvitation(invitationId: String): Result<String> = runCatching { api.invitationDecline(invitationId) }
         .map { "Declined. ${firstName(it.inviterName.ifBlank { "They" })} sees that you declined." }.also { synchronized(this) { reloadInvitations() } }.mapError()
 
-    override fun onGroupInvitation(invitation: GroupInvitation) { synchronized(this) { reloadInvitations() } }
+    /** Set by the app: an invitation arrived or changed (notifications; called on a core thread). */
+    @Volatile var onInvitation: ((GroupInvitation) -> Unit)? = null
+
+    override fun onGroupInvitation(invitation: GroupInvitation) { synchronized(this) { reloadInvitations() }; onInvitation?.invoke(invitation) }
 
     fun flag(id: String, did: String) = act("Flag recorded. It is signed by you and the member can see it.") { api.flag(id, did) }
     fun setAdmin(id: String, did: String, admin: Boolean) = act(if (admin) "Made admin." else "No longer an admin.") { api.setAdmin(id, did, admin) }
@@ -422,6 +425,12 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun acceptCallHost(id: String, accept: Boolean) = act(
         if (accept) "This device now hosts the group’s calls." else "This device won’t host the group’s calls."
     ) { api.acceptCallHost(id, accept) }
+
+    /** This phone carries the group's calls: accept when an admin asked; otherwise an admin appoints this device and accepts, in one go. */
+    fun hostCallsHere(id: String, requested: Boolean) = act("This phone carries the calls it starts in this group now.") {
+        if (!requested) api.appointCallHost(id, myDid, api.deviceId())
+        api.acceptCallHost(id, true)
+    }
 
     private fun reloadRequests() {
         _incoming.value = try { api.requestsIncoming() } catch (_: Exception) { emptyList() }

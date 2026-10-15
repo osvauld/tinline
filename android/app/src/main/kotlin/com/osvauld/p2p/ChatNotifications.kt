@@ -21,6 +21,8 @@ object OpenChat {
     @Volatile var group: String? = null
     /** A tap on a message notification asks the UI to open this conversation. */
     val request = MutableStateFlow<String?>(null)
+    /** A tap on a group invitation notification asks Home to show the Groups tab. */
+    val groupsTab = MutableStateFlow(false)
 }
 
 /** One MessagingStyle notification per conversation, with an inline reply. Hooked to `on_message_added`. */
@@ -80,7 +82,7 @@ object ChatNotifier {
             .addRemoteInput(RemoteInput.Builder(KEY_REPLY).setLabel("Message").build())
             .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).setShowsUserInterface(false).build()
         val n = NotificationCompat.Builder(c, Notifications.CH_MESSAGES)
-            .setSilent(AlertPrefs.quiet(c))
+            .setSilent(AlertPrefs.quiet(c) || AppVisible.resumed)   // in front, the app plays the `received` cue itself
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setColor(0xFF0B6B5B.toInt())
             .setStyle(style)
@@ -137,7 +139,9 @@ object GroupNotifier {
     private fun id(gid: String) = 3000 + (gid.hashCode() and 0xffff)
 
     fun post(app: P2pApp, m: uniffi.p2pcore.GroupMessage, groupName: String?) {
-        if (m.outgoing || m.kind != uniffi.p2pcore.GroupItemKind.POST || OpenChat.group == m.groupId) return
+        if (m.outgoing || m.kind != uniffi.p2pcore.GroupItemKind.POST) return
+        Cues.incoming(app, true, m.authorDid)   // in the app: the `received` tone (the notification below is then silent)
+        if (OpenChat.group == m.groupId) return
         if (!AlertPrefs.groups(app)) return
         if (app.blocks.value.blockedByMe(m.authorDid)) return
         val who = m.authorName.trim().substringBefore(' ').ifBlank { "Someone" }
@@ -148,7 +152,7 @@ object GroupNotifier {
         val open = PendingIntent.getActivity(app, id(m.groupId), Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(app, Notifications.CH_GROUPS)
-            .setSilent(AlertPrefs.quiet(app))
+            .setSilent(AlertPrefs.quiet(app) || AppVisible.resumed)   // in front, the app plays the `received` cue itself
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setColor(0xFF0B6B5B.toInt())
             .setStyle(style)
@@ -158,6 +162,24 @@ object GroupNotifier {
             .setOnlyAlertOnce(true)
             .build()
         try { nm(app).notify(id(m.groupId), n) } catch (_: SecurityException) { }
+    }
+
+    /** "Book club · Priya invited you to the group". A tap opens the Groups tab, where the invitation waits. */
+    fun invitation(app: P2pApp, i: uniffi.p2pcore.GroupInvitation) {
+        val by = i.inviterName.trim().substringBefore(' ').ifBlank { "Someone" }
+        val open = PendingIntent.getActivity(app, 5000 + (i.id.hashCode() and 0xfff),
+            Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra(Notifications.EXTRA_GROUPS, true),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val n = NotificationCompat.Builder(app, Notifications.CH_GROUPS)
+            .setSilent(AlertPrefs.quiet(app))
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setColor(0xFF0B6B5B.toInt())
+            .setContentTitle(i.groupName.ifBlank { "A group" })
+            .setContentText("$by invited you to the group")
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        try { nm(app).notify(4000 + (i.id.hashCode() and 0xffff), n) } catch (_: SecurityException) { }
     }
 
     fun cancel(c: Context, gid: String) {

@@ -48,7 +48,8 @@ impl Inner {
                 }
                 let Ok(e) = w::open_end(&end) else { return };
                 let known = self.group.calls.st.lock().calls.get(gid).and_then(|c| c.get(&e.call_id)).is_some_and(|(_, s)| s.host_ref.holder_did == e.host_did);
-                if e.gid != gid || e.reason != EndReason::Ended || !known || !signer_ok(&e.host_did) || !self.calls_first_sight(&end.signature, now + CALL_KEEP_MS) {
+                let unknown = !known && !self.group.calls.st.lock().calls.get(gid).is_some_and(|c| c.contains_key(&e.call_id)) && dir.is_member(gid, &e.host_did);
+                if e.gid != gid || e.reason != EndReason::Ended || !(known || unknown) || !signer_ok(&e.host_did) || !self.calls_first_sight(&end.signature, now + CALL_KEEP_MS) {
                     return;
                 }
                 self.group_call_ended(gid, &e.call_id, &end);
@@ -106,7 +107,7 @@ impl Inner {
     pub(super) fn group_call_started(self: &Arc<Self>, gid: &str, blob: SignedBlob, s: CallStart) {
         let new_call = {
             let mut st = self.group.calls.st.lock();
-            if st.ended.contains(&s.call_id) {
+            if st.ended.contains(&s.call_id) || st.ends.get(&s.call_id).is_some_and(|(_, host, _, _)| *host == s.host_ref.holder_did) {
                 return;
             }
             let calls = st.calls.entry(gid.to_string()).or_default();
@@ -146,6 +147,12 @@ impl Inner {
         let _ = self.gcall_observe_end(end);
         let had = {
             let mut st = self.group.calls.st.lock();
+            if let Ok(e) = w::open_end(end) {
+                if st.ends.len() >= SEEN_MAX {
+                    st.ends.clear();
+                }
+                st.ends.insert(call_id.to_string(), (gid.to_string(), e.host_did, end.clone(), now_ms() + CALL_KEEP_MS));
+            }
             st.ended.insert(call_id.to_string());
             st.calls.get_mut(gid).and_then(|c| c.remove(call_id)).is_some()
         };

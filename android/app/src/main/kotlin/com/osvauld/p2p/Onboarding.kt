@@ -18,8 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
@@ -31,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -606,7 +603,7 @@ private fun SyncingStep(name: String, peer: String, contacts: Int, calls: Int, o
     ) {
         PfCard {
             row { SyncRow(PgIcons.Users, "Contacts", if (contacts > 0) "$contacts" else "Waiting", contacts > 0) }
-            row { SyncRow(Icons.Rounded.History, "Call history", if (calls > 0) "$calls" else "Waiting", calls > 0) }
+            row { SyncRow(PgIcons.Clock, "Call history", if (calls > 0) "$calls" else "Waiting", calls > 0) }
         }
         ReservedLine(if (slow && contacts == 0 && calls == 0) "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
             else "Keep both devices online. Sync keeps going in the background.", style = PgType.sub19, color = c.ink2, align = TextAlign.Center, lines = 2)
@@ -914,7 +911,7 @@ internal fun WordsKeySeg(asKey: Boolean, onChange: (Boolean) -> Unit) {
         listOf(false to "Words", true to "Key").forEach { (k, label) ->
             val on = k == asKey
             Box(
-                Modifier.heightIn(min = 40.dp).clip(SmoothCornerShape(9.dp)).background(if (on) c.sf else Color.Transparent)
+                Modifier.heightIn(min = 40.dp).clip(SmoothCornerShape(9.dp)).background(if (on) c.sf else androidx.compose.ui.graphics.Color.Transparent)
                     .clickable(role = Role.Tab) { onChange(k) }.padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center,
             ) { Text(label, style = TinType.bodyM.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), color = c.ink) }

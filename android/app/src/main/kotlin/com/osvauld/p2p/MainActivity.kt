@@ -9,7 +9,9 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
 import androidx.compose.runtime.*
+import uniffi.p2pcore.CallState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
@@ -53,6 +55,8 @@ class MainActivity : ComponentActivity() {
         val app = P2pApp.get(this)
         if (app.node.hasIdentity()) CoreService.ensureRunning(this)
         intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
+        if (intent?.getBooleanExtra(Notifications.EXTRA_GROUPS, false) == true) OpenChat.groupsTab.value = true
+        groupCallFrom(intent)
         if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent); requestFrom(intent) }
         Appearance.load(this)
         setContent {
@@ -68,13 +72,22 @@ class MainActivity : ComponentActivity() {
         app.requestsIn.value.firstOrNull { it.did == did }?.let { app.incoming.value = IncomingSheet(it.did, it.name, joined = false, theirs = false) }
     }
 
+    /** The group-call notification: Join takes the ringing call; a tap on the ongoing one returns to its screen. */
+    private fun groupCallFrom(intent: android.content.Intent?) {
+        val app = P2pApp.get(this)
+        intent?.getStringExtra(Notifications.EXTRA_GCALL_JOIN)?.let { intent.removeExtra(Notifications.EXTRA_GCALL_JOIN); app.groupCallUi.call(it) {} }
+        if (intent?.getBooleanExtra(Notifications.EXTRA_GCALL_OPEN, false) == true) { intent.removeExtra(Notifications.EXTRA_GCALL_OPEN); app.groupCallUi.restore() }
+    }
+
     override fun onResume() { super.onResume(); AppVisible.resumed = true }
-    override fun onPause() { AppVisible.resumed = false; super.onPause() }
+    override fun onPause() { AppVisible.resumed = false; P2pApp.get(this).calls.appLeftFront(); P2pApp.get(this).groupCallUi.appLeftFront(); super.onPause() }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         requestFrom(intent)
+        groupCallFrom(intent)
         intent.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
+        if (intent.getBooleanExtra(Notifications.EXTRA_GROUPS, false)) OpenChat.groupsTab.value = true
         CardInbox.take(intent)
         GroupLinkInbox.take(intent)
     }
@@ -120,6 +133,8 @@ private sealed interface Route {
     data object Me : Route
     data object Notifications : Route
     data object Sounds : Route
+    data object Video : Route
+    data object Storage : Route
     data object Privacy : Route
     data object CallsAllowed : Route
 }
@@ -177,6 +192,16 @@ private fun Root(app: P2pApp) {
         if (has && lock == LockState.UNLOCKED && termsOk && !onboarding) {
             OpenChat.request.value = null
             if ((stack.last() as? Route.Chat)?.did != did) stack.add(Route.Chat(did))
+        }
+    }
+
+    // A tap on a group invitation: Home on the Groups tab, where the invitation waits.
+    val openGroups by OpenChat.groupsTab.collectAsState()
+    LaunchedEffect(openGroups, has, lock, termsOk) {
+        if (openGroups && has && lock == LockState.UNLOCKED && termsOk && !onboarding) {
+            OpenChat.groupsTab.value = false
+            while (stack.size > 1) stack.removeAt(stack.lastIndex)
+            homeTab.value = HomeTab.Groups
         }
     }
 
@@ -269,6 +294,25 @@ private fun Root(app: P2pApp) {
             BackHandler(stack.size > 1) { pop() }
             val inCall by app.calls.ui.collectAsState()
             val top = stack.last()
+            // RingHead.svelte: a call ringing while the app is open turns the home header into the caller, in place. Over
+            // my own answered call (call minimised to the strip) a second caller does the same, with Decline / End & answer.
+            val waitingCall by app.calls.waiting.collectAsState()
+            LaunchedEffect(inCall, waitingCall) {
+                val u = inCall; val w = waitingCall
+                RingHead.ring.value = when {
+                    u != null && w != null && u.state is CallState.Active -> RingHead.Ring(
+                        w.peerDid, w.peerName.ifBlank { "Unknown" }, "Calling during your call", waiting = true,
+                        onOpen = { ctx.startActivity(Intent(ctx, CallActivity::class.java)) },
+                        onDecline = { app.calls.declineWaiting() }, onAnswer = { app.calls.endAndAnswer() })
+                    u != null && u.info.incoming && u.state is CallState.Ringing -> RingHead.Ring(
+                        u.info.peerDid, u.info.peerName.ifBlank { "Unknown" }, "Incoming call",
+                        onOpen = { ctx.startActivity(Intent(ctx, IncomingCallActivity::class.java)) },
+                        onDecline = { app.calls.decline() },
+                        onAnswer = { ctx.startActivity(Intent(ctx, CallActivity::class.java).putExtra(CallActivity.EXTRA_ANSWER, true)) })
+                    else -> null
+                }
+            }
+            DisposableEffect(Unit) { onDispose { RingHead.ring.value = null } }
             val onHomeOrAdd = top is Route.Home || top is Route.Add
             // Someone used my code, or accepted my request while the sheet was closed: the sheet opens by itself over
             // Home (my own open Add contact sheet turns into it), never over a call or another screen; else it's dropped
@@ -291,7 +335,7 @@ private fun Root(app: P2pApp) {
                     onContact = { stack.add(Route.Contact(it.did)) }, onCall = { call(it.did) }, callError = callError,
                     onChat = { stack.add(Route.Chat(it)) }, onNewChat = { stack.add(Route.NewChat) },
                     homeTab = homeTab,
-                    say = ::say, onGroup = { stack.add(Route.Group(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
+                    say = ::say, onGroup = { stack.add(Route.Group(it)) }, onGroupInfo = { stack.add(Route.GroupInfo(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
                     onSearch = { stack.add(Route.Search) },
                 ) }
             when (val r = stack.last()) {
@@ -366,11 +410,13 @@ private fun Root(app: P2pApp) {
                     app, missing, onBack = ::pop, onMe = { stack.add(Route.Me) }, onSwitchPick = { stack.add(Route.SwitchConfirm(it)) },
                     onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) }, onLinkAccount = { addAccount(false, link = true) },
                     onDevices = { stack.add(Route.Devices) }, onPrivacy = { stack.add(Route.Privacy) }, onNotifications = { stack.add(Route.Notifications) },
-                    onSounds = { stack.add(Route.Sounds) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
+                    onSounds = { stack.add(Route.Sounds) }, onVideo = { stack.add(Route.Video) }, onStorage = { stack.add(Route.Storage) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
                 )
                 Route.Me -> MyProfileRoute(app, onBack = ::pop)
                 Route.Notifications -> NotificationsPage(missing, onBack = ::pop, fix = fix)
                 Route.Sounds -> SoundsPage(onBack = ::pop)
+                Route.Video -> VideoSettingsRoute(app, onBack = ::pop)
+                Route.Storage -> StorageRoute(app, onBack = ::pop)
                 Route.Privacy -> PrivacyRoute(app, onBack = ::pop, onBlocked = { stack.add(Route.Blocked) }, onCalls = { stack.add(Route.CallsAllowed) },
                     onPhrase = { stack.add(Route.PhraseGate) }, onPassphrase = { stack.add(Route.Passphrase) })
                 Route.CallsAllowed -> CallsAllowedRoute(app, onBack = ::pop)
@@ -389,6 +435,12 @@ private fun Root(app: P2pApp) {
                 Route.MicNeeded -> MicNeededScreen(onOpenSettings = { Perms.openSettings(ctx, Perms.appDetails(ctx)) }, onNotNow = ::pop)
             }
         }
+    }
+    // MiniVideo: their picture floats over the app while a video call is minimised.
+    if (has && lock == LockState.UNLOCKED) MiniVideo(app, Modifier.align(androidx.compose.ui.Alignment.BottomEnd).padding(end = 12.dp, bottom = 92.dp))
+    // "Sam started a call in Weekend hike": over the app, only once it is open and unlocked.
+    if (has && lock == LockState.UNLOCKED && termsOk && !onboarding && adding == null && unlinkedName == null) {
+        GroupCallAnnounce(app, openGid = (stack.last() as? Route.Group)?.id) { stack.add(Route.Group(it)) }
     }
     androidx.compose.material3.SnackbarHost(snack, Modifier.align(androidx.compose.ui.Alignment.BottomCenter).navigationBarsPadding().padding(16.dp))
     }

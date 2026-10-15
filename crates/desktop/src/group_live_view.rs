@@ -90,10 +90,8 @@ impl App {
             let msg = if !ready { "Unlock to see your groups." } else if q.is_empty() { "Groups you start or join show up here." } else { "No group matches." };
             col = col.push(container(tx(msg, 13.0, t.ink2).line_height(lh(19.0))).padding([8, 20]));
         }
-        let face = |dim: bool| -> El<'_> {
-            container(crate::pg_icons::pgi("users", 22.0, ui::alpha(t.accent_ink, if dim { 0.72 } else { 1.0 })))
-                .width(48).height(48).center_x(48).center_y(48).style(ui::plain(t.surface2, 24.0)).into()
-        };
+        // The group's own mandala (the left-or-removed rows rely on their dimmed text; the art is not faded).
+        let face = |gid: &str| -> El<'_> { gav(t, gid, 48.0) };
         let mut rows = column![];
         for s in active {
             let at = s.last.as_ref().map_or(0, |m| m.at);
@@ -104,7 +102,7 @@ impl App {
             let pv = if in_call { Preview::Plain("You\u{2019}re in the call".into(), Some(t.accent_ink)) }
                 else if self.gcall.live.contains_key(&s.id) { Preview::Plain("Call in progress".into(), Some(t.accent_ink)) }
                 else if !s.hosted_here && !s.host_reachable { Preview::Waiting(text) } else { Preview::Plain(text, None) };
-            rows = rows.push(self.pg_chat_row(t, sel, face(false), s.name.clone(), at, s.unread, false, pv, l(Lm::Open(s.id.clone()))));
+            rows = rows.push(self.pg_chat_row(t, sel, face(&s.id), s.name.clone(), at, s.unread, false, pv, l(Lm::Open(s.id.clone()))));
         }
         col = col.push(container(rows).padding([0, 8]));
         if !gone.is_empty() {
@@ -120,7 +118,7 @@ impl App {
                     let at = s.last.as_ref().map_or(0, |m| m.at);
                     let what = if s.my_role == GroupRole::Removed { "Removed" } else { "You left" };
                     let sub = if at > 0 { format!("{what} \u{b7} {}", day_only(at)) } else { what.to_string() };
-                    rows = rows.push(button(row![face(true), column![semi(s.name.clone(), 15.0, ui::alpha(t.ink, 0.72)).line_height(lh(21.0)),
+                    rows = rows.push(button(row![face(&s.id), column![semi(s.name.clone(), 15.0, ui::alpha(t.ink, 0.72)).line_height(lh(21.0)),
                             tx(sub, 13.0, t.ink2).line_height(lh(21.0))].spacing(2).width(Fill)].spacing(12).align_y(Alignment::Center).height(56))
                         .padding(8).width(Fill).style(super::shell_view::wash(t, sel.then_some(t.accent_soft), (!sel).then_some(t.surface2), 14.0))
                         .on_press(l(Lm::Open(s.id.clone()))));
@@ -141,24 +139,25 @@ impl App {
         let on = !self.live.hide_info;
         // Conversation.svelte `.bar` for a group: the head (36 group avatar, name 17/22, "9 members" 13/18), then
         // the details button (here it shows or hides the members pane beside the chat).
-        let face = container(crate::pg_icons::pgi("users", 18.0, t.accent_ink)).width(36).height(36).center_x(36).center_y(36).style(ui::plain(t.surface2, 18.0));
+        let face = gav(t, self.live.open.as_deref().unwrap_or_default(), 36.0);
         let head_btn = button(row![face, column![semi(d.name.clone(), 17.0, t.ink).line_height(lh(22.0)).wrapping(iced::widget::text::Wrapping::None),
                 tx(self.live.status_line(), 13.0, sub_color).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)]].spacing(10).align_y(Alignment::Center))
             .padding(Padding { top: 4.0, right: 10.0, bottom: 4.0, left: 6.0 }).height(44).width(Fill)
             .style(super::shell_view::wash(t, None, Some(t.surface2), 12.0)).on_press(l(Lm::ToggleInfo));
         let info = button(container(crate::pg_icons::pgi("info", 24.0, if on { t.accent_ink } else { t.ink })).center_x(44).center_y(44)).padding(0).width(44).height(44)
             .style(super::shell_view::wash(t, on.then_some(t.accent_soft), Some(t.surface2), 22.0)).on_press(l(Lm::ToggleInfo));
-        // The call button: start a call, join the one running, or return to mine (live: accent-soft). Dimmed, with
-        // the reason as its tooltip, while the group has no call host and no call runs.
+        // The call button: start a call, join the one running, or return to mine (live: accent-soft). It stays
+        // in place while the group has no call host: pressing it then explains, calmly, what a call needs.
         let gid = d.id.clone();
         let running = self.gcall.live.contains_key(&gid) || (self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live());
         let no_host = d.call_hosts.is_empty() && !running;
         let tip = if self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live() { "Return to group call" } else if running { "Join group call" }
-            else if no_host { "No call host yet: an admin can appoint one in Group info" } else { "Start group call" };
-        let call_btn = button(container(crate::pg_icons::pgi("phone", 24.0, if running { t.accent_ink } else if no_host { ui::alpha(t.ink2, 0.45) } else { t.ink })).center_x(44).center_y(44))
+            else if no_host { "Group call (needs a call host)" } else { "Start group call" };
+        let press = if no_host { l(Lm::CallNeedsHost(!self.live.call_needs_host)) } else { Msg::GCall(crate::app::gcall::Gm::Call(gid.clone())) };
+        let call_btn = button(container(crate::pg_icons::pgi("phone", 24.0, if running { t.accent_ink } else { t.ink })).center_x(44).center_y(44))
             .padding(0).width(44).height(44)
-            .style(super::shell_view::wash(t, running.then_some(t.accent_soft), (!no_host).then_some(t.surface2), 22.0))
-            .on_press_maybe((!gone && !no_host).then(|| Msg::GCall(crate::app::gcall::Gm::Call(gid.clone()))));
+            .style(super::shell_view::wash(t, (running || (no_host && self.live.call_needs_host)).then_some(t.accent_soft), Some(t.surface2), 22.0))
+            .on_press_maybe((!gone).then_some(press));
         let call_btn = iced::widget::tooltip(call_btn, iced::widget::text(tip).size(13), iced::widget::tooltip::Position::Bottom);
         let head = row![head_btn, call_btn, info].spacing(2).align_y(Alignment::Center);
         let mut top = column![container(head).padding(8).height(60).width(Fill).style(ui::plain(t.surface, 0.0)), rule(t)];
@@ -167,6 +166,24 @@ impl App {
         }
         if self.notice.is_some() {
             top = top.push(container(self.notice_bar(t)).padding([8, 20]));
+        }
+        if self.live.call_needs_host && d.call_hosts.is_empty() && !gone {
+            let admin = self.live.is_admin();
+            let mut acts = row![].spacing(8);
+            if admin {
+                acts = acts.push(btn(t, Kind::Primary, "Host calls on this computer", Some(l(Lm::CallsHere(true)))));
+            }
+            acts = acts.push(btn(t, Kind::Ghost, "Not now", Some(l(Lm::CallNeedsHost(false)))));
+            top = top.push(
+                container(
+                    column![
+                        bold("A call needs a call host", 15.0, t.ink),
+                        tx(if admin { "A call host is a member\u{2019}s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info." }
+                            else { "A call host is a member\u{2019}s computer or phone that carries the call. An admin can appoint one in Group info." }, 13.0, t.ink2),
+                        acts,
+                    ].spacing(6),
+                ).padding([12, 20]).width(Fill).style(ui::plain(t.surface2, 0.0)),
+            ).push(rule(t));
         }
         if let Some(by) = self.live.host_asked() {
             top = top.push(
@@ -215,10 +232,34 @@ impl App {
                     && super::groups_view::day(a.at) == super::groups_view::day(b.at)
             };
             let mut last_day = String::new();
+            // This group's call log, oldest first, merged in by time (MessageRow `.callrec`).
+            let open_id = self.live.open.clone().unwrap_or_default();
+            let calls: Vec<&p2pcore::GroupCallRecord> = {
+                let mut v: Vec<_> = self.group_log.iter().filter(|r| r.group_id == open_id).collect();
+                v.sort_by_key(|r| r.started_at);
+                v
+            };
+            let mut ci = 0;
+            let day_chip = |at: u64| -> El<'_> {
+                let chip = container(semi(chip_day(at), 11.0, t.ink2).line_height(lh(16.0))).padding([3, 10]).style(move |_: &iced::Theme| container::Style {
+                    background: Some(t.surface.into()), border: iced::Border { color: t.hairline, width: 1.0, radius: 999.0.into() }, ..Default::default() });
+                container(chip).center_x(Fill).padding([10, 0]).into()
+            };
             // Before the oldest of the posts that were unread when the group was opened.
             let n_unread = self.live.unread_at_open as usize;
             let divider = if n_unread > 0 { self.live.msgs.iter().rev().filter(|m| !m.outgoing && m.kind == GroupItemKind::Post).nth(n_unread - 1).map(|m| m.id.clone()) } else { None };
             for (i, m) in self.live.msgs.iter().enumerate() {
+                while ci < calls.len() && calls[ci].started_at * 1000 <= m.at {
+                    let at = calls[ci].started_at * 1000;
+                    let dk = super::groups_view::day(at);
+                    let new_day = dk != last_day;
+                    if new_day {
+                        last_day = dk;
+                        list = list.push(day_chip(at));
+                    }
+                    list = list.push(container(self.group_call_pill(t, calls[ci])).padding(Padding { top: if new_day { 0.0 } else { 10.0 }, ..Default::default() }));
+                    ci += 1;
+                }
                 let dk = super::groups_view::day(m.at);
                 let new_day = dk != last_day;
                 if new_day {
@@ -237,7 +278,18 @@ impl App {
                 }
                 list = list.push(container(self.live_item(t, m, pos, max_bub)).padding(iced::Padding { top: gap, ..Default::default() }));
             }
-            if self.live.msgs.is_empty() {
+            while ci < calls.len() {
+                let at = calls[ci].started_at * 1000;
+                let dk = super::groups_view::day(at);
+                let new_day = dk != last_day;
+                if new_day {
+                    last_day = dk;
+                    list = list.push(day_chip(at));
+                }
+                list = list.push(container(self.group_call_pill(t, calls[ci])).padding(Padding { top: if new_day { 0.0 } else { 10.0 }, ..Default::default() }));
+                ci += 1;
+            }
+            if self.live.msgs.is_empty() && calls.is_empty() {
                 list = list.push(sys(t, "No messages yet"));
             }
 
@@ -313,6 +365,23 @@ impl App {
             .on_press_maybe(can.then_some(l(Lm::Send)));
         c = c.push(row![container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
         container(c).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
+    }
+
+    /// MessageRow `.callrec` for a group call: "Group call · 19 min · 4 people", or "Missed group call · 5 min"
+    /// (calm: never the error colour). A call I started sits on my side. Tap = start or join a call here.
+    fn group_call_pill<'a>(&'a self, t: Tok, r: &p2pcore::GroupCallRecord) -> El<'a> {
+        let stamp = hhmm(r.started_at * 1000);
+        let gid = r.group_id.clone();
+        let gone = self.live.detail.as_ref().is_none_or(|d| !gl::active(d.my_role));
+        let label = p2pcore::group_call_label(r.clone());
+        let pill = button(row![crate::pg_icons::pgi("phone", 16.0, t.ink2), semi(label, 13.0, t.ink).line_height(lh(18.0)),
+                tx(stamp, 11.0, t.ink2).line_height(lh(18.0))].spacing(6).height(Fill).align_y(Alignment::Center))
+            .padding([0, 12]).height(32)
+            .style(move |_: &iced::Theme, st| button::Style {
+                background: Some(if matches!(st, button::Status::Hovered) { t.surface2 } else { t.surface }.into()),
+                border: Border { color: t.hairline, width: 1.0, radius: 16.0.into() }, text_color: t.ink, ..Default::default() })
+            .on_press_maybe((!gone).then(|| Msg::GCall(crate::app::gcall::Gm::Call(gid))));
+        if !r.missed && r.started_by == self.live.me { row![Space::new().width(Fill), pill].into() } else { row![pill, Space::new().width(Fill)].into() }
     }
 
     fn live_item<'a>(&'a self, t: Tok, m: &'a GroupMessage, pos: geom::Pos, max_bub: f32) -> El<'a> {
@@ -487,7 +556,7 @@ impl App {
             _ => format!("{} member{} \u{b7} {role_line}", d.members.len(), if d.members.len() == 1 { "" } else { "s" }),
         };
         col = col.push(container(column![
-            container(crate::pg_icons::pgi("users", 34.0, t.accent_ink)).width(72).height(72).center_x(72).center_y(72).style(ui::plain(t.surface2, 36.0)),
+            gav(t, self.live.open.as_deref().unwrap_or_default(), 72.0),
             Space::new().height(12),
             semi(d.name.clone(), 22.0, t.ink).line_height(lh(28.0)),
             tx(hero_sub, 13.0, t.ink2).line_height(lh(19.0)),
@@ -515,11 +584,13 @@ impl App {
             // ---- hosts
             let up = d.am_host || d.hosts.iter().any(|h| h.online);
             let host_line = if d.hosts.is_empty() { "This group has no host. Posts wait until a host is appointed.".to_string() }
-                else if up { format!("{} host{} online. Posts go through right away.", d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1), if d.hosts.len() == 1 { "" } else { "s" }) }
+                // This computer is said in words, not listed as a row: its "Stop hosting" button below stands for it.
+                else if d.am_host && d.hosts.len() == 1 { "This computer hosts the group. Posts go through right away.".to_string() }
+                else if up { format!("{} host{} online{}. Posts go through right away.", d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1), if d.hosts.len() == 1 { "" } else { "s" }, if d.am_host { ", this computer too" } else { "" }) }
                 else { "No host is online. Your posts are saved and send when one is.".to_string() };
             let mut c = column![h2("Hosts", None), status(up && !d.hosts.is_empty(), host_line)];
-            for h in &d.hosts {
-                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
+            for h in d.hosts.iter().filter(|h| !h.is_me) {
+                let name = self.live_name(&h.did, &h.name);
                 let calls = d.call_hosts.iter().any(|x| x.did == h.did && x.device_id == h.device_id);
                 let sub = format!("{}{}", if h.online || h.is_me { "Online" } else { "Offline" }, if calls { " \u{b7} also hosts calls" } else { "" });
                 let end: El = if admin { textbtn("Remove", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
@@ -549,19 +620,34 @@ impl App {
             // ---- call hosts
             let ready = d.call_hosts.len();
             let ch_line = if ready == 0 { "This group has no call host. Nobody can start a call until an admin appoints one.".to_string() }
+                else if d.am_call_host && d.call_hosts.len() == 1 { "This computer carries the calls.".to_string() }
                 else { format!("{ready} call host{} ready. Calls start through {}.", if ready == 1 { "" } else { "s" }, if ready == 1 { "it" } else { "them" }) };
             let mut c = column![h2("Call hosts", None), status(ready > 0, ch_line)];
-            for h in &d.call_hosts {
-                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
-                let end: El = if admin { textbtn("Remove", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
+            for h in d.call_hosts.iter().filter(|h| !h.is_me) {
+                let name = self.live_name(&h.did, &h.name);
+                // Removes the CALL host (was wired to the chat-host revoke).
+                let end: El = if admin { textbtn("Remove", t.ink, l(Lm::RevokeCall(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
                 c = c.push(mrow(&h.did, name, if h.online || h.is_me { "Online".into() } else { "Offline".into() }, end));
             }
             for h in &d.call_host_requests {
                 let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
                 c = c.push(mrow(&h.did, name, "Waiting to accept".into(), Space::new().into()));
             }
+            // This computer: carry the calls (an admin can appoint it in one step; a member accepts when asked).
+            let here: Option<El> = if d.am_call_host {
+                Some(act("phone", "Stop hosting calls on this computer".into(), None, None, Some(l(Lm::CallsHere(false))), false))
+            } else if d.call_host_requested_here {
+                Some(act("phone", "Host calls on this computer".into(), Some("An admin asked this computer to carry the group\u{2019}s calls".into()), None, Some(l(Lm::CallsHere(true))), false))
+            } else if admin {
+                Some(act("phone", "Host calls on this computer".into(), Some("Carries the group\u{2019}s calls; a computer that stays on is best".into()), None, Some(l(Lm::CallsHere(true))), false))
+            } else {
+                None
+            };
+            if let Some(h) = here {
+                c = c.push(container(card(vec![h])).padding(Padding { top: 8.0, ..Padding::ZERO }));
+            }
             c = c.push(note(format!("A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{}",
-                if admin { " Appoint one from a member\u{2019}s menu." } else { "" })));
+                if admin { " Appoint one from a member\u{2019}s menu, or host calls on this computer." } else { "" })));
             col = col.push(sec(c));
             // ---- members: owner, admins, then members; me first among equals. A row opens its actions.
             let mut members: Vec<&p2pcore::GroupMember> = d.members.iter().collect();
@@ -797,6 +883,20 @@ impl App {
                     "Members stop going through it".into(),
                     t.ink,
                     l(Lm::Revoke(m.did.clone(), dev)),
+                ),
+                Action::AppointCall(dev) => item(
+                    Icon::Phone,
+                    if several { format!("Make device {} a call host", short_dev(&dev)) } else { "Make call host".into() },
+                    format!("Asks {first} to carry group calls on that device; they have to accept"),
+                    t.ink,
+                    l(Lm::AppointCall(m.did.clone(), dev)),
+                ),
+                Action::RevokeCall(dev) => item(
+                    Icon::Phone,
+                    if several { format!("Stop device {} carrying calls", short_dev(&dev)) } else { "Stop hosting calls".into() },
+                    "Calls go through the other call hosts".into(),
+                    t.ink,
+                    l(Lm::RevokeCall(m.did.clone(), dev)),
                 ),
                 Action::Flag => item(
                     Icon::Flag,

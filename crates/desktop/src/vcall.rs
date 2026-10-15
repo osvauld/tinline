@@ -21,6 +21,10 @@ pub(super) enum Vm {
     Found(Option<Source>),
     /// The "video in calls" setting.
     Enabled(bool),
+    PreferHd(bool),
+    ScanCameras,
+    Cameras(Vec<camera::Info>),
+    SelectCamera(String),
 }
 
 #[derive(Default)]
@@ -36,6 +40,10 @@ pub(super) struct VideoUi {
     /// Remote frames shown and the UI-thread cost per frame (pull + RGBA + handle), smoothed.
     shown: u64,
     cost_ms: f32,
+    pub send_size: Option<(u32, u32)>,
+    pub devices: Vec<camera::Info>,
+    initial_sent: u64,
+    stats_tick: u32,
 }
 
 impl VideoUi {
@@ -46,7 +54,9 @@ impl VideoUi {
 
     /// Either camera is on, so the call screen shows the video stage.
     pub fn live(&self) -> bool {
-        self.info.as_ref().is_some_and(|i| i.negotiated && (i.local_camera || i.remote_camera))
+        self.info
+            .as_ref()
+            .is_some_and(|i| i.negotiated && (i.local_camera || i.remote_camera))
     }
 
     pub fn local_on(&self) -> bool {
@@ -80,7 +90,10 @@ impl App {
             Vm::Found(src) => {
                 self.video.source = Some(src);
                 let intent = std::mem::take(&mut self.video_intent);
-                if self.video.has_camera() && !self.video.local_on() && (intent || crate::test_env("P2P_AUTO_CAMERA").is_some()) {
+                if self.video.has_camera()
+                    && !self.video.local_on()
+                    && (intent || crate::test_env("P2P_AUTO_CAMERA").is_some())
+                {
                     return self.video_update(Vm::ToggleCamera);
                 }
                 self.sync_camera();
@@ -90,13 +103,28 @@ impl App {
                 self.node.set_video_enabled(on);
                 self.save_settings();
             }
+            Vm::ScanCameras => return blocking(camera::infos, |d| Msg::Video(Vm::Cameras(d))),
+            Vm::Cameras(devices) => self.video.devices = devices,
+            Vm::SelectCamera(device) => {
+                self.settings.camera_device = (device != super::DEFAULT_LABEL).then_some(device);
+                self.save_settings();
+                // Camera selection applies next call; don't interrupt an active capture.
+            }
+            Vm::PreferHd(on) => {
+                self.settings.prefer_hd = on;
+                self.save_settings();
+            }
         }
         Task::none()
     }
 
     /// The core's video state for the current call changed.
     pub(super) fn video_state(&mut self, info: VideoInfo) -> Task<Msg> {
-        if self.call.as_ref().is_none_or(|c| c.info.call_id != info.call_id) {
+        if self
+            .call
+            .as_ref()
+            .is_none_or(|c| c.info.call_id != info.call_id)
+        {
             return Task::none();
         }
         let first = self.video.info.is_none();
@@ -107,7 +135,11 @@ impl App {
         self.sync_camera();
         if first && self.video.negotiated() && self.video.source.is_none() {
             let fake = crate::test_env("TINLINE_FAKE_CAMERA");
-            return blocking(move || camera::find(fake.as_deref()), |s| Msg::Video(Vm::Found(s)));
+            let selected = self.settings.camera_device.clone();
+            return blocking(
+                move || camera::find_selected(fake.as_deref(), selected.as_deref()),
+                |s| Msg::Video(Vm::Found(s)),
+            );
         }
         Task::none()
     }
@@ -118,17 +150,27 @@ impl App {
         if !want {
             self.video.camera = None;
             self.video.local = None;
+            self.video.send_size = None;
             self.video.slot.lock().unwrap().take();
             return;
         }
-        let Some(Some(src)) = self.video.source.clone() else { return };
+        let Some(Some(src)) = self.video.source.clone() else {
+            return;
+        };
         if self.video.camera.is_some() {
             return;
         }
         let (node, slot) = (self.node.clone(), self.video.slot.clone());
         let (node2, tx) = (self.node.clone(), INIT.get().unwrap().tx.clone());
-        self.video.camera = Some(Camera::start(
+        self.video.initial_sent = self.node.video_stats().map_or(0, |s| s.frames_sent);
+        self.video.stats_tick = 0;
+        self.video.camera = Some(Camera::start_with_quality(
             src,
+            if self.settings.prefer_hd {
+                camera::Quality::PreferHd
+            } else {
+                camera::Quality::Auto
+            },
             move |r| match r {
                 Ok(_o) => {
                     crate::tlog!("CAMERA {} {}x{}", _o.format, _o.width, _o.height);
@@ -146,15 +188,36 @@ impl App {
     }
 
     fn video_tick(&mut self) {
+        if self.video.local_on() {
+            if self.video.stats_tick == 0 {
+                self.video.send_size = self.node.video_stats().and_then(|s| {
+                    (s.frames_sent > self.video.initial_sent
+                        && s.send_width > 0
+                        && s.send_height > 0)
+                        .then_some((s.send_width, s.send_height))
+                });
+            }
+            self.video.stats_tick = (self.video.stats_tick + 1) % 30;
+        }
         let t = Instant::now();
         if let Some(r) = frames::pull(&self.node) {
             self.video.remote = Some(Handle::from_rgba(r.width, r.height, r.data));
             let ms = t.elapsed().as_secs_f32() * 1e3;
             let v = &mut self.video;
-            v.cost_ms = if v.shown == 0 { ms } else { 0.9 * v.cost_ms + 0.1 * ms };
+            v.cost_ms = if v.shown == 0 {
+                ms
+            } else {
+                0.9 * v.cost_ms + 0.1 * ms
+            };
             v.shown += 1;
             if v.shown.is_multiple_of(150) {
-                crate::tlog!("VRENDER shown={} ms={:.2} {}x{}", v.shown, v.cost_ms, r.width, r.height);
+                crate::tlog!(
+                    "VRENDER shown={} ms={:.2} {}x{}",
+                    v.shown,
+                    v.cost_ms,
+                    r.width,
+                    r.height
+                );
             }
         }
         if let Some(l) = self.video.slot.lock().unwrap().take() {
@@ -169,17 +232,29 @@ impl App {
 
     /// Test hook P2P_AUTO_CALL=<contact name>: call them once online.
     pub(super) fn auto_call(&mut self) -> Task<Msg> {
-        let Some(name) = crate::test_env("P2P_AUTO_CALL") else { return Task::none() };
+        let Some(name) = crate::test_env("P2P_AUTO_CALL") else {
+            return Task::none();
+        };
         if !self.status.online || self.call.is_some() || AUTO_CALLED.load(Ordering::Relaxed) {
             return Task::none();
         }
-        let Some(did) = self.contacts.iter().find(|c| c.name == name).map(|c| c.did.clone()) else { return Task::none() };
+        let Some(did) = self
+            .contacts
+            .iter()
+            .find(|c| c.name == name)
+            .map(|c| c.did.clone())
+        else {
+            return Task::none();
+        };
         AUTO_CALLED.store(true, Ordering::Relaxed);
         self.update(Msg::CallPressed(did))
     }
 
     /// Pull remote frames while video runs.
     pub(super) fn video_ticking(&self) -> bool {
-        self.call.as_ref().is_some_and(|c| c.state == CallState::Active) && self.video.live()
+        self.call
+            .as_ref()
+            .is_some_and(|c| c.state == CallState::Active)
+            && self.video.live()
     }
 }

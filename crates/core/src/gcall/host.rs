@@ -266,6 +266,15 @@ impl HostEngine {
         for d in gone {
             self.remove_part(&d);
         }
+        self.after_removal()
+    }
+
+    /// After someone left the Roster: the last one out ends the call for good (otherwise an empty
+    /// call stays announced forever, and "End" on a member only leaves it); else Roster + Active.
+    fn after_removal(&mut self) -> Vec<HostAction> {
+        if self.st.parts.is_empty() {
+            return self.end(EndReason::Ended, None);
+        }
         let mut out = self.roster_actions();
         out.extend(self.active_actions());
         out
@@ -374,9 +383,7 @@ impl HostEngine {
             let next = self.next_backup(auth);
             return Ok(self.end(EndReason::HostLeaving, next));
         }
-        let mut out = self.roster_actions();
-        out.extend(self.active_actions());
-        Ok(out)
+        Ok(self.after_removal())
     }
 
     /// An upstream datagram from `conn`. Audio from a forwarded slot goes out at once to every
@@ -494,8 +501,10 @@ impl HostEngine {
             changed = true;
         }
         if changed {
-            out.extend(self.roster_actions());
-            out.extend(self.active_actions());
+            out.extend(self.after_removal());
+            if self.st.ended {
+                return out;
+            }
         }
         if now >= self.st.next_hb_ms {
             self.st.next_hb_ms = now + HEARTBEAT_MS;

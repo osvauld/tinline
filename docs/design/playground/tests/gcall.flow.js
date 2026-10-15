@@ -16,7 +16,7 @@ async function open(b, form, hash, dark = false) {
   await wait(p, 500);
   await ev(p, () => {
     window.__gc.chatter = false;
-    const m = window.__gcms; m.ask = 150; m.refuse = 100; m.connect = 150; m.redialCrash = 400; m.redialPlanned = 250; m.redialRotate = 250; m.bannerHold = 1500;
+    const m = window.__gcms; m.ask = 150; m.refuse = 100; m.connect = 150; m.redialCrash = 400; m.redialPlanned = 250; m.redialRotate = 250; m.bannerHold = 1500; m.ring = 8000;
     window.__pg.CALL_MS.connect = 150;
   });
   return p;
@@ -56,8 +56,8 @@ const recs = (p, id) => ev(p, (id) => window.__pg.db.chats.find((c) => c.id === 
     await ev(p, () => { for (const id of ['sam', 'meera', 'priya', 'leo', 'kavya']) window.__gc.setSpeaking(id, true); });
     await wait(p, 900);
     const sp = await ev(p, () => window.__gc.loud.filter((x) => x !== 'me'));
-    ok('speaking: the host forwards at most K=3 (a computer host)', sp.length === 3, JSON.stringify(sp));
-    ok('speaking: exactly those tiles are lit', (await p.locator('[data-gcall] .tile.speaking').count()) === 3);
+    ok('speaking: a computer host forwards every speaker (Q2)', sp.length === 5, JSON.stringify(sp));
+    ok('speaking: exactly those tiles are lit', (await p.locator('[data-gcall] .tile.speaking').count()) === 5);
     ok('speaking: a speaking line names them', /speaking/.test(await p.locator('[data-gcall] .spk').innerText()));
     await ev(p, () => { for (const id of ['sam', 'meera', 'priya', 'leo', 'kavya']) window.__gc.setSpeaking(id, false); });
     ok('speaking: quiet again, nobody lit', await until(p, () => document.querySelectorAll('[data-gcall] .tile.speaking').length === 0, null, 4000));
@@ -77,7 +77,7 @@ const recs = (p, id) => ev(p, (id) => window.__pg.db.chats.find((c) => c.id === 
     ok('info: Escape closes it and the call stays', await until(p, () => !document.querySelector('[data-gcall] .info'), null, 4000) && (await gphase(p)) === 'active');
 
     /* ---- minimise and restore ---- */
-    await p.getByRole('button', { name: 'Minimize call' }).click();
+    await p.getByRole('button', { name: /^(Minimize call|Back to the app)/ }).click();
     await p.waitForSelector('[data-gstrip]');
     ok('minimise: the strip shows the group and a timer', /Weekend hike/.test(await p.locator('[data-gstrip]').innerText()) && !(await p.locator('[data-gcall]').count()));
     ok('minimise: the strip carries the call, so the join banner is gone', (await p.locator('[data-gbanner]').count()) === 0);
@@ -95,8 +95,8 @@ const recs = (p, id) => ev(p, (id) => window.__pg.db.chats.find((c) => c.id === 
     await p.locator('[data-gcall]').getByRole('button', { name: 'Leave call' }).click();
     ok('leave: screen goes', await until(p, () => !document.querySelector('[data-gcall]'), null, 3000));
     ok('leave: back to idle', await until(p, () => window.__gc.phase === 'idle', null, 3000));
-    const r = await recs(p, 'hike');
-    ok('record: one "Group call" record, from me', r.length === 1 && r[0].group === true && r[0].direction === 'out' && r[0].from === 'me', JSON.stringify(r));
+    const r = (await recs(p, 'hike')).filter((x) => x.from === 'me');   // the seed holds two earlier group calls from others
+    ok('record: one "Group call" record, from me', r.length === 1 && r[0].group === true && r[0].direction === 'out', JSON.stringify(r));
     ok('record: the pill reads "Group call · …"', /Group call · \d+ s|Group call · \d+ min/.test(await p.locator('.callrec .pill').first().innerText()));
     ok('call goes on without me (others still in)', await ev(p, () => !!window.__gc.liveFor('hike') && !window.__gc.liveFor('hike').parts.includes('me')));
     ok('banner: Join is offered again', (await p.locator('[data-gbanner] button', { hasText: 'Join' }).count()) === 1);
@@ -163,7 +163,17 @@ const recs = (p, id) => ev(p, (id) => window.__pg.db.chats.find((c) => c.id === 
     await ev(p, () => window.__gc.remoteStart('hike', 'sam'));
     ok('started: Call started by Sam is in the thread', await ev(p, () => window.__pg.db.chats.find((c) => c.id === 'hike').messages.some((m) => m.system && /Call started by Sam/.test(m.text))));
     ok('started: the conversation banner shows, 1 joined', /Call in progress/.test(await p.locator('[data-gbanner]').innerText()) && /1 joined/.test(await p.locator('[data-gbanner]').innerText()));
-    ok('started: no ringing (no incoming call phase)', (await ev(p, () => window.__pg.call.phase)) === 'idle' && !(await ev(p, () => window.__pg.fxLog.some(({ e }) => e.type === 'incoming'))));
+    ok('started: a group call rings (ring cue on, 1:1 phase stays idle)', (await ev(p, () => window.__pg.call.phase)) === 'idle' && (await ev(p, () => window.__gc.announce?.ringing === true && window.__pg.fxLog.some(({ e }) => e.type === 'incoming' && e.on))));
+    ok('ring: the card says Sam is calling the group, Join / Not now', /Sam is calling the group/.test(await p.locator('[data-gcall-announce]').innerText().catch(() => '')) && (await p.locator('[data-gcall-announce]').getByRole('button', { name: 'Not now' }).count()) === 1);
+    await p.locator('[data-gcall-announce]').getByRole('button', { name: 'Not now' }).click();
+    ok('ring: Not now stops the ring; the quiet banner stays', (await ev(p, () => window.__gc.announce?.ringing === false && window.__pg.fxLog.filter(({ e }) => e.type === 'incoming').at(-1).e.on === false)) && /Call in progress/.test(await p.locator('[data-gbanner]').innerText()));
+    await ev(p, () => window.__gc.remoteLeave('hike', 'sam'));
+    await ev(p, () => { window.__pg.db.chats.find((c) => c.id === 'hike').muted = true; });
+    await ev(p, () => window.__gc.remoteStart('hike', 'sam'));
+    ok('ring: a muted group does not ring', (await ev(p, () => window.__gc.announce?.ringing)) === false);
+    await ev(p, () => { window.__gc.remoteLeave('hike', 'sam'); window.__pg.db.chats.find((c) => c.id === 'hike').muted = false; });
+    await ev(p, () => { window.__gcms.ring = 800; window.__gc.remoteStart('hike', 'sam'); });
+    ok('ring: ends by itself after the ring time', await until(p, () => window.__gc.announce?.ringing === false, null, 3000));
     await ev(p, () => { window.__gc.conds.arjun.class = 'phone'; window.__gc.conds.arjun.power = 'mains'; });
     for (const id of ['meera', 'priya', 'leo', 'kavya', 'dev', 'nisha', 'amma']) await ev(p, (id) => { const g = window.__pg.db.chats.find((c) => c.id === 'hike'); if (!g.members.some((m) => m.id === id)) g.members.push({ id, role: 'member', host: false, callHost: false, callHostPaused: false, since: 0 }); window.__gc.remoteJoin('hike', id); }, id);
     ok('cap: a phone host stops at 8 people', (await ev(p, () => window.__gc.liveFor('hike').parts.length)) === 8 && (await ev(p, () => window.__gc.remoteJoin('hike', 'sana'))) === false);
