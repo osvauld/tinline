@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -20,6 +22,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.os.SystemClock
+import android.view.ViewTreeObserver
+import kotlinx.coroutines.delay
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -99,7 +111,7 @@ fun SettingsScreen(
             SectionLabel("SECURITY")
             if (hasPass) ListItem("Change passphrase", onClick = onPassphrase, icon = PgIcons.Key)
             else ListItem("Add passphrase", onClick = onPassphrase, icon = PgIcons.Key, sub = "Optional — encrypts your account")
-            ListItem("Recovery phrase", onClick = onPhrase, icon = PgIcons.Lock, sub = if (hasPass) "Needs your passphrase" else "Needs your screen lock")
+            ListItem("Account recovery", onClick = onPhrase, icon = PgIcons.Lock, sub = if (hasPass) "Needs your passphrase" else "Needs your screen lock")
             SectionLabel("PRIVACY")
             val blocks by app.blocks.collectAsState()
             ListItem("Blocked people", onClick = onBlocked, icon = PgIcons.Off,
@@ -164,71 +176,139 @@ private fun CheckRow(icon: androidx.compose.ui.graphics.vector.ImageVector, titl
 
 // ------------------------------------------------------------------ recovery phrase
 
-/** Asks for the passphrase (or, with none set, the screen lock), then reveals the phrase through [onPhrase]. */
+/** Both Profile and Privacy use this gate; no credential or phrase enters synchronized profile data. */
 @Composable
 fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
-    val hasPass = remember { app.node.hasPassphrase() }
+    val owner = LocalLifecycleOwner.current
+    var hasPass by remember { mutableStateOf<Boolean?>(null) }
     var pass by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var prompting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var generation by remember { mutableIntStateOf(0) }
+    var alive by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        val ticket = app.profiles.session.ticket() ?: return@LaunchedEffect
+        val result = withContext(Dispatchers.IO) { runCatching { app.profileWork(ticket) { it.hasPassphrase() } }.getOrNull() }
+        if (app.profiles.session.accepts(ticket)) hasPass = result
+        if (result == null) error = "Couldn’t open recovery. Go back and try again."
+    }
+    DisposableEffect(owner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                pass = ""; generation++
+                if (!prompting) busy = false
+            }
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { alive = false; generation++; pass = ""; owner.lifecycle.removeObserver(observer) }
+    }
     fun reveal() {
+        val ticket = app.profiles.session.ticket() ?: return
+        val attempt = ++generation
+        val password = pass
         busy = true; error = null
         scope.launch {
-            val r = withContext(Dispatchers.IO) { runCatching { app.node.recoveryPhrase(pass) } }
-            busy = false
-            r.onFailure { error = friendly(it) }
-            r.onSuccess { pass = ""; onPhrase(it) }
+            val result = withContext(Dispatchers.IO) { runCatching { app.profileWork(ticket) { it.recoveryPhrase(password) } } }
+            if (!alive || attempt != generation || !app.profiles.session.accepts(ticket)) return@launch
+            busy = false; pass = ""
+            if (!owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
+            result.onSuccess(onPhrase).onFailure {
+                error = if (it is uniffi.p2pcore.Exception.WrongPassphrase) "That didn’t match. Try again." else "Couldn’t open your backup. Try again."
+            }
         }
     }
     fun go() {
+        if (busy || hasPass == null) return
+        error = null
+        if (hasPass == true) { if (pass.isNotEmpty()) reveal(); return }
         val act = ctx.findActivity()
-        if (hasPass || act == null) reveal()
-        else DeviceAuth.ask(act, "Show recovery phrase") { ok -> if (ok) reveal() else error = "Screen lock check cancelled" }
+        // DeviceAuth's legacy fallback is permissive. Recovery must not treat no prompt as authentication.
+        if (act == null || !DeviceAuth.available(act)) {
+            error = "Add a screen lock or an app passphrase to open your backup."
+            return
+        }
+        val ticket = app.profiles.session.ticket() ?: return
+        busy = true; prompting = true
+        DeviceAuth.ask(act, "Account recovery") { ok ->
+            if (alive) {
+                prompting = false; busy = false
+                if (ok && app.profiles.session.accepts(ticket) && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) reveal()
+            }
+        }
     }
     Page {
-        TopBar("Recovery phrase", onBack)
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Box(Modifier.size(64.dp).clip(CircleShape).background(Tin.c.prc), contentAlignment = Alignment.Center) { Icon(PgIcons.Lock, null, tint = Tin.c.onPrc, modifier = Modifier.size(28.dp)) }
-            Text(if (hasPass) "Enter your passphrase" else "Confirm it’s you", style = TinType.h1.copy(fontSize = 26.sp, lineHeight = 32.sp), color = Tin.c.ink)
-            Lead(if (hasPass) "Your recovery phrase is the key to your account, so we check it’s really you first."
-            else "Your recovery phrase is the key to your account, so we ask for your phone’s screen lock first.")
-            if (hasPass) TinField(pass, { pass = it; error = null }, "Passphrase", mono = true, password = true, enabled = !busy,
-                state = if (error != null) FieldState.Error else FieldState.Normal, hint = error,
-                keyboard = KeyboardOptions(imeAction = ImeAction.Done), actions = KeyboardActions(onDone = { if (pass.isNotEmpty() && !busy) go() }))
-            else error?.let { Text(it, style = TinType.bodyM, color = Tin.c.er) }
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Tin.c.pr, trackColor = Tin.c.sf3)
+        TopBar("Account recovery", onBack)
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Hint("Only you")
+            Lead("Check it’s you before opening your backup.")
+            if (hasPass == true) TinField(pass, { pass = it; error = null }, "Your passphrase", password = true, enabled = !busy,
+                keyboard = KeyboardOptions(imeAction = ImeAction.Done), actions = KeyboardActions(onDone = { go() }))
+            else if (hasPass == false) Hint("Use your phone’s screen lock to continue.")
+            Text(error.orEmpty(), Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = TinType.bodyM, color = Tin.c.er)
         }
-        Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Show recovery phrase", ::go, enabled = (!hasPass || pass.isNotEmpty()) && !busy) }
+        Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) {
+            TinButton(if (hasPass == false) "Use screen lock" else "Continue", ::go, enabled = hasPass != null && (hasPass == false || pass.isNotEmpty()) && !busy)
+        }
     }
 }
 
 @Composable
-fun PhraseShownScreen(phrase: String, onHide: () -> Unit) {
+fun PhraseShownScreen(phrase: String, onHide: () -> Unit, onRelock: () -> Unit = onHide) {
     val ctx = LocalContext.current
+    val view = LocalView.current
+    val relock by rememberUpdatedState(onRelock)
+    var state by remember(phrase) { mutableStateOf(RecoveryBackupState()) }
     var copied by remember { mutableStateOf(false) }
-    // Words | Key: the same secret two ways (core recovery_key.rs).
-    var asKey by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
     val key = remember(phrase) { runCatching { uniffi.p2pcore.recoveryKeyFromPhrase(phrase) }.getOrDefault("") }
-    Page {
-        TopBar("Recovery phrase", onHide)
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            InfoCard(if (asKey) "Anyone who sees this key can become you. Check nobody is looking." else "Anyone who sees these words can become you. Check nobody is looking.", icon = PgIcons.Warning, kind = BannerKind.Warn)
-            WordsKeySeg(asKey) { asKey = it; copied = false }
-            if (asKey) KeyCard(key) else WordGrid(phrase)
-            TinButton(if (copied) "Copied" else if (asKey) "Copy my key" else "Copy recovery phrase", {
-                if (asKey) copyToClipboard(ctx, "Recovery key", key) else copyToClipboard(ctx, "Recovery phrase", phrase)
-                copied = true
-            }, style = BtnStyle.Outlined, icon = PgIcons.Copy)
-            Hint(if (asKey) "Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."
-                else "Paste into a trusted password manager. Anyone with these words can access your account.")
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(PgIcons.Lock, null, tint = Tin.c.ink2, modifier = Modifier.size(16.dp))
-                Hint("Screenshots and screen recording are blocked here.")
-            }
+    val shown = state.visible(SystemClock.elapsedRealtime())
+    LaunchedEffect(state.revealUntil) {
+        state.revealUntil?.let { deadline ->
+            delay((deadline - SystemClock.elapsedRealtime()).coerceAtLeast(0))
+            state = state.hide(); copied = false
         }
-        Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Hide", onHide) }
+    }
+    DisposableEffect(view) {
+        val observer = view.viewTreeObserver
+        val listener = ViewTreeObserver.OnWindowFocusChangeListener { focused -> if (!focused) relock() }
+        observer.addOnWindowFocusChangeListener(listener)
+        onDispose { if (observer.isAlive) observer.removeOnWindowFocusChangeListener(listener) }
+    }
+    Page {
+        TopBar("Your recovery backup", onHide)
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Hint("Only you")
+            Lead("Keep this private. Anyone with it can act as you.")
+            Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(true to "Key", false to "24 words").forEach { (asKey, label) ->
+                    Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (state.asKey == asKey) Tin.c.prc else Tin.c.sf)
+                        .selectable(state.asKey == asKey, role = Role.Tab) { state = state.select(asKey); copied = false; error = "" }.padding(12.dp), contentAlignment = Alignment.Center) {
+                        Text(label, style = TinType.label, color = if (state.asKey == asKey) Tin.c.onPrc else Tin.c.ink)
+                    }
+                }
+            }
+            if (state.asKey) KeyCard(if (shown) key else "•••• •••• •••• ••••") else WordGrid(phrase, hidden = !shown)
+            if (state.asKey && key.isEmpty()) Hint("Couldn’t prepare the key. Use your 24 words instead.")
+            TinButton(if (shown) "Hide" else "Reveal", {
+                state = if (shown) state.hide() else state.reveal(SystemClock.elapsedRealtime()); copied = false; error = ""
+            }, style = BtnStyle.Outlined, enabled = !state.asKey || key.isNotEmpty())
+            Hint("Hides after 30 seconds. Locks when you leave the app.")
+            Hint("Key or words restore the same account. Keep either in a private, safe place.")
+        }
+        Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(error.ifEmpty { if (copied && shown) "Copied. Keep it somewhere private." else "" }, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = TinType.bodyM, color = Tin.c.ink2)
+            if (state.asKey) TinButton(if (copied) "Copied" else "Copy key", {
+                // Check the monotonic deadline at the gesture, not just at the last composition.
+                if (state.canCopyKey(SystemClock.elapsedRealtime()) && key.isNotEmpty() && view.hasWindowFocus()) {
+                    copied = runCatching { copyToClipboard(ctx, "Recovery key", key) }.isSuccess
+                    error = if (copied) "" else "Couldn’t copy. Try again."
+                }
+            }, enabled = shown && key.isNotEmpty())
+            else TinButton("Done", onHide)
+        }
     }
 }
 
