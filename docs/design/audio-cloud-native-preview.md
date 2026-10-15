@@ -1,5 +1,7 @@
 # Native Fog / Clouds call-screen preview
 
+> The `cargo --example` tools named below (audio_cloud_demo) were removed on 2026-10-15; recover them with `git show archive/examples-2026-10-15:<path>`. The measured numbers stay valid as a record.
+
 Owned by the audio-simulation coordinating session in `bench/group-audio-capacity`.
 This session owns the new `audio_cloud_demo.rs`, `cloud.rs`, `cloud_tests.rs`,
 `cloud_parity.mjs`, `cloud.wgsl`, `iced_cloud.rs`, `run-cloud.sh`, this report, and

@@ -1,5 +1,7 @@
 # Video calls (spike: `crates/video`)
 
+> The `cargo --example` tools named below (net_loopback, bench, convert_bench, delay, cam_probe) were removed on 2026-10-15; recover them with `git show archive/examples-2026-10-15:<path>`. The measured numbers stay valid as a record.
+
 Status: design + simulation; wired into 1:1 calls in the core; Android UI (camera, render,
 call screen); desktop UI (camera + render).
 
