@@ -333,8 +333,8 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
 
 /** The libraries only the Android app ships (the core's own are `openSourceLicences()`). */
 private val ANDROID_LIBS = listOf(
-    "ZXing" to "Apache-2.0", "JNA" to "Apache-2.0 or LGPL-2.1", "AndroidX and Jetpack Compose" to "Apache-2.0",
-    "Figtree and IBM Plex Mono" to "SIL OFL 1.1", "BIP-39 word list" to "MIT",
+    "ZXing and ZXing Android Embedded" to "Apache-2.0", "JNA" to "Apache-2.0 or LGPL-2.1+", "AndroidX and Jetpack Compose" to "Apache-2.0",
+    "libyuv (in CameraX)" to "BSD", "Figtree and IBM Plex Mono" to "SIL OFL 1.1",
 )
 
 @Composable
