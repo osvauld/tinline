@@ -119,8 +119,8 @@ fn tags_pkt() -> Vec<u8> {
 }
 
 fn silence_pkt() -> Vec<u8> {
-    let mut e = Encoder::new().unwrap();
-    e.encode(&[0; FRAME]).unwrap()
+    let mut e = Encoder::new(&CODEC).unwrap();
+    encode_packet(&mut e, &[0; FRAME]).unwrap()
 }
 
 /// head, tags, then `n` single-packet audio pages (last is EOS), all valid.

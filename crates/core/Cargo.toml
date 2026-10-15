@@ -32,7 +32,6 @@ video = { path = "../video", default-features = false, features = ["net"] }
 identity.workspace = true
 cryptography.workspace = true
 zeroize.workspace = true
-opusic-sys = "0.7.5"
 sha2.workspace = true
 parking_lot = "0.12"
 base64.workspace = true
