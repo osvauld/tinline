@@ -13,6 +13,7 @@ use storage::Sealed;
 pub(crate) struct ReceiptStore {
     db: Sealed,
     opened: Mutex<BTreeSet<String>>,
+    joins: Mutex<std::sync::Weak<joins::JoinController>>,
     #[cfg(test)]
     fail_commit: std::sync::atomic::AtomicBool,
 }
@@ -66,6 +67,7 @@ impl ReceiptStore {
         Arc::new(Self {
             db,
             opened: Mutex::new(BTreeSet::new()),
+            joins: Mutex::new(std::sync::Weak::new()),
             #[cfg(test)]
             fail_commit: false.into(),
         })
@@ -136,6 +138,17 @@ impl ReceiptStore {
         }
         result
     }
+    fn apply_ops(&self, ops: &[storage::Op]) -> Result<(), ReceiptError> {
+        #[cfg(test)]
+        if self
+            .fail_commit
+            .swap(false, std::sync::atomic::Ordering::SeqCst)
+        {
+            return Err(io("injected receipt commit failure"));
+        }
+        self.db.apply(ops).map_err(io)
+    }
+
     #[cfg(test)]
     pub(crate) fn fail_next_commit(&self) {
         self.fail_commit
@@ -307,6 +320,18 @@ impl Ledger {
         evidence: &[super::evidence::Evidence],
         admit: impl FnOnce(&[Entry]) -> Result<(), String>,
     ) -> Result<Committed, ReceiptError> {
+        self.write_with_evidence_and_ops(claim, account, evidence, admit, vec![])
+    }
+    /// Store-owned controller sidecars only: native receipt, originals and intent
+    /// completion must share a transaction. Never exposed to protocol/UI callers.
+    fn write_with_evidence_and_ops(
+        &self,
+        claim: &Receipt,
+        account: &identity::Identity,
+        evidence: &[super::evidence::Evidence],
+        admit: impl FnOnce(&[Entry]) -> Result<(), String>,
+        extra: Vec<storage::Op>,
+    ) -> Result<Committed, ReceiptError> {
         let mut live = self.state.lock();
         let call = claim.call.as_ref().ok_or(ReceiptError::Bounds)?;
         if claim.kind != Kind::Call || evidence.len() > super::calls::MAX_CALL_EVIDENCE {
@@ -340,6 +365,9 @@ impl Ledger {
                     return Err(io("accepted call receipt lacks original evidence"));
                 }
             }
+            if !extra.is_empty() {
+                self.store.apply_ops(&extra)?;
+            }
             return Ok(Committed {
                 entries: vec![],
                 update: None,
@@ -347,7 +375,7 @@ impl Ledger {
             });
         };
         admit(std::slice::from_ref(&entry)).map_err(ReceiptError::Policy)?;
-        self.commit(&mut live, candidate, update, vec![entry], evidence)
+        self.commit_with_ops(&mut live, candidate, update, vec![entry], evidence, extra)
     }
     pub(crate) fn evidence(
         &self,
@@ -373,6 +401,17 @@ impl Ledger {
         update: Vec<u8>,
         entries: Vec<Entry>,
         evidence: &[super::evidence::Evidence],
+    ) -> Result<Committed, ReceiptError> {
+        self.commit_with_ops(live, candidate, update, entries, evidence, vec![])
+    }
+    fn commit_with_ops(
+        &self,
+        live: &mut Live,
+        candidate: ReceiptDoc,
+        update: Vec<u8>,
+        entries: Vec<Entry>,
+        evidence: &[super::evidence::Evidence],
+        extra: Vec<storage::Op>,
     ) -> Result<Committed, ReceiptError> {
         let seq = live
             .seq
@@ -420,15 +459,8 @@ impl Ledger {
                 ops.push(self.store.db.put_op(&path, &e.bytes).map_err(io)?);
             }
         }
-        #[cfg(test)]
-        if self
-            .store
-            .fail_commit
-            .swap(false, std::sync::atomic::Ordering::SeqCst)
-        {
-            return Err(io("injected receipt commit failure"));
-        }
-        self.store.db.apply(&ops).map_err(io)?;
+        ops.extend(extra);
+        self.store.apply_ops(&ops)?;
         let frontier = candidate.vv();
         live.doc = candidate;
         live.seq = seq;
@@ -459,5 +491,6 @@ impl Ledger {
     }
 }
 pub(crate) mod bundles;
+pub(crate) mod joins;
 #[cfg(test)]
 mod tests;
