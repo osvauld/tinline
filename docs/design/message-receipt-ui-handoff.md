@@ -6,28 +6,42 @@ provenance in the message menu / action sheet. Group receipts are not built.
 
 ## What was built
 
-- Core decides the mark: `MessageReceiptStatus.tick: ReceiptTick { None, OnlyHere, Waiting,
-  Delivered, Read }`. `Delivered`/`Read` come only from committed recipient-signed
-  statements for the exact shown version; the legacy transport ack can at most move
-  `OnlyHere` to `Waiting`. Both apps only map tick -> glyph (Rust-first).
-- Marks: clock = `OnlyHere`/`Waiting` (never looks delivered), check = signed Delivered,
-  new `read` glyph (a second check beside the first, tin-icons `read`, Android
-  `Pg.TickRead`) = signed Read, brighter tint. The 13 x 11 slot is always reserved
-  (Android `MetaTick.Blank` while loading), so no layout shift.
-- Provenance: desktop message menu header ("Read on bob’s device" / "On bob’s device" /
-  "Waiting for bob’s device to confirm" / "Only on this computer so far"), then "Signed by
-  bob" and one line per signing device ("Device dbebb7e4 · delivered, read"). Android
-  action sheet: the same headline in the "Sent hh:mm · ..." hint plus one line per proof.
-- Loading: per day page `chat_day_receipts`; single message re-read on send, edit/delete,
-  `on_message_changed` (raised when signed receipts commit) and `on_delivery_changed`.
-  `chat_list_receipts` exists for list rows; neither app's list draws a delivered mark today,
-  so it is unused by the UIs.
-- Desktop test hook `P2P_MENU_FIRST=1` opens the oldest loaded message's menu for screenshots.
-- No read-receipt off switch (open product decision).
+- Core decides the state: `MessageReceiptStatus.tick: ReceiptTick { None, OnlyHere, Waiting, Delivered,
+  Read }`. `Delivered`/`Read` come only from committed recipient-signed statements for the exact shown
+  version; the legacy transport ack can at most move `OnlyHere` to `Waiting`.
+- **Ticks are the mark's string** (user pick from `?lab=ticks`, branch lab/ticks, preset "crisp",
+  STRING variant at every size): K1 (6,12), K2 (19.5,4), sag 7.5, swing -35 deg, stroke 2.1, second
+  tick dx 5, knot gap 1, slot `20 + max(dx, 6)` = 26 units wide on the 24 grid. Geometry (40-point
+  polylines for the slack and the taut string) and the morph curves (the mark's own spring, sampled at
+  120 Hz: pull `1 - s/s0`, pluck `1 - 2s/s0`) are generated from Rust: `crates/tin-icons/src/ticks.rs`
+  -> `generated/tin_ticks.rs` (iced) and `generated/TinTicks.kt` (Compose). Checked against the lab in
+  node: tick points identical to 3 decimals, pluck identical, pull within 0.005.
+- States: OnlyHere = slack string (waiting to send), Waiting = one tick (left your device), Delivered
+  = two ticks, Read = two ticks in lavender ink, Not delivered (blocked) = slack string in the danger
+  ink. Groups: waiting for a host = slack, a host has it = one tick (no member delivery/read yet).
+- Tokens: desktop `Tok.tick_read` / `tick_bad`, Android `TinColors.tickRead` / `tickBad`. Light: read
+  #374582, bad #A12B23 on the sent bubble #CDEBE3 = 7.10 / 5.75 : 1. Dark: read #DFE3FF, bad #F2B8B5
+  on #0E4E43 = 7.57 / 5.62 : 1 (WCAG). The dark danger ink already clears 3:1, so no stronger tint
+  was needed; it does read as pink, which is the token's hue.
+- Transitions, one shot, only when the state of a message already on screen changes (never on page
+  load or scroll-in): slack -> one = pull; one -> two = the second string pulls out of the first;
+  two -> read = one pluck + colour ease (240 ms, ease-out); waiting -> not delivered = colour ease;
+  waiting -> two = both pull together (not in the lab, which steps one state at a time). Reduced
+  motion shows the end state. The slot never changes size.
+- Provenance: desktop message menu header ("Read on bob's device" / "On bob's device" / "Waiting for
+  bob's device to confirm" / "Only on this computer so far"), "Signed by bob", one line per signing
+  device ("Device dbebb7e4 · delivered, read"). The core has no display name for a contact's install
+  (receipts carry the scoped install ID; device labels exist only for our own linked devices), so the
+  short ID stays. Android action sheet: same headline plus one line per proof.
+- Desktop menu rows are now vertically centred in their 44 px rows (the gap under the last row).
+- Test hooks (desktop, test-hooks builds only): `P2P_MENU_FIRST`, `P2P_SHOT_EVERY=dir` (window to
+  dir/NNN.png twice a second), `P2P_TICK_AT_MS=n` (freeze every transition at n ms).
+- Open: whether users can turn read receipts off.
 
-Files: `crates/desktop/src/{chat.rs, chat_view.rs, chat_fake.rs}`, `crates/tin-icons`
-(+ generated), `android/.../{ChatSource.kt, ChatUi.kt, ChatParts.kt, ChatGlyphs.kt,
-PgIcons.kt, Chats.kt, Conversation.kt}`. The desktop fake chat never reports Delivered/Read
+Files: `crates/desktop/src/{ticks.rs, chat.rs, chat_view.rs, chat_fake.rs, group_live_view.rs,
+ui.rs, app.rs, main.rs}`, `crates/tin-icons` (+ generated), `android/.../{ReceiptTicks.kt,
+ChatSource.kt, ChatUi.kt, ChatParts.kt, ChatGlyphs.kt, PgIcons.kt, Chats.kt, Conversation.kt,
+GroupsLive.kt, Theme.kt}`. The desktop fake chat never reports Delivered/Read
 (it has no signatures): at most Waiting.
 
 The sections below are the original handoff contract (kept for reference).
