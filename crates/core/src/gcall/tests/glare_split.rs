@@ -45,7 +45,6 @@ fn gcall_split_outside_the_previous_backups_falls_back_to_rank_tie_hash() {
     let cid = w::new_call_id();
     let start = |host: usize, host_gen: u32, backups: Vec<usize>| {
         let cs = w::CallStart {
-            v: w::GCALL_VERSION,
             gid: gid(),
             call_id: cid.clone(),
             host_gen,
@@ -57,13 +56,17 @@ fn gcall_split_outside_the_previous_backups_falls_back_to_rank_tie_hash() {
             backups: backups.iter().map(|b| s.href(*b)).collect(),
             meta_frontier: "frontier".into(),
         };
-        w::sign_start(&s.d[host].id, cs)
+        Signed::sign(&cs, &s.d[host].id).unwrap()
     };
     let gen1 = start(H1, 1, vec![OLGA]);
     let (b, p) = (start(BOB, 2, vec![]), start(HP, 2, vec![]));
-    assert!(!w::open_start(&gen1).unwrap().backups.contains(&s.href(BOB)));
-    assert!(!w::open_start(&gen1).unwrap().backups.contains(&s.href(HP)));
-    let want = if rank::tie_hash(&cid, &s.href(BOB)) < rank::tie_hash(&cid, &s.href(HP)) { BOB } else { HP };
+    assert!(!gen1.open().unwrap().backups.contains(&s.href(BOB)));
+    assert!(!gen1.open().unwrap().backups.contains(&s.href(HP)));
+    let want = if rank::tie_hash(&cid, &s.href(BOB)) < rank::tie_hash(&cid, &s.href(HP)) {
+        BOB
+    } else {
+        HP
+    };
     for (first, second) in [(&b, &p), (&p, &b)] {
         let mut board = CallBoard::new(&gid(), None);
         board.accept_start(&gen1, &s.auth).unwrap();

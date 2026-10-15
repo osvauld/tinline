@@ -10,9 +10,21 @@ impl CallAuthority for Authority {
     fn host_permit_ok(&self, _: &str, _: &w::HostRef) -> bool {
         self.0
     }
-    fn endpoint_ok(&self, _: &str, _: &str, _: Option<&proto::SignedBlob>, _: &[u8; 32]) -> bool {
+    fn endpoint_ok(&self, _: &str, _: &str, _: Option<&w::SignedNote>, _: &[u8; 32]) -> bool {
         self.0
     }
+}
+fn flipped<T: proto::Signable>(s: &proto::Signed<T>) -> proto::Signed<T> {
+    let mut sig = *s.sig();
+    sig[0] ^= 1;
+    proto::Signed::from_parts(s.body().to_vec(), sig)
+}
+fn originals(p: &JoinProofs) -> [Evidence; 3] {
+    [
+        Evidence::from_blob(&p.start).unwrap(),
+        Evidence::from_blob(&p.expected_join).unwrap(),
+        Evidence::from_blob(&p.roster).unwrap(),
+    ]
 }
 fn setup(
     a: &identity::Identity,
@@ -27,7 +39,7 @@ fn open(store: &Arc<ReceiptStore>, a: &identity::Identity, p: &JoinProofs) -> Le
     store
         .open(
             Scope {
-                conversation: Conversation::Group(w::open_start(&p.start).unwrap().gid),
+                conversation: Conversation::Group(p.start.open().unwrap().gid),
                 day: "1970-01-01".into(),
             },
             writer_id(a.did(), &[1; 32]),
@@ -108,7 +120,7 @@ fn factory_shares_controller_and_keeps_one_ledger_per_scope() {
         store
             .open(
                 Scope {
-                    conversation: Conversation::Group(w::open_start(&p.start).unwrap().gid),
+                    conversation: Conversation::Group(p.start.open().unwrap().gid),
                     day: "1970-01-01".into()
                 },
                 writer_id(a.did(), &[1; 32]),
@@ -169,17 +181,11 @@ fn forged_protocol_originals_cannot_enter_outbox() {
             expected_join: p.expected_join.clone(),
             roster: p.roster.clone(),
         };
-        let blob = match index {
-            0 => &mut forged.start,
-            1 => &mut forged.expected_join,
-            _ => &mut forged.roster,
-        };
-        let replacement = if blob.signature.starts_with('A') {
-            "B"
-        } else {
-            "A"
-        };
-        blob.signature.replace_range(0..1, replacement);
+        match index {
+            0 => forged.start = flipped(&forged.start),
+            1 => forged.expected_join = flipped(&forged.expected_join),
+            _ => forged.roster = flipped(&forged.roster),
+        }
         assert!(
             c.capture(
                 &a,
@@ -238,12 +244,8 @@ fn failed_completion_leaves_intent_and_no_evidence_frontier_or_done_marker() {
     assert!(store.db.get(&format!("{DONE}{id}")).unwrap().is_none());
     assert!(l.entries().unwrap().is_empty());
     assert_eq!(l.vv(), vv);
-    for blob in [&p.start, &p.expected_join, &p.roster] {
-        assert!(
-            l.evidence(&Evidence::from_blob(blob).unwrap().id)
-                .unwrap()
-                .is_none()
-        );
+    for evidence in originals(&p) {
+        assert!(l.evidence(&evidence.id).unwrap().is_none());
     }
     assert!(commit(&c, &id, &l, &a).newly_committed);
     assert_eq!(l.entries().unwrap().len(), 1);
@@ -540,8 +542,7 @@ fn existing_receipt_completion_sidecars_are_atomic_without_advancing_native_fron
     let claim = prepare_join(&a, [1; 32], 2, vec![(9, 1)], &p, &Authority(true))
         .unwrap()
         .0;
-    let originals =
-        [&p.start, &p.expected_join, &p.roster].map(|b| Evidence::from_blob(b).unwrap());
+    let originals = originals(&p);
     l.write_with_evidence(&claim, &a, &originals, |_| Ok(()))
         .unwrap();
     let vv = l.vv();
@@ -585,19 +586,17 @@ fn low_level_dangling_receipt_cannot_be_healed_by_pending_completion() {
 fn newer_roster_is_same_transition_but_new_expected_join_is_a_separate_observation() {
     let (a, template) = fixture();
     let host = identity::generate().0;
-    let mut s = w::open_start(&template.start).unwrap();
+    let mut s = template.start.open().unwrap();
     s.host_ref.holder_did = host.did().into();
     s.starter_did = host.did().into();
-    let start = w::sign_start(&host, s.clone());
+    let start = proto::Signed::sign(&s, &host).unwrap();
     let make = |issued, epoch| {
-        let (j, blob) = w::sign_join(&a, &s.gid, &s.call_id, s.host_gen, issued);
+        let (j, blob) = w::sign_join(&a, &s.gid, &s.call_id, s.host_gen, issued).unwrap();
         JoinProofs {
             start: start.clone(),
             expected_join: blob.clone(),
-            roster: w::sign_roster(
-                &host,
-                w::Roster {
-                    v: w::GCALL_VERSION,
+            roster: proto::Signed::sign(
+                &w::Roster {
                     gid: s.gid.clone(),
                     call_id: s.call_id.clone(),
                     host_gen: s.host_gen,
@@ -605,19 +604,21 @@ fn newer_roster_is_same_transition_but_new_expected_join_is_a_separate_observati
                     epoch,
                     entries: vec![w::RosterEntry::new(0, &j, &blob)],
                 },
-            ),
+                &host,
+            )
+            .unwrap(),
         }
     };
     let p = make(1, 1);
     let (store, c, l) = setup(&a, &p);
     let first = capture(&c, &a, &p, 2);
     let frozen = store.db.get(&format!("{PENDING}{first}")).unwrap();
-    let mut roster = w::open_roster(&p.roster).unwrap();
+    let mut roster = p.roster.open().unwrap();
     roster.epoch = 2;
     let updated = JoinProofs {
         start: start.clone(),
         expected_join: p.expected_join.clone(),
-        roster: w::sign_roster(&host, roster),
+        roster: proto::Signed::sign(&roster, &host).unwrap(),
     };
     assert_eq!(capture(&c, &a, &updated, 3), first);
     assert_eq!(store.db.get(&format!("{PENDING}{first}")).unwrap(), frozen);

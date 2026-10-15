@@ -264,6 +264,28 @@ fn blob(id: &identity::Identity, devices: &[[u8; 32]], seq: u64) -> String {
     serde_json::to_string(&proto::sign_device_list(id, &list, seq)).unwrap()
 }
 
+/// A correctly signed list that `sign_device_list` itself would refuse (empty, over the cap).
+fn unchecked_blob(id: &identity::Identity, devices: &[[u8; 32]], seq: u64) -> String {
+    use proto::Signable;
+    let list = proto::DeviceList {
+        did: id.did().to_string(),
+        seq,
+        devices: devices
+            .iter()
+            .map(|d| proto::DeviceEntry {
+                device: *d,
+                relay: None,
+            })
+            .collect(),
+    };
+    let body = cryptography::codec::to_bytes(&list).unwrap();
+    let sig = id.sign(&cryptography::sign::input(
+        proto::DeviceList::DOMAIN,
+        &[&body],
+    ));
+    serde_json::to_string(&proto::SignedDeviceList::from_parts(body, sig)).unwrap()
+}
+
 #[test]
 fn device_list_newer_replaces_older_is_ignored() {
     let (a, b, bid) = fresh_pair("dl-seq");
@@ -291,15 +313,26 @@ fn forged_and_foreign_device_lists_are_ignored() {
     let (other, _) = identity::generate();
     assert!(!a.node.offer_device_list_for_test(b.did.clone(), blob(&other, &[dev(1)], 5000)));
     // B's list with the payload altered after signing.
-    let mut v: serde_json::Value = serde_json::from_str(&blob(&bid, &[dev(1)], 5000)).unwrap();
-    let payload = v["payload"].as_str().unwrap().to_string();
-    let swapped = payload.replacen('A', "B", 1);
-    v["payload"] = if swapped == payload { format!("{payload}x").into() } else { swapped.into() };
-    assert!(!a.node.offer_device_list_for_test(b.did.clone(), v.to_string()));
+    let genuine: proto::SignedDeviceList =
+        serde_json::from_str(&blob(&bid, &[dev(1)], 5000)).unwrap();
+    let mut body = genuine.body().to_vec();
+    let last = body.len() - 1;
+    body[last] ^= 1;
+    let altered = proto::SignedDeviceList::from_parts(body, *genuine.sig());
+    assert!(
+        !a.node
+            .offer_device_list_for_test(b.did.clone(), serde_json::to_string(&altered).unwrap())
+    );
     // An empty list and a list over the cap.
-    assert!(!a.node.offer_device_list_for_test(b.did.clone(), blob(&bid, &[], 5000)));
+    assert!(
+        !a.node
+            .offer_device_list_for_test(b.did.clone(), unchecked_blob(&bid, &[], 5000))
+    );
     let nine: Vec<[u8; 32]> = (1..=9).map(dev).collect();
-    assert!(!a.node.offer_device_list_for_test(b.did.clone(), blob(&bid, &nine, 5000)));
+    assert!(
+        !a.node
+            .offer_device_list_for_test(b.did.clone(), unchecked_blob(&bid, &nine, 5000))
+    );
     // B's list offered for a different contact is ignored too.
     let c = make_peer("dl-forged-c", None);
     a.node.add_contact(c.node.my_ticket().unwrap()).unwrap();
@@ -347,12 +380,17 @@ fn device_list_persists_across_restart() {
 fn own_device_list_is_signed_and_changes_with_the_registry() {
     let (a, b1, b2) = trio("own-list");
     let _ = a;
-    let list: proto::SignedBlob = serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap();
+    let list: proto::SignedDeviceList =
+        serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap();
     let l = proto::verify_device_list(&list, &b1.did).unwrap();
     assert_eq!(l.devices.len(), 2);
-    assert_eq!(l.devices[0].device, b1.node.device_key_for_test().unwrap());
+    assert_eq!(
+        proto::device_to_text(&l.devices[0].device),
+        b1.node.device_key_for_test().unwrap()
+    );
     // Unchanged registry: the same blob, not a fresh seq.
-    let again: proto::SignedBlob = serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap();
+    let again: proto::SignedDeviceList =
+        serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap();
     assert_eq!(list, again);
     let _ = b2;
 }

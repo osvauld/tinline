@@ -202,7 +202,7 @@ impl Raw {
             unreachable!()
         };
         let to_node = grant_for_you.clone();
-        let device = proto::device_from_text(&ticket.device).unwrap();
+        let device = ticket.device;
         let mut addr = EndpointAddr::new(PublicKey::from_bytes(&device).unwrap());
         if let Some(url) = ticket
             .relay

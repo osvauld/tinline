@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 use loro::{ExportMode, LoroDoc, LoroValue, VersionVector};
 use serde::{Deserialize, Serialize};
 
-use super::record::{Body, Record, RecordError, SignedRecord, record_id};
+use super::record::{Body, Record, RecordError, decode_trusted, open_record, record_id};
 use crate::chat::doc::{DAY_MS, HOUR_MS, day_of, day_start, writer_id};
 
 pub(crate) mod batching;
@@ -231,7 +231,7 @@ impl GroupDoc {
         fits(&self.id, rec)?;
         let bytes = rec.sign(account).to_bytes();
         // What we write must pass what everyone else checks.
-        SignedRecord::open(&bytes, &self.group).map_err(Reject::Record)?;
+        open_record(&bytes, &self.group).map_err(Reject::Record)?;
         let id = record_id(&bytes);
         let before = self.vv();
         let counter = before.get(&self.peer()).copied().unwrap_or(0);
@@ -372,23 +372,42 @@ impl GroupDoc {
 
 /// Every op of `doc` between `from` and `to`, each checked to be a valid record insert for doc
 /// `id` (`verify`: including the key, the writer ID and the author's signature).
-fn ops_between(doc: &LoroDoc, from: &VersionVector, to: &VersionVector, group: &str, id: &DocId, verify: bool) -> Result<Vec<Entry>, Reject> {
-    crate::signed_map::inserts(doc, from, to, ROOT, Reject::Structure, |key, bytes, peer, counter| {
-        let rec = if verify {
-            if record_id(bytes) != key {
-                return Err(Reject::WrongKey);
-            }
-            let rec = SignedRecord::open(bytes, group).map_err(Reject::Record)?;
-            if writer_id(&rec.author, &rec.dev) != peer {
-                return Err(Reject::ForeignPeer);
-            }
-            rec
-        } else {
-            SignedRecord::decode_trusted(bytes, group).map_err(Reject::Record)?
-        };
-        fits(id, &rec)?;
-        Ok(Entry { id: key.to_string(), rec, peer, counter })
-    })
+fn ops_between(
+    doc: &LoroDoc,
+    from: &VersionVector,
+    to: &VersionVector,
+    group: &str,
+    id: &DocId,
+    verify: bool,
+) -> Result<Vec<Entry>, Reject> {
+    crate::signed_map::inserts(
+        doc,
+        from,
+        to,
+        ROOT,
+        Reject::Structure,
+        |key, bytes, peer, counter| {
+            let rec = if verify {
+                if record_id(bytes) != key {
+                    return Err(Reject::WrongKey);
+                }
+                let rec = open_record(bytes, group).map_err(Reject::Record)?;
+                if writer_id(&rec.author, &rec.dev) != peer {
+                    return Err(Reject::ForeignPeer);
+                }
+                rec
+            } else {
+                decode_trusted(bytes, group).map_err(Reject::Record)?
+            };
+            fits(id, &rec)?;
+            Ok(Entry {
+                id: key.to_string(),
+                rec,
+                peer,
+                counter,
+            })
+        },
+    )
 }
 
 #[cfg(test)]

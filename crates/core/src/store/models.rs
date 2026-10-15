@@ -75,7 +75,7 @@ pub struct StoredContact {
     pub devices: Vec<ContactDevice>,
     /// The newest signed device list we hold for them; once present it, not `note_device`,
     /// decides which devices we dial.
-    pub device_list: Option<proto::SignedBlob>,
+    pub device_list: Option<proto::SignedDeviceList>,
     /// Their message token for us (U13): opens chat with them. Replaced by a renewal that
     /// outlives it. A legacy (pre-P6) `call` grant counts as message + call.
     pub grant_from_them: proto::SignedGrant,
@@ -124,7 +124,7 @@ struct RawContact {
     #[serde(default)]
     relay: Option<String>,
     #[serde(default)]
-    device_list: Option<proto::SignedBlob>,
+    device_list: Option<proto::SignedDeviceList>,
     grant_from_them: proto::SignedGrant,
     #[serde(default)]
     call_grant_from_them: Option<proto::SignedGrant>,
@@ -159,9 +159,13 @@ impl From<RawContact> for StoredContact {
             device_list: r.device_list,
             // U13 migration: a legacy `call` grant also lets us call (records from before P6
             // have no call slot and default to `calls_allowed`).
-            call_grant_from_them: r
-                .call_grant_from_them
-                .or_else(|| proto::peek_grant(&r.grant_from_them).filter(|g| g.is_legacy()).map(|_| r.grant_from_them.clone())),
+            call_grant_from_them: r.call_grant_from_them.or_else(|| {
+                r.grant_from_them
+                    .peek()
+                    .ok()
+                    .filter(|g| g.is_legacy())
+                    .map(|_| r.grant_from_them.clone())
+            }),
             grant_from_them: r.grant_from_them,
             calls_allowed: r.calls_allowed,
             added_at: r.added_at,
@@ -213,7 +217,7 @@ pub struct State {
     pub blocked: HashSet<String>,
     /// The latest block / unblock notice we signed for each DID (`proto::sign_block_notice`);
     /// synced to own devices, which hand out the same notice instead of signing their own.
-    pub sent_notices: HashMap<String, proto::SignedBlob>,
+    pub sent_notices: HashMap<String, proto::SignedBlockNotice>,
     /// Notices this device still has to deliver (local: only the device that signed one sends it).
     pub notice_outbox: HashSet<String>,
     /// The latest notice each DID sent us, verified on intake; a block there is "<name> blocked
@@ -230,7 +234,7 @@ pub struct State {
     pub registry: Vec<OwnDevice>,
     /// The latest `DeviceList` we signed from the registry; sent in every call hello and accept,
     /// and pushed to contacts when its device set changes (U8, `devlist.rs`).
-    pub own_list: Option<proto::SignedBlob>,
+    pub own_list: Option<proto::SignedDeviceList>,
     /// Contacts this device still has to send its current `own_list` to (local: the device that
     /// saw the change pushes; the list is read fresh on each attempt).
     pub list_outbox: HashSet<String>,
@@ -332,7 +336,7 @@ impl CutOffs {
 /// block, U20, but the kept conversation still needs a name).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HeldNotice {
-    pub notice: proto::SignedBlob,
+    pub notice: proto::SignedBlockNotice,
     pub name: String,
     /// From the verified notice: a block (true) or an unblock, and its `at` (unix ms).
     pub blocked: bool,

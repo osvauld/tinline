@@ -51,7 +51,7 @@ impl Node {
                 let row = match pending {
                     Some(r) => r.clone(),
                     None => {
-                        let invite = Invite { group: group_id.clone(), issuer: core.did.clone(), expires: now() + INVITE_TTL, nonce: cryptography::rng::bytes() }.sign(&core.account);
+                        let invite = issue_invite(&core.account, &group_id, now() + INVITE_TTL);
                         let t = inner.group_token(&core, &group_id, Some(invite))?;
                         let row = InvRow {
                             id: hex::encode(cryptography::rng::bytes::<16>()),
@@ -142,9 +142,29 @@ impl Node {
 impl Node {
     /// The group endpoint ids of the hosts the token of invitation `id` names.
     pub fn group_invitation_hosts_for_test(&self, id: String) -> Vec<String> {
-        let Ok(core) = self.inner.group_core() else { return vec![] };
-        let row = core.store.invs().unwrap_or_default().into_iter().find(|r| r.id == id);
-        let Some(t) = row.and_then(|r| cryptography::codec::from_bytes::<InviteToken>(&r.token, crate::group::record::MAX_TOKEN).ok()) else { return vec![] };
-        t.hosts.iter().filter_map(|h| h.open()).filter_map(|a| iroh::PublicKey::from_bytes(&a.endpoint).ok()).map(|k| k.to_string()).collect()
+        let Ok(core) = self.inner.group_core() else {
+            return vec![];
+        };
+        let row = core
+            .store
+            .invs()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|r| r.id == id);
+        let Some(t) = row.and_then(|r| {
+            cryptography::codec::from_bytes::<InviteToken>(
+                &r.token,
+                crate::group::record::MAX_TOKEN,
+            )
+            .ok()
+        }) else {
+            return vec![];
+        };
+        t.hosts
+            .iter()
+            .filter_map(|h| h.open().ok())
+            .filter_map(|a| iroh::PublicKey::from_bytes(&a.endpoint).ok())
+            .map(|k| k.to_string())
+            .collect()
     }
 }

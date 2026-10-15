@@ -19,7 +19,7 @@ fn renewed_grant_must_be_valid_and_later() {
     assert!(!ok(&proto::issue_grant(&them, other.did(), T0 + 500, 1000)));
     // Bad signature: a longer-lived payload under another grant's signature.
     let long = proto::issue_grant(&them, me.did(), T0 + 500, 100_000);
-    let forged = proto::SignedGrant { payload: long.payload.clone(), signature: newer.signature.clone() };
+    let forged = proto::SignedGrant::from_parts(long.body().to_vec(), *newer.sig());
     assert!(!ok(&forged));
     // An expired stored grant is beaten by any valid one.
     assert!(grant_outlives(&old, &newer, them.did(), me.did(), T0 + 1200));

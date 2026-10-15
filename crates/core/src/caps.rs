@@ -180,8 +180,11 @@ impl Node {
     pub fn held_token_ids_for_test(&self, did: String) -> (Option<String>, Option<String>) {
         let s = self.inner.shared.lock();
         let c = s.state.contacts.iter().find(|c| c.did == did);
-        let id = |g: Option<&SignedGrant>| g.and_then(proto::peek_grant).map(|g| g.id);
-        (id(c.map(|c| &c.grant_from_them)), id(c.and_then(|c| c.call_grant_from_them.as_ref())))
+        let id = |g: Option<&SignedGrant>| g.and_then(|g| g.peek().ok()).map(|g| g.id);
+        (
+            id(c.map(|c| &c.grant_from_them)),
+            id(c.and_then(|c| c.call_grant_from_them.as_ref())),
+        )
     }
 }
 
@@ -258,10 +261,24 @@ impl Inner {
                 return Err(Error::Locked);
             }
             for g in grants.iter().take(8) {
-                let Some(claim) = proto::peek_grant(g) else { continue };
-                let Ok(v) = proto::verify_grant(g, &claim.iss, &my_did, t, &HashSet::new()) else { continue };
-                let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == v.iss) else { continue };
-                if v.allows(Cap::Message) && !v.is_legacy() && outlives(Some(&c.grant_from_them), g, Cap::Message, &v.iss, &my_did, t) {
+                let Ok(claim) = g.peek() else { continue };
+                let Ok(v) = proto::verify_grant(g, &claim.iss, &my_did, t, &HashSet::new()) else {
+                    continue;
+                };
+                let Some(c) = s.state.contacts.iter_mut().find(|c| c.did == v.iss) else {
+                    continue;
+                };
+                if v.allows(Cap::Message)
+                    && !v.is_legacy()
+                    && outlives(
+                        Some(&c.grant_from_them),
+                        g,
+                        Cap::Message,
+                        &v.iss,
+                        &my_did,
+                        t,
+                    )
+                {
                     c.grant_from_them = g.clone();
                     changed = true;
                 }

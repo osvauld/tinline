@@ -62,7 +62,11 @@ impl Inner {
                 }
                 continue;
             }
-            let hosts: Vec<&SignedHostAddr> = t.hosts.iter().filter(|h| h.open().is_some_and(|a| a.group == gid)).collect();
+            let hosts: Vec<&SignedHostAddr> = t
+                .hosts
+                .iter()
+                .filter(|h| h.open().ok().is_some_and(|a| a.group == gid))
+                .collect();
             if hosts.is_empty() && !contents {
                 continue;
             }
@@ -76,7 +80,7 @@ impl Inner {
                 continue;
             }
             for h in hosts {
-                if let Some(a) = h.open() {
+                if let Some(a) = h.open().ok() {
                     let _ = core.store.put_host(&gid, &a.did, &a.dev, h);
                 }
             }

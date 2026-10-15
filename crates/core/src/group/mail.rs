@@ -17,9 +17,8 @@
 //! message token only); the chat then runs directly between private endpoints, without the host.
 
 use cryptography::{codec, domains};
+use proto::{Signable, Signed, Signer};
 use serde::{Deserialize, Serialize};
-
-use super::record::verify_did;
 
 /// Largest sealed body (a contact ticket and a name fit easily).
 pub const MAX_SEALED: usize = 8 * 1024;
@@ -39,11 +38,26 @@ pub struct Mail {
     pub sealed: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SignedMail {
-    pub body: Vec<u8>,
-    pub sig: Vec<u8>,
+/// DID-signed by `from`; well formed: sealed body bounded, sender is not the recipient.
+impl Signable for Mail {
+    const DOMAIN: domains::Domain = domains::GROUP_MAIL;
+    const MAX_BODY: usize = MAX_SEALED + 1024;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.from)
+    }
+    fn check(&self) -> proto::Result<()> {
+        if self.sealed.len() > MAX_SEALED
+            || self.from.len() > 200
+            || self.to.len() > 200
+            || self.from == self.to
+        {
+            return Err(proto::Error::Decode);
+        }
+        Ok(())
+    }
 }
+
+pub type SignedMail = Signed<Mail>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Letter {
@@ -63,29 +77,6 @@ struct Sealed {
     letter: Letter,
 }
 
-fn sig_input(body: &[u8]) -> Vec<u8> {
-    super::record::sig_input(domains::GROUP_MAIL, body)
-}
-
-impl SignedMail {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        codec::to_bytes(self).expect("mail serialises")
-    }
-
-    pub fn from_bytes(b: &[u8]) -> Option<Self> {
-        codec::from_bytes_canonical(b, MAX_SEALED + 2048).ok()
-    }
-
-    /// The envelope, if its sender's DID signed it and it is well formed.
-    pub fn open(&self) -> Option<Mail> {
-        let m: Mail = codec::from_bytes_canonical(&self.body, MAX_SEALED + 1024).ok()?;
-        if m.sealed.len() > MAX_SEALED || m.from.len() > 200 || m.to.len() > 200 || m.from == m.to {
-            return None;
-        }
-        verify_did(&m.from, &sig_input(&self.body), &self.sig).then_some(m)
-    }
-}
-
 pub fn id_hex(id: &[u8; 16]) -> String {
     hex::encode(id)
 }
@@ -94,17 +85,27 @@ pub fn id_hex(id: &[u8; 16]) -> String {
 pub fn seal(account: &identity::Identity, group: &str, to: &str, to_key: &[u8; 32], letter: Letter, at: u64) -> Result<SignedMail, crate::Error> {
     let inner = Sealed { group: group.to_string(), from: account.did().to_string(), to: to.to_string(), letter };
     let plain = codec::to_bytes(&inner).expect("letter serialises");
-    let sealed = identity::encrypt_for(to_key, &plain).map_err(|e| crate::Error::Protocol(e.to_string()))?;
-    let mail = Mail { group: group.to_string(), from: account.did().to_string(), to: to.to_string(), id: cryptography::rng::bytes(), at, sealed };
-    let body = codec::to_bytes(&mail).expect("mail serialises");
-    let sig = account.sign(&sig_input(&body)).to_vec();
-    Ok(SignedMail { body, sig })
+    let sealed =
+        identity::encrypt_for(to_key, &plain).map_err(|e| crate::Error::Protocol(e.to_string()))?;
+    let mail = Mail {
+        group: group.to_string(),
+        from: account.did().to_string(),
+        to: to.to_string(),
+        id: cryptography::rng::bytes(),
+        at,
+        sealed,
+    };
+    Signed::sign(&mail, account).map_err(|e| crate::Error::Protocol(e.to_string()))
 }
 
 /// Opens mail addressed to `account` in `group`: the envelope verifies, it is for us, the body
 /// decrypts with our key and repeats the envelope's group, sender and recipient.
-pub fn open_for(account: &identity::Identity, group: &str, s: &SignedMail) -> Option<(Mail, Letter)> {
-    let m = s.open()?;
+pub fn open_for(
+    account: &identity::Identity,
+    group: &str,
+    s: &SignedMail,
+) -> Option<(Mail, Letter)> {
+    let m = s.open().ok()?;
     if m.group != group || m.to != account.did() {
         return None;
     }

@@ -18,7 +18,7 @@
 use std::sync::{Arc, Weak};
 
 use iroh::EndpointAddr;
-use proto::SignedBlob;
+use proto::gcall::SignedNote;
 
 use super::engine::GroupCore;
 use super::state::{CallHostInfo, GroupState};
@@ -72,8 +72,16 @@ impl CallAuthority for GroupCallDir {
         self.state(gid, |_, st| resolve(st, host).is_some()).unwrap_or(false)
     }
 
-    fn endpoint_ok(&self, gid: &str, did: &str, note: Option<&SignedBlob>, endpoint: &[u8; 32]) -> bool {
-        let Some(core) = self.core() else { return false };
+    fn endpoint_ok(
+        &self,
+        gid: &str,
+        did: &str,
+        note: Option<&SignedNote>,
+        endpoint: &[u8; 32],
+    ) -> bool {
+        let Some(core) = self.core() else {
+            return false;
+        };
         if !self.is_member(gid, did) {
             return false;
         }
@@ -84,7 +92,8 @@ impl CallAuthority for GroupCallDir {
             return true;
         }
         // The joiner's DID-signed group note (§9 G2).
-        note.and_then(|n| proto::gcall::open_note(n).ok()).is_some_and(|n| n.did == did && n.endpoint_bytes().as_ref() == Some(endpoint))
+        note.and_then(|n| n.open().ok())
+            .is_some_and(|n| n.did == did && &n.endpoint == endpoint)
     }
 }
 
@@ -101,7 +110,7 @@ impl CallDirectory for GroupCallDir {
             .hosts(&gid)
             .unwrap_or_default()
             .into_iter()
-            .filter_map(|s| s.open())
+            .filter_map(|s| s.open().ok())
             .filter(|a| a.group == gid && a.did == host.holder_did && a.dev == dev)
             .max_by_key(|a| a.at)?;
         addr_for(&addr.endpoint, addr.relay.as_deref()).ok()
@@ -115,7 +124,7 @@ impl CallDirectory for GroupCallDir {
         self.state(gid, |core, st| st.call_host(&core.did, &core.dev).map(host_ref_of)).flatten()
     }
 
-    fn my_note(&self) -> Option<SignedBlob> {
+    fn my_note(&self) -> Option<SignedNote> {
         let core = self.core()?;
         let ep = core.ep_id.lock().clone()?;
         Some(proto::gcall::sign_note(&core.account, &core.dev, ep.id().as_bytes(), now_ms()))

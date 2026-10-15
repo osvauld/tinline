@@ -44,7 +44,9 @@ pub enum ChatMsg {
     HistoryResp { days: Vec<HistDay> },
     /// Instead of `Auth`, from a contact that blocks us: its DID-signed block notice
     /// (`proto::sign_block_notice`); the connection ends after it.
-    Notice { notice: proto::SignedBlob },
+    Notice {
+        notice: proto::SignedBlockNotice,
+    },
     /// chat/6: recipient-signed delivered/read receipt exchange (`docs/chat.md` "Receipts").
     /// The receipt-ledger version vector we hold per day of this conversation.
     ReceiptHello { days: Vec<(String, Vec<u8>)> },
@@ -55,18 +57,30 @@ pub enum ChatMsg {
     ReceiptAck { day: String, vv: Vec<u8> },
 }
 
-fn sig_input(doc: &str, update: &[u8]) -> Vec<u8> {
-    cryptography::sign::input(cryptography::domains::CHAT_BATCH, &[doc.as_bytes(), update])
-}
+use cryptography::domains::CHAT_BATCH;
+use proto::signed::{SecretKey, Signer, sign_detached, verify_detached};
 
-/// The author's attested device key signs every update batch.
+/// The author's attested device key signs every update batch (detached, over `[doc, update]`).
 pub fn sign_batch(device_secret: &[u8; 32], doc: &str, update: &[u8]) -> Vec<u8> {
-    cryptography::signature::sign(device_secret, &sig_input(doc, update)).to_vec()
+    sign_detached(
+        &SecretKey(device_secret),
+        CHAT_BATCH,
+        &[doc.as_bytes(), update],
+    )
+    .to_vec()
 }
 
 pub fn verify_batch(device: &[u8; 32], doc: &str, update: &[u8], sig: &[u8]) -> bool {
-    let Ok(sig) = <[u8; 64]>::try_from(sig) else { return false };
-    cryptography::signature::verify(device, &sig_input(doc, update), &sig)
+    let Ok(sig) = <[u8; 64]>::try_from(sig) else {
+        return false;
+    };
+    verify_detached(
+        Signer::Key(device),
+        CHAT_BATCH,
+        &[doc.as_bytes(), update],
+        &sig,
+    )
+    .is_ok()
 }
 
 pub struct ChatWriter(pub SendStream);

@@ -3,8 +3,8 @@
 
 use std::collections::BTreeMap;
 
-use proto::SignedBlob;
-use proto::gcall::{self as w, CallStart, EndReason, HostRef};
+use proto::gcall::{CallStart, EndReason, HostRef};
+use proto::gcall::{SignedEnd, SignedStart};
 
 use super::*;
 
@@ -31,8 +31,12 @@ impl CallBoard {
 
     /// A relayed (or directly received) CallStart: §3.2 items 1–3, generation, split and
     /// glare. A refusal leaves the board unchanged.
-    pub fn accept_start(&mut self, blob: &SignedBlob, auth: &dyn CallAuthority) -> Result<(), Refusal> {
-        let s = w::open_start(blob)?;
+    pub fn accept_start(
+        &mut self,
+        blob: &SignedStart,
+        auth: &dyn CallAuthority,
+    ) -> Result<(), Refusal> {
+        let s = blob.open()?;
         if s.gid != self.gid {
             return Err(Refusal::WrongGroup);
         }
@@ -74,8 +78,12 @@ impl CallBoard {
 
     /// A relayed `End{ended}` removes the call from the board. Other reasons only concern
     /// participants and are ignored here.
-    pub fn accept_end(&mut self, blob: &SignedBlob, auth: &dyn CallAuthority) -> Result<(), Refusal> {
-        let e = w::open_end(blob)?;
+    pub fn accept_end(
+        &mut self,
+        blob: &SignedEnd,
+        auth: &dyn CallAuthority,
+    ) -> Result<(), Refusal> {
+        let e = blob.open()?;
         if e.gid != self.gid {
             return Err(Refusal::WrongGroup);
         }

@@ -14,7 +14,18 @@ fn the_doc_is_sealed_at_rest_and_reloads() {
     let mut meta = GroupMeta::default();
     for i in 0..70 {
         let name = format!("secret text {i}");
-        let rec = Record { v: 1, group: "g".into(), author: a.did().into(), dev, at: i, seen: doc.seen(), body: Body::Genesis { name, nonce: [0; 16], owner_name: String::new() } };
+        let rec = Record {
+            group: "g".into(),
+            author: a.did().into(),
+            dev,
+            at: i,
+            seen: doc.seen(),
+            body: Body::Genesis {
+                name,
+                nonce: [0; 16],
+                owner_name: String::new(),
+            },
+        };
         let (_, up) = doc.write(&a, &rec).unwrap();
         s.append_meta("g", &mut meta, &up, || doc.snapshot()).unwrap();
     }
@@ -48,7 +59,17 @@ fn day_docs_are_sealed_indexed_and_compact() {
     let mut sm = ShardMeta::default();
     for i in 0..70 {
         let text = format!("secret text {i}");
-        let rec = Record { v: 1, group: "g".into(), author: a.did().into(), dev, at: i, seen: vec![], body: Body::Post { text, reply_to: None } };
+        let rec = Record {
+            group: "g".into(),
+            author: a.did().into(),
+            dev,
+            at: i,
+            seen: vec![],
+            body: Body::Post {
+                text,
+                reply_to: None,
+            },
+        };
         let (_, up) = doc.write(&a, &rec).unwrap();
         s.append_shard("g", "1970-01-01", &mut sm, doc.vv().encode(), &up, || doc.snapshot(), None).unwrap();
     }
@@ -68,7 +89,17 @@ fn day_docs_are_sealed_indexed_and_compact() {
     let back = GroupDoc::load_in("g", day(), peer, snap.as_deref(), &ups).unwrap();
     assert_eq!(back.entries_trusted().unwrap().len(), 70);
     // A later update opens it again.
-    let rec = Record { v: 1, group: "g".into(), author: a.did().into(), dev, at: 99, seen: vec![], body: Body::Post { text: "late".into(), reply_to: None } };
+    let rec = Record {
+        group: "g".into(),
+        author: a.did().into(),
+        dev,
+        at: 99,
+        seen: vec![],
+        body: Body::Post {
+            text: "late".into(),
+            reply_to: None,
+        },
+    };
     let (_, up) = doc.write(&a, &rec).unwrap();
     s.append_shard("g", "1970-01-01", &mut sm, doc.vv().encode(), &up, || doc.snapshot(), None).unwrap();
     assert!(!s.shard_meta("g", "1970-01-01").unwrap().unwrap().closed);

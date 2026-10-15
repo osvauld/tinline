@@ -432,8 +432,13 @@ impl Inner {
                 if core.store.inv(&id).ok().flatten().is_some() {
                     return;
                 }
-                let Ok(t) = cryptography::codec::from_bytes::<InviteToken>(&token, MAX_TOKEN) else { return };
-                let Some(inv) = t.invite.as_ref().and_then(|i| i.open()) else { return };
+                let Ok(t) = cryptography::codec::from_bytes::<InviteToken>(&token, MAX_TOKEN)
+                else {
+                    return;
+                };
+                let Some(inv) = t.invite.as_ref().and_then(|i| i.open().ok()) else {
+                    return;
+                };
                 // The sender signed it, for this group, and it has not run out.
                 if inv.issuer != from || inv.group != t.group || inv.expires < now() || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
                     self.log(format!("a group invitation from {from} does not check out"));
@@ -509,8 +514,17 @@ impl Inner {
             match core.store.inv(&r.id).ok().flatten() {
                 None => {
                     // An incoming one must still carry an invite its inviter signed.
-                    let ok = cryptography::codec::from_bytes::<InviteToken>(&r.token, MAX_TOKEN).ok().and_then(|t| t.invite.as_ref().and_then(|i| i.open()).map(|i| (i, t.group)))
-                        .is_some_and(|(i, g)| i.issuer == r.inviter && i.group == g && g == r.group);
+                    let ok = cryptography::codec::from_bytes::<InviteToken>(&r.token, MAX_TOKEN)
+                        .ok()
+                        .and_then(|t| {
+                            t.invite
+                                .as_ref()
+                                .and_then(|i| i.open().ok())
+                                .map(|i| (i, t.group))
+                        })
+                        .is_some_and(|(i, g)| {
+                            i.issuer == r.inviter && i.group == g && g == r.group
+                        });
                     if ok {
                         self.inv_save(&core, &r);
                     }

@@ -5,22 +5,20 @@
 //! (`p2pcore::gcall::CallAuthority`); this module checks signatures, versions, shapes and
 //! size bounds only.
 //!
-//! Every signed message is a `SignedBlob` over one internally tagged claim enum, with the one
-//! domain `tinline/gcall/v1\0`. The `"t"` tag inside the signed payload keeps a signed `Join`
-//! from being replayed as a `Leave` (their other fields overlap).
+//! Every signed message is its own `Signable` with its own domain, so a signed `Join` cannot be
+//! replayed as a `Leave` (their other fields overlap); `Signed::open` checks signature and shape.
 //!
 //! Roster entries are compact (§9.1): an entry carries the joiner's DID, `issued_ms`, `nonce`
-//! and the Join *signature* only. The signed Join payload is rebuilt from the Roster's own
-//! `v`/`gid`/`call_id`/`host_gen`, so a member still checks that every listed DID signed a Join
-//! for exactly this call and generation. A 12-entry Roster fits `MAX_CONTROL`
+//! and the Join *signature* only. The signed Join body is rebuilt from the Roster's own
+//! `gid`/`call_id`/`host_gen` (postcard is deterministic), so a member still checks that every
+//! listed DID signed a Join for exactly this call and generation. A 12-entry Roster fits `MAX_CONTROL`
 //! (`gcall_roster_of_12_fits_the_control_limit`).
 
 use super::*;
 
 /// ALPN of the per-call connection to the call host (§1.1).
 pub const GCALL_ALPN: &[u8] = b"tinline/gcall/1";
-pub(crate) const GCALL_DOMAIN: cryptography::domains::Domain = cryptography::domains::GCALL;
-pub const GCALL_VERSION: u8 = 1;
+use cryptography::domains as d;
 
 /// Largest control frame body (§6).
 pub const MAX_CONTROL: usize = 4096;
@@ -63,7 +61,6 @@ pub enum EndReason {
 /// Signed by `host_ref.holder_did`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CallStart {
-    pub v: u8,
     pub gid: String,
     /// 16 random bytes, base64url (`new_call_id`).
     pub call_id: String,
@@ -80,7 +77,6 @@ pub struct CallStart {
 /// Signed by `did`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Join {
-    pub v: u8,
     pub gid: String,
     pub call_id: String,
     pub host_gen: u32,
@@ -93,28 +89,23 @@ pub struct Join {
 /// Roster already carries.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RosterEntry {
-    #[serde(rename = "s")]
     pub slot: u8,
-    #[serde(rename = "d")]
     pub did: String,
-    #[serde(rename = "i")]
     pub issued_ms: u64,
-    #[serde(rename = "n")]
     pub nonce: u64,
-    /// The Join's signature, base64url.
-    #[serde(rename = "g")]
-    pub sig: String,
+    /// The Join's signature (64 bytes).
+    pub sig: Vec<u8>,
 }
 
 impl RosterEntry {
     /// `join` must be the verified claim inside `blob`.
-    pub fn new(slot: u8, join: &Join, blob: &SignedBlob) -> Self {
+    pub fn new(slot: u8, join: &Join, blob: &Signed<Join>) -> Self {
         RosterEntry {
             slot,
             did: join.did.clone(),
             issued_ms: join.issued_ms,
             nonce: join.nonce,
-            sig: blob.signature.clone(),
+            sig: blob.sig().to_vec(),
         }
     }
 }
@@ -122,7 +113,6 @@ impl RosterEntry {
 /// Signed by `host_did`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Roster {
-    pub v: u8,
     pub gid: String,
     pub call_id: String,
     pub host_gen: u32,
@@ -135,7 +125,6 @@ pub struct Roster {
 /// Signed by `did`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Leave {
-    pub v: u8,
     pub gid: String,
     pub call_id: String,
     pub host_gen: u32,
@@ -146,7 +135,6 @@ pub struct Leave {
 /// Signed by `host_did`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct End {
-    pub v: u8,
     pub gid: String,
     pub call_id: String,
     pub host_gen: u32,
@@ -159,7 +147,6 @@ pub struct End {
 /// chat hosts to that device. Signed by `starter_did`. `backups` go into the CallStart.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HostRequest {
-    pub v: u8,
     pub gid: String,
     pub call_id: String,
     pub starter_did: String,
@@ -176,7 +163,6 @@ pub struct HostRequest {
 /// accepts answers with the call's `CallStart` instead.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HostRefusal {
-    pub v: u8,
     pub gid: String,
     pub call_id: String,
     pub starter_did: String,
@@ -186,53 +172,25 @@ pub struct HostRefusal {
 
 /// A device's group endpoint note (§9 G2): "group endpoint `endpoint` is device `dev` of
 /// `did`", signed by `did`. Sent with every `Join`, so a call host that holds no member
-/// directory (it is not a chat host) can still check the connecting endpoint. Both keys are
-/// base64url of 32 bytes. Only call hosts ever see it (U7).
+/// directory (it is not a chat host) can still check the connecting endpoint; group hosts take
+/// the same statement from members (`p2pcore::group`). `issued_ms` is informational: no
+/// rotation-generation check is made here.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GroupNote {
-    pub v: u8,
     pub did: String,
-    pub dev: String,
-    pub endpoint: String,
+    pub dev: [u8; 32],
+    pub endpoint: [u8; 32],
     pub issued_ms: u64,
 }
 
-impl GroupNote {
-    pub fn dev_bytes(&self) -> Option<[u8; 32]> {
-        dec32(&self.dev).ok()
-    }
-    pub fn endpoint_bytes(&self) -> Option<[u8; 32]> {
-        dec32(&self.endpoint).ok()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(tag = "t", rename_all = "snake_case")]
-enum Claim {
-    Start(CallStart),
-    Join(Join),
-    Roster(Roster),
-    Leave(Leave),
-    End(End),
-    HostRequest(HostRequest),
-    HostRefusal(HostRefusal),
-    Note(GroupNote),
-}
-
-impl Claim {
-    fn signer(&self) -> &str {
-        match self {
-            Claim::Start(c) => &c.host_ref.holder_did,
-            Claim::Join(c) => &c.did,
-            Claim::Roster(c) => &c.host_did,
-            Claim::Leave(c) => &c.did,
-            Claim::End(c) => &c.host_did,
-            Claim::HostRequest(c) => &c.starter_did,
-            Claim::HostRefusal(c) => &c.host.holder_did,
-            Claim::Note(c) => &c.did,
-        }
-    }
-}
+pub type SignedStart = Signed<CallStart>;
+pub type SignedJoin = Signed<Join>;
+pub type SignedRoster = Signed<Roster>;
+pub type SignedLeave = Signed<Leave>;
+pub type SignedEnd = Signed<End>;
+pub type SignedHostRequest = Signed<HostRequest>;
+pub type SignedHostRefusal = Signed<HostRefusal>;
+pub type SignedNote = Signed<GroupNote>;
 
 pub fn new_call_id() -> String {
     random16()
@@ -242,65 +200,142 @@ pub fn new_nonce() -> u64 {
     cryptography::rng::u64()
 }
 
-fn sign_claim(id: &Identity, claim: &Claim) -> SignedBlob {
-    debug_assert_eq!(
-        id.did(),
-        claim.signer(),
-        "gcall claims are signed by their claimed signer"
-    );
-    sign_blob(id, GCALL_DOMAIN, claim)
-}
-
-fn open_claim(blob: &SignedBlob) -> Result<Claim> {
-    if blob.payload.len() > MAX_CONTROL * 2 {
-        return Err(Error::FrameTooLarge);
-    }
-    open_blob(blob, GCALL_DOMAIN, |c: &Claim| c.signer())
-}
-
 pub(crate) fn text_ok(s: &str) -> bool {
     !s.is_empty() && s.len() <= MAX_TEXT
 }
 
-fn check_common(v: u8, gid: &str, call_id: &str) -> Result<()> {
-    if v != GCALL_VERSION {
-        return Err(Error::UnknownVersion);
-    }
-    if !text_ok(gid) || dec(call_id).map(|b| b.len()) != Ok(CALL_ID_LEN) {
-        return Err(Error::Decode);
-    }
-    Ok(())
+fn ok(cond: bool) -> Result<()> {
+    if cond { Ok(()) } else { Err(Error::Decode) }
+}
+
+fn common_ok(gid: &str, call_id: &str) -> bool {
+    text_ok(gid) && dec(call_id).map(|b| b.len()) == Ok(CALL_ID_LEN)
 }
 
 fn host_ref_ok(r: &HostRef) -> bool {
     text_ok(&r.holder_did) && text_ok(&r.permit_digest)
 }
 
-pub fn sign_start(id: &Identity, start: CallStart) -> SignedBlob {
-    sign_claim(id, &Claim::Start(start))
+/// Signed by `host_ref.holder_did`. Membership, the `host_call` permit and generations are the
+/// caller's checks.
+impl Signable for CallStart {
+    const DOMAIN: d::Domain = d::GCALL_START;
+    const MAX_BODY: usize = MAX_CONTROL;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.host_ref.holder_did)
+    }
+    fn check(&self) -> Result<()> {
+        let c = self;
+        ok(common_ok(&c.gid, &c.call_id)
+            && c.host_gen >= 1
+            && host_ref_ok(&c.host_ref)
+            && text_ok(&c.starter_did)
+            && c.k >= 1
+            && (c.k as usize) <= MAX_PARTICIPANTS
+            && c.max_participants >= 2
+            && c.max_participants as usize <= MAX_PARTICIPANTS
+            && c.backups.len() <= MAX_BACKUPS
+            && c.backups.iter().all(host_ref_ok)
+            && c.meta_frontier.len() <= MAX_TEXT)
+    }
 }
 
-/// Signature (by `host_ref.holder_did`), version and bounds. Membership, the `host_call`
-/// permit and generations are the caller's checks.
-pub fn open_start(blob: &SignedBlob) -> Result<CallStart> {
-    let Claim::Start(c) = open_claim(blob)? else {
-        return Err(Error::UnexpectedMessage);
-    };
-    check_common(c.v, &c.gid, &c.call_id)?;
-    let ok = c.host_gen >= 1
-        && host_ref_ok(&c.host_ref)
-        && text_ok(&c.starter_did)
-        && c.k >= 1
-        && (c.k as usize) <= MAX_PARTICIPANTS
-        && c.max_participants >= 2
-        && c.max_participants as usize <= MAX_PARTICIPANTS
-        && c.backups.len() <= MAX_BACKUPS
-        && c.backups.iter().all(host_ref_ok)
-        && c.meta_frontier.len() <= MAX_TEXT;
-    if !ok {
-        return Err(Error::Decode);
+impl Signable for Join {
+    const DOMAIN: d::Domain = d::GCALL_JOIN;
+    const MAX_BODY: usize = MAX_CONTROL;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.did)
     }
-    Ok(c)
+    fn check(&self) -> Result<()> {
+        ok(common_ok(&self.gid, &self.call_id))
+    }
+}
+
+/// Host signature, bounds, unique slots and DIDs, and every entry's Join signature over this
+/// Roster's call and generation.
+impl Signable for Roster {
+    const DOMAIN: d::Domain = d::GCALL_ROSTER;
+    const MAX_BODY: usize = MAX_CONTROL;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.host_did)
+    }
+    fn check(&self) -> Result<()> {
+        ok(common_ok(&self.gid, &self.call_id) && self.entries.len() <= MAX_PARTICIPANTS)?;
+        let mut slots = HashSet::new();
+        let mut dids = HashSet::new();
+        for e in &self.entries {
+            ok(slots.insert(e.slot) && dids.insert(e.did.as_str()))?;
+            verify_entry(self, e)?;
+        }
+        Ok(())
+    }
+}
+
+impl Signable for Leave {
+    const DOMAIN: d::Domain = d::GCALL_LEAVE;
+    const MAX_BODY: usize = MAX_CONTROL;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.did)
+    }
+    fn check(&self) -> Result<()> {
+        ok(common_ok(&self.gid, &self.call_id))
+    }
+}
+
+impl Signable for End {
+    const DOMAIN: d::Domain = d::GCALL_END;
+    const MAX_BODY: usize = MAX_CONTROL;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.host_did)
+    }
+    fn check(&self) -> Result<()> {
+        ok(common_ok(&self.gid, &self.call_id) && self.next_host.as_ref().is_none_or(host_ref_ok))
+    }
+}
+
+/// Signed by `starter_did`.
+impl Signable for HostRequest {
+    const DOMAIN: d::Domain = d::GCALL_HOST_REQUEST;
+    const MAX_BODY: usize = MAX_CONTROL;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.starter_did)
+    }
+    fn check(&self) -> Result<()> {
+        let c = self;
+        ok(common_ok(&c.gid, &c.call_id)
+            && text_ok(&c.starter_did)
+            && host_ref_ok(&c.host)
+            && c.backups.len() <= MAX_BACKUPS
+            && c.backups.iter().all(host_ref_ok)
+            && (2..=MAX_PARTICIPANTS).contains(&(c.expected as usize)))
+    }
+}
+
+/// Signed by `host.holder_did`.
+impl Signable for HostRefusal {
+    const DOMAIN: d::Domain = d::GCALL_HOST_REFUSAL;
+    const MAX_BODY: usize = MAX_CONTROL;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.host.holder_did)
+    }
+    fn check(&self) -> Result<()> {
+        let c = self;
+        ok(common_ok(&c.gid, &c.call_id)
+            && text_ok(&c.starter_did)
+            && host_ref_ok(&c.host)
+            && c.reason.len() <= MAX_TEXT)
+    }
+}
+
+impl Signable for GroupNote {
+    const DOMAIN: d::Domain = d::ENDPOINT_NOTE;
+    const MAX_BODY: usize = 256;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.did)
+    }
+    fn check(&self) -> Result<()> {
+        ok(text_ok(&self.did))
+    }
 }
 
 /// A fresh Join with a random nonce.
@@ -310,9 +345,8 @@ pub fn sign_join(
     call_id: &str,
     host_gen: u32,
     issued_ms: u64,
-) -> (Join, SignedBlob) {
+) -> Result<(Join, SignedJoin)> {
     let join = Join {
-        v: GCALL_VERSION,
         gid: gid.into(),
         call_id: call_id.into(),
         host_gen,
@@ -320,47 +354,13 @@ pub fn sign_join(
         issued_ms,
         nonce: new_nonce(),
     };
-    let blob = sign_claim(id, &Claim::Join(join.clone()));
-    (join, blob)
-}
-
-pub fn open_join(blob: &SignedBlob) -> Result<Join> {
-    let Claim::Join(c) = open_claim(blob)? else {
-        return Err(Error::UnexpectedMessage);
-    };
-    check_common(c.v, &c.gid, &c.call_id)?;
-    Ok(c)
-}
-
-pub fn sign_roster(id: &Identity, roster: Roster) -> SignedBlob {
-    sign_claim(id, &Claim::Roster(roster))
-}
-
-/// Host signature, bounds, unique slots and DIDs, and every entry's Join signature over this
-/// Roster's call and generation.
-pub fn open_roster(blob: &SignedBlob) -> Result<Roster> {
-    let Claim::Roster(r) = open_claim(blob)? else {
-        return Err(Error::UnexpectedMessage);
-    };
-    check_common(r.v, &r.gid, &r.call_id)?;
-    if r.entries.len() > MAX_PARTICIPANTS {
-        return Err(Error::Decode);
-    }
-    let mut slots = HashSet::new();
-    let mut dids = HashSet::new();
-    for e in &r.entries {
-        if !slots.insert(e.slot) || !dids.insert(e.did.as_str()) {
-            return Err(Error::Decode);
-        }
-        verify_entry(&r, e)?;
-    }
-    Ok(r)
+    let blob = Signed::sign(&join, id)?;
+    Ok((join, blob))
 }
 
 /// The Join this entry stands for, as it was signed.
 pub fn entry_join(r: &Roster, e: &RosterEntry) -> Join {
     Join {
-        v: r.v,
         gid: r.gid.clone(),
         call_id: r.call_id.clone(),
         host_gen: r.host_gen,
@@ -370,14 +370,15 @@ pub fn entry_join(r: &Roster, e: &RosterEntry) -> Join {
     }
 }
 
+/// The entry's Join, reassembled as the envelope its joiner signed.
+pub fn entry_signed_join(r: &Roster, e: &RosterEntry) -> Result<SignedJoin> {
+    let body = cryptography::codec::to_bytes(&entry_join(r, e)).map_err(|_| Error::Decode)?;
+    let sig: [u8; 64] = e.sig.as_slice().try_into().map_err(|_| Error::Decode)?;
+    Ok(Signed::from_parts(body, sig))
+}
+
 fn verify_entry(r: &Roster, e: &RosterEntry) -> Result<()> {
-    let payload = serde_json::to_vec(&Claim::Join(entry_join(r, e))).expect("claims serialize");
-    let sig: [u8; 64] = dec(&e.sig)?.try_into().map_err(|_| Error::Decode)?;
-    let public = public_key_from_did(&e.did).ok_or(Error::Decode)?;
-    if !verify(&public, &cryptography::sign::input(GCALL_DOMAIN, &[&payload]), &sig) {
-        return Err(Error::BadSignature);
-    }
-    Ok(())
+    entry_signed_join(r, e)?.open().map(|_| ())
 }
 
 pub fn sign_leave(
@@ -386,101 +387,25 @@ pub fn sign_leave(
     call_id: &str,
     host_gen: u32,
     issued_ms: u64,
-) -> SignedBlob {
+) -> Result<SignedLeave> {
     let leave = Leave {
-        v: GCALL_VERSION,
         gid: gid.into(),
         call_id: call_id.into(),
         host_gen,
         did: id.did().into(),
         issued_ms,
     };
-    sign_claim(id, &Claim::Leave(leave))
+    Signed::sign(&leave, id)
 }
 
-pub fn open_leave(blob: &SignedBlob) -> Result<Leave> {
-    let Claim::Leave(c) = open_claim(blob)? else {
-        return Err(Error::UnexpectedMessage);
-    };
-    check_common(c.v, &c.gid, &c.call_id)?;
-    Ok(c)
-}
-
-pub fn sign_end(id: &Identity, end: End) -> SignedBlob {
-    sign_claim(id, &Claim::End(end))
-}
-
-pub fn open_end(blob: &SignedBlob) -> Result<End> {
-    let Claim::End(c) = open_claim(blob)? else {
-        return Err(Error::UnexpectedMessage);
-    };
-    check_common(c.v, &c.gid, &c.call_id)?;
-    if c.next_host.as_ref().is_some_and(|h| !host_ref_ok(h)) {
-        return Err(Error::Decode);
-    }
-    Ok(c)
-}
-
-pub fn sign_host_request(id: &Identity, req: HostRequest) -> SignedBlob {
-    sign_claim(id, &Claim::HostRequest(req))
-}
-
-/// Signature (by `starter_did`), version and bounds.
-pub fn open_host_request(blob: &SignedBlob) -> Result<HostRequest> {
-    let Claim::HostRequest(c) = open_claim(blob)? else {
-        return Err(Error::UnexpectedMessage);
-    };
-    check_common(c.v, &c.gid, &c.call_id)?;
-    let ok = text_ok(&c.starter_did)
-        && host_ref_ok(&c.host)
-        && c.backups.len() <= MAX_BACKUPS
-        && c.backups.iter().all(host_ref_ok)
-        && (2..=MAX_PARTICIPANTS).contains(&(c.expected as usize));
-    if !ok {
-        return Err(Error::Decode);
-    }
-    Ok(c)
-}
-
-pub fn sign_host_refusal(id: &Identity, refusal: HostRefusal) -> SignedBlob {
-    sign_claim(id, &Claim::HostRefusal(refusal))
-}
-
-/// Signature (by `host.holder_did`), version and bounds.
-pub fn open_host_refusal(blob: &SignedBlob) -> Result<HostRefusal> {
-    let Claim::HostRefusal(c) = open_claim(blob)? else {
-        return Err(Error::UnexpectedMessage);
-    };
-    check_common(c.v, &c.gid, &c.call_id)?;
-    if !text_ok(&c.starter_did) || !host_ref_ok(&c.host) || c.reason.len() > MAX_TEXT {
-        return Err(Error::Decode);
-    }
-    Ok(c)
-}
-
-pub fn sign_note(id: &Identity, dev: &[u8; 32], endpoint: &[u8; 32], issued_ms: u64) -> SignedBlob {
+pub fn sign_note(id: &Identity, dev: &[u8; 32], endpoint: &[u8; 32], issued_ms: u64) -> SignedNote {
     let note = GroupNote {
-        v: GCALL_VERSION,
         did: id.did().into(),
-        dev: enc(dev),
-        endpoint: enc(endpoint),
+        dev: *dev,
+        endpoint: *endpoint,
         issued_ms,
     };
-    sign_claim(id, &Claim::Note(note))
-}
-
-/// Signature (by `did`), version and the two 32-byte keys.
-pub fn open_note(blob: &SignedBlob) -> Result<GroupNote> {
-    let Claim::Note(c) = open_claim(blob)? else {
-        return Err(Error::UnexpectedMessage);
-    };
-    if c.v != GCALL_VERSION {
-        return Err(Error::UnknownVersion);
-    }
-    if !text_ok(&c.did) || c.dev_bytes().is_none() || c.endpoint_bytes().is_none() {
-        return Err(Error::Decode);
-    }
-    Ok(c)
+    Signed::sign(&note, id).expect("own note signs")
 }
 
 // ---- control frames ----------------------------------------------------------------
@@ -493,23 +418,23 @@ pub enum GroupCallMsg {
     /// Host → member, right after a Join is accepted: this generation's CallStart (the
     /// backups for redial; a takeover host's new CallStart reaches its members this way).
     Start {
-        start: SignedBlob,
+        start: SignedStart,
     },
     /// Member → host. `note` is the joiner's DID-signed group endpoint note (§9 G2), opaque
     /// here and checked by the host's `CallAuthority`.
     Join {
-        join: SignedBlob,
+        join: SignedJoin,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        note: Option<SignedBlob>,
+        note: Option<SignedNote>,
     },
     Roster {
-        roster: SignedBlob,
+        roster: SignedRoster,
     },
     Leave {
-        leave: SignedBlob,
+        leave: SignedLeave,
     },
     End {
-        end: SignedBlob,
+        end: SignedEnd,
     },
     /// Host → member, once per second; unsigned (authenticated stream).
     Heartbeat {

@@ -15,26 +15,32 @@ impl Inner {
             from.filter(|s| s.hosting && !core.groups.lock().get(gid).is_some_and(|l| l.state.is_host(&s.did, &s.dev))).map(|s| s.did.clone());
         let signer_ok = |signer: &str| member_sender.as_deref().is_none_or(|d| d == signer);
         let fid = from.map(|s| s.id);
-        let big = |b: &SignedBlob| b.payload.len() + b.signature.len() > MAX_BLOB;
         match msg {
             GroupMsg::CallHostStatus { status } => {
-                if big(&status) {
+                if status.len() > MAX_BLOB {
                     return;
                 }
-                let Ok(s) = rank::admit(&dir, gid, &status, now) else { return };
-                if !signer_ok(&s.host_ref.holder_did) || !self.calls_first_sight(&status.signature, s.expires_ms()) {
+                let Ok(s) = rank::admit(&dir, gid, &status, now) else {
+                    return;
+                };
+                if !signer_ok(&s.host_ref.holder_did)
+                    || !self.calls_first_sight(status.sig(), s.expires_ms())
+                {
                     return;
                 }
                 self.calls_keep_status(gid, status.clone(), s);
                 self.calls_send(core, gid, &GroupMsg::CallHostStatus { status }, &Route::All, fid);
             }
             GroupMsg::CallStart { start, hosts } => {
-                if big(&start) {
+                if start.len() > MAX_BLOB {
                     return;
                 }
-                let Ok(s) = w::open_start(&start) else { return };
-                let ok = s.gid == gid && dir.host_permit_ok(gid, &s.host_ref) && dir.is_member(gid, &s.starter_did) && signer_ok(&s.host_ref.holder_did);
-                if !ok || !self.calls_first_sight(&start.signature, now + CALL_KEEP_MS) {
+                let Ok(s) = start.open() else { return };
+                let ok = s.gid == gid
+                    && dir.host_permit_ok(gid, &s.host_ref)
+                    && dir.is_member(gid, &s.starter_did)
+                    && signer_ok(&s.host_ref.holder_did);
+                if !ok || !self.calls_first_sight(start.sig(), now + CALL_KEEP_MS) {
                     return;
                 }
                 let hosts: Vec<SignedHostAddr> = hosts.into_iter().take(1 + MAX_BACKUPS).collect();
@@ -43,26 +49,53 @@ impl Inner {
                 self.calls_send(core, gid, &GroupMsg::CallStart { start, hosts }, &Route::All, fid);
             }
             GroupMsg::CallEnd { end } => {
-                if big(&end) {
+                if end.len() > MAX_BLOB {
                     return;
                 }
-                let Ok(e) = w::open_end(&end) else { return };
-                let known = self.group.calls.st.lock().calls.get(gid).and_then(|c| c.get(&e.call_id)).is_some_and(|(_, s)| s.host_ref.holder_did == e.host_did);
-                let unknown = !known && !self.group.calls.st.lock().calls.get(gid).is_some_and(|c| c.contains_key(&e.call_id)) && dir.is_member(gid, &e.host_did);
-                if e.gid != gid || e.reason != EndReason::Ended || !(known || unknown) || !signer_ok(&e.host_did) || !self.calls_first_sight(&end.signature, now + CALL_KEEP_MS) {
+                let Ok(e) = end.open() else { return };
+                let known = self
+                    .group
+                    .calls
+                    .st
+                    .lock()
+                    .calls
+                    .get(gid)
+                    .and_then(|c| c.get(&e.call_id))
+                    .is_some_and(|(_, s)| s.host_ref.holder_did == e.host_did);
+                let unknown = !known
+                    && !self
+                        .group
+                        .calls
+                        .st
+                        .lock()
+                        .calls
+                        .get(gid)
+                        .is_some_and(|c| c.contains_key(&e.call_id))
+                    && dir.is_member(gid, &e.host_did);
+                if e.gid != gid
+                    || e.reason != EndReason::Ended
+                    || !(known || unknown)
+                    || !signer_ok(&e.host_did)
+                    || !self.calls_first_sight(end.sig(), now + CALL_KEEP_MS)
+                {
                     return;
                 }
                 self.group_call_ended(gid, &e.call_id, &end);
                 self.calls_send(core, gid, &GroupMsg::CallEnd { end }, &Route::All, fid);
             }
             GroupMsg::CallHostRequest { request } => {
-                if big(&request) {
+                if request.len() > MAX_BLOB {
                     return;
                 }
-                let Ok(r) = w::open_host_request(&request) else { return };
-                let fresh = r.issued_ms + REQUEST_MAX_AGE_MS > now && r.issued_ms <= now + gs::MAX_CLOCK_SKEW_MS;
-                let ok = r.gid == gid && fresh && dir.is_member(gid, &r.starter_did) && dir.host_permit_ok(gid, &r.host) && signer_ok(&r.starter_did);
-                if !ok || !self.calls_first_sight(&request.signature, now + REQUEST_MAX_AGE_MS) {
+                let Ok(r) = request.open() else { return };
+                let fresh = r.issued_ms + REQUEST_MAX_AGE_MS > now
+                    && r.issued_ms <= now + gs::MAX_CLOCK_SKEW_MS;
+                let ok = r.gid == gid
+                    && fresh
+                    && dir.is_member(gid, &r.starter_did)
+                    && dir.host_permit_ok(gid, &r.host)
+                    && signer_ok(&r.starter_did);
+                if !ok || !self.calls_first_sight(request.sig(), now + REQUEST_MAX_AGE_MS) {
                     return;
                 }
                 // For this device (also when paused: it then declines).
@@ -75,12 +108,14 @@ impl Inner {
                 self.calls_send(core, gid, &GroupMsg::CallHostRequest { request }, &route, fid);
             }
             GroupMsg::CallHostRefusal { refusal } => {
-                if big(&refusal) {
+                if refusal.len() > MAX_BLOB {
                     return;
                 }
-                let Ok(f) = w::open_host_refusal(&refusal) else { return };
-                let ok = f.gid == gid && dir.is_member(gid, &f.starter_did) && signer_ok(&f.host.holder_did);
-                if !ok || !self.calls_first_sight(&refusal.signature, now + REQUEST_MAX_AGE_MS) {
+                let Ok(f) = refusal.open() else { return };
+                let ok = f.gid == gid
+                    && dir.is_member(gid, &f.starter_did)
+                    && signer_ok(&f.host.holder_did);
+                if !ok || !self.calls_first_sight(refusal.sig(), now + REQUEST_MAX_AGE_MS) {
                     return;
                 }
                 if f.starter_did == core.did {
@@ -93,7 +128,7 @@ impl Inner {
         }
     }
 
-    pub(super) fn calls_keep_status(&self, gid: &str, blob: SignedBlob, s: CallHostStatus) {
+    pub(super) fn calls_keep_status(&self, gid: &str, blob: SignedStatus, s: CallHostStatus) {
         let mut st = self.group.calls.st.lock();
         let m = st.statuses.entry(gid.to_string()).or_default();
         let key = (s.host_ref.holder_did.clone(), s.host_ref.device_slot);
@@ -104,7 +139,7 @@ impl Inner {
 
     /// A CallStart (relayed, or one of ours): remembered, fed to the call board, joined by
     /// the starter whose pick it answers.
-    pub(super) fn group_call_started(self: &Arc<Self>, gid: &str, blob: SignedBlob, s: CallStart) {
+    pub(super) fn group_call_started(self: &Arc<Self>, gid: &str, blob: SignedStart, s: CallStart) {
         let new_call = {
             let mut st = self.group.calls.st.lock();
             if st.ended.contains(&s.call_id) || st.ends.get(&s.call_id).is_some_and(|(_, host, _, _)| *host == s.host_ref.holder_did) {
@@ -143,11 +178,11 @@ impl Inner {
         }
     }
 
-    pub(super) fn group_call_ended(self: &Arc<Self>, gid: &str, call_id: &str, end: &SignedBlob) {
+    pub(super) fn group_call_ended(self: &Arc<Self>, gid: &str, call_id: &str, end: &SignedEnd) {
         let _ = self.gcall_observe_end(end);
         let had = {
             let mut st = self.group.calls.st.lock();
-            if let Ok(e) = w::open_end(end) {
+            if let Ok(e) = end.open() {
                 if st.ends.len() >= SEEN_MAX {
                     st.ends.clear();
                 }
@@ -191,19 +226,26 @@ impl Inner {
         };
         self.log(format!("group {}: declined to host call {}: {reason}", short(gid), r.call_id));
         let f = HostRefusal {
-            v: GCALL_VERSION,
             gid: gid.to_string(),
             call_id: r.call_id.clone(),
             starter_did: r.starter_did.clone(),
             host: r.host.clone(),
             reason: reason.chars().take(100).collect(),
         };
-        let blob = w::sign_host_refusal(&core.account, f.clone());
+        let Ok(blob) = Signed::sign(&f, &core.account) else {
+            return;
+        };
         if f.starter_did == core.did {
             self.group_call_refused(core, &f);
         }
-        let sig = blob.signature.clone();
-        self.calls_originate(core, gid, &sig, GroupMsg::CallHostRefusal { refusal: blob }, Route::Did(f.starter_did));
+        let sig = *blob.sig();
+        self.calls_originate(
+            core,
+            gid,
+            &sig,
+            GroupMsg::CallHostRefusal { refusal: blob },
+            Route::Did(f.starter_did),
+        );
     }
 
     pub(super) fn calls_frontier(&self, core: &GroupCore, gid: &str) -> String {

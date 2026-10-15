@@ -12,11 +12,8 @@ pub fn accept_self_hello(
     remote_device: [u8; 32],
     tombstoned: &HashSet<[u8; 32]>,
 ) -> Result<Attestation> {
-    let att = verify_attestation(attestation)?;
-    if att.did != my_did {
-        return Err(Error::WrongIssuer);
-    }
-    let dev = att.device_key()?;
+    let att = attestation.open_from(my_did)?;
+    let dev = att.device;
     if dev != remote_device {
         return Err(Error::DeviceMismatch);
     }
@@ -68,13 +65,14 @@ pub fn redeemed_key(joiner: &str, nonce: &str) -> String {
 }
 
 /// Binds the joiner's DID to *this* invite and *this* pair of devices, so a hello can't be
-/// lifted onto another connection or invite.
-pub(crate) fn binding_message(
-    nonce: &str,
-    joiner_device: &[u8; 32],
-    owner_device: &[u8; 32],
-) -> Result<Vec<u8>> {
-    Ok(sign::input(BIND_DOMAIN, &[&dec(nonce)?, joiner_device, owner_device]))
+/// lifted onto another connection or invite: a detached signature over
+/// `[nonce, joiner_device, owner_device]` under `domains::BIND`.
+pub(crate) fn binding_parts<'a>(
+    nonce: &'a [u8],
+    joiner_device: &'a [u8; 32],
+    owner_device: &'a [u8; 32],
+) -> [&'a [u8]; 3] {
+    [nonce, joiner_device, owner_device]
 }
 
 /// `contact_hello_with` for a ticket contact (message + call).
@@ -111,8 +109,13 @@ pub fn contact_hello_with(
     if claim.iss == me.did() {
         return Err(Error::SelfContact);
     }
-    let their_device = dec32(&claim.device)?;
-    let binding = enc(me.sign(&binding_message(&claim.nonce, &my_device, &their_device)?));
+    let their_device = claim.device;
+    let nonce = dec(&claim.nonce)?;
+    let binding = enc(signed::sign_detached(
+        me,
+        domains::BIND,
+        &binding_parts(&nonce, &my_device, &their_device),
+    ));
     let (message, call) = policy.issue(me, &claim.iss, now, grant_ttl);
     let msg = Msg::ContactHello {
         relay: None,
@@ -188,11 +191,11 @@ pub fn accept_contact_hello_with(
     if now >= claim.exp {
         return Err(Error::Expired);
     }
-    if dec32(&claim.device)? != my_device {
+    if claim.device != my_device {
         return Err(Error::DeviceMismatch);
     }
     let att = verify_attestation(attestation)?;
-    if att.device_key()? != remote_device {
+    if att.device != remote_device {
         return Err(Error::DeviceMismatch);
     }
     // A ticket adds any number of joiners until it expires; each joiner DID redeems it once. A
@@ -200,12 +203,14 @@ pub fn accept_contact_hello_with(
     if redeemed_nonces.contains(&claim.nonce) || redeemed_nonces.contains(&redeemed_key(&att.did, &claim.nonce)) {
         return Err(Error::Replayed);
     }
-    let their_pub = public_key_from_did(&att.did).ok_or(Error::Decode)?;
     let sig: [u8; 64] = dec(binding)?.try_into().map_err(|_| Error::Decode)?;
-    let bind_msg = binding_message(&claim.nonce, &remote_device, &my_device)?;
-    if !verify(&their_pub, &bind_msg, &sig) {
-        return Err(Error::BadSignature);
-    }
+    let nonce = dec(&claim.nonce)?;
+    signed::verify_detached(
+        Signer::Did(&att.did),
+        domains::BIND,
+        &binding_parts(&nonce, &remote_device, &my_device),
+        &sig,
+    )?;
     verify_contact_tokens(
         grant_for_you,
         call_grant_for_you.as_ref(),
@@ -251,11 +256,8 @@ pub fn accept_contact_welcome(
     if pending.my_did != me.did() {
         return Err(Error::WrongHolder);
     }
-    let att = verify_attestation(attestation)?;
-    if att.did != pending.did {
-        return Err(Error::WrongIssuer);
-    }
-    let dev = att.device_key()?;
+    let att = attestation.open_from(&pending.did)?;
+    let dev = att.device;
     if dev != remote_device || dev != pending.device {
         return Err(Error::DeviceMismatch);
     }

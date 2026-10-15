@@ -1,8 +1,9 @@
 use super::super::StaticAuthority;
 use super::*;
 use identity::Identity;
-use proto::gcall::{GCALL_VERSION, MAX_PARTICIPANTS, new_call_id};
-use proto::gcall_status::{STATUS_TTL_MS, sign_status};
+use proto::Signed;
+use proto::gcall::{MAX_PARTICIPANTS, new_call_id};
+use proto::gcall_status::{STATUS_TTL_MS, SignedStatus};
 
 const NOW: u64 = 1_800_000_000_000;
 
@@ -21,7 +22,6 @@ fn host_ref(id: &Identity, slot: u64) -> HostRef {
 
 fn desktop(r: &HostRef) -> CallHostStatus {
     CallHostStatus {
-        v: GCALL_VERSION,
         gid: gid(),
         host_ref: r.clone(),
         class: DeviceClass::Desktop,
@@ -63,8 +63,8 @@ impl World {
     fn r(&self, i: usize, slot: u64) -> HostRef {
         host_ref(&self.ids[i], slot)
     }
-    fn sign(&self, i: usize, s: CallHostStatus) -> SignedBlob {
-        sign_status(&self.ids[i], s)
+    fn sign(&self, i: usize, s: CallHostStatus) -> SignedStatus {
+        Signed::sign(&s, &self.ids[i]).unwrap()
     }
 }
 
@@ -98,8 +98,8 @@ fn gcall_rank_gc_s04_same_status_set_gives_identical_ranking_everywhere() {
         w.sign(3, phone(&hp, PowerState::Charging(90))),
     ];
     // Forged: signed by member 1 but claiming member 0's other device.
-    let mut forged = w.sign(0, desktop(&w.r(0, 1)));
-    forged.signature = w.sign(1, desktop(&h1)).signature;
+    let other = w.sign(0, desktop(&w.r(0, 1)));
+    let forged = SignedStatus::from_parts(other.body().to_vec(), *w.sign(1, desktop(&h1)).sig());
     st.push(forged);
     // No permit (member 4).
     st.push(w.sign(4, desktop(&w.r(4, 0))));
@@ -235,8 +235,7 @@ fn gcall_rank_excludes_expired_foreign_and_unpermitted_statuses() {
     assert_eq!(admit(&auth, &g, &fresh, NOW), Err(Refusal::PermitInvalid));
     assert_eq!(admit(&w.auth, &g, &w.sign(4, desktop(&w.r(4, 0))), NOW), Err(Refusal::PermitInvalid));
     // Forged.
-    let mut forged = sa.clone();
-    forged.signature = fresh.signature.clone();
+    let forged = SignedStatus::from_parts(sa.body().to_vec(), *fresh.sig());
     assert_eq!(admit(&w.auth, &g, &forged, NOW), Err(Refusal::BadSignature));
     assert!(rank(&w.auth, &[forged, foreign, future], &ctx(&cid, &g, None)).is_empty());
 }

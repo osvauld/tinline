@@ -60,7 +60,9 @@ impl ProfileDoc {
         Ok(())
     }
 
-    pub fn deletions(&self) -> Result<BTreeMap<String, proto::SignedBlob>, Error> {
+    pub fn deletions(
+        &self,
+    ) -> Result<BTreeMap<String, proto::profile::SignedPictureDeletion>, Error> {
         let root = self.doc.get_map("deletions").get_deep_value();
         let values = entries(&root);
         if values.len() > 4096 {
@@ -79,7 +81,11 @@ impl ProfileDoc {
             .collect()
     }
 
-    pub fn request_deletion(&self, hash: &str, permit: &proto::SignedBlob) -> Result<(), Error> {
+    pub fn request_deletion(
+        &self,
+        hash: &str,
+        permit: &proto::profile::SignedPictureDeletion,
+    ) -> Result<(), Error> {
         if self.deletions()?.get(hash) == Some(permit) {
             return Ok(());
         }

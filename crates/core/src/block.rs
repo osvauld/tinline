@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use parking_lot::Mutex;
-use proto::{BlockNotice as Claim, Msg, SignedBlob};
+use proto::{BlockNotice as Claim, Msg, SignedBlockNotice as SignedBlob};
 
 use crate::node::{Inner, Node, addr_for, now_ms};
 use crate::store::{HeldNotice, State};

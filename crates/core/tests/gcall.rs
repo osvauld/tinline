@@ -353,7 +353,7 @@ fn glare_two_hosts() {
             x.node.gcall_observe_start(s).unwrap();
         }
     }
-    let id = |s: &proto::SignedBlob| proto::gcall::open_start(s).unwrap().call_id;
+    let id = |s: &proto::gcall::SignedStart| s.open().unwrap().call_id;
     let (ia, ib) = (id(&a), id(&b));
     let glare = |id: &str| cryptography::hash::content(cryptography::domains::GCALL_BOARD, id.as_bytes());
     let a_wins = glare(&ia) < glare(&ib);
@@ -365,7 +365,7 @@ fn glare_two_hosts() {
     assert!(drive(&mut all(&mut m), 10_000, false, settled), "everyone in the winner's call");
     assert!(m[lose].node.gcall_status().unwrap().hosting.is_none());
     assert!(
-        m[lose].evs.iter().any(|e| matches!(e, GcallEvent::HostingEnded { reason: EndReason::Superseded, next_host: Some(n), .. } if *n == wh)),
+        m[lose].evs.iter().any(|e| matches!(e, GcallEvent::HostingEnded { reason: EndReason::Superseded, next_host: Some(n), .. } if n == &wh)),
         "the loser ends superseded"
     );
     let follower = if lose == 0 { 2 } else { 3 };

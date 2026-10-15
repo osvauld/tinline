@@ -164,13 +164,6 @@ fn is_zero(v: &u32) -> bool {
     *v == 0
 }
 
-impl FileRef {
-    /// The picture's size and preview are present (a /5 photo).
-    pub fn has_picture(&self) -> bool {
-        self.width != 0 || self.height != 0 || !self.preview.is_empty()
-    }
-}
-
 /// One version of a message, as its record reads.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MsgRec {
@@ -190,10 +183,6 @@ pub struct MsgRec {
     pub did_sig: Vec<u8>,
 }
 
-/// The P9b domain was `tinline-chat-msg-did-v2` (signature in a commit message); v3 signs the
-/// record-field form, including `dev`.
-const MSG_SIG_DOMAIN: &[u8] = b"tinline-chat-msg-v3";
-
 /// The span of ops that writes one message version: its Loro peer id (the writer ID), the
 /// counter of its first op and its op count, the last op being the insert of `v` (which holds
 /// the `did_sig`). The DID
@@ -206,78 +195,107 @@ pub struct WrittenAt {
     pub len: u32,
 }
 
-fn put_str(v: &mut Vec<u8>, s: &str) {
-    v.extend_from_slice(&(s.len() as u32).to_be_bytes());
-    v.extend_from_slice(s.as_bytes());
+/// The signed form of one message version: every field, always (no optional tail), then the
+/// device ID and the span.
+#[derive(Serialize)]
+struct MsgSig<'a> {
+    doc: &'a str,
+    id: &'a str,
+    author: &'a str,
+    at: i64,
+    text: &'a str,
+    edited_at: Option<i64>,
+    deleted: bool,
+    reply_to: Option<&'a str>,
+    file: Option<FileSig<'a>>,
+    dev: [u8; 32],
+    peer: u64,
+    counter: i32,
+    len: u32,
 }
 
-/// What the author's DID key signs: domain, doc id (so a message cannot be replayed into another
-/// day or pair), id, author, time, text, edit, delete, reply, file, then the device ID and the
-/// span (`WrittenAt`: peer id u64 BE, counter i32 BE, length u32 BE). Strings are u32 BE
-/// length-prefixed; options are a 0/1 byte then the value.
-pub fn msg_sig_input(doc: &str, m: &MsgRec, at: &WrittenAt) -> Vec<u8> {
-    let mut v = MSG_SIG_DOMAIN.to_vec();
-    put_str(&mut v, doc);
-    put_str(&mut v, &m.id);
-    put_str(&mut v, &m.author);
-    v.extend_from_slice(&m.at.to_be_bytes());
-    put_str(&mut v, &m.text);
-    match m.edited_at {
-        None => v.push(0),
-        Some(t) => {
-            v.push(1);
-            v.extend_from_slice(&t.to_be_bytes());
-        }
-    }
-    v.push(m.deleted as u8);
-    match &m.reply_to {
-        None => v.push(0),
-        Some(r) => {
-            v.push(1);
-            put_str(&mut v, r);
-        }
-    }
-    match &m.file {
-        None => v.push(0),
-        Some(f) => {
-            v.push(1);
-            put_str(&mut v, &f.hash);
-            put_str(&mut v, &f.key);
-            put_str(&mut v, &f.name);
-            v.extend_from_slice(&f.size.to_be_bytes());
-            put_str(&mut v, &f.mime);
-            put_str(&mut v, &f.kind);
-            v.extend_from_slice(&f.duration_ms.to_be_bytes());
-            v.extend_from_slice(&(f.waveform.len() as u32).to_be_bytes());
-            v.extend_from_slice(&f.waveform);
-            // /5: the picture's size and preview are signed too. Only when present, so every record written
-            // before /5 (no picture fields) keeps exactly the input it was signed with.
-            if f.has_picture() {
-                v.push(2);
-                v.extend_from_slice(&f.width.to_be_bytes());
-                v.extend_from_slice(&f.height.to_be_bytes());
-                put_str(&mut v, &f.preview);
-            }
-        }
-    }
-    v.extend_from_slice(&m.dev);
-    v.extend_from_slice(&at.peer.to_be_bytes());
-    v.extend_from_slice(&at.counter.to_be_bytes());
-    v.extend_from_slice(&at.len.to_be_bytes());
-    v
+#[derive(Serialize)]
+struct FileSig<'a> {
+    hash: &'a str,
+    key: &'a str,
+    name: &'a str,
+    size: u64,
+    mime: &'a str,
+    kind: &'a str,
+    duration_ms: u32,
+    waveform: &'a [u8],
+    width: u32,
+    height: u32,
+    preview: &'a str,
+}
+
+/// What the author's DID key signs: `sign::input(CHAT_MSG, [postcard(MsgSig)])`, binding the doc id
+/// (so a message cannot be replayed into another day or pair), every field of the version, its
+/// device ID and its span (`WrittenAt`). Tests sign it with other keys.
+#[cfg(test)]
+pub(crate) fn msg_sig_input(doc: &str, m: &MsgRec, at: &WrittenAt) -> Vec<u8> {
+    cryptography::sign::input(
+        cryptography::domains::CHAT_MSG,
+        &[&msg_sig_body(doc, m, at)],
+    )
+}
+
+fn msg_sig_body(doc: &str, m: &MsgRec, at: &WrittenAt) -> Vec<u8> {
+    let file = m.file.as_ref().map(|f| FileSig {
+        hash: &f.hash,
+        key: &f.key,
+        name: &f.name,
+        size: f.size,
+        mime: &f.mime,
+        kind: &f.kind,
+        duration_ms: f.duration_ms,
+        waveform: &f.waveform,
+        width: f.width,
+        height: f.height,
+        preview: &f.preview,
+    });
+    let sig = MsgSig {
+        doc,
+        id: &m.id,
+        author: &m.author,
+        at: m.at,
+        text: &m.text,
+        edited_at: m.edited_at,
+        deleted: m.deleted,
+        reply_to: m.reply_to.as_deref(),
+        file,
+        dev: m.dev,
+        peer: at.peer,
+        counter: at.counter,
+        len: at.len,
+    };
+    cryptography::codec::to_bytes(&sig).expect("message signs")
 }
 
 /// The DID signature of `m` (its `dev` included; its `did_sig` ignored) written as the span `at`.
 pub fn sign_msg(account: &identity::Identity, doc: &str, m: &MsgRec, at: &WrittenAt) -> Vec<u8> {
-    account.sign(&msg_sig_input(doc, m, at)).to_vec()
+    proto::signed::sign_detached(
+        account,
+        cryptography::domains::CHAT_MSG,
+        &[&msg_sig_body(doc, m, at)],
+    )
+    .to_vec()
 }
 
 /// `m.did_sig` is the signature of this version of `m`, written as the span `at`, by the key of
 /// its author's DID.
 pub fn verify_msg(doc: &str, m: &MsgRec, at: &WrittenAt) -> bool {
-    let Some(key) = identity::public_key_from_did(&m.author) else { return false };
-    let Ok(sig) = <[u8; 64]>::try_from(m.did_sig.as_slice()) else { return false };
-    identity::verify(&key, &msg_sig_input(doc, m, at), &sig)
+    let Ok(sig) = <[u8; 64]>::try_from(m.did_sig.as_slice()) else {
+        return false;
+    };
+    let body = msg_sig_body(doc, m, at);
+    proto::signed::verify_detached(
+        proto::Signer::Did(&m.author),
+        cryptography::domains::CHAT_MSG,
+        &[&body],
+        &sig,
+    )
+    .is_ok()
 }
 
 /// `m`, as it reads after the span `at`, proves that span: `at.peer` is its author's writer ID

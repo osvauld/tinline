@@ -87,16 +87,27 @@ pub enum GroupMsg {
     // §9.3) and to other hosts, the addressed ones towards their one recipient. Every device
     // drops a blob it has seen (signature), so host-to-host relay ends.
     /// A call-host candidate's signed conditions (`proto::gcall_status`), every 30 s.
-    CallHostStatus { status: proto::SignedBlob },
+    CallHostStatus {
+        status: proto::gcall_status::SignedStatus,
+    },
     /// A call began (or a backup took it over): the host's signed CallStart and the
     /// DID-signed group addresses of it and its backups (G1: what members dial).
-    CallStart { start: proto::SignedBlob, hosts: Vec<SignedHostAddr> },
+    CallStart {
+        start: proto::gcall::SignedStart,
+        hosts: Vec<SignedHostAddr>,
+    },
     /// The call ended (`End{ended}`, signed by its host).
-    CallEnd { end: proto::SignedBlob },
+    CallEnd {
+        end: proto::gcall::SignedEnd,
+    },
     /// Starter -> one call-host candidate (`proto::gcall::HostRequest`).
-    CallHostRequest { request: proto::SignedBlob },
+    CallHostRequest {
+        request: proto::gcall::SignedHostRequest,
+    },
     /// Candidate -> starter: declined (`proto::gcall::HostRefusal`). Accepting is a CallStart.
-    CallHostRefusal { refusal: proto::SignedBlob },
+    CallHostRefusal {
+        refusal: proto::gcall::SignedHostRefusal,
+    },
 }
 
 pub struct Writer(pub SendStream);

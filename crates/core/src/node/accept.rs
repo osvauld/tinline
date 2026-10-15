@@ -16,7 +16,7 @@ pub(super) enum HelloError {
     /// Acceptable, but we could not make it durable.
     Failed(Error),
     /// From a DID we block: answered with our notice.
-    Blocked(proto::SignedBlob),
+    Blocked(proto::SignedBlockNotice),
 }
 
 impl Inner {
@@ -251,7 +251,7 @@ impl Inner {
     }
 
     /// We blocked `did`: a call with them tells them so and ends.
-    pub(crate) fn calls_blocked(&self, did: &str, notice: &proto::SignedBlob) {
+    pub(crate) fn calls_blocked(&self, did: &str, notice: &proto::SignedBlockNotice) {
         for call in self.live_calls_with(did) {
             let _ = call.cmd.send(Cmd::Block(notice.clone()));
         }

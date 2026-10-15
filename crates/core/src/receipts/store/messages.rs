@@ -275,7 +275,6 @@ impl MessageReceipts {
         let mut out = Vec::new();
         for (n, chunk) in chunks.iter().enumerate() {
             let claim = Receipt {
-                version: 1,
                 scope: intent.scope.clone(),
                 kind: intent.kind,
                 recipient: self.me.clone(),

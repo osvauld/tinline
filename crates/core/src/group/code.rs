@@ -265,12 +265,19 @@ impl GroupStore {
 /// Checks a fetched token against the code it was fetched with: the dialled endpoint is one of
 /// the group's signed host addresses, and the invite (if any) is signed, for this group, unexpired.
 pub(crate) fn check_fetched(t: &InviteToken, sc: &ShortCode) -> Result<(), Error> {
-    let names_host = t.hosts.iter().any(|h| h.open().is_some_and(|a| a.group == t.group && a.endpoint == sc.endpoint));
+    let names_host = t.hosts.iter().any(|h| {
+        h.open()
+            .ok()
+            .is_some_and(|a| a.group == t.group && a.endpoint == sc.endpoint)
+    });
     if !names_host || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
         return Err(Error::Protocol("the host's answer does not match the invite link".into()));
     }
     if let Some(inv) = &t.invite
-        && inv.open().is_none_or(|i| i.group != t.group || i.expires < now())
+        && inv
+            .open()
+            .ok()
+            .is_none_or(|i| i.group != t.group || i.expires < now())
     {
         return Err(Error::Rejected("invite expired or invalid".into()));
     }
@@ -282,13 +289,16 @@ impl Inner {
     /// host `gid`, else a host we have a session with. Returns the link.
     pub(crate) async fn group_issue_code(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, invite: Option<SignedInvite>) -> Result<String, Error> {
         let code: [u8; CODE_LEN] = cryptography::rng::bytes();
-        let expires = invite.as_ref().and_then(|i| i.open()).map_or(now() + INVITE_TTL, |i| i.expires);
+        let expires = invite
+            .as_ref()
+            .and_then(|i| i.open().ok())
+            .map_or(now() + INVITE_TTL, |i| i.expires);
         // Only a CHAT host keeps codes (`group_fetch_answer` checks `is_host`); `group_my_addr`
         // is also Some for a device that only hosts calls (GA-I1), which registers at a host.
         let chat_host = core.am_host(gid);
         if chat_host
             && let Some(mine) = self.group_my_addr(core, gid)
-            && let Some(a) = mine.open()
+            && let Some(a) = mine.open().ok()
         {
             if core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
                 return Err(Error::Rejected("too many open invites for this group; revoke some".into()));
@@ -321,7 +331,7 @@ impl Inner {
             .store
             .hosts(gid)?
             .into_iter()
-            .filter_map(|s| s.open())
+            .filter_map(|s| s.open().ok())
             .find(|a| a.did == host_did && a.dev == host_dev)
             .ok_or_else(|| Error::Rejected("the host's address is unknown".into()))?;
         core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did, host_dev: hex::encode(host_dev), expires })?;
@@ -444,8 +454,15 @@ impl Inner {
                     return ack(code, false, "not a member");
                 }
                 let expires = match &invite {
-                    Some(i) => match i.open() {
-                        Some(inv) if inv.group == gid && inv.issuer == did && admin && inv.expires >= now() => inv.expires,
+                    Some(i) => match i.open().ok() {
+                        Some(inv)
+                            if inv.group == gid
+                                && inv.issuer == did
+                                && admin
+                                && inv.expires >= now() =>
+                        {
+                            inv.expires
+                        }
                         _ => return ack(code, false, "only admins can invite"),
                     },
                     None => expires.min(now() + INVITE_TTL),

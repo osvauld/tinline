@@ -3,7 +3,7 @@
 pub(super) use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 pub(super) use identity::Identity;
-pub(super) use proto::SignedBlob;
+pub(super) use proto::Signed;
 pub(super) use proto::gcall::{self as w, GroupCallMsg};
 
 pub(super) use super::super::client::ClientEnd;
@@ -71,7 +71,7 @@ pub(super) struct World {
     pub(super) q: VecDeque<Ev>,
     pub(super) cut: BTreeSet<(usize, usize)>,
     pub(super) hold_relay: bool,
-    pub(super) held: Vec<SignedBlob>,
+    pub(super) held: Vec<w::SignedStart>,
     pub(super) taking: BTreeSet<usize>,
     // Last upstream datagram per device; idle joined clients send the gated level-only
     // keepalive every LEVEL_ONLY_MS like a real silence-gated sender.
@@ -161,7 +161,7 @@ impl World {
     }
 
     // The host's own board first; everyone else through the chat relay unless held.
-    pub(super) fn announce(&mut self, h: usize, blob: SignedBlob) {
+    pub(super) fn announce(&mut self, h: usize, blob: w::SignedStart) {
         let _ = self.d[h].board.accept_start(&blob, &self.auth);
         if self.hold_relay {
             self.held.push(blob);
@@ -170,7 +170,7 @@ impl World {
         }
     }
 
-    pub(super) fn relay(&mut self, blob: &SignedBlob) {
+    pub(super) fn relay(&mut self, blob: &w::SignedStart) {
         for i in 0..N {
             if self.d[i].online && i != MALLORY {
                 let _ = self.d[i].board.accept_start(blob, &self.auth);
@@ -356,8 +356,10 @@ impl World {
 
     // §5: a backup that gets the first valid Join{gen + 1} signs CallStart{gen + 1}.
     pub(super) fn maybe_take_over(&mut self, h: usize, msg: &GroupCallMsg, _m: usize) {
-        let GroupCallMsg::Join { join, .. } = msg else { return };
-        let Ok(j) = w::open_join(join) else { return };
+        let GroupCallMsg::Join { join, .. } = msg else {
+            return;
+        };
+        let Ok(j) = join.open() else { return };
         if self.d[h].board.may_take(&j.call_id) != Some(j.host_gen) {
             return;
         }
@@ -439,7 +441,12 @@ impl World {
     }
 
     // A raw Join for `m` on a fresh connection from `ep`.
-    pub(super) fn raw_join(&mut self, h: usize, ep: [u8; 32], join: SignedBlob) -> Result<Vec<HostAction>, Refusal> {
+    pub(super) fn raw_join(
+        &mut self,
+        h: usize,
+        ep: [u8; 32],
+        join: w::SignedJoin,
+    ) -> Result<Vec<HostAction>, Refusal> {
         self.next_conn += 1;
         let conn = ConnId(self.next_conn);
         let e = self.hosts.get_mut(&h).unwrap();

@@ -47,7 +47,12 @@ impl Inner {
 
     /// A contact's signed `DeviceList` from a hello or an accept: kept if it verifies for that
     /// DID and is newer than the one we hold. A new device in it resets `verified`.
-    pub(crate) fn accept_device_list(self: &Arc<Self>, epoch: u64, did: &str, blob: &proto::SignedBlob) -> bool {
+    pub(crate) fn accept_device_list(
+        self: &Arc<Self>,
+        epoch: u64,
+        did: &str,
+        blob: &proto::SignedDeviceList,
+    ) -> bool {
         let changed = {
             let mut s = self.shared.lock();
             if s.epoch != epoch {
@@ -67,7 +72,7 @@ impl Inner {
 
     /// Our own `DeviceList`: every live install of the registry (this device first, on its
     /// current relay). Re-signed with a higher `seq` only when its content changed.
-    pub(crate) fn my_device_list(self: &Arc<Self>, me: &Me) -> Option<proto::SignedBlob> {
+    pub(crate) fn my_device_list(self: &Arc<Self>, me: &Me) -> Option<proto::SignedDeviceList> {
         let relay = self.endpoint().ok().as_ref().and_then(relay_of);
         let (blob, dirty) = {
             let mut s = self.shared.lock();
@@ -113,7 +118,10 @@ impl Inner {
             let same = st.own_list.as_ref().is_some_and(|b| {
                 proto::verify_device_list(b, me.id.did()).is_ok_and(|l| {
                     l.devices.len() == want.len()
-                        && l.devices.iter().zip(&want).all(|(e, (d, r))| e.device_key().ok() == Some(*d) && &e.relay == r)
+                        && l.devices
+                            .iter()
+                            .zip(&want)
+                            .all(|(e, (d, r))| e.device == *d && &e.relay == r)
                 })
             });
             if !same {
@@ -138,8 +146,10 @@ impl Inner {
 /// list we hold and its seq is not too far ahead of our clock (`proto::list_seq_in_bounds`,
 /// PROVISIONAL (coordinator)). Hints are kept for devices we knew; a device we did not know resets
 /// `verified`. Returns whether anything changed.
-pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedBlob) -> bool {
-    let Ok(list) = proto::verify_device_list(blob, &c.did) else { return false };
+pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedDeviceList) -> bool {
+    let Ok(list) = proto::verify_device_list(blob, &c.did) else {
+        return false;
+    };
     if !proto::list_seq_in_bounds(list.seq, now_ms()) {
         return false;
     }
@@ -150,7 +160,7 @@ pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedBlob)
         .devices
         .iter()
         .filter_map(|e| {
-            let device = e.device_key().ok()?;
+            let device = e.device;
             let relay = relay_hint(&e.relay).or_else(|| c.relay_for(&device).map(String::from));
             Some(ContactDevice { device, relay })
         })

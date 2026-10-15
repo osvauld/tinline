@@ -250,7 +250,7 @@ impl Inner {
         let relay = relay_of(&ep);
         let mut cache = core.my_addr.lock();
         if let Some(s) = cache.get(gid)
-            && s.open().is_some_and(|a| a.relay == relay)
+            && s.open().ok().is_some_and(|a| a.relay == relay)
         {
             return Some(s.clone());
         }
@@ -261,8 +261,8 @@ impl Inner {
             endpoint: *ep.id().as_bytes(),
             relay,
             at: now_ms(),
-        }
-        .sign(&core.account);
+        };
+        let a = proto::Signed::sign(&a, &core.account).ok()?;
         cache.insert(gid.to_string(), a.clone());
         Some(a)
     }

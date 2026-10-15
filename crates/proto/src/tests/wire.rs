@@ -158,3 +158,132 @@ fn call_hello_with_max_device_list_fits_frame() {
     assert!(f.len() - 4 < MAX_FRAME, "{}", f.len());
     assert_eq!(decode_frame(&f).unwrap().unwrap().0, m);
 }
+
+/// Every signed statement runs the same envelope table (forgery, cross-domain replay, trailing
+/// bytes, wrong signer, size cap). `Twin` and the mutations live in `signed::conformance`.
+#[test]
+fn every_signable_passes_the_envelope_table() {
+    use crate::gcall::{self, *};
+    use crate::gcall_status::*;
+    use signed::conformance::check;
+    let (a, b) = (peer(), peer());
+    let (x, y) = (&a.id, &b.id);
+    let cid = new_call_id();
+    let gid = "f0".repeat(32);
+    let hr = |id: &Identity| HostRef {
+        holder_did: id.did().into(),
+        device_slot: 3,
+        permit_digest: "d".repeat(64),
+    };
+
+    check(&attest(x, a.dev, T0).peek().unwrap(), x, y);
+    check(&issue_grant(x, y.did(), T0, GTTL).peek().unwrap(), x, y);
+    // A ticket is signed by the raw account key it carries.
+    check(&ticket(&a).invite.peek().unwrap(), x, y);
+    check(
+        &sign_device_list(
+            x,
+            &[(a.dev, None), (dev(), Some("https://r.example/".into()))],
+            7,
+        )
+        .peek()
+        .unwrap(),
+        x,
+        y,
+    );
+    check(
+        &sign_block_notice(x, y.did(), true, 9).peek().unwrap(),
+        x,
+        y,
+    );
+
+    let (join, join_env) = gcall::sign_join(y, &gid, &cid, 1, 5).unwrap();
+    check(&join, y, x);
+    check(
+        &sign_leave(y, &gid, &cid, 1, 6).unwrap().peek().unwrap(),
+        y,
+        x,
+    );
+    check(
+        &Roster {
+            gid: gid.clone(),
+            call_id: cid.clone(),
+            host_gen: 1,
+            host_did: x.did().into(),
+            epoch: 2,
+            entries: vec![RosterEntry::new(1, &join, &join_env)],
+        },
+        x,
+        y,
+    );
+    check(
+        &CallStart {
+            gid: gid.clone(),
+            call_id: cid.clone(),
+            host_gen: 1,
+            host_ref: hr(x),
+            starter_did: x.did().into(),
+            started_ms: T0,
+            k: 3,
+            max_participants: 12,
+            backups: vec![hr(y)],
+            meta_frontier: "m".into(),
+        },
+        x,
+        y,
+    );
+    check(
+        &End {
+            gid: gid.clone(),
+            call_id: cid.clone(),
+            host_gen: 1,
+            host_did: x.did().into(),
+            reason: EndReason::Ended,
+            next_host: Some(hr(y)),
+        },
+        x,
+        y,
+    );
+    check(
+        &HostRequest {
+            gid: gid.clone(),
+            call_id: cid.clone(),
+            starter_did: x.did().into(),
+            host: hr(y),
+            backups: vec![],
+            expected: 4,
+            issued_ms: T0,
+        },
+        x,
+        y,
+    );
+    check(
+        &HostRefusal {
+            gid: gid.clone(),
+            call_id: cid,
+            starter_did: x.did().into(),
+            host: hr(y),
+            reason: "busy".into(),
+        },
+        y,
+        x,
+    );
+    check(&sign_note(x, &a.dev, &[9; 32], 5).peek().unwrap(), x, y);
+    check(
+        &CallHostStatus {
+            gid,
+            host_ref: hr(x),
+            class: DeviceClass::Phone,
+            power: PowerState::Battery(50),
+            network: NetworkKind::Metered,
+            thermal: ThermalLevel::None,
+            busy: false,
+            load: 10,
+            max_participants: 6,
+            issued_ms: T0,
+            ttl_ms: 30_000,
+        },
+        x,
+        y,
+    );
+}

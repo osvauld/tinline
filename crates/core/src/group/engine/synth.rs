@@ -50,8 +50,21 @@ impl Inner {
         let hub = GroupDoc::new(&gid, 0xFEED_0000_0000_0001);
         hub.import_for_test(&snap);
         let sent = hub.vv();
-        let owner = SMember { did: core.did.clone(), acct: core.account.clone(), dev: core.dev, doc: owner_doc, days: Default::default() };
-        Ok(SynthGroup { gid, hub, day_hubs: Default::default(), members: vec![owner], sent, day_sent: Default::default(), owner_did: core.did.clone() })
+        let owner = SMember {
+            did: core.did.clone(),
+            acct: core.account.clone(),
+            dev: core.dev,
+            doc: owner_doc,
+            days: Default::default(),
+        };
+        Ok(SynthGroup {
+            gid,
+            hub,
+            day_hubs: Default::default(),
+            members: vec![owner],
+            sent,
+            day_sent: Default::default(),
+        })
     }
 
     /// The registered peer `did` joins (invited by us); returns its member index. Buffered until
@@ -60,8 +73,14 @@ impl Inner {
         let core = self.group_core()?;
         let (acct, dev) = crate::synth::peer(did).ok_or(Error::NotFound)?;
         let doc = GroupDoc::new(&g.gid, writer_id(did, &dev));
-        let invite = Invite { group: g.gid.clone(), issuer: g.owner_did.clone(), expires: now() + 10 * 365 * 86_400, nonce: cryptography::rng::bytes() }.sign(&core.account);
-        g.members.push(SMember { did: did.to_string(), acct, dev, doc, days: Default::default() });
+        let invite = issue_invite(&core.account, &g.gid, now() + 10 * 365 * 86_400);
+        g.members.push(SMember {
+            did: did.to_string(),
+            acct,
+            dev,
+            doc,
+            days: Default::default(),
+        });
         let idx = g.members.len() - 1;
         self.synth_group_write(g, idx, at, Body::Join { invite, name: name.to_string() })?;
         Ok(idx)
@@ -70,7 +89,14 @@ impl Inner {
     pub(crate) fn synth_group_write(self: &Arc<Self>, g: &mut SynthGroup, idx: usize, at: i64, body: Body) -> Result<(), Error> {
         let gid = g.gid.clone();
         let m = &mut g.members[idx];
-        let rec = Record { v: 1, group: gid.clone(), author: m.did.clone(), dev: m.dev, at, seen: g.hub.seen(), body };
+        let rec = Record {
+            group: gid.clone(),
+            author: m.did.clone(),
+            dev: m.dev,
+            at,
+            seen: g.hub.seen(),
+            body,
+        };
         if matches!(rec.body, Body::Post { .. }) {
             let day = day_of(at);
             let wid = writer_id(&m.did, &m.dev);
@@ -148,7 +174,17 @@ impl Inner {
             let doc = GroupDoc::load_in(&r.gid, DocId::Day(day.clone()), writer_id(&r.m.did, &r.m.dev), Some(&snap), &[]).map_err(rej)?;
             r.m.days.insert(day.clone(), doc);
         }
-        let rec = Record { v: 1, group: r.gid.clone(), author: r.m.did.clone(), dev: r.m.dev, at, seen: r.m.doc.seen(), body: Body::Post { text: text.to_string(), reply_to: None } };
+        let rec = Record {
+            group: r.gid.clone(),
+            author: r.m.did.clone(),
+            dev: r.m.dev,
+            at,
+            seen: r.m.doc.seen(),
+            body: Body::Post {
+                text: text.to_string(),
+                reply_to: None,
+            },
+        };
         let (_, up) = r.m.days[&day].write(&r.m.acct, &rec).map_err(rej)?;
         let t = Instant::now();
         let changed = core.apply_for_test(&r.gid, &DocId::Day(day), &up).map_err(rej)?.ok_or(Error::NotFound)?;

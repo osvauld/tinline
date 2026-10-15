@@ -15,7 +15,17 @@ fn dd(group: &str, peer: u64) -> GroupDoc {
 }
 
 fn post(a: &identity::Identity, dev: [u8; 32], doc: &GroupDoc, text: &str) -> Record {
-    Record { v: 1, group: doc.group.clone(), author: a.did().into(), dev, at: 1, seen: doc.seen(), body: Body::Post { text: text.into(), reply_to: None } }
+    Record {
+        group: doc.group.clone(),
+        author: a.did().into(),
+        dev,
+        at: 1,
+        seen: doc.seen(),
+        body: Body::Post {
+            text: text.into(),
+            reply_to: None,
+        },
+    }
 }
 
 fn ok(_: &[Entry]) -> Result<(), String> {
@@ -54,7 +64,7 @@ fn forged_tampered_and_foreign_batches_are_refused() {
     let mut r = post(&a, dev, &mallory, "x");
     r.author = m.did().into();
     let body = cryptography::codec::to_bytes(&r).unwrap();
-    let fake = SignedRecord { body, sig: a.sign(b"whatever").to_vec() }.to_bytes();
+    let fake = SignedRecord::from_parts(body, a.sign(b"whatever")).to_bytes();
     let up = mallory.raw_insert(&record_id(&fake), fake);
     assert!(matches!(target.apply_remote(&up, ok), Err(Reject::Record(RecordError::BadSignature))));
 
@@ -127,8 +137,23 @@ fn records_are_accepted_only_in_their_doc() {
     let dev = [1; 32];
     let peer = writer_id(a.did(), &dev);
     let meta = GroupDoc::new("g", peer);
-    let rec = |at: i64, body: Body| Record { v: 1, group: "g".into(), author: a.did().into(), dev, at, seen: vec![], body };
-    let p = |at| rec(at, Body::Post { text: "x".into(), reply_to: None });
+    let rec = |at: i64, body: Body| Record {
+        group: "g".into(),
+        author: a.did().into(),
+        dev,
+        at,
+        seen: vec![],
+        body,
+    };
+    let p = |at| {
+        rec(
+            at,
+            Body::Post {
+                text: "x".into(),
+                reply_to: None,
+            },
+        )
+    };
     let leave = rec(1, Body::Leave);
     // Local writes refuse the wrong doc too.
     assert_eq!(meta.write(&a, &p(1)).unwrap_err(), Reject::WrongDoc);
@@ -177,7 +202,8 @@ fn trusted_entries_read_without_verifying() {
     // A forged signature slips through the trusted read, never the verifying one.
     let mut r = post(&a, dev, &d, "forged");
     r.at = 2;
-    let fake = SignedRecord { body: cryptography::codec::to_bytes(&r).unwrap(), sig: vec![0; 64] }.to_bytes();
+    let fake =
+        SignedRecord::from_parts(cryptography::codec::to_bytes(&r).unwrap(), [0; 64]).to_bytes();
     let forger = dd("g", writer_id(a.did(), &dev));
     forger.raw_insert(&record_id(&fake), fake);
     assert_eq!(forger.entries_trusted().unwrap().len(), 1);

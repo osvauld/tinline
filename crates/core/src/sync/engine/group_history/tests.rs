@@ -203,7 +203,6 @@ async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_bound
                 doc.write(
                     &ma.id,
                     &Record {
-                        v: 1,
                         group: gid.clone(),
                         author: ma.id.did().into(),
                         dev,

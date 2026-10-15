@@ -18,11 +18,18 @@ fn mail_is_sealed_to_the_recipient_and_bound_to_its_envelope() {
     let mut forged = env.clone();
     forged.from = host.did().into();
     let body = cryptography::codec::to_bytes(&forged).unwrap();
-    let fm = SignedMail { sig: host.sign(&sig_input(&body)).to_vec(), body };
-    assert!(fm.open().is_some());
+    let fm = SignedMail::from_parts(
+        body.clone(),
+        host.sign(&cryptography::sign::input(Mail::DOMAIN, &[&body])),
+    );
+    assert!(fm.open().is_ok());
     assert!(open_for(&a, "g", &fm).is_none());
     // Tampered signature.
-    let mut t = m.clone();
-    t.sig[0] ^= 1;
-    assert!(t.open().is_none());
+    let mut sig = *m.sig();
+    sig[0] ^= 1;
+    assert!(
+        SignedMail::from_parts(m.body().to_vec(), sig)
+            .open()
+            .is_err()
+    );
 }

@@ -29,7 +29,7 @@ fn individual_and_group_call_observations_use_same_native_receipt_pipeline() {
         assert_eq!(target.entries().unwrap(), vec![entry.clone()]);
         assert_eq!(target.raw(&entry.id), source.raw(&entry.id));
         assert_eq!(
-            SignedReceipt::open(&target.raw(&entry.id).unwrap(), &c.scope).unwrap(),
+            open_receipt(&target.raw(&entry.id).unwrap(), &c.scope).unwrap(),
             c
         );
     }
@@ -55,16 +55,10 @@ fn all_typed_session_observation_fields_are_signature_bound() {
                 event.active_ms = Some(1000);
             }
         }
-        let bytes = SignedReceipt {
-            body: cryptography::codec::to_bytes(&c).unwrap(),
-            sig: signed.sig.clone(),
-        }
-        .to_bytes()
-        .unwrap();
-        assert_eq!(
-            SignedReceipt::open(&bytes, &c.scope),
-            Err(ReceiptError::Signature)
-        );
+        let bytes =
+            SignedReceipt::from_parts(cryptography::codec::to_bytes(&c).unwrap(), *signed.sig())
+                .to_bytes();
+        assert_eq!(open_receipt(&bytes, &c.scope), Err(ReceiptError::Signature));
     }
 }
 #[test]
@@ -105,8 +99,8 @@ fn interruption_and_local_ending_are_not_host_end_or_global_duration() {
     ] {
         c.call.as_mut().unwrap().event = event;
         c.call.as_mut().unwrap().active_ms = Some(1234);
-        let bytes = c.sign_claim(&a).unwrap().to_bytes().unwrap();
-        assert_eq!(SignedReceipt::open(&bytes, &c.scope).unwrap(), c);
+        let bytes = c.sign_claim(&a).unwrap().to_bytes();
+        assert_eq!(open_receipt(&bytes, &c.scope).unwrap(), c);
     }
     c.call.as_mut().unwrap().event = CallEventKind::ObservedHostEnd;
     assert_eq!(c.sign_claim(&a), Err(ReceiptError::Bounds));

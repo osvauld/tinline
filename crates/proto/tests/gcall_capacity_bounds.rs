@@ -1,7 +1,18 @@
 //! Production wire characterization, with real Ed25519 signatures.
 //! Larger-roster acceptance is an explicit candidate gate, NOT a chosen schema/default.
 use identity::Identity;
+use proto::Signed;
 use proto::gcall::{self as w, GroupCallMsg, Roster, RosterEntry};
+
+/// A roster signed without the sign-time shape check: what a peer could put on the wire.
+fn raw_roster(host: &Identity, r: &Roster) -> Signed<Roster> {
+    let body = cryptography::codec::to_bytes(r).unwrap();
+    let sig = host.sign(&cryptography::sign::input(
+        cryptography::domains::GCALL_ROSTER,
+        &[&body],
+    ));
+    Signed::from_parts(body, sig)
+}
 
 #[path = "support/fixtures.rs"]
 mod fixtures;
@@ -15,12 +26,11 @@ fn roster(n: usize) -> (Identity, Roster) {
         .map(|i| {
             let member = identity(i as u8 + 1);
             let (join, blob) =
-                w::sign_join(&member, &gid, &call_id, 1, 1_800_000_000_000 + i as u64);
+                w::sign_join(&member, &gid, &call_id, 1, 1_800_000_000_000 + i as u64).unwrap();
             RosterEntry::new(i as u8, &join, &blob)
         })
         .collect();
     let r = Roster {
-        v: w::GCALL_VERSION,
         gid,
         call_id,
         host_gen: 1,
@@ -34,35 +44,42 @@ fn roster(n: usize) -> (Identity, Roster) {
 #[test]
 fn current_twelve_member_roster_roundtrips_with_verified_joins() {
     let (host, r) = roster(12);
-    let signed = w::sign_roster(&host, r.clone());
-    assert_eq!(w::open_roster(&signed).unwrap(), r);
+    let signed = Signed::sign(&r, &host).unwrap();
+    assert_eq!(signed.open().unwrap(), r);
     let frame = w::encode_control(&GroupCallMsg::Roster { roster: signed }).unwrap();
     assert!(frame.len() - 4 <= w::MAX_CONTROL);
-    eprintln!("signed 12-member roster body: {} bytes", frame.len() - 4);
     let (msg, consumed) = w::decode_control(&frame).unwrap().unwrap();
     assert_eq!(consumed, frame.len());
     let GroupCallMsg::Roster { roster } = msg else {
         panic!("wrong frame")
     };
-    assert_eq!(w::open_roster(&roster).unwrap(), r);
+    assert_eq!(roster.open().unwrap(), r);
 }
 
 #[test]
 fn larger_rosters_hit_both_semantic_and_transport_bounds_today() {
     for n in [16, 24, 32] {
         let (host, r) = roster(n);
-        let signed = w::sign_roster(&host, r);
         assert!(
-            w::open_roster(&signed).is_err(),
+            Signed::sign(&r, &host).is_err(),
+            "current bounds refuse to sign N={n}"
+        );
+        let signed = raw_roster(&host, &r);
+        assert!(
+            signed.open().is_err(),
             "current semantic bound rejects N={n}"
         );
-        assert!(
-            matches!(
-                w::encode_control(&GroupCallMsg::Roster { roster: signed }),
-                Err(proto::Error::FrameTooLarge)
-            ),
-            "current 4KiB frame rejects N={n}"
-        );
+        let frame = w::encode_control(&GroupCallMsg::Roster { roster: signed });
+        if n == 16 {
+            // Compact entries (postcard body, 64-byte sigs) now let 16 fit the 4KiB frame; only
+            // the participant bound stops it.
+            assert!(frame.is_ok(), "N=16 fits the 4KiB frame");
+        } else {
+            assert!(
+                matches!(frame, Err(proto::Error::FrameTooLarge)),
+                "current 4KiB frame rejects N={n}"
+            );
+        }
     }
 }
 
@@ -79,7 +96,7 @@ fn oversized_prefix_rejected_before_receiving_a_body() {
 #[ignore = "candidate acceptance: larger signed-roster transport needs a bounded protocol decision"]
 fn candidate_sixteen_member_roster_can_be_sent_and_verified() {
     let (host, r) = roster(16);
-    let signed = w::sign_roster(&host, r.clone());
+    let signed = raw_roster(&host, &r);
     // Deliberately fails on current production; run explicitly as the red acceptance gate.
     let frame = w::encode_control(&GroupCallMsg::Roster { roster: signed })
         .expect("candidate goal: convey a 16-member roster with real signatures");
@@ -87,5 +104,5 @@ fn candidate_sixteen_member_roster_can_be_sent_and_verified() {
     let GroupCallMsg::Roster { roster } = msg else {
         panic!("wrong frame")
     };
-    assert_eq!(w::open_roster(&roster).unwrap(), r);
+    assert_eq!(roster.open().unwrap(), r);
 }

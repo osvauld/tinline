@@ -46,7 +46,7 @@ pub trait CallDirectory: CallAuthority + Send + Sync {
     }
     /// This device's DID-signed group endpoint note for a Join, when [`GcallConfig::note`] is
     /// not set.
-    fn my_note(&self) -> Option<SignedBlob> {
+    fn my_note(&self) -> Option<SignedNote> {
         None
     }
 }
@@ -66,7 +66,13 @@ impl CallAuthority for StaticDirectory {
     fn host_permit_ok(&self, gid: &str, host: &HostRef) -> bool {
         self.auth.lock().host_permit_ok(gid, host)
     }
-    fn endpoint_ok(&self, gid: &str, did: &str, note: Option<&SignedBlob>, endpoint: &[u8; 32]) -> bool {
+    fn endpoint_ok(
+        &self,
+        gid: &str,
+        did: &str,
+        note: Option<&SignedNote>,
+        endpoint: &[u8; 32],
+    ) -> bool {
         self.auth.lock().endpoint_ok(gid, did, note, endpoint)
     }
 }
@@ -93,9 +99,18 @@ pub enum GcallEvent {
     Ended { call_id: String, why: ClientEnd },
     /// This device now hosts `call_id` at `host_gen` (a start or a takeover). `start` is the
     /// signed CallStart to announce through the chat hosts (G1).
-    HostingStarted { call_id: String, host_gen: u32, start: SignedBlob },
+    HostingStarted {
+        call_id: String,
+        host_gen: u32,
+        start: SignedStart,
+    },
     /// This device stopped hosting. `end` is the signed End (relay it when `reason` is `Ended`).
-    HostingEnded { call_id: String, reason: EndReason, next_host: Option<HostRef>, end: Option<SignedBlob> },
+    HostingEnded {
+        call_id: String,
+        reason: EndReason,
+        next_host: Option<HostRef>,
+        end: Option<SignedEnd>,
+    },
     Notice(HostNotice),
 }
 
@@ -114,7 +129,7 @@ pub struct GcallConfig {
     /// Local hosting conditions (§2.4).
     pub cond: Cond,
     /// This device's DID-signed group endpoint note, sent with every Join (G2).
-    pub note: Option<SignedBlob>,
+    pub note: Option<SignedNote>,
 }
 
 impl GcallConfig {
@@ -123,7 +138,7 @@ impl GcallConfig {
         self.host_ref.clone().or_else(|| self.dir.my_host_ref(gid))
     }
 
-    pub(super) fn note_now(&self) -> Option<SignedBlob> {
+    pub(super) fn note_now(&self) -> Option<SignedNote> {
         self.note.clone().or_else(|| self.dir.my_note())
     }
 }

@@ -33,7 +33,6 @@ fn write(account: &identity::Identity, doc: &GroupDoc, device: u8, text: &str) -
     doc.write(
         account,
         &Record {
-            v: 1,
             group: doc.group.clone(),
             author: account.did().into(),
             dev: [device; 32],
@@ -335,7 +334,6 @@ fn grouped_loro_changes_can_be_split_at_whole_map_operation_boundaries() {
     let map = source[0].doc.get_map(super::super::ROOT);
     for i in 0..9 {
         let record = Record {
-            v: 1,
             group: source[0].group.clone(),
             author: a.did().into(),
             dev: [1; 32],

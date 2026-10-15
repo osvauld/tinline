@@ -43,7 +43,6 @@ pub struct SynthGroup {
     /// What went through `apply` already, per doc.
     pub(crate) sent: VersionVector,
     pub(crate) day_sent: HashMap<String, VersionVector>,
-    pub(crate) owner_did: String,
 }
 
 /// A remote member's writing doc (see `Node::synth_remote_open_for_test`).

@@ -8,12 +8,12 @@ use super::{
     *,
 };
 use crate::gcall::CallAuthority;
-use proto::{SignedBlob, gcall as w};
+use proto::gcall::{self as w, SignedJoin, SignedRoster, SignedStart};
 
 pub(crate) struct JoinProofs {
-    pub start: SignedBlob,
-    pub expected_join: SignedBlob,
-    pub roster: SignedBlob,
+    pub start: SignedStart,
+    pub expected_join: SignedJoin,
+    pub roster: SignedRoster,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ParticipationView {
@@ -29,10 +29,18 @@ fn refusal(reason: &str) -> ReceiptError {
     ReceiptError::Policy(reason.into())
 }
 fn opened(proofs: &JoinProofs, issuer: &str) -> Result<(w::CallStart, w::Roster), ReceiptError> {
-    let s = w::open_start(&proofs.start).map_err(|_| refusal("invalid original CallStart"))?;
-    let j =
-        w::open_join(&proofs.expected_join).map_err(|_| refusal("invalid original local Join"))?;
-    let r = w::open_roster(&proofs.roster).map_err(|_| refusal("invalid original Roster"))?;
+    let s = proofs
+        .start
+        .open()
+        .map_err(|_| refusal("invalid original CallStart"))?;
+    let j = proofs
+        .expected_join
+        .open()
+        .map_err(|_| refusal("invalid original local Join"))?;
+    let r = proofs
+        .roster
+        .open()
+        .map_err(|_| refusal("invalid original Roster"))?;
     if j.did != issuer
         || j.gid != s.gid
         || r.gid != s.gid
@@ -45,7 +53,7 @@ fn opened(proofs: &JoinProofs, issuer: &str) -> Result<(w::CallStart, w::Roster)
             e.did == issuer
                 && e.issued_ms == j.issued_ms
                 && e.nonce == j.nonce
-                && e.sig == proofs.expected_join.signature
+                && e.sig[..] == proofs.expected_join.sig()[..]
         })
     {
         return Err(refusal(
@@ -98,7 +106,6 @@ pub(super) fn prepare_join(
     ids.sort_unstable();
     let at = i64::try_from(observed_at_ms).map_err(|_| ReceiptError::Bounds)?;
     let claim = Receipt {
-        version: 1,
         scope: Scope {
             conversation: Conversation::Group(s.gid),
             day: day_of(at),
@@ -117,7 +124,7 @@ pub(super) fn prepare_join(
             evidence: ids,
         }),
     };
-    claim.check()?;
+    claim.check_shape()?;
     Ok((claim, evidence))
 }
 /// Proof-backed observations, NOT another call-log backend or an all-member
@@ -165,16 +172,22 @@ pub(crate) fn verify_joined_entry(
         if proof.id != *id {
             return Err(refusal("joined evidence identity mismatch"));
         }
-        let blob = proof.blob()?;
-        if w::open_start(&blob).is_ok() {
+        // Each statement type has its own domain, so exactly one of these opens.
+        if let Ok(blob) = proof.blob::<w::CallStart>()
+            && blob.open().is_ok()
+        {
             if start.replace(blob).is_some() {
                 return Err(refusal("duplicate start evidence"));
             }
-        } else if w::open_join(&blob).is_ok() {
+        } else if let Ok(blob) = proof.blob::<w::Join>()
+            && blob.open().is_ok()
+        {
             if join.replace(blob).is_some() {
                 return Err(refusal("duplicate Join evidence"));
             }
-        } else if w::open_roster(&blob).is_ok() {
+        } else if let Ok(blob) = proof.blob::<w::Roster>()
+            && blob.open().is_ok()
+        {
             if roster.replace(blob).is_some() {
                 return Err(refusal("duplicate Roster evidence"));
             }

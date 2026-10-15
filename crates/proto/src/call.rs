@@ -71,7 +71,7 @@ pub fn accept_hello(
         _ => return Err(Error::UnexpectedMessage),
     };
     let att = verify_attestation(attestation)?;
-    if att.device_key()? != remote_device {
+    if att.device != remote_device {
         return Err(Error::DeviceMismatch);
     }
     // Holder is the attested DID, so a grant lifted by someone else fails here.

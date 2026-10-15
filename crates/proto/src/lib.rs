@@ -17,8 +17,8 @@ pub use signed::{SecretKey, SignKey, Signable, Signed, Signer, SignerId};
 use std::collections::HashSet;
 
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
-use cryptography::{domains, sign};
-use identity::{Identity, public_key_from_did, verify};
+use cryptography::domains;
+use identity::Identity;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 /// Calls, contact exchange and notices. Version 1 (P6): separate `message` and `call` tokens;
@@ -29,16 +29,6 @@ pub const ALPN: &[u8] = b"osvauld/p2p/1";
 /// token cut-offs); versions 2 and 1 are refused by the app.
 pub const SELF_ALPN: &[u8] = b"tinline/self/5";
 
-const ATTEST_DOMAIN: domains::Domain = domains::ATTEST;
-const INVITE_DOMAIN: domains::Domain = domains::INVITE;
-const GRANT_DOMAIN: domains::Domain = domains::GRANT;
-const INVITE_V2_DOMAIN: domains::Domain = domains::INVITE_V2;
-const BIND_DOMAIN: domains::Domain = domains::BIND;
-const DEVICES_DOMAIN: domains::Domain = domains::DEVICES;
-const BLOCK_DOMAIN: domains::Domain = domains::BLOCK;
-
-const VERSION: u8 = 1;
-const TICKET_PREFIX: &str = "osvc1.";
 const TICKET_PREFIX_V2: &str = "OSVC2:";
 pub const CAP_MESSAGE: &str = "message";
 pub const CAP_CALL: &str = "call";
@@ -147,87 +137,40 @@ pub fn sanitize_name(name: &str) -> String {
     clean.trim().to_string()
 }
 
-// ---- signed envelope ---------------------------------------------------------------
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct SignedBlob {
-    pub payload: String,
-    pub signature: String,
-}
-
-pub type SignedAttestation = SignedBlob;
-pub type SignedGrant = SignedBlob;
-
-fn sign_blob<T: Serialize>(id: &Identity, domain: domains::Domain, claim: &T) -> SignedBlob {
-    let payload = serde_json::to_vec(claim).expect("claims serialize");
-    SignedBlob {
-        signature: enc(id.sign(&sign::input(domain, &[&payload]))),
-        payload: enc(payload),
-    }
-}
-
-/// The signer is whoever the payload *claims* (`issuer_of`); the key comes from that DID, so
-/// a valid signature proves the claimed DID wrote it. Callers then check it is the DID they
-/// expected.
-fn open_blob<T: DeserializeOwned>(
-    blob: &SignedBlob,
-    domain: domains::Domain,
-    issuer_of: impl Fn(&T) -> &str,
-) -> Result<T> {
-    let payload = dec(&blob.payload)?;
-    let sig: [u8; 64] = dec(&blob.signature)?
-        .try_into()
-        .map_err(|_| Error::Decode)?;
-    let claim: T = serde_json::from_slice(&payload).map_err(|_| Error::Decode)?;
-    let public = public_key_from_did(issuer_of(&claim)).ok_or(Error::Decode)?;
-    if !verify(&public, &sign::input(domain, &[&payload]), &sig) {
-        return Err(Error::BadSignature);
-    }
-    Ok(claim)
-}
-
-fn check_version(v: u8) -> Result<()> {
-    if v == VERSION {
-        Ok(())
-    } else {
-        Err(Error::UnknownVersion)
-    }
-}
-
 // ---- attestation -------------------------------------------------------------------
 
+/// "This device key is a device of this DID", signed by the DID.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Attestation {
-    pub v: u8,
     pub did: String,
-    pub device: String,
+    pub device: [u8; 32],
     pub iat: u64,
 }
 
-impl Attestation {
-    pub fn device_key(&self) -> Result<[u8; 32]> {
-        dec32(&self.device)
+impl Signable for Attestation {
+    const DOMAIN: domains::Domain = domains::ATTEST;
+    const MAX_BODY: usize = 256;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.did)
     }
 }
+
+pub type SignedAttestation = Signed<Attestation>;
 
 /// No expiry: it asserts a fact about key custody. There is no device revocation; removing a
 /// contact is a local block (see docs/protocol.md). `iat` is informational (callers may age it
 /// out).
 pub fn attest(id: &Identity, device: [u8; 32], now: u64) -> SignedAttestation {
     let claim = Attestation {
-        v: VERSION,
         did: id.did().to_string(),
-        device: enc(device),
+        device,
         iat: now,
     };
-    sign_blob(id, ATTEST_DOMAIN, &claim)
+    Signed::sign(&claim, id).expect("own attestation signs")
 }
 
 pub fn verify_attestation(a: &SignedAttestation) -> Result<Attestation> {
-    let claim: Attestation = open_blob(a, ATTEST_DOMAIN, |c: &Attestation| &c.did)?;
-    check_version(claim.v)?;
-    claim.device_key()?;
-    Ok(claim)
+    a.open()
 }
 
 mod call;

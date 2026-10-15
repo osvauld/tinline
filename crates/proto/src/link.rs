@@ -9,6 +9,8 @@ use super::*;
 pub const LINK_ALPN: &[u8] = b"tinline/link/1";
 const LINK_PREFIX: &str = "OSVL1:";
 const LINK_VERSION: u8 = 1;
+/// Relay code for a custom URL in the packed QR (codes 1..=4 are `KNOWN_RELAYS`).
+const RELAY_CUSTOM: u8 = 7;
 pub const LINK_TTL_SECS: u64 = 300;
 /// BLAKE3 `derive_key` contexts of the link key K and the grant key.
 const K_CONTEXT: &str = "tinline/link/v1 key";
@@ -32,13 +34,13 @@ pub fn new_link_qr(device: [u8; 32], relay: Option<String>, now: u64, ttl_secs: 
     cryptography::rng::fill(&mut secret);
     let exp_min = now
         .saturating_add(ttl_secs)
-        .saturating_sub(V2_EPOCH)
+        .saturating_sub(TICKET_EPOCH)
         .div_ceil(60)
         .min(0xFF_FFFF);
     LinkQr {
         device,
         secret,
-        exp: V2_EPOCH + exp_min * 60,
+        exp: TICKET_EPOCH + exp_min * 60,
         relay: relay.filter(|r| r.len() <= 255),
     }
 }
@@ -51,7 +53,7 @@ impl LinkQr {
     /// `OSVL1:` + base32 (uppercase, no padding) of
     /// `v | device[32] | secret[16] | exp[3] | relay_code<<5 [| len | url]`.
     pub fn to_text(&self) -> String {
-        let exp_min = (self.exp.saturating_sub(V2_EPOCH) / 60).min(0xFF_FFFF);
+        let exp_min = (self.exp.saturating_sub(TICKET_EPOCH) / 60).min(0xFF_FFFF);
         let code = match &self.relay {
             None => 0,
             Some(r) => KNOWN_RELAYS
@@ -92,7 +94,7 @@ impl LinkQr {
         let device: [u8; 32] = take(32)?.try_into().unwrap();
         let secret: [u8; 16] = take(16)?.try_into().unwrap();
         let e = take(3)?;
-        let exp = V2_EPOCH + 60 * ((e[0] as u64) << 16 | (e[1] as u64) << 8 | e[2] as u64);
+        let exp = TICKET_EPOCH + 60 * ((e[0] as u64) << 16 | (e[1] as u64) << 8 | e[2] as u64);
         let flags = take(1)?[0];
         if flags & 31 != 0 {
             return Err(Error::Decode);
@@ -352,7 +354,7 @@ pub fn accept_link_done(
     if att.did != my_did {
         return Err(Error::WrongIssuer);
     }
-    if att.device_key()? != remote_device {
+    if att.device != remote_device {
         return Err(Error::DeviceMismatch);
     }
     Ok(LinkedDevice {

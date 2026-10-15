@@ -236,7 +236,7 @@ impl Ledger {
         }
         let mut sidecars = BTreeMap::new();
         for e in supplied {
-            e.blob()?;
+            e.check()?;
             if sidecars.insert(e.id, e.clone()).is_some() {
                 return Err(ReceiptError::Bounds);
             }
@@ -363,7 +363,7 @@ impl Ledger {
         }
         let mut ids = Vec::new();
         for e in evidence {
-            e.blob()?;
+            e.check()?;
             ids.push(e.id);
         }
         ids.sort_unstable();
@@ -413,7 +413,7 @@ impl Ledger {
         bytes
             .map(|bytes| {
                 let e = super::evidence::Evidence { id: *id, bytes };
-                e.blob()?;
+                e.check()?;
                 Ok(e)
             })
             .transpose()

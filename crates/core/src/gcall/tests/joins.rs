@@ -13,24 +13,36 @@ fn gcall_s01_bad_joins_are_refused_and_leave_host_state_unchanged() {
     s.advance(3_000);
     let carol = s.d[CAROL].id.clone();
     let (cep, mep) = (s.d[CAROL].ep, s.d[MALLORY].ep);
-    let j = |id: &Identity, gid: &str, cid: &str, g: u32, t: u64| w::sign_join(id, gid, cid, g, t).1;
+    let j = |id: &Identity, gid: &str, cid: &str, g: u32, t: u64| {
+        w::sign_join(id, gid, cid, g, t).unwrap().1
+    };
     let now = s.now;
-    let mut tampered = j(&carol, &gid(), &cid, 1, now);
-    {
-        use base64::Engine;
-        let e = base64::engine::general_purpose::URL_SAFE_NO_PAD;
-        let mut v: serde_json::Value = serde_json::from_slice(&e.decode(&tampered.payload).unwrap()).unwrap();
-        v["issued_ms"] = (now + 1).into();
-        tampered.payload = e.encode(serde_json::to_vec(&v).unwrap());
-    }
+    let genuine = j(&carol, &gid(), &cid, 1, now);
+    let tampered = {
+        let mut claim = genuine.peek().unwrap();
+        claim.issued_ms = now + 1;
+        w::SignedJoin::from_parts(
+            cryptography::codec::to_bytes(&claim).unwrap(),
+            *genuine.sig(),
+        )
+    };
     let a1_join = s.up_ctl.iter().find_map(|(m, msg)| match msg {
         GroupCallMsg::Join { join, .. } if *m == A1 => Some(join.clone()),
         _ => None,
     });
     let bob_join = j(&s.d[BOB].id.clone(), &gid(), &cid, 1, now);
-    s.auth.endpoints.entry(s.did(MALLORY)).or_default().insert(mep);
-    let cases: Vec<(&str, [u8; 32], SignedBlob, Refusal)> = vec![
-        ("non-member", mep, j(&s.d[MALLORY].id.clone(), &gid(), &cid, 1, now), Refusal::NotMember),
+    s.auth
+        .endpoints
+        .entry(s.did(MALLORY))
+        .or_default()
+        .insert(mep);
+    let cases: Vec<(&str, [u8; 32], w::SignedJoin, Refusal)> = vec![
+        (
+            "non-member",
+            mep,
+            j(&s.d[MALLORY].id.clone(), &gid(), &cid, 1, now),
+            Refusal::NotMember,
+        ),
         ("tampered body", cep, tampered, Refusal::BadSignature),
         ("wrong gid", cep, j(&carol, &"e".repeat(64), &cid, 1, now), Refusal::WrongGroup),
         ("wrong call_id", cep, j(&carol, &gid(), &w::new_call_id(), 1, now), Refusal::WrongCall),
@@ -88,8 +100,13 @@ fn gcall_s17_same_did_on_two_devices_newer_join_replaces_older() {
     assert_eq!(e.on_datagram(a1_conn, &w::up_audio(&audio_dgram(1, 10)), s.now), Err(Refusal::NotParticipant));
     s.advance(JOIN_MIN_GAP_MS);
     let ep1 = s.d[A1].ep;
-    let older = w::sign_join(&s.d[A1].id.clone(), &gid(), &cid, 1, T0 - 1).1;
-    for (case, blob, want) in [("replay", a1_join.unwrap(), Refusal::Replay), ("older issued_ms", older, Refusal::Stale)] {
+    let older = w::sign_join(&s.d[A1].id.clone(), &gid(), &cid, 1, T0 - 1)
+        .unwrap()
+        .1;
+    for (case, blob, want) in [
+        ("replay", a1_join.unwrap(), Refusal::Replay),
+        ("older issued_ms", older, Refusal::Stale),
+    ] {
         let before = s.hosts[&H1].snapshot();
         assert_eq!(s.raw_join(H1, ep1, blob), Err(want), "{case}");
         assert_eq!(s.hosts[&H1].snapshot(), before, "{case}");

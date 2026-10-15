@@ -1,7 +1,6 @@
 use super::*;
 pub(super) fn sample(a: &identity::Identity, kind: Kind, group: bool) -> Receipt {
     Receipt {
-        version: 1,
         call: None,
         scope: Scope {
             conversation: if group {
@@ -24,8 +23,8 @@ fn both_domains_and_receipt_kinds_roundtrip_without_read_hole_expansion() {
     for group in [false, true] {
         for kind in [Kind::Delivered, Kind::Read] {
             let c = sample(&a, kind, group);
-            let bytes = c.sign_claim(&a).unwrap().to_bytes().unwrap();
-            let opened = SignedReceipt::open(&bytes, &c.scope).unwrap();
+            let bytes = c.sign_claim(&a).unwrap().to_bytes();
+            let opened = open_receipt(&bytes, &c.scope).unwrap();
             assert_eq!(opened, c);
             assert!(!opened.messages.contains(&[2; 32]));
         }
@@ -47,14 +46,11 @@ fn valid_shaped_mutations_of_every_claim_field_break_the_signature() {
             5 => changed.scope.day = "1970-01-02".into(),
             _ => changed.scope.conversation = Conversation::Group("b".repeat(64)),
         }
-        let forged = SignedReceipt {
-            body: cryptography::codec::to_bytes(&changed).unwrap(),
-            sig: s.sig.clone(),
-        }
-        .to_bytes()
-        .unwrap();
+        let forged =
+            SignedReceipt::from_parts(cryptography::codec::to_bytes(&changed).unwrap(), *s.sig())
+                .to_bytes();
         assert_eq!(
-            SignedReceipt::open(&forged, &changed.scope),
+            open_receipt(&forged, &changed.scope),
             Err(ReceiptError::Signature)
         );
     }
@@ -65,7 +61,7 @@ fn valid_shaped_mutations_of_every_claim_field_break_the_signature() {
     let mut wrong = c.scope.clone();
     wrong.day = "1970-01-02".into();
     assert_eq!(
-        SignedReceipt::open(&s.to_bytes().unwrap(), &wrong),
+        open_receipt(&s.to_bytes(), &wrong),
         Err(ReceiptError::Scope)
     );
 }
@@ -73,18 +69,17 @@ fn valid_shaped_mutations_of_every_claim_field_break_the_signature() {
 fn canonical_hash_sets_context_and_shape_are_required_before_signing() {
     let a = identity::generate().0;
     let base = sample(&a, Kind::Read, true);
-    for field in 0..10 {
+    for field in 0..9 {
         let mut c = base.clone();
         match field {
-            0 => c.version = 2,
-            1 => c.messages.clear(),
-            2 => c.messages.reverse(),
-            3 => c.messages.push([3; 32]),
-            4 => c.messages = vec![[1; 32]; MAX_MESSAGES + 1],
-            5 => c.metadata.clear(),
-            6 => c.metadata[0].1 = 0,
-            7 => c.metadata.push((7, 2)),
-            8 => c.scope.day = "1970-02-30".into(),
+            0 => c.messages.clear(),
+            1 => c.messages.reverse(),
+            2 => c.messages.push([3; 32]),
+            3 => c.messages = vec![[1; 32]; MAX_MESSAGES + 1],
+            4 => c.metadata.clear(),
+            5 => c.metadata[0].1 = 0,
+            6 => c.metadata.push((7, 2)),
+            7 => c.scope.day = "1970-02-30".into(),
             _ => c.scope.conversation = Conversation::Group("A".repeat(64)),
         }
         assert_eq!(c.sign_claim(&a), Err(ReceiptError::Bounds));
@@ -97,14 +92,14 @@ fn canonical_hash_sets_context_and_shape_are_required_before_signing() {
 fn byte_bounds_trailing_data_and_adversarial_lengths_fail_closed() {
     let a = identity::generate().0;
     let c = sample(&a, Kind::Read, false);
-    let bytes = c.sign_claim(&a).unwrap().to_bytes().unwrap();
+    let bytes = c.sign_claim(&a).unwrap().to_bytes();
     let mut extra = bytes.clone();
     extra.push(0);
-    assert!(SignedReceipt::open(&extra, &c.scope).is_err());
-    assert!(SignedReceipt::open(&bytes[..bytes.len() / 2], &c.scope).is_err());
-    assert!(SignedReceipt::open(&u64::MAX.to_le_bytes(), &c.scope).is_err());
+    assert!(open_receipt(&extra, &c.scope).is_err());
+    assert!(open_receipt(&bytes[..bytes.len() / 2], &c.scope).is_err());
+    assert!(open_receipt(&u64::MAX.to_le_bytes(), &c.scope).is_err());
     assert_eq!(
-        SignedReceipt::open(&vec![0; MAX_SIGNED + 1], &c.scope),
+        open_receipt(&vec![0; MAX_SIGNED + 1], &c.scope),
         Err(ReceiptError::Bounds)
     );
 }
@@ -113,17 +108,12 @@ fn host_record_and_raw_signature_domains_cannot_be_interpreted_as_recipient_proo
     let a = identity::generate().0;
     let c = sample(&a, Kind::Read, false);
     let body = cryptography::codec::to_bytes(&c).unwrap();
-    for input in [body.clone(), cryptography::sign::input(cryptography::domains::STORAGE_ATTESTATION, &[&body])] {
-        let bytes = SignedReceipt {
-            body: body.clone(),
-            sig: a.sign(&input).to_vec(),
-        }
-        .to_bytes()
-        .unwrap();
-        assert_eq!(
-            SignedReceipt::open(&bytes, &c.scope),
-            Err(ReceiptError::Signature)
-        );
+    for input in [
+        body.clone(),
+        cryptography::sign::input(cryptography::domains::STORAGE_ATTESTATION, &[&body]),
+    ] {
+        let bytes = SignedReceipt::from_parts(body.clone(), a.sign(&input)).to_bytes();
+        assert_eq!(open_receipt(&bytes, &c.scope), Err(ReceiptError::Signature));
     }
 }
 #[test]
@@ -138,9 +128,9 @@ fn maximum_exact_hash_batch_and_metadata_context_fit_codec_budget() {
         })
         .collect();
     c.metadata = (0..MAX_CONTEXT_WRITERS as u64).map(|p| (p, 1)).collect();
-    let bytes = c.sign_claim(&a).unwrap().to_bytes().unwrap();
+    let bytes = c.sign_claim(&a).unwrap().to_bytes();
     assert!(bytes.len() < MAX_SIGNED);
-    assert_eq!(SignedReceipt::open(&bytes, &c.scope).unwrap(), c);
+    assert_eq!(open_receipt(&bytes, &c.scope).unwrap(), c);
     c.metadata.push((MAX_CONTEXT_WRITERS as u64, 1));
     assert_eq!(c.sign_claim(&a), Err(ReceiptError::Bounds));
 }

@@ -479,7 +479,7 @@ impl Inner {
             if a.did != did {
                 return Err("mismatch");
             }
-            let device = a.device_key().map_err(|_| "bad_grant")?;
+            let device = a.device;
             registry.push(OwnDevice {
                 device,
                 attestation: r.attestation.clone(),

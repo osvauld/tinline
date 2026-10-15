@@ -43,7 +43,7 @@ impl GroupCore {
         if self.closed() {
             return Err(AttestationError::Closed);
         }
-        let claim = SignedStorageAttestation::open(bytes, group, doc)?;
+        let claim = super::open_attestation(bytes, group, doc)?;
         let id = digest(bytes);
         let mut groups = self.groups.lock();
         let live = groups
@@ -160,7 +160,7 @@ impl GroupCore {
             if digest(&row.bytes) != id {
                 return Err(AttestationError::Store("proof digest mismatch".into()));
             }
-            SignedStorageAttestation::open(&row.bytes, group, &row.doc)?;
+            super::open_attestation(&row.bytes, group, &row.doc)?;
             result.push((doc_name(group, &row.doc), row.bytes));
         }
         Ok(result)

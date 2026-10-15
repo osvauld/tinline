@@ -47,9 +47,12 @@ impl<'a> Ctx<'a> {
 
     /// The issuer of a join's invite, if the join is valid.
     fn valid_join(&self, e: &Entry) -> Option<String> {
-        let Body::Join { invite, .. } = &e.rec.body else { return None };
-        let inv = invite.open()?;
-        (inv.group == self.group && self.admin_as_of(&inv.issuer, Some(&e.rec.seen))).then_some(inv.issuer)
+        let Body::Join { invite, .. } = &e.rec.body else {
+            return None;
+        };
+        let inv = invite.open().ok()?;
+        (inv.group == self.group && self.admin_as_of(&inv.issuer, Some(&e.rec.seen)))
+            .then_some(inv.issuer)
     }
 }
 

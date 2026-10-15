@@ -96,7 +96,7 @@ impl Inner {
                 continue;
             }
             for s in core.store.hosts(&gid).unwrap_or_default() {
-                let Some(a) = s.open() else { continue };
+                let Some(a) = s.open().ok() else { continue };
                 if a.did == core.did && a.dev == core.dev {
                     continue;
                 }
@@ -179,7 +179,7 @@ impl Inner {
                 .and_then(|b| cryptography::codec::from_bytes::<SignedInvite>(b, crate::store::MAX_ROW).ok());
             (live.doc.vv(), invite)
         };
-        let auth = EndpointAuth::new(&core.account, core.dev, *ep.id().as_bytes());
+        let auth = endpoint_auth(&core.account, core.dev, *ep.id().as_bytes());
         let days = core.hello_days(&gid);
         writer
             .send(&GroupMsg::Hello {
@@ -202,12 +202,11 @@ impl Inner {
                 days,
                 hosts,
             }) => {
-                if !auth.verify(conn.remote_id().as_bytes())
-                    || auth.did != host.did
-                    || auth.dev != host.dev
-                {
+                let Some(auth) = verify_endpoint(&auth, conn.remote_id().as_bytes())
+                    .filter(|a| a.did == host.did && a.dev == host.dev)
+                else {
                     return Err(Error::Protocol("host proof does not verify".into()));
-                }
+                };
                 core.refusals.lock().remove(&gid);
                 core.merge_hosts_from(&gid, &hosts, None);
                 let peer = Peer::new(&vv, &days)?;

@@ -73,7 +73,7 @@ fn policy_refusal_and_checkpoint_restore_leave_document_and_writer_unchanged() {
 fn malformed_wrong_scope_foreign_writer_and_noninsert_operations_rollback() {
     let a = identity::generate().0;
     let c = sample(&a, Kind::Delivered, true);
-    let bytes = c.sign_claim(&a).unwrap().to_bytes().unwrap();
+    let bytes = c.sign_claim(&a).unwrap().to_bytes();
     let key = receipt_id(&bytes);
     for scenario in 0..6 {
         let raw = LoroDoc::new();

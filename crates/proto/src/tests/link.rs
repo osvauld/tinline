@@ -154,8 +154,10 @@ fn link_done_checks() {
         accept_link_done(&done(attest(&e.id, n_dev, T0)), e.id.did(), n.dev),
         Err(Error::DeviceMismatch)
     );
-    let mut forged = attest(&e.id, n_dev, T0);
-    forged.signature = attest(&other.id, n_dev, T0).signature;
+    let forged = Signed::from_parts(
+        attest(&e.id, n_dev, T0).body().to_vec(),
+        *attest(&other.id, n_dev, T0).sig(),
+    );
     assert_eq!(
         accept_link_done(&done(forged), e.id.did(), n_dev),
         Err(Error::BadSignature)

@@ -26,7 +26,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::Mutex;
-use proto::{Msg, SignedBlob};
+use proto::{Msg, SignedDeviceList as SignedBlob};
 
 use crate::Error;
 use crate::node::{Inner, Node, addr_for};
@@ -49,7 +49,12 @@ enum Outcome {
 
 fn keys_of(blob: &SignedBlob, did: &str) -> Vec<String> {
     let mut v: Vec<String> = proto::verify_device_list(blob, did)
-        .map(|l| l.devices.into_iter().map(|e| e.device).collect())
+        .map(|l| {
+            l.devices
+                .iter()
+                .map(|e| proto::device_to_text(&e.device))
+                .collect()
+        })
         .unwrap_or_default();
     v.sort();
     v
@@ -111,7 +116,7 @@ impl Inner {
     /// a DID we block.
     pub(crate) async fn devices_incoming(self: &Arc<Self>, mut ctrl: Ctrl, list: SignedBlob) -> Result<(), Error> {
         let me = self.me()?;
-        let did = proto::peek_device_list(&list).map(|l| l.did).unwrap_or_default();
+        let did = list.peek().map(|l| l.did).unwrap_or_default();
         if let Some(notice) = self.refusal_for(&did) {
             self.log("refused a device list: blocked");
             ctrl.send(&Msg::Notice { notice }).await?;

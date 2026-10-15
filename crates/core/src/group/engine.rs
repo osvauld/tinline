@@ -338,7 +338,7 @@ pub(crate) fn proof_removes(
 ) -> Option<Vec<(String, i64)>> {
     let recs: Vec<Record> = records
         .iter()
-        .filter_map(|b| SignedRecord::open(b, gid).ok())
+        .filter_map(|b| open_record(b, gid).ok())
         .collect();
     let owner = recs.iter().find_map(|r| match &r.body {
         Body::Genesis { nonce, .. } if group_id(&r.author, nonce) == gid => Some(r.author.clone()),

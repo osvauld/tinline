@@ -313,7 +313,7 @@ impl Inner {
                 // joiner dials the one named here), still days of life left, and points at our
                 // current relay so the joiner can dial without discovery.
                 && claim.iss == me.id.did()
-                && claim.device == proto::device_to_text(&me.device)
+                && claim.device == me.device
                 && claim.name == me.profile.name
                 && claim.exp > now + 24 * 3600
                 && (relay.is_none() || claim.relay == relay)
@@ -321,9 +321,13 @@ impl Inner {
                 return Ok(text.clone());
             }
             // The one it replaces was handed out and stays good until it expires.
-            if s.state.ticket.as_deref().and_then(|t| ContactTicket::from_text(t).ok()).and_then(|t| t.verify(now).ok()).is_some_and(|c| {
-                c.iss == me.id.did() && c.device == proto::device_to_text(&me.device)
-            }) {
+            if s.state
+                .ticket
+                .as_deref()
+                .and_then(|t| ContactTicket::from_text(t).ok())
+                .and_then(|t| t.verify(now).ok())
+                .is_some_and(|c| c.iss == me.id.did() && c.device == me.device)
+            {
                 retire_ticket(&mut s.state, true);
             }
             s.state.live_tickets.retain(|_, exp| *exp > now);

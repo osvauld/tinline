@@ -14,7 +14,7 @@ impl CallAuthority for Authority {
     fn host_permit_ok(&self, _: &str, _: &w::HostRef) -> bool {
         self.allowed
     }
-    fn endpoint_ok(&self, _: &str, _: &str, _: Option<&SignedBlob>, _: &[u8; 32]) -> bool {
+    fn endpoint_ok(&self, _: &str, _: &str, _: Option<&w::SignedNote>, _: &[u8; 32]) -> bool {
         self.allowed
     }
 }
@@ -28,17 +28,18 @@ fn verify_import(claims: &[store::ImportClaim], evidence: &[Evidence]) -> Result
     Ok(())
 }
 fn sidecars(p: &JoinProofs) -> Vec<Evidence> {
-    [&p.start, &p.expected_join, &p.roster]
-        .into_iter()
-        .map(|b| Evidence::from_blob(b).unwrap())
-        .collect()
+    vec![
+        Evidence::from_blob(&p.start).unwrap(),
+        Evidence::from_blob(&p.expected_join).unwrap(),
+        Evidence::from_blob(&p.roster).unwrap(),
+    ]
 }
 fn replica(p: &JoinProofs, peer: u64) -> (std::sync::Arc<store::ReceiptStore>, Ledger) {
     let db = store::ReceiptStore::new(Sealed::new(Store::open_in_memory().unwrap(), [9; 32]));
     let l = db
         .open(
             Scope {
-                conversation: Conversation::Group(w::open_start(&p.start).unwrap().gid),
+                conversation: Conversation::Group(p.start.open().unwrap().gid),
                 day: "1970-01-01".into(),
             },
             peer,
@@ -52,7 +53,6 @@ pub(crate) fn fixture() -> (identity::Identity, JoinProofs) {
     let local = identity::generate().0;
     let auth = Authority { allowed: true };
     let start = w::CallStart {
-        v: w::GCALL_VERSION,
         gid: "a".repeat(64),
         call_id: w::new_call_id(),
         host_gen: 1,
@@ -68,7 +68,7 @@ pub(crate) fn fixture() -> (identity::Identity, JoinProofs) {
         backups: vec![],
         meta_frontier: "m".repeat(64),
     };
-    let signed_start = w::sign_start(&host, start.clone());
+    let signed_start = Signed::sign(&start, &host).unwrap();
     let (mut client, actions) =
         ClientEngine::new(local.clone(), start.clone(), None, 1, &auth).unwrap();
     let join = actions
@@ -86,11 +86,9 @@ pub(crate) fn fixture() -> (identity::Identity, JoinProofs) {
             }
         })
         .unwrap();
-    let j = w::open_join(&join).unwrap();
-    let roster = w::sign_roster(
-        &host,
-        w::Roster {
-            v: w::GCALL_VERSION,
+    let j = join.open().unwrap();
+    let roster = Signed::sign(
+        &w::Roster {
             gid: start.gid.clone(),
             call_id: start.call_id.clone(),
             host_gen: 1,
@@ -98,7 +96,9 @@ pub(crate) fn fixture() -> (identity::Identity, JoinProofs) {
             epoch: 1,
             entries: vec![w::RosterEntry::new(0, &j, &join)],
         },
-    );
+        &host,
+    )
+    .unwrap();
     let observed = client
         .on_control(
             w::GroupCallMsg::Roster {
@@ -124,7 +124,7 @@ pub(crate) fn fixture() -> (identity::Identity, JoinProofs) {
     )
 }
 fn ledger(a: &identity::Identity, p: &JoinProofs) -> (std::sync::Arc<store::ReceiptStore>, Ledger) {
-    let s = w::open_start(&p.start).unwrap();
+    let s = p.start.open().unwrap();
     let db = store::ReceiptStore::new(Sealed::new(Store::open_in_memory().unwrap(), [9; 32]));
     let l = db
         .open(
@@ -158,9 +158,8 @@ fn actual_client_join_transition_to_durable_originals_and_receipt_view() {
     assert_eq!(views.len(), 1);
     assert_eq!(views[0].issuer, a.did());
     assert_eq!(views[0].device, [1; 32]);
-    assert_eq!(views[0].call_id, w::open_start(&p.start).unwrap().call_id);
-    for blob in [&p.start, &p.expected_join, &p.roster] {
-        let evidence = Evidence::from_blob(blob).unwrap();
+    assert_eq!(views[0].call_id, p.start.open().unwrap().call_id);
+    for evidence in sidecars(&p) {
         assert_eq!(
             l.evidence(&evidence.id).unwrap().unwrap().bytes,
             evidence.bytes
@@ -203,12 +202,8 @@ fn failure_persists_neither_original_evidence_nor_receipt_or_projection() {
     );
     assert!(l.vv().is_empty());
     assert!(joined_views(&l).unwrap().is_empty());
-    for blob in [&p.start, &p.expected_join, &p.roster] {
-        assert!(
-            l.evidence(&Evidence::from_blob(blob).unwrap().id)
-                .unwrap()
-                .is_none()
-        );
+    for evidence in sidecars(&p) {
+        assert!(l.evidence(&evidence.id).unwrap().is_none());
     }
     persist_join(
         &l,
@@ -227,10 +222,12 @@ fn failure_persists_neither_original_evidence_nor_receipt_or_projection() {
 fn crypto_valid_roster_for_another_expected_join_is_not_this_device_confirmation() {
     let (a, mut p) = fixture();
     let (_, l) = ledger(&a, &p);
-    let s = w::open_start(&p.start).unwrap();
+    let s = p.start.open().unwrap();
     // Another genuinely signed Join of the SAME account. The roster still
     // verifies, but it must not stand for this device's expected outbound Join.
-    p.expected_join = w::sign_join(&a, &s.gid, &s.call_id, s.host_gen, 3).1;
+    p.expected_join = w::sign_join(&a, &s.gid, &s.call_id, s.host_gen, 3)
+        .unwrap()
+        .1;
     assert!(
         persist_join(
             &l,
@@ -276,7 +273,7 @@ fn revoked_roles_local_device_gate_and_forged_originals_refuse_before_commit() {
         )
         .is_err()
     );
-    p.roster.signature = p.expected_join.signature.clone();
+    p.roster = w::SignedRoster::from_parts(p.roster.body().to_vec(), *p.expected_join.sig());
     assert!(
         persist_join(
             &l,
@@ -483,7 +480,7 @@ fn signed_receipt_with_hash_correct_but_forged_protocol_evidence_is_refused() {
     )
     .unwrap();
     let mut claim = first.entries[0].receipt.clone();
-    p.roster.signature = p.expected_join.signature.clone();
+    p.roster = w::SignedRoster::from_parts(p.roster.body().to_vec(), *p.expected_join.sig());
     let proofs = sidecars(&p);
     claim.call.as_mut().unwrap().evidence = proofs.iter().map(|e| e.id).collect();
     claim.call.as_mut().unwrap().evidence.sort_unstable();
@@ -532,7 +529,7 @@ fn strict_vv_only_import_checks_known_originals_and_commits_frontier_atomically(
     raw.set_peer_id(entry.peer).unwrap();
     let mut prefix = entry.receipt.clone();
     prefix.call.as_mut().unwrap().event = CallEventKind::ObservedStart;
-    let bytes = prefix.sign_claim(&a).unwrap().to_bytes().unwrap();
+    let bytes = prefix.sign_claim(&a).unwrap().to_bytes();
     raw.get_map("receipts")
         .insert(&receipt_id(&bytes), loro::LoroValue::Binary(bytes.into()))
         .unwrap();
@@ -688,7 +685,7 @@ fn proof_aware_export_refuses_missing_or_corrupt_original_without_source_progres
         let source = factory
             .open(
                 Scope {
-                    conversation: Conversation::Group(w::open_start(&p.start).unwrap().gid),
+                    conversation: Conversation::Group(p.start.open().unwrap().gid),
                     day: "1970-01-01".into(),
                 },
                 writer_id(a.did(), &[1; 32]),
@@ -868,7 +865,7 @@ fn clean_sealed_redb_reopen_restores_exact_originals_and_joined_projection() {
     let path = directory.0.join("receipts.redb");
     let (a, p) = fixture();
     let scope = Scope {
-        conversation: Conversation::Group(w::open_start(&p.start).unwrap().gid),
+        conversation: Conversation::Group(p.start.open().unwrap().gid),
         day: "1970-01-01".into(),
     };
     let peer = writer_id(a.did(), &[1; 32]);
@@ -898,8 +895,7 @@ fn clean_sealed_redb_reopen_restores_exact_originals_and_joined_projection() {
     assert_eq!(vv, l.vv());
     assert_eq!(views, joined_views(&l).unwrap());
     assert_eq!(raw, l.raw(&committed.entries[0].id).unwrap());
-    for blob in [&p.start, &p.expected_join, &p.roster] {
-        let e = Evidence::from_blob(blob).unwrap();
+    for e in sidecars(&p) {
         assert_eq!(e.bytes, l.evidence(&e.id).unwrap().unwrap().bytes);
     }
     assert!(
@@ -928,7 +924,7 @@ fn missing_or_corrupt_originals_fail_closed_after_reopen_without_silent_repair()
         let backing = Sealed::new(Store::open_in_memory().unwrap(), [9; 32]);
         let factory = store::ReceiptStore::new(backing.clone());
         let scope = Scope {
-            conversation: Conversation::Group(w::open_start(&p.start).unwrap().gid),
+            conversation: Conversation::Group(p.start.open().unwrap().gid),
             day: "1970-01-01".into(),
         };
         let peer = writer_id(a.did(), &[1; 32]);

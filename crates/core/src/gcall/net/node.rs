@@ -62,7 +62,7 @@ impl Inner {
             }
         };
         let join = match &msg {
-            GroupCallMsg::Join { join, .. } => w::open_join(join).ok(),
+            GroupCallMsg::Join { join, .. } => join.open().ok(),
             _ => None,
         };
         let session = match join {
@@ -170,10 +170,12 @@ impl Inner {
     /// A CallStart relayed through the chat hosts: remembered so that this device can take
     /// over as a backup, or follow a `Superseded`. Verified (signature, permit, starter).
     /// When it beats the call hosted here (glare, split), that call ends `superseded`.
-    pub(crate) fn gcall_observe_start(self: &Arc<Self>, start: &SignedBlob) -> Result<(), Error> {
+    pub(crate) fn gcall_observe_start(self: &Arc<Self>, start: &SignedStart) -> Result<(), Error> {
         let cfg = self.gcall_cfg()?;
-        let s = w::open_start(start).map_err(|e| Error::Protocol(e.to_string()))?;
-        if !cfg.dir.host_permit_ok(&s.gid, &s.host_ref) || !cfg.dir.is_member(&s.gid, &s.starter_did) {
+        let s = start.open().map_err(|e| Error::Protocol(e.to_string()))?;
+        if !cfg.dir.host_permit_ok(&s.gid, &s.host_ref)
+            || !cfg.dir.is_member(&s.gid, &s.starter_did)
+        {
             return Err(Error::Rejected("call host not permitted".into()));
         }
         let follow = {
@@ -199,9 +201,9 @@ impl Inner {
     }
 
     /// A relayed `End{ended}`: the call leaves the group's board (it no longer wins a glare).
-    pub(crate) fn gcall_observe_end(&self, end: &SignedBlob) -> Result<(), Error> {
+    pub(crate) fn gcall_observe_end(&self, end: &SignedEnd) -> Result<(), Error> {
         let cfg = self.gcall_cfg()?;
-        let e = w::open_end(end).map_err(|e| Error::Protocol(e.to_string()))?;
+        let e = end.open().map_err(|e| Error::Protocol(e.to_string()))?;
         let mut k = self.gcall.known.lock();
         let b = k.boards.entry(e.gid.clone()).or_insert_with(|| CallBoard::new(&e.gid, cfg.host_ref_for(&e.gid)));
         b.accept_end(end, &*cfg.dir).map_err(|r| Error::Rejected(format!("{r:?}")))
@@ -210,7 +212,7 @@ impl Inner {
     /// Host a call. `cfg.host_ref` must be this device's configured host ref. With
     /// `own_user_in` this device's user joins at once through `ConnId::LOCAL`. Returns the
     /// signed CallStart to announce (also delivered as `HostingStarted`).
-    pub(crate) fn gcall_host(self: &Arc<Self>, cfg: HostConfig) -> Result<SignedBlob, Error> {
+    pub(crate) fn gcall_host(self: &Arc<Self>, cfg: HostConfig) -> Result<SignedStart, Error> {
         let gc = self.gcall_cfg()?;
         if gc.host_ref_for(&cfg.gid).as_ref() != Some(&cfg.host_ref) {
             return Err(Error::Protocol("host_ref is not this device's".into()));
@@ -240,9 +242,13 @@ impl Inner {
 
     /// Join the call announced by `start`. `host_addr` is where its host can be reached (else
     /// the directory is asked). Progress arrives as `GcallEvent`s.
-    pub(crate) fn gcall_join(self: &Arc<Self>, start: &SignedBlob, host_addr: Option<EndpointAddr>) -> Result<(), Error> {
+    pub(crate) fn gcall_join(
+        self: &Arc<Self>,
+        start: &SignedStart,
+        host_addr: Option<EndpointAddr>,
+    ) -> Result<(), Error> {
         let gc = self.gcall_cfg()?;
-        let s = w::open_start(start).map_err(|e| Error::Protocol(e.to_string()))?;
+        let s = start.open().map_err(|e| Error::Protocol(e.to_string()))?;
         self.gcall_observe_start(start)?;
         // Joining the call this device already hosts listen-only: add the user to it.
         if let Some(cur) = self.gcall.live() {
@@ -372,23 +378,27 @@ impl crate::Node {
     }
 
     /// A CallStart relayed through the chat hosts (`Inner::gcall_observe_start`).
-    pub fn gcall_observe_start(&self, start: &SignedBlob) -> Result<(), Error> {
+    pub fn gcall_observe_start(&self, start: &SignedStart) -> Result<(), Error> {
         self.inner.gcall_observe_start(start)
     }
 
     /// A relayed `End{ended}`: the call leaves the group's board.
-    pub fn gcall_observe_end(&self, end: &SignedBlob) -> Result<(), Error> {
+    pub fn gcall_observe_end(&self, end: &SignedEnd) -> Result<(), Error> {
         self.inner.gcall_observe_end(end)
     }
 
     /// Host a call (`Inner::gcall_host`).
-    pub fn gcall_host(&self, cfg: HostConfig) -> Result<SignedBlob, Error> {
+    pub fn gcall_host(&self, cfg: HostConfig) -> Result<SignedStart, Error> {
         self.gcall_ensure_endpoint()?;
         self.inner.gcall_host(cfg)
     }
 
     /// Join the call announced by `start` (`Inner::gcall_join`).
-    pub fn gcall_join(&self, start: &SignedBlob, host_addr: Option<EndpointAddr>) -> Result<(), Error> {
+    pub fn gcall_join(
+        &self,
+        start: &SignedStart,
+        host_addr: Option<EndpointAddr>,
+    ) -> Result<(), Error> {
         self.gcall_ensure_endpoint()?;
         self.inner.gcall_join(start, host_addr)
     }

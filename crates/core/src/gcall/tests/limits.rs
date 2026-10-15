@@ -49,11 +49,13 @@ fn gcall_s13_floods_are_bounded_and_other_members_are_unaffected() {
     // with H's state unchanged.
     let carol = s.d[CAROL].id.clone();
     let cep = s.d[CAROL].ep;
-    let first = w::sign_join(&carol, &gid(), &cid, 1, s.now + 1).1;
+    let first = w::sign_join(&carol, &gid(), &cid, 1, s.now + 1).unwrap().1;
     assert!(s.raw_join(H1, cep, first).is_ok());
     let roster = s.roster(H1);
     for i in 0..5 {
-        let r = w::sign_join(&carol, &gid(), &cid, 1, s.now + 2 + i).1;
+        let r = w::sign_join(&carol, &gid(), &cid, 1, s.now + 2 + i)
+            .unwrap()
+            .1;
         let before = s.hosts[&H1].snapshot();
         assert_eq!(s.raw_join(H1, cep, r), Err(Refusal::RateLimited));
         assert_eq!(s.hosts[&H1].snapshot(), before);
@@ -100,7 +102,9 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
     s.pump();
     assert!(s.notices.contains(&(HP, HostNotice::Limited)));
     let before = s.hosts[&HP].snapshot();
-    let r = w::sign_join(&s.d[CAROL].id.clone(), &gid(), &cid, 1, s.now).1;
+    let r = w::sign_join(&s.d[CAROL].id.clone(), &gid(), &cid, 1, s.now)
+        .unwrap()
+        .1;
     let cep = s.d[CAROL].ep;
     assert_eq!(s.raw_join(HP, cep, r), Err(Refusal::Limited));
     assert_eq!(s.hosts[&HP].snapshot(), before);
@@ -138,7 +142,9 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
     s.client_actions(A1, acts);
     s.pump();
     s.advance(JOIN_MIN_GAP_MS);
-    let r = w::sign_join(&s.d[A1].id.clone(), &gid(), &cid, 1, s.now).1;
+    let r = w::sign_join(&s.d[A1].id.clone(), &gid(), &cid, 1, s.now)
+        .unwrap()
+        .1;
     let a1ep = s.d[A1].ep;
     assert!(s.raw_join(HP, a1ep, r).is_ok(), "no metered cap");
     assert_eq!(s.roster(HP).len(), 5);

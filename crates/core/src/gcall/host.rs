@@ -3,8 +3,12 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use identity::Identity;
-use proto::SignedBlob;
-use proto::gcall::{self as w, CallStart, End, EndReason, GroupCallMsg, HostRef, Join, Roster, RosterEntry, UpDatagram};
+use proto::Signed;
+use proto::gcall::{
+    self as w, CallStart, End, EndReason, GroupCallMsg, HostRef, Join, Roster, RosterEntry,
+    UpDatagram,
+};
+use proto::gcall::{SignedEnd, SignedJoin, SignedLeave, SignedNote, SignedStart};
 
 use super::policy::{Class, Cond, PhoneAction, phone_policy};
 use super::select::Forwarder;
@@ -59,7 +63,11 @@ pub enum HostAction {
     /// The engine is finished. `end` is the signed End that went to the participants (relay it
     /// through the chat hosts when `reason` is `Ended`); `None` when hosting stopped without
     /// one (own permit revoked).
-    Ended { reason: EndReason, next_host: Option<HostRef>, end: Option<SignedBlob> },
+    Ended {
+        reason: EndReason,
+        next_host: Option<HostRef>,
+        end: Option<SignedEnd>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,7 +75,7 @@ struct Part {
     slot: u8,
     conn: ConnId,
     join: Join,
-    sig: String,
+    sig: [u8; 64],
     last_ms: u64,
     /// Upstream token bucket, milli-datagrams, and when it was last filled.
     bucket: u64,
@@ -79,7 +87,7 @@ struct Part {
 struct State {
     epoch: u32,
     parts: BTreeMap<String, Part>,
-    seen: BTreeSet<String>,
+    seen: BTreeSet<[u8; 64]>,
     last_join: BTreeMap<String, u64>,
     cond: Cond,
     limited: bool,
@@ -95,7 +103,7 @@ struct State {
 pub struct HostEngine {
     id: Identity,
     start: CallStart,
-    start_blob: SignedBlob,
+    start_blob: SignedStart,
     st: State,
     /// Authenticated remote endpoint per connection (transport bookkeeping).
     conns: BTreeMap<ConnId, [u8; 32]>,
@@ -116,7 +124,6 @@ impl HostEngine {
         }
         let k = cfg.cond.k();
         let start = CallStart {
-            v: w::GCALL_VERSION,
             gid: cfg.gid,
             call_id: cfg.call_id,
             host_gen: cfg.host_gen,
@@ -128,7 +135,7 @@ impl HostEngine {
             backups: cfg.backups,
             meta_frontier: cfg.meta_frontier,
         };
-        let start_blob = w::sign_start(&id, start.clone());
+        let start_blob = Signed::sign(&start, &id).map_err(|_| Refusal::Malformed)?;
         Ok(HostEngine {
             id,
             start,
@@ -182,7 +189,7 @@ impl HostEngine {
 
     /// The signed CallStart to announce through the chat hosts (G1: next to the call-host
     /// record).
-    pub fn start_blob(&self) -> &SignedBlob {
+    pub fn start_blob(&self) -> &SignedStart {
         &self.start_blob
     }
 
@@ -301,8 +308,15 @@ impl HostEngine {
     }
 
     // §3.2 at H. Every check runs before any state changes.
-    fn join(&mut self, conn: ConnId, blob: &SignedBlob, note: Option<&SignedBlob>, now: u64, auth: &dyn CallAuthority) -> Result<Vec<HostAction>, Refusal> {
-        let j = w::open_join(blob)?;
+    fn join(
+        &mut self,
+        conn: ConnId,
+        blob: &SignedJoin,
+        note: Option<&SignedNote>,
+        now: u64,
+        auth: &dyn CallAuthority,
+    ) -> Result<Vec<HostAction>, Refusal> {
+        let j = blob.open()?;
         let s = &self.start;
         if j.gid != s.gid {
             return Err(Refusal::WrongGroup);
@@ -326,7 +340,7 @@ impl HostEngine {
                 return Err(Refusal::EndpointMismatch);
             }
         }
-        if self.st.seen.contains(&blob.signature) {
+        if self.st.seen.contains(blob.sig()) {
             return Err(Refusal::Replay);
         }
         if self.st.last_join.get(&j.did).is_some_and(|t| t + JOIN_MIN_GAP_MS > now) {
@@ -342,7 +356,7 @@ impl HostEngine {
         }
         // ---- accepted ----
         let did = j.did.clone();
-        self.st.seen.insert(blob.signature.clone());
+        self.st.seen.insert(*blob.sig());
         self.st.last_join.insert(did.clone(), now);
         let old = self.st.parts.remove(&did);
         let slot = match &old {
@@ -352,7 +366,15 @@ impl HostEngine {
                 (0..=u8::MAX).find(|s| !used.contains(s)).expect("at most 12 participants")
             }
         };
-        let part = Part { slot, conn, join: j, sig: blob.signature.clone(), last_ms: now, bucket: UP_BURST * 1_000, bucket_ms: now };
+        let part = Part {
+            slot,
+            conn,
+            join: j,
+            sig: *blob.sig(),
+            last_ms: now,
+            bucket: UP_BURST * 1_000,
+            bucket_ms: now,
+        };
         self.st.parts.insert(did, part);
         let mut out = vec![];
         if let Some(o) = old.filter(|o| o.conn != conn) {
@@ -367,8 +389,13 @@ impl HostEngine {
         Ok(out)
     }
 
-    fn leave(&mut self, conn: ConnId, blob: &SignedBlob, auth: &dyn CallAuthority) -> Result<Vec<HostAction>, Refusal> {
-        let l = w::open_leave(blob)?;
+    fn leave(
+        &mut self,
+        conn: ConnId,
+        blob: &SignedLeave,
+        auth: &dyn CallAuthority,
+    ) -> Result<Vec<HostAction>, Refusal> {
+        let l = blob.open()?;
         let s = &self.start;
         if l.gid != s.gid || l.call_id != s.call_id || l.host_gen != s.host_gen {
             return Err(Refusal::WrongCall);
@@ -591,12 +618,17 @@ impl HostEngine {
         }
     }
 
-    fn sign_end(&self, reason: EndReason, next_host: Option<HostRef>) -> SignedBlob {
+    fn sign_end(&self, reason: EndReason, next_host: Option<HostRef>) -> SignedEnd {
         let s = &self.start;
-        w::sign_end(
-            &self.id,
-            End { v: w::GCALL_VERSION, gid: s.gid.clone(), call_id: s.call_id.clone(), host_gen: s.host_gen, host_did: self.id.did().into(), reason, next_host },
-        )
+        let end = End {
+            gid: s.gid.clone(),
+            call_id: s.call_id.clone(),
+            host_gen: s.host_gen,
+            host_did: self.id.did().into(),
+            reason,
+            next_host,
+        };
+        Signed::sign(&end, &self.id).expect("our own call's End signs")
     }
 
     fn roster_actions(&mut self) -> Vec<HostAction> {
@@ -606,11 +638,16 @@ impl HostEngine {
             .st
             .parts
             .iter()
-            .map(|(d, p)| RosterEntry { slot: p.slot, did: d.clone(), issued_ms: p.join.issued_ms, nonce: p.join.nonce, sig: p.sig.clone() })
+            .map(|(d, p)| RosterEntry {
+                slot: p.slot,
+                did: d.clone(),
+                issued_ms: p.join.issued_ms,
+                nonce: p.join.nonce,
+                sig: p.sig.to_vec(),
+            })
             .collect();
         entries.sort_by_key(|e| e.slot);
         let r = Roster {
-            v: w::GCALL_VERSION,
             gid: s.gid.clone(),
             call_id: s.call_id.clone(),
             host_gen: s.host_gen,
@@ -618,8 +655,17 @@ impl HostEngine {
             epoch: self.st.epoch,
             entries,
         };
-        let f = frame(&GroupCallMsg::Roster { roster: w::sign_roster(&self.id, r) });
-        self.st.parts.values().map(|p| HostAction::Control { conn: p.conn, frame: f.clone() }).collect()
+        let f = frame(&GroupCallMsg::Roster {
+            roster: Signed::sign(&r, &self.id).expect("our own roster signs"),
+        });
+        self.st
+            .parts
+            .values()
+            .map(|p| HostAction::Control {
+                conn: p.conn,
+                frame: f.clone(),
+            })
+            .collect()
     }
 
     // G6-D1/D2: `Active` to every participant whenever the forwarded set changes.

@@ -146,8 +146,8 @@ fn binding_for_different_device_or_invite() {
     // Binding made for some other joiner device.
     let claim = open_invite(&invite).unwrap();
     let other = cryptography::signature::public_key(&new_device_secret());
-    let sig =
-        b.id.sign(&binding_message(&claim.nonce, &other, &a.dev).unwrap());
+    let nonce = dec(&claim.nonce).unwrap();
+    let sig = signed::sign_detached(&b.id, domains::BIND, &binding_parts(&nonce, &other, &a.dev));
     let bad = Msg::ContactHello {
         relay: None,
         attestation: att.clone(),
@@ -188,8 +188,8 @@ fn binding_signed_by_wrong_key() {
     let (hello, _) = contact_hello(&b.id, b.dev, &t, "bob", T0, GTTL).unwrap();
     let (att, name, invite, _, grant) = hello_parts(&hello);
     let claim = open_invite(&invite).unwrap();
-    let sig =
-        m.id.sign(&binding_message(&claim.nonce, &b.dev, &a.dev).unwrap());
+    let nonce = dec(&claim.nonce).unwrap();
+    let sig = signed::sign_detached(&m.id, domains::BIND, &binding_parts(&nonce, &b.dev, &a.dev));
     let bad = Msg::ContactHello {
         relay: None,
         attestation: att,
@@ -323,20 +323,24 @@ fn grant_issued_by_third_party_rejected_on_call() {
 #[test]
 fn attestation_forgery_and_domain_separation() {
     let (a, b) = (peer(), peer());
-    // Attestation claiming Alice's DID but signed by Bob.
+    // Attestation claiming Alice's DID but signed by Bob: refused at sign time, and a raw
+    // envelope carrying Bob's signature does not open.
     let claim = Attestation {
-        v: 1,
         did: a.id.did().into(),
-        device: enc(b.dev),
+        device: b.dev,
         iat: T0,
     };
-    let forged = sign_blob(&b.id, ATTEST_DOMAIN, &claim);
+    assert_eq!(Signed::sign(&claim, &b.id).err(), Some(Error::WrongIssuer));
+    let body = cryptography::codec::to_bytes(&claim).unwrap();
+    let sig =
+        b.id.sign(&cryptography::sign::input(Attestation::DOMAIN, &[&body]));
+    let forged = Signed::<Attestation>::from_parts(body, sig);
     assert_eq!(verify_attestation(&forged), Err(Error::BadSignature));
-    // A grant blob can't be replayed as an attestation (domains differ).
+    // A grant envelope can't be replayed as an attestation (domains differ), nor the reverse.
     let g = issue_grant(&a.id, b.id.did(), T0, GTTL);
-    assert!(verify_attestation(&g).is_err());
+    assert!(verify_attestation(&retype(&g)).is_err());
     let at = attest(&a.id, a.dev, T0);
-    assert!(verify_grant(&at, a.id.did(), b.id.did(), T0, &none()).is_err());
+    assert!(verify_grant(&retype(&at), a.id.did(), b.id.did(), T0, &none()).is_err());
 }
 
 #[test]
@@ -393,7 +397,7 @@ fn call_grant_and_self_sync_do_not_cross() {
     let none = HashSet::new();
     // A call grant is not an attestation, so it cannot open own-device sync.
     let g = issue_grant(&a.id, b.id.did(), T0, GTTL);
-    assert!(accept_self_hello(&g, a.id.did(), b.dev, &none).is_err());
+    assert!(accept_self_hello(&retype(&g), a.id.did(), b.dev, &none).is_err());
     // A self attestation alone (no grant from us) does not get a call accepted: here A's
     // second device calls A's first with a grant from a stranger, and also as a non-contact.
     let d2 = dev();

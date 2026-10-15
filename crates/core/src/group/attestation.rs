@@ -1,26 +1,25 @@
 //! Prototype portable host storage statements. No wire negotiation, forwarding,
 //! Ack-store updates, debt clearing, UI status or readiness certificate yet.
 //! Signatures attest a host's claim; they cannot audit a dishonest host's disk.
-use cryptography::{codec, domains};
+use cryptography::domains;
 use loro::VersionVector;
 use serde::{Deserialize, Serialize};
+
+use proto::{Signable, Signed, Signer};
 
 use super::{
     doc::{DocId, GroupDoc},
     engine::GroupCore,
-    record::verify_did,
     state::{GroupState, derive_meta},
 };
 
 // Provisional payload budget; tuning is separate from schema/algorithm widths.
 const MAX_BODY: usize = 128 * 1024;
-const SIGNATURE_BYTES: usize = 64; // Ed25519
-pub(crate) const MAX_SIGNED: usize = MAX_BODY + 2 * codec::LEN_PREFIX_MAX + SIGNATURE_BYTES;
+pub(crate) const MAX_SIGNED: usize = MAX_BODY + proto::signed::SIG_LEN;
 const MAX_WRITERS: usize = 4096;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct StorageAttestation {
-    pub version: u8,
     pub group: String,
     pub doc: DocId,
     pub host: String,
@@ -32,10 +31,17 @@ pub(crate) struct StorageAttestation {
     pub metadata: Vec<(u64, i32)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct SignedStorageAttestation {
-    pub body: Vec<u8>,
-    pub sig: Vec<u8>,
+pub(crate) type SignedStorageAttestation = Signed<StorageAttestation>;
+
+impl Signable for StorageAttestation {
+    const DOMAIN: domains::Domain = domains::STORAGE_ATTESTATION;
+    const MAX_BODY: usize = MAX_BODY;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.host)
+    }
+    fn check(&self) -> proto::Result<()> {
+        self.check_shape().map_err(|_| proto::Error::Decode)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -62,9 +68,6 @@ pub(crate) enum AttestationError {
 
 fn scope_ok(group: &str, doc: &DocId) -> bool {
     super::valid_gid(group) && doc.is_valid()
-}
-fn sig_input(body: &[u8]) -> Vec<u8> {
-    super::record::sig_input(domains::STORAGE_ATTESTATION, body)
 }
 fn frontier_ok(frontier: &[(u64, i32)]) -> bool {
     !frontier.is_empty()
@@ -97,9 +100,8 @@ fn host_allowed(state: &GroupState, did: &str, dev: &[u8; 32]) -> bool {
 }
 
 impl StorageAttestation {
-    fn check(&self) -> Result<(), AttestationError> {
-        if self.version != 1
-            || self.host.len() > 200
+    fn check_shape(&self) -> Result<(), AttestationError> {
+        if self.host.len() > 200
             || identity::public_key_from_did(&self.host).is_none()
             || !scope_ok(&self.group, &self.doc)
             || !frontier_ok(&self.stored)
@@ -115,52 +117,31 @@ impl StorageAttestation {
         &self,
         account: &identity::Identity,
     ) -> Result<SignedStorageAttestation, AttestationError> {
-        self.check()?;
-        if self.host != account.did() {
-            return Err(AttestationError::Signature);
-        }
-        let body = codec::to_bytes(self).map_err(|_| AttestationError::Encoding)?;
-        if body.len() > MAX_BODY {
-            return Err(AttestationError::Bounds);
-        }
-        Ok(SignedStorageAttestation {
-            sig: account.sign(&sig_input(&body)).to_vec(),
-            body,
+        self.check_shape()?;
+        Signed::sign(self, account).map_err(|e| match e {
+            proto::Error::WrongIssuer => AttestationError::Signature,
+            _ => AttestationError::Bounds,
         })
     }
 }
 
-impl SignedStorageAttestation {
-    pub(crate) fn to_bytes(&self) -> Result<Vec<u8>, AttestationError> {
-        if self.body.len() > MAX_BODY || self.sig.len() != SIGNATURE_BYTES {
-            return Err(AttestationError::Bounds);
-        }
-        codec::to_bytes(self).map_err(|_| AttestationError::Encoding)
+/// Signature/scope check ONLY. Hosting authority is checked separately below.
+pub(crate) fn open_attestation(
+    bytes: &[u8],
+    group: &str,
+    doc: &DocId,
+) -> Result<StorageAttestation, AttestationError> {
+    let signed =
+        SignedStorageAttestation::from_bytes(bytes).map_err(|_| AttestationError::Bounds)?;
+    let claim = signed.peek().map_err(|_| AttestationError::Encoding)?;
+    claim.check_shape()?;
+    if claim.group != group || &claim.doc != doc {
+        return Err(AttestationError::Scope);
     }
-    /// Signature/scope check ONLY. Hosting authority is checked separately below.
-    pub(crate) fn open(
-        bytes: &[u8],
-        group: &str,
-        doc: &DocId,
-    ) -> Result<StorageAttestation, AttestationError> {
-        if bytes.len() > MAX_SIGNED {
-            return Err(AttestationError::Bounds);
-        }
-        let signed: Self = codec::from_bytes_canonical(bytes, MAX_SIGNED).map_err(|_| AttestationError::Encoding)?;
-        if signed.body.len() > MAX_BODY || signed.sig.len() != SIGNATURE_BYTES {
-            return Err(AttestationError::Bounds);
-        }
-        let claim: StorageAttestation =
-            codec::from_bytes_canonical(&signed.body, MAX_BODY).map_err(|_| AttestationError::Encoding)?;
-        claim.check()?;
-        if claim.group != group || &claim.doc != doc {
-            return Err(AttestationError::Scope);
-        }
-        if !verify_did(&claim.host, &sig_input(&signed.body), &signed.sig) {
-            return Err(AttestationError::Signature);
-        }
-        Ok(claim)
-    }
+    signed.open().map_err(|e| match e {
+        proto::Error::BadSignature => AttestationError::Signature,
+        _ => AttestationError::Encoding,
+    })
 }
 
 impl GroupCore {
@@ -214,7 +195,6 @@ impl GroupCore {
             accepted.vv()
         };
         let claim = StorageAttestation {
-            version: 1,
             group: group.into(),
             doc: doc.clone(),
             host: self.did.clone(),
@@ -241,7 +221,7 @@ impl GroupCore {
         if self.closed() {
             return Err(AttestationError::Closed);
         }
-        let claim = SignedStorageAttestation::open(bytes, group, doc)?;
+        let claim = open_attestation(bytes, group, doc)?;
         let groups = self.groups.lock();
         if !groups.contains_key(group) {
             return Err(AttestationError::PendingMetadata);

@@ -36,7 +36,7 @@ impl GroupCore {
             .unwrap_or_default()
             .into_iter()
             .filter(|s| {
-                s.open().is_some_and(|a| {
+                s.open().ok().is_some_and(|a| {
                     hosts_or_calls(&live.state, &a.did, &a.dev)
                         && !(a.did == self.did && a.dev == self.dev)
                 })
@@ -146,12 +146,12 @@ impl GroupCore {
             .hosts(gid)
             .unwrap_or_default()
             .into_iter()
-            .filter_map(|s| s.open())
+            .filter_map(|s| s.open().ok())
             .map(|a| (host_key(&a.did, &a.dev), a))
             .collect();
         let mut changed = false;
         for s in addrs.iter().take(64) {
-            let Some(a) = s.open() else { continue };
+            let Some(a) = s.open().ok() else { continue };
             if a.group != gid || (a.did == self.did && a.dev == self.dev) {
                 continue;
             }
@@ -231,7 +231,7 @@ impl GroupCore {
             .unwrap_or_default()
             .into_iter()
             .filter(|s| {
-                s.open().is_some_and(|a| {
+                s.open().ok().is_some_and(|a| {
                     live.state.is_host(&a.did, &a.dev) && !(a.did == self.did && a.dev == self.dev)
                 })
             })

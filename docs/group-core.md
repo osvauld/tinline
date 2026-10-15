@@ -69,8 +69,8 @@ the user was away; each is listed at the end.
   addresses (`SignedHostAddr`, DID-signed, newest `at` wins) are the only endpoints that travel to
   members, and only for devices that are active hosts in the receiver's own derived state (a
   joiner with no state yet takes the ones in its invite token). Records never contain endpoints.
-- **Endpoint proof.** Each side of a connection first sends `EndpointAuth{did, dev, endpoint,
-  sig}`; the receiver checks `endpoint` equals the QUIC remote key (QUIC proves possession).
+- **Endpoint proof.** Each side of a connection first sends `EndpointAuth` (the gcall
+  `Signed<GroupNote{did, dev, endpoint, issued_ms}>`, one statement for both); the receiver checks `endpoint` equals the QUIC remote key (QUIC proves possession).
 - **Session** (`wire.rs`): member `Hello{auth, group, vv, days, invite?, hosts, relay}` → host
   `Welcome{auth, vv, days, hosts}` | `Removed{records, vv}` | `Refused{reason}` (`vv`: the meta
   doc's version vector, `days`: those of the day docs of the last 7 days we hold); then both sides

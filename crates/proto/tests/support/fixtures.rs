@@ -1,5 +1,5 @@
 //! Fixtures shared by the rotation_* and token contract tests: deterministic identities and
-//! endpoint keys, JSON helpers and URL-safe base64 for tampering with signed payloads.
+//! endpoint keys, JSON helpers and URL-safe base64.
 //! TEST-ONLY. Fixture keys come from fixed seeds so runs are reproducible; this is NOT a
 //! derivation scheme and receivers never compute them.
 //!
@@ -44,7 +44,7 @@ pub fn ser<T: Serialize>(t: &T) -> Vec<u8> {
     serde_json::to_vec(t).unwrap()
 }
 
-/// URL-safe, unpadded base64 (the encoding of `proto::SignedBlob` fields).
+/// URL-safe, unpadded base64.
 pub fn base64_encode(bytes: &[u8]) -> String {
     URL_SAFE_NO_PAD.encode(bytes)
 }

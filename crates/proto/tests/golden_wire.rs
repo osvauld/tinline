@@ -1,7 +1,9 @@
 //! Golden wire vectors for `proto`, frozen BEFORE the dependency upgrades (ed25519-dalek 3, sha2 0.11,
 //! hkdf/hmac 0.13, aes-gcm 0.11, rand 0.10). Must pass UNCHANGED afterwards.
 //! Regenerated 2026-10-15 for the one signing-input rule (`cryptography::sign::input`) and BLAKE3 link
-//! keys/proofs (pre-release, no back-compat); DIDs and the QR/ticket text layouts did not change.
+//! keys/proofs, and again for the `Signed<T>` envelope (postcard body || signature, one domain per type,
+//! no `v` fields; pre-release, no back-compat). DIDs and the QR text layouts did not change; the
+//! `OSVC2:` ticket is now the envelope's bytes. Signed items are stored as hex of `Signed::to_bytes()`.
 //!
 //! Produced by `cargo test -p proto --test golden_wire -- --ignored --nocapture dump` on base 0e1eecb,
 //! pasted into the tables below. Identities come from the public BIP-39 test phrases (synthetic).
@@ -50,11 +52,10 @@ fn host(i: &Identity) -> gcall::HostRef {
     }
 }
 
-/// Every deterministic signed blob, by name.
-fn blobs() -> Vec<(&'static str, SignedBlob)> {
+/// Every deterministic signed envelope (`to_bytes()`), by name.
+fn blobs() -> Vec<(&'static str, Vec<u8>)> {
     let (a, b) = (a(), b());
     let start = gcall::CallStart {
-        v: 1,
         gid: GID.into(),
         call_id: CALL_ID.into(),
         host_gen: 1,
@@ -66,23 +67,25 @@ fn blobs() -> Vec<(&'static str, SignedBlob)> {
         backups: vec![host(&b)],
         meta_frontier: "frontier-golden".into(),
     };
+    // The entry carries a real Join signature (Ed25519 is deterministic), so the roster opens.
+    let join = gcall::Join {
+        gid: GID.into(),
+        call_id: CALL_ID.into(),
+        host_gen: 1,
+        did: b.did().into(),
+        issued_ms: T0 * 1000 + 5,
+        nonce: 42,
+    };
+    let join_env = Signed::sign(&join, &b).unwrap();
     let roster = gcall::Roster {
-        v: 1,
         gid: GID.into(),
         call_id: CALL_ID.into(),
         host_gen: 1,
         host_did: a.did().into(),
         epoch: 2,
-        entries: vec![gcall::RosterEntry {
-            slot: 1,
-            did: b.did().into(),
-            issued_ms: T0 * 1000 + 5,
-            nonce: 42,
-            sig: "c2ln".into(),
-        }],
+        entries: vec![gcall::RosterEntry::new(1, &join, &join_env)],
     };
     let end = gcall::End {
-        v: 1,
         gid: GID.into(),
         call_id: CALL_ID.into(),
         host_gen: 1,
@@ -91,7 +94,6 @@ fn blobs() -> Vec<(&'static str, SignedBlob)> {
         next_host: Some(host(&b)),
     };
     let req = gcall::HostRequest {
-        v: 1,
         gid: GID.into(),
         call_id: CALL_ID.into(),
         starter_did: a.did().into(),
@@ -101,7 +103,6 @@ fn blobs() -> Vec<(&'static str, SignedBlob)> {
         issued_ms: T0 * 1000,
     };
     let refusal = gcall::HostRefusal {
-        v: 1,
         gid: GID.into(),
         call_id: CALL_ID.into(),
         starter_did: a.did().into(),
@@ -109,7 +110,6 @@ fn blobs() -> Vec<(&'static str, SignedBlob)> {
         reason: "busy".into(),
     };
     let status = gcall_status::CallHostStatus {
-        v: 1,
         gid: GID.into(),
         host_ref: host(&a),
         class: gcall_status::DeviceClass::Phone,
@@ -123,7 +123,7 @@ fn blobs() -> Vec<(&'static str, SignedBlob)> {
         ttl_ms: 30_000,
     };
     vec![
-        ("attestation", attest(&a, dev(1), T0)),
+        ("attestation", attest(&a, dev(1), T0).to_bytes()),
         (
             "device_list",
             sign_device_list(
@@ -133,33 +133,50 @@ fn blobs() -> Vec<(&'static str, SignedBlob)> {
                     (dev(50), Some("https://relay.example.test".into())),
                 ],
                 T0 * 1000,
-            ),
+            )
+            .to_bytes(),
         ),
         (
             "block_notice",
-            sign_block_notice(&a, b.did(), true, T0 * 1000),
+            sign_block_notice(&a, b.did(), true, T0 * 1000).to_bytes(),
         ),
         (
             "unblock_notice",
-            sign_block_notice(&a, b.did(), false, T0 * 1000 + 1),
+            sign_block_notice(&a, b.did(), false, T0 * 1000 + 1).to_bytes(),
         ),
-        ("gcall_start", gcall::sign_start(&a, start)),
-        ("gcall_roster", gcall::sign_roster(&a, roster)),
+        ("gcall_start", Signed::sign(&start, &a).unwrap().to_bytes()),
+        (
+            "gcall_roster",
+            Signed::sign(&roster, &a).unwrap().to_bytes(),
+        ),
         (
             "gcall_leave",
-            gcall::sign_leave(&b, GID, CALL_ID, 1, T0 * 1000 + 9),
+            gcall::sign_leave(&b, GID, CALL_ID, 1, T0 * 1000 + 9)
+                .unwrap()
+                .to_bytes(),
         ),
-        ("gcall_end", gcall::sign_end(&a, end)),
-        ("gcall_host_request", gcall::sign_host_request(&a, req)),
-        ("gcall_host_refusal", gcall::sign_host_refusal(&b, refusal)),
+        ("gcall_end", Signed::sign(&end, &a).unwrap().to_bytes()),
+        (
+            "gcall_host_request",
+            Signed::sign(&req, &a).unwrap().to_bytes(),
+        ),
+        (
+            "gcall_host_refusal",
+            Signed::sign(&refusal, &b).unwrap().to_bytes(),
+        ),
         (
             "gcall_note",
-            gcall::sign_note(&b, &dev(7), &dev(9), T0 * 1000),
+            gcall::sign_note(&b, &dev(7), &dev(9), T0 * 1000).to_bytes(),
         ),
-        ("gcall_status", gcall_status::sign_status(&a, status)),
+        (
+            "gcall_status",
+            Signed::sign(&status, &a).unwrap().to_bytes(),
+        ),
         (
             "picture_deletion",
-            profile::sign_picture_deletion(&a, &"ab".repeat(32)).unwrap(),
+            profile::sign_picture_deletion(&a, &"ab".repeat(32))
+                .unwrap()
+                .to_bytes(),
         ),
     ]
 }
@@ -168,6 +185,8 @@ fn blobs() -> Vec<(&'static str, SignedBlob)> {
 fn frames() -> Vec<(&'static str, Vec<u8>)> {
     let (a, _) = (a(), b());
     let att = attest(&a, dev(1), T0);
+    // Any envelope serialises the same way; an attestation stands in for the grant slots.
+    let as_grant = |s: &SignedAttestation| Signed::<Grant>::from_bytes(&s.to_bytes()).unwrap();
     vec![
         ("ringing", encode_frame(&Msg::Ringing)),
         ("busy", encode_frame(&Msg::Busy)),
@@ -216,14 +235,14 @@ fn frames() -> Vec<(&'static str, Vec<u8>)> {
         (
             "tokens",
             encode_frame(&Msg::Tokens {
-                grants: vec![att.clone()],
+                grants: vec![as_grant(&att)],
             }),
         ),
         (
             "group_letter",
             encode_frame(&Msg::GroupLetter {
                 attestation: att,
-                grant: attest(&a, dev(2), T0),
+                grant: as_grant(&attest(&a, dev(2), T0)),
                 letter: "bGV0dGVy".into(),
             }),
         ),
@@ -279,36 +298,108 @@ fn link_proofs() -> Vec<(&'static str, String)> {
 }
 
 // ---- captured tables ----
-const BLOBS: &[(&str, &str, &str)] = &[
-    ("attestation", "eyJ2IjoxLCJkaWQiOiJkaWQ6a2V5Ono2TWtubmNWbWVkcGhnRFNiUW9ZTHlOYUZSRmRCMld0eWp4Y0ZkS1Y2elRmY1l2cyIsImRldmljZSI6IkFRSURCQVVHQndnSkNnc01EUTRQRUJFU0V4UVZGaGNZR1JvYkhCMGVIeUEiLCJpYXQiOjE4MDAwMDAwMDB9", "8L-Ak6CWr-jZpBDkxDp5YaiT2nuO4_dcW5QmhkXOyiAinAFFmcks585M5bqRKUNMkA9F0ZW6eMtSNfV8S1S1CA"),
-    ("device_list", "eyJ2IjoxLCJkaWQiOiJkaWQ6a2V5Ono2TWtubmNWbWVkcGhnRFNiUW9ZTHlOYUZSRmRCMld0eWp4Y0ZkS1Y2elRmY1l2cyIsInNlcSI6MTgwMDAwMDAwMDAwMCwiZGV2aWNlcyI6W3siZGV2aWNlIjoiQVFJREJBVUdCd2dKQ2dzTURRNFBFQkVTRXhRVkZoY1lHUm9iSEIwZUh5QSIsInJlbGF5IjpudWxsfSx7ImRldmljZSI6Ik1qTTBOVFkzT0RrNk96dzlQajlBUVVKRFJFVkdSMGhKU2t0TVRVNVBVRkUiLCJyZWxheSI6Imh0dHBzOi8vcmVsYXkuZXhhbXBsZS50ZXN0In1dfQ", "yADLbYsyvXMa2kBW30EFAIUZJXDzbkZsH6NpQy7V0a5oocd-nsRk3WsW8zDYTPj9R5qjCY3qKhDz_n8OgNQjBg"),
-    ("block_notice", "eyJ2IjoxLCJmcm9tIjoiZGlkOmtleTp6Nk1rbm5jVm1lZHBoZ0RTYlFvWUx5TmFGUkZkQjJXdHlqeGNGZEtWNnpUZmNZdnMiLCJ0byI6ImRpZDprZXk6ejZNa3ZtQTRxSDcyRk43djl6Yzl5M2U5d3JSanVUb2VaNmVWVXBjMWNmNzh5a2JjIiwiYmxvY2tlZCI6dHJ1ZSwiYXQiOjE4MDAwMDAwMDAwMDB9", "N5vSCThbZBJ4gp7Umf5NxCaKY0E9ERVxUSLN9Wg_iLyuvkiNTNFoVJI6nQOyCwWGYRnnT4mgtAmgKdsYohHGCA"),
-    ("unblock_notice", "eyJ2IjoxLCJmcm9tIjoiZGlkOmtleTp6Nk1rbm5jVm1lZHBoZ0RTYlFvWUx5TmFGUkZkQjJXdHlqeGNGZEtWNnpUZmNZdnMiLCJ0byI6ImRpZDprZXk6ejZNa3ZtQTRxSDcyRk43djl6Yzl5M2U5d3JSanVUb2VaNmVWVXBjMWNmNzh5a2JjIiwiYmxvY2tlZCI6ZmFsc2UsImF0IjoxODAwMDAwMDAwMDAxfQ", "DGBOeDxynY-dwx0gDppK7nwDpV3_S3wpA2EwYRF_Ig3pYY-o0slss3jc6TOVC7mqo5EyBZ_jIi7XFOw5INmoDg"),
-    ("gcall_start", "eyJ0Ijoic3RhcnQiLCJ2IjoxLCJnaWQiOiJncnAtZ29sZGVuIiwiY2FsbF9pZCI6IkFRSURCQVVHQndnSkNnc01EUTRQRUEiLCJob3N0X2dlbiI6MSwiaG9zdF9yZWYiOnsiaG9sZGVyX2RpZCI6ImRpZDprZXk6ejZNa25uY1ZtZWRwaGdEU2JRb1lMeU5hRlJGZEIyV3R5anhjRmRLVjZ6VGZjWXZzIiwiZGV2aWNlX3Nsb3QiOjMsInBlcm1pdF9kaWdlc3QiOiJkaWdlc3QtZ29sZGVuIn0sInN0YXJ0ZXJfZGlkIjoiZGlkOmtleTp6Nk1rbm5jVm1lZHBoZ0RTYlFvWUx5TmFGUkZkQjJXdHlqeGNGZEtWNnpUZmNZdnMiLCJzdGFydGVkX21zIjoxODAwMDAwMDAwMDAwLCJrIjozLCJtYXhfcGFydGljaXBhbnRzIjo4LCJiYWNrdXBzIjpbeyJob2xkZXJfZGlkIjoiZGlkOmtleTp6Nk1rdm1BNHFINzJGTjd2OXpjOXkzZTl3clJqdVRvZVo2ZVZVcGMxY2Y3OHlrYmMiLCJkZXZpY2Vfc2xvdCI6MywicGVybWl0X2RpZ2VzdCI6ImRpZ2VzdC1nb2xkZW4ifV0sIm1ldGFfZnJvbnRpZXIiOiJmcm9udGllci1nb2xkZW4ifQ", "Xs3T9FGW6rcGYCSNeaqbdPfF2ldWLfx-kL523AFf9pjEkOkJMqzpttZe-IEZ40IdkfnS-8aymenSFO5q3y_bCw"),
-    ("gcall_roster", "eyJ0Ijoicm9zdGVyIiwidiI6MSwiZ2lkIjoiZ3JwLWdvbGRlbiIsImNhbGxfaWQiOiJBUUlEQkFVR0J3Z0pDZ3NNRFE0UEVBIiwiaG9zdF9nZW4iOjEsImhvc3RfZGlkIjoiZGlkOmtleTp6Nk1rbm5jVm1lZHBoZ0RTYlFvWUx5TmFGUkZkQjJXdHlqeGNGZEtWNnpUZmNZdnMiLCJlcG9jaCI6MiwiZW50cmllcyI6W3sicyI6MSwiZCI6ImRpZDprZXk6ejZNa3ZtQTRxSDcyRk43djl6Yzl5M2U5d3JSanVUb2VaNmVWVXBjMWNmNzh5a2JjIiwiaSI6MTgwMDAwMDAwMDAwNSwibiI6NDIsImciOiJjMmxuIn1dfQ", "ihst5rzDC2-LdSmPwHFD8AvA84d3UcOqDjwNtXk6qYM9EaKlusENwMCIHbzHxJ6vDmnee9RR7w1Cbzr1iOhCCw"),
-    ("gcall_leave", "eyJ0IjoibGVhdmUiLCJ2IjoxLCJnaWQiOiJncnAtZ29sZGVuIiwiY2FsbF9pZCI6IkFRSURCQVVHQndnSkNnc01EUTRQRUEiLCJob3N0X2dlbiI6MSwiZGlkIjoiZGlkOmtleTp6Nk1rdm1BNHFINzJGTjd2OXpjOXkzZTl3clJqdVRvZVo2ZVZVcGMxY2Y3OHlrYmMiLCJpc3N1ZWRfbXMiOjE4MDAwMDAwMDAwMDl9", "LGuQwq31Vv1LOkzztSDw2yKKO32hLrAYYyMXPsttlHbXpO7Mufy_PERJfJzSAEoHYU56mACFP11EbXWNMRdbDg"),
-    ("gcall_end", "eyJ0IjoiZW5kIiwidiI6MSwiZ2lkIjoiZ3JwLWdvbGRlbiIsImNhbGxfaWQiOiJBUUlEQkFVR0J3Z0pDZ3NNRFE0UEVBIiwiaG9zdF9nZW4iOjEsImhvc3RfZGlkIjoiZGlkOmtleTp6Nk1rbm5jVm1lZHBoZ0RTYlFvWUx5TmFGUkZkQjJXdHlqeGNGZEtWNnpUZmNZdnMiLCJyZWFzb24iOiJob3N0X3JvdGF0aW5nIiwibmV4dF9ob3N0Ijp7ImhvbGRlcl9kaWQiOiJkaWQ6a2V5Ono2TWt2bUE0cUg3MkZON3Y5emM5eTNlOXdyUmp1VG9lWjZlVlVwYzFjZjc4eWtiYyIsImRldmljZV9zbG90IjozLCJwZXJtaXRfZGlnZXN0IjoiZGlnZXN0LWdvbGRlbiJ9fQ", "L6Ar1xyu8ETplgDIp-kHs4xmEXoKgP-s8lP9TNuB65IQ5oPx8dAbWepMK2ZQMsWFPP_WeljMoR5H9eWShaILAA"),
-    ("gcall_host_request", "eyJ0IjoiaG9zdF9yZXF1ZXN0IiwidiI6MSwiZ2lkIjoiZ3JwLWdvbGRlbiIsImNhbGxfaWQiOiJBUUlEQkFVR0J3Z0pDZ3NNRFE0UEVBIiwic3RhcnRlcl9kaWQiOiJkaWQ6a2V5Ono2TWtubmNWbWVkcGhnRFNiUW9ZTHlOYUZSRmRCMld0eWp4Y0ZkS1Y2elRmY1l2cyIsImhvc3QiOnsiaG9sZGVyX2RpZCI6ImRpZDprZXk6ejZNa3ZtQTRxSDcyRk43djl6Yzl5M2U5d3JSanVUb2VaNmVWVXBjMWNmNzh5a2JjIiwiZGV2aWNlX3Nsb3QiOjMsInBlcm1pdF9kaWdlc3QiOiJkaWdlc3QtZ29sZGVuIn0sImJhY2t1cHMiOltdLCJleHBlY3RlZCI6NCwiaXNzdWVkX21zIjoxODAwMDAwMDAwMDAwfQ", "qGpDy1TWWP1VJvJJD7P-X0JxYY5SS8XgEqbzCDxJ31jndNzJcWMsER4Q6WEoi-xfcxALjHWJQJKnwXgrqzP0Aw"),
-    ("gcall_host_refusal", "eyJ0IjoiaG9zdF9yZWZ1c2FsIiwidiI6MSwiZ2lkIjoiZ3JwLWdvbGRlbiIsImNhbGxfaWQiOiJBUUlEQkFVR0J3Z0pDZ3NNRFE0UEVBIiwic3RhcnRlcl9kaWQiOiJkaWQ6a2V5Ono2TWtubmNWbWVkcGhnRFNiUW9ZTHlOYUZSRmRCMld0eWp4Y0ZkS1Y2elRmY1l2cyIsImhvc3QiOnsiaG9sZGVyX2RpZCI6ImRpZDprZXk6ejZNa3ZtQTRxSDcyRk43djl6Yzl5M2U5d3JSanVUb2VaNmVWVXBjMWNmNzh5a2JjIiwiZGV2aWNlX3Nsb3QiOjMsInBlcm1pdF9kaWdlc3QiOiJkaWdlc3QtZ29sZGVuIn0sInJlYXNvbiI6ImJ1c3kifQ", "2WIb52saH3E359N-hOaJjAISH33NNMAlxdB1AL47U0lEfPT9hJv_KKwOfGfC9v4-7jL0m-TI1cRvLyU328lkBA"),
-    ("gcall_note", "eyJ0Ijoibm90ZSIsInYiOjEsImRpZCI6ImRpZDprZXk6ejZNa3ZtQTRxSDcyRk43djl6Yzl5M2U5d3JSanVUb2VaNmVWVXBjMWNmNzh5a2JjIiwiZGV2IjoiQndnSkNnc01EUTRQRUJFU0V4UVZGaGNZR1JvYkhCMGVIeUFoSWlNa0pTWSIsImVuZHBvaW50IjoiQ1FvTERBME9EeEFSRWhNVUZSWVhHQmthR3h3ZEhoOGdJU0lqSkNVbUp5ZyIsImlzc3VlZF9tcyI6MTgwMDAwMDAwMDAwMH0", "lTt8j9yHsLPTWN9eZT1cXafN-UwURm_YJZdGMphiAyyOur-1WXQ6n0uhG1U6rTeyu6sGvJgbVy2NyhHcvfZDCA"),
-    ("gcall_status", "eyJ0IjoiaG9zdF9zdGF0dXMiLCJ2IjoxLCJnaWQiOiJncnAtZ29sZGVuIiwiaG9zdF9yZWYiOnsiaG9sZGVyX2RpZCI6ImRpZDprZXk6ejZNa25uY1ZtZWRwaGdEU2JRb1lMeU5hRlJGZEIyV3R5anhjRmRLVjZ6VGZjWXZzIiwiZGV2aWNlX3Nsb3QiOjMsInBlcm1pdF9kaWdlc3QiOiJkaWdlc3QtZ29sZGVuIn0sImNsYXNzIjoicGhvbmUiLCJwb3dlciI6eyJiYXR0ZXJ5Ijo4MH0sIm5ldHdvcmsiOiJtZXRlcmVkIiwidGhlcm1hbCI6ImxpZ2h0IiwiYnVzeSI6ZmFsc2UsImxvYWQiOjEwLCJtYXhfcGFydGljaXBhbnRzIjo2LCJpc3N1ZWRfbXMiOjE4MDAwMDAwMDAwMDAsInR0bF9tcyI6MzAwMDB9", "j4a4vZ94t_CIZFrWERNZPOCb57MYW6u9JAtJs7jAj3cK3N6l91QRpgq10DRsX9x9qLje136nb-ueGUQqz2-1Cg"),
-    ("picture_deletion", "eyJ2IjoxLCJvd25lciI6ImRpZDprZXk6ejZNa25uY1ZtZWRwaGdEU2JRb1lMeU5hRlJGZEIyV3R5anhjRmRLVjZ6VGZjWXZzIiwicGljdHVyZV9oYXNoIjoiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYiIsInNjb3BlIjoiY2FjaGVkLXByb2ZpbGUtcGljdHVyZSIsImNvbnNlbnQiOnRydWV9", "mMTI6CsSSTnFwLFU5-9u_KwZ1o0eQklj_bNIdCTc6hYR-E7g5pYU946SgOxmnIMa1p7FAjF15B7Q0oadsB1wCQ"),
+const BLOBS: &[(&str, &str)] = &[
+    (
+        "attestation",
+        "386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a5466635976730102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2080a4a7da061acb5d5cdf9553e912806b2790a0b86452677ac12a2ebd3a8f797d23a13612c144c559d26d7de427d1fa5b6a2a050ddf6bf27a8fd9e6de634700a1a40ab4c00b",
+    ),
+    (
+        "device_list",
+        "386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a54666359767380a0f1c2b134020102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f200032333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f5051011a68747470733a2f2f72656c61792e6578616d706c652e74657374c0110b2c7e87f6f8af8cde38072bafe5305715642763618981ee4bdb208951832be67102cc57f1f714380d76c81751ce59d15b5346511f1d25f6762ccb05d807",
+    ),
+    (
+        "block_notice",
+        "386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a546663597673386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b62630180a0f1c2b1342cd9180926c8d36e7e0268c12206eebf8bead05c7b8da862aa074aac28200bd1f95cddacd1126edb0b10dec0fc52a1f670eac3d3acb8c9203b0663ef02cdaf0b",
+    ),
+    (
+        "unblock_notice",
+        "386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a546663597673386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b62630081a0f1c2b13448ced4abf6888b0a97c877cba7b832cffd79f6704de08ab961133d93c9821d8fc679e4a59db0bbfa4e70cdf92830b7cd3733cb3d6039634e518dacd8ea70b40b",
+    ),
+    (
+        "gcall_start",
+        "0a6772702d676f6c64656e1641514944424155474277674a4367734d44513450454101386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a546663597673030d6469676573742d676f6c64656e386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a54666359767380a0f1c2b134030801386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b6263030d6469676573742d676f6c64656e0f66726f6e746965722d676f6c64656ed5daba016afdc1c7305b8f07f7eae4f46378e45c7c49b48da018b1e09b71f1a705420129859e965b2834d1e72b4ef90e2aca237da0b6affdbb0fd531c5d23f02",
+    ),
+    (
+        "gcall_roster",
+        "0a6772702d676f6c64656e1641514944424155474277674a4367734d44513450454101386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a546663597673020101386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b626385a0f1c2b1342a40eefe73f47defa03630c5c62346f6bac02eaabe2255fc06962293f18c7c240c4543c063a804d1b8797cc3645a454183bdc5313c9a568f555b2df0b6d632a0250bec0ba7a551a24689a7826ed470a0b068b7c0d2b73641f3a3b0d57508d9c01775ea7b090c5a8d27b18f300b4933d388cc751026dec91b4d26fe7e9441b706d60e",
+    ),
+    (
+        "gcall_leave",
+        "0a6772702d676f6c64656e1641514944424155474277674a4367734d44513450454101386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b626389a0f1c2b1347221598af39a505448c53505053595836beede86576e20e2937621930435887054146fdb3e11e44a60c4d99ca596561d39d3a37d2cdbabe588e517aa5652510c",
+    ),
+    (
+        "gcall_end",
+        "0a6772702d676f6c64656e1641514944424155474277674a4367734d44513450454101386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a5466635976730201386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b6263030d6469676573742d676f6c64656e4e3ef030c10873d1eb0f8ca5561738ee1a5b1e664c41fcf15a278fd5d67f4338890967e419e20f6e038774e3840c4e191c0ea4982f2490d214b870f50609b00c",
+    ),
+    (
+        "gcall_host_request",
+        "0a6772702d676f6c64656e1641514944424155474277674a4367734d445134504541386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a546663597673386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b6263030d6469676573742d676f6c64656e000480a0f1c2b13440b1d9bf93e5fca63db91884775397b7bd8d798335bb9d13a8a04f66ed0613a2a8b8288e23ad3f6c65ef79f708e1bb38a1f5bfe59ae63ad5ce651f1bdb46e80d",
+    ),
+    (
+        "gcall_host_refusal",
+        "0a6772702d676f6c64656e1641514944424155474277674a4367734d445134504541386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a546663597673386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b6263030d6469676573742d676f6c64656e0462757379cfec59974c18731a02169ce612f3fb9731e6747a9c14b90bf79ecab2f65be1dc93951c5b90ff545f6b08773e773798d437f6968c958db4ab7729f9184eda6d06",
+    ),
+    (
+        "gcall_note",
+        "386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b62630708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223242526090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223242526272880a0f1c2b1349e694d67dd5217f691d1b98f51080ef84efb387272cddb0e21dc27ddac4b2b21cae2055af6f84d11b246b0cf481e5429d6b043460004cc29ea5f90f2aacd7f0b",
+    ),
+    (
+        "gcall_status",
+        "0a6772702d676f6c64656e386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a546663597673030d6469676573742d676f6c64656e0202500101000a0680a0f1c2b134b0ea01d9853878859c8db48d72b658c27498a164fde2b5375559eb02765a45dfb7fc9daf2a098ae6d5ea4415fbff36e10fd6671d182ff997f67503379914fec52d0806",
+    ),
+    (
+        "picture_deletion",
+        "386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a5466635976734061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162166361636865642d70726f66696c652d7069637475726501ffa0424b15d78bb2eea93ba0284030036000e0f1b01ce0aadb61d7c0d343a5c4a7220387f1347a6354d61806faaef6094f0f06a65a3495085ec3a4b5cf31b308",
+    ),
 ];
 const FRAMES: &[(&str, &str)] = &[
     ("ringing", "0000000f7b2274223a2272696e67696e67227d"),
     ("busy", "0000000c7b2274223a2262757379227d"),
     ("hangup", "0000000e7b2274223a2268616e677570227d"),
-    ("reject", "0000002b7b2274223a2272656a656374222c22726561736f6e223a2263616c6c73206e6f7420616c6c6f776564227d"),
-    ("video", "0000001b7b2274223a22766964656f222c2263616d657261223a747275657d"),
-    ("notice", "0000016f7b2274223a226e6f74696365222c226e6f74696365223a7b227061796c6f6164223a2265794a32496a6f784c434a6d636d3974496a6f695a476c6b4f6d746c655470364e6b3172626d356a566d316c5a48426f5a305254596c467657557835546d4647556b5a6b516a4a5864486c7165474e475a4574574e6e70555a6d4e5a646e4d694c434a3062794936496d52705a4470725a586b36656a5a4e61335a745154527853446379526b3433646a6c36597a6c354d32553564334a53616e5655623256614e6d56575658426a4d574e6d4e7a683561324a6a49697769596d78765932746c5a43493664484a315a537769595851694f6a45344d4441774d4441774d4441774d444239222c227369676e6174757265223a224e357653435468625a424a34677037556d66354e7843614b593045394552567855534c4e3957675f694c7975766b694e544e466f564a49366e514f794377574759526e6e54346d6774416d674b6473596f6848474341227d7d"),
-    ("devices", "000001727b2274223a2264657669636573222c226c697374223a7b227061796c6f6164223a2265794a32496a6f784c434a6b615751694f694a6b61575136613256354f6e6f3254577475626d4e576257566b6347686e52464e695557395a54486c4f59555a53526d52434d6c64306557703459305a6b53315932656c526d59316c3263794973496e4e6c635349364d5467774d4441774d4441774d4441774d4377695a47563261574e6c63794936573373695a47563261574e6c496a6f695156464a52454a42565564436432644b5132647a545552524e464246516b565452586852566b5a6f59316c48556d3969534549775a55683551534973496e4a6c62474635496a70756457787366563139222c227369676e6174757265223a22413850616f396a685565547374377645384b6572305a67524b3669564968517139364b44554a70376766355764716d6c3672384b77686b6838704a714c44494d38364c5a657449626d53446e53327447645163344451227d7d"),
-    ("accept", "000000417b2274223a22616363657074222c2272656e657765645f6772616e74223a6e756c6c2c22766964656f223a7b226d61785f706978656c73223a3932313630307d7d"),
-    ("decline", "000000207b2274223a226465636c696e65222c22726561736f6e223a226c61746572227d"),
-    ("cancel", "0000002c7b2274223a2263616e63656c222c22726561736f6e223a22616e7377657265645f656c73657768657265227d"),
-    ("tokens", "0000014d7b2274223a22746f6b656e73222c226772616e7473223a5b7b227061796c6f6164223a2265794a32496a6f784c434a6b615751694f694a6b61575136613256354f6e6f3254577475626d4e576257566b6347686e52464e695557395a54486c4f59555a53526d52434d6c64306557703459305a6b53315932656c526d59316c3263794973496d526c646d6c6a5a534936496b46525355524351565648516e646e536b4e6e633031455554525152554a465530563455565a4761474e5a52314a76596b68434d475649655545694c434a70595851694f6a45344d4441774d4441774d444239222c227369676e6174757265223a22384c2d416b364357722d6a5a7042446b7844703559616954326e754f345f64635735516d686b584f796941696e4146466d636b733538354d356271524b554e4d6b413946305a5736654d74534e665638533153314341227d5d7d"),
-    ("group_letter", "000002a67b2274223a2267726f75705f6c6574746572222c226174746573746174696f6e223a7b227061796c6f6164223a2265794a32496a6f784c434a6b615751694f694a6b61575136613256354f6e6f3254577475626d4e576257566b6347686e52464e695557395a54486c4f59555a53526d52434d6c64306557703459305a6b53315932656c526d59316c3263794973496d526c646d6c6a5a534936496b46525355524351565648516e646e536b4e6e633031455554525152554a465530563455565a4761474e5a52314a76596b68434d475649655545694c434a70595851694f6a45344d4441774d4441774d444239222c227369676e6174757265223a22384c2d416b364357722d6a5a7042446b7844703559616954326e754f345f64635735516d686b584f796941696e4146466d636b733538354d356271524b554e4d6b413946305a5736654d74534e665638533153314341227d2c226772616e74223a7b227061796c6f6164223a2265794a32496a6f784c434a6b615751694f694a6b61575136613256354f6e6f3254577475626d4e576257566b6347686e52464e695557395a54486c4f59555a53526d52434d6c64306557703459305a6b53315932656c526d59316c3263794973496d526c646d6c6a5a534936496b466e5455564355566c495130467253304e33643035455a7a685252564a4a56455a4356566447654764615232687a593068534e475a4a513055694c434a70595851694f6a45344d4441774d4441774d444239222c227369676e6174757265223a2273364a68366e624d42584a484c37586f7a733148494751444e5f2d6d6256775a5f4c617a5a6a6d387275435779377245336d524731533851415056596e7a644d5f4c75713163477830507866396b59355978376d4441227d2c226c6574746572223a226247563064475679227d"),
-    ("gcall_heartbeat", "0000001b7b2274223a22686561727462656174222c2265706f6368223a377d"),
-    ("gcall_active", "000000267b2274223a22616374697665222c2267656e223a322c22736c6f7473223a5b312c342c355d7d"),
+    (
+        "reject",
+        "0000002b7b2274223a2272656a656374222c22726561736f6e223a2263616c6c73206e6f7420616c6c6f776564227d",
+    ),
+    (
+        "video",
+        "0000001b7b2274223a22766964656f222c2263616d657261223a747275657d",
+    ),
+    (
+        "notice",
+        "000001117b2274223a226e6f74696365222c226e6f74696365223a224f4752705a4470725a586b36656a5a4e6132357559315a745a5752776147644555324a5262316c4d65553568526c4a475a45497956335235616e686a526d524c566a5a3656475a6a57585a7a4f4752705a4470725a586b36656a5a4e61335a745154527853446379526b3433646a6c36597a6c354d32553564334a53616e5655623256614e6d56575658426a4d574e6d4e7a683561324a6a4159436738634b784e437a5a47416b6d794e4e7566674a6f7753494737722d4c367442636534326f59716f485371776f494176522d567a64724e45536274734c454e37415f464b68396e447177394f73754d6b674f775a6a37774c4e727773227d",
+    ),
+    (
+        "devices",
+        "000000f07b2274223a2264657669636573222c226c697374223a224f4752705a4470725a586b36656a5a4e6132357559315a745a5752776147644555324a5262316c4d65553568526c4a475a45497956335235616e686a526d524c566a5a3656475a6a57585a7a674b44787772453041514543417751464267634943516f4c4441304f4478415245684d554652595847426b614778776448683867414b513646714142324b34446c6f376f6843336a4b4a5f373753796752325063546e5f6b545a34626f7978347353546235475158396a32787a5a72636d36706d4b4e49526a2d576b6f6264576b364a557a564d4f6b674d227d",
+    ),
+    (
+        "accept",
+        "000000417b2274223a22616363657074222c2272656e657765645f6772616e74223a6e756c6c2c22766964656f223a7b226d61785f706978656c73223a3932313630307d7d",
+    ),
+    (
+        "decline",
+        "000000207b2274223a226465636c696e65222c22726561736f6e223a226c61746572227d",
+    ),
+    (
+        "cancel",
+        "0000002c7b2274223a2263616e63656c222c22726561736f6e223a22616e7377657265645f656c73657768657265227d",
+    ),
+    (
+        "tokens",
+        "000000ef7b2274223a22746f6b656e73222c226772616e7473223a5b224f4752705a4470725a586b36656a5a4e6132357559315a745a5752776147644555324a5262316c4d65553568526c4a475a45497956335235616e686a526d524c566a5a3656475a6a57585a7a41514944424155474277674a4367734d4451345045424553457851564668635947526f624842306548794341704b66614268724c58567a666c565070456f42724a354367754752535a3372424b6936394f6f393566534f684e684c42524d565a306d3139354366522d6c74714b67554e33327679656f5f5a3574356a5277436870417130774173225d7d",
+    ),
+    (
+        "group_letter",
+        "000001ea7b2274223a2267726f75705f6c6574746572222c226174746573746174696f6e223a224f4752705a4470725a586b36656a5a4e6132357559315a745a5752776147644555324a5262316c4d65553568526c4a475a45497956335235616e686a526d524c566a5a3656475a6a57585a7a41514944424155474277674a4367734d4451345045424553457851564668635947526f624842306548794341704b66614268724c58567a666c565070456f42724a354367754752535a3372424b6936394f6f393566534f684e684c42524d565a306d3139354366522d6c74714b67554e33327679656f5f5a3574356a5277436870417130774173222c226772616e74223a224f4752705a4470725a586b36656a5a4e6132357559315a745a5752776147644555324a5262316c4d65553568526c4a475a45497956335235616e686a526d524c566a5a3656475a6a57585a7a41674d454251594843416b4b4377774e4467385145524954464255574678675a476873634852346649434741704b6661427570524c466969616a775a57566c59705f7178655252764877484878716961755a48704643664e4b317779593235743641775a38787570354655546b3878703464354c57612d6a416c6d516b694862726a4555337751222c226c6574746572223a226247563064475679227d",
+    ),
+    (
+        "gcall_heartbeat",
+        "0000001b7b2274223a22686561727462656174222c2265706f6368223a377d",
+    ),
+    (
+        "gcall_active",
+        "000000267b2274223a22616374697665222c2267656e223a322c22736c6f7473223a5b312c342c355d7d",
+    ),
 ];
 const LINKS: &[(&str, &str)] = &[
     ("qr_none", "OSVL1:AEBQIBIGA4EASCQLBQGQ4DYQCEJBGFAVCYLRQGI2DMOB2HQ7EAQSECIJBEEQSCIJBEEQSCIJBEEQSCIAAPUAA"),
@@ -317,17 +408,17 @@ const LINKS: &[(&str, &str)] = &[
     ("proof_displayer", "e67927f17c0045de349227e067e7c77128eaf4eefa0ce9db37d7e962c119d316"),
     ("confirm_code", "623 727"),
 ];
-const RANDOM_TOKEN: (&str, &str) = ("eyJ2IjoyLCJpZCI6Im1lTmhCeXJVYXJzWmQtS1FCQllqa2ciLCJpc3MiOiJkaWQ6a2V5Ono2TWtubmNWbWVkcGhnRFNiUW9ZTHlOYUZSRmRCMld0eWp4Y0ZkS1Y2elRmY1l2cyIsImhvbGRlciI6ImRpZDprZXk6ejZNa3ZtQTRxSDcyRk43djl6Yzl5M2U5d3JSanVUb2VaNmVWVXBjMWNmNzh5a2JjIiwiY2FwIjoibWVzc2FnZSIsImlhdCI6MTgwMDAwMDAwMCwiZXhwIjoxODAwMDAzNjAwfQ", "b5Vgx1sajLq4XlOol7pG0cMmwx940zYYp0f5YPo0MB7_-6kXPj-kRKZaDmvi_ye069QEvugoPaJonLbWlZJwCw");
-const RANDOM_TICKET: &str = "OSVC2:PPJKPPDRZ3WCT3WAROFVBZTIR2T7OCJJECUQCMQ3TTSVWNVGKJUACAQDAQCQMBYIBEFAWDANBYHRAEISCMKBKFQXDAMRUGY4DUPB6IGYD2O4AABGBBK4VZSHN5WGIZLODJUHI5DQOM5C6L3SMVWGC6JOMV4GC3LQNRSS45DFON2ORM732FOBDPVDSG7JBC5RZ62XJNP537KXQAQOTR4THPTPGP6W55C6BIMKY5TKPSHHQCKMFAH7UQDTOXB5BD73U6PNATWVJVO2IS37A4";
-const RANDOM_LINK_GRANT: &str = "QrO4eY8LlAl8dgNYA-nrJe3oBwPRZa08eHjqkPxuCxBn0oavk3cJYUe_L8eR";
-const RANDOM_GCALL_JOIN: (&str, &str) = ("eyJ0Ijoiam9pbiIsInYiOjEsImdpZCI6ImdycC1nb2xkZW4iLCJjYWxsX2lkIjoiQVFJREJBVUdCd2dKQ2dzTURRNFBFQSIsImhvc3RfZ2VuIjoxLCJkaWQiOiJkaWQ6a2V5Ono2TWt2bUE0cUg3MkZON3Y5emM5eTNlOXdyUmp1VG9lWjZlVlVwYzFjZjc4eWtiYyIsImlzc3VlZF9tcyI6MTgwMDAwMDAwMDAwMCwibm9uY2UiOjMwNTkwMDA3OTg3MTY1MjM5MjR9", "Vsd_ZYYlomT1hGOaaTx29PV-CMbkKlbj-i0EfmmAvsruYHYh7p7TXNlhep8Zc3pLsfa3tH2sa5gD58i_7zOuAg");
+const RANDOM_TOKEN: &str = "02164e67383854454a6646425162444b7153345f717a6e41386469643a6b65793a7a364d6b6e6e63566d6564706867445362516f594c794e614652466442325774796a786346644b56367a546663597673386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b6263076d65737361676580a4a7da0690c0a7da06783753a5ffe6ff329d48e6848c9d457c5bec8638c4aa9ca7bec5cb3c9e3e5ca1c4e31b1980a9e459c7338ef762e383db22c07b24f4acb56d0e261a5420802509";
+const RANDOM_TICKET: &str = "OSVC2:PPJKPPDRZ3WCT3WAROFVBZTIR2T7OCJJECUQCMQ3TTSVWNVGKJUACAQDAQCQMBYIBEFAWDANBYHRAEISCMKBKFQXDAMRUGY4DUPB6IE5DORENMQ4ZKVSCBSHN5WGIZLOAINGQ5DUOBZTULZPOJSWYYLZFZSXQYLNOBWGKLTUMVZXJR3IAXCBN6Y2XJWSTRKD2Q6Q2RSSYLLWHBQVGRKUGYYJWY264FDOESRUSET2Q5DTN6ZTHYT6UDTI7VB7GCGVUCUASG4RNK3AMQK6JMDA";
+const RANDOM_LINK_GRANT: &str = "GpMOyFRWYBOc4TKaRumm6rZXDck1jrO-CqWkjRebtlbFEiAl1Mr0wjD5N6rN";
+const RANDOM_GCALL_JOIN: &str = "0a6772702d676f6c64656e1641514944424155474277674a4367734d44513450454101386469643a6b65793a7a364d6b766d413471483732464e3776397a6339793365397772526a75546f655a3665565570633163663738796b626380a0f1c2b134bbabb693f8ebb9cebd0169d4d8b5de0a18683df1f7622788b105448781961be8084465601c3bdd0741d6970956fb760451fdfb39e4572123f50cb98dd18d6b0c99aa49e65d4d895f8806";
 
 #[test]
 #[ignore = "generator"]
 fn dump() {
-    println!("const BLOBS: &[(&str, &str, &str)] = &[");
+    println!("const BLOBS: &[(&str, &str)] = &[");
     for (n, b) in blobs() {
-        println!("    (\"{n}\", \"{}\", \"{}\"),", b.payload, b.signature);
+        println!("    (\"{n}\", \"{}\"),", hex(&b));
     }
     println!("];\nconst FRAMES: &[(&str, &str)] = &[");
     for (n, f) in frames() {
@@ -339,10 +430,7 @@ fn dump() {
     }
     println!("];");
     let g = issue_token(&a(), b().did(), Cap::Message, T0, 3600);
-    println!(
-        "const RANDOM_TOKEN: (&str, &str) = (\"{}\", \"{}\");",
-        g.payload, g.signature
-    );
+    println!("const RANDOM_TOKEN: &str = \"{}\";", hex(&g.to_bytes()));
     println!(
         "const RANDOM_TICKET: &str = \"{}\";",
         issue_contact_ticket(
@@ -359,10 +447,10 @@ fn dump() {
         "const RANDOM_LINK_GRANT: &str = \"{}\";",
         proto::link::seal_link_grant(&[9u8; 16], &dev(10), &dev(20), b"golden grant body")
     );
-    let (_, j) = gcall::sign_join(&b(), GID, CALL_ID, 1, T0 * 1000);
+    let (_, j) = gcall::sign_join(&b(), GID, CALL_ID, 1, T0 * 1000).unwrap();
     println!(
-        "const RANDOM_GCALL_JOIN: (&str, &str) = (\"{}\", \"{}\");",
-        j.payload, j.signature
+        "const RANDOM_GCALL_JOIN: &str = \"{}\";",
+        hex(&j.to_bytes())
     );
 }
 
@@ -370,29 +458,22 @@ fn dump() {
 fn deterministic_blobs_are_byte_identical() {
     let built = blobs();
     assert_eq!(built.len(), BLOBS.len());
-    for ((name, blob), (gname, payload, sig)) in built.iter().zip(BLOBS) {
+    for ((name, bytes), (gname, golden)) in built.iter().zip(BLOBS) {
         assert_eq!(name, gname);
-        assert_eq!(&blob.payload, payload, "{name} payload");
-        assert_eq!(&blob.signature, sig, "{name} signature");
+        assert_eq!(&hex(bytes), golden, "{name} envelope bytes");
     }
 }
 
-fn captured(name: &str) -> SignedBlob {
-    let (_, p, s) = BLOBS.iter().find(|(n, _, _)| *n == name).unwrap();
-    SignedBlob {
-        payload: p.to_string(),
-        signature: s.to_string(),
-    }
+fn captured<T: Signable>(name: &str) -> Signed<T> {
+    let (_, h) = BLOBS.iter().find(|(n, _)| *n == name).unwrap();
+    Signed::from_bytes(&unhex(h)).unwrap()
 }
 
 #[test]
 fn captured_blobs_open() {
     let (a, b) = (a(), b());
     assert_eq!(
-        verify_attestation(&captured("attestation"))
-            .unwrap()
-            .device_key()
-            .unwrap(),
+        verify_attestation(&captured("attestation")).unwrap().device,
         dev(1)
     );
     let list = verify_device_list(&captured("device_list"), a.did()).unwrap();
@@ -405,32 +486,41 @@ fn captured_blobs_open() {
             .unwrap()
             .blocked
     );
-    assert_eq!(gcall::open_start(&captured("gcall_start")).unwrap().k, 3);
-    // The entry carries a made-up Join signature, so opening refuses it today; the host signature and
-    // payload bytes of the roster are still frozen by `deterministic_blobs_are_byte_identical`.
     assert_eq!(
-        gcall::open_roster(&captured("gcall_roster")),
-        Err(Error::Decode)
+        captured::<gcall::CallStart>("gcall_start")
+            .open()
+            .unwrap()
+            .k,
+        3
     );
-    gcall::open_leave(&captured("gcall_leave")).unwrap();
+    // The roster's entry carries a real Join signature, so the whole roster opens.
+    let roster = captured::<gcall::Roster>("gcall_roster").open().unwrap();
+    assert_eq!(roster.entries.len(), 1);
+    captured::<gcall::Leave>("gcall_leave").open().unwrap();
     assert_eq!(
-        gcall::open_end(&captured("gcall_end")).unwrap().reason,
+        captured::<gcall::End>("gcall_end").open().unwrap().reason,
         gcall::EndReason::HostRotating
     );
-    gcall::open_host_request(&captured("gcall_host_request")).unwrap();
-    gcall::open_host_refusal(&captured("gcall_host_refusal")).unwrap();
+    captured::<gcall::HostRequest>("gcall_host_request")
+        .open()
+        .unwrap();
+    captured::<gcall::HostRefusal>("gcall_host_refusal")
+        .open()
+        .unwrap();
     assert_eq!(
-        gcall::open_note(&captured("gcall_note"))
+        captured::<gcall::GroupNote>("gcall_note")
+            .open()
             .unwrap()
-            .dev_bytes(),
-        Some(dev(7))
+            .dev,
+        dev(7)
     );
     let st = gcall_status::open_status_for(&captured("gcall_status"), GID, T0 * 1000 + 1).unwrap();
     assert_eq!(st.load, 10);
     profile::verify_picture_deletion(&captured("picture_deletion"), a.did()).unwrap();
-    // A flipped signature byte is refused.
-    let mut bad = captured("attestation");
-    bad.signature = captured("device_list").signature;
+    // A signature from another envelope is refused.
+    let other = captured::<Attestation>("attestation");
+    let list = captured::<DeviceList>("device_list");
+    let bad = Signed::<Attestation>::from_parts(other.body().to_vec(), *list.sig());
     assert_eq!(verify_attestation(&bad), Err(Error::BadSignature));
 }
 
@@ -482,10 +572,7 @@ fn link_text_proofs_and_code() {
 #[test]
 fn captured_random_items_verify() {
     let (a, b) = (a(), b());
-    let tok = SignedBlob {
-        payload: RANDOM_TOKEN.0.into(),
-        signature: RANDOM_TOKEN.1.into(),
-    };
+    let tok = Signed::<Grant>::from_bytes(&unhex(RANDOM_TOKEN)).unwrap();
     let g = verify_token(
         &tok,
         a.did(),
@@ -535,9 +622,6 @@ fn captured_random_items_verify() {
         proto::link::open_link_grant(&[9u8; 16], &dev(10), &dev(21), RANDOM_LINK_GRANT).is_err()
     );
 
-    let join = SignedBlob {
-        payload: RANDOM_GCALL_JOIN.0.into(),
-        signature: RANDOM_GCALL_JOIN.1.into(),
-    };
-    assert_eq!(gcall::open_join(&join).unwrap().did, b.did());
+    let join = Signed::<gcall::Join>::from_bytes(&unhex(RANDOM_GCALL_JOIN)).unwrap();
+    assert_eq!(join.open().unwrap().did, b.did());
 }

@@ -13,7 +13,7 @@ impl Inner {
         mut writer: Writer,
         mut reader: Reader,
         gid: String,
-        peer: EndpointAuth,
+        peer: proto::gcall::GroupNote,
         hosting: bool,
         joining: bool,
         theirs: Peer,

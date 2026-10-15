@@ -147,7 +147,7 @@ impl Inner {
                 break;
             }
             let hosts = core.host_addrs(&gid);
-            let auth = EndpointAuth::new(&core.account, core.dev, *ep.id().as_bytes());
+            let auth = endpoint_auth(&core.account, core.dev, *ep.id().as_bytes());
             for (_, d) in targets {
                 let Ok(key) = d.endpoint.parse::<iroh::PublicKey>() else {
                     continue;
@@ -196,9 +196,9 @@ impl Inner {
         gid: &str,
         hosts: &[SignedHostAddr],
     ) {
-        if !auth.verify(&remote) {
+        let Some(auth) = verify_endpoint(&auth, &remote) else {
             return;
-        }
+        };
         let ok = core
             .groups
             .lock()
@@ -209,6 +209,7 @@ impl Inner {
         }
         let mine = hosts.iter().any(|s| {
             s.open()
+                .ok()
                 .is_some_and(|a| a.did == auth.did && a.dev == auth.dev && a.endpoint == remote)
         });
         if !mine {

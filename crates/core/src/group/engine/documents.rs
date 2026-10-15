@@ -76,7 +76,7 @@ impl GroupCore {
     pub fn known_endpoints(&self, gid: &str) -> Vec<String> {
         let mut out: HashSet<String> = HashSet::new();
         for a in self.store.hosts(gid).unwrap_or_default() {
-            if let Some(a) = a.open()
+            if let Some(a) = a.open().ok()
                 && !(a.did == self.did && a.dev == self.dev)
             {
                 out.insert(
@@ -105,7 +105,6 @@ impl GroupCore {
         let mut groups = self.groups.lock();
         let live = groups.get_mut(gid).ok_or(Error::NotFound)?;
         let rec = Record {
-            v: 1,
             group: gid.to_string(),
             author: self.did.clone(),
             dev: self.dev,

@@ -4,7 +4,6 @@ use super::*;
 
 fn claim(account: &identity::Identity) -> StorageAttestation {
     StorageAttestation {
-        version: 1,
         group: "a".repeat(64),
         doc: DocId::Day("2026-10-14".into()),
         host: account.did().into(),
@@ -15,12 +14,11 @@ fn claim(account: &identity::Identity) -> StorageAttestation {
 }
 fn unchecked_bytes(claim: &StorageAttestation, account: &identity::Identity) -> Vec<u8> {
     let body = cryptography::codec::to_bytes(claim).unwrap();
-    SignedStorageAttestation {
-        sig: account.sign(&sig_input(&body)).to_vec(),
-        body,
-    }
-    .to_bytes()
-    .unwrap()
+    let sig = account.sign(&cryptography::sign::input(
+        StorageAttestation::DOMAIN,
+        &[&body],
+    ));
+    SignedStorageAttestation::from_parts(body, sig).to_bytes()
 }
 
 #[test]
@@ -28,11 +26,8 @@ fn canonical_receipt_roundtrip_and_all_signed_fields_are_bound() {
     let account = identity::generate().0;
     let c = claim(&account);
     let proof = c.sign(&account).unwrap();
-    let bytes = proof.to_bytes().unwrap();
-    assert_eq!(
-        SignedStorageAttestation::open(&bytes, &c.group, &c.doc),
-        Ok(c.clone())
-    );
+    let bytes = proof.to_bytes();
+    assert_eq!(open_attestation(&bytes, &c.group, &c.doc), Ok(c.clone()));
     let other = identity::generate().0;
     let mut variants = Vec::new();
     let mut changed = c.clone();
@@ -54,23 +49,22 @@ fn canonical_receipt_roundtrip_and_all_signed_fields_are_bound() {
     changed.metadata[0].1 += 1;
     variants.push(changed);
     for changed in variants {
-        let tampered = SignedStorageAttestation {
-            body: cryptography::codec::to_bytes(&changed).unwrap(),
-            sig: proof.sig.clone(),
-        }
-        .to_bytes()
-        .unwrap();
+        let tampered = SignedStorageAttestation::from_parts(
+            cryptography::codec::to_bytes(&changed).unwrap(),
+            *proof.sig(),
+        )
+        .to_bytes();
         assert_eq!(
-            SignedStorageAttestation::open(&tampered, &changed.group, &changed.doc),
+            open_attestation(&tampered, &changed.group, &changed.doc),
             Err(AttestationError::Signature)
         );
     }
     assert_eq!(
-        SignedStorageAttestation::open(&bytes, &"b".repeat(64), &c.doc),
+        open_attestation(&bytes, &"b".repeat(64), &c.doc),
         Err(AttestationError::Scope)
     );
     assert_eq!(
-        SignedStorageAttestation::open(&bytes, &c.group, &DocId::Meta),
+        open_attestation(&bytes, &c.group, &DocId::Meta),
         Err(AttestationError::Scope)
     );
 }
@@ -85,30 +79,25 @@ fn wrong_key_raw_signature_and_record_domain_are_not_storage_receipts() {
     let record_input = cryptography::sign::input(cryptography::domains::GROUP_RECORD, &[&body]);
     for signature in [
         account.sign(&body),
-        other.sign(&sig_input(&body)),
+        other.sign(&cryptography::sign::input(
+            StorageAttestation::DOMAIN,
+            &[&body],
+        )),
         account.sign(&record_input),
     ] {
-        let bytes = SignedStorageAttestation {
-            body: body.clone(),
-            sig: signature.to_vec(),
-        }
-        .to_bytes()
-        .unwrap();
+        let bytes = SignedStorageAttestation::from_parts(body.clone(), signature).to_bytes();
         assert_eq!(
-            SignedStorageAttestation::open(&bytes, &c.group, &c.doc),
+            open_attestation(&bytes, &c.group, &c.doc),
             Err(AttestationError::Signature)
         );
     }
 }
 
 #[test]
-fn unsupported_versions_bad_scope_and_frontier_aliases_are_refused() {
+fn bad_scope_and_frontier_aliases_are_refused() {
     let account = identity::generate().0;
     let c = claim(&account);
     let mut variants = Vec::new();
-    let mut bad = c.clone();
-    bad.version = 2;
-    variants.push(bad);
     let mut bad = c.clone();
     bad.group = "A".repeat(64);
     variants.push(bad);
@@ -141,7 +130,7 @@ fn unsupported_versions_bad_scope_and_frontier_aliases_are_refused() {
     for bad in variants {
         let bytes = unchecked_bytes(&bad, &account);
         assert_eq!(
-            SignedStorageAttestation::open(&bytes, &bad.group, &bad.doc),
+            open_attestation(&bytes, &bad.group, &bad.doc),
             Err(AttestationError::Bounds)
         );
     }
@@ -155,30 +144,36 @@ fn unsupported_versions_bad_scope_and_frontier_aliases_are_refused() {
 fn trailing_bytes_truncation_oversize_and_adversarial_lengths_are_refused() {
     let account = identity::generate().0;
     let c = claim(&account);
-    let mut proof = c.sign(&account).unwrap();
-    let bytes = proof.to_bytes().unwrap();
+    let proof = c.sign(&account).unwrap();
+    let bytes = proof.to_bytes();
     let mut trailing = bytes.clone();
     trailing.push(0);
     assert_eq!(
-        SignedStorageAttestation::open(&trailing, &c.group, &c.doc),
+        open_attestation(&trailing, &c.group, &c.doc),
         Err(AttestationError::Encoding)
     );
     for end in [0, 1, bytes.len() / 2, bytes.len() - 1] {
-        assert!(SignedStorageAttestation::open(&bytes[..end], &c.group, &c.doc).is_err());
+        assert!(open_attestation(&bytes[..end], &c.group, &c.doc).is_err());
     }
-    proof.body.push(0);
-    proof.sig = account.sign(&sig_input(&proof.body)).to_vec();
+    let mut body = proof.body().to_vec();
+    body.push(0);
+    let sig = account.sign(&cryptography::sign::input(
+        StorageAttestation::DOMAIN,
+        &[&body],
+    ));
     assert_eq!(
-        SignedStorageAttestation::open(&proof.to_bytes().unwrap(), &c.group, &c.doc),
+        open_attestation(
+            &SignedStorageAttestation::from_parts(body, sig).to_bytes(),
+            &c.group,
+            &c.doc
+        ),
         Err(AttestationError::Encoding)
     );
     assert_eq!(
-        SignedStorageAttestation::open(&vec![0; MAX_SIGNED + 1], &c.group, &c.doc),
+        open_attestation(&vec![0; MAX_SIGNED + 1], &c.group, &c.doc),
         Err(AttestationError::Bounds)
     );
-    assert!(SignedStorageAttestation::open(&u64::MAX.to_le_bytes(), &c.group, &c.doc).is_err());
-    proof.sig.pop();
-    assert_eq!(proof.to_bytes(), Err(AttestationError::Bounds));
+    assert!(open_attestation(&u64::MAX.to_le_bytes(), &c.group, &c.doc).is_err());
 }
 
 #[test]
@@ -187,10 +182,7 @@ fn maximum_writer_frontiers_fit_without_silently_truncating() {
     let mut c = claim(&account);
     c.stored = (0..MAX_WRITERS as u64).map(|p| (p, i32::MAX)).collect();
     c.metadata = c.stored.clone();
-    let bytes = c.sign(&account).unwrap().to_bytes().unwrap();
+    let bytes = c.sign(&account).unwrap().to_bytes();
     assert!(bytes.len() < MAX_SIGNED);
-    assert_eq!(
-        SignedStorageAttestation::open(&bytes, &c.group, &c.doc),
-        Ok(c)
-    );
+    assert_eq!(open_attestation(&bytes, &c.group, &c.doc), Ok(c));
 }

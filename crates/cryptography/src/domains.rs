@@ -9,22 +9,30 @@ pub type Domain = &'static [u8];
 
 // ---- signatures: proto (DID or device key over JSON claims) ----
 pub const ATTEST: Domain = b"osvauld/p2p/attest/v1\0";
-pub const INVITE: Domain = b"osvauld/p2p/invite/v1\0";
 pub const INVITE_V2: Domain = b"osvauld/p2p/invite/v2\0";
 pub const GRANT: Domain = b"osvauld/p2p/grant/v1\0";
 pub const BIND: Domain = b"osvauld/p2p/bind/v1\0";
 pub const DEVICES: Domain = b"osvauld/p2p/devices/v1\0";
 pub const BLOCK: Domain = b"osvauld/p2p/block/v1\0";
-pub const GCALL: Domain = b"tinline/gcall/v1\0";
+pub const GCALL_START: Domain = b"tinline/gcall/start/v1";
+pub const GCALL_JOIN: Domain = b"tinline/gcall/join/v1";
+pub const GCALL_ROSTER: Domain = b"tinline/gcall/roster/v1";
+pub const GCALL_LEAVE: Domain = b"tinline/gcall/leave/v1";
+pub const GCALL_END: Domain = b"tinline/gcall/end/v1";
+pub const GCALL_HOST_REQUEST: Domain = b"tinline/gcall/host-request/v1";
+pub const GCALL_HOST_REFUSAL: Domain = b"tinline/gcall/host-refusal/v1";
+pub const GCALL_STATUS: Domain = b"tinline/gcall/host-status/v1";
+/// "endpoint is device dev of did" (gcall note and group-host endpoint auth, one statement).
+pub const ENDPOINT_NOTE: Domain = b"tinline/endpoint-note/v1";
 pub const PICTURE_DELETION: Domain = b"tinline-profile-picture-deletion-v1\0";
 
 // ---- signatures: core ----
 pub const CHAT_BATCH: Domain = b"tinline-chat-batch-v1";
+pub const CHAT_MSG: Domain = b"tinline/chat/msg/v4";
 pub const GROUP_RECORD: Domain = b"tinline-group-record-v1";
 pub const GROUP_INVITE: Domain = b"tinline-group-invite-v1";
 pub const GROUP_HOST_ADDR: Domain = b"tinline-group-host-addr-v1";
 pub const GROUP_MAIL: Domain = b"tinline-group-mail-v1";
-pub const GROUP_ENDPOINT: Domain = b"tinline-group-endpoint-v1";
 pub const STORAGE_ATTESTATION: Domain = b"tinline-group-storage-attestation-v1\0";
 pub const RECEIPT: Domain = b"tinline-recipient-receipt-v1\0";
 
@@ -54,20 +62,27 @@ pub const LINK_TRANSCRIPT: Domain = b"tinline/link/v1";
 /// Every domain above (checked for duplicates in tests).
 pub const ALL: &[Domain] = &[
     ATTEST,
-    INVITE,
     INVITE_V2,
     GRANT,
     BIND,
     DEVICES,
     BLOCK,
-    GCALL,
+    GCALL_START,
+    GCALL_JOIN,
+    GCALL_ROSTER,
+    GCALL_LEAVE,
+    GCALL_END,
+    GCALL_HOST_REQUEST,
+    GCALL_HOST_REFUSAL,
+    GCALL_STATUS,
+    ENDPOINT_NOTE,
     PICTURE_DELETION,
     CHAT_BATCH,
+    CHAT_MSG,
     GROUP_RECORD,
     GROUP_INVITE,
     GROUP_HOST_ADDR,
     GROUP_MAIL,
-    GROUP_ENDPOINT,
     STORAGE_ATTESTATION,
     RECEIPT,
     GROUP_ID,

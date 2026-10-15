@@ -3,19 +3,18 @@
 //! the device is the per-install random device ID (`dev`, U16), and the record's Loro peer id
 //! must be `writer_id(author, dev)`.
 //!
-//! A record is stored as `SignedRecord` bytes; its id is the hex BLAKE3 of those bytes, so the
-//! id binds the content and the signature. Records are immutable: an edit would be a new record.
+//! A record is stored as `SignedRecord` bytes (`proto::Signed`); its id is the hex BLAKE3 of
+//! those bytes, so the id binds the content and the signature. Records are immutable: an edit
+//! would be a new record.
 //!
 //! Outside the doc (never in a record): invites (`SignedInvite`, only its signed grant goes into
 //! a `Join`), host addresses (`SignedHostAddr`) and the per-connection endpoint proof
-//! (`EndpointAuth`). Those carry group endpoints and travel only member <-> host (U7).
+//! (`EndpointAuth`, the gcall endpoint note). Those carry group endpoints and travel only
+//! member <-> host (U7).
 
-use cryptography::{codec, domains, hash, sign};
+use cryptography::{domains, hash};
+use proto::{Signable, Signed, Signer};
 use serde::{Deserialize, Serialize};
-
-const RECORD_DOMAIN: domains::Domain = domains::GROUP_RECORD;
-const INVITE_DOMAIN: domains::Domain = domains::GROUP_INVITE;
-const HOST_ADDR_DOMAIN: domains::Domain = domains::GROUP_HOST_ADDR;
 
 /// Largest stored record (a post's text is capped well below).
 pub const MAX_RECORD: usize = 64 * 1024;
@@ -70,7 +69,6 @@ pub enum Body {
 /// One group op, as signed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Record {
-    pub v: u8,
     pub group: String,
     pub author: String,
     /// The writing install's device ID (U16). `writer_id(author, dev)` is the record's Loro peer.
@@ -83,12 +81,7 @@ pub struct Record {
     pub body: Body,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SignedRecord {
-    /// `codec` bytes of `Record`.
-    pub body: Vec<u8>,
-    pub sig: Vec<u8>,
-}
+pub type SignedRecord = Signed<Record>;
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum RecordError {
@@ -102,22 +95,21 @@ pub enum RecordError {
     BadSignature,
 }
 
-/// What a DID signs for a body under `domain` (`cryptography::sign::input`).
-pub(crate) fn sig_input(domain: domains::Domain, body: &[u8]) -> Vec<u8> {
-    sign::input(domain, &[body])
-}
-
-/// `sig` is a valid signature of `msg` by the key of `did`.
-pub(crate) fn verify_did(did: &str, msg: &[u8], sig: &[u8]) -> bool {
-    let Some(key) = identity::public_key_from_did(did) else { return false };
-    let Ok(sig) = <[u8; 64]>::try_from(sig) else { return false };
-    identity::verify(&key, msg, &sig)
+impl Signable for Record {
+    const DOMAIN: domains::Domain = domains::GROUP_RECORD;
+    const MAX_BODY: usize = MAX_RECORD - proto::signed::SIG_LEN;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.author)
+    }
+    fn check(&self) -> proto::Result<()> {
+        self.check_shape().map_err(|_| proto::Error::Decode)
+    }
 }
 
 impl Record {
     fn check_shape(&self) -> Result<(), RecordError> {
         let bad = Err(RecordError::Malformed);
-        if self.v != 1 || self.author.is_empty() || self.author.len() > 200 || self.seen.len() > MAX_SEEN {
+        if self.author.is_empty() || self.author.len() > 200 || self.seen.len() > MAX_SEEN {
             return bad;
         }
         if self.seen.windows(2).any(|w| w[0].0 >= w[1].0) {
@@ -135,49 +127,38 @@ impl Record {
 
     /// Signs as `account` (whose DID must be `self.author`).
     pub fn sign(&self, account: &identity::Identity) -> SignedRecord {
-        debug_assert_eq!(account.did(), self.author);
-        let body = codec::to_bytes(self).expect("record serialises");
-        let sig = account.sign(&sig_input(RECORD_DOMAIN, &body)).to_vec();
-        SignedRecord { body, sig }
+        Signed::sign(self, account).expect("own record signs")
     }
 }
 
-impl SignedRecord {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        codec::to_bytes(self).expect("record serialises")
+/// Decodes stored or received bytes and verifies them: shape, group, and the author's DID
+/// signature.
+pub fn open_record(bytes: &[u8], group: &str) -> Result<Record, RecordError> {
+    let s = SignedRecord::from_bytes(bytes).map_err(|_| RecordError::Malformed)?;
+    let rec = s.open().map_err(|e| match e {
+        proto::Error::BadSignature => RecordError::BadSignature,
+        proto::Error::TooLarge => RecordError::Malformed,
+        _ => match s.peek() {
+            Ok(r) if r.check_shape().is_err() => RecordError::Malformed,
+            _ => RecordError::Undecodable,
+        },
+    })?;
+    if rec.group != group {
+        return Err(RecordError::WrongGroup);
     }
-
-    /// Decodes stored bytes and verifies them: shape, group, and the author's DID signature.
-    pub fn open(bytes: &[u8], group: &str) -> Result<Record, RecordError> {
-        if bytes.len() > MAX_RECORD {
-            return Err(RecordError::Malformed);
-        }
-        // Canonical: the stored bytes are exactly what re-encoding gives (no trailing junk or
-        // overlong integers, so two byte strings never carry one record under two ids).
-        let s: SignedRecord = codec::from_bytes_canonical(bytes, MAX_RECORD).map_err(|_| RecordError::Undecodable)?;
-        let rec: Record = codec::from_bytes_canonical(&s.body, MAX_RECORD).map_err(|_| RecordError::Undecodable)?;
-        rec.check_shape()?;
-        if rec.group != group {
-            return Err(RecordError::WrongGroup);
-        }
-        if !verify_did(&rec.author, &sig_input(RECORD_DOMAIN, &s.body), &s.sig) {
-            return Err(RecordError::BadSignature);
-        }
-        Ok(rec)
-    }
+    Ok(rec)
 }
 
-impl SignedRecord {
-    /// Decodes bytes our own store holds (verified on the way in): no signature, shape or
-    /// canonical-encoding check, only that it decodes and is for this group.
-    pub fn decode_trusted(bytes: &[u8], group: &str) -> Result<Record, RecordError> {
-        let s: SignedRecord = codec::from_bytes(bytes, crate::store::MAX_ROW).map_err(|_| RecordError::Undecodable)?;
-        let rec: Record = codec::from_bytes(&s.body, crate::store::MAX_ROW).map_err(|_| RecordError::Undecodable)?;
-        if rec.group != group {
-            return Err(RecordError::WrongGroup);
-        }
-        Ok(rec)
+/// Decodes bytes our own store holds (verified on the way in): no signature, shape or
+/// canonical-encoding check, only that it decodes and is for this group.
+pub fn decode_trusted(bytes: &[u8], group: &str) -> Result<Record, RecordError> {
+    let rec = SignedRecord::from_bytes(bytes)
+        .and_then(|s| s.peek())
+        .map_err(|_| RecordError::Undecodable)?;
+    if rec.group != group {
+        return Err(RecordError::WrongGroup);
     }
+    Ok(rec)
 }
 
 /// The id of stored record bytes.
@@ -198,25 +179,25 @@ pub struct Invite {
     pub nonce: [u8; 16],
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SignedInvite {
-    pub body: Vec<u8>,
-    pub sig: Vec<u8>,
-}
-
-impl Invite {
-    pub fn sign(&self, account: &identity::Identity) -> SignedInvite {
-        let body = codec::to_bytes(self).expect("invite serialises");
-        SignedInvite { sig: account.sign(&sig_input(INVITE_DOMAIN, &body)).to_vec(), body }
+impl Signable for Invite {
+    const DOMAIN: domains::Domain = domains::GROUP_INVITE;
+    const MAX_BODY: usize = MAX_SMALL_BODY;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.issuer)
     }
 }
 
-impl SignedInvite {
-    /// The invite, if its issuer's DID signed it. Expiry and the issuer's role are the caller's.
-    pub fn open(&self) -> Option<Invite> {
-        let inv: Invite = codec::from_bytes_canonical(&self.body, MAX_SMALL_BODY).ok()?;
-        (verify_did(&inv.issuer, &sig_input(INVITE_DOMAIN, &self.body), &self.sig)).then_some(inv)
-    }
+pub type SignedInvite = Signed<Invite>;
+
+/// A fresh invite to `group`, issued by `account` and valid until `expires` (unix seconds).
+pub fn issue_invite(account: &identity::Identity, group: &str, expires: u64) -> SignedInvite {
+    let inv = Invite {
+        group: group.to_string(),
+        issuer: account.did().to_string(),
+        expires,
+        nonce: cryptography::rng::bytes(),
+    };
+    Signed::sign(&inv, account).expect("own invite signs")
 }
 
 // ---- host addresses (outside the doc) -----------------------------------------------------------
@@ -233,56 +214,41 @@ pub struct HostAddr {
     pub at: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SignedHostAddr {
-    pub body: Vec<u8>,
-    pub sig: Vec<u8>,
-}
-
-impl HostAddr {
-    pub fn sign(&self, account: &identity::Identity) -> SignedHostAddr {
-        let body = codec::to_bytes(self).expect("host addr serialises");
-        SignedHostAddr { sig: account.sign(&sig_input(HOST_ADDR_DOMAIN, &body)).to_vec(), body }
+impl Signable for HostAddr {
+    const DOMAIN: domains::Domain = domains::GROUP_HOST_ADDR;
+    const MAX_BODY: usize = MAX_SMALL_BODY;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.did)
     }
-}
-
-impl SignedHostAddr {
-    pub fn open(&self) -> Option<HostAddr> {
-        let a: HostAddr = codec::from_bytes_canonical(&self.body, MAX_SMALL_BODY).ok()?;
-        if a.relay.as_ref().is_some_and(|r| r.len() > 300) {
-            return None;
+    fn check(&self) -> proto::Result<()> {
+        if self.relay.as_ref().is_some_and(|r| r.len() > 300) {
+            return Err(proto::Error::Decode);
         }
-        (verify_did(&a.did, &sig_input(HOST_ADDR_DOMAIN, &self.body), &self.sig)).then_some(a)
+        Ok(())
     }
 }
+
+pub type SignedHostAddr = Signed<HostAddr>;
 
 // ---- endpoint proof (per connection) -------------------------------------------------------------
 
-/// "Group endpoint `endpoint` is device `dev` of `did`", DID-signed. Sent first on every group
-/// connection; the receiver checks `endpoint` is the connection's remote key (QUIC proved the
-/// sender holds it). Never stored in the doc.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct EndpointAuth {
-    pub did: String,
-    pub dev: [u8; 32],
-    pub endpoint: [u8; 32],
-    pub sig: Vec<u8>,
+/// "Group endpoint `endpoint` is device `dev` of `did`", DID-signed: the same statement as the
+/// gcall endpoint note. Sent first on every group connection; the receiver checks `endpoint` is
+/// the connection's remote key (QUIC proved the sender holds it). Never stored in the doc.
+pub type EndpointAuth = proto::gcall::SignedNote;
+
+/// Our endpoint proof for a connection from `endpoint`.
+pub fn endpoint_auth(
+    account: &identity::Identity,
+    dev: [u8; 32],
+    endpoint: [u8; 32],
+) -> EndpointAuth {
+    proto::gcall::sign_note(account, &dev, &endpoint, crate::node::now_ms())
 }
 
-fn auth_input(did: &str, dev: &[u8; 32], endpoint: &[u8; 32]) -> Vec<u8> {
-    sign::input(domains::GROUP_ENDPOINT, &[did.as_bytes(), dev, endpoint])
-}
-
-impl EndpointAuth {
-    pub fn new(account: &identity::Identity, dev: [u8; 32], endpoint: [u8; 32]) -> Self {
-        let sig = account.sign(&auth_input(account.did(), &dev, &endpoint)).to_vec();
-        Self { did: account.did().to_string(), dev, endpoint, sig }
-    }
-
-    /// Valid and made for the connection whose remote key is `remote`.
-    pub fn verify(&self, remote: &[u8; 32]) -> bool {
-        &self.endpoint == remote && verify_did(&self.did, &auth_input(&self.did, &self.dev, &self.endpoint), &self.sig)
-    }
+/// The proof's statement, if valid and made for the connection whose remote key is `remote`.
+pub fn verify_endpoint(auth: &EndpointAuth, remote: &[u8; 32]) -> Option<proto::gcall::GroupNote> {
+    auth.open().ok().filter(|n| &n.endpoint == remote)
 }
 
 // ---- invite token -------------------------------------------------------------------------------------

@@ -322,7 +322,6 @@ fn import_refuses_foreign_issuers_wrong_sessions_and_call_claims() {
     ledger
         .write(
             &Receipt {
-                version: 1,
                 scope: p.scope.clone(),
                 kind: Kind::Delivered,
                 recipient: mallory.did().into(),
